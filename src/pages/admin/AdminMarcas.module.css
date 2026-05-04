@@ -1,0 +1,303 @@
+/* ═══════════════════════════════════════════
+   ADMIN MARCAS — Responsive profesional
+   ═══════════════════════════════════════════ */
+
+.wrapper {
+  max-width: 700px;
+  width: 100%;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: var(--gris-texto, #333);
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--gris-texto-secundario, #666);
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+}
+
+/* ── Formulario de nueva/editar marca ── */
+.form {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: var(--blanco);
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  border-radius: 10px;
+}
+
+.formFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gris-texto, #333);
+}
+
+.input {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9375rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 6px;
+  box-sizing: border-box;
+  min-height: 40px;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--rojo-principal);
+}
+
+.inputOrder {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9375rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 6px;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+
+.logoUploadRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.logoPreview {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  background: #f9f9f9;
+}
+
+.fileInput {
+  font-size: 0.8125rem;
+}
+
+.uploadingLabel {
+  font-size: 0.8125rem;
+  color: var(--gris-texto-secundario, #666);
+  font-style: italic;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ── Estados ── */
+.loading,
+.error,
+.empty {
+  font-size: 0.9375rem;
+  margin: 0 0 1rem 0;
+}
+
+.error {
+  color: var(--rojo-principal);
+}
+
+.empty {
+  color: var(--gris-texto-secundario);
+}
+
+/* ── Lista de marcas ── */
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 1rem;
+  background: var(--blanco);
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.itemLogo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  background: #f9f9f9;
+  flex-shrink: 0;
+}
+
+.itemName {
+  font-weight: 500;
+  flex: 1;
+  font-size: 0.9375rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemOrder {
+  font-size: 0.8125rem;
+  color: var(--gris-texto-secundario);
+  flex-shrink: 0;
+}
+
+.itemActions {
+  display: flex;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.btnEdit,
+.btnDelete {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s;
+}
+
+.btnEdit {
+  background: rgba(180, 23, 30, 0.1);
+  color: var(--rojo-principal);
+}
+
+.btnDelete {
+  background: var(--blanco);
+  color: var(--gris-texto-secundario);
+  border: 1px solid var(--gris-borde);
+}
+
+.btnEdit:hover,
+.btnDelete:hover {
+  opacity: 0.8;
+}
+
+/* ── Modal ── */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--blanco);
+  padding: 1.5rem;
+  border-radius: 10px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+}
+
+.modal p {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.modalHint {
+  font-size: 0.8125rem !important;
+  color: var(--gris-texto-secundario, #666);
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 768px
+   ══════════════════════════════ */
+@media (max-width: 768px) {
+  .wrapper {
+    max-width: 100%;
+  }
+
+  .formFields {
+    flex-direction: column;
+  }
+
+  .fieldGroup {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .input {
+    min-width: unset;
+    width: 100%;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 576px
+   ══════════════════════════════ */
+@media (max-width: 576px) {
+  .item {
+    flex-wrap: wrap;
+    gap: 0.625rem;
+  }
+
+  .itemName {
+    flex: none;
+    width: 100%;
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .itemActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+
+  .modalActions button {
+    width: 100%;
+  }
+}

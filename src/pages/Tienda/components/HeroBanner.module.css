@@ -1,0 +1,100 @@
+.heroContainer {
+  position: relative;
+  width: 100vw;
+  height: 90vh; /* Ocupa el 90% de la ventana al estilo Nude Project */
+  min-height: 500px;
+  overflow: hidden;
+  margin-left: calc(-50vw + 50%); /* Rompe el grid para ocupar ancho completo */
+  margin-top: -1rem; /* Sube para estar debajo del header si hay padding */
+  margin-bottom: 2rem;
+  background: #000;
+}
+
+.mediaWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mediaElement, .mediaThumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.mediaThumbnail {
+  z-index: 1;
+  filter: blur(5px);
+  transform: scale(1.02); /* Evita bordes blancos por el blur */
+}
+
+.mediaElement.loading {
+  opacity: 0;
+}
+
+.mediaElement.loaded {
+  opacity: 1;
+  transition: opacity 0.5s ease-in;
+  z-index: 2;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3); /* Ligero oscurecimiento para leer texto */
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.content {
+  max-width: 800px;
+}
+
+.title {
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 800;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.subtitle {
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  color: white;
+  margin-bottom: 2rem;
+  font-weight: 500;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.actionButton {
+  font-size: 1.2rem;
+  padding: 1rem 3rem;
+  border-radius: 50px;
+  background-color: white !important;
+  color: black !important;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: none;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.actionButton:hover {
+  transform: scale(1.05);
+  background-color: #f0f0f0 !important;
+}

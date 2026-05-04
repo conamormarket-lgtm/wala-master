@@ -1,0 +1,12 @@
+{
+  "name": "portal-clientes-functions",
+  "description": "Cloud Functions del Portal de Clientes - crear cuenta al crear pedido en ERP",
+  "main": "index.js",
+  "type": "commonjs",
+  "engines": { "node": "18" },
+  "dependencies": {
+    "firebase-admin": "^11.11.0",
+    "firebase-functions": "^4.5.0"
+  },
+  "private": true
+}

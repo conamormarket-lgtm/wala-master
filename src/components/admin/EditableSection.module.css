@@ -1,0 +1,78 @@
+.editableWrapper {
+  position: relative;
+  transition: all 0.2s;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed transparent;
+  z-index: 99; /* Para estar por encima de los elementos clickeables */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none; /* Dejamos que los clicks pasen por defecto */
+  transition: all 0.2s;
+}
+
+.editableWrapper:hover .overlay {
+  border-color: #e31837;
+  background-color: rgba(227, 24, 55, 0.05);
+  pointer-events: auto; /* Al hacer hover, capturamos el click */
+  cursor: pointer;
+}
+
+.editableWrapper.active .overlay {
+  border: 3px solid #e31837;
+  background-color: rgba(227, 24, 55, 0.05);
+  pointer-events: none; /* Si está activo, dejamos interactuar con el componente real para probar */
+}
+
+.editButton {
+  background-color: #e31837;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.2s;
+}
+
+.editableWrapper:hover .editButton {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.editableWrapper.active .editButton {
+  display: none;
+}
+
+.emptyPlaceholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 150px;
+  background-color: #f8f9fa;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  color: #666;
+  font-weight: 600;
+  gap: 0.5rem;
+}
+
+.emptyPlaceholder small {
+  font-weight: 400;
+  color: #999;
+}
+
+.isEmpty .overlay {
+  border-color: #ccc;
+  background-color: transparent;
+}

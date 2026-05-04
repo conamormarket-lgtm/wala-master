@@ -1,0 +1,134 @@
+.marqueeContainer {
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--gris-fondo, #f9f9f9);
+  padding: 3rem 0;
+  position: relative;
+  display: flex;
+}
+
+/* Bordes difuminados para suavizar entrada y salida */
+.marqueeContainer::before,
+.marqueeContainer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 50px;
+  height: 100%;
+  z-index: 2;
+}
+
+.marqueeContainer::before {
+  left: 0;
+  background: linear-gradient(to right, var(--gris-fondo, #f9f9f9), transparent);
+}
+
+.marqueeContainer::after {
+  right: 0;
+  background: linear-gradient(to left, var(--gris-fondo, #f9f9f9), transparent);
+}
+
+.marqueeTrack {
+  display: flex;
+  gap: 3rem;
+  padding-left: 3rem; /* Same as gap to ensure smooth loop */
+  /* El width será el 100% de sus items en fila india */
+  width: max-content;
+  animation: scrollTrack linear infinite;
+}
+
+.marqueeTrack:hover {
+  animation-play-state: paused;
+}
+
+.brandItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 120px; /* Ancho fijo para mantener la estructura redonda */
+}
+
+.brandLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.brandLink:hover {
+  transform: scale(1.05);
+}
+
+.imageWrapper {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: white;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.brandImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholderCircle {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #e0e0e0, #f5f5f5);
+}
+
+.brandName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #333);
+  text-align: center;
+}
+
+@keyframes scrollTrack {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    /* Translate to half width since items array is duplicated */
+    transform: translateX(-50%);
+  }
+}
+
+/* Responsividad para móviles */
+@media (max-width: 768px) {
+  .marqueeContainer {
+    padding: 2rem 0;
+  }
+  
+  .marqueeTrack {
+    gap: 1.5rem;
+    padding-left: 1.5rem;
+  }
+  
+  .brandItem {
+    width: 90px;
+  }
+  
+  .imageWrapper {
+    width: 75px;
+    height: 75px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .brandName {
+    font-size: 0.85rem;
+  }
+}

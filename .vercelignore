@@ -1,0 +1,10 @@
+node_modules
+.env
+.env.local
+.env.*.local
+*.log
+.git
+backend
+functions
+android
+Portal Clientes

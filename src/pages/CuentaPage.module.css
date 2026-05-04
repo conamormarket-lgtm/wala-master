@@ -1,0 +1,404 @@
+/* ═══════════════════════════════════════════
+   CUENTA LAYOUT — Responsive profesional
+   ═══════════════════════════════════════════ */
+
+.container {
+  min-height: calc(100vh - var(--header-height, 72px));
+  min-height: calc(100dvh - var(--header-height, 72px));
+  padding: 2rem 1.5rem;
+  padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 2rem);
+  background-color: var(--gris-fondo);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.content {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* ── Estado de carga inline ── */
+.loadingInline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: var(--gris-texto-secundario);
+  font-size: 0.9375rem;
+}
+
+.loadingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rojo-principal);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.loadingText {
+  font-weight: 500;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Layout cuando el usuario está logueado ── */
+.contentLoggedIn {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+/* ── Skeletons Layout ── */
+.skeletonLayout {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.skeletonHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1rem;
+  gap: 1rem;
+}
+
+.skeletonTabs {
+  height: 48px;
+  width: 300px;
+  background-color: rgba(229, 231, 235, 0.4);
+  border-radius: 100px;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonProfileBtn {
+  height: 48px;
+  width: 120px;
+  background-color: var(--blanco);
+  border: 1px solid #e5e7eb;
+  border-radius: 100px;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonContentBox {
+  height: 300px;
+  width: 100%;
+  background-color: var(--blanco);
+  border-radius: var(--radio-grande);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonTabs::after,
+.skeletonProfileBtn::after,
+.skeletonContentBox::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ── Tabs de navegación Premium ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1rem;
+  position: relative;
+  gap: 1rem;
+  animation: fadeInDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+  padding: 0.375rem;
+  background-color: rgba(229, 231, 235, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 100px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex: 1;
+  min-width: 0;
+  max-width: max-content;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-decoration: none;
+  border-radius: 100px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.tab:hover {
+  color: #111827;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--rojo-principal);
+  outline-offset: 2px;
+}
+
+.tabActive {
+  color: #111827;
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.tabActive::after {
+  display: none;
+}
+
+/* ── Botón Perfil ── */
+.profileBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+  background-color: var(--blanco);
+  border: 1px solid #e5e7eb;
+  border-radius: 100px;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.profileBtn svg {
+  color: #9ca3af;
+  transition: var(--transicion-suave);
+}
+
+.profileBtn:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.profileBtn:hover svg {
+  color: var(--rojo-principal);
+}
+
+.profileBtnActive {
+  color: var(--blanco);
+  border-color: var(--rojo-principal);
+  background-color: var(--rojo-principal);
+  box-shadow: 0 4px 14px rgba(227, 24, 55, 0.3);
+}
+
+.profileBtnActive:hover {
+  background-color: #c41828;
+  border-color: #c41828;
+  transform: translateY(-1px);
+  color: var(--blanco);
+}
+
+.profileBtnActive svg {
+  color: var(--blanco);
+}
+
+.profileBtnActive:hover svg {
+  color: var(--blanco);
+}
+
+.outlet {
+  min-height: 200px;
+  animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 992px
+   ══════════════════════════════ */
+@media (max-width: 992px) {
+  .container {
+    padding: 1.5rem 1.25rem;
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 1.5rem);
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 768px
+   ══════════════════════════════ */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+    min-height: calc(100vh - var(--header-height, 60px));
+    min-height: calc(100dvh - var(--header-height, 60px));
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 1rem);
+  }
+
+  .header {
+    margin-bottom: 1.5rem;
+  }
+
+  .tabs {
+    gap: 0.125rem;
+  }
+
+  .tab {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 576px
+   ══════════════════════════════ */
+@media (max-width: 576px) {
+  .container {
+    padding: 0.875rem;
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 0.875rem);
+  }
+
+  .header {
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-bottom: 0;
+  }
+
+  .tabs {
+    margin-left: -0.875rem;
+    margin-right: -0.875rem;
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+    border-radius: 0;
+    box-shadow: none;
+    border-bottom: 1px solid var(--gris-borde);
+    background-color: transparent;
+    order: 2;
+    flex: 1 1 100%;
+    max-width: 100%;
+    gap: 0.5rem;
+  }
+
+  .tab {
+    padding: 0.625rem 0.5rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+    border-radius: 0;
+    background-color: transparent !important;
+    position: relative;
+    color: var(--gris-texto-secundario);
+  }
+
+  .tabActive {
+    color: var(--rojo-principal);
+    box-shadow: none;
+  }
+
+  .tabActive::after {
+    display: block;
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--rojo-principal);
+    border-radius: 2px 2px 0 0;
+  }
+
+  .profileBtn {
+    order: 1;
+    margin-left: auto;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.875rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 380px
+   ══════════════════════════════ */
+@media (max-width: 380px) {
+  .container {
+    padding: 0.75rem;
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 0.75rem);
+  }
+
+  .tab {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+}

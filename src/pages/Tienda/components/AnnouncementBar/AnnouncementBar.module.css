@@ -1,0 +1,81 @@
+.announcementBar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 15px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  z-index: 100;
+  overflow: hidden;
+  position: relative;
+  min-height: 36px;
+}
+
+.announcementText {
+  animation: fadeSlide 0.5s ease-in-out;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.announcementLink {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.messageContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.messageIcon {
+  height: 20px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Scroll Animation Styles */
+.scrollTrack {
+  display: flex;
+  width: max-content;
+  animation: scrollTrack linear infinite;
+  gap: 3rem;
+  padding-left: 3rem;
+}
+
+.scrollTrack:hover {
+  animation-play-state: paused;
+}
+
+.scrollItem {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@keyframes fadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scrollTrack {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}

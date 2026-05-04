@@ -1,0 +1,337 @@
+.wrapper {
+  max-width: 640px;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: var(--gris-texto, #333);
+}
+
+.subtitle {
+  font-size: 0.9375rem;
+  color: var(--gris-texto-secundario);
+  margin: 0 0 1.5rem 0;
+}
+
+.loading,
+.error {
+  font-size: 0.9375rem;
+  margin: 1rem 0;
+}
+
+.error {
+  color: var(--rojo-principal, #b4171e);
+}
+
+.toolbar {
+  margin-bottom: 1rem;
+}
+
+.addDropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.addMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  background: #fff;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  min-width: 220px;
+}
+
+.addMenuItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.9375rem;
+}
+
+.addMenuItem:hover {
+  background: var(--gris-fondo, #f5f5f5);
+}
+
+.addMenuItem:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.addMenuItem:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  background: #fff;
+  gap: 0.75rem;
+}
+
+.item:global(.isDragging) {
+  opacity: 0.6;
+}
+
+.item:global(.isDragOver) {
+  border-color: var(--rojo-principal, #b4171e);
+  box-shadow: 0 0 0 2px rgba(180, 23, 30, 0.2);
+}
+
+.dragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 32px;
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--gris-texto-secundario, #888);
+  border: none;
+  background: none;
+  padding: 0;
+  border-radius: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.dragHandle:hover {
+  color: var(--gris-texto, #333);
+  background: var(--gris-fondo, #f0f0f0);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragHandleDots {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dragHandleRow {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+}
+
+.dragHandleRow span {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.itemLabel {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--gris-texto, #333);
+}
+
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btnIcon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.btnIcon:hover:not(:disabled) {
+  background: var(--gris-fondo, #f5f5f5);
+}
+
+.btnIcon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnEdit,
+.btnDelete {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8125rem;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+}
+
+.btnEdit {
+  background: rgba(180, 23, 30, 0.1);
+  color: var(--rojo-principal, #b4171e);
+}
+
+.btnDelete {
+  background: #fff;
+  color: var(--gris-texto-secundario);
+  border: 1px solid var(--gris-borde, #e0e0e0);
+}
+
+.empty {
+  font-size: 0.9375rem;
+  color: var(--gris-texto-secundario);
+  margin-top: 1rem;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 480px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+  color: var(--gris-texto, #333);
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  border-radius: 6px;
+}
+
+textarea.input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: var(--gris-texto-secundario);
+  margin: 0 0 1rem 0;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* ══════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════ */
+@media (max-width: 768px) {
+  .wrapper {
+    max-width: 100%;
+  }
+
+  .item {
+    flex-wrap: wrap;
+    gap: 0.625rem;
+  }
+
+  .dragHandle {
+    width: 36px;
+    height: 40px;
+  }
+
+  .btnIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .btnEdit,
+  .btnDelete {
+    min-height: 40px;
+  }
+
+  .modal {
+    width: 95%;
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .item {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .itemLabel {
+    width: 100%;
+    flex: none;
+    font-size: 0.875rem;
+  }
+
+  .itemActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .input {
+    font-size: 16px;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+
+  .modalActions button {
+    width: 100%;
+  }
+}

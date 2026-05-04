@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Products - públicos para lectura, solo admin puede escribir
+    match /products/{productId} {
+      allow read: if true; // Todos pueden leer productos
+      allow write: if isAdmin();
+    }
+    
+    // Categories - públicos para lectura, solo admin puede escribir
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Orders - usuarios pueden crear y leer sus propios pedidos
+    match /orders/{orderId} {
+      allow read: if isOwner(resource.data.userId) || 
+                     (request.resource.data.dni != null && 
+                      resource.data.dni == request.resource.data.dni) ||
+                     isAdmin();
+      allow create: if isAuthenticated() || request.resource.data.dni != null;
+      allow update: if isAdmin() || isOwner(resource.data.userId);
+      allow delete: if isAdmin();
+    }
+    
+    // Designs - usuarios pueden crear y leer sus propios diseños
+    match /designs/{designId} {
+      allow read: if isOwner(resource.data.userId) || 
+                     resource.data.isPublic == true ||
+                     isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // Templates - públicos para lectura, solo admin puede escribir
+    match /templates/{templateId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Cliparts (galería global) - públicos para lectura, solo admin puede escribir
+    match /cliparts/{clipartId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Custom Shapes (formas personalizadas) - públicos para lectura, solo admin puede escribir
+    match /customShapes/{shapeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Fonts (tipografías personalizadas) - públicos para lectura, solo admin puede escribir
+    match /fonts/{fontId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Admin users - solo admin puede leer y escribir
+    match /adminUsers/{userId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Settings - solo lectura para todos, solo admin puede escribir
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Messages (textos tienda, WhatsApp, mascota, etc.) - lectura pública para que la app muestre la mascota y textos sin login
+    match /messages/{messageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Users - usuarios pueden leer y actualizar su propio perfil
+    // Users - usuarios pueden leer y actualizar su propio perfil (pero no campos sensibles)
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAdmin() || (isOwner(userId) && 
+                    !request.resource.data.diff(resource.data).affectedKeys().hasAny(
+                      ['monedas', 'monedasReclamadas', 'monedasEnEspera', 'historialMonedasEspera', 'role']
+                    ));
+      allow delete: if isAdmin();
+    }
+    
+    // Portal Users - usuarios pueden leer y actualizar su propio perfil (pero no campos sensibles)
+    match /portal_clientes_users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAdmin() || (isOwner(userId) && 
+                    !request.resource.data.diff(resource.data).affectedKeys().hasAny(
+                      ['monedas', 'monedasReclamadas', 'monedasEnEspera', 'historialMonedasEspera', 'role']
+                    ));
+      allow delete: if isAdmin();
+    }
+  }
+}

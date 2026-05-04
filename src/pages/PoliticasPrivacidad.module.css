@@ -1,0 +1,117 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  background-color: var(--surface-color, #ffffff);
+  color: var(--text-color, #1a202c);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  padding-bottom: 20px;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--primary-color, #4f46e5);
+  margin-bottom: 10px;
+  letter-spacing: -0.025em;
+}
+
+.lastUpdated {
+  font-size: 0.9rem;
+  color: var(--text-color-light, #64748b);
+  font-style: italic;
+}
+
+.content {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text-secondary, #334155);
+}
+
+.section {
+  margin-bottom: 35px;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-color, #0f172a);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sectionTitle::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 24px;
+  background-color: var(--primary-color, #4f46e5);
+  border-radius: 4px;
+}
+
+.paragraph {
+  margin-bottom: 15px;
+  text-align: justify;
+}
+
+.list {
+  list-style-type: disc;
+  padding-left: 25px;
+  margin-bottom: 15px;
+}
+
+.listItem {
+  margin-bottom: 8px;
+}
+
+.listItem strong {
+  color: var(--text-color, #1e293b);
+  font-weight: 600;
+}
+
+.contactBox {
+  background-color: var(--bg-secondary, #f8fafc);
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid var(--secondary-color, #ec4899);
+  margin-top: 30px;
+}
+
+.contactBox p {
+  margin: 5px 0;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: 25px 15px;
+    margin-top: 1rem;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .content {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .sectionTitle {
+    font-size: 1.3rem;
+  }
+}

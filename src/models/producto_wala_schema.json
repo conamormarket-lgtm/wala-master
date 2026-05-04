@@ -1,0 +1,136 @@
+{
+  "_comentario": "Este es el modelo/esquema exacto de cómo se guardan los documentos de productos en la colección 'productos_wala' de Firebase Firestore.",
+  
+  "name": "Camiseta Oversize Básica",
+  "sku": "TSH-OVR-001",
+  "vendor": "Wala",
+  "productType": "Apparel",
+  "description": "<p>Descripción enriquecida en HTML generada por el editor Quill...</p>",
+  
+  "price": 120.00,
+  "salePrice": 99.90,
+  "inStock": 50,
+  
+  "visible": true,
+  "featured": false,
+  "featuredOrder": 0,
+  
+  "whatsappEnabled": true,
+  "whatsappNumber": "+51912881722",
+  "whatsappMessage": "Hola CON AMOR: Me interesa este producto de tu página: {url}",
+  
+  "brandId": "brand_id_123",
+  "categories": ["cat_id_1", "cat_id_2"],
+  "collections": ["col_id_1"],
+  "tags": ["oversize", "algodon"],
+  "characters": [],
+  
+  "mainImage": "https://firebasestorage.googleapis.com/.../main_image.jpg",
+  "mainSizes": ["S", "M", "L", "XL"],
+  
+  "hasVariants": true,
+  "defaultVariantId": "variant_1684321000_abc12",
+  "variantDisplayBehavior": "default_only",
+  "behaviorImpressionsThreshold": 3,
+  
+  "variants": [
+    {
+      "id": "variant_1684321000_abc12",
+      "name": "Negro",
+      "imageUrl": "https://firebasestorage.googleapis.com/.../negro.jpg",
+      "sizes": ["S", "M", "L", "XL"],
+      "thumbnailCrop": null
+    },
+    {
+      "id": "variant_1684321005_xyz98",
+      "name": "Blanco",
+      "imageUrl": "https://firebasestorage.googleapis.com/.../blanco.jpg",
+      "sizes": ["M", "L"],
+      "thumbnailCrop": null
+    }
+  ],
+  
+  "customizable": true,
+  "thumbnailWithDesignUrl": "https://firebasestorage.googleapis.com/.../thumbnail.png",
+  
+  "customizationViews": [
+    {
+      "id": "view_1684321100_qwe34",
+      "name": "Frente",
+      "hasBackSide": true,
+      "imagesByColor": {
+        "default": "https://...",
+        "Negro": "https://...",
+        "Blanco": "https://..."
+      },
+      "printAreas": [
+        {
+          "id": "zone_1684321150_0",
+          "shape": "rectangle",
+          "x": 20,
+          "y": 25,
+          "width": 60,
+          "height": 50,
+          "rotation": 0,
+          "skewX": 0,
+          "skewY": 0
+        }
+      ],
+      "initialLayersByColor": {
+        "default": [],
+        "Negro": [
+          {
+            "id": "layer_1",
+            "type": "image",
+            "src": "https://...",
+            "x": 30,
+            "y": 30,
+            "width": 20,
+            "height": 20
+          }
+        ],
+        "Blanco": []
+      },
+      "backSide": {
+        "id": "back_1684321100_zxc56",
+        "name": "Espalda",
+        "imagesByColor": {
+          "default": "https://..."
+        },
+        "printAreas": [
+          {
+            "id": "zone_1684321160_1",
+            "shape": "rectangle",
+            "x": 10,
+            "y": 15,
+            "width": 80,
+            "height": 70,
+            "rotation": 0,
+            "skewX": 0,
+            "skewY": 0
+          }
+        ],
+        "initialLayersByColor": {
+          "default": []
+        }
+      }
+    }
+  ],
+  
+  "productCliparts": [
+    {
+      "id": "clipart_1684321200_0",
+      "name": "Logo Frontal",
+      "url": "https://..."
+    }
+  ],
+  
+  "isComboProduct": false,
+  "comboPreviewImage": "",
+  "comboLayout": {
+    "orientation": "horizontal",
+    "spacing": 20
+  },
+  "comboItems": [],
+  "comboItemCustomization": []
+}

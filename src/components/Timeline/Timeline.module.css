@@ -1,0 +1,159 @@
+/* Contenedor */
+.timeline {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  padding: 1.5rem 0.5rem;
+  scrollbar-width: thin;
+  justify-content: space-between;
+}
+
+.item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* Línea Conectora */
+.item::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  width: 100%;
+  height: 4px;
+  background-color: #e2e8f0; /* slate-200 futuro */
+  z-index: 0;
+  transition: background-color 0.4s ease;
+}
+
+.item:last-child::before {
+  display: none;
+}
+
+.item.completado::before {
+  background-color: #10b981; /* emerald-500 pasado */
+}
+.item:has(+ .item.actual)::before {
+  background-color: #10b981; /* línea hasta el presente */
+}
+
+/* El Nodo / Círculo */
+.dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #e2e8f0; /* slate-200 futuro */
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 0 4px white; /* Corte visual con la línea */
+}
+
+/* Pasado (Completado) */
+.item.completado .dot {
+  background-color: #10b981; /* emerald-500 */
+}
+
+/* Presente (Actual) */
+.item.actual .dot {
+  background-color: #3b82f6; /* blue-500 */
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px white, 0 0 0 8px rgba(59, 130, 246, 0.2);
+  animation: pulso 2.5s infinite;
+}
+
+/* El puntito interno del presente */
+.puntito {
+  width: 8px;
+  height: 8px;
+  background-color: white;
+  border-radius: 50%;
+}
+
+@keyframes pulso {
+  0% { box-shadow: 0 0 0 4px white, 0 0 0 6px rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 0 4px white, 0 0 0 10px rgba(59, 130, 246, 0.1); }
+  100% { box-shadow: 0 0 0 4px white, 0 0 0 6px rgba(59, 130, 246, 0.4); }
+}
+
+@keyframes pulsoDeuda {
+  0% { box-shadow: 0 0 0 4px white, 0 0 0 6px rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 4px white, 0 0 0 10px rgba(239, 68, 68, 0.1); }
+  100% { box-shadow: 0 0 0 4px white, 0 0 0 6px rgba(239, 68, 68, 0.4); }
+}
+
+/* Textos debajo del nodo */
+.contenido {
+  text-align: center;
+  margin-top: 1.25rem;
+}
+.etapa {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #64748b; /* slate-500 */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+.item.actual .etapa {
+  color: #0f172a; /* slate-900 */
+}
+.fecha {
+  font-size: 0.65rem;
+  color: #94a3b8; /* slate-400 */
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+/* ---- OVERRIDES CRÍTICOS: SI HAY DEUDA EN EL PEDIDO ---- */
+.timelineDeuda .item.completado::before,
+.timelineDeuda .item:has(+ .item.actual)::before {
+  background-color: #ef4444 !important; /* red-500 */
+}
+
+.timelineDeuda .item.completado .dot {
+  background-color: #ef4444 !important; 
+}
+
+.timelineDeuda .item.actual .dot {
+  background-color: #ef4444 !important;
+  animation: pulsoDeuda 2.5s infinite;
+}
+
+
+/* ---- RESPONSIVE MOBILE ---- */
+@media (max-width: 768px) {
+  .timeline {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem 0;
+  }
+  .item {
+    flex-direction: row;
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+  .item:last-child {
+    margin-bottom: 0;
+  }
+  .item::before {
+    left: 14px;
+    top: 32px;
+    width: 4px;
+    height: calc(100% + 14px); /* conecta verticalmente al siguiente nodo */
+  }
+  .contenido {
+    margin-top: 0;
+    margin-left: 1.5rem;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}

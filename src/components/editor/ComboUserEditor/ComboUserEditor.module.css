@@ -1,0 +1,1225 @@
+.comboUserEditor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.composedImageSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  background: var(--gris-fondo, #f5f5f5);
+  border-radius: 12px;
+  border: 2px solid var(--gris-borde, #e0e0e0);
+}
+
+.composedImageContainer {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.composedImage {
+  width: 100%;
+  height: auto;
+  max-height: 600px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.activeItemIndicator {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--rojo-principal, #b4171e);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.editorSection {
+  width: 100%;
+}
+
+.editorHeader {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--gris-borde, #e0e0e0);
+}
+
+.editorTitle {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #333);
+}
+
+.loading {
+  padding: 3rem;
+  text-align: center;
+  color: var(--gris-texto-secundario, #666);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.loadingDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--rojo-principal, #b4171e);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.placeholder {
+  padding: 3rem;
+  text-align: center;
+  color: var(--gris-texto-secundario, #666);
+  font-size: 0.9375rem;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 6px;
+  padding-right: 1rem;
+  align-items: center;
+  justify-content: center;
+  /* Evita squish flex vertical */
+}
+
+.swatches::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .swatches::-webkit-scrollbar {
+    display: block;
+    height: 8px;
+  }
+
+  .swatches::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+}
+
+.scrollHint {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-left: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0.8;
+}
+
+.swatchBtn {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  /* Blindaje vertical */
+  min-width: 32px;
+  /* Blindaje horizontal */
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  aspect-ratio: 1 / 1;
+}
+
+.swatchBtn:hover {
+  transform: scale(1.1);
+}
+
+.swatchBtn.active {
+  border-color: var(--rojo-principal, #b4171e);
+  box-shadow: 0 0 8px rgba(180, 23, 30, 0.3);
+}
+
+.swatchCircle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: #ddd;
+}
+
+.swatchCircle.defaultColor {
+  background: conic-gradient(#f44336, #2196f3, #4caf50, #ffeb3b, #ff9800);
+}
+
+.sideToggles {
+  display: flex;
+  gap: 0.2rem;
+  margin-top: 2px;
+  /* Margen reducido para compactar Talla/Lados */
+}
+
+.sideToggleBtn {
+  padding: 0.4rem 1.25rem;
+  border-radius: 9999px;
+  background-color: var(--gris-fondo, #f5f5f5);
+  color: var(--gris-texto, #333);
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sideToggleBtn:hover {
+  background-color: #e8e8e8;
+}
+
+.sideToggleBtn.activeState {
+  background-color: var(--rojo-principal, #b4171e);
+  color: #fff;
+  border-color: var(--rojo-principal, #b4171e);
+  box-shadow: 0 2px 4px rgba(180, 23, 30, 0.2);
+}
+
+.comboStepsContainer {
+  margin-top: -1rem;
+  padding: 0 1rem;
+}
+
+.comboStepsTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  color: #111827;
+}
+
+.stepTabsList {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.stepTabsList::-webkit-scrollbar {
+  display: none;
+}
+
+.stepTab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  background: var(--gris-fondo, #f5f5f5);
+  color: #4b5563;
+  border: 1px solid transparent;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.stepTab:hover {
+  background: #e5e7eb;
+}
+
+.stepTabActive {
+  background: #fee2e2;
+  color: #b4171e;
+  border-color: #fca5a5;
+  box-shadow: 0 2px 4px rgba(180, 23, 30, 0.1);
+}
+
+.stepNumber {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.stepTabActive .stepNumber {
+  background: #b4171e;
+  color: white;
+}
+
+.activeCustomizationCard {
+  background: white;
+  border: 1px solid #fca5a5;
+  border-radius: 0 8px 8px 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(180, 23, 30, 0.05), 0 2px 4px -1px rgba(180, 23, 30, 0.03);
+}
+
+.sideToggles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sideTogglesLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-right: 0.25rem;
+}
+
+.editorLayout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.productCustomizerArea {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  max-width: 650px;
+  /* Ancho cómodo centrado simulando la app en PC */
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Asignación estricta de flex para que NADA se solape */
+.topControls {
+  flex: 0 0 auto;
+  /* No crece, no se encoge por debajo de su tamaño natural */
+}
+
+.canvasSection {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 40vh;
+  width: 100%;
+  /* Es el único autorizado a absorber el espacio extra o contraerse */
+
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.bottomControls {
+  flex: 0 0 auto;
+  /* Altura natural estricta */
+  width: 100%;
+  /* Asegura llenar su bloque sin flotar */
+  margin-top: 1rem;
+}
+
+.toolbarSection {
+  flex: 0 0 auto;
+  /* Altura natural estricta */
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 1rem;
+}
+
+.mobileToolbarSpacer {
+  display: none;
+  /* Invisible en PC */
+}
+
+@media (max-width: 1024px) {
+  .editorLayout {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .comboUserEditor {
+    overflow-x: hidden;
+    max-width: 100vw;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+  }
+
+  .editorSection {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .editingContainer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .editorLayout {
+    flex: 1;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+    display: flex;
+  }
+
+  .productCustomizerArea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding-bottom: 0;
+  }
+
+  .canvasSection {
+    margin-bottom: 0;
+    padding-bottom: 10px;
+  }
+
+  /* Fixing the full bleed active custom card */
+  .activeCustomizationCard {
+    padding: 1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin: 0 0 1rem 0;
+    /* Prevents blowing past 100vw width */
+  }
+
+  .stepTab {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .comboStepsContainer {
+    padding: 0;
+  }
+
+  .sideToggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+  }
+
+  .sideTogglesLabel {
+    display: none;
+  }
+
+  .sideToggleBtn {
+    padding: 0 !important;
+    height: auto !important;
+    aspect-ratio: 5 / 1 !important;
+    font-size: 3.5vw !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+  }
+
+  /* Escalado fluido en responsive X para vista individual */
+  .sizeBtn {
+    min-width: 0 !important;
+    width: 11vw !important;
+    height: auto !important;
+    aspect-ratio: 2 / 1 !important;
+    font-size: 4vw !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .swatchBtn {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    width: 11vw !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  /* Escalado de fondos blancos y textos (Vista Individual) */
+  .topControls {
+    padding: 3vw 3vw 1.5vw 3vw !important;
+  }
+  
+  .bottomControls {
+    padding: 1.5vw 3vw 3vw 3vw !important;
+  }
+
+  .fieldLabel {
+    font-size: 3.5vw !important;
+    margin-bottom: 1vw !important;
+  }
+
+  .colorName {
+    margin-left: 1vw !important;
+  }
+
+  .scrollHint {
+    font-size: 2.7vw !important;
+    margin-left: 1.5vw !important;
+  }
+
+  .selectorField {
+    gap: 1.5vw !important;
+  }
+
+  /* Make sure images do not overflow with container margins */
+  .composedImageSection {
+    padding: 1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+
+  .composedImageContainer {
+    max-width: 100%;
+  }
+
+  /* Contenedor padre global: Liberado al Responsive Orgánico */
+  .globalEditionLayout {
+    flex: 1;
+    min-height: 0;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+}
+
+.selectorField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  /* Margen drásticamente reducido en lugar de 1rem */
+}
+
+.fieldLabel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #333);
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.colorName {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+  /* Limits the long color names */
+  margin-left: 0.25rem;
+}
+
+.selectWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.comboSelect {
+  appearance: none;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  background: var(--blanco, #fff);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--gris-texto, #333);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.comboSelect:hover {
+  border-color: #fca5a5;
+}
+
+.comboSelect:focus {
+  outline: none;
+  border-color: var(--rojo-principal, #b4171e);
+  box-shadow: 0 0 0 3px rgba(180, 23, 30, 0.1);
+}
+
+.selectChevron {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+}
+
+.selectChevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Modificaciones para Modal Móvil */
+.showOnlyMobile {
+  display: none !important;
+}
+
+.mobileSettingsBtn {
+  width: 100%;
+  margin: 0.5rem 0 1rem;
+  padding: 0.8rem;
+  background-color: #fff;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--rojo-principal, #b4171e);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+  .showOnlyMobile {
+    display: flex !important;
+  }
+
+  .desktopControls {
+    display: none !important;
+  }
+
+  .hiddenMobile {
+    display: none !important;
+  }
+
+  .hiddenContentMobile {
+    display: none !important;
+  }
+
+  /* Ajuste para que el editor layout sea flex column en móvil, ocupando al 100% de la ventana de forma fluida */
+  .editorLayout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+  }
+
+  .canvasSection {
+    flex: 1;
+    min-height: 1px;
+    height: auto;
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-bottom: 0;
+    padding-bottom: 1px;
+    position: relative;
+    aspect-ratio: 1 / 2;
+    border-radius: 8px;
+  }
+
+  .globalCanvasesGrid {
+    display: grid !important;
+    gap: 0.25rem;
+    /* Espaciado proporcional entre ellas */
+    padding: 0;
+    /* Cero separación a los bordes */
+    grid-template-columns: repeat(2, 1fr) !important;
+    /* Divide la pantalla en 2 mitades perfectas */
+    justify-content: stretch;
+    align-items: start;
+    flex-direction: unset;
+  }
+
+  .globalCanvasItemWrapper {
+    max-width: 100% !important;
+    /* Libre crecimiento para ocupar la mitad */
+    min-width: 0 !important;
+    width: 100%;
+    margin: 0;
+  }
+
+  .globalDynamicCanvas {
+    min-height: auto !important;
+    height: auto !important;
+    /* Anula el 55vh forzado de la vista principal */
+    max-height: none !important;
+    /* Anula el 550px */
+    padding-bottom: 0 !important;
+    /* Quita el espacio para herramientas extra */
+    aspect-ratio: 3 / 4;
+  }
+
+  .globalCanvasItemWrapper .topControls {
+    padding: 1.5vw 1.5vw 1vw 1.5vw !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .globalCanvasItemWrapper .bottomControls {
+    padding: 1vw 2vw 2vw 2vw !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .globalCanvasItemWrapper .fieldLabel {
+    font-size: 2.5vw !important;
+    margin-bottom: 1vw !important;
+  }
+  
+  .globalCanvasItemWrapper .scrollHint {
+    font-size: 1.8vw !important;
+    margin-left: 1vw !important;
+  }
+
+  /* Compactación al extremo de Gaps y botones */
+  .globalCanvasItemWrapper .selectorField {
+    gap: 1vw !important;
+    margin-bottom: 0 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .globalCanvasItemWrapper .sizeSwatches {
+    gap: 0.25rem !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    padding-bottom: 2px !important;
+    scrollbar-width: none !important;
+  }
+
+  .globalCanvasItemWrapper .sizeSwatches::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .globalCanvasItemWrapper .sizeBtn {
+    min-width: 0 !important;
+    width: 6.5vw !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+    font-size: 2.5vw !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .globalCanvasItemWrapper .swatches {
+    gap: 0.25rem !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-bottom: 2px !important;
+    padding-right: 8px !important;
+    padding-left: 8px !important;
+    scrollbar-width: none !important;
+  }
+
+  .globalCanvasItemWrapper .swatches::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .globalCanvasItemWrapper .swatchBtn {
+    min-width: 0 !important;
+    width: 6.5vw !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  .globalCanvasItemWrapper .sideToggles {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.25rem !important;
+    width: 100% !important;
+  }
+
+  .globalCanvasItemWrapper .sideToggleBtn {
+    padding: 0 !important;
+    aspect-ratio: 3 / 1 !important;
+    font-size: 2.8vw !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: auto !important;
+  }
+}
+
+/* ESTILOS DEL SELECTOR (Solo visibles por la lógica en React o clases) */
+.mobileProductSelector {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background: var(--gris-fondo, #f5f5f5);
+}
+
+.mobileSelectorTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #111827;
+  text-align: center;
+}
+
+.mobileCardsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobileProductCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: active 0.2s;
+}
+
+.mobileProductCard:active {
+  background: #f9fafb;
+  transform: scale(0.98);
+}
+
+.mobileProductCard svg {
+  color: #9ca3af;
+}
+
+.mobileCardInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mobileCardNumber {
+  width: 28px;
+  height: 28px;
+  background: var(--rojo-principal, #b4171e);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.mobileCardName {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+/* OVERLAY HEADER (El botón para volver en Overlay) */
+.mobileOverlayHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 10;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.mobileOverlayCloseBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--rojo-principal, #b4171e);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
+/* ====================================================
+   UNIFIED LAYOUT ENHANCEMENTS
+   ==================================================== */
+
+/* Contenedor de tallas fijas separado */
+.fixedSizesStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--gris-fondo, #f9fafb);
+  border-bottom: 1px solid var(--gris-borde, #e5e7eb);
+  align-items: center;
+  justify-content: center;
+}
+
+.fixedSizeField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fixedSizeLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.fixedSizeSelect {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 0.85rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* Tabs Minimalistas (Navbar) */
+.unifiedTabsRow {
+  background: transparent;
+  width: 100%;
+  min-width: 0;
+  max-width: 100vw;
+}
+
+.stepTabsList {
+  display: flex;
+  overflow-x: auto;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+  scrollbar-width: none;
+}
+
+.stepTabsList::-webkit-scrollbar {
+  display: none;
+}
+
+.stepTab {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0.6rem 0.5rem;
+  /* Padding reducido para acortar el alto */
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.stepTab:focus {
+  outline: none;
+}
+
+.stepTab:hover {
+  color: #111827;
+}
+
+.stepTabActive {
+  color: #9333ea !important;
+  /* Morado fuerte */
+  border-bottom-color: #9333ea !important;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(147, 51, 234, 0.2);
+  /* Sombreado muy tenue de morado */
+}
+
+.globalTabBtn {
+  flex: none;
+  width: auto;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.globalTabBtn svg {
+  color: inherit;
+}
+
+.globalTabBtn.stepTabActive {
+  filter: drop-shadow(0 0 4px rgba(147, 51, 234, 0.3));
+  /* Sombra para el SVG */
+}
+
+/* Grilla Global */
+.globalEditionLayout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  /* Contexto de anclaje para MobileFloatingTools */
+}
+
+.globalCanvasesGrid {
+  display: grid;
+  flex: 1;
+  overflow-y: auto;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: #f3f4f6;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  /* Desktop default: Grilla Horizontal inteligente */
+  align-items: start;
+  justify-items: center;
+}
+
+.globalCanvasItemWrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  /* 100% fluido en Desktop/Tablet, creciendo ilimitado en su columna 1fr */
+  margin: 0 auto;
+  /* Asegura fijado al centro de su ranura de la grilla */
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.globalDynamicCanvas {
+  margin: 0;
+  border-radius: 0;
+  min-height: auto;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  /* El lienzo principal en PC también será dinámicamente responsivo y cuadrado perfecto */
+}
+
+.globalCanvasItemTitle {
+  margin: 0;
+  padding: 0.75rem;
+  text-align: center;
+  background: #fff;
+  border-bottom: 1px solid #f3f4f6;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+.globalCanvasContainerAbsolute {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+  min-height: 280px;
+}
+
+/* Selectores de Talla Individuales (Cajas/Botones) */
+.sizeSwatches {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0.2rem;
+  -webkit-overflow-scrolling: touch;
+  /* Habilitar momentum scroll suave fluido en Safari/iOS */
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.sizeSwatches::-webkit-scrollbar {
+  display: none;
+}
+
+.sizeBtn {
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.sizeBtn:hover {
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.activeSize {
+  background: #9333ea;
+  /* Morado fuerte */
+  border-color: #9333ea;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 6px -1px rgba(147, 51, 234, 0.3);
+}
+
+.sizeBtnMini {
+  min-width: 30px;
+  height: 30px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  padding: 0 0.3rem;
+}
+
+/* Selector de color Option B (Vista Global) */
+.globalColorStrip {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  justify-content: center;
+  background: #fff;
+  border-top: 1px solid #f3f4f6;
+  overflow-x: auto;
+}
+
+.swatchBtnMini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.swatchBtnMini:hover {
+  transform: scale(1.1);
+}
+
+.activeMini {
+  border: 2px solid #111827;
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px #fff inset;
+}
+
+/* Controles separados Top / Bottom */
+.topControls {
+  padding: 1rem 1rem 0.5rem 1rem;
+  background: #fff;
+  z-index: 5;
+}
+
+.bottomControls {
+  padding: 0.5rem 1rem 1rem 1rem;
+  background: #fff;
+  z-index: 5;
+}
+
+.globalControlsStripTop {
+  padding: 0.75rem 1rem;
+  background: #fbfbfb;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.toolbarSectionGlobal {
+  background: #fff;
+  z-index: 10;
+}
+
+/* Micro-dispositivos (Resoluciones de altura <= 667px o anchos muy pequeños) */
+@media (max-width: 380px),
+(max-height: 680px) {
+  .globalCanvasesGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.15rem !important;
+    /* Gap al absoluto mínimo */
+    padding: 0 !important;
+    /* Cero padding al borde */
+  }
+
+  .globalCanvasItemWrapper {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .globalCanvasItemWrapper .sizeBtn {
+    min-width: 24px !important;
+    height: 24px !important;
+    font-size: 0.65rem !important;
+  }
+
+  .globalCanvasItemWrapper .swatchCircle,
+  .globalCanvasItemWrapper .swatchBtn {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+  }
+}

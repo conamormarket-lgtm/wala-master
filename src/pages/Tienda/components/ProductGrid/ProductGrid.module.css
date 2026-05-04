@@ -1,0 +1,169 @@
+/* ═══════════════════════════════════════════
+   PRODUCT GRID — Responsive profesional
+   ═══════════════════════════════════════════ */
+
+.grid {
+  display: grid;
+  /* Usamos auto-fit para que los productos se estiren y no dejen espacio vacío al final si son pocos */
+  grid-template-columns: repeat(var(--grid-cols-desktop, auto-fit), minmax(320px, 1fr));
+  gap: 2px;
+  padding: 1rem 0;
+}
+
+/* ── Skeleton cards ── */
+.skeletonCard {
+  background: var(--blanco, #fff);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--gris-borde, #eee);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.skeletonImage {
+  width: 100%;
+  padding-top: 100%;
+  background: transparent;
+}
+
+.skeletonContent {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeletonLine {
+  height: 16px;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.skeletonLineShort {
+  height: 14px;
+  width: 50%;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.skeletonPrice {
+  height: 20px;
+  width: 35%;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  background: transparent;
+}
+
+/* ── Estados vacío / error ── */
+.errorContainer,
+.emptyContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.errorTitle,
+.emptyTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+}
+
+.errorText,
+.emptyText {
+  margin: 0 0 1.5rem 0;
+  color: var(--gris-texto-secundario);
+  font-size: 0.9375rem;
+  max-width: 380px;
+  line-height: 1.6;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  color: var(--gris-borde);
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.emptyLink {
+  display: inline-block;
+  padding: 0.65rem 1.5rem;
+  background: var(--rojo-principal);
+  color: var(--blanco);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.emptyLink:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 992px
+   ══════════════════════════════ */
+@media (max-width: 992px) {
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2px;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 768px (tablet)
+   ══════════════════════════════ */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(var(--grid-cols-mobile, 2), 1fr);
+    gap: 2px;
+    padding: 2px 0;
+  }
+
+  .errorContainer,
+  .emptyContainer {
+    min-height: 260px;
+    padding: 2rem 1rem;
+  }
+
+  .errorTitle,
+  .emptyTitle {
+    font-size: 1.125rem;
+  }
+
+  .errorText,
+  .emptyText {
+    font-size: 0.875rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 480px (móvil)
+   ══════════════════════════════ */
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(var(--grid-cols-mobile, 2), 1fr);
+    gap: 2px;
+    padding: 2px 0;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 380px (móvil XS)
+   ══════════════════════════════ */
+@media (max-width: 380px) {
+  .grid {
+    /* Pantallas muy pequeñas: seguir con 2 col pero gap mínimo */
+    grid-template-columns: repeat(var(--grid-cols-mobile, 2), 1fr);
+    gap: 2px;
+  }
+}

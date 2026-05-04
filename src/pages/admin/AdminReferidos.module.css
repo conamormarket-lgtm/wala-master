@@ -1,0 +1,52 @@
+.tableWrapper {
+  overflow-x: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-top: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th, .table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.btnApprove, .btnReject {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btnApprove {
+  background: #28a745;
+  color: white;
+}
+
+.btnReject {
+  background: #dc3545;
+  color: white;
+}
+
+.btnApprove:hover, .btnReject:hover {
+  opacity: 0.8;
+}
+
+.btnApprove:disabled, .btnReject:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

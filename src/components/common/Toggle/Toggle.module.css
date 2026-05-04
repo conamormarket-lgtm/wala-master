@@ -1,0 +1,130 @@
+.toggleWrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gris-texto, #333);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  transition: opacity 0.2s ease;
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--rojo-principal, #b4171e);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+.toggle.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.track {
+  position: relative;
+  display: block;
+  background-color: #cbd5e0;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.toggle.checked .track {
+  background-color: var(--rojo-principal, #b4171e);
+}
+
+.toggle.disabled .track {
+  background-color: #e2e8f0;
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  transform: translateY(-50%);
+  display: block;
+  background-color: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.toggle.checked .thumb {
+  transform: translate(calc(100% - 2px), -50%);
+}
+
+.toggle.animating .thumb {
+  transition-duration: 0.15s;
+}
+
+/* Tamaños */
+.small .track {
+  width: 32px;
+  height: 18px;
+}
+
+.small .thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.small.checked .thumb {
+  transform: translate(calc(100% - 2px), -50%);
+}
+
+.medium .track {
+  width: 44px;
+  height: 24px;
+}
+
+.medium .thumb {
+  width: 20px;
+  height: 20px;
+}
+
+.medium.checked .thumb {
+  transform: translate(calc(100% - 2px), -50%);
+}
+
+.large .track {
+  width: 56px;
+  height: 30px;
+}
+
+.large .thumb {
+  width: 26px;
+  height: 26px;
+}
+
+.large.checked .thumb {
+  transform: translate(calc(100% - 2px), -50%);
+}
+
+/* Estados hover */
+.toggle:not(.disabled):hover .track {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.toggle:not(.disabled):hover .thumb {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* Estados active */
+.toggle:not(.disabled):active .thumb {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}

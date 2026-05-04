@@ -1,0 +1,27 @@
+.bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    z-index: 9999;
+    background: linear-gradient(90deg,
+            var(--rojo-principal, #D9232D) 0%,
+            #ff6b6b 50%,
+            var(--rojo-principal, #D9232D) 100%);
+    background-size: 200% 100%;
+    animation: barShimmer 1.2s linear infinite;
+    border-radius: 0 999px 999px 0;
+    transition: width 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 0 8px rgba(217, 35, 45, 0.6);
+    pointer-events: none;
+}
+
+@keyframes barShimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}

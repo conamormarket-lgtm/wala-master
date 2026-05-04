@@ -1,0 +1,137 @@
+.container {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  overflow: visible;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.loading {
+  padding: 3rem;
+  text-align: center;
+  color: var(--gris-texto-secundario, #666);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 0.9375rem;
+}
+
+.loadingDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--rojo-principal, #b4171e);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.error {
+  padding: 2rem;
+  text-align: center;
+  color: var(--rojo-principal, #b4171e);
+  background: rgba(180, 23, 30, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(180, 23, 30, 0.2);
+}
+
+.error p {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.placeholder {
+  padding: 3rem;
+  text-align: center;
+  color: var(--gris-texto-secundario, #666);
+  font-size: 0.9375rem;
+}
+
+.placeholder p {
+  margin: 0;
+}
+
+/* Vista por items: ambas imágenes caben en la tarjeta (mitad cada una) */
+.comboRow {
+  display: flex;
+  align-items: stretch; /* CLAVE: ambas columnas miden lo mismo de alto */
+  justify-content: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.comboRowItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between; /* Perfect control alignment at top and bottom */
+  gap: 0.5rem;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.5rem;
+}
+
+.comboRowImage {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+/* Skeleton shimmer para items del combo mientras carga */
+.comboRowSkeleton {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.comboRowPlaceholder {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: transparent;
+}
+
+/* Placeholder estático para cuando ya se obtuvo la imagen pero aún carga */
+.comboRowPlaceholder {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background-color: #f5f5f5;
+  border: 1px dashed #ddd;
+}
+
+@media (max-width: 768px) {
+  .comboRowItem {
+    padding: 0.1rem;
+  }
+}

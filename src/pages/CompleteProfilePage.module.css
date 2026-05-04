@@ -1,0 +1,355 @@
+/* ═══════════════════════════════════════════
+   COMPLETE PROFILE PAGE — Responsive profesional
+   ═══════════════════════════════════════════ */
+
+.container {
+  min-height: calc(100vh - var(--header-height, 72px));
+  min-height: calc(100dvh - var(--header-height, 72px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background-color: var(--gris-fondo);
+}
+
+/* ── Wrapper con 2 columnas ── */
+.wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  background-color: var(--blanco);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-profunda);
+  overflow: hidden;
+}
+
+.branding {
+  background: linear-gradient(135deg, var(--rojo-principal) 0%, #a11720 100%);
+  color: var(--blanco);
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.branding::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 65%);
+  animation: brandingPulse 14s ease-in-out infinite;
+}
+
+@keyframes brandingPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.branding img {
+  width: 140px;
+  height: 140px;
+  margin-bottom: 1.5rem;
+  background-color: var(--blanco);
+  border-radius: 50%;
+  padding: 10px;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.branding h2 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.625rem;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+}
+
+.branding>p {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  opacity: 0.95;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Formulario ── */
+.formContainer {
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.logoMovil {
+  display: none;
+}
+
+.formContainer h1 {
+  color: var(--gris-texto-principal);
+  margin: 0 0 0.25rem 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.formContainer>p {
+  color: var(--gris-texto-secundario);
+  margin-bottom: 1.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.form {
+  margin-bottom: 0;
+}
+
+.toggleRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.toggle {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid var(--gris-borde);
+  border-radius: var(--radio-pequeno);
+  background: var(--blanco);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--gris-texto-secundario);
+  cursor: pointer;
+  transition: var(--transicion-suave);
+  min-height: var(--touch-target, 44px);
+}
+
+.toggle:hover {
+  border-color: var(--gris-texto-secundario);
+}
+
+.toggleActive {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid var(--rojo-principal);
+  border-radius: var(--radio-pequeno);
+  background: var(--rojo-principal);
+  color: var(--blanco);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: var(--transicion-suave);
+  min-height: var(--touch-target, 44px);
+}
+
+.formGroup {
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal);
+  font-size: 0.9375rem;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  font-size: 1rem;
+  border: 2px solid var(--gris-borde);
+  border-radius: var(--radio-pequeno);
+  transition: var(--transicion-suave);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  box-sizing: border-box;
+  min-height: var(--touch-target, 44px);
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: var(--rojo-principal);
+  box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
+}
+
+.fieldError {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--rojo-principal);
+}
+
+.errorMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: rgba(217, 35, 45, 0.08);
+  border: 1px solid rgba(217, 35, 45, 0.3);
+  border-radius: var(--radio-pequeno);
+  color: var(--rojo-principal);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.loadingInline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: var(--gris-texto-secundario);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.loadingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rojo-principal);
+  animation: pulseDot 1s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 900px
+   ══════════════════════════════ */
+@media (max-width: 900px) {
+  .wrapper {
+    grid-template-columns: 1fr;
+    max-width: 460px;
+  }
+
+  .branding {
+    display: none;
+  }
+
+  .logoMovil {
+    display: block;
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 1.5rem auto;
+    border-radius: 50%;
+    background: var(--gris-fondo);
+    border: 2px solid var(--gris-borde);
+    padding: 8px;
+    object-fit: contain;
+    box-shadow: var(--sombra-suave);
+  }
+
+  .formContainer {
+    padding: 2.5rem;
+  }
+
+  .formContainer h1,
+  .formContainer>p {
+    text-align: center;
+  }
+
+  .formContainer h1 {
+    font-size: 1.5rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 768px
+   ══════════════════════════════ */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+    min-height: calc(100vh - 60px);
+    min-height: calc(100dvh - 60px);
+    align-items: flex-start;
+  }
+
+  .wrapper {
+    max-width: 100%;
+    border-radius: var(--radio-mediano);
+  }
+
+  .formContainer {
+    padding: 2rem 1.75rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 576px
+   ══════════════════════════════ */
+@media (max-width: 576px) {
+  .container {
+    padding: 0.875rem;
+  }
+
+  .formContainer {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .formContainer h1 {
+    font-size: 1.375rem;
+  }
+
+  .formGroup input {
+    font-size: 16px;
+    /* evitar zoom iOS */
+  }
+
+  .toggle,
+  .toggleActive {
+    font-size: 0.875rem;
+    padding: 0.625rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 380px
+   ══════════════════════════════ */
+@media (max-width: 380px) {
+  .container {
+    padding: 0.625rem;
+  }
+
+  .formContainer {
+    padding: 1.5rem 1rem;
+  }
+
+  .formContainer h1 {
+    font-size: 1.25rem;
+  }
+}

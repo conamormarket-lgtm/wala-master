@@ -1,0 +1,86 @@
+/* ═══════════════════════════════════════════
+   CATEGORY NAV — Responsive profesional
+   ═══════════════════════════════════════════ */
+
+.nav {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.25rem 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* Firefox */
+  /* Padding lateral para buen scroll */
+  scroll-padding-inline: 0.5rem;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevenir que los chips se compriman */
+.nav>* {
+  flex-shrink: 0;
+}
+
+.categoryLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1.25rem;
+  background-color: transparent;
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio-grande);
+  text-decoration: none;
+  color: var(--gris-texto-secundario);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  transition: var(--transicion-suave);
+  min-height: var(--touch-target, 44px);
+}
+
+.categoryLink:hover {
+  border-color: var(--gris-texto-secundario);
+  color: var(--gris-texto-principal);
+  background-color: var(--gris-hover);
+}
+
+.categoryLink.active,
+.categoryLink:global(.active) {
+  background-color: var(--rojo-principal);
+  border-color: var(--rojo-principal);
+  color: var(--blanco);
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(109, 40, 217, 0.2);
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 768px
+   ══════════════════════════════ */
+@media (max-width: 768px) {
+  .nav {
+    gap: 0.625rem;
+    padding: 0.875rem 0;
+    /* Margen negativo + padding para que llegue al borde en móvil */
+    margin: 0 calc(-1 * var(--page-padding-sm, 0.875rem));
+    padding-left: var(--page-padding-sm, 0.875rem);
+    padding-right: var(--page-padding-sm, 0.875rem);
+  }
+
+  .categoryLink {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    min-height: 40px;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 480px
+   ══════════════════════════════ */
+@media (max-width: 480px) {
+  .categoryLink {
+    padding: 0.425rem 0.875rem;
+    font-size: 0.8125rem;
+    border-radius: 20px;
+  }
+}

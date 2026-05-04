@@ -1,0 +1,213 @@
+/* ═══════════════════════════════════════════
+   PEDIDOS PAGE — Responsive profesional
+   ═══════════════════════════════════════════ */
+
+.container {
+  min-height: calc(100vh - var(--header-height, 72px));
+  min-height: calc(100dvh - var(--header-height, 72px));
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background-color: var(--gris-fondo);
+}
+
+/* ── Loading Skeletons ── */
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.skeletonOrder {
+  background: var(--blanco);
+  border-radius: var(--radio-grande);
+  height: 120px;
+  width: 100%;
+  pointer-events: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--gris-borde);
+}
+
+.skeletonOrder::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ── Content Fade ── */
+.content {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.25rem;
+}
+
+/* ── Profile card (sin login) ── */
+.profileCard {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 2.5rem;
+  background: var(--blanco);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-media);
+  text-align: center;
+}
+
+.profileCard h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+}
+
+.profileCard p {
+  margin: 0 0 1.5rem 0;
+  color: var(--gris-texto-secundario);
+  line-height: 1.5;
+}
+
+.profileCard .errorText {
+  color: var(--rojo-principal);
+  margin-bottom: 1rem;
+}
+
+/* ── Client data card ── */
+.clientDataCard {
+  width: 100%;
+  max-width: 500px;
+  padding: 1.25rem 1.5rem;
+  background: var(--blanco);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-media);
+}
+
+.clientDataTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+}
+
+.clientDataList {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem 1rem;
+}
+
+.clientDataRow {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.clientDataRow dt {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario);
+}
+
+.clientDataRow dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--gris-texto-principal);
+  word-break: break-word;
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 768px
+   ══════════════════════════════ */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+    min-height: calc(100vh - var(--header-height, 60px));
+    min-height: calc(100dvh - var(--header-height, 60px));
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 1rem);
+  }
+
+  .profileCard {
+    padding: 1.75rem;
+    max-width: 100%;
+  }
+
+  .profileCard h2 {
+    font-size: 1.375rem;
+  }
+
+  .clientDataCard {
+    padding: 1rem 1.25rem;
+    max-width: 100%;
+  }
+
+  .clientDataRow {
+    grid-template-columns: 1fr;
+    gap: 0.125rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 576px
+   ══════════════════════════════ */
+@media (max-width: 576px) {
+  .container {
+    padding: 0.875rem;
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 0.875rem);
+  }
+
+  .profileCard {
+    padding: 1.5rem;
+  }
+
+  .profileCard h2 {
+    font-size: 1.25rem;
+  }
+
+  .clientDataCard {
+    padding: 1rem;
+  }
+
+  .clientDataTitle {
+    font-size: 1rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 380px
+   ══════════════════════════════ */
+@media (max-width: 380px) {
+  .container {
+    padding: 0.75rem;
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 0.75rem);
+  }
+
+  .profileCard {
+    padding: 1.25rem;
+  }
+
+  .profileCard h2 {
+    font-size: 1.125rem;
+  }
+}

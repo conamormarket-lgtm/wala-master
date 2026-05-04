@@ -1,0 +1,74 @@
+.whatsappButton {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background-color: #25d366;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+  z-index: 1000;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  color: white;
+}
+
+.whatsappButton:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(37, 211, 102, 0.5);
+}
+
+.whatsappButton:active {
+  transform: scale(0.95);
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+/* Animación de pulso (opcional, estándar en la industria) */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(37, 211, 102, 0.6);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+  }
+}
+
+.whatsappButton {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Responsive: en móvil, ajustar posición si hay BottomNav */
+@media (max-width: 768px) {
+  .whatsappButton {
+    bottom: 80px; /* Espacio para BottomNav */
+    right: 16px;
+    width: 56px;
+    height: 56px;
+  }
+  
+  .icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .whatsappButton.inProductDetail {
+    /* 
+      El stickyMenu de ProductDetail toma: 56px (BottomNav) + ~72px (Botones y padding) = ~128px 
+      El FAB de Personalizar toma: 56px + 140px = 196px
+      Queremos dejar el WhatsAppButton en el medio de ambos:
+      56px de height -> offset 76px -> top es 132+56 = 188px (quedan 8px de gap hasta el FAB, y 4px hasta el bottom bar)
+    */
+    bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 76px);
+  }
+}

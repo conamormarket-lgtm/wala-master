@@ -1,0 +1,57 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             firestore.get(/databases/(default)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Product images - públicos para lectura, solo admin puede escribir
+    match /products/{productId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Design images - usuarios pueden subir sus propios diseños
+    match /designs/{userId}/{allPaths=**} {
+      allow read: if true; // Diseños pueden ser públicos o privados según metadata
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAuthenticated() && request.auth.uid == userId || isAdmin();
+    }
+    
+    // User uploads - usuarios pueden subir sus propios archivos
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAuthenticated() && request.auth.uid == userId || isAdmin();
+    }
+    
+    // Admin uploads - solo admin
+    match /admin/{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // Cliparts (galería global) - lectura pública, solo admin puede subir/eliminar
+    match /cliparts/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Fonts (tipografías) - lectura pública, solo admin puede subir/eliminar
+    match /fonts/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Config (mascota, etc.) - lectura pública, solo admin puede escribir
+    match /config/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

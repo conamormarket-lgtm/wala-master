@@ -1,0 +1,83 @@
+.adminBar {
+  background-color: #1a1a1a;
+  color: #fff;
+  font-size: 0.85rem;
+  z-index: 9999;
+  position: sticky;
+  top: 0;
+  width: 100%;
+  border-bottom: 2px solid #e31837; /* El color rojo principal de Wala */
+}
+
+.adminBarContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: var(--container-wide, 1400px);
+  margin: 0 auto;
+  padding: 0.4rem 1.5rem;
+}
+
+.adminInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.adminActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.editButton {
+  background-color: #e31837;
+  color: #fff;
+  text-decoration: none;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: background-color 0.2s;
+}
+
+.editButton {
+  background-color: #e31837;
+  color: #fff;
+  text-decoration: none;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.editButton:hover {
+  background-color: #c4122d;
+}
+
+.activeEdit {
+  background-color: #10b981;
+}
+
+.activeEdit:hover {
+  background-color: #059669;
+}
+
+@media (max-width: 768px) {
+  .adminBarContainer {
+    padding: 0.4rem 1rem;
+  }
+  .text {
+    display: none;
+  }
+}

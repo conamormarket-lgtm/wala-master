@@ -1,0 +1,154 @@
+/**
+ * Tipografías locales (public/fonts).
+ * Cargadas en index.html para admins y usuarios en el editor.
+ */
+@font-face {
+  font-family: 'Segoe UI';
+  src: url('segoeui.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Super Bubble';
+  src: url('Super Bubble.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Varsity';
+  src: url('Varsity.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Varsity Regular';
+  src: url('varsity_regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Varsity Team Bold';
+  src: url('VarsityTeam-Bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Waltograph';
+  src: url('waltograph42.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Waltograph UI';
+  src: url('waltographUI.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'White Beach';
+  src: url('White Beach.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Alianza Lima 2023';
+  src: url('ALIANZA LIMA 2023 TIPOGRAFSTORE.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Amertha';
+  src: url('AMERTHA_PERSONAL_USE_ONLY.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Bebas Neue Bold';
+  src: url('BebasNeue Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Brush Sci';
+  src: url('BRUSHSCI.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Bubblegum';
+  src: url('Bubblegum.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Buka Bird';
+  src: url('Buka Bird.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'CC Up Up And Away';
+  src: url('CCUpUpAndAway.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Club Alianza Lima 2024';
+  src: url('CLUB ALIANZA LIMA FONT - 2024.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Deutsch';
+  src: url('Deutsch.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gloomy Things';
+  src: url('Gloomy Things.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Impact';
+  src: url('impact.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Love Nature';
+  src: url('Love Nature.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Nature Beauty';
+  src: url('Nature Beauty Personal Use.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Rage';
+  src: url('RAGE.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Real Madrid 25-26';
+  src: url('Real Madrid 25-26 Tipografstore.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Real Madrid 2021';
+  src: url('real-madrid-2021-ucl-cup-font.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Forte';
+  src: url('FORTE.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}

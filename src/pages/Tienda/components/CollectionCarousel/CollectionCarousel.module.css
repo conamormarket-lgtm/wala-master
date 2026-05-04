@@ -1,0 +1,69 @@
+.carouselContainer {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.carouselHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.carouselTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color, #333);
+  margin: 0;
+}
+
+.carouselScrollArea {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+
+.carouselScrollArea::-webkit-scrollbar {
+  height: 6px;
+}
+
+.carouselScrollArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.carouselScrollArea::-webkit-scrollbar-thumb {
+  background: var(--border-color, #ccc);
+  border-radius: 4px;
+}
+
+.carouselItem {
+  flex: 0 0 calc(50% - 0.75rem); /* Dos tarjetas visibles en móvil */
+  scroll-snap-align: start;
+  display: flex;
+}
+
+@media (min-width: 640px) {
+  .carouselItem {
+    flex: 0 0 calc(33.333% - 1rem); /* Tres tarjetas en tablet */
+  }
+}
+
+@media (min-width: 1024px) {
+  .carouselItem {
+    flex: 0 0 calc(25% - 1.125rem); /* Cuatro tarjetas en desktop */
+  }
+}
+
+.loadingText,
+.errorText,
+.emptyText {
+  color: var(--text-muted, #666);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2rem 0;
+}

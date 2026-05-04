@@ -1,0 +1,515 @@
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background-color: var(--blanco);
+  border-radius: var(--radio-grande);
+  border: 1px solid var(--gris-borde);
+  box-shadow: var(--sombra-media);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal);
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--gris-borde);
+}
+
+.toolButton {
+  padding: 0.75rem;
+  background-color: var(--blanco);
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio-pequeno);
+  cursor: pointer;
+  font-weight: 500;
+  transition: var(--transicion-suave);
+  color: var(--gris-texto-principal);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.toolButton:hover {
+  background-color: var(--gris-hover);
+  border-color: var(--gris-texto-secundario);
+  transform: translateY(-1px);
+}
+
+.shapeRow {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.shapeRow .toolButton {
+  flex: 1;
+  min-width: 44px;
+}
+
+.subTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario);
+  margin: 0.5rem 0 0.35rem 0;
+}
+
+.clipartSection {
+  margin-top: 0.25rem;
+}
+
+.shapesAndImagesPanel {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--gris-fondo);
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.panelSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.panelSection .subTitle {
+  margin: 0 0 0.25rem 0;
+}
+
+.deleteLayerBtn {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--rojo-principal);
+  background: none;
+  border: 1px solid var(--rojo-principal);
+  border-radius: 6px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.deleteLayerBtn:hover {
+  background: var(--rojo-light);
+}
+
+.layersList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.layerItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background-color: var(--blanco);
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio-pequeno);
+  cursor: pointer;
+  transition: var(--transicion-suave);
+}
+
+.layerInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.layerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.actionBtn {
+  padding: 0.35rem 0.6rem;
+  min-width: 36px;
+  min-height: 36px;
+  font-size: 1.1rem;
+  line-height: 1;
+  border: 1px solid var(--gris-borde);
+  border-radius: 6px;
+  background: var(--blanco);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.actionBtn:hover {
+  background-color: var(--azul-light, #e3f2fd);
+  border-color: var(--azul-principal, #2196f3);
+  color: var(--azul-principal, #2196f3);
+}
+
+.layerReorder {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.reorderBtn {
+  padding: 0.35rem 0.5rem;
+  min-width: 36px;
+  min-height: 36px;
+  font-size: 1rem;
+  line-height: 1;
+  border: 1px solid var(--gris-borde);
+  border-radius: 6px;
+  background: var(--blanco);
+  cursor: pointer;
+}
+
+.reorderBtn:hover:not(:disabled) {
+  border-color: var(--rojo-principal);
+  color: var(--rojo-principal);
+}
+
+.reorderBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.layerItem:hover {
+  border-color: var(--gris-texto-secundario);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.layerItem.active {
+  background-color: var(--rojo-light);
+  color: var(--rojo-principal);
+  border-color: var(--rojo-principal);
+  font-weight: 600;
+}
+
+.zoneSelector {
+  padding: 0.75rem;
+  background-color: var(--blanco);
+  border: 2px solid var(--gris-borde);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gris-texto-principal);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.zoneSelector:hover {
+  border-color: var(--rojo-principal);
+}
+
+.zoneSelector:focus {
+  outline: none;
+  border-color: var(--rojo-principal);
+  box-shadow: 0 0 0 3px rgba(180, 23, 30, 0.1);
+}
+
+.zoneHint {
+  font-size: 0.75rem;
+  color: var(--gris-texto-secundario);
+  margin: 0.25rem 0 0 0;
+  font-style: italic;
+}
+
+.desktopOnly {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.mobileOnly {
+  display: none !important;
+}
+
+@media (max-width: 968px) {
+  .toolbar {
+    max-height: none;
+  }
+
+  .shapesAndImagesPanel {
+    max-height: 50vh;
+  }
+
+  .toolButton {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* ─────────────────────────────────────────────
+     TOOLBAR MOBILE: Bottom Sheet nativa tipo app
+     ───────────────────────────────────────────── */
+
+  .toolbar {
+    /* En mobile el toolbar se convierte en un bottom sheet fijo */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 0;
+    max-height: none;
+    overflow-y: visible;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+    gap: 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+    /* El toolbar en sí no bloquea clics */
+  }
+
+  .desktopOnly {
+    display: none !important;
+  }
+
+  .desktopOnly.forceDesktop {
+    display: flex !important;
+    pointer-events: all !important;
+  }
+
+  .mobileOnly {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: fixed;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    /* Exact anchor to the new 56px actionsBar */
+    left: 0;
+    right: 0;
+    z-index: 110;
+    pointer-events: none;
+  }
+
+  .comboMobileOnly {
+    bottom: env(safe-area-inset-bottom, 0px) !important;
+    z-index: 10005 !important;
+  }
+
+  /* Panel que contiene el contenido activo del tab */
+  .mobilePanel {
+    background: #fff;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.12);
+    max-height: 42vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 1rem;
+    pointer-events: all;
+    animation: slideUpPanel 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  @keyframes slideUpPanel {
+    from {
+      transform: translateY(100%);
+      opacity: 0.8;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Barra de handle (drag indicator) */
+  .mobilePanel::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: #d1d5db;
+    border-radius: 2px;
+    margin: 0 auto 1rem;
+  }
+
+  /* Tab bar de herramientas fija al fondo */
+  .mobileTabBar {
+    display: flex;
+    background: #fff;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    pointer-events: all;
+    height: 52px;
+    align-items: stretch;
+  }
+
+  .mobileTab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #9ca3af;
+    transition: all 0.15s ease;
+    position: relative;
+    letter-spacing: 0.01em;
+    padding: 0.25rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobileTab svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+    transition: color 0.15s;
+  }
+
+  .mobileTab:active {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .mobileTabActive {
+    color: var(--rojo-principal, #e31837);
+  }
+
+  .mobileTabActive svg {
+    stroke: var(--rojo-principal, #e31837);
+  }
+
+  .mobileTabActive::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 20%;
+    right: 20%;
+    height: 3px;
+    background: var(--rojo-principal, #e31837);
+    border-radius: 3px 3px 0 0;
+  }
+
+  /* Las secciones "section" se ocultan en mobile — el panel muestra lo que el tab activo necesita */
+  .section {
+    display: none;
+  }
+
+  /* Contenido del panel mobile: grid de botones grandes */
+  .mobilePanelContent {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  /* Botones del panel mobile: cuadrados con icono + texto */
+  .mobilePanelBtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.875rem 0.5rem;
+    background: #f9fafb;
+    border: 1.5px solid #f3f4f6;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #374151;
+    transition: all 0.15s;
+    min-height: 80px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobilePanelBtn svg {
+    width: 26px;
+    height: 26px;
+    color: #374151;
+  }
+
+  .mobilePanelBtn:active {
+    transform: scale(0.95);
+    background: rgba(227, 24, 55, 0.06);
+    border-color: rgba(227, 24, 55, 0.3);
+    color: var(--rojo-principal, #e31837);
+  }
+
+  .mobilePanelBtn:active svg {
+    color: var(--rojo-principal, #e31837);
+  }
+
+  /* Layer items en mobile: más compactos y touch-friendly */
+  .layerItem {
+    min-height: 52px;
+    padding: 0.625rem 0.875rem;
+    border-radius: 10px;
+    gap: 0.75rem;
+  }
+
+  .layerLabel {
+    font-size: 0.9rem;
+  }
+
+  .reorderBtn {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+  }
+
+  .zoneSelector {
+    min-height: 48px;
+    font-size: 0.9375rem;
+    border-radius: 10px;
+  }
+
+  .deleteLayerBtn {
+    min-height: 48px;
+    font-size: 0.9375rem;
+    border-radius: 10px;
+  }
+
+  .toolButton {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9375rem;
+  }
+
+  .section h3 {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .shapesAndImagesPanel {
+    max-height: none;
+    overflow: visible;
+    border: none;
+    border-radius: 0;
+    padding: 0.5rem 0;
+    background: transparent;
+  }
+
+  .layersList {
+    max-height: none;
+    overflow: visible;
+    gap: 0.625rem;
+  }
+}

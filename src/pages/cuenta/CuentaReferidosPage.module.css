@@ -1,0 +1,356 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.headerCard {
+  background: #1E293B;
+  color: white;
+  border-radius: var(--radio-mediano);
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.recompensaTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.balance {
+  margin: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.coinIcon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.balanceNumber {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.balanceCurrency {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #E2E8F0;
+  align-self: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.codeRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.codeBox {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.8rem 1rem 0.8rem 1.5rem;
+  border-radius: var(--radio-pequeno);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.copyBtn {
+  background: var(--rojo-principal);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radio-pequeno);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copyBtn:hover {
+  background: var(--rojo-secundario);
+}
+
+.generateBtn {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--radio-pequeno);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.generateBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+.generateBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.infoText {
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  color: #E2E8F0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
+.listTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--gris-fondo);
+  padding-bottom: 0.5rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem;
+  background: var(--gris-fondo);
+  border-radius: var(--radio-mediano);
+  color: var(--gris-texto-secundario);
+  font-style: italic;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.referralCard {
+  background: white;
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio-mediano);
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.referralCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cardClaimed {
+  opacity: 0.8;
+  background: #fdfdfd;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.dateText {
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario);
+  font-weight: 600;
+}
+
+.orderLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--gris-fondo);
+  padding: 4px 10px;
+  border-radius: var(--radio-pequeno);
+  color: var(--gris-texto-principal);
+}
+
+/* ══════════════════════════════
+   STEPPER
+   ══════════════════════════════ */
+.stepperContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 0 0.5rem;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+}
+
+.stepCircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gris-borde);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.stepLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.activeStep .stepCircle {
+  background: var(--verde-exito);
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.activeStep .stepLabel {
+  color: var(--verde-exito);
+}
+
+.stepLine {
+  flex: 1;
+  height: 3px;
+  background: var(--gris-borde);
+  margin: 0 0.5rem;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.activeLine {
+  background: var(--verde-exito);
+}
+
+.statusBox {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border-radius: var(--radio-pequeno);
+  border-left: 4px solid #ffc107;
+}
+
+.errorText {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #856404;
+  font-weight: 600;
+}
+
+.actionBox {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--gris-borde);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.earnedStats {
+  font-size: 0.9rem;
+  color: var(--gris-texto-principal);
+  line-height: 1.4;
+}
+
+.highlightCoins {
+  color: #d35400;
+  font-size: 1rem;
+}
+
+.claimActionBtn {
+  background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radio-mediano);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
+  transition: all 0.2s ease;
+}
+
+.claimActionBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(243, 156, 18, 0.4);
+}
+
+.claimedBadge {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--verde-exito);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(40, 167, 69, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radio-pequeno);
+}
+
+@media (max-width: 576px) {
+  .headerCard {
+    padding: 1.5rem 1rem;
+  }
+  .balanceNumber {
+    font-size: 3rem;
+  }
+  .codeRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .codeBox {
+    justify-content: center;
+  }
+  .stepperContainer {
+    padding: 0;
+  }
+  .stepCircle {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+  .stepLabel {
+    font-size: 0.65rem;
+  }
+  .actionBox {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .claimActionBtn {
+    width: 100%;
+  }
+}

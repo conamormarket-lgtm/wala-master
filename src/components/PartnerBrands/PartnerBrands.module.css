@@ -1,0 +1,73 @@
+.partnerContainer {
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.partnerTitle {
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.5px !important;
+  margin: 0 0 1rem 0 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 600 !important;
+}
+
+.partnerLogos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: -0.5rem; /* Negative gap for facepile effect if desired, but flex facepile needs absolute or specific margins */
+  flex-wrap: wrap;
+}
+
+.brandLogoWrapper {
+  width: 64px;
+  height: 64px;
+  background-color: transparent;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  margin: 0 6px;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease, z-index 0.3s;
+  cursor: default;
+  position: relative;
+  z-index: 1;
+  overflow: hidden; /* To ensure square images become perfectly circular without white borders */
+}
+
+.brandLogoWrapper:hover {
+  transform: scale(1.15) translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  z-index: 10;
+}
+
+.brandLogoWrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .partnerContainer {
+    margin-top: 2rem;
+  }
+  .brandLogoWrapper {
+    width: 54px;
+    height: 54px;
+  }
+}

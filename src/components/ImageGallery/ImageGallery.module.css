@@ -1,0 +1,47 @@
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.image {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: var(--radio-pequeno);
+  border: 2px solid var(--gris-borde);
+  transition: var(--transicion-suave);
+  cursor: pointer;
+  box-shadow: var(--sombra-suave);
+}
+
+.image:hover {
+  transform: scale(1.08);
+  box-shadow: var(--sombra-media);
+  border-color: var(--rojo-principal);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    gap: 0.75rem;
+  }
+
+  .image {
+    width: 90px;
+    height: 90px;
+  }
+}
+
+@media (max-width: 380px) {
+  .image {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+@media (hover: none) {
+  .image:hover {
+    transform: none;
+  }
+}

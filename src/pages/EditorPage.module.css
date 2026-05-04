@@ -1,0 +1,637 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0.5rem; /* Rescata 48 píxeles de espacio inútil a los lados */
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+  margin: 0;
+}
+
+.variantBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--gris-borde);
+}
+
+.variantGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.variantLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gris-texto-secundario);
+}
+
+.variantOptions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 6px;
+  padding-top: 2px;
+  padding-right: 1rem;
+}
+
+.variantOptions::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .variantOptions::-webkit-scrollbar {
+    display: block;
+    height: 8px;
+  }
+  .variantOptions::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  .variantOptions::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+.scrollHint {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-left: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0.8;
+}
+
+.variantBtn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  border: 1px solid var(--gris-borde);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.variantBtn:hover {
+  background: var(--gris-hover);
+}
+
+.variantBtnActive {
+  border-color: var(--rojo-principal);
+  background: var(--rojo-light);
+  color: var(--rojo-principal);
+}
+
+.colorBtn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 1;
+}
+
+.viewTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.viewTab {
+  padding: 0.5rem 1rem;
+  font-size: 0.9375rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.viewTab:hover {
+  background: var(--gris-hover);
+}
+
+.viewTabActive {
+  border-color: var(--rojo-principal);
+  background: var(--rojo-light);
+  color: var(--rojo-principal);
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--rojo-principal);
+}
+
+.editorLayout {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.canvasSection {
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+.toolbarSection {
+  min-height: 200px;
+}
+
+.actionsBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 968px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .editorLayout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .canvasSection {
+    order: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--gris-fondo);
+    border-radius: var(--radio-mediano);
+    border: 1px solid var(--gris-borde);
+  }
+
+  .toolbarSection {
+    order: 2;
+    max-height: none;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .actionsBar {
+    flex-direction: column;
+  }
+
+  .actionsBar button {
+    min-height: 48px;
+    width: 100%;
+  }
+}
+
+.showOnlyMobile {
+  display: none !important;
+}
+
+.appMobileBtn {
+  background: transparent;
+  border: none;
+  color: var(--gris-texto-principal, #333);
+  padding: 0.5rem;
+  margin: 0;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.appMobileSpinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--gris-borde, #e0e0e0);
+  border-top-color: var(--rojo-principal, #b4171e);
+  border-radius: 50%;
+  animation: appMobileSpin 1s linear infinite;
+}
+
+@keyframes appMobileSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Móvil: experiencia tipo app nativa (Android) */
+@media (max-width: 768px) {
+  .container {
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    max-width: 100%;
+    background: #f5f5f5;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    touch-action: none !important;
+  }
+
+  .header {
+    margin-bottom: 0;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem;
+    background: var(--blanco);
+    border-bottom: 1px solid var(--gris-borde);
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .title {
+    font-size: 1.125rem;
+    line-height: 1.3;
+    flex: 1 1 100%;
+    order: 1;
+    margin: 0;
+  }
+
+  .price {
+    font-size: 1.125rem;
+    order: 2;
+  }
+
+  .showOnlyMobile {
+    display: flex !important;
+  }
+  
+  .actionsBtnMobileHidden {
+    display: none !important;
+  }
+
+  /* Version super compacta para maximizar el canvas */
+  .appMobileBar {
+    padding: 0.25rem 0.5rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+  }
+
+  .appNativeTitleWrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .appMobileBar .title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex: unset;
+    order: unset;
+    margin: 0;
+    text-align: center;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .appMobileBar .price {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--gris-texto-secundario, #666);
+    flex: unset;
+    order: unset;
+    margin: 0;
+  }
+
+  .variantBar {
+    background: var(--blanco);
+    padding: 0.75rem 1rem;
+    margin: 0;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+
+  .viewTabs {
+    padding: 0.5rem 1rem;
+    margin-bottom: 0;
+    background: var(--blanco);
+    border-bottom: 1px solid var(--gris-borde);
+  }
+
+  .actionsBar {
+    position: fixed;
+    bottom: 0;
+    /* at the absolute bottom */
+    left: 0;
+    right: 0;
+    z-index: 85;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0 0.5rem;
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--blanco);
+    border-top: 1px solid var(--gris-borde);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .actionsBar button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0 0.25rem;
+    line-height: 1.1;
+  }
+
+  .actionsBar button.btnPrimaryMobile {
+    flex: 1.5 1 0;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0;
+    padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .header {
+    margin-bottom: 0;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .comboHeaderMobile {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .comboHeaderMobile .title {
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .comboHeaderMobile .price {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .title {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .price {
+    font-size: 1rem;
+  }
+
+  .viewTabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .viewTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .viewTab {
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+
+  .variantBar {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .actionsBar {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    padding: 0 0.35rem;
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .actionsBar button {
+    min-height: 42px;
+    font-size: 0.7rem;
+    padding: 0 0.2rem;
+  }
+  
+  .actionsBar button.btnPrimaryMobile {
+    font-size: 0.75rem;
+  }
+
+}
+
+.loadingInline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 3rem;
+  color: var(--gris-texto-secundario);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.loadingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rojo-principal);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.promptModal {
+  max-width: 480px;
+  margin: 10vh auto;
+  padding: 2rem;
+  background: var(--blanco);
+  border-radius: var(--radio-mediano);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  border: 1px solid var(--gris-borde);
+}
+
+.promptModal h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.promptModal p {
+  font-size: 1rem;
+  color: var(--gris-texto-secundario);
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.promptActions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 480px) {
+  .promptActions {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.resetDesignContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1.5rem 0 1rem;
+  width: 100%;
+}
+
+.resetDesignBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  border-radius: 9999px;
+  padding: 0.5rem 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resetDesignBtn:hover {
+  background: #f3f4f6;
+  color: #374151;
+  border-color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .resetDesignContainer {
+    margin: 0.5rem 0;
+    padding: 0 0.5rem;
+    box-sizing: border-box;
+  }
+  
+  .resetDesignBtn {
+    font-size: 0.75rem;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    justify-content: center;
+    border-radius: 8px; /* Match standard mobile buttons visually instead of pill */
+  }
+}
+
+.container:has([class*="unifiedSideBySideModeSingle"]) .resetDesignContainer {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .resetDesignContainer {
+    justify-content: flex-end;
+    margin: 1rem 0;
+  }
+
+  .container:has([class*="unifiedSideBySideModeSingle"]) .resetDesignContainer {
+    display: flex !important;
+  }
+}
+
+/* Modificaciones para Modal Móvil en Editor Normal */
+.showOnlyMobile {
+  display: none !important;
+}
+
+.mobileSettingsBtn {
+  width: 100%;
+  margin: 0.5rem 0 1rem;
+  padding: 0.8rem;
+  background-color: #fff;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--rojo-principal, #b4171e);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+@media (max-width: 768px) {
+  .showOnlyMobile {
+    display: flex !important;
+  }
+  .desktopControls {
+    display: none !important;
+  }
+}

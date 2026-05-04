@@ -1,0 +1,74 @@
+:root {
+  /* Breakpoints */
+  --bp-xs: 380px;
+  --bp-sm: 576px;
+  --bp-md: 768px;
+  --bp-lg: 992px;
+  --bp-xl: 1200px;
+  --bp-xxl: 1400px;
+
+  /* Contenedores */
+  --container-narrow: 720px;
+  --container-default: 1200px;
+  --container-wide: 1400px;
+
+  /* Espaciado responsive */
+  --page-padding-sm: 0.875rem;
+  --page-padding-md: 1.25rem;
+  --page-padding-lg: 2rem;
+
+  /* Colores Premium E-commerce Walá */
+  --primary-color: #6D28D9; /* Violeta Premium Profundo (Violet 700) */
+  --primary-hover: #5B21B6; /* Violet 800 */
+  --primary-light: rgba(109, 40, 217, 0.08);
+
+  /* Renombrados lógicos para no romper el resto de la app */
+  --rojo-principal: var(--primary-color);
+  --rojo-hover: var(--primary-hover);
+  --rojo-light: var(--primary-light);
+
+  --gris-texto-principal: #0F172A; /* Slate 900 - Contraste alto elegante */
+  --gris-texto-secundario: #475569; /* Slate 600 - Suave y legible */
+  --gris-borde: #E2E8F0; /* Slate 200 - Bordes pulidos */
+  --gris-fondo: #F8FAFC; /* Slate 50 - Fondo brillante casi blanco */
+  --gris-hover: #F1F5F9; /* Slate 100 - Interacción suave */
+
+  --verde-exito: #10B981; /* Emerald 500 - Verde nativo moderno */
+  --verde-exito-hover: #059669;
+  --blanco: #FFFFFF;
+
+  /* Sombras Apple/Stripe-like ultra pulidas (teñidas con Slate) */
+  --sombra-suave: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --sombra-media: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+  --sombra-profunda: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.04);
+  --sombra-hover: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(109, 40, 217, 0.05);
+
+  /* Transiciones Premium Edge */
+  --transicion-suave: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --transicion-rapida: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Radios continuos (squircle aproximation) */
+  --radio-pequeno: 10px;
+  --radio-mediano: 16px;
+  --radio-grande: 24px;
+
+  /* Touch targets mínimos (WCAG) */
+  --touch-target: 44px;
+
+  /* Safe area (móviles con notch) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* Header height para calcular offsets */
+  --header-height: 72px;
+  --bottom-nav-height: 56px;
+}
+
+/* En móviles, reducir header */
+@media (max-width: 768px) {
+  :root {
+    --header-height: 60px;
+  }
+}

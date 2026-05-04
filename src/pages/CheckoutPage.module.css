@@ -1,0 +1,274 @@
+/* ═══════════════════════════════════════════
+   CHECKOUT PAGE — Responsive profesional
+   ═══════════════════════════════════════════ */
+
+.container {
+  max-width: var(--container-default, 1200px);
+  margin: 0 auto;
+  padding: var(--page-padding-lg, 2rem);
+  width: 100%;
+  box-sizing: border-box;
+  /* Espacio para BottomNav en móvil */
+}
+
+.container h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--gris-texto-principal);
+  letter-spacing: -0.02em;
+}
+
+/* ── Layout: formulario (2/3) + resumen (1/3) ── */
+.layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+/* ── Formulario ── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form h2 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: var(--gris-texto-principal);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field label {
+  font-weight: 500;
+  color: var(--gris-texto-principal);
+  font-size: 0.9375rem;
+}
+
+.field input {
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--gris-borde);
+  border-radius: var(--radio-pequeno);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  min-height: var(--touch-target, 44px);
+  box-sizing: border-box;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--rojo-principal);
+  box-shadow: 0 0 0 3px rgba(217, 35, 45, 0.1);
+}
+
+.error {
+  color: var(--rojo-principal);
+  font-size: 0.8125rem;
+}
+
+
+
+.buttonGroup {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Fila con 2 campos lado a lado */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── Resumen del pedido ── */
+.summary {
+  background-color: var(--gris-fondo);
+  padding: 2rem;
+  border-radius: 12px;
+  height: fit-content;
+  position: sticky;
+  top: calc(var(--header-height, 72px) + 1rem);
+  border: 1px solid var(--gris-borde);
+}
+
+.summary h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: var(--gris-texto-principal);
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--gris-borde);
+}
+
+.summaryItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  gap: 0.5rem;
+}
+
+.summaryItem span:first-child {
+  color: var(--gris-texto-secundario);
+  flex: 1;
+  min-width: 0;
+  /* line-clamp: 2 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.summaryItem span:last-child {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9375rem;
+  gap: 0.5rem;
+}
+
+.finalTotal {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--rojo-principal);
+  padding-top: 1rem;
+  border-top: 2px solid var(--gris-borde);
+  margin-top: 0.5rem;
+}
+
+/* ── Estado vacío ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1.5rem;
+  text-align: center;
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 992px (tablet)
+   ══════════════════════════════ */
+@media (max-width: 992px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  /* El resumen sube al tope en tablet, no sticky */
+  .summary {
+    position: static;
+    order: -1;
+    /* Resumen primero en tablet para ver el total antes de rellenar */
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 768px (móvil grande)
+   ══════════════════════════════ */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 1rem);
+  }
+
+  .container h1 {
+    font-size: 1.5rem;
+  }
+
+  .layout {
+    gap: 1.5rem;
+  }
+
+  .summary {
+    padding: 1.5rem;
+    border-radius: 10px;
+    order: unset;
+    /* Formulario primero en móvil */
+  }
+
+  .form h2 {
+    font-size: 1.25rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 576px (móvil)
+   ══════════════════════════════ */
+@media (max-width: 576px) {
+  .container {
+    padding: 0.875rem;
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 1rem);
+  }
+
+  .container h1 {
+    font-size: 1.25rem;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .field input {
+    font-size: 16px;
+    /* evitar zoom iOS */
+    padding: 0.75rem 0.875rem;
+  }
+
+  .summary {
+    padding: 1.25rem;
+  }
+
+  .summary h2 {
+    font-size: 1.125rem;
+  }
+
+  .finalTotal {
+    font-size: 1.125rem;
+  }
+}
+
+/* ══════════════════════════════
+   RESPONSIVE ≤ 380px
+   ══════════════════════════════ */
+@media (max-width: 380px) {
+  .container {
+    padding: 0.75rem;
+    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 0.75rem);
+  }
+
+  .container h1 {
+    font-size: 1.125rem;
+  }
+
+  .summary {
+    padding: 1rem;
+  }
+}

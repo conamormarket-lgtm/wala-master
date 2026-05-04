@@ -1,0 +1,156 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.emptyContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  background-color: var(--gris-fondo);
+  border-radius: 8px;
+  border: 1px dashed var(--gris-borde);
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.7;
+}
+
+.emptyContainer p {
+  color: var(--gris-texto-secundario);
+  font-size: 0.95rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ================== RESUMEN SUPERIOR ================== */
+.resumenWrap {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  background: var(--gris-fondo);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+@media (max-width: 480px) {
+  .resumenWrap {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.resumenItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.resumenHighlight {
+  border-left: 2px solid var(--gris-borde);
+}
+
+@media (max-width: 480px) {
+  .resumenHighlight {
+    border-left: none;
+    border-top: 2px solid var(--gris-borde);
+    padding-top: 0.75rem;
+  }
+}
+
+.resumenLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--gris-texto-secundario);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.resumenValor {
+  font-size: 1.15rem;
+  color: var(--gris-texto-principal);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.textGreen {
+  color: var(--verde-exito) !important;
+}
+
+.textRed {
+  color: var(--rojo-secundario) !important;
+}
+
+/* ================== LISTA DE PAGOS ================== */
+.listaTitulo {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+  border-bottom: 1px solid var(--gris-borde);
+  padding-bottom: 0.5rem;
+}
+
+.listaPagos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+/* Custom Scrollbar */
+.listaPagos::-webkit-scrollbar {
+  width: 4px;
+}
+.listaPagos::-webkit-scrollbar-thumb {
+  background: var(--gris-borde);
+  border-radius: 4px;
+}
+
+.pagoFila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid var(--gris-borde);
+  border-left: 3px solid var(--verde-exito);
+  border-radius: 6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pagoFila:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.pagoMonto {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--gris-texto-principal);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pagoIndicador {
+  color: var(--verde-exito);
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.pagoFechaHora {
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario);
+  font-weight: 500;
+}

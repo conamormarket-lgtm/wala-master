@@ -1,0 +1,65 @@
+.wrapper {
+  width: 100%;
+  padding: 2rem 1.5rem;
+  animation: wrapperFadeIn 0.15s ease forwards;
+}
+
+@keyframes wrapperFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Grid de skeletons ────────────────────────────────────────── */
+.skeletonPage {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── Tarjeta skeleton ─────────────────────────────────────────── */
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--blanco, #fff);
+  padding-bottom: 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.skeletonImage {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.skeletonLine {
+  height: 14px;
+  border-radius: 6px;
+  margin: 0 1rem;
+  background: transparent;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .wrapper {
+    padding: 1rem;
+  }
+
+  .skeletonGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}

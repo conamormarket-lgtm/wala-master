@@ -1,0 +1,230 @@
+.wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  background-color: var(--blanco);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-profunda);
+  overflow: hidden;
+}
+
+.branding {
+  background: linear-gradient(135deg, #4c1d95, #7c3aed, #a855f7, #6d28d9);
+  background-size: 300% 300%;
+  animation: gradientFlow 12s ease infinite;
+  color: var(--blanco);
+  padding: 3.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.branding::before, .branding::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(45px);
+  z-index: 0;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.branding::before {
+  width: 300px;
+  height: 300px;
+  background: #d8b4fe;
+  top: -100px;
+  left: -100px;
+  animation: floatOrb 8s infinite alternate ease-in-out;
+}
+
+.branding::after {
+  width: 250px;
+  height: 250px;
+  background: #3b0764;
+  bottom: -50px;
+  right: -50px;
+  animation: floatOrb 10s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes floatOrb {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(30px) scale(1.1); }
+}
+
+.branding > * {
+  position: relative;
+  z-index: 10;
+}
+
+.branding > img {
+  width: 150px;
+  height: 150px;
+  margin-bottom: 2rem;
+  background: rgba(255, 255, 255, 0.08); /* Glassmorphism */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 50%;
+  padding: 12px;
+  object-fit: contain;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.branding > img:hover {
+  transform: scale(1.05) rotate(-2deg);
+}
+
+.branding h2 {
+  margin: 0 0 0.75rem 0;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
+.branding p {
+  margin: 0;
+  font-size: 1.15rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.formContainer {
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 500px;
+}
+
+.logoMovil {
+  display: none;
+}
+
+.formContainer h1 {
+  color: var(--gris-texto-principal);
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.formContainer p {
+  color: var(--gris-texto-secundario);
+  margin-bottom: 2rem;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario);
+  font-size: 0.9rem;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 12px 15px;
+  font-size: 1rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: var(--rojo-principal);
+  box-shadow: 0 0 0 3px rgba(217, 35, 45, 0.2);
+}
+
+.button {
+  padding: 12px 20px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  background-color: var(--rojo-principal);
+  color: var(--blanco);
+}
+
+.button:hover:not(:disabled) {
+  background-color: var(--rojo-hover);
+  transform: translateY(-2px);
+}
+
+.button:disabled {
+  background-color: #f5a0a5;
+  cursor: not-allowed;
+}
+
+.mensaje {
+  margin-top: 1.5rem;
+  font-weight: 500;
+  height: 20px;
+}
+
+.mensajeExito {
+  color: var(--verde-exito);
+}
+
+.mensajeError {
+  color: var(--rojo-principal);
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    grid-template-columns: 1fr;
+  }
+  
+  .branding {
+    display: none;
+  }
+  
+  .logoMovil {
+    display: block;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 2rem auto;
+    border-radius: 50%;
+    background-color: var(--blanco);
+    border: 1px solid var(--gris-borde);
+    padding: 8px;
+    object-fit: contain;
+  }
+  
+  .formContainer {
+    padding: 2rem;
+  }
+  
+  .formContainer h1,
+  .formContainer p {
+    text-align: center;
+  }
+}

@@ -1,0 +1,1 @@
+Coloque aquí la imagen de la mascota Kap como kap.png (o kap.webp y actualice la ruta en KapMessage.jsx).

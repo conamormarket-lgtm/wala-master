@@ -1,0 +1,143 @@
+/* ═══════════════════════════════════════════
+   BOTTOM NAV — Responsive profesional
+   Solo visible en móvil (≤768px)
+   ═══════════════════════════════════════════ */
+
+.bottomNav {
+  display: none;
+  /* Oculto por defecto en desktop */
+}
+
+@media (max-width: 768px) {
+  .bottomNav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* Altura fija + safe area para notch/home indicator */
+    height: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px));
+    min-height: 56px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--gris-borde);
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.07);
+    z-index: 90;
+    align-items: flex-start;
+    /* Alinear al top para dejar safe area abajo */
+    justify-content: space-around;
+    padding-top: 0;
+    padding-bottom: var(--safe-bottom, 0px);
+    /* Horizontal safe areas */
+    padding-left: max(0px, var(--safe-left, 0px));
+    padding-right: max(0px, var(--safe-right, 0px));
+  }
+
+  .link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    text-decoration: none;
+    color: var(--gris-texto-secundario);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    /* Touch target mínimo */
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--radio-pequeno, 6px);
+    transition: color 0.2s ease, background-color 0.2s ease;
+    flex: 1;
+    max-width: 110px;
+    min-width: 0;
+    min-height: 56px;
+    /* Touch target */
+  }
+
+  .link:hover {
+    color: var(--rojo-principal);
+    background-color: rgba(217, 35, 45, 0.06);
+  }
+
+  .link:active {
+    background-color: rgba(217, 35, 45, 0.1);
+  }
+
+  .linkActive {
+    color: var(--rojo-principal);
+    font-weight: 600;
+    background-color: rgba(217, 35, 45, 0.08);
+  }
+
+  .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    position: relative;
+  }
+
+  .icon svg {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+
+  .linkActive .icon svg {
+    stroke: var(--rojo-principal);
+  }
+
+  .label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-size: inherit;
+    line-height: 1.2;
+  }
+}
+
+/* ══════════════════════════════
+   ≤ 480px: etiquetas más pequeñas
+   ══════════════════════════════ */
+@media (max-width: 480px) {
+  .link {
+    font-size: 0.625rem;
+    padding: 0.5rem 0.375rem;
+    gap: 1px;
+  }
+
+  .icon svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ══════════════════════════════
+   ≤ 380px: sin etiquetas de texto
+   ══════════════════════════════ */
+@media (max-width: 380px) {
+  .link {
+    font-size: 0rem;
+    /* Ocultar texto en pantallas XS si hay muchos ítems */
+    gap: 0;
+    padding: 0.5rem 0.25rem;
+  }
+
+  /* Mostrar solo el icono */
+  .label {
+    display: none;
+  }
+
+  .icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .icon svg {
+    width: 22px;
+    height: 22px;
+  }
+}
