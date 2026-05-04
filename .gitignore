@@ -104,3 +104,4 @@ app/src/main/res/xml/config.xml
 .env*.local
 node_modules/
 .env
+.env
