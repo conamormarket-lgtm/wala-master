@@ -533,7 +533,7 @@ const AdminProductos = () => {
                 </div>
                 <div className={styles.cardActions}>
                   <Link
-                    to={`/admin/productos/${p.id}`}
+                    to={p.isV2 ? `/admin/productos/v2/${p.id}` : `/admin/productos/${p.id}`}
                     className={styles.btnEdit}
                     title="Editar producto"
                   >

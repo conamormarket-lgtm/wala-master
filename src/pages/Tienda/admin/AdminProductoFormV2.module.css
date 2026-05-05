@@ -320,6 +320,105 @@
   color: #111;
 }
 
+.cardSubtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: -1rem;
+  margin-bottom: 1.5rem;
+}
+
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.galleryItem {
+  position: relative;
+  aspect-ratio: 3/4;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #eee;
+  background: #f8f9fa;
+  cursor: grab;
+}
+
+.galleryItem:active {
+  cursor: grabbing;
+}
+
+.galleryItemDragging {
+  opacity: 0.5;
+  border: 2px dashed #111;
+}
+
+.galleryItem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.deleteGalleryBtn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #e03131;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+}
+
+.deleteGalleryBtn:hover {
+  background: #ffe3e3;
+  transform: scale(1.1);
+}
+
+.hoverBadge {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.addGalleryBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  aspect-ratio: 3/4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #666;
+  background-color: #fafafa;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.addGalleryBtn:hover {
+  background-color: #f1f3f5;
+  border-color: #ccc;
+  color: #111;
+}
+
 .saveSection {
   display: flex;
   justify-content: flex-end;

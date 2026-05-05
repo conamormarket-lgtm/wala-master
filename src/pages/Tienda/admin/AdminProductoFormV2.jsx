@@ -20,10 +20,10 @@ const dataURLtoBlob = (dataurl) => {
   const bstr = atob(arr[1]);
   let n = bstr.length;
   const u8arr = new Uint8Array(n);
-  while(n--){
-      u8arr[n] = bstr.charCodeAt(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
   }
-  return new Blob([u8arr], {type:mime});
+  return new Blob([u8arr], { type: mime });
 }
 
 const AdminProductoFormV2 = () => {
@@ -43,6 +43,7 @@ const AdminProductoFormV2 = () => {
     category: '',
     collection: '',
     mainImage: '', // Para modo directo o imagen final guardada
+    images: [], // Imágenes adicionales de galería
   });
 
   const [mockupState, setMockupState] = useState({
@@ -63,13 +64,13 @@ const AdminProductoFormV2 = () => {
         height: 533,
         preserveObjectStacking: true,
       });
-      
+
       canvas.on('selection:created', () => setHasActiveObject(true));
       canvas.on('selection:updated', () => setHasActiveObject(true));
       canvas.on('selection:cleared', () => setHasActiveObject(false));
-      
+
       setFabricCanvas(canvas);
-      
+
       return () => {
         canvas.dispose();
         setFabricCanvas(null);
@@ -102,6 +103,7 @@ const AdminProductoFormV2 = () => {
         category: productData.category ? productData.category.id || productData.category : '',
         collection: productData.collections?.[0]?.id || productData.collections?.[0] || '',
         mainImage: productData.mainImage || '',
+        images: productData.images || [],
       });
       setMode('direct'); // Los productos existentes suelen ser de imagen directa
     }
@@ -117,14 +119,14 @@ const AdminProductoFormV2 = () => {
       fabric.Image.fromURL(baseImage, (img) => {
         const scale = Math.max(400 / img.width, 533 / img.height); // Cover scale
         img.set({
-          originX: 'center', 
-          originY: 'center', 
-          left: 200, 
-          top: 266.5, 
-          scaleX: scale, 
-          scaleY: scale, 
-          selectable: false, 
-          evented: false 
+          originX: 'center',
+          originY: 'center',
+          left: 200,
+          top: 266.5,
+          scaleX: scale,
+          scaleY: scale,
+          selectable: false,
+          evented: false
         });
         fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
       }, { crossOrigin: 'anonymous' });
@@ -157,6 +159,58 @@ const AdminProductoFormV2 = () => {
       });
     }
     e.target.value = ''; // Reset input
+  };
+
+  const handleGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const newImages = [];
+      for (const file of files) {
+        const path = `productos_v2/gallery_${Date.now()}_${file.name}`;
+        const { url } = await uploadFile(file, path);
+        if (url) newImages.push(url);
+      }
+      setForm(f => ({ ...f, images: [...f.images, ...newImages] }));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeGalleryImage = (index) => {
+    setForm(f => ({
+      ...f,
+      images: f.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Drag & Drop para la galería
+  const [draggedIdx, setDraggedIdx] = useState(null);
+
+  const handleDragStart = (e, index) => {
+    setDraggedIdx(index);
+    // Para Firefox es necesario setear datos
+    e.dataTransfer.setData('text/plain', index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault(); // Permite soltar
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetIdx) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === targetIdx) return;
+    
+    setForm(f => {
+      const newImages = [...f.images];
+      const [draggedImg] = newImages.splice(draggedIdx, 1);
+      newImages.splice(targetIdx, 0, draggedImg);
+      return { ...f, images: newImages };
+    });
+    setDraggedIdx(null);
   };
 
   const handleDeleteActiveDesign = () => {
@@ -203,15 +257,15 @@ const AdminProductoFormV2 = () => {
 
       // Si usamos Mockup generamos la imagen desde el Canvas (multiplicador 2x para buena resolución)
       if (mode === 'mockup' && baseImage && fabricCanvas) {
-         fabricCanvas.discardActiveObject(); // Deseleccionar caja antes de tomar foto
-         fabricCanvas.renderAll();
-         
-         const dataURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 2 });
-         const blob = dataURLtoBlob(dataURL);
-         
-         const path = `productos_v2/mockup_merged_${Date.now()}.png`;
-         const { url } = await uploadFile(blob, path);
-         if (url) finalImageUrl = url;
+        fabricCanvas.discardActiveObject(); // Deseleccionar caja antes de tomar foto
+        fabricCanvas.renderAll();
+
+        const dataURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 2 });
+        const blob = dataURLtoBlob(dataURL);
+
+        const path = `productos_v2/mockup_merged_${Date.now()}.png`;
+        const { url } = await uploadFile(blob, path);
+        if (url) finalImageUrl = url;
       }
 
       const payload = {
@@ -224,6 +278,7 @@ const AdminProductoFormV2 = () => {
         category: form.category ? { id: form.category } : null,
         collections: form.collection ? [{ id: form.collection }] : [],
         mainImage: finalImageUrl,
+        images: form.images,
         visible: true,
         isV2: true, // Flag to identify V2 architecture
       };
@@ -239,8 +294,8 @@ const AdminProductoFormV2 = () => {
   const selectedBrand = brands?.find(b => b.id === form.brandId);
   const brandBgStyle = selectedBrand ? {
     backgroundColor: selectedBrand.bgType === 'color' ? selectedBrand.bgColor : 'transparent',
-    backgroundImage: selectedBrand.bgType === 'image' && selectedBrand.bgImage 
-      ? `url(${selectedBrand.bgImage})` 
+    backgroundImage: selectedBrand.bgType === 'image' && selectedBrand.bgImage
+      ? `url(${selectedBrand.bgImage})`
       : 'none',
     backgroundSize: 'cover',
     backgroundPosition: 'center'
@@ -263,16 +318,16 @@ const AdminProductoFormV2 = () => {
         <div className={styles.leftCol}>
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Información Básica</h2>
-            
+
             <div className={styles.field}>
               <label className={styles.label}>Nombre del Producto</label>
               <input
                 type="text"
                 className={styles.input}
                 value={form.name}
-                onChange={e => setForm(f => ({...f, name: e.target.value}))}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 required
-                placeholder="Ej. Hoodie Gymshark Oversize"
+                placeholder="Ej. Hoodie Oversize"
               />
             </div>
 
@@ -284,7 +339,7 @@ const AdminProductoFormV2 = () => {
                   step="0.01"
                   className={styles.input}
                   value={form.price}
-                  onChange={e => setForm(f => ({...f, price: e.target.value}))}
+                  onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
                   required
                 />
               </div>
@@ -295,7 +350,7 @@ const AdminProductoFormV2 = () => {
                   step="0.01"
                   className={styles.input}
                   value={form.salePrice}
-                  onChange={e => setForm(f => ({...f, salePrice: e.target.value}))}
+                  onChange={e => setForm(f => ({ ...f, salePrice: e.target.value }))}
                 />
               </div>
               <div className={styles.field}>
@@ -304,7 +359,7 @@ const AdminProductoFormV2 = () => {
                   type="text"
                   className={styles.input}
                   value={form.sku}
-                  onChange={e => setForm(f => ({...f, sku: e.target.value}))}
+                  onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
                   placeholder="Ej. HOOD-BLK-01"
                 />
               </div>
@@ -315,7 +370,7 @@ const AdminProductoFormV2 = () => {
               <textarea
                 className={styles.textarea}
                 value={form.description}
-                onChange={e => setForm(f => ({...f, description: e.target.value}))}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 rows={3}
               />
             </div>
@@ -323,25 +378,25 @@ const AdminProductoFormV2 = () => {
 
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Organización</h2>
-            
+
             <div className={styles.fieldRow}>
               <div className={styles.field}>
                 <label className={styles.label}>Marca</label>
-                <select className={styles.input} value={form.brandId} onChange={e => setForm(f => ({...f, brandId: e.target.value}))}>
+                <select className={styles.input} value={form.brandId} onChange={e => setForm(f => ({ ...f, brandId: e.target.value }))}>
                   <option value="">Ninguna</option>
                   {brands?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Categoría</label>
-                <select className={styles.input} value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value}))}>
+                <select className={styles.input} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                   <option value="">Seleccionar...</option>
                   {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Colección</label>
-                <select className={styles.input} value={form.collection} onChange={e => setForm(f => ({...f, collection: e.target.value}))}>
+                <select className={styles.input} value={form.collection} onChange={e => setForm(f => ({ ...f, collection: e.target.value }))}>
                   <option value="">Ninguna</option>
                   {collections?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -354,17 +409,17 @@ const AdminProductoFormV2 = () => {
         <div className={styles.rightCol}>
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Generador Visual</h2>
-            
+
             <div className={styles.modeToggle}>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={`${styles.modeBtn} ${mode === 'mockup' ? styles.modeActive : ''}`}
                 onClick={() => setMode('mockup')}
               >
                 <Shirt size={18} /> Usar Mockup
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={`${styles.modeBtn} ${mode === 'direct' ? styles.modeActive : ''}`}
                 onClick={() => setMode('direct')}
               >
@@ -376,9 +431,9 @@ const AdminProductoFormV2 = () => {
               <div className={styles.mockupWorkspace}>
                 <div className={styles.field}>
                   <label className={styles.label}>1. Elige una prenda base (Mockup)</label>
-                  <select 
-                    className={styles.input} 
-                    value={mockupState.selectedMockupId} 
+                  <select
+                    className={styles.input}
+                    value={mockupState.selectedMockupId}
                     onChange={e => setMockupState(prev => ({ ...prev, selectedMockupId: e.target.value, selectedVariantIndex: 0 }))}
                   >
                     <option value="">-- Selecciona un Mockup --</option>
@@ -455,13 +510,45 @@ const AdminProductoFormV2 = () => {
             )}
           </div>
 
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Galería de Imágenes Extras</h2>
+            <p className={styles.cardSubtitle}>
+              Sube fotos del producto en uso. La primera imagen de esta galería se usará para el efecto <strong>"Hover"</strong>.
+            </p>
+
+            <div className={styles.galleryGrid}>
+              {form.images.map((img, idx) => (
+                <div 
+                  key={idx} 
+                  className={`${styles.galleryItem} ${draggedIdx === idx ? styles.galleryItemDragging : ''}`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, idx)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, idx)}
+                >
+                  <img src={img} alt={`Gallery ${idx}`} />
+                  <button type="button" onClick={() => removeGalleryImage(idx)} className={styles.deleteGalleryBtn}>
+                    <Trash2 size={14} />
+                  </button>
+                  {idx === 0 && <span className={styles.hoverBadge}>Hover Image</span>}
+                </div>
+              ))}
+
+              <label className={styles.addGalleryBtn}>
+                <ImagePlus size={24} />
+                <span>Agregar Fotos</span>
+                <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} disabled={uploading} hidden />
+              </label>
+            </div>
+          </div>
+
           <div className={styles.saveSection}>
-            <Button 
-              type="submit" 
-              className={styles.saveBtn} 
+            <Button
+              type="submit"
+              className={styles.saveBtn}
               disabled={uploading || saveMutation.isPending || (mode === 'mockup' && !baseImage) || (mode === 'direct' && !form.mainImage)}
             >
-              {uploading ? <><Loader2 className="animate-spin" size={18}/> Guardando...</> : <><Save size={18}/> {isNew ? 'Crear Producto' : 'Guardar Cambios'}</>}
+              {uploading ? <><Loader2 className="animate-spin" size={18} /> Guardando...</> : <><Save size={18} /> {isNew ? 'Crear Producto' : 'Guardar Cambios'}</>}
             </Button>
           </div>
 

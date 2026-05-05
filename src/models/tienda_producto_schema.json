@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Producto V2 Schema",
+  "description": "Estructura de un producto en la colección products con soporte V2 para Mockups y Galerías por Variante.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nombre público del producto."
+    },
+    "description": {
+      "type": "string",
+      "description": "Descripción del producto."
+    },
+    "price": {
+      "type": "number",
+      "description": "Precio regular."
+    },
+    "salePrice": {
+      "type": "number",
+      "description": "Precio de oferta (opcional)."
+    },
+    "sku": {
+      "type": "string",
+      "description": "Código interno de referencia."
+    },
+    "brandId": {
+      "type": "string",
+      "description": "Referencia a la colección tienda_brands."
+    },
+    "category": {
+      "type": ["object", "null"],
+      "properties": {
+        "id": { "type": "string" }
+      }
+    },
+    "collections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" }
+        }
+      }
+    },
+    "mainImage": {
+      "type": "string",
+      "description": "URL de la imagen representativa global (suele ser la primera foto de la primera variante)."
+    },
+    "images": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Galería global de imágenes (usualmente de la variante principal para hover global)."
+    },
+    "isV2": {
+      "type": "boolean",
+      "description": "Bandera obligatoria (true) para identificar que fue creado con AdminProductoFormV2."
+    },
+    "visible": {
+      "type": "boolean",
+      "description": "Indica si el producto se muestra en la tienda."
+    },
+    "variants": {
+      "type": "array",
+      "description": "Lista de colores o estilos del producto.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "ID único de la variante." },
+          "name": { "type": "string", "description": "Nombre de la variante, ej. 'Rojo'." },
+          "imageUrl": { "type": "string", "description": "Imagen frontal generada con el mockup para este color en específico." },
+          "images": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Galería de imágenes específica de ESTE color (usada para el efecto Hover cuando se selecciona)."
+          },
+          "sizes": {
+            "type": "array",
+            "description": "Lista de tallas y su stock para esta variante.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "size": { "type": "string", "description": "Nombre de la talla, ej. 'S', 'M'." },
+                "stock": { "type": "number", "description": "Cantidad de unidades en inventario." }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["name", "price", "isV2"]
+}

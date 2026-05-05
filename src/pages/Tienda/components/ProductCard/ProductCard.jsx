@@ -138,15 +138,18 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
     product?.images?.[0] ||
     '';
 
-  const secondaryImageUrl = product?.images?.[1] || null;
-
-  // Fallback: imagen real de la variante principal (por si la thumbnail falla o está desactualizada)
+  // Fallback: imagen real de la variante principal
   const fallbackImageUrl = toThumbnailImageUrl(
     principalVariant?.imageUrl ||
     product?.mainImage ||
     product?.images?.[0] ||
     ''
   );
+
+  // En V2, la galería extra empieza en images[0]. En legacy, images[0] suele ser la principal y images[1] el hover.
+  const secondaryImageUrl = product?.isV2 
+    ? (product?.images?.[0] || null)
+    : (product?.images?.[1] || null);
 
   // Extraer el crop de la variante principal si existe
   const mainVariantCrop = principalVariant?.thumbnailCrop?.percentages;

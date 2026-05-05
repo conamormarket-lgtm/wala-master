@@ -4,10 +4,12 @@
 
 .grid {
   display: grid;
-  /* Usamos auto-fit para que los productos se estiren y no dejen espacio vacío al final si son pocos */
-  grid-template-columns: repeat(var(--grid-cols-desktop, auto-fit), minmax(320px, 1fr));
+  /* Usamos auto-fill para que los productos mantengan un tamaño razonable y no se estiren al infinito si hay pocos */
+  grid-template-columns: repeat(var(--grid-cols-desktop, auto-fill), minmax(320px, 1fr));
   gap: 2px;
   padding: 1rem 0;
+  max-width: 1400px; /* Limita a ~4 columnas máximo en pantallas gigantes */
+  margin: 0 auto; /* Centra la cuadrícula */
 }
 
 /* ── Skeleton cards ── */
@@ -114,7 +116,7 @@
    ══════════════════════════════ */
 @media (max-width: 992px) {
   .grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 2px;
   }
 }
