@@ -1,0 +1,49 @@
+{
+  "collection": "tienda_brands",
+  "description": "Nueva colección para gestionar las marcas de la tienda premium (V2).",
+  "documentId": "auto-generado",
+  "fields": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "description": "Nombre público de la marca (ej. Gymshark)."
+    },
+    "description": {
+      "type": "string",
+      "required": false,
+      "description": "Descripción corta de la filosofía o historia de la marca."
+    },
+    "imageUrl": {
+      "type": "string",
+      "required": false,
+      "description": "URL del logotipo principal, típicamente con fondo transparente."
+    },
+    "config": {
+      "type": "object",
+      "required": false,
+      "description": "Configuración visual avanzada de la marca.",
+      "properties": {
+        "colorHex": {
+          "type": "string",
+          "description": "Color base (en Hexadecimal) para detalles de UI."
+        },
+        "bgOpacity": {
+          "type": "number",
+          "description": "Nivel de opacidad (0 a 1) para la capa protectora del fondo."
+        },
+        "backgroundImageUrl": {
+          "type": "string",
+          "description": "URL de la imagen o textura de fondo que se repetirá/cubrirá las tarjetas de sus productos."
+        }
+      }
+    },
+    "createdAt": {
+      "type": "timestamp",
+      "description": "Fecha y hora de creación del registro en Firestore."
+    },
+    "updatedAt": {
+      "type": "timestamp",
+      "description": "Fecha y hora de la última modificación."
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "collection": "tienda_categories",
+  "description": "Nueva colección para gestionar las categorías de productos (V2) con soporte visual.",
+  "documentId": "auto-generado",
+  "fields": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "description": "Nombre público de la categoría (ej. Hoodies, Polos)."
+    },
+    "imageUrl": {
+      "type": "string",
+      "required": false,
+      "description": "URL de la imagen representativa (usualmente recortada en formato 1:1 circular) para el menú de navegación."
+    },
+    "order": {
+      "type": "number",
+      "required": true,
+      "default": 0,
+      "description": "Prioridad de ordenamiento en las listas de la interfaz. Valores menores aparecen primero. Si hay empate, se ordena alfabéticamente o por fecha."
+    },
+    "createdAt": {
+      "type": "timestamp",
+      "description": "Fecha y hora de creación."
+    },
+    "updatedAt": {
+      "type": "timestamp",
+      "description": "Fecha y hora de la última modificación."
+    }
+  }
+}

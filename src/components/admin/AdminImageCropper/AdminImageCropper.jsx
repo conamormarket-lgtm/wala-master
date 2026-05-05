@@ -41,7 +41,7 @@ async function getCroppedImg(imageSrc, pixelCrop) {
   });
 }
 
-function AdminImageCropper({ imageSrc, onCropComplete, onCancel }) {
+function AdminImageCropper({ imageSrc, onCropComplete, onCancel, aspectRatio = undefined }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
@@ -74,7 +74,7 @@ function AdminImageCropper({ imageSrc, onCropComplete, onCancel }) {
             image={imageSrc}
             crop={crop}
             zoom={zoom}
-            aspect={undefined} // Free aspect ratio
+            aspect={aspectRatio}
             onCropChange={setCrop}
             onCropComplete={handleCropComplete}
             onZoomChange={setZoom}

@@ -1,188 +1,342 @@
 .wrapper {
-  max-width: 800px;
-  margin: 0 auto;
   padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 2rem;
 }
 
 .title {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 2rem;
-  color: var(--text-color, #1a1a1a);
+  color: #111;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f0f0;
+}
+
+.cardTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .form {
   display: flex;
-  background: var(--surface-color, #fff);
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  margin-bottom: 2.5rem;
-  align-items: center;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.fieldRow {
+  display: flex;
   gap: 1rem;
-  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.helpText {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0;
 }
 
 .input {
-  flex: 1;
-  min-width: 200px;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color, #e0e0e0);
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
   font-size: 1rem;
-  outline: none;
-  transition: border-color 0.2s;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background-color: #fafafa;
 }
 
 .input:focus {
-  border-color: var(--primary-color, #000);
-}
-
-.inputOrder {
-  width: 100px;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 8px;
-  font-size: 1rem;
   outline: none;
-  transition: border-color 0.2s;
+  border-color: #111;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.1);
 }
 
-.inputOrder:focus {
-  border-color: var(--primary-color, #000);
+.imageUploadWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.imagePreviewContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #f0f0f0;
+}
+
+.imagePreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.removeBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.removeBtn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.uploadImageLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px dashed #ddd;
+  border-radius: 12px;
+  padding: 3rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #666;
+  background-color: #fafafa;
+}
+
+.uploadImageLabel:hover {
+  background-color: #f1f3f5;
+  border-color: #ccc;
+  color: #111;
+}
+
+.uploadOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  border-radius: 12px;
+  z-index: 10;
 }
 
 .formActions {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.collectionsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.collectionCard {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  transition: all 0.2s ease;
+  height: 100px;
+}
+
+.collectionCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: #e0e0e0;
+}
+
+.collectionVisual {
+  width: 177px; /* roughly 16:9 ratio for 100px height */
+  height: 100%;
+  flex-shrink: 0;
+  border-right: 1px solid #f0f0f0;
+}
+
+.collectionBanner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.collectionBannerEmpty {
+  width: 100%;
+  height: 100%;
+  background: #f8f9fa;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.item {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: var(--surface-color, #fff);
+  justify-content: center;
+  color: #adb5bd;
+  font-size: 0.75rem;
+  gap: 0.25rem;
+}
+
+.collectionContent {
   padding: 1rem 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.itemName {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--text-color, #1a1a1a);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   flex: 1;
+  min-width: 0;
 }
 
-.itemOrder {
-  color: var(--text-muted, #666);
-  font-size: 0.9rem;
-  margin-right: 2rem;
+.collectionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
 }
 
-.itemActions {
+.collectionName {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.collectionBadge {
+  background: #f1f3f5;
+  color: #555;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+.collectionActions {
   display: flex;
   gap: 0.5rem;
 }
 
-.btnEdit {
-  background: var(--surface-color, #f0f0f0);
-  color: var(--text-color, #333);
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btnEdit:hover {
-  background: #e0e0e0;
-}
-
-.btnDelete {
-  background: #fff0f0;
-  color: #d32f2f;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btnDelete:hover {
-  background: #ffe0e0;
-}
-
-.loading {
-  color: var(--text-muted, #666);
-  text-align: center;
-  padding: 2rem;
-}
-
-.error {
-  color: #d32f2f;
-  background: #fff0f0;
-  padding: 1rem;
+.actionBtn {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  color: #444;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
-  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.empty {
+.actionBtn:hover {
+  background: #e9ecef;
+  color: #111;
+}
+
+.actionBtnDelete:hover {
+  background: #fff0f0;
+  color: #ff4757;
+  border-color: #ff4757;
+}
+
+.emptyState {
   text-align: center;
-  color: var(--text-muted, #666);
-  padding: 3rem;
-  background: var(--surface-alt, #f9f9f9);
-  border-radius: 12px;
-  border: 1px dashed var(--border-color, #ccc);
+  padding: 3rem 0;
+  color: #888;
 }
 
+/* Modal */
 .modalBackdrop {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
-  backdrop-filter: blur(4px);
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  z-index: 1000;
 }
 
 .modal {
-  background: var(--surface-color, #fff);
+  background: #fff;
   padding: 2rem;
   border-radius: 16px;
-  max-width: 400px;
   width: 90%;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
 
-.modal p {
+.modalTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.modalText {
   margin: 0 0 2rem 0;
-  font-size: 1.1rem;
-  color: var(--text-color, #333);
+  color: #555;
+  line-height: 1.5;
 }
 
 .modalActions {

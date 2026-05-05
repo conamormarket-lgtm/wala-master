@@ -24,7 +24,7 @@
 
 .contentGrid {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
+  grid-template-columns: 1.2fr 1fr;
   gap: 2rem;
   align-items: start;
 }
@@ -67,6 +67,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex: 1;
 }
 
 .label {
@@ -75,6 +76,12 @@
   color: #444;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.helpText {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0;
 }
 
 .input {
@@ -95,6 +102,15 @@
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.1);
 }
 
+.colorInput {
+  width: 100%;
+  height: 42px;
+  padding: 2px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 .imageUploadWrapper {
   position: relative;
   width: 100%;
@@ -103,20 +119,19 @@
 .imagePreviewContainer {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
-  max-width: 200px;
-  margin: 0 auto;
+  aspect-ratio: 3/4;
+  max-width: 300px;
   border-radius: 12px;
   overflow: hidden;
   border: 2px solid #f0f0f0;
-  background: repeating-conic-gradient(#f1f3f5 0% 25%, transparent 0% 50%) 50% / 20px 20px;
+  background-color: #f8f9fa;
+  margin: 0 auto;
 }
 
 .imagePreview {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 1rem;
 }
 
 .removeBtn {
@@ -156,33 +171,118 @@
   color: #111;
 }
 
-.uploadOverlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  border-radius: 12px;
-  z-index: 10;
+/* Variantes */
+.variantsSection {
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 1.5rem;
 }
 
-.formActions {
+.variantsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.addVariantBtn {
+  background: #f1f3f5;
+  color: #111;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s;
+}
+
+.addVariantBtn:hover {
+  background: #e9ecef;
+}
+
+.variantCard {
+  background: #fdfdfd;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.variantHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.removeVariantBtn {
+  background: none;
+  border: none;
+  color: #ff4757;
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+}
+
+.variantBody {
   display: flex;
   gap: 1rem;
-  margin-top: 1rem;
+  align-items: flex-end;
+}
+
+.smallPreviewContainer {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  overflow: hidden;
+}
+
+.smallPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.removeSmallBtn {
+  position: absolute;
+  top: 0; right: 0;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+
+.smallUploadBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: #f1f3f5;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #444;
 }
 
 /* Grid Lista */
-.clipartsGrid {
+.mockupsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.5rem;
 }
 
-.clipartCard {
+.mockupCard {
   background: #fff;
   border: 1px solid #f0f0f0;
   border-radius: 12px;
@@ -192,70 +292,57 @@
   transition: all 0.2s ease;
 }
 
-.clipartCard:hover {
+.mockupCard:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   border-color: #e0e0e0;
 }
 
-.clipartVisual {
+.mockupVisual {
   width: 100%;
-  aspect-ratio: 1;
-  background: repeating-conic-gradient(#f8f9fa 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+  aspect-ratio: 3/4;
+  background: #f8f9fa;
   border-bottom: 1px solid #f0f0f0;
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.clipartImage {
+.mockupImage {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.05));
 }
 
-.clipartContent {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.clipartInfo {
+.mockupInfo {
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.25rem;
   flex: 1;
-  min-width: 0;
 }
 
-.clipartName {
-  font-size: 1rem;
+.mockupName {
+  font-size: 1.1rem;
   font-weight: 600;
-  margin: 0;
+  margin: 0 0 0.25rem 0;
   color: #111;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
 }
 
-.clipartBadge {
-  background: #f1f3f5;
-  color: #555;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  display: inline-block;
-  margin-top: 0.25rem;
+.mockupCategory {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0 0 0.5rem 0;
 }
 
-.clipartActions {
+.colorDots {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.colorDot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+}
+
+.mockupActions {
   display: flex;
   border-top: 1px solid #f0f0f0;
 }
@@ -279,19 +366,13 @@
 }
 
 .actionBtn:hover {
-  background: #e9ecef;
+  background: #f1f3f5;
   color: #111;
 }
 
 .actionBtnDelete:hover {
   background: #fff0f0;
   color: #ff4757;
-}
-
-.emptyState {
-  text-align: center;
-  padding: 3rem 0;
-  color: #888;
 }
 
 /* Modal */
@@ -315,20 +396,9 @@
   box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
 
-.modalTitle {
-  margin: 0 0 1rem 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.modalText {
-  margin: 0 0 2rem 0;
-  color: #555;
-  line-height: 1.5;
-}
-
 .modalActions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  margin-top: 1.5rem;
 }

@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBrands, createBrand, updateBrand, deleteBrand } from '../../services/brands';
 import { uploadFile } from '../../services/firebase/storage';
+import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus } from 'lucide-react';
 import Button from '../../components/common/Button';
+import AdminImageCropper from '../../components/admin/AdminImageCropper/AdminImageCropper';
 import styles from './AdminMarcas.module.css';
 
 const hexToRgba = (hex, alpha) => {
@@ -20,6 +22,8 @@ const AdminMarcas = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [bgUploading, setBgUploading] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState(null);
 
   const { data: brandsData, isLoading, error } = useQuery({
     queryKey: ['admin-brands'],
@@ -88,6 +92,7 @@ const AdminMarcas = () => {
       bgImage: brand.bgImage || '',
       bgOpacity: brand.bgOpacity ?? 100
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
@@ -113,10 +118,22 @@ const AdminMarcas = () => {
   const handleBgUpload = async (e) => {
     const file = e?.target?.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
+    
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      setImageToCrop(reader.result);
+      setCropModalOpen(true);
+    };
+  };
+
+  const handleCropComplete = async (croppedFile) => {
+    setCropModalOpen(false);
+    setImageToCrop(null);
     setBgUploading(true);
     try {
-      const path = `brands/backgrounds/${Date.now()}_${file.name}`;
-      const { url, error: err } = await uploadFile(file, path);
+      const path = `brands/backgrounds/${Date.now()}_cropped.jpg`;
+      const { url, error: err } = await uploadFile(croppedFile, path);
       if (url && !err) {
         setForm((f) => ({ ...f, bgImage: url }));
       }
@@ -127,223 +144,275 @@ const AdminMarcas = () => {
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.title}>Marcas</h1>
-      <p className={styles.subtitle}>
-        Walá unifica varias marcas. Agrega aquí las marcas que manejas y asígnalas a cada producto.
-        Si un producto no tiene marca asignada, se entiende que es de <strong>Walá</strong>.
-      </p>
+      <div className={styles.header}>
+        <div className={styles.headerTitles}>
+          <h1 className={styles.title}>Gestión de Marcas</h1>
+          <p className={styles.subtitle}>
+            Diseña identidades visuales únicas para cada marca. Los productos heredarán estos fondos en la tienda.
+          </p>
+        </div>
+      </div>
 
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.formFields}>
-          <div className={styles.fieldGroup}>
-            <label className={styles.label}>Nombre de la marca *</label>
-            <input
-              type="text"
-              placeholder="Ej. Nike, Adidas, Mi Marca…"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className={styles.input}
-              required
-            />
-          </div>
-
-          <div className={styles.fieldGroup}>
-            <label className={styles.label}>Logo (opcional)</label>
-            <div className={styles.logoUploadRow}>
-              {form.logoUrl && (
-                <img
-                  src={form.logoUrl}
-                  alt="Logo preview"
-                  className={styles.logoPreview}
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
-              )}
+      <form className={styles.formCard} onSubmit={handleSubmit}>
+        <div className={styles.formGrid}>
+          {/* Columna Izquierda: Datos Básicos */}
+          <div className={styles.basicInfo}>
+            <h3 className={styles.sectionTitle}>
+              <Palette size={18} />
+              Información Básica
+            </h3>
+            
+            <div className={styles.field}>
+              <label className={styles.label}>Nombre de la Marca</label>
               <input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                className={styles.fileInput}
-                disabled={uploading}
+                type="text"
+                placeholder="Ej. Nike, Adidas..."
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                className={styles.input}
+                required
               />
-              {uploading && <span className={styles.uploadingLabel}>Subiendo...</span>}
             </div>
-            <input
-              type="text"
-              placeholder="O pega URL del logo"
-              value={form.logoUrl}
-              onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
-              className={styles.input}
-              style={{ marginTop: '0.5rem' }}
-            />
-          </div>
 
-          <div className={styles.fieldGroup} style={{ maxWidth: '120px' }}>
-            <label className={styles.label}>Orden</label>
-            <input
-              type="number"
-              min="0"
-              placeholder="0"
-              value={form.order}
-              onChange={(e) => setForm((f) => ({ ...f, order: e.target.value }))}
-              className={styles.inputOrder}
-            />
-          </div>
-
-          <div className={styles.designSection}>
-            <h3 className={styles.designTitle}>Diseño Característico (Fondo en Tienda)</h3>
-            <div className={styles.designFields}>
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>Color Base (Hexadecimal)</label>
-                <div className={styles.colorPickerWrapper}>
-                  <input
-                    type="color"
-                    value={form.bgColor}
-                    onChange={(e) => setForm((f) => ({ ...f, bgColor: e.target.value }))}
-                    className={styles.colorInput}
-                  />
-                  <input
-                    type="text"
-                    value={form.bgColor}
-                    onChange={(e) => setForm((f) => ({ ...f, bgColor: e.target.value }))}
-                    className={styles.input}
-                    style={{ width: '100px' }}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>Textura o Imagen de Fondo</label>
-                <div className={styles.logoUploadRow}>
-                  {form.bgImage && (
-                    <img
-                      src={form.bgImage}
-                      alt="Background preview"
-                      className={styles.bgPreview}
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
+            <div className={styles.fieldRow}>
+              <div className={styles.field} style={{ flex: 2 }}>
+                <label className={styles.label}>Logotipo</label>
+                <div className={styles.uploadBox}>
+                  {form.logoUrl ? (
+                    <div className={styles.logoPreviewWrapper}>
+                      <img src={form.logoUrl} alt="Logo" className={styles.logoPreview} />
+                      <button type="button" onClick={() => setForm(f => ({...f, logoUrl: ''}))} className={styles.removeBtn}>✕</button>
+                    </div>
+                  ) : (
+                    <label className={styles.uploadLabel}>
+                      <UploadCloud size={24} />
+                      <span>Subir Logo</span>
+                      <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} hidden />
+                    </label>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBgUpload}
-                    className={styles.fileInput}
-                    disabled={bgUploading}
-                  />
-                  {bgUploading && <span className={styles.uploadingLabel}>Subiendo...</span>}
+                  {uploading && <div className={styles.uploadOverlay}>Subiendo...</div>}
                 </div>
-                {form.bgImage && (
-                  <div className={styles.rangeGroup}>
-                    <label className={styles.label}>Visibilidad de la Imagen ({form.bgOpacity}%)</label>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="100" 
-                      value={form.bgOpacity}
-                      onChange={(e) => setForm((f) => ({ ...f, bgOpacity: Number(e.target.value) }))}
-                      className={styles.rangeInput}
-                    />
-                    <small className={styles.hint}>100% = Imagen opaca, 0% = Solo color base.</small>
-                  </div>
-                )}
               </div>
-              
-              <div className={styles.previewBoxWrapper}>
-                <label className={styles.label}>Vista Previa del Fondo</label>
-                <div 
-                  className={styles.previewBox}
-                  style={{
-                    backgroundColor: form.bgColor,
-                    backgroundImage: form.bgImage 
-                      ? `linear-gradient(${hexToRgba(form.bgColor, 1 - form.bgOpacity/100)}, ${hexToRgba(form.bgColor, 1 - form.bgOpacity/100)}), url(${form.bgImage})` 
-                      : 'none'
-                  }}
-                >
-                  <span className={styles.previewBoxText}>{form.name || 'Tu Marca'}</span>
+
+              <div className={styles.field} style={{ flex: 1 }}>
+                <label className={styles.label}>Orden</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.order}
+                  onChange={(e) => setForm((f) => ({ ...f, order: e.target.value }))}
+                  className={styles.input}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Columna Derecha: Identidad Visual */}
+          <div className={styles.visualInfo}>
+            <h3 className={styles.sectionTitle}>
+              <ImageIcon size={18} />
+              Identidad Visual
+            </h3>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Color Base</label>
+              <div className={styles.colorPickerContainer}>
+                <input
+                  type="color"
+                  value={form.bgColor}
+                  onChange={(e) => setForm((f) => ({ ...f, bgColor: e.target.value }))}
+                  className={styles.colorInput}
+                />
+                <input
+                  type="text"
+                  value={form.bgColor}
+                  onChange={(e) => setForm((f) => ({ ...f, bgColor: e.target.value }))}
+                  className={styles.input}
+                  style={{ textTransform: 'uppercase', flex: 1 }}
+                />
+              </div>
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Textura o Imagen de Fondo</label>
+              <div className={styles.bgUploadWrapper}>
+                {form.bgImage ? (
+                  <div className={styles.bgPreviewContainer}>
+                    <img src={form.bgImage} alt="Background" className={styles.bgPreviewImg} />
+                    <button type="button" onClick={() => setForm(f => ({...f, bgImage: ''}))} className={styles.removeBtn}>✕</button>
+                  </div>
+                ) : (
+                  <label className={styles.uploadBgLabel}>
+                    <ImagePlus size={20} />
+                    <span>Añadir Fondo</span>
+                    <input type="file" accept="image/*" onChange={handleBgUpload} disabled={bgUploading} hidden />
+                  </label>
+                )}
+                {bgUploading && <div className={styles.uploadOverlay}>Subiendo...</div>}
+              </div>
+            </div>
+
+            {form.bgImage && (
+              <div className={styles.field}>
+                <div className={styles.rangeHeader}>
+                  <label className={styles.label}>Transparencia de la Imagen</label>
+                  <span className={styles.rangeValue}>{form.bgOpacity}%</span>
                 </div>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  value={form.bgOpacity}
+                  onChange={(e) => setForm((f) => ({ ...f, bgOpacity: Number(e.target.value) }))}
+                  className={styles.rangeSlider}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Vista Previa */}
+        <div className={styles.previewSection}>
+          <h3 className={styles.previewTitle}>Vista Previa de Tarjeta</h3>
+          <div className={styles.previewCardWrapper}>
+            <div 
+              className={styles.previewCard}
+              style={{
+                backgroundColor: form.bgColor,
+                backgroundImage: form.bgImage 
+                  ? `linear-gradient(${hexToRgba(form.bgColor, 1 - form.bgOpacity/100)}, ${hexToRgba(form.bgColor, 1 - form.bgOpacity/100)}), url(${form.bgImage})` 
+                  : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: `center`,
+                backgroundRepeat: 'no-repeat'
+              }}
+            >
+              <div className={styles.previewProductMockup}>
+                {form.logoUrl ? (
+                  <img src={form.logoUrl} className={styles.previewMockupLogo} alt="Logo" />
+                ) : (
+                  <div className={styles.previewMockupPlaceholder} />
+                )}
+                <div className={styles.previewMockupTags}>
+                  <span>NEW</span>
+                </div>
+              </div>
+              <div className={styles.previewCardContent}>
+                <h4>Product Name</h4>
+                <p>S/ 99.00</p>
+                <div className={styles.previewMockupBrand}>{form.name || 'Brand Name'}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className={styles.formActions}>
-          <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-            {editingId ? 'Guardar cambios' : 'Añadir marca'}
-          </Button>
+        <div className={styles.formFooter}>
           {editingId && (
             <Button type="button" variant="secondary" onClick={handleCancelEdit}>
               Cancelar
             </Button>
           )}
+          <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+            {editingId ? 'Actualizar Identidad' : 'Crear Marca'}
+          </Button>
         </div>
       </form>
 
-      {isLoading && <p className={styles.loading}>Cargando marcas...</p>}
-      {error && <p className={styles.error}>{error.message}</p>}
+      {/* Grid de Marcas */}
+      <div className={styles.brandsSection}>
+        <h2 className={styles.brandsTitle}>Marcas Registradas ({brands.length})</h2>
+        
+        {isLoading && <div className={styles.loadingPulse}>Cargando identidades...</div>}
+        {error && <div className={styles.errorAlert}>{error.message}</div>}
 
-      <ul className={styles.list}>
-        {brands.map((brand) => (
-          <li key={brand.id} className={styles.item}>
-            {brand.logoUrl && (
-              <img
-                src={brand.logoUrl}
-                alt={brand.name}
-                className={styles.itemLogo}
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-            )}
-            <div className={styles.itemInfo}>
-              <span className={styles.itemName}>{brand.name}</span>
-              <span className={styles.itemOrder}>Orden: {brand.order ?? 0}</span>
-              <div 
-                className={styles.itemColorSwatch} 
-                style={{ 
-                  backgroundColor: brand.bgColor || '#ffffff',
-                  backgroundImage: brand.bgImage ? `linear-gradient(${hexToRgba(brand.bgColor, 1 - (brand.bgOpacity ?? 100)/100)}, ${hexToRgba(brand.bgColor, 1 - (brand.bgOpacity ?? 100)/100)}), url(${brand.bgImage})` : 'none',
-                }} 
-                title="Fondo de la marca"
-              />
+        <div className={styles.brandsGrid}>
+          {brands.map((brand) => (
+            <div 
+              key={brand.id} 
+              className={styles.brandCard}
+              style={{
+                backgroundColor: brand.bgColor || '#ffffff',
+                backgroundImage: brand.bgImage ? `linear-gradient(${hexToRgba(brand.bgColor, 1 - (brand.bgOpacity ?? 100)/100)}, ${hexToRgba(brand.bgColor, 1 - (brand.bgOpacity ?? 100)/100)}), url(${brand.bgImage})` : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: `center`,
+                backgroundRepeat: 'no-repeat'
+              }}
+            >
+              <div className={styles.brandCardGlass}>
+                <div className={styles.brandCardHeader}>
+                  <div className={styles.brandCardLogoWrap}>
+                    {brand.logoUrl ? (
+                      <img src={brand.logoUrl} alt={brand.name} className={styles.brandCardLogo} />
+                    ) : (
+                      <span className={styles.brandInitials}>{brand.name.substring(0,2).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className={styles.brandCardActions}>
+                    <button onClick={() => handleEdit(brand)} className={styles.iconBtn} title="Editar">
+                      <Edit2 size={16} />
+                    </button>
+                    <button onClick={() => setDeleteConfirm(brand)} className={`${styles.iconBtn} ${styles.dangerBtn}`} title="Eliminar">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.brandCardBody}>
+                  <h3 className={styles.brandCardName}>{brand.name}</h3>
+                  <div className={styles.brandCardMeta}>
+                    <span className={styles.metaPill}>Orden: {brand.order ?? 0}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className={styles.itemActions}>
-              <button type="button" className={styles.btnEdit} onClick={() => handleEdit(brand)}>
-                Editar
-              </button>
-              <button
-                type="button"
-                className={styles.btnDelete}
-                onClick={() => setDeleteConfirm(brand)}
-              >
-                Eliminar
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+          ))}
+        </div>
 
-      {brands.length === 0 && !isLoading && (
-        <p className={styles.empty}>No hay marcas registradas. Añade una arriba.</p>
-      )}
+        {brands.length === 0 && !isLoading && (
+          <div className={styles.emptyState}>
+            <Palette size={48} className={styles.emptyIcon} />
+            <p>No tienes marcas creadas aún.</p>
+            <span>Configura tu primera marca arriba para empezar a personalizar fondos.</span>
+          </div>
+        )}
+      </div>
 
       {deleteConfirm && (
         <div className={styles.modalBackdrop} onClick={() => setDeleteConfirm(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <p>¿Eliminar la marca &quot;{deleteConfirm.name}&quot;?</p>
-            <p className={styles.modalHint}>
-              Los productos que tenían esta marca asignada volverán a mostrarse como "Walá".
+            <div className={styles.modalHeader}>
+              <Trash2 size={24} className={styles.modalIcon} />
+              <h3>¿Eliminar "{deleteConfirm.name}"?</h3>
+            </div>
+            <p className={styles.modalBody}>
+              Al eliminar esta marca, los productos que la tengan asignada volverán a tener el fondo predeterminado (transparent/blanco). Esta acción no se puede deshacer.
             </p>
-            <div className={styles.modalActions}>
+            <div className={styles.modalFooter}>
               <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
                 Cancelar
               </Button>
               <Button
                 variant="primary"
+                style={{ backgroundColor: 'var(--rojo-principal)' }}
                 onClick={() => deleteMutation.mutate(deleteConfirm.id)}
                 disabled={deleteMutation.isPending}
               >
-                Eliminar
+                Sí, Eliminar
               </Button>
             </div>
           </div>
         </div>
+      )}
+
+      {cropModalOpen && imageToCrop && (
+        <AdminImageCropper
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          onCancel={() => {
+            setCropModalOpen(false);
+            setImageToCrop(null);
+          }}
+          aspectRatio={3 / 4} // Proporción vertical para tarjetas de producto
+        />
       )}
     </div>
   );

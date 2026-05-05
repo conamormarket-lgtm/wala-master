@@ -135,6 +135,14 @@ const AdminLayout = () => {
                 </NavLink>
               )}
               {canProducts && (
+                <NavLink
+                  to="/admin/mockups"
+                  className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
+                >
+                  Mockups Base
+                </NavLink>
+              )}
+              {canProducts && (
                 <>
                   <NavLink
                     to="/admin/categorias"

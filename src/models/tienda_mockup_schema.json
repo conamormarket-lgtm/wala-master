@@ -1,0 +1,41 @@
+{
+  "collection": "tienda_mockups",
+  "description": "Colección para gestionar mockups (prendas/artículos en blanco) que se usarán como base para crear productos.",
+  "documentId": "auto-generado",
+  "fields": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "description": "Nombre identificador del mockup (ej. Hoodie Oversize, Polo Básico)."
+    },
+    "category": {
+      "type": "string",
+      "required": false,
+      "description": "Categoría a la que pertenece el mockup (ej. Hoodies, Polos)."
+    },
+    "baseImageUrl": {
+      "type": "string",
+      "required": true,
+      "description": "URL de la imagen base del mockup (preferiblemente un PNG con fondo transparente)."
+    },
+    "variants": {
+      "type": "array",
+      "required": false,
+      "description": "Lista de colores o vistas disponibles para este mockup.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "colorName": { "type": "string", "description": "Nombre del color (ej. Negro, Blanco)" },
+          "colorHex": { "type": "string", "description": "Código Hexadecimal" },
+          "imageUrl": { "type": "string", "description": "Imagen específica para este color (si aplica)" }
+        }
+      }
+    },
+    "createdAt": {
+      "type": "timestamp"
+    },
+    "updatedAt": {
+      "type": "timestamp"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "collection": "tienda_collections",
+  "description": "Nueva colección para agrupar productos en colecciones temporales o campañas (V2).",
+  "documentId": "auto-generado",
+  "fields": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "description": "Nombre de la colección (ej. Drop Summer 2024)."
+    },
+    "imageUrl": {
+      "type": "string",
+      "required": false,
+      "description": "URL del banner de la colección (usualmente en formato horizontal 16:9) que se mostrará como encabezado."
+    },
+    "order": {
+      "type": "number",
+      "required": true,
+      "default": 0,
+      "description": "Prioridad de ordenamiento. Funciona igual que en categorías."
+    },
+    "createdAt": {
+      "type": "timestamp",
+      "description": "Fecha y hora de creación."
+    },
+    "updatedAt": {
+      "type": "timestamp",
+      "description": "Fecha y hora de la última modificación."
+    }
+  }
+}

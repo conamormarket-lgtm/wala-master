@@ -1,6 +1,6 @@
 import { getCollection, getDocument, createDocument, updateDocument, deleteDocument } from './firebase/firestore';
 
-const COLLECTION = 'collections';
+const COLLECTION = 'tienda_collections';
 
 /**
  * Obtener todas las colecciones ordenadas por order
@@ -23,6 +23,7 @@ export const getCollectionById = async (id) => {
 export const createCollection = async (data) => {
   return await createDocument(COLLECTION, {
     name: data.name || '',
+    imageUrl: data.imageUrl || '',
     order: typeof data.order === 'number' ? data.order : 0
   });
 };
@@ -35,6 +36,7 @@ export const createCollection = async (data) => {
 export const updateCollection = async (id, data) => {
   const payload = {};
   if (data.name !== undefined) payload.name = data.name;
+  if (data.imageUrl !== undefined) payload.imageUrl = data.imageUrl;
   if (data.order !== undefined) payload.order = data.order;
   return await updateDocument(COLLECTION, id, payload);
 };

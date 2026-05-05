@@ -1,0 +1,54 @@
+{
+  "collection": "tienda_landing_pages",
+  "description": "Nueva colección para generar landing pages dinámicas y personalizadas (V2).",
+  "documentId": "auto-generado",
+  "fields": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "description": "Título principal del Landing Page."
+    },
+    "slug": {
+      "type": "string",
+      "required": true,
+      "description": "El path de la URL (ej. 'gymshark-drop' genera wala.pe/gymshark-drop)."
+    },
+    "heroImage": {
+      "type": "string",
+      "required": false,
+      "description": "URL de la imagen de cabecera principal (hero banner)."
+    },
+    "theme": {
+      "type": "object",
+      "required": false,
+      "description": "Variables CSS que controlarán la paleta de colores inyectada en esta página.",
+      "properties": {
+        "backgroundColor": { "type": "string" },
+        "primaryColor": { "type": "string" },
+        "textColor": { "type": "string" }
+      }
+    },
+    "targetBrandId": {
+      "type": "string",
+      "required": false,
+      "description": "ID de la marca cuyos productos se mostrarán en este landing (referencia cruzada a tienda_brands)."
+    },
+    "targetCollectionId": {
+      "type": "string",
+      "required": false,
+      "description": "ID de la colección a mostrar (referencia cruzada a tienda_collections)."
+    },
+    "isActive": {
+      "type": "boolean",
+      "required": true,
+      "default": false,
+      "description": "Permite habilitar o inhabilitar la URL sin borrar el documento."
+    },
+    "createdAt": {
+      "type": "timestamp"
+    },
+    "updatedAt": {
+      "type": "timestamp"
+    }
+  }
+}

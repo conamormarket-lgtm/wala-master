@@ -105,3 +105,6 @@ app/src/main/res/xml/config.xml
 node_modules/
 .env
 .env
+
+# Context mapping for V2 migration
+contexto.md

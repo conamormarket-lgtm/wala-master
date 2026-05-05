@@ -1,6 +1,6 @@
 import { getCollection, getDocument, createDocument, updateDocument, deleteDocument } from './firebase/firestore';
 
-const COLLECTION = 'brands';
+const COLLECTION = 'tienda_brands';
 
 /**
  * Obtener todas las marcas ordenadas por order
