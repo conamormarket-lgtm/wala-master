@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProducts, getCategories, deleteProduct, updateProduct, createProduct } from '../../../services/products';
+import { getBrands } from '../../../services/brands';
 import { createReferenceProducts } from '../../../scripts/createReferenceProducts';
 import { exportProducts } from '../../../utils/exportProducts';
 import { useToast } from '../../../hooks/useToast';
@@ -44,6 +45,15 @@ const AdminProductos = () => {
     queryKey: ['admin-categories'],
     queryFn: async () => {
       const { data, error: err } = await getCategories();
+      if (err) throw new Error(err);
+      return data;
+    }
+  });
+
+  const { data: brandsData = [] } = useQuery({
+    queryKey: ['admin-brands'],
+    queryFn: async () => {
+      const { data, error: err } = await getBrands();
       if (err) throw new Error(err);
       return data;
     }
@@ -337,7 +347,10 @@ const AdminProductos = () => {
             Exportar CSV
           </Button>
           <Link to="/admin/productos/nuevo">
-            <Button>Nuevo producto</Button>
+            <Button variant="secondary">Creación Legacy</Button>
+          </Link>
+          <Link to="/admin/productos/v2/nuevo">
+            <Button>Generador V2</Button>
           </Link>
         </div>
       </div>
@@ -486,15 +499,25 @@ const AdminProductos = () => {
                     const displayUrl = adminImageStr || 'https://via.placeholder.com/400x400/eee/999?text=Producto';
                     const adminCrop = principalVariant?.thumbnailCrop?.percentages;
 
+                    const brand = brandsData.find(b => b.id === p.brandId);
+                    const brandBgStyle = brand ? {
+                      backgroundColor: brand.bgType === 'color' ? brand.bgColor : 'transparent',
+                      backgroundImage: brand.bgType === 'image' && brand.bgImage ? `url(${brand.bgImage})` : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    } : {};
+
                     return (
-                      <OptimizedImage
-                        src={toThumbnailImageUrl(displayUrl)}
-                        fallbackSrc={toDirectImageUrl(displayUrl)}
-                        alt={p.name}
-                        containerClassName={styles.cardImageContainer}
-                        cropData={adminCrop}
-                        showSkeleton={true}
-                      />
+                      <div style={{ width: '100%', height: '100%', ...brandBgStyle }}>
+                        <OptimizedImage
+                          src={toThumbnailImageUrl(displayUrl)}
+                          fallbackSrc={toDirectImageUrl(displayUrl)}
+                          alt={p.name}
+                          containerClassName={styles.cardImageContainer}
+                          cropData={adminCrop}
+                          showSkeleton={true}
+                        />
+                      </div>
                     );
                   })()}
                 </div>
