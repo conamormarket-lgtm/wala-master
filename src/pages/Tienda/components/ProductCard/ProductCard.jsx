@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { getBrands } from '../../../../services/brands';
 import { useCart } from '../../../../contexts/CartContext';
 import { toDirectImageUrl, toThumbnailImageUrl } from '../../../../utils/imageUrl'; // Force recompile
 import { isComboProduct } from '../../../../utils/comboProductUtils';
@@ -9,6 +10,14 @@ import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
 import Button from '../../../../components/common/Button';
 import styles from './ProductCard.module.css';
+
+const hexToRgba = (hex, alpha) => {
+  const cleanHex = hex ? hex.replace('#', '') : 'ffffff';
+  const r = parseInt(cleanHex.length === 3 ? cleanHex.charAt(0).repeat(2) : cleanHex.substring(0, 2), 16) || 255;
+  const g = parseInt(cleanHex.length === 3 ? cleanHex.charAt(1).repeat(2) : cleanHex.substring(2, 4), 16) || 255;
+  const b = parseInt(cleanHex.length === 3 ? cleanHex.charAt(2).repeat(2) : cleanHex.substring(4, 6), 16) || 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 const getCategoryDisplay = (product, categoriesList) => {
   const ids = product.categories ?? (product.category ? [product.category] : []);
@@ -27,6 +36,30 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
   const { thumbnailImageUrl, recordImpression, variantIndex } = useProductThumbnailVariant(product);
   const imageContainerRef = useRef(null);
   const impressionRecorded = useRef(false);
+
+  const { data: brandsData } = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => {
+      const res = await getBrands();
+      return res.data;
+    },
+    staleTime: 1000 * 60 * 5, // 5 min cache
+  });
+
+  const productBrand = brandsData?.find(b => b.id === product.brandId);
+  const brandBgColor = productBrand?.bgColor;
+  const brandBgImage = productBrand?.bgImage;
+  const brandBgOpacity = productBrand?.bgOpacity ?? 100;
+
+  const brandBgStyle = (brandBgColor || brandBgImage) ? {
+    backgroundColor: brandBgColor || 'transparent',
+    backgroundImage: brandBgImage 
+      ? `linear-gradient(${hexToRgba(brandBgColor, 1 - brandBgOpacity/100)}, ${hexToRgba(brandBgColor, 1 - brandBgOpacity/100)}), url(${brandBgImage})` 
+      : 'none',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  } : {};
 
   useEffect(() => {
     if (!product?.id || impressionRecorded.current) return;
@@ -127,7 +160,7 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
       onMouseEnter={handlePrefetch}
       onTouchStart={handlePrefetch}
     >
-      <div className={`${styles.imageContainer} ${isCombo ? styles.isCombo : styles.isNormal}`} ref={imageContainerRef}>
+      <div className={`${styles.imageContainer} ${isCombo ? styles.isCombo : styles.isNormal}`} ref={imageContainerRef} style={brandBgStyle}>
         {isCombo ? (
           <ComboProductImage
             comboProduct={product}

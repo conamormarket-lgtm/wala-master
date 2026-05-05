@@ -5,12 +5,21 @@ import { uploadFile } from '../../services/firebase/storage';
 import Button from '../../components/common/Button';
 import styles from './AdminMarcas.module.css';
 
+const hexToRgba = (hex, alpha) => {
+  const cleanHex = hex ? hex.replace('#', '') : 'ffffff';
+  const r = parseInt(cleanHex.length === 3 ? cleanHex.charAt(0).repeat(2) : cleanHex.substring(0, 2), 16) || 255;
+  const g = parseInt(cleanHex.length === 3 ? cleanHex.charAt(1).repeat(2) : cleanHex.substring(2, 4), 16) || 255;
+  const b = parseInt(cleanHex.length === 3 ? cleanHex.charAt(2).repeat(2) : cleanHex.substring(4, 6), 16) || 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 const AdminMarcas = () => {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', logoUrl: '', order: 0 });
+  const [form, setForm] = useState({ name: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100 });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [bgUploading, setBgUploading] = useState(false);
 
   const { data: brandsData, isLoading, error } = useQuery({
     queryKey: ['admin-brands'],
@@ -26,7 +35,7 @@ const AdminMarcas = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      setForm({ name: '', logoUrl: '', order: (brandsData?.length ?? 0) });
+      setForm({ name: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100 });
     }
   });
 
@@ -36,7 +45,7 @@ const AdminMarcas = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setEditingId(null);
-      setForm({ name: '', logoUrl: '', order: 0 });
+      setForm({ name: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100 });
     }
   });
 
@@ -54,7 +63,14 @@ const AdminMarcas = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    const payload = { name: form.name.trim(), logoUrl: form.logoUrl.trim(), order: Number(form.order) };
+    const payload = { 
+      name: form.name.trim(), 
+      logoUrl: form.logoUrl.trim(), 
+      order: Number(form.order),
+      bgColor: form.bgColor,
+      bgImage: form.bgImage.trim(),
+      bgOpacity: Number(form.bgOpacity)
+    };
     if (editingId) {
       updateMutation.mutate({ id: editingId, data: payload });
     } else {
@@ -64,12 +80,19 @@ const AdminMarcas = () => {
 
   const handleEdit = (brand) => {
     setEditingId(brand.id);
-    setForm({ name: brand.name, logoUrl: brand.logoUrl || '', order: brand.order ?? 0 });
+    setForm({ 
+      name: brand.name, 
+      logoUrl: brand.logoUrl || '', 
+      order: brand.order ?? 0,
+      bgColor: brand.bgColor || '#ffffff',
+      bgImage: brand.bgImage || '',
+      bgOpacity: brand.bgOpacity ?? 100
+    });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm({ name: '', logoUrl: '', order: brands.length });
+    setForm({ name: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100 });
   };
 
   const handleLogoUpload = async (e) => {
@@ -84,6 +107,21 @@ const AdminMarcas = () => {
       }
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleBgUpload = async (e) => {
+    const file = e?.target?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    setBgUploading(true);
+    try {
+      const path = `brands/backgrounds/${Date.now()}_${file.name}`;
+      const { url, error: err } = await uploadFile(file, path);
+      if (url && !err) {
+        setForm((f) => ({ ...f, bgImage: url }));
+      }
+    } finally {
+      setBgUploading(false);
     }
   };
 
@@ -150,6 +188,81 @@ const AdminMarcas = () => {
               className={styles.inputOrder}
             />
           </div>
+
+          <div className={styles.designSection}>
+            <h3 className={styles.designTitle}>Diseño Característico (Fondo en Tienda)</h3>
+            <div className={styles.designFields}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>Color Base (Hexadecimal)</label>
+                <div className={styles.colorPickerWrapper}>
+                  <input
+                    type="color"
+                    value={form.bgColor}
+                    onChange={(e) => setForm((f) => ({ ...f, bgColor: e.target.value }))}
+                    className={styles.colorInput}
+                  />
+                  <input
+                    type="text"
+                    value={form.bgColor}
+                    onChange={(e) => setForm((f) => ({ ...f, bgColor: e.target.value }))}
+                    className={styles.input}
+                    style={{ width: '100px' }}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>Textura o Imagen de Fondo</label>
+                <div className={styles.logoUploadRow}>
+                  {form.bgImage && (
+                    <img
+                      src={form.bgImage}
+                      alt="Background preview"
+                      className={styles.bgPreview}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBgUpload}
+                    className={styles.fileInput}
+                    disabled={bgUploading}
+                  />
+                  {bgUploading && <span className={styles.uploadingLabel}>Subiendo...</span>}
+                </div>
+                {form.bgImage && (
+                  <div className={styles.rangeGroup}>
+                    <label className={styles.label}>Visibilidad de la Imagen ({form.bgOpacity}%)</label>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="100" 
+                      value={form.bgOpacity}
+                      onChange={(e) => setForm((f) => ({ ...f, bgOpacity: Number(e.target.value) }))}
+                      className={styles.rangeInput}
+                    />
+                    <small className={styles.hint}>100% = Imagen opaca, 0% = Solo color base.</small>
+                  </div>
+                )}
+              </div>
+              
+              <div className={styles.previewBoxWrapper}>
+                <label className={styles.label}>Vista Previa del Fondo</label>
+                <div 
+                  className={styles.previewBox}
+                  style={{
+                    backgroundColor: form.bgColor,
+                    backgroundImage: form.bgImage 
+                      ? `linear-gradient(${hexToRgba(form.bgColor, 1 - form.bgOpacity/100)}, ${hexToRgba(form.bgColor, 1 - form.bgOpacity/100)}), url(${form.bgImage})` 
+                      : 'none'
+                  }}
+                >
+                  <span className={styles.previewBoxText}>{form.name || 'Tu Marca'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className={styles.formActions}>
@@ -178,8 +291,18 @@ const AdminMarcas = () => {
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
-            <span className={styles.itemName}>{brand.name}</span>
-            <span className={styles.itemOrder}>Orden: {brand.order ?? 0}</span>
+            <div className={styles.itemInfo}>
+              <span className={styles.itemName}>{brand.name}</span>
+              <span className={styles.itemOrder}>Orden: {brand.order ?? 0}</span>
+              <div 
+                className={styles.itemColorSwatch} 
+                style={{ 
+                  backgroundColor: brand.bgColor || '#ffffff',
+                  backgroundImage: brand.bgImage ? `linear-gradient(${hexToRgba(brand.bgColor, 1 - (brand.bgOpacity ?? 100)/100)}, ${hexToRgba(brand.bgColor, 1 - (brand.bgOpacity ?? 100)/100)}), url(${brand.bgImage})` : 'none',
+                }} 
+                title="Fondo de la marca"
+              />
+            </div>
             <div className={styles.itemActions}>
               <button type="button" className={styles.btnEdit} onClick={() => handleEdit(brand)}>
                 Editar

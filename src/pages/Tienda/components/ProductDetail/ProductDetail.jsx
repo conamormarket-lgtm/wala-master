@@ -14,6 +14,8 @@ import Button from '../../../../components/common/Button';
 import DraggableContainer from '../../../../components/common/DraggableContainer/DraggableContainer';
 import ProductCuestionarioModal from '../ProductCuestionarioModal/ProductCuestionarioModal';
 import OptimizedImage, { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
+import { useQuery } from '@tanstack/react-query';
+import { getBrands } from '../../../../services/brands';
 import styles from './ProductDetail.module.css';
 
 const getCategoryDisplay = (product, categoriesList) => {
@@ -235,6 +237,30 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const [cuestionarioModalTemplate, setCuestionarioModalTemplate] = useState(null);
   const variantSecondsRef = useRef(0);
   const lastVariantIdRef = useRef(null);
+
+  const { data: brandsData } = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => {
+      const res = await getBrands();
+      return res.data;
+    },
+    staleTime: 1000 * 60 * 5, // 5 min cache
+  });
+
+  const productBrand = brandsData?.find(b => b.id === product?.brandId);
+  const brandBgColor = productBrand?.bgColor;
+  const brandBgImage = productBrand?.bgImage;
+  const brandBgOpacity = productBrand?.bgOpacity ?? 100;
+
+  const brandBgStyle = (brandBgColor || brandBgImage) ? {
+    backgroundColor: brandBgColor || 'transparent',
+    backgroundImage: brandBgImage 
+      ? `linear-gradient(rgba(0,0,0,${1 - brandBgOpacity/100}), rgba(0,0,0,${1 - brandBgOpacity/100})), url(${brandBgImage})` 
+      : 'none',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  } : {};
 
   // Precargar todas las imágenes relacionadas al producto
   const allProductUrls = React.useMemo(() => {
@@ -490,7 +516,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   return (
     <>
       <div className={`${styles.container} ${isCombo ? styles.containerCombo : ''}`}>
-        <div className={styles.imageSection}>
+        <div className={styles.imageSection} style={brandBgStyle}>
           <ProductGallery 
             product={product} 
             selectedVariant={selectedVariant}

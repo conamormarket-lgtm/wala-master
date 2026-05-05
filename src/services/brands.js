@@ -18,26 +18,32 @@ export const getBrand = async (id) => {
 
 /**
  * Crear marca (Firestore genera ID)
- * @param {{ name: string, logoUrl?: string, order: number }} data
+ * @param {{ name: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number }} data
  */
 export const createBrand = async (data) => {
   return await createDocument(COLLECTION, {
     name: data.name || '',
     logoUrl: data.logoUrl || '',
-    order: typeof data.order === 'number' ? data.order : 0
+    order: typeof data.order === 'number' ? data.order : 0,
+    bgColor: data.bgColor || '#ffffff',
+    bgImage: data.bgImage || '',
+    bgOpacity: typeof data.bgOpacity === 'number' ? data.bgOpacity : 100
   });
 };
 
 /**
  * Actualizar marca
  * @param {string} id
- * @param {{ name?: string, logoUrl?: string, order?: number }} data
+ * @param {{ name?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number }} data
  */
 export const updateBrand = async (id, data) => {
   const payload = {};
   if (data.name !== undefined) payload.name = data.name;
   if (data.logoUrl !== undefined) payload.logoUrl = data.logoUrl;
   if (data.order !== undefined) payload.order = data.order;
+  if (data.bgColor !== undefined) payload.bgColor = data.bgColor;
+  if (data.bgImage !== undefined) payload.bgImage = data.bgImage;
+  if (data.bgOpacity !== undefined) payload.bgOpacity = data.bgOpacity;
   return await updateDocument(COLLECTION, id, payload);
 };
 

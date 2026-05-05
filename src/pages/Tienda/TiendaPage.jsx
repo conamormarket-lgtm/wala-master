@@ -316,37 +316,8 @@ const TiendaPage = () => {
     }
   };
 
-  // ── HEADER UNIFICADO ──────────────────────────────────────────────
-  const headerSection = displaySections.find(s => s.type === 'header');
-  const displayTitle = headerSection?.settings?.title?.trim() || title;
-  const displaySubtitle = headerSection?.settings?.subtitle?.trim() || subtitle;
-
-  const renderUnifiedHeader = () => (
-    <div className={styles.storeHeader}>
-      <div className={styles.storeHeaderContent}>
-        <div className={styles.storeInfo}>
-          <h1 className={styles.title}>{displayTitle}</h1>
-          <p className={styles.subtitle}>{displaySubtitle}</p>
-        </div>
-        <div className={styles.searchWrap}>
-          <ProductSearch onSearch={handleSearch} />
-        </div>
-      </div>
-
-      <div className={styles.storeNavRow}>
-        <div className={styles.categoryWrap}>
-          <VisualCategoryNav categories={categoriesData} loading={false} />
-        </div>
-        <div className={styles.sortWrap}>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={styles.sortSelect}>
-            <option value="name">Ordenar: A-Z</option>
-            <option value="price">Menor precio</option>
-            <option value="price-desc">Mayor precio</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  );
+  // El header unificado ha sido movido a LegacyTiendaPage.
+  // Esta vista ahora es puramente una Landing Page dinámica.
 
   const { isEditModeActive, updateSectionsDraft } = useVisualEditor();
 
@@ -401,7 +372,6 @@ const TiendaPage = () => {
   if (isConfigLoading && !storefrontConfig) {
     return (
       <div className={styles.container}>
-        {renderUnifiedHeader()}
         <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--gris-texto-secundario)' }}>
           Cargando configuración...
         </div>
@@ -411,7 +381,6 @@ const TiendaPage = () => {
 
   return (
     <div className={styles.container}>
-      {renderUnifiedHeader()}
       {sorted.map((section, index) => (
         <React.Fragment key={section.id}>
           <ModuleInserter index={index} />

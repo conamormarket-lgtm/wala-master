@@ -19,6 +19,7 @@ import './App.css';
 
 // ── Páginas principales y Layout Crítico (Carga Inmediata para evitar efecto Waterfall de Suspense) ──
 import TiendaPage from './pages/Tienda/TiendaPage';
+import LegacyTiendaPage from './pages/LegacyTienda/LegacyTiendaPage';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import BottomNav from './components/common/BottomNav';
@@ -126,7 +127,7 @@ function App() {
                       <Routes>
                         {/* Tienda abierta para todos */}
                         <Route path="/" element={<TiendaPage />} />
-                        <Route path="/tienda" element={<TiendaPage />} />
+                        <Route path="/tienda" element={<LegacyTiendaPage />} />
                         <Route path="/producto/:id" element={<ProductPage />} />
                         <Route path="/personalizar" element={<PersonalizarPage />} />
                         <Route path="/editor/:id" element={<EditorPage />} />
