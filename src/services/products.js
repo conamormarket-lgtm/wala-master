@@ -1,10 +1,19 @@
 import { getCollection, getDocument, getCollectionPaginated, createDocument, updateDocument, deleteDocument } from './firebase/firestore';
 
 const COLLECTION = 'productos_wala';
+const CACHE_VERSION = 'v2'; // Cambiar esto invalida la caché de todos los usuarios
+const CACHE_KEYS = {
+  products: `wala_products_cache_${CACHE_VERSION}`,
+  featured: `wala_featured_cache_${CACHE_VERSION}`,
+  categories: `wala_categories_cache_${CACHE_VERSION}`
+};
 
-/**
- * Obtener todos los productos (solo visibles por defecto para la tienda)
- */
+// Limpiar cachés antiguas para liberar espacio
+try {
+  localStorage.removeItem('conamor_products_cache');
+  localStorage.removeItem('conamor_featured_cache');
+  localStorage.removeItem('conamor_categories_cache');
+} catch(e) {}
 export const getProducts = async (filters = [], orderBy = null, limitCount = null, options = {}) => {
   const { includeHidden = false } = options;
   const result = await getCollection(COLLECTION, filters, orderBy, limitCount);
@@ -14,7 +23,7 @@ export const getProducts = async (filters = [], orderBy = null, limitCount = nul
 
   try {
     if (!includeHidden && (!filters || filters.length === 0) && !orderBy && !limitCount) {
-      localStorage.setItem('conamor_products_cache', JSON.stringify(data));
+      localStorage.setItem(CACHE_KEYS.products, JSON.stringify(data));
     }
   } catch(e) {}
 
@@ -23,7 +32,7 @@ export const getProducts = async (filters = [], orderBy = null, limitCount = nul
 
 export const getCachedProducts = () => {
   try {
-    const cached = localStorage.getItem('conamor_products_cache');
+    const cached = localStorage.getItem(CACHE_KEYS.products);
     if (cached) return JSON.parse(cached);
   } catch(e) {}
   return undefined;
@@ -294,7 +303,7 @@ export const getFeaturedProducts = async () => {
   const data = result.data.filter((p) => p.visible !== false).map((doc) => normalizeProductForRead(doc));
   
   try {
-    localStorage.setItem('conamor_featured_cache', JSON.stringify(data));
+    localStorage.setItem(CACHE_KEYS.featured, JSON.stringify(data));
   } catch(e) {}
 
   return { data, error: null };
@@ -302,7 +311,7 @@ export const getFeaturedProducts = async () => {
 
 export const getCachedFeaturedProducts = () => {
   try {
-    const cached = localStorage.getItem('conamor_featured_cache');
+    const cached = localStorage.getItem(CACHE_KEYS.featured);
     if (cached) return JSON.parse(cached);
   } catch(e) {}
   return undefined;
@@ -310,9 +319,9 @@ export const getCachedFeaturedProducts = () => {
 
 export const clearProductCaches = () => {
   try {
-    localStorage.removeItem('conamor_products_cache');
-    localStorage.removeItem('conamor_featured_cache');
-    localStorage.removeItem('conamor_categories_cache');
+    localStorage.removeItem(CACHE_KEYS.products);
+    localStorage.removeItem(CACHE_KEYS.featured);
+    localStorage.removeItem(CACHE_KEYS.categories);
   } catch(e) {}
 };
 
@@ -352,7 +361,7 @@ export const getCategories = async () => {
   const result = await getCollection('categories', [], { field: 'order', direction: 'asc' });
   if (!result.error && result.data) {
     try {
-      localStorage.setItem('conamor_categories_cache', JSON.stringify(result.data));
+      localStorage.setItem(CACHE_KEYS.categories, JSON.stringify(result.data));
     } catch(e) {}
   }
   return result;
@@ -360,7 +369,7 @@ export const getCategories = async () => {
 
 export const getCachedCategories = () => {
   try {
-    const cached = localStorage.getItem('conamor_categories_cache');
+    const cached = localStorage.getItem(CACHE_KEYS.categories);
     if (cached) return JSON.parse(cached);
   } catch(e) {}
   return undefined;
