@@ -38,6 +38,7 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const PoliticasPrivacidadPage = lazy(() => import('./pages/PoliticasPrivacidadPage'));
+const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
 const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
@@ -181,6 +182,7 @@ function App() {
                         <Route path="/completar-perfil" element={<CompleteProfilePage />} />
                         <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                         <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
+                        <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
                         
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />

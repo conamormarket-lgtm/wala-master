@@ -192,7 +192,8 @@ const Footer = () => {
               { text: 'Crear', url: '/personalizar' },
               { text: 'Mi cuenta', url: '/cuenta' },
               { text: 'Contacto WhatsApp', url: 'https://wa.me/51912881722' },
-              { text: 'Políticas de Privacidad', url: '/politicas-privacidad' }
+              { text: 'Políticas de Privacidad', url: '/politicas-privacidad' },
+              { text: 'Términos y Condiciones', url: '/terminos-y-condiciones' }
             ]}
           ]
         }
