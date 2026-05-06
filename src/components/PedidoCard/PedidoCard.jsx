@@ -10,6 +10,7 @@ import { getEtapaBadgeLabel, ETAPAS_TIMELINE, estadoToKey, getQueueStage } from 
 import { useAuth } from '../../contexts/AuthContext';
 import { showFlyingCoins } from '../../utils/animations';
 import { ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, User, MapPin, Building, Flag, AlertCircle, ShoppingCart } from 'lucide-react';
+import { listFilesInFolder } from '../../services/firebase/storage';
 import styles from './PedidoCard.module.css';
 
 const DEUDA_IMPRESION_MENSAJE = 'STOP... TIENES UNA DEUDA PENDIENTE, POR FAVOR REALIZA TU PAGO PARA QUE TU PEDIDO PUEDA CONTINUAR AVANZANDO';
@@ -21,6 +22,10 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
   const [showDeudaImpresionModal, setShowDeudaImpresionModal] = useState(false);
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [showHistorialModal, setShowHistorialModal] = useState(false);
+  const [showBoletaModal, setShowBoletaModal] = useState(false);
+  const [boletas, setBoletas] = useState([]);
+  const [loadingBoletas, setLoadingBoletas] = useState(false);
+  const [boletaError, setBoletaError] = useState(null);
   const [claimingCoins, setClaimingCoins] = useState(false);
 
   const completedEstados = ['finalizado', 'entregado', 'completado'];
@@ -82,6 +87,22 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
     baseText = baseText.replace('{id}', pedido.id).replace('{monto}', pedido.montoDeuda ?? '0.00');
     const link = `https://wa.me/${num.replace('+', '')}?text=${encodeURIComponent(baseText)}`;
     window.open(link, '_blank');
+  };
+
+  const handleVerBoleta = async (e) => {
+    e.stopPropagation();
+    setShowBoletaModal(true);
+    if (boletas.length === 0) {
+      setLoadingBoletas(true);
+      setBoletaError(null);
+      const { urls, error } = await listFilesInFolder(`00${pedido.id}`);
+      setLoadingBoletas(false);
+      if (error) {
+        setBoletaError(error);
+      } else {
+        setBoletas(urls);
+      }
+    }
   };
 
   const toggleExpanded = () => {
@@ -253,6 +274,15 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
                 </button>
              </div>
           )}
+          <div style={{ gridColumn: '1 / -1', textAlign: 'right', marginTop: '-0.5rem' }}>
+              <button 
+                className={styles.verPagosBtn} 
+                style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem', border: 'none', textDecoration: 'underline', color: '#3b82f6', background: 'transparent', display: 'inline-flex', alignItems: 'center', gap: '4px', float: 'right' }} 
+                onClick={handleVerBoleta}
+              >
+                📄 Ver Boleta / Recibos
+              </button>
+          </div>
         </div>
 
         {/* SECCIÓN B: NOTAS */}
@@ -356,6 +386,33 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
                    🚀 Enviar comprobante por WhatsApp
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showBoletaModal}
+        title={`Boleta del Pedido #${pedido.id}`}
+        onClose={() => setShowBoletaModal(false)}
+      >
+        <div style={{ padding: '1rem', textAlign: 'center' }}>
+          {loadingBoletas ? (
+            <p style={{ color: '#666' }}>Buscando boletas...</p>
+          ) : boletaError ? (
+            <p style={{ color: '#ef4444' }}>Error al cargar boletas.</p>
+          ) : boletas.length === 0 ? (
+            <div style={{ color: '#666', padding: '2rem 0' }}>
+              <span style={{ fontSize: '3rem', opacity: 0.2, margin: '0 auto 1rem', display: 'block' }}>📄</span>
+              <p>Aún no hay boletas adjuntas a este pedido.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {boletas.map((url, index) => (
+                <div key={index} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <img src={url} alt={`Boleta ${index + 1}`} style={{ width: '100%', height: 'auto', display: 'block' }} />
+                </div>
+              ))}
             </div>
           )}
         </div>

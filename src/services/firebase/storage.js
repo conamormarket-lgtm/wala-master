@@ -1,4 +1,4 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
 import { storage } from './config';
 
 // Verificar si Storage está disponible
@@ -115,5 +115,24 @@ export const getFileURL = async (path) => {
     return { url, error: null };
   } catch (error) {
     return { url: null, error: error.message };
+  }
+};
+
+/**
+ * Obtener todos los archivos de una carpeta (ej. para boletas)
+ */
+export const listFilesInFolder = async (folderPath) => {
+  if (!isStorageAvailable()) {
+    return { urls: [], error: null };
+  }
+  try {
+    const folderRef = ref(storage, folderPath);
+    const result = await listAll(folderRef);
+    const urlPromises = result.items.map(itemRef => getDownloadURL(itemRef));
+    const urls = await Promise.all(urlPromises);
+    return { urls, error: null };
+  } catch (error) {
+    // Si la carpeta no existe o no hay acceso, firebase lanza un error
+    return { urls: [], error: error.message };
   }
 };

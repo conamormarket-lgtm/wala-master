@@ -283,11 +283,19 @@ export async function generateThumbnailWithDesign(baseImageUrl, layers = [], opt
     targetW = options.forceWidth;
     targetH = options.forceHeight;
   } else {
-    // TODOS los ítems de combo se renderizan forzando el layout aspect-ratio de 4/5.
-    // Usamos esto consistentemente para asegurar simetría matemática perfecta 1:1 en las miniaturas finales.
+    // Si la primera capa tiene baseW y baseH (del editor), usar esas proporciones exactas.
+    // De lo contrario, mantener el aspect ratio original de la imagen base.
+    const firstLayer = preValidLayers.find(l => l && l.baseW && l.baseH);
     const maxWidth = options.maxWidth && options.maxWidth > 0 ? options.maxWidth : 600;
     targetW = maxWidth;
-    targetH = Math.round(targetW / 0.8); // 0.8 = 4/5 ratio -> Altura es 1.25x Ancho (p.ej. 600x750)
+    
+    if (firstLayer && firstLayer.baseW && firstLayer.baseH) {
+      const editorRatio = firstLayer.baseH / firstLayer.baseW;
+      targetH = Math.round(targetW * editorRatio);
+    } else {
+      const originalRatio = h / w;
+      targetH = Math.round(targetW * originalRatio);
+    }
   }
 
   const canvasEl = document.createElement('canvas');

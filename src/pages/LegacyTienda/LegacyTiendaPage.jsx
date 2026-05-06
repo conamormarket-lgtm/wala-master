@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 
 import ProductGrid from '../Tienda/components/ProductGrid';
-import VisualCategoryNav from '../Tienda/components/VisualCategoryNav/VisualCategoryNav';
 import ProductSearch from '../Tienda/components/ProductSearch';
 
 import {
@@ -100,30 +99,54 @@ const LegacyTiendaPage = () => {
             <ProductSearch onSearch={handleSearch} />
           </div>
         </div>
-
-        <div className={styles.storeNavRow}>
-          <div className={styles.categoryWrap}>
-            <VisualCategoryNav categories={categoriesData} loading={false} />
-          </div>
-          <div className={styles.sortWrap}>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={styles.sortSelect}>
-              <option value="name">Ordenar: A-Z</option>
-              <option value="price">Menor precio</option>
-              <option value="price-desc">Mayor precio</option>
-            </select>
-          </div>
-        </div>
       </div>
 
-      <section className={styles.sectionBlock}>
-        <ProductGrid
-          products={productsData || []}
-          loading={productsLoading}
-          error={productsError?.message}
-          emptyMessage={emptyMessage}
-          categories={categoriesData}
-        />
-      </section>
+      <div className={styles.pageLayout}>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarSection}>
+            <h3 className={styles.sidebarTitle}>Categorías</h3>
+            <ul className={styles.categoryList}>
+              <li>
+                <Link to="/tienda" className={!categoryId ? styles.activeCat : ''}>
+                  Todas
+                </Link>
+              </li>
+              {categoriesData?.map(c => (
+                <li key={c.id}>
+                  <Link to={`/tienda?categoria=${c.id}`} className={categoryId === c.id ? styles.activeCat : ''}>
+                    {c.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+
+        <main className={styles.mainContent}>
+          <div className={styles.topBar}>
+            <span className={styles.resultsCount}>
+              {productsData ? productsData.length : 0} resultados
+            </span>
+            <div className={styles.sortWrap}>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={styles.sortSelect}>
+                <option value="name">Ordenar: A-Z</option>
+                <option value="price">Menor precio</option>
+                <option value="price-desc">Mayor precio</option>
+              </select>
+            </div>
+          </div>
+
+          <section className={styles.sectionBlock}>
+            <ProductGrid
+              products={productsData || []}
+              loading={productsLoading}
+              error={productsError?.message}
+              emptyMessage={emptyMessage}
+              categories={categoriesData}
+            />
+          </section>
+        </main>
+      </div>
     </div>
   );
 };

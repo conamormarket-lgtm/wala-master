@@ -117,7 +117,7 @@ const AdminProductoFormV2 = () => {
   useEffect(() => {
     if (mode === 'mockup' && fabricCanvas && baseImage) {
       fabric.Image.fromURL(baseImage, (img) => {
-        const scale = Math.max(400 / img.width, 533 / img.height); // Cover scale
+        const scale = Math.min(400 / img.width, 533 / img.height); // Contain scale
         img.set({
           originX: 'center',
           originY: 'center',
@@ -203,7 +203,7 @@ const AdminProductoFormV2 = () => {
   const handleDrop = (e, targetIdx) => {
     e.preventDefault();
     if (draggedIdx === null || draggedIdx === targetIdx) return;
-    
+
     setForm(f => {
       const newImages = [...f.images];
       const [draggedImg] = newImages.splice(draggedIdx, 1);
@@ -518,8 +518,8 @@ const AdminProductoFormV2 = () => {
 
             <div className={styles.galleryGrid}>
               {form.images.map((img, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className={`${styles.galleryItem} ${draggedIdx === idx ? styles.galleryItemDragging : ''}`}
                   draggable
                   onDragStart={(e) => handleDragStart(e, idx)}
