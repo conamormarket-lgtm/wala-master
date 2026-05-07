@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import ProductGrid from './components/ProductGrid';
@@ -178,6 +179,8 @@ const TiendaPage = () => {
 
   // ── RENDERIZADO PROGRESIVO ────────────────────────────────────────
 
+  let emptyMessageShown = false;
+
   const renderSection = (section) => {
     const s = section.settings || {};
     switch (section.type) {
@@ -266,13 +269,19 @@ const TiendaPage = () => {
             <BestSellersRow cards={s.cards} />
           </section>
         );
-      case 'featured_products':
+      case 'featured_products': {
+        const isEmpty = !featuredProducts || featuredProducts.length === 0;
+        if (isEmpty) {
+          if (emptyMessageShown) return null;
+          emptyMessageShown = true;
+        }
         return (
           <section key={section.id} className={styles.featuredSection}>
-            {s.title && <h2 className={styles.featuredTitle}>{s.title}</h2>}
-            <ProductGrid products={featuredProducts} loading={false} error={null} categories={categoriesData} />
+            {(!isEmpty && s.title) && <h2 className={styles.featuredTitle}>{s.title}</h2>}
+            <ProductGrid products={featuredProducts} loading={false} error={null} categories={categoriesData} emptyMessage={emptyMessage} />
           </section>
         );
+      }
       case 'collection_carousel':
         return (
           <section key={section.id} className={styles.sectionBlock}>
@@ -283,10 +292,15 @@ const TiendaPage = () => {
             />
           </section>
         );
-      case 'product_grid':
+      case 'product_grid': {
+        const isEmpty = !productsLoading && (!productsData || productsData.length === 0);
+        if (isEmpty) {
+          if (emptyMessageShown) return null;
+          emptyMessageShown = true;
+        }
         return (
           <section key={section.id} className={styles.sectionBlock}>
-            {s.title && <h2 className={styles.featuredTitle}>{s.title}</h2>}
+            {(!isEmpty && s.title) && <h2 className={styles.featuredTitle}>{s.title}</h2>}
             <ProductGrid
               products={productsData || []}
               loading={productsLoading}
@@ -297,7 +311,13 @@ const TiendaPage = () => {
             />
           </section>
         );
-      case 'sidebar_catalog':
+      }
+      case 'sidebar_catalog': {
+        const isEmpty = !productsLoading && (!productsData || productsData.length === 0);
+        if (isEmpty) {
+          if (emptyMessageShown) return null;
+          emptyMessageShown = true;
+        }
         return (
           <section key={section.id} className={styles.sectionBlock}>
             <SidebarCatalogLayout 
@@ -307,10 +327,11 @@ const TiendaPage = () => {
               emptyMessage={emptyMessage}
               categories={categoriesData}
               layoutConfig={storeConfig?.layout}
-              title={s.title}
+              title={(!isEmpty && s.title) ? s.title : undefined}
             />
           </section>
         );
+      }
       default:
         return null;
     }
@@ -344,13 +365,15 @@ const TiendaPage = () => {
         <div className={styles.inserterLine}></div>
         <div className={styles.inserterContent}>
           <button 
-            className={styles.inserterBtn} 
+            className={`${styles.inserterBtn} ${isOpen ? styles.active : ''}`} 
             title="Añadir Módulo Aquí"
             onClick={() => setIsOpen(!isOpen)}
-          >+</button>
+          >
+            <Plus size={20} strokeWidth={1.5} />
+          </button>
           {isOpen && (
             <div className={styles.inserterMenuVisible}>
-              <p>Insertar módulo:</p>
+              <p style={{fontSize: '0.8rem', color: '#64748b', margin: '0 0 10px 0', fontWeight: '600'}}>Añadir módulo nuevo:</p>
               <div className={styles.inserterOptions}>
                 <button onClick={() => handleInsert('hero_banner')}>Banner Principal</button>
                 <button onClick={() => handleInsert('bestsellers_row')}>Lo Más Vendido (Fila 5)</button>

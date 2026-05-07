@@ -27,6 +27,8 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
   const [loadingBoletas, setLoadingBoletas] = useState(false);
   const [boletaError, setBoletaError] = useState(null);
   const [claimingCoins, setClaimingCoins] = useState(false);
+  const [boletasEnvio, setBoletasEnvio] = useState(null);
+  const [loadingBoletasEnvio, setLoadingBoletasEnvio] = useState(false);
 
   const completedEstados = ['finalizado', 'entregado', 'completado'];
   const isCompleted = completedEstados.includes(estadoToKey(pedido.estadoGeneral));
@@ -111,6 +113,30 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
     if (nextExpanded && estadoToKey(pedido.estadoGeneral) === 'impresion' && pedido.conDeuda) {
       setShowDeudaImpresionModal(true);
     }
+    if (nextExpanded && boletasEnvio === null) {
+      fetchBoletasEnvio();
+    }
+  };
+
+  const fetchBoletasEnvio = async () => {
+    setLoadingBoletasEnvio(true);
+
+    // 1. Priorizar lectura rápida desde Firestore (según boletas_envio_storage.md)
+    if (pedido.reparto?.boletasEnvio && Array.isArray(pedido.reparto.boletasEnvio) && pedido.reparto.boletasEnvio.length > 0) {
+      const urlsFromFirestore = pedido.reparto.boletasEnvio.map(b => b.url || b);
+      setBoletasEnvio(urlsFromFirestore);
+      setLoadingBoletasEnvio(false);
+      return;
+    }
+
+    // 2. Fallback: buscar en Storage directamente (para compatibilidad con datos legacy)
+    let { urls, error } = await listFilesInFolder(`boletas_envio/00${pedido.id}`);
+    if (error || urls.length === 0) {
+      const fallback = await listFilesInFolder(`boletas_envio/${pedido.id}`);
+      urls = fallback.urls || [];
+    }
+    setBoletasEnvio(urls);
+    setLoadingBoletasEnvio(false);
   };
 
   const badgeLabel = getEtapaBadgeLabel(pedido.estadoGeneral);
@@ -283,6 +309,22 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
                 📄 Ver Boleta / Recibos
               </button>
           </div>
+        </div>
+
+        {/* SECCIÓN E: BOLETAS DE ENVÍO */}
+        <div className={styles.sectionDivider} />
+        <div className={styles.sectionTitle}><ShoppingCart size={16}/> Foto de Boletas (Envío)</div>
+        <div style={{ padding: '0 1rem', marginBottom: '1rem' }}>
+          {loadingBoletasEnvio ? (
+            <p style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>Buscando fotos de boletas...</p>
+          ) : (boletasEnvio && boletasEnvio.length > 0) ? (
+            <ImageGallery 
+              images={boletasEnvio} 
+              onImageClick={(index) => onImageClick(boletasEnvio, index)}
+            />
+          ) : (
+            <p style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>Aún no hay boletas adjuntas.</p>
+          )}
         </div>
 
         {/* SECCIÓN B: NOTAS */}

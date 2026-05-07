@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import styles from './AdminBar.module.css';
+import { Settings, Save, Eye, Edit2 } from 'lucide-react';
 
 const AdminBar = () => {
   const { isAdmin } = useAuth();
@@ -33,7 +34,7 @@ const AdminBar = () => {
     <div className={styles.adminBar}>
       <div className={styles.adminBarContainer}>
         <div className={styles.adminInfo}>
-          <span className={styles.icon}>🛠️</span>
+          <span className={styles.icon} style={{ display: 'flex', alignItems: 'center' }}><Settings size={16} strokeWidth={1.5} /></span>
           <span className={styles.text}>Modo Administrador Activo</span>
         </div>
         <div className={styles.adminActions}>
@@ -41,12 +42,13 @@ const AdminBar = () => {
             <button 
               onClick={toggleEditMode} 
               className={`${styles.editButton} ${isEditModeActive ? styles.activeEdit : ''}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              {isEditModeActive ? '✅ Guardar / Salir' : '👁️‍🗨️ Activar Editor Visual'}
+              {isEditModeActive ? <><Save size={16} strokeWidth={1.5} /> Guardar / Salir</> : <><Eye size={16} strokeWidth={1.5} /> Activar Editor Visual</>}
             </button>
           ) : (
-            <Link to={editLink} className={styles.editButton}>
-              ✏️ {editText}
+            <Link to={editLink} className={styles.editButton} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Edit2 size={16} strokeWidth={1.5} /> {editText}
             </Link>
           )}
         </div>

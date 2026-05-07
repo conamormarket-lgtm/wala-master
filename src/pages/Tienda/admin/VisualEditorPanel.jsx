@@ -7,7 +7,7 @@ import { saveLandingPage } from '../services/landingPages';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { SECTION_TYPES, getDefaultSettings } from '../services/storefront';
 import styles from '../../../components/admin/VisualEditorPanel.module.css';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft, GripVertical, Save, X, LayoutTemplate, PanelLeft, Monitor, PanelRight } from 'lucide-react';
 
 const VisualEditorPanel = () => {
   const { 
@@ -84,7 +84,7 @@ const VisualEditorPanel = () => {
         
         <div className={styles.sectionList}>
           {/* HEADER (Global) */}
-          {activePageId !== 'footer' && (
+          {(activePageId === 'home' || activePageId === 'tienda') && activePageId !== 'footer' && (
             <div className={styles.linkSummaryBox} style={{ borderLeft: '4px solid #8b5cf6', background: '#f8f5ff', marginBottom: '15px', flexDirection: 'column', alignItems: 'stretch', padding: '12px', opacity: !isHeaderVisible ? 0.6 : 1 }}>
               <div style={{marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
                 <div>
@@ -119,7 +119,28 @@ const VisualEditorPanel = () => {
           )}
 
           {/* DYNAMIC SECTIONS */}
-          {sections.length === 0 && <p style={{textAlign: 'center', color: '#888', margin: '20px 0'}}>No hay módulos en el cuerpo de esta página.</p>}
+          {sections.length === 0 && (
+            <div style={{textAlign: 'center', margin: '20px 0', padding: '20px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1'}}>
+              <p style={{color: '#64748b', marginBottom: '15px', fontSize: '0.9rem'}}>Crea tu página arrastrando módulos o inicia rápido con una base.</p>
+              <button 
+                onClick={() => {
+                  const newSections = [
+                    { id: `section_${Date.now()}_1`, type: 'hero_banner', order: 0, settings: getDefaultSettings('hero_banner') },
+                    { id: `section_${Date.now()}_2`, type: 'text_block', order: 1, settings: getDefaultSettings('text_block') }
+                  ];
+                  if (newSections[0].settings) {
+                    newSections[0].settings.title = "¡Gran Oferta Especial!";
+                    newSections[0].settings.subtitle = "Descripción corta para atrapar a tu cliente.";
+                    newSections[0].settings.buttonText = "Comprar Ahora";
+                  }
+                  updateSectionsDraft(newSections);
+                }}
+                style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                <LayoutTemplate size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Cargar Plantilla de Landing
+              </button>
+            </div>
+          )}
           {sections.sort((a,b) => (a.order||0) - (b.order||0)).map((section, index) => {
             const typeLabel = SECTION_TYPES.find(t => t.id === section.type)?.label || section.type;
             return (
@@ -131,17 +152,17 @@ const VisualEditorPanel = () => {
                   )}
                 </div>
                 <div className={styles.linkSummaryActions}>
-                  <button onClick={() => moveSection(index, 'up')} disabled={index === 0} title="Mover Arriba">↑</button>
-                  <button onClick={() => moveSection(index, 'down')} disabled={index === sections.length - 1} title="Mover Abajo">↓</button>
-                  <button onClick={() => openEditorForSection(section.id, storeConfigDraft)} title="Editar Configuración">✏️</button>
-                  <button onClick={() => removeSection(index)} className={styles.removeBtn} title="Eliminar">✖</button>
+                  <button onClick={() => moveSection(index, 'up')} disabled={index === 0} title="Mover Arriba"><ChevronUp size={16} strokeWidth={1.5} /></button>
+                  <button onClick={() => moveSection(index, 'down')} disabled={index === sections.length - 1} title="Mover Abajo"><ChevronDown size={16} strokeWidth={1.5} /></button>
+                  <button onClick={() => openEditorForSection(section.id, storeConfigDraft)} title="Editar Configuración"><Settings2 size={16} strokeWidth={1.5} /></button>
+                  <button onClick={() => removeSection(index)} className={styles.removeBtn} title="Eliminar"><Trash2 size={16} strokeWidth={1.5} /></button>
                 </div>
               </div>
             );
           })}
 
           {/* FOOTER (Global) */}
-          {activePageId !== 'footer' && (
+          {(activePageId === 'home' || activePageId === 'tienda') && activePageId !== 'footer' && (
             <div className={styles.linkSummaryBox} style={{ borderLeft: '4px solid #8b5cf6', background: '#f8f5ff', marginTop: '15px', opacity: !isFooterVisible ? 0.6 : 1 }}>
               <div style={{flex: 1}}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
@@ -175,17 +196,18 @@ const VisualEditorPanel = () => {
                   closeEditor();
                   // Forzamos recarga para que tome el contexto
                   window.location.href = '/tienda?t=preview';
-                }} title="Editar Diseño del Footer Global" style={{ opacity: !isFooterVisible ? 0.5 : 1 }}>✏️</button>
+                }} title="Editar Diseño del Footer Global" style={{ opacity: !isFooterVisible ? 0.5 : 1 }}><Settings2 size={16} strokeWidth={1.5} /></button>
               </div>
             </div>
           )}
         </div>
 
-        <div style={{marginTop: '2rem', borderTop: '1px solid #eee', paddingTop: '1rem'}}>
-          <h4>+ Añadir Módulo</h4>
+        <div className={styles.formGroup} style={{marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', paddingBottom: '1rem'}}>
+          <label style={{ display: 'flex', alignItems: 'center', color: '#0f172a', fontWeight: '600', fontSize: '0.95rem', marginBottom: '0.5rem', marginTop: 0 }}>
+            <Plus size={16} strokeWidth={2} style={{marginRight: 6, color: '#8b5cf6'}} /> Añadir Nuevo Módulo
+          </label>
           <select 
             className={styles.typeSelect} 
-            style={{width: '100%', padding: '8px', marginBottom: '10px'}}
             onChange={(e) => {
               if (e.target.value) {
                 addSection(e.target.value);
@@ -219,7 +241,7 @@ const VisualEditorPanel = () => {
         return (
           <div className={styles.formGroup}>
             <button className={styles.backBtn} onClick={() => closeEditor()}>
-              ← Volver a los Módulos
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
             </button>
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
               Editando: Pie de Página (Columnas)
@@ -250,7 +272,7 @@ const VisualEditorPanel = () => {
                       updateSectionsDraft(newSections);
                     }}
                     style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
-                  >✖</button>
+                  ><Trash2 size={16} strokeWidth={1.5} /></button>
                 </div>
 
                 <select 
@@ -346,7 +368,7 @@ const VisualEditorPanel = () => {
                             }}
                             style={{marginLeft: 'auto', background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1rem', padding: '0 5px'}}
                             title="Eliminar enlace"
-                          >✖</button>
+                          ><Trash2 size={16} strokeWidth={1.5} /></button>
                         </div>
                       </div>
                     ))}
@@ -360,7 +382,7 @@ const VisualEditorPanel = () => {
                         updateSectionsDraft(newSections);
                       }}
                       style={{background: '#eee', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', marginTop: '5px'}}
-                    >+ Añadir Enlace</button>
+                    ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Enlace</button>
                   </div>
                 )}
               </div>
@@ -376,7 +398,7 @@ const VisualEditorPanel = () => {
                 updateSectionsDraft(newSections);
               }}
               style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer'}}
-            >+ Añadir Columna</button>
+            ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Columna</button>
           </div>
         );
       }
@@ -386,7 +408,7 @@ const VisualEditorPanel = () => {
         return (
           <div className={styles.formGroup}>
             <button className={styles.backBtn} onClick={() => closeEditor()}>
-              ← Volver a los Módulos
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
             </button>
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
               Editando: Barra de Anuncios Superior
@@ -461,7 +483,7 @@ const VisualEditorPanel = () => {
                       updateSectionsDraft(newSections);
                     }}
                     style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
-                  >✖</button>
+                  ><Trash2 size={16} strokeWidth={1.5} /></button>
                 </div>
 
                 <label>Texto del anuncio</label>
@@ -576,7 +598,7 @@ const VisualEditorPanel = () => {
                 updateSectionsDraft(newSections);
               }}
               style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer'}}
-            >+ Añadir Mensaje</button>
+            ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Mensaje</button>
           </div>
         );
       }
@@ -586,7 +608,7 @@ const VisualEditorPanel = () => {
         return (
           <div className={styles.formGroup}>
             <button className={styles.backBtn} onClick={() => closeEditor()}>
-              ← Volver a los Módulos
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
             </button>
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
               Editando: Carrusel de Logos / Marcas
@@ -618,7 +640,7 @@ const VisualEditorPanel = () => {
                       updateSectionsDraft(newSections);
                     }}
                     style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
-                  >✖</button>
+                  ><Trash2 size={16} strokeWidth={1.5} /></button>
                 </div>
 
                 <label>Nombre de la Marca (Texto debajo)</label>
@@ -671,7 +693,7 @@ const VisualEditorPanel = () => {
                 updateSectionsDraft(newSections);
               }}
               style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer'}}
-            >+ Añadir Marca</button>
+            ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Marca</button>
           </div>
         );
       }
@@ -681,7 +703,7 @@ const VisualEditorPanel = () => {
         return (
           <div className={styles.formGroup}>
             <button className={styles.backBtn} onClick={() => closeEditor()}>
-              ← Volver a los Módulos
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
             </button>
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
               Editando: Lo Más Vendido (Fila de 5)
@@ -703,7 +725,7 @@ const VisualEditorPanel = () => {
                       updateSectionsDraft(newSections);
                     }}
                     style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
-                  >✖</button>
+                  ><Trash2 size={16} strokeWidth={1.5} /></button>
                 </div>
 
                 <label>Título (Encima de la foto)</label>
@@ -769,7 +791,7 @@ const VisualEditorPanel = () => {
                   updateSectionsDraft(newSections);
                 }}
                 style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer'}}
-              >+ Añadir Tarjeta (Máx 5)</button>
+              ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Tarjeta (Máx 5)</button>
             )}
           </div>
         );
@@ -780,7 +802,7 @@ const VisualEditorPanel = () => {
         return (
           <div className={styles.formGroup}>
             <button className={styles.backBtn} onClick={() => closeEditor()}>
-              ← Volver a los Módulos
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
             </button>
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
               Editando: Banner Principal (Hero)
@@ -905,7 +927,7 @@ const VisualEditorPanel = () => {
 
         <div className={styles.formGroup}>
           <button className={styles.backBtn} onClick={() => closeEditor()}>
-            ← Volver a los Módulos
+            <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
           </button>
           <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
             Editando: {SECTION_TYPES.find(t => t.id === section.type)?.label || section.type}
@@ -1044,7 +1066,7 @@ const VisualEditorPanel = () => {
       return (
         <div className={styles.formGroup}>
           <button className={styles.backBtn} onClick={() => closeEditor()}>
-            ← Volver a los Módulos
+            <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
           </button>
           <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
             Editando: Pop-up de Favoritos
@@ -1108,10 +1130,10 @@ const VisualEditorPanel = () => {
       <div className={styles.header}>
         <h3>{activeSection ? `Editando: ${activeSection}` : 'Page Builder (Layout)'}</h3>
         <div className={styles.controls}>
-          <button onClick={() => setEditorPosition('left')} title="Izquierda">⬅️</button>
-          <button onClick={() => setEditorPosition('floating')} title="Flotante">🪟</button>
-          <button onClick={() => setEditorPosition('right')} title="Derecha">➡️</button>
-          <button onClick={closeEditor} title="Cerrar">✖️</button>
+          <button onClick={() => setEditorPosition('left')} title="Anclar a la Izquierda"><PanelLeft size={16} strokeWidth={1.5} /></button>
+          <button onClick={() => setEditorPosition('floating')} title="Modo Flotante"><Monitor size={16} strokeWidth={1.5} /></button>
+          <button onClick={() => setEditorPosition('right')} title="Anclar a la Derecha"><PanelRight size={16} strokeWidth={1.5} /></button>
+          <button onClick={closeEditor} title="Cerrar Panel"><X size={16} strokeWidth={1.5} /></button>
         </div>
       </div>
       
@@ -1163,19 +1185,19 @@ const HeaderEditor = ({ navLinks, onChange }) => {
               {link.text}
             </span>
             <div className={styles.linkSummaryActions}>
-              <span className={styles.editIcon}>✏️</span>
+              <span className={styles.editIcon}><Settings2 size={16} strokeWidth={1.5} /></span>
               <button 
                 onClick={(e) => { e.stopPropagation(); removeLink(index); }} 
                 className={styles.removeBtn}
                 title="Eliminar botón"
               >
-                ✖
+                <Trash2 size={16} strokeWidth={1.5} />
               </button>
             </div>
           </div>
         ))}
         <Button variant="secondary" onClick={addLink} style={{width: '100%', marginTop: '1rem', borderStyle: 'dashed'}}>
-          + Añadir Nuevo Botón
+          <Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Nuevo Botón
         </Button>
       </div>
     );
@@ -1190,7 +1212,7 @@ const HeaderEditor = ({ navLinks, onChange }) => {
   return (
     <div className={styles.headerEditor}>
       <button className={styles.backBtn} onClick={() => setActiveIndex(null)}>
-        ← Volver a la lista
+        <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a la lista
       </button>
 
       <div className={styles.linkEditorBox}>
@@ -1349,7 +1371,7 @@ const HeaderEditor = ({ navLinks, onChange }) => {
                       }}
                       style={{width: '10%', background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
                     >
-                      ✖
+                      <Trash2 size={16} strokeWidth={1.5} />
                     </button>
                   </div>
                 ))}
@@ -1361,7 +1383,7 @@ const HeaderEditor = ({ navLinks, onChange }) => {
                   }}
                   style={{fontSize: '0.8rem', padding: '0.4rem 0.8rem', marginTop: '5px'}}
                 >
-                  + Añadir sub-enlace
+                  <Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir sub-enlace
                 </Button>
               </div>
             )}
@@ -1468,7 +1490,7 @@ const AccountPopupEditor = ({ config, onChange }) => {
               className={styles.removeBtn}
               style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
               title="Eliminar marca"
-            >✖</button>
+            ><Trash2 size={16} strokeWidth={1.5} /></button>
           </div>
           
           <div className={styles.formGroup}>
@@ -1506,7 +1528,7 @@ const AccountPopupEditor = ({ config, onChange }) => {
       ))}
 
       <Button variant="secondary" onClick={addBrand} style={{width: '100%', borderStyle: 'dashed'}}>
-        + Añadir Marca / Botón
+        <Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Marca / Botón
       </Button>
     </div>
   );

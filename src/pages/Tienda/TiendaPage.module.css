@@ -33,3 +33,99 @@
   margin: 1rem auto 0;
   border-radius: 2px;
 }
+
+/* Module Inserter Styles */
+.moduleInserterWrapper {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  margin: -10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.moduleInserterWrapper:hover,
+.moduleInserterWrapper:focus-within {
+  opacity: 1;
+}
+
+.inserterLine {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background-color: #8b5cf6;
+  opacity: 0.5;
+}
+
+.inserterContent {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.inserterBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 2;
+}
+
+.inserterBtn:hover,
+.inserterBtn.active {
+  transform: scale(1.15);
+  box-shadow: 0 6px 14px rgba(139, 92, 246, 0.4);
+}
+
+.inserterMenuVisible {
+  position: absolute;
+  top: 100%;
+  margin-top: 10px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  width: 260px;
+  z-index: 10;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.inserterOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inserterOptions button {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.inserterOptions button:hover {
+  background-color: #f8fafc;
+  color: #8b5cf6;
+  padding-left: 16px;
+}
