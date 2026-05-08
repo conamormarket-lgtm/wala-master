@@ -603,6 +603,254 @@ const VisualEditorPanel = () => {
         );
       }
 
+      if (section.type === 'testimonials') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: Testimonios / Opiniones
+            </h4>
+
+            <label>Título de la Sección</label>
+            <input 
+              type="text" 
+              value={s.title || ''} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.title = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            />
+
+            <h5 style={{marginBottom: '10px'}}>Testimonios</h5>
+            {(s.testimonials || []).map((testim, index) => (
+              <div key={index} style={{background: '#f9f9f9', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #eee'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+                  <strong>Testimonio {index + 1}</strong>
+                  <button 
+                    onClick={() => {
+                      const newSections = [...storeConfigDraft.sections];
+                      newSections[dynamicSectionIndex].settings.testimonials.splice(index, 1);
+                      updateSectionsDraft(newSections);
+                    }}
+                    style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
+                  ><Trash2 size={16} strokeWidth={1.5} /></button>
+                </div>
+
+                <label>Nombre del Autor</label>
+                <input 
+                  type="text" 
+                  value={testim.author || ''} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.testimonials[index].author = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                />
+
+                <label>Texto / Opinión</label>
+                <textarea 
+                  value={testim.text || ''} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.testimonials[index].text = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px', minHeight: '60px', fontFamily: 'inherit'}}
+                />
+
+                <label>Calificación (Estrellas 1-5)</label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="5" 
+                  value={testim.rating || 5} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.testimonials[index].rating = Number(e.target.value);
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                />
+              </div>
+            ))}
+
+            <button 
+              onClick={() => {
+                const newSections = [...storeConfigDraft.sections];
+                if (!newSections[dynamicSectionIndex].settings.testimonials) {
+                  newSections[dynamicSectionIndex].settings.testimonials = [];
+                }
+                newSections[dynamicSectionIndex].settings.testimonials.push({ author: 'Nuevo Autor', text: 'Me encantó este producto.', rating: 5 });
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer'}}
+            ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Testimonio</button>
+          </div>
+        );
+      }
+
+      if (section.type === 'video') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: Video Promocional
+            </h4>
+
+            <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '1rem'}}>
+              Pega un enlace directo de YouTube o la URL de un archivo MP4. El reproductor se adaptará automáticamente a pantalla completa.
+            </p>
+
+            <label>URL del Video (YouTube o MP4)</label>
+            <input 
+              type="text" 
+              placeholder="Ej: https://www.youtube.com/watch?v=..."
+              value={s.url || ''} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.url = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            />
+
+            <label>Relación de Aspecto (Formato)</label>
+            <select 
+              value={s.aspectRatio || '16:9'} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.aspectRatio = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            >
+              <option value="16:9">Horizontal Clásico (16:9)</option>
+              <option value="9:16">Vertical / Shorts / TikTok (9:16)</option>
+              <option value="1:1">Cuadrado (1:1)</option>
+              <option value="auto">Automático (Solo MP4 nativo)</option>
+            </select>
+
+            <label>URL de la Portada (Opcional, solo para MP4)</label>
+            <input 
+              type="text" 
+              placeholder="https://..."
+              value={s.poster || ''} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.poster = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            />
+          </div>
+        );
+      }
+
+      if (section.type === 'map_location') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: Ubicación / Mapa
+            </h4>
+
+            <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '1rem'}}>
+              Pega el HTML "Insertar un mapa" de Google Maps y personaliza el texto de la tienda.
+            </p>
+
+            <h5 style={{marginBottom: '10px'}}>1. Google Maps</h5>
+            <label>Código HTML (Embed) o URL</label>
+            <textarea 
+              placeholder='Ej: <iframe src="https://www.google.com/maps/embed?..." ...></iframe>'
+              value={s.embedUrl || ''} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.embedUrl = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px', minHeight: '80px', fontFamily: 'monospace', fontSize: '12px'}}
+            />
+
+            <h5 style={{marginBottom: '10px'}}>2. Texto Adicional</h5>
+            <label>Título</label>
+            <input 
+              type="text" 
+              value={s.title || ''} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.title = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+            />
+            <label>Descripción / Dirección</label>
+            <textarea 
+              value={s.description || ''} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.description = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px', minHeight: '60px', fontFamily: 'inherit'}}
+            />
+
+            <h5 style={{marginBottom: '10px', marginTop: '10px'}}>3. Diseño y Tamaño (Flexbox)</h5>
+            
+            <label>Posición del Mapa respecto al Texto</label>
+            <select 
+              value={s.layout || 'mapRight'} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.layout = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+            >
+              <option value="mapRight">Texto a la Izquierda, Mapa a la Derecha</option>
+              <option value="mapLeft">Mapa a la Izquierda, Texto a la Derecha</option>
+              <option value="mapTop">Mapa Arriba, Texto Abajo (Apilados)</option>
+              <option value="mapBottom">Texto Arriba, Mapa Abajo (Apilados)</option>
+            </select>
+
+            <label>Ancho del Mapa (Ej: 50%, 60%, 100%)</label>
+            <input 
+              type="text" 
+              value={s.mapWidth || '50%'} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.mapWidth = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+            />
+
+            <label>Alto del Mapa (Ej: 300px, 400px)</label>
+            <input 
+              type="text" 
+              value={s.mapHeight || '400px'} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.mapHeight = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            />
+          </div>
+        );
+      }
+
       if (section.type === 'marquee') {
         const s = section.settings || {};
         return (

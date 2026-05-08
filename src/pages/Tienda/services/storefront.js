@@ -34,7 +34,8 @@ export const SECTION_TYPES = [
   { id: 'testimonials', label: 'Testimonios / Opiniones' },
   { id: 'marquee', label: 'Carrusel de Logos / Marcas' },
   { id: 'bestsellers_row', label: 'Lo Más Vendido (Fila de 5)' },
-  { id: 'footer_columns', label: 'Pie de Página (Columnas/Enlaces)' }
+  { id: 'footer_columns', label: 'Pie de Página (Columnas/Enlaces)' },
+  { id: 'map_location', label: 'Ubicación / Mapa' }
 ];
 
 export function getDefaultSettings(type) {
@@ -107,6 +108,15 @@ export function getDefaultSettings(type) {
             ]
           }
         ]
+      };
+    case 'map_location':
+      return {
+        title: 'Encuéntranos',
+        description: 'Visita nuestra tienda física de Lunes a Viernes de 9am a 6pm.',
+        embedUrl: '',
+        layout: 'mapRight',
+        mapWidth: '50%',
+        mapHeight: '400px'
       };
     default:
       return {};

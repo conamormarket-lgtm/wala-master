@@ -12,6 +12,8 @@ import FlashSales from './components/FlashSales';
 import SidebarCatalogLayout from './components/SidebarCatalogLayout';
 import BrandMarquee from './components/BrandMarquee/BrandMarquee';
 import BestSellersRow from './components/BestSellersRow/BestSellersRow';
+import Testimonials from './components/Testimonials';
+import MapLocation from './components/MapLocation';
 import {
   getProducts,
   getCategories,
@@ -220,20 +222,69 @@ const TiendaPage = () => {
             {s.link?.trim() ? <a href={s.link} target="_blank" rel="noopener noreferrer">{img}</a> : img}
           </section>
         );
-      case 'video':
+      case 'video': {
         if (!s.url?.trim()) return null;
-        const isEmbed = /youtube|vimeo|embed/.test(s.url);
+        let finalUrl = s.url;
+        let isEmbed = false;
+
+        // Auto-convertir links de YouTube a formato embed
+        const ytMatch = finalUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        if (ytMatch && ytMatch[1]) {
+          finalUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
+          isEmbed = true;
+        } else if (/vimeo|embed/.test(finalUrl)) {
+          isEmbed = true;
+        }
+
+        const aspect = s.aspectRatio || '16:9';
+        let paddingBottom = '56.25%'; // 16:9
+        if (aspect === '9:16') paddingBottom = '177.77%';
+        else if (aspect === '1:1') paddingBottom = '100%';
+
+        const forceRatio = isEmbed || aspect !== 'auto';
+
         return (
           <section key={section.id} className={styles.sectionBlock}>
-            <div className={styles.sectionVideo}>
+            <div 
+              className={styles.sectionVideo} 
+              style={{ 
+                position: 'relative', 
+                paddingBottom: forceRatio ? paddingBottom : '0', 
+                height: forceRatio ? '0' : 'auto', 
+                overflow: 'hidden', 
+                borderRadius: '12px',
+                maxWidth: aspect === '9:16' ? '450px' : (aspect === '1:1' ? '600px' : '100%'),
+                margin: '0 auto',
+                background: '#000'
+              }}
+            >
               {isEmbed ? (
-                <iframe title="Video" src={s.url.startsWith('http') ? s.url : `https://www.youtube.com/embed/${s.url}`} allowFullScreen />
+                <iframe 
+                  title="Video" 
+                  src={finalUrl} 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen 
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                />
               ) : (
-                <video src={s.url} poster={s.poster || undefined} controls />
+                <video 
+                  src={finalUrl} 
+                  poster={s.poster || undefined} 
+                  controls 
+                  style={{ 
+                    position: forceRatio ? 'absolute' : 'relative',
+                    top: 0, left: 0, 
+                    width: '100%', 
+                    height: forceRatio ? '100%' : 'auto',
+                    objectFit: 'cover',
+                    borderRadius: '12px' 
+                  }} 
+                />
               )}
             </div>
           </section>
         );
+      }
       case 'announcement_bar':
         return (
           <section key={section.id}>
@@ -255,6 +306,18 @@ const TiendaPage = () => {
                endTime={s.endTime}
                categories={categoriesData}
             />
+          </section>
+        );
+      case 'testimonials':
+        return (
+          <section key={section.id} className={styles.sectionBlock}>
+            <Testimonials title={s.title} testimonials={s.testimonials} />
+          </section>
+        );
+      case 'map_location':
+        return (
+          <section key={section.id} className={styles.sectionBlock}>
+            <MapLocation config={s} />
           </section>
         );
       case 'marquee':
@@ -377,6 +440,8 @@ const TiendaPage = () => {
               <div className={styles.inserterOptions}>
                 <button onClick={() => handleInsert('hero_banner')}>Banner Principal</button>
                 <button onClick={() => handleInsert('bestsellers_row')}>Lo Más Vendido (Fila 5)</button>
+                <button onClick={() => handleInsert('testimonials')}>Testimonios</button>
+                <button onClick={() => handleInsert('map_location')}>Ubicación (Mapa)</button>
                 <button onClick={() => handleInsert('product_grid')}>Grilla de Productos</button>
                 <button onClick={() => handleInsert('sidebar_catalog')}>Catálogo (Filtros)</button>
                 <button onClick={() => handleInsert('hero_carousel')}>Carrusel Imágenes</button>
