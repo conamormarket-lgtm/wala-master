@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProducts, getCategories, deleteProduct, updateProduct, createProduct } from '../../../services/products';
 import { getBrands } from '../../../services/brands';
+import { deleteFile } from '../../../services/firebase/storage';
 import { createReferenceProducts } from '../../../scripts/createReferenceProducts';
 import { exportProducts } from '../../../utils/exportProducts';
 import { useToast } from '../../../hooks/useToast';
@@ -12,6 +13,7 @@ import ProductTable from '../../../components/admin/ProductTable/ProductTable';
 import BulkActions from '../../../components/admin/BulkActions/BulkActions';
 import ToastContainer from '../../../components/common/Toast/ToastContainer';
 import { EyeIcon, EyeOffIcon, EditIcon, TrashIcon, GridIcon, TableIcon, CopyIcon } from '../../../components/common/Icons/Icons';
+import { Clock, Edit2, Trash2 } from 'lucide-react';
 import { toDirectImageUrl, toThumbnailImageUrl } from '../../../utils/imageUrl';
 import ComboProductImage from '../components/ComboProductImage/ComboProductImage';
 import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedImage';
@@ -31,6 +33,43 @@ const AdminProductos = () => {
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const { toasts, removeToast, success, error: showError } = useToast();
+
+  const [drafts, setDrafts] = useState([]);
+
+  useEffect(() => {
+    const savedDrafts = JSON.parse(localStorage.getItem('wala_drafts') || '[]');
+    setDrafts(savedDrafts);
+  }, []);
+
+  const handleDiscardDraft = async (draftId) => {
+    if (!window.confirm('¿Seguro que deseas descartar este borrador? Se eliminarán todas las fotos asociadas de la nube.')) return;
+    
+    const draft = drafts.find(d => d.draftId === draftId);
+    if (!draft) return;
+
+    const urlsToDelete = [];
+    if (draft.form?.variants) {
+      draft.form.variants.forEach(v => {
+        if (v.imageUrl) urlsToDelete.push(v.imageUrl);
+        if (v.images && v.images.length > 0) urlsToDelete.push(...v.images);
+      });
+    }
+
+    if (urlsToDelete.length > 0) {
+      success('Borrando archivos temporales...', { duration: 3000 });
+      try {
+        await Promise.all(urlsToDelete.map(url => deleteFile(url)));
+      } catch (e) {
+        console.error("Error al borrar archivos de Firebase", e);
+      }
+    }
+
+    const newDrafts = drafts.filter(d => d.draftId !== draftId);
+    setDrafts(newDrafts);
+    localStorage.setItem('wala_drafts', JSON.stringify(newDrafts));
+    
+    success('Borrador descartado exitosamente');
+  };
 
   const { data: productsData, isLoading, error } = useQuery({
     queryKey: ['admin-products'],
@@ -354,6 +393,40 @@ const AdminProductos = () => {
           </Link>
         </div>
       </div>
+
+      {/* SECCIÓN BORRADORES PENDIENTES */}
+      {drafts.length > 0 && (
+        <div style={{ background: '#fafafa', border: '1px solid #eaeaea', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+          <h2 style={{ color: '#111', margin: '0 0 0.5rem 0', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Clock size={18} color="#666" /> Borradores Pendientes ({drafts.length})
+          </h2>
+          <p style={{ color: '#666', margin: '0 0 1rem 0', fontSize: '0.9rem' }}>
+            Productos con ediciones sin finalizar. Las imágenes asociadas ocupan espacio temporal.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {drafts.map(draft => (
+              <div key={draft.draftId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '0.75rem', borderRadius: '6px', border: '1px solid #eaeaea' }}>
+                <div>
+                  <strong style={{ color: '#333' }}>{draft.form?.name || 'Producto sin nombre'}</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#888', marginLeft: '0.5rem' }}>
+                    Modificado: {new Date(draft.updatedAt).toLocaleString()}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <Link to={`/admin/productos/v2/nuevo?draftId=${draft.draftId}`}>
+                    <Button variant="secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <Edit2 size={14} /> Continuar
+                    </Button>
+                  </Link>
+                  <Button variant="secondary" onClick={() => handleDiscardDraft(draft.draftId)} style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', color: '#e03131', borderColor: '#ffc9c9', background: '#fff5f5', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <Trash2 size={14} /> Descartar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {createResult && (
         <div style={{
