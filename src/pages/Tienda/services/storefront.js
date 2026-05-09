@@ -47,10 +47,27 @@ export function getDefaultSettings(type) {
         title: 'NUEVA COLECCIÓN',
         subtitle: 'Diseñada para destacar. Construida para durar.',
         buttonText: 'COMPRAR AHORA',
-        buttonLink: '/tienda'
+        buttonLink: '/tienda',
+        textAlign: 'center',
+        textPosition: 'center',
+        overlayOpacity: 40,
+        titleColor: '#ffffff',
+        subtitleColor: '#ffffff',
+        buttonBgColor: '#ffffff',
+        buttonTextColor: '#000000',
+        minHeight: '600px'
       };
     case 'header':
-      return { title: 'Nuestra Tienda', subtitle: 'Explora nuestros productos.' };
+      return { 
+        title: 'Nuestra Tienda', 
+        subtitle: 'Explora nuestros productos.',
+        backgroundColor: 'transparent',
+        titleColor: '#000000',
+        subtitleColor: '#666666',
+        textAlign: 'center',
+        paddingTop: '3rem',
+        paddingBottom: '2rem'
+      };
     case 'text':
       return { 
         heading: '', 

@@ -1168,6 +1168,61 @@ const VisualEditorPanel = () => {
         );
       }
 
+      if (section.type === 'header') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>Editando: Encabezado (Título)</h4>
+
+            <label>Título Principal</label>
+            <input type="text" value={s.title || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.title = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px'}} />
+
+            <label>Subtítulo</label>
+            <textarea value={s.subtitle || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.subtitle = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px', minHeight: '60px', fontFamily: 'inherit'}} />
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <input type="text" placeholder="Ej: #ffffff o transparent" value={s.backgroundColor || 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Alineación</label>
+                <select value={s.textAlign || 'center'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.textAlign = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}}>
+                  <option value="left">Izquierda</option>
+                  <option value="center">Centro</option>
+                  <option value="right">Derecha</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Título</label>
+                <input type="color" value={s.titleColor || '#000000'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.titleColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Color de Subtítulo</label>
+                <input type="color" value={s.subtitleColor || '#666666'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.subtitleColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 3rem" value={s.paddingTop || '3rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       if (section.type === 'hero_banner') {
         const draft = section.settings || {};
         return (
@@ -1242,6 +1297,7 @@ const VisualEditorPanel = () => {
               </div>
             </div>
             
+            <h5 style={{marginTop: '15px', marginBottom: '10px'}}>Textos y Enlaces</h5>
             <label>Título</label>
             <input 
               type="text" 
@@ -1266,29 +1322,88 @@ const VisualEditorPanel = () => {
               style={{width: '100%', padding: '6px', marginBottom: '10px'}}
             />
             
-            <label>Texto Botón</label>
-            <input 
-              type="text" 
-              value={draft.buttonText || ''} 
-              onChange={e => {
-                const newSections = [...storeConfigDraft.sections];
-                newSections[dynamicSectionIndex].settings.buttonText = e.target.value;
-                updateSectionsDraft(newSections);
-              }}
-              style={{width: '100%', padding: '6px', marginBottom: '10px'}}
-            />
-            
-            <label>Enlace Botón</label>
-            <input 
-              type="text" 
-              value={draft.buttonLink || ''} 
-              onChange={e => {
-                const newSections = [...storeConfigDraft.sections];
-                newSections[dynamicSectionIndex].settings.buttonLink = e.target.value;
-                updateSectionsDraft(newSections);
-              }}
-              style={{width: '100%', padding: '6px', marginBottom: '10px'}}
-            />
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Texto Botón</label>
+                <input 
+                  type="text" 
+                  value={draft.buttonText || ''} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.buttonText = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px'}}
+                />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Enlace Botón</label>
+                <input 
+                  type="text" 
+                  value={draft.buttonLink || ''} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.buttonLink = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px'}}
+                />
+              </div>
+            </div>
+
+            <h5 style={{marginTop: '15px', marginBottom: '10px'}}>Estilos y Colores</h5>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Altura (minHeight)</label>
+                <input 
+                  type="text" 
+                  value={draft.minHeight || '600px'} 
+                  placeholder="Ej: 600px o 100vh"
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.minHeight = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px'}}
+                />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Opacidad Fondo Oscuro (%)</label>
+                <input 
+                  type="number" 
+                  min="0" max="100"
+                  value={draft.overlayOpacity ?? 40} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.overlayOpacity = Number(e.target.value);
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px'}}
+                />
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color Título</label>
+                <input type="color" value={draft.titleColor || '#ffffff'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.titleColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Color Subtítulo</label>
+                <input type="color" value={draft.subtitleColor || '#ffffff'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.subtitleColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Fondo Botón</label>
+                <input type="color" value={draft.buttonBgColor || '#ffffff'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.buttonBgColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Texto Botón</label>
+                <input type="color" value={draft.buttonTextColor || '#000000'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.buttonTextColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
+              </div>
+            </div>
           </div>
         );
       }

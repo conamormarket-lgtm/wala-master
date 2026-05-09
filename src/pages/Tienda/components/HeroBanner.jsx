@@ -13,7 +13,13 @@ const HeroBanner = ({ config }) => {
     buttonText, 
     buttonLink,
     textAlign = 'center',
-    textPosition = 'center'
+    textPosition = 'center',
+    overlayOpacity = 40,
+    titleColor = '#ffffff',
+    subtitleColor = '#ffffff',
+    buttonBgColor = '#ffffff',
+    buttonTextColor = '#000000',
+    minHeight = '600px'
   } = config;
   
   const videoRef = useRef(null);
@@ -37,7 +43,7 @@ const HeroBanner = ({ config }) => {
   };
 
   return (
-    <div className={styles.heroContainer}>
+    <div className={styles.heroContainer} style={{ minHeight }}>
       <div className={styles.mediaWrapper}>
         {mediaType === 'video' ? (
           <>
@@ -66,15 +72,24 @@ const HeroBanner = ({ config }) => {
         style={{ 
           justifyContent: textPosition, 
           alignItems: alignItemsMap[textAlign] || 'center',
-          textAlign: textAlign 
+          textAlign: textAlign,
+          background: `linear-gradient(to bottom, rgba(0,0,0,${overlayOpacity/100 * 0.2}) 0%, rgba(0,0,0,${overlayOpacity/100 * 0.7}) 50%, rgba(0,0,0,${overlayOpacity/100}) 100%)`
         }}
       >
         <div className={styles.content}>
-          {title && <h1 className={styles.title}>{title}</h1>}
-          {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+          {title && <h1 className={styles.title} style={{ color: titleColor }}>{title}</h1>}
+          {subtitle && <p className={styles.subtitle} style={{ color: subtitleColor }}>{subtitle}</p>}
           {buttonText && buttonLink && (
             <Link to={buttonLink}>
-              <Button variant="primary" className={styles.actionButton}>
+              <Button 
+                variant="primary" 
+                className={styles.actionButton}
+                style={{ 
+                  backgroundColor: buttonBgColor, 
+                  color: buttonTextColor,
+                  borderColor: buttonBgColor 
+                }}
+              >
                 {buttonText}
               </Button>
             </Link>

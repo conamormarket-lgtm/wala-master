@@ -16,6 +16,7 @@ import Testimonials from './components/Testimonials';
 import MapLocation from './components/MapLocation';
 import TextBlock from './components/TextBlock/TextBlock';
 import ImageBlock from './components/ImageBlock/ImageBlock';
+import HeaderBlock from './components/HeaderBlock/HeaderBlock';
 import {
   getProducts,
   getCategories,
@@ -189,8 +190,13 @@ const TiendaPage = () => {
     const s = section.settings || {};
     switch (section.type) {
       case 'header':
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0 }}>
+            <HeaderBlock config={s} />
+          </section>
+        );
       case 'categories_nav':
-        // Estas secciones estructurales ahora se renderizan unificadas en la cabecera principal.
+        // Esta sección estructural ahora se renderiza unificada en la cabecera principal.
         return null;
       case 'hero_banner':
         // Usa la configuración local de la sección o el fallback al config global
@@ -428,6 +434,7 @@ const TiendaPage = () => {
             <div className={styles.inserterMenuVisible}>
               <p style={{fontSize: '0.8rem', color: '#64748b', margin: '0 0 10px 0', fontWeight: '600'}}>Añadir módulo nuevo:</p>
               <div className={styles.inserterOptions}>
+                <button onClick={() => handleInsert('header')}>Encabezado (Título)</button>
                 <button onClick={() => handleInsert('hero_banner')}>Banner Principal</button>
                 <button onClick={() => handleInsert('bestsellers_row')}>Lo Más Vendido (Fila 5)</button>
                 <button onClick={() => handleInsert('testimonials')}>Testimonios</button>
