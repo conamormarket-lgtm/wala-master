@@ -755,6 +755,129 @@ const VisualEditorPanel = () => {
         );
       }
 
+      if (section.type === 'text') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>Editando: Bloque de Texto</h4>
+
+            <label>Título (Opcional)</label>
+            <input type="text" value={s.heading || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.heading = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px'}} />
+
+            <label>Contenido</label>
+            <textarea value={s.content || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.content = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px', minHeight: '100px', fontFamily: 'inherit'}} />
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <input type="text" placeholder="#ffffff o transparent" value={s.backgroundColor || 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Color de Título</label>
+                <input type="color" value={s.headingColor || '#000000'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.headingColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Color de Texto</label>
+                <input type="color" value={s.textColor || '#333333'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.textColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Alineación</label>
+                <select value={s.textAlign || 'left'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.textAlign = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}}>
+                  <option value="left">Izquierda</option>
+                  <option value="center">Centro</option>
+                  <option value="right">Derecha</option>
+                  <option value="justify">Justificado</option>
+                </select>
+              </div>
+              <div style={{flex: 1}}>
+                <label>Ancho Máximo</label>
+                <input type="text" placeholder="Ej: 800px o 100%" value={s.maxWidth || '800px'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.maxWidth = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (section.type === 'image') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>Editando: Bloque de Imagen</h4>
+
+            <label>URL de la Imagen</label>
+            <input type="text" placeholder="https://..." value={s.url || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.url = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px'}} />
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Texto Alternativo (Alt)</label>
+                <input type="text" placeholder="Descripción para SEO" value={s.alt || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.alt = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Enlace (Opcional)</label>
+                <input type="text" placeholder="https://..." value={s.link || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.link = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Alineación</label>
+                <select value={s.alignment || 'center'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.alignment = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}}>
+                  <option value="left">Izquierda</option>
+                  <option value="center">Centro</option>
+                  <option value="right">Derecha</option>
+                </select>
+              </div>
+              <div style={{flex: 1}}>
+                <label>Ancho Máximo</label>
+                <input type="text" placeholder="Ej: 100% o 500px" value={s.maxWidth || '100%'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.maxWidth = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Radio de Borde</label>
+                <input type="text" placeholder="Ej: 0px o 50%" value={s.borderRadius || '0px'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.borderRadius = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <input type="text" placeholder="#ffffff o transparent" value={s.backgroundColor || 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 0rem" value={s.paddingTop || '0rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 0rem" value={s.paddingBottom || '0rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       if (section.type === 'map_location') {
         const s = section.settings || {};
         return (

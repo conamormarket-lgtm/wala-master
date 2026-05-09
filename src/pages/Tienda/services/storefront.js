@@ -52,9 +52,29 @@ export function getDefaultSettings(type) {
     case 'header':
       return { title: 'Nuestra Tienda', subtitle: 'Explora nuestros productos.' };
     case 'text':
-      return { heading: '', content: '' };
+      return { 
+        heading: '', 
+        content: '', 
+        backgroundColor: 'transparent', 
+        textColor: '#333333', 
+        headingColor: '#000000', 
+        textAlign: 'left', 
+        paddingTop: '2rem',
+        paddingBottom: '2rem',
+        maxWidth: '800px'
+      };
     case 'image':
-      return { url: '', alt: '', link: '' };
+      return { 
+        url: '', 
+        alt: '', 
+        link: '',
+        maxWidth: '100%',
+        alignment: 'center',
+        borderRadius: '0px',
+        paddingTop: '0rem',
+        paddingBottom: '0rem',
+        backgroundColor: 'transparent'
+      };
     case 'video':
       return { url: '', poster: '' };
     case 'featured_products':

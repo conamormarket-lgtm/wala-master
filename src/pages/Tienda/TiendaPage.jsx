@@ -14,6 +14,8 @@ import BrandMarquee from './components/BrandMarquee/BrandMarquee';
 import BestSellersRow from './components/BestSellersRow/BestSellersRow';
 import Testimonials from './components/Testimonials';
 import MapLocation from './components/MapLocation';
+import TextBlock from './components/TextBlock/TextBlock';
+import ImageBlock from './components/ImageBlock/ImageBlock';
 import {
   getProducts,
   getCategories,
@@ -200,26 +202,14 @@ const TiendaPage = () => {
         );
       case 'text':
         return (
-          <section key={section.id} className={styles.sectionBlock}>
-            {s.heading && <h2 className={styles.sectionHeading}>{s.heading}</h2>}
-            {s.content && <div className={styles.sectionContent}>{s.content}</div>}
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0 }}>
+            <TextBlock config={s} />
           </section>
         );
       case 'image':
-        if (!s.url?.trim()) return null;
-        const img = (
-          <OptimizedImage
-            src={toDirectImageUrl(s.url)}
-            alt={s.alt || ''}
-            className={styles.sectionImage}
-            loading={section.order === 0 ? "eager" : "lazy"}
-            fetchPriority={section.order === 0 ? "high" : "auto"}
-            showSkeleton={false}
-          />
-        );
         return (
-          <section key={section.id} className={styles.sectionBlock}>
-            {s.link?.trim() ? <a href={s.link} target="_blank" rel="noopener noreferrer">{img}</a> : img}
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0 }}>
+            <ImageBlock config={s} isFirstSection={section.order === 0} />
           </section>
         );
       case 'video': {
