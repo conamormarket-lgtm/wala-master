@@ -19,7 +19,15 @@ const HeroBanner = ({ config }) => {
     subtitleColor = '#ffffff',
     buttonBgColor = '#ffffff',
     buttonTextColor = '#000000',
-    minHeight = '600px'
+    minHeight = '600px',
+    titleFontFamily,
+    titleFontSize,
+    titleFontWeight,
+    titleTextTransform,
+    subtitleFontFamily,
+    subtitleFontSize,
+    subtitleFontWeight,
+    subtitleTextTransform
   } = config;
   
   const videoRef = useRef(null);
@@ -77,8 +85,34 @@ const HeroBanner = ({ config }) => {
         }}
       >
         <div className={styles.content}>
-          {title && <h1 className={styles.title} style={{ color: titleColor }}>{title}</h1>}
-          {subtitle && <p className={styles.subtitle} style={{ color: subtitleColor }}>{subtitle}</p>}
+          {title && (
+            <h1 
+              className={styles.title} 
+              style={{ 
+                color: titleColor,
+                fontFamily: titleFontFamily || 'inherit',
+                fontSize: titleFontSize || undefined,
+                fontWeight: titleFontWeight || undefined,
+                textTransform: titleTextTransform || 'none'
+              }}
+            >
+              {title}
+            </h1>
+          )}
+          {subtitle && (
+            <p 
+              className={styles.subtitle} 
+              style={{ 
+                color: subtitleColor,
+                fontFamily: subtitleFontFamily || 'inherit',
+                fontSize: subtitleFontSize || undefined,
+                fontWeight: subtitleFontWeight || undefined,
+                textTransform: subtitleTextTransform || 'none'
+              }}
+            >
+              {subtitle}
+            </p>
+          )}
           {buttonText && buttonLink && (
             <Link to={buttonLink}>
               <Button 

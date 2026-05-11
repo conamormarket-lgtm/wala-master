@@ -9,7 +9,15 @@ const HeaderBlock = ({ config }) => {
     subtitleColor = '#666666',
     textAlign = 'center',
     paddingTop = '3rem',
-    paddingBottom = '2rem'
+    paddingBottom = '2rem',
+    titleFontFamily,
+    titleFontSize,
+    titleFontWeight,
+    titleTextTransform,
+    subtitleFontFamily,
+    subtitleFontSize,
+    subtitleFontWeight,
+    subtitleTextTransform
   } = config || {};
 
   if (!title && !subtitle) return null;
@@ -39,8 +47,10 @@ const HeaderBlock = ({ config }) => {
           <h1 style={{ 
             color: titleColor, 
             marginBottom: subtitle ? '0.5rem' : '0', 
-            fontSize: 'clamp(2rem, 5vw, 3rem)', 
-            fontWeight: '800',
+            fontSize: titleFontSize || 'clamp(2rem, 5vw, 3rem)', 
+            fontWeight: titleFontWeight || '800',
+            fontFamily: titleFontFamily || 'inherit',
+            textTransform: titleTextTransform || 'none',
             letterSpacing: '-0.02em',
             lineHeight: '1.2'
           }}>
@@ -50,7 +60,10 @@ const HeaderBlock = ({ config }) => {
         {subtitle && (
           <p style={{ 
             color: subtitleColor, 
-            fontSize: 'clamp(1rem, 2vw, 1.25rem)', 
+            fontSize: subtitleFontSize || 'clamp(1rem, 2vw, 1.25rem)', 
+            fontWeight: subtitleFontWeight || 'normal',
+            fontFamily: subtitleFontFamily || 'inherit',
+            textTransform: subtitleTextTransform || 'none',
             lineHeight: '1.5',
             maxWidth: '800px',
             margin: textAlign === 'center' ? '0 auto' : '0'

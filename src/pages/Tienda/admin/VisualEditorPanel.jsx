@@ -9,6 +9,60 @@ import { SECTION_TYPES, getDefaultSettings } from '../services/storefront';
 import styles from '../../../components/admin/VisualEditorPanel.module.css';
 import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft, GripVertical, Save, X, LayoutTemplate, PanelLeft, Monitor, PanelRight } from 'lucide-react';
 
+const TypographyControl = ({ label, prefix, settings, onChange }) => {
+  return (
+    <div style={{marginBottom: '15px', padding: '10px', background: '#f5f5f5', borderRadius: '6px', border: '1px solid #e2e8f0'}}>
+      <h5 style={{margin: '0 0 10px 0', fontSize: '0.9rem', color: '#334155'}}>{label}</h5>
+      <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
+        <div style={{flex: '1 1 45%'}}>
+          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Fuente</label>
+          <select value={settings[`${prefix}FontFamily`] || ''} onChange={e => onChange(`${prefix}FontFamily`, e.target.value)} style={{width: '100%', padding: '6px'}}>
+            <option value="">Por defecto</option>
+            <option value="'Inter', sans-serif">Inter</option>
+            <option value="'Roboto', sans-serif">Roboto</option>
+            <option value="'Poppins', sans-serif">Poppins</option>
+            <option value="'Montserrat', sans-serif">Montserrat</option>
+            <option value="'Outfit', sans-serif">Outfit</option>
+            <option value="'Nunito', sans-serif">Nunito</option>
+            <option value="'Raleway', sans-serif">Raleway</option>
+            <option value="'Ubuntu', sans-serif">Ubuntu</option>
+            <option value="'Playfair Display', serif">Playfair Display</option>
+            <option value="'Merriweather', serif">Merriweather</option>
+            <option value="'Lora', serif">Lora</option>
+            <option value="'Oswald', sans-serif">Oswald</option>
+          </select>
+        </div>
+        <div style={{flex: '1 1 45%'}}>
+          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Tamaño</label>
+          <input type="text" placeholder="Ej: 2rem o 24px" value={settings[`${prefix}FontSize`] || ''} onChange={e => onChange(`${prefix}FontSize`, e.target.value)} style={{width: '100%', padding: '6px'}} />
+        </div>
+        <div style={{flex: '1 1 45%'}}>
+          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Grosor</label>
+          <select value={settings[`${prefix}FontWeight`] || ''} onChange={e => onChange(`${prefix}FontWeight`, e.target.value)} style={{width: '100%', padding: '6px'}}>
+            <option value="">Por defecto</option>
+            <option value="300">Light (300)</option>
+            <option value="400">Normal (400)</option>
+            <option value="500">Medium (500)</option>
+            <option value="600">Semibold (600)</option>
+            <option value="700">Bold (700)</option>
+            <option value="800">Extra Bold (800)</option>
+            <option value="900">Black (900)</option>
+          </select>
+        </div>
+        <div style={{flex: '1 1 45%'}}>
+          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Transformar</label>
+          <select value={settings[`${prefix}TextTransform`] || ''} onChange={e => onChange(`${prefix}TextTransform`, e.target.value)} style={{width: '100%', padding: '6px'}}>
+            <option value="">Ninguno</option>
+            <option value="uppercase">MAYÚSCULAS</option>
+            <option value="lowercase">minúsculas</option>
+            <option value="capitalize">Capitalizar</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const VisualEditorPanel = () => {
   const { 
     isEditModeActive, 
@@ -797,59 +851,85 @@ const VisualEditorPanel = () => {
             </button>
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>Editando: Bloque de Texto</h4>
 
-            <label>Título (Opcional)</label>
-            <input type="text" value={s.heading || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.heading = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px'}} />
+            <fieldset style={{border: '1px solid #e2e8f0', borderRadius: '6px', padding: '15px', marginBottom: '15px'}}>
+              <legend style={{fontWeight: 'bold', fontSize: '0.9rem', color: '#475569', padding: '0 5px'}}>Contenido Principal</legend>
+              <label style={{fontSize: '0.85rem', color: '#64748b'}}>Título (Opcional)</label>
+              <input type="text" placeholder="Escribe un título llamativo..." value={s.heading || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.heading = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '8px', marginBottom: '15px', border: '1px solid #cbd5e1', borderRadius: '4px'}} />
 
-            <label>Contenido</label>
-            <textarea value={s.content || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.content = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px', minHeight: '100px', fontFamily: 'inherit'}} />
+              <label style={{fontSize: '0.85rem', color: '#64748b'}}>Párrafo</label>
+              <textarea placeholder="Escribe aquí tu texto detallado..." value={s.content || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.content = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '8px', minHeight: '120px', fontFamily: 'inherit', border: '1px solid #cbd5e1', borderRadius: '4px'}} />
+            </fieldset>
 
-            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
-              <div style={{flex: 1}}>
-                <label>Color de Fondo</label>
-                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
-                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
-                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
-                    Transparente
-                  </label>
+            <fieldset style={{border: '1px solid #e2e8f0', borderRadius: '6px', padding: '15px', marginBottom: '15px'}}>
+              <legend style={{fontWeight: 'bold', fontSize: '0.9rem', color: '#475569', padding: '0 5px'}}>Colores del Bloque</legend>
+              <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap'}}>
+                <div style={{flex: '1 1 30%'}}>
+                  <label style={{fontSize: '0.85rem', color: '#64748b'}}>Fondo</label>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px'}}>
+                    <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                    <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.8rem', cursor: 'pointer', color: '#64748b'}}>
+                      <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                      Transparente
+                    </label>
+                  </div>
+                </div>
+                <div style={{flex: '1 1 30%'}}>
+                  <label style={{fontSize: '0.85rem', color: '#64748b', display: 'block', marginBottom: '4px'}}>Color de Título</label>
+                  <input type="color" value={s.headingColor || '#000000'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.headingColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0, border: '1px solid #cbd5e1', borderRadius: '4px'}} />
+                </div>
+                <div style={{flex: '1 1 30%'}}>
+                  <label style={{fontSize: '0.85rem', color: '#64748b', display: 'block', marginBottom: '4px'}}>Color de Párrafo</label>
+                  <input type="color" value={s.textColor || '#333333'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.textColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0, border: '1px solid #cbd5e1', borderRadius: '4px'}} />
                 </div>
               </div>
-              <div style={{flex: 1}}>
-                <label>Color de Título</label>
-                <input type="color" value={s.headingColor || '#000000'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.headingColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
-              </div>
-              <div style={{flex: 1}}>
-                <label>Color de Texto</label>
-                <input type="color" value={s.textColor || '#333333'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.textColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
-              </div>
-            </div>
+            </fieldset>
 
-            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
-              <div style={{flex: 1}}>
-                <label>Alineación</label>
-                <select value={s.textAlign || 'left'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.textAlign = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}}>
-                  <option value="left">Izquierda</option>
-                  <option value="center">Centro</option>
-                  <option value="right">Derecha</option>
-                  <option value="justify">Justificado</option>
-                </select>
-              </div>
-              <div style={{flex: 1}}>
-                <label>Ancho Máximo</label>
-                <input type="text" placeholder="Ej: 800px o 100%" value={s.maxWidth || '800px'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.maxWidth = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
-              </div>
-            </div>
+            <fieldset style={{border: '1px solid #e2e8f0', borderRadius: '6px', padding: '15px', marginBottom: '15px'}}>
+              <legend style={{fontWeight: 'bold', fontSize: '0.9rem', color: '#475569', padding: '0 5px'}}>Tipografía Avanzada</legend>
+              <TypographyControl 
+                label="Tipografía del Título" 
+                prefix="heading" 
+                settings={s} 
+                onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
+              />
+              
+              <TypographyControl 
+                label="Tipografía del Párrafo" 
+                prefix="content" 
+                settings={s} 
+                onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
+              />
+            </fieldset>
 
-            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
-              <div style={{flex: 1}}>
-                <label>Padding Superior</label>
-                <input type="text" placeholder="Ej: 2rem" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+            <fieldset style={{border: '1px solid #e2e8f0', borderRadius: '6px', padding: '15px', marginBottom: '15px'}}>
+              <legend style={{fontWeight: 'bold', fontSize: '0.9rem', color: '#475569', padding: '0 5px'}}>Estructura y Espaciado</legend>
+              <div style={{display: 'flex', gap: '15px', marginBottom: '15px', flexWrap: 'wrap'}}>
+                <div style={{flex: '1 1 45%'}}>
+                  <label style={{fontSize: '0.85rem', color: '#64748b', display: 'block', marginBottom: '4px'}}>Alineación de texto</label>
+                  <select value={s.textAlign || 'left'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.textAlign = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px'}}>
+                    <option value="left">Izquierda</option>
+                    <option value="center">Centro</option>
+                    <option value="right">Derecha</option>
+                    <option value="justify">Justificado</option>
+                  </select>
+                </div>
+                <div style={{flex: '1 1 45%'}}>
+                  <label style={{fontSize: '0.85rem', color: '#64748b', display: 'block', marginBottom: '4px'}}>Ancho Máximo</label>
+                  <input type="text" placeholder="Ej: 800px o 100%" value={s.maxWidth || '800px'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.maxWidth = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px'}} />
+                </div>
               </div>
-              <div style={{flex: 1}}>
-                <label>Padding Inferior</label>
-                <input type="text" placeholder="Ej: 2rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+
+              <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap'}}>
+                <div style={{flex: '1 1 45%'}}>
+                  <label style={{fontSize: '0.85rem', color: '#64748b', display: 'block', marginBottom: '4px'}}>Espaciado Arriba (Padding)</label>
+                  <input type="text" placeholder="Ej: 2rem o 32px" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px'}} />
+                </div>
+                <div style={{flex: '1 1 45%'}}>
+                  <label style={{fontSize: '0.85rem', color: '#64748b', display: 'block', marginBottom: '4px'}}>Espaciado Abajo (Padding)</label>
+                  <input type="text" placeholder="Ej: 2rem o 32px" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px'}} />
+                </div>
               </div>
-            </div>
+            </fieldset>
           </div>
         );
       }
@@ -1299,6 +1379,20 @@ const VisualEditorPanel = () => {
               </div>
             </div>
 
+            <TypographyControl 
+              label="Tipografía del Título" 
+              prefix="title" 
+              settings={s} 
+              onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
+            />
+            
+            <TypographyControl 
+              label="Tipografía del Subtítulo" 
+              prefix="subtitle" 
+              settings={s} 
+              onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
+            />
+
             <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
               <div style={{flex: 1}}>
                 <label>Color de Título</label>
@@ -1420,7 +1514,21 @@ const VisualEditorPanel = () => {
                 newSections[dynamicSectionIndex].settings.subtitle = e.target.value;
                 updateSectionsDraft(newSections);
               }}
-              style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            />
+
+            <TypographyControl 
+              label="Tipografía del Título" 
+              prefix="title" 
+              settings={draft} 
+              onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
+            />
+            
+            <TypographyControl 
+              label="Tipografía del Subtítulo" 
+              prefix="subtitle" 
+              settings={draft} 
+              onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
             />
             
             <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>

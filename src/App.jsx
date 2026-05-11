@@ -22,6 +22,7 @@ import TiendaPage from './pages/Tienda/TiendaPage';
 import LegacyTiendaPage from './pages/LegacyTienda/LegacyTiendaPage';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
+import WordlePage from './pages/Tienda/WordlePage';
 import BottomNav from './components/common/BottomNav';
 import WhatsAppButton from './components/common/WhatsAppButton';
 import FirebaseWarning from './components/common/FirebaseWarning';
@@ -68,6 +69,7 @@ const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
 const AdminCrearCuentasPedidos = lazy(() => import('./pages/admin/AdminCrearCuentasPedidos'));
 const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuariosAnalyticsPage'));
+const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
 const AdminStoreEditor = lazy(() => import('./pages/Tienda/admin/AdminStoreEditor'));
@@ -169,6 +171,7 @@ function App() {
                             <Route path="mascota" element={<AdminMascota />} />
                             <Route path="crear-cuentas-pedidos" element={<AdminCrearCuentasPedidos />} />
                             <Route path="usuarios-analytics" element={<AdminUsuariosAnalyticsPage />} />
+                            <Route path="wordle" element={<AdminWordlePage />} />
                             <Route path="marcas" element={<AdminMarcas />} />
                             <Route path="landing-pages" element={<AdminLandingPages />} />
                             <Route path="store-editor" element={<AdminStoreEditor />} />
@@ -180,6 +183,7 @@ function App() {
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/registro" element={<RegisterPage />} />
                         <Route path="/completar-perfil" element={<CompleteProfilePage />} />
+                        <Route path="/palabra-del-dia" element={<WordlePage />} />
                         <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                         <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                         <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />

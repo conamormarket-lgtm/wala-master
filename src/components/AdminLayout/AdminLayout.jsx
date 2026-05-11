@@ -109,6 +109,12 @@ const AdminLayout = () => {
               >
                 Mascota
               </NavLink>
+              <NavLink
+                to="/admin/wordle"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                La Palabra del Día
+              </NavLink>
             </>
           )}
 
