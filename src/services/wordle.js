@@ -5,18 +5,11 @@ import { getCurrentUser } from './firebase/auth';
 const DAILY_WORDS_COLLECTION = 'wordle_daily_words';
 const USERS_COLLECTION = 'portal_clientes_users';
 
-// Lista de respaldo (fallback) de 100 palabras de 5 a 8 letras (sin tildes, en mayúsculas)
-const FALLBACK_WORDS = [
-  "MUNDO", "TIEMPO", "CORAZON", "ARBOL", "PERRO", "GATO", "CAMINO", "FUEGO", "AGUA", "TIERRA",
-  "VIENTO", "CIELO", "MAR", "SOL", "LUNA", "ESTRELLA", "MONTAÑA", "RIO", "FLOR", "BOSQUE",
-  "VIDA", "AMOR", "PAZ", "LUZ", "SOMBRA", "SUEÑO", "ESPERA", "VERDAD", "RAZON", "MENTE",
-  "ALMA", "CUERPO", "MANO", "PIE", "CABEZA", "OJOS", "BOCA", "NARIZ", "OREJA", "PIEL",
-  "SANGRE", "HUESO", "DOLOR", "SALUD", "ENFERMO", "MEDICO", "HOSPITAL", "MEDICINA", "CURA", "SANO",
-  "CASA", "HOGAR", "FAMILIA", "PADRE", "MADRE", "HIJO", "HERMANO", "AMIGO", "ENEMIGO", "VECINO",
-  "PUEBLO", "CIUDAD", "CALLE", "PLAZA", "PUENTE", "PUERTA", "VENTANA", "PARED", "TECHO", "SUELO",
-  "MESA", "SILLA", "CAMA", "PLATO", "VASO", "AGUA", "COMIDA", "PAN", "CARNE", "FRUTA",
-  "ROPA", "ZAPATO", "ABRIGO", "CAMISA", "PANTALON", "SOMBRERO", "GUANTE", "RELOJ", "ANILLO", "COLLAR",
-  "DINERO", "PRECIO", "TRABAJO", "EMPLEO", "OFICIO", "NEGOCIO", "MERCADO", "TIENDA", "COMPRA", "VENTA"
+import { DAILY_WORDS } from '../data/wordleDictionary';
+
+// Si el diccionario aún no se generó, usamos un fallback básico de 5 letras
+const FALLBACK_WORDS = DAILY_WORDS.length > 5 ? DAILY_WORDS : [
+  "MUNDO", "TIGRE", "PERRO", "GATOS", "LUNAS", "SOLAR", "MARTE", "PLATA", "COBRE", "LAPIZ"
 ];
 
 /**
