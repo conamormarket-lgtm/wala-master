@@ -21,6 +21,20 @@ export const VisualEditorProvider = ({ children }) => {
   const [storeConfigDraft, setStoreConfigDraft] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Modo vista móvil
+  const [isPreviewMobile, setIsPreviewMobile] = useState(false);
+  const toggleMobilePreview = () => setIsPreviewMobile(!isPreviewMobile);
+
+  // Inyectar clase al body cuando se activa la previsualización móvil
+  useEffect(() => {
+    if (isEditModeActive && isPreviewMobile) {
+      document.body.classList.add('mobile-preview-active');
+    } else {
+      document.body.classList.remove('mobile-preview-active');
+    }
+    return () => document.body.classList.remove('mobile-preview-active');
+  }, [isEditModeActive, isPreviewMobile]);
+
   // Solo se permite el modo edición si el usuario es Admin
   useEffect(() => {
     if (!isAdmin && isEditModeActive) {
@@ -156,7 +170,9 @@ export const VisualEditorProvider = ({ children }) => {
         updateDraft,
         updateSectionsDraft,
         saveDraftToFirestore,
-        isSaving
+        isSaving,
+        isPreviewMobile,
+        toggleMobilePreview
       }}
     >
       {children}

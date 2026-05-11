@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDesignsByUser } from '../../services/designs';
+import { usePedidos } from '../../hooks/usePedidos';
 import MiCreacionCard from './components/MiCreacionCard';
 import styles from './MisCreacionesPage.module.css';
 
@@ -25,10 +26,19 @@ const formatDate = (timestamp) => {
 };
 
 const MisCreacionesPage = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [designs, setDesigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
+  const { data: pedidosData, buscar: buscarPedidos } = usePedidos(dni);
+
+  useEffect(() => {
+    if (dni) {
+      buscarPedidos(dni);
+    }
+  }, [dni, buscarPedidos]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -43,6 +53,18 @@ const MisCreacionesPage = () => {
     })();
     return () => { cancelled = true; };
   }, [user?.uid]);
+
+  const purchasedDesignIds = useMemo(() => {
+    const ids = new Set();
+    const pedidos = pedidosData?.pedidos || [];
+    pedidos.forEach(pedido => {
+      const items = pedido.productos || {};
+      Object.values(items).forEach(item => {
+        if (item.designId) ids.add(item.designId);
+      });
+    });
+    return ids;
+  }, [pedidosData]);
 
   if (!user) return null;
   if (loading) {
@@ -88,7 +110,7 @@ const MisCreacionesPage = () => {
       ) : (
         <ul className={styles.grid}>
           {designs.map((d) => (
-            <MiCreacionCard key={d.id} design={d} />
+            <MiCreacionCard key={d.id} design={d} isPurchased={purchasedDesignIds.has(d.id)} />
           ))}
         </ul>
       )}

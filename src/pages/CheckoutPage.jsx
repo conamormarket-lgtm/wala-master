@@ -319,6 +319,7 @@ const CheckoutPage = () => {
                 (c) => c?.layersByView && Object.values(c.layersByView).some((l) => l?.length > 0)
               )),
               urlImagenPersonalizada: item.customization?.imageURL || '',
+              designId: item.customization?.designId || '',
               subProductos,
             };
           } else {
@@ -336,6 +337,7 @@ const CheckoutPage = () => {
                 : item.customization?.imageURL),
               textoPersonalizado: item.customization?.text || '',
               urlImagenPersonalizada: item.customization?.imageURL || '',
+              designId: item.customization?.designId || '',
             };
           }
         });

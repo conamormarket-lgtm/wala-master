@@ -7,7 +7,7 @@ import { saveLandingPage } from '../services/landingPages';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { SECTION_TYPES, getDefaultSettings } from '../services/storefront';
 import styles from '../../../components/admin/VisualEditorPanel.module.css';
-import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft, GripVertical, Save, X, LayoutTemplate, PanelLeft, Monitor, PanelRight } from 'lucide-react';
+import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft, GripVertical, Save, X, LayoutTemplate, PanelLeft, Monitor, PanelRight, Smartphone } from 'lucide-react';
 
 const TypographyControl = ({ label, prefix, settings, onChange }) => {
   return (
@@ -141,7 +141,9 @@ const VisualEditorPanel = () => {
     updateDraft,
     updateSectionsDraft,
     saveDraftToFirestore,
-    isSaving
+    isSaving,
+    isPreviewMobile,
+    toggleMobilePreview
   } = useVisualEditor();
 
   const { isHeaderVisible, setHeaderVisible, isFooterVisible, setFooterVisible } = useLayoutContext();
@@ -2241,6 +2243,10 @@ const VisualEditorPanel = () => {
       >
         <h3 style={{ pointerEvents: 'none' }}>{activeSection ? `Editando: ${activeSection}` : 'Page Builder (Layout)'}</h3>
         <div className={styles.controls}>
+          <button onClick={toggleMobilePreview} title={isPreviewMobile ? "Volver a vista de Escritorio" : "Previsualización Móvil"}>
+            {isPreviewMobile ? <Monitor size={16} strokeWidth={1.5} color="#3b82f6" /> : <Smartphone size={16} strokeWidth={1.5} />}
+          </button>
+          <div style={{width: '1px', background: '#cbd5e1', margin: '0 5px', height: '16px'}} />
           <button onClick={() => setEditorPosition('left')} title="Anclar a la Izquierda"><PanelLeft size={16} strokeWidth={1.5} /></button>
           <button onClick={() => setEditorPosition('floating')} title="Modo Flotante"><Monitor size={16} strokeWidth={1.5} /></button>
           <button onClick={() => setEditorPosition('right')} title="Anclar a la Derecha"><PanelRight size={16} strokeWidth={1.5} /></button>
