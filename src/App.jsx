@@ -41,6 +41,7 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const PoliticasPrivacidadPage = lazy(() => import('./pages/PoliticasPrivacidadPage'));
 const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
 const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'));
+const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -134,6 +135,11 @@ function App() {
                         {/* Tienda abierta para todos */}
                         <Route path="/" element={<TiendaPage />} />
                         <Route path="/tienda" element={<LegacyTiendaPage />} />
+                        <Route path="/encuesta-suscripcion" element={
+                          <Suspense fallback={<PageLoading />}>
+                            <SubscriptionSurveyPage />
+                          </Suspense>
+                        } />
                         <Route path="/producto/:id" element={<ProductPage />} />
                         <Route path="/personalizar" element={<PersonalizarPage />} />
                         <Route path="/editor/:id" element={<EditorPage />} />

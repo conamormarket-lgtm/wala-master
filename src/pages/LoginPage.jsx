@@ -19,7 +19,11 @@ const LoginPage = () => {
   React.useEffect(() => {
     if (authLoading || !user) return;
     if (userProfile?.dni && userProfile?.phone) {
-      navigate('/', { replace: true });
+      if (!userProfile?.hasCompletedSurvey) {
+        navigate('/encuesta-suscripcion', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } else {
       navigate('/completar-perfil', { replace: true });
     }
@@ -41,7 +45,11 @@ const LoginPage = () => {
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
     } else {
-      navigate('/');
+      if (!userProfile?.hasCompletedSurvey) {
+        navigate('/encuesta-suscripcion');
+      } else {
+        navigate('/');
+      }
     }
     setLoading(false);
   };
