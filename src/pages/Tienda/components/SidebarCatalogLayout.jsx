@@ -48,6 +48,7 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
       <div className={styles.catalogLayout}>
         {/* SIDEBAR Izquierdo */}
         <aside className={styles.sidebar}>
+          
           <div className={styles.sidebarSection}>
             <h3>Categorías</h3>
             <ul className={styles.categoryList}>
@@ -96,6 +97,7 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
               </ul>
             </div>
           )}
+          
 
           {(productTypes || []).length > 0 && (
             <div className={styles.sidebarSection}>
