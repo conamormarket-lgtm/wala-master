@@ -12,8 +12,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
+  background: transparent;
+  border-bottom: none;
 }
 
 .headerLeft, .headerRight {
@@ -39,6 +39,7 @@
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s;
+  display: none; /* Ocultado a petición del usuario */
 }
 
 .backLink:hover {

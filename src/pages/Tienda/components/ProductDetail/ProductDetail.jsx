@@ -16,6 +16,7 @@ import ProductCuestionarioModal from '../ProductCuestionarioModal/ProductCuestio
 import OptimizedImage, { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import { useQuery } from '@tanstack/react-query';
 import { getBrands } from '../../../../services/brands';
+import ProductReviews from '../ProductReviews';
 import styles from './ProductDetail.module.css';
 
 const getCategoryDisplay = (product, categoriesList) => {
@@ -671,6 +672,9 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
               />
             </div>
           )}
+
+          {/* Sección de Reseñas */}
+          <ProductReviews productId={product.id} />
 
         </div>
       </div>

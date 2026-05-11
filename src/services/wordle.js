@@ -105,6 +105,7 @@ export const saveWordleResult = async (won, attemptsUsed) => {
         wordleWins: won ? 1 : 0,
         wordleCurrentStreak: won ? 1 : 0,
         wordleMaxStreak: won ? 1 : 0,
+        wordleTotalAttempts: attemptsUsed,
         lastWordleDate: today,
         displayName: user.displayName || 'Anónimo',
         email: user.email
@@ -146,6 +147,7 @@ export const saveWordleResult = async (won, attemptsUsed) => {
       wordleWins: (userData.wordleWins || 0) + (won ? 1 : 0),
       wordleCurrentStreak: newStreak,
       wordleMaxStreak: maxStreak,
+      wordleTotalAttempts: (userData.wordleTotalAttempts || 0) + attemptsUsed,
       lastWordleDate: today
     };
 
@@ -177,7 +179,8 @@ export const getWordleRanking = async () => {
         displayName: data.displayName || data.nombres || 'Anónimo',
         maxStreak: data.wordleMaxStreak || 0,
         wins: data.wordleWins || 0,
-        played: data.wordlePlayed || 0
+        played: data.wordlePlayed || 0,
+        totalAttempts: data.wordleTotalAttempts || 0
       };
     });
   } catch (error) {

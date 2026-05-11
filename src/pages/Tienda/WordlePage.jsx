@@ -207,9 +207,7 @@ const WordlePage = () => {
   return (
     <div className={styles.pageContainer}>
       <header className={styles.header}>
-        <div className={styles.headerLeft}>
-          <a href="/" className={styles.backLink}>← Volver a la tienda</a>
-        </div>
+        <div className={styles.headerLeft}></div>
         <h1 className={styles.title}>La Palabra del Día</h1>
         <div className={styles.headerRight}>
           <button className={styles.iconBtn} onClick={() => setShowRanking(!showRanking)}>
@@ -233,6 +231,7 @@ const WordlePage = () => {
                   <th>Jugador</th>
                   <th>Mejor Racha</th>
                   <th>Victorias Totales</th>
+                  <th>Intentos Acumulados</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,6 +241,7 @@ const WordlePage = () => {
                     <td>{p.displayName} {user?.uid === p.id && "(Tú)"}</td>
                     <td><span className={styles.streakBadge}>🔥 {p.maxStreak}</span></td>
                     <td>{p.wins} / {p.played}</td>
+                    <td>{p.totalAttempts || 0}</td>
                   </tr>
                 ))}
               </tbody>
@@ -301,7 +301,9 @@ const WordlePage = () => {
               <div className={styles.resultCard} onClick={e => e.stopPropagation()}>
                 <button className={styles.closeModalBtn} onClick={() => setShowResultModal(false)}>✕</button>
                 <h2>{gameStatus === 'won' ? '¡Felicidades!' : 'Fin del Juego'}</h2>
-                {gameStatus === 'lost' && (
+                {gameStatus === 'won' ? (
+                  <p>Adivinaste la palabra en <strong>{guesses.length}</strong> intento{guesses.length !== 1 ? 's' : ''}.</p>
+                ) : (
                   <p>La palabra era: <strong>{targetWord}</strong></p>
                 )}
                 
