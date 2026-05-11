@@ -34,14 +34,17 @@ const AppDownloadBanner = () => {
         </div>
       </div>
       <div className={styles.rightContent}>
-        <a 
-          href="https://play.google.com/store/apps/details?id=com.wala.tienda" 
+        <button 
+          onClick={() => {
+            window.location.href = 'market://details?id=com.wala.tienda';
+            setTimeout(() => {
+              window.location.replace('https://play.google.com/store/apps/details?id=com.wala.tienda');
+            }, 1000);
+          }}
           className={styles.downloadBtn}
-          target="_blank"
-          rel="noopener noreferrer"
         >
           OBTENER
-        </a>
+        </button>
         <button onClick={handleClose} className={styles.closeBtn} aria-label="Cerrar">
           <X size={18} />
         </button>

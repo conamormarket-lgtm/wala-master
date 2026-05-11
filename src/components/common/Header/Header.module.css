@@ -715,6 +715,12 @@
     width: 22px;
     height: 22px;
   }
+
+  .coinsDisplay {
+    font-size: 0.85rem;
+    padding: 3px 8px;
+    margin-right: 0.25rem;
+  }
 }
 
 /* ══════════════════════════════
@@ -745,6 +751,12 @@
     width: 18px;
     height: 18px;
     font-size: 0.625rem;
+  }
+
+  .coinsDisplay {
+    font-size: 0.75rem;
+    padding: 2px 5px;
+    margin-right: 0;
   }
 }
 

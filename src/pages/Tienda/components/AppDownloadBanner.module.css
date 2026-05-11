@@ -7,8 +7,10 @@
   justify-content: space-between;
   gap: 1rem;
   font-family: inherit;
-  z-index: 40;
+  z-index: 90;
   width: 100%;
+  position: sticky;
+  top: calc(var(--header-height, 60px) + var(--safe-top, 0px));
 }
 
 .leftContent {
