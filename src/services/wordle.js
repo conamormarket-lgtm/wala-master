@@ -1,11 +1,10 @@
 import { collection, doc, getDoc, setDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { getCurrentUser } from './firebase/auth';
+import { DAILY_WORDS } from '../data/wordleDictionary';
 
 const DAILY_WORDS_COLLECTION = 'wordle_daily_words';
 const USERS_COLLECTION = 'portal_clientes_users';
-
-import { DAILY_WORDS } from '../data/wordleDictionary';
 
 // Si el diccionario aún no se generó, usamos un fallback básico de 5 letras
 const FALLBACK_WORDS = DAILY_WORDS.length > 5 ? DAILY_WORDS : [

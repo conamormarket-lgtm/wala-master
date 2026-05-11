@@ -36,6 +36,7 @@ import OptimizedImage from '../../components/common/OptimizedImage/OptimizedImag
 import HeroBanner from './components/HeroBanner';
 import EditableSection from '../../components/admin/EditableSection';
 import { useVisualEditor } from './contexts/VisualEditorContext';
+import AppDownloadBanner from './components/AppDownloadBanner';
 import styles from './TiendaPage.module.css';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
@@ -541,6 +542,7 @@ const TiendaPage = () => {
 
   return (
     <div className={styles.container}>
+      {!categoryId && !searchTerm && <AppDownloadBanner />}
       {sorted.map((section, index) => {
         const rendered = renderSection(section);
         if (!rendered) return null;
