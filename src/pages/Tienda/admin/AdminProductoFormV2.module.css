@@ -693,3 +693,218 @@ input:checked + .slider:before {
   content: 'Sans Serif' !important;
 }
 
+/* Tag Input */
+.tagInputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.tagBadge {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #334155;
+}
+.tagBadge button {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+.tagBadge button:hover {
+  color: #ef4444;
+}
+
+/* Brand Creation Modal */
+.addBrandBtn {
+  background: none;
+  border: 1px dashed #cbd5e1;
+  color: #0f172a;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.addBrandBtn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #eff6ff;
+}
+.brandModalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+.brandModal {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.brandModal h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+}
+.brandModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.brandModalActions .cancelBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-weight: 500;
+}
+.brandModalActions .saveBtn {
+  background: #111;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.brandModalActions .saveBtn:disabled {
+  opacity: 0.7;
+}
+
+/* Admin Brands Miniviews Carousel */
+.adminBrandsCarousel {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-top: 6px;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+  scrollbar-width: none;
+}
+.adminBrandsCarousel::-webkit-scrollbar {
+  display: none;
+}
+
+.adminBrandWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  min-width: 65px;
+}
+
+.adminBrandItem {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.editBrandBtn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s;
+  z-index: 5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.adminBrandWrapper:hover .editBrandBtn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.editBrandBtn:hover {
+  background: #f8fafc;
+  color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.adminBrandWrapper:hover .adminBrandItem {
+  transform: translateY(-3px);
+  border-color: #cbd5e1;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+}
+
+.adminBrandActive .adminBrandItem {
+  border-color: var(--primario, #8b5cf6);
+  border-width: 2px;
+  background: #fcfbfe;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
+}
+
+.adminBrandActive .adminBrandName {
+  color: var(--primario, #8b5cf6);
+  font-weight: 700;
+}
+
+.adminBrandImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.adminBrandFallback {
+  font-weight: 700;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.adminBrandName {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 65px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+

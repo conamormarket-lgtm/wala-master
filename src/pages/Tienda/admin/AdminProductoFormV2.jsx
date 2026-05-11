@@ -3,11 +3,14 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createProduct, updateProduct, getProduct } from '../../../services/products';
 import { getMockups } from '../../../services/mockups';
-import { getBrands } from '../../../services/brands';
-import { getCategories } from '../../../services/categories';
-import { getCollections } from '../../../services/collections';
+import { getBrands, createBrand, updateBrand } from '../../../services/brands';
+import { getCategories, createCategory } from '../../../services/categories';
+import { getCollections, createCollection } from '../../../services/collections';
+import { getTags, createTag } from '../../../services/tags';
+import { getCharacters, createCharacter } from '../../../services/characters';
 import { uploadFile } from '../../../services/firebase/storage';
-import { ImagePlus, Save, ArrowLeft, Loader2, Shirt, Image as ImageIcon, Trash2, Camera, Star } from 'lucide-react';
+import CreatableSelect from 'react-select/creatable';
+import { ImagePlus, Save, ArrowLeft, Loader2, Shirt, Image as ImageIcon, Trash2, Camera, Star, X, Edit2 } from 'lucide-react';
 import Button from '../../../components/common/Button';
 import ProductImageContainer from '../components/ProductImageContainer/ProductImageContainer';
 import AdminCustomizationViewsEditor from '../components/AdminCustomizationViewsEditor/AdminCustomizationViewsEditor';
@@ -38,6 +41,42 @@ const dataURLtoBlob = (dataurl) => {
   return new Blob([u8arr], { type: mime });
 }
 
+const TagInput = ({ tags, setTags, placeholder }) => {
+  const [input, setInput] = useState('');
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = input.trim();
+      if (val && !tags.includes(val)) {
+        setTags([...tags, val]);
+      }
+      setInput('');
+    }
+  };
+  const removeTag = (indexToRemove) => {
+    setTags(tags.filter((_, i) => i !== indexToRemove));
+  };
+  return (
+    <div className={styles.tagInputContainer}>
+      <div className={styles.tagList}>
+        {tags.map((tag, i) => (
+          <span key={i} className={styles.tagBadge}>
+            {tag} <button type="button" onClick={() => removeTag(i)}><X size={12}/></button>
+          </span>
+        ))}
+      </div>
+      <input 
+        type="text" 
+        className={styles.input} 
+        value={input} 
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+};
+
 const AdminProductoFormV2 = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -62,6 +101,8 @@ const AdminProductoFormV2 = () => {
     variants: [], 
     customizable: false,
     customizationViews: [],
+    characters: [],
+    tags: [],
     isComboProduct: false,
     comboItems: [],
     comboPreviewImage: '',
@@ -71,6 +112,10 @@ const AdminProductoFormV2 = () => {
   const [activeGalleryTabId, setActiveGalleryTabId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const canvasElRef = useRef(null);
+
+  const [showBrandModal, setShowBrandModal] = useState(false);
+  const [newBrandForm, setNewBrandForm] = useState({ id: null, name: '', logoUrl: '' });
+  const [creatingBrand, setCreatingBrand] = useState(false);
 
   const quillModules = {
     toolbar: [
@@ -92,6 +137,8 @@ const AdminProductoFormV2 = () => {
   const { data: brands } = useQuery({ queryKey: ['admin-brands'], queryFn: async () => (await getBrands()).data });
   const { data: categories } = useQuery({ queryKey: ['admin-categories'], queryFn: async () => (await getCategories()).data });
   const { data: collections } = useQuery({ queryKey: ['admin-collections'], queryFn: async () => (await getCollections()).data });
+  const { data: tags } = useQuery({ queryKey: ['admin-tags'], queryFn: async () => (await getTags()).data });
+  const { data: characters } = useQuery({ queryKey: ['admin-characters'], queryFn: async () => (await getCharacters()).data });
 
   // Si editamos un producto existente en DB
   const { data: productData, isLoading: loadingProduct } = useQuery({
@@ -126,6 +173,8 @@ const AdminProductoFormV2 = () => {
         isComboProduct: Boolean(productData.isComboProduct),
         comboItems: productData.comboItems || [],
         comboPreviewImage: productData.comboPreviewImage || '',
+        characters: productData.characters || [],
+        tags: productData.tags || [],
         featured: productData.featured || false,
       });
 
@@ -163,6 +212,8 @@ const AdminProductoFormV2 = () => {
       variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '' }],
       customizable: false,
       customizationViews: [],
+      characters: [],
+      tags: [],
       isComboProduct: false,
       comboItems: [],
       comboPreviewImage: '',
@@ -474,6 +525,8 @@ const AdminProductoFormV2 = () => {
         isComboProduct: form.isComboProduct,
         comboItems: form.isComboProduct ? form.comboItems : [],
         comboPreviewImage: form.isComboProduct ? form.comboPreviewImage : '',
+        characters: form.characters || [],
+        tags: form.tags || [],
         variants: form.isComboProduct ? [] : finalVariants,
         visible: true,
         featured: form.featured,
@@ -512,6 +565,64 @@ const AdminProductoFormV2 = () => {
           </p>
         </div>
       </div>
+
+      {showBrandModal && (
+        <div className={styles.brandModalOverlay}>
+          <div className={styles.brandModal}>
+            <h3>{newBrandForm.id ? 'Editar Marca' : 'Crear Nueva Marca'}</h3>
+            <div className={styles.field}>
+              <label>Nombre de la marca *</label>
+              <input 
+                type="text" 
+                className={styles.input} 
+                value={newBrandForm.name} 
+                onChange={(e) => setNewBrandForm({ ...newBrandForm, name: e.target.value })}
+                placeholder="Ej: Nike, Apple..."
+                autoFocus
+              />
+            </div>
+            <div className={styles.field}>
+              <label>URL de Imagen / Logo (Opcional)</label>
+              <input 
+                type="text" 
+                className={styles.input} 
+                value={newBrandForm.logoUrl} 
+                onChange={(e) => setNewBrandForm({ ...newBrandForm, logoUrl: e.target.value })}
+                placeholder="https://..."
+              />
+            </div>
+            <div className={styles.brandModalActions}>
+              <button type="button" className={styles.cancelBtn} onClick={() => setShowBrandModal(false)} disabled={creatingBrand}>Cancelar</button>
+              <button 
+                type="button" 
+                className={styles.saveBtn} 
+                onClick={async () => {
+                  if (!newBrandForm.name.trim()) return alert('El nombre es obligatorio');
+                  setCreatingBrand(true);
+                  try {
+                    if (newBrandForm.id) {
+                      await updateBrand(newBrandForm.id, { name: newBrandForm.name, logoUrl: newBrandForm.logoUrl });
+                    } else {
+                      const res = await createBrand({ name: newBrandForm.name, logoUrl: newBrandForm.logoUrl });
+                      setForm(f => ({ ...f, brandId: res.id }));
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
+                    setShowBrandModal(false);
+                    setNewBrandForm({ id: null, name: '', logoUrl: '' });
+                  } catch (err) {
+                    alert('Error creando marca');
+                  } finally {
+                    setCreatingBrand(false);
+                  }
+                }}
+                disabled={creatingBrand}
+              >
+                {creatingBrand ? 'Creando...' : 'Guardar Marca'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form className={styles.contentGrid} onSubmit={handleSubmit}>
         
@@ -602,29 +713,115 @@ const AdminProductoFormV2 = () => {
           </div>
 
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Organización</h2>
+            <div className={styles.cardHeaderFlex}>
+              <h2 className={styles.cardTitle}>Organización</h2>
+              <button type="button" onClick={() => setShowBrandModal(true)} className={styles.addBrandBtn}>
+                + Crear Marca
+              </button>
+            </div>
+
+            {/* Fila de Marcas (Miniviews) */}
+            <div className={styles.adminBrandsCarousel}>
+              {(brands || []).map(b => (
+                <div 
+                  key={b.id} 
+                  className={`${styles.adminBrandWrapper} ${form.brandId === b.id ? styles.adminBrandActive : ''}`}
+                  onClick={() => setForm(f => ({ ...f, brandId: form.brandId === b.id ? '' : b.id }))}
+                  title={b.name}
+                >
+                  <div className={styles.adminBrandItem}>
+                    {b.logoUrl || b.imageUrl ? (
+                      <img src={b.logoUrl || b.imageUrl} alt={b.name} className={styles.adminBrandImage} />
+                    ) : (
+                      <div className={styles.adminBrandFallback}>{b.name.substring(0, 2).toUpperCase()}</div>
+                    )}
+                    <button 
+                      type="button" 
+                      className={styles.editBrandBtn} 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setNewBrandForm({ id: b.id, name: b.name, logoUrl: b.logoUrl || b.imageUrl || '' }); 
+                        setShowBrandModal(true); 
+                      }}
+                      title="Editar marca"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                  </div>
+                  <span className={styles.adminBrandName}>{b.name}</span>
+                </div>
+              ))}
+            </div>
 
             <div className={styles.fieldRow}>
               <div className={styles.field}>
-                <label className={styles.label}>Marca</label>
-                <select className={styles.input} value={form.brandId} onChange={e => setForm(f => ({ ...f, brandId: e.target.value }))}>
-                  <option value="">Ninguna</option>
-                  {brands?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div className={styles.field}>
                 <label className={styles.label}>Categoría</label>
-                <select className={styles.input} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  <option value="">Seleccionar...</option>
-                  {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <CreatableSelect
+                  isClearable
+                  placeholder="Seleccionar o escribir..."
+                  onChange={(val) => setForm(f => ({ ...f, category: val ? val.value : '' }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createCategory({ name: inputValue });
+                    queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+                    setForm(f => ({ ...f, category: res.id }));
+                  }}
+                  options={categories?.map(c => ({ label: c.name, value: c.id })) || []}
+                  value={categories?.find(c => c.id === form.category) ? { label: categories.find(c => c.id === form.category).name, value: form.category } : null}
+                />
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Colección</label>
-                <select className={styles.input} value={form.collection} onChange={e => setForm(f => ({ ...f, collection: e.target.value }))}>
-                  <option value="">Ninguna</option>
-                  {collections?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <CreatableSelect
+                  isClearable
+                  placeholder="Seleccionar o escribir..."
+                  onChange={(val) => setForm(f => ({ ...f, collection: val ? val.value : '' }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createCollection({ name: inputValue });
+                    queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
+                    setForm(f => ({ ...f, collection: res.id }));
+                  }}
+                  options={collections?.map(c => ({ label: c.name, value: c.id })) || []}
+                  value={collections?.find(c => c.id === form.collection) ? { label: collections.find(c => c.id === form.collection).name, value: form.collection } : null}
+                />
+              </div>
+            </div>
+            
+            <div className={styles.fieldRow}>
+              <div className={styles.field}>
+                <label className={styles.label}>Personajes</label>
+                <CreatableSelect
+                  isMulti
+                  placeholder="Seleccionar o escribir..."
+                  onChange={(val) => setForm(f => ({ ...f, characters: val.map(v => v.value) }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createCharacter({ name: inputValue });
+                    queryClient.invalidateQueries({ queryKey: ['admin-characters'] });
+                    setForm(f => ({ ...f, characters: [...(f.characters || []), res.id] }));
+                  }}
+                  options={characters?.map(c => ({ label: c.name, value: c.id })) || []}
+                  value={(form.characters || []).map(id => {
+                    const char = characters?.find(c => c.id === id);
+                    return char ? { label: char.name, value: id } : { label: id, value: id };
+                  })}
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Etiquetas / Tags</label>
+                <CreatableSelect
+                  isMulti
+                  placeholder="Seleccionar o escribir..."
+                  onChange={(val) => setForm(f => ({ ...f, tags: val.map(v => v.value) }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createTag({ name: inputValue });
+                    queryClient.invalidateQueries({ queryKey: ['admin-tags'] });
+                    setForm(f => ({ ...f, tags: [...(f.tags || []), res.id] }));
+                  }}
+                  options={tags?.map(c => ({ label: c.name, value: c.id })) || []}
+                  value={(form.tags || []).map(id => {
+                    const tag = tags?.find(c => c.id === id);
+                    return tag ? { label: tag.name, value: id } : { label: id, value: id };
+                  })}
+                />
               </div>
             </div>
           </div>
