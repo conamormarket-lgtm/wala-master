@@ -28,7 +28,7 @@ const formatDate = (timestamp) => {
   }
 };
 
-const MiCreacionCard = ({ design }) => {
+const MiCreacionCard = ({ design, isPurchased }) => {
   const { data: productResponse, isLoading } = useQuery({
     queryKey: ['product', design.productId],
     queryFn: () => getProduct(design.productId),
@@ -113,8 +113,14 @@ const MiCreacionCard = ({ design }) => {
       </Link>
       
       <div className={styles.cardBody}>
-        <div className={styles.cardHeaderInfo} style={{ marginBottom: '0.25rem' }}>
-           <h3 className={styles.cardTitle}>{design.name || 'Sin nombre'}</h3>
+        <div className={styles.cardHeaderInfo} style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+           <h3 className={styles.cardTitle} style={{ margin: 0 }}>{design.name || 'Sin nombre'}</h3>
+           {isPurchased && (
+             <span title="Este diseño ya fue comprado" style={{ padding: '2px 6px', fontSize: '0.65rem', fontWeight: 700, color: '#15803d', backgroundColor: '#dcfce7', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+               COMPRADO
+             </span>
+           )}
         </div>
         
         <div style={{ fontSize: '0.8125rem', color: 'var(--gris-texto-principal)', marginBottom: '0.25rem', fontWeight: 500 }}>
