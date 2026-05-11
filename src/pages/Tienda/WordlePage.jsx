@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDailyWord, saveWordleResult, getWordleRanking } from '../../services/wordle';
+import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -150,6 +151,13 @@ const WordlePage = () => {
       }
       
       const guessStr = currentGuess.join('');
+      
+      // Validar si la palabra existe en el diccionario (si el diccionario está cargado)
+      if (VALID_GUESSES.size > 10 && !VALID_GUESSES.has(guessStr)) {
+        alert("La palabra no está en el diccionario.");
+        return;
+      }
+
       const newGuesses = [...guesses, guessStr];
       setGuesses(newGuesses);
       setCurrentGuess(Array(wordLength).fill(''));
