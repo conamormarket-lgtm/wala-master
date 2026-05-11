@@ -13,7 +13,17 @@ import ProductImageContainer from '../components/ProductImageContainer/ProductIm
 import AdminCustomizationViewsEditor from '../components/AdminCustomizationViewsEditor/AdminCustomizationViewsEditor';
 import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
 import { fabric } from 'fabric';
+import ReactQuill, { Quill } from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import styles from './AdminProductoFormV2.module.css';
+
+const Size = Quill.import('attributors/style/size');
+Size.whitelist = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
+Quill.register(Size, true);
+
+const Font = Quill.import('attributors/style/font');
+Font.whitelist = ['arial', 'courier', 'garamond', 'tahoma', 'times-new-roman', 'verdana', 'impact', 'roboto', 'open-sans', 'montserrat', 'lato'];
+Quill.register(Font, true);
 
 // Helper to convert dataURL to Blob
 const dataURLtoBlob = (dataurl) => {
@@ -61,6 +71,19 @@ const AdminProductoFormV2 = () => {
   const [activeGalleryTabId, setActiveGalleryTabId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const canvasElRef = useRef(null);
+
+  const quillModules = {
+    toolbar: [
+      [{ 'font': Font.whitelist }],
+      [{ 'size': Size.whitelist }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
   const [fabricCanvas, setFabricCanvas] = useState(null);
   const [hasActiveObject, setHasActiveObject] = useState(false);
 
@@ -563,14 +586,18 @@ const AdminProductoFormV2 = () => {
               </div>
             </div>
 
-            <div className={styles.field}>
+            <div className={styles.field} style={{ marginBottom: '1.5rem' }}>
               <label className={styles.label}>Descripción Breve</label>
-              <textarea
-                className={styles.textarea}
-                value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                rows={3}
-              />
+              <div style={{ background: '#fff' }}>
+                <ReactQuill 
+                  theme="snow"
+                  value={form.description}
+                  onChange={(content) => setForm(f => ({ ...f, description: content }))}
+                  modules={quillModules}
+                  placeholder="Escribe la descripción de tu producto..."
+                  style={{ minHeight: '150px' }}
+                />
+              </div>
             </div>
           </div>
 

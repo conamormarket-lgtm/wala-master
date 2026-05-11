@@ -658,3 +658,38 @@ input:checked + .slider:before {
   transform: translateX(24px);
 }
 
+/* ReactQuill Overrides */
+:global(.ql-container) {
+  font-family: inherit !important;
+  font-size: 0.95rem !important;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+:global(.ql-toolbar) {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  background: #f8f9fa;
+}
+
+/* ReactQuill Custom Dropdown Labels for Sizes */
+:global(.ql-snow .ql-picker.ql-size .ql-picker-label[data-value]::before),
+:global(.ql-snow .ql-picker.ql-size .ql-picker-item[data-value]::before) {
+  content: attr(data-value) !important;
+}
+:global(.ql-snow .ql-picker.ql-size .ql-picker-label::before),
+:global(.ql-snow .ql-picker.ql-size .ql-picker-item::before) {
+  content: 'Normal' !important;
+}
+
+/* ReactQuill Custom Dropdown Labels for Fonts */
+:global(.ql-snow .ql-picker.ql-font .ql-picker-label[data-value]::before),
+:global(.ql-snow .ql-picker.ql-font .ql-picker-item[data-value]::before) {
+  content: attr(data-value) !important;
+  text-transform: capitalize;
+}
+:global(.ql-snow .ql-picker.ql-font .ql-picker-label::before),
+:global(.ql-snow .ql-picker.ql-font .ql-picker-item::before) {
+  content: 'Sans Serif' !important;
+}
+
