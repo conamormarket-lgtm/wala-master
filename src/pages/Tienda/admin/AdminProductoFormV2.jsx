@@ -9,6 +9,9 @@ import { getCollections } from '../../../services/collections';
 import { uploadFile } from '../../../services/firebase/storage';
 import { ImagePlus, Save, ArrowLeft, Loader2, Shirt, Image as ImageIcon, Trash2, Camera, Star } from 'lucide-react';
 import Button from '../../../components/common/Button';
+import ProductImageContainer from '../components/ProductImageContainer/ProductImageContainer';
+import AdminCustomizationViewsEditor from '../components/AdminCustomizationViewsEditor/AdminCustomizationViewsEditor';
+import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
 import { fabric } from 'fabric';
 import styles from './AdminProductoFormV2.module.css';
 
@@ -47,6 +50,12 @@ const AdminProductoFormV2 = () => {
     collection: '',
     defaultVariantId: '', // ID de la variante principal
     variants: [], 
+    customizable: false,
+    customizationViews: [],
+    isComboProduct: false,
+    comboItems: [],
+    comboPreviewImage: '',
+    featured: false,
   });
 
   const [activeGalleryTabId, setActiveGalleryTabId] = useState(null);
@@ -89,6 +98,12 @@ const AdminProductoFormV2 = () => {
         collection: productData.collections?.[0]?.id || productData.collections?.[0] || '',
         defaultVariantId: productData.defaultVariantId || (mappedVariants[0]?.id || ''),
         variants: mappedVariants,
+        customizable: productData.customizable || false,
+        customizationViews: productData.customizable && productData.customizationViews ? productData.customizationViews : [],
+        isComboProduct: Boolean(productData.isComboProduct),
+        comboItems: productData.comboItems || [],
+        comboPreviewImage: productData.comboPreviewImage || '',
+        featured: productData.featured || false,
       });
 
       if (mappedVariants.length > 0) setActiveGalleryTabId(mappedVariants[0].id);
@@ -122,7 +137,13 @@ const AdminProductoFormV2 = () => {
     setForm(f => ({
       ...f,
       defaultVariantId: initialVariantId,
-      variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '' }]
+      variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '' }],
+      customizable: false,
+      customizationViews: [],
+      isComboProduct: false,
+      comboItems: [],
+      comboPreviewImage: '',
+      featured: false,
     }));
     setActiveGalleryTabId(initialVariantId);
   };
@@ -156,8 +177,8 @@ const AdminProductoFormV2 = () => {
 
     if (shouldShowCanvas && canvasElRef.current && !fabricCanvas) {
       const canvas = new fabric.Canvas(canvasElRef.current, {
-        width: 400,
-        height: 533,
+        width: 300,
+        height: 400,
         preserveObjectStacking: true,
       });
 
@@ -184,8 +205,8 @@ const AdminProductoFormV2 = () => {
 
       if (baseImgUrl) {
         fabric.Image.fromURL(baseImgUrl, (img) => {
-          const scale = Math.min(400 / img.width, 533 / img.height);
-          img.set({ originX: 'center', originY: 'center', left: 200, top: 266.5, scaleX: scale, scaleY: scale, selectable: false, evented: false });
+          const scale = Math.min(300 / img.width, 400 / img.height);
+          img.set({ originX: 'center', originY: 'center', left: 150, top: 200, scaleX: scale, scaleY: scale, selectable: false, evented: false });
           fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
         }, { crossOrigin: 'anonymous' });
       } else {
@@ -207,9 +228,9 @@ const AdminProductoFormV2 = () => {
     if (file && fabricCanvas) {
       const url = URL.createObjectURL(file);
       fabric.Image.fromURL(url, (img) => {
-        img.scaleToWidth(150);
+        img.scaleToWidth(120);
         img.set({
-          originX: 'center', originY: 'center', left: 200, top: 200,
+          originX: 'center', originY: 'center', left: 150, top: 150,
           transparentCorners: false, cornerColor: '#111', borderColor: '#111', cornerSize: 10, padding: 5
         });
         fabricCanvas.add(img);
@@ -343,6 +364,41 @@ const AdminProductoFormV2 = () => {
     }
   };
 
+  const handleToggleCustomizable = (e) => {
+    const isCustomizable = e.target.checked;
+    setForm(f => {
+      const newState = { ...f, customizable: isCustomizable };
+      
+      if (isCustomizable && f.customizationViews.length === 0) {
+        let baseImageUrl = '';
+        const defaultVariant = f.variants.find(v => v.id === f.defaultVariantId) || f.variants[0];
+        
+        if (defaultVariant) {
+          if (defaultVariant.mode === 'mockup' && defaultVariant.mockupState?.selectedMockupId) {
+            const mockup = mockups?.find(m => m.id === defaultVariant.mockupState.selectedMockupId);
+            baseImageUrl = mockup?.variants?.[defaultVariant.mockupState.selectedVariantIndex]?.imageUrl || mockup?.baseImageUrl || '';
+          } else {
+            baseImageUrl = defaultVariant.imageUrl || '';
+          }
+        }
+
+        const newView = {
+          id: `view_${Date.now()}`,
+          name: 'Vista 1 (Frente)',
+          imagesByColor: { default: baseImageUrl },
+          initialLayersByColor: { default: [] },
+          printAreas: [{
+            id: `zone_${Date.now()}_0`,
+            shape: 'rectangle',
+            x: 20, y: 20, width: 60, height: 60, rotation: 0, skewX: 0, skewY: 0
+          }]
+        };
+        newState.customizationViews = [newView];
+      }
+      return newState;
+    });
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (payload) => {
       if (isNew) return await createProduct(payload);
@@ -363,11 +419,7 @@ const AdminProductoFormV2 = () => {
     e.preventDefault();
     if (!form.name.trim() || form.variants.length === 0) return;
 
-    if (form.variants.some(v => v.mode === 'mockup' && !v.imageUrl) || form.variants.some(v => v.mode === 'direct' && !v.imageUrl)) {
-      alert("Falta fijar o subir la foto principal en alguna de tus variantes. Por favor asegúrate de haber capturado o subido todas las imágenes.");
-      return;
-    }
-
+    // Validación de imagen eliminada para permitir productos sin foto
     setUploading(true);
     try {
       const finalVariants = form.variants.map((v) => ({
@@ -394,8 +446,14 @@ const AdminProductoFormV2 = () => {
         collections: form.collection ? [{ id: form.collection }] : [],
         mainImage: mainImage,
         defaultVariantId: defaultVariant.id,
-        variants: finalVariants,
+        customizable: form.customizable,
+        customizationViews: form.customizationViews,
+        isComboProduct: form.isComboProduct,
+        comboItems: form.isComboProduct ? form.comboItems : [],
+        comboPreviewImage: form.isComboProduct ? form.comboPreviewImage : '',
+        variants: form.isComboProduct ? [] : finalVariants,
         visible: true,
+        featured: form.featured,
         isV2: true, 
       };
 
@@ -424,7 +482,7 @@ const AdminProductoFormV2 = () => {
           <ArrowLeft size={20} /> Volver
         </button>
         <div>
-          <h1 className={styles.title}>{isNew ? 'Crear Producto (Generador V2)' : 'Editar Producto V2'}</h1>
+          <h1 className={styles.title}>{isNew ? 'Crear Producto' : 'Editar Producto'}</h1>
           <p className={styles.subtitle}>
             {isNew && <span style={{ color: '#f59f00', fontWeight: 'bold', marginRight: '8px' }}>[Autoguardado Activo]</span>}
             Crea productos configurando mockups o imágenes independientes por cada variante.
@@ -433,13 +491,34 @@ const AdminProductoFormV2 = () => {
       </div>
 
       <form className={styles.contentGrid} onSubmit={handleSubmit}>
+        
+        {/* Type Selector (Individual vs Combo) */}
+        <div className={styles.card} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>📦 Tipo de Producto</h2>
+              <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem', marginBottom: 0 }}>¿Qué vas a vender?</p>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input type="radio" checked={!form.isComboProduct} onChange={() => setForm(f => ({ ...f, isComboProduct: false }))} />
+                <span style={{ fontWeight: !form.isComboProduct ? 600 : 400 }}>Producto Individual</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input type="radio" checked={form.isComboProduct} onChange={() => setForm(f => ({ ...f, isComboProduct: true }))} />
+                <span style={{ fontWeight: form.isComboProduct ? 600 : 400 }}>Combo / Paquete</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
         {/* COLUMNA IZQUIERDA: Formulario */}
         <div className={styles.leftCol}>
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>Información Básica</h2>
 
             <div className={styles.field}>
-              <label className={styles.label}>Nombre del Producto</label>
+              <label className={styles.label}>Nombre del Producto <span style={{color: '#e03131'}}>*</span></label>
               <input
                 type="text"
                 className={styles.input}
@@ -452,7 +531,7 @@ const AdminProductoFormV2 = () => {
 
             <div className={styles.fieldRow}>
               <div className={styles.field}>
-                <label className={styles.label}>Precio Base</label>
+                <label className={styles.label}>Precio Base <span style={{color: '#e03131'}}>*</span></label>
                 <input
                   type="number"
                   step="0.01"
@@ -524,10 +603,20 @@ const AdminProductoFormV2 = () => {
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: Editor de Variante */}
+        {/* COLUMNA DERECHA: Editor de Variante / Combo */}
         <div className={styles.rightCol}>
           
-          <div className={styles.card}>
+          {form.isComboProduct ? (
+            <AdminComboEditor 
+              comboItems={form.comboItems} 
+              setComboItems={(items) => setForm(f => ({ ...f, comboItems: items }))} 
+              comboPreviewImage={form.comboPreviewImage}
+              setComboPreviewImage={(img) => setForm(f => ({ ...f, comboPreviewImage: img }))}
+              draftId={draftId}
+            />
+          ) : (
+            <>
+              <div className={styles.card}>
             <div className={styles.cardHeaderFlex}>
               <div>
                 <h2 className={styles.cardTitle}>Editor de Variantes</h2>
@@ -634,9 +723,10 @@ const AdminProductoFormV2 = () => {
                     {activeVariant.imageUrl ? (
                       // SHOW PREVIEW IF CAPTURED
                       <div className={styles.capturedPreviewContainer}>
-                        <div className={styles.previewBox} style={brandBgStyle}>
-                          <img src={activeVariant.imageUrl} alt="Mockup Capturado" className={styles.mockupBaseImg} />
-                        </div>
+                        <ProductImageContainer 
+                          imageUrl={activeVariant.imageUrl} 
+                          style={brandBgStyle} 
+                        />
                         <button type="button" onClick={handleRedoMockup} className={styles.redoBtn}>
                           Rehacer Diseño (Volver al Canvas)
                         </button>
@@ -688,7 +778,7 @@ const AdminProductoFormV2 = () => {
                           </div>
                         )}
 
-                        <div className={styles.previewBoxInteractive} style={brandBgStyle}>
+                        <ProductImageContainer style={brandBgStyle}>
                           {!activeVariant.mockupState.selectedMockupId && (
                             <div className={styles.emptyPreviewOverlay}>
                               <Shirt size={48} opacity={0.2} />
@@ -696,7 +786,7 @@ const AdminProductoFormV2 = () => {
                             </div>
                           )}
                           <canvas ref={canvasElRef} className={styles.fabricCanvasEl} />
-                        </div>
+                        </ProductImageContainer>
 
                         {activeVariant.mockupState.selectedMockupId && (
                           <button type="button" onClick={handleCaptureMockup} className={styles.captureBtn} disabled={uploading}>
@@ -710,18 +800,11 @@ const AdminProductoFormV2 = () => {
                   </div>
                 ) : (
                   <div className={styles.directWorkspace}>
-                    <div className={styles.previewBox} style={brandBgStyle}>
-                      {activeVariant.imageUrl ? (
-                        <div className={styles.mockupContainer}>
-                          <img src={activeVariant.imageUrl} alt="Producto" className={styles.mockupBaseImg} />
-                        </div>
-                      ) : (
-                        <div className={styles.emptyPreview}>
-                          <ImageIcon size={48} opacity={0.2} />
-                          <span>Sube una imagen del producto terminado</span>
-                        </div>
-                      )}
-                    </div>
+                    <ProductImageContainer 
+                      imageUrl={activeVariant.imageUrl} 
+                      style={brandBgStyle}
+                      emptyMessage="Sube una imagen del producto terminado"
+                    />
                     <div className={styles.field} style={{ marginTop: '1rem' }}>
                       <label className={styles.uploadImageLabel}>
                         <ImagePlus size={24} />
@@ -749,7 +832,7 @@ const AdminProductoFormV2 = () => {
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, idx)}
                     >
-                      <img src={img} alt={`Gallery ${idx}`} />
+                      <ProductImageContainer imageUrl={img} isGallery={true} />
                       <button type="button" onClick={() => removeGalleryImage(idx)} className={styles.deleteGalleryBtn}>
                         <Trash2 size={14} />
                       </button>
@@ -767,12 +850,80 @@ const AdminProductoFormV2 = () => {
               </div>
             )}
           </div>
+          </>
+          )}
+
+          <div className={styles.card} style={{ marginTop: '1.5rem' }}>
+            <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>
+              <div>
+                <h2 className={styles.cardTitle} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>Producto Personalizable</h2>
+                <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem' }}>
+                  {form.isComboProduct 
+                    ? 'Permite a los clientes personalizar los productos de este paquete usando las vistas originales de cada uno.'
+                    : 'Permite a los clientes añadir sus propios textos y diseños sobre este producto en la tienda.'}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch}>
+                <input
+                  type="checkbox"
+                  checked={form.customizable}
+                  onChange={handleToggleCustomizable}
+                />
+                <span className={styles.slider}></span>
+              </label>
+            </div>
+            {form.customizable && !form.isComboProduct && (
+              <div style={{ marginTop: '2rem' }}>
+                <AdminCustomizationViewsEditor 
+                  views={form.customizationViews} 
+                  onChange={(views) => setForm(f => ({ ...f, customizationViews: views }))} 
+                  draftId={draftId}
+                />
+              </div>
+            )}
+            {form.customizable && form.isComboProduct && (
+              <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+                <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
+                  ✅ <strong>Personalización activada.</strong> En la tienda, el cliente podrá personalizar cada elemento de este combo. Las áreas de impresión y vistas se heredarán automáticamente de la configuración original de cada producto.
+                </p>
+              </div>
+            )}
+          </div>
+
+
+          <div className={styles.card} style={{ marginTop: '1.5rem' }}>
+            <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>
+              <div>
+                <h2 className={styles.cardTitle} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>Configuración</h2>
+                <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem' }}>
+                  Ajustes adicionales para la visualización del producto en la tienda.
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+              <div>
+                <h4 style={{ margin: 0, color: '#111', fontSize: '1rem' }}>Producto Destacado</h4>
+                <p style={{ margin: 0, color: '#666', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                  Resalta este producto en los módulos de "Productos Destacados" de tus landing pages.
+                </p>
+              </div>
+              <label className={styles.toggleSwitch}>
+                <input
+                  type="checkbox"
+                  checked={form.featured}
+                  onChange={(e) => setForm(f => ({ ...f, featured: e.target.checked }))}
+                />
+                <span className={styles.slider}></span>
+              </label>
+            </div>
+          </div>
 
           <div className={styles.saveSection}>
             <Button
               type="submit"
               className={styles.saveBtn}
-              disabled={uploading || saveMutation.isPending || form.variants.some(v => !v.imageUrl)}
+              disabled={uploading || saveMutation.isPending}
             >
               {uploading ? <><Loader2 className="animate-spin" size={18} /> Procesando...</> : <><Save size={18} /> {isNew ? 'Guardar Producto (Oficial)' : 'Guardar Cambios'}</>}
             </Button>

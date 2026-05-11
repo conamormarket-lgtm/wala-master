@@ -1,0 +1,102 @@
+.container {
+  width: 300px;
+  height: 400px;
+  border-radius: 12px;
+  background: repeating-conic-gradient(#f8f9fa 0% 25%, transparent 0% 50%) 50% / 20px 20px;
+  background-color: #ffffff;
+  border: 2px dashed #e0e0e0;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.galleryContainer {
+  width: 100%;
+  aspect-ratio: 3/4;
+  height: auto;
+  border-radius: 8px;
+  background: repeating-conic-gradient(#f8f9fa 0% 25%, transparent 0% 50%) 50% / 20px 20px;
+  background-color: #ffffff;
+  border: 1px solid #eee;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.contentWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #999;
+  text-align: center;
+  padding: 2rem;
+  z-index: 1;
+}
+
+.resolutionBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #eee;
+  color: #666;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 10;
+  cursor: help;
+}
+
+.tooltip {
+  visibility: hidden;
+  width: 220px;
+  background-color: #111;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px;
+  position: absolute;
+  z-index: 20;
+  top: 120%;
+  right: 0;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.75rem;
+  font-weight: 400;
+  pointer-events: none;
+}
+
+.resolutionBadge:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}

@@ -55,7 +55,6 @@ const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'))
 const AdminInventario = lazy(() => import('./pages/Tienda/admin/AdminInventario'));
 const AdminMockups = lazy(() => import('./pages/Tienda/admin/AdminMockups'));
 const AdminReferidos = lazy(() => import('./pages/admin/AdminReferidos'));
-const AdminProductoForm = lazy(() => import('./pages/AdminProducto/AdminProductoForm'));
 const AdminProductoFormV2 = lazy(() => import('./pages/Tienda/admin/AdminProductoFormV2'));
 const AdminCategorias = lazy(() => import('./pages/admin/AdminCategorias'));
 const AdminColecciones = lazy(() => import('./pages/admin/AdminColecciones'));
@@ -155,10 +154,8 @@ function App() {
                             <Route path="productos" element={<AdminProductos />} />
                             <Route path="inventario" element={<AdminInventario />} />
                             <Route path="mockups" element={<AdminMockups />} />
-                            <Route path="productos/nuevo" element={<AdminProductoForm />} />
-                            <Route path="productos/v2/nuevo" element={<AdminProductoFormV2 />} />
-                            <Route path="productos/v2/:id" element={<AdminProductoFormV2 />} />
-                            <Route path="productos/:id" element={<AdminProductoForm />} />
+                            <Route path="productos/nuevo" element={<AdminProductoFormV2 />} />
+                            <Route path="productos/:id" element={<AdminProductoFormV2 />} />
                             <Route path="categorias" element={<AdminCategorias />} />
                             <Route path="colecciones" element={<AdminColecciones />} />
 

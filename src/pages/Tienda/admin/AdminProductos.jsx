@@ -386,10 +386,7 @@ const AdminProductos = () => {
             Exportar CSV
           </Button>
           <Link to="/admin/productos/nuevo">
-            <Button variant="secondary">Creación Legacy</Button>
-          </Link>
-          <Link to="/admin/productos/v2/nuevo">
-            <Button>Generador V2</Button>
+            <Button>Crear Producto</Button>
           </Link>
         </div>
       </div>
@@ -413,7 +410,7 @@ const AdminProductos = () => {
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <Link to={`/admin/productos/v2/nuevo?draftId=${draft.draftId}`}>
+                  <Link to={`/admin/productos/nuevo?draftId=${draft.draftId}`}>
                     <Button variant="secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <Edit2 size={14} /> Continuar
                     </Button>
@@ -606,7 +603,7 @@ const AdminProductos = () => {
                 </div>
                 <div className={styles.cardActions}>
                   <Link
-                    to={p.isV2 ? `/admin/productos/v2/${p.id}` : `/admin/productos/${p.id}`}
+                    to={`/admin/productos/${p.id}`}
                     className={styles.btnEdit}
                     title="Editar producto"
                   >
