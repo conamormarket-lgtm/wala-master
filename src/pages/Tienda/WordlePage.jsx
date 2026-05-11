@@ -29,10 +29,12 @@ const WordlePage = () => {
   const [targetWord, setTargetWord] = useState('');
   const [wordLength, setWordLength] = useState(5);
   const [guesses, setGuesses] = useState([]);
-  const [currentGuess, setCurrentGuess] = useState('');
+  const [currentGuess, setCurrentGuess] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [gameStatus, setGameStatus] = useState('playing'); // 'playing', 'won', 'lost'
   const [userStats, setUserStats] = useState(null);
   const [showRanking, setShowRanking] = useState(false);
+  const [showResultModal, setShowResultModal] = useState(false);
 
   // Obtener la palabra del día
   const { data: dailyWord, isLoading: isLoadingWord } = useQuery({
@@ -63,6 +65,7 @@ const WordlePage = () => {
       const cleanTarget = removeAccents(dailyWord);
       setTargetWord(cleanTarget);
       setWordLength(cleanTarget.length);
+      setCurrentGuess(Array(cleanTarget.length).fill(''));
 
       const savedState = localStorage.getItem(storageKey);
       if (savedState) {
@@ -70,6 +73,9 @@ const WordlePage = () => {
           const parsed = JSON.parse(savedState);
           setGuesses(parsed.guesses || []);
           setGameStatus(parsed.gameStatus || 'playing');
+          if (parsed.gameStatus && parsed.gameStatus !== 'playing') {
+            setShowResultModal(true);
+          }
           if (parsed.userStats) setUserStats(parsed.userStats);
         } catch (e) {
           console.error("Error parsing localstorage", e);
@@ -124,43 +130,69 @@ const WordlePage = () => {
     if (gameStatus !== 'playing') return;
 
     if (key === 'BACKSPACE') {
-      setCurrentGuess(prev => prev.slice(0, -1));
+      setCurrentGuess(prev => {
+        const newArr = [...prev];
+        if (newArr[activeIndex] !== '') {
+          newArr[activeIndex] = '';
+        } else if (activeIndex > 0) {
+          newArr[activeIndex - 1] = '';
+          setActiveIndex(activeIndex - 1);
+        }
+        return newArr;
+      });
       return;
     }
 
     if (key === 'ENTER') {
-      if (currentGuess.length !== wordLength) {
-        // Podría mostrar un toast "Faltan letras"
+      if (currentGuess.includes('')) {
+        // Faltan letras
         return;
       }
       
-      const newGuesses = [...guesses, currentGuess];
+      const guessStr = currentGuess.join('');
+      const newGuesses = [...guesses, guessStr];
       setGuesses(newGuesses);
-      setCurrentGuess('');
+      setCurrentGuess(Array(wordLength).fill(''));
+      setActiveIndex(0);
 
-      if (currentGuess === targetWord) {
+      if (guessStr === targetWord) {
         setGameStatus('won');
+        setShowResultModal(true);
         if (user) saveResultMutation.mutate({ won: true, attempts: newGuesses.length });
       } else if (newGuesses.length >= MAX_ATTEMPTS) {
         setGameStatus('lost');
+        setShowResultModal(true);
         if (user) saveResultMutation.mutate({ won: false, attempts: newGuesses.length });
       }
       return;
     }
 
-    if (LETTERS.includes(key) && currentGuess.length < wordLength) {
-      setCurrentGuess(prev => prev + key);
+    if (LETTERS.includes(key)) {
+      setCurrentGuess(prev => {
+        const newArr = [...prev];
+        newArr[activeIndex] = key;
+        return newArr;
+      });
+      if (activeIndex < wordLength - 1) {
+        setActiveIndex(activeIndex + 1);
+      }
     }
-  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, user, saveResultMutation]);
+  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, user, saveResultMutation, activeIndex]);
 
   // Escuchar teclado físico
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const key = e.key.toUpperCase();
-      if (key === 'ENTER') onKeyPress('ENTER');
-      if (key === 'BACKSPACE') onKeyPress('BACKSPACE');
-      if (LETTERS.includes(key) || key === 'Ñ') onKeyPress(key);
+      if (key === 'BACKSPACE') {
+        e.preventDefault();
+        onKeyPress('BACKSPACE');
+      } else if (key === 'ENTER') {
+        e.preventDefault();
+        onKeyPress('ENTER');
+      } else if (LETTERS.includes(key) || key === 'Ñ') {
+        onKeyPress(key);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -224,23 +256,30 @@ const WordlePage = () => {
             {Array.from({ length: MAX_ATTEMPTS }).map((_, rowIndex) => {
               const isCurrentRow = rowIndex === guesses.length;
               const isPastRow = rowIndex < guesses.length;
-              const guessStr = isPastRow ? guesses[rowIndex] : (isCurrentRow ? currentGuess : '');
 
               return (
                 <div key={rowIndex} className={styles.row} style={{ gridTemplateColumns: `repeat(${wordLength}, 1fr)` }}>
                   {Array.from({ length: wordLength }).map((_, colIndex) => {
-                    const letter = guessStr[colIndex] || '';
+                    const letter = isPastRow ? guesses[rowIndex][colIndex] : (isCurrentRow ? currentGuess[colIndex] : '');
                     let statusClass = styles.emptyCell;
                     
                     if (isPastRow) {
-                      const status = getLetterStatus(letter, colIndex, guessStr);
+                      const status = getLetterStatus(letter, colIndex, guesses[rowIndex]);
                       statusClass = styles[status];
                     } else if (letter) {
                       statusClass = styles.filledCell;
                     }
 
+                    const isFocused = isCurrentRow && activeIndex === colIndex;
+
                     return (
-                      <div key={colIndex} className={`${styles.cell} ${statusClass} ${letter && isCurrentRow ? styles.pop : ''}`}>
+                      <div 
+                        key={colIndex} 
+                        className={`${styles.cell} ${statusClass} ${letter && isCurrentRow ? styles.pop : ''} ${isFocused ? styles.focusedCell : ''}`}
+                        onClick={() => {
+                          if (isCurrentRow) setActiveIndex(colIndex);
+                        }}
+                      >
                         {letter}
                       </div>
                     );
@@ -250,10 +289,17 @@ const WordlePage = () => {
             })}
           </div>
 
+          {gameStatus !== 'playing' && !showResultModal && (
+            <button className={styles.showResultBtn} onClick={() => setShowResultModal(true)}>
+              📊 Ver Resultados
+            </button>
+          )}
+
           {/* Modal de Resultado */}
-          {gameStatus !== 'playing' && (
-            <div className={styles.resultOverlay}>
-              <div className={styles.resultCard}>
+          {showResultModal && (
+            <div className={styles.resultOverlay} onClick={() => setShowResultModal(false)}>
+              <div className={styles.resultCard} onClick={e => e.stopPropagation()}>
+                <button className={styles.closeModalBtn} onClick={() => setShowResultModal(false)}>✕</button>
                 <h2>{gameStatus === 'won' ? '¡Felicidades!' : 'Fin del Juego'}</h2>
                 {gameStatus === 'lost' && (
                   <p>La palabra era: <strong>{targetWord}</strong></p>
