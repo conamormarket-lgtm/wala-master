@@ -26,7 +26,11 @@ const CompleteProfilePage = () => {
     }
     if (!authLoading && user && userProfile) {
       if (userProfile.dni && userProfile.phone) {
-        navigate('/');
+        if (!userProfile.hasCompletedSurvey) {
+          navigate('/encuesta-suscripcion');
+        } else {
+          navigate('/');
+        }
         return;
       }
       setFullName(userProfile.displayName || user.displayName || '');
@@ -69,7 +73,11 @@ const CompleteProfilePage = () => {
       setError(err);
       return;
     }
-    navigate('/');
+    if (!userProfile?.hasCompletedSurvey) {
+      navigate('/encuesta-suscripcion');
+    } else {
+      navigate('/');
+    }
   };
 
   if (authLoading || (!user && !userProfile)) {

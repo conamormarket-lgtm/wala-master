@@ -42,7 +42,11 @@ const RegisterPage = () => {
   React.useEffect(() => {
     if (authLoading || !user) return;
     if (userProfile?.dni && userProfile?.phone) {
-      navigate('/', { replace: true });
+      if (!userProfile?.hasCompletedSurvey) {
+        navigate('/encuesta-suscripcion', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } else if (step === 1) {
       setStep(2);
     }
@@ -101,7 +105,7 @@ const RegisterPage = () => {
       setError(err);
       return;
     }
-    navigate('/');
+    navigate('/encuesta-suscripcion');
   };
 
   const handleGoogle = async () => {
