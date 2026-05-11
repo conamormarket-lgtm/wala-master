@@ -1,6 +1,8 @@
 .editableWrapper {
   position: relative;
   transition: all 0.2s;
+  width: 100%;
+  display: flow-root;
 }
 
 .overlay {
@@ -30,6 +32,8 @@
   background-color: rgba(227, 24, 55, 0.05);
   pointer-events: none; /* Si está activo, dejamos interactuar con el componente real para probar */
 }
+
+/* Los estilos de hover desde el cajón se manejan vía inline styles en EditableSection.jsx */
 
 .editButton {
   background-color: #e31837;

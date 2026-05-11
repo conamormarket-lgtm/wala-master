@@ -66,7 +66,9 @@ const TypographyControl = ({ label, prefix, settings, onChange }) => {
 const VisualEditorPanel = () => {
   const { 
     isEditModeActive, 
-    activeSection, 
+    activeSection,
+    hoveredSectionId,
+    setHoveredSectionId,
     openEditorForSection,
     closeEditor, 
     editorPosition, 
@@ -248,7 +250,13 @@ const VisualEditorPanel = () => {
           {sections.sort((a,b) => (a.order||0) - (b.order||0)).map((section, index) => {
             const typeLabel = SECTION_TYPES.find(t => t.id === section.type)?.label || section.type;
             return (
-              <div key={section.id} className={styles.linkSummaryBox} style={{cursor: 'default'}}>
+              <div 
+                key={section.id} 
+                className={`${styles.linkSummaryBox} ${hoveredSectionId === section.id ? styles.hoveredModuleInDrawer : ''}`} 
+                style={{cursor: 'default'}}
+                onMouseEnter={() => setHoveredSectionId(section.id)}
+                onMouseLeave={() => setHoveredSectionId(null)}
+              >
                 <div style={{flex: 1}}>
                   <strong style={{display: 'block', fontSize: '0.95rem'}}>{typeLabel}</strong>
                   {section.settings?.title && (

@@ -12,6 +12,7 @@ export const VisualEditorProvider = ({ children }) => {
   const { isAdmin } = useAuth();
   const [isEditModeActive, setIsEditModeActive] = useState(false);
   const [activeSection, setActiveSection] = useState(null); // 'heroBanner', 'layout', 'header'
+  const [hoveredSectionId, setHoveredSectionId] = useState(null); // sectionId from drawer
   const [editorPosition, setEditorPosition] = useState('right'); // 'left', 'right', 'floating'
   
   const [activePageId, setActivePageId] = useState('home');
@@ -142,6 +143,8 @@ export const VisualEditorProvider = ({ children }) => {
         isEditModeActive,
         toggleEditMode,
         activeSection,
+        hoveredSectionId,
+        setHoveredSectionId,
         openEditorForSection,
         closeEditor,
         editorPosition,

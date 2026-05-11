@@ -471,14 +471,24 @@ const TiendaPage = () => {
     );
   }
 
+  const { SECTION_TYPES } = require('./services/storefront');
+
   return (
     <div className={styles.container}>
-      {sorted.map((section, index) => (
-        <React.Fragment key={section.id}>
-          <ModuleInserter index={index} />
-          {renderSection(section)}
-        </React.Fragment>
-      ))}
+      {sorted.map((section, index) => {
+        const rendered = renderSection(section);
+        if (!rendered) return null;
+        const typeLabel = SECTION_TYPES?.find(t => t.id === section.type)?.label || section.type;
+        
+        return (
+          <React.Fragment key={section.id}>
+            <ModuleInserter index={index} />
+            <EditableSection sectionId={section.id} currentConfig={activeConfig} label={typeLabel}>
+              {rendered}
+            </EditableSection>
+          </React.Fragment>
+        );
+      })}
       <ModuleInserter index={sorted.length} />
     </div>
   );
