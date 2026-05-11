@@ -90,6 +90,48 @@ const VisualEditorPanel = () => {
     }
   });
 
+  // --- Lógica de Arrastre (Drag) para Modo Flotante ---
+  const [position, setPosition] = React.useState({ x: window.innerWidth - 380, y: 80 });
+  const [isDragging, setIsDragging] = React.useState(false);
+  const dragStartPos = React.useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = (e) => {
+    if (editorPosition !== 'floating') return;
+    if (e.target.closest('button')) return; // No arrastrar si hace clic en un botón
+    setIsDragging(true);
+    dragStartPos.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    };
+  };
+
+  const handleMouseMove = React.useCallback((e) => {
+    if (!isDragging) return;
+    setPosition({
+      x: e.clientX - dragStartPos.current.x,
+      y: e.clientY - dragStartPos.current.y
+    });
+  }, [isDragging]);
+
+  const handleMouseUp = React.useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    } else {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+  // ----------------------------------------------------
+
   if (!isEditModeActive) return null;
 
   const handleSave = async () => {
@@ -2153,14 +2195,20 @@ const VisualEditorPanel = () => {
   };
 
   return (
-    <div className={`${styles.panelWrapper} ${styles[editorPosition]}`}>
-      <div className={styles.header}>
-        <h3>{activeSection ? `Editando: ${activeSection}` : 'Page Builder (Layout)'}</h3>
+    <div 
+      className={`${styles.panelWrapper} ${styles[editorPosition]}`}
+      style={editorPosition === 'floating' ? { top: `${position.y}px`, right: 'auto', left: `${position.x}px` } : {}}
+    >
+      <div 
+        className={styles.header}
+        onMouseDown={handleMouseDown}
+        style={{ cursor: editorPosition === 'floating' ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+      >
+        <h3 style={{ pointerEvents: 'none' }}>{activeSection ? `Editando: ${activeSection}` : 'Page Builder (Layout)'}</h3>
         <div className={styles.controls}>
           <button onClick={() => setEditorPosition('left')} title="Anclar a la Izquierda"><PanelLeft size={16} strokeWidth={1.5} /></button>
           <button onClick={() => setEditorPosition('floating')} title="Modo Flotante"><Monitor size={16} strokeWidth={1.5} /></button>
           <button onClick={() => setEditorPosition('right')} title="Anclar a la Derecha"><PanelRight size={16} strokeWidth={1.5} /></button>
-          <button onClick={closeEditor} title="Cerrar Panel"><X size={16} strokeWidth={1.5} /></button>
         </div>
       </div>
       
