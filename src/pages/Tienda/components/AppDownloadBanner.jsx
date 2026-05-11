@@ -8,9 +8,8 @@ const AppDownloadBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Solo mostrar si es un dispositivo móvil y si el usuario no lo ha cerrado antes
-    const hasClosedBanner = sessionStorage.getItem('wala_app_banner_closed');
-    if (isMobileDevice && !hasClosedBanner) {
+    // Solo mostrar si es un dispositivo móvil
+    if (isMobileDevice) {
       setIsVisible(true);
     }
   }, [isMobileDevice]);
@@ -19,7 +18,6 @@ const AppDownloadBanner = () => {
 
   const handleClose = () => {
     setIsVisible(false);
-    sessionStorage.setItem('wala_app_banner_closed', 'true');
   };
 
   return (
