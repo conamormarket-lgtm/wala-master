@@ -73,6 +73,8 @@ const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
 const AdminStoreEditor = lazy(() => import('./pages/Tienda/admin/AdminStoreEditor'));
 
+const AppRedirect = lazy(() => import('./pages/AppRedirect'));
+
 // ── Cuenta ────────────────────────────────────────────────────────────────────
 const CuentaLayout = lazy(() => import('./pages/CuentaLayout'));
 const PerfilPage = lazy(() => import('./pages/cuenta/PerfilPage'));
@@ -137,6 +139,8 @@ function App() {
                         <Route path="/editor/:id" element={<EditorPage />} />
                         <Route path="/carrito" element={<CartPage />} />
                         <Route path="/checkout" element={<CheckoutPage />} />
+                        <Route path="/app" element={<AppRedirect />} />
+                        <Route path="/descargar" element={<AppRedirect />} />
 
                         <Route path="/pedidos" element={<Navigate to="/cuenta/pedidos" replace />} />
 
