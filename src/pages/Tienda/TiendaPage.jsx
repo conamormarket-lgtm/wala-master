@@ -41,6 +41,55 @@ import styles from './TiendaPage.module.css';
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
 
+const SectionBackground = ({ config }) => {
+  const { 
+    backgroundColor, 
+    backgroundGradient, 
+    backgroundImageUrl, 
+    backgroundBlur, 
+    backgroundOverlay
+  } = config;
+
+  const hasImageOrGradient = backgroundImageUrl || backgroundGradient;
+  const hasOverlay = backgroundOverlay;
+
+  if (!hasImageOrGradient && (!backgroundColor || backgroundColor === 'transparent') && !hasOverlay) {
+    return null;
+  }
+
+  return (
+    <>
+      {hasImageOrGradient && (
+        <div style={{
+          position: 'absolute',
+          top: '-15px', left: '-15px', right: '-15px', bottom: '-15px',
+          zIndex: -2,
+          backgroundImage: backgroundImageUrl ? `url(${backgroundImageUrl})` : (backgroundGradient || 'none'),
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: backgroundBlur ? `blur(${backgroundBlur}px)` : 'none',
+          transform: backgroundBlur ? 'scale(1.05)' : 'none',
+          pointerEvents: 'none'
+        }} />
+      )}
+      {(!hasImageOrGradient && backgroundColor && backgroundColor !== 'transparent') && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -2,
+          backgroundColor: backgroundColor,
+          pointerEvents: 'none'
+        }} />
+      )}
+      {backgroundOverlay && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1,
+          backgroundColor: backgroundOverlay,
+          pointerEvents: 'none'
+        }} />
+      )}
+    </>
+  );
+};
+
 const TiendaPage = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -192,7 +241,8 @@ const TiendaPage = () => {
     switch (section.type) {
       case 'header':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0 }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <HeaderBlock config={s} />
           </section>
         );
@@ -203,19 +253,22 @@ const TiendaPage = () => {
         // Usa la configuración local de la sección o el fallback al config global
         const heroConfig = { ...activeConfig.heroBanner, ...s };
         return (
-          <section key={section.id} className={styles.sectionBlock}>
+          <section key={section.id} className={styles.sectionBlock} style={{ overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <HeroBanner config={heroConfig} />
           </section>
         );
       case 'text':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0 }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <TextBlock config={s} />
           </section>
         );
       case 'image':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0 }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <ImageBlock config={s} isFirstSection={section.order === 0} />
           </section>
         );
@@ -241,7 +294,8 @@ const TiendaPage = () => {
         const forceRatio = isEmbed || aspect !== 'auto';
 
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <div 
               className={styles.sectionVideo} 
               style={{ 
@@ -284,19 +338,22 @@ const TiendaPage = () => {
       }
       case 'announcement_bar':
         return (
-          <section key={section.id}>
+          <section key={section.id} style={{ position: 'relative', overflow: 'hidden' }}>
+             <SectionBackground config={s} />
              <AnnouncementBar messages={s.messages} speed={s.speed} bgColor={s.bgColor} textColor={s.textColor} />
           </section>
         );
       case 'hero_carousel':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+             <SectionBackground config={s} />
              <HeroCarousel slides={s.slides} autoPlaySpeed={s.autoPlaySpeed} />
           </section>
         );
       case 'flash_sales':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <FlashSales
                title={s.title}
                collectionName={s.collection}
@@ -307,31 +364,36 @@ const TiendaPage = () => {
         );
       case 'testimonials':
         return (
-          <section key={section.id} className={styles.sectionBlock}>
+          <section key={section.id} className={styles.sectionBlock} style={{ overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <Testimonials title={s.title} testimonials={s.testimonials} />
           </section>
         );
       case 'map_location':
         return (
-          <section key={section.id} className={styles.sectionBlock}>
+          <section key={section.id} className={styles.sectionBlock} style={{ overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <MapLocation config={s} />
           </section>
         );
       case 'trust_badges':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <TrustBadges badges={s.badges} />
           </section>
         );
       case 'marquee':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <BrandMarquee items={s.items} speed={s.speed} />
           </section>
         );
       case 'bestsellers_row':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <BestSellersRow cards={s.cards} />
           </section>
         );
@@ -342,7 +404,8 @@ const TiendaPage = () => {
           emptyMessageShown = true;
         }
         return (
-          <section key={section.id} className={styles.featuredSection} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.featuredSection} style={{ position: 'relative', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             {(!isEmpty && s.title) && <h2 className={styles.featuredTitle}>{s.title}</h2>}
             <ProductGrid products={featuredProducts} loading={false} error={null} categories={categoriesData} emptyMessage={emptyMessage} />
           </section>
@@ -350,7 +413,8 @@ const TiendaPage = () => {
       }
       case 'collection_carousel':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <CollectionCarousel
               title={s.title}
               collectionName={s.collection}
@@ -365,7 +429,8 @@ const TiendaPage = () => {
           emptyMessageShown = true;
         }
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             {(!isEmpty && s.title) && <h2 className={styles.featuredTitle}>{s.title}</h2>}
             <ProductGrid
               products={productsData || []}
@@ -385,7 +450,8 @@ const TiendaPage = () => {
           emptyMessageShown = true;
         }
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ backgroundColor: s.backgroundColor || 'transparent', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
             <SidebarCatalogLayout 
               productsData={productsData || []}
               productsLoading={productsLoading}
