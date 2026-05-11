@@ -1,6 +1,6 @@
 import React from 'react';
-import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedImage';
-import { toDirectImageUrl } from '../../../utils/imageUrl';
+import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
+import { toDirectImageUrl } from '../../../../utils/imageUrl';
 
 const ImageBlock = ({ config, isFirstSection }) => {
   const {
