@@ -717,8 +717,8 @@
   }
 
   .coinsDisplay {
-    font-size: 0.85rem;
-    padding: 3px 8px;
+    font-size: 0.9rem;
+    padding: 4px 10px;
     margin-right: 0.25rem;
   }
 }
@@ -754,9 +754,9 @@
   }
 
   .coinsDisplay {
-    font-size: 0.75rem;
-    padding: 2px 5px;
-    margin-right: 0;
+    font-size: 0.85rem;
+    padding: 3px 8px;
+    margin-right: 0.15rem;
   }
 }
 
