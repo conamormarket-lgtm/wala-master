@@ -93,31 +93,34 @@ export function getDefaultSettings(type) {
         backgroundColor: 'transparent'
       };
     case 'video':
-      return { url: '', poster: '' };
+      return { url: '', poster: '', backgroundColor: 'transparent', paddingTop: '0rem', paddingBottom: '0rem' };
     case 'featured_products':
-      return { title: 'Productos destacados' };
+      return { title: 'Productos destacados', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'collection_carousel':
-      return { title: '', collection: '' };
+      return { title: '', collection: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'categories_nav':
       return {};
     case 'product_grid':
-      return { title: '', show_search: true };
+      return { title: '', show_search: true, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'sidebar_catalog':
-      return { title: 'Catálogo Completo' };
+      return { title: 'Catálogo Completo', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'announcement_bar':
       return { messages: [{ text: 'Envío gratis a Lima', link: '' }], speed: 3000, bgColor: '#000000', textColor: '#ffffff' };
     case 'hero_carousel':
-      return { slides: [{ imageUrl: '', link: '', alt: '' }], autoPlaySpeed: 5000 };
+      return { slides: [{ imageUrl: '', link: '', alt: '' }], autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '0rem', paddingBottom: '0rem' };
     case 'trust_badges':
-      return { badges: [{ icon: 'truck', text: 'Envío Rápido' }, { icon: 'lock', text: 'Pago Seguro' }] };
+      return { badges: [{ icon: 'truck', text: 'Envío Rápido' }, { icon: 'shield', text: 'Pago Seguro' }], backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'flash_sales':
-      return { title: 'Ofertas Relámpago', collection: '', endTime: new Date(Date.now() + 86400000).toISOString() };
+      return { title: 'Ofertas Relámpago', collection: '', endTime: new Date(Date.now() + 86400000).toISOString(), backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'testimonials':
       return { title: 'Lo que dicen nuestros clientes', testimonials: [{ text: 'Me encantó mi polera, el diseño súper nítido!', author: 'María P.', rating: 5 }] };
     case 'marquee':
-      return { items: [{ imageUrl: '', alt: 'Marca 1' }], speed: 20000 };
+      return { items: [{ imageUrl: '', alt: 'Marca 1' }], speed: 20000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'bestsellers_row':
       return {
+        backgroundColor: 'transparent',
+        paddingTop: '2rem',
+        paddingBottom: '2rem',
         cards: [
           { id: 'card1', title: 'Top 1', subtitle: 'Descripción breve', imageUrl: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&q=80', link: '/tienda' },
           { id: 'card2', title: 'Top 2', subtitle: 'Descripción breve', imageUrl: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&q=80', link: '/tienda' },

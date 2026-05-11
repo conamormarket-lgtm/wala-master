@@ -28,6 +28,14 @@ const VisualEditorPanel = () => {
 
   const { isHeaderVisible, setHeaderVisible, isFooterVisible, setFooterVisible } = useLayoutContext();
 
+  const { data: collections } = useQuery({
+    queryKey: ['admin-collections'],
+    queryFn: async () => {
+      const { data } = await getCollections();
+      return data || [];
+    }
+  });
+
   if (!isEditModeActive) return null;
 
   const handleSave = async () => {
@@ -751,6 +759,31 @@ const VisualEditorPanel = () => {
               }}
               style={{width: '100%', padding: '6px', marginBottom: '15px'}}
             />
+
+            <h5 style={{marginTop: '15px', marginBottom: '10px'}}>Estilos Adicionales</h5>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 0rem" value={s.paddingTop || '0rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 0rem" value={s.paddingBottom || '0rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
           </div>
         );
       }
@@ -773,7 +806,13 @@ const VisualEditorPanel = () => {
             <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
               <div style={{flex: 1}}>
                 <label>Color de Fondo</label>
-                <input type="text" placeholder="#ffffff o transparent" value={s.backgroundColor || 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
               </div>
               <div style={{flex: 1}}>
                 <label>Color de Título</label>
@@ -860,7 +899,13 @@ const VisualEditorPanel = () => {
               </div>
               <div style={{flex: 1}}>
                 <label>Color de Fondo</label>
-                <input type="text" placeholder="#ffffff o transparent" value={s.backgroundColor || 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -1063,8 +1108,33 @@ const VisualEditorPanel = () => {
                 newSections[dynamicSectionIndex].settings.items.push({ name: 'Nueva Marca', imageUrl: '', link: '' });
                 updateSectionsDraft(newSections);
               }}
-              style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer'}}
+              style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '15px'}}
             ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Marca</button>
+
+            <h5 style={{marginTop: '15px', marginBottom: '10px'}}>Estilos Adicionales</h5>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
           </div>
         );
       }
@@ -1161,9 +1231,34 @@ const VisualEditorPanel = () => {
                   newSections[dynamicSectionIndex].settings.cards.push({ title: 'Nueva Tarjeta', subtitle: '', imageUrl: '', link: '' });
                   updateSectionsDraft(newSections);
                 }}
-                style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer'}}
+                style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '15px'}}
               ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Tarjeta (Máx 5)</button>
             )}
+
+            <h5 style={{marginTop: '15px', marginBottom: '10px'}}>Estilos Adicionales</h5>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
           </div>
         );
       }
@@ -1186,7 +1281,13 @@ const VisualEditorPanel = () => {
             <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
               <div style={{flex: 1}}>
                 <label>Color de Fondo</label>
-                <input type="text" placeholder="Ej: #ffffff o transparent" value={s.backgroundColor || 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
               </div>
               <div style={{flex: 1}}>
                 <label>Alineación</label>
@@ -1402,6 +1503,338 @@ const VisualEditorPanel = () => {
               <div style={{flex: 1}}>
                 <label>Texto Botón</label>
                 <input type="color" value={draft.buttonTextColor || '#000000'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.buttonTextColor = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', height: '32px', padding: 0}} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (['featured_products', 'product_grid', 'sidebar_catalog'].includes(section.type)) {
+        const s = section.settings || {};
+        const titleLabel = section.type === 'sidebar_catalog' ? 'Título (Opcional)' : 'Título de la Sección';
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: {SECTION_TYPES.find(t => t.id === section.type)?.label || section.type}
+            </h4>
+
+            <label>{titleLabel}</label>
+            <input 
+              type="text" 
+              value={s.title || ''} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.title = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            />
+
+            <h5 style={{marginTop: '15px', marginBottom: '10px'}}>Estilos Adicionales</h5>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (['collection_carousel', 'flash_sales'].includes(section.type)) {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: {SECTION_TYPES.find(t => t.id === section.type)?.label || section.type}
+            </h4>
+
+            <label>Título de la Sección</label>
+            <input type="text" value={s.title || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.title = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px'}} />
+
+            <label>Colección a Mostrar</label>
+            <select value={s.collection || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.collection = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px'}}>
+              <option value="">-- Seleccionar Colección --</option>
+              {collections?.map(col => (
+                <option key={col.id} value={col.id}>{col.name}</option>
+              ))}
+            </select>
+            
+            {section.type === 'flash_sales' && (
+              <>
+                <label>Fecha y Hora de Término</label>
+                <input 
+                  type="datetime-local" 
+                  value={s.endTime ? new Date(s.endTime).toISOString().slice(0, 16) : ''} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.endTime = new Date(e.target.value).toISOString();
+                    updateSectionsDraft(newSections);
+                  }} 
+                  style={{width: '100%', padding: '6px', marginBottom: '15px'}} 
+                />
+              </>
+            )}
+
+            <h5 style={{marginTop: '15px', marginBottom: '10px'}}>Estilos Adicionales</h5>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (section.type === 'hero_carousel') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: Carrusel Principal (Slider)
+            </h4>
+
+            <label>Velocidad de Autoplay (ms)</label>
+            <input 
+              type="number" 
+              value={s.autoPlaySpeed || 5000} 
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.autoPlaySpeed = Number(e.target.value);
+                updateSectionsDraft(newSections);
+              }}
+              min="1000"
+              step="500"
+              style={{width: '100%', padding: '8px', marginBottom: '15px'}}
+            />
+
+            <h5 style={{marginBottom: '10px', marginTop: '10px'}}>Slides</h5>
+            {(s.slides || []).map((slide, slideIndex) => (
+              <div key={slideIndex} style={{background: '#f9f9f9', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #eee'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+                  <strong>Slide {slideIndex + 1}</strong>
+                  <button 
+                    onClick={() => {
+                      const newSections = [...storeConfigDraft.sections];
+                      newSections[dynamicSectionIndex].settings.slides.splice(slideIndex, 1);
+                      updateSectionsDraft(newSections);
+                    }}
+                    style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
+                  ><Trash2 size={16} strokeWidth={1.5} /></button>
+                </div>
+
+                <label>URL de la Imagen</label>
+                <input 
+                  type="text" 
+                  placeholder="https://..."
+                  value={slide.imageUrl || ''} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.slides[slideIndex].imageUrl = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                />
+
+                <label>Enlace de Destino (Opcional)</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: /tienda"
+                  value={slide.link || ''} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.slides[slideIndex].link = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                />
+                
+                <label>Texto Alternativo (Alt)</label>
+                <input 
+                  type="text" 
+                  value={slide.alt || ''} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.slides[slideIndex].alt = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                />
+              </div>
+            ))}
+
+            <button 
+              onClick={() => {
+                const newSections = [...storeConfigDraft.sections];
+                if (!newSections[dynamicSectionIndex].settings.slides) {
+                  newSections[dynamicSectionIndex].settings.slides = [];
+                }
+                newSections[dynamicSectionIndex].settings.slides.push({ imageUrl: '', link: '', alt: '' });
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '15px'}}
+            ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Slide</button>
+
+            <h5 style={{marginTop: '15px', marginBottom: '10px'}}>Estilos Adicionales</h5>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 0rem" value={s.paddingTop || '0rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 0rem" value={s.paddingBottom || '0rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (section.type === 'trust_badges') {
+        const s = section.settings || {};
+        const availableIcons = ['truck', 'shield', 'clock', 'credit_card', 'return', 'heart', 'star', 'check'];
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: Íconos de Confianza (Badges)
+            </h4>
+
+            <h5 style={{marginBottom: '10px', marginTop: '10px'}}>Insignias</h5>
+            {(s.badges || []).map((badge, badgeIndex) => (
+              <div key={badgeIndex} style={{background: '#f9f9f9', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #eee'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+                  <strong>Insignia {badgeIndex + 1}</strong>
+                  <button 
+                    onClick={() => {
+                      const newSections = [...storeConfigDraft.sections];
+                      newSections[dynamicSectionIndex].settings.badges.splice(badgeIndex, 1);
+                      updateSectionsDraft(newSections);
+                    }}
+                    style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
+                  ><Trash2 size={16} strokeWidth={1.5} /></button>
+                </div>
+
+                <label>Ícono</label>
+                <select 
+                  value={badge.icon || 'check'} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.badges[badgeIndex].icon = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                >
+                  {availableIcons.map(icon => <option key={icon} value={icon}>{icon}</option>)}
+                </select>
+
+                <label>Texto Corto</label>
+                <input 
+                  type="text" 
+                  value={badge.text || ''} 
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.badges[badgeIndex].text = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                />
+              </div>
+            ))}
+
+            <button 
+              onClick={() => {
+                const newSections = [...storeConfigDraft.sections];
+                if (!newSections[dynamicSectionIndex].settings.badges) {
+                  newSections[dynamicSectionIndex].settings.badges = [];
+                }
+                newSections[dynamicSectionIndex].settings.badges.push({ icon: 'check', text: 'Nueva Insignia' });
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '15px'}}
+            ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Insignia</button>
+
+            <h5 style={{marginTop: '15px', marginBottom: '10px'}}>Estilos Adicionales</h5>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Color de Fondo</label>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <input type="color" value={s.backgroundColor === 'transparent' ? '#ffffff' : (s.backgroundColor || '#ffffff')} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.value; updateSectionsDraft(newSections); }} disabled={s.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: s.backgroundColor === 'transparent' ? 'not-allowed' : 'pointer'}} />
+                  <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input type="checkbox" checked={s.backgroundColor === 'transparent'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.backgroundColor = e.target.checked ? 'transparent' : '#ffffff'; updateSectionsDraft(newSections); }} style={{margin: 0}} />
+                    Transparente
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
               </div>
             </div>
           </div>
