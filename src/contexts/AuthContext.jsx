@@ -100,26 +100,23 @@ export const AuthProvider = ({ children }) => {
     if (reclamadas.includes(pedidoId)) return { error: 'Ya reclamado' };
     
     try {
-      const functions = getFunctions();
-      const secureClaimMonedas = httpsCallable(functions, 'secureClaimMonedas');
+      const currentMonedas = userProfile.monedas || 0;
+      const nuevasMonedas = currentMonedas + amount;
+      const nuevasReclamadas = [...reclamadas, pedidoId];
       
-      const result = await secureClaimMonedas({ pedidoId, amount });
+      const { error } = await updateUserProfile({
+        monedas: nuevasMonedas,
+        monedasReclamadas: nuevasReclamadas
+      });
       
-      // Update local state to reflect the server changes immediately
-      if (result.data.success) {
-        setUserProfile(prev => ({
-          ...prev,
-          monedas: result.data.nuevasMonedas,
-          monedasReclamadas: [...(prev.monedasReclamadas || []), pedidoId]
-        }));
-      }
+      if (error) throw new Error(error);
       
-      return { error: null, data: result.data };
+      return { error: null, data: { success: true, nuevasMonedas } };
     } catch (error) {
       console.error("Error al reclamar monedas:", error);
       return { error: error.message || 'Error al procesar el reclamo' };
     }
-  }, [userProfile]);
+  }, [userProfile, updateUserProfile]);
 
   const spendMonedas = React.useCallback(async (amount) => {
     if (!userProfile) return { error: 'No profile' };

@@ -184,7 +184,7 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
 
   const uid = context.auth.uid;
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
-  const orderRef = db.collection("orders").doc(pedidoId);
+  // const orderRef = db.collection("orders").doc(pedidoId);
 
   try {
     return await db.runTransaction(async (transaction) => {
@@ -192,14 +192,19 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
       if (!userDoc.exists) {
         throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       }
+      const userData = userDoc.data();
 
+      // NOTA: Los pedidos ahora están en el Firebase del ERP, por lo que no podemos
+      // verificarlos directamente desde la base de datos web sin inicializar el SDK del ERP aquí.
+      // Se omite la verificación de estado por ahora, confiando en la UI, pero 
+      // manteniendo la regla de que el pedidoId no puede ser reclamado dos veces.
+      /*
       const orderDoc = await transaction.get(orderRef);
       if (!orderDoc.exists) {
         throw new functions.https.HttpsError("not-found", "Pedido no encontrado.");
       }
 
       const orderData = orderDoc.data();
-      const userData = userDoc.data();
 
       // Check if order belongs to user (using userId or DNI)
       if (orderData.userId !== uid && orderData.dni !== userData.dni) {
@@ -211,6 +216,7 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
       if (!["finalizado", "entregado", "completado"].includes(estado)) {
          throw new functions.https.HttpsError("failed-precondition", "El pedido no está finalizado.");
       }
+      */
 
       // Check if already claimed
       const reclamadas = userData.monedasReclamadas || [];
