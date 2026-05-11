@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Upload, X } from 'lucide-react';
+import { Star, Upload, X, ThumbsUp } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
-import { addReview, getProductReviews } from '../../../../services/reviews';
+import { addReview, getProductReviews, toggleHelpfulVote } from '../../../../services/reviews';
 import Button from '../../../../components/common/Button';
 import styles from './ProductReviews.module.css';
 
@@ -84,6 +84,28 @@ const ProductReviews = ({ productId }) => {
     }
   };
 
+  const handleHelpfulVote = async (reviewId) => {
+    if (!user) {
+      toast.error("Inicia sesión para votar");
+      return;
+    }
+    const { success, voted, error } = await toggleHelpfulVote(reviewId, user.uid);
+    if (success) {
+      setReviews(prev => prev.map(r => {
+        if (r.id === reviewId) {
+          const currentVotes = r.helpfulVotes || [];
+          const newVotes = voted 
+            ? [...currentVotes, user.uid] 
+            : currentVotes.filter(id => id !== user.uid);
+          return { ...r, helpfulVotes: newVotes };
+        }
+        return r;
+      }));
+    } else {
+      toast.error(error || "Error al registrar el voto");
+    }
+  };
+
   // Stats calculation
   const totalReviews = reviews.length;
   const averageRating = totalReviews > 0 
@@ -108,6 +130,92 @@ const ProductReviews = ({ productId }) => {
       r.imageUrls.forEach(url => allReviewImages.push(url));
     }
   });
+
+  // Calculate Featured Review
+  const featuredReview = React.useMemo(() => {
+    if (!reviews || reviews.length === 0) return null;
+    let topReview = null;
+    let maxVotes = 0;
+
+    for (const r of reviews) {
+      const votes = r.helpfulVotes?.length || 0;
+      if (votes > maxVotes) {
+        maxVotes = votes;
+        topReview = r;
+      } else if (votes === maxVotes && maxVotes > 0) {
+        // Empate: priorizar el que tiene imágenes
+        const hasImgsA = topReview?.imageUrls?.length > 0;
+        const hasImgsB = r.imageUrls?.length > 0;
+        if (hasImgsB && !hasImgsA) {
+          topReview = r;
+        }
+      }
+    }
+    // Solo mostrar si tiene al menos 1 voto
+    return maxVotes > 0 ? topReview : null;
+  }, [reviews]);
+
+  const renderReviewItem = (review, isFeatured = false) => {
+    const helpfulCount = review.helpfulVotes?.length || 0;
+    const userHasVoted = user && review.helpfulVotes?.includes(user.uid);
+
+    return (
+      <div key={review.id} className={isFeatured ? styles.featuredReviewCard : styles.reviewItem}>
+        {isFeatured && (
+          <div className={styles.featuredBadge}>
+            <Star size={12} fill="currentColor" /> Opinión destacada por la comunidad
+          </div>
+        )}
+        <div className={styles.reviewHeader}>
+          <div className={styles.reviewerAvatar}>
+            {review.userName.charAt(0).toUpperCase()}
+          </div>
+          <span className={styles.reviewerName}>{review.userName}</span>
+        </div>
+        <div className={styles.reviewSubHeader}>
+          <div className={styles.reviewStars}>
+            {[1, 2, 3, 4, 5].map(star => (
+              <Star 
+                key={star} 
+                size={16} 
+                fill={star <= review.rating ? "currentColor" : "none"} 
+                color={star <= review.rating ? "currentColor" : "#cbd5e1"} 
+              />
+            ))}
+          </div>
+          <span className={styles.reviewDate}>
+            {review.createdAt instanceof Date 
+              ? review.createdAt.toLocaleDateString() 
+              : new Date(review.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+        <p className={styles.reviewComment}>{review.comment}</p>
+        
+        {review.imageUrls && review.imageUrls.length > 0 && (
+          <div className={styles.reviewImages}>
+            {review.imageUrls.map((url, i) => (
+              <img key={i} src={url} alt={`Reseña ${i+1}`} className={styles.reviewImg} loading="lazy" />
+            ))}
+          </div>
+        )}
+
+        <div className={styles.reviewActions}>
+          <button 
+            className={`${styles.helpfulBtn} ${userHasVoted ? styles.helpfulBtnActive : ''}`}
+            onClick={() => handleHelpfulVote(review.id)}
+          >
+            <ThumbsUp size={14} fill={userHasVoted ? "currentColor" : "none"} />
+            Útil
+          </button>
+          {helpfulCount > 0 && (
+            <span className={styles.helpfulText}>
+              A {helpfulCount} persona{helpfulCount === 1 ? '' : 's'} le pareció útil
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={styles.container}>
@@ -256,49 +364,29 @@ const ProductReviews = ({ productId }) => {
             </>
           )}
 
+          {featuredReview && (
+            <>
+              <h3 className={styles.rightTitle} style={{ marginBottom: '1rem' }}>
+                Reseña principal de Perú
+              </h3>
+              {renderReviewItem(featuredReview, true)}
+              <hr className={styles.divider} style={{ marginTop: '0', marginBottom: '2rem' }} />
+            </>
+          )}
+
           <h3 className={styles.rightTitle}>Todas las reseñas</h3>
           <div className={styles.reviewsList}>
             {loading ? (
               <p>Cargando reseñas...</p>
             ) : reviews.length > 0 ? (
-              reviews.map(review => (
-                <div key={review.id} className={styles.reviewItem}>
-                  <div className={styles.reviewHeader}>
-                    <div className={styles.reviewerAvatar}>
-                      {review.userName.charAt(0).toUpperCase()}
-                    </div>
-                    <span className={styles.reviewerName}>{review.userName}</span>
-                  </div>
-                  <div className={styles.reviewSubHeader}>
-                    <div className={styles.reviewStars}>
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star 
-                          key={star} 
-                          size={16} 
-                          fill={star <= review.rating ? "currentColor" : "none"} 
-                          color={star <= review.rating ? "currentColor" : "#cbd5e1"} 
-                        />
-                      ))}
-                    </div>
-                    <span className={styles.reviewDate}>
-                      {review.createdAt instanceof Date 
-                        ? review.createdAt.toLocaleDateString() 
-                        : new Date(review.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className={styles.reviewComment}>{review.comment}</p>
-                  
-                  {review.imageUrls && review.imageUrls.length > 0 && (
-                    <div className={styles.reviewImages}>
-                      {review.imageUrls.map((url, i) => (
-                        <img key={i} src={url} alt={`Reseña ${i+1}`} className={styles.reviewImg} loading="lazy" />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
+              reviews.filter(r => r.id !== featuredReview?.id).map(review => renderReviewItem(review))
             ) : (
               <p className={styles.emptyState}>No hay reseñas aún. ¡Sé el primero en opinar!</p>
+            )}
+            
+            {/* Si solo existía la reseña destacada */}
+            {!loading && reviews.length > 0 && reviews.filter(r => r.id !== featuredReview?.id).length === 0 && (
+               <p className={styles.emptyState} style={{padding: '0'}}>No hay más reseñas para mostrar.</p>
             )}
           </div>
         </div>

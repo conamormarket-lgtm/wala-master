@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { uploadFile } from './firebase/storage';
 
@@ -31,6 +31,7 @@ export const addReview = async (productId, user, rating, comment, imageFiles) =>
       rating,
       comment,
       imageUrls,
+      helpfulVotes: [],
       createdAt: serverTimestamp(),
     };
 
@@ -63,5 +64,40 @@ export const getProductReviews = async (productId) => {
     // Nota: Firebase requiere un índice compuesto si usas where y orderBy juntos.
     // Si falla por índice, Firebase mostrará un link en la consola para crearlo.
     return [];
+  }
+};
+
+/**
+ * Alterna el voto "Útil" de un usuario en una reseña.
+ */
+export const toggleHelpfulVote = async (reviewId, userId) => {
+  if (!userId) throw new Error("Debes estar logueado para votar.");
+
+  try {
+    const reviewRef = doc(db, REVIEWS_COLLECTION, reviewId);
+    const reviewSnap = await getDoc(reviewRef);
+    
+    if (!reviewSnap.exists()) {
+      throw new Error("La reseña no existe.");
+    }
+
+    const data = reviewSnap.data();
+    const helpfulVotes = data.helpfulVotes || [];
+    const hasVoted = helpfulVotes.includes(userId);
+
+    if (hasVoted) {
+      await updateDoc(reviewRef, {
+        helpfulVotes: arrayRemove(userId)
+      });
+      return { success: true, voted: false };
+    } else {
+      await updateDoc(reviewRef, {
+        helpfulVotes: arrayUnion(userId)
+      });
+      return { success: true, voted: true };
+    }
+  } catch (error) {
+    console.error("Error al votar:", error);
+    return { success: false, error: error.message };
   }
 };
