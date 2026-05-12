@@ -431,7 +431,7 @@
 .deleteGalleryBtn {
   position: absolute;
   top: 5px;
-  right: 5px;
+  left: 5px;
   background: rgba(255, 255, 255, 0.9);
   color: #e03131;
   border: none;
