@@ -541,14 +541,16 @@ const AdminProductoFormV2 = () => {
       const filtered = savedDrafts.filter(d => d.draftId !== draftId);
       localStorage.setItem('wala_drafts', JSON.stringify(filtered));
 
+      // Forzamos la descarga de la nueva lista antes de navegar (refetchQueries sí o sí descarga aunque la query esté inactiva)
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['admin-products'] }),
+        queryClient.refetchQueries({ queryKey: ['admin-products'] }),
         queryClient.invalidateQueries({ queryKey: ['products'] }),
         queryClient.invalidateQueries({ queryKey: ['product', id] }),
         queryClient.invalidateQueries({ queryKey: ['featured-products'] }),
         queryClient.invalidateQueries({ queryKey: ['collection-products'] })
       ]);
-      window.location.href = '/admin/productos';
+      
+      navigate('/admin/productos');
     }
   });
 
