@@ -1,27 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Calendar, Plus, Trash2, Gift, ArrowRight, UserCircle, CheckCircle, Tag, Users } from 'lucide-react';
+import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
 import styles from './SubscriptionSurveyPage.module.css';
-
-const EVENT_TYPES = [
-  { id: 'cumpleanos', label: 'Cumpleaños' },
-  { id: 'aniversario', label: 'Aniversario de Pareja' },
-  { id: 'dia_madre', label: 'Día de la Madre' },
-  { id: 'dia_padre', label: 'Día del Padre' },
-  { id: 'navidad', label: 'Navidad' },
-  { id: 'otro', label: 'Otro Evento' }
-];
-
-const RELATIONSHIP_TYPES = [
-  'Pareja (Esposo/a, Novio/a)',
-  'Hijo / Hija',
-  'Padre / Madre',
-  'Hermano / Hermana',
-  'Amigo / Amiga',
-  'Otro (Personalizado)'
-];
 
 const SubscriptionSurveyPage = () => {
   const { userProfile, updateUserProfile, loading: authLoading } = useAuth();
@@ -33,15 +15,33 @@ const SubscriptionSurveyPage = () => {
   // Flujo Principal
   const [currentStep, setCurrentStep] = useState(0); 
   const [saving, setSaving] = useState(false);
-  const [animationDir, setAnimationDir] = useState('Right'); // 'Right' o 'Left'
+  const [animationDir, setAnimationDir] = useState('Right');
   
   const [basicAnswers, setBasicAnswers] = useState({});
-  const [giftRecipients, setGiftRecipients] = useState([]);
   
-  // Sub-Flujo
-  const [isAddingRecipient, setIsAddingRecipient] = useState(false);
-  const [recipientStep, setRecipientStep] = useState(0); 
-  const [tempRecipient, setTempRecipient] = useState({ name: '', relationship: '', customRelationship: '', eventType: '', date: '', interests: [], answers: {} });
+  // --- NUEVOS ESTADOS DEL WIZARD ---
+  const [selectedGroups, setSelectedGroups] = useState({
+    familia: false,
+    pareja: false,
+    amigos: false
+  });
+
+  const [breakdownData, setBreakdownData] = useState({
+    familia: {
+      esposa: false,
+      hijos: 0,
+      padres: 0,
+      hermanos: 0,
+      tios: 0,
+      primos: 0,
+      sobrinos: 0
+    },
+    parejaNombre: '',
+    amigosCantidad: 0
+  });
+
+  const [generatedRecipients, setGeneratedRecipients] = useState([]);
+  const [currentRecipientIndex, setCurrentRecipientIndex] = useState(0);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -64,8 +64,58 @@ const SubscriptionSurveyPage = () => {
     return true;
   };
 
+  const generateRecipientsList = () => {
+    const list = [];
+    
+    // Familia
+    if (selectedGroups.familia) {
+      if (breakdownData.familia.esposa) {
+        list.push({ id: 'f_esposa', role: 'Esposa / Esposo', name: '', birthday: '', likesFootball: false, footballTeam: '', likesGeek: false, geekAnime: '' });
+      }
+      Object.entries(breakdownData.familia).forEach(([key, value]) => {
+        if (key !== 'esposa' && value > 0) {
+          for (let i = 0; i < value; i++) {
+            const label = key.charAt(0).toUpperCase() + key.slice(1, -1); // hijos -> Hijo
+            list.push({ id: `f_${key}_${i}`, role: `${label} ${i + 1}`, name: '', birthday: '', likesFootball: false, footballTeam: '', likesGeek: false, geekAnime: '' });
+          }
+        }
+      });
+    }
+
+    // Pareja
+    if (selectedGroups.pareja) {
+      list.push({ id: 'pareja', role: 'Pareja', name: breakdownData.parejaNombre || '', birthday: '', likesFootball: false, footballTeam: '', likesGeek: false, geekAnime: '' });
+    }
+
+    // Amigos
+    if (selectedGroups.amigos && breakdownData.amigosCantidad > 0) {
+      for (let i = 0; i < breakdownData.amigosCantidad; i++) {
+        list.push({ id: `amigo_${i}`, role: `Amigo ${i + 1}`, name: '', birthday: '', likesFootball: false, footballTeam: '', likesGeek: false, geekAnime: '' });
+      }
+    }
+
+    return list;
+  };
+
   const goToNextStep = () => {
     if (currentStep === 1 && !validateFields(config.basicDataPanel.fields, basicAnswers)) return;
+    
+    if (currentStep === 2) {
+      if (!selectedGroups.familia && !selectedGroups.pareja && !selectedGroups.amigos) {
+        return alert('Por favor, selecciona al menos un grupo o dale a Omitir si no deseas regalar a nadie.');
+      }
+    }
+
+    if (currentStep === 3) {
+      // Al salir del breakdown, generamos la lista
+      const list = generateRecipientsList();
+      if (list.length === 0) {
+        return alert('No has especificado a ninguna persona. Añade al menos uno o regresa.');
+      }
+      setGeneratedRecipients(list);
+      setCurrentRecipientIndex(0);
+    }
+
     setAnimationDir('Right');
     setCurrentStep(prev => prev + 1);
   };
@@ -75,71 +125,48 @@ const SubscriptionSurveyPage = () => {
     setCurrentStep(prev => prev - 1);
   };
 
-  // --- SUB-FLUJO LÓGICA ---
-  const startAddingRecipient = () => {
-    setTempRecipient({ id: Date.now().toString(), name: '', relationship: '', customRelationship: '', eventType: '', date: '', interests: [], answers: {} });
-    setRecipientStep(0);
-    setAnimationDir('Right');
-    setIsAddingRecipient(true);
+  const handleRecipientDataChange = (field, value) => {
+    const updated = [...generatedRecipients];
+    updated[currentRecipientIndex] = { ...updated[currentRecipientIndex], [field]: value };
+    setGeneratedRecipients(updated);
   };
 
-  const nextRecipientStep = () => {
-    if (recipientStep === 0) {
-      if (!tempRecipient.name || !tempRecipient.relationship || !tempRecipient.eventType || !tempRecipient.date) {
-        return alert('Por favor, completa el nombre, la relación, el tipo de evento y la fecha.');
-      }
-      if (tempRecipient.relationship === 'Otro (Personalizado)' && !tempRecipient.customRelationship) {
-        return alert('Por favor, especifica el tipo de relación.');
-      }
+  const handleNextRecipient = () => {
+    const current = generatedRecipients[currentRecipientIndex];
+    if (!current.birthday) {
+      return alert('La fecha de cumpleaños es obligatoria.');
     }
     
-    if (recipientStep >= 2) {
-      const currentCatId = tempRecipient.interests[recipientStep - 2];
-      const categoryConfig = config.brandsPanel.categories.find(c => c.id === currentCatId);
-      if (categoryConfig && !validateFields(categoryConfig.fields, tempRecipient.answers[currentCatId] || {})) return;
-    }
-
-    const totalSteps = 2 + tempRecipient.interests.length;
-    if (recipientStep + 1 >= totalSteps) {
-      const finalRelationship = tempRecipient.relationship === 'Otro (Personalizado)' ? tempRecipient.customRelationship : tempRecipient.relationship;
-      setGiftRecipients([...giftRecipients, { ...tempRecipient, relationship: finalRelationship }]);
-      setAnimationDir('Left'); // Simulamos que volvemos a la pantalla principal
-      setIsAddingRecipient(false);
-    } else {
+    if (currentRecipientIndex + 1 < generatedRecipients.length) {
       setAnimationDir('Right');
-      setRecipientStep(prev => prev + 1);
+      setCurrentRecipientIndex(prev => prev + 1);
+    } else {
+      // Terminar bucle
+      handleFinalSave();
     }
   };
 
-  const prevRecipientStep = () => {
-    setAnimationDir('Left');
-    if (recipientStep === 0) setIsAddingRecipient(false);
-    else setRecipientStep(prev => prev - 1);
-  };
-
-  const removeRecipient = (id) => setGiftRecipients(giftRecipients.filter(r => r.id !== id));
-
-  const toggleRecipientInterest = (catId) => {
-    const isSelected = tempRecipient.interests.includes(catId);
-    setTempRecipient({
-      ...tempRecipient,
-      interests: isSelected ? tempRecipient.interests.filter(id => id !== catId) : [...tempRecipient.interests, catId]
-    });
-  };
-
-  const handleRecipientAnswerChange = (catId, fieldId, value) => {
-    setTempRecipient(prev => ({
-      ...prev,
-      answers: { ...prev.answers, [catId]: { ...(prev.answers[catId] || {}), [fieldId]: value } }
-    }));
+  const handlePrevRecipient = () => {
+    if (currentRecipientIndex > 0) {
+      setAnimationDir('Left');
+      setCurrentRecipientIndex(prev => prev - 1);
+    } else {
+      goBack(); // Vuelve al breakdown
+    }
   };
 
   const handleFinalSave = async () => {
     setSaving(true);
     try {
-      await updateUserProfile({ surveyBasicData: basicAnswers, giftRecipients: giftRecipients, hasCompletedSurvey: true });
+      await updateUserProfile({ 
+        surveyBasicData: basicAnswers, 
+        giftGroups: selectedGroups,
+        giftBreakdown: breakdownData,
+        giftRecipients: generatedRecipients, 
+        hasCompletedSurvey: true 
+      });
       setAnimationDir('Right');
-      setCurrentStep(3);
+      setCurrentStep(5);
     } catch (err) {
       alert('Hubo un error al guardar tus datos.');
     } finally {
@@ -151,42 +178,34 @@ const SubscriptionSurveyPage = () => {
 
   // Cálculo de Progreso
   let progressPercent = 0;
-  if (!isAddingRecipient) {
-    progressPercent = (currentStep / 3) * 100;
+  if (currentStep <= 3) {
+    progressPercent = (currentStep / 5) * 100;
+  } else if (currentStep === 4) {
+    const subProgress = (currentRecipientIndex / generatedRecipients.length) * (100 / 5);
+    progressPercent = (4 / 5) * 100 + subProgress;
   } else {
-    // Si estamos añadiendo a alguien, la barra se "pausa" en el progreso del paso 2 (aprox 66%) 
-    // y muestra un sub-progreso visual.
-    const totalSubSteps = 2 + tempRecipient.interests.length;
-    const subProgress = ((recipientStep) / totalSubSteps) * (100 / 3); // Fracción del 33% restante
-    progressPercent = 66 + subProgress;
+    progressPercent = 100;
   }
 
-  // Animación clave para forzar el remount del div de la tarjeta
-  const animationKey = isAddingRecipient ? `sub-${recipientStep}` : `main-${currentStep}`;
+  const animationKey = currentStep === 4 ? `recipient-${currentRecipientIndex}` : `main-${currentStep}`;
   const animationClass = animationDir === 'Right' ? styles.animateSlideInRight : styles.animateSlideInLeft;
 
   return (
     <div className={styles.surveyLayout} style={{ '--survey-primary': config.design.primaryColor, backgroundColor: config.design.backgroundColor, color: config.design.textColor }}>
       
-      {/* Escena Izquierda */}
-      <div className={styles.sideScene}>
-        {/* Aquí va el componente de mascota / ilustración futura */}
-      </div>
+      <div className={styles.sideScene}></div>
 
-      {/* Columna Central */}
       <div className={styles.centerColumn}>
         
-        {/* Barra de Progreso */}
         <div className={styles.progressBarContainer}>
           <div className={styles.progressBarLight}></div>
           <div className={styles.progressBarFill} style={{ width: `${progressPercent}%` }}></div>
         </div>
 
-        {/* Tarjeta con Remount Animation */}
         <div key={animationKey} className={`${styles.card} ${animationClass}`}>
           
           {/* PASO 0: Hook */}
-          {!isAddingRecipient && currentStep === 0 && (
+          {currentStep === 0 && (
             <>
               <div className={styles.headerIcon}>
                 <Gift size={40} color={config.design.primaryColor} />
@@ -203,7 +222,7 @@ const SubscriptionSurveyPage = () => {
           )}
 
           {/* PASO 1: Datos Básicos */}
-          {!isAddingRecipient && currentStep === 1 && (
+          {currentStep === 1 && (
             <>
               <div className={styles.headerIcon}>
                 <UserCircle size={40} color={config.design.primaryColor} />
@@ -231,163 +250,185 @@ const SubscriptionSurveyPage = () => {
             </>
           )}
 
-          {/* PASO 2: Lista de Agasajados */}
-          {!isAddingRecipient && currentStep === 2 && (
+          {/* PASO 2: Selección de Grupos */}
+          {currentStep === 2 && (
             <>
               <div className={styles.headerIcon}>
                 <Users size={40} color={config.design.primaryColor} />
               </div>
-              <h1 className={styles.title}>Tus Personas Especiales</h1>
-              <p className={styles.description}>Añade a las personas a las que sueles hacer regalos. Armaremos cajas perfectas basadas en sus gustos.</p>
+              <h1 className={styles.title}>¿A quiénes sueles regalar?</h1>
+              <p className={styles.description}>Selecciona los grupos de personas a los que más les haces regalos. (Puedes elegir más de uno)</p>
               
-              <div className={styles.form}>
-                <div className={styles.recipientsList}>
-                  {giftRecipients.map((rec) => (
-                    <div key={rec.id} className={styles.recipientCard}>
-                      <div className={styles.recipientInfo}>
-                        <h3>{rec.name} ({rec.relationship})</h3>
-                        <p><Calendar size={14}/> {EVENT_TYPES.find(t => t.id === rec.eventType)?.label} - {rec.date}</p>
-                        {rec.interests.length > 0 && (
-                          <div className={styles.recipientPills}>
-                            {rec.interests.map(catId => {
-                              const catName = config.brandsPanel.categories.find(c => c.id === catId)?.name;
-                              return catName ? <span key={catId} className={styles.miniPill}>{catName}</span> : null;
-                            })}
-                          </div>
-                        )}
-                      </div>
-                      <button type="button" onClick={() => removeRecipient(rec.id)} className={styles.removeBtn}>
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <button type="button" onClick={startAddingRecipient} className={styles.addRecipientBtn}>
-                  <Plus size={20} /> Añadir a alguien especial
+              <div className={styles.groupsContainer}>
+                <button 
+                  className={`${styles.groupCard} ${selectedGroups.familia ? styles.groupCardSelected : ''}`}
+                  onClick={() => setSelectedGroups(p => ({...p, familia: !p.familia}))}
+                >
+                  <Users size={32} />
+                  <h3>Familia</h3>
+                </button>
+                <button 
+                  className={`${styles.groupCard} ${selectedGroups.pareja ? styles.groupCardSelected : ''}`}
+                  onClick={() => setSelectedGroups(p => ({...p, pareja: !p.pareja}))}
+                >
+                  <Heart size={32} />
+                  <h3>Pareja</h3>
+                </button>
+                <button 
+                  className={`${styles.groupCard} ${selectedGroups.amigos ? styles.groupCardSelected : ''}`}
+                  onClick={() => setSelectedGroups(p => ({...p, amigos: !p.amigos}))}
+                >
+                  <UserPlus size={32} />
+                  <h3>Amigos</h3>
                 </button>
               </div>
 
               <div className={styles.actions}>
-                <button type="button" onClick={goBack} className={styles.skipBtn} disabled={saving}>Atrás</button>
-                <button type="button" onClick={handleFinalSave} className={styles.saveBtn} disabled={saving}>
-                  {saving ? 'Guardando...' : 'Terminar'} <CheckCircle size={18} />
-                </button>
+                <button type="button" onClick={goBack} className={styles.skipBtn}>Atrás</button>
+                <button type="button" onClick={goToNextStep} className={styles.saveBtn}>Continuar</button>
               </div>
             </>
           )}
 
-          {/* SUB-FLUJO: Añadir Agasajado */}
-          {isAddingRecipient && (
+          {/* PASO 3: Desglose */}
+          {currentStep === 3 && (
+            <>
+              <div className={styles.headerIcon}>
+                <Users size={40} color={config.design.primaryColor} />
+              </div>
+              <h1 className={styles.title}>Detalla tus selecciones</h1>
+              <p className={styles.description}>Ayúdanos a identificar quiénes son exactamente.</p>
+              
+              <div className={styles.form}>
+                
+                {selectedGroups.familia && (
+                  <div className={styles.breakdownSection}>
+                    <h3 className={styles.breakdownTitle}>Tu Familia</h3>
+                    <div className={styles.breakdownGrid}>
+                      <div className={styles.breakdownItem}>
+                        <label>
+                          <input type="checkbox" checked={breakdownData.familia.esposa} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, esposa: e.target.checked}}))} />
+                          Esposa / Esposo
+                        </label>
+                      </div>
+                      <div className={styles.breakdownItemCounter}>
+                        <label>Hijos</label>
+                        <input type="number" min="0" max="10" className={styles.counterInput} value={breakdownData.familia.hijos} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, hijos: parseInt(e.target.value) || 0}}))} />
+                      </div>
+                      <div className={styles.breakdownItemCounter}>
+                        <label>Padres</label>
+                        <input type="number" min="0" max="4" className={styles.counterInput} value={breakdownData.familia.padres} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, padres: parseInt(e.target.value) || 0}}))} />
+                      </div>
+                      <div className={styles.breakdownItemCounter}>
+                        <label>Hermanos</label>
+                        <input type="number" min="0" max="10" className={styles.counterInput} value={breakdownData.familia.hermanos} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, hermanos: parseInt(e.target.value) || 0}}))} />
+                      </div>
+                      <div className={styles.breakdownItemCounter}>
+                        <label>Tíos</label>
+                        <input type="number" min="0" max="20" className={styles.counterInput} value={breakdownData.familia.tios} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, tios: parseInt(e.target.value) || 0}}))} />
+                      </div>
+                      <div className={styles.breakdownItemCounter}>
+                        <label>Primos</label>
+                        <input type="number" min="0" max="30" className={styles.counterInput} value={breakdownData.familia.primos} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, primos: parseInt(e.target.value) || 0}}))} />
+                      </div>
+                      <div className={styles.breakdownItemCounter}>
+                        <label>Sobrinos</label>
+                        <input type="number" min="0" max="20" className={styles.counterInput} value={breakdownData.familia.sobrinos} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, sobrinos: parseInt(e.target.value) || 0}}))} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedGroups.pareja && (
+                  <div className={styles.breakdownSection}>
+                    <h3 className={styles.breakdownTitle}>Tu Pareja</h3>
+                    <div className={styles.fieldGroup}>
+                      <label>¿Cómo se llama tu pareja? (Opcional)</label>
+                      <input type="text" className={styles.input} placeholder="Nombre de tu pareja" value={breakdownData.parejaNombre} onChange={e => setBreakdownData(p => ({...p, parejaNombre: e.target.value}))} />
+                    </div>
+                  </div>
+                )}
+
+                {selectedGroups.amigos && (
+                  <div className={styles.breakdownSection}>
+                    <h3 className={styles.breakdownTitle}>Tus Amigos</h3>
+                    <div className={styles.fieldGroup}>
+                      <label>¿A cuántos amigos sueles darles regalos importantes?</label>
+                      <input type="number" min="1" max="20" className={styles.input} value={breakdownData.amigosCantidad || ''} onChange={e => setBreakdownData(p => ({...p, amigosCantidad: parseInt(e.target.value) || 0}))} />
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              <div className={styles.actions}>
+                <button type="button" onClick={goBack} className={styles.skipBtn}>Atrás</button>
+                <button type="button" onClick={goToNextStep} className={styles.saveBtn}>Siguiente</button>
+              </div>
+            </>
+          )}
+
+          {/* PASO 4: Bucle de Detalles */}
+          {currentStep === 4 && generatedRecipients.length > 0 && (
             <>
               <div className={styles.subFlowHeader}>
-                <h3>Creando Perfil</h3>
+                <h3>Perfil {currentRecipientIndex + 1} de {generatedRecipients.length}</h3>
               </div>
               
               <div className={styles.form}>
-                {recipientStep === 0 && (
-                  <div>
-                    <h2 className={styles.subtitle}>¿Para quién es y qué celebramos?</h2>
-                    <div className={styles.fieldGroup}>
-                      <label>Nombre de la Persona</label>
-                      <input type="text" placeholder="Ej. María" className={styles.input} value={tempRecipient.name} onChange={e => setTempRecipient({...tempRecipient, name: e.target.value})} />
-                    </div>
-                    <div className={styles.fieldGroup}>
-                      <label>Relación / Parentesco</label>
-                      <select className={styles.input} value={tempRecipient.relationship} onChange={e => setTempRecipient({...tempRecipient, relationship: e.target.value})}>
-                        <option value="">Seleccionar...</option>
-                        {RELATIONSHIP_TYPES.map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                    </div>
-                    
-                    {tempRecipient.relationship === 'Otro (Personalizado)' && (
-                      <div className={styles.fieldGroup}>
-                        <label>Especifica la relación</label>
-                        <input type="text" placeholder="Ej. Compañero de trabajo" className={styles.input} value={tempRecipient.customRelationship} onChange={e => setTempRecipient({...tempRecipient, customRelationship: e.target.value})} />
-                      </div>
-                    )}
-                    
-                    <div className={styles.fieldGroup}>
-                      <label>Tipo de Evento</label>
-                      <select className={styles.input} value={tempRecipient.eventType} onChange={e => setTempRecipient({...tempRecipient, eventType: e.target.value})}>
-                        <option value="">Seleccionar...</option>
-                        {EVENT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-                      </select>
-                    </div>
-                    <div className={styles.fieldGroup}>
-                      <label>Fecha del Evento</label>
-                      <input type="date" className={styles.input} value={tempRecipient.date} onChange={e => setTempRecipient({...tempRecipient, date: e.target.value})} />
-                    </div>
-                  </div>
-                )}
+                <h2 className={styles.subtitle}>Datos sobre: {generatedRecipients[currentRecipientIndex].role}</h2>
+                
+                <div className={styles.fieldGroup}>
+                  <label>Nombre de la persona (Opcional)</label>
+                  <input type="text" className={styles.input} placeholder="Ej. Carlos" value={generatedRecipients[currentRecipientIndex].name} onChange={e => handleRecipientDataChange('name', e.target.value)} />
+                </div>
+                
+                <div className={styles.fieldGroup}>
+                  <label>Fecha de Cumpleaños *</label>
+                  <input type="date" className={styles.input} value={generatedRecipients[currentRecipientIndex].birthday} onChange={e => handleRecipientDataChange('birthday', e.target.value)} />
+                </div>
 
-                {recipientStep === 1 && (
-                  <div style={{ textAlign: 'center' }}>
-                    <h2 className={styles.subtitle}>¿Qué le gusta a {tempRecipient.name}?</h2>
-                    <p className={styles.description} style={{ marginBottom: '1.5rem' }}>Selecciona sus intereses.</p>
-                    
-                    <div className={styles.pillsContainer}>
-                      {config.brandsPanel?.categories?.map(cat => {
-                        const isSelected = tempRecipient.interests.includes(cat.id);
-                        return (
-                          <button key={cat.id} type="button" className={`${styles.pillBtn} ${isSelected ? styles.pillSelected : ''}`} onClick={() => toggleRecipientInterest(cat.id)}>
-                            {cat.name}
-                          </button>
-                        );
-                      })}
+                <div className={styles.breakdownSection}>
+                  <h3 className={styles.breakdownTitle} style={{fontSize:'1rem'}}>Intereses: Fútbol</h3>
+                  <label style={{display:'flex', gap:'0.5rem', alignItems:'center', cursor:'pointer', marginBottom:'0.5rem'}}>
+                    <input type="checkbox" checked={generatedRecipients[currentRecipientIndex].likesFootball} onChange={e => handleRecipientDataChange('likesFootball', e.target.checked)} />
+                    ¿Es fan del fútbol?
+                  </label>
+                  {generatedRecipients[currentRecipientIndex].likesFootball && (
+                    <div className={styles.fieldGroup}>
+                      <label>¿Qué equipo o jugador favorito?</label>
+                      <input type="text" className={styles.input} placeholder="Ej. Real Madrid, Messi" value={generatedRecipients[currentRecipientIndex].footballTeam} onChange={e => handleRecipientDataChange('footballTeam', e.target.value)} />
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {recipientStep >= 2 && (
-                  (() => {
-                    const currentCatId = tempRecipient.interests[recipientStep - 2];
-                    const categoryConfig = config.brandsPanel.categories.find(c => c.id === currentCatId);
-                    const answersForCat = tempRecipient.answers[currentCatId] || {};
+                <div className={styles.breakdownSection}>
+                  <h3 className={styles.breakdownTitle} style={{fontSize:'1rem'}}>Intereses: Geek / Anime</h3>
+                  <label style={{display:'flex', gap:'0.5rem', alignItems:'center', cursor:'pointer', marginBottom:'0.5rem'}}>
+                    <input type="checkbox" checked={generatedRecipients[currentRecipientIndex].likesGeek} onChange={e => handleRecipientDataChange('likesGeek', e.target.checked)} />
+                    ¿Le gusta el anime, Marvel o videojuegos?
+                  </label>
+                  {generatedRecipients[currentRecipientIndex].likesGeek && (
+                    <div className={styles.fieldGroup}>
+                      <label>¿Qué anime, serie o personaje específico?</label>
+                      <input type="text" className={styles.input} placeholder="Ej. Naruto, Spiderman" value={generatedRecipients[currentRecipientIndex].geekAnime} onChange={e => handleRecipientDataChange('geekAnime', e.target.value)} />
+                    </div>
+                  )}
+                </div>
 
-                    if (!categoryConfig || categoryConfig.fields.length === 0) {
-                      return (
-                        <div>
-                          <h2 className={styles.subtitle}>{categoryConfig?.name}</h2>
-                          <p className={styles.description}>No hay detalles extras para esta categoría.</p>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div>
-                        <h2 className={styles.subtitle}>Preferencias de {categoryConfig.name}</h2>
-                        {categoryConfig.fields.map(f => (
-                          <div key={f.id} className={styles.fieldGroup}>
-                            <label>{f.label} {f.required && '*'}</label>
-                            {f.type === 'text' && <input type="text" className={styles.input} value={answersForCat[f.id] || ''} onChange={e => handleRecipientAnswerChange(currentCatId, f.id, e.target.value)} required={f.required} />}
-                            {f.type === 'select' && (
-                              <select className={styles.input} value={answersForCat[f.id] || ''} onChange={e => handleRecipientAnswerChange(currentCatId, f.id, e.target.value)} required={f.required}>
-                                <option value="">Seleccionar...</option>
-                                {f.options?.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                              </select>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()
-                )}
               </div>
 
               <div className={styles.actions}>
-                <button type="button" onClick={prevRecipientStep} className={styles.skipBtn}>
-                  {recipientStep === 0 ? 'Cancelar' : 'Atrás'}
-                </button>
-                <button type="button" onClick={nextRecipientStep} className={styles.saveBtn}>
-                  {recipientStep + 1 >= 2 + tempRecipient.interests.length ? 'Guardar' : 'Continuar'}
+                <button type="button" onClick={handlePrevRecipient} className={styles.skipBtn} disabled={saving}>Atrás</button>
+                <button type="button" onClick={handleNextRecipient} className={styles.saveBtn} disabled={saving}>
+                  {currentRecipientIndex + 1 >= generatedRecipients.length ? (saving ? 'Guardando...' : 'Terminar') : 'Siguiente Persona'}
                 </button>
               </div>
             </>
           )}
 
-          {/* PASO 3: Completado */}
-          {!isAddingRecipient && currentStep === 3 && (
+          {/* PASO 5: Completado */}
+          {currentStep === 5 && (
             <>
               <div className={styles.headerIcon}>
                 <CheckCircle size={60} color={config.design.primaryColor} />
@@ -406,10 +447,7 @@ const SubscriptionSurveyPage = () => {
         </div>
       </div>
 
-      {/* Escena Derecha */}
-      <div className={styles.sideScene}>
-        {/* Aquí va el componente de mascota / ilustración futura */}
-      </div>
+      <div className={styles.sideScene}></div>
 
     </div>
   );

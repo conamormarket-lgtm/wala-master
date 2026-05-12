@@ -421,3 +421,111 @@ textarea.input {
   margin: 0;
   font-weight: 800;
 }
+
+/* Nuevas clases para el Wizard de Grupos */
+.groupsContainer {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.groupCard {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-bottom-width: 4px;
+  border-radius: 16px;
+  padding: 2rem 1rem;
+  width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #475569;
+}
+
+.groupCard:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  margin-bottom: 2px;
+}
+
+.groupCard h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.groupCardSelected {
+  border-color: var(--survey-primary, #8b5cf6);
+  background: rgba(139, 92, 246, 0.05);
+  color: var(--survey-primary, #8b5cf6);
+}
+
+.breakdownSection {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.breakdownTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1.15rem;
+  color: #0f172a;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 0.5rem;
+}
+
+.breakdownGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.breakdownItem {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: #334155;
+}
+
+.breakdownItem label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.breakdownItemCounter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breakdownItemCounter label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.counterInput {
+  width: 100%;
+  padding: 0.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.counterInput:focus {
+  outline: none;
+  border-color: var(--survey-primary, #8b5cf6);
+}

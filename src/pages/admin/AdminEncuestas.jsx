@@ -208,9 +208,11 @@ const AdminEncuestas = () => {
         <button className={`${styles.tabBtn} ${activeTab === 'basic' ? styles.active : ''}`} onClick={() => setActiveTab('basic')}>
           Datos Básicos
         </button>
+        {/* 
         <button className={`${styles.tabBtn} ${activeTab === 'brands' ? styles.active : ''}`} onClick={() => setActiveTab('brands')}>
           Intereses (Marcas)
-        </button>
+        </button> 
+        */}
         <button className={`${styles.tabBtn} ${activeTab === 'completion' ? styles.active : ''}`} onClick={() => setActiveTab('completion')}>
           Finalización
         </button>
