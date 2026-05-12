@@ -117,6 +117,7 @@ const AdminProductoFormV2 = () => {
     featured: false,
   });
 
+  const [initialFormState, setInitialFormState] = useState(null);
   const [activeGalleryTabId, setActiveGalleryTabId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const canvasElRef = useRef(null);
@@ -187,7 +188,7 @@ const AdminProductoFormV2 = () => {
 
       const firstVariantId = mappedVariants[0]?.id || '';
 
-      setForm({
+      const newForm = {
         name: productData.name || '',
         description: productData.description || '',
         price: productData.price || '',
@@ -206,7 +207,9 @@ const AdminProductoFormV2 = () => {
         characters: productData.characters || [],
         tags: productData.tags || [],
         featured: productData.featured || false,
-      });
+      };
+      setForm(newForm);
+      setInitialFormState(JSON.stringify(newForm));
 
       // Siempre activar la primera variante si existe
       if (firstVariantId) setActiveGalleryTabId(firstVariantId);
@@ -219,6 +222,7 @@ const AdminProductoFormV2 = () => {
       const draft = savedDrafts.find(d => d.draftId === urlDraftId);
       if (draft) {
         setForm(draft.form);
+        setInitialFormState(JSON.stringify(draft.form));
         if (draft.form.variants?.length > 0) {
           setActiveGalleryTabId(draft.form.variants[0].id);
         }
@@ -237,25 +241,30 @@ const AdminProductoFormV2 = () => {
 
   const initEmptyForm = () => {
     const initialVariantId = `var_${Date.now()}`;
-    setForm(f => ({
-      ...f,
-      defaultVariantId: initialVariantId,
-      variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '' }],
-      customizable: false,
-      customizationViews: [],
-      characters: [],
-      tags: [],
-      isComboProduct: false,
-      comboItems: [],
-      comboPreviewImage: '',
-      featured: false,
-    }));
+    setForm(f => {
+      const newForm = {
+        ...f,
+        defaultVariantId: initialVariantId,
+        variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '' }],
+        customizable: false,
+        customizationViews: [],
+        characters: [],
+        tags: [],
+        isComboProduct: false,
+        comboItems: [],
+        comboPreviewImage: '',
+        featured: false,
+      };
+      setInitialFormState(JSON.stringify(newForm));
+      return newForm;
+    });
     setActiveGalleryTabId(initialVariantId);
   };
 
   // 2. Autoguardado en LocalStorage
   useEffect(() => {
-    if (form.variants.length > 0) {
+    // Guardar borrador SOLO si la data ha cambiado de su estado inicial
+    if (form.variants.length > 0 && initialFormState && JSON.stringify(form) !== initialFormState) {
       const savedDrafts = JSON.parse(localStorage.getItem('wala_drafts') || '[]');
       const existingDraftIndex = savedDrafts.findIndex(d => d.draftId === draftId);
       
