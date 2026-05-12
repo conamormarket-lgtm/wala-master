@@ -1,6 +1,7 @@
 import React from 'react';
 import { Info, ImageOff } from 'lucide-react';
 import styles from './ProductImageContainer.module.css';
+import { toDirectImageUrl } from '../../../../utils/imageUrl';
 
 const ProductImageContainer = ({ 
   imageUrl, 
@@ -11,6 +12,8 @@ const ProductImageContainer = ({
   emptyMessage = 'Sin imagen'
 }) => {
   const containerClass = isGallery ? styles.galleryContainer : styles.container;
+  const isValidUrl = typeof imageUrl === 'string' && imageUrl.trim().length > 0 && imageUrl !== 'undefined' && imageUrl !== 'null';
+  const displayUrl = isValidUrl ? toDirectImageUrl(imageUrl) : '';
 
   return (
     <div className={containerClass} style={style}>
@@ -27,8 +30,8 @@ const ProductImageContainer = ({
       </div>
 
       {/* Imagen Principal (si hay imageUrl) */}
-      {imageUrl ? (
-        <img src={imageUrl} alt={alt} className={styles.image} />
+      {displayUrl ? (
+        <img src={displayUrl} alt={alt} className={styles.image} />
       ) : !children ? (
         /* Estado Vacío (si no hay ni imageUrl ni children) */
         <div className={styles.emptyState}>

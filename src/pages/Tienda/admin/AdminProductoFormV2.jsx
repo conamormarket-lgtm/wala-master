@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createProduct, updateProduct, getProduct } from '../../../services/products';
+import { createProduct, updateProduct, getProduct, generateProductId } from '../../../services/products';
 import { getMockups } from '../../../services/mockups';
 import { getBrands, createBrand, updateBrand } from '../../../services/brands';
 import { getCategories, createCategory } from '../../../services/categories';
@@ -85,8 +85,16 @@ const AdminProductoFormV2 = () => {
   const isNew = !id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  // Si no hay draftId en la URL, se genera uno nuevo (o se usa el id del producto si estamos editando)
+  const [draftId] = useState(() => urlDraftId || (isNew ? generateProductId() : id));
 
-  const [draftId, setDraftId] = useState(urlDraftId || Date.now().toString());
+  // Prevenir duplicación de borradores: inyectar el draftId en la URL si es un producto nuevo
+  // De esta manera, si el usuario recarga la página (F5), se leerá de la URL y reutilizará el mismo borrador.
+  useEffect(() => {
+    if (isNew && !urlDraftId) {
+      navigate(`?draftId=${draftId}`, { replace: true });
+    }
+  }, [isNew, urlDraftId, draftId, navigate]);
 
   const [form, setForm] = useState({
     name: '',
@@ -109,6 +117,7 @@ const AdminProductoFormV2 = () => {
     featured: false,
   });
 
+  const [initialFormState, setInitialFormState] = useState(null);
   const [activeGalleryTabId, setActiveGalleryTabId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const canvasElRef = useRef(null);
@@ -151,13 +160,35 @@ const AdminProductoFormV2 = () => {
   useEffect(() => {
     // Si estamos editando un producto oficial
     if (!isNew && productData) {
-      const mappedVariants = (productData.variants || []).map(v => ({
+      let mappedVariants = (productData.variants || []).map(v => ({
         ...v,
         mode: v.imageUrl ? 'direct' : 'mockup',
         mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
+        // Asegurar que images y sizes siempre sean arrays
+        images: Array.isArray(v.images) ? v.images : [],
+        sizes: Array.isArray(v.sizes) ? v.sizes : [],
       }));
 
-      setForm({
+      // ── FALLBACK: producto sin variants[] (legacy o guardado sin hasVariants) ──
+      // Si no hay variantes pero hay mainImage, creamos una variante sintética
+      // para que el editor de variantes pueda trabajar.
+      if (mappedVariants.length === 0 && !productData.isComboProduct) {
+        const syntheticId = productData.defaultVariantId || `var_${Date.now()}`;
+        mappedVariants = [{
+          id: syntheticId,
+          name: 'Principal',
+          colorHex: '#cccccc',
+          mode: productData.mainImage ? 'direct' : 'mockup',
+          imageUrl: productData.mainImage || '',
+          images: Array.isArray(productData.images) ? productData.images.filter(u => u !== productData.mainImage) : [],
+          sizes: Array.isArray(productData.mainSizes) ? productData.mainSizes : [],
+          mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
+        }];
+      }
+
+      const firstVariantId = mappedVariants[0]?.id || '';
+
+      const newForm = {
         name: productData.name || '',
         description: productData.description || '',
         price: productData.price || '',
@@ -166,7 +197,7 @@ const AdminProductoFormV2 = () => {
         brandId: productData.brandId || '',
         category: productData.category ? productData.category.id || productData.category : '',
         collection: productData.collections?.[0]?.id || productData.collections?.[0] || '',
-        defaultVariantId: productData.defaultVariantId || (mappedVariants[0]?.id || ''),
+        defaultVariantId: productData.defaultVariantId || firstVariantId,
         variants: mappedVariants,
         customizable: productData.customizable || false,
         customizationViews: productData.customizable && productData.customizationViews ? productData.customizationViews : [],
@@ -176,9 +207,12 @@ const AdminProductoFormV2 = () => {
         characters: productData.characters || [],
         tags: productData.tags || [],
         featured: productData.featured || false,
-      });
+      };
+      setForm(newForm);
+      setInitialFormState(JSON.stringify(newForm));
 
-      if (mappedVariants.length > 0) setActiveGalleryTabId(mappedVariants[0].id);
+      // Siempre activar la primera variante si existe
+      if (firstVariantId) setActiveGalleryTabId(firstVariantId);
       return; // No cargamos draft si estamos editando uno oficial directamente sin draftId
     }
 
@@ -188,6 +222,7 @@ const AdminProductoFormV2 = () => {
       const draft = savedDrafts.find(d => d.draftId === urlDraftId);
       if (draft) {
         setForm(draft.form);
+        setInitialFormState(JSON.stringify(draft.form));
         if (draft.form.variants?.length > 0) {
           setActiveGalleryTabId(draft.form.variants[0].id);
         }
@@ -206,25 +241,30 @@ const AdminProductoFormV2 = () => {
 
   const initEmptyForm = () => {
     const initialVariantId = `var_${Date.now()}`;
-    setForm(f => ({
-      ...f,
-      defaultVariantId: initialVariantId,
-      variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '' }],
-      customizable: false,
-      customizationViews: [],
-      characters: [],
-      tags: [],
-      isComboProduct: false,
-      comboItems: [],
-      comboPreviewImage: '',
-      featured: false,
-    }));
+    setForm(f => {
+      const newForm = {
+        ...f,
+        defaultVariantId: initialVariantId,
+        variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '' }],
+        customizable: false,
+        customizationViews: [],
+        characters: [],
+        tags: [],
+        isComboProduct: false,
+        comboItems: [],
+        comboPreviewImage: '',
+        featured: false,
+      };
+      setInitialFormState(JSON.stringify(newForm));
+      return newForm;
+    });
     setActiveGalleryTabId(initialVariantId);
   };
 
   // 2. Autoguardado en LocalStorage
   useEffect(() => {
-    if (form.variants.length > 0) {
+    // Guardar borrador SOLO si la data ha cambiado de su estado inicial
+    if (form.variants.length > 0 && initialFormState && JSON.stringify(form) !== initialFormState) {
       const savedDrafts = JSON.parse(localStorage.getItem('wala_drafts') || '[]');
       const existingDraftIndex = savedDrafts.findIndex(d => d.draftId === draftId);
       
@@ -475,7 +515,7 @@ const AdminProductoFormV2 = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (payload) => {
-      if (isNew) return await createProduct(payload);
+      if (isNew) return await createProduct(payload, draftId);
       return await updateProduct(id, payload);
     },
     onSuccess: () => {
@@ -485,6 +525,10 @@ const AdminProductoFormV2 = () => {
       localStorage.setItem('wala_drafts', JSON.stringify(filtered));
 
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', id] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-products'] });
       navigate('/admin/productos');
     }
   });
@@ -500,14 +544,15 @@ const AdminProductoFormV2 = () => {
         id: v.id,
         name: v.name,
         colorHex: v.colorHex,
-        imageUrl: v.imageUrl,
-        images: v.images || [],
-        sizes: v.sizes || []
+        imageUrl: v.imageUrl || '',
+        images: Array.isArray(v.images) ? v.images : [],
+        sizes: Array.isArray(v.sizes) ? v.sizes : [],
       }));
 
       // Identify main image
       const defaultVariant = finalVariants.find(v => v.id === form.defaultVariantId) || finalVariants[0];
       const mainImage = defaultVariant?.imageUrl || '';
+      const isCombo = form.isComboProduct;
 
       const payload = {
         name: form.name,
@@ -519,18 +564,21 @@ const AdminProductoFormV2 = () => {
         category: form.category ? { id: form.category } : null,
         collections: form.collection ? [{ id: form.collection }] : [],
         mainImage: mainImage,
-        defaultVariantId: defaultVariant.id,
+        mainSizes: [],                     // Las tallas viven dentro de cada variante
+        defaultVariantId: defaultVariant?.id || '',
+        // ── CRÍTICO: persistir hasVariants para que normalizeProductForRead lo lea ──
+        hasVariants: !isCombo && finalVariants.length > 0,
         customizable: form.customizable,
         customizationViews: form.customizationViews,
-        isComboProduct: form.isComboProduct,
-        comboItems: form.isComboProduct ? form.comboItems : [],
-        comboPreviewImage: form.isComboProduct ? form.comboPreviewImage : '',
+        isComboProduct: isCombo,
+        comboItems: isCombo ? form.comboItems : [],
+        comboPreviewImage: isCombo ? form.comboPreviewImage : '',
         characters: form.characters || [],
         tags: form.tags || [],
-        variants: form.isComboProduct ? [] : finalVariants,
+        variants: isCombo ? [] : finalVariants,
         visible: true,
         featured: form.featured,
-        isV2: true, 
+        isV2: true,
       };
 
       await saveMutation.mutateAsync(payload);
