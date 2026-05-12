@@ -47,11 +47,17 @@ function normalizeVariantItem(item, index) {
   const name = String(item.name ?? '').trim();
   const imageUrl = String(item.imageUrl ?? '');
   const sizes = Array.isArray(item.sizes) ? item.sizes.filter(Boolean) : [];
+  
+  // Guardamos tanto 'images' (nuevo) como 'galleryImages' (viejo/tienda) para máxima compatibilidad
+  const images = Array.isArray(item.images) ? item.images : (Array.isArray(item.galleryImages) ? item.galleryImages : []);
+  
   return { 
     id, 
     name, 
     imageUrl, 
     sizes, 
+    images,
+    galleryImages: images,
     thumbnailCrop: item.thumbnailCrop ?? null,
     ...(item.colorHex ? { colorHex: item.colorHex } : {})
   };
