@@ -192,6 +192,7 @@ function normalizeProductForRead(doc) {
     productType: doc.productType ?? '',
     brandId: doc.brandId ?? '',
     customizationViews,
+    customizable: Boolean(doc.customizable) || customizationViews.length > 0,
     hasVariants: Boolean(hasVariants),
     mainImage,
     mainSizes,

@@ -70,8 +70,10 @@ const buildImages = (product, variant, isCombo, comboSels, comboProd) => {
           if (bk) push(view.backSide.imagesByColor[bk]);
         }
       });
+      if (variant.imageUrl) push(variant.imageUrl);
       if (variant.galleryImages?.length) variant.galleryImages.forEach(u => push(u));
-      else { if (variant.imageUrl) push(variant.imageUrl); (product?.images || []).forEach(u => push(u)); }
+      else if (variant.images?.length) variant.images.forEach(u => push(u));
+      else { (product?.images || []).forEach(u => push(u)); }
     } else {
       if (product?.mainImage) push(product.mainImage);
       (product?.images || []).forEach(u => push(u));
