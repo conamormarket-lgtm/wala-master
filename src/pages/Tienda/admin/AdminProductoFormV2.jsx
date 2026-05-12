@@ -364,7 +364,7 @@ const AdminProductoFormV2 = () => {
       const dataURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 2 });
       const blob = dataURLtoBlob(dataURL);
       
-      const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}.png`;
+      const path = `productos_v2/${draftId}/imagenes/main_${activeVariant.id}_${Date.now()}.png`;
       const { url } = await uploadFile(blob, path);
       if (url) {
         updateActiveVariant({ imageUrl: url });
@@ -395,7 +395,7 @@ const AdminProductoFormV2 = () => {
     if (!file || !activeVariant) return;
     setUploading(true);
     try {
-      const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}_${file.name}`;
+      const path = `productos_v2/${draftId}/imagenes/main_${activeVariant.id}_${Date.now()}_${file.name}`;
       const { url } = await uploadFile(file, path);
       if (url) {
         updateActiveVariant({ imageUrl: url });
@@ -412,7 +412,7 @@ const AdminProductoFormV2 = () => {
     try {
       const newImages = [];
       for (const file of files) {
-        const path = `productos_v2/${draftId}/gallery_${Date.now()}_${file.name}`;
+        const path = `productos_v2/${draftId}/imagenes/gallery_${Date.now()}_${file.name}`;
         const { url } = await uploadFile(file, path);
         if (url) newImages.push(url);
       }
