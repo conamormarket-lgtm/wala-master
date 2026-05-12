@@ -85,8 +85,16 @@ const AdminProductoFormV2 = () => {
   const isNew = !id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  // Si no hay draftId en la URL, se genera uno nuevo (o se usa el id del producto si estamos editando)
+  const [draftId] = useState(urlDraftId || (isNew ? Date.now().toString() : id));
 
-  const [draftId, setDraftId] = useState(urlDraftId || Date.now().toString());
+  // Prevenir duplicación de borradores: inyectar el draftId en la URL si es un producto nuevo
+  // De esta manera, si el usuario recarga la página (F5), se leerá de la URL y reutilizará el mismo borrador.
+  useEffect(() => {
+    if (isNew && !urlDraftId) {
+      navigate(`?draftId=${draftId}`, { replace: true });
+    }
+  }, [isNew, urlDraftId, draftId, navigate]);
 
   const [form, setForm] = useState({
     name: '',
