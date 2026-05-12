@@ -88,14 +88,16 @@ const SubscriptionSurveyPage = () => {
       roleKey,
       roleDisplay: displayRole,
       name: '',
+      gender: '',
       events: [{ id: Math.random().toString(36).substring(2, 9), type: 'Cumpleaños', date: '' }],
       selectedCategories: [],
-      categoryAnswers: {}
+      categoryAnswers: {},
+      familySet: false,
+      familyAnswers: { q1: '', q2: '', q3: '' }
     };
   };
 
   const setupParejaIfNeeded = (recipientsList, currentRoles, index) => {
-    // Si el rol actual es Pareja y no existe en finalRecipients, lo creamos
     if (currentRoles[index] === 'pareja') {
       const hasPareja = recipientsList.some(r => r.roleKey === 'pareja');
       if (!hasPareja) {
@@ -109,7 +111,7 @@ const SubscriptionSurveyPage = () => {
     
     if (currentStep === 2) {
       const selectedKeys = Object.keys(ROLES_MAP).filter(key => selectedRoles[key]);
-      if (selectedRoles.pareja) selectedKeys.unshift('pareja'); // Pareja siempre primero
+      if (selectedRoles.pareja) selectedKeys.unshift('pareja');
       
       if (selectedKeys.length === 0) {
         return alert('Por favor, selecciona al menos un rol o dale a Atrás/Omitir si no deseas regalar a nadie.');
@@ -118,8 +120,6 @@ const SubscriptionSurveyPage = () => {
       setRolesList(selectedKeys);
       setCurrentRoleIndex(0);
       setIsEditingRecipient(false);
-      
-      // Auto-generar tarjeta de Pareja si es el primero
       setupParejaIfNeeded(finalRecipients, selectedKeys, 0);
     }
 
@@ -133,10 +133,9 @@ const SubscriptionSurveyPage = () => {
   };
 
   const isRecipientComplete = (rec) => {
-    // Para que esté completo debe tener nombre y el evento cumpleaños debe tener fecha (si aplica)
     if (!rec.name || rec.name.trim() === '') return false;
+    if (!rec.gender || rec.gender.trim() === '') return false;
     
-    // Verificar que todos los eventos que requieran fecha la tengan
     for (const ev of rec.events) {
       const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.label === 'Otro Evento');
       if (evTypeConfig.needsDate && (!ev.date || ev.date.trim() === '')) {
@@ -151,13 +150,11 @@ const SubscriptionSurveyPage = () => {
     const currentRoleKey = rolesList[currentRoleIndex];
     const roleRecipients = finalRecipients.filter(r => r.roleKey === currentRoleKey);
     
-    // Validación: No pueden haber tarjetas incompletas en este grupo
     const hasIncompletes = roleRecipients.some(r => !isRecipientComplete(r));
     if (hasIncompletes) {
-       return alert('Por favor completa los datos de todas las tarjetas antes de continuar.');
+       return alert('Por favor completa todos los datos obligatorios (Nombre y Género) de todas las tarjetas antes de continuar.');
     }
     
-    // Validación: Debe haber al menos una persona en los grupos (excepto si el usuario los borró todos, pero lo normal es que haya)
     if (roleRecipients.length === 0 && currentRoleKey !== 'pareja') {
       const confirmSkip = window.confirm('No has agregado a nadie en este grupo. ¿Deseas continuar de todos modos?');
       if (!confirmSkip) return;
@@ -174,7 +171,6 @@ const SubscriptionSurveyPage = () => {
     }
   };
 
-  // ---- MANEJO DEL HUB ----
   const handleAddNewCard = () => {
     const roleKey = rolesList[currentRoleIndex];
     const roleDisplay = ROLES_MAP[roleKey].singular;
@@ -183,12 +179,11 @@ const SubscriptionSurveyPage = () => {
   };
 
   const startEditingCard = (recipient) => {
-    setTempRecipient(JSON.parse(JSON.stringify(recipient))); // Clon profundo simple
+    setTempRecipient(JSON.parse(JSON.stringify(recipient)));
     setAnimationDir('Right');
     setIsEditingRecipient(true);
   };
 
-  // ---- MANEJO DEL TEMP RECIPIENT (EDITOR) ----
   const handleTempChange = (field, value) => {
     setTempRecipient(prev => ({ ...prev, [field]: value }));
   };
@@ -224,9 +219,11 @@ const SubscriptionSurveyPage = () => {
   };
 
   const saveTempRecipient = () => {
-    // Validaciones
     if (!tempRecipient.name || tempRecipient.name.trim() === '') {
        return alert('El nombre es obligatorio.');
+    }
+    if (!tempRecipient.gender || tempRecipient.gender.trim() === '') {
+       return alert('El género es obligatorio.');
     }
 
     for (const ev of tempRecipient.events) {
@@ -246,18 +243,17 @@ const SubscriptionSurveyPage = () => {
     });
 
     setAnimationDir('Left');
-    setIsEditingRecipient(false); // Volver al Hub
+    setIsEditingRecipient(false);
   };
 
   const cancelTempRecipient = () => {
     setAnimationDir('Left');
-    setIsEditingRecipient(false); // Volver al Hub sin guardar los cambios de tempRecipient
+    setIsEditingRecipient(false);
   };
 
   const handleFinalSave = async () => {
     setSaving(true);
     try {
-      // Limpiar tarjetas incompletas que hayan quedado
       const validRecipients = finalRecipients.filter(r => isRecipientComplete(r));
       
       await updateUserProfile({ 
@@ -277,7 +273,6 @@ const SubscriptionSurveyPage = () => {
 
   if (authLoading || configLoading) return <div className={styles.surveyLayout}>Cargando...</div>;
 
-  // Cálculo de Progreso
   let progressPercent = 0;
   if (currentStep <= 2) {
     progressPercent = (currentStep / 4) * 100;
@@ -309,7 +304,6 @@ const SubscriptionSurveyPage = () => {
 
         <div key={animationKey} className={`${styles.card} ${animationClass}`}>
           
-          {/* PASOS 0, 1 y 2 */}
           {currentStep === 0 && (
             <>
               <div className={styles.headerIcon}><Gift size={40} color={config.design.primaryColor} /></div>
@@ -380,11 +374,9 @@ const SubscriptionSurveyPage = () => {
             </>
           )}
 
-          {/* PASO 3: Bucle de Roles (Hub & Spoke) */}
           {currentStep === 3 && currentRoleObj && (
             <>
               {!isEditingRecipient ? (
-                /* ---- EL HUB (PANTALLA RESUMEN) ---- */
                 <>
                   <div className={styles.headerIcon}>{currentRoleObj.icon}</div>
                   <h1 className={styles.title}>{rolesList[currentRoleIndex] === 'pareja' ? 'Tu Pareja' : `Tus ${currentRoleObj.label}`}</h1>
@@ -440,7 +432,6 @@ const SubscriptionSurveyPage = () => {
                   </div>
                 </>
               ) : (
-                /* ---- EL SPOKE (FORMULARIO DE DETALLES) ---- */
                 <>
                   <div className={styles.subFlowHeader}>
                     <button className={styles.backLinkBtn} onClick={cancelTempRecipient} style={{background:'none', border:'none', color:'#64748b', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', marginBottom:'1rem', fontWeight:'600'}}>
@@ -450,9 +441,20 @@ const SubscriptionSurveyPage = () => {
                   </div>
                   
                   <div className={styles.form}>
-                    <div className={styles.fieldGroup}>
-                      <label>Nombre de la persona *</label>
-                      <input type="text" className={styles.input} placeholder="Ej. Carlos" value={tempRecipient.name} onChange={e => handleTempChange('name', e.target.value)} />
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div className={styles.fieldGroup} style={{ flex: 2 }}>
+                        <label>Nombre de la persona *</label>
+                        <input type="text" className={styles.input} placeholder="Ej. Carlos" value={tempRecipient.name} onChange={e => handleTempChange('name', e.target.value)} />
+                      </div>
+                      <div className={styles.fieldGroup} style={{ flex: 1 }}>
+                        <label>Género *</label>
+                        <select className={styles.input} value={tempRecipient.gender || ''} onChange={e => handleTempChange('gender', e.target.value)} required>
+                          <option value="">Seleccionar...</option>
+                          <option value="Masculino">Masculino</option>
+                          <option value="Femenino">Femenino</option>
+                          <option value="Otro">Otro</option>
+                        </select>
+                      </div>
                     </div>
                     
                     <div className={styles.breakdownSection}>
@@ -497,7 +499,56 @@ const SubscriptionSurveyPage = () => {
                       </button>
                     </div>
 
-                    {/* Preguntas Dinámicas de Administrador (Intereses convertidos a Botones Toggle) */}
+                    {/* CONJUNTO FAMILIA (Hardcoded con lógica de género) */}
+                    <div className={styles.breakdownSection} style={{ padding: '1rem' }}>
+                      <button 
+                        type="button"
+                        className={`${styles.conjuntoBtn} ${tempRecipient.familySet ? styles.conjuntoBtnActive : ''}`}
+                        onClick={() => handleTempChange('familySet', !tempRecipient.familySet)}
+                      >
+                        <span style={{flex: 1, textAlign: 'left', fontWeight: 'bold'}}>Conjunto Familia</span>
+                        <div className={styles.toggleIndicator}>
+                          <div className={styles.toggleCircle}></div>
+                        </div>
+                      </button>
+                      
+                      {tempRecipient.familySet && (
+                        <div style={{ marginTop: '1rem' }}>
+                          <div className={styles.fieldGroup}>
+                            <label>¿Es para {tempRecipient.gender === 'Masculino' ? 'él' : tempRecipient.gender === 'Femenino' ? 'ella' : 'él o ella'}?</label>
+                            <input 
+                              type="text" 
+                              className={styles.input} 
+                              placeholder="Ej. Ropa, reloj..."
+                              value={tempRecipient.familyAnswers?.q1 || ''} 
+                              onChange={e => handleTempChange('familyAnswers', { ...tempRecipient.familyAnswers, q1: e.target.value })} 
+                            />
+                          </div>
+                          <div className={styles.fieldGroup}>
+                            <label>¿Es para ambos?</label>
+                            <input 
+                              type="text" 
+                              className={styles.input} 
+                              placeholder="Ej. Un viaje, cena..."
+                              value={tempRecipient.familyAnswers?.q2 || ''} 
+                              onChange={e => handleTempChange('familyAnswers', { ...tempRecipient.familyAnswers, q2: e.target.value })} 
+                            />
+                          </div>
+                          <div className={styles.fieldGroup}>
+                            <label>¿Es para más personas?</label>
+                            <input 
+                              type="text" 
+                              className={styles.input} 
+                              placeholder="Ej. Juego de mesa familiar..."
+                              value={tempRecipient.familyAnswers?.q3 || ''} 
+                              onChange={e => handleTempChange('familyAnswers', { ...tempRecipient.familyAnswers, q3: e.target.value })} 
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CONJUNTOS DINÁMICOS DE FIREBASE */}
                     {config.brandsPanel?.categories?.map(cat => {
                       const isCatSelected = tempRecipient.selectedCategories?.includes(cat.id);
                       return (
@@ -572,7 +623,6 @@ const SubscriptionSurveyPage = () => {
             </>
           )}
 
-          {/* PASO 4: Completado */}
           {currentStep === 4 && (
             <>
               <div className={styles.headerIcon}>
