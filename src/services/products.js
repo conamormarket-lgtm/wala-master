@@ -1,4 +1,6 @@
-import { getCollection, getDocument, getCollectionPaginated, createDocument, updateDocument, deleteDocument } from './firebase/firestore';
+import { getCollection, getDocument, getCollectionPaginated, createDocument, updateDocument, deleteDocument, setDocument } from './firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
+import { db } from './firebase/config';
 
 const COLLECTION = 'productos_wala';
 const CACHE_VERSION = 'v2'; // Cambiar esto invalida la caché de todos los usuarios
@@ -6,6 +8,10 @@ const CACHE_KEYS = {
   products: `wala_products_cache_${CACHE_VERSION}`,
   featured: `wala_featured_cache_${CACHE_VERSION}`,
   categories: `wala_categories_cache_${CACHE_VERSION}`
+};
+
+export const generateProductId = () => {
+  return doc(collection(db, COLLECTION)).id;
 };
 
 // Limpiar cachés antiguas para liberar espacio
@@ -336,9 +342,20 @@ export const clearProductCaches = () => {
  * Crear producto
  * @param {Object} data - name, category, price, images, description, inStock, customizable, variants, featured, featuredOrder, visible
  */
-export const createProduct = async (data) => {
+export const createProduct = async (data, explicitId = null) => {
   const payload = normalizeProductPayload(data);
-  const result = await createDocument(COLLECTION, payload);
+  let result;
+  
+  if (explicitId) {
+    result = await setDocument(COLLECTION, explicitId, {
+      ...payload,
+      createdAt: new Date().toISOString()
+    });
+    if (!result.error) result.id = explicitId;
+  } else {
+    result = await createDocument(COLLECTION, payload);
+  }
+  
   if (result.error) throw new Error(result.error);
   clearProductCaches();
   return result;

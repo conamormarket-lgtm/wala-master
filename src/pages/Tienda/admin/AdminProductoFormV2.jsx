@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createProduct, updateProduct, getProduct } from '../../../services/products';
+import { createProduct, updateProduct, getProduct, generateProductId } from '../../../services/products';
 import { getMockups } from '../../../services/mockups';
 import { getBrands, createBrand, updateBrand } from '../../../services/brands';
 import { getCategories, createCategory } from '../../../services/categories';
@@ -86,7 +86,7 @@ const AdminProductoFormV2 = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   // Si no hay draftId en la URL, se genera uno nuevo (o se usa el id del producto si estamos editando)
-  const [draftId] = useState(urlDraftId || (isNew ? Date.now().toString() : id));
+  const [draftId] = useState(() => urlDraftId || (isNew ? generateProductId() : id));
 
   // Prevenir duplicación de borradores: inyectar el draftId en la URL si es un producto nuevo
   // De esta manera, si el usuario recarga la página (F5), se leerá de la URL y reutilizará el mismo borrador.
@@ -364,7 +364,7 @@ const AdminProductoFormV2 = () => {
       const dataURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 2 });
       const blob = dataURLtoBlob(dataURL);
       
-      const path = `productos_v2/${draftId}/imagenes/main_${activeVariant.id}_${Date.now()}.png`;
+      const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}.png`;
       const { url } = await uploadFile(blob, path);
       if (url) {
         updateActiveVariant({ imageUrl: url });
@@ -395,7 +395,7 @@ const AdminProductoFormV2 = () => {
     if (!file || !activeVariant) return;
     setUploading(true);
     try {
-      const path = `productos_v2/${draftId}/imagenes/main_${activeVariant.id}_${Date.now()}_${file.name}`;
+      const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}_${file.name}`;
       const { url } = await uploadFile(file, path);
       if (url) {
         updateActiveVariant({ imageUrl: url });
@@ -412,7 +412,7 @@ const AdminProductoFormV2 = () => {
     try {
       const newImages = [];
       for (const file of files) {
-        const path = `productos_v2/${draftId}/imagenes/gallery_${Date.now()}_${file.name}`;
+        const path = `productos_v2/${draftId}/gallery_${Date.now()}_${file.name}`;
         const { url } = await uploadFile(file, path);
         if (url) newImages.push(url);
       }
@@ -515,7 +515,7 @@ const AdminProductoFormV2 = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (payload) => {
-      if (isNew) return await createProduct(payload);
+      if (isNew) return await createProduct(payload, draftId);
       return await updateProduct(id, payload);
     },
     onSuccess: () => {
