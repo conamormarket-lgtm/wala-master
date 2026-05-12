@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useCart } from '../../../../contexts/CartContext';
@@ -9,584 +9,401 @@ import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { recordProductClick, recordVariantViewTime } from '../../../../utils/productVariantBehavior';
 import { getFallbackHex } from '../../../../utils/colors';
+import { getBrands } from '../../../../services/brands';
+import { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
+import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
-import Button from '../../../../components/common/Button';
 import DraggableContainer from '../../../../components/common/DraggableContainer/DraggableContainer';
 import ProductCuestionarioModal from '../ProductCuestionarioModal/ProductCuestionarioModal';
-import OptimizedImage, { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
-import { useQuery } from '@tanstack/react-query';
-import { getBrands } from '../../../../services/brands';
 import ProductReviews from '../ProductReviews';
+import { Truck, RefreshCw, ShieldCheck, Share2 } from 'lucide-react';
 import styles from './ProductDetail.module.css';
 
-const getCategoryDisplay = (product, categoriesList) => {
+// ─── helpers ─────────────────────────────────────────────────────────────────
+const getCategory = (product, cats) => {
   const ids = product?.categories ?? (product?.category ? [product.category] : []);
-  if (!Array.isArray(ids) || ids.length === 0) return product?.category || '';
-  const names = (categoriesList || []).filter((c) => ids.includes(c.id)).map((c) => c.name).filter(Boolean);
-  return names.length ? names.join(', ') : product?.category || '';
+  const found = (cats || []).filter(c => ids.includes(c.id)).map(c => c.name).filter(Boolean);
+  return found[0] || product?.category || '';
 };
 
-/**
- * ProductGallery — Galería profesional con miniaturas y zoom (Amazon/Nike style)
- * Soporta múltiples imágenes por variante y unificación de capas para Productos Combo.
- */
-const ProductGallery = ({ product, selectedVariant, isCombo, comboVariantSelections, comboSubProducts = {}, comboElement }) => {
-  const images = React.useMemo(() => {
-    let result = [];
-
-    if (isCombo) {
-      // 1. Portada del Combo
-      const comboThumb = product?.comboPreviewImage
-        ? toDirectImageUrl(product.comboPreviewImage)
-        : product?.mainImage
-        ? toDirectImageUrl(product.mainImage)
-        : toDirectImageUrl('https://via.placeholder.com/500x500?text=COMBO');
-        
-      result.push({ isComboView: true, url: comboThumb });
-
-      // 2. Extraer fotos de los submúltiples
-      if (comboSubProducts && typeof comboSubProducts === 'object') {
-        Object.keys(comboSubProducts).forEach((idx) => {
-          const subProduct = comboSubProducts[idx];
-          const selection = comboVariantSelections?.[idx];
-          if (!subProduct) return;
-
-          const cleanColor = selection?.color ? selection.color.trim().toLowerCase() : '';
-          let matchingVariant = null;
-          if (cleanColor && Array.isArray(subProduct.variants)) {
-            matchingVariant = subProduct.variants.find(v => v.name && v.name.trim().toLowerCase() === cleanColor);
-          }
-
-          if (matchingVariant) {
-            if (Array.isArray(subProduct.customizationViews)) {
-              subProduct.customizationViews.forEach(view => {
-                const keys = Object.keys(view.imagesByColor || {});
-                const matchedKey = keys.find(k => k.trim().toLowerCase() === cleanColor);
-                if (matchedKey && view.imagesByColor[matchedKey]) {
-                  result.push({ isComboView: false, url: toDirectImageUrl(view.imagesByColor[matchedKey]) });
-                }
-                if (view.hasBackSide && view.backSide?.imagesByColor) {
-                  const bKeys = Object.keys(view.backSide.imagesByColor);
-                  const bMatchedKey = bKeys.find(k => k.trim().toLowerCase() === cleanColor);
-                  if (bMatchedKey && view.backSide.imagesByColor[bMatchedKey]) {
-                    result.push({ isComboView: false, url: toDirectImageUrl(view.backSide.imagesByColor[bMatchedKey]) });
-                  }
-                }
-              });
-            }
-            if (matchingVariant.galleryImages && matchingVariant.galleryImages.length > 0) {
-              matchingVariant.galleryImages.forEach(img => result.push({ isComboView: false, url: toDirectImageUrl(img) }));
-            } else if (matchingVariant.imageUrl) {
-              result.push({ isComboView: false, url: toDirectImageUrl(matchingVariant.imageUrl) });
-            }
-          } else {
-            const globals = (subProduct.images || []).map(toDirectImageUrl);
-            if (globals.length > 0) {
-              globals.forEach(url => result.push({ isComboView: false, url }));
-            } else if (subProduct.mainImage) {
-              result.push({ isComboView: false, url: toDirectImageUrl(subProduct.mainImage) });
-            }
-          }
-        });
-      }
-      
-      const globalCombos = (product?.images || []).map(toDirectImageUrl);
-      globalCombos.forEach(url => result.push({ isComboView: false, url }));
-      
-    } else {
-      let urls = [];
-      if (selectedVariant) {
-        const cleanColor = selectedVariant.name ? selectedVariant.name.trim().toLowerCase() : '';
-        if (Array.isArray(product?.customizationViews)) {
-          product.customizationViews.forEach(view => {
-            const keys = Object.keys(view.imagesByColor || {});
-            const matchedKey = keys.find(k => k.trim().toLowerCase() === cleanColor);
-            if (matchedKey && view.imagesByColor[matchedKey]) {
-              urls.push(toDirectImageUrl(view.imagesByColor[matchedKey]));
-            }
-            if (view.hasBackSide && view.backSide?.imagesByColor) {
-              const bKeys = Object.keys(view.backSide.imagesByColor);
-              const bMatchedKey = bKeys.find(k => k.trim().toLowerCase() === cleanColor);
-              if (bMatchedKey && view.backSide.imagesByColor[bMatchedKey]) {
-                urls.push(toDirectImageUrl(view.backSide.imagesByColor[bMatchedKey]));
-              }
-            }
-          });
-        }
-        if (selectedVariant.galleryImages && selectedVariant.galleryImages.length > 0) {
-          urls.push(...selectedVariant.galleryImages.map(toDirectImageUrl));
-        } else {
-          const vImg = selectedVariant.imageUrl ? toDirectImageUrl(selectedVariant.imageUrl) : null;
-          const globals = (product?.images || []).map(toDirectImageUrl);
-          urls.push(...[vImg, ...globals].filter(Boolean));
-        }
-      } else {
-        const mainImg = product?.mainImage ? toDirectImageUrl(product.mainImage) : null;
-        const globals = (product?.images || []).map(toDirectImageUrl);
-        urls = [mainImg, ...globals].filter(Boolean);
-      }
-      urls.forEach(url => result.push({ isComboView: false, url }));
-    }
-    
-    // Quitar duplicados
-    const unique = [];
-    const seen = new Set();
-    result.forEach(item => {
-      if (item.url && !item.url.includes('undefined') && !seen.has(item.url)) {
-        seen.add(item.url);
-        unique.push(item);
-      }
-    });
-
-    if (unique.length === 0) {
-       unique.push({ isComboView: false, url: toDirectImageUrl('https://via.placeholder.com/500x500') });
-    }
-    return unique;
-  }, [product, selectedVariant, isCombo, comboVariantSelections, comboSubProducts]);
-
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [isZooming, setIsZooming] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    setActiveIdx(0);
-  }, [selectedVariant?.id, selectedVariant?.name, isCombo ? JSON.stringify(comboVariantSelections) : null, images.length]);
-
-  const handleMouseMove = (e) => {
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
-    setMousePos({ x, y });
+const buildImages = (product, variant, isCombo, comboSels, comboProd) => {
+  const seen = new Set();
+  const list = [];
+  const push = (url, extra = {}) => {
+    const u = toDirectImageUrl(url);
+    if (u && !u.includes('undefined') && !seen.has(u)) { seen.add(u); list.push({ url: u, ...extra }); }
   };
 
-  const activeImage = images[activeIdx] || images[0];
-  const isCurrentlyComboView = activeImage.isComboView;
+  if (isCombo) {
+    push(product?.comboPreviewImage || product?.mainImage || '', { isComboView: true });
+    Object.keys(comboProd || {}).forEach(idx => {
+      const sub = comboProd[idx];
+      const sel = comboSels?.[idx];
+      if (!sub) return;
+      const cc = sel?.color?.trim().toLowerCase() || '';
+      const mv = cc && sub.variants?.find(v => v.name?.trim().toLowerCase() === cc);
+      if (mv) {
+        (sub.customizationViews || []).forEach(view => {
+          const k = Object.keys(view.imagesByColor || {}).find(k => k.trim().toLowerCase() === cc);
+          if (k) push(view.imagesByColor[k]);
+          if (view.hasBackSide) {
+            const bk = Object.keys(view.backSide?.imagesByColor || {}).find(k => k.trim().toLowerCase() === cc);
+            if (bk) push(view.backSide.imagesByColor[bk]);
+          }
+        });
+        (mv.galleryImages || []).forEach(u => push(u));
+        if (!mv.galleryImages?.length && mv.imageUrl) push(mv.imageUrl);
+      } else {
+        (sub.images || []).forEach(u => push(u));
+        if (sub.mainImage) push(sub.mainImage);
+      }
+    });
+    (product?.images || []).forEach(u => push(u));
+  } else {
+    const cc = variant?.name?.trim().toLowerCase() || '';
+    if (variant) {
+      (product?.customizationViews || []).forEach(view => {
+        const k = Object.keys(view.imagesByColor || {}).find(k => k.trim().toLowerCase() === cc);
+        if (k) push(view.imagesByColor[k]);
+        if (view.hasBackSide) {
+          const bk = Object.keys(view.backSide?.imagesByColor || {}).find(k => k.trim().toLowerCase() === cc);
+          if (bk) push(view.backSide.imagesByColor[bk]);
+        }
+      });
+      if (variant.galleryImages?.length) variant.galleryImages.forEach(u => push(u));
+      else { if (variant.imageUrl) push(variant.imageUrl); (product?.images || []).forEach(u => push(u)); }
+    } else {
+      if (product?.mainImage) push(product.mainImage);
+      (product?.images || []).forEach(u => push(u));
+    }
+  }
+  if (!list.length) list.push({ url: 'https://via.placeholder.com/600x750', isComboView: false });
+  return list;
+};
+
+// ─── Gallery ─────────────────────────────────────────────────────────────────
+const Gallery = ({ images, activeIdx, setActiveIdx, showCombo, comboEl }) => {
+  const [zoom, setZoom] = useState(false);
+  const [pos, setPos] = useState({ x: 50, y: 50 });
+  const active = images[activeIdx] || images[0];
+
+  const onMove = e => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
+  };
 
   return (
-    <div className={styles.galleryContainer}>
+    <div className={styles.gallery}>
       {images.length > 1 && (
-        <div className={styles.thumbnailList}>
+        <div className={styles.thumbStrip}>
           {images.map((img, i) => (
             <button
               key={i}
-              className={`${styles.thumbnail} ${activeIdx === i ? styles.thumbnailActive : ''}`}
+              className={`${styles.thumb} ${activeIdx === i ? styles.thumbActive : ''}`}
               onClick={() => setActiveIdx(i)}
               onMouseEnter={() => setActiveIdx(i)}
-              aria-label={`Ver imagen ${i + 1}`}
             >
-              <img src={img.url} alt={`${product?.name || 'Producto'} miniatura ${i + 1}`} loading="lazy" />
+              <img src={img.url} alt="" loading="lazy" />
             </button>
           ))}
         </div>
       )}
-      <div 
-        className={`${styles.mainGalleryImage} ${isCurrentlyComboView ? styles.mainGalleryImageCombo : ''}`}
-        onMouseEnter={() => !isCurrentlyComboView && setIsZooming(true)}
-        onMouseLeave={() => setIsZooming(false)}
-        onMouseMove={(e) => !isCurrentlyComboView && handleMouseMove(e)}
-        style={{ cursor: isCurrentlyComboView ? 'default' : 'crosshair' }}
+
+      <div
+        className={`${styles.mainFrame} ${showCombo ? styles.mainFrameCombo : ''}`}
+        onMouseEnter={() => !showCombo && setZoom(true)}
+        onMouseLeave={() => setZoom(false)}
+        onMouseMove={onMove}
       >
-        {isCurrentlyComboView ? (
-          <div className={styles.comboWrapperInsideGallery}>
-            {comboElement}
-          </div>
+        {showCombo ? (
+          <div className={styles.comboWrap}>{comboEl}</div>
         ) : (
-           <>
-            <img 
-              src={activeImage.url} 
-              alt={product?.name || 'Producto'} 
-              className={`${styles.galleryImg} ${isZooming ? styles.galleryImgZoomed : ''}`}
-              style={isZooming ? { transformOrigin: `${mousePos.x}% ${mousePos.y}%` } : {}}
-              fetchpriority="high"
-              loading="eager"
-            />
-            {!isZooming && <div className={styles.zoomHint}>🔍 Pasa el ratón para zoom</div>}
-          </>
+          <img
+            src={active.url}
+            alt="Producto"
+            className={styles.mainImg}
+            style={zoom ? { transform: 'scale(2.4)', transformOrigin: `${pos.x}% ${pos.y}%` } : {}}
+            fetchpriority="high"
+            loading="eager"
+          />
         )}
+        {!zoom && !showCombo && <span className={styles.zoomHint}>🔍 Hover para zoom</span>}
       </div>
     </div>
   );
 };
 
-// Removido fake scarcity stats y countdown
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+const Skeleton = () => (
+  <div className={styles.skeleton}>
+    <div className={styles.skeletonGallery} />
+    <div className={styles.skeletonInfo}>
+      {[40, 85, 30, 100, 100].map((w, i) => (
+        <div key={i} className={styles.skeletonLine} style={{ width: `${w}%` }} />
+      ))}
+    </div>
+  </div>
+);
 
+// ─── ProductDetail ────────────────────────────────────────────────────────────
 const ProductDetail = ({ product, loading, categories = [] }) => {
-  const categoryDisplay = getCategoryDisplay(product, categories);
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { user, userProfile } = useAuth();
   const toast = useGlobalToast();
-  const [generatingLink, setGeneratingLink] = useState(false);
+
+  const [variantIdx, setVariantIdx] = useState(0);
+  const [selectedSize, setSelectedSize] = useState('');
+  const [qty, setQty] = useState(1);
+  const [comboSels, setComboSels] = useState({});
+  const [comboProd, setComboProd] = useState({});
+  const [imgIdx, setImgIdx] = useState(0);
+  const [cuestionario, setCuestionario] = useState(null);
+  const [sharing, setSharing] = useState(false);
+
+  const secsRef = useRef(0);
+  const lastVariantRef = useRef(null);
+
+  const isCombo = isComboProduct(product);
+  const hasVariants = Boolean(product?.hasVariants);
+  const variants = hasVariants ? (Array.isArray(product?.variants) ? product.variants : []) : [];
+  const selectedVariant = hasVariants && variants[variantIdx] ? variants[variantIdx] : null;
+  const sizes = hasVariants ? (selectedVariant?.sizes || []) : (product?.mainSizes || []);
+  const category = getCategory(product, categories);
+  const displayPrice = product?.salePrice || product?.price || 0;
+  const originalPrice = product?.salePrice ? product?.price : null;
+  const discount = originalPrice ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100) : 0;
   const referralCode = userProfile?.referralCode || (user?.uid ? `KS-${user.uid.substring(0, 6).toUpperCase()}` : '');
 
-  const hasVariants = Boolean(product?.hasVariants);
-  const variantsList = Array.isArray(product?.variants) ? product.variants : [];
-
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-  const selectedVariant = hasVariants && variantsList[selectedVariantIndex]
-    ? variantsList[selectedVariantIndex]
-    : null;
-
-  const availableSizes = hasVariants 
-    ? (selectedVariant?.sizes || [])
-    : (Array.isArray(product?.mainSizes) ? product.mainSizes : []);
-
-  const [selectedSize, setSelectedSize] = useState(availableSizes[0] || '');
-  const [quantity, setQuantity] = useState(1);
-  const [comboVariantSelections, setComboVariantSelections] = useState({});
-  const [comboSubProducts, setComboSubProducts] = useState({});
-  const [cuestionarioModalTemplate, setCuestionarioModalTemplate] = useState(null);
-  const variantSecondsRef = useRef(0);
-  const lastVariantIdRef = useRef(null);
-
-  const { data: brandsData } = useQuery({
+  const { data: brands } = useQuery({
     queryKey: ['brands'],
-    queryFn: async () => {
-      const res = await getBrands();
-      return res.data;
-    },
-    staleTime: 1000 * 60 * 5, // 5 min cache
+    queryFn: async () => (await getBrands()).data,
+    staleTime: 300_000,
   });
+  const brand = brands?.find(b => b.id === product?.brandId);
 
-  const productBrand = brandsData?.find(b => b.id === product?.brandId);
-  const brandBgColor = productBrand?.bgColor;
-  const brandBgImage = productBrand?.bgImage;
-  const brandBgOpacity = productBrand?.bgOpacity ?? 100;
+  const images = React.useMemo(
+    () => product ? buildImages(product, selectedVariant, isCombo, comboSels, comboProd) : [],
+    [product, selectedVariant, isCombo, comboSels, comboProd]
+  );
 
-  const brandBgStyle = (brandBgColor || brandBgImage) ? {
-    backgroundColor: brandBgColor || 'transparent',
-    backgroundImage: brandBgImage 
-      ? `linear-gradient(rgba(0,0,0,${1 - brandBgOpacity/100}), rgba(0,0,0,${1 - brandBgOpacity/100})), url(${brandBgImage})` 
-      : 'none',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat'
-  } : {};
-
-  // Precargar todas las imágenes relacionadas al producto
-  const allProductUrls = React.useMemo(() => {
+  const allUrls = React.useMemo(() => {
     if (!product) return [];
-    const urls = new Set();
-    const extract = (obj) => {
-      if (!obj) return;
-      if (typeof obj === 'string') {
-        if (obj.startsWith('http') && (obj.includes('cloudinary') || obj.match(/\.(jpeg|jpg|webp|png|gif)$/i))) {
-          urls.add(obj);
-        }
-      } else if (Array.isArray(obj)) {
-        obj.forEach(extract);
-      } else if (typeof obj === 'object') {
-        Object.values(obj).forEach(extract);
-      }
+    const s = new Set();
+    const walk = v => {
+      if (!v) return;
+      if (typeof v === 'string' && v.startsWith('http')) s.add(v);
+      else if (Array.isArray(v)) v.forEach(walk);
+      else if (typeof v === 'object') Object.values(v).forEach(walk);
     };
-    extract(product);
-    return Array.from(urls);
+    walk(product);
+    return [...s];
   }, [product]);
 
-  useImagePreloader(allProductUrls);
+  useImagePreloader(allUrls);
 
-  useEffect(() => {
-    if (product?.id) recordProductClick(product.id);
-  }, [product?.id]);
-
-  useEffect(() => {
-    if (!product?.isComboProduct || !Array.isArray(product.comboItems) || product.comboItems.length === 0) return;
-    const initial = {};
-    product.comboItems.forEach((item, i) => {
-      if (item.variantMapping?.color) initial[i] = { color: item.variantMapping.color };
-    });
-    setComboVariantSelections((prev) => (Object.keys(initial).length > 0 ? { ...initial, ...prev } : prev));
-  }, [product?.id, product?.isComboProduct, product?.comboItems]);
+  useEffect(() => { setImgIdx(0); }, [selectedVariant?.id, selectedVariant?.name]);
+  useEffect(() => { if (product?.id) recordProductClick(product.id); }, [product?.id]);
 
   useEffect(() => {
     if (!product?.id || !selectedVariant?.id) return;
-    const flush = (variantId, seconds) => {
-      if (variantId && seconds > 0) recordVariantViewTime(product.id, variantId, seconds);
-    };
-    if (lastVariantIdRef.current !== selectedVariant.id) {
-      flush(lastVariantIdRef.current, variantSecondsRef.current);
-      variantSecondsRef.current = 0;
-      lastVariantIdRef.current = selectedVariant.id;
+    const flush = (id, s) => { if (id && s > 0) recordVariantViewTime(product.id, id, s); };
+    if (lastVariantRef.current !== selectedVariant.id) {
+      flush(lastVariantRef.current, secsRef.current);
+      secsRef.current = 0;
+      lastVariantRef.current = selectedVariant.id;
     }
-    const interval = setInterval(() => { variantSecondsRef.current += 1; }, 1000);
-    return () => {
-      clearInterval(interval);
-      flush(selectedVariant.id, variantSecondsRef.current);
-    };
+    const iv = setInterval(() => secsRef.current++, 1000);
+    return () => { clearInterval(iv); flush(selectedVariant.id, secsRef.current); };
   }, [product?.id, selectedVariant?.id]);
 
   useEffect(() => {
-    const sizes = hasVariants && selectedVariant?.sizes?.length
-      ? selectedVariant.sizes
-      : product?.mainSizes || [];
-    setSelectedSize(sizes[0] || '');
-  }, [hasVariants, selectedVariant, product?.mainSizes]);
+    if (!isCombo || !product?.comboItems?.length) return;
+    const init = {};
+    product.comboItems.forEach((item, i) => { if (item.variantMapping?.color) init[i] = { color: item.variantMapping.color }; });
+    if (Object.keys(init).length) setComboSels(prev => ({ ...init, ...prev }));
+  }, [product?.id, isCombo]);
 
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loadingInline}>
-          <span className={styles.loadingDot} />
-          <span>Cargando producto...</span>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => { setSelectedSize(sizes[0] || ''); }, [selectedVariant?.id, JSON.stringify(sizes)]);
 
-  if (!product) return <div>Producto no encontrado</div>;
-
+  // ── Handlers
   const handleAddToCart = () => {
-    const comboData = isCombo ? {
-      variantSelections: comboVariantSelections,
-      customizations: {},
-      // Pasamos los datos completos de los sub-productos ya cargados desde Firestore
-      // para que el checkout pueda extraer nombres reales e imágenes base por color
-      subProductsData: comboSubProducts,
-    } : null;
-    addToCart(product, { size: selectedSize, selectedVariant: selectedVariant ?? undefined }, null, quantity, comboData);
-  };
-
-  const handleShareProduct = async () => {
-    if (!user) {
-      toast.error('Inicia sesión para compartir y ganar monedas');
-      return;
-    }
-    setGeneratingLink(true);
-    const { id, error } = await createReferralShare(referralCode);
-    setGeneratingLink(false);
-
-    if (error) {
-      toast.error('Error al generar enlace');
-      return;
-    }
-
-    const url = `${window.location.origin}/producto/${product.id}?ref=${referralCode}&shareId=${id}`;
-    navigator.clipboard.writeText(url)
-      .then(() => toast.success('¡Enlace individual copiado! Compártelo y gana monedas.'))
-      .catch(() => toast.error('Error copiando al portapapeles'));
+    addToCart(
+      product,
+      { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
+      null,
+      qty,
+      isCombo ? { variantSelections: comboSels, customizations: {}, subProductsData: comboProd } : null
+    );
+    toast.success('¡Agregado al carrito!');
   };
 
   const handlePersonalize = () => {
-    const params = new URLSearchParams();
-    if (selectedSize) params.set('size', selectedSize);
-    if (selectedVariant?.name) params.set('color', selectedVariant.name);
-    if (isCombo && Object.keys(comboVariantSelections).length > 0) {
-      params.set('comboSelections', JSON.stringify(comboVariantSelections));
-    }
-    navigate(`/editor/${product.id}${params.toString() ? `?${params.toString()}` : ''}`);
+    const p = new URLSearchParams();
+    if (selectedSize) p.set('size', selectedSize);
+    if (selectedVariant?.name) p.set('color', selectedVariant.name);
+    if (isCombo && Object.keys(comboSels).length) p.set('comboSelections', JSON.stringify(comboSels));
+    navigate(`/editor/${product.id}${p.toString() ? `?${p}` : ''}`);
   };
 
-  const handleDescriptionClick = (e) => {
-    const customBtn = e.target.closest('a.custom-quill-button');
-    if (customBtn) {
-      const href = customBtn.getAttribute('href');
-      if (href && href.startsWith('cuestionario://')) {
-        e.preventDefault();
-        const templateId = href.replace('cuestionario://', '');
-        setCuestionarioModalTemplate(templateId);
-      }
+  const handleShare = async () => {
+    if (!user) { toast.error('Inicia sesión para compartir y ganar monedas'); return; }
+    setSharing(true);
+    const { id, error } = await createReferralShare(referralCode);
+    setSharing(false);
+    if (error) { toast.error('Error al generar enlace'); return; }
+    const url = `${window.location.origin}/producto/${product.id}?ref=${referralCode}&shareId=${id}`;
+    navigator.clipboard.writeText(url)
+      .then(() => toast.success('¡Enlace copiado! Compártelo y gana monedas.'))
+      .catch(() => toast.error('Error al copiar'));
+  };
+
+  const handleDescClick = e => {
+    const btn = e.target.closest('a.custom-quill-button');
+    if (btn?.getAttribute('href')?.startsWith('cuestionario://')) {
+      e.preventDefault();
+      setCuestionario(btn.getAttribute('href').replace('cuestionario://', ''));
     }
   };
 
-  const displayPrice = product.salePrice || product.price || 0;
-  const regularPrice = product.salePrice ? product.price : null;
-  const isCombo = isComboProduct(product);
+  // ── Combo selector renderer
+  const renderComboSelector = (index, sub, position = 'all') => {
+    if (!sub) return null;
+    const sel = comboSels[index] || {};
+    const cfg = product.comboItems?.[index] || {};
+    const allowed = cfg.variantMapping?.allowedColors?.map(c => c.trim().toLowerCase()) || [];
+    const allVars = Array.isArray(sub.variants) ? sub.variants : [];
+    const vars = allowed.length ? allVars.filter(v => allowed.includes(v.name?.trim().toLowerCase())) : allVars;
+    const hasColors = sub.hasVariants && vars.length > 0;
+    const selVar = hasColors ? (vars.find(v => v.name === sel.color) || vars[0]) : null;
+    const cSizes = hasColors ? (selVar?.sizes || []) : (sub.mainSizes || sub.sizes || []);
 
-  const discount = product?.salePrice && product?.price
-    ? Math.round(((product.price - product.salePrice) / product.price) * 100)
-    : 0;
+    const sizeUI = cSizes.length > 0 && (
+      <div className={styles.selectorGroup}>
+        <span className={styles.selectorLabel}>Talla</span>
+        <DraggableContainer className={styles.pillRow}>
+          {cSizes.map(s => (
+            <button key={s} className={`${styles.sizePill} ${sel.size === s ? styles.sizePillActive : ''}`}
+              onClick={() => setComboSels(p => ({ ...p, [index]: { ...p[index], size: s } }))}>
+              {s}
+            </button>
+          ))}
+        </DraggableContainer>
+      </div>
+    );
 
-  const renderComboItemSelector = (index, comboItemProduct, position = 'all') => {
-    if (!comboItemProduct) return null;
-
-    const currentSelection = comboVariantSelections[index] || {};
-    const comboItemConfig = product.comboItems?.[index] || {};
-    const allowedColors = comboItemConfig.variantMapping?.allowedColors;
-    const allowedLower = allowedColors && Array.isArray(allowedColors) ? allowedColors.map(c => c.trim().toLowerCase()) : [];
-
-    const fullVariantsList = Array.isArray(comboItemProduct.variants) ? comboItemProduct.variants : [];
-    const displayVariantsList = allowedLower.length > 0
-      ? fullVariantsList.filter(v => allowedLower.includes((v.name || '').trim().toLowerCase()))
-      : fullVariantsList;
-
-    const hasColorVariants = comboItemProduct.hasVariants && displayVariantsList.length > 0;
-    const selectedVar = hasColorVariants
-      ? (displayVariantsList.find(v => v.name === currentSelection.color) || displayVariantsList[0])
-      : null;
-
-    // Determine Sizes
-    let availableComboSizes = [];
-    if (hasColorVariants && selectedVar?.sizes) {
-      availableComboSizes = selectedVar.sizes;
-    } else if (!hasColorVariants && Array.isArray(comboItemProduct.mainSizes)) {
-      availableComboSizes = comboItemProduct.mainSizes;
-    } else if (!hasColorVariants && Array.isArray(comboItemProduct.sizes)) {
-      availableComboSizes = comboItemProduct.sizes;
-    }
-
-    const showColor = hasColorVariants && displayVariantsList.some(v => !!v.name);
-    const showSize = availableComboSizes.length > 0;
-
-    // Use current selection or fallback to first available
-    const displayColor = currentSelection.color || (showColor ? displayVariantsList[0].name : '');
-    const displaySize = currentSelection.size || '';
-
-    const sizeUI = showSize ? (
-      <div className={styles.comboItemSelectorsWrapper}>
-        <div className={styles.comboSelectGroup}>
-          <span className={styles.comboSelectLabel}>
-            Talla:
-            {availableComboSizes.length > 4 && <span className={styles.scrollHint}>Deslizar <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span>}
-          </span>
-          <DraggableContainer className={styles.comboVariantOptions} onPointerDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-            {availableComboSizes.map(s => (
-              <button
-                key={s}
-                className={`${styles.comboSizeButton} ${displaySize === s ? styles.comboSizeButtonActive : ''}`}
-                onClick={() => {
-                  setComboVariantSelections(prev => ({
-                    ...prev,
-                    [index]: { ...prev[index], size: s }
-                  }));
-                }}
-              >
-                {s}
+    const colorUI = hasColors && (
+      <div className={styles.selectorGroup}>
+        <span className={styles.selectorLabel}>Color: <em>{sel.color || vars[0]?.name}</em></span>
+        <DraggableContainer className={styles.swatchRow}>
+          {vars.map(v => {
+            const hex = v.colorHex || getFallbackHex(v.name);
+            return (
+              <button key={v.id || v.name}
+                className={`${styles.swatch} ${sel.color === v.name ? styles.swatchActive : ''}`}
+                onClick={() => setComboSels(p => ({ ...p, [index]: { ...p[index], color: v.name } }))}
+                title={v.name}>
+                {v.imageUrl
+                  ? <OptimizedImage src={toDirectImageUrl(v.imageUrl)} cropData={v.thumbnailCrop?.percentages} alt={v.name} className={styles.swatchImg} />
+                  : <span className={styles.swatchColor} style={{ background: hex }} />}
               </button>
-            ))}
-          </DraggableContainer>
-        </div>
+            );
+          })}
+        </DraggableContainer>
       </div>
-    ) : null;
-
-    const colorUI = showColor ? (
-      <div className={styles.comboItemSelectorsWrapper} style={{ marginBottom: 0 }}>
-        <div className={styles.comboSelectGroup}>
-          <span className={styles.comboSelectLabel}>
-            Color:
-            {displayVariantsList.length > 5 && <span className={styles.scrollHint}>Deslizar <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span>}
-          </span>
-          <DraggableContainer className={styles.comboVariantOptions} onPointerDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-            {displayVariantsList.map(v => {
-              const hex = v.colorHex || getFallbackHex(v.name);
-              const hasImg = !!v.imageUrl;
-              return (
-                <button
-                  key={v.id || v.name}
-                  className={`${styles.variantThumbBtn} ${displayColor === v.name ? styles.variantThumbBtnActive : ''}`}
-                  onClick={() => {
-                    setComboVariantSelections(prev => ({
-                      ...prev,
-                      [index]: { ...prev[index], color: v.name }
-                    }));
-                  }}
-                  title={v.name}
-                >
-                  {hasImg ? (
-                    <div className={styles.variantThumbImageWrapper}>
-                      <OptimizedImage
-                        src={toDirectImageUrl(v.imageUrl)}
-                        cropData={v.thumbnailCrop?.percentages}
-                        className={styles.variantThumbImage}
-                        alt={v.name}
-                      />
-                    </div>
-                  ) : hex ? (
-                    <span className={styles.variantThumbColor} style={{ backgroundColor: hex }}></span>
-                  ) : (
-                    <span className={styles.variantThumbText}>{v.name}</span>
-                  )}
-                </button>
-              );
-            })}
-          </DraggableContainer>
-        </div>
-      </div>
-    ) : null;
+    );
 
     if (position === 'top') return sizeUI;
     if (position === 'bottom') return colorUI;
-
-    return (
-      <>
-        {sizeUI}
-        {colorUI}
-      </>
-    );
+    return <>{sizeUI}{colorUI}</>;
   };
+
+  // ── Render
+  if (loading) return <Skeleton />;
+  if (!product) return <div className={styles.notFound}>Producto no encontrado.</div>;
+
+  const activeImage = images[imgIdx] || images[0];
+  const showCombo = isCombo && Boolean(activeImage?.isComboView);
 
   return (
     <>
-      <div className={`${styles.container} ${isCombo ? styles.containerCombo : ''}`}>
-        <div className={styles.imageSection} style={brandBgStyle}>
-          <ProductGallery 
-            product={product} 
-            selectedVariant={selectedVariant}
-            isCombo={isCombo}
-            comboVariantSelections={comboVariantSelections}
-            comboSubProducts={comboSubProducts}
-            comboElement={
+      <div className={`${styles.pdp} ${isCombo ? styles.pdpCombo : ''}`}>
+
+        {/* ── Gallery ── */}
+        <div className={styles.galleryCol}>
+          <Gallery
+            images={images}
+            activeIdx={imgIdx}
+            setActiveIdx={setImgIdx}
+            showCombo={showCombo}
+            comboEl={
               isCombo ? (
                 <ComboProductImage
                   comboProduct={product}
-                  variantSelections={comboVariantSelections}
-                  renderSelector={renderComboItemSelector}
-                  className={styles.mainComboImage}
-                  onProductsFetched={setComboSubProducts}
+                  variantSelections={comboSels}
+                  renderSelector={renderComboSelector}
+                  onProductsFetched={setComboProd}
                 />
               ) : null
             }
           />
         </div>
 
-        <div className={styles.infoSection}>
-          <div className={styles.productHeader}>
-            <h1 className={styles.name}>{product.name}</h1>
-            <div className={styles.priceContainer}>
-              {regularPrice ? (
-                <>
-                  <span className={styles.salePrice}>S/ {displayPrice.toFixed(2)}</span>
-                  <span className={styles.regularPrice}>S/ {regularPrice.toFixed(2)}</span>
-                </>
-              ) : (
-                <span className={styles.salePrice}>S/ {displayPrice.toFixed(2)}</span>
-              )}
-            </div>
+        {/* ── Info ── */}
+        <div className={styles.infoCol}>
+
+          {/* Breadcrumb */}
+          <nav className={styles.breadcrumb}>
+            <a href="/">Inicio</a>
+            <span>/</span>
+            {category && <><a href="/">{category}</a><span>/</span></>}
+            <span>{product.name}</span>
+          </nav>
+
+          {/* Title + share */}
+          <div className={styles.titleRow}>
+            <h1 className={styles.pdpTitle}>{product.name}</h1>
+            {user && (
+              <button className={styles.shareIconBtn} onClick={handleShare} disabled={sharing} title="Compartir y ganar monedas">
+                <Share2 size={16} strokeWidth={1.8} />
+              </button>
+            )}
           </div>
 
+          {/* Brand */}
+          {brand?.name && (
+            <span className={styles.brandBadge} style={brand.bgColor ? { background: brand.bgColor } : {}}>
+              {brand.name}
+            </span>
+          )}
 
+          {/* Price */}
+          <div className={styles.priceRow}>
+            <span className={styles.price}>S/ {displayPrice.toFixed(2)}</span>
+            {originalPrice && (
+              <>
+                <span className={styles.priceOriginal}>S/ {originalPrice.toFixed(2)}</span>
+                <span className={styles.discountBadge}>−{discount}%</span>
+              </>
+            )}
+          </div>
 
-          {hasVariants && variantsList.length > 0 && (
-            <div className={styles.variant}>
-              <div className={styles.variantLabelRow}>
-                <label>Color: <span className={styles.selectedLabelValue}>{selectedVariant?.name}</span></label>
-                {variantsList.length > 5 && <span className={styles.scrollHint}>Deslizar <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span>}
-              </div>
-              <DraggableContainer className={styles.comboVariantOptions} onPointerDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-                {variantsList.map((v, i) => {
+          <hr className={styles.divider} />
+
+          {/* Color selector */}
+          {hasVariants && variants.length > 0 && (
+            <div className={styles.selectorGroup}>
+              <span className={styles.selectorLabel}>Color: <em>{selectedVariant?.name}</em></span>
+              <DraggableContainer className={styles.swatchRow}>
+                {variants.map((v, i) => {
                   const hex = v.colorHex || getFallbackHex(v.name);
-                  const hasImg = !!v.imageUrl;
-                  
                   return (
-                    <button
-                      key={v.id || i}
-                      className={`${styles.variantThumbBtn} ${selectedVariantIndex === i ? styles.variantThumbBtnActive : ''}`}
-                      onClick={() => setSelectedVariantIndex(i)}
-                      title={v.name}
-                    >
-                      {hasImg ? (
-                        <div className={styles.variantThumbImageWrapper}>
-                          <OptimizedImage
-                            src={toDirectImageUrl(v.imageUrl)}
-                            cropData={v.thumbnailCrop?.percentages}
-                            className={styles.variantThumbImage}
-                            alt={v.name}
-                          />
-                        </div>
-                      ) : hex ? (
-                         <span className={styles.variantThumbColor} style={{ backgroundColor: hex }}></span>
-                      ) : (
-                         <span className={styles.variantThumbText}>{v.name}</span>
-                      )}
+                    <button key={v.id || i}
+                      className={`${styles.swatch} ${variantIdx === i ? styles.swatchActive : ''}`}
+                      onClick={() => setVariantIdx(i)} title={v.name}>
+                      {v.imageUrl
+                        ? <OptimizedImage src={toDirectImageUrl(v.imageUrl)} cropData={v.thumbnailCrop?.percentages} alt={v.name} className={styles.swatchImg} />
+                        : <span className={styles.swatchColor} style={{ background: hex }} />}
                     </button>
                   );
                 })}
@@ -594,100 +411,82 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             </div>
           )}
 
-          {availableSizes.length > 0 && (
-            <div className={styles.variant}>
-              <div className={styles.variantLabelRow}>
-                <label>Talla: <span className={styles.selectedLabelValue}>{selectedSize}</span></label>
-                {availableSizes.length > 4 && <span className={styles.scrollHint}>Deslizar <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span>}
-              </div>
-              <DraggableContainer className={styles.comboVariantOptions} onPointerDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-                {availableSizes.map(size => (
-                  <button
-                    key={size}
-                    className={`${styles.premiumSizeButton} ${selectedSize === size ? styles.premiumSizeButtonActive : ''}`}
-                    onClick={() => setSelectedSize(size)}
-                  >
-                    {size}
+          {/* Size selector */}
+          {sizes.length > 0 && (
+            <div className={styles.selectorGroup}>
+              <span className={styles.selectorLabel}>Talla: <em>{selectedSize}</em></span>
+              <DraggableContainer className={styles.pillRow}>
+                {sizes.map(s => (
+                  <button key={s}
+                    className={`${styles.sizePill} ${selectedSize === s ? styles.sizePillActive : ''}`}
+                    onClick={() => setSelectedSize(s)}>
+                    {s}
                   </button>
                 ))}
               </DraggableContainer>
             </div>
           )}
 
-          <div className={styles.quantity}>
-            <label>Cantidad:</label>
-            <div className={styles.quantityControls}>
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
-              <span>{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)}>+</button>
+          {/* Quantity */}
+          <div className={styles.qtyRow}>
+            <span className={styles.selectorLabel}>Cantidad</span>
+            <div className={styles.qtyControl}>
+              <button className={styles.qtyBtn} onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
+              <span className={styles.qtyValue}>{qty}</span>
+              <button className={styles.qtyBtn} onClick={() => setQty(q => q + 1)}>+</button>
             </div>
           </div>
 
-          <div className={`${styles.actions} ${styles.stickyMobileActions}`}>
-            {product.customizable && (
-              <Button variant="primary" onClick={handlePersonalize} className={`${styles.personalizeBtn} ${styles.animatedPersonalizeBtn}`}>
-                Personalizar
-              </Button>
+          {/* CTA Buttons */}
+          <div className={styles.ctaStack}>
+            {product.inStock ? (
+              <button className={styles.btnPrimary} onClick={handleAddToCart}>
+                Agregar al carrito
+              </button>
+            ) : (
+              <button className={styles.btnPrimary} disabled>Agotado</button>
             )}
-            <Button
-              variant="outline"
-              onClick={handleAddToCart}
-              disabled={!product.inStock}
-              className={styles.addBtn}
-            >
-              {product.inStock ? 'Agregar al Carrito' : 'Agotado'}
-            </Button>
+            {product.customizable && (
+              <button className={styles.btnOutline} onClick={handlePersonalize}>
+                Personalizar
+              </button>
+            )}
           </div>
 
-          {user && (
-             <div className={styles.shareContainer}>
-               <Button
-                 variant="outline"
-                 onClick={handleShareProduct}
-                 disabled={generatingLink}
-                 className={styles.shareBtn}
-               >
-                 {generatingLink ? (
-                   <>
-                     <span className={styles.shareIcon}>⏳</span>
-                     <span className={styles.shareBtnText}>Generando...</span>
-                   </>
-                 ) : (
-                   <>
-                     <span className={styles.shareIcon}>🔗</span>
-                     <span className={styles.shareBtnText}>Compartir y Ganar</span>
-                   </>
-                 )}
-               </Button>
-             </div>
-          )}
+          {/* Trust badges */}
+          <div className={styles.trustRow}>
+            <div className={styles.trustItem}><Truck size={14} /><span>Envío a todo el país</span></div>
+            <div className={styles.trustItem}><RefreshCw size={14} /><span>Cambios y devoluciones</span></div>
+            <div className={styles.trustItem}><ShieldCheck size={14} /><span>Pago seguro</span></div>
+          </div>
 
+          {/* Description */}
           {product.description && (
-            <div className={styles.description}>
-              <h3>Descripción</h3>
+            <details className={styles.accordion} open>
+              <summary className={styles.accordionSummary}>Descripción</summary>
               <div
-                className={styles.richTextDescription}
+                className={styles.richText}
                 dangerouslySetInnerHTML={{ __html: product.description }}
-                onClick={handleDescriptionClick}
+                onClick={handleDescClick}
               />
-            </div>
+            </details>
           )}
 
-          {/* Sección de Reseñas */}
+          {/* Reviews */}
           <ProductReviews productId={product.id} />
 
         </div>
       </div>
 
       <ProductCuestionarioModal
-        isOpen={!!cuestionarioModalTemplate}
-        onClose={() => setCuestionarioModalTemplate(null)}
-        templateId={cuestionarioModalTemplate}
+        isOpen={!!cuestionario}
+        onClose={() => setCuestionario(null)}
+        templateId={cuestionario}
         product={product}
         selectedVariant={selectedVariant}
         selectedSize={selectedSize}
-        quantity={quantity}
-        comboVariantSelections={comboVariantSelections}
+        quantity={qty}
+        comboVariantSelections={comboSels}
       />
     </>
   );
