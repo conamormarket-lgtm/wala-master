@@ -548,7 +548,7 @@ const AdminProductoFormV2 = () => {
         queryClient.invalidateQueries({ queryKey: ['featured-products'] }),
         queryClient.invalidateQueries({ queryKey: ['collection-products'] })
       ]);
-      navigate('/admin/productos');
+      window.location.href = '/admin/productos';
     }
   });
 
