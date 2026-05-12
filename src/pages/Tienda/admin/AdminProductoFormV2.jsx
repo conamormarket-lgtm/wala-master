@@ -151,11 +151,33 @@ const AdminProductoFormV2 = () => {
   useEffect(() => {
     // Si estamos editando un producto oficial
     if (!isNew && productData) {
-      const mappedVariants = (productData.variants || []).map(v => ({
+      let mappedVariants = (productData.variants || []).map(v => ({
         ...v,
         mode: v.imageUrl ? 'direct' : 'mockup',
         mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
+        // Asegurar que images y sizes siempre sean arrays
+        images: Array.isArray(v.images) ? v.images : [],
+        sizes: Array.isArray(v.sizes) ? v.sizes : [],
       }));
+
+      // ── FALLBACK: producto sin variants[] (legacy o guardado sin hasVariants) ──
+      // Si no hay variantes pero hay mainImage, creamos una variante sintética
+      // para que el editor de variantes pueda trabajar.
+      if (mappedVariants.length === 0 && !productData.isComboProduct) {
+        const syntheticId = productData.defaultVariantId || `var_${Date.now()}`;
+        mappedVariants = [{
+          id: syntheticId,
+          name: 'Principal',
+          colorHex: '#cccccc',
+          mode: productData.mainImage ? 'direct' : 'mockup',
+          imageUrl: productData.mainImage || '',
+          images: Array.isArray(productData.images) ? productData.images.filter(u => u !== productData.mainImage) : [],
+          sizes: Array.isArray(productData.mainSizes) ? productData.mainSizes : [],
+          mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
+        }];
+      }
+
+      const firstVariantId = mappedVariants[0]?.id || '';
 
       setForm({
         name: productData.name || '',
@@ -166,7 +188,7 @@ const AdminProductoFormV2 = () => {
         brandId: productData.brandId || '',
         category: productData.category ? productData.category.id || productData.category : '',
         collection: productData.collections?.[0]?.id || productData.collections?.[0] || '',
-        defaultVariantId: productData.defaultVariantId || (mappedVariants[0]?.id || ''),
+        defaultVariantId: productData.defaultVariantId || firstVariantId,
         variants: mappedVariants,
         customizable: productData.customizable || false,
         customizationViews: productData.customizable && productData.customizationViews ? productData.customizationViews : [],
@@ -178,7 +200,8 @@ const AdminProductoFormV2 = () => {
         featured: productData.featured || false,
       });
 
-      if (mappedVariants.length > 0) setActiveGalleryTabId(mappedVariants[0].id);
+      // Siempre activar la primera variante si existe
+      if (firstVariantId) setActiveGalleryTabId(firstVariantId);
       return; // No cargamos draft si estamos editando uno oficial directamente sin draftId
     }
 
@@ -500,14 +523,15 @@ const AdminProductoFormV2 = () => {
         id: v.id,
         name: v.name,
         colorHex: v.colorHex,
-        imageUrl: v.imageUrl,
-        images: v.images || [],
-        sizes: v.sizes || []
+        imageUrl: v.imageUrl || '',
+        images: Array.isArray(v.images) ? v.images : [],
+        sizes: Array.isArray(v.sizes) ? v.sizes : [],
       }));
 
       // Identify main image
       const defaultVariant = finalVariants.find(v => v.id === form.defaultVariantId) || finalVariants[0];
       const mainImage = defaultVariant?.imageUrl || '';
+      const isCombo = form.isComboProduct;
 
       const payload = {
         name: form.name,
@@ -519,18 +543,21 @@ const AdminProductoFormV2 = () => {
         category: form.category ? { id: form.category } : null,
         collections: form.collection ? [{ id: form.collection }] : [],
         mainImage: mainImage,
-        defaultVariantId: defaultVariant.id,
+        mainSizes: [],                     // Las tallas viven dentro de cada variante
+        defaultVariantId: defaultVariant?.id || '',
+        // ── CRÍTICO: persistir hasVariants para que normalizeProductForRead lo lea ──
+        hasVariants: !isCombo && finalVariants.length > 0,
         customizable: form.customizable,
         customizationViews: form.customizationViews,
-        isComboProduct: form.isComboProduct,
-        comboItems: form.isComboProduct ? form.comboItems : [],
-        comboPreviewImage: form.isComboProduct ? form.comboPreviewImage : '',
+        isComboProduct: isCombo,
+        comboItems: isCombo ? form.comboItems : [],
+        comboPreviewImage: isCombo ? form.comboPreviewImage : '',
         characters: form.characters || [],
         tags: form.tags || [],
-        variants: form.isComboProduct ? [] : finalVariants,
+        variants: isCombo ? [] : finalVariants,
         visible: true,
         featured: form.featured,
-        isV2: true, 
+        isV2: true,
       };
 
       await saveMutation.mutateAsync(payload);
