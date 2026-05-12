@@ -444,6 +444,7 @@
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   transition: all 0.2s;
+  z-index: 20;
 }
 
 .deleteGalleryBtn:hover {
@@ -906,5 +907,57 @@ input:checked + .slider:before {
   max-width: 65px;
   font-weight: 500;
   transition: color 0.2s;
+}
+
+/* Animations and Loading Toast */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.loadingToast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid #eee;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  color: #111;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toastText h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.toastText p {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.9rem;
+  color: #666;
 }
 
