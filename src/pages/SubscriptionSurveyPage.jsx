@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Calendar, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Calendar, Plus, Trash2, ArrowLeft, Edit2, AlertCircle } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
 import styles from './SubscriptionSurveyPage.module.css';
 
@@ -82,18 +82,26 @@ const SubscriptionSurveyPage = () => {
     return true;
   };
 
-  const startEditingRecipient = (roleKey, displayRole) => {
-    setTempRecipient({
+  const createBlankRecipient = (roleKey, displayRole) => {
+    return {
       id: Math.random().toString(36).substring(2, 9),
-      roleKey, // e.g. 'hijos'
-      roleDisplay: displayRole, // e.g. 'Hijo/a'
+      roleKey,
+      roleDisplay: displayRole,
       name: '',
       events: [{ id: Math.random().toString(36).substring(2, 9), type: 'Cumpleaños', date: '' }],
       selectedCategories: [],
       categoryAnswers: {}
-    });
-    setAnimationDir('Right');
-    setIsEditingRecipient(true);
+    };
+  };
+
+  const setupParejaIfNeeded = (recipientsList, currentRoles, index) => {
+    // Si el rol actual es Pareja y no existe en finalRecipients, lo creamos
+    if (currentRoles[index] === 'pareja') {
+      const hasPareja = recipientsList.some(r => r.roleKey === 'pareja');
+      if (!hasPareja) {
+        setFinalRecipients(prev => [...prev, createBlankRecipient('pareja', 'Pareja')]);
+      }
+    }
   };
 
   const goToNextStep = () => {
@@ -109,12 +117,10 @@ const SubscriptionSurveyPage = () => {
 
       setRolesList(selectedKeys);
       setCurrentRoleIndex(0);
+      setIsEditingRecipient(false);
       
-      if (selectedKeys[0] === 'pareja') {
-        startEditingRecipient('pareja', 'Pareja');
-      } else {
-        setIsEditingRecipient(false);
-      }
+      // Auto-generar tarjeta de Pareja si es el primero
+      setupParejaIfNeeded(finalRecipients, selectedKeys, 0);
     }
 
     setAnimationDir('Right');
@@ -126,22 +132,63 @@ const SubscriptionSurveyPage = () => {
     setCurrentStep(prev => prev - 1);
   };
 
+  const isRecipientComplete = (rec) => {
+    // Para que esté completo debe tener nombre y el evento cumpleaños debe tener fecha (si aplica)
+    if (!rec.name || rec.name.trim() === '') return false;
+    
+    // Verificar que todos los eventos que requieran fecha la tengan
+    for (const ev of rec.events) {
+      const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.label === 'Otro Evento');
+      if (evTypeConfig.needsDate && (!ev.date || ev.date.trim() === '')) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   const goToNextRoleGroup = () => {
+    const currentRoleKey = rolesList[currentRoleIndex];
+    const roleRecipients = finalRecipients.filter(r => r.roleKey === currentRoleKey);
+    
+    // Validación: No pueden haber tarjetas incompletas en este grupo
+    const hasIncompletes = roleRecipients.some(r => !isRecipientComplete(r));
+    if (hasIncompletes) {
+       return alert('Por favor completa los datos de todas las tarjetas antes de continuar.');
+    }
+    
+    // Validación: Debe haber al menos una persona en los grupos (excepto si el usuario los borró todos, pero lo normal es que haya)
+    if (roleRecipients.length === 0 && currentRoleKey !== 'pareja') {
+      const confirmSkip = window.confirm('No has agregado a nadie en este grupo. ¿Deseas continuar de todos modos?');
+      if (!confirmSkip) return;
+    }
+
     const nextIdx = currentRoleIndex + 1;
     if (nextIdx < rolesList.length) {
       setAnimationDir('Right');
       setCurrentRoleIndex(nextIdx);
-      if (rolesList[nextIdx] === 'pareja') {
-        startEditingRecipient('pareja', 'Pareja');
-      } else {
-        setIsEditingRecipient(false); // Entra al Hub
-      }
+      setIsEditingRecipient(false);
+      setupParejaIfNeeded(finalRecipients, rolesList, nextIdx);
     } else {
       handleFinalSave();
     }
   };
 
-  // ---- MANEJO DEL TEMP RECIPIENT ----
+  // ---- MANEJO DEL HUB ----
+  const handleAddNewCard = () => {
+    const roleKey = rolesList[currentRoleIndex];
+    const roleDisplay = ROLES_MAP[roleKey].singular;
+    const newRecipient = createBlankRecipient(roleKey, roleDisplay);
+    setFinalRecipients(prev => [...prev, newRecipient]);
+  };
+
+  const startEditingCard = (recipient) => {
+    setTempRecipient(JSON.parse(JSON.stringify(recipient))); // Clon profundo simple
+    setAnimationDir('Right');
+    setIsEditingRecipient(true);
+  };
+
+  // ---- MANEJO DEL TEMP RECIPIENT (EDITOR) ----
   const handleTempChange = (field, value) => {
     setTempRecipient(prev => ({ ...prev, [field]: value }));
   };
@@ -178,55 +225,45 @@ const SubscriptionSurveyPage = () => {
 
   const saveTempRecipient = () => {
     // Validaciones
-    if (tempRecipient.roleKey !== 'pareja' && !tempRecipient.name) {
-       return alert('Por favor escribe el nombre de esta persona para poder identificarla en tu lista.');
+    if (!tempRecipient.name || tempRecipient.name.trim() === '') {
+       return alert('El nombre es obligatorio.');
     }
 
     for (const ev of tempRecipient.events) {
       const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.label === 'Otro Evento');
-      if (evTypeConfig.needsDate && !ev.date) {
+      if (evTypeConfig.needsDate && (!ev.date || ev.date.trim() === '')) {
         return alert(`La fecha es obligatoria para el evento: ${ev.type}.`);
       }
     }
 
     setFinalRecipients(prev => {
-      // Si estamos editando uno existente (todavía no soportado, pero buena práctica) o creando uno nuevo
-      const existingIdx = prev.findIndex(r => r.id === tempRecipient.id);
+      const copy = [...prev];
+      const existingIdx = copy.findIndex(r => r.id === tempRecipient.id);
       if (existingIdx >= 0) {
-        const copy = [...prev];
         copy[existingIdx] = tempRecipient;
-        return copy;
       }
-      return [...prev, tempRecipient];
+      return copy;
     });
 
-    const currentRole = rolesList[currentRoleIndex];
-    if (currentRole === 'pareja') {
-      goToNextRoleGroup();
-    } else {
-      setAnimationDir('Left');
-      setIsEditingRecipient(false); // Volver al Hub
-    }
+    setAnimationDir('Left');
+    setIsEditingRecipient(false); // Volver al Hub
   };
 
   const cancelTempRecipient = () => {
-    const currentRole = rolesList[currentRoleIndex];
     setAnimationDir('Left');
-    if (currentRole === 'pareja') {
-      // Si cancelan pareja, simplemente se salta este grupo
-      goToNextRoleGroup();
-    } else {
-      setIsEditingRecipient(false); // Volver al Hub
-    }
+    setIsEditingRecipient(false); // Volver al Hub sin guardar los cambios de tempRecipient
   };
 
   const handleFinalSave = async () => {
     setSaving(true);
     try {
+      // Limpiar tarjetas incompletas que hayan quedado
+      const validRecipients = finalRecipients.filter(r => isRecipientComplete(r));
+      
       await updateUserProfile({ 
         surveyBasicData: basicAnswers, 
         giftRoles: selectedRoles,
-        giftRecipients: finalRecipients, 
+        giftRecipients: validRecipients, 
         hasCompletedSurvey: true 
       });
       setAnimationDir('Right');
@@ -254,6 +291,10 @@ const SubscriptionSurveyPage = () => {
   const animationKey = currentStep === 3 ? `${rolesList[currentRoleIndex]}-${isEditingRecipient ? 'edit' : 'hub'}` : `main-${currentStep}`;
   const animationClass = animationDir === 'Right' ? styles.animateSlideInRight : styles.animateSlideInLeft;
 
+  const currentRoleObj = rolesList[currentRoleIndex] === 'pareja' 
+    ? { label: 'Pareja', icon: <Heart size={32} />, singular: 'Pareja' } 
+    : ROLES_MAP[rolesList[currentRoleIndex]];
+
   return (
     <div className={styles.surveyLayout} style={{ '--survey-primary': config.design.primaryColor, backgroundColor: config.design.backgroundColor, color: config.design.textColor }}>
       
@@ -268,16 +309,13 @@ const SubscriptionSurveyPage = () => {
 
         <div key={animationKey} className={`${styles.card} ${animationClass}`}>
           
-          {/* PASO 0: Hook */}
+          {/* PASOS 0, 1 y 2 */}
           {currentStep === 0 && (
             <>
-              <div className={styles.headerIcon}>
-                <Gift size={40} color={config.design.primaryColor} />
-              </div>
+              <div className={styles.headerIcon}><Gift size={40} color={config.design.primaryColor} /></div>
               <h1 className={styles.title}>{config.introPanel.title}</h1>
               <h2 className={styles.subtitle}>{config.introPanel.subtitle}</h2>
               <p className={styles.description}>{config.introPanel.description}</p>
-              
               <div className={styles.actions} style={{ justifyContent: 'center' }}>
                 <button type="button" onClick={handleSkip} className={styles.skipBtn}>{config.introPanel.skipButtonText}</button>
                 <button type="button" onClick={goToNextStep} className={styles.saveBtn}>{config.introPanel.continueButtonText}</button>
@@ -285,12 +323,9 @@ const SubscriptionSurveyPage = () => {
             </>
           )}
 
-          {/* PASO 1: Datos Básicos */}
           {currentStep === 1 && (
             <>
-              <div className={styles.headerIcon}>
-                <UserCircle size={40} color={config.design.primaryColor} />
-              </div>
+              <div className={styles.headerIcon}><UserCircle size={40} color={config.design.primaryColor} /></div>
               <h1 className={styles.title}>{config.basicDataPanel.title}</h1>
               <h2 className={styles.subtitle}>{config.basicDataPanel.subtitle}</h2>
               <div className={styles.form}>
@@ -314,36 +349,28 @@ const SubscriptionSurveyPage = () => {
             </>
           )}
 
-          {/* PASO 2: Selección de Roles */}
           {currentStep === 2 && (
             <>
-              <div className={styles.headerIcon}>
-                <Users size={40} color={config.design.primaryColor} />
-              </div>
+              <div className={styles.headerIcon}><Users size={40} color={config.design.primaryColor} /></div>
               <h1 className={styles.title}>¿A quiénes sueles regalar?</h1>
               <p className={styles.description}>Selecciona todos los perfiles a los que sueles hacer regalos (puedes elegir varios).</p>
               
               <div className={styles.groupsContainer}>
-                
                 <button 
                   className={`${styles.groupCard} ${selectedRoles.pareja ? styles.groupCardSelected : ''}`}
                   onClick={() => setSelectedRoles(p => ({...p, pareja: !p.pareja}))}
                 >
-                  <Heart size={32} />
-                  <h3>Pareja</h3>
+                  <Heart size={32} /><h3>Pareja</h3>
                 </button>
-
                 {Object.keys(ROLES_MAP).map(roleKey => (
                   <button 
                     key={roleKey}
                     className={`${styles.groupCard} ${selectedRoles[roleKey] ? styles.groupCardSelected : ''}`}
                     onClick={() => setSelectedRoles(p => ({...p, [roleKey]: !p[roleKey]}))}
                   >
-                    {ROLES_MAP[roleKey].icon}
-                    <h3>{ROLES_MAP[roleKey].label}</h3>
+                    {ROLES_MAP[roleKey].icon}<h3>{ROLES_MAP[roleKey].label}</h3>
                   </button>
                 ))}
-
               </div>
 
               <div className={styles.actions}>
@@ -354,47 +381,47 @@ const SubscriptionSurveyPage = () => {
           )}
 
           {/* PASO 3: Bucle de Roles (Hub & Spoke) */}
-          {currentStep === 3 && (
+          {currentStep === 3 && currentRoleObj && (
             <>
               {!isEditingRecipient ? (
                 /* ---- EL HUB (PANTALLA RESUMEN) ---- */
                 <>
-                  <div className={styles.headerIcon}>
-                    {ROLES_MAP[rolesList[currentRoleIndex]].icon}
-                  </div>
-                  <h1 className={styles.title}>Tus {ROLES_MAP[rolesList[currentRoleIndex]].label}</h1>
-                  <p className={styles.description}>Agrega a los {ROLES_MAP[rolesList[currentRoleIndex]].label.toLowerCase()} a los que sueles darles regalos.</p>
+                  <div className={styles.headerIcon}>{currentRoleObj.icon}</div>
+                  <h1 className={styles.title}>{rolesList[currentRoleIndex] === 'pareja' ? 'Tu Pareja' : `Tus ${currentRoleObj.label}`}</h1>
+                  <p className={styles.description}>Completa los datos de estas personas para poder guardarlas.</p>
                   
                   <div className={styles.form}>
                     <div className={styles.recipientsList}>
-                      {finalRecipients.filter(r => r.roleKey === rolesList[currentRoleIndex]).map((rec, idx) => (
-                        <div key={rec.id} className={styles.recipientCard}>
-                          <div className={styles.recipientInfo}>
-                            <h3>{rec.name} ({rec.roleDisplay})</h3>
-                            <p><Calendar size={14}/> {rec.events.length} Fechas Importantes guardadas</p>
-                            {rec.selectedCategories.length > 0 && (
-                              <div className={styles.recipientPills}>
-                                {rec.selectedCategories.map(catId => {
-                                  const catName = config.brandsPanel.categories.find(c => c.id === catId)?.name;
-                                  return catName ? <span key={catId} className={styles.miniPill}>{catName}</span> : null;
-                                })}
-                              </div>
+                      {finalRecipients.filter(r => r.roleKey === rolesList[currentRoleIndex]).map((rec, idx) => {
+                        const isDone = isRecipientComplete(rec);
+                        return (
+                          <div key={rec.id} className={`${styles.recipientCard} ${isDone ? styles.cardComplete : styles.cardIncomplete}`} onClick={() => startEditingCard(rec)}>
+                            <div className={styles.recipientInfo}>
+                              <h3>{rec.name || `${rec.roleDisplay} (Sin Nombre)`}</h3>
+                              {isDone ? (
+                                <p style={{color: '#10b981'}}><CheckCircle size={14}/> Perfil Completado</p>
+                              ) : (
+                                <p style={{color: '#f59e0b'}}><AlertCircle size={14}/> Falta completar datos</p>
+                              )}
+                            </div>
+                            <button type="button" className={isDone ? styles.hubEditBtn : styles.hubCompleteBtn} onClick={(e) => { e.stopPropagation(); startEditingCard(rec); }}>
+                              {isDone ? 'Editar' : 'Completar Perfil'}
+                            </button>
+                            {rolesList[currentRoleIndex] !== 'pareja' && (
+                              <button type="button" onClick={(e) => { e.stopPropagation(); setFinalRecipients(prev => prev.filter(p => p.id !== rec.id)); }} className={styles.removeBtn} style={{marginLeft:'0.5rem'}}>
+                                <Trash2 size={20} />
+                              </button>
                             )}
                           </div>
-                          <button type="button" onClick={() => setFinalRecipients(prev => prev.filter(p => p.id !== rec.id))} className={styles.removeBtn}>
-                            <Trash2 size={20} />
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
-                    <button 
-                      type="button" 
-                      onClick={() => startEditingRecipient(rolesList[currentRoleIndex], ROLES_MAP[rolesList[currentRoleIndex]].singular)} 
-                      className={styles.addRecipientBtn}
-                    >
-                      <Plus size={20} /> Añadir {ROLES_MAP[rolesList[currentRoleIndex]].singular}
-                    </button>
+                    {rolesList[currentRoleIndex] !== 'pareja' && (
+                      <button type="button" onClick={handleAddNewCard} className={styles.addRecipientBtn}>
+                        <Plus size={20} /> Añadir {currentRoleObj.singular}
+                      </button>
+                    )}
                   </div>
 
                   <div className={styles.actions}>
@@ -404,10 +431,7 @@ const SubscriptionSurveyPage = () => {
                       <button type="button" onClick={() => {
                         setAnimationDir('Left');
                         setCurrentRoleIndex(prev => prev - 1);
-                        if (rolesList[currentRoleIndex - 1] === 'pareja') {
-                          // Aunque Pareja no tiene hub, al darle atrás deberíamos poder editarla?
-                          // Por ahora dejaremos que solo puedan darle atrás y pase de grupo
-                        }
+                        setIsEditingRecipient(false);
                       }} className={styles.skipBtn}>Grupo Anterior</button>
                     )}
                     <button type="button" onClick={goToNextRoleGroup} className={styles.saveBtn} disabled={saving}>
@@ -420,14 +444,14 @@ const SubscriptionSurveyPage = () => {
                 <>
                   <div className={styles.subFlowHeader}>
                     <button className={styles.backLinkBtn} onClick={cancelTempRecipient} style={{background:'none', border:'none', color:'#64748b', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', marginBottom:'1rem', fontWeight:'600'}}>
-                      <ArrowLeft size={16}/> Volver
+                      <ArrowLeft size={16}/> Volver sin guardar
                     </button>
                     <h3>Datos de {tempRecipient.roleDisplay}</h3>
                   </div>
                   
                   <div className={styles.form}>
                     <div className={styles.fieldGroup}>
-                      <label>Nombre de la persona {tempRecipient.roleKey !== 'pareja' && '*'}</label>
+                      <label>Nombre de la persona *</label>
                       <input type="text" className={styles.input} placeholder="Ej. Carlos" value={tempRecipient.name} onChange={e => handleTempChange('name', e.target.value)} />
                     </div>
                     
@@ -473,24 +497,25 @@ const SubscriptionSurveyPage = () => {
                       </button>
                     </div>
 
-                    {/* Preguntas Dinámicas de Administrador (Intereses) */}
+                    {/* Preguntas Dinámicas de Administrador (Intereses convertidos a Botones Toggle) */}
                     {config.brandsPanel?.categories?.map(cat => {
                       const isCatSelected = tempRecipient.selectedCategories?.includes(cat.id);
                       return (
-                        <div key={cat.id} className={styles.breakdownSection}>
-                          <h3 className={styles.breakdownTitle} style={{fontSize:'1rem'}}>Intereses: {cat.name}</h3>
-                          <label style={{display:'flex', gap:'0.5rem', alignItems:'center', cursor:'pointer', marginBottom:'0.5rem'}}>
-                            <input 
-                              type="checkbox" 
-                              checked={isCatSelected || false} 
-                              onChange={e => {
-                                const currentList = tempRecipient.selectedCategories || [];
-                                const newList = e.target.checked ? [...currentList, cat.id] : currentList.filter(id => id !== cat.id);
-                                handleTempChange('selectedCategories', newList);
-                              }} 
-                            />
-                            ¿Le interesa {cat.name}?
-                          </label>
+                        <div key={cat.id} className={styles.breakdownSection} style={{ padding: '1rem' }}>
+                          <button 
+                            type="button"
+                            className={`${styles.conjuntoBtn} ${isCatSelected ? styles.conjuntoBtnActive : ''}`}
+                            onClick={() => {
+                              const currentList = tempRecipient.selectedCategories || [];
+                              const newList = !isCatSelected ? [...currentList, cat.id] : currentList.filter(id => id !== cat.id);
+                              handleTempChange('selectedCategories', newList);
+                            }}
+                          >
+                            <span style={{flex: 1, textAlign: 'left', fontWeight: 'bold'}}>Conjunto {cat.name}</span>
+                            <div className={styles.toggleIndicator}>
+                              <div className={styles.toggleCircle}></div>
+                            </div>
+                          </button>
                           
                           {isCatSelected && cat.fields?.map(field => {
                             const answerValue = tempRecipient.categoryAnswers?.[cat.id]?.[field.id] || '';
