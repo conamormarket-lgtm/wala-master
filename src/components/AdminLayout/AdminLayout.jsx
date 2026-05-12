@@ -217,6 +217,12 @@ const AdminLayout = () => {
               >
                 Usuarios y métricas
               </NavLink>
+              <NavLink
+                to="/admin/encuestas"
+                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
+              >
+                Encuesta de Suscripción
+              </NavLink>
             </>
           )}
 

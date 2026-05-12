@@ -64,7 +64,8 @@ const Header = () => {
     // Configuración por defecto si no hay nada en Firebase
     navLinks = [
       { id: '1', text: 'Tienda', type: 'dropdown', url: '/tienda', isCategoryAuto: true },
-      { id: '2', text: 'Crear', type: 'link', url: '/personalizar' }
+      { id: '2', text: 'Suscripciones', type: 'link', url: '/suscripciones' },
+      { id: '3', text: 'Crear', type: 'link', url: '/personalizar' }
     ];
   }
 

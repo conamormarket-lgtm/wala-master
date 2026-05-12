@@ -42,6 +42,7 @@ const PoliticasPrivacidadPage = lazy(() => import('./pages/PoliticasPrivacidadPa
 const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
 const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'));
 const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage'));
+const SubscriptionLandingPage = lazy(() => import('./pages/SubscriptionLandingPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -73,6 +74,7 @@ const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
 const AdminStoreEditor = lazy(() => import('./pages/Tienda/admin/AdminStoreEditor'));
+const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 
 const AppRedirect = lazy(() => import('./pages/AppRedirect'));
 
@@ -140,6 +142,11 @@ function App() {
                             <SubscriptionSurveyPage />
                           </Suspense>
                         } />
+                        <Route path="/suscripciones" element={
+                          <Suspense fallback={<PageLoading />}>
+                            <SubscriptionLandingPage />
+                          </Suspense>
+                        } />
                         <Route path="/producto/:id" element={<ProductPage />} />
                         <Route path="/personalizar" element={<PersonalizarPage />} />
                         <Route path="/editor/:id" element={<EditorPage />} />
@@ -184,6 +191,7 @@ function App() {
                             <Route path="store-editor" element={<AdminStoreEditor />} />
                             <Route path="backups" element={<AdminBackups />} />
                             <Route path="configuracion" element={<AdminConfiguracion />} />
+                            <Route path="encuestas" element={<AdminEncuestas />} />
                           </Route>
                         </Route>
 

@@ -54,8 +54,16 @@ function normalizeVariantItem(item, index) {
   const imageUrl = String(item.imageUrl ?? '');
   const sizes = Array.isArray(item.sizes) ? item.sizes.filter(Boolean) : [];
   
+  // Extraer las URLs asegurando que los objetos legacy se conviertan a strings
+  const extractUrl = (img) => {
+    if (!img) return '';
+    if (typeof img === 'string') return img;
+    return img.url || img.imageUrl || '';
+  };
+  
   // Guardamos tanto 'images' (nuevo) como 'galleryImages' (viejo/tienda) para máxima compatibilidad
-  const images = Array.isArray(item.images) ? item.images : (Array.isArray(item.galleryImages) ? item.galleryImages : []);
+  const rawImages = Array.isArray(item.images) ? item.images : (Array.isArray(item.galleryImages) ? item.galleryImages : []);
+  const images = rawImages.map(extractUrl).filter(Boolean);
   
   return { 
     id, 
@@ -125,25 +133,33 @@ function normalizeProductForRead(doc) {
         ? variants[0].id
         : '';
 
-  // Derivar images e imagesByColor para compatibilidad con tienda/editor y admin (miniatura = variante principal)
-  let images = Array.isArray(doc.images) ? doc.images : [];
+  // Extraer las URLs asegurando que los objetos legacy se conviertan a strings
+  const extractUrl = (img) => {
+    if (!img) return '';
+    if (typeof img === 'string') return img;
+    return img.url || img.imageUrl || '';
+  };
+  
+  let rawImages = Array.isArray(doc.images) ? doc.images.map(extractUrl).filter(Boolean) : [];
+  let images = [...rawImages];
   let imagesByColor = doc.imagesByColor && typeof doc.imagesByColor === 'object' ? doc.imagesByColor : {};
+
   if (hasVariants && variants.length > 0) {
     const defaultVariant = defaultVariantId ? variants.find((v) => v.id === defaultVariantId) : variants[0];
     const principalImage = defaultVariant?.imageUrl || variants[0]?.imageUrl || '';
+    
+    // Si hay una imagen principal, asegurarse de que esté al inicio, pero no borrar el resto de imágenes
     if (principalImage) {
-      images = [principalImage];
+      images = [principalImage, ...rawImages.filter(u => u !== principalImage)];
     }
-    if (images.length === 0 && Array.isArray(doc.images) && doc.images.length > 0) {
-      images = [...doc.images];
-    }
+    
     const byName = {};
     variants.forEach((v) => {
       if (v.imageUrl) byName[v.name] = [v.imageUrl];
     });
     if (Object.keys(byName).length > 0) imagesByColor = byName;
   } else if (!hasVariants && mainImage) {
-    images = [mainImage];
+    images = [mainImage, ...rawImages.filter(u => u !== mainImage)];
     imagesByColor = { default: mainImage };
   }
 
