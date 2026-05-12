@@ -601,6 +601,30 @@ const AdminProductoFormV2 = () => {
 
   return (
     <div className={styles.wrapper}>
+      {/* OVERLAY DE CARGA PANTALLA COMPLETA */}
+      {(uploading || saveMutation.isPending) && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#0a0a0a',
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <Loader2 className="animate-spin" size={64} style={{ marginBottom: '1rem', color: '#0a0a0a' }} />
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>
+            {isNew ? 'Creando Producto...' : 'Guardando Cambios...'}
+          </h2>
+          <p style={{ margin: 0, color: '#666', fontSize: '1rem' }}>
+            Por favor, no cierres ni recargues esta ventana.
+          </p>
+        </div>
+      )}
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate('/admin/productos')} type="button">
           <ArrowLeft size={20} /> Volver
