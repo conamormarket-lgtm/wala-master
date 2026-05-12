@@ -1,9 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus } from 'lucide-react';
+import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Calendar, Plus, Trash2 } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
 import styles from './SubscriptionSurveyPage.module.css';
+
+const EVENT_TYPES = [
+  { id: 'cumpleanos', label: 'Cumpleaños', needsDate: true },
+  { id: 'aniversario', label: 'Aniversario', needsDate: true },
+  { id: 'navidad', label: 'Navidad', needsDate: false },
+  { id: 'dia_madre', label: 'Día de la Madre', needsDate: false },
+  { id: 'dia_padre', label: 'Día del Padre', needsDate: false },
+  { id: 'dia_nino', label: 'Día del Niño', needsDate: false },
+  { id: 'san_valentin', label: 'San Valentín', needsDate: false },
+  { id: 'otro', label: 'Otro Evento', needsDate: true }
+];
+
+const ROLES_MAP = {
+  hijos: { label: 'Hijos', icon: <UserPlus size={32} />, singular: 'Hijo/a' },
+  padres: { label: 'Padres', icon: <Users size={32} />, singular: 'Padre/Madre' },
+  hermanos: { label: 'Hermanos', icon: <Users size={32} />, singular: 'Hermano/a' },
+  sobrinos: { label: 'Sobrinos', icon: <Users size={32} />, singular: 'Sobrino/a' },
+  primos: { label: 'Primos', icon: <Users size={32} />, singular: 'Primo/a' },
+  amigos: { label: 'Amigos', icon: <UserPlus size={32} />, singular: 'Amigo/a' },
+  otros: { label: 'Otros', icon: <UserCircle size={32} />, singular: 'Otra persona' }
+};
 
 const SubscriptionSurveyPage = () => {
   const { userProfile, updateUserProfile, loading: authLoading } = useAuth();
@@ -19,25 +40,27 @@ const SubscriptionSurveyPage = () => {
   
   const [basicAnswers, setBasicAnswers] = useState({});
   
-  // --- NUEVOS ESTADOS DEL WIZARD ---
-  const [selectedGroups, setSelectedGroups] = useState({
-    familia: false,
+  // --- NUEVOS ESTADOS DEL WIZARD (Roles Directos) ---
+  const [selectedRoles, setSelectedRoles] = useState({
     pareja: false,
-    amigos: false
+    hijos: false,
+    padres: false,
+    hermanos: false,
+    sobrinos: false,
+    primos: false,
+    amigos: false,
+    otros: false
   });
 
-  const [breakdownData, setBreakdownData] = useState({
-    familia: {
-      esposa: false,
-      hijos: 0,
-      padres: 0,
-      hermanos: 0,
-      tios: 0,
-      primos: 0,
-      sobrinos: 0
-    },
+  const [quantities, setQuantities] = useState({
     parejaNombre: '',
-    amigosCantidad: 0
+    hijos: 1,
+    padres: 1,
+    hermanos: 1,
+    sobrinos: 1,
+    primos: 1,
+    amigos: 1,
+    otros: 1
   });
 
   const [generatedRecipients, setGeneratedRecipients] = useState([]);
@@ -67,32 +90,34 @@ const SubscriptionSurveyPage = () => {
   const generateRecipientsList = () => {
     const list = [];
     
-    // Familia
-    if (selectedGroups.familia) {
-      if (breakdownData.familia.esposa) {
-        list.push({ id: 'f_esposa', role: 'Esposa / Esposo', name: '', birthday: '', likesFootball: false, footballTeam: '', likesGeek: false, geekAnime: '' });
-      }
-      Object.entries(breakdownData.familia).forEach(([key, value]) => {
-        if (key !== 'esposa' && value > 0) {
-          for (let i = 0; i < value; i++) {
-            const label = key.charAt(0).toUpperCase() + key.slice(1, -1); // hijos -> Hijo
-            list.push({ id: `f_${key}_${i}`, role: `${label} ${i + 1}`, name: '', birthday: '', likesFootball: false, footballTeam: '', likesGeek: false, geekAnime: '' });
-          }
-        }
+    // Generar Pareja primero si existe
+    if (selectedRoles.pareja) {
+      list.push({ 
+        id: 'pareja', 
+        role: 'Pareja', 
+        name: quantities.parejaNombre || '', 
+        events: [{ id: Math.random().toString(36).substring(2, 9), type: 'Cumpleaños', date: '' }], 
+        selectedCategories: [], 
+        categoryAnswers: {} 
       });
     }
 
-    // Pareja
-    if (selectedGroups.pareja) {
-      list.push({ id: 'pareja', role: 'Pareja', name: breakdownData.parejaNombre || '', birthday: '', likesFootball: false, footballTeam: '', likesGeek: false, geekAnime: '' });
-    }
-
-    // Amigos
-    if (selectedGroups.amigos && breakdownData.amigosCantidad > 0) {
-      for (let i = 0; i < breakdownData.amigosCantidad; i++) {
-        list.push({ id: `amigo_${i}`, role: `Amigo ${i + 1}`, name: '', birthday: '', likesFootball: false, footballTeam: '', likesGeek: false, geekAnime: '' });
+    // Generar el resto iterando sobre el mapa de roles
+    Object.keys(ROLES_MAP).forEach(roleKey => {
+      if (selectedRoles[roleKey]) {
+        const qty = quantities[roleKey] || 1;
+        for (let i = 0; i < qty; i++) {
+          list.push({ 
+            id: `${roleKey}_${i}`, 
+            role: qty > 1 ? `${ROLES_MAP[roleKey].singular} ${i + 1}` : ROLES_MAP[roleKey].singular, 
+            name: '', 
+            events: [{ id: Math.random().toString(36).substring(2, 9), type: 'Cumpleaños', date: '' }], 
+            selectedCategories: [], 
+            categoryAnswers: {} 
+          });
+        }
       }
-    }
+    });
 
     return list;
   };
@@ -101,16 +126,17 @@ const SubscriptionSurveyPage = () => {
     if (currentStep === 1 && !validateFields(config.basicDataPanel.fields, basicAnswers)) return;
     
     if (currentStep === 2) {
-      if (!selectedGroups.familia && !selectedGroups.pareja && !selectedGroups.amigos) {
-        return alert('Por favor, selecciona al menos un grupo o dale a Omitir si no deseas regalar a nadie.');
+      const hasAnyRole = Object.values(selectedRoles).some(val => val === true);
+      if (!hasAnyRole) {
+        return alert('Por favor, selecciona al menos un rol o dale a Atrás/Omitir si no deseas regalar a nadie.');
       }
     }
 
     if (currentStep === 3) {
-      // Al salir del breakdown, generamos la lista
+      // Al salir del desglose de cantidades, generamos la lista
       const list = generateRecipientsList();
       if (list.length === 0) {
-        return alert('No has especificado a ninguna persona. Añade al menos uno o regresa.');
+        return alert('No has especificado a ninguna persona válida. Regresa y verifica las cantidades.');
       }
       setGeneratedRecipients(list);
       setCurrentRecipientIndex(0);
@@ -125,23 +151,61 @@ const SubscriptionSurveyPage = () => {
     setCurrentStep(prev => prev - 1);
   };
 
+  // ---- MANEJO DE ESTADO DE RECIPIENTES ----
   const handleRecipientDataChange = (field, value) => {
     const updated = [...generatedRecipients];
     updated[currentRecipientIndex] = { ...updated[currentRecipientIndex], [field]: value };
     setGeneratedRecipients(updated);
   };
 
+  // ---- MANEJO DE FECHAS (EVENTOS) ----
+  const addEvent = () => {
+    const updated = [...generatedRecipients];
+    updated[currentRecipientIndex].events.push({ 
+      id: Math.random().toString(36).substring(2, 9), 
+      type: 'Otro Evento', 
+      date: '' 
+    });
+    setGeneratedRecipients(updated);
+  };
+
+  const updateEvent = (eventIndex, field, value) => {
+    const updated = [...generatedRecipients];
+    const event = updated[currentRecipientIndex].events[eventIndex];
+    event[field] = value;
+    
+    // Auto-limpiar fecha si cambia a un evento que no la necesita
+    if (field === 'type') {
+      const evTypeConfig = EVENT_TYPES.find(e => e.label === value);
+      if (evTypeConfig && !evTypeConfig.needsDate) {
+        event.date = '';
+      }
+    }
+    
+    setGeneratedRecipients(updated);
+  };
+
+  const removeEvent = (eventIndex) => {
+    const updated = [...generatedRecipients];
+    updated[currentRecipientIndex].events.splice(eventIndex, 1);
+    setGeneratedRecipients(updated);
+  };
+
   const handleNextRecipient = () => {
     const current = generatedRecipients[currentRecipientIndex];
-    if (!current.birthday) {
-      return alert('La fecha de cumpleaños es obligatoria.');
+    
+    // Validación: Todos los eventos creados deben ser válidos
+    for (const ev of current.events) {
+      const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.label === 'Otro Evento');
+      if (evTypeConfig.needsDate && !ev.date) {
+        return alert(`La fecha es obligatoria para el evento: ${ev.type}.`);
+      }
     }
     
     if (currentRecipientIndex + 1 < generatedRecipients.length) {
       setAnimationDir('Right');
       setCurrentRecipientIndex(prev => prev + 1);
     } else {
-      // Terminar bucle
       handleFinalSave();
     }
   };
@@ -151,7 +215,7 @@ const SubscriptionSurveyPage = () => {
       setAnimationDir('Left');
       setCurrentRecipientIndex(prev => prev - 1);
     } else {
-      goBack(); // Vuelve al breakdown
+      goBack();
     }
   };
 
@@ -160,8 +224,8 @@ const SubscriptionSurveyPage = () => {
     try {
       await updateUserProfile({ 
         surveyBasicData: basicAnswers, 
-        giftGroups: selectedGroups,
-        giftBreakdown: breakdownData,
+        giftRoles: selectedRoles,
+        giftQuantities: quantities,
         giftRecipients: generatedRecipients, 
         hasCompletedSurvey: true 
       });
@@ -250,37 +314,36 @@ const SubscriptionSurveyPage = () => {
             </>
           )}
 
-          {/* PASO 2: Selección de Grupos */}
+          {/* PASO 2: Selección de Roles */}
           {currentStep === 2 && (
             <>
               <div className={styles.headerIcon}>
                 <Users size={40} color={config.design.primaryColor} />
               </div>
               <h1 className={styles.title}>¿A quiénes sueles regalar?</h1>
-              <p className={styles.description}>Selecciona los grupos de personas a los que más les haces regalos. (Puedes elegir más de uno)</p>
+              <p className={styles.description}>Selecciona todos los perfiles a los que sueles hacer regalos (puedes elegir varios).</p>
               
               <div className={styles.groupsContainer}>
+                
                 <button 
-                  className={`${styles.groupCard} ${selectedGroups.familia ? styles.groupCardSelected : ''}`}
-                  onClick={() => setSelectedGroups(p => ({...p, familia: !p.familia}))}
-                >
-                  <Users size={32} />
-                  <h3>Familia</h3>
-                </button>
-                <button 
-                  className={`${styles.groupCard} ${selectedGroups.pareja ? styles.groupCardSelected : ''}`}
-                  onClick={() => setSelectedGroups(p => ({...p, pareja: !p.pareja}))}
+                  className={`${styles.groupCard} ${selectedRoles.pareja ? styles.groupCardSelected : ''}`}
+                  onClick={() => setSelectedRoles(p => ({...p, pareja: !p.pareja}))}
                 >
                   <Heart size={32} />
                   <h3>Pareja</h3>
                 </button>
-                <button 
-                  className={`${styles.groupCard} ${selectedGroups.amigos ? styles.groupCardSelected : ''}`}
-                  onClick={() => setSelectedGroups(p => ({...p, amigos: !p.amigos}))}
-                >
-                  <UserPlus size={32} />
-                  <h3>Amigos</h3>
-                </button>
+
+                {Object.keys(ROLES_MAP).map(roleKey => (
+                  <button 
+                    key={roleKey}
+                    className={`${styles.groupCard} ${selectedRoles[roleKey] ? styles.groupCardSelected : ''}`}
+                    onClick={() => setSelectedRoles(p => ({...p, [roleKey]: !p[roleKey]}))}
+                  >
+                    {ROLES_MAP[roleKey].icon}
+                    <h3>{ROLES_MAP[roleKey].label}</h3>
+                  </button>
+                ))}
+
               </div>
 
               <div className={styles.actions}>
@@ -290,75 +353,47 @@ const SubscriptionSurveyPage = () => {
             </>
           )}
 
-          {/* PASO 3: Desglose */}
+          {/* PASO 3: Cantidades */}
           {currentStep === 3 && (
             <>
               <div className={styles.headerIcon}>
                 <Users size={40} color={config.design.primaryColor} />
               </div>
-              <h1 className={styles.title}>Detalla tus selecciones</h1>
-              <p className={styles.description}>Ayúdanos a identificar quiénes son exactamente.</p>
+              <h1 className={styles.title}>Detalla las cantidades</h1>
+              <p className={styles.description}>Dinos cuántas personas hay en cada grupo seleccionado.</p>
               
               <div className={styles.form}>
-                
-                {selectedGroups.familia && (
-                  <div className={styles.breakdownSection}>
-                    <h3 className={styles.breakdownTitle}>Tu Familia</h3>
-                    <div className={styles.breakdownGrid}>
-                      <div className={styles.breakdownItem}>
-                        <label>
-                          <input type="checkbox" checked={breakdownData.familia.esposa} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, esposa: e.target.checked}}))} />
-                          Esposa / Esposo
-                        </label>
-                      </div>
-                      <div className={styles.breakdownItemCounter}>
-                        <label>Hijos</label>
-                        <input type="number" min="0" max="10" className={styles.counterInput} value={breakdownData.familia.hijos} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, hijos: parseInt(e.target.value) || 0}}))} />
-                      </div>
-                      <div className={styles.breakdownItemCounter}>
-                        <label>Padres</label>
-                        <input type="number" min="0" max="4" className={styles.counterInput} value={breakdownData.familia.padres} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, padres: parseInt(e.target.value) || 0}}))} />
-                      </div>
-                      <div className={styles.breakdownItemCounter}>
-                        <label>Hermanos</label>
-                        <input type="number" min="0" max="10" className={styles.counterInput} value={breakdownData.familia.hermanos} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, hermanos: parseInt(e.target.value) || 0}}))} />
-                      </div>
-                      <div className={styles.breakdownItemCounter}>
-                        <label>Tíos</label>
-                        <input type="number" min="0" max="20" className={styles.counterInput} value={breakdownData.familia.tios} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, tios: parseInt(e.target.value) || 0}}))} />
-                      </div>
-                      <div className={styles.breakdownItemCounter}>
-                        <label>Primos</label>
-                        <input type="number" min="0" max="30" className={styles.counterInput} value={breakdownData.familia.primos} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, primos: parseInt(e.target.value) || 0}}))} />
-                      </div>
-                      <div className={styles.breakdownItemCounter}>
-                        <label>Sobrinos</label>
-                        <input type="number" min="0" max="20" className={styles.counterInput} value={breakdownData.familia.sobrinos} onChange={e => setBreakdownData(p => ({...p, familia: {...p.familia, sobrinos: parseInt(e.target.value) || 0}}))} />
+                <div className={styles.breakdownGrid}>
+                  
+                  {selectedRoles.pareja && (
+                    <div className={styles.breakdownSection} style={{ gridColumn: '1 / -1' }}>
+                      <div className={styles.fieldGroup} style={{ marginBottom: 0 }}>
+                        <label>Nombre de tu Pareja (Opcional)</label>
+                        <input type="text" className={styles.input} placeholder="Ej. Ana" value={quantities.parejaNombre} onChange={e => setQuantities(p => ({...p, parejaNombre: e.target.value}))} />
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {selectedGroups.pareja && (
-                  <div className={styles.breakdownSection}>
-                    <h3 className={styles.breakdownTitle}>Tu Pareja</h3>
-                    <div className={styles.fieldGroup}>
-                      <label>¿Cómo se llama tu pareja? (Opcional)</label>
-                      <input type="text" className={styles.input} placeholder="Nombre de tu pareja" value={breakdownData.parejaNombre} onChange={e => setBreakdownData(p => ({...p, parejaNombre: e.target.value}))} />
-                    </div>
-                  </div>
-                )}
-
-                {selectedGroups.amigos && (
-                  <div className={styles.breakdownSection}>
-                    <h3 className={styles.breakdownTitle}>Tus Amigos</h3>
-                    <div className={styles.fieldGroup}>
-                      <label>¿A cuántos amigos sueles darles regalos importantes?</label>
-                      <input type="number" min="1" max="20" className={styles.input} value={breakdownData.amigosCantidad || ''} onChange={e => setBreakdownData(p => ({...p, amigosCantidad: parseInt(e.target.value) || 0}))} />
-                    </div>
-                  </div>
-                )}
-
+                  {Object.keys(ROLES_MAP).map(roleKey => {
+                    if (!selectedRoles[roleKey]) return null;
+                    return (
+                      <div key={roleKey} className={styles.breakdownSection}>
+                        <div className={styles.breakdownItemCounter}>
+                          <label>¿Cuántos {ROLES_MAP[roleKey].label}?</label>
+                          <input 
+                            type="number" 
+                            min="1" 
+                            max="30" 
+                            className={styles.counterInput} 
+                            value={quantities[roleKey]} 
+                            onChange={e => setQuantities(p => ({...p, [roleKey]: parseInt(e.target.value) || 1}))} 
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                </div>
               </div>
 
               <div className={styles.actions}>
@@ -368,7 +403,7 @@ const SubscriptionSurveyPage = () => {
             </>
           )}
 
-          {/* PASO 4: Bucle de Detalles */}
+          {/* PASO 4: Bucle de Detalles (Perfil por Perfil) */}
           {currentStep === 4 && generatedRecipients.length > 0 && (
             <>
               <div className={styles.subFlowHeader}>
@@ -383,11 +418,49 @@ const SubscriptionSurveyPage = () => {
                   <input type="text" className={styles.input} placeholder="Ej. Carlos" value={generatedRecipients[currentRecipientIndex].name} onChange={e => handleRecipientDataChange('name', e.target.value)} />
                 </div>
                 
-                <div className={styles.fieldGroup}>
-                  <label>Fecha de Cumpleaños *</label>
-                  <input type="date" className={styles.input} value={generatedRecipients[currentRecipientIndex].birthday} onChange={e => handleRecipientDataChange('birthday', e.target.value)} />
+                <div className={styles.breakdownSection}>
+                  <h3 className={styles.breakdownTitle} style={{fontSize:'1rem'}}>Fechas Importantes</h3>
+                  
+                  {generatedRecipients[currentRecipientIndex].events.map((event, eventIdx) => {
+                    const evTypeConfig = EVENT_TYPES.find(e => e.label === event.type) || EVENT_TYPES.find(e => e.id === 'otro');
+                    return (
+                      <div key={event.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <select 
+                            className={styles.input} 
+                            value={event.type}
+                            onChange={e => updateEvent(eventIdx, 'type', e.target.value)}
+                            disabled={eventIdx === 0} // El primero (Cumpleaños) no se puede cambiar de tipo
+                          >
+                            {EVENT_TYPES.map(et => <option key={et.id} value={et.label}>{et.label}</option>)}
+                          </select>
+                          
+                          {evTypeConfig.needsDate && (
+                            <input 
+                              type="date" 
+                              className={styles.input} 
+                              value={event.date} 
+                              onChange={e => updateEvent(eventIdx, 'date', e.target.value)} 
+                              required={true}
+                            />
+                          )}
+                        </div>
+                        
+                        {eventIdx > 0 && (
+                          <button type="button" onClick={() => removeEvent(eventIdx)} className={styles.removeBtn} style={{ marginTop: '0.2rem' }}>
+                            <Trash2 size={20} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                  <button type="button" onClick={addEvent} className={styles.addBtn} style={{ background: 'transparent', color: config.design.primaryColor, border: `1px dashed ${config.design.primaryColor}`, padding: '0.5rem', borderRadius: '8px', width: '100%', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold' }}>
+                    <Plus size={18} /> Agregar otra fecha importante
+                  </button>
                 </div>
 
+                {/* Preguntas Dinámicas de Administrador (Intereses) */}
                 {config.brandsPanel?.categories?.map(cat => {
                   const isCatSelected = generatedRecipients[currentRecipientIndex].selectedCategories?.includes(cat.id);
                   return (
@@ -409,7 +482,7 @@ const SubscriptionSurveyPage = () => {
                       {isCatSelected && cat.fields?.map(field => {
                         const answerValue = generatedRecipients[currentRecipientIndex].categoryAnswers?.[cat.id]?.[field.id] || '';
                         return (
-                          <div key={field.id} className={styles.fieldGroup}>
+                          <div key={field.id} className={styles.fieldGroup} style={{ marginTop: '1rem' }}>
                             <label>{field.label} {field.required && '*'}</label>
                             {field.type === 'text' && (
                               <input 
