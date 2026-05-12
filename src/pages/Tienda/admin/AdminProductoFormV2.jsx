@@ -8,7 +8,7 @@ import { getCategories, createCategory } from '../../../services/categories';
 import { getCollections, createCollection } from '../../../services/collections';
 import { getTags, createTag } from '../../../services/tags';
 import { getCharacters, createCharacter } from '../../../services/characters';
-import { uploadFile } from '../../../services/firebase/storage';
+import { uploadFile, deleteFile } from '../../../services/firebase/storage';
 import CreatableSelect from 'react-select/creatable';
 import { ImagePlus, Save, ArrowLeft, Loader2, Shirt, Image as ImageIcon, Trash2, Camera, Star, X, Edit2 } from 'lucide-react';
 import Button from '../../../components/common/Button';
@@ -355,6 +355,12 @@ const AdminProductoFormV2 = () => {
     e.target.value = ''; 
   };
 
+  const safelyDeleteOldImage = async (url) => {
+    if (url && url.includes('firebasestorage.googleapis.com')) {
+      try { await deleteFile(url); } catch(e) { console.warn('Could not delete old image', e); }
+    }
+  };
+
   const handleCaptureMockup = async () => {
     if (!fabricCanvas || !activeVariant) return;
     setUploading(true);
@@ -367,6 +373,7 @@ const AdminProductoFormV2 = () => {
       const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}.png`;
       const { url } = await uploadFile(blob, path);
       if (url) {
+        await safelyDeleteOldImage(activeVariant.imageUrl);
         updateActiveVariant({ imageUrl: url });
       }
     } finally {
@@ -398,6 +405,7 @@ const AdminProductoFormV2 = () => {
       const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}_${file.name}`;
       const { url } = await uploadFile(file, path);
       if (url) {
+        await safelyDeleteOldImage(activeVariant.imageUrl);
         updateActiveVariant({ imageUrl: url });
       }
     } finally {
@@ -422,8 +430,17 @@ const AdminProductoFormV2 = () => {
     }
   };
 
-  const removeGalleryImage = (index) => {
-    updateActiveVariant({ images: activeVariant.images.filter((_, i) => i !== index) });
+  const removeGalleryImage = async (index) => {
+    const imageUrlToDelete = activeVariant.images[index];
+    if (!imageUrlToDelete) return;
+    
+    setUploading(true);
+    try {
+      await safelyDeleteOldImage(imageUrlToDelete);
+      updateActiveVariant({ images: activeVariant.images.filter((_, i) => i !== index) });
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Drag & Drop
