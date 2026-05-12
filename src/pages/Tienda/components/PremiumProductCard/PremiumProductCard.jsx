@@ -96,7 +96,7 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
     product?.images?.[0] ||
     '';
 
-  const secondaryImageUrl = product?.images?.[1] || null;
+  const secondaryImageUrl = principalVariant?.images?.[0] || principalVariant?.galleryImages?.[0] || product?.images?.[1] || null;
 
   const fallbackImageUrl = toThumbnailImageUrl(
     principalVariant?.imageUrl ||

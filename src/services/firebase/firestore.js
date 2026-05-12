@@ -68,7 +68,7 @@ function removeEmptyForFirestore(obj) {
   if (obj instanceof Date) return obj;
   if (Array.isArray(obj)) {
     const cleaned = obj.map(removeEmptyForFirestore).filter((v) => v !== undefined);
-    return cleaned.length > 0 ? cleaned : undefined;
+    return cleaned;
   }
   if (typeof obj === 'object') {
     const out = {};

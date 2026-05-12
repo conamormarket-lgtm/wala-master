@@ -516,6 +516,10 @@ const AdminProductoFormV2 = () => {
       localStorage.setItem('wala_drafts', JSON.stringify(filtered));
 
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', id] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({ queryKey: ['collection-products'] });
       navigate('/admin/productos');
     }
   });
