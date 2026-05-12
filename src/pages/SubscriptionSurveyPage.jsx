@@ -388,33 +388,67 @@ const SubscriptionSurveyPage = () => {
                   <input type="date" className={styles.input} value={generatedRecipients[currentRecipientIndex].birthday} onChange={e => handleRecipientDataChange('birthday', e.target.value)} />
                 </div>
 
-                <div className={styles.breakdownSection}>
-                  <h3 className={styles.breakdownTitle} style={{fontSize:'1rem'}}>Intereses: Fútbol</h3>
-                  <label style={{display:'flex', gap:'0.5rem', alignItems:'center', cursor:'pointer', marginBottom:'0.5rem'}}>
-                    <input type="checkbox" checked={generatedRecipients[currentRecipientIndex].likesFootball} onChange={e => handleRecipientDataChange('likesFootball', e.target.checked)} />
-                    ¿Es fan del fútbol?
-                  </label>
-                  {generatedRecipients[currentRecipientIndex].likesFootball && (
-                    <div className={styles.fieldGroup}>
-                      <label>¿Qué equipo o jugador favorito?</label>
-                      <input type="text" className={styles.input} placeholder="Ej. Real Madrid, Messi" value={generatedRecipients[currentRecipientIndex].footballTeam} onChange={e => handleRecipientDataChange('footballTeam', e.target.value)} />
+                {config.brandsPanel?.categories?.map(cat => {
+                  const isCatSelected = generatedRecipients[currentRecipientIndex].selectedCategories?.includes(cat.id);
+                  return (
+                    <div key={cat.id} className={styles.breakdownSection}>
+                      <h3 className={styles.breakdownTitle} style={{fontSize:'1rem'}}>Intereses: {cat.name}</h3>
+                      <label style={{display:'flex', gap:'0.5rem', alignItems:'center', cursor:'pointer', marginBottom:'0.5rem'}}>
+                        <input 
+                          type="checkbox" 
+                          checked={isCatSelected || false} 
+                          onChange={e => {
+                            const currentList = generatedRecipients[currentRecipientIndex].selectedCategories || [];
+                            const newList = e.target.checked ? [...currentList, cat.id] : currentList.filter(id => id !== cat.id);
+                            handleRecipientDataChange('selectedCategories', newList);
+                          }} 
+                        />
+                        ¿Le interesa {cat.name}?
+                      </label>
+                      
+                      {isCatSelected && cat.fields?.map(field => {
+                        const answerValue = generatedRecipients[currentRecipientIndex].categoryAnswers?.[cat.id]?.[field.id] || '';
+                        return (
+                          <div key={field.id} className={styles.fieldGroup}>
+                            <label>{field.label} {field.required && '*'}</label>
+                            {field.type === 'text' && (
+                              <input 
+                                type="text" 
+                                className={styles.input} 
+                                value={answerValue} 
+                                onChange={e => {
+                                  const currentAnswers = generatedRecipients[currentRecipientIndex].categoryAnswers || {};
+                                  handleRecipientDataChange('categoryAnswers', {
+                                    ...currentAnswers,
+                                    [cat.id]: { ...(currentAnswers[cat.id] || {}), [field.id]: e.target.value }
+                                  });
+                                }} 
+                                required={field.required}
+                              />
+                            )}
+                            {field.type === 'select' && (
+                              <select 
+                                className={styles.input} 
+                                value={answerValue} 
+                                onChange={e => {
+                                  const currentAnswers = generatedRecipients[currentRecipientIndex].categoryAnswers || {};
+                                  handleRecipientDataChange('categoryAnswers', {
+                                    ...currentAnswers,
+                                    [cat.id]: { ...(currentAnswers[cat.id] || {}), [field.id]: e.target.value }
+                                  });
+                                }} 
+                                required={field.required}
+                              >
+                                <option value="">Seleccionar...</option>
+                                {field.options?.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                              </select>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-
-                <div className={styles.breakdownSection}>
-                  <h3 className={styles.breakdownTitle} style={{fontSize:'1rem'}}>Intereses: Geek / Anime</h3>
-                  <label style={{display:'flex', gap:'0.5rem', alignItems:'center', cursor:'pointer', marginBottom:'0.5rem'}}>
-                    <input type="checkbox" checked={generatedRecipients[currentRecipientIndex].likesGeek} onChange={e => handleRecipientDataChange('likesGeek', e.target.checked)} />
-                    ¿Le gusta el anime, Marvel o videojuegos?
-                  </label>
-                  {generatedRecipients[currentRecipientIndex].likesGeek && (
-                    <div className={styles.fieldGroup}>
-                      <label>¿Qué anime, serie o personaje específico?</label>
-                      <input type="text" className={styles.input} placeholder="Ej. Naruto, Spiderman" value={generatedRecipients[currentRecipientIndex].geekAnime} onChange={e => handleRecipientDataChange('geekAnime', e.target.value)} />
-                    </div>
-                  )}
-                </div>
+                  );
+                })}
 
               </div>
 
