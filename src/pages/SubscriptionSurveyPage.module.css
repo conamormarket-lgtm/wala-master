@@ -422,6 +422,10 @@ textarea.input {
   font-weight: 800;
 }
 
+.backLinkBtn:hover {
+  color: var(--survey-primary, #8b5cf6) !important;
+}
+
 /* Nuevas clases para el Wizard de Grupos */
 .groupsContainer {
   display: flex;
