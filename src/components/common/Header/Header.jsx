@@ -336,8 +336,23 @@ const Header = () => {
                 <div className={styles.accountPopupContent}>
                   {user ? (
                     <>
-                      <h3>Hola, {userProfile?.nombre || user.email?.split('@')[0]}</h3>
+                      <h3>Hola, {userProfile?.displayName || userProfile?.nombre || user.email?.split('@')[0]}</h3>
                       <p>Bienvenido a tu cuenta</p>
+                      
+                      {!userProfile?.hasCompletedSurvey && (
+                        <div style={{ background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', border: '1px solid #e2e8f0', textAlign: 'left' }}>
+                          <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '0.9rem', color: '#111827', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            🎁 Perfil de Regalos
+                          </h4>
+                          <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.75rem', color: '#4b5563', lineHeight: '1.3' }}>
+                            Gana recompensas diciéndonos qué te gusta.
+                          </p>
+                          <Link to="/encuesta-suscripcion" className={styles.primaryButton} style={{ background: '#8b5cf6', color: 'white', padding: '0.5rem', fontSize: '0.85rem' }}>
+                            Completar Encuesta
+                          </Link>
+                        </div>
+                      )}
+
                       <div className={styles.accountButtons}>
                         <Link to="/cuenta" className={styles.primaryButton}>
                           Mi Perfil
