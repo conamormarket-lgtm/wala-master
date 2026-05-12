@@ -73,6 +73,7 @@ const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuario
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
+const AdminThemes = lazy(() => import('./pages/Tienda/admin/AdminThemes'));
 const AdminStoreEditor = lazy(() => import('./pages/Tienda/admin/AdminStoreEditor'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 
@@ -188,6 +189,7 @@ function App() {
                             <Route path="wordle" element={<AdminWordlePage />} />
                             <Route path="marcas" element={<AdminMarcas />} />
                             <Route path="landing-pages" element={<AdminLandingPages />} />
+                            <Route path="temas" element={<AdminThemes />} />
                             <Route path="store-editor" element={<AdminStoreEditor />} />
                             <Route path="backups" element={<AdminBackups />} />
                             <Route path="configuracion" element={<AdminConfiguracion />} />

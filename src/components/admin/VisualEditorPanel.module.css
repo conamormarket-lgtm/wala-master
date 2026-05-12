@@ -1,16 +1,47 @@
+/* Elementor-inspired Dark Theme */
 .panelWrapper {
   position: fixed;
-  background-color: #ffffff;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  z-index: 10000;
+  background-color: #1f2124; /* Dark gray */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  z-index: 100000;
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  font-family: 'Inter', system-ui, sans-serif;
-  color: #334155;
+  font-family: 'Roboto', 'Inter', system-ui, sans-serif;
+  color: #d9dadd;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #3e3f43;
+}
+
+/* Para sobrescribir los estilos inline "light mode" de VisualEditorPanel.jsx */
+.panelWrapper * {
+  border-color: #3e3f43 !important;
+}
+
+/* Cualquier div/button/fieldset/p con estilos inline se vuelve oscuro */
+.panelWrapper div[style],
+.panelWrapper fieldset[style],
+.panelWrapper button[style],
+.panelWrapper p[style] {
+  background-color: #25262a !important;
+  color: #d9dadd !important;
+}
+
+/* Excepción: Los botones de las pestañas principales deben ser transparentes */
+.panelWrapper > div:nth-child(2) button {
+  background-color: transparent !important;
+}
+
+/* Excepciones estructurales que deben mantener el fondo principal más oscuro */
+.panelWrapper .body,
+.panelWrapper .header,
+.panelWrapper .footer {
+  background-color: #1f2124 !important;
+}
+
+.panelWrapper h4, .panelWrapper h5, .panelWrapper h3, .panelWrapper strong, .panelWrapper p, .panelWrapper span, .panelWrapper label {
+  color: #e5e5e5 !important;
 }
 
 /* Modos de visualización */
@@ -18,8 +49,8 @@
   top: 50px;
   left: 0;
   height: calc(100vh - 50px);
-  width: 340px;
-  border-right: 1px solid #e2e8f0;
+  width: 360px;
+  border-right: 1px solid #3e3f43;
   border-radius: 0;
 }
 
@@ -27,15 +58,15 @@
   top: 50px;
   right: 0;
   height: calc(100vh - 50px);
-  width: 340px;
-  border-left: 1px solid #e2e8f0;
+  width: 360px;
+  border-left: 1px solid #3e3f43;
   border-radius: 0;
 }
 
 .floating {
   top: 80px;
   right: 40px;
-  width: 360px;
+  width: 380px;
   max-height: 85vh;
 }
 
@@ -45,15 +76,18 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.2rem 1.5rem;
-  border-bottom: 1px solid #f1f5f9;
-  background-color: #ffffff;
+  border-bottom: 1px solid #3e3f43 !important;
+  background-color: #25262a !important;
 }
 
 .header h3 {
   margin: 0;
   font-size: 1.05rem;
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: 500;
+  color: #ffffff !important;
+}
+.header h3 svg {
+  color: #e60278 !important; /* Elementor Pink Accent */
 }
 
 .controls {
@@ -63,11 +97,11 @@
 
 .controls button {
   background: none;
-  border: none;
+  border: none !important;
   cursor: pointer;
-  color: #64748b;
+  color: #a7a9ad;
   padding: 6px;
-  border-radius: 6px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,15 +109,15 @@
 }
 
 .controls button:hover {
-  background-color: #f1f5f9;
-  color: #0f172a;
+  background-color: #3e3f43 !important;
+  color: #ffffff !important;
 }
 
 .body {
   padding: 1.5rem;
   flex-grow: 1;
   overflow-y: auto;
-  background-color: #f8fafc;
+  background-color: #1f2124 !important;
 }
 
 .formGroup {
@@ -93,39 +127,49 @@
 }
 
 .formGroup label {
-  font-weight: 500;
-  font-size: 0.85rem;
-  color: #475569;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #a7a9ad !important;
   margin-top: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
+/* Inputs and Textareas Elementor style */
 .formGroup input[type="text"],
 .formGroup input[type="number"],
 .formGroup select,
-.formGroup textarea {
+.formGroup textarea,
+.panelWrapper input[type="text"],
+.panelWrapper input[type="number"],
+.panelWrapper select,
+.panelWrapper textarea {
   padding: 0.6rem 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border: 1px solid #3e3f43 !important;
+  border-radius: 3px !important;
+  font-size: 0.85rem;
   width: 100%;
-  background-color: #ffffff;
-  color: #1e293b;
+  background-color: #3b3c40 !important;
+  color: #ffffff !important;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .formGroup input[type="text"]:focus,
 .formGroup input[type="number"]:focus,
 .formGroup select:focus,
-.formGroup textarea:focus {
+.formGroup textarea:focus,
+.panelWrapper input[type="text"]:focus,
+.panelWrapper input[type="number"]:focus,
+.panelWrapper select:focus,
+.panelWrapper textarea:focus {
   outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  border-color: #e60278 !important;
 }
 
 .footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background-color: #ffffff;
+  border-top: 1px solid #3e3f43 !important;
+  background-color: #25262a !important;
   display: flex;
   justify-content: space-between;
 }
@@ -144,26 +188,25 @@
 }
 
 .linkSummaryBox {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border: 1px solid #3e3f43 !important;
+  border-radius: 4px !important;
   padding: 1rem;
-  background-color: #ffffff;
+  background-color: #2c2d30 !important;
   display: flex;
   justify-content: space-between;
   align-items: center;
   transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  cursor: pointer;
 }
 
 .linkSummaryBox:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+  border-color: #55575e !important;
+  background-color: #323337 !important;
 }
 
 .hoveredModuleInDrawer {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
+  border-color: #e60278 !important;
+  background-color: rgba(230, 2, 120, 0.1) !important;
 }
 
 .linkSummaryActions {
@@ -173,11 +216,11 @@
 }
 
 .linkSummaryActions button {
-  background: none;
-  border: none;
-  color: #94a3b8;
+  background: none !important;
+  border: none !important;
+  color: #a7a9ad !important;
   padding: 6px;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -186,23 +229,23 @@
 }
 
 .linkSummaryActions button:hover {
-  background-color: #f1f5f9;
-  color: #334155;
+  background-color: #3e3f43 !important;
+  color: #ffffff !important;
 }
 
 .removeBtn {
-  color: #ef4444 !important;
+  color: #ff6b6b !important;
 }
 
 .removeBtn:hover {
-  background-color: #fef2f2 !important;
-  color: #dc2626 !important;
+  background-color: rgba(255, 107, 107, 0.1) !important;
+  color: #ff5252 !important;
 }
 
 .backBtn {
-  background: none;
-  border: none;
-  color: #64748b;
+  background: none !important;
+  border: none !important;
+  color: #a7a9ad !important;
   font-weight: 500;
   font-size: 0.85rem;
   cursor: pointer;
@@ -211,42 +254,41 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: all 0.2s;
   align-self: flex-start;
 }
 
 .backBtn:hover {
-  background-color: #e2e8f0;
-  color: #0f172a;
+  background-color: #3e3f43 !important;
+  color: #ffffff !important;
 }
 
 .linkEditorBox {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border: 1px solid #3e3f43 !important;
+  border-radius: 4px !important;
   padding: 1.25rem;
-  background-color: #ffffff;
+  background-color: #2c2d30 !important;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
 .styleControls {
   display: flex;
   gap: 10px;
   margin-bottom: 15px;
-  background: #f8fafc;
+  background: #323337 !important;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 4px !important;
 }
 
 .typeSelect {
   margin-bottom: 0.5rem;
-  background-color: #ffffff;
+  background-color: #3b3c40 !important;
 }
 
 .dropdownOptions {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #3e3f43 !important;
   padding-top: 1rem;
   margin-top: 0.5rem;
   display: flex;
@@ -255,20 +297,19 @@
 }
 
 .manualLinksArea {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background-color: #323337 !important;
+  border: 1px solid #3e3f43 !important;
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 4px !important;
 }
 
 /* Sub-items (Columns, links, etc) */
 .subItemCard {
-  background: #ffffff;
+  background: #2c2d30 !important;
   padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border-radius: 4px !important;
+  border: 1px solid #3e3f43 !important;
   margin-bottom: 0.75rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 
 .subItemHeader {
@@ -280,12 +321,12 @@
 
 .addButton {
   width: 100%;
-  border: 1px dashed #cbd5e1;
-  background: transparent;
+  border: 1px dashed #55575e !important;
+  background: transparent !important;
   padding: 0.75rem;
-  border-radius: 8px;
+  border-radius: 4px !important;
   cursor: pointer;
-  color: #64748b;
+  color: #a7a9ad !important;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -295,25 +336,34 @@
 }
 
 .addButton:hover {
-  border-color: #94a3b8;
-  color: #334155;
-  background: #f8fafc;
+  border-color: #e60278 !important;
+  color: #e60278 !important;
+  background: rgba(230, 2, 120, 0.05) !important;
 }
 
 .primaryButton {
-  background: #0f172a;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
+  background: #e60278 !important; /* Elementor Pink */
+  color: white !important;
+  border: none !important;
+  padding: 0.8rem 1.2rem;
+  border-radius: 4px !important;
   font-weight: 500;
+  font-size: 0.95rem;
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   transition: opacity 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .primaryButton:hover {
-  opacity: 0.9;
+  background: #c20063 !important;
+}
+
+/* Estilizar botones de tabs para que coincidan */
+.panelWrapper button[style*="activeTab"] {
+  border-radius: 0 !important;
 }

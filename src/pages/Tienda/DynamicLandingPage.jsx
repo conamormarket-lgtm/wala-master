@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { getLandingPageBySlug } from './services/landingPages';
+import { getThemeById } from './services/themes';
 import { useLayoutContext } from '../../contexts/LayoutContext';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 import TiendaPage from './TiendaPage';
@@ -15,6 +16,7 @@ const DynamicLandingPage = () => {
   
   const [loading, setLoading] = useState(true);
   const [landingPage, setLandingPage] = useState(null);
+  const [themeContent, setThemeContent] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -26,6 +28,13 @@ const DynamicLandingPage = () => {
           setActivePageId(page.id);
           setHeaderVisible(!page.hideHeader);
           setFooterVisible(!page.hideFooter);
+          
+          if (page.themeId) {
+            const theme = await getThemeById(page.themeId);
+            if (theme && theme.cssContent) {
+              setThemeContent(theme.cssContent);
+            }
+          }
         }
         setLoading(false);
       }
@@ -50,7 +59,10 @@ const DynamicLandingPage = () => {
   }
 
   return (
-    <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''}`}>
+    <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''}`} id="landing-theme-wrapper">
+      {themeContent && (
+        <style dangerouslySetInnerHTML={{ __html: themeContent }} />
+      )}
       {/* 
         TiendaPage internamente usa la ruta para definir el pageId,
         así que ya renderizará las secciones correctas para esta landing.

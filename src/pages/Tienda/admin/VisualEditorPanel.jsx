@@ -7,125 +7,58 @@ import { saveLandingPage } from '../services/landingPages';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { SECTION_TYPES, getDefaultSettings } from '../services/storefront';
 import styles from '../../../components/admin/VisualEditorPanel.module.css';
-import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft, GripVertical, Save, X, LayoutTemplate, PanelLeft, Monitor, PanelRight, Smartphone } from 'lucide-react';
+import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft, GripVertical, Save, X, LayoutTemplate, PanelLeft, Monitor, PanelRight, Smartphone, Settings, Layers } from 'lucide-react';
 
-const TypographyControl = ({ label, prefix, settings, onChange }) => {
+import TypographyControl from './editor/controls/TypographyControl';
+import BackgroundStylesControl from './editor/controls/BackgroundStylesControl';
+
+const LandingPageSettingsBox = ({ slug }) => {
+  const [lp, setLp] = React.useState(null);
+  const { data: themes } = useQuery({
+    queryKey: ['admin-themes'],
+    queryFn: async () => {
+      const { getThemes } = await import('../services/themes');
+      return await getThemes();
+    }
+  });
+
+  React.useEffect(() => {
+    import('../services/landingPages').then(async ({ getLandingPageById }) => {
+      const data = await getLandingPageById(slug);
+      setLp(data || { id: slug, themeId: '' }); // Fallback if page is not saved yet
+    });
+  }, [slug]);
+
+  if (!lp) return <div style={{padding: '10px', color: '#a7a9ad'}}>Cargando selector de temas...</div>;
+
+  const handleChangeTheme = async (themeId) => {
+    setLp({ ...lp, themeId });
+    const { saveLandingPage } = await import('../services/landingPages');
+    await saveLandingPage(lp.id, { themeId });
+    // Refrescar iframe para ver los cambios
+    const iframe = document.querySelector('iframe');
+    if (iframe) iframe.contentWindow.location.reload();
+  };
+
   return (
-    <div style={{marginBottom: '15px', padding: '10px', background: '#f5f5f5', borderRadius: '6px', border: '1px solid #e2e8f0'}}>
-      <h5 style={{margin: '0 0 10px 0', fontSize: '0.9rem', color: '#334155'}}>{label}</h5>
-      <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
-        <div style={{flex: '1 1 45%'}}>
-          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Fuente</label>
-          <select value={settings[`${prefix}FontFamily`] || ''} onChange={e => onChange(`${prefix}FontFamily`, e.target.value)} style={{width: '100%', padding: '6px'}}>
-            <option value="">Por defecto</option>
-            <option value="'Inter', sans-serif">Inter</option>
-            <option value="'Roboto', sans-serif">Roboto</option>
-            <option value="'Poppins', sans-serif">Poppins</option>
-            <option value="'Montserrat', sans-serif">Montserrat</option>
-            <option value="'Outfit', sans-serif">Outfit</option>
-            <option value="'Nunito', sans-serif">Nunito</option>
-            <option value="'Raleway', sans-serif">Raleway</option>
-            <option value="'Ubuntu', sans-serif">Ubuntu</option>
-            <option value="'Playfair Display', serif">Playfair Display</option>
-            <option value="'Merriweather', serif">Merriweather</option>
-            <option value="'Lora', serif">Lora</option>
-            <option value="'Oswald', sans-serif">Oswald</option>
-          </select>
-        </div>
-        <div style={{flex: '1 1 45%'}}>
-          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Tamaño</label>
-          <input type="text" placeholder="Ej: 2rem o 24px" value={settings[`${prefix}FontSize`] || ''} onChange={e => onChange(`${prefix}FontSize`, e.target.value)} style={{width: '100%', padding: '6px'}} />
-        </div>
-        <div style={{flex: '1 1 45%'}}>
-          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Grosor</label>
-          <select value={settings[`${prefix}FontWeight`] || ''} onChange={e => onChange(`${prefix}FontWeight`, e.target.value)} style={{width: '100%', padding: '6px'}}>
-            <option value="">Por defecto</option>
-            <option value="300">Light (300)</option>
-            <option value="400">Normal (400)</option>
-            <option value="500">Medium (500)</option>
-            <option value="600">Semibold (600)</option>
-            <option value="700">Bold (700)</option>
-            <option value="800">Extra Bold (800)</option>
-            <option value="900">Black (900)</option>
-          </select>
-        </div>
-        <div style={{flex: '1 1 45%'}}>
-          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Transformar</label>
-          <select value={settings[`${prefix}TextTransform`] || ''} onChange={e => onChange(`${prefix}TextTransform`, e.target.value)} style={{width: '100%', padding: '6px'}}>
-            <option value="">Ninguno</option>
-            <option value="uppercase">MAYÚSCULAS</option>
-            <option value="lowercase">minúsculas</option>
-            <option value="capitalize">Capitalizar</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const BackgroundStylesControl = ({ settings, onChange }) => {
-  return (
-    <div style={{marginBottom: '15px', padding: '15px', background: '#f5f5f5', borderRadius: '6px', border: '1px solid #e2e8f0'}}>
-      <h5 style={{margin: '0 0 10px 0', fontSize: '0.9rem', color: '#334155'}}>Fondo y Espaciado</h5>
-      
-      {/* Espaciado */}
-      <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
-        <div style={{flex: 1}}>
-          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Padding Superior</label>
-          <input type="text" placeholder="Ej: 2rem o 0" value={settings.paddingTop || '0rem'} onChange={e => onChange('paddingTop', e.target.value)} style={{width: '100%', padding: '6px'}} />
-        </div>
-        <div style={{flex: 1}}>
-          <label style={{fontSize: '0.75rem', color: '#64748b'}}>Padding Inferior</label>
-          <input type="text" placeholder="Ej: 2rem o 0" value={settings.paddingBottom || '0rem'} onChange={e => onChange('paddingBottom', e.target.value)} style={{width: '100%', padding: '6px'}} />
-        </div>
-      </div>
-
-      {/* Tipo de fondo */}
-      <div style={{marginBottom: '10px'}}>
-        <label style={{fontSize: '0.75rem', color: '#64748b'}}>Color Sólido</label>
-        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px'}}>
-          <input type="color" value={(!settings.backgroundColor || settings.backgroundColor === 'transparent') ? '#ffffff' : settings.backgroundColor} onChange={e => onChange('backgroundColor', e.target.value)} disabled={!settings.backgroundColor || settings.backgroundColor === 'transparent'} style={{height: '32px', padding: 0, width: '40px', cursor: (!settings.backgroundColor || settings.backgroundColor === 'transparent') ? 'not-allowed' : 'pointer'}} />
-          <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
-            <input type="checkbox" checked={!settings.backgroundColor || settings.backgroundColor === 'transparent'} onChange={e => onChange('backgroundColor', e.target.checked ? 'transparent' : '#ffffff')} style={{margin: 0}} />
-            Transparente
-          </label>
-        </div>
-      </div>
-
-      <div style={{marginBottom: '10px'}}>
-        <label style={{fontSize: '0.75rem', color: '#64748b'}}>Wallpaper (URL de Imagen)</label>
-        <input type="text" placeholder="https://..." value={settings.backgroundImageUrl || ''} onChange={e => onChange('backgroundImageUrl', e.target.value)} style={{width: '100%', padding: '6px'}} />
-      </div>
-
-      <div style={{marginBottom: '10px'}}>
-        <label style={{fontSize: '0.75rem', color: '#64748b'}}>Gradiente CSS (Opcional)</label>
-        <input type="text" placeholder="Ej: linear-gradient(90deg, #000, #fff)" value={settings.backgroundGradient || ''} onChange={e => onChange('backgroundGradient', e.target.value)} style={{width: '100%', padding: '6px'}} />
-      </div>
-
-      {(settings.backgroundImageUrl || settings.backgroundGradient) && (
-        <>
-          <div style={{marginBottom: '10px'}}>
-            <label style={{fontSize: '0.75rem', color: '#64748b'}}>Difuminar Fondo (Blur px)</label>
-            <input type="number" min="0" max="100" placeholder="Ej: 10" value={settings.backgroundBlur || ''} onChange={e => onChange('backgroundBlur', e.target.value)} style={{width: '100%', padding: '6px'}} />
-          </div>
-        </>
-      )}
-
-      <div>
-        <label style={{fontSize: '0.75rem', color: '#64748b'}}>Filtro Oscuro/Color (Overlay)</label>
-        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px'}}>
-          <input type="color" value={settings.backgroundOverlay || '#000000'} onChange={e => onChange('backgroundOverlay', e.target.value)} disabled={!settings.backgroundOverlay} style={{height: '32px', padding: 0, width: '40px', cursor: !settings.backgroundOverlay ? 'not-allowed' : 'pointer'}} />
-          <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
-            <input type="checkbox" checked={!settings.backgroundOverlay} onChange={e => onChange('backgroundOverlay', e.target.checked ? '' : 'rgba(0,0,0,0.5)')} style={{margin: 0}} />
-            Sin filtro
-          </label>
-        </div>
-      </div>
+    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+      <select 
+        value={lp.themeId || ''} 
+        onChange={e => handleChangeTheme(e.target.value)}
+        style={{ width: '100%', padding: '8px 12px', borderRadius: '4px', border: '1px solid #3e3f43', fontSize: '0.85rem', background: '#3b3c40', color: '#ffffff', outline: 'none' }}
+      >
+        <option value="">-- Tema Global Wala (Por Defecto) --</option>
+        {themes?.map(t => (
+          <option key={t.id} value={t.id}>{t.name}</option>
+        ))}
+      </select>
     </div>
   );
 };
 
 const VisualEditorPanel = () => {
+  const [activeTab, setActiveTab] = React.useState('modules'); // 'modules' | 'settings'
+
   const { 
     isEditModeActive, 
     activeSection,
@@ -248,10 +181,6 @@ const VisualEditorPanel = () => {
     
     return (
       <div className={styles.pageBuilder}>
-        <p style={{marginBottom: '1rem', fontSize: '0.9rem', color: '#666'}}>
-          Configurando página: <strong>{activePageId}</strong>
-        </p>
-        
         <div className={styles.sectionList}>
           {/* HEADER (Global) */}
           {(activePageId === 'home' || activePageId === 'tienda') && activePageId !== 'footer' && (
@@ -294,20 +223,19 @@ const VisualEditorPanel = () => {
               <p style={{color: '#64748b', marginBottom: '15px', fontSize: '0.9rem'}}>Crea tu página arrastrando módulos o inicia rápido con una base.</p>
               <button 
                 onClick={() => {
+                  const t = Date.now();
                   const newSections = [
-                    { id: `section_${Date.now()}_1`, type: 'hero_banner', order: 0, settings: getDefaultSettings('hero_banner') },
-                    { id: `section_${Date.now()}_2`, type: 'text_block', order: 1, settings: getDefaultSettings('text_block') }
+                    { id: `section_${t}_1`, type: 'hero_banner', order: 0, settings: { ...getDefaultSettings('hero_banner'), title: "¡Lanza tu Producto Hoy!", subtitle: "Una estructura perfecta diseñada para convertir visitantes en clientes.", buttonText: "Comprar Ahora" } },
+                    { id: `section_${t}_2`, type: 'marquee', order: 1, settings: { ...getDefaultSettings('marquee'), items: [{name: 'Confianza', imageUrl: ''}, {name: 'Calidad', imageUrl: ''}, {name: 'Garantía', imageUrl: ''}] } },
+                    { id: `section_${t}_3`, type: 'text', order: 2, settings: { ...getDefaultSettings('text'), heading: "Beneficios de Nuestro Producto", content: "Explica brevemente por qué tu cliente necesita esto. Usa viñetas o texto directo que resalte el valor principal.", textAlign: 'center' } },
+                    { id: `section_${t}_4`, type: 'bestsellers_row', order: 3, settings: { ...getDefaultSettings('bestsellers_row'), cards: [{title: 'Destacado 1', subtitle: 'Lo más vendido', imageUrl: ''}, {title: 'Destacado 2', subtitle: 'Nuevo ingreso', imageUrl: ''}] } },
+                    { id: `section_${t}_5`, type: 'testimonials', order: 4, settings: { ...getDefaultSettings('testimonials'), title: "Lo que dicen nuestros clientes", testimonials: [{author: 'Juan Pérez', text: 'Excelente servicio, muy recomendado.', rating: 5}] } }
                   ];
-                  if (newSections[0].settings) {
-                    newSections[0].settings.title = "¡Gran Oferta Especial!";
-                    newSections[0].settings.subtitle = "Descripción corta para atrapar a tu cliente.";
-                    newSections[0].settings.buttonText = "Comprar Ahora";
-                  }
                   updateSectionsDraft(newSections);
                 }}
-                style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                style={{ background: '#e60278', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}
               >
-                <LayoutTemplate size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Cargar Plantilla de Landing
+                <LayoutTemplate size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Cargar Estructura Básica
               </button>
             </div>
           )}
@@ -2236,12 +2164,16 @@ const VisualEditorPanel = () => {
       className={`${styles.panelWrapper} ${styles[editorPosition]}`}
       style={editorPosition === 'floating' ? { top: `${position.y}px`, right: 'auto', left: `${position.x}px` } : {}}
     >
+      {/* HEADER PRINCIPAL */}
       <div 
         className={styles.header}
         onMouseDown={handleMouseDown}
         style={{ cursor: editorPosition === 'floating' ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
       >
-        <h3 style={{ pointerEvents: 'none' }}>{activeSection ? `Editando: ${activeSection}` : 'Page Builder (Layout)'}</h3>
+        <h3 style={{ pointerEvents: 'none', margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <LayoutTemplate size={18} color="#8b5cf6" />
+          {activeSection ? `Editando: ${activeSection}` : 'Wala Page Builder'}
+        </h3>
         <div className={styles.controls}>
           <button onClick={toggleMobilePreview} title={isPreviewMobile ? "Volver a vista de Escritorio" : "Previsualización Móvil"}>
             {isPreviewMobile ? <Monitor size={16} strokeWidth={1.5} color="#3b82f6" /> : <Smartphone size={16} strokeWidth={1.5} />}
@@ -2253,12 +2185,104 @@ const VisualEditorPanel = () => {
         </div>
       </div>
       
-      <div className={styles.body}>
-        {renderForm()}
+      {/* PESTAÑAS NAVEGACIÓN (Solo visible en el root) */}
+      {!activeSection && (
+        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+          <button 
+            onClick={() => setActiveTab('modules')}
+            style={{ 
+              flex: 1, padding: '12px', border: 'none', background: 'transparent', cursor: 'pointer',
+              borderBottom: activeTab === 'modules' ? '2px solid #e60278' : '2px solid transparent',
+              color: activeTab === 'modules' ? '#e60278' : '#a7a9ad', fontWeight: activeTab === 'modules' ? '600' : '400',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+            }}
+          >
+            <Layers size={16} /> Módulos
+          </button>
+          <button 
+            onClick={() => setActiveTab('settings')}
+            style={{ 
+              flex: 1, padding: '12px', border: 'none', background: 'transparent', cursor: 'pointer',
+              borderBottom: activeTab === 'settings' ? '2px solid #e60278' : '2px solid transparent',
+              color: activeTab === 'settings' ? '#e60278' : '#a7a9ad', fontWeight: activeTab === 'settings' ? '600' : '400',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+            }}
+          >
+            <Settings size={16} /> Configuración
+          </button>
+        </div>
+      )}
+
+      <div className={styles.body} style={{ padding: '0', display: 'flex', flexDirection: 'column' }}>
+        {activeSection ? (
+          /* VISTA EDICIÓN MÓDULO */
+          <div style={{ padding: '1.5rem' }}>
+            {renderForm()}
+          </div>
+        ) : (
+          /* VISTA RAÍZ (TABS) */
+          <>
+            {activeTab === 'modules' && (
+              <div style={{ padding: '1.5rem', flexGrow: 1, overflowY: 'auto' }}>
+                <p style={{marginBottom: '1.5rem', fontSize: '0.85rem', color: '#64748b', background: '#f1f5f9', padding: '10px', borderRadius: '6px'}}>
+                  Estás editando la página: <strong>{activePageId}</strong>. Arrastra los módulos para ordenarlos.
+                </p>
+                {renderPageBuilderOverview()}
+              </div>
+            )}
+            
+            {activeTab === 'settings' && (
+              <div style={{ padding: '1.5rem', flexGrow: 1, overflowY: 'auto', background: '#f8fafc' }}>
+                
+                {/* TEMA VISUAL */}
+                {activePageId !== 'home' && activePageId !== 'tienda' && activePageId !== 'footer' && (
+                  <div style={{ marginBottom: '20px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '15px' }}>
+                    <h4 style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <LayoutTemplate size={18} color="#e60278" />
+                      Tema Visual
+                    </h4>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '15px' }}>
+                      Sobrescribe los estilos globales de tu tienda aplicando un tema personalizado solo para esta Landing Page.
+                    </p>
+                    <LandingPageSettingsBox slug={activePageId} />
+                  </div>
+                )}
+
+                {/* ESTRUCTURA GLOBAL */}
+                <div style={{ marginBottom: '20px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '15px' }}>
+                  <h4 style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#0f172a' }}>Estructura de la Página</h4>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '15px' }}>
+                    Oculta el menú o pie de página global si deseas crear un "Funnel" sin distracciones.
+                  </p>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', cursor: 'pointer', fontSize: '0.9rem', color: '#334155'}}>
+                    <input 
+                      type="checkbox" 
+                      checked={!isHeaderVisible} 
+                      onChange={e => setHeaderVisible(!e.target.checked)} 
+                      style={{width: '18px', height: '18px'}}
+                    />
+                    Ocultar Menú Principal (Header Global)
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: '#334155'}}>
+                    <input 
+                      type="checkbox" 
+                      checked={!isFooterVisible} 
+                      onChange={e => setFooterVisible(!e.target.checked)} 
+                      style={{width: '18px', height: '18px'}}
+                    />
+                    Ocultar Pie de Página (Footer Global)
+                  </label>
+                </div>
+
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <div className={styles.footer}>
-        <Button variant="primary" onClick={handleSave} disabled={isSaving} style={{ width: '100%' }}>
+        <Button variant="primary" onClick={handleSave} disabled={isSaving} style={{ width: '100%', padding: '12px', fontSize: '1rem' }}>
+          <Save size={18} style={{marginRight: 8}} />
           {isSaving ? 'Guardando...' : 'Guardar y Publicar'}
         </Button>
       </div>

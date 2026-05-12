@@ -169,12 +169,20 @@ const AdminLayout = () => {
                     Marcas
                   </NavLink>
                   {canLandingPages && (
-                    <NavLink
-                      to="/admin/landing-pages"
-                      className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
-                    >
-                      Landing Pages
-                    </NavLink>
+                    <>
+                      <NavLink
+                        to="/admin/landing-pages"
+                        className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
+                      >
+                        Landing Pages
+                      </NavLink>
+                      <NavLink
+                        to="/admin/temas"
+                        className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
+                      >
+                        Gestor de Temas
+                      </NavLink>
+                    </>
                   )}
                   <NavLink
                     to="/admin/cliparts"

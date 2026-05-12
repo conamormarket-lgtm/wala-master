@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getLandingPages, saveLandingPage, deleteLandingPage } from '../services/landingPages';
+import { getThemes } from '../services/themes';
 import { getProducts } from '../../../services/products';
 import Button from '../../../components/common/Button';
 import styles from '../../admin/AdminLandingPages.module.css';
@@ -7,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 const AdminLandingPages = () => {
   const [pages, setPages] = useState([]);
+  const [themes, setThemes] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -18,6 +20,7 @@ const AdminLandingPages = () => {
     slug: '',
     hideHeader: false,
     hideFooter: false,
+    themeId: '',
     linkedProducts: [] // { productId, stockType: 'global' | 'infinite' | 'exclusive', allocatedStock: 0 }
   });
 
@@ -29,12 +32,14 @@ const AdminLandingPages = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [pagesData, productsData] = await Promise.all([
+    const [pagesData, productsData, themesData] = await Promise.all([
       getLandingPages(),
-      getProducts()
+      getProducts(),
+      getThemes()
     ]);
     setPages(pagesData);
     setProducts(productsData.data || []);
+    setThemes(themesData);
     setLoading(false);
   };
 
@@ -45,6 +50,7 @@ const AdminLandingPages = () => {
       slug: '',
       hideHeader: true,
       hideFooter: true,
+      themeId: '',
       linkedProducts: []
     });
     setIsEditing(true);
@@ -57,6 +63,7 @@ const AdminLandingPages = () => {
       slug: page.slug || '',
       hideHeader: !!page.hideHeader,
       hideFooter: !!page.hideFooter,
+      themeId: page.themeId || '',
       linkedProducts: page.linkedProducts || []
     });
     setIsEditing(true);
@@ -169,6 +176,23 @@ const AdminLandingPages = () => {
                     required
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className={styles.row}>
+              <div className={styles.inputGroup}>
+                <label>Tema Visual Personalizado (Opcional)</label>
+                <select 
+                  value={formData.themeId} 
+                  onChange={e => setFormData({...formData, themeId: e.target.value})}
+                  className={styles.input}
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                >
+                  <option value="">-- Tema Global de la Tienda --</option>
+                  {themes.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.type === 'custom_css' ? 'CSS' : 'WP'})</option>
+                  ))}
+                </select>
               </div>
             </div>
 
