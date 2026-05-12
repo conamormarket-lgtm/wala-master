@@ -535,17 +535,19 @@ const AdminProductoFormV2 = () => {
       if (isNew) return await createProduct(payload, draftId);
       return await updateProduct(id, payload);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       // Limpiar borrador si existe
       const savedDrafts = JSON.parse(localStorage.getItem('wala_drafts') || '[]');
       const filtered = savedDrafts.filter(d => d.draftId !== draftId);
       localStorage.setItem('wala_drafts', JSON.stringify(filtered));
 
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['product', id] });
-      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
-      queryClient.invalidateQueries({ queryKey: ['collection-products'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-products'] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        queryClient.invalidateQueries({ queryKey: ['product', id] }),
+        queryClient.invalidateQueries({ queryKey: ['featured-products'] }),
+        queryClient.invalidateQueries({ queryKey: ['collection-products'] })
+      ]);
       navigate('/admin/productos');
     }
   });
