@@ -5,6 +5,7 @@ import { DAILY_WORDS } from '../data/wordleDictionary';
 
 const DAILY_WORDS_COLLECTION = 'wordle_daily_words';
 const USERS_COLLECTION = 'portal_clientes_users';
+const WORDLE_COLLECTION = 'wordle';
 
 // Si el diccionario aún no se generó, usamos un fallback básico de 5 letras
 const FALLBACK_WORDS = DAILY_WORDS.length > 5 ? DAILY_WORDS : [
@@ -81,7 +82,7 @@ export const deleteDailyWord = async (dateStr) => {
 /**
  * Actualiza o registra las estadísticas del jugador cuando termina una partida.
  */
-export const saveWordleResult = async (won, attemptsUsed) => {
+export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, length) => {
   const user = getCurrentUser();
   if (!user) return { error: "No user authenticated" };
 
@@ -146,7 +147,24 @@ export const saveWordleResult = async (won, attemptsUsed) => {
       wordleTodayWon: won
     };
 
+    // Guardar en portal_clientes_users
     await setDoc(userRef, newData, { merge: true });
+
+    // Guardar en la nueva colección wordle
+    const wordleRecordRef = doc(db, WORDLE_COLLECTION, `${user.uid}_${today}`);
+    const wordleRecordData = {
+      userId: user.uid,
+      displayName: user.displayName || 'Anónimo',
+      date: today,
+      word: word || '',
+      length: length || 0,
+      attempts: attemptsUsed,
+      timeSeconds: timeSeconds || 0,
+      won: won,
+      currentStreak: newStreak
+    };
+    await setDoc(wordleRecordRef, wordleRecordData);
+
     return { success: true, stats: { ...userData, ...newData } };
 
   } catch (error) {
@@ -194,34 +212,35 @@ export const getWordleRanking = async () => {
 export const getWordleRankingToday = async () => {
   const today = new Date().toISOString().split('T')[0];
   try {
+    // Buscar en la nueva colección 'wordle'
+    // Como no podemos asegurar que hay índices complejos creados,
+    // traemos los registros recientes o filtramos en memoria.
     const q = query(
-      collection(db, USERS_COLLECTION),
-      orderBy('wordleWins', 'desc'),
-      limit(200)
+      collection(db, WORDLE_COLLECTION)
     );
     const snapshot = await getDocs(q);
 
     const todayWinners = snapshot.docs
-      .map(d => {
-        const data = d.data();
-        return {
-          id: d.id,
-          displayName: data.displayName || data.nombres || 'Anónimo',
-          maxStreak: data.wordleMaxStreak || 0,
-          currentStreak: data.wordleCurrentStreak || 0,
-          wins: data.wordleWins || 0,
-          todayAttempts: data.wordleTodayAttempts || 0,
-          todayWon: data.wordleTodayWon ?? false,
-          lastWordleDate: data.lastWordleDate || ''
-        };
-      })
+      .map(d => d.data())
       // Solo quienes jugaron HOY y además GANARON
-      .filter(p => p.lastWordleDate === today && p.todayWon === true)
+      .filter(p => p.date === today && p.won === true)
       // El que lo resolvió en menos intentos va primero
-      .sort((a, b) => (a.todayAttempts || 99) - (b.todayAttempts || 99))
+      // En caso de empate, el que lo resolvió en menos tiempo
+      .sort((a, b) => {
+        if (a.attempts !== b.attempts) {
+          return (a.attempts || 99) - (b.attempts || 99);
+        }
+        return (a.timeSeconds || 9999) - (b.timeSeconds || 9999);
+      })
       .slice(0, 50);
 
-    return todayWinners;
+    return todayWinners.map(w => ({
+      id: w.userId,
+      displayName: w.displayName,
+      todayAttempts: w.attempts,
+      timeSeconds: w.timeSeconds,
+      currentStreak: w.currentStreak
+    }));
   } catch (error) {
     console.error("Error fetching today's wordle ranking:", error);
     return [];

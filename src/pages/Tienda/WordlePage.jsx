@@ -20,6 +20,13 @@ const removeAccents = (str) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 };
 
+const formatTime = (seconds) => {
+  if (seconds == null) return '—';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+};
+
 const WordlePage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -34,6 +41,7 @@ const WordlePage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [gameStatus, setGameStatus] = useState('playing'); // 'playing', 'won', 'lost'
   const [userStats, setUserStats] = useState(null);
+  const [startTime, setStartTime] = useState(null);
   const [showRanking, setShowRanking] = useState(false);
   const [rankingTab, setRankingTab] = useState('today'); // 'today' | 'global'
   const [showResultModal, setShowResultModal] = useState(false);
@@ -63,7 +71,7 @@ const WordlePage = () => {
 
   // Mutación para guardar el resultado
   const saveResultMutation = useMutation({
-    mutationFn: ({ won, attempts }) => saveWordleResult(won, attempts),
+    mutationFn: ({ won, attempts, timeSeconds, word, length }) => saveWordleResult(won, attempts, timeSeconds, word, length),
     onSuccess: (res) => {
       if (res.success && res.stats) {
         setUserStats(res.stats);
@@ -91,6 +99,7 @@ const WordlePage = () => {
             setShowResultModal(true);
           }
           if (parsed.userStats) setUserStats(parsed.userStats);
+          if (parsed.startTime) setStartTime(parsed.startTime);
         } catch (e) {
           console.error("Error parsing localstorage", e);
         }
@@ -104,10 +113,11 @@ const WordlePage = () => {
       localStorage.setItem(storageKey, JSON.stringify({
         guesses,
         gameStatus,
-        userStats
+        userStats,
+        startTime
       }));
     }
-  }, [guesses, gameStatus, userStats, storageKey, targetWord]);
+  }, [guesses, gameStatus, userStats, startTime, storageKey, targetWord]);
 
   // Evaluar letra
   const getLetterStatus = (letter, index, guessStr) => {
@@ -142,6 +152,10 @@ const WordlePage = () => {
 
   const onKeyPress = useCallback((key) => {
     if (gameStatus !== 'playing') return;
+
+    if (!startTime) {
+      setStartTime(Date.now());
+    }
 
     if (key === 'BACKSPACE') {
       setCurrentGuess(prev => {
@@ -179,11 +193,13 @@ const WordlePage = () => {
       if (guessStr === targetWord) {
         setGameStatus('won');
         setShowResultModal(true);
-        if (user) saveResultMutation.mutate({ won: true, attempts: newGuesses.length });
+        const timeSeconds = Math.floor((Date.now() - (startTime || Date.now())) / 1000);
+        if (user) saveResultMutation.mutate({ won: true, attempts: newGuesses.length, timeSeconds, word: targetWord, length: wordLength });
       } else if (newGuesses.length >= MAX_ATTEMPTS) {
         setGameStatus('lost');
         setShowResultModal(true);
-        if (user) saveResultMutation.mutate({ won: false, attempts: newGuesses.length });
+        const timeSeconds = Math.floor((Date.now() - (startTime || Date.now())) / 1000);
+        if (user) saveResultMutation.mutate({ won: false, attempts: newGuesses.length, timeSeconds, word: targetWord, length: wordLength });
       }
       return;
     }
@@ -198,7 +214,7 @@ const WordlePage = () => {
         setActiveIndex(activeIndex + 1);
       }
     }
-  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, user, saveResultMutation, activeIndex]);
+  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, user, saveResultMutation, activeIndex, startTime]);
 
   // Escuchar teclado físico
   useEffect(() => {
@@ -280,6 +296,7 @@ const WordlePage = () => {
                   {rankingTab === 'today' ? (
                     <>
                       <th>Intentos</th>
+                      <th>Tiempo</th>
                       <th>Racha Actual</th>
                     </>
                   ) : (
@@ -299,6 +316,7 @@ const WordlePage = () => {
                     {rankingTab === 'today' ? (
                       <>
                         <td>{p.todayAttempts} / 6</td>
+                        <td>{formatTime(p.timeSeconds)}</td>
                         <td><span className={styles.streakBadge}>{p.currentStreak}</span></td>
                       </>
                     ) : (
