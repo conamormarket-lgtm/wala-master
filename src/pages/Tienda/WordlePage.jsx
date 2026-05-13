@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getDailyWord, saveWordleResult, getWordleRanking } from '../../services/wordle';
+import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday } from '../../services/wordle';
 import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
@@ -35,6 +35,7 @@ const WordlePage = () => {
   const [gameStatus, setGameStatus] = useState('playing'); // 'playing', 'won', 'lost'
   const [userStats, setUserStats] = useState(null);
   const [showRanking, setShowRanking] = useState(false);
+  const [rankingTab, setRankingTab] = useState('today'); // 'today' | 'global'
   const [showResultModal, setShowResultModal] = useState(false);
 
   // Obtener la palabra del día
@@ -43,11 +44,22 @@ const WordlePage = () => {
     queryFn: () => getDailyWord(todayStr)
   });
 
-  // Obtener ranking
-  const { data: rankingData, isLoading: isLoadingRanking } = useQuery({
-    queryKey: ['wordle-ranking'],
-    queryFn: getWordleRanking
+  // Ranking del día (jugadores de hoy)
+  const { data: rankingToday, isLoading: isLoadingToday } = useQuery({
+    queryKey: ['wordle-ranking-today', todayStr],
+    queryFn: getWordleRankingToday,
+    staleTime: 0  // siempre fresco — el ranking cambia a medida que la gente juega
   });
+
+  // Ranking global (rachas históricas)
+  const { data: rankingGlobal, isLoading: isLoadingGlobal } = useQuery({
+    queryKey: ['wordle-ranking-global'],
+    queryFn: getWordleRanking,
+    staleTime: 5 * 60 * 1000
+  });
+
+  const rankingData = rankingTab === 'today' ? rankingToday : rankingGlobal;
+  const isLoadingRanking = rankingTab === 'today' ? isLoadingToday : isLoadingGlobal;
 
   // Mutación para guardar el resultado
   const saveResultMutation = useMutation({
@@ -55,7 +67,8 @@ const WordlePage = () => {
     onSuccess: (res) => {
       if (res.success && res.stats) {
         setUserStats(res.stats);
-        queryClient.invalidateQueries({ queryKey: ['wordle-ranking'] });
+        queryClient.invalidateQueries({ queryKey: ['wordle-ranking-today', todayStr] });
+        queryClient.invalidateQueries({ queryKey: ['wordle-ranking-global'] });
       }
     }
   });
@@ -219,37 +232,84 @@ const WordlePage = () => {
         <h1 className={styles.title}>La Palabra del Día</h1>
         <div className={styles.headerRight}>
           <button className={styles.iconBtn} onClick={() => setShowRanking(!showRanking)}>
-            🏆 Ranking
+            Ranking
           </button>
         </div>
       </header>
 
       {showRanking ? (
         <div className={styles.rankingContainer}>
-          <h2>Ranking Global (Top 50)</h2>
-          <p className={styles.rankingDesc}>Ordenado por la mayor racha de victorias seguidas.</p>
+          <h2>Ranking</h2>
+
+          {/* Tabs */}
+          <div className={styles.rankingTabs}>
+            <button
+              className={`${styles.rankingTab} ${rankingTab === 'today' ? styles.rankingTabActive : ''}`}
+              onClick={() => setRankingTab('today')}
+            >
+              Hoy
+            </button>
+            <button
+              className={`${styles.rankingTab} ${rankingTab === 'global' ? styles.rankingTabActive : ''}`}
+              onClick={() => setRankingTab('global')}
+            >
+              Global
+            </button>
+          </div>
+
+          {rankingTab === 'today' ? (
+            <p className={styles.rankingDesc}>Jugadores que completaron el wordle de hoy, ordenados por intentos usados.</p>
+          ) : (
+            <p className={styles.rankingDesc}>Ordenado por la mayor racha de victorias seguidas (histórico).</p>
+          )}
           
           {isLoadingRanking ? (
             <p>Cargando ranking...</p>
+          ) : rankingData?.length === 0 ? (
+            <p className={styles.rankingEmpty}>
+              {rankingTab === 'today'
+                ? 'Nadie ha completado el wordle de hoy todavía. ¡Sé el primero!'
+                : 'No hay datos de ranking aún.'}
+            </p>
           ) : (
             <table className={styles.rankingTable}>
               <thead>
                 <tr>
                   <th>Pos</th>
                   <th>Jugador</th>
-                  <th>Mejor Racha</th>
-                  <th>Victorias Totales</th>
-                  <th>Intentos Acumulados</th>
+                  {rankingTab === 'today' ? (
+                    <>
+                      <th>Resultado</th>
+                      <th>Intentos Hoy</th>
+                      <th>Racha Actual</th>
+                    </>
+                  ) : (
+                    <>
+                      <th>Mejor Racha</th>
+                      <th>Victorias Totales</th>
+                      <th>Intentos Acum.</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {rankingData?.map((p, index) => (
                   <tr key={p.id} className={user?.uid === p.id ? styles.currentUserRow : ''}>
                     <td>#{index + 1}</td>
-                    <td>{p.displayName} {user?.uid === p.id && "(Tú)"}</td>
-                    <td><span className={styles.streakBadge}>🔥 {p.maxStreak}</span></td>
-                    <td>{p.wins} / {p.played}</td>
-                    <td>{p.totalAttempts || 0}</td>
+                    <td>{p.displayName} {user?.uid === p.id && <strong>(Tú)</strong>}</td>
+                    {rankingTab === 'today' ? (
+                      <>
+                        <td>{p.todayWon ? <span className={styles.wonBadge}>Ganó</span> : <span className={styles.lostBadge}>Perdió</span>}</td>
+                        <td>{p.todayAttempts || '—'} / 6</td>
+                        <td><span className={styles.streakBadge}>{p.currentStreak}</span></td>
+                      </>
+                    ) : (
+                      <>
+                        <td><span className={styles.streakBadge}>{p.maxStreak}</span></td>
+                        <td>{p.wins} / {p.played}</td>
+                        <td>{p.totalAttempts || 0}</td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -299,7 +359,7 @@ const WordlePage = () => {
 
           {gameStatus !== 'playing' && !showResultModal && (
             <button className={styles.showResultBtn} onClick={() => setShowResultModal(true)}>
-              📊 Ver Resultados
+              Ver Resultados
             </button>
           )}
 
@@ -307,7 +367,7 @@ const WordlePage = () => {
           {showResultModal && (
             <div className={styles.resultOverlay} onClick={() => setShowResultModal(false)}>
               <div className={styles.resultCard} onClick={e => e.stopPropagation()}>
-                <button className={styles.closeModalBtn} onClick={() => setShowResultModal(false)}>✕</button>
+                <button className={styles.closeModalBtn} onClick={() => setShowResultModal(false)}>×</button>
                 <h2>{gameStatus === 'won' ? '¡Felicidades!' : 'Fin del Juego'}</h2>
                 {gameStatus === 'won' ? (
                   <p>Adivinaste la palabra en <strong>{guesses.length}</strong> intento{guesses.length !== 1 ? 's' : ''}.</p>

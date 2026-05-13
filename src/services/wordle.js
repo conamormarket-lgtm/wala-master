@@ -140,7 +140,10 @@ export const saveWordleResult = async (won, attemptsUsed) => {
       wordleCurrentStreak: newStreak,
       wordleMaxStreak: maxStreak,
       wordleTotalAttempts: (userData.wordleTotalAttempts || 0) + attemptsUsed,
-      lastWordleDate: today
+      lastWordleDate: today,
+      // Campos para el ranking del día: intentos de HOY y si ganó hoy
+      wordleTodayAttempts: attemptsUsed,
+      wordleTodayWon: won
     };
 
     await setDoc(userRef, newData, { merge: true });
@@ -153,7 +156,7 @@ export const saveWordleResult = async (won, attemptsUsed) => {
 };
 
 /**
- * Obtener el ranking Top 50 por racha máxima y luego por victorias.
+ * Obtener el ranking global Top 50 por racha máxima y luego por victorias totales.
  */
 export const getWordleRanking = async () => {
   try {
@@ -170,13 +173,63 @@ export const getWordleRanking = async () => {
         id: d.id,
         displayName: data.displayName || data.nombres || 'Anónimo',
         maxStreak: data.wordleMaxStreak || 0,
+        currentStreak: data.wordleCurrentStreak || 0,
         wins: data.wordleWins || 0,
         played: data.wordlePlayed || 0,
-        totalAttempts: data.wordleTotalAttempts || 0
+        totalAttempts: data.wordleTotalAttempts || 0,
+        lastWordleDate: data.lastWordleDate || ''
       };
     });
   } catch (error) {
     console.error("Error fetching wordle ranking:", error);
+    return [];
+  }
+};
+
+/**
+ * Obtener el ranking del día de hoy: solo usuarios que jugaron HOY.
+ * Ordenados por: ganadores primero, luego por menor número de intentos.
+ * Firestore no soporta este filtro+orden directamente, así que se trae
+ * un lote amplio y se filtra en el cliente.
+ */
+export const getWordleRankingToday = async () => {
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    // Traemos los 200 usuarios con más victorias como pool candidato
+    // y filtramos en cliente a los que tienen lastWordleDate === hoy
+    const q = query(
+      collection(db, USERS_COLLECTION),
+      orderBy('wordleWins', 'desc'),
+      limit(200)
+    );
+    const snapshot = await getDocs(q);
+
+    const todayPlayers = snapshot.docs
+      .map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          displayName: data.displayName || data.nombres || 'Anónimo',
+          maxStreak: data.wordleMaxStreak || 0,
+          currentStreak: data.wordleCurrentStreak || 0,
+          wins: data.wordleWins || 0,
+          played: data.wordlePlayed || 0,
+          todayAttempts: data.wordleTodayAttempts || 0,
+          todayWon: data.wordleTodayWon ?? null,
+          lastWordleDate: data.lastWordleDate || ''
+        };
+      })
+      .filter(p => p.lastWordleDate === today)
+      // Primero los que ganaron, luego por menor número de intentos hoy
+      .sort((a, b) => {
+        if (a.todayWon !== b.todayWon) return (b.todayWon ? 1 : 0) - (a.todayWon ? 1 : 0);
+        return (a.todayAttempts || 99) - (b.todayAttempts || 99);
+      })
+      .slice(0, 50);
+
+    return todayPlayers;
+  } catch (error) {
+    console.error("Error fetching today's wordle ranking:", error);
     return [];
   }
 };

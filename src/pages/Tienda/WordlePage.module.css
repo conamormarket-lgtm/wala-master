@@ -342,6 +342,66 @@
   font-weight: bold;
 }
 
+.wonBadge {
+  background: #dcfce7;
+  color: #16a34a;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.lostBadge {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.rankingTabs {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  background: #f1f5f9;
+  padding: 0.35rem;
+  border-radius: 999px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.rankingTab {
+  background: transparent;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: #64748b;
+  transition: background 0.2s, color 0.2s;
+}
+
+.rankingTabActive {
+  background: white;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.rankingEmpty {
+  text-align: center;
+  color: #64748b;
+  padding: 2.5rem 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  border: 1px dashed #cbd5e1;
+}
+
 .primaryBtn {
   background: #0f172a;
   color: white;
