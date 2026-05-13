@@ -279,8 +279,7 @@ const WordlePage = () => {
                   <th>Jugador</th>
                   {rankingTab === 'today' ? (
                     <>
-                      <th>Resultado</th>
-                      <th>Intentos Hoy</th>
+                      <th>Intentos</th>
                       <th>Racha Actual</th>
                     </>
                   ) : (
@@ -299,8 +298,7 @@ const WordlePage = () => {
                     <td>{p.displayName} {user?.uid === p.id && <strong>(Tú)</strong>}</td>
                     {rankingTab === 'today' ? (
                       <>
-                        <td>{p.todayWon ? <span className={styles.wonBadge}>Ganó</span> : <span className={styles.lostBadge}>Perdió</span>}</td>
-                        <td>{p.todayAttempts || '—'} / 6</td>
+                        <td>{p.todayAttempts} / 6</td>
                         <td><span className={styles.streakBadge}>{p.currentStreak}</span></td>
                       </>
                     ) : (

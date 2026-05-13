@@ -187,16 +187,13 @@ export const getWordleRanking = async () => {
 };
 
 /**
- * Obtener el ranking del día de hoy: solo usuarios que jugaron HOY.
- * Ordenados por: ganadores primero, luego por menor número de intentos.
- * Firestore no soporta este filtro+orden directamente, así que se trae
- * un lote amplio y se filtra en el cliente.
+ * Obtener el ranking del día de hoy: SOLO los usuarios que GANARON hoy.
+ * Ordenados por menor número de intentos usados.
+ * Firestore no soporta este filtro compuesto directamente, se filtra en cliente.
  */
 export const getWordleRankingToday = async () => {
   const today = new Date().toISOString().split('T')[0];
   try {
-    // Traemos los 200 usuarios con más victorias como pool candidato
-    // y filtramos en cliente a los que tienen lastWordleDate === hoy
     const q = query(
       collection(db, USERS_COLLECTION),
       orderBy('wordleWins', 'desc'),
@@ -204,7 +201,7 @@ export const getWordleRankingToday = async () => {
     );
     const snapshot = await getDocs(q);
 
-    const todayPlayers = snapshot.docs
+    const todayWinners = snapshot.docs
       .map(d => {
         const data = d.data();
         return {
@@ -213,21 +210,18 @@ export const getWordleRankingToday = async () => {
           maxStreak: data.wordleMaxStreak || 0,
           currentStreak: data.wordleCurrentStreak || 0,
           wins: data.wordleWins || 0,
-          played: data.wordlePlayed || 0,
           todayAttempts: data.wordleTodayAttempts || 0,
-          todayWon: data.wordleTodayWon ?? null,
+          todayWon: data.wordleTodayWon ?? false,
           lastWordleDate: data.lastWordleDate || ''
         };
       })
-      .filter(p => p.lastWordleDate === today)
-      // Primero los que ganaron, luego por menor número de intentos hoy
-      .sort((a, b) => {
-        if (a.todayWon !== b.todayWon) return (b.todayWon ? 1 : 0) - (a.todayWon ? 1 : 0);
-        return (a.todayAttempts || 99) - (b.todayAttempts || 99);
-      })
+      // Solo quienes jugaron HOY y además GANARON
+      .filter(p => p.lastWordleDate === today && p.todayWon === true)
+      // El que lo resolvió en menos intentos va primero
+      .sort((a, b) => (a.todayAttempts || 99) - (b.todayAttempts || 99))
       .slice(0, 50);
 
-    return todayPlayers;
+    return todayWinners;
   } catch (error) {
     console.error("Error fetching today's wordle ranking:", error);
     return [];
