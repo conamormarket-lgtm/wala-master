@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.wala.tienda",
+    "sha256_cert_fingerprints": [
+      "1B:31:D9:FF:6F:1B:01:40:55:91:F8:D2:D9:14:08:DA:69:E1:BB:94:09:44:05:24:5B:D1:12:AC:B9:98:F5:59"
+    ]
+  }
+}]

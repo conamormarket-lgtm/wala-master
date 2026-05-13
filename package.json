@@ -6,6 +6,7 @@
   "private": true,
   "dependencies": {
     "@capacitor/android": "^8.2.0",
+    "@capacitor/app": "latest",
     "@capacitor/core": "^8.2.0",
     "@capacitor/local-notifications": "^8.0.2",
     "@readyplayerme/react-avatar-creator": "^0.5.0",

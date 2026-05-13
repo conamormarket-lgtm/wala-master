@@ -29,6 +29,7 @@ import FirebaseWarning from './components/common/FirebaseWarning';
 import DailyReward from './components/common/DailyReward/DailyReward';
 import AdminBar from './components/common/AdminBar/AdminBar';
 import VisualEditorPanel from './pages/Tienda/admin/VisualEditorPanel';
+import DeepLinkHandler from './components/common/DeepLinkHandler';
 
 // ── Páginas secundarias — lazy para no bloquear ──────────
 const ProductPage = lazy(() => import('./pages/ProductPage'));
@@ -122,6 +123,7 @@ function App() {
             <CartProvider>
               <LayoutProvider>
                 <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <DeepLinkHandler />
                 <div className="App">
                   <NavProgressBar />
                 <RouteTracker />
