@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
@@ -44,6 +44,7 @@ const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPa
 const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'));
 const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage'));
 const SubscriptionLandingPage = lazy(() => import('./pages/SubscriptionLandingPage'));
+const NuevosUsuariosPage = lazy(() => import('./pages/NuevosUsuariosPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -111,6 +112,40 @@ const RestrictedRoute = ({ children }) => {
   return <Navigate to="/cuenta" replace />;
 };
 
+const GlobalLayout = ({ children }) => {
+  const location = useLocation();
+  const isIndependentRoute = location.pathname.startsWith('/nuevos-usuarios');
+
+  if (isIndependentRoute) {
+    return (
+      <div className="App independent-app">
+        <main style={{ width: '100%', minHeight: '100vh', padding: 0, margin: 0 }}>
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="App">
+      <NavProgressBar />
+      <RouteTracker />
+      <ReferralTracker />
+      <AdminBar />
+      <VisualEditorPanel />
+      <Header />
+      <main id="main-content-area">
+        {children}
+      </main>
+      <Footer />
+      <BottomNav />
+      <WhatsAppButton />
+      <DailyReward />
+      <FirebaseWarning />
+    </div>
+  );
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -124,16 +159,7 @@ function App() {
               <LayoutProvider>
                 <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <DeepLinkHandler />
-                <div className="App">
-                  <NavProgressBar />
-                <RouteTracker />
-                <ReferralTracker />
-
-                <AdminBar />
-                <VisualEditorPanel />
-                <Header />
-
-                <main id="main-content-area">
+                <GlobalLayout>
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoading />}>
                       <Routes>
@@ -206,6 +232,7 @@ function App() {
                         <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                         <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                         <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
+                        <Route path="/nuevos-usuarios" element={<NuevosUsuariosPage />} />
                         
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />
@@ -214,14 +241,7 @@ function App() {
                       </Routes>
                     </Suspense>
                   </ErrorBoundary>
-                </main>
-
-                <Footer />
-                <BottomNav />
-                <WhatsAppButton />
-                <DailyReward />
-                <FirebaseWarning />
-              </div>
+                </GlobalLayout>
                 </Router>
               </LayoutProvider>
             </CartProvider>
