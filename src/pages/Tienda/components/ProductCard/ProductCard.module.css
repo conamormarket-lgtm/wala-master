@@ -7,17 +7,22 @@
   flex-direction: column;
   background-color: var(--blanco);
   overflow: hidden;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
   text-decoration: none;
   color: inherit;
   content-visibility: auto;
   contain-intrinsic-size: 350px;
   height: 100%;
   width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
 .card:hover {
-  opacity: 0.95;
+  opacity: 0.98;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Imagen ── */
@@ -363,9 +368,14 @@
 @media (max-width: 768px) {
 
 
+  .card {
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
   .content {
-    padding: 0.55rem;
-    gap: 0.2rem;
+    padding: 0.75rem 0.65rem;
+    gap: 0.25rem;
   }
 
   .name {
@@ -429,8 +439,8 @@
    ══════════════════════════════ */
 @media (max-width: 480px) {
   .content {
-    padding: 0.45rem 0;
-    gap: 0.15rem;
+    padding: 0.6rem 0.5rem;
+    gap: 0.2rem;
   }
 
   .name {

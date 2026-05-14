@@ -231,6 +231,23 @@
 
 /* Mobile specific overrides */
 @media (max-width: 768px) {
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0,0,0,0.02);
+    padding-bottom: 0.5rem;
+  }
+  
+  .imageContainer {
+    border-radius: 16px 16px 0 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .info {
+    padding: 0 0.65rem;
+  }
+
   .quickAddOverlay {
     transform: translateY(0);
     opacity: 1;

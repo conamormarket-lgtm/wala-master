@@ -127,8 +127,8 @@
 @media (max-width: 768px) {
   .grid {
     grid-template-columns: repeat(var(--grid-cols-mobile, 2), 1fr);
-    gap: 2px;
-    padding: 2px 0;
+    gap: 12px;
+    padding: 0.5rem;
   }
 
   .errorContainer,
@@ -154,8 +154,8 @@
 @media (max-width: 480px) {
   .grid {
     grid-template-columns: repeat(var(--grid-cols-mobile, 2), 1fr);
-    gap: 2px;
-    padding: 2px 0;
+    gap: 12px;
+    padding: 0.5rem;
   }
 }
 
@@ -166,6 +166,7 @@
   .grid {
     /* Pantallas muy pequeñas: seguir con 2 col pero gap mínimo */
     grid-template-columns: repeat(var(--grid-cols-mobile, 2), 1fr);
-    gap: 2px;
+    gap: 8px;
+    padding: 0.25rem;
   }
 }

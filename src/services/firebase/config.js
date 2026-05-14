@@ -37,17 +37,9 @@ if (isFirebaseConfigured()) {
     storage = getStorage(app);
 
     // ── Firestore con persistencia offline ─────────────────────────────
-    // Usa initializeFirestore (API moderna) para configurar caché local
-    // persistente en IndexedDB + soporte multi-tab.
-    //
-    // Después de la primera carga, TODAS las lecturas de Firestore se
-    // sirven desde disco local (~10ms) en lugar del servidor (~300-2000ms).
-    // Los datos se sincronizan en background cuando hay conexión.
     try {
       db = initializeFirestore(app, {
-        localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager(),
-        }),
+        localCache: persistentLocalCache(), // Cache simple sin multi-tab para mejor compatibilidad en Capacitor/Android
       });
     } catch (firestoreErr) {
       // Si initializeFirestore falla (ya inicializado, etc.), usar getFirestore

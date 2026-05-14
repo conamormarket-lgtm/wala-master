@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Filter, X } from 'lucide-react';
 import ProductGrid from './ProductGrid';
 import styles from './SidebarCatalogLayout.module.css';
 import { toDirectImageUrl } from '../../../utils/imageUrl';
@@ -16,6 +17,19 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
   const [activeTag, setActiveTag] = useState(null);
   const [activeCharacter, setActiveCharacter] = useState(null);
   const [activeType, setActiveType] = useState(null);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  // Prevenir scroll en el body cuando el drawer esté abierto
+  useEffect(() => {
+    if (isMobileDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileDrawerOpen]);
 
   const { data: collections } = useQuery({ queryKey: ['collections'], queryFn: async () => (await getCollections()).data });
   const { data: brands } = useQuery({ queryKey: ['brands'], queryFn: async () => (await getBrands()).data });
@@ -25,10 +39,12 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
 
   const handleCategoryClick = (catId) => {
     setActiveCategory(catId === activeCategory ? null : catId);
+    setIsMobileDrawerOpen(false);
   };
 
   const handleFilterClick = (setter, id) => {
     setter(prev => prev === id ? null : id);
+    setIsMobileDrawerOpen(false);
   };
 
   const filteredProducts = (productsData || []).filter(p => {
@@ -46,9 +62,32 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
       {title && <h2 className={styles.catalogTitle}>{title}</h2>}
       
       <div className={styles.catalogLayout}>
-        {/* SIDEBAR Izquierdo */}
-        <aside className={styles.sidebar}>
+        {/* BOTÓN MÓVIL (Visible solo en CSS) */}
+        <div className={styles.mobileFilterControls}>
+          <button 
+            className={styles.mobileFilterBtn} 
+            onClick={() => setIsMobileDrawerOpen(true)}
+          >
+            <Filter size={18} /> Filtrar y Categorías
+          </button>
+        </div>
+
+        {/* OVERLAY FONDO OSCURO (Móvil) */}
+        <div 
+          className={`${styles.drawerOverlay} ${isMobileDrawerOpen ? styles.overlayVisible : ''}`} 
+          onClick={() => setIsMobileDrawerOpen(false)}
+        />
+
+        {/* SIDEBAR Izquierdo / Drawer Móvil */}
+        <aside className={`${styles.sidebar} ${isMobileDrawerOpen ? styles.sidebarOpen : ''}`}>
           
+          <div className={styles.drawerHeader}>
+            <h3 style={{ margin: 0 }}>Filtros</h3>
+            <button className={styles.closeDrawerBtn} onClick={() => setIsMobileDrawerOpen(false)}>
+              <X size={24} color="#666" />
+            </button>
+          </div>
+
           <div className={styles.sidebarSection}>
             <h3>Categorías</h3>
             <ul className={styles.categoryList}>
