@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Smartphone } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import useIsMobile from '../../../hooks/useIsMobile';
 import styles from './AppDownloadBanner.module.css';
 
@@ -8,8 +9,8 @@ const AppDownloadBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Solo mostrar si es un dispositivo móvil
-    if (isMobileDevice) {
+    // Solo mostrar si es un dispositivo móvil y NO estamos dentro de la app nativa
+    if (isMobileDevice && !Capacitor.isNativePlatform()) {
       setIsVisible(true);
     }
   }, [isMobileDevice]);

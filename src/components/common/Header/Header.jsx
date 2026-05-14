@@ -10,6 +10,7 @@ import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorCont
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
 import { Heart, User, ShoppingBag } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import styles from './Header.module.css';
 import OptimizedImage from '../OptimizedImage/OptimizedImage';
 

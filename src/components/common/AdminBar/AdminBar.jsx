@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import styles from './AdminBar.module.css';
@@ -25,6 +26,9 @@ const AdminBar = () => {
   } else if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/login') || location.pathname.startsWith('/registro')) {
     isStorefront = false;
   }
+
+  // Desactivar la edición de landing pages (editor visual) en la app móvil nativa
+  if (isStorefront && Capacitor.isNativePlatform()) return null;
 
   if (isStorefront) {
     editText = isEditModeActive ? 'Terminar Edición Visual' : 'Activar Edición Visual (WYSIWYG)';
