@@ -8,12 +8,12 @@ const NuevosUsuariosPage = () => {
 
   // DATOS PARA LAS TARJETAS DE RESEÑAS
   const reviewsData = [
-    { id: 1, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.jpg`, location: 'Lima, PE', date: '12/05/2026', title: 'El mejor regalo', review: 'Mi novia lloró de la emoción cuando vio nuestra foto enmarcada. ¡Gracias!' },
-    { id: 2, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.png`, location: 'Arequipa, PE', date: '08/05/2026', title: 'Calidad Premium', review: 'La madera del marco se siente muy fina y la impresión fotográfica es espectacular.' },
-    { id: 3, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.png`, location: 'Cusco, PE', date: '01/05/2026', title: 'Llegó rapidísimo', review: 'Lo pedí un martes y el jueves ya estaba en la puerta de mi casa. Súper recomendados.' },
-    { id: 4, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.jpg`, location: 'Trujillo, PE', date: '25/04/2026', title: 'Detalle único', review: 'Me encantó poder personalizar la dedicatoria. Hizo que el regalo fuera mucho más especial.' },
-    { id: 5, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.png`, location: 'Piura, PE', date: '15/04/2026', title: '100% Confiable', review: 'Tenía dudas por ser mi primera compra, pero el empaque protegió súper bien el cuadro.' },
-    { id: 6, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.jpg`, location: 'Ica, PE', date: '02/04/2026', title: 'A mi mamá le encantó', review: 'Le regalé un cuadro con fotos de los nietos por su cumpleaños y quedó fascinada.' }
+    { id: 1, image: `https://picsum.photos/400/400?random=1`, location: 'Lima, PE', date: '12/05/2026', title: 'El mejor regalo', review: 'Mi novia lloró de la emoción cuando vio nuestra foto enmarcada. ¡Gracias!' },
+    { id: 2, image: `https://picsum.photos/400/400?random=2`, location: 'Arequipa, PE', date: '08/05/2026', title: 'Calidad Premium', review: 'La madera del marco se siente muy fina y la impresión fotográfica es espectacular.' },
+    { id: 3, image: `https://picsum.photos/400/400?random=3`, location: 'Cusco, PE', date: '01/05/2026', title: 'Llegó rapidísimo', review: 'Lo pedí un martes y el jueves ya estaba en la puerta de mi casa. Súper recomendados.' },
+    { id: 4, image: `https://picsum.photos/400/400?random=4`, location: 'Trujillo, PE', date: '25/04/2026', title: 'Detalle único', review: 'Me encantó poder personalizar la dedicatoria. Hizo que el regalo fuera mucho más especial.' },
+    { id: 5, image: `https://picsum.photos/400/400?random=5`, location: 'Piura, PE', date: '15/04/2026', title: '100% Confiable', review: 'Tenía dudas por ser mi primera compra, pero el empaque protegió súper bien el cuadro.' },
+    { id: 6, image: `https://picsum.photos/400/400?random=6`, location: 'Ica, PE', date: '02/04/2026', title: 'A mi mamá le encantó', review: 'Le regalé un cuadro con fotos de los nietos por su cumpleaños y quedó fascinada.' }
   ];
 
   const handleNextReview = () => {
@@ -26,8 +26,8 @@ const NuevosUsuariosPage = () => {
 
   // ARREGLO DE PARES DE IMÁGENES PARA EL BLOQUE VS (4 imágenes = 2 pares)
   const vsSlidesData = [
-    { left: 'imagen_izquierda_1.png', right: 'imagen_derecha_1.png' },
-    { left: 'imagen_izquierda_2.png', right: 'imagen_derecha_2.png' }
+    { left: 'https://picsum.photos/400/400?random=10', right: 'https://picsum.photos/400/400?random=11' },
+    { left: 'https://picsum.photos/400/400?random=12', right: 'https://picsum.photos/400/400?random=13' }
   ];
 
   const handleNextVsSlide = () => {
@@ -150,7 +150,8 @@ const NuevosUsuariosPage = () => {
           justify-content: center;
           box-shadow: 0 8px 20px rgba(0,0,0,0.15);
           text-align: center;
-          padding: 1rem;
+          padding: 0; /* Sin padding para que la imagen toque el borde */
+          overflow: hidden; /* Corta la imagen en las esquinas redondas */
         }
 
         /* Animación suave al cambiar la imagen del VS */
@@ -595,10 +596,10 @@ const NuevosUsuariosPage = () => {
                 <div className="vs-box">
                   <img
                     key={`vs-left-${vsSlideIndex}`} /* El key asegura que la animación corra de nuevo al cambiar de estado */
-                    src={`${process.env.PUBLIC_URL}/diseno/${vsSlidesData[vsSlideIndex].left}`} /* 👇 NOMBRE DINÁMICO 👇 */
+                    src={vsSlidesData[vsSlideIndex].left.startsWith('http') ? vsSlidesData[vsSlideIndex].left : `${process.env.PUBLIC_URL}/diseno/${vsSlidesData[vsSlideIndex].left}`} /* 👇 NOMBRE DINÁMICO 👇 */
                     alt="Opción Común"
                     className="vs-animate"
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>
 
@@ -633,10 +634,10 @@ const NuevosUsuariosPage = () => {
                 <div className="vs-box">
                   <img
                     key={`vs-right-${vsSlideIndex}`}
-                    src={`${process.env.PUBLIC_URL}/diseno/${vsSlidesData[vsSlideIndex].right}`} /* 👇 NOMBRE DINÁMICO 👇 */
+                    src={vsSlidesData[vsSlideIndex].right.startsWith('http') ? vsSlidesData[vsSlideIndex].right : `${process.env.PUBLIC_URL}/diseno/${vsSlidesData[vsSlideIndex].right}`} /* 👇 NOMBRE DINÁMICO 👇 */
                     alt="Nuestra App"
                     className="vs-animate"
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>
 
@@ -700,7 +701,7 @@ const NuevosUsuariosPage = () => {
                   así pongas 1 sola imagen, llenará la pantalla y dará vueltas sin parar.
                 */}
                 {Array(20).fill([
-                  'logo_1.png',
+                  'wala 900x900.png',
                   // Puedes agregar 'logo_2.png', 'logo_3.png' separándolos por comas
                 ]).flat().map((imagen, index) => (
                   <div key={index} className="logo-circle-wrapper">
@@ -709,7 +710,7 @@ const NuevosUsuariosPage = () => {
                       width: '90px',
                       height: '90px',
                       backgroundColor: '#ffffff',
-                      border: '6px solid #ffffff', /* Borde grueso y blanco como las cajas anteriores */
+                      border: '1px solid #ffffff', /* Borde grueso y blanco como las cajas anteriores */
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
@@ -980,8 +981,8 @@ const NuevosUsuariosPage = () => {
                         </div>
 
                         {/* Caja de Imagen */}
-                        <div className="enc-caja-img">
-                          <span style={{ fontSize: '0.6rem', color: '#888', fontWeight: 'bold' }}>Imágen</span>
+                        <div className="enc-caja-img" style={{ overflow: 'hidden' }}>
+                          <img src={`https://picsum.photos/400/400?random=20`} alt="Tienda Wala" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
 
                         {/* Botón Derecho */}
