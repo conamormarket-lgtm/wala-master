@@ -114,7 +114,7 @@ const RestrictedRoute = ({ children }) => {
 
 const GlobalLayout = ({ children }) => {
   const location = useLocation();
-  const isIndependentRoute = location.pathname.startsWith('/nuevos-usuarios');
+  const isIndependentRoute = location.pathname.startsWith('/regalos-con-amor');
 
   if (isIndependentRoute) {
     return (
@@ -232,7 +232,8 @@ function App() {
                         <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                         <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                         <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
-                        <Route path="/nuevos-usuarios" element={<NuevosUsuariosPage />} />
+                        <Route path="/regalos-con-amor" element={<NuevosUsuariosPage />} />
+                        <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
                         
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />

@@ -72,6 +72,20 @@ const NuevosUsuariosPage = () => {
     return () => clearInterval(autoPlayInterval);
   }, []);
 
+  // HELPER: Renderiza <img> o <video> según la extensión del archivo fuente
+  const renderMedia = (src, alt, style = {}, className = '') => {
+    const videoExts = ['.mp4', '.webm', '.mov', '.ogg'];
+    const isVideo = videoExts.some(ext => src.toLowerCase().endsWith(ext));
+    if (isVideo) {
+      return (
+        <video className={className} style={style} autoPlay muted loop playsInline>
+          <source src={src} />
+        </video>
+      );
+    }
+    return <img className={className} src={src} alt={alt} style={style} />;
+  };
+
   return (
     <>
       <style>{`
@@ -484,14 +498,14 @@ const NuevosUsuariosPage = () => {
       <div className="landing-container">
 
         {/* FONDO PC PARALLAX */}
-        <img className="landing-bg-image" src={`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`} alt="Fondo PC" />
+        {renderMedia(`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`, 'Fondo PC', {}, 'landing-bg-image')}
 
         {/* FONDO MÓVIL (4 capas apiladas con efecto espejo en 2 y 4) */}
         <div className="landing-bg-mobile-container">
-          <img className="mobile-bg-slice" src={`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`} alt="Fondo Movil 1" />
-          <img className="mobile-bg-slice" src={`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`} alt="Fondo Movil 2" style={{ transform: 'scaleY(-1)' }} />
-          <img className="mobile-bg-slice" src={`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`} alt="Fondo Movil 3" />
-          <img className="mobile-bg-slice" src={`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`} alt="Fondo Movil 4" style={{ transform: 'scaleY(-1)' }} />
+          {renderMedia(`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`, 'Fondo Movil 1', {}, 'mobile-bg-slice')}
+          {renderMedia(`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`, 'Fondo Movil 2', { transform: 'scaleY(-1)' }, 'mobile-bg-slice')}
+          {renderMedia(`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`, 'Fondo Movil 3', {}, 'mobile-bg-slice')}
+          {renderMedia(`${process.env.PUBLIC_URL}/diseno/1920jpg.jpg`, 'Fondo Movil 4', { transform: 'scaleY(-1)' }, 'mobile-bg-slice')}
         </div>
 
         {/* CONTENIDO LIBRE (Aquí pondremos todos los componentes) */}
@@ -512,20 +526,12 @@ const NuevosUsuariosPage = () => {
             {/* Título Principal (Responsivo) */}
             <h1 className="hero-title">
               Convierte tus Mejores Recuerdos <br />
-              en <img
-                src={`${process.env.PUBLIC_URL}/diseno/abrazos.png`}
-                alt="Abrazos"
-                className="hero-abrazos-img"
-              /> que Duran para Siempre.
+              en {renderMedia(`${process.env.PUBLIC_URL}/diseno/abrazos.png`, 'Abrazos', {}, 'hero-abrazos-img')} que Duran para Siempre.
             </h1>
 
             {/* Label estilo botón (Responsivo) */}
             <div className="hero-btn">
-              <img
-                src={`${process.env.PUBLIC_URL}/diseno/corazón.png`}
-                alt="Corazón"
-                className="hero-btn-icon"
-              />
+              {renderMedia(`${process.env.PUBLIC_URL}/diseno/corazón.png`, 'Corazón', {}, 'hero-btn-icon')}
               <span>ten a tu familia feliz con nuestra app</span>
             </div>
 
@@ -573,19 +579,15 @@ const NuevosUsuariosPage = () => {
               </div>
 
               {/* MARCO PANTALLA.PNG (Por encima del video) */}
-              <img
-                src={`${process.env.PUBLIC_URL}/diseno/PANTALLA.png`}
-                alt="Pantalla de la App"
-                style={{
+              {renderMedia(`${process.env.PUBLIC_URL}/diseno/PANTALLA.png`, 'Pantalla de la App', {
                   position: 'relative',
                   width: '100%',
                   height: 'auto',
                   objectFit: 'contain',
-                  zIndex: 2, /* Se pone por encima del iframe para servir de marco */
-                  pointerEvents: 'none', /* ¡IMPORTANTE! Permite dar click al video de YouTube "traspasando" la imagen */
-                  filter: 'drop-shadow(0px 15px 30px rgba(0,0,0,0.5))' /* Sombra fuerte solicitada */
-                }}
-              />
+                  zIndex: 2,
+                  pointerEvents: 'none',
+                  filter: 'drop-shadow(0px 15px 30px rgba(0,0,0,0.5))'
+                })}
             </div>
           </div>
 
@@ -664,11 +666,11 @@ const NuevosUsuariosPage = () => {
                         {/* Caja Izquierda */}
                         <div className="vs-box" style={{ position: 'relative' }}>
                           <div style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: badgeBg, color: '#ffffff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', zIndex: 5, fontFamily: 'Arial, sans-serif' }}>{labelText}</div>
-                          <img
-                            src={slide.left.startsWith('http') ? slide.left : `${process.env.PUBLIC_URL}/diseno/${slide.left}`}
-                            alt="Opción Común"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
+                          {renderMedia(
+                            slide.left.startsWith('http') ? slide.left : `${process.env.PUBLIC_URL}/diseno/${slide.left}`,
+                            'Opción Común',
+                            { width: '100%', height: '100%', objectFit: 'cover' }
+                          )}
                         </div>
 
                         {/* Círculo VS Central */}
@@ -701,11 +703,11 @@ const NuevosUsuariosPage = () => {
                         {/* Caja Derecha */}
                         <div className="vs-box" style={{ position: 'relative' }}>
                           <div style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: badgeBg, color: '#ffffff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', zIndex: 5, fontFamily: 'Arial, sans-serif' }}>{labelText}</div>
-                          <img
-                            src={slide.right.startsWith('http') ? slide.right : `${process.env.PUBLIC_URL}/diseno/${slide.right}`}
-                            alt="Nuestra App"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
+                          {renderMedia(
+                            slide.right.startsWith('http') ? slide.right : `${process.env.PUBLIC_URL}/diseno/${slide.right}`,
+                            'Nuestra App',
+                            { width: '100%', height: '100%', objectFit: 'cover' }
+                          )}
                         </div>
 
                       </div>
@@ -822,11 +824,7 @@ const NuevosUsuariosPage = () => {
               width: '85%', /* 👈 TAMAÑO DE LA IMAGEN */
               zIndex: 1    /* 👈 ORDEN DE CAPAS (1 está más al fondo) */
             }}>
-              <img
-                src={`${process.env.PUBLIC_URL}/diseno/kapi.png`}
-                alt="Kapi"
-                style={{ width: '100%', objectFit: 'contain' }}
-              />
+              {renderMedia(`${process.env.PUBLIC_URL}/diseno/kapi.png`, 'Kapi', { width: '100%', objectFit: 'contain' })}
             </div>
 
             {/* 2. Componente: Texto (Frente Superior Centro) */}
@@ -860,11 +858,7 @@ const NuevosUsuariosPage = () => {
               width: '24%',
               zIndex: 2    /* 👈 ORDEN DE CAPAS (2 está en el medio de los 3) */
             }}>
-              <img
-                src={`${process.env.PUBLIC_URL}/diseno/15 kapi.png`}
-                alt="15 Kapi"
-                style={{ width: '100%', objectFit: 'contain' }}
-              />
+              {renderMedia(`${process.env.PUBLIC_URL}/diseno/15 kapi.png`, '15 Kapi', { width: '100%', objectFit: 'contain' })}
             </div>
 
           </div>
@@ -872,11 +866,7 @@ const NuevosUsuariosPage = () => {
           {/* SÉPTIMO BLOQUE: BOTÓN DE DESCARGA (REEMPLAZADO POR IMAGEN) */}
           <div className="download-section">
             <a href="#" target="_blank" rel="noopener noreferrer" className="download-img-wrapper">
-              <img
-                src={`${process.env.PUBLIC_URL}/diseno/descarga.png`}
-                alt="Descarga la App"
-                style={{ width: '100%', height: 'auto', cursor: 'pointer', objectFit: 'contain' }}
-              />
+              {renderMedia(`${process.env.PUBLIC_URL}/diseno/descarga.png`, 'Descarga la App', { width: '100%', height: 'auto', cursor: 'pointer', objectFit: 'contain' })}
             </a>
           </div>
 
@@ -960,13 +950,13 @@ const NuevosUsuariosPage = () => {
                           <div className="review-img" style={{
                             width: '100%',
                             backgroundColor: '#FF8B6F',
-                            backgroundImage: `url('${review.image}')`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
                             borderRadius: '15px',
                             boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
                             marginBottom: '-5px',
-                          }} />
+                            overflow: 'hidden',
+                          }}>
+                            {renderMedia(review.image, 'Reseña', { width: '100%', height: '100%', objectFit: 'cover', display: 'block' })}
+                          </div>
                         </div>
 
                         {/* Zona de Texto (5 partes) */}
@@ -1033,11 +1023,7 @@ const NuevosUsuariosPage = () => {
                       - - - - - - - - - - - - - - - - - - - - -
                     </div>
                     {/* Ícono de Ubicación */}
-                    <img
-                      src={`${process.env.PUBLIC_URL}/diseno/ubicación.png`}
-                      alt="Ubicación"
-                      className="enc-white-icon"
-                    />
+                    {renderMedia(`${process.env.PUBLIC_URL}/diseno/ubicación.png`, 'Ubicación', {}, 'enc-white-icon')}
                     {/* Texto */}
                     <span className="enc-white-text" style={{ fontFamily: 'Arial, sans-serif' }}>
                       Visita nuestra Fisica de:
@@ -1065,7 +1051,7 @@ const NuevosUsuariosPage = () => {
 
                         {/* Caja de Imagen */}
                         <div className="enc-caja-img" style={{ overflow: 'hidden' }}>
-                          <img src={`https://picsum.photos/400/400?random=20`} alt="Tienda Wala" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          {renderMedia(`https://picsum.photos/400/400?random=20`, 'Tienda Wala', { width: '100%', height: '100%', objectFit: 'cover' })}
                         </div>
 
                         {/* Botón Derecho */}
@@ -1096,11 +1082,7 @@ const NuevosUsuariosPage = () => {
 
               {/* Imagen de Kapi */}
               <div className="enc-kapi-container">
-                <img
-                  src={`${process.env.PUBLIC_URL}/diseno/ya.png`}
-                  alt="Kapi mascot"
-                  className="enc-kapi-img"
-                />
+                {renderMedia(`${process.env.PUBLIC_URL}/diseno/ya.png`, 'Kapi mascot', {}, 'enc-kapi-img')}
               </div>
             </div>
           </div>
