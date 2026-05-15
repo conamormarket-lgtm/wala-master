@@ -4,7 +4,8 @@ import './NuevosUsuariosPage.module.css';
 
 const NuevosUsuariosPage = () => {
   const [vsSlideIndex, setVsSlideIndex] = React.useState(0);
-  const [reviewsSlideIndex, setReviewsSlideIndex] = React.useState(0);
+  const [reviewsSlideIndex, setReviewsSlideIndex] = React.useState(6); // Empezamos en la copia del medio
+  const [isTransitioning, setIsTransitioning] = React.useState(true);
 
   // DATOS PARA LAS TARJETAS DE RESEÑAS
   const reviewsData = [
@@ -17,11 +18,13 @@ const NuevosUsuariosPage = () => {
   ];
 
   const handleNextReview = () => {
-    setReviewsSlideIndex((prev) => (prev + 1) % reviewsData.length);
+    if (!isTransitioning) return;
+    setReviewsSlideIndex((prev) => prev + 1);
   };
 
   const handlePrevReview = () => {
-    setReviewsSlideIndex((prev) => (prev - 1 + reviewsData.length) % reviewsData.length);
+    if (!isTransitioning) return;
+    setReviewsSlideIndex((prev) => prev - 1);
   };
 
   // ARREGLO DE PARES DE IMÁGENES PARA EL BLOQUE VS (4 imágenes = 2 pares)
@@ -37,6 +40,37 @@ const NuevosUsuariosPage = () => {
   const handlePrevVsSlide = () => {
     setVsSlideIndex((prev) => (prev - 1 + vsSlidesData.length) % vsSlidesData.length);
   };
+
+  // LÓGICA DEL CARRUSEL INFINITO FLUIDO (BLOQUE 9)
+  React.useEffect(() => {
+    let timeout;
+    if (reviewsSlideIndex === reviewsData.length * 2) {
+      timeout = setTimeout(() => {
+        setIsTransitioning(false);
+        setReviewsSlideIndex(reviewsData.length);
+      }, 500);
+    }
+    else if (reviewsSlideIndex === 0) {
+      timeout = setTimeout(() => {
+        setIsTransitioning(false);
+        setReviewsSlideIndex(reviewsData.length);
+      }, 500);
+    }
+    else if (!isTransitioning) {
+      timeout = setTimeout(() => {
+        setIsTransitioning(true);
+      }, 50);
+    }
+    return () => clearTimeout(timeout);
+  }, [reviewsSlideIndex, isTransitioning, reviewsData.length]);
+
+  React.useEffect(() => {
+    const autoPlayInterval = setInterval(() => {
+      setReviewsSlideIndex((prev) => prev + 1);
+    }, 3500);
+
+    return () => clearInterval(autoPlayInterval);
+  }, []);
 
   return (
     <>
@@ -227,10 +261,14 @@ const NuevosUsuariosPage = () => {
 
         /* --- CLASES RESPONSIVAS PARA IMAGEN DE DESCARGA (PC por defecto) --- */
         .download-img-wrapper {
-          display: inline-block;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 50%;
           width: 100%;
           max-width: 600px; /* 👈 Tamaño aún más grande para PC (Ajustado) */
           transition: transform 0.2s ease;
+          transform-origin: center; /* Asegura que escale siempre desde el puro centro */
         }
         .download-img-wrapper:hover {
           transform: scale(1.05); /* Pequeño efecto al pasar el mouse en PC */
@@ -239,12 +277,15 @@ const NuevosUsuariosPage = () => {
         /* --- CONTENEDOR SÉPTIMO BLOQUE (PC) --- */
         .download-section {
           width: 100%;
+          height: 100%;
           display: flex;
           justify-content: center;
           align-items: center;
           padding: 0 1rem;
-          margin-top: -34rem; /* 👈 Margen ajustado para PC que querías (-17rem) */
-          margin-bottom: -10.5rem; /* 👈 Margen ajustado para PC que querías (-12rem) */
+          margin-top: -6rem; /* 👈 Margen ajustado para PC que querías (-17rem) */
+          margin-bottom: 14rem; /* 👈 Margen ajustado para PC que querías (-12rem) */
+          position: relative; /* Necesario para que el z-index funcione */
+          z-index: 10; /* Fomenta que su hitbox esté por ENCIMA de las capas del collage */
         }
 
         /* --- CLASES SEXTO BLOQUE TEXTOS RESPONSIVOS --- */
@@ -270,7 +311,7 @@ const NuevosUsuariosPage = () => {
         /* --- CLASES RESPONSIVAS PARA EL OCTAVO Y NOVENO BLOQUE (PC por defecto) --- */
         .banner-line1 { font-size: 1.8rem; line-height: 1.3; }
         .banner-line2 { font-size: 2.2rem; }
-        .review-card { max-width: 300px; }
+        .review-card { max-width: 300px; border-radius: 20px !important; }
         .review-img-wrapper { padding: 10px; }
         .review-img { height: 160px; }
         .review-text-zone { padding: 1rem; gap: 0.5rem; }
@@ -306,6 +347,12 @@ const NuevosUsuariosPage = () => {
         .enc-sub-izq { flex: 3; padding: 0.2rem; display: flex; align-items: center; justify-content: center; }
         .enc-sub-der { flex: 7; padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .enc-franja-blanca { flex: 1; background-color: white; width: 90%; max-width: 100%; box-sizing: border-box; overflow: hidden; border-top-right-radius: 50px; border-bottom-right-radius: 50px; display: flex; align-items: center; margin-left: -0.4rem; padding-left: 0.4rem; padding-right: 1rem; z-index: 1; }
+
+        /* ESTILOS TÉRMINOS Y CONDICIONES (PC) */
+        .terms-container { width: 100%; background-color: transparent; padding: 4rem 10%; margin-top: 5rem; text-align: center; color: #666; }
+        .terms-title { margin: 0 0 1.5rem 0; color: #333; font-size: 1.2rem; }
+        .terms-text { max-width: 1000px; margin: 0 auto; line-height: 1.8; font-size: 0.9rem; }
+        .terms-copy { margin-top: 2rem; font-size: 0.8rem; }
 
         /* ESTILO MÓVIL: Ajustes generales */
         @media (max-width: 768px) {
@@ -364,8 +411,8 @@ const NuevosUsuariosPage = () => {
 
           /* --- CONTENEDOR SÉPTIMO BLOQUE (MÓVIL) --- */
           .download-section {
-            margin-top: -16rem; /* 👈 Margen original protegido para Móvil */
-            margin-bottom: 1rem; /* 👈 Margen original protegido para Móvil */
+            margin-top: -2rem !important; /* 👈 Protegido estrictamente para Móvil */
+            margin-bottom: 14rem !important; /* 👈 Protegido estrictamente para Móvil */
           }
 
           /* --- SEXTO BLOQUE (KAPI COLLAGE) MÓVIL --- */
@@ -404,6 +451,12 @@ const NuevosUsuariosPage = () => {
           .enc-caja-img { height: 150px !important; }
           .enc-btn { width: 15px !important; height: 15px !important; font-size: 8px !important; min-width: 15px !important; }
           .enc-guiones { width: 0% !important; }
+
+          /* TÉRMINOS MÓVIL */
+          .terms-container { padding: 2rem 5% !important; margin-top: 3rem !important; }
+          .terms-title { font-size: 0.9rem !important; margin-bottom: 1rem !important; }
+          .terms-text { font-size: 0.7rem !important; line-height: 1.5 !important; max-width: 100% !important; }
+          .terms-copy { font-size: 0.6rem !important; margin-top: 1rem !important; }
 
           .kapi-text-box-mobile {
             /* En móvil, podemos hacer que el texto del collage sea un poco más chico para que no desborde */
@@ -486,7 +539,7 @@ const NuevosUsuariosPage = () => {
             justifyContent: 'center',
             padding: '0 5%' /* Padding lateral para que no toque los bordes del celular */
           }}>
-            <div style={{ position: 'relative', display: 'inline-block', maxWidth: '800px', width: '100%' }}>
+            <div style={{ position: 'relative', display: 'inline-block', maxWidth: '1400px', width: '100%' }}>
 
               {/* FONDO NEGRO Y VIDEO DE YOUTUBE */}
               <div style={{
@@ -546,11 +599,15 @@ const NuevosUsuariosPage = () => {
             justifyContent: 'center',
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
           }}>
-            <p className="text-block-general" style={{ lineHeight: '1.2' }}>
-              <strong className="text-block-title"><span style={{ fontFamily: 'Georgia, serif' }}>¿</span>Por qué regalar algo personalizado?</strong> <br />
-              Por que hay fechas que merecen más que un <strong style={{ color: '#000000' }}>regalo</strong> <br />
-              de último minuto. Un detalle <strong style={{ color: '#000000' }}>personalizado</strong> se usa, <br />
-              se abraza y <strong style={{ color: '#000000' }}>se guarda para siempre</strong>.
+            <p className="text-block-general" style={{ lineHeight: '1.3', color: '#ffffff', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+              <strong className="text-block-title" style={{ color: '#292929', textShadow: 'none' }}>
+                <span style={{ fontFamily: 'Georgia, serif' }}>¿</span>Por qué regalar algo personalizado?
+              </strong> <br />
+              <span style={{ fontFamily: 'Arial, sans-serif', textShadow: '2px 2px 6px rgba(0, 0, 0, 0.8)' }}>
+                Por que hay fechas que merecen más que un <strong style={{ color: '#292929', textShadow: 'none' }}>regalo</strong> <br />
+                de último minuto. Un detalle <strong style={{ color: '#292929', textShadow: 'none' }}>personalizado</strong> se usa, <br />
+                se abraza y <strong style={{ color: '#292929', textShadow: 'none' }}>se guarda para siempre.</strong>
+              </span>
             </p>
           </div>
 
@@ -581,66 +638,80 @@ const NuevosUsuariosPage = () => {
                 &#10094;
               </div>
 
-              {/* Contenedor de las dos cajas */}
-              <div style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10%', /* Espacio entre los cuadrados */
-                position: 'relative',
-                flex: 1
-              }}>
-
-                {/* Caja Izquierda */}
-                <div className="vs-box">
-                  <img
-                    key={`vs-left-${vsSlideIndex}`} /* El key asegura que la animación corra de nuevo al cambiar de estado */
-                    src={vsSlidesData[vsSlideIndex].left.startsWith('http') ? vsSlidesData[vsSlideIndex].left : `${process.env.PUBLIC_URL}/diseno/${vsSlidesData[vsSlideIndex].left}`} /* 👇 NOMBRE DINÁMICO 👇 */
-                    alt="Opción Común"
-                    className="vs-animate"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-
-                {/* Círculo VS Central (Se superpone usando absolute) */}
+              {/* Carrusel Deslizable del VS */}
+              <div style={{ flex: 1, overflow: 'hidden', padding: '10px 0' }}>
                 <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)', /* Centrado perfecto matemático */
-                  width: '40px', /* Reducido de 60px a 40px */
-                  height: '40px',
-                  backgroundColor: '#ffffff',
-                  borderRadius: '50%',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#FF8B6F',
-                  fontWeight: 'bold',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-                  zIndex: 10
+                  width: '100%',
+                  transition: 'transform 0.5s ease-in-out',
+                  transform: `translateX(-${vsSlideIndex * 100}%)`
                 }}>
-                  <span style={{
-                    fontSize: '1.3rem', /* Letra más grande */
-                    WebkitTextStroke: '1px #FF8B6F', /* Lo hace más grueso de forma artificial */
-                    marginTop: '4px' /* Lo empuja un poco hacia abajo para centrarlo visualmente */
-                  }}>
-                    VS
-                  </span>
-                </div>
+                  {vsSlidesData.map((slide, index) => {
+                    const labelText = index === 0 ? 'Antes' : 'Después';
+                    const badgeBg = index === 0 ? 'rgba(0,0,0,0.6)' : '#FF8B6F';
 
-                {/* Caja Derecha */}
-                <div className="vs-box">
-                  <img
-                    key={`vs-right-${vsSlideIndex}`}
-                    src={vsSlidesData[vsSlideIndex].right.startsWith('http') ? vsSlidesData[vsSlideIndex].right : `${process.env.PUBLIC_URL}/diseno/${vsSlidesData[vsSlideIndex].right}`} /* 👇 NOMBRE DINÁMICO 👇 */
-                    alt="Nuestra App"
-                    className="vs-animate"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
+                    return (
+                      <div key={index} style={{
+                        flex: '0 0 100%',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10%',
+                        position: 'relative'
+                      }}>
 
+                        {/* Caja Izquierda */}
+                        <div className="vs-box" style={{ position: 'relative' }}>
+                          <div style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: badgeBg, color: '#ffffff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', zIndex: 5, fontFamily: 'Arial, sans-serif' }}>{labelText}</div>
+                          <img
+                            src={slide.left.startsWith('http') ? slide.left : `${process.env.PUBLIC_URL}/diseno/${slide.left}`}
+                            alt="Opción Común"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+
+                        {/* Círculo VS Central */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: '40px',
+                          height: '40px',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#FF8B6F',
+                          fontWeight: 'bold',
+                          boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                          zIndex: 10
+                        }}>
+                          <span style={{
+                            fontSize: '1.3rem',
+                            WebkitTextStroke: '1px #FF8B6F',
+                            marginTop: '4px'
+                          }}>
+                            VS
+                          </span>
+                        </div>
+
+                        {/* Caja Derecha */}
+                        <div className="vs-box" style={{ position: 'relative' }}>
+                          <div style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: badgeBg, color: '#ffffff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold', zIndex: 5, fontFamily: 'Arial, sans-serif' }}>{labelText}</div>
+                          <img
+                            src={slide.right.startsWith('http') ? slide.right : `${process.env.PUBLIC_URL}/diseno/${slide.right}`}
+                            alt="Nuestra App"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Flecha Derecha (Ahora con acción de React) */}
@@ -652,10 +723,10 @@ const NuevosUsuariosPage = () => {
 
             {/* Botón Descubre la diferencia (Responsivo) */}
             <div className="discover-btn" style={{
-              backgroundColor: '#FF8B6F',
+              backgroundColor: '#292929',
               color: '#ffffff',
               borderRadius: '50px',
-              boxShadow: '0 6px 20px rgba(217,135,115,0.4)',
+              boxShadow: '0 6px 20px rgba(41, 41, 41, 0.4)',
               cursor: 'pointer',
               textAlign: 'center',
               marginTop: '0.5rem'
@@ -677,8 +748,8 @@ const NuevosUsuariosPage = () => {
 
             {/* Título Estilo Píldora Gris (Responsivo y Negrita Forzada) */}
             <div className="brands-title" style={{
-              border: '1px solid #000000',
-              backgroundColor: 'rgba(250, 250, 250, 0.66)', /* Fondo gris clarito con 66% de opacidad que tú ajustaste */
+              border: '1px solid #FF8B6F',
+              backgroundColor: 'rgba(255, 255, 255, 1)', /* Fondo gris clarito con 66% de opacidad que tú ajustaste */
               color: '#000000',
               padding: '6px 20px', /* Relleno ajustado */
               borderRadius: '50px',
@@ -687,47 +758,55 @@ const NuevosUsuariosPage = () => {
               whiteSpace: 'nowrap', /* Fuerza a que todo el texto se mantenga en 1 sola línea */
               textAlign: 'center'
             }}>
-              Empresas con las que trabajamos
+              <span style={{ fontFamily: 'Georgia, serif' }}>
+                Empresas con las que trabajamos
+              </span>
             </div>
 
             {/* Carrusel Deslizable Infinito */}
             <div className="marquee-container">
-              <div className="marquee-track">
-
-                {/* 
-                  TRUCO DE BUCLE PERFECTO:
-                  Aquí pones 1, 2, 3 o las marcas que tengas.
-                  El Array(10).fill(...).flat() las multiplicará mágicamente para crear una cinta infinita,
-                  así pongas 1 sola imagen, llenará la pantalla y dará vueltas sin parar.
-                */}
-                {Array(20).fill([
+              {(() => {
+                // 1. AQUÍ AGREGAS TUS LOGOS (ej: 'logo_1.png', 'logo_2.png')
+                const marcasUnicas = [
                   'wala 900x900.png',
-                  // Puedes agregar 'logo_2.png', 'logo_3.png' separándolos por comas
-                ]).flat().map((imagen, index) => (
-                  <div key={index} className="logo-circle-wrapper">
-                    <div className="logo-circle" style={{
-                      flexShrink: 0,
-                      width: '90px',
-                      height: '90px',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #ffffff', /* Borde grueso y blanco como las cajas anteriores */
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 8px 20px rgba(0,0,0,0.15)', /* Sombra para que resalte el borde blanco sobre fondos claros */
-                      overflow: 'hidden'
-                    }}>
-                      <img
-                        src={`${process.env.PUBLIC_URL}/diseno/${imagen}`}
-                        alt={`Logo Empresa ${index}`}
-                        style={{ width: '70%', height: '70%', objectFit: 'contain' }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                ];
 
-              </div>
+                const multiplicador = 100; // Multiplicamos para crear la cinta infinita
+                const totalItems = marcasUnicas.length * multiplicador;
+
+                // 2. MANTENIMIENTO DE VELOCIDAD: Calcula el tiempo automáticamente.
+                // 1.25 segundos por cada ítem generado para mantener la misma velocidad siempre, 
+                // sin importar cuántos logos agregues a tu lista.
+                const duracionAnimacion = totalItems * 1.25;
+
+                return (
+                  <div className="marquee-track" style={{ animationDuration: `${duracionAnimacion}s` }}>
+                    {Array(multiplicador).fill(marcasUnicas).flat().map((imagen, index) => (
+                      <div key={index} className="logo-circle-wrapper">
+                        <div className="logo-circle" style={{
+                          flexShrink: 0,
+                          width: '90px',
+                          height: '90px',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #ffffff', /* Borde grueso y blanco como las cajas anteriores */
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 8px 20px rgba(0,0,0,0.15)', /* Sombra para que resalte el borde blanco sobre fondos claros */
+                          overflow: 'hidden'
+                        }}>
+                          <img
+                            src={`${process.env.PUBLIC_URL}/diseno/${imagen}`}
+                            alt={`Logo Empresa ${index}`}
+                            style={{ width: '70%', height: '70%', objectFit: 'contain' }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
           </div>
@@ -758,13 +837,13 @@ const NuevosUsuariosPage = () => {
               width: '60%',
               zIndex: 3    /* 👈 ORDEN DE CAPAS (3 está hasta el frente) */
             }}>
-              <h3 className="text-block-general kapi-text-1" style={{ textAlign: 'left', color: '#000000', margin: '0', lineHeight: '1.2' }}>
+              <h3 className="text-block-general kapi-text-1" style={{ textAlign: 'left', color: '#000000', margin: '0', lineHeight: '1.2', fontFamily: 'Georgia, serif' }}>
                 Toma la decisión de regalar diferente
               </h3>
               <p className="text-block-general kapi-text-2" style={{ textAlign: 'left', maxWidth: '100%', color: '#FF8B6F', fontWeight: 'bold', margin: '0', lineHeight: '1.2' }}>
                 ¡Y llévate S/15 de regalos hoy mismo!
               </p>
-              <p className="text-block-general kapi-text-3" style={{ textAlign: 'left', maxWidth: '100%', color: '#000000', margin: '0', lineHeight: '1.1' }}>
+              <p className="text-block-general kapi-text-3" style={{ textAlign: 'left', maxWidth: '100%', color: '#000000', margin: '0', lineHeight: '1.1', fontFamily: 'Georgia, serif' }}>
                 Descarga la app de Wala y empieza<br />
                 a crear regalos con verdadero significado.<br />
                 Al completar tus fechas importantes,<br />
@@ -794,7 +873,7 @@ const NuevosUsuariosPage = () => {
           <div className="download-section">
             <a href="#" target="_blank" rel="noopener noreferrer" className="download-img-wrapper">
               <img
-                src={`${process.env.PUBLIC_URL}/diseno/dfdf.png`}
+                src={`${process.env.PUBLIC_URL}/diseno/descarga.png`}
                 alt="Descarga la App"
                 style={{ width: '100%', height: 'auto', cursor: 'pointer', objectFit: 'contain' }}
               />
@@ -816,7 +895,8 @@ const NuevosUsuariosPage = () => {
               margin: 0,
               color: '#000000',
               fontWeight: 'bold',
-              textAlign: 'center'
+              textAlign: 'center',
+              fontFamily: 'Arial, sans-serif'
             }}>
               Ellos ya están Regalando <br />
               <span className="banner-line2">
@@ -847,74 +927,77 @@ const NuevosUsuariosPage = () => {
                 &#10094;
               </div>
 
-              {/* Tarjetas Visibles (3 a la vez) */}
+              {/* Tarjetas Visibles Animadas */}
               <div style={{
-                display: 'flex',
-                gap: '15px',
                 width: '100%',
-                justifyContent: 'center',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                padding: '10px 0' /* Para no cortar la sombra */
               }}>
-                {[0, 1, 2].map((offset) => {
-                  const reviewIndex = (reviewsSlideIndex + offset) % reviewsData.length;
-                  const review = reviewsData[reviewIndex];
-                  return (
-                    <div key={review.id + '-' + offset} className="review-card" style={{
-                      backgroundColor: '#ffffff',
-                      borderRadius: '5px',
-                      border: '2px solid #FF8B6F', /* Borde del color principal */
-                      flex: '1 1 30%', /* Garantiza que siempre quepan 3 */
-                      minWidth: '0', /* Quitamos el límite para pantallas pequeñas */
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }}>
-                      {/* Zona Superior: Fondo del color principal */}
-                      <div className="review-img-wrapper" style={{
-                        width: '100%',
+                <div style={{
+                  display: 'flex',
+                  gap: '15px',
+                  width: '100%',
+                  transition: isTransitioning ? 'transform 0.5s ease-in-out' : 'none',
+                  transform: `translateX(calc(-${reviewsSlideIndex * 33.333333}% - ${reviewsSlideIndex * 5}px))`
+                }}>
+                  {[...reviewsData, ...reviewsData, ...reviewsData].map((review, index) => {
+                    return (
+                      <div key={review.id + '-' + index} className="review-card" style={{
                         backgroundColor: '#ffffff',
+                        borderRadius: '15px',
+                        border: '2px solid #FF8B6F',
+                        flex: '0 0 calc(33.333333% - 10px)', /* Ancho exacto para que entren 3 */
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column'
                       }}>
-                        <div className="review-img" style={{
+                        {/* Zona Superior: Fondo del color principal */}
+                        <div className="review-img-wrapper" style={{
                           width: '100%',
-                          backgroundColor: '#FF8B6F',
-                          backgroundImage: `url('${review.image}')`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          borderRadius: '4px',
-                          boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                          marginBottom: '-5px',
-                        }} />
-                      </div>
-
-                      {/* Zona de Texto (5 partes) */}
-                      <div className="review-text-zone" style={{ color: '#000000', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                        {/* Partes 1 y 2: Lugar y Fecha */}
-                        <div className="review-meta" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
-                          <span>{review.location}</span>
-                          <span>{review.date}</span>
+                          backgroundColor: '#ffffff',
+                        }}>
+                          <div className="review-img" style={{
+                            width: '100%',
+                            backgroundColor: '#FF8B6F',
+                            backgroundImage: `url('${review.image}')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            borderRadius: '15px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                            marginBottom: '-5px',
+                          }} />
                         </div>
 
-                        {/* Parte 3: Título */}
-                        <h3 className="review-title" style={{ margin: 0, fontWeight: '900', textAlign: 'center' }}>
-                          {review.title}
-                        </h3>
+                        {/* Zona de Texto (5 partes) */}
+                        <div className="review-text-zone" style={{ color: '#000000', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                          {/* Partes 1 y 2: Lugar y Fecha */}
+                          <div className="review-meta" style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Arial, sans-serif' }}>
+                            <span>{review.location}</span>
+                            <span>{review.date}</span>
+                          </div>
 
-                        {/* Parte 4: Reseña */}
-                        <p className="review-desc" style={{ margin: 0, textAlign: 'center' }}>
-                          {review.review}
-                        </p>
+                          {/* Parte 3: Título */}
+                          <h3 className="review-title" style={{ margin: 0, fontWeight: '900', textAlign: 'center' }}>
+                            {review.title}
+                          </h3>
 
-                        {/* Parte 5: Estrellas */}
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', marginTop: 'auto' }}>
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star key={star} className="review-star" fill="#f1a257ff" color="#f1a257ff" />
-                          ))}
+                          {/* Parte 4: Reseña */}
+                          <p className="review-desc" style={{ margin: 0, textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
+                            {review.review}
+                          </p>
+
+                          {/* Parte 5: Estrellas */}
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', marginTop: 'auto' }}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star key={star} className="review-star" fill="#f1a257ff" color="#f1a257ff" />
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Flecha Derecha */}
@@ -933,7 +1016,7 @@ const NuevosUsuariosPage = () => {
             marginTop: '1rem',
             marginBottom: '2rem'
           }}>
-            <h2 className="enc-main-title">
+            <h2 className="enc-main-title" style={{ fontFamily: 'Arial, sans-serif' }}>
               ¡ENCUÉNTRANOS!
             </h2>
 
@@ -956,7 +1039,7 @@ const NuevosUsuariosPage = () => {
                       className="enc-white-icon"
                     />
                     {/* Texto */}
-                    <span className="enc-white-text">
+                    <span className="enc-white-text" style={{ fontFamily: 'Arial, sans-serif' }}>
                       Visita nuestra Fisica de:
                     </span>
                   </div>
@@ -971,7 +1054,7 @@ const NuevosUsuariosPage = () => {
                     </div>
                     {/* Segunda subdivision derecha inferior (70%) */}
                     <div className="enc-sub-der">
-                      <span className="enc-horario">
+                      <span className="enc-horario" style={{ fontFamily: 'Arial, sans-serif' }}>
                         Lunes a Viernes 9am a 6pm
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'center', gap: '5px', marginLeft: '10px' }}>
@@ -1020,6 +1103,22 @@ const NuevosUsuariosPage = () => {
                 />
               </div>
             </div>
+          </div>
+
+          {/* UNDÉCIMO BLOQUE: TÉRMINOS Y CONDICIONES */}
+          <div className="terms-container" style={{ fontFamily: 'Arial, sans-serif' }}>
+            <h4 className="terms-title">Términos y Condiciones</h4>
+            <p className="terms-text">
+              El uso de esta aplicación y sitio web está sujeto a los presentes Términos y Condiciones.
+              Al acceder o utilizar nuestros servicios, usted acepta estar sujeto a estas políticas.
+              Nos reservamos el derecho de modificar, actualizar o cambiar cualquier parte de estos términos
+              sin previo aviso. Es responsabilidad del usuario revisar periódicamente esta sección para
+              estar al tanto de posibles cambios. Todas las promociones y ofertas están sujetas a
+              disponibilidad. Las imágenes presentadas son referenciales.
+            </p>
+            <p className="terms-copy">
+              &copy; {new Date().getFullYear()} Wala. Todos los derechos reservados.
+            </p>
           </div>
 
         </div>
