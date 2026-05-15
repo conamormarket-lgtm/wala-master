@@ -224,6 +224,28 @@ const NuevosUsuariosPage = () => {
           font-size: 1.25rem;
         }
 
+        /* --- CLASES RESPONSIVAS PARA IMAGEN DE DESCARGA (PC por defecto) --- */
+        .download-img-wrapper {
+          display: inline-block;
+          width: 100%;
+          max-width: 600px; /* 👈 Tamaño aún más grande para PC (Ajustado) */
+          transition: transform 0.2s ease;
+        }
+        .download-img-wrapper:hover {
+          transform: scale(1.05); /* Pequeño efecto al pasar el mouse en PC */
+        }
+
+        /* --- CONTENEDOR SÉPTIMO BLOQUE (PC) --- */
+        .download-section {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 0 1rem;
+          margin-top: -34rem; /* 👈 Margen ajustado para PC que querías (-17rem) */
+          margin-bottom: -10.5rem; /* 👈 Margen ajustado para PC que querías (-12rem) */
+        }
+
         /* --- CLASES SEXTO BLOQUE TEXTOS RESPONSIVOS --- */
         .kapi-text-1 {
           font-size: 1.2rem;
@@ -257,20 +279,32 @@ const NuevosUsuariosPage = () => {
         .review-star { width: 16px !important; height: 16px !important; }
 
         /* --- CLASES DÉCIMO BLOQUE --- */
-        .enc-container { display: flex; width: 100%; align-items: center; justify-content: flex-start; overflow: hidden; }
-        .enc-banner { width: 80%; aspect-ratio: 4 / 1.1; flex-shrink: 0; background-color: #FF8B6F; padding: 0.4rem; border-top-right-radius: 10px; border-bottom-right-radius: 10px; display: flex; color: black; }
+        .enc-container { display: flex; width: 100%; align-items: center; justify-content: flex-start; overflow: visible; position: relative; }
+        .enc-banner { width: 80%; aspect-ratio: 4 / 1.1; flex-shrink: 0; background-color: #FF8B6F; padding: 0.8rem; border-top-right-radius: 18px; border-bottom-right-radius: 18px; display: flex; color: black; }
         .enc-izq { flex: 1; min-width: 0; display: flex; flex-direction: column; }
         .enc-der { flex: 1; min-width: 0; display: flex; padding: 0.1rem; }
-        .enc-kapi-container { width: 35%; flex-shrink: 0; margin-left: -30px; display: flex; justify-content: flex-start; padding-left: 1rem; z-index: 2; }
-        .enc-kapi-img { max-width: 100%; max-height: 250px; object-fit: contain; }
+        
+        /* EDITA AQUÍ PARA MOVER Y CAMBIAR DE TAMAÑO A KAPI EN PC */
+        .enc-kapi-container { 
+          position: absolute; 
+          right: 5%; /* 👈 Posición horizontal: juega con este valor (-5%, 0%, 10px, etc.) */
+          bottom: -7px; /* 👈 Posición vertical: juega con este valor (-20px, 10px, etc.) */
+          width: 16%; /* 👈 Ancho del contenedor: juega con este valor para hacer a kapi más grande o pequeño */
+          display: flex; justify-content: center; z-index: 2; pointer-events: none; 
+        }
+        .enc-kapi-img { width: 100%; max-width: 400px; height: auto; object-fit: contain; }
         .enc-main-title { font-size: 1.2rem; font-weight: 900; color: #000; text-align: center; }
         .enc-white-text { font-size: 0.8rem; font-weight: 900; color: #000; }
         .enc-white-icon { height: 25px; margin: 0 10px; }
-        .enc-no-llegues { font-size: 1.1rem; font-weight: 900; color: #000; text-align: center; }
-        .enc-horario { font-size: 0.7rem; font-weight: 900; color: #000; margin-bottom: 0.5rem; text-align: center; }
-        .enc-caja-img { flex: 1; height: 100px; background-color: #f5a7a7ff; border-radius: 5px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .enc-no-llegues { font-size: 2rem; font-weight: 900; color: #000; text-align: center; line-height: 1.1; }
+        .enc-horario { font-size: 1.3rem; font-weight: 900; color: #000; margin-bottom: 0.5rem; text-align: center; }
+        .enc-caja-img { flex: 1; height: 230px; background-color: #f5a7a7ff; border-radius: 5px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         .enc-btn { width: 25px !important; height: 25px !important; font-size: 12px !important; min-width: 25px !important; }
-        .enc-guiones { width: 40%; overflow: hidden; white-space: nowrap; color: #FF8B6F; font-weight: bold; letter-spacing: 3px; }
+        .enc-guiones { width: 65%; overflow: hidden; white-space: nowrap; color: #FF8B6F; font-weight: bold; letter-spacing: 3px; }
+        .enc-sub-container { flex: 8; padding: 0.1rem; display: flex; align-items: center; justify-content: center; }
+        .enc-sub-izq { flex: 3; padding: 0.2rem; display: flex; align-items: center; justify-content: center; }
+        .enc-sub-der { flex: 7; padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .enc-franja-blanca { flex: 1; background-color: white; width: 90%; max-width: 100%; box-sizing: border-box; overflow: hidden; border-top-right-radius: 50px; border-bottom-right-radius: 50px; display: flex; align-items: center; margin-left: -0.4rem; padding-left: 0.4rem; padding-right: 1rem; z-index: 1; }
 
         /* ESTILO MÓVIL: Ajustes generales */
         @media (max-width: 768px) {
@@ -322,6 +356,17 @@ const NuevosUsuariosPage = () => {
             font-size: 0.95rem; /* Letra ajustada para móvil */
           }
 
+          /* --- IMAGEN DE DESCARGA MÓVIL --- */
+          .download-img-wrapper {
+            max-width: 300px !important; /* 👈 Tamaño fijo para móvil */
+          }
+
+          /* --- CONTENEDOR SÉPTIMO BLOQUE (MÓVIL) --- */
+          .download-section {
+            margin-top: -16rem; /* 👈 Margen original protegido para Móvil */
+            margin-bottom: 1rem; /* 👈 Margen original protegido para Móvil */
+          }
+
           /* --- SEXTO BLOQUE (KAPI COLLAGE) MÓVIL --- */
           .kapi-text-1 { font-size: 0.63rem; }
           .kapi-text-2 { font-size: 0.7rem; }
@@ -341,16 +386,21 @@ const NuevosUsuariosPage = () => {
 
           /* --- DÉCIMO BLOQUE MÓVIL --- */
           .enc-container { flex-direction: column !important; overflow: visible !important; }
-          .enc-banner { width: 95% !important; aspect-ratio: auto !important; flex-direction: column !important; border-radius: 10px !important; padding: 1rem !important; }
-          .enc-der { flex: none !important; width: 60% !important; min-height: 180px !important; margin-top: 0.5rem !important; }
-          .enc-kapi-container { width: 40% !important; margin-left: 0 !important; justify-content: center !important; padding-left: 0 !important; margin-top: -140px !important; align-self: flex-end !important; z-index: 5 !important; }
-          .enc-kapi-img { max-height: 130px !important; }
+          .enc-banner { width: 95% !important; aspect-ratio: auto !important; flex-direction: column !important; border-radius: 18px !important; padding: 1rem !important; }
+          .enc-franja-blanca { width: 40% !important; border-radius: 50px !important; margin-bottom: 0.5rem !important; } /* 👈 Juega con la franja en celular aquí */
+          .enc-sub-container { flex-direction: column !important; margin-top: 1rem; }
+          .enc-sub-izq { width: 100% !important; padding: 0 !important; margin-bottom: 0.5rem; text-align: center !important; }
+          .enc-sub-der { width: 100% !important; padding: 0 !important; }
+          .enc-der { flex: none !important; width: 100% !important; min-height: 200px !important; margin-top: 1rem !important; height: 100px !important; }
+          .enc-kapi-container { position: relative !important; right: auto !important; bottom: auto !important; width: 40% !important; margin-left: 0 !important; justify-content: center !important; padding-left: 0 !important; margin-top: -140px !important; align-self: flex-end !important; z-index: 5 !important; }
+          .enc-kapi-img { max-height: 130px !important; max-width: 100% !important; }
+          .hide-mobile { display: none !important; }
           .enc-main-title { font-size: 0.8rem !important; }
           .enc-white-text { font-size: 0.5rem !important; }
           .enc-white-icon { height: 15px !important; margin: 0 5px !important; }
-          .enc-no-llegues { font-size: 0.8rem !important; }
-          .enc-horario { font-size: 0.45rem !important; margin-bottom: 0.1rem !important; }
-          .enc-caja-img { height: 70px !important; }
+          .enc-no-llegues { font-size: 1.4rem !important; }
+          .enc-horario { font-size: 1.1rem !important; margin-bottom: 0.1rem !important; }
+          .enc-caja-img { height: 150px !important; }
           .enc-btn { width: 15px !important; height: 15px !important; font-size: 8px !important; min-width: 15px !important; }
           .enc-guiones { width: 0% !important; }
 
@@ -739,50 +789,20 @@ const NuevosUsuariosPage = () => {
 
           </div>
 
-          {/* SÉPTIMO BLOQUE: BOTÓN DE DESCARGA */}
-          <div style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginTop: '-2.2rem', /* 👈 Juega con este valor (-2rem, -5rem, etc.) para acercarlo/alejarlo del bloque superior */
-            marginBottom: '2rem',
-            padding: '0 1rem'
-          }}>
-            <div className="discover-btn" style={{
-              backgroundColor: '#FF8B6F',
-              color: '#ffffff',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingTop: '12px',
-              paddingBottom: '10px',
-              gap: '10px',
-              fontFamily: 'Arial, Helvetica, sans-serif',
-              fontWeight: 'bold',
-              textTransform: 'uppercase',
-              boxShadow: '0 6px 20px rgba(217,135,115,0.4)'
-            }}>
-              DESCARGA LA APP
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24" height="24"
-                viewBox="0 0 24 24"
-                fill="none" stroke="currentColor"
-                strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" x2="12" y1="15" y2="3" />
-              </svg>
-            </div>
+          {/* SÉPTIMO BLOQUE: BOTÓN DE DESCARGA (REEMPLAZADO POR IMAGEN) */}
+          <div className="download-section">
+            <a href="#" target="_blank" rel="noopener noreferrer" className="download-img-wrapper">
+              <img
+                src={`${process.env.PUBLIC_URL}/diseno/dfdf.png`}
+                alt="Descarga la App"
+                style={{ width: '100%', height: 'auto', cursor: 'pointer', objectFit: 'contain' }}
+              />
+            </a>
           </div>
 
           {/* OCTAVO BLOQUE: FRANJA DE TEXTO */}
           <div style={{
-            marginTop: '-0.5rem',
+            marginTop: '-13rem',
             marginBottom: '1rem',
             width: '100%', /* 100% de la pantalla */
             backgroundColor: 'rgba(217, 135, 115, 0.66)', /* Fondo Salmón con Opacidad */
@@ -920,10 +940,10 @@ const NuevosUsuariosPage = () => {
               {/* Franja */}
               <div className="enc-banner">
 
-                {/* PRIMERA PARTE (Izquierda) */}
+                {/* PRIMERA PARTE (Izquierda) - COMBINADO */}
                 <div className="enc-izq">
-                  {/* División 1 en vertical (Franja Blanca - 20%) */}
-                  <div style={{ flex: 2, backgroundColor: 'white', width: '90%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden', borderTopRightRadius: '50px', borderBottomRightRadius: '50px', display: 'flex', alignItems: 'center', marginLeft: '-0.4rem', paddingLeft: '0.4rem', paddingRight: '1rem', zIndex: 1 }}>
+                  {/* División 1 en vertical (Franja Blanca - más delgada) */}
+                  <div className="enc-franja-blanca">
                     {/* Guiones (40%) */}
                     <div className="enc-guiones">
                       - - - - - - - - - - - - - - - - - - - - -
@@ -941,16 +961,19 @@ const NuevosUsuariosPage = () => {
                   </div>
 
                   {/* División 2 en vertical (80%) */}
-                  <div style={{ flex: 8, padding: '0.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span className="enc-no-llegues">
-                      ¡No llegues <br /> tarde!...
-                    </span>
-                    {/* División 3 en vertical */}
-                    <div style={{ flex: 1, padding: '0.2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="enc-sub-container">
+                    {/* Primera subdivision izquierda inferior (20%) */}
+                    <div className="enc-sub-izq">
+                      <span className="enc-no-llegues">
+                        ¡No llegues <br className="hide-mobile" /> tarde!...
+                      </span>
+                    </div>
+                    {/* Segunda subdivision derecha inferior (70%) */}
+                    <div className="enc-sub-der">
                       <span className="enc-horario">
                         Lunes a Viernes 9am a 6pm
                       </span>
-                      <div style={{ display: 'flex', alignItems: 'center', width: '70%', justifyContent: 'center', gap: '5px', marginLeft: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'center', gap: '5px', marginLeft: '10px' }}>
                         {/* Botón Izquierdo */}
                         <div className="vs-arrow-btn enc-btn" style={{ position: 'static', transform: 'none' }}>
                           &#10094;
@@ -970,14 +993,14 @@ const NuevosUsuariosPage = () => {
                   </div>
                 </div>
 
-                {/* SEGUNDA PARTE (Derecha) */}
+                {/* SEGUNDA PARTE (Derecha) - VISTA DEL MAPA */}
                 <div className="enc-der">
                   {/* Google Maps Embed */}
                   <iframe
                     src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d975.8504224873767!2d-77.06130106375515!3d-11.94666653232308!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9105d1f845a69fad%3A0x9087d0a48380741b!2sCon%20Amor%20Market!5e0!3m2!1ses-419!2spe!4v1778832509730!5m2!1ses-419!2spe"
                     width="100%"
                     height="100%"
-                    style={{ border: 0, borderRadius: '8px', minHeight: '100px', boxShadow: '0 0 8px rgba(0,0,0,0.4)' }}
+                    style={{ border: 0, borderRadius: '18px', minHeight: '100px', boxShadow: '0 0 8px rgba(0,0,0,0.4)' }}
                     allowFullScreen=""
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
@@ -990,7 +1013,7 @@ const NuevosUsuariosPage = () => {
               {/* Imagen de Kapi */}
               <div className="enc-kapi-container">
                 <img
-                  src={`${process.env.PUBLIC_URL}/diseno/kapi.png`}
+                  src={`${process.env.PUBLIC_URL}/diseno/ya.png`}
                   alt="Kapi mascot"
                   className="enc-kapi-img"
                 />
