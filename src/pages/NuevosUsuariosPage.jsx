@@ -1,8 +1,28 @@
 import React from 'react';
+import { Star } from 'lucide-react';
 import './NuevosUsuariosPage.module.css';
 
 const NuevosUsuariosPage = () => {
   const [vsSlideIndex, setVsSlideIndex] = React.useState(0);
+  const [reviewsSlideIndex, setReviewsSlideIndex] = React.useState(0);
+
+  // DATOS PARA LAS TARJETAS DE RESEÑAS
+  const reviewsData = [
+    { id: 1, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.jpg`, location: 'Lima, PE', date: '12/05/2026', title: 'El mejor regalo', review: 'Mi novia lloró de la emoción cuando vio nuestra foto enmarcada. ¡Gracias!' },
+    { id: 2, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.png`, location: 'Arequipa, PE', date: '08/05/2026', title: 'Calidad Premium', review: 'La madera del marco se siente muy fina y la impresión fotográfica es espectacular.' },
+    { id: 3, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.png`, location: 'Cusco, PE', date: '01/05/2026', title: 'Llegó rapidísimo', review: 'Lo pedí un martes y el jueves ya estaba en la puerta de mi casa. Súper recomendados.' },
+    { id: 4, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.jpg`, location: 'Trujillo, PE', date: '25/04/2026', title: 'Detalle único', review: 'Me encantó poder personalizar la dedicatoria. Hizo que el regalo fuera mucho más especial.' },
+    { id: 5, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.png`, location: 'Piura, PE', date: '15/04/2026', title: '100% Confiable', review: 'Tenía dudas por ser mi primera compra, pero el empaque protegió súper bien el cuadro.' },
+    { id: 6, image: `${process.env.PUBLIC_URL}/diseno/PANTALLA.jpg`, location: 'Ica, PE', date: '02/04/2026', title: 'A mi mamá le encantó', review: 'Le regalé un cuadro con fotos de los nietos por su cumpleaños y quedó fascinada.' }
+  ];
+
+  const handleNextReview = () => {
+    setReviewsSlideIndex((prev) => (prev + 1) % reviewsData.length);
+  };
+
+  const handlePrevReview = () => {
+    setReviewsSlideIndex((prev) => (prev - 1 + reviewsData.length) % reviewsData.length);
+  };
 
   // ARREGLO DE PARES DE IMÁGENES PARA EL BLOQUE VS (4 imágenes = 2 pares)
   const vsSlidesData = [
@@ -101,25 +121,25 @@ const NuevosUsuariosPage = () => {
           object-fit: contain;
         }
 
-        /* --- CLASES PARA EL BLOQUE VS --- */
+        /* --- CLASES PARA EL BLOQUE VS (Y FLECHAS DE RESEÑAS) --- */
         .vs-arrow-btn {
-          width: 45px;
-          height: 45px;
+          width: 35px; /* 👈 MODIFICA EL TAMAÑO DE LAS FLECHAS EN PC (ancho) */
+          height: 35px; /* 👈 MODIFICA EL TAMAÑO DE LAS FLECHAS EN PC (alto) */
           border-radius: 50%;
           background-color: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #d98773;
+          color: #FF8B6F;
           font-weight: bold;
-          font-size: 1.2rem;
+          font-size: 1rem; /* 👈 MODIFICA EL TAMAÑO DEL ÍCONO DE FLECHA EN PC */
           box-shadow: 0 4px 10px rgba(0,0,0,0.15);
           cursor: pointer;
           flex-shrink: 0;
         }
 
         .vs-box {
-          background-color: #d98773;
+          background-color: #FF8B6F;
           border: 6px solid #ffffff;
           border-radius: 20px;
           width: 45%; /* Asegura que quepan 2 siempre */
@@ -187,9 +207,8 @@ const NuevosUsuariosPage = () => {
           text-shadow: 0px 2px 4px rgba(0,0,0,0.2);
         }
         .text-block-title {
-          font-size: 2rem; /* Título Grande para PC */
+          font-size: 2.1rem; /* Título Grande para PC (Ajustado) */
           color: #000000;
-          -webkit-text-stroke: 1px #000000;
         }
 
         /* --- CLASES RESPONSIVAS PARA EL QUINTO BLOQUE (PC por defecto) --- */
@@ -205,14 +224,53 @@ const NuevosUsuariosPage = () => {
           font-size: 1.25rem;
         }
 
+        /* --- CLASES SEXTO BLOQUE TEXTOS RESPONSIVOS --- */
+        .kapi-text-1 {
+          font-size: 1.2rem;
+        }
+        .kapi-text-2 {
+          font-size: 1.3rem;
+        }
+        .kapi-text-3 {
+          font-size: 1.3rem;
+        }
+
         /* --- CLASES SEXTO BLOQUE (COLLAGE KAPI) --- */
         .kapi-collage-container {
           position: relative;
           width: 100%;
           max-width: 1000px;
           aspect-ratio: 1000 / 600; /* 👈 Esto hace que el lienzo actúe como una imagen y se reduzca proporcionalmente en celular */
-          margin: 0 auto 4rem auto;
+          margin: 0 auto 0 auto;
         }
+
+        /* --- CLASES RESPONSIVAS PARA EL OCTAVO Y NOVENO BLOQUE (PC por defecto) --- */
+        .banner-line1 { font-size: 1.8rem; line-height: 1.3; }
+        .banner-line2 { font-size: 2.2rem; }
+        .review-card { max-width: 300px; }
+        .review-img-wrapper { padding: 10px; }
+        .review-img { height: 160px; }
+        .review-text-zone { padding: 1rem; gap: 0.5rem; }
+        .review-meta { font-size: 0.8rem; }
+        .review-title { font-size: 1.2rem; }
+        .review-desc { font-size: 0.9rem; line-height: 1.4; }
+        .review-star { width: 16px !important; height: 16px !important; }
+
+        /* --- CLASES DÉCIMO BLOQUE --- */
+        .enc-container { display: flex; width: 100%; align-items: center; justify-content: flex-start; overflow: hidden; }
+        .enc-banner { width: 80%; aspect-ratio: 4 / 1.1; flex-shrink: 0; background-color: #FF8B6F; padding: 0.4rem; border-top-right-radius: 10px; border-bottom-right-radius: 10px; display: flex; color: black; }
+        .enc-izq { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .enc-der { flex: 1; min-width: 0; display: flex; padding: 0.1rem; }
+        .enc-kapi-container { width: 35%; flex-shrink: 0; margin-left: -30px; display: flex; justify-content: flex-start; padding-left: 1rem; z-index: 2; }
+        .enc-kapi-img { max-width: 100%; max-height: 250px; object-fit: contain; }
+        .enc-main-title { font-size: 1.2rem; font-weight: 900; color: #000; text-align: center; }
+        .enc-white-text { font-size: 0.8rem; font-weight: 900; color: #000; }
+        .enc-white-icon { height: 25px; margin: 0 10px; }
+        .enc-no-llegues { font-size: 1.1rem; font-weight: 900; color: #000; text-align: center; }
+        .enc-horario { font-size: 0.7rem; font-weight: 900; color: #000; margin-bottom: 0.5rem; text-align: center; }
+        .enc-caja-img { flex: 1; height: 100px; background-color: #f5a7a7ff; border-radius: 5px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .enc-btn { width: 25px !important; height: 25px !important; font-size: 12px !important; min-width: 25px !important; }
+        .enc-guiones { width: 40%; overflow: hidden; white-space: nowrap; color: #FF8B6F; font-weight: bold; letter-spacing: 3px; }
 
         /* ESTILO MÓVIL: Ajustes generales */
         @media (max-width: 768px) {
@@ -239,9 +297,9 @@ const NuevosUsuariosPage = () => {
           }
 
           .vs-arrow-btn {
-            width: 30px; /* Flechas más chicas en móvil */
-            height: 30px;
-            font-size: 0.9rem;
+            width: 25px; /* 👈 MODIFICA EL TAMAÑO DE LAS FLECHAS EN MÓVIL (ancho) */
+            height: 25px; /* 👈 MODIFICA EL TAMAÑO DE LAS FLECHAS EN MÓVIL (alto) */
+            font-size: 0.8rem; /* 👈 MODIFICA EL TAMAÑO DEL ÍCONO DE FLECHA EN MÓVIL */
           }
           
           /* --- TERCER BLOQUE TAMAÑOS REDUCIDOS PARA MÓVIL --- */
@@ -249,7 +307,7 @@ const NuevosUsuariosPage = () => {
             font-size: 0.75rem; /* El tamaño general que pusiste en móvil */
           }
           .text-block-title {
-            font-size: 1.1rem; /* El tamaño de la primera línea en móvil */
+            font-size: 1.2rem; /* El tamaño de la primera línea en móvil (Ajustado) */
           }
 
           /* --- QUINTO BLOQUE TAMAÑOS REDUCIDOS PARA MÓVIL --- */
@@ -265,6 +323,37 @@ const NuevosUsuariosPage = () => {
           }
 
           /* --- SEXTO BLOQUE (KAPI COLLAGE) MÓVIL --- */
+          .kapi-text-1 { font-size: 0.63rem; }
+          .kapi-text-2 { font-size: 0.7rem; }
+          .kapi-text-3 { font-size: 0.63rem; }
+          
+          /* --- OCTAVO Y NOVENO BLOQUE PARA MÓVIL --- */
+          .banner-line1 { font-size: 0.9rem; line-height: 1.2; }
+          .banner-line2 { font-size: 1.1rem; }
+          .review-card { max-width: 200px; }
+          .review-img-wrapper { padding: 2px; }
+          .review-img { height: 50px; }
+          .review-text-zone { padding: 0.3rem; gap: 0.05rem; }
+          .review-meta { font-size: 0.2rem; }
+          .review-title { font-size: 0.4rem; }
+          .review-desc { font-size: 0.32rem; line-height: 1; }
+          .review-star { width: 6px !important; height: 6px !important; }
+
+          /* --- DÉCIMO BLOQUE MÓVIL --- */
+          .enc-container { flex-direction: column !important; overflow: visible !important; }
+          .enc-banner { width: 95% !important; aspect-ratio: auto !important; flex-direction: column !important; border-radius: 10px !important; padding: 1rem !important; }
+          .enc-der { flex: none !important; width: 60% !important; min-height: 180px !important; margin-top: 0.5rem !important; }
+          .enc-kapi-container { width: 40% !important; margin-left: 0 !important; justify-content: center !important; padding-left: 0 !important; margin-top: -140px !important; align-self: flex-end !important; z-index: 5 !important; }
+          .enc-kapi-img { max-height: 130px !important; }
+          .enc-main-title { font-size: 0.8rem !important; }
+          .enc-white-text { font-size: 0.5rem !important; }
+          .enc-white-icon { height: 15px !important; margin: 0 5px !important; }
+          .enc-no-llegues { font-size: 0.8rem !important; }
+          .enc-horario { font-size: 0.45rem !important; margin-bottom: 0.1rem !important; }
+          .enc-caja-img { height: 70px !important; }
+          .enc-btn { width: 15px !important; height: 15px !important; font-size: 8px !important; min-width: 15px !important; }
+          .enc-guiones { width: 0% !important; }
+
           .kapi-text-box-mobile {
             /* En móvil, podemos hacer que el texto del collage sea un poco más chico para que no desborde */
           }
@@ -406,11 +495,11 @@ const NuevosUsuariosPage = () => {
             justifyContent: 'center',
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
           }}>
-            <p className="text-block-general">
+            <p className="text-block-general" style={{ lineHeight: '1.2' }}>
               <strong className="text-block-title"><span style={{ fontFamily: 'Georgia, serif' }}>¿</span>Por qué regalar algo personalizado?</strong> <br />
-              Por que hay fechas que merecen más que un <strong style={{ color: '#000000', WebkitTextStroke: '0.8px #000000' }}>regalo</strong> <br />
-              de último minuto. Un detalle <strong style={{ color: '#000000', WebkitTextStroke: '0.8px #000000' }}>personalizado</strong> se usa, <br />
-              se abraza y <strong style={{ color: '#000000', WebkitTextStroke: '0.8px #000000' }}>se guarda para siempre</strong>.
+              Por que hay fechas que merecen más que un <strong style={{ color: '#000000' }}>regalo</strong> <br />
+              de último minuto. Un detalle <strong style={{ color: '#000000' }}>personalizado</strong> se usa, <br />
+              se abraza y <strong style={{ color: '#000000' }}>se guarda para siempre</strong>.
             </p>
           </div>
 
@@ -476,14 +565,14 @@ const NuevosUsuariosPage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#d98773',
+                  color: '#FF8B6F',
                   fontWeight: 'bold',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
                   zIndex: 10
                 }}>
                   <span style={{
                     fontSize: '1.3rem', /* Letra más grande */
-                    WebkitTextStroke: '1px #d98773', /* Lo hace más grueso de forma artificial */
+                    WebkitTextStroke: '1px #FF8B6F', /* Lo hace más grueso de forma artificial */
                     marginTop: '4px' /* Lo empuja un poco hacia abajo para centrarlo visualmente */
                   }}>
                     VS
@@ -512,7 +601,7 @@ const NuevosUsuariosPage = () => {
 
             {/* Botón Descubre la diferencia (Responsivo) */}
             <div className="discover-btn" style={{
-              backgroundColor: '#d98773',
+              backgroundColor: '#FF8B6F',
               color: '#ffffff',
               borderRadius: '50px',
               boxShadow: '0 6px 20px rgba(217,135,115,0.4)',
@@ -532,7 +621,7 @@ const NuevosUsuariosPage = () => {
             flexDirection: 'column',
             alignItems: 'center',
             gap: '2rem',
-            marginBottom: '4rem'
+            marginBottom: '0.2rem'
           }}>
 
             {/* Título Estilo Píldora Gris (Responsivo y Negrita Forzada) */}
@@ -560,7 +649,7 @@ const NuevosUsuariosPage = () => {
                   El Array(10).fill(...).flat() las multiplicará mágicamente para crear una cinta infinita,
                   así pongas 1 sola imagen, llenará la pantalla y dará vueltas sin parar.
                 */}
-                {Array(10).fill([
+                {Array(20).fill([
                   'logo_1.png',
                   // Puedes agregar 'logo_2.png', 'logo_3.png' separándolos por comas
                 ]).flat().map((imagen, index) => (
@@ -598,7 +687,7 @@ const NuevosUsuariosPage = () => {
             {/* 1. Componente: kapi.png (Fondo Izquierdo) */}
             <div style={{
               position: 'absolute',
-              top: '1%',   /* 👈 JUEGA CON ESTE VALOR (arriba/abajo) */
+              top: '0%',   /* 👈 JUEGA CON ESTE VALOR (arriba/abajo) */
               left: '2%',  /* 👈 JUEGA CON ESTE VALOR (izquierda/derecha) */
               width: '85%', /* 👈 TAMAÑO DE LA IMAGEN */
               zIndex: 1    /* 👈 ORDEN DE CAPAS (1 está más al fondo) */
@@ -613,25 +702,32 @@ const NuevosUsuariosPage = () => {
             {/* 2. Componente: Texto (Frente Superior Centro) */}
             <div className="kapi-text-box-mobile" style={{
               position: 'absolute',
-              top: '1%',  /* 👈 JUEGA CON ESTE VALOR */
-              left: '45%', /* 👈 JUEGA CON ESTE VALOR */
-              width: '50%',
+              top: '5%',  /* 👈 JUEGA CON ESTE VALOR */
+              left: '46%', /* 👈 JUEGA CON ESTE VALOR */
+              width: '60%',
               zIndex: 3    /* 👈 ORDEN DE CAPAS (3 está hasta el frente) */
             }}>
-              <h3 className="text-block-title" style={{ textAlign: 'left', margin: '0 0 1rem 0' }}>
-                El toque perfecto
+              <h3 className="text-block-general kapi-text-1" style={{ textAlign: 'left', color: '#000000', margin: '0', lineHeight: '1.2' }}>
+                Toma la decisión de regalar diferente
               </h3>
-              <p className="text-block-general" style={{ textAlign: 'left', maxWidth: '100%' }}>
-                Este es un lienzo libre. Cambiando los porcentajes de "top" y "left" en el código puedes mover este texto libremente sobre Kapi y la otra imagen hasta lograr la superposición exacta que deseas.
+              <p className="text-block-general kapi-text-2" style={{ textAlign: 'left', maxWidth: '100%', color: '#FF8B6F', fontWeight: 'bold', margin: '0', lineHeight: '1.2' }}>
+                ¡Y llévate S/15 de regalos hoy mismo!
+              </p>
+              <p className="text-block-general kapi-text-3" style={{ textAlign: 'left', maxWidth: '100%', color: '#000000', margin: '0', lineHeight: '1.1' }}>
+                Descarga la app de Wala y empieza<br />
+                a crear regalos con verdadero significado.<br />
+                Al completar tus fechas importantes,<br />
+                recibirás S/.15 en KapiCoins como<br />
+                regalo de Bienvenida.
               </p>
             </div>
 
             {/* 3. Componente: 15 kapi.png (Frente Inferior Derecho) */}
             <div style={{
               position: 'absolute',
-              bottom: '0%', /* 👈 JUEGA CON ESTE VALOR (0% es pegado abajo) */
-              right: '50%',  /* 👈 JUEGA CON ESTE VALOR */
-              width: '40%',
+              bottom: '17%', /* 👈 JUEGA CON ESTE VALOR (0% es pegado abajo) */
+              right: '12%',  /* 👈 JUEGA CON ESTE VALOR */
+              width: '24%',
               zIndex: 2    /* 👈 ORDEN DE CAPAS (2 está en el medio de los 3) */
             }}>
               <img
@@ -641,6 +737,265 @@ const NuevosUsuariosPage = () => {
               />
             </div>
 
+          </div>
+
+          {/* SÉPTIMO BLOQUE: BOTÓN DE DESCARGA */}
+          <div style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginTop: '-2.2rem', /* 👈 Juega con este valor (-2rem, -5rem, etc.) para acercarlo/alejarlo del bloque superior */
+            marginBottom: '2rem',
+            padding: '0 1rem'
+          }}>
+            <div className="discover-btn" style={{
+              backgroundColor: '#FF8B6F',
+              color: '#ffffff',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingTop: '12px',
+              paddingBottom: '10px',
+              gap: '10px',
+              fontFamily: 'Arial, Helvetica, sans-serif',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              boxShadow: '0 6px 20px rgba(217,135,115,0.4)'
+            }}>
+              DESCARGA LA APP
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24" height="24"
+                viewBox="0 0 24 24"
+                fill="none" stroke="currentColor"
+                strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" x2="12" y1="15" y2="3" />
+              </svg>
+            </div>
+          </div>
+
+          {/* OCTAVO BLOQUE: FRANJA DE TEXTO */}
+          <div style={{
+            marginTop: '-0.5rem',
+            marginBottom: '1rem',
+            width: '100%', /* 100% de la pantalla */
+            backgroundColor: 'rgba(217, 135, 115, 0.66)', /* Fondo Salmón con Opacidad */
+            padding: '1rem 5%',
+            display: 'flex',
+            justifyContent: 'center',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          }}>
+            <h2 className="banner-line1" style={{
+              margin: 0,
+              color: '#000000',
+              fontWeight: 'bold',
+              textAlign: 'center'
+            }}>
+              Ellos ya están Regalando <br />
+              <span className="banner-line2">
+                Momentos inolvidables...
+              </span>
+            </h2>
+          </div>
+
+          {/* NOVENO BLOQUE: SLIDER DE TARJETAS */}
+          <div style={{
+            width: '100%',
+            maxWidth: '1000px',
+            padding: '0 1rem',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            position: 'relative'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '15px',
+              width: '100%'
+            }}>
+              {/* Flecha Izquierda */}
+              <div className="vs-arrow-btn" onClick={handlePrevReview}>
+                &#10094;
+              </div>
+
+              {/* Tarjetas Visibles (3 a la vez) */}
+              <div style={{
+                display: 'flex',
+                gap: '15px',
+                width: '100%',
+                justifyContent: 'center',
+                overflow: 'hidden'
+              }}>
+                {[0, 1, 2].map((offset) => {
+                  const reviewIndex = (reviewsSlideIndex + offset) % reviewsData.length;
+                  const review = reviewsData[reviewIndex];
+                  return (
+                    <div key={review.id + '-' + offset} className="review-card" style={{
+                      backgroundColor: '#ffffff',
+                      borderRadius: '5px',
+                      border: '2px solid #FF8B6F', /* Borde del color principal */
+                      flex: '1 1 30%', /* Garantiza que siempre quepan 3 */
+                      minWidth: '0', /* Quitamos el límite para pantallas pequeñas */
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }}>
+                      {/* Zona Superior: Fondo del color principal */}
+                      <div className="review-img-wrapper" style={{
+                        width: '100%',
+                        backgroundColor: '#ffffff',
+                      }}>
+                        <div className="review-img" style={{
+                          width: '100%',
+                          backgroundColor: '#FF8B6F',
+                          backgroundImage: `url('${review.image}')`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          borderRadius: '4px',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                          marginBottom: '-5px',
+                        }} />
+                      </div>
+
+                      {/* Zona de Texto (5 partes) */}
+                      <div className="review-text-zone" style={{ color: '#000000', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                        {/* Partes 1 y 2: Lugar y Fecha */}
+                        <div className="review-meta" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                          <span>{review.location}</span>
+                          <span>{review.date}</span>
+                        </div>
+
+                        {/* Parte 3: Título */}
+                        <h3 className="review-title" style={{ margin: 0, fontWeight: '900', textAlign: 'center' }}>
+                          {review.title}
+                        </h3>
+
+                        {/* Parte 4: Reseña */}
+                        <p className="review-desc" style={{ margin: 0, textAlign: 'center' }}>
+                          {review.review}
+                        </p>
+
+                        {/* Parte 5: Estrellas */}
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '2px', marginTop: 'auto' }}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star key={star} className="review-star" fill="#f1a257ff" color="#f1a257ff" />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Flecha Derecha */}
+              <div className="vs-arrow-btn" onClick={handleNextReview}>
+                &#10095;
+              </div>
+            </div>
+          </div>
+
+          {/* DÉCIMO BLOQUE: ¡ENCUÉNTRANOS! */}
+          <div style={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginTop: '1rem',
+            marginBottom: '2rem'
+          }}>
+            <h2 className="enc-main-title">
+              ¡ENCUÉNTRANOS!
+            </h2>
+
+            <div className="enc-container">
+              {/* Franja */}
+              <div className="enc-banner">
+
+                {/* PRIMERA PARTE (Izquierda) */}
+                <div className="enc-izq">
+                  {/* División 1 en vertical (Franja Blanca - 20%) */}
+                  <div style={{ flex: 2, backgroundColor: 'white', width: '90%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden', borderTopRightRadius: '50px', borderBottomRightRadius: '50px', display: 'flex', alignItems: 'center', marginLeft: '-0.4rem', paddingLeft: '0.4rem', paddingRight: '1rem', zIndex: 1 }}>
+                    {/* Guiones (40%) */}
+                    <div className="enc-guiones">
+                      - - - - - - - - - - - - - - - - - - - - -
+                    </div>
+                    {/* Ícono de Ubicación */}
+                    <img
+                      src={`${process.env.PUBLIC_URL}/diseno/ubicación.png`}
+                      alt="Ubicación"
+                      className="enc-white-icon"
+                    />
+                    {/* Texto */}
+                    <span className="enc-white-text">
+                      Visita nuestra Fisica de:
+                    </span>
+                  </div>
+
+                  {/* División 2 en vertical (80%) */}
+                  <div style={{ flex: 8, padding: '0.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="enc-no-llegues">
+                      ¡No llegues <br /> tarde!...
+                    </span>
+                    {/* División 3 en vertical */}
+                    <div style={{ flex: 1, padding: '0.2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="enc-horario">
+                        Lunes a Viernes 9am a 6pm
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', width: '70%', justifyContent: 'center', gap: '5px', marginLeft: '10px' }}>
+                        {/* Botón Izquierdo */}
+                        <div className="vs-arrow-btn enc-btn" style={{ position: 'static', transform: 'none' }}>
+                          &#10094;
+                        </div>
+
+                        {/* Caja de Imagen */}
+                        <div className="enc-caja-img">
+                          <span style={{ fontSize: '0.6rem', color: '#888', fontWeight: 'bold' }}>Imágen</span>
+                        </div>
+
+                        {/* Botón Derecho */}
+                        <div className="vs-arrow-btn enc-btn" style={{ position: 'static', transform: 'none' }}>
+                          &#10095;
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SEGUNDA PARTE (Derecha) */}
+                <div className="enc-der">
+                  {/* Google Maps Embed */}
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d975.8504224873767!2d-77.06130106375515!3d-11.94666653232308!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9105d1f845a69fad%3A0x9087d0a48380741b!2sCon%20Amor%20Market!5e0!3m2!1ses-419!2spe!4v1778832509730!5m2!1ses-419!2spe"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, borderRadius: '8px', minHeight: '100px', boxShadow: '0 0 8px rgba(0,0,0,0.4)' }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Ubicación Con Amor Market"
+                  ></iframe>
+                </div>
+
+              </div>
+
+              {/* Imagen de Kapi */}
+              <div className="enc-kapi-container">
+                <img
+                  src={`${process.env.PUBLIC_URL}/diseno/kapi.png`}
+                  alt="Kapi mascot"
+                  className="enc-kapi-img"
+                />
+              </div>
+            </div>
           </div>
 
         </div>
