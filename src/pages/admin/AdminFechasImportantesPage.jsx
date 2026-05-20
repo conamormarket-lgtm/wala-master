@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, doc, setDoc, deleteDoc, addDoc } from 'firebase/firestore';
-import { db } from '../../../services/firebase/config';
-import Button from '../../../components/common/Button';
+import { db } from '../../services/firebase/config';
+import Button from '../../components/common/Button';
 import styles from './AdminFechasImportantesPage.module.css';
 
 const AdminFechasImportantesPage = () => {
