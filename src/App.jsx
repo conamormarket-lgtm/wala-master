@@ -78,6 +78,7 @@ const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPa
 const AdminThemes = lazy(() => import('./pages/Tienda/admin/AdminThemes'));
 const AdminStoreEditor = lazy(() => import('./pages/Tienda/admin/AdminStoreEditor'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
+const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
 
 const AppRedirect = lazy(() => import('./pages/AppRedirect'));
 
@@ -222,6 +223,7 @@ function App() {
                             <Route path="backups" element={<AdminBackups />} />
                             <Route path="configuracion" element={<AdminConfiguracion />} />
                             <Route path="encuestas" element={<AdminEncuestas />} />
+                            <Route path="fechas-importantes" element={<AdminFechasImportantesPage />} />
                           </Route>
                         </Route>
 
