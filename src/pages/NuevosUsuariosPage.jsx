@@ -4,17 +4,25 @@ import './NuevosUsuariosPage.module.css';
 
 const NuevosUsuariosPage = () => {
   const [vsSlideIndex, setVsSlideIndex] = React.useState(0);
-  const [reviewsSlideIndex, setReviewsSlideIndex] = React.useState(6); // Empezamos en la copia del medio
+  const [reviewsSlideIndex, setReviewsSlideIndex] = React.useState(14); // Empezamos en la copia del medio
   const [isTransitioning, setIsTransitioning] = React.useState(true);
 
   // DATOS PARA LAS TARJETAS DE RESEÑAS
   const reviewsData = [
-    { id: 1, image: `https://picsum.photos/400/400?random=1`, location: 'Lima, PE', date: '12/05/2026', title: 'El mejor regalo', review: 'Mi novia lloró de la emoción cuando vio nuestra foto enmarcada. ¡Gracias!' },
-    { id: 2, image: `https://picsum.photos/400/400?random=2`, location: 'Arequipa, PE', date: '08/05/2026', title: 'Calidad Premium', review: 'La madera del marco se siente muy fina y la impresión fotográfica es espectacular.' },
-    { id: 3, image: `https://picsum.photos/400/400?random=3`, location: 'Cusco, PE', date: '01/05/2026', title: 'Llegó rapidísimo', review: 'Lo pedí un martes y el jueves ya estaba en la puerta de mi casa. Súper recomendados.' },
-    { id: 4, image: `https://picsum.photos/400/400?random=4`, location: 'Trujillo, PE', date: '25/04/2026', title: 'Detalle único', review: 'Me encantó poder personalizar la dedicatoria. Hizo que el regalo fuera mucho más especial.' },
-    { id: 5, image: `https://picsum.photos/400/400?random=5`, location: 'Piura, PE', date: '15/04/2026', title: '100% Confiable', review: 'Tenía dudas por ser mi primera compra, pero el empaque protegió súper bien el cuadro.' },
-    { id: 6, image: `https://picsum.photos/400/400?random=6`, location: 'Ica, PE', date: '02/04/2026', title: 'A mi mamá le encantó', review: 'Le regalé un cuadro con fotos de los nietos por su cumpleaños y quedó fascinada.' }
+    { id: 1, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi1.jpeg`, location: 'Lima, PE', date: '12/05/2026', title: 'Un detalle muy especial', review: 'Pedimos poleras para aniversario y nos sorprendieron muchísimo. La impresión se ve elegante y resistente. Y de regalo nos dieron unas pulseras que brillan en la oscuridad ☕❤️' },
+    { id: 2, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi2.jpeg`, location: 'Arequipa, PE', date: '08/05/2026', title: 'Calidad Premium', review: 'Los gorros personalizados quedaron increíbles. Son cómodos, modernos y el bordado se ve de muy buena calidad. Mi novio y yo los usamos todos los días. ¡Nos preguntan dónde los compramos!' },
+    { id: 3, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi3.jpeg`, location: 'Cusco, PE', date: '01/05/2026', title: 'Ideal para fans de series y dibujos', review: 'Pedí una casaca temática y literalmente todos me preguntan dónde la compré. Los acabados están muy bien hechos y el diseño se ve igual que en las imágenes. La taza de regalo fue un plus genial.' },
+    { id: 4, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi4.jpeg`, location: 'Trujillo, PE', date: '25/04/2026', title: '¡Nos encantó como pareja!', review: 'Pedimos las 2 poleras personalizadas y superaron nuestras expectativas. La tela es suave, cómoda y el diseño quedó exactamente como lo imaginábamos. Se nota mucho el cuidado en los detalles y la impresión tiene colores muy vivos. Sin duda, un regalo perfecto para parejas. 💕' },
+    { id: 5, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi5.jpeg`, location: 'Piura, PE', date: '15/04/2026', title: 'Perfecto para sorprender a tu persona especial', review: 'Compramos el conjunto personalizado y fue un acierto total. La calidad es excelente y se siente muy cómodo al usarlo. Además, llegó súper bien presentado, ideal para regalo. ¡Ya queremos pedir otro diseño!' },
+    { id: 6, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi6.jpeg`, location: 'Ica, PE', date: '02/04/2026', title: 'Mucho mejor de lo que esperaba', review: 'Los polos personalizados quedaron hermosos. Las fotos y nombres se ven nítidos y el material no da calor. Mi pareja y yo quedamos fascinados porque además combina perfecto para salir juntos. 😍' },
+    { id: 7, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi7.jpeg`, location: 'Lima, PE', date: '28/03/2026', title: 'Brutal para fans del anime', review: 'La casaca personalizada superó totalmente mis expectativas. Los colores del diseño se ven increíbles y la tela es cómoda y abrigadora. Además, vino con una taza de regalo que está demasiado buena. ¡Se nota que está hecha para verdaderos geeks! 🔥' },
+    { id: 8, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi8.jpeg`, location: 'Arequipa, PE', date: '15/03/2026', title: 'Perfecto para cualquier otaku', review: 'Compré un polo de anime y quedé fascinado con la calidad de impresión. Los detalles del personaje se ven súper nítidos y no se despintan al lavar. Encima me enviaron un mouse pad de regalo. ¡100% recomendado!' },
+    { id: 9, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi9.jpeg`, location: 'Cusco, PE', date: '05/03/2026', title: 'Mucho mejor de lo esperado', review: 'El pantalón de anime está increíble. Tiene un diseño demasiado épico y queda cómodo para usar todo el día. Me sorprendió mucho la calidad por el precio. Definitivamente volveré a comprar más productos geek. 😎' },
+    { id: 10, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi10.jpeg`, location: 'Lima, PE', date: '20/02/2026', title: 'Perfecto para verdaderos hinchas', review: 'La casaca de fútbol me sorprendió muchísimo. La calidad es excelente y los colores del equipo se ven intensos y bien definidos. Además, vino con una taza de regalo que está genial. ¡Ideal para cualquier fanático! ⚽🔥' },
+    { id: 11, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi11.jpeg`, location: 'Trujillo, PE', date: '12/02/2026', title: 'Mucho mejor de lo esperado', review: 'Compré un polo de Universitario y quedó brutal. La tela es fresca y cómoda, perfecta para usar en partidos o salidas. El estampado se ve de alta calidad y no pierde color al lavar.' },
+    { id: 12, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi12.jpeg`, location: 'Lima, PE', date: '01/02/2026', title: 'Excelente para hinchas de corazón', review: 'El pantalón deportivo de Alianza Lima está demasiado bueno. Súper cómodo para entrenar o usar diario. Encima me llegó con una billetera de regalo que está increíble. 💙' },
+    { id: 13, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi13.jpeg`, location: 'Piura, PE', date: '25/01/2026', title: 'Calidad top para fans del fútbol', review: 'Pedí una casaca del Real Madrid y sinceramente se ve espectacular. Los detalles están muy bien hechos y el material abriga bastante. Todos me preguntan dónde la compré. 😎' },
+    { id: 14, image: `${process.env.PUBLIC_URL}/regalos-con-amor/testimonios/testi14.jpeg`, location: 'Arequipa, PE', date: '10/01/2026', title: 'El regalo perfecto para futboleros', review: 'Compré un cuadro personalizado del Barcelona y quedó espectacular. Los colores resaltan muchísimo y le dio un toque increíble a mi cuarto. Se nota que trabajan con buenos materiales.' }
   ];
 
   const handleNextReview = () => {
@@ -44,16 +52,16 @@ const NuevosUsuariosPage = () => {
   // LÓGICA DEL CARRUSEL INFINITO FLUIDO (BLOQUE 9)
   React.useEffect(() => {
     let timeout;
-    if (reviewsSlideIndex === reviewsData.length * 2) {
+    if (reviewsSlideIndex >= reviewsData.length * 2) {
       timeout = setTimeout(() => {
         setIsTransitioning(false);
-        setReviewsSlideIndex(reviewsData.length);
+        setReviewsSlideIndex(reviewsData.length + (reviewsSlideIndex - reviewsData.length * 2));
       }, 500);
     }
-    else if (reviewsSlideIndex === 0) {
+    else if (reviewsSlideIndex <= 0) {
       timeout = setTimeout(() => {
         setIsTransitioning(false);
-        setReviewsSlideIndex(reviewsData.length);
+        setReviewsSlideIndex(reviewsData.length + reviewsSlideIndex);
       }, 500);
     }
     else if (!isTransitioning) {
