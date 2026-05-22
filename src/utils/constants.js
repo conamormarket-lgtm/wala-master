@@ -1,4 +1,4 @@
-export const LOGO_URL = "/logo-wala.jpg";
+export const LOGO_URL = "/logo-wala.png";
 export const WHATSAPP_NUMBER = "51912881722";
 export const WHATSAPP_MESSAGE = "Hola, quiero hacer un nuevo pedido";
 
