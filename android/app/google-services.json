@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "572322137024-858pfv4mskq5jbmkrlkf1lrer058frbt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wala.tienda",
+            "certificate_hash": "0f28a96da9f7f50e5495485004dc6e01ba1c45a9"
+          }
+        },
+        {
+          "client_id": "572322137024-mn7q72mripfhq47v3frqf847hfiu326b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wala.tienda",
+            "certificate_hash": "1ddf920e1f25235f7e88a1354708fe302ac6bda9"
+          }
+        },
+        {
           "client_id": "572322137024-0bl118c7mnuglq3fbnbdlhv5kg36dp9a.apps.googleusercontent.com",
           "client_type": 3
         }
