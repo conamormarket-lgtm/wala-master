@@ -4,4 +4,5 @@
     <string name="title_activity_main">WALA</string>
     <string name="package_name">com.wala.tienda</string>
     <string name="custom_url_scheme">com.wala.tienda</string>
+    <string name="server_client_id">572322137024-0bl118c7mnuglq3fbnbdlhv5kg36dp9a.apps.googleusercontent.com</string>
 </resources>

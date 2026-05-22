@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "572322137024-fpuitantrsoug1sk5ijtj3jshjcqhl09.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wala.tienda",
+            "certificate_hash": "e2ec5c06dcab2f59d3d40ae8455fd7c3479a75c8"
+          }
+        },
+        {
           "client_id": "572322137024-mn7q72mripfhq47v3frqf847hfiu326b.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

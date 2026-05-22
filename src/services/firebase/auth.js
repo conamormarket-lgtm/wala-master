@@ -10,6 +10,7 @@ import {
   sendPasswordResetEmail as firebaseSendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, getFirebaseConfigMessage } from './config';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 // Detecta si la app está corriendo dentro de un runtime nativo de Capacitor (Android/iOS)
 // window.Capacitor es inyectado automáticamente por el bridge de Capacitor en el WebView nativo.
@@ -72,7 +73,6 @@ export const signInWithGoogle = async () => {
   // ── Plataforma nativa (Android / iOS) ────────────────────────────────────
   if (isNativePlatform()) {
     try {
-      const { GoogleAuth } = await import(/* webpackIgnore: true */ '@codetrix-studio/capacitor-google-auth');
       await GoogleAuth.initialize({
         clientId: '572322137024-0bl118c7mnuglq3fbnbdlhv5kg36dp9a.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
@@ -123,7 +123,6 @@ export const logout = async () => {
     // Si es plataforma nativa, también cerrar sesión del plugin de Google
     if (isNativePlatform()) {
       try {
-        const { GoogleAuth } = await import(/* webpackIgnore: true */ '@codetrix-studio/capacitor-google-auth');
         await GoogleAuth.signOut();
       } catch (_) {
         // Ignorar error si el plugin no estaba activo
