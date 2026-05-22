@@ -53,6 +53,7 @@ const PerfilPage = () => {
   const [tipoDoc, setTipoDoc] = useState('DNI');
   const [documento, setDocumento] = useState('');
   const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
 
   // Avatar config state
   const [avatarConfig, setAvatarConfig] = useState({
@@ -92,6 +93,7 @@ const PerfilPage = () => {
       setTipoDoc(userProfile.tipoDocumento || 'DNI');
       setDocumento(userProfile.dni ? String(userProfile.dni).trim() : '');
       setPhone(userProfile.phone ? String(userProfile.phone).replace(/\D/g, '') : '');
+      setBirthDate(userProfile.birthDate || '');
 
       if (userProfile.avatarConfig) {
         setAvatarConfig(prev => ({ ...prev, ...userProfile.avatarConfig }));
@@ -113,7 +115,8 @@ const PerfilPage = () => {
       displayName: fullName.trim(),
       dni: documento,
       tipoDocumento: tipoDoc,
-      phone: phone.replace(/\D/g, '')
+      phone: phone.replace(/\D/g, ''),
+      birthDate: birthDate
     };
     const { error: err } = await updateUserProfile(updates);
     setLoading(false);
@@ -199,6 +202,10 @@ const PerfilPage = () => {
                   <label>Teléfono</label>
                   <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} disabled={loading} />
                 </div>
+                <div className={styles.formGroup}>
+                  <label>Fecha de Nacimiento</label>
+                  <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} disabled={loading} />
+                </div>
                 {error && <div className={styles.errorMessage}>{error}</div>}
 
                 <div className={styles.actionsGroup}>
@@ -212,6 +219,7 @@ const PerfilPage = () => {
                 <div className={styles.infoRow}><span className={styles.infoLabel}>Email</span><span className={styles.infoValue}>{email || '—'}</span></div>
                 <div className={styles.infoRow}><span className={styles.infoLabel}>DNI</span><span className={styles.infoValue}>{userProfile.dni || '—'}</span></div>
                 <div className={styles.infoRow}><span className={styles.infoLabel}>Teléfono</span><span className={styles.infoValue}>{userProfile.phone || '—'}</span></div>
+                <div className={styles.infoRow}><span className={styles.infoLabel}>Cumpleaños</span><span className={styles.infoValue}>{userProfile.birthDate || '—'}</span></div>
 
                 {!hasCompleteProfile && (
                   <div className={styles.errorMessage}>Para ver tus pedidos necesitamos tu DNI y número de teléfono.</div>

@@ -30,7 +30,6 @@
                 <data android:host="wala.pe" />
                 <data android:host="www.wala.pe" />
             </intent-filter>
-
         </activity>
 
         <provider

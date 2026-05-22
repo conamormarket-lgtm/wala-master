@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "572322137024",
+    "project_id": "sistema-gestion-3b225",
+    "storage_bucket": "sistema-gestion-3b225.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:572322137024:android:77d6ca4d0b58e8ace43e25",
+        "android_client_info": {
+          "package_name": "com.wala.tienda"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "572322137024-858pfv4mskq5jbmkrlkf1lrer058frbt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wala.tienda",
+            "certificate_hash": "0f28a96da9f7f50e5495485004dc6e01ba1c45a9"
+          }
+        },
+        {
+          "client_id": "572322137024-mn7q72mripfhq47v3frqf847hfiu326b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wala.tienda",
+            "certificate_hash": "1ddf920e1f25235f7e88a1354708fe302ac6bda9"
+          }
+        },
+        {
+          "client_id": "572322137024-0bl118c7mnuglq3fbnbdlhv5kg36dp9a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFfyvfJ0IOXRd7DA0EmDQN3CtAx-nz59M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "572322137024-0bl118c7mnuglq3fbnbdlhv5kg36dp9a.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

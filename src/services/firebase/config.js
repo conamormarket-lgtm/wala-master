@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
+import { getMessaging, isSupported } from 'firebase/messaging';
 
 // Verificar si Firebase está configurado
 const isFirebaseConfigured = () => {
@@ -17,6 +18,7 @@ let app = null;
 let db = null;
 let auth = null;
 let storage = null;
+let messaging = null;
 
 if (isFirebaseConfigured()) {
   try {
@@ -55,12 +57,27 @@ if (isFirebaseConfigured()) {
       console.warn('Firebase Auth no disponible:', authError?.message || authError);
       console.warn('Solución: en Firebase Console > Authentication > haz clic en "Comenzar" y añade "localhost" en Dominios autorizados.');
     }
+
+    // Inicializar Messaging solo si es soportado por el navegador
+    isSupported().then((supported) => {
+      if (supported) {
+        try {
+          messaging = getMessaging(app);
+        } catch (messagingError) {
+          console.warn('Firebase Messaging no disponible:', messagingError);
+        }
+      } else {
+        console.warn('Firebase Messaging no está soportado en este navegador.');
+      }
+    });
+
   } catch (error) {
     console.warn('Error al inicializar Firebase:', error);
     app = null;
     db = null;
     auth = null;
     storage = null;
+    messaging = null;
   }
 } else {
   console.warn('Firebase no está configurado. Usando modo desarrollo con backend mock.');
@@ -75,5 +92,5 @@ const getFirebaseConfigMessage = () => {
   return 'Firebase no está configurado. Por favor configura tus credenciales en el archivo .env';
 };
 
-export { db, auth, storage, getFirebaseConfigMessage };
+export { db, auth, storage, messaging, getFirebaseConfigMessage };
 export default app;

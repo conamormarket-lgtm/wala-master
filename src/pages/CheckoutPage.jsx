@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../services/messages';
 import { linkPurchaseToReferral } from '../services/referrals';
 import { createWebOrder } from '../services/erp/firebase';
+import { markItemAsGifted } from '../services/wishlist';
 import Button from '../components/common/Button';
 import styles from './CheckoutPage.module.css';
 
@@ -48,14 +49,14 @@ const validationSchema = Yup.object({
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, getTotalPrice, clearCart } = useCart();
-  const { user, userProfile, updateUserProfile, freezeMonedas } = useAuth();
+  const { user, userProfile, updateUserProfile, freezeMonedas, activeMainCoins } = useAuth();
   const toast = useGlobalToast();
 
   const [processing, setProcessing] = useState(false);
-  const [coinInput, setCoinInput] = useState('');
+  const [useCoinsToggle, setUseCoinsToggle] = useState(false);
   
   const subtotal = getTotalPrice();
-  const monedasCount = userProfile?.monedas || 0;
+  const monedasCount = activeMainCoins || 0;
   
   // Calcular límite de monedas (50% del subtotal como máximo)
   const maxCoinsAllowed = Math.floor(subtotal / 2);
@@ -63,21 +64,14 @@ const CheckoutPage = () => {
   const canUseCoins = monedasCount > 0 && availableCoins > 0;
   
   // Calcular descuentos
-  const parsedCoins = parseInt(coinInput, 10) || 0;
-  const discount = (canUseCoins && parsedCoins > 0 && parsedCoins <= availableCoins) ? parsedCoins : 0;
+  const discount = (canUseCoins && useCoinsToggle) ? availableCoins : 0;
   
   const subtotalWithDiscount = Math.max(0, subtotal - discount);
   const shipping = subtotalWithDiscount > 100 ? 0 : 15;
   const total = subtotalWithDiscount + shipping;
   
-  const handleCoinInputChange = (e) => {
-    let val = e.target.value.replace(/\D/g, '');
-    if (val !== '') {
-      let num = parseInt(val, 10);
-      if (num > availableCoins) num = availableCoins;
-      val = num.toString();
-    }
-    setCoinInput(val);
+  const handleToggleCoins = () => {
+    setUseCoinsToggle(!useCoinsToggle);
   };
   
   // Config WhatsApp
@@ -486,6 +480,16 @@ const CheckoutPage = () => {
           console.warn('Error al conectar con ERP Firebase:', erpErr);
         }
 
+        // ── 1.5 Procesar Regalos de Wishlist ──────────────────────────────
+        try {
+          const wishlistGifts = items.filter(item => item.isWishlistGift && item.wishlistUserCode);
+          for (const gift of wishlistGifts) {
+            await markItemAsGifted(gift.wishlistUserCode, gift.productId, values.customerName);
+          }
+        } catch (giftErr) {
+          console.warn('Error al marcar regalos de wishlist:', giftErr);
+        }
+
         // ── 2. Procesar referidos ─────────────────────────────────────────
         let referralTag = '';
         try {
@@ -750,41 +754,26 @@ const CheckoutPage = () => {
               {canUseCoins && (
                 <div style={{ marginTop: '1rem', marginBottom: '1rem', background: 'linear-gradient(145deg, #fffbeb, #fef3c7)', padding: '1.25rem', borderRadius: '12px', border: '1px solid #fcd34d', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.1)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <KapiSolCoinMini />
-                      <label style={{ fontWeight: 700, fontSize: '15px', color: '#92400e', margin: 0, lineHeight: 1 }}>
-                        Usa tus Monedas KapiSol
-                      </label>
-                    </div>
-                    <p style={{ fontSize: '0.8rem', color: '#b45309', margin: '0 0 0.5rem 0', fontWeight: 500 }}>
-                      Puedes cubrir hasta el <strong style={{ color: '#92400e' }}>50%</strong> (S/ {maxCoinsAllowed.toFixed(2)}) de tus productos. 
-                    </p>
-                    
-                    <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.5rem', background: 'white', padding: '0.5rem', borderRadius: '8px', border: '1px solid #fde68a' }}>
-                      <input 
-                        type="number" 
-                        value={coinInput}
-                        onChange={handleCoinInputChange}
-                        placeholder="0"
-                        min="0"
-                        max={availableCoins}
-                        style={{ width: '80px', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '2px solid #fcd34d', fontSize: '1rem', fontWeight: 600, color: '#92400e', textAlign: 'center', outline: 'none' }}
-                      />
-                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, fontSize: '0.8rem', color: '#78350f' }}>
-                        <span>/ <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{availableCoins}</span> KS max.</span>
-                        <span style={{ fontSize: '0.7rem' }}>Tienes {monedasCount} KS en total</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <KapiSolCoinMini />
+                        <label style={{ fontWeight: 700, fontSize: '15px', color: '#92400e', margin: 0, lineHeight: 1 }}>
+                          Tienes {monedasCount} monedas = S/{monedasCount.toFixed(2)}
+                        </label>
                       </div>
-                      
-                      <button 
-                        type="button" 
-                        onClick={() => setCoinInput(availableCoins.toString())} 
-                        style={{ background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', padding: '0 0.75rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s', alignSelf: 'stretch' }}
-                        onMouseOver={(e) => e.target.style.background = '#d97706'}
-                        onMouseOut={(e) => e.target.style.background = '#f59e0b'}
-                      >
-                        USAR MAX
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#b45309' }}>¿Aplicar?</span>
+                        <input 
+                          type="checkbox" 
+                          checked={useCoinsToggle} 
+                          onChange={handleToggleCoins}
+                          style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#e11d48' }}
+                        />
+                      </div>
                     </div>
+                    <p style={{ fontSize: '0.8rem', color: '#b45309', margin: '0', fontWeight: 500 }}>
+                      Se aplicará automáticamente el descuento máximo permitido ({availableCoins} monedas = S/{availableCoins.toFixed(2)}).
+                    </p>
                   </div>
                 </div>
               )}

@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useWishlist } from '../../../contexts/WishlistContext';
 import { getCategories } from '../../../services/products';
 import { getCollections } from '../../../services/collections';
 import { getDocument } from '../../../services/firebase/firestore';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
-import { Heart, User, ShoppingBag } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import styles from './Header.module.css';
+import NotificationTray from './NotificationTray';
 import OptimizedImage from '../OptimizedImage/OptimizedImage';
 
 const navLinkClass = ({ isActive }) =>
@@ -19,16 +21,22 @@ const navLinkClass = ({ isActive }) =>
 
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
-  const { user, userProfile, isAdmin, updateUserProfile, logout } = useAuth();
+  const { user, userProfile, isAdmin, updateUserProfile, logout, activeMainCoins } = useAuth();
+  const { wishlistItems } = useWishlist();
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const cartItemsCount = getTotalItems();
-  const realCoins = userProfile?.monedas || 0;
+  const realCoins = activeMainCoins || 0;
   
   const [displayCoins, setDisplayCoins] = useState(realCoins);
   const pendingCoinsRef = useRef(0);
   const [isCoinBouncing, setIsCoinBouncing] = useState(false);
+
+  const realKapiCoins = userProfile?.kapiCoins || 0;
+  const [displayKapiCoins, setDisplayKapiCoins] = useState(realKapiCoins);
+  const [isKapiBouncing, setIsKapiBouncing] = useState(false);
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
@@ -106,7 +114,7 @@ const Header = () => {
 
     const handleEnd = () => {
       pendingCoinsRef.current = 0;
-      setDisplayCoins(userProfile?.monedas || 0); // sync por si hubo desface
+      setDisplayCoins(activeMainCoins || 0); // sync por si hubo desface
     };
 
     window.addEventListener('coins-animation-start', handleStart);
@@ -118,7 +126,22 @@ const Header = () => {
       window.removeEventListener('coin-reached-target', handleReached);
       window.removeEventListener('coins-animation-end', handleEnd);
     };
-  }, [userProfile?.monedas]);
+  }, [activeMainCoins]);
+
+  useEffect(() => {
+    setDisplayKapiCoins(realKapiCoins);
+  }, [realKapiCoins]);
+
+  useEffect(() => {
+    const handleKapiStart = (e) => {
+      const inc = e.detail?.amount || 1;
+      setDisplayKapiCoins(prev => prev + inc);
+      setIsKapiBouncing(true);
+      setTimeout(() => setIsKapiBouncing(false), 200);
+    };
+    window.addEventListener('kapi-coins-animation-start', handleKapiStart);
+    return () => window.removeEventListener('kapi-coins-animation-start', handleKapiStart);
+  }, []);
 
   const handleResetCoinsForTesting = async () => {
     if (user?.email?.toLowerCase() === 'yorh001@gmail.com') {
@@ -133,8 +156,11 @@ const Header = () => {
 
   if (!isHeaderVisible) return null;
 
+  const isArcadeZone = location.pathname.startsWith('/minijuegos') || location.pathname.startsWith('/ruleta');
+  const headerStyle = isArcadeZone ? { background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)', borderBottom: '1px solid rgba(255,255,255,0.1)' } : {};
+
   return (
-    <header className={styles.header}>
+    <header className={`${styles.header} ${isArcadeZone ? styles.arcadeHeader : ''}`} style={headerStyle}>
       <div className={styles.container}>
         <Link to="/" className={styles.logo}>
           <svg viewBox="0 0 390 120" className={styles.logoImage} style={{ height: '44px', width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
@@ -155,7 +181,7 @@ const Header = () => {
             </g>
 
             {/* LOGOTIPO (Right) - Anchored right, giving 'A' a strict known position */}
-            <text x="375" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALA</text>
+            <text x="375" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill={isArcadeZone ? "white" : "url(#walaGradient)"} stroke={isArcadeZone ? "white" : "url(#walaGradient)"} strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALA</text>
 
             {/* THE TILDE ACCENT OVER 'A' - Pinned specifically at x=353 (perfect center of A) and y=12 (floating above) */}
             <g transform="translate(353, 12) scale(0.3) rotate(5)">
@@ -172,15 +198,20 @@ const Header = () => {
             
             {navLinks.map((link) => {
               const linkStyle = {
-                color: link.color || 'inherit',
+                color: isArcadeZone ? '#e2e8f0' : (link.color || 'inherit'),
                 fontFamily: link.fontFamily || 'inherit',
                 fontWeight: link.bold ? 'bold' : 'normal',
                 fontStyle: link.italic ? 'italic' : 'normal',
               };
 
+              const getActiveStyle = (isActive) => ({
+                ...linkStyle,
+                ...(isActive ? { color: isArcadeZone ? '#a855f7' : 'var(--rojo-principal)' } : {})
+              });
+
               if (link.type === 'link') {
                 return (
-                  <NavLink key={link.id} to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => ({ ...linkStyle, ...(isActive ? { color: 'var(--rojo-principal)' } : {}) })}>
+                  <NavLink key={link.id} to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => getActiveStyle(isActive)}>
                     {link.text}
                   </NavLink>
                 );
@@ -189,7 +220,7 @@ const Header = () => {
               if (link.type === 'dropdown') {
                 return (
                   <div key={link.id} className={styles.navItemWithDropdown}>
-                    <NavLink to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => ({ ...linkStyle, ...(isActive ? { color: 'var(--rojo-principal)' } : {}) })}>{link.text}</NavLink>
+                    <NavLink to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => getActiveStyle(isActive)}>{link.text}</NavLink>
                     <div className={styles.megaMenu}>
                       <div className={styles.megaMenuContent}>
                         <h4>{link.text}</h4>
@@ -248,6 +279,7 @@ const Header = () => {
         </EditableSection>
 
         <div className={styles.actions}>
+          {/* Billetera Principal (Wala Coins) */}
           <div 
             className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`} 
             onClick={handleResetCoinsForTesting}
@@ -257,14 +289,30 @@ const Header = () => {
               🪙 {Math.floor(displayCoins)}
             </div>
             <div className={styles.tooltipText}>
-              ¡Canjea tus Kapicoins en el carrito por descuentos directos!
+              Billetera Principal - ¡Canjea tus monedas en el catálogo o checkout!
               {user?.email === 'yorh001@gmail.com' && <br/>}
               {user?.email === 'yorh001@gmail.com' && <small style={{color:'#f1c40f'}}>(Click para Reset Test)</small>}
             </div>
           </div>
+
+          {/* Billetera Diaria (Kapi Coins) */}
+          <div className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer}`}>
+            <div className={`${styles.coinsDisplay} ${isKapiBouncing ? styles.bounce : ''}`} style={{ backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' }}>
+              🍖 {displayKapiCoins}
+            </div>
+            <div className={styles.tooltipText}>
+              Billetera Diaria - Kapi Coins (Vencen a fin de mes)
+            </div>
+          </div>
           
           <div className={styles.accountDropdownContainer}>
-            <Link to="/favoritos" className={styles.iconButton} aria-label="Favoritos">
+            <Link to="/minijuegos" className={styles.iconButton} aria-label="Minijuegos" title="Minijuegos y Recompensas">
+              <Gamepad2 strokeWidth={1.5} className={styles.icon} />
+            </Link>
+          </div>
+          
+          <div className={styles.accountDropdownContainer}>
+            <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} aria-label="Favoritos">
               <Heart strokeWidth={1.5} className={styles.icon} />
             </Link>
             
@@ -295,6 +343,19 @@ const Header = () => {
                   };
 
                   if (user) {
+                    if (wishlistItems.length > 0) {
+                      return (
+                        <>
+                          <h3>Tu Lista de Deseos</h3>
+                          <p style={textStyle}>Tienes {wishlistItems.length} productos guardados en tu lista.</p>
+                          <div className={styles.accountButtons}>
+                            <Link to="/cuenta/wishlist" className={styles.primaryButton}>
+                              Ver mi lista
+                            </Link>
+                          </div>
+                        </>
+                      );
+                    }
                     return (
                       <>
                         <h3>{favConfig.loggedInTitle || 'Tus Favoritos'}</h3>
@@ -326,6 +387,8 @@ const Header = () => {
               </div>
             </div>
           </div>
+          
+          {user && <NotificationTray />}
           
           <div className={styles.accountDropdownContainer}>
             <Link to="/cuenta" className={styles.iconButton} aria-label="Mi cuenta">

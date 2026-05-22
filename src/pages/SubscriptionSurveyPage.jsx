@@ -8,12 +8,7 @@ import styles from './SubscriptionSurveyPage.module.css';
 const EVENT_TYPES = [
   { id: 'cumpleanos', label: 'Cumpleaños', needsDate: true },
   { id: 'aniversario', label: 'Aniversario', needsDate: true },
-  { id: 'navidad', label: 'Navidad', needsDate: false },
-  { id: 'dia_madre', label: 'Día de la Madre', needsDate: false },
-  { id: 'dia_padre', label: 'Día del Padre', needsDate: false },
-  { id: 'dia_nino', label: 'Día del Niño', needsDate: false },
-  { id: 'san_valentin', label: 'San Valentín', needsDate: false },
-  { id: 'otro', label: 'Otro Evento', needsDate: true }
+  { id: 'otro', label: 'Fecha Especial', needsDate: true }
 ];
 
 const ROLES_MAP = {
@@ -27,7 +22,7 @@ const ROLES_MAP = {
 };
 
 const SubscriptionSurveyPage = () => {
-  const { userProfile, updateUserProfile, loading: authLoading } = useAuth();
+  const { userProfile, updateUserProfile, loading: authLoading, earnMainCoins } = useAuth();
   const navigate = useNavigate();
   
   const [config, setConfig] = useState(DEFAULT_SURVEY_CONFIG);
@@ -70,7 +65,14 @@ const SubscriptionSurveyPage = () => {
     fetchConfig();
   }, []);
 
-  const handleSkip = () => navigate('/', { replace: true });
+  const handleSkip = async () => {
+    try {
+      await updateUserProfile({ lastSurveyPromptedAt: Date.now() });
+    } catch (e) {
+      console.error('Error saving skip timestamp:', e);
+    }
+    navigate('/', { replace: true });
+  };
 
   const validateFields = (fieldsArray, answersObject) => {
     for (let field of fieldsArray) {
@@ -191,7 +193,7 @@ const SubscriptionSurveyPage = () => {
   const addEvent = () => {
     setTempRecipient(prev => ({
       ...prev,
-      events: [...prev.events, { id: Math.random().toString(36).substring(2, 9), type: 'Otro Evento', date: '' }]
+      events: [...prev.events, { id: Math.random().toString(36).substring(2, 9), type: 'Fecha Especial', date: '', customName: '' }]
     }));
   };
 
@@ -201,7 +203,7 @@ const SubscriptionSurveyPage = () => {
       newEvents[index][field] = value;
       
       if (field === 'type') {
-        const evTypeConfig = EVENT_TYPES.find(e => e.label === value);
+        const evTypeConfig = EVENT_TYPES.find(e => e.label === value) || EVENT_TYPES.find(e => e.id === 'otro');
         if (evTypeConfig && !evTypeConfig.needsDate) {
           newEvents[index].date = '';
         }
@@ -227,9 +229,12 @@ const SubscriptionSurveyPage = () => {
     }
 
     for (const ev of tempRecipient.events) {
-      const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.label === 'Otro Evento');
+      const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.id === 'otro');
       if (evTypeConfig.needsDate && (!ev.date || ev.date.trim() === '')) {
         return alert(`La fecha es obligatoria para el evento: ${ev.type}.`);
+      }
+      if (ev.type === 'Fecha Especial' && (!ev.customName || ev.customName.trim() === '')) {
+        return alert('Por favor, indica qué se celebra en la Fecha Especial.');
       }
     }
 
@@ -256,12 +261,29 @@ const SubscriptionSurveyPage = () => {
     try {
       const validRecipients = finalRecipients.filter(r => isRecipientComplete(r));
       
+      // Calcular monedas ganadas solo si es la primera vez que completa la encuesta
+      let coinsEarned = 0;
+      
+      if (!userProfile.hasCompletedSurvey) {
+        let totalFechas = 0;
+        validRecipients.forEach(r => {
+          totalFechas += r.events.length;
+        });
+        coinsEarned = totalFechas * 5;
+      }
+      
       await updateUserProfile({ 
         surveyBasicData: basicAnswers, 
         giftRoles: selectedRoles,
         giftRecipients: validRecipients, 
-        hasCompletedSurvey: true 
+        hasCompletedSurvey: true
       });
+
+      if (coinsEarned > 0) {
+        await earnMainCoins(coinsEarned, 'Fechas registradas en encuesta', 90);
+        window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: coinsEarned } }));
+      }
+
       setAnimationDir('Right');
       setCurrentStep(4);
     } catch (err) {
@@ -309,6 +331,14 @@ const SubscriptionSurveyPage = () => {
               <div className={styles.headerIcon}><Gift size={40} color={config.design.primaryColor} /></div>
               <h1 className={styles.title}>{config.introPanel.title}</h1>
               <h2 className={styles.subtitle}>{config.introPanel.subtitle}</h2>
+              
+              <div style={{ backgroundColor: '#fffbeb', color: '#b45309', padding: '1rem', borderRadius: '12px', margin: '1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 'bold', border: '1px solid #fde68a', boxShadow: '0 4px 6px -1px rgba(251, 191, 36, 0.1)' }}>
+                <span style={{ fontSize: '2rem', lineHeight: 1 }}>🪙</span>
+                <span style={{ fontSize: '1rem', textAlign: 'left' }}>
+                  ¡Gana 5 Kapicoins por cada fecha importante (Cumpleaños o Fecha Especial) que registres de tus seres queridos!
+                </span>
+              </div>
+
               <p className={styles.description}>{config.introPanel.description}</p>
               <div className={styles.actions} style={{ justifyContent: 'center' }}>
                 <button type="button" onClick={handleSkip} className={styles.skipBtn}>{config.introPanel.skipButtonText}</button>
@@ -462,18 +492,38 @@ const SubscriptionSurveyPage = () => {
                       
                       {tempRecipient.events.map((event, eventIdx) => {
                         const evTypeConfig = EVENT_TYPES.find(e => e.label === event.type) || EVENT_TYPES.find(e => e.id === 'otro');
+                        
                         return (
-                          <div key={event.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
+                          <div key={event.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-start', background: eventIdx === 0 ? '#f8fafc' : 'transparent', padding: eventIdx === 0 ? '1rem' : '0', borderRadius: '8px', border: eventIdx === 0 ? '1px solid #e2e8f0' : 'none' }}>
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                              <select 
-                                className={styles.input} 
-                                value={event.type}
-                                onChange={e => updateEvent(eventIdx, 'type', e.target.value)}
-                                disabled={eventIdx === 0}
-                              >
-                                {EVENT_TYPES.map(et => <option key={et.id} value={et.label}>{et.label}</option>)}
-                              </select>
                               
+                              {eventIdx === 0 ? (
+                                <div style={{ fontWeight: 'bold', color: '#0f172a', padding: '0.5rem 0' }}>
+                                  Cumpleaños *
+                                </div>
+                              ) : (
+                                <select 
+                                  className={styles.input} 
+                                  value={event.type}
+                                  onChange={e => updateEvent(eventIdx, 'type', e.target.value)}
+                                >
+                                  {EVENT_TYPES.filter(et => et.id !== 'cumpleanos').map(et => (
+                                    <option key={et.id} value={et.label}>{et.label}</option>
+                                  ))}
+                                </select>
+                              )}
+                              
+                              {event.type === 'Fecha Especial' && eventIdx > 0 && (
+                                <input 
+                                  type="text" 
+                                  className={styles.input} 
+                                  placeholder="¿Qué se celebra? (Ej. Bautizo, Graduación)" 
+                                  value={event.customName || ''} 
+                                  onChange={e => updateEvent(eventIdx, 'customName', e.target.value)}
+                                  required={true}
+                                />
+                              )}
+
                               {evTypeConfig.needsDate && (
                                 <input 
                                   type="date" 
@@ -630,6 +680,13 @@ const SubscriptionSurveyPage = () => {
               </div>
               <h1 className={styles.title}>{config.completionPanel.title}</h1>
               <p className={styles.description}>{config.completionPanel.message}</p>
+              
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '1rem', textAlign: 'left' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569' }}>
+                  <strong>💡 Tip:</strong> A partir de ahora puedes gestionar a tus personas importantes y agregar nuevas fechas yendo a tu Perfil y dándole a la pestaña <strong>"Fechas Importantes"</strong>.
+                </p>
+              </div>
+
               <div style={{ flex: 1 }}></div>
               <div className={styles.actions} style={{ justifyContent: 'center' }}>
                 <button type="button" onClick={handleSkip} className={styles.saveBtn}>

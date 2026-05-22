@@ -786,3 +786,24 @@
     max-height: 36px !important;
   }
 }
+
+/* Arcade Mode Overrides */
+.arcadeHeader .navLink {
+  color: #e2e8f0;
+}
+.arcadeHeader .navLink:hover {
+  color: #a855f7;
+}
+.arcadeHeader .icon {
+  color: #e2e8f0;
+}
+.arcadeHeader .icon:hover {
+  color: #a855f7;
+}
+.arcadeHeader .logoImage text {
+  fill: #f8fafc;
+  stroke: #f8fafc;
+}
+.arcadeHeader .accountPopupContent, .arcadeHeader .accountPopupContent p, .arcadeHeader .accountPopupContent h3 {
+  color: #1e293b; /* keep popup text dark */
+}

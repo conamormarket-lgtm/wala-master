@@ -4,6 +4,8 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { getBrands } from '../../../../services/brands';
 import { useCart } from '../../../../contexts/CartContext';
 import { toDirectImageUrl, toThumbnailImageUrl } from '../../../../utils/imageUrl'; // Force recompile
+import { useWishlist } from '../../../../contexts/WishlistContext';
+import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
@@ -29,7 +31,7 @@ const getCategoryDisplay = (product, categoriesList) => {
   return names.length ? names.join(', ') : product.category || '';
 };
 
-const ProductCard = React.memo(({ product, categories = [], isAboveFold = false, showHoverSecondaryMedia = true }) => {
+const ProductCard = React.memo(({ product, categories = [], isAboveFold = false, showHoverSecondaryMedia = true, onAddToCartOverride }) => {
   const { addToCart } = useCart();
   const queryClient = useQueryClient();
   const categoryDisplay = getCategoryDisplay(product, categories);
@@ -37,6 +39,9 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
   const imageContainerRef = useRef(null);
   const impressionRecorded = useRef(false);
 
+  const { isFavorite, toggleFavorite } = useWishlist();
+  const { addToast } = useGlobalToast();
+  
   const { data: brandsData } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
@@ -82,8 +87,12 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
   const handleAddToCart = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product, {}, null, 1);
-  }, [addToCart, product]);
+    if (onAddToCartOverride) {
+      onAddToCartOverride(product);
+    } else {
+      addToCart(product, {}, null, 1);
+    }
+  }, [addToCart, product, onAddToCartOverride]);
 
   const handlePersonalize = useCallback((e) => {
     e.preventDefault();
@@ -91,13 +100,18 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
     window.location.href = `/editor/${product.id}`;
   }, [product.id]);
 
-  const [isFavorite, setIsFavorite] = useState(false);
-  const handleToggleFavorite = useCallback((e) => {
+  const isFav = isFavorite(product.id);
+  
+  const handleToggleFavorite = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorite(prev => !prev);
-    // TODO: En el futuro esto llamará al Context global de Favoritos
-  }, []);
+    const result = await toggleFavorite(product);
+    if (result && result.error) {
+      addToast(result.error, 'error');
+    } else if (result && result.success) {
+      addToast(isFav ? 'Eliminado de tu lista de deseos' : 'Agregado a tu lista de deseos', 'success');
+    }
+  }, [product, toggleFavorite, addToast, isFav]);
 
   const handlePrefetch = useCallback(() => {
     queryClient.setQueryData(['product', product.id], product);
@@ -211,12 +225,12 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
         </div>
 
         <button 
-          className={`${styles.favoriteBtn} ${isFavorite ? styles.favoriteBtnActive : ''}`}
+          className={`${styles.favoriteBtn} ${isFav ? styles.favoriteBtnActive : ''}`}
           onClick={handleToggleFavorite}
           aria-label="Agregar a favoritos"
           title="Agregar a favoritos"
         >
-          <svg viewBox="0 0 24 24" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+          <svg viewBox="0 0 24 24" fill={isFav ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>

@@ -3,6 +3,7 @@ import { onAuthChange } from '../services/firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getDocument, updateDocument, setDocument } from '../services/firebase/firestore';
 import { getAdminRoleByEmail, setAdminRole } from '../services/adminRoles';
+import { getStartOfWeek, formatIsoDate } from '../services/firebase/ruleta';
 import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 
 const AuthContext = createContext();
@@ -94,62 +95,217 @@ export const AuthProvider = ({ children }) => {
     return await updateUserProfile({ dni, phone });
   }, [updateUserProfile]);
 
+  const calculateActiveCoins = React.useCallback(() => {
+    if (!userProfile || !userProfile.monedasActivas) return userProfile?.monedas || 0;
+    const now = new Date().toISOString();
+    return userProfile.monedasActivas.reduce((acc, batch) => {
+      if (batch.expiresAt > now) return acc + batch.amount;
+      return acc;
+    }, 0);
+  }, [userProfile]);
+
+  // Migración automática de monedas antiguas
+  React.useEffect(() => {
+    if (userProfile && userProfile.monedas > 0 && !userProfile.legacyCoinsMigrated) {
+      const migrateCoins = async () => {
+        const expDate = new Date();
+        expDate.setDate(expDate.getDate() + 31); // TTL de 31 días para las antiguas
+        
+        const legacyBatch = {
+          amount: userProfile.monedas,
+          expiresAt: expDate.toISOString(),
+          reason: 'Migración de monedas antiguas (TTL 31 días)'
+        };
+        
+        try {
+          await updateUserProfile({
+            legacyCoinsMigrated: true,
+            monedasActivas: [...(userProfile.monedasActivas || []), legacyBatch]
+          });
+        } catch (err) {
+          console.error("Error migrating legacy coins:", err);
+        }
+      };
+      
+      migrateCoins();
+    }
+  }, [userProfile, updateUserProfile]);
+
+  const earnMainCoins = React.useCallback(async (amount, reason = 'Bono', ttlDays = 90) => {
+    if (!userProfile) return { error: 'No profile' };
+    
+    const now = new Date();
+    const expirationDate = new Date(now);
+    expirationDate.setDate(expirationDate.getDate() + ttlDays);
+    expirationDate.setHours(23, 59, 59, 999);
+    const expiresAtIso = expirationDate.toISOString();
+
+    let monedasActivas = [...(userProfile.monedasActivas || [])];
+    const existingBatchIndex = monedasActivas.findIndex(b => b.expiresAt === expiresAtIso);
+    
+    if (existingBatchIndex >= 0) {
+      monedasActivas[existingBatchIndex] = {
+        ...monedasActivas[existingBatchIndex],
+        amount: monedasActivas[existingBatchIndex].amount + amount
+      };
+    } else {
+      monedasActivas.push({
+        amount,
+        expiresAt: expiresAtIso,
+        reason,
+        createdAt: now.toISOString()
+      });
+    }
+
+    const currentGlobal = userProfile.monedas || 0;
+    return await updateUserProfile({
+      monedas: currentGlobal + amount,
+      monedasActivas
+    });
+  }, [userProfile, updateUserProfile]);
+
   const claimMonedas = React.useCallback(async (pedidoId, amount = 10) => {
     if (!userProfile) return { error: 'No profile' };
     const reclamadas = userProfile.monedasReclamadas || [];
     if (reclamadas.includes(pedidoId)) return { error: 'Ya reclamado' };
     
     try {
-      const currentMonedas = userProfile.monedas || 0;
-      const nuevasMonedas = currentMonedas + amount;
-      const nuevasReclamadas = [...reclamadas, pedidoId];
+      const { error } = await earnMainCoins(amount, "pedido_" + pedidoId, 90);
+      if (error) throw new Error(error);
       
-      const { error } = await updateUserProfile({
-        monedas: nuevasMonedas,
+      const nuevasReclamadas = [...reclamadas, pedidoId];
+      await updateUserProfile({
         monedasReclamadas: nuevasReclamadas
       });
       
-      if (error) throw new Error(error);
-      
-      return { error: null, data: { success: true, nuevasMonedas } };
+      return { error: null, data: { success: true } };
     } catch (error) {
       console.error("Error al reclamar monedas:", error);
       return { error: error.message || 'Error al procesar el reclamo' };
     }
-  }, [userProfile, updateUserProfile]);
+  }, [userProfile, earnMainCoins, updateUserProfile]);
 
   const spendMonedas = React.useCallback(async (amount) => {
     if (!userProfile) return { error: 'No profile' };
-    const currentMonedas = userProfile.monedas || 0;
-    if (currentMonedas < amount) return { error: 'Monedas insuficientes' };
+    
+    let activeCoins = calculateActiveCoins();
+    if (activeCoins < amount) return { error: 'Monedas insuficientes' };
 
+    let remainingToSpend = amount;
+    const now = new Date().toISOString();
+    
+    // Clonar y filtrar solo los que no han expirado, ordenados por fecha de expiración (FIFO)
+    let monedasActivas = [...(userProfile.monedasActivas || [])];
+    
+    // Ordenar: los que expiran antes van primero
+    monedasActivas.sort((a, b) => a.expiresAt.localeCompare(b.expiresAt));
+
+    for (let i = 0; i < monedasActivas.length; i++) {
+      let batch = monedasActivas[i];
+      if (batch.expiresAt > now && batch.amount > 0) {
+        if (batch.amount >= remainingToSpend) {
+          monedasActivas[i] = { ...batch, amount: batch.amount - remainingToSpend };
+          remainingToSpend = 0;
+          break;
+        } else {
+          remainingToSpend -= batch.amount;
+          monedasActivas[i] = { ...batch, amount: 0 };
+        }
+      }
+    }
+
+    // Filtrar los que quedaron en 0 o expiraron para limpiar la DB (opcional, pero buena práctica)
+    monedasActivas = monedasActivas.filter(b => b.amount > 0 && b.expiresAt > now);
+
+    const currentMonedas = userProfile.monedas || 0;
     return await updateUserProfile({
-      monedas: currentMonedas - amount
+      monedas: Math.max(0, currentMonedas - amount),
+      monedasActivas
     });
-  }, [userProfile, updateUserProfile]);
+  }, [userProfile, calculateActiveCoins, updateUserProfile]);
 
   const freezeMonedas = React.useCallback(async (amount, pseudoOrderId) => {
     if (!userProfile) return { error: 'No profile' };
-    const currentMonedas = userProfile.monedas || 0;
-    if (currentMonedas < amount) return { error: 'Monedas insuficientes' };
+    const activeCoins = calculateActiveCoins();
+    if (activeCoins < amount) return { error: 'Monedas insuficientes' };
     
     const monedasEnEspera = userProfile.monedasEnEspera || 0;
     const historyEspera = userProfile.historialMonedasEspera || [];
     
+    const spendRes = await spendMonedas(amount);
+    if (spendRes.error) return spendRes;
+    
     return await updateUserProfile({
-      monedas: currentMonedas - amount,
       monedasEnEspera: monedasEnEspera + amount,
       historialMonedasEspera: [
         ...historyEspera,
         {
           orderId: pseudoOrderId,
           amount: amount,
-          status: 'pending', // pueden ser: pending, claimed (aprobado), refunded (devuelto)
+          status: 'pending',
           date: new Date().toISOString()
         }
       ]
     });
+  }, [userProfile, calculateActiveCoins, spendMonedas, updateUserProfile]);
+
+  const feedKapi = React.useCallback(async () => {
+    if (!userProfile) return { error: 'No profile' };
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (userProfile.lastKapiClaimDate === todayStr) {
+      return { error: 'Ya alimentaste a Kapi hoy' };
+    }
+    
+    const currentKapiCoins = userProfile.kapiCoins || 0;
+    if (currentKapiCoins >= 31) {
+      return { error: 'Límite de Kapi Coins mensual alcanzado' };
+    }
+
+    const currentHappiness = userProfile.kapiHappiness || 0;
+
+    // Calcular racha semanal para la ruleta
+    const currentWeekStart = formatIsoDate(getStartOfWeek());
+    let weeklyData = userProfile.weeklyClaimsData || { weekStart: currentWeekStart, daysClaimed: [] };
+    
+    if (weeklyData.weekStart !== currentWeekStart) {
+      // Nueva semana
+      weeklyData = { weekStart: currentWeekStart, daysClaimed: [todayStr] };
+    } else {
+      // Misma semana
+      if (!weeklyData.daysClaimed.includes(todayStr)) {
+        weeklyData.daysClaimed.push(todayStr);
+      }
+    }
+
+    return await updateUserProfile({
+      kapiCoins: currentKapiCoins + 1,
+      lastKapiClaimDate: todayStr,
+      kapiHappiness: Math.min(100, currentHappiness + 10),
+      weeklyClaimsData: weeklyData
+    });
   }, [userProfile, updateUserProfile]);
+
+  const validateDatesStreak = React.useCallback(async (completedOrders) => {
+    if (!userProfile) return { error: 'No profile' };
+    
+    // CompletedOrders should be an array of orders. 
+    // We check how many unique special dates this user has covered.
+    const coveredDates = completedOrders
+      .filter(o => o.fechaEspecial || o.motivoRegalo)
+      .map(o => o.fechaEspecial || o.motivoRegalo);
+      
+    const uniqueDates = [...new Set(coveredDates)];
+    const hasReceivedBonus = userProfile.streakBonusReceived === true;
+    
+    // Streak: 3 fechas cubiertas = 25 bonus 90 días
+    if (uniqueDates.length >= 3 && !hasReceivedBonus) {
+      await earnMainCoins(25, 'Streak 3 fechas cubiertas', 90);
+      return await updateUserProfile({ streakBonusReceived: true });
+    }
+    
+    return { status: 'no_action' };
+  }, [userProfile, earnMainCoins, updateUserProfile]);
 
   const profileIncomplete = !!user && !!userProfile && (!userProfile.dni || !userProfile.phone);
 
@@ -168,10 +324,14 @@ export const AuthProvider = ({ children }) => {
     claimMonedas,
     spendMonedas,
     freezeMonedas,
+    earnMainCoins,
+    feedKapi,
+    validateDatesStreak,
+    activeMainCoins: calculateActiveCoins(),
     isAuthenticated: !!user,
     isAdmin,
     profileIncomplete,
-  }), [user, userProfile, effectiveAdminPermissions, loading, updateUserProfile, linkDNI, claimMonedas, spendMonedas, freezeMonedas, profileIncomplete, isAdmin]);
+  }), [user, userProfile, effectiveAdminPermissions, loading, updateUserProfile, linkDNI, claimMonedas, spendMonedas, freezeMonedas, earnMainCoins, feedKapi, validateDatesStreak, calculateActiveCoins, profileIncomplete, isAdmin]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

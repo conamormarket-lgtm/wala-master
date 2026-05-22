@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getCollection } from '../services/firebase/firestore';
+import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
 import { validateDNI, validateCE, validatePhone } from '../utils/helpers';
 import Button from '../components/common/Button';
@@ -26,7 +27,7 @@ const CompleteProfilePage = () => {
     }
     if (!authLoading && user && userProfile) {
       if (userProfile.dni && userProfile.phone) {
-        if (!userProfile.hasCompletedSurvey) {
+        if (shouldPromptSurvey(userProfile)) {
           navigate('/encuesta-suscripcion');
         } else {
           navigate('/');
@@ -73,7 +74,7 @@ const CompleteProfilePage = () => {
       setError(err);
       return;
     }
-    if (!userProfile?.hasCompletedSurvey) {
+    if (shouldPromptSurvey(userProfile)) {
       navigate('/encuesta-suscripcion');
     } else {
       navigate('/');

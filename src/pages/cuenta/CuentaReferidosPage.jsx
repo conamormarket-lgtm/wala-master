@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
-import { getReferralsByReferrer, createReferralShare, claimReferralCoins } from '../../services/referrals';
+import { getReferralsByReferrer, createReferralShare, claimReferralCoins, updateReferralCode } from '../../services/referrals';
+import ReferralRanking from '../../components/analytics/ReferralRanking';
 import styles from './CuentaReferidosPage.module.css';
 
 const STAGES = {
@@ -15,10 +16,15 @@ const STAGES = {
 };
 
 const CuentaReferidosPage = () => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, updateUserProfile } = useAuth();
   const toast = useGlobalToast();
   const queryClient = useQueryClient();
   const [generating, setGenerating] = useState(false);
+  
+  // States para edición de código
+  const [isEditingCode, setIsEditingCode] = useState(false);
+  const [newCodeInput, setNewCodeInput] = useState('');
+  const [savingCode, setSavingCode] = useState(false);
 
   const referralCode = userProfile?.referralCode || '';
 
@@ -31,6 +37,39 @@ const CuentaReferidosPage = () => {
     },
     enabled: !!referralCode,
   });
+
+  // Notificaciones al cargar la página (música figurativa)
+  useEffect(() => {
+    if (referrals && referrals.length > 0) {
+      // Mostrar notificaciones de las actividades más recientes (últimos 3 días)
+      const now = new Date();
+      const recent = referrals.filter(r => {
+        const d = r.updatedAt?.toDate() || r.createdAt?.toDate();
+        if (!d) return false;
+        return (now - d) / (1000 * 60 * 60 * 24) <= 3;
+      });
+      
+      const unnotifiedKey = 'notified_referrals_' + referralCode;
+      const notifiedStr = localStorage.getItem(unnotifiedKey) || '[]';
+      const notified = JSON.parse(notifiedStr);
+      let newNotified = [...notified];
+
+      recent.forEach(r => {
+        if (!notified.includes(r.id + '_' + r.status)) {
+          if (r.status === 'clicked') {
+            toast.info('👀 Alguien acaba de ver un producto desde tu enlace.');
+          } else if (r.status === 'purchased' || r.status === 'completed') {
+            toast.success('🎉 ¡Vendiste! Alguien compró por tu enlace.');
+          }
+          newNotified.push(r.id + '_' + r.status);
+        }
+      });
+      
+      if (newNotified.length > notified.length) {
+        localStorage.setItem(unnotifiedKey, JSON.stringify(newNotified));
+      }
+    }
+  }, [referrals, referralCode, toast]);
 
   const generateLink = async () => {
     if (!referralCode) return;
@@ -80,9 +119,43 @@ const CuentaReferidosPage = () => {
       .catch(() => toast.error('Error al copiar'));
   };
 
+  const handleSaveNewCode = async () => {
+    if (!newCodeInput || newCodeInput.trim().length < 4) {
+      toast.error('El código debe tener al menos 4 caracteres');
+      return;
+    }
+    setSavingCode(true);
+    const { error } = await updateReferralCode(user.uid, newCodeInput);
+    if (error) {
+      toast.error(error);
+      setSavingCode(false);
+    } else {
+      toast.success('Código actualizado exitosamente');
+      await updateUserProfile({ referralCode: newCodeInput.trim().toUpperCase(), referralCodeEdited: true });
+      setIsEditingCode(false);
+      setSavingCode(false);
+    }
+  };
+
   if (isLoading) {
     return <div className={styles.loading}>Cargando panel de referidos...</div>;
   }
+
+  // Cálculos de estadísticas
+  const totalVisitas = referrals?.filter(r => STAGES[r.status] >= 2).length || 0;
+  const totalCompras = referrals?.filter(r => STAGES[r.status] >= 3 && r.status !== 'ineligible').length || 0;
+  const totalMonedas = referrals?.reduce((acc, r) => acc + (r.earnedCoins || 0), 0) || 0;
+
+  // Progreso Multiplicador (mes actual)
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const comprasMesActual = referrals?.filter(r => {
+    const isCompleted = r.status === 'completed' || r.status === 'claimed';
+    const d = r.completedAt?.toDate();
+    return isCompleted && d && d >= startOfMonth;
+  }).length || 0;
+
+  const nextPurchaseMultiplier = comprasMesActual >= 2;
 
   return (
     <div className={styles.container}>
@@ -97,10 +170,45 @@ const CuentaReferidosPage = () => {
           <span className={styles.balanceCurrency}>Monedas</span>
         </div>
         
+        <div className={styles.statsRow}>
+          <div className={styles.statBox}>
+            <span className={styles.statValue}>{totalVisitas}</span>
+            <span className={styles.statLabel}>Visitas</span>
+          </div>
+          <div className={styles.statBox}>
+            <span className={styles.statValue}>{totalCompras}</span>
+            <span className={styles.statLabel}>Compras</span>
+          </div>
+          <div className={styles.statBox}>
+            <span className={styles.statValue}>{totalMonedas}</span>
+            <span className={styles.statLabel}>Monedas Ganadas</span>
+          </div>
+        </div>
+
         <div className={styles.codeRow}>
           <div className={styles.codeBox}>
-            {referralCode}
-            <button className={styles.copyBtn} onClick={copyCodeOnly} title="Copiar código">Copiar</button>
+            {isEditingCode ? (
+              <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                <input 
+                  type="text" 
+                  value={newCodeInput} 
+                  onChange={e => setNewCodeInput(e.target.value)} 
+                  style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', textTransform: 'uppercase', flex: 1, minWidth: '120px' }}
+                  maxLength={15}
+                  placeholder="NUEVO_CODIGO"
+                />
+                <button onClick={handleSaveNewCode} disabled={savingCode} style={{ background: '#28a745', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer' }}>✓</button>
+                <button onClick={() => setIsEditingCode(false)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer' }}>✕</button>
+              </div>
+            ) : (
+              <>
+                {referralCode}
+                {!userProfile?.referralCodeEdited && (
+                  <button onClick={() => { setIsEditingCode(true); setNewCodeInput(referralCode); }} title="Editar código (solo se puede 1 vez)" style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>✏️</button>
+                )}
+                <button className={styles.copyBtn} onClick={copyCodeOnly} title="Copiar código">Copiar</button>
+              </>
+            )}
           </div>
           <button className={styles.generateBtn} onClick={generateLink} disabled={generating}>
             {generating ? 'Generando...' : 'Generar Link de Referido'}
@@ -108,7 +216,16 @@ const CuentaReferidosPage = () => {
         </div>
         
         <div className={styles.infoText}>
-          Genera un enlace y compártelo. Ganarás <strong>5 monedas</strong> por cada S/100 que gaste la persona (en compras finalizadas exitosamente).
+          Genera un enlace y compártelo. Ganarás <strong>10 monedas</strong> por cada venta finalizada.
+          {nextPurchaseMultiplier ? (
+            <div style={{ color: '#ffd700', fontWeight: 'bold', marginTop: '0.5rem' }}>
+              ¡Multiplicador activado! Tu próxima venta este mes te dará x2 monedas (20).
+            </div>
+          ) : (
+            <div style={{ color: '#a0aec0', marginTop: '0.5rem' }}>
+              Llevas {comprasMesActual}/3 compras completadas este mes. ¡En la 3ra venta el premio se duplica!
+            </div>
+          )}
         </div>
       </div>
 
@@ -193,6 +310,9 @@ const CuentaReferidosPage = () => {
           })}
         </div>
       )}
+
+      {/* Nuevo componente de Ranking Mensual */}
+      <ReferralRanking />
     </div>
   );
 };

@@ -55,6 +55,18 @@ const CuentaLayout = () => {
             >
               Mis Referidos
             </NavLink>
+            <NavLink
+              to="/cuenta/fechas-importantes"
+              className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
+            >
+              Fechas Importantes
+            </NavLink>
+            <NavLink
+              to="/cuenta/catalogo"
+              className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
+            >
+              Catálogo Recompensas
+            </NavLink>
           </nav>
           <NavLink
             to="/cuenta/perfil"
