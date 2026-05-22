@@ -2,6 +2,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithCredential,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
@@ -9,6 +10,13 @@ import {
   sendPasswordResetEmail as firebaseSendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, getFirebaseConfigMessage } from './config';
+
+// Detecta si la app está corriendo dentro de un runtime nativo de Capacitor (Android/iOS)
+// window.Capacitor es inyectado automáticamente por el bridge de Capacitor en el WebView nativo.
+const isNativePlatform = () =>
+  typeof window !== 'undefined' &&
+  window.Capacitor &&
+  window.Capacitor.isNativePlatform?.();
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -51,13 +59,45 @@ export const signInWithEmail = async (email, password) => {
 };
 
 /**
- * Login con Google
- * Devuelve errorCode y credential (si aplica) para tratar account-exists-with-different-credential.
+ * Login con Google.
+ * - En Android/iOS nativo (Capacitor): usa el plugin @codetrix-studio/capacitor-google-auth
+ *   que abre el selector de cuentas nativo de Google (sin popup ni WebView en blanco).
+ * - En navegador web: usa signInWithPopup como siempre.
  */
 export const signInWithGoogle = async () => {
   if (!isAuthAvailable()) {
     return { user: null, error: getFirebaseConfigMessage(), errorCode: null, credential: null };
   }
+
+  // ── Plataforma nativa (Android / iOS) ────────────────────────────────────
+  if (isNativePlatform()) {
+    try {
+      const { GoogleAuth } = await import(/* webpackIgnore: true */ '@codetrix-studio/capacitor-google-auth');
+      await GoogleAuth.initialize({
+        clientId: '572322137024-0bl118c7mnuglq3fbnbdlhv5kg36dp9a.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
+      const googleUser = await GoogleAuth.signIn();
+      const idToken = googleUser.authentication.idToken;
+      const credential = GoogleAuthProvider.credential(idToken);
+      const result = await signInWithCredential(auth, credential);
+      return { user: result.user, error: null, errorCode: null, credential: null };
+    } catch (error) {
+      // El usuario canceló el selector de cuentas — no es un error real
+      if (error.error === 'popup_closed_by_user' || error.message === 'The user canceled the sign-in flow.') {
+        return { user: null, error: null, errorCode: 'auth/cancelled', credential: null };
+      }
+      return {
+        user: null,
+        error: error.message || 'Error al iniciar sesión con Google',
+        errorCode: error.code || null,
+        credential: null,
+      };
+    }
+  }
+
+  // ── Navegador web ─────────────────────────────────────────────────────────
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return { user: result.user, error: null, errorCode: null, credential: null };
@@ -80,6 +120,15 @@ export const logout = async () => {
     return { error: null };
   }
   try {
+    // Si es plataforma nativa, también cerrar sesión del plugin de Google
+    if (isNativePlatform()) {
+      try {
+        const { GoogleAuth } = await import(/* webpackIgnore: true */ '@codetrix-studio/capacitor-google-auth');
+        await GoogleAuth.signOut();
+      } catch (_) {
+        // Ignorar error si el plugin no estaba activo
+      }
+    }
     await signOut(auth);
     return { error: null };
   } catch (error) {
@@ -124,3 +173,4 @@ export const sendPasswordResetEmail = async (email) => {
     return { error: error.message, errorCode: error.code || null };
   }
 };
+
