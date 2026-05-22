@@ -390,8 +390,144 @@ exports.notifyWishlistBirthdays = onSchedule("0 9 * * *", async (event) => {
       console.log("No users match the 14-day birthday criteria with active wishlists.");
     }
 
+    }
   } catch (error) {
     console.error("Error in notifyWishlistBirthdays:", error);
   }
+});
+
+// ====== RETOS SEMANALES ======
+
+/**
+ * Cron Job: Se ejecuta cada lunes a las 00:00 (Zona horaria America/Lima).
+ * Rota el reto semanal seleccionando uno de los retos disponibles en la colección "weeklyChallenges".
+ */
+exports.rotateWeeklyChallenge = onSchedule({
+  schedule: "0 0 * * 1",
+  timeZone: "America/Lima"
+}, async (event) => {
+  try {
+    const challengesSnap = await db.collection("weeklyChallenges").get();
+    if (challengesSnap.empty) {
+      console.log("No hay retos disponibles para rotar.");
+      return;
+    }
+    
+    // Convertir a array
+    const challenges = [];
+    challengesSnap.forEach(doc => challenges.push({ id: doc.id, ...doc.data() }));
+    
+    // Seleccionar uno al azar
+    const randomIndex = Math.floor(Math.random() * challenges.length);
+    const selectedChallenge = challenges[randomIndex];
+    
+    // Actualizar o crear el documento global 'activeChallenge'
+    await db.collection("globals").doc("activeChallenge").set({
+      challengeId: selectedChallenge.id,
+      title: selectedChallenge.title,
+      description: selectedChallenge.description,
+      actionType: selectedChallenge.actionType,
+      goal: selectedChallenge.goal,
+      rewardCoins: selectedChallenge.rewardCoins,
+      rewardType: selectedChallenge.rewardType || "main", // "main" o "kapi_double_3d"
+      startedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    
+    console.log("Reto semanal rotado exitosamente:", selectedChallenge.title);
+  } catch (err) {
+    console.error("Error al rotar reto semanal:", err);
+  }
+});
+
+/**
+ * Callable Function: Enviar evidencia manual para el reto (ej. link a story, foto)
+ */
+exports.submitChallengeEvidence = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
+  }
+  const { evidenceUrl, challengeId, evidenceType } = data;
+  if (!evidenceUrl || !challengeId) {
+    throw new functions.https.HttpsError("invalid-argument", "Faltan datos de la evidencia.");
+  }
+
+  const uid = context.auth.uid;
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const userDoc = await userRef.get();
+  const userName = userDoc.exists ? userDoc.data().displayName : "Usuario";
+  
+  await db.collection("challengeEvidences").add({
+    userId: uid,
+    userName: userName,
+    challengeId,
+    evidenceUrl,
+    evidenceType: evidenceType || "image",
+    status: "pending",
+    submittedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  return { success: true };
+});
+
+/**
+ * Callable Function (Admin Solo): Aprobar o rechazar evidencia
+ */
+exports.approveChallengeEvidence = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
+  }
+  
+  const { evidenceId, action, rewardCoins, rewardType } = data; // action: 'approve' | 'reject'
+  if (!evidenceId || !action) {
+    throw new functions.https.HttpsError("invalid-argument", "Faltan datos.");
+  }
+
+  const evidenceRef = db.collection("challengeEvidences").doc(evidenceId);
+  
+  await db.runTransaction(async (transaction) => {
+    const evidenceDoc = await transaction.get(evidenceRef);
+    if (!evidenceDoc.exists) {
+      throw new functions.https.HttpsError("not-found", "Evidencia no encontrada.");
+    }
+    const evData = evidenceDoc.data();
+    if (evData.status !== "pending") {
+      throw new functions.https.HttpsError("failed-precondition", "La evidencia ya fue procesada.");
+    }
+
+    transaction.update(evidenceRef, { 
+      status: action === "approve" ? "approved" : "rejected",
+      processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      processedBy: context.auth.uid
+    });
+
+    if (action === "approve") {
+      const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(evData.userId);
+      const userDoc = await transaction.get(userRef);
+      if(userDoc.exists) {
+        const userData = userDoc.data();
+        let updates = {
+           challengeEvidencesApproved: admin.firestore.FieldValue.arrayUnion(evData.challengeId)
+        };
+        // Acreditar monedas si se aprobaron directamente acá
+        if (rewardType === 'main') {
+           // Usamos la misma lógica de earnMainCoins pero en backend
+           let activas = userData.monedasActivas || [];
+           const tzOffset = -5 * 60; // Peru
+           const expirationDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000 + tzOffset * 60000);
+           const expiresAt = expirationDate.toISOString().replace('Z', '-05:00');
+           activas.push({ amount: rewardCoins, reason: 'Reto Manual Completado', expiresAt, createdAt: new Date().toISOString() });
+           updates.monedas = (userData.monedas || 0) + rewardCoins;
+           updates.monedasActivas = activas;
+        } else if (rewardType === 'kapi_double_3d') {
+           updates.activeMultiplier = 'kapi_double_3d';
+           updates.multiplierExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+        }
+        transaction.set(userRef, updates, { merge: true });
+      }
+    }
+  });
+
+  return { success: true };
 });
 

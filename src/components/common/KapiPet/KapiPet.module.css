@@ -171,3 +171,109 @@
   font-weight: bold;
   font-size: 15px;
 }
+
+/* Reto Semanal Styles */
+.challengeCard {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.challengeHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.challengeIcon {
+  font-size: 24px;
+}
+
+.challengeTitle {
+  margin: 0;
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.challengeReward {
+  font-size: 12px;
+  color: #db8a10;
+  font-weight: 600;
+}
+
+.challengeDesc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.challengeProgress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.progressBar {
+  flex: 1;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #10b981;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.challengeCompletedBox {
+  background: #ecfdf5;
+  color: #059669;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.evidenceBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.evidenceInput {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  width: 100%;
+}
+
+.evidenceBtn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.evidenceBtn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}

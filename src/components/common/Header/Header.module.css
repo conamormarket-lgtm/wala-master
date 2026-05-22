@@ -434,6 +434,21 @@
   border-color: #8b5cf6;
 }
 
+.walletsContainer {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.desktopWalletsOnly {
+  display: flex;
+  align-items: center;
+}
+
+.mobileWalletsOnly {
+  display: none;
+}
+
 .coinsDisplayTarget {
   position: relative;
   display: flex;
@@ -716,10 +731,167 @@
     height: 22px;
   }
 
+  .desktopWalletsOnly {
+    display: none;
+  }
+  
+  .mobileWalletsOnly {
+    display: block;
+    position: relative;
+  }
+
+  .mobileWalletBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0.375rem;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: var(--radio-pequeno);
+    cursor: pointer;
+    transition: var(--transicion-rapida);
+  }
+
+  .mobileWalletBtn:hover {
+    background-color: var(--rojo-light);
+  }
+
+  .premiumMobileDropdown {
+    position: fixed;
+    top: 70px; /* Debajo del header */
+    left: 50%;
+    right: auto;
+    margin: 0;
+    background: var(--blanco);
+    border: 1px solid var(--gris-borde);
+    border-radius: 16px;
+    width: 92vw;
+    max-width: 320px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 105;
+    overflow: hidden;
+  }
+
+  .premiumMobileDropdownOpen {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .premiumMobileHeader {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gris-borde);
+    background: #f8fafc;
+  }
+
+  .premiumMobileHeader h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--gris-texto-principal);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .premiumWalletItem {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .premiumWalletItem:last-of-type {
+    border-bottom: none;
+  }
+
+  .premiumWalletIconWrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+
+  .premiumWalletIcon {
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  .premiumWalletDetails {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .premiumWalletTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--gris-texto-principal);
+  }
+
+  .premiumWalletSubtitle {
+    font-size: 0.75rem;
+    color: var(--gris-texto-secundario);
+    margin-top: 2px;
+  }
+
+  .premiumWalletAmount {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #db8a10;
+  }
+
+  .premiumWalletFooter {
+    padding: 12px 16px;
+    background: #fff;
+    border-top: 1px solid var(--gris-borde);
+    display: flex;
+    justify-content: center;
+  }
+
+  .premiumWalletLink {
+    color: var(--rojo-principal);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .premiumWalletLink:hover {
+    opacity: 0.8;
+  }
+
   .coinsDisplay {
     font-size: 0.9rem;
-    padding: 4px 10px;
-    margin-right: 0.25rem;
+    padding: 3px 8px;
+    margin-right: 0;
+  }
+
+  .mobileCenteredPopup {
+    position: fixed;
+    top: 70px; /* Debajo del header */
+    left: 50%;
+    right: auto;
+    background: var(--blanco);
+    width: 92vw;
+    max-width: 320px;
+    transform: translateX(-50%) translateY(-10px);
+    z-index: 105;
+  }
+
+  .accountDropdownContainer:hover .mobileCenteredPopup {
+    transform: translateX(-50%) translateY(0);
   }
 }
 
@@ -755,8 +927,8 @@
 
   .coinsDisplay {
     font-size: 0.85rem;
-    padding: 3px 8px;
-    margin-right: 0.15rem;
+    padding: 2px 6px;
+    margin-right: 0;
   }
 }
 

@@ -13,7 +13,7 @@ export const useWishlist = () => {
 };
 
 export const WishlistProvider = ({ children }) => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, processChallengeEvent } = useAuth();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -82,6 +82,11 @@ export const WishlistProvider = ({ children }) => {
       } else if (data) {
         // Update with actual data from backend if needed
         setWishlistItems(prev => prev.map(item => item.productId === product.id ? data : item));
+      }
+      
+      // Hook para el reto semanal
+      if (processChallengeEvent) {
+        processChallengeEvent('add_wishlist', 1);
       }
     }
     

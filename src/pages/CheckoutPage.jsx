@@ -44,6 +44,16 @@ const validationSchema = Yup.object({
   district: Yup.string().required('Distrito requerido'),
   city: Yup.string().required('Ciudad requerida'),
   email: Yup.string().email('Email inválido').required('Email requerido'),
+  isGiftMode: Yup.boolean(),
+  giftRecipientName: Yup.string().when('isGiftMode', {
+    is: true,
+    then: () => Yup.string().required('Nombre del destinatario requerido')
+  }),
+  giftMessage: Yup.string().when('isGiftMode', {
+    is: true,
+    then: () => Yup.string().max(200, 'Máximo 200 caracteres').required('Mensaje requerido')
+  }),
+  giftSticker: Yup.string()
 });
 
 const CheckoutPage = () => {
@@ -115,7 +125,11 @@ const CheckoutPage = () => {
       address: guestSavedInfo.address || '',
       district: guestSavedInfo.district || '',
       city: guestSavedInfo.city || 'Lima',
-      email: user?.email || guestSavedInfo.email || ''
+      email: user?.email || guestSavedInfo.email || '',
+      isGiftMode: false,
+      giftRecipientName: '',
+      giftMessage: '',
+      giftSticker: 'kapi-love'
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -465,6 +479,14 @@ const CheckoutPage = () => {
           // ─ Referencia del usuario autenticado (si aplica) ─
           ...(user?.uid && { userId: user.uid }),
           portalPseudoOrderId: pseudoOrderId,
+          ...(values.isGiftMode && {
+            giftDetails: {
+              isGift: true,
+              recipientName: values.giftRecipientName,
+              message: values.giftMessage,
+              sticker: values.giftSticker
+            }
+          }),
         };
 
         // ── 1. Guardar en pedidos_web (colección separada, para validación previa) ──
@@ -514,6 +536,12 @@ const CheckoutPage = () => {
         message += `Teléfono: ${values.phone}\n`;
         message += `Email: ${values.email}\n`;
         message += `Dirección: ${values.address}, ${values.district}, ${values.city}\n\n`;
+
+        if (values.isGiftMode) {
+          message += `🎁 *MODO REGALO ACTIVO*\n`;
+          message += `   Para: ${values.giftRecipientName}\n`;
+          message += `   Mensaje: "${values.giftMessage}"\n\n`;
+        }
 
         message += `Detalle de Compra:\n`;
         items.forEach((item, index) => {
@@ -722,6 +750,74 @@ const CheckoutPage = () => {
               />
               {formik.touched.address && formik.errors.address && (
                 <span className={styles.error}>{formik.errors.address}</span>
+              )}
+            </div>
+
+            <div className={styles.giftModeContainer}>
+              <div className={styles.giftModeToggle}>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="isGiftMode"
+                    checked={formik.values.isGiftMode}
+                    onChange={formik.handleChange}
+                  />
+                  🎁 Activar Modo Regalo (Gratis)
+                </label>
+                <p>Incluye una experiencia digital inmersiva para el destinatario.</p>
+              </div>
+
+              {formik.values.isGiftMode && (
+                <div className={styles.giftModeFields}>
+                  <div className={styles.field}>
+                    <label>Nombre del destinatario *</label>
+                    <input
+                      type="text"
+                      name="giftRecipientName"
+                      value={formik.values.giftRecipientName}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      placeholder="Ej: María"
+                    />
+                    {formik.touched.giftRecipientName && formik.errors.giftRecipientName && (
+                      <span className={styles.error}>{formik.errors.giftRecipientName}</span>
+                    )}
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Mensaje (Máx 200 caracteres) *</label>
+                    <textarea
+                      name="giftMessage"
+                      value={formik.values.giftMessage}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      maxLength="200"
+                      placeholder="Escribe un mensaje especial..."
+                      rows="3"
+                    ></textarea>
+                    {formik.touched.giftMessage && formik.errors.giftMessage && (
+                      <span className={styles.error}>{formik.errors.giftMessage}</span>
+                    )}
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Sticker de Kapi</label>
+                    <div className={styles.stickerSelection}>
+                      <label className={formik.values.giftSticker === 'kapi-love' ? styles.stickerSelected : ''}>
+                        <input type="radio" name="giftSticker" value="kapi-love" checked={formik.values.giftSticker === 'kapi-love'} onChange={formik.handleChange} />
+                        😍 Amor
+                      </label>
+                      <label className={formik.values.giftSticker === 'kapi-party' ? styles.stickerSelected : ''}>
+                        <input type="radio" name="giftSticker" value="kapi-party" checked={formik.values.giftSticker === 'kapi-party'} onChange={formik.handleChange} />
+                        🎉 Fiesta
+                      </label>
+                      <label className={formik.values.giftSticker === 'kapi-smile' ? styles.stickerSelected : ''}>
+                        <input type="radio" name="giftSticker" value="kapi-smile" checked={formik.values.giftSticker === 'kapi-smile'} onChange={formik.handleChange} />
+                        😊 Feliz
+                      </label>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 

@@ -5,6 +5,8 @@ import { getDocument, updateDocument, setDocument } from '../services/firebase/f
 import { getAdminRoleByEmail, setAdminRole } from '../services/adminRoles';
 import { getStartOfWeek, formatIsoDate } from '../services/firebase/ruleta';
 import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/userCollections';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../services/firebase/config';
 
 const AuthContext = createContext();
 
@@ -21,6 +23,19 @@ export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [adminPermissions, setAdminPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeWeeklyChallenge, setActiveWeeklyChallenge] = useState(null);
+
+  useEffect(() => {
+    if (!db) return;
+    const unsub = onSnapshot(doc(db, 'globals', 'activeChallenge'), (snapshot) => {
+      if (snapshot.exists()) {
+        setActiveWeeklyChallenge(snapshot.data());
+      } else {
+        setActiveWeeklyChallenge(null);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
@@ -249,6 +264,52 @@ export const AuthProvider = ({ children }) => {
     });
   }, [userProfile, calculateActiveCoins, spendMonedas, updateUserProfile]);
 
+  const processChallengeEvent = React.useCallback(async (actionType, count = 1) => {
+    if (!userProfile || !activeWeeklyChallenge) return;
+    
+    // Si el tipo de evento coincide
+    if (activeWeeklyChallenge.actionType === actionType) {
+      const challengeId = activeWeeklyChallenge.challengeId;
+      const currentProgress = userProfile.weeklyChallengeProgress || {};
+      
+      // Si ya lo completó o es de otro challenge, reseteamos/ignoramos
+      if (currentProgress.challengeId !== challengeId) {
+         currentProgress.challengeId = challengeId;
+         currentProgress.progress = 0;
+         currentProgress.completed = false;
+      }
+      
+      if (currentProgress.completed) return; // Ya lo completó
+      
+      const newProgress = Math.min((currentProgress.progress || 0) + count, activeWeeklyChallenge.goal);
+      const isNowCompleted = newProgress >= activeWeeklyChallenge.goal;
+      
+      let updates = {
+         weeklyChallengeProgress: {
+            challengeId,
+            progress: newProgress,
+            completed: isNowCompleted
+         }
+      };
+
+      // Si se acaba de completar, acreditamos
+      if (isNowCompleted) {
+         if (activeWeeklyChallenge.rewardType === 'kapi_double_3d') {
+             updates.activeMultiplier = 'kapi_double_3d';
+             updates.multiplierExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+         }
+         window.dispatchEvent(new CustomEvent('weekly-challenge-completed'));
+      }
+      
+      await updateUserProfile(updates);
+
+      // Si es "main", acreditamos aparte para asegurar consistencia
+      if (isNowCompleted && activeWeeklyChallenge.rewardType === 'main') {
+          await earnMainCoins(activeWeeklyChallenge.rewardCoins, 'Reto Semanal Completado', 90);
+      }
+    }
+  }, [userProfile, activeWeeklyChallenge, updateUserProfile, earnMainCoins]);
+
   const feedKapi = React.useCallback(async () => {
     if (!userProfile) return { error: 'No profile' };
     
@@ -278,8 +339,15 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
+    let coinsToAdd = 1;
+    if (userProfile.activeMultiplier === 'kapi_double_3d') {
+      if (userProfile.multiplierExpiresAt && new Date(userProfile.multiplierExpiresAt) > new Date()) {
+         coinsToAdd = 2;
+      }
+    }
+
     return await updateUserProfile({
-      kapiCoins: currentKapiCoins + 1,
+      kapiCoins: currentKapiCoins + coinsToAdd,
       lastKapiClaimDate: todayStr,
       kapiHappiness: Math.min(100, currentHappiness + 10),
       weeklyClaimsData: weeklyData
@@ -327,11 +395,13 @@ export const AuthProvider = ({ children }) => {
     earnMainCoins,
     feedKapi,
     validateDatesStreak,
+    processChallengeEvent,
+    activeWeeklyChallenge,
     activeMainCoins: calculateActiveCoins(),
     isAuthenticated: !!user,
     isAdmin,
     profileIncomplete,
-  }), [user, userProfile, effectiveAdminPermissions, loading, updateUserProfile, linkDNI, claimMonedas, spendMonedas, freezeMonedas, earnMainCoins, feedKapi, validateDatesStreak, calculateActiveCoins, profileIncomplete, isAdmin]);
+  }), [user, userProfile, effectiveAdminPermissions, loading, updateUserProfile, linkDNI, claimMonedas, spendMonedas, freezeMonedas, earnMainCoins, feedKapi, validateDatesStreak, processChallengeEvent, activeWeeklyChallenge, calculateActiveCoins, profileIncomplete, isAdmin]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

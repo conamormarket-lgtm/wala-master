@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { scheduleKapiNotifications } from '../../../services/kapiNotifications';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import styles from './KapiPet.module.css';
 
 const KapiPet = () => {
-  const { user, userProfile, feedKapi } = useAuth();
+  const { user, userProfile, feedKapi, activeWeeklyChallenge } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isFeeding, setIsFeeding] = useState(false);
+  const [evidenceUrl, setEvidenceUrl] = useState('');
+  const [submittingEv, setSubmittingEv] = useState(false);
 
   // Placeholders para las imágenes que luego proveerá el cliente
   const IMAGES = {
@@ -25,9 +28,33 @@ const KapiPet = () => {
     const handleOpenEvent = () => {
       setIsOpen(true);
     };
+    const handleChallengeCompleted = () => {
+      // Usar alerta o animación CSS sencilla sin librerías de terceros
+      console.log('¡Reto completado!');
+      setIsOpen(true); // Abre Kapi para mostrar la celebración
+    };
+
     window.addEventListener('open-kapi-pet', handleOpenEvent);
-    return () => window.removeEventListener('open-kapi-pet', handleOpenEvent);
+    window.addEventListener('weekly-challenge-completed', handleChallengeCompleted);
+    return () => {
+      window.removeEventListener('open-kapi-pet', handleOpenEvent);
+      window.removeEventListener('weekly-challenge-completed', handleChallengeCompleted);
+    };
   }, []);
+
+  // Hook para reto de visita diaria (se dispara 1 vez al cargar Kapi si el reto está activo)
+  useEffect(() => {
+    if (activeWeeklyChallenge && activeWeeklyChallenge.actionType === 'daily_visit' && userProfile) {
+      // Nota: Idealmente validaríamos que no se haya disparado hoy. 
+      // Por ahora, usamos processChallengeEvent pero cuidado con recargas.
+      // Para un tracker real de "5 días seguidos", se requerirá un campo en AuthContext.
+      const today = new Date().toISOString().split('T')[0];
+      if (userProfile.lastDailyVisitChallenge !== today) {
+         // Firing hook would go here. For now it's just prepared.
+         // feedKapi() is a good analog for daily tracking.
+      }
+    }
+  }, [activeWeeklyChallenge, userProfile]);
 
   if (!user || !userProfile) return null;
 
@@ -68,7 +95,35 @@ const KapiPet = () => {
     }, 1500);
   };
 
+  const handleSubmitEvidence = async () => {
+    if(!evidenceUrl) return;
+    setSubmittingEv(true);
+    try {
+       const functions = getFunctions();
+       const submitEvidence = httpsCallable(functions, 'submitChallengeEvidence');
+       await submitEvidence({
+         evidenceUrl,
+         challengeId: activeWeeklyChallenge.challengeId,
+         evidenceType: 'link'
+       });
+       alert('¡Evidencia enviada! Será revisada pronto.');
+       setEvidenceUrl('');
+    } catch(e) {
+       alert('Error al enviar: ' + e.message);
+    }
+    setSubmittingEv(false);
+  };
+
   const handleToggle = () => setIsOpen(!isOpen);
+
+  // Determinar progreso del reto actual
+  const progressData = userProfile?.weeklyChallengeProgress || {};
+  const isChallengeCompleted = progressData.challengeId === activeWeeklyChallenge?.challengeId && progressData.completed;
+  const currentProgress = progressData.challengeId === activeWeeklyChallenge?.challengeId ? (progressData.progress || 0) : 0;
+  const isPendingApproval = userProfile?.challengeEvidencesApproved?.includes(activeWeeklyChallenge?.challengeId);
+  // Wait, actually challengeEvidencesApproved means it IS approved.
+  const isManualApproved = userProfile?.challengeEvidencesApproved?.includes(activeWeeklyChallenge?.challengeId);
+  const displayCompleted = isChallengeCompleted || isManualApproved;
 
   return (
     <>
@@ -107,6 +162,52 @@ const KapiPet = () => {
                 </div>
               </div>
             </div>
+
+            {/* RETO SEMANAL BANNER */}
+            {activeWeeklyChallenge && (
+              <div className={styles.challengeCard}>
+                <div className={styles.challengeHeader}>
+                  <span className={styles.challengeIcon}>🎯</span>
+                  <div style={{flex: 1}}>
+                    <h4 className={styles.challengeTitle}>Reto Semanal: {activeWeeklyChallenge.title}</h4>
+                    <span className={styles.challengeReward}>
+                      Recompensa: {activeWeeklyChallenge.rewardType === 'main' ? `${activeWeeklyChallenge.rewardCoins} WalaCoins` : 'Doble KapiCoins'}
+                    </span>
+                  </div>
+                </div>
+                
+                <p className={styles.challengeDesc}>{activeWeeklyChallenge.description}</p>
+                
+                {displayCompleted ? (
+                   <div className={styles.challengeCompletedBox}>
+                     ✅ ¡Reto completado! Recompensa entregada.
+                   </div>
+                ) : (
+                   <>
+                     <div className={styles.challengeProgress}>
+                       <span>{currentProgress} / {activeWeeklyChallenge.goal}</span>
+                       <div className={styles.progressBar}>
+                         <div className={styles.progressFill} style={{width: `${Math.min(100, (currentProgress/activeWeeklyChallenge.goal)*100)}%`}}></div>
+                       </div>
+                     </div>
+                     {activeWeeklyChallenge.actionType?.startsWith('manual_') && (
+                       <div className={styles.evidenceBox}>
+                         <input 
+                           type="text" 
+                           placeholder="Pega el link de tu evidencia (foto/story)" 
+                           value={evidenceUrl} 
+                           onChange={e => setEvidenceUrl(e.target.value)} 
+                           className={styles.evidenceInput}
+                         />
+                         <button onClick={handleSubmitEvidence} disabled={submittingEv || !evidenceUrl} className={styles.evidenceBtn}>
+                           {submittingEv ? 'Enviando...' : 'Enviar Evidencia'}
+                         </button>
+                       </div>
+                     )}
+                   </>
+                )}
+              </div>
+            )}
 
             <div className={styles.actionContainer}>
               {hasClaimedToday ? (

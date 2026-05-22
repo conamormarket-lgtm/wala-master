@@ -243,9 +243,13 @@ const AdminLayout = () => {
               >
                 Fechas Importantes
               </NavLink>
+              <NavLink
+                to="/admin/retos"
+                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
+              >
+                Retos Semanales
+              </NavLink>
             </>
-          )}
-
           )}
 
         </nav>

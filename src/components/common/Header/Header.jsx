@@ -27,6 +27,7 @@ const Header = () => {
   const { isHeaderVisible } = useLayoutContext();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileWalletOpen, setMobileWalletOpen] = useState(false);
   const cartItemsCount = getTotalItems();
   const realCoins = activeMainCoins || 0;
   
@@ -279,29 +280,83 @@ const Header = () => {
         </EditableSection>
 
         <div className={styles.actions}>
-          {/* Billetera Principal (Wala Coins) */}
-          <div 
-            className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`} 
-            onClick={handleResetCoinsForTesting}
-            style={user?.email === 'yorh001@gmail.com' ? { cursor: 'pointer' } : {}}
-          >
-            <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
-              🪙 {Math.floor(displayCoins)}
-            </div>
-            <div className={styles.tooltipText}>
-              Billetera Principal - ¡Canjea tus monedas en el catálogo o checkout!
-              {user?.email === 'yorh001@gmail.com' && <br/>}
-              {user?.email === 'yorh001@gmail.com' && <small style={{color:'#f1c40f'}}>(Click para Reset Test)</small>}
-            </div>
-          </div>
+          <div className={styles.walletsContainer}>
+            {/* --- DESKTOP VIEW --- */}
+            <div className={styles.desktopWalletsOnly}>
+              {/* Billetera Principal (Wala Coins) */}
+              <div 
+                className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`} 
+                onClick={handleResetCoinsForTesting}
+                style={user?.email === 'yorh001@gmail.com' ? { cursor: 'pointer' } : {}}
+              >
+                <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
+                  🪙 {Math.floor(displayCoins)}
+                </div>
+                <div className={styles.tooltipText}>
+                  Billetera Principal - ¡Canjea tus monedas en el catálogo o checkout!
+                  {user?.email === 'yorh001@gmail.com' && <br/>}
+                  {user?.email === 'yorh001@gmail.com' && <small style={{color:'#f1c40f'}}>(Click para Reset Test)</small>}
+                </div>
+              </div>
 
-          {/* Billetera Diaria (Kapi Coins) */}
-          <div className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer}`}>
-            <div className={`${styles.coinsDisplay} ${isKapiBouncing ? styles.bounce : ''}`} style={{ backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' }}>
-              🍖 {displayKapiCoins}
+              {/* Billetera Diaria (Kapi Coins) */}
+              <div className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer}`}>
+                <div className={`${styles.coinsDisplay} ${isKapiBouncing ? styles.bounce : ''}`} style={{ backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' }}>
+                  🍖 {displayKapiCoins}
+                </div>
+                <div className={styles.tooltipText}>
+                  Billetera Diaria - Kapi Coins (Vencen a fin de mes)
+                </div>
+              </div>
             </div>
-            <div className={styles.tooltipText}>
-              Billetera Diaria - Kapi Coins (Vencen a fin de mes)
+
+            {/* --- MOBILE VIEW --- */}
+            <div className={styles.mobileWalletsOnly}>
+              <button 
+                className={styles.mobileWalletBtn} 
+                onClick={() => setMobileWalletOpen(!mobileWalletOpen)}
+                aria-label="Tus billeteras"
+              >
+                <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>🪙</span>
+              </button>
+
+              <div className={`${styles.premiumMobileDropdown} ${mobileWalletOpen ? styles.premiumMobileDropdownOpen : ''}`}>
+                <div className={styles.premiumMobileHeader}>
+                  <h4>Mis Billeteras</h4>
+                </div>
+                
+                <div className={styles.premiumWalletItem}>
+                  <div className={styles.premiumWalletIconWrapper} style={{background: 'rgba(243, 156, 18, 0.15)'}}>
+                     <span className={styles.premiumWalletIcon}>🪙</span>
+                  </div>
+                  <div className={styles.premiumWalletDetails}>
+                     <span className={styles.premiumWalletTitle}>Wala Coins</span>
+                     <span className={styles.premiumWalletSubtitle}>Principal</span>
+                  </div>
+                  <div className={styles.premiumWalletAmount}>
+                     {Math.floor(displayCoins)}
+                  </div>
+                </div>
+
+                <div className={styles.premiumWalletItem}>
+                  <div className={styles.premiumWalletIconWrapper} style={{background: 'rgba(133, 100, 4, 0.1)'}}>
+                     <span className={styles.premiumWalletIcon}>🍖</span>
+                  </div>
+                  <div className={styles.premiumWalletDetails}>
+                     <span className={styles.premiumWalletTitle}>Kapi Coins</span>
+                     <span className={styles.premiumWalletSubtitle}>Diaria</span>
+                  </div>
+                  <div className={styles.premiumWalletAmount} style={{color: '#856404'}}>
+                     {displayKapiCoins}
+                  </div>
+                </div>
+
+                <div className={styles.premiumWalletFooter}>
+                  <Link to="/cuenta/catalogo" className={styles.premiumWalletLink} onClick={() => setMobileWalletOpen(false)}>
+                    Ir al Catálogo de Recompensas
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -316,7 +371,7 @@ const Header = () => {
               <Heart strokeWidth={1.5} className={styles.icon} />
             </Link>
             
-            <div className={styles.accountPopup}>
+            <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
               <div className={styles.accountPopupContent}>
                 {(() => {
                   const favConfig = storeConfigDraft?.favoritesPopup || {
@@ -395,7 +450,7 @@ const Header = () => {
               <User strokeWidth={1.5} className={styles.icon} />
             </Link>
             
-            <div className={styles.accountPopup}>
+            <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
               <EditableSection sectionId="accountPopup" currentConfig={activeConfig} label="Pop-up de Cuenta">
                 <div className={styles.accountPopupContent}>
                   {user ? (
@@ -467,7 +522,7 @@ const Header = () => {
               )}
             </Link>
 
-            <div className={`${styles.accountPopup} ${styles.cartPopupWidth}`}>
+            <div className={`${styles.accountPopup} ${styles.cartPopupWidth} ${styles.mobileCenteredPopup}`}>
               <div className={styles.accountPopupContent}>
                 <h3 style={{textAlign: 'left', borderBottom: '1px solid #eee', paddingBottom: '0.75rem', marginBottom: '0.75rem'}}>Mi Carrito</h3>
                 {cartItems.length === 0 ? (

@@ -21,7 +21,7 @@ const NotificationTray = () => {
         )}
       </button>
 
-      <div className={`${styles.accountPopup} ${styles.cartPopupWidth}`}>
+      <div className={`${styles.accountPopup} ${styles.cartPopupWidth} ${styles.mobileCenteredPopup}`}>
         <div className={styles.accountPopupContent} style={{ padding: '0.5rem', maxHeight: '400px', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
             <h3 style={{ margin: 0, fontSize: '1rem' }}>Notificaciones</h3>

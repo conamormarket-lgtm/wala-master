@@ -293,4 +293,41 @@ export async function createWebOrder(orderData) {
   }
 }
 
+/**
+ * Obtener detalles del regalo de un pedido (por pseudoOrderId o ID)
+ * Solo devuelve los datos de giftDetails para mantener la privacidad
+ */
+export async function getOrderGiftDetails(orderId) {
+  if (!isErpFirestoreAvailable()) {
+    return { data: null, error: 'Firestore del ERP no está disponible' };
+  }
+
+  try {
+    // 1. Buscar por numeroPedido en pedidos_web
+    const qWeb = query(collection(erpDb, 'pedidos_web'), where('numeroPedido', '==', orderId));
+    const snapWeb = await getDocs(qWeb);
+    if (!snapWeb.empty) {
+      const docData = snapWeb.docs[0].data();
+      if (docData.giftDetails && docData.giftDetails.isGift) {
+        return { data: docData.giftDetails, error: null };
+      }
+    }
+
+    // 2. Buscar por numeroPedido en pedidos (aprobados)
+    const qPedidos = query(collection(erpDb, 'pedidos'), where('numeroPedido', '==', orderId));
+    const snapPedidos = await getDocs(qPedidos);
+    if (!snapPedidos.empty) {
+      const docData = snapPedidos.docs[0].data();
+      if (docData.giftDetails && docData.giftDetails.isGift) {
+        return { data: docData.giftDetails, error: null };
+      }
+    }
+
+    return { data: null, error: 'No se encontraron detalles de regalo para esta orden.' };
+  } catch (error) {
+    console.error('Error al obtener detalles del regalo:', error);
+    return { data: null, error: error.message };
+  }
+}
+
 export { erpDb, erpApp };

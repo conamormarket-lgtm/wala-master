@@ -49,6 +49,7 @@ const SubscriptionLandingPage = lazy(() => import('./pages/SubscriptionLandingPa
 const NuevosUsuariosPage = lazy(() => import('./pages/NuevosUsuariosPage'));
 const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
 const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
+const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -75,6 +76,7 @@ const AdminMascota = lazy(() => import('./pages/admin/AdminMascota'));
 const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
 const AdminCrearCuentasPedidos = lazy(() => import('./pages/admin/AdminCrearCuentasPedidos'));
+const AdminRetos = lazy(() => import('./pages/admin/AdminRetos'));
 const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuariosAnalyticsPage'));
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
@@ -224,6 +226,7 @@ function App() {
                             <Route path="whatsapp" element={<AdminWhatsApp />} />
                             <Route path="referidos" element={<AdminReferidos />} />
                             <Route path="pagos" element={<AdminPagos />} />
+                            <Route path="retos" element={<AdminRetos />} />
                             <Route path="destacados" element={<AdminDestacados />} />
                             <Route path="zonas" element={<Navigate to="/admin" replace />} />
                             <Route path="cliparts" element={<AdminCliparts />} />
@@ -254,6 +257,7 @@ function App() {
                         <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
                         <Route path="/regalos-con-amor" element={<NuevosUsuariosPage />} />
                         <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
+                        <Route path="/regalo/:orderId" element={<GiftExperiencePage />} />
                         
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />
