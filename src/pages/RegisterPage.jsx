@@ -4,6 +4,7 @@ import { signUpWithEmail, signInWithGoogle } from '../services/firebase/auth';
 import { setDocument, getCollection } from '../services/firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
+import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
 import { validateDNI, validateCE, validatePhone, getPasswordRequirements, isPasswordValid } from '../utils/helpers';
 import Button from '../components/common/Button';
@@ -42,7 +43,7 @@ const RegisterPage = () => {
   React.useEffect(() => {
     if (authLoading || !user) return;
     if (userProfile?.dni && userProfile?.phone) {
-      if (!userProfile?.hasCompletedSurvey) {
+      if (shouldPromptSurvey(userProfile)) {
         navigate('/encuesta-suscripcion', { replace: true });
       } else {
         navigate('/', { replace: true });

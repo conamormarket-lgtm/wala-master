@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmail, signInWithGoogle } from '../services/firebase/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
+import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
@@ -19,7 +20,7 @@ const LoginPage = () => {
   React.useEffect(() => {
     if (authLoading || !user) return;
     if (userProfile?.dni && userProfile?.phone) {
-      if (!userProfile?.hasCompletedSurvey) {
+      if (shouldPromptSurvey(userProfile)) {
         navigate('/encuesta-suscripcion', { replace: true });
       } else {
         navigate('/', { replace: true });
@@ -45,7 +46,7 @@ const LoginPage = () => {
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
     } else {
-      if (!userProfile?.hasCompletedSurvey) {
+      if (shouldPromptSurvey(userProfile)) {
         navigate('/encuesta-suscripcion');
       } else {
         navigate('/');

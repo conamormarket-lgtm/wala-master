@@ -96,17 +96,23 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.95);
   border: none;
-  color: #000;
+  color: #111;
   cursor: pointer;
   z-index: 10;
-  padding: 8px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  transition: transform 0.2s ease, color 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, color 0.2s ease, background-color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.favoriteBtn svg {
+  filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.1));
 }
 
 .favoriteBtn:hover {

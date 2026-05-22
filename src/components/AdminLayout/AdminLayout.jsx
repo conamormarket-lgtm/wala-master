@@ -115,6 +115,12 @@ const AdminLayout = () => {
               >
                 La Palabra del Día
               </NavLink>
+              <NavLink
+                to="/admin/ruleta"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                Ruleta Semanal
+              </NavLink>
             </>
           )}
 
@@ -230,6 +236,12 @@ const AdminLayout = () => {
                 className={({ isActive }) => getLinkClass(isActive, 'clientes')}
               >
                 Encuesta de Suscripción
+              </NavLink>
+              <NavLink
+                to="/admin/fechas-importantes"
+                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
+              >
+                Fechas Importantes
               </NavLink>
             </>
           )}

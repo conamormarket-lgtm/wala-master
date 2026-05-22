@@ -7,6 +7,7 @@ import { EditorProvider } from './contexts/EditorContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { VisualEditorProvider } from './pages/Tienda/contexts/VisualEditorContext';
 import { LayoutProvider } from './contexts/LayoutContext';
+import { WishlistProvider } from './contexts/WishlistContext';
 import AdminRoute from './components/AdminRoute/AdminRoute';
 import RouteTracker from './components/analytics/RouteTracker';
 import ReferralTracker from './components/analytics/ReferralTracker';
@@ -26,10 +27,11 @@ import WordlePage from './pages/Tienda/WordlePage';
 import BottomNav from './components/common/BottomNav';
 import WhatsAppButton from './components/common/WhatsAppButton';
 import FirebaseWarning from './components/common/FirebaseWarning';
-import DailyReward from './components/common/DailyReward/DailyReward';
+import KapiPet from './components/common/KapiPet/KapiPet';
 import AdminBar from './components/common/AdminBar/AdminBar';
 import VisualEditorPanel from './pages/Tienda/admin/VisualEditorPanel';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
+
 
 // ── Páginas secundarias — lazy para no bloquear ──────────
 const ProductPage = lazy(() => import('./pages/ProductPage'));
@@ -45,6 +47,8 @@ const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'
 const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage'));
 const SubscriptionLandingPage = lazy(() => import('./pages/SubscriptionLandingPage'));
 const NuevosUsuariosPage = lazy(() => import('./pages/NuevosUsuariosPage'));
+const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
+const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -77,6 +81,7 @@ const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
 const AdminThemes = lazy(() => import('./pages/Tienda/admin/AdminThemes'));
 const AdminStoreEditor = lazy(() => import('./pages/Tienda/admin/AdminStoreEditor'));
+const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
 
@@ -88,6 +93,10 @@ const PerfilPage = lazy(() => import('./pages/cuenta/PerfilPage'));
 const CuentaPedidosPage = lazy(() => import('./pages/cuenta/CuentaPedidosPage'));
 const MisCreacionesPage = lazy(() => import('./pages/cuenta/MisCreacionesPage'));
 const CuentaReferidosPage = lazy(() => import('./pages/cuenta/CuentaReferidosPage'));
+const CuentaFechasImportantesPage = lazy(() => import('./pages/cuenta/CuentaFechasImportantesPage'));
+const CatalogReward = lazy(() => import('./pages/cuenta/CatalogReward'));
+const WishlistPrivatePage = lazy(() => import('./pages/cuenta/WishlistPage'));
+const WishlistPublicPage = lazy(() => import('./pages/WishlistPublic/WishlistPublic'));
 
 // ── QueryClient optimizado ────────────────────────────────────────────────────
 const queryClient = new QueryClient({
@@ -141,7 +150,8 @@ const GlobalLayout = ({ children }) => {
       <Footer />
       <BottomNav />
       <WhatsAppButton />
-      <DailyReward />
+      <KapiPet />
+
       <FirebaseWarning />
     </div>
   );
@@ -155,11 +165,12 @@ function App() {
       <AppPrefetcher />
       <ToastProvider>
         <AuthProvider>
-          <VisualEditorProvider>
-            <CartProvider>
-              <LayoutProvider>
-                <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                <DeepLinkHandler />
+          <WishlistProvider>
+            <VisualEditorProvider>
+              <CartProvider>
+                <LayoutProvider>
+                  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                  <DeepLinkHandler />
                 <GlobalLayout>
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoading />}>
@@ -182,6 +193,7 @@ function App() {
                         <Route path="/editor/:id" element={<EditorPage />} />
                         <Route path="/carrito" element={<CartPage />} />
                         <Route path="/checkout" element={<CheckoutPage />} />
+                        <Route path="/wishlist/:userCode" element={<WishlistPublicPage />} />
                         <Route path="/app" element={<AppRedirect />} />
                         <Route path="/descargar" element={<AppRedirect />} />
 
@@ -193,6 +205,9 @@ function App() {
                           <Route path="pedidos" element={<CuentaPedidosPage />} />
                           <Route path="creaciones" element={<MisCreacionesPage />} />
                           <Route path="referidos" element={<CuentaReferidosPage />} />
+                          <Route path="fechas-importantes" element={<CuentaFechasImportantesPage />} />
+                          <Route path="catalogo" element={<CatalogReward />} />
+                          <Route path="wishlist" element={<WishlistPrivatePage />} />
                         </Route>
 
                         <Route path="/admin" element={<AdminRoute />}>
@@ -220,6 +235,7 @@ function App() {
                             <Route path="landing-pages" element={<AdminLandingPages />} />
                             <Route path="temas" element={<AdminThemes />} />
                             <Route path="store-editor" element={<AdminStoreEditor />} />
+                            <Route path="ruleta" element={<AdminRuletaPage />} />
                             <Route path="backups" element={<AdminBackups />} />
                             <Route path="configuracion" element={<AdminConfiguracion />} />
                             <Route path="encuestas" element={<AdminEncuestas />} />
@@ -231,6 +247,8 @@ function App() {
                         <Route path="/registro" element={<RegisterPage />} />
                         <Route path="/completar-perfil" element={<CompleteProfilePage />} />
                         <Route path="/palabra-del-dia" element={<WordlePage />} />
+                        <Route path="/minijuegos" element={<MinijuegosPage />} />
+                        <Route path="/ruleta" element={<RuletaPage />} />
                         <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                         <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                         <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
@@ -246,9 +264,10 @@ function App() {
                   </ErrorBoundary>
                 </GlobalLayout>
                 </Router>
-              </LayoutProvider>
-            </CartProvider>
-          </VisualEditorProvider>
+                </LayoutProvider>
+              </CartProvider>
+            </VisualEditorProvider>
+          </WishlistProvider>
         </AuthProvider>
       </ToastProvider>
     </QueryClientProvider>

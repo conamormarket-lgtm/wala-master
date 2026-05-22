@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { getBrands } from '../../../../services/brands';
 import { useCart } from '../../../../contexts/CartContext';
+import { useWishlist } from '../../../../contexts/WishlistContext';
+import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { toThumbnailImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
@@ -24,6 +26,9 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   const { thumbnailImageUrl, recordImpression, variantIndex } = useProductThumbnailVariant(product);
   const imageContainerRef = useRef(null);
   const impressionRecorded = useRef(false);
+
+  const { isFavorite, toggleFavorite } = useWishlist();
+  const { addToast } = useGlobalToast();
 
   const { data: brandsData } = useQuery({
     queryKey: ['brands'],
@@ -73,12 +78,18 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
     addToCart(product, {}, null, 1);
   }, [addToCart, product]);
 
-  const [isFavorite, setIsFavorite] = useState(false);
-  const handleToggleFavorite = useCallback((e) => {
+  const isFav = isFavorite(product.id);
+  
+  const handleToggleFavorite = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorite(prev => !prev);
-  }, []);
+    const result = await toggleFavorite(product);
+    if (result && result.error) {
+      addToast(result.error, 'error');
+    } else if (result && result.success) {
+      addToast(isFav ? 'Eliminado de tu lista de deseos' : 'Agregado a tu lista de deseos', 'success');
+    }
+  }, [product, toggleFavorite, addToast, isFav]);
 
   const handlePrefetch = useCallback(() => {
     queryClient.setQueryData(['product', product.id], product);
@@ -170,11 +181,11 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
 
         {/* Favorite Icon */}
         <button 
-          className={`${styles.favoriteBtn} ${isFavorite ? styles.favoriteBtnActive : ''}`}
+          className={`${styles.favoriteBtn} ${isFav ? styles.favoriteBtnActive : ''}`}
           onClick={handleToggleFavorite}
           aria-label="Agregar a favoritos"
         >
-          <svg viewBox="0 0 24 24" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+          <svg viewBox="0 0 24 24" fill={isFav ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>

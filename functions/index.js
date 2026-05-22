@@ -5,6 +5,7 @@
  */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -224,17 +225,173 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("already-exists", "Las monedas de este pedido ya fueron reclamadas.");
       }
 
+      // Manejo de Monedas con TTL (90 días por defecto para pedidos)
+      const TTL_DAYS = 90;
+      const now = new Date();
+      
+      // Fecha de expiración al final del día (23:59:59) para agrupar mejor
+      const expirationDate = new Date(now);
+      expirationDate.setDate(expirationDate.getDate() + TTL_DAYS);
+      expirationDate.setHours(23, 59, 59, 999);
+      const expiresAtIso = expirationDate.toISOString();
+
+      let monedasActivas = userData.monedasActivas || [];
+      
+      // Intentar encontrar un lote existente con exactamente la misma fecha de expiración
+      const existingBatchIndex = monedasActivas.findIndex(b => b.expiresAt === expiresAtIso);
+      
+      if (existingBatchIndex >= 0) {
+        monedasActivas[existingBatchIndex].amount += amount;
+      } else {
+        monedasActivas.push({
+          amount: amount,
+          expiresAt: expiresAtIso,
+          source: "pedido_" + pedidoId,
+          createdAt: now.toISOString()
+        });
+      }
+
       // Update user document safely
       const currentMonedas = userData.monedas || 0;
       transaction.update(userRef, {
-        monedas: currentMonedas + amount,
+        monedas: currentMonedas + amount, // Mantenemos el campo global por compatibilidad, aunque el cliente calculará sobre monedasActivas
+        monedasActivas: monedasActivas,
         monedasReclamadas: admin.firestore.FieldValue.arrayUnion(pedidoId)
       });
 
-      return { success: true, nuevasMonedas: currentMonedas + amount };
+      return { success: true, nuevasMonedas: currentMonedas + amount, monedasActivas };
     });
   } catch (error) {
     console.error("secureClaimMonedas error:", error);
     throw new functions.https.HttpsError("internal", error.message || "Error al procesar el reclamo.");
   }
 });
+
+/**
+ * Cron Job mensual: Resetea kapiCoins a 0 el último día de cada mes a las 23:59.
+ * Utiliza Firebase Scheduler (Cloud Scheduler).
+ */
+exports.resetKapiCoins = onSchedule("59 23 28-31 * *", async (event) => {
+  // Asegurarnos de que hoy es realmente el último día del mes
+  // (ya que el cron se corre del 28 al 31)
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  if (tomorrow.getDate() !== 1) {
+    // No es el último día del mes, ignorar
+    console.log("Not the last day of the month, skipping KapiCoins reset.");
+    return;
+  }
+
+  console.log("Running monthly KapiCoins reset...");
+
+  try {
+    const usersSnapshot = await db.collection(PORTAL_USERS_COLLECTION)
+      .where("kapiCoins", ">", 0)
+      .get();
+      
+    if (usersSnapshot.empty) {
+      console.log("No users with kapiCoins > 0 found.");
+      return;
+    }
+
+    const batch = db.batch();
+    const analyticsRef = db.collection("analytics_kapi");
+    const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    
+    let totalUnspent = 0;
+    
+    usersSnapshot.forEach(doc => {
+      const data = doc.data();
+      const unspent = data.kapiCoins || 0;
+      totalUnspent += unspent;
+
+      // Reset in user document
+      batch.update(doc.ref, { kapiCoins: 0 });
+    });
+
+    // Save analytics document for the month
+    const analyticsDocRef = analyticsRef.doc(currentMonthStr);
+    batch.set(analyticsDocRef, {
+      month: currentMonthStr,
+      totalUnspentCoins: totalUnspent,
+      usersAffected: usersSnapshot.size,
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    await batch.commit();
+    console.log(`Successfully reset KapiCoins for ${usersSnapshot.size} users. Total unspent: ${totalUnspent}`);
+
+  } catch (error) {
+    console.error("Error resetting KapiCoins:", error);
+  }
+});
+
+/**
+ * Cron Job diario: Notifica a los usuarios 14 días antes de su cumpleaños
+ * para que compartan su Wishlist. Se ejecuta a las 9:00 AM.
+ */
+exports.notifyWishlistBirthdays = onSchedule("0 9 * * *", async (event) => {
+  console.log("Running daily birthday wishlist notification...");
+
+  try {
+    // Calcular la fecha objetivo: hoy + 14 días
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + 14);
+    
+    // Extraer mes y día en formato MM-DD
+    const targetMonth = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const targetDay = String(targetDate.getDate()).padStart(2, '0');
+    const targetSuffix = `-${targetMonth}-${targetDay}`;
+
+    // Obtener todos los usuarios (idealmente indexados, o se filtra en memoria si no son muchos)
+    // Para bases de datos grandes, sería mejor guardar birthMonthDay como un campo aparte.
+    const usersSnapshot = await db.collection(PORTAL_USERS_COLLECTION).get();
+    
+    if (usersSnapshot.empty) {
+      console.log("No users found.");
+      return;
+    }
+
+    let notifiedCount = 0;
+    const batch = db.batch();
+
+    for (const doc of usersSnapshot.docs) {
+      const data = doc.data();
+      if (!data.birthDate) continue; // Formato esperado: YYYY-MM-DD o similar
+
+      if (data.birthDate.endsWith(targetSuffix)) {
+        // Verificar si tiene una wishlist
+        const wishlistRef = db.collection('wishlists').doc(doc.id);
+        const wishlistSnap = await wishlistRef.get();
+        
+        if (wishlistSnap.exists) {
+          const items = wishlistSnap.data().items || [];
+          if (items.length > 0) {
+            // Generar notificación in-app
+            const notifRef = db.collection(`users/${doc.id}/notifications`).doc();
+            batch.set(notifRef, {
+              title: '¡Tu cumpleaños se acerca! 🎂',
+              body: 'Faltan 14 días para tu cumpleaños. ¡Comparte tu lista de deseos para que tus amigos sepan exactamente qué regalarte!',
+              createdAt: new Date().toISOString(),
+              read: false,
+              type: 'wishlist_birthday_reminder'
+            });
+            notifiedCount++;
+          }
+        }
+      }
+    }
+
+    if (notifiedCount > 0) {
+      await batch.commit();
+      console.log(`Successfully notified ${notifiedCount} users for upcoming birthdays.`);
+    } else {
+      console.log("No users match the 14-day birthday criteria with active wishlists.");
+    }
+
+  } catch (error) {
+    console.error("Error in notifyWishlistBirthdays:", error);
+  }
+});
+
