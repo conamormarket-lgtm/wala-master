@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -12,6 +12,7 @@ import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
 import { Heart, User, ShoppingBag, Gamepad2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { logout } from '../../../services/firebase/auth';
 import styles from './Header.module.css';
 import NotificationTray from './NotificationTray';
 import OptimizedImage from '../OptimizedImage/OptimizedImage';
@@ -21,13 +22,15 @@ const navLinkClass = ({ isActive }) =>
 
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
-  const { user, userProfile, isAdmin, updateUserProfile, logout, activeMainCoins } = useAuth();
+  const { user, userProfile, isAdmin, updateUserProfile, activeMainCoins } = useAuth();
+  const navigate = useNavigate();
   const { wishlistItems } = useWishlist();
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileWalletOpen, setMobileWalletOpen] = useState(false);
+  const mobileWalletRef = useRef(null);
   const cartItemsCount = getTotalItems();
   const realCoins = activeMainCoins || 0;
   
@@ -142,6 +145,22 @@ const Header = () => {
     };
     window.addEventListener('kapi-coins-animation-start', handleKapiStart);
     return () => window.removeEventListener('kapi-coins-animation-start', handleKapiStart);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (mobileWalletRef.current && !mobileWalletRef.current.contains(event.target)) {
+        setMobileWalletOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    // Para dispositivos móviles táctiles
+    document.addEventListener('touchstart', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const handleResetCoinsForTesting = async () => {
@@ -311,7 +330,7 @@ const Header = () => {
             </div>
 
             {/* --- MOBILE VIEW --- */}
-            <div className={styles.mobileWalletsOnly}>
+            <div className={styles.mobileWalletsOnly} ref={mobileWalletRef}>
               <button 
                 className={styles.mobileWalletBtn} 
                 onClick={() => setMobileWalletOpen(!mobileWalletOpen)}
@@ -476,7 +495,7 @@ const Header = () => {
                         <Link to="/cuenta" className={styles.primaryButton}>
                           Mi Perfil
                         </Link>
-                        <button onClick={logout} className={styles.secondaryButton} style={{ width: '100%', cursor: 'pointer', border: '1px solid #ccc' }}>
+                        <button onClick={async () => { await logout(); navigate('/'); }} className={styles.secondaryButton} style={{ width: '100%', cursor: 'pointer', border: '1px solid #ccc' }}>
                           Cerrar sesión
                         </button>
                       </div>
@@ -563,15 +582,6 @@ const Header = () => {
             </div>
           </div>
 
-          <button
-            className={styles.mobileMenuButton}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
         </div>
       </div>
     </header>

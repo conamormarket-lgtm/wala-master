@@ -698,6 +698,46 @@
     display: none;
   }
 
+  /* Override megaMenu for mobile nav */
+  .navOpen .navItemWithDropdown {
+    flex-direction: column;
+    align-items: flex-start;
+    height: auto;
+  }
+
+  .navOpen .megaMenu {
+    position: static;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    width: 100%;
+    box-shadow: none;
+    border: none;
+    border-left: 2px solid var(--rojo-principal);
+    border-radius: 0;
+    margin: 0 0 0 1rem;
+    padding: 0;
+    background: transparent;
+  }
+
+  .navOpen .megaMenu::before {
+    display: none;
+  }
+
+  .navOpen .megaMenuContent {
+    padding: 0.5rem 1rem 0.5rem 1rem;
+  }
+
+  .navOpen .megaMenuContent h4 {
+    display: none;
+  }
+
+  .navOpen .megaMenuContent li a {
+    padding: 0.6rem 0;
+    font-size: 0.95rem;
+    color: var(--gris-texto-secundario);
+  }
+
   .mobileMenuButton {
     display: flex;
   }
