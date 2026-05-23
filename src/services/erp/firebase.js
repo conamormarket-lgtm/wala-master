@@ -41,8 +41,13 @@ try {
     erpDb = getFirestore(erpApp);
   } else {
     // Inicializar Firebase del ERP con un nombre único para evitar conflictos
-    erpApp = initializeApp(erpFirebaseConfig, 'erp-firebase');
-    erpDb = getFirestore(erpApp);
+    if (erpFirebaseConfig.apiKey) {
+      erpApp = initializeApp(erpFirebaseConfig, 'erp-firebase');
+      erpDb = getFirestore(erpApp);
+      console.log('ERP Firebase inicializado correctamente.', erpFirebaseConfig.projectId);
+    } else {
+      console.warn('ERP Firebase config no tiene apiKey. Las variables de entorno no cargaron.');
+    }
   }
 } catch (error) {
   console.error('Error al inicializar Firebase del ERP:', error);
@@ -138,6 +143,25 @@ export async function searchOrdersByDniInERP(dni) {
       pedidos = snapDni.docs.map(d => ({ id: d.id, ...d.data() }));
     }
 
+    // Buscar también en pedidos_web (pedidos recientes aún no validados por admin)
+    const qWeb = query(
+      collection(erpDb, 'pedidos_web'),
+      where('clienteNumeroDocumento', '==', dniNorm)
+    );
+    const querySnapshotWeb = await getDocs(qWeb);
+    let pedidosWeb = querySnapshotWeb.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (pedidosWeb.length === 0) {
+      const qWebDni = query(
+        collection(erpDb, 'pedidos_web'),
+        where('dni', '==', dniNorm)
+      );
+      const snapWebDni = await getDocs(qWebDni);
+      pedidosWeb = snapWebDni.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    pedidos = [...pedidos, ...pedidosWeb];
+
     pedidos = sortPedidosByCreatedAt(pedidos);
     return { data: pedidos, error: null };
   } catch (error) {
@@ -166,10 +190,26 @@ export async function searchOrdersInERP(telefono, dni) {
     );
 
     const querySnapshot = await getDocs(q);
-    const pedidos = querySnapshot.docs.map(doc => ({
+    let pedidos = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    const qWeb = query(
+      collection(erpDb, 'pedidos_web'),
+      where('phone', '==', telefono),
+      where('dni', '==', dni),
+      orderBy('createdAt', 'desc')
+    );
+
+    const querySnapshotWeb = await getDocs(qWeb);
+    const pedidosWeb = querySnapshotWeb.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    pedidos = [...pedidos, ...pedidosWeb];
+    pedidos = sortPedidosByCreatedAt(pedidos);
 
     return { data: pedidos, error: null };
   } catch (error) {

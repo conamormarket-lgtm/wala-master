@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { db, messaging } from '../services/firebase/config';
-import { collection, query, onSnapshot, orderBy, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, updateDoc, doc, arrayUnion, setDoc } from 'firebase/firestore';
 import { getToken, onMessage } from 'firebase/messaging';
+import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext'; // Asumiendo que existe un AuthContext, si no, lo ajustaremos
@@ -60,8 +61,12 @@ export const useNotifications = () => {
 
       PushNotifications.addListener('registration', async (token) => {
         console.log('Push registration success, token: ' + token.value);
-        // Aquí deberías guardar el token en Firestore bajo el usuario
-        // await setDoc(doc(db, `users/${uid}/fcmTokens`, token.value), { token: token.value, platform: 'capacitor' });
+        try {
+          const userRef = doc(db, PORTAL_USERS_COLLECTION, uid);
+          await setDoc(userRef, { fcmTokens: arrayUnion(token.value) }, { merge: true });
+        } catch (err) {
+          console.warn('Error saving capacitor token:', err);
+        }
       });
 
       PushNotifications.addListener('registrationError', (error) => {
@@ -84,7 +89,12 @@ export const useNotifications = () => {
           });
           if (currentToken) {
             console.log('Web FCM token:', currentToken);
-            // Guardar token en Firestore
+            try {
+              const userRef = doc(db, PORTAL_USERS_COLLECTION, uid);
+              await setDoc(userRef, { fcmTokens: arrayUnion(currentToken) }, { merge: true });
+            } catch (err) {
+              console.warn('Error saving web token:', err);
+            }
           }
           
           // Escuchar mensajes en primer plano (Web)

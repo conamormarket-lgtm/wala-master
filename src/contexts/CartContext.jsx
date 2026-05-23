@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useGlobalToast } from './ToastContext';
-import { onSnapshot, doc } from 'firebase/firestore';
+import { onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { erpDb } from '../services/erp/firebase';
+import { db, auth } from '../services/firebase/config';
+import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 
 const CartContext = createContext();
 
@@ -32,9 +34,25 @@ export const CartProvider = ({ children }) => {
   // { [webOrderId]: unsubscribeFn }
   const listenersRef = useRef({});
 
-  // Guardar carrito en localStorage cuando cambie
+  // Guardar carrito en localStorage cuando cambie y en Firestore si el usuario está logueado
   useEffect(() => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    
+    // Sync con Firestore para notificaciones de Carrito Abandonado
+    if (auth?.currentUser && db) {
+      const uid = auth.currentUser.uid;
+      const docRef = doc(db, PORTAL_USERS_COLLECTION, uid);
+      
+      const cartData = items.length > 0 ? {
+        items,
+        cartUpdatedAt: new Date().toISOString(),
+        abandonedLevel: 0
+      } : null; // Si está vacío, limpiamos el cart del usuario
+      
+      setDoc(docRef, { cart: cartData }, { merge: true }).catch(err => {
+        console.warn('Error sincronizando carrito con Firestore:', err);
+      });
+    }
   }, [items]);
 
   // ── Escuchar en tiempo real los pedidos_web pendientes ─────────────────────
