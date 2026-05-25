@@ -79,6 +79,13 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
+        // Update lastAppOpen if not updated today
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (profileData.lastAppOpen !== todayStr) {
+          profileData.lastAppOpen = todayStr;
+          setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { lastAppOpen: todayStr });
+        }
+
         setUserProfile(profileData);
       } else {
         setUser(null);

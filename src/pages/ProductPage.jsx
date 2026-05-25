@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useProduct } from '../hooks/useProducts';
 import { getCategories } from '../services/products';
 import ProductDetail from './Tienda/components/ProductDetail';
+import { useProductTracking } from '../hooks/useProductTracking';
 
 const ProductPage = () => {
   const { id } = useParams();
@@ -16,6 +17,9 @@ const ProductPage = () => {
       return data;
     }
   });
+
+  // Rastreo de vistas de producto para notificaciones de comportamiento
+  useProductTracking(product);
 
   if (error) {
     return <div>Error al cargar el producto: {error.message}</div>;

@@ -8,6 +8,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { VisualEditorProvider } from './pages/Tienda/contexts/VisualEditorContext';
 import { LayoutProvider } from './contexts/LayoutContext';
 import { WishlistProvider } from './contexts/WishlistContext';
+import AdminNotifications from './pages/admin/AdminNotifications/AdminNotifications';
 import AdminRoute from './components/AdminRoute/AdminRoute';
 import RouteTracker from './components/analytics/RouteTracker';
 import ReferralTracker from './components/analytics/ReferralTracker';
@@ -234,6 +235,7 @@ function App() {
                             <Route path="crear-cuentas-pedidos" element={<AdminCrearCuentasPedidos />} />
                             <Route path="usuarios-analytics" element={<AdminUsuariosAnalyticsPage />} />
                             <Route path="wordle" element={<AdminWordlePage />} />
+                            <Route path="notificaciones" element={<AdminNotifications />} />
                             <Route path="marcas" element={<AdminMarcas />} />
                             <Route path="landing-pages" element={<AdminLandingPages />} />
                             <Route path="temas" element={<AdminThemes />} />

@@ -1,0 +1,222 @@
+.container {
+  padding: 24px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.tabs button {
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: #6b7280;
+  border-bottom: 2px solid transparent;
+}
+
+.tabs button.active {
+  color: #4f46e5;
+  border-bottom-color: #4f46e5;
+}
+
+.tabContent {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.switches {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.switchLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.helpText {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.copysList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.copyItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.copyItem label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.copyInput {
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 100%;
+}
+
+.saveBtn {
+  background-color: #4f46e5;
+  color: white;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.saveBtn:hover {
+  background-color: #4338ca;
+}
+
+.manualForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.manualForm label {
+  font-weight: 600;
+}
+
+.manualForm input, .manualForm textarea, .manualForm select {
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+.manualForm textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.chartContainer {
+  margin-top: 24px;
+}
+
+.categoryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+}
+
+.scheduleInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.scheduleInputs input {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.copyBlock {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.copyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.copyHeader h4 {
+  margin: 0;
+  color: #111827;
+}
+
+.textBtn {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.textBtnDanger {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.variantContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 3px solid #d1d5db;
+}
+
+.variantLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.copyFields {
+  display: flex;
+  gap: 12px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  flex: 3;
+  gap: 4px;
+}
+
+.fieldGroupSmall {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+}
+
+.fieldGroup label, .fieldGroupSmall label {
+  font-size: 0.8rem;
+  color: #4b5563;
+}

@@ -531,3 +531,5 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
   return { success: true };
 });
 
+exports.notificationEngine = require('./notificationsEngine').notificationEngine;
+exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;
