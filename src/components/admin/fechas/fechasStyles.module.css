@@ -185,3 +185,212 @@
   color: white;
   border-color: #0f172a;
 }
+
+/* EXPANDABLE ROWS & PACKAGES */
+.expandableRow {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.expandableRow:hover {
+  background-color: #f8fafc;
+}
+
+.expandToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: transform 0.2s ease, color 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.expandToggle:hover {
+  color: #475569;
+}
+
+.expandToggleOpen {
+  transform: rotate(90deg);
+  color: #0ea5e9;
+}
+
+.packagesRow {
+  background-color: #f8fafc;
+}
+
+.packagesRow td {
+  padding: 1rem 1.5rem !important;
+}
+
+.packagesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.packagesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.packagesHeader h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.packageCard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.packageCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.packageCardSelected {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.packageProducts {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  overflow-x: auto;
+  padding: 0.25rem 0;
+}
+
+.packageProductThumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 70px;
+  max-width: 80px;
+}
+
+.packageProductThumb img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.packageProductThumb span {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+}
+
+.packageBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.packageBadgeSelected {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.packageBadgeDraft {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+.packageActions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.packageActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.packageActionBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.packageActionBtnDanger:hover {
+  background: #fef2f2;
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.packageActionBtnSelect:hover {
+  background: #f0fdf4;
+  color: #22c55e;
+  border-color: #bbf7d0;
+}
+
+.addPackageBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.addPackageBtn:hover {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+  background: #f0f9ff;
+}
+
+.emptyPackages {
+  text-align: center;
+  color: #94a3b8;
+  padding: 1rem;
+  font-style: italic;
+  font-size: 0.875rem;
+}

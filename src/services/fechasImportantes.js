@@ -114,3 +114,33 @@ export const saveSuggestedPackage = async (packageData) => {
     throw error;
   }
 };
+
+export const getSuggestedPackages = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'suggested_packages'));
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error fetching suggested packages:', error);
+    return [];
+  }
+};
+
+export const updateSuggestedPackage = async (id, data) => {
+  try {
+    data.updatedAt = new Date().toISOString();
+    await setDoc(doc(db, 'suggested_packages', id), data, { merge: true });
+    return { id, ...data };
+  } catch (error) {
+    console.error('Error updating suggested package:', error);
+    throw error;
+  }
+};
+
+export const deleteSuggestedPackage = async (id) => {
+  try {
+    await deleteDoc(doc(db, 'suggested_packages', id));
+  } catch (error) {
+    console.error('Error deleting suggested package:', error);
+    throw error;
+  }
+};

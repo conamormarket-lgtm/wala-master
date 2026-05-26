@@ -1,25 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { getProducts } from '../../../services/products';
-import { saveSuggestedPackage } from '../../../services/fechasImportantes';
+import { saveSuggestedPackage, updateSuggestedPackage } from '../../../services/fechasImportantes';
 import Button from '../../common/Button';
 import { X, Search, Sparkles, Trash2 } from 'lucide-react';
 import styles from './PackageCreatorModal.module.css';
 
-const PackageCreatorModal = ({ recipientData, onClose }) => {
-  const [step, setStep] = useState(1); // 1: Resumen y opciones, 2: Creador/Edición
-  const [selectedProducts, setSelectedProducts] = useState([]);
+/**
+ * PackageCreatorModal
+ * 
+ * Props:
+ * - recipientData: datos del destinatario (siempre requerido)
+ * - existingPackage: (opcional) paquete existente para modo edición
+ * - reuseProducts: (opcional) array de productos para modo reutilizar
+ * - onClose: cerrar modal
+ * - onSave: callback(savedPackage) cuando se guarda exitosamente
+ * - isFirstPackage: (opcional) si true, se marcará como isSelected automáticamente
+ */
+const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, onClose, onSave, isFirstPackage = false }) => {
+  const isEditMode = !!existingPackage;
+  const isReuseMode = !!reuseProducts && !isEditMode;
+
+  const [step, setStep] = useState(isEditMode || isReuseMode ? 2 : 1);
+  const [selectedProducts, setSelectedProducts] = useState(() => {
+    if (isEditMode && existingPackage.products) {
+      return existingPackage.products;
+    }
+    if (isReuseMode && reuseProducts) {
+      return [...reuseProducts];
+    }
+    return [];
+  });
   const [allProducts, setAllProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Cargar productos
   useEffect(() => {
     const fetchProds = async () => {
       setLoadingProducts(true);
       try {
-        const prods = await getProducts();
-        setAllProducts(prods);
+        const result = await getProducts();
+        setAllProducts(result.data || []);
       } catch (e) {
         console.error(e);
       } finally {
@@ -30,7 +51,6 @@ const PackageCreatorModal = ({ recipientData, onClose }) => {
   }, []);
 
   const handleAutoGenerate = () => {
-    // Filtrar productos que coincidan con las categorías seleccionadas por la persona (recipientData.selectedCategories)
     const prefs = recipientData.selectedCategories || [];
     
     let matchedProducts = [];
@@ -40,7 +60,6 @@ const PackageCreatorModal = ({ recipientData, onClose }) => {
       );
     }
 
-    // Si no hay suficientes coincidencias, rellenar con aleatorios
     let candidates = [...matchedProducts];
     if (candidates.length < 3) {
       const remaining = allProducts.filter(p => !candidates.includes(p));
@@ -48,7 +67,6 @@ const PackageCreatorModal = ({ recipientData, onClose }) => {
       candidates = [...candidates, ...shuffled.slice(0, 3 - candidates.length)];
     }
 
-    // Tomar máximo 3
     const finalSelection = candidates.slice(0, 3);
     setSelectedProducts(finalSelection);
     setStep(2);
@@ -76,22 +94,37 @@ const PackageCreatorModal = ({ recipientData, onClose }) => {
     
     setSaving(true);
     try {
-      const packageData = {
-        userId: recipientData.userId,
-        recipientId: recipientData.recipientId,
-        eventId: recipientData.eventId,
-        eventType: recipientData.eventType,
-        products: selectedProducts.map(p => ({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          image: p.images?.[0] || ''
-        })),
-        status: 'pending_notification'
-      };
+      const productsPayload = selectedProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        image: p.images?.[0] || ''
+      }));
+
+      if (isEditMode) {
+        // Modo editar: actualizar paquete existente
+        const updateData = {
+          products: productsPayload,
+        };
+        const result = await updateSuggestedPackage(existingPackage.id, updateData);
+        const merged = { ...existingPackage, ...result };
+        if (onSave) onSave(merged);
+      } else {
+        // Modo crear o reutilizar: crear nuevo paquete
+        const packageData = {
+          userId: recipientData.userId,
+          recipientId: recipientData.recipientId,
+          eventId: recipientData.eventId,
+          eventType: recipientData.eventType,
+          products: productsPayload,
+          status: 'pending_notification',
+          isSelected: isFirstPackage,
+        };
+        
+        const result = await saveSuggestedPackage(packageData);
+        if (onSave) onSave(result);
+      }
       
-      await saveSuggestedPackage(packageData);
-      alert('Paquete sugerido guardado correctamente.');
       onClose();
     } catch (e) {
       alert('Error al guardar el paquete.');
@@ -105,11 +138,17 @@ const PackageCreatorModal = ({ recipientData, onClose }) => {
     !selectedProducts.find(sp => sp.id === p.id)
   );
 
+  const modalTitle = isEditMode 
+    ? `Editar Paquete para ${recipientData.recipientName}`
+    : isReuseMode
+      ? `Reutilizar Paquete para ${recipientData.recipientName}`
+      : `Crear Paquete para ${recipientData.recipientName}`;
+
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
         <div className={styles.header}>
-          <h2>Crear Paquete para {recipientData.recipientName}</h2>
+          <h2>{modalTitle}</h2>
           <button onClick={onClose} className={styles.closeBtn}>
             <X size={24} />
           </button>
@@ -168,7 +207,7 @@ const PackageCreatorModal = ({ recipientData, onClose }) => {
                   <div className={styles.selectedList}>
                     {selectedProducts.map(prod => (
                       <div key={prod.id} className={styles.selectedItem}>
-                        <img src={prod.images?.[0] || 'https://via.placeholder.com/50'} alt={prod.name} />
+                        <img src={prod.images?.[0] || prod.image || 'https://via.placeholder.com/50'} alt={prod.name} />
                         <div className={styles.itemInfo}>
                           <h4>{prod.name}</h4>
                           <p>S/ {prod.price}</p>
@@ -183,7 +222,7 @@ const PackageCreatorModal = ({ recipientData, onClose }) => {
                 
                 <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
                   <Button variant="primary" fullWidth onClick={handleSavePackage} disabled={saving || selectedProducts.length === 0}>
-                    {saving ? 'Guardando...' : 'Guardar Paquete Sugerido'}
+                    {saving ? 'Guardando...' : isEditMode ? 'Guardar Cambios' : 'Guardar Paquete'}
                   </Button>
                 </div>
               </div>
