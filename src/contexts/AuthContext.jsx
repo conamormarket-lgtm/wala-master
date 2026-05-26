@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthChange } from '../services/firebase/auth';
 // eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
 import { getDocument, setDocument } from '../services/firebase/firestore';
 import { getAdminRoleByEmail, setAdminRole } from '../services/adminRoles';
 import { getStartOfWeek, formatIsoDate } from '../services/firebase/ruleta';
@@ -121,71 +120,16 @@ export const AuthProvider = ({ children }) => {
   }, [updateUserProfile]);
 
   const calculateActiveCoins = React.useCallback(() => {
-    if (!userProfile || !userProfile.monedasActivas) return userProfile?.monedas || 0;
-    const now = new Date().toISOString();
-    return userProfile.monedasActivas.reduce((acc, batch) => {
-      if (batch.expiresAt > now) return acc + batch.amount;
-      return acc;
-    }, 0);
+    // Las monedas son permanentes ahora
+    return userProfile?.monedas || 0;
   }, [userProfile]);
 
-  // Migración automática de monedas antiguas
-  React.useEffect(() => {
-    if (userProfile && userProfile.monedas > 0 && !userProfile.legacyCoinsMigrated) {
-      const migrateCoins = async () => {
-        const expDate = new Date();
-        expDate.setDate(expDate.getDate() + 31); // TTL de 31 días para las antiguas
-        
-        const legacyBatch = {
-          amount: userProfile.monedas,
-          expiresAt: expDate.toISOString(),
-          reason: 'Migración de monedas antiguas (TTL 31 días)'
-        };
-        
-        try {
-          await updateUserProfile({
-            legacyCoinsMigrated: true,
-            monedasActivas: [...(userProfile.monedasActivas || []), legacyBatch]
-          });
-        } catch (err) {
-          console.error("Error migrating legacy coins:", err);
-        }
-      };
-      
-      migrateCoins();
-    }
-  }, [userProfile, updateUserProfile]);
-
-  const earnMainCoins = React.useCallback(async (amount, reason = 'Bono', ttlDays = 90) => {
+  const earnMainCoins = React.useCallback(async (amount, reason = 'Bono') => {
     if (!userProfile) return { error: 'No profile' };
     
-    const now = new Date();
-    const expirationDate = new Date(now);
-    expirationDate.setDate(expirationDate.getDate() + ttlDays);
-    expirationDate.setHours(23, 59, 59, 999);
-    const expiresAtIso = expirationDate.toISOString();
-
-    let monedasActivas = [...(userProfile.monedasActivas || [])];
-    const existingBatchIndex = monedasActivas.findIndex(b => b.expiresAt === expiresAtIso);
-    
-    if (existingBatchIndex >= 0) {
-      monedasActivas[existingBatchIndex] = {
-        ...monedasActivas[existingBatchIndex],
-        amount: monedasActivas[existingBatchIndex].amount + amount
-      };
-    } else {
-      monedasActivas.push({
-        amount,
-        expiresAt: expiresAtIso,
-        reason,
-        createdAt: now.toISOString()
-      });
-    }
-
     const currentGlobal = userProfile.monedas || 0;
     return await updateUserProfile({
-      monedas: currentGlobal + amount,
-      monedasActivas
+      monedas: currentGlobal + amount
     });
   }, [userProfile, updateUserProfile]);
 
@@ -195,7 +139,7 @@ export const AuthProvider = ({ children }) => {
     if (reclamadas.includes(pedidoId)) return { error: 'Ya reclamado' };
     
     try {
-      const { error } = await earnMainCoins(amount, "pedido_" + pedidoId, 90);
+      const { error } = await earnMainCoins(amount, "pedido_" + pedidoId);
       if (error) throw new Error(error);
       
       const nuevasReclamadas = [...reclamadas, pedidoId];
@@ -216,36 +160,9 @@ export const AuthProvider = ({ children }) => {
     let activeCoins = calculateActiveCoins();
     if (activeCoins < amount) return { error: 'Monedas insuficientes' };
 
-    let remainingToSpend = amount;
-    const now = new Date().toISOString();
-    
-    // Clonar y filtrar solo los que no han expirado, ordenados por fecha de expiración (FIFO)
-    let monedasActivas = [...(userProfile.monedasActivas || [])];
-    
-    // Ordenar: los que expiran antes van primero
-    monedasActivas.sort((a, b) => a.expiresAt.localeCompare(b.expiresAt));
-
-    for (let i = 0; i < monedasActivas.length; i++) {
-      let batch = monedasActivas[i];
-      if (batch.expiresAt > now && batch.amount > 0) {
-        if (batch.amount >= remainingToSpend) {
-          monedasActivas[i] = { ...batch, amount: batch.amount - remainingToSpend };
-          remainingToSpend = 0;
-          break;
-        } else {
-          remainingToSpend -= batch.amount;
-          monedasActivas[i] = { ...batch, amount: 0 };
-        }
-      }
-    }
-
-    // Filtrar los que quedaron en 0 o expiraron para limpiar la DB (opcional, pero buena práctica)
-    monedasActivas = monedasActivas.filter(b => b.amount > 0 && b.expiresAt > now);
-
     const currentMonedas = userProfile.monedas || 0;
     return await updateUserProfile({
-      monedas: Math.max(0, currentMonedas - amount),
-      monedasActivas
+      monedas: Math.max(0, currentMonedas - amount)
     });
   }, [userProfile, calculateActiveCoins, updateUserProfile]);
 
@@ -315,7 +232,7 @@ export const AuthProvider = ({ children }) => {
 
       // Si es "main", acreditamos aparte para asegurar consistencia
       if (isNowCompleted && activeWeeklyChallenge.rewardType === 'main') {
-          await earnMainCoins(activeWeeklyChallenge.rewardCoins, 'Reto Semanal Completado', 90);
+          await earnMainCoins(activeWeeklyChallenge.rewardCoins, 'Reto Semanal Completado');
       }
     }
   }, [userProfile, activeWeeklyChallenge, updateUserProfile, earnMainCoins]);
@@ -377,9 +294,9 @@ export const AuthProvider = ({ children }) => {
     const uniqueDates = [...new Set(coveredDates)];
     const hasReceivedBonus = userProfile.streakBonusReceived === true;
     
-    // Streak: 3 fechas cubiertas = 25 bonus 90 días
+    // Streak: 3 fechas cubiertas = 25 bonus permanente
     if (uniqueDates.length >= 3 && !hasReceivedBonus) {
-      await earnMainCoins(25, 'Streak 3 fechas cubiertas', 90);
+      await earnMainCoins(25, 'Streak 3 fechas cubiertas');
       return await updateUserProfile({ streakBonusReceived: true });
     }
     

@@ -6,6 +6,7 @@ const NuevosUsuariosPage = () => {
   const [vsSlideIndex, setVsSlideIndex] = React.useState(0);
   const [reviewsSlideIndex, setReviewsSlideIndex] = React.useState(14); // Empezamos en la copia del medio
   const [isTransitioning, setIsTransitioning] = React.useState(true);
+  const [storeSlideIndex, setStoreSlideIndex] = React.useState(0);
 
   // DATOS PARA LAS TARJETAS DE RESEÑAS
   const reviewsData = [
@@ -37,8 +38,8 @@ const NuevosUsuariosPage = () => {
 
   // ARREGLO DE PARES DE IMÁGENES PARA EL BLOQUE VS (4 imágenes = 2 pares)
   const vsSlidesData = [
-    { left: 'https://picsum.photos/400/400?random=10', right: 'https://picsum.photos/400/400?random=11' },
-    { left: 'https://picsum.photos/400/400?random=12', right: 'https://picsum.photos/400/400?random=13' }
+    { left: 'tiempo/antes-1.jpeg', right: 'tiempo/despues-1.jpeg' },
+    { left: 'tiempo/antes-2.jpeg', right: 'tiempo/despues-2.jpeg' }
   ];
 
   const handleNextVsSlide = () => {
@@ -47,6 +48,21 @@ const NuevosUsuariosPage = () => {
 
   const handlePrevVsSlide = () => {
     setVsSlideIndex((prev) => (prev - 1 + vsSlidesData.length) % vsSlidesData.length);
+  };
+
+  // IMÁGENES PARA EL BLOQUE DE LA TIENDA (ENCUÉNTRANOS)
+  const storeImages = [
+    'tienda/tienda-1.jpeg',
+    'tienda/tienda-2.jpeg',
+    'tienda/tienda-3.jpeg'
+  ];
+
+  const handleNextStore = () => {
+    setStoreSlideIndex((prev) => (prev + 1) % storeImages.length);
+  };
+
+  const handlePrevStore = () => {
+    setStoreSlideIndex((prev) => (prev - 1 + storeImages.length) % storeImages.length);
   };
 
   // LÓGICA DEL CARRUSEL INFINITO FLUIDO (BLOQUE 9)
@@ -573,7 +589,7 @@ const NuevosUsuariosPage = () => {
                 alignItems: 'center'
               }}>
                 <iframe
-                  src="https://www.youtube.com/embed/dQw4w9WgXcQ?controls=0" /* REEMPLAZAR CON TU LINK REAL */
+                  src="https://www.youtube.com/embed/eodAZJiI2-E?controls=0"
                   title="YouTube video player"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -873,9 +889,7 @@ const NuevosUsuariosPage = () => {
 
           {/* SÉPTIMO BLOQUE: BOTÓN DE DESCARGA (REEMPLAZADO POR IMAGEN) */}
           <div className="download-section">
-            // eslint-disable-next-line jsx-a11y/anchor-is-valid
-            // eslint-disable-next-line jsx-a11y/anchor-is-valid
-            <a href="#" target="_blank" rel="noopener noreferrer" className="download-img-wrapper">
+            <a href="https://play.google.com/store/apps/details?id=com.wala.tienda" target="_blank" rel="noopener noreferrer" className="download-img-wrapper">
               {renderMedia(`${process.env.PUBLIC_URL}/diseno/descarga.png`, 'Descarga la App', { width: '100%', height: 'auto', cursor: 'pointer', objectFit: 'contain' })}
             </a>
           </div>
@@ -1055,17 +1069,31 @@ const NuevosUsuariosPage = () => {
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'center', gap: '5px', marginLeft: '10px' }}>
                         {/* Botón Izquierdo */}
-                        <div className="vs-arrow-btn enc-btn" style={{ position: 'static', transform: 'none' }}>
+                        <div className="vs-arrow-btn enc-btn" style={{ position: 'static', transform: 'none', cursor: 'pointer' }} onClick={handlePrevStore}>
                           &#10094;
                         </div>
 
-                        {/* Caja de Imagen */}
-                        <div className="enc-caja-img" style={{ overflow: 'hidden' }}>
-                          {renderMedia(`https://picsum.photos/400/400?random=20`, 'Tienda Wala', { width: '100%', height: '100%', objectFit: 'cover' })}
+                        {/* Caja de Imagen (Slider) */}
+                        <div className="enc-caja-img" style={{ overflow: 'hidden', position: 'relative' }}>
+                          {storeImages.map((img, idx) => (
+                            <div key={idx} style={{
+                              position: 'absolute',
+                              top: 0, left: 0, width: '100%', height: '100%',
+                              opacity: storeSlideIndex === idx ? 1 : 0,
+                              transition: 'opacity 0.5s ease-in-out',
+                              zIndex: storeSlideIndex === idx ? 2 : 1
+                            }}>
+                              {renderMedia(
+                                img.startsWith('http') ? img : `${process.env.PUBLIC_URL}/diseno/${img}`,
+                                `Tienda Wala ${idx + 1}`,
+                                { width: '100%', height: '100%', objectFit: 'cover' }
+                              )}
+                            </div>
+                          ))}
                         </div>
 
                         {/* Botón Derecho */}
-                        <div className="vs-arrow-btn enc-btn" style={{ position: 'static', transform: 'none' }}>
+                        <div className="vs-arrow-btn enc-btn" style={{ position: 'static', transform: 'none', cursor: 'pointer' }} onClick={handleNextStore}>
                           &#10095;
                         </div>
                       </div>

@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, setDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, addDoc, query, where } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 
@@ -142,5 +142,20 @@ export const deleteSuggestedPackage = async (id) => {
   } catch (error) {
     console.error('Error deleting suggested package:', error);
     throw error;
+  }
+};
+
+export const getUserSuggestedPackages = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'suggested_packages'),
+      where('userId', '==', userId),
+      where('isSelected', '==', true)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (error) {
+    console.error('Error fetching user suggested packages:', error);
+    return [];
   }
 };

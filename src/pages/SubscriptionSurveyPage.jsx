@@ -280,7 +280,9 @@ const SubscriptionSurveyPage = () => {
       let coinsEarned = 0;
       
       if (newEventsAdded > 0) {
-        coinsEarned = newEventsAdded * 5;
+        // Límite de 3 fechas pagadas (máximo 15 monedas)
+        const eventosPagados = Math.min(newEventsAdded, 3);
+        coinsEarned = eventosPagados * 5;
       }
       
       await updateUserProfile({ 
@@ -291,7 +293,7 @@ const SubscriptionSurveyPage = () => {
       });
 
       if (coinsEarned > 0) {
-        await earnMainCoins(coinsEarned, 'Fechas registradas en encuesta', 90);
+        await earnMainCoins(coinsEarned, 'Fechas registradas en encuesta');
         window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: coinsEarned } }));
       }
 
@@ -346,7 +348,7 @@ const SubscriptionSurveyPage = () => {
               <div style={{ backgroundColor: '#fffbeb', color: '#b45309', padding: '1rem', borderRadius: '12px', margin: '1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 'bold', border: '1px solid #fde68a', boxShadow: '0 4px 6px -1px rgba(251, 191, 36, 0.1)' }}>
                 <span style={{ fontSize: '2rem', lineHeight: 1 }}>🪙</span>
                 <span style={{ fontSize: '1rem', textAlign: 'left' }}>
-                  ¡Gana 5 Kapicoins por cada fecha importante que registres!
+                  ¡Gana 5 Wala Coins por cada fecha importante que registres (hasta un máximo de 15 monedas)!
                 </span>
               </div>
 

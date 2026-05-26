@@ -161,7 +161,7 @@ export const CartProvider = ({ children }) => {
       price: itemPrice,
       basePrice: product.basePrice || itemPrice,
       regularPrice,
-      variant: { ...variant, selectedVariant: selectedVariant ?? undefined },
+      variant: { ...variant, selectedVariant: selectedVariant ?? null },
       customization,
       quantity,
       addedAt: new Date().toISOString(),

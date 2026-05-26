@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { addDays, isWithinInterval, startOfDay, addWeeks, startOfMonth, addMonths, endOfMonth, startOfWeek, endOfWeek, parseISO, setYear } from 'date-fns';
 import { getUserDates, getSuggestedPackages, updateSuggestedPackage, deleteSuggestedPackage } from '../../../services/fechasImportantes';
 import Button from '../../common/Button';
 import PackageCreatorModal from './PackageCreatorModal';
-import { ChevronRight, Plus, Edit2, Copy, CheckCircle, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, Edit2, Copy, CheckCircle, Trash2, Calendar, User, Package } from 'lucide-react';
 import styles from './fechasStyles.module.css';
 
 const UsuariosView = () => {
@@ -38,12 +38,29 @@ const UsuariosView = () => {
     fetchData();
   }, []);
 
-  // Helper: build a row key from a date entry
+  // Agrupar las fechas filtradas por usuario (email)
+  const groupedUsers = useMemo(() => {
+    const groupsMap = {};
+    filteredDates.forEach(d => {
+      const key = d.userId;
+      if (!groupsMap[key]) {
+        groupsMap[key] = {
+          userId: d.userId,
+          userEmail: d.userEmail,
+          events: []
+        };
+      }
+      groupsMap[key].events.push(d);
+    });
+    return Object.values(groupsMap);
+  }, [filteredDates]);
+
+  // Helper: build a row key from a date entry for the packages logic
   const getRowKey = useCallback((d) => {
     return `${d.userId}_${d.recipientId}_${d.eventType}`;
   }, []);
 
-  // Get packages for a specific row
+  // Get packages for a specific event row
   const getPackagesForRow = useCallback((d) => {
     return packages.filter(p => 
       p.userId === d.userId && 
@@ -91,9 +108,9 @@ const UsuariosView = () => {
     }
   };
 
-  // Pagination logic
-  const totalPages = Math.max(1, Math.ceil(filteredDates.length / itemsPerPage));
-  const currentItems = filteredDates.slice(
+  // Pagination logic sobre los usuarios (grupos), no sobre los eventos individuales
+  const totalPages = Math.max(1, Math.ceil(groupedUsers.length / itemsPerPage));
+  const currentItems = groupedUsers.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -110,9 +127,9 @@ const UsuariosView = () => {
     }
   };
 
-  // Toggle expand row
-  const toggleRow = (rowKey) => {
-    setExpandedRows(prev => ({ ...prev, [rowKey]: !prev[rowKey] }));
+  // Toggle expand user row
+  const toggleUserRow = (userId) => {
+    setExpandedRows(prev => ({ ...prev, [userId]: !prev[userId] }));
   };
 
   // Open modal in create mode
@@ -207,6 +224,12 @@ const UsuariosView = () => {
       // Create/reuse: add to state
       setPackages(prev => [...prev, savedPackage]);
     }
+
+    // Expand the user row automatically so the admin can see the new package
+    if (modalConfig?.recipientData) {
+      const userId = modalConfig.recipientData.userId;
+      setExpandedRows(prev => ({ ...prev, [userId]: true }));
+    }
   };
 
   return (
@@ -214,7 +237,7 @@ const UsuariosView = () => {
       <div className={styles.header}>
         <div>
           <h2>Fechas Importantes de Usuarios</h2>
-          <p>Consolidado y filtrado de las fechas registradas por los usuarios (Cumpleaños, Aniversarios).</p>
+          <p>Consolidado y filtrado de usuarios que han registrado fechas importantes (agrupados por usuario).</p>
         </div>
       </div>
 
@@ -247,7 +270,7 @@ const UsuariosView = () => {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#475569' }}>
-          <label>Mostrar:</label>
+          <label>Mostrar Usuarios:</label>
           <select 
             value={itemsPerPage} 
             onChange={handleItemsPerPageChange}
@@ -270,27 +293,21 @@ const UsuariosView = () => {
               <tr>
                 <th style={{ width: '32px' }}></th>
                 <th>Usuario (Email)</th>
-                <th>Destinatario</th>
-                <th>Relación</th>
-                <th>Evento</th>
-                <th>Fecha Original</th>
-                <th>Paquetes</th>
-                <th>Acciones</th>
+                <th>Eventos Registrados</th>
+                <th>Paquetes Creados</th>
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((d, index) => {
-                const rowKey = getRowKey(d);
-                const isExpanded = expandedRows[rowKey];
-                const rowPackages = getPackagesForRow(d);
-                const selectedPkg = rowPackages.find(p => p.isSelected);
+              {currentItems.map((group, index) => {
+                const isExpanded = expandedRows[group.userId];
+                const userPackages = packages.filter(p => p.userId === group.userId);
 
                 return (
                   <React.Fragment key={index}>
-                    {/* Main row */}
+                    {/* Fila Principal (Usuario) */}
                     <tr 
                       className={styles.expandableRow}
-                      onClick={() => toggleRow(rowKey)}
+                      onClick={() => toggleUserRow(group.userId)}
                     >
                       <td style={{ padding: '0.5rem', textAlign: 'center' }}>
                         <span 
@@ -299,113 +316,147 @@ const UsuariosView = () => {
                           <ChevronRight size={16} />
                         </span>
                       </td>
-                      <td>{d.userEmail}</td>
-                      <td>{d.recipientName}</td>
-                      <td>{d.recipientRole}</td>
-                      <td><span className={styles.badge}>{d.eventType}</span></td>
-                      <td>{d.eventDate}</td>
                       <td>
-                        {rowPackages.length > 0 ? (
-                          <span className={`${styles.packageBadge} ${selectedPkg ? styles.packageBadgeSelected : styles.packageBadgeDraft}`}>
-                            {rowPackages.length} {rowPackages.length === 1 ? 'paquete' : 'paquetes'}
-                          </span>
-                        ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>—</span>
-                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <User size={16} style={{ color: '#64748b' }} />
+                          <span style={{ fontWeight: 600, color: '#0f172a' }}>{group.userEmail}</span>
+                        </div>
                       </td>
                       <td>
-                        <Button 
-                          variant="primary" 
-                          onClick={(e) => { e.stopPropagation(); handleCreatePackage(d); }} 
-                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
-                        >
-                          <Plus size={14} style={{ marginRight: '0.25rem' }} />
-                          Crear Paquete
-                        </Button>
+                        <span className={styles.badge} style={{ background: '#eff6ff', color: '#3b82f6' }}>
+                          {group.events.length} {group.events.length === 1 ? 'evento' : 'eventos'}
+                        </span>
+                      </td>
+                      <td>
+                        {userPackages.length > 0 ? (
+                          <span className={styles.packageBadge} style={{ background: '#f0fdf4', color: '#166534' }}>
+                            {userPackages.length} {userPackages.length === 1 ? 'paquete' : 'paquetes'}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Sin paquetes</span>
+                        )}
                       </td>
                     </tr>
 
-                    {/* Expanded packages row */}
+                    {/* Fila Expandida (Eventos y Paquetes) */}
                     {isExpanded && (
                       <tr className={styles.packagesRow}>
-                        <td colSpan="8">
-                          <div className={styles.packagesContainer}>
-                            <div className={styles.packagesHeader}>
-                              <h4>Paquetes para {d.recipientName} — {d.eventType}</h4>
-                            </div>
-
-                            {rowPackages.length === 0 ? (
-                              <div className={styles.emptyPackages}>
-                                No hay paquetes creados para este destinatario.
-                              </div>
-                            ) : (
-                              rowPackages.map(pkg => (
-                                <div 
-                                  key={pkg.id} 
-                                  className={`${styles.packageCard} ${pkg.isSelected ? styles.packageCardSelected : ''}`}
-                                >
-                                  {/* Badge */}
-                                  <span className={`${styles.packageBadge} ${pkg.isSelected ? styles.packageBadgeSelected : styles.packageBadgeDraft}`}>
-                                    {pkg.isSelected ? 'Seleccionado' : 'Borrador'}
-                                  </span>
-
-                                  {/* Product thumbnails */}
-                                  <div className={styles.packageProducts}>
-                                    {(pkg.products || []).map((prod, i) => (
-                                      <div key={i} className={styles.packageProductThumb}>
-                                        <img 
-                                          src={prod.image || 'https://via.placeholder.com/50'} 
-                                          alt={prod.name} 
-                                        />
-                                        <span>{prod.name}</span>
+                        <td colSpan="4">
+                          <div style={{ padding: '0.5rem 1rem' }}>
+                            <h4 style={{ margin: '0 0 1rem 0', color: '#475569', fontSize: '0.9rem' }}>Detalle de Fechas Importantes</h4>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                              {group.events.map((d, i) => {
+                                const rowPackages = getPackagesForRow(d);
+                                
+                                return (
+                                  <div key={i} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    
+                                    {/* Cabecera del Evento */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                                      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                                        <div>
+                                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Destinatario</div>
+                                          <div style={{ fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            {d.recipientName}
+                                            <span style={{ fontSize: '0.75rem', padding: '0.1rem 0.4rem', background: '#f1f5f9', borderRadius: '4px', color: '#475569' }}>
+                                              {d.recipientRole}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Evento</div>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0f172a' }}>
+                                            <Calendar size={14} style={{ color: '#8b5cf6' }} />
+                                            {d.eventType} — {d.eventDate}
+                                          </div>
+                                        </div>
                                       </div>
-                                    ))}
-                                  </div>
-
-                                  {/* Action buttons */}
-                                  <div className={styles.packageActions}>
-                                    <button 
-                                      className={styles.packageActionBtn} 
-                                      title="Editar"
-                                      onClick={() => handleEditPackage(d, pkg)}
-                                    >
-                                      <Edit2 size={15} />
-                                    </button>
-                                    <button 
-                                      className={styles.packageActionBtn} 
-                                      title="Reutilizar para otro"
-                                      onClick={() => handleReusePackage(d, pkg)}
-                                    >
-                                      <Copy size={15} />
-                                    </button>
-                                    {!pkg.isSelected && (
-                                      <button 
-                                        className={`${styles.packageActionBtn} ${styles.packageActionBtnSelect}`}
-                                        title="Seleccionar como oferta"
-                                        onClick={() => handleSelectPackage(d, pkg)}
+                                      
+                                      <Button 
+                                        variant="primary" 
+                                        onClick={() => handleCreatePackage(d)} 
+                                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
                                       >
-                                        <CheckCircle size={15} />
-                                      </button>
-                                    )}
-                                    <button 
-                                      className={`${styles.packageActionBtn} ${styles.packageActionBtnDanger}`}
-                                      title="Eliminar"
-                                      onClick={() => handleDeletePackage(pkg)}
-                                    >
-                                      <Trash2 size={15} />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))
-                            )}
+                                        <Plus size={14} style={{ marginRight: '0.35rem' }} />
+                                        Crear Paquete
+                                      </Button>
+                                    </div>
+                                    
+                                    {/* Paquetes del Evento */}
+                                    <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                                      {rowPackages.length === 0 ? (
+                                        <div style={{ color: '#94a3b8', fontSize: '0.85rem', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                          <Package size={14} /> Aún no has creado paquetes para este evento.
+                                        </div>
+                                      ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                          {rowPackages.map(pkg => (
+                                            <div 
+                                              key={pkg.id} 
+                                              className={`${styles.packageCard} ${pkg.isSelected ? styles.packageCardSelected : ''}`}
+                                            >
+                                              {/* Badge */}
+                                              <span className={`${styles.packageBadge} ${pkg.isSelected ? styles.packageBadgeSelected : styles.packageBadgeDraft}`}>
+                                                {pkg.isSelected ? 'Seleccionado' : 'Borrador'}
+                                              </span>
 
-                            <button 
-                              className={styles.addPackageBtn}
-                              onClick={() => handleCreatePackage(d)}
-                            >
-                              <Plus size={16} />
-                              Agregar otro paquete
-                            </button>
+                                              {/* Product thumbnails */}
+                                              <div className={styles.packageProducts}>
+                                                {(pkg.products || []).map((prod, j) => (
+                                                  <div key={j} className={styles.packageProductThumb}>
+                                                    <img 
+                                                      src={prod.image || 'https://via.placeholder.com/50'} 
+                                                      alt={prod.name} 
+                                                    />
+                                                    <span>{prod.name}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+
+                                              {/* Action buttons */}
+                                              <div className={styles.packageActions}>
+                                                <button 
+                                                  className={styles.packageActionBtn} 
+                                                  title="Editar"
+                                                  onClick={() => handleEditPackage(d, pkg)}
+                                                >
+                                                  <Edit2 size={15} />
+                                                </button>
+                                                <button 
+                                                  className={styles.packageActionBtn} 
+                                                  title="Reutilizar para otro"
+                                                  onClick={() => handleReusePackage(d, pkg)}
+                                                >
+                                                  <Copy size={15} />
+                                                </button>
+                                                {!pkg.isSelected && (
+                                                  <button 
+                                                    className={`${styles.packageActionBtn} ${styles.packageActionBtnSelect}`}
+                                                    title="Seleccionar como oferta"
+                                                    onClick={() => handleSelectPackage(d, pkg)}
+                                                  >
+                                                    <CheckCircle size={15} />
+                                                  </button>
+                                                )}
+                                                <button 
+                                                  className={`${styles.packageActionBtn} ${styles.packageActionBtnDanger}`}
+                                                  title="Eliminar"
+                                                  onClick={() => handleDeletePackage(pkg)}
+                                                >
+                                                  <Trash2 size={15} />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -415,14 +466,14 @@ const UsuariosView = () => {
               })}
               {currentItems.length === 0 && (
                 <tr>
-                  <td colSpan="8" className={styles.empty}>No hay fechas que coincidan con el filtro.</td>
+                  <td colSpan="4" className={styles.empty}>No se encontraron usuarios con fechas importantes.</td>
                 </tr>
               )}
             </tbody>
           </table>
           
           {/* Pagination Controls */}
-          {filteredDates.length > 0 && (
+          {groupedUsers.length > 0 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
               <Button 
                 variant="secondary" 

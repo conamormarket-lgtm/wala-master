@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCart } from '../../contexts/CartContext';
+import { getUserSuggestedPackages } from '../../services/fechasImportantes';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
-import { Gift, Calendar, Plus, Edit2, Trash2, X, Globe } from 'lucide-react';
+import { Gift, Calendar, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package } from 'lucide-react';
 import styles from './CuentaFechasImportantesPage.module.css';
 
 const EVENT_TYPES = [
@@ -39,16 +41,48 @@ const getGlobalDates = (roleKey, gender) => {
 
 const CuentaFechasImportantesPage = () => {
   // eslint-disable-next-line no-unused-vars
-  const { userProfile, updateUserProfile } = useAuth();
+  const { user, userProfile, updateUserProfile } = useAuth();
+  const { addToCart } = useCart();
   // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tempRecipient, setTempRecipient] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [suggestedPackages, setSuggestedPackages] = useState([]);
+  const [addedPackageIds, setAddedPackageIds] = useState(new Set());
 
   const recipients = userProfile?.giftRecipients || [];
   const hasCompletedSurvey = userProfile?.hasCompletedSurvey;
+
+  // Load suggested packages for current user
+  useEffect(() => {
+    if (user?.uid) {
+      getUserSuggestedPackages(user.uid).then(pkgs => {
+        setSuggestedPackages(pkgs);
+      });
+    }
+  }, [user?.uid]);
+
+  // Get packages for a specific recipient
+  const getPackagesForRecipient = (rec) => {
+    return suggestedPackages.filter(pkg => 
+      pkg.recipientId === rec.id
+    );
+  };
+
+  // Add all products from a package to cart
+  const handleAddPackageToCart = (pkg) => {
+    (pkg.products || []).forEach(prod => {
+      addToCart(
+        { id: prod.id, name: prod.name, price: prod.price, images: [prod.image] },
+        {},
+        null,
+        1
+      );
+    });
+    setAddedPackageIds(prev => new Set([...prev, pkg.id]));
+  };
 
   if (!hasCompletedSurvey) {
     return (
@@ -178,45 +212,87 @@ const CuentaFechasImportantesPage = () => {
         {recipients.length === 0 ? (
           <p style={{ color: '#64748b' }}>Aún no has agregado personas a tu lista.</p>
         ) : (
-          recipients.map(rec => (
-            <div key={rec.id} className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <h3 className={styles.cardTitle}>{rec.name}</h3>
-                  <span className={styles.cardRole}>{rec.roleDisplay}</span>
-                  {getGlobalDates(rec.roleKey, rec.gender).length > 0 && (
-                    <div className={styles.globalDatesContainer}>
-                      {getGlobalDates(rec.roleKey, rec.gender).map((gDate, i) => (
-                        <span key={i} className={styles.globalDateBadge}>
-                          <Globe size={12} /> {gDate}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className={styles.cardActions}>
-                  <button onClick={() => handleEdit(rec)} className={styles.iconBtn} title="Editar">
-                    <Edit2 size={18} />
-                  </button>
-                  <button onClick={() => handleDelete(rec.id)} className={`${styles.iconBtn} ${styles.deleteBtn}`} title="Eliminar">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-              
-              <div className={styles.eventsList}>
-                {rec.events.map(ev => (
-                  <div key={ev.id} className={styles.eventItem}>
-                    <Calendar size={16} />
-                    <span>
-                      <strong>{ev.type === 'Fecha Especial' ? ev.customName : ev.type}:</strong>{' '}
-                      {ev.date ? new Date(ev.date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : 'Sin fecha'}
-                    </span>
+          recipients.map(rec => {
+            const recPackages = getPackagesForRecipient(rec);
+            return (
+              <div key={rec.id} className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <div>
+                    <h3 className={styles.cardTitle}>{rec.name}</h3>
+                    <span className={styles.cardRole}>{rec.roleDisplay}</span>
+                    {getGlobalDates(rec.roleKey, rec.gender).length > 0 && (
+                      <div className={styles.globalDatesContainer}>
+                        {getGlobalDates(rec.roleKey, rec.gender).map((gDate, i) => (
+                          <span key={i} className={styles.globalDateBadge}>
+                            <Globe size={12} /> {gDate}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
+                  <div className={styles.cardActions}>
+                    <button onClick={() => handleEdit(rec)} className={styles.iconBtn} title="Editar">
+                      <Edit2 size={18} />
+                    </button>
+                    <button onClick={() => handleDelete(rec.id)} className={`${styles.iconBtn} ${styles.deleteBtn}`} title="Eliminar">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className={styles.eventsList}>
+                  {rec.events.map(ev => (
+                    <div key={ev.id} className={styles.eventItem}>
+                      <Calendar size={16} />
+                      <span>
+                        <strong>{ev.type === 'Fecha Especial' ? ev.customName : ev.type}:</strong>{' '}
+                        {ev.date ? new Date(ev.date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : 'Sin fecha'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Suggested Packages Section */}
+                {recPackages.length > 0 && (
+                  <div className={styles.suggestedSection}>
+                    <div className={styles.suggestedHeader}>
+                      <Package size={16} />
+                      <span>Paquete sugerido para ti</span>
+                    </div>
+                    {recPackages.map(pkg => {
+                      const isAdded = addedPackageIds.has(pkg.id);
+                      return (
+                        <div key={pkg.id} className={styles.suggestedPackage}>
+                          <div className={styles.suggestedProducts}>
+                            {(pkg.products || []).map((prod, i) => (
+                              <div key={i} className={styles.suggestedProductItem}>
+                                <img 
+                                  src={prod.image || 'https://via.placeholder.com/60'} 
+                                  alt={prod.name} 
+                                />
+                                <div className={styles.suggestedProductInfo}>
+                                  <span className={styles.suggestedProductName}>{prod.name}</span>
+                                  <span className={styles.suggestedProductPrice}>S/ {prod.price}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <button 
+                            className={`${styles.addToCartBtn} ${isAdded ? styles.addToCartBtnDone : ''}`}
+                            onClick={() => !isAdded && handleAddPackageToCart(pkg)}
+                            disabled={isAdded}
+                          >
+                            <ShoppingCart size={16} />
+                            {isAdded ? 'Agregado al carrito' : 'Agregar todo al carrito'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
