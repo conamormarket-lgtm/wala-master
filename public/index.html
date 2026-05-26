@@ -54,6 +54,27 @@
   </head>
   <body>
     <noscript>Necesitas habilitar JavaScript para ejecutar esta aplicación.</noscript>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pantalla de carga inline: se muestra mientras React carga y se reemplaza automáticamente -->
+      <div id="app-loading" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(315deg,#5B21B6 0%,#8B5CF6 100%);">
+        <svg viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg" style="animation:pulseLoad 1.8s ease-in-out infinite;">
+          <defs>
+            <linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.95)" />
+              <stop offset="100%" stop-color="rgba(255,255,255,0.8)" />
+            </linearGradient>
+          </defs>
+          <circle cx="60" cy="60" r="56" fill="url(#splashGrad)" opacity="0.15"/>
+          <g transform="translate(25, 15) scale(0.58)">
+            <path d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z" fill="rgba(255,255,255,0.9)" />
+            <circle cx="67" cy="23" r="6.5" fill="#7C3AED" />
+            <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#7C3AED" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M 68 20 C 72 -2, 98 0, 85 28" stroke="rgba(255,255,255,0.9)" stroke-width="6" stroke-linecap="round" fill="none" />
+          </g>
+          <text x="60" y="105" text-anchor="middle" font-family="'Montserrat','Poppins',sans-serif" font-weight="900" font-size="22" fill="rgba(255,255,255,0.95)" letter-spacing="-1">WALÁ</text>
+        </svg>
+        <style>@keyframes pulseLoad{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(1.04)}}</style>
+      </div>
+    </div>
   </body>
 </html>
