@@ -340,6 +340,11 @@
   .headerTitle {
     font-size: 0.95rem;
   }
+  .reclamarChip,
+  .canjeadoChip {
+    font-size: 0.6rem;
+    padding: 3px 8px;
+  }
   .marcaBadge {
     width: 36px;
     height: 36px;

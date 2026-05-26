@@ -138,10 +138,12 @@
   height: 15px;
 }
 
-.navItemWithDropdown:hover .megaMenu {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
+@media (hover: hover) {
+  .navItemWithDropdown:hover .megaMenu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .megaMenuContent {
@@ -247,10 +249,12 @@
   height: 20px;
 }
 
-.accountDropdownContainer:hover .accountPopup {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
+@media (hover: hover) {
+  .accountDropdownContainer:hover .accountPopup {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
 }
 
 .accountPopupContent {
