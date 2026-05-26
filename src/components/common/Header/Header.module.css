@@ -654,6 +654,10 @@
     display: none;
   }
 
+  .desktopOnlyItem {
+    display: none !important;
+  }
+
   .navOpen {
     display: flex;
     position: fixed;

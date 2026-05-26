@@ -331,8 +331,10 @@ const Header = () => {
               return null;
             })}
 
+            <NavLink to="/minijuegos" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`} end>Minijuegos</NavLink>
+
             {user && (
-              <NavLink to="/cuenta" className={navLinkClass}>Mi cuenta</NavLink>
+              <NavLink to="/cuenta" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`}>Mi cuenta</NavLink>
             )}
             
             {isAdmin && (

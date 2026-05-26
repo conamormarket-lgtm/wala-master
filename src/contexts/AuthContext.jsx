@@ -82,7 +82,8 @@ export const AuthProvider = ({ children }) => {
         }
 
         // Update lastAppOpen if not updated today
-        const todayStr = new Date().toISOString().split('T')[0];
+        const _d1 = new Date();
+        const todayStr = `${_d1.getFullYear()}-${String(_d1.getMonth()+1).padStart(2, '0')}-${String(_d1.getDate()).padStart(2, '0')}`;
         if (profileData.lastAppOpen !== todayStr) {
           profileData.lastAppOpen = todayStr;
           setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { lastAppOpen: todayStr });
@@ -322,7 +323,8 @@ export const AuthProvider = ({ children }) => {
   const feedKapi = React.useCallback(async () => {
     if (!userProfile) return { error: 'No profile' };
     
-    const todayStr = new Date().toISOString().split('T')[0];
+    const _d2 = new Date();
+    const todayStr = `${_d2.getFullYear()}-${String(_d2.getMonth()+1).padStart(2, '0')}-${String(_d2.getDate()).padStart(2, '0')}`;
     if (userProfile.lastKapiClaimDate === todayStr) {
       return { error: 'Ya alimentaste a Kapi hoy' };
     }

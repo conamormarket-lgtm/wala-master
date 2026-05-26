@@ -16,9 +16,9 @@ const KapiPet = () => {
   // Placeholders para las imágenes que luego proveerá el cliente
   // eslint-disable-next-line no-unused-vars
   const IMAGES = {
-    happy: '/assets/kapi/kapi-happy.png',
-    sad: '/assets/kapi/kapi-sad.png',
-    hungry: '/assets/kapi/kapi-hungry.png'
+    happy: process.env.PUBLIC_URL + '/assets/kapi/kapi-happy.png',
+    sad: process.env.PUBLIC_URL + '/assets/kapi/kapi_sad.png',
+    hungry: process.env.PUBLIC_URL + '/assets/kapi/kapi-hungry.png'
   };
 
   useEffect(() => {
@@ -51,7 +51,8 @@ const KapiPet = () => {
       // Nota: Idealmente validaríamos que no se haya disparado hoy. 
       // Por ahora, usamos processChallengeEvent pero cuidado con recargas.
       // Para un tracker real de "5 días seguidos", se requerirá un campo en AuthContext.
-      const today = new Date().toISOString().split('T')[0];
+      const _d1 = new Date();
+      const today = `${_d1.getFullYear()}-${String(_d1.getMonth()+1).padStart(2, '0')}-${String(_d1.getDate()).padStart(2, '0')}`;
       if (userProfile.lastDailyVisitChallenge !== today) {
          // Firing hook would go here. For now it's just prepared.
          // feedKapi() is a good analog for daily tracking.
@@ -98,11 +99,13 @@ const KapiPet = () => {
 
   if (!user || !userProfile) return null;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const _d2 = new Date();
+  const todayStr = `${_d2.getFullYear()}-${String(_d2.getMonth()+1).padStart(2, '0')}-${String(_d2.getDate()).padStart(2, '0')}`;
   const lastClaim = userProfile.lastKapiClaimDate;
   const hasClaimedToday = lastClaim === todayStr;
 
-  if (hasClaimedToday) return null;
+  // Ya no retornamos null aquí, para que la mascota siempre esté visible (feliz si ya comió)
+  // if (hasClaimedToday) return null;
 
   let kapiState = 'happy';
   if (!hasClaimedToday) {
@@ -173,7 +176,11 @@ const KapiPet = () => {
       {!isOpen && (
         <div className={styles.fab} onClick={handleToggle} title="¡Tu Kapi Pet!">
           <div className={styles.fabIcon}>
-            {kapiState === 'hungry' ? '🥺' : '😺'}
+            <img 
+              src={IMAGES[kapiState]} 
+              alt="Kapi Pet" 
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+            />
           </div>
           {!hasClaimedToday && <div className={styles.badge}>!</div>}
         </div>
@@ -191,11 +198,11 @@ const KapiPet = () => {
 
             <div className={styles.petContainer} id="kapi-pet-container">
               <div className={`${styles.petImageWrapper} ${isFeeding ? styles.eating : ''}`}>
-                {/* Fallback temporario con emoji si la imagen no carga, dado que no hay assets aún */}
-                <div className={styles.emojiFallback}>
-                   {kapiState === 'hungry' ? '😿' : (isFeeding ? '😻' : '😺')}
-                </div>
-                {/* <img src={IMAGES[kapiState]} alt={`Kapi ${kapiState}`} className={styles.petImage} style={{display: 'none'}} /> */}
+                <img 
+                  src={isFeeding ? IMAGES.happy : IMAGES[kapiState]} 
+                  alt={`Kapi ${kapiState}`} 
+                  className={styles.petImage} 
+                />
               </div>
               
               <div className={styles.stats} id="kapi-stats">
