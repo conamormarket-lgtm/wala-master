@@ -21,6 +21,7 @@
     "fabric": "^5.3.0",
     "firebase": "^10.7.0",
     "formik": "^2.4.5",
+    "framer-motion": "^10.18.0",
     "html2canvas": "^1.4.1",
     "jszip": "^3.10.1",
     "lottie-react": "^2.4.1",

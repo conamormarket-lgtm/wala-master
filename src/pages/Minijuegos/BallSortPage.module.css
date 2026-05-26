@@ -102,19 +102,15 @@
   border-radius: 50%;
   margin-bottom: 4px;
   box-shadow: inset -5px -5px 10px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
-  transition: transform 0.3s cubic-bezier(0.17, 0.67, 0.12, 1.5);
-  animation: dropIn 0.3s cubic-bezier(0.17, 0.67, 0.12, 1) forwards;
+  /* No CSS animation — framer-motion handles all positional movement */
 }
 
 .selectedBall {
   transform: translateY(-20px);
   box-shadow: 0 10px 15px rgba(0,0,0,0.3), inset -5px -5px 10px rgba(0,0,0,0.3);
   z-index: 10;
-}
-
-@keyframes dropIn {
-  0% { transform: translateY(-100px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  transition: transform 0.2s cubic-bezier(0.17, 0.67, 0.12, 1.5),
+              box-shadow 0.2s ease;
 }
 
 .controls {
@@ -200,4 +196,51 @@
 @keyframes popIn {
   from { transform: translate(-50%, -40%) scale(0.8); opacity: 0; }
   to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* ── Confeti de tubo completado ── */
+
+.tubeComplete {
+  animation: tubeGlow 0.6s ease forwards;
+}
+
+@keyframes tubeGlow {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.08); }
+  60% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+.tubeComplete .tube {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35),
+              inset 0 -5px 10px rgba(0,0,0,0.05);
+}
+
+.confettiContainer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.confettiParticle {
+  position: absolute;
+  border-radius: 2px;
+  opacity: 1;
+  animation: confettiBurst 0.7s ease-out forwards;
+}
+
+@keyframes confettiBurst {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0);
+    opacity: 0;
+  }
 }
