@@ -618,7 +618,7 @@ const Header = () => {
       </div>
     </header>
 
-      {isNativeApp && user && !userProfile?.hasCompletedSurvey && (
+      {user && !userProfile?.hasCompletedSurvey && (
         <Link to="/encuesta-suscripcion" className={styles.floatingSurveyBtn} onClick={closeDropdowns}>
           <span className={styles.floatingSurveyIcon}>🎁</span>
           <span className={styles.floatingSurveyLabel}>Completar Encuesta</span>

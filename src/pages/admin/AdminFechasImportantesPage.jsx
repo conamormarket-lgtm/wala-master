@@ -35,25 +35,25 @@ const AdminFechasImportantesPage = () => {
             className={`${styles.drawerBtn} ${activeView === 'calendario' ? styles.active : ''}`}
             onClick={() => setActiveView('calendario')}
           >
-            📅 Calendario Global
+            Calendario Global
           </button>
           <button 
             className={`${styles.drawerBtn} ${activeView === 'universales' ? styles.active : ''}`}
             onClick={() => setActiveView('universales')}
           >
-            🌎 Fechas Universales
+            Fechas Universales
           </button>
           <button 
             className={`${styles.drawerBtn} ${activeView === 'usuarios' ? styles.active : ''}`}
             onClick={() => setActiveView('usuarios')}
           >
-            👥 Fechas de Usuarios
+            Fechas de Usuarios
           </button>
           <button 
             className={`${styles.drawerBtn} ${activeView === 'eventos' ? styles.active : ''}`}
             onClick={() => setActiveView('eventos')}
           >
-            🎁 Eventos Organizables
+            Eventos Organizables
           </button>
         </nav>
       </aside>

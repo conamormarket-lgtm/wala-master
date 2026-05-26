@@ -1,5 +1,6 @@
 import { collection, getDocs, doc, setDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from './firebase/config';
+import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 
 export const getUniversalDates = async () => {
   try {
@@ -32,7 +33,7 @@ export const deleteUniversalDate = async (id) => {
 
 export const getUserDates = async () => {
   try {
-    const usersSnap = await getDocs(collection(db, 'users'));
+    const usersSnap = await getDocs(collection(db, PORTAL_USERS_COLLECTION));
     const dates = [];
     
     usersSnap.forEach(userDoc => {

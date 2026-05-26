@@ -340,10 +340,10 @@
   .headerTitle {
     font-size: 0.95rem;
   }
-  .reclamarChip,
-  .canjeadoChip {
-    font-size: 0.6rem;
-    padding: 3px 8px;
+  .coinChip {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
   }
   .marcaBadge {
     width: 36px;
@@ -408,27 +408,49 @@
   border: 1px solid rgba(0,0,0,0.05);
 }
 
-.reclamarChip {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 6px 14px;
-  border-radius: 20px;
-  color: white;
-  background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
-  text-transform: uppercase;
+.coinChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.9rem;
   border: none;
   cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
 }
-.reclamarChip.claiming { opacity: 0.7; }
 
-.canjeadoChip {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 6px 14px;
-  border-radius: 20px;
-  color: #7f8c8d;
-  background: #ecf0f1;
-  text-transform: uppercase;
+.coinActive {
+  background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+  animation: coinPulse 2s ease-in-out infinite;
+}
+
+.coinActive:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.5);
+}
+
+.coinActive.claiming {
+  opacity: 0.5;
+  pointer-events: none;
+  animation: none;
+}
+
+.coinClaimed {
+  background: #e2e8f0;
+  cursor: default;
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+@keyframes coinPulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 2px 16px rgba(245, 158, 11, 0.7); }
 }
 
 /* Cola Badge en el Accordion Header */
@@ -441,14 +463,4 @@
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   display: inline-flex;
   align-items: center;
-}
-
-/* Chip exclusivo para app nativa Capacitor */
-.nativeChip {
-  font-size: 0.55rem;
-  padding: 2px 7px;
-  border-radius: 10px;
-  letter-spacing: 0.03em;
-  gap: 2px;
-  white-space: nowrap;
 }
