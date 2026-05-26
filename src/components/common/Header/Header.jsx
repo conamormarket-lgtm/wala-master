@@ -384,7 +384,7 @@ const Header = () => {
                     onClick={(e) => handleMobileDropdownClick(e, 'billetera')}
                     style={{ background: 'transparent', border: 'none', display: 'flex', gap: '6px', padding: 0 }}
                   >
-                    <div className={`${styles.nativeCoinBadge} ${isCoinBouncing || isKapiBouncing ? styles.bounce : ''}`} style={{ color: 'var(--rojo-principal)', background: '#ffe4e6', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '12px' }}>
+                    <div className={`${styles.nativeCoinBadge} ${isCoinBouncing || isKapiBouncing ? styles.bounce : ''} global-coins-target`} style={{ color: 'var(--rojo-principal)', background: '#ffe4e6', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '12px' }}>
                       <span style={{fontSize: '13px'}}>🪙</span> <strong>{Math.floor(displayCoins) + displayKapiCoins}</strong>
                     </div>
                   </button>

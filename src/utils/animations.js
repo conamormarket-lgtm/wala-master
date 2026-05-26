@@ -43,8 +43,17 @@ export const showFlyingCoins = (startX, startY, amount = 10) => {
   // Notify header to expect incoming coins
   window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount } }));
 
-  // Buscamos específicamente a la clase global-coins-target para volar a ella
-  const targetEl = document.querySelector('.global-coins-target') || document.querySelector('header');
+  // Buscamos el .global-coins-target visible (desktop y mobile tienen la clase, pero solo uno es visible)
+  const candidates = document.querySelectorAll('.global-coins-target');
+  let targetEl = null;
+  for (const el of candidates) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) {
+      targetEl = el;
+      break;
+    }
+  }
+  if (!targetEl) targetEl = document.querySelector('header');
   let targetX = window.innerWidth - 100;
   let targetY = 30;
 
