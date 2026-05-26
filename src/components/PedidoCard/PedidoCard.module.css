@@ -442,3 +442,13 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* Chip exclusivo para app nativa Capacitor */
+.nativeChip {
+  font-size: 0.55rem;
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.03em;
+  gap: 2px;
+  white-space: nowrap;
+}

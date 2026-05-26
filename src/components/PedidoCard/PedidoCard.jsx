@@ -11,12 +11,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { showFlyingCoins } from '../../utils/animations';
 import { ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, User, MapPin, Building, Flag, AlertCircle, ShoppingCart } from 'lucide-react';
 import { listFilesInFolder } from '../../services/firebase/storage';
+import { Capacitor } from '@capacitor/core';
 import styles from './PedidoCard.module.css';
 
 const DEUDA_IMPRESION_MENSAJE = 'STOP... TIENES UNA DEUDA PENDIENTE, POR FAVOR REALIZA TU PAGO PARA QUE TU PEDIDO PUEDA CONTINUAR AVANZANDO';
 
 const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
   const { userProfile, claimMonedas } = useAuth();
+  const isNativeApp = Capacitor.isNativePlatform();
   const [isExpanded, setIsExpanded] = useState(false);
   const [etapaModal, setEtapaModal] = useState(null);
   const [showDeudaImpresionModal, setShowDeudaImpresionModal] = useState(false);
@@ -180,14 +182,14 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
               {canClaimCoins && (
                 <button 
                   type="button" 
-                  className={`${styles.reclamarChip} ${claimingCoins ? styles.claiming : ''}`}
+                  className={`${styles.reclamarChip} ${claimingCoins ? styles.claiming : ''} ${isNativeApp ? styles.nativeChip : ''}`}
                   onClick={handleClaimCoins}
                   title="Ganar 10 monedas"
                 >
                  🪙 Reclamar
                 </button>
               )}
-              {isCompleted && !canClaimCoins && <span className={styles.canjeadoChip}>🪙 Reclamado</span>}
+              {isCompleted && !canClaimCoins && <span className={`${styles.canjeadoChip} ${isNativeApp ? styles.nativeChip : ''}`}>🪙 Reclamado</span>}
             </div>
             {pedido.numeroColaDisplay != null && pedido.numeroColaDisplay !== '' && getQueueStage(pedido.estadoGeneral) && (
               <span className={styles.colaBadge}>🎟️ {pedido.numeroColaDisplay}</span>
