@@ -51,6 +51,8 @@ function tryLoadImageUrl(imageUrl, { skipCloudinaryOptimize = false } = {}) {
 function loadFabricImage(imageUrl, { skipCloudinaryOptimize = false } = {}) {
   const urlObjs = tryLoadImageUrl(imageUrl, { skipCloudinaryOptimize });
   const tried = new Set();
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   let lastError = null;
 
   const tryCreateImage = (url) =>

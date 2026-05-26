@@ -1,6 +1,6 @@
 /* Contenedor Principal: Flexbox para tres columnas */
 .surveyLayout {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -80,18 +80,75 @@
 }
 
 @media (max-width: 640px) {
+  .surveyLayout {
+    min-height: auto;
+    height: max-content;
+    display: block;
+    padding: 1rem 0;
+  }
   .centerColumn {
-    padding: 1rem 0.5rem;
+    padding: 0; /* Sin padding externo para ganar el 100% de la pantalla */
+    justify-content: flex-start; /* Subir todo un poco */
   }
   .card {
-    padding: 2rem 1.25rem;
-    border-radius: 20px;
+    padding: 0.85rem 0.5rem;
+    border-radius: 12px;
+    border-bottom-width: 3px;
+    height: auto; /* Dejar que el flex decida, no forzar 100dvh */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: none;
+    background: transparent; /* Ayuda a que se fusione y no cree barras de scroll extra */
   }
   .title {
-    font-size: 1.5rem;
+    font-size: 1.05rem;
+    margin-bottom: 0.15rem;
+    line-height: 1.1;
   }
   .subtitle {
-    font-size: 1rem;
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+    line-height: 1.1;
+  }
+  .headerIcon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0.25rem;
+    border-width: 1px;
+  }
+  .headerIcon svg {
+    width: 16px;
+    height: 16px;
+  }
+  .description {
+    font-size: 0.7rem;
+    margin-bottom: 0.4rem;
+    line-height: 1.15;
+  }
+  .progressBarContainer {
+    height: 6px;
+    margin-bottom: 0.4rem;
+  }
+  .progressBarLight {
+    top: 1px;
+    height: 2px;
+  }
+  .actions {
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    gap: 0.5rem;
+  }
+  .fieldGroup {
+    margin-bottom: 0.5rem;
+  }
+  .fieldRow {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .input {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.85rem;
   }
 }
 
@@ -395,6 +452,24 @@ textarea.input {
   color: #475569;
   cursor: pointer;
   transition: all 0.1s;
+}
+
+@media (max-width: 640px) {
+  .saveBtn, .skipBtn {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    border-bottom-width: 2px;
+  }
+  .pillsContainer {
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+  }
+  .pillBtn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    border-bottom-width: 2px;
+    border-radius: 12px;
+  }
 }
 
 .pillBtn:active {

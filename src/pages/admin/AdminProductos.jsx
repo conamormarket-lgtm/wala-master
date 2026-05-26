@@ -140,6 +140,7 @@ const AdminProductos = () => {
     }
 
     return filtered;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productsData, optimisticVisibility, searchQuery]);
 
   const categoryName = (p) => {

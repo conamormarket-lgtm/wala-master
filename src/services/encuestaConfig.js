@@ -9,7 +9,7 @@ export const DEFAULT_SURVEY_CONFIG = {
   introPanel: {
     title: '¡Queremos conocerte mejor!',
     subtitle: 'Tus respuestas nos ayudarán a darte una experiencia increíble.',
-    description: 'Completa esta breve encuesta y recibe recomendaciones (y regalos) pensados exclusivamente en ti y en tus fechas más importantes. Prometemos que será rápido y sin pedir datos sensibles.',
+    description: 'Completa esta encuesta para recibir recomendaciones y regalos exclusivos. Es súper rápido.',
     continueButtonText: 'Empezar Encuesta',
     skipButtonText: 'No, gracias',
     imageUrl: '' // Opcional, para subir una imagen atractiva

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Plus, Trash2, X, Edit, Code } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import { Upload, Trash2, X, Edit, Code } from 'lucide-react';
 import { getThemes, saveTheme, deleteTheme } from '../services/themes';
 // Importaremos JSZip dinámicamente para no cargar el bundle inicial si no es necesario
 // import JSZip from 'jszip';

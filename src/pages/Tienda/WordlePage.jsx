@@ -4,7 +4,8 @@ import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday
 import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 import styles from './WordlePage.module.css';
 
 // Constantes

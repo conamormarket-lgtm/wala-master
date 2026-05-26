@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Filter, X } from 'lucide-react';
 import ProductGrid from './ProductGrid';
 import styles from './SidebarCatalogLayout.module.css';
-import { toDirectImageUrl } from '../../../utils/imageUrl';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 import { useQuery } from '@tanstack/react-query';
 import { getCollections } from '../../../services/collections';
 import { getBrands } from '../../../services/brands';

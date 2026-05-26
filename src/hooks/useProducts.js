@@ -50,6 +50,7 @@ export const useProduct = (productId) => {
       const queries = queryClient.getQueriesData({ queryKey: ['products'] });
       const allQueries = queryClient.getQueriesData({ queryKey: ['allProducts'] });
       
+      // eslint-disable-next-line no-unused-vars
       for (const [key, data] of [...queries, ...allQueries]) {
         if (Array.isArray(data)) {
           const found = data.find(p => p.id === productId);

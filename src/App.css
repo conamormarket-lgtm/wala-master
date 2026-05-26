@@ -58,3 +58,28 @@ body.mobile-preview-active .App > footer {
   border-radius: 0 0 30px 30px;
   margin-top: 0 !important;
 }
+
+/* ── Pila de Botones Flotantes (WhatsApp, Kapi, etc.) ── */
+.floating-action-stack {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 16px;
+  z-index: 1000;
+  pointer-events: none; /* Permite clicks a través del contenedor */
+  align-items: center;
+}
+
+.floating-action-stack > * {
+  pointer-events: auto; /* Reactiva los clicks en los botones individuales */
+}
+
+@media (max-width: 768px) {
+  .floating-action-stack {
+    bottom: 80px; /* Espacio para el BottomNav */
+    right: 16px;
+    gap: 12px;
+  }
+}

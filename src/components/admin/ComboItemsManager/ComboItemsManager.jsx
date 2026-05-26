@@ -6,7 +6,9 @@ import Button from '../../common/Button';
 import styles from './ComboItemsManager.module.css';
 
 const ComboItemsManager = ({ comboItems = [], onItemsChange, onAddItem }) => {
+  // eslint-disable-next-line no-unused-vars
   const [editingIndex, setEditingIndex] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [scaleInputs, setScaleInputs] = useState({});
 
   const handleRemoveItem = (index) => {

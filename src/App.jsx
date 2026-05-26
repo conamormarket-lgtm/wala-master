@@ -50,6 +50,7 @@ const SubscriptionLandingPage = lazy(() => import('./pages/SubscriptionLandingPa
 const NuevosUsuariosPage = lazy(() => import('./pages/NuevosUsuariosPage'));
 const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
 const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
+const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
@@ -152,8 +153,10 @@ const GlobalLayout = ({ children }) => {
       </main>
       <Footer />
       <BottomNav />
-      <WhatsAppButton />
-      <KapiPet />
+      <div className="floating-action-stack">
+        <WhatsAppButton />
+        <KapiPet />
+      </div>
 
       <FirebaseWarning />
     </div>
@@ -254,6 +257,7 @@ function App() {
                         <Route path="/palabra-del-dia" element={<WordlePage />} />
                         <Route path="/minijuegos" element={<MinijuegosPage />} />
                         <Route path="/ruleta" element={<RuletaPage />} />
+                        <Route path="/ball-sort" element={<BallSortPage />} />
                         <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                         <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                         <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />

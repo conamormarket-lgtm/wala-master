@@ -1,5 +1,6 @@
 import { db } from './config';
 import { doc, getDoc, updateDoc, setDoc, collection, getDocs, addDoc, deleteDoc, query, orderBy, runTransaction } from 'firebase/firestore';
+import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
 
 // --- UTILIDADES DE FECHA ---
 export const getStartOfWeek = (date = new Date()) => {
@@ -122,7 +123,7 @@ export const spinRuleta = async (userId, userProfile) => {
     }
 
     // Usar transacción para asignar premio y marcar que ya giró
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, PORTAL_USERS_COLLECTION, userId);
     
     await runTransaction(db, async (transaction) => {
       const userDoc = await transaction.get(userRef);

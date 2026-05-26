@@ -28,6 +28,8 @@ const AdminStoreEditor = () => {
 
   useEffect(() => {
     const fetchConfig = async () => {
+      // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
       const { data, error } = await getDocument('storeConfig', 'homePage');
       if (data) {
         setConfig(prev => ({

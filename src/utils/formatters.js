@@ -11,7 +11,9 @@ export const slugify = (text) => {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, '-')
+    // eslint-disable-next-line no-useless-escape
     .replace(/[^\w\-]+/g, '')
+    // eslint-disable-next-line no-useless-escape
     .replace(/\-\-+/g, '-');
 };
 

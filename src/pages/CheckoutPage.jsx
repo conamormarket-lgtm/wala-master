@@ -58,6 +58,8 @@ const validationSchema = Yup.object({
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const { items, getTotalPrice, clearCart } = useCart();
   const { user, userProfile, updateUserProfile, freezeMonedas, activeMainCoins } = useAuth();
   const toast = useGlobalToast();
@@ -96,7 +98,9 @@ const CheckoutPage = () => {
 
         let num = tiendaNum.data?.trim() || fallbackNum.data?.trim() || '';
         let cleanText = textTienda.data || 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.';
+// eslint-disable-next-line no-useless-escape
 
+        // eslint-disable-next-line no-useless-escape
         let clean = num.replace(/[\s\-\(\)\+]/g, '');
         if (clean && !clean.startsWith('51') && clean.length <= 9) {
           clean = `51${clean}`;

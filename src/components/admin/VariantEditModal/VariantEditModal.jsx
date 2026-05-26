@@ -145,6 +145,7 @@ const VariantEditModal = ({ isOpen, variant, onSave, onClose }) => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const onCropComplete = useCallback((croppedArea, croppedAreaPercentages) => {
     setCroppedAreaPercentages(croppedAreaPercentages);
   }, []);

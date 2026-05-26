@@ -1,7 +1,5 @@
 .fab {
-  position: fixed;
-  bottom: 80px;
-  right: 20px;
+  position: relative;
   width: 60px;
   height: 60px;
   background: var(--rojo-principal, #e11d48);
@@ -276,4 +274,39 @@
 .evidenceBtn:disabled {
   background: #94a3b8;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .fab {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* Driver.js Overrides para bordes suaves */
+:global(.driver-popover) {
+  border-radius: 16px !important;
+  border: none !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+  padding: 20px !important;
+}
+
+:global(.driver-popover-footer button) {
+  border-radius: 20px !important;
+  border: none !important;
+  font-weight: 600 !important;
+  text-shadow: none !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+  padding: 8px 16px !important;
+}
+
+:global(.driver-popover-next-btn),
+:global(.driver-popover-done-btn) {
+  background-color: var(--rojo-principal, #e11d48) !important;
+  color: white !important;
+}
+
+:global(.driver-popover-prev-btn) {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
 }

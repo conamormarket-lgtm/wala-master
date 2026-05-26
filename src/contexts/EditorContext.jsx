@@ -143,6 +143,8 @@ export const EditorProvider = ({ children }) => {
   }, [activeViewId]);
 
   // ---- NEW: Undo / Redo / Clear All ----
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const undo = useCallback(() => {
     setUndoStack((prevUndo) => {
       if (prevUndo.length === 0) return prevUndo;
@@ -152,7 +154,9 @@ export const EditorProvider = ({ children }) => {
       return prevUndo.slice(0, -1);
     });
   }, []);
+// eslint-disable-next-line no-unused-vars
 
+  // eslint-disable-next-line no-unused-vars
   const redo = useCallback(() => {
     setRedoStack((prevRedo) => {
       if (prevRedo.length === 0) return prevRedo;

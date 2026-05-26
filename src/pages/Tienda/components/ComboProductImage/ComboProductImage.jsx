@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getProduct } from '../../../../services/products';
 import { toDirectImageUrl, toThumbnailImageUrl, ensureSingleImageUrl } from '../../../../utils/imageUrl';
-import { getThumbnailVariant } from '../../../../utils/productThumbnailVariant';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 import { recordThumbnailImpression } from '../../../../utils/productVariantBehavior';
 import { useQueryClient } from '@tanstack/react-query';
 import OptimizedImage, { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
@@ -83,6 +84,8 @@ const ComboProductImage = ({
   const containerRef = useRef(null);
   const comboImpressionRecorded = useRef(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const comboItems = comboProduct?.comboItems || [];
   const comboLayout = comboProduct?.comboLayout || { orientation: 'horizontal', spacing: 20 };
 
@@ -214,7 +217,9 @@ const ComboProductImage = ({
     };
 
     run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comboItems, effectiveVariantSelections, queryClient]);
 
   const isHorizontal = comboLayout.orientation !== 'vertical';

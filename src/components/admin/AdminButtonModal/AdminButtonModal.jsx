@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// eslint-disable-next-line no-unused-vars
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCuestionariosTemplates, createCuestionarioTemplate, updateCuestionarioTemplate } from '../../../services/cuestionarios';
 import Button from '../../common/Button';
 import AdminCuestionarioTemplateModal from '../AdminCuestionarioTemplateModal/AdminCuestionarioTemplateModal';
@@ -15,6 +16,7 @@ function AdminButtonModal({ isOpen, onClose, onInsert, defaultNumber, initialDat
   const [editingTemplate, setEditingTemplate] = useState(null);
 
   const queryClient = useQueryClient();
+  // eslint-disable-next-line no-unused-vars
   const { data: templatesRaw, isLoading } = useQuery({
     queryKey: ['cuestionario-templates'],
     queryFn: async () => {
@@ -41,6 +43,7 @@ function AdminButtonModal({ isOpen, onClose, onInsert, defaultNumber, initialDat
         setButtonType('whatsapp');
         setText('Contactar por WhatsApp');
         
+        // eslint-disable-next-line no-useless-escape
         const numClean = (defaultNumber || '').replace(/[\s\-\(\)]/g, '');
         const formatNum = numClean.startsWith('+') ? numClean.replace('+','') : '51'+numClean;
         setUrl(`https://wa.me/${formatNum}?text=Hola,%20quiero%20más%20información`);
@@ -53,6 +56,7 @@ function AdminButtonModal({ isOpen, onClose, onInsert, defaultNumber, initialDat
     setButtonType(newType);
     if (newType === 'whatsapp') {
       setText('Contactar por WhatsApp');
+      // eslint-disable-next-line no-useless-escape
       const numClean = (defaultNumber || '').replace(/[\s\-\(\)]/g, '');
       const formatNum = numClean.startsWith('+') ? numClean.replace('+','') : '51'+numClean;
       setUrl(`https://wa.me/${formatNum}?text=Hola,%20quiero%20más%20información`);

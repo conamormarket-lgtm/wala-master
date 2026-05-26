@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Edit2 } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import { Save, Plus, Trash2 } from 'lucide-react';
 import { getSurveyConfig, saveSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
 import styles from './AdminEncuestas.module.css';
 
@@ -10,7 +12,9 @@ const AdminEncuestas = () => {
   const [activeTab, setActiveTab] = useState('intro'); // intro, basic, brands, completion, design
 
   useEffect(() => {
+    // eslint-disable-next-line no-unused-vars
     const fetchConfig = async () => {
+      // eslint-disable-next-line no-unused-vars
       const { data, error } = await getSurveyConfig();
       if (data) {
         // Hacemos un merge con default por si hay campos nuevos

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
 
 import ProductGrid from '../Tienda/components/ProductGrid';
 import ProductSearch from '../Tienda/components/ProductSearch';
+import MobileCategorySubheader from '../Tienda/components/MobileCategorySubheader/MobileCategorySubheader';
 
 import {
   getProducts,
@@ -87,6 +89,8 @@ const LegacyTiendaPage = () => {
   const subtitle = storeMessages?.subtitle ?? DEFAULT_STORE_SUBTITLE;
   const emptyMessage = storeMessages?.emptyMessage ?? '';
 
+  const isNativeApp = Capacitor.isNativePlatform();
+
   return (
     <div className={styles.container}>
       <div className={styles.storeHeader}>
@@ -102,25 +106,27 @@ const LegacyTiendaPage = () => {
       </div>
 
       <div className={styles.pageLayout}>
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarSection}>
-            <h3 className={styles.sidebarTitle}>Categorías</h3>
-            <ul className={styles.categoryList}>
-              <li>
-                <Link to="/tienda" className={!categoryId ? styles.activeCat : ''}>
-                  Todas
-                </Link>
-              </li>
-              {categoriesData?.map(c => (
-                <li key={c.id}>
-                  <Link to={`/tienda?categoria=${c.id}`} className={categoryId === c.id ? styles.activeCat : ''}>
-                    {c.name}
+        {!isNativeApp && (
+          <aside className={styles.sidebar}>
+            <div className={styles.sidebarSection}>
+              <h3 className={styles.sidebarTitle}>Categorías</h3>
+              <ul className={styles.categoryList}>
+                <li>
+                  <Link to="/tienda" className={!categoryId ? styles.activeCat : ''}>
+                    Todas
                   </Link>
                 </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
+                {categoriesData?.map(c => (
+                  <li key={c.id}>
+                    <Link to={`/tienda?categoria=${c.id}`} className={categoryId === c.id ? styles.activeCat : ''}>
+                      {c.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </aside>
+        )}
 
         <main className={styles.mainContent}>
           <div className={styles.topBar}>
@@ -135,6 +141,8 @@ const LegacyTiendaPage = () => {
               </select>
             </div>
           </div>
+
+          <MobileCategorySubheader categories={categoriesData} />
 
           <section className={styles.sectionBlock}>
             <ProductGrid

@@ -91,7 +91,7 @@ const SectionBackground = ({ config }) => {
   );
 };
 
-const TiendaPage = () => {
+const TiendaPage = ({ isLandingPage = false }) => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
+// eslint-disable-next-line no-unused-vars
 import { useAuth } from '../../contexts/AuthContext';
 
 /**

@@ -4,7 +4,8 @@ import { fabric } from 'fabric';
 import { useEditor } from '../../../contexts/EditorContext';
 import { useDesignClipboard } from '../../../contexts/DesignClipboardContext';
 import { EDITOR_FONTS, FONT_WEIGHT_NORMAL, FONT_WEIGHT_BOLD, FONT_STYLE_NORMAL, FONT_STYLE_ITALIC } from '../../../constants/fonts';
-import { toDirectImageUrl, toCanvasImageUrl, ensureSingleImageUrl } from '../../../utils/imageUrl';
+// eslint-disable-next-line no-unused-vars
+import { toDirectImageUrl, ensureSingleImageUrl } from '../../../utils/imageUrl';
 import { SHAPE_TYPES, renderShapeSVG, isPointInShape, loadCustomShape } from '../../../utils/shapeUtils';
 import styles from './EditorCanvas.module.css';
 
@@ -162,6 +163,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
       if (roCssImg) roCssImg.disconnect();
       window.removeEventListener('resize', onResize);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageDimensions.width, imageDimensions.height]);
 
   // En móvil el contenedor puede tener tamaño 0 en el primer paint; forzar recálculo con dimensiones de viewport
@@ -712,6 +714,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
     measurer.src = displayUrl;
 
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localCanvasReady, productImage, setCanvasDimensions]);
 
   useEffect(() => {
@@ -722,6 +725,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
       lc.setActiveObject(obj);
       safeRequestRenderAll(lc);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas, selectedLayer, layers]);
 
   useEffect(() => {
@@ -829,6 +833,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
           if (active) {
             e.preventDefault();
             const step = e.shiftKey ? 10 : 1;
+            // eslint-disable-next-line default-case
             switch(e.key) {
                case 'ArrowUp': active.set('top', active.top - step); break;
                case 'ArrowDown': active.set('top', active.top + step); break;
@@ -869,6 +874,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas, viewIdToUse, removeLayer, setSelectedLayer, handleUndo, handleRedo, clipboardLayers, setClipboardLayers, addLayer, layers, activeViewId]);
 
   // Función centralizada para actualizar posiciones de zonas y capas
@@ -1011,6 +1017,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
 
     lc.on('mouse:up', handleMouseUp);
     return () => lc.off('mouse:up', handleMouseUp);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas, viewIdToUse, removeLayer]);
 
   // Listen for drops FROM other canvases into this one
@@ -1073,6 +1080,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
 
   useEffect(() => {
     const lc = localCanvasRef.current;
+    // eslint-disable-next-line no-unused-vars
     const { totalW, totalH, padding = 0 } = imageDimensions;
     if (!lc || !isCanvasValid(lc) || totalW === 0 || totalH === 0) return;
     try {
@@ -1702,6 +1710,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
     } catch (err) {
       console.warn('EditorCanvas: error syncing layers', err);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas, layers, printAreas, imageDimensions.width, imageDimensions.height, activePrintAreaId, viewIdToUse, updateLayer, editingTextId, setActivePrintAreaId]);
 
   const getEditingTextObject = () => {

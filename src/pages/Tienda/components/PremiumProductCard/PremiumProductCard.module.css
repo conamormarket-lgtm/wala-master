@@ -68,12 +68,18 @@
   z-index: 10;
 }
 
-.badgeNew, .badgeSale, .badgeOut {
+.badgeNew, .badgeSale, .badgeOut, .badgeSold {
   font-size: 0.65rem;
   font-weight: 700;
   padding: 4px 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.badgeSold {
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+  color: #fff;
+  border-radius: 4px;
 }
 
 .badgeNew {

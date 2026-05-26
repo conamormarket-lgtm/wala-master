@@ -3,11 +3,14 @@ import { useVisualEditor } from '../contexts/VisualEditorContext';
 import Button from '../../../components/common/Button';
 import { useQuery } from '@tanstack/react-query';
 import { getCollections } from '../../../services/collections';
-import { saveLandingPage } from '../services/landingPages';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { SECTION_TYPES, getDefaultSettings } from '../services/storefront';
 import styles from '../../../components/admin/VisualEditorPanel.module.css';
-import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft, GripVertical, Save, X, LayoutTemplate, PanelLeft, Monitor, PanelRight, Smartphone, Settings, Layers } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft, Save, LayoutTemplate, PanelLeft, Monitor, PanelRight, Smartphone, Settings, Layers } from 'lucide-react';
 
 import TypographyControl from './editor/controls/TypographyControl';
 import BackgroundStylesControl from './editor/controls/BackgroundStylesControl';

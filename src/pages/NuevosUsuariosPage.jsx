@@ -873,6 +873,8 @@ const NuevosUsuariosPage = () => {
 
           {/* SÉPTIMO BLOQUE: BOTÓN DE DESCARGA (REEMPLAZADO POR IMAGEN) */}
           <div className="download-section">
+            // eslint-disable-next-line jsx-a11y/anchor-is-valid
+            // eslint-disable-next-line jsx-a11y/anchor-is-valid
             <a href="#" target="_blank" rel="noopener noreferrer" className="download-img-wrapper">
               {renderMedia(`${process.env.PUBLIC_URL}/diseno/descarga.png`, 'Descarga la App', { width: '100%', height: 'auto', cursor: 'pointer', objectFit: 'contain' })}
             </a>

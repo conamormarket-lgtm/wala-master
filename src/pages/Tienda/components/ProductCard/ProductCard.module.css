@@ -174,6 +174,22 @@
   letter-spacing: 0.02em;
 }
 
+.soldBadge {
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+  color: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(255, 75, 43, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
 .comboImage {
   position: absolute;
   top: 0;
@@ -242,15 +258,6 @@
 
 .reviewsCount {
   color: #888;
-}
-
-.soldCount {
-  background: rgba(109, 40, 217, 0.08);
-  color: var(--rojo-principal);
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-  font-weight: 700;
-  font-size: 0.7rem;
 }
 
 .priceRow {
@@ -413,11 +420,6 @@
     font-size: 0.65rem;
   }
 
-  .soldCount {
-    font-size: 0.65rem;
-    padding: 0.1rem 0.35rem;
-  }
-
   .deliveryTag {
     font-size: 0.625rem;
     margin-top: 0.3rem;
@@ -431,7 +433,8 @@
   }
 
   .comboBadge,
-  .discountBadge {
+  .discountBadge,
+  .soldBadge {
     padding: 0.15rem 0.4rem;
     font-size: 0.65rem;
     border-radius: 4px;
@@ -472,11 +475,6 @@
 
   .socialProof {
     column-gap: 3px;
-  }
-
-  .soldCount {
-    padding: 0.1rem 0.25rem;
-    font-size: 0.6rem;
   }
 }
 

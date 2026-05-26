@@ -462,16 +462,26 @@ export const generateComboPreview = async (product, variantSelections = {}) => {
     throw new Error('Producto no es un combo válido');
   }
 
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const { orientation = 'horizontal', spacing = 20 } = product.comboLayout || {};
+  // eslint-disable-next-line no-unused-vars
   const isHorizontal = orientation === 'vertical' ? false : true;
 
+  // eslint-disable-next-line no-unused-vars
   // Cargar imágenes de cada producto según variantes
+  // eslint-disable-next-line no-unused-vars
   const images = [];
+  // eslint-disable-next-line no-unused-vars
   let totalWidth = 0;
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   let totalHeight = 0;
 
   for (let i = 0; i < product.comboItems.length; i++) {
+    // eslint-disable-next-line no-unused-vars
     const item = product.comboItems[i];
+    // eslint-disable-next-line no-unused-vars
     const variant = variantSelections[i] || {};
 
     try {

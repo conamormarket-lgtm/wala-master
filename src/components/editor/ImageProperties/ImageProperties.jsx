@@ -101,6 +101,7 @@ const ImageProperties = ({ layerId }) => {
     } finally {
       setRemoveBgApplying(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layer, layerId, removeBgColor, removeBgTolerance, updateLayer, removeBgApplying, canvas]);
 
   if (!layer || layer.type !== 'image') return null;

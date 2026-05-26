@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
-import { toDirectImageUrl } from '../../../../utils/imageUrl';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 import styles from './ProductGrid.module.css';
 
 const SKELETON_COUNT = 6;

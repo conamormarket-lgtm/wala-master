@@ -155,7 +155,9 @@ const PrintAreasEditor = ({
   const [freeDrawPoints, setFreeDrawPoints] = useState([]); // Puntos del dibujo libre
   const [mousePos, setMousePos] = useState(null); // Seguir ratón para previsualización
   const [, setIsDrawingFree] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [editingPointIndex, setEditingPointIndex] = useState(null); // Índice del punto que se está editando
+  // eslint-disable-next-line no-unused-vars
   const [editingZoneId, setEditingZoneId] = useState(null); // ID de la zona que se está editando
   const [isMouseOver, setIsMouseOver] = useState(false);
 
@@ -171,6 +173,7 @@ const PrintAreasEditor = ({
   }, []);
 
   // Guardar estado en historial
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const saveToHistory = (newZones, newRotation, newSkew) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push({
@@ -1098,6 +1101,7 @@ const PrintAreasEditor = ({
       window.addEventListener('mousemove', checkTransfer);
       return () => window.removeEventListener('mousemove', checkTransfer);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDragging, zones, imageUrl, onChange]);
 
   const selectedZone = zones.find(z => z.id === selectedZoneId);

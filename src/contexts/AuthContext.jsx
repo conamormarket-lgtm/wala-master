@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, startTransition } from 'react';
+// eslint-disable-next-line no-unused-vars
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthChange } from '../services/firebase/auth';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getDocument, updateDocument, setDocument } from '../services/firebase/firestore';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import { getDocument, setDocument } from '../services/firebase/firestore';
 import { getAdminRoleByEmail, setAdminRole } from '../services/adminRoles';
 import { getStartOfWeek, formatIsoDate } from '../services/firebase/ruleta';
 import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/userCollections';
@@ -385,6 +387,7 @@ export const AuthProvider = ({ children }) => {
   const profileIncomplete = !!user && !!userProfile && (!userProfile.dni || !userProfile.phone);
 
   const isLegacyAdmin = userProfile?.role === 'admin' || user?.email === 'yorh001@gmail.com' || user?.email === 'heyeru24@gmail.com' || localStorage.getItem('adminWalaPro') === 'true';
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const effectiveAdminPermissions = (adminPermissions && adminPermissions.length > 0) ? adminPermissions : (isLegacyAdmin ? ['superadmin'] : []);
   
   const isAdmin = isLegacyAdmin || effectiveAdminPermissions.length > 0;

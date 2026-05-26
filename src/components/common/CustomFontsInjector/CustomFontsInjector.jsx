@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
+// eslint-disable-next-line no-unused-vars
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getFonts } from '../../../services/fonts';
 

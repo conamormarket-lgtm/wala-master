@@ -41,6 +41,8 @@ const MiCreacionCard = ({ design, isPurchased }) => {
   // Utilizar la lógica de miniaturas de la tienda
   const { thumbnailImageUrl } = useProductThumbnailVariant(product);
   
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const handlePrefetch = () => {}; // Si deseamos prefetch
 
   if (isLoading || !product) {

@@ -305,3 +305,23 @@
 .addBtn:hover {
   background: rgba(139, 92, 246, 0.05);
 }
+
+.globalDatesContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.globalDateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #fdf4ff;
+  color: #c026d3;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  border: 1px solid #f5d0fe;
+}

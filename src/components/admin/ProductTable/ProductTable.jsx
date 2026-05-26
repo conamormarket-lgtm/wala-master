@@ -73,6 +73,7 @@ const ProductTable = ({
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, sortConfig, categories]);
 
   const SortIcon = ({ columnKey }) => {

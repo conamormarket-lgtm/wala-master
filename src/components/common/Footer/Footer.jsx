@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { getStorefrontConfig } from '../../../pages/Tienda/services/storefront';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
+import { Capacitor } from '@capacitor/core';
 import styles from './Footer.module.css';
 
 // Importamos algunos de los bloques que pueden renderizarse en el footer
 // Para simplificar, implementaremos el renderizado directamente o reutilizaremos componentes
-import OptimizedImage from '../OptimizedImage/OptimizedImage';
 
 const Footer = () => {
   const location = useLocation();
@@ -27,6 +27,8 @@ const Footer = () => {
   });
 
   if (!isFooterVisible) return null;
+  // Ocultar footer si está en una app móvil nativa (Capacitor)
+  if (window.Capacitor?.isNativePlatform?.() || Capacitor.isNativePlatform()) return null;
 
   const isEditingFooter = activePageId === 'footer';
   let displaySections = isEditingFooter ? (storeConfigDraft?.sections || []) : (footerConfig?.sections || []);

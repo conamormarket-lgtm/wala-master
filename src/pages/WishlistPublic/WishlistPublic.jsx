@@ -4,7 +4,9 @@ import { getWishlistByUserCode } from '../../services/wishlist';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { db } from '../../services/firebase/config';
-import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { useProducts } from '../../hooks/useProducts';
 import ProductCard from '../Tienda/components/ProductCard/ProductCard';
 import styles from './WishlistPublic.module.css';

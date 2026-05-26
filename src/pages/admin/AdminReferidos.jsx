@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, query, getDocs, updateDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db } from '../../services/firebase/config';
 import { useGlobalToast } from '../../contexts/ToastContext';

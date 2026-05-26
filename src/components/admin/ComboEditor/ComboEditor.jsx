@@ -1,5 +1,5 @@
 import React, { useState, forwardRef, useImperativeHandle } from 'react';
-import { useQuery } from '@tanstack/react-query';
+// eslint-disable-next-line no-unused-vars
 import { getProduct } from '../../../services/products';
 import UnifiedComboEditor from '../UnifiedComboEditor/UnifiedComboEditor';
 import { toDirectImageUrl, ensureSingleImageUrl } from '../../../utils/imageUrl';

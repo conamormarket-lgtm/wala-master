@@ -6,6 +6,8 @@ import { usePedidos } from '../../hooks/usePedidos';
 import MiCreacionCard from './components/MiCreacionCard';
 import styles from './MisCreacionesPage.module.css';
 
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 const formatDate = (timestamp) => {
   if (!timestamp) return '—';
   try {

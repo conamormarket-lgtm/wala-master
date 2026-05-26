@@ -10,7 +10,7 @@ import { getDocument } from '../../../services/firebase/firestore';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
-import { Heart, User, ShoppingBag, Gamepad2 } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
 import styles from './Header.module.css';
@@ -28,8 +28,12 @@ const Header = () => {
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
   const location = useLocation();
+  const isArcadeZone = location.pathname.startsWith('/minijuegos') || location.pathname.startsWith('/ruleta') || location.pathname.startsWith('/ball-sort');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileWalletOpen, setMobileWalletOpen] = useState(false);
+  const [forceHideDropdowns, setForceHideDropdowns] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
   const mobileWalletRef = useRef(null);
   const cartItemsCount = getTotalItems();
   const realCoins = activeMainCoins || 0;
@@ -148,9 +152,15 @@ const Header = () => {
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (mobileWalletRef.current && !mobileWalletRef.current.contains(event.target)) {
+    const handleClickOutside = (e) => {
+      // Para billetera móvil
+      if (mobileWalletRef.current && !mobileWalletRef.current.contains(e.target)) {
         setMobileWalletOpen(false);
+      }
+      // Cerrar el dropdown activo en móviles/escritorio si se da clic afuera de un contenedor de dropdown
+      const isDropdownContainer = e.target.closest('.' + styles.accountDropdownContainer);
+      if (!isDropdownContainer) {
+        setActiveDropdown(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -162,6 +172,34 @@ const Header = () => {
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    closeDropdowns();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+
+  const closeDropdowns = () => {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    setMobileMenuOpen(false);
+    setMobileWalletOpen(false);
+    setActiveDropdown(null);
+    setForceHideDropdowns(true);
+    setTimeout(() => {
+      const handlePointerMove = () => {
+        setForceHideDropdowns(false);
+        window.removeEventListener('pointermove', handlePointerMove);
+      };
+      window.addEventListener('pointermove', handlePointerMove);
+    }, 100);
+  };
+
+  const handleMobileDropdownClick = (e, dropdownName) => {
+    if (window.innerWidth <= 768 || Capacitor.isNativePlatform()) {
+      e.preventDefault();
+      setActiveDropdown(prev => prev === dropdownName ? null : dropdownName);
+    }
+  };
 
   const handleResetCoinsForTesting = async () => {
     if (user?.email?.toLowerCase() === 'yorh001@gmail.com') {
@@ -176,12 +214,16 @@ const Header = () => {
 
   if (!isHeaderVisible) return null;
 
-  const isArcadeZone = location.pathname.startsWith('/minijuegos') || location.pathname.startsWith('/ruleta');
-  const headerStyle = isArcadeZone ? { background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)', borderBottom: '1px solid rgba(255,255,255,0.1)' } : {};
+  const isNativeApp = Capacitor.isNativePlatform();
 
   return (
-    <header className={`${styles.header} ${isArcadeZone ? styles.arcadeHeader : ''}`} style={headerStyle}>
+    <header className={`${styles.header} ${forceHideDropdowns ? styles.forceHideHover : ''}`}>
       <div className={styles.container}>
+        {isNativeApp ? (
+          <Link to="/" className={styles.nativeBackBtn}>
+            <Home size={20} />
+          </Link>
+        ) : (
         <Link to="/" className={styles.logo}>
           <svg viewBox="0 0 390 120" className={styles.logoImage} style={{ height: '44px', width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -201,7 +243,7 @@ const Header = () => {
             </g>
 
             {/* LOGOTIPO (Right) - Anchored right, giving 'A' a strict known position */}
-            <text x="375" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill={isArcadeZone ? "white" : "url(#walaGradient)"} stroke={isArcadeZone ? "white" : "url(#walaGradient)"} strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALA</text>
+            <text x="375" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALA</text>
 
             {/* THE TILDE ACCENT OVER 'A' - Pinned specifically at x=353 (perfect center of A) and y=12 (floating above) */}
             <g transform="translate(353, 12) scale(0.3) rotate(5)">
@@ -212,13 +254,14 @@ const Header = () => {
             </g>
           </svg>
         </Link>
+        )}
 
         <EditableSection sectionId="header" currentConfig={activeConfig} label="Menú de Navegación">
           <nav className={`${styles.nav} ${mobileMenuOpen ? styles.navOpen : ''}`} aria-label="Navegación principal">
             
             {navLinks.map((link) => {
               const linkStyle = {
-                color: isArcadeZone ? '#e2e8f0' : (link.color || 'inherit'),
+                color: (link.color || 'inherit'),
                 fontFamily: link.fontFamily || 'inherit',
                 fontWeight: link.bold ? 'bold' : 'normal',
                 fontStyle: link.italic ? 'italic' : 'normal',
@@ -226,7 +269,7 @@ const Header = () => {
 
               const getActiveStyle = (isActive) => ({
                 ...linkStyle,
-                ...(isActive ? { color: isArcadeZone ? '#a855f7' : 'var(--rojo-principal)' } : {})
+                ...(isActive ? { color: 'var(--rojo-principal)' } : {})
               });
 
               if (link.type === 'link') {
@@ -300,93 +343,80 @@ const Header = () => {
 
         <div className={styles.actions}>
           <div className={styles.walletsContainer}>
-            {/* --- DESKTOP VIEW --- */}
-            <div className={styles.desktopWalletsOnly}>
-              {/* Billetera Principal (Wala Coins) */}
-              <div 
-                className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`} 
-                onClick={handleResetCoinsForTesting}
-                style={user?.email === 'yorh001@gmail.com' ? { cursor: 'pointer' } : {}}
-              >
-                <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
-                  🪙 {Math.floor(displayCoins)}
-                </div>
-                <div className={styles.tooltipText}>
-                  Billetera Principal - ¡Canjea tus monedas en el catálogo o checkout!
-                  {user?.email === 'yorh001@gmail.com' && <br/>}
-                  {user?.email === 'yorh001@gmail.com' && <small style={{color:'#f1c40f'}}>(Click para Reset Test)</small>}
-                </div>
-              </div>
-
-              {/* Billetera Diaria (Kapi Coins) */}
-              <div className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer}`}>
-                <div className={`${styles.coinsDisplay} ${isKapiBouncing ? styles.bounce : ''}`} style={{ backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' }}>
-                  🍖 {displayKapiCoins}
-                </div>
-                <div className={styles.tooltipText}>
-                  Billetera Diaria - Kapi Coins (Vencen a fin de mes)
-                </div>
-              </div>
-            </div>
-
-            {/* --- MOBILE VIEW --- */}
-            <div className={styles.mobileWalletsOnly} ref={mobileWalletRef}>
-              <button 
-                className={styles.mobileWalletBtn} 
-                onClick={() => setMobileWalletOpen(!mobileWalletOpen)}
-                aria-label="Tus billeteras"
-              >
-                <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>🪙</span>
-              </button>
-
-              <div className={`${styles.premiumMobileDropdown} ${mobileWalletOpen ? styles.premiumMobileDropdownOpen : ''}`}>
-                <div className={styles.premiumMobileHeader}>
-                  <h4>Mis Billeteras</h4>
-                </div>
-                
-                <div className={styles.premiumWalletItem}>
-                  <div className={styles.premiumWalletIconWrapper} style={{background: 'rgba(243, 156, 18, 0.15)'}}>
-                     <span className={styles.premiumWalletIcon}>🪙</span>
+            {user && (
+              <>
+                {/* --- DESKTOP VIEW --- */}
+                <div className={styles.desktopWalletsOnly}>
+                  {/* Billetera Principal (Wala Coins) */}
+                  <div 
+                    className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`} 
+                    onClick={handleResetCoinsForTesting}
+                    style={user?.email === 'yorh001@gmail.com' ? { cursor: 'pointer' } : {}}
+                  >
+                    <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
+                      🪙 {Math.floor(displayCoins)}
+                    </div>
+                    <div className={styles.tooltipText}>
+                      Billetera Principal - ¡Canjea tus monedas en el catálogo o checkout!
+                      {user?.email === 'yorh001@gmail.com' && <br/>}
+                      {user?.email === 'yorh001@gmail.com' && <small style={{color:'#f1c40f'}}>(Click para Reset Test)</small>}
+                    </div>
                   </div>
-                  <div className={styles.premiumWalletDetails}>
-                     <span className={styles.premiumWalletTitle}>Wala Coins</span>
-                     <span className={styles.premiumWalletSubtitle}>Principal</span>
-                  </div>
-                  <div className={styles.premiumWalletAmount}>
-                     {Math.floor(displayCoins)}
+
+                  {/* Billetera Diaria (Kapi Coins) */}
+                  <div className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer}`}>
+                    <div className={`${styles.coinsDisplay} ${isKapiBouncing ? styles.bounce : ''}`} style={{ backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' }}>
+                      🍖 {displayKapiCoins}
+                    </div>
+                    <div className={styles.tooltipText}>
+                      Billetera Diaria - Kapi Coins (Vencen a fin de mes)
+                    </div>
                   </div>
                 </div>
 
-                <div className={styles.premiumWalletItem}>
-                  <div className={styles.premiumWalletIconWrapper} style={{background: 'rgba(133, 100, 4, 0.1)'}}>
-                     <span className={styles.premiumWalletIcon}>🍖</span>
-                  </div>
-                  <div className={styles.premiumWalletDetails}>
-                     <span className={styles.premiumWalletTitle}>Kapi Coins</span>
-                     <span className={styles.premiumWalletSubtitle}>Diaria</span>
-                  </div>
-                  <div className={styles.premiumWalletAmount} style={{color: '#856404'}}>
-                     {displayKapiCoins}
-                  </div>
-                </div>
+                {/* --- MOBILE VIEW --- */}
+                <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'billetera' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'billetera' ? styles.forceHideHover : ''} ${styles.mobileWalletsOnly}`}>
+                  <button 
+                    className={styles.mobileWalletsBtn} 
+                    onClick={(e) => handleMobileDropdownClick(e, 'billetera')}
+                    style={{ background: 'transparent', border: 'none', display: 'flex', gap: '6px', padding: 0 }}
+                  >
+                    <div className={styles.nativeCoinBadge} style={{ color: 'var(--rojo-principal)', background: '#ffe4e6', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 6px', borderRadius: '12px' }}>
+                      <span style={{fontSize: '13px'}}>🪙</span> <strong>{Math.floor(displayCoins)}</strong>
+                    </div>
+                    <div className={styles.nativeCoinBadge} style={{ color: '#b45309', background: '#fef3c7', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 6px', borderRadius: '12px' }}>
+                      <span style={{fontSize: '13px'}}>🍖</span> <strong>{displayKapiCoins}</strong>
+                    </div>
+                  </button>
 
-                <div className={styles.premiumWalletFooter}>
-                  <Link to="/cuenta/catalogo" className={styles.premiumWalletLink} onClick={() => setMobileWalletOpen(false)}>
-                    Ir al Catálogo de Recompensas
-                  </Link>
+                  <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
+                    <div className={styles.accountPopupContent} style={{ padding: '12px' }}>
+                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#333' }}>Mis Billeteras</h4>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '18px' }}>🪙</span>
+                            <span style={{ fontSize: '14px', fontWeight: '500', color: '#334155' }}>Wala Coins</span>
+                          </div>
+                          <strong style={{ color: 'var(--rojo-principal)', fontSize: '15px' }}>{Math.floor(displayCoins)}</strong>
+                        </li>
+                        <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '18px' }}>🍖</span>
+                            <span style={{ fontSize: '14px', fontWeight: '500', color: '#334155' }}>Kapi Coins</span>
+                          </div>
+                          <strong style={{ color: '#b45309', fontSize: '15px' }}>{displayKapiCoins}</strong>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
-          
-          <div className={styles.accountDropdownContainer}>
-            <Link to="/minijuegos" className={styles.iconButton} aria-label="Minijuegos" title="Minijuegos y Recompensas">
-              <Gamepad2 strokeWidth={1.5} className={styles.icon} />
-            </Link>
-          </div>
-          
-          <div className={styles.accountDropdownContainer}>
-            <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} aria-label="Favoritos">
+
+          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`}>
+            <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'favoritos')} aria-label="Favoritos">
               <Heart strokeWidth={1.5} className={styles.icon} />
             </Link>
             
@@ -423,7 +453,7 @@ const Header = () => {
                           <h3>Tu Lista de Deseos</h3>
                           <p style={textStyle}>Tienes {wishlistItems.length} productos guardados en tu lista.</p>
                           <div className={styles.accountButtons}>
-                            <Link to="/cuenta/wishlist" className={styles.primaryButton}>
+                            <Link to="/cuenta/wishlist" className={styles.primaryButton} onClick={closeDropdowns}>
                               Ver mi lista
                             </Link>
                           </div>
@@ -435,7 +465,7 @@ const Header = () => {
                         <h3>{favConfig.loggedInTitle || 'Tus Favoritos'}</h3>
                         <p style={textStyle}>{favConfig.loggedInText || 'Aún no has marcado nada como favorito.'}</p>
                         <div className={styles.accountButtons}>
-                          <Link to={favConfig.buttonLink || '/tienda'} className={styles.primaryButton}>
+                          <Link to={favConfig.buttonLink || '/tienda'} className={styles.primaryButton} onClick={closeDropdowns}>
                             {favConfig.buttonText || 'Mira lo que te puede interesar'}
                           </Link>
                         </div>
@@ -448,10 +478,10 @@ const Header = () => {
                       <h3>{favConfig.loggedOutTitle || 'Tus Favoritos'}</h3>
                       <p style={textStyle}>{favConfig.loggedOutText || 'Aún no tienes artículos guardados. Inicia sesión para crear tu lista de deseos.'}</p>
                       <div className={styles.accountButtons}>
-                        <Link to="/login" className={styles.primaryButton}>
+                        <Link to="/login" className={styles.primaryButton} onClick={closeDropdowns}>
                           Iniciar sesión
                         </Link>
-                        <Link to="/tienda" className={styles.secondaryButton}>
+                        <Link to="/tienda" className={styles.secondaryButton} onClick={closeDropdowns}>
                           Explorar tienda
                         </Link>
                       </div>
@@ -463,78 +493,10 @@ const Header = () => {
           </div>
           
           {user && <NotificationTray />}
-          
-          <div className={styles.accountDropdownContainer}>
-            <Link to="/cuenta" className={styles.iconButton} aria-label="Mi cuenta">
-              <User strokeWidth={1.5} className={styles.icon} />
-            </Link>
-            
-            <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
-              <EditableSection sectionId="accountPopup" currentConfig={activeConfig} label="Pop-up de Cuenta">
-                <div className={styles.accountPopupContent}>
-                  {user ? (
-                    <>
-                      <h3>Hola, {userProfile?.displayName || userProfile?.nombre || user.email?.split('@')[0]}</h3>
-                      <p>Bienvenido a tu cuenta</p>
-                      
-                      {!userProfile?.hasCompletedSurvey && (
-                        <div style={{ background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', border: '1px solid #e2e8f0', textAlign: 'left' }}>
-                          <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '0.9rem', color: '#111827', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                            🎁 Perfil de Regalos
-                          </h4>
-                          <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.75rem', color: '#4b5563', lineHeight: '1.3' }}>
-                            Gana recompensas diciéndonos qué te gusta.
-                          </p>
-                          <Link to="/encuesta-suscripcion" className={styles.primaryButton} style={{ background: '#8b5cf6', color: 'white', padding: '0.5rem', fontSize: '0.85rem' }}>
-                            Completar Encuesta
-                          </Link>
-                        </div>
-                      )}
 
-                      <div className={styles.accountButtons}>
-                        <Link to="/cuenta" className={styles.primaryButton}>
-                          Mi Perfil
-                        </Link>
-                        <button onClick={async () => { await logout(); navigate('/'); }} className={styles.secondaryButton} style={{ width: '100%', cursor: 'pointer', border: '1px solid #ccc' }}>
-                          Cerrar sesión
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <h3>{accountPopup.title}</h3>
-                      <p>{accountPopup.description}</p>
-                      
-                      <div className={styles.accountButtons}>
-                        <Link to={accountPopup.loginButtonUrl || '/login'} className={styles.primaryButton}>
-                          {accountPopup.loginButtonText || 'Iniciar sesión'}
-                        </Link>
-                        <Link to={accountPopup.registerButtonUrl || '/registro'} className={styles.secondaryButton}>
-                          {accountPopup.registerButtonText || 'Crear cuenta'}
-                        </Link>
-                      </div>
-                    </>
-                  )}
-                  
-                  {accountPopup.brands && accountPopup.brands.length > 0 && (
-                    <div className={styles.brandsSection}>
-                      <h4>NUESTRAS MARCAS</h4>
-                      <div className={styles.brandsList}>
-                        {accountPopup.brands.map(brand => (
-                          <a key={brand.id} href={brand.url || '#'} className={styles.brandLink} title={brand.name}>
-                            <img src={brand.imageUrl || 'https://via.placeholder.com/150'} alt={brand.name} className={styles.brandLogo} />
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </EditableSection>
-            </div>
-          </div>
 
-          <div className={styles.accountDropdownContainer}>
-            <Link to="/carrito" className={styles.iconButton} aria-label="Carrito de compras">
+          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'carrito' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'carrito' ? styles.forceHideHover : ''}`}>
+            <Link to="/carrito" className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'carrito')} aria-label="Carrito de compras">
               <ShoppingBag strokeWidth={1.5} className={styles.icon} />
               {cartItemsCount > 0 && (
                 <span className={styles.cartBadge}>{cartItemsCount}</span>
@@ -548,7 +510,7 @@ const Header = () => {
                   <>
                     <p>Tu carrito está vacío en este momento.</p>
                     <div className={styles.accountButtons}>
-                      <Link to="/tienda" className={styles.primaryButton}>Explorar tienda</Link>
+                      <Link to="/tienda" className={styles.primaryButton} onClick={closeDropdowns}>Explorar tienda</Link>
                     </div>
                   </>
                 ) : (
@@ -572,7 +534,7 @@ const Header = () => {
                         <span>Total:</span>
                         <strong>S/ {getTotalPrice().toFixed(2)}</strong>
                       </div>
-                      <Link to="/carrito" className={styles.primaryButton} style={{width: '100%', boxSizing: 'border-box'}}>
+                      <Link to="/carrito" className={styles.primaryButton} onClick={closeDropdowns} style={{width: '100%', boxSizing: 'border-box'}}>
                         Ir a pagar
                       </Link>
                     </div>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Calendar, Plus, Trash2, ArrowLeft, Edit2, AlertCircle } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Plus, Trash2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
 import styles from './SubscriptionSurveyPage.module.css';
 
@@ -261,15 +263,24 @@ const SubscriptionSurveyPage = () => {
     try {
       const validRecipients = finalRecipients.filter(r => isRecipientComplete(r));
       
-      // Calcular monedas ganadas solo si es la primera vez que completa la encuesta
+      // Calcular monedas ganadas por fechas nuevas agregadas
+      let oldTotalFechas = 0;
+      if (userProfile.giftRecipients) {
+        userProfile.giftRecipients.forEach(r => {
+          if (r.events) oldTotalFechas += r.events.length;
+        });
+      }
+
+      let newTotalFechas = 0;
+      validRecipients.forEach(r => {
+        if (r.events) newTotalFechas += r.events.length;
+      });
+
+      const newEventsAdded = newTotalFechas - oldTotalFechas;
       let coinsEarned = 0;
       
-      if (!userProfile.hasCompletedSurvey) {
-        let totalFechas = 0;
-        validRecipients.forEach(r => {
-          totalFechas += r.events.length;
-        });
-        coinsEarned = totalFechas * 5;
+      if (newEventsAdded > 0) {
+        coinsEarned = newEventsAdded * 5;
       }
       
       await updateUserProfile({ 
@@ -335,11 +346,13 @@ const SubscriptionSurveyPage = () => {
               <div style={{ backgroundColor: '#fffbeb', color: '#b45309', padding: '1rem', borderRadius: '12px', margin: '1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 'bold', border: '1px solid #fde68a', boxShadow: '0 4px 6px -1px rgba(251, 191, 36, 0.1)' }}>
                 <span style={{ fontSize: '2rem', lineHeight: 1 }}>🪙</span>
                 <span style={{ fontSize: '1rem', textAlign: 'left' }}>
-                  ¡Gana 5 Kapicoins por cada fecha importante (Cumpleaños o Fecha Especial) que registres de tus seres queridos!
+                  ¡Gana 5 Kapicoins por cada fecha importante que registres!
                 </span>
               </div>
 
-              <p className={styles.description}>{config.introPanel.description}</p>
+              <p className={styles.description}>
+                Completa esta encuesta para recibir recomendaciones y regalos exclusivos. Es muy rápido.
+              </p>
               <div className={styles.actions} style={{ justifyContent: 'center' }}>
                 <button type="button" onClick={handleSkip} className={styles.skipBtn}>{config.introPanel.skipButtonText}</button>
                 <button type="button" onClick={goToNextStep} className={styles.saveBtn}>{config.introPanel.continueButtonText}</button>

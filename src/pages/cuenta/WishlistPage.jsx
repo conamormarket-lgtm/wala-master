@@ -26,6 +26,8 @@ const WishlistPage = () => {
     setTimeout(() => setCopying(false), 2000);
   };
 
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const handleRemove = async (product) => {
     const res = await toggleFavorite({ id: product.productId });
     if (res?.error) {

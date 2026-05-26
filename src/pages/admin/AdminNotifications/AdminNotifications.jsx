@@ -38,6 +38,8 @@ const AdminNotifications = () => {
   const toast = useGlobalToast();
   
   // Fake metrics for now, since we haven't tracked enough real data yet
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const [metricsData, setMetricsData] = useState([
     { name: 'Carrito 1h', openRate: 45, conversion: 15, optOut: 1 },
     { name: 'Carrito 24h', openRate: 35, conversion: 10, optOut: 2 },

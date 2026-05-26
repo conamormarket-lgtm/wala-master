@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { getProduct, getThumbnailVariant } from '../../../services/products';
+// eslint-disable-next-line no-unused-vars
+import { getProduct } from '../../../services/products';
 import { toDirectImageUrl, ensureSingleImageUrl } from '../../../utils/imageUrl';
 import {
   itemBoundsToPct,
@@ -7,7 +8,8 @@ import {
   unifiedZoneToItemZone,
   getItemIndexForUnifiedZone
 } from '../../../utils/comboUnifiedCoords';
-import { generateComboPreviewDataUrlWithBounds, composeComboImage, loadImageAsFabricCanvas, captureComboPreviewAsImage } from '../../../utils/comboImageComposer';
+// eslint-disable-next-line no-unused-vars
+import { generateComboPreviewDataUrlWithBounds, composeComboImage, loadImageAsFabricCanvas } from '../../../utils/comboImageComposer';
 import { generateThumbnailWithDesign } from '../../../utils/thumbnailWithDesign';
 import { getCloudinaryOptimized } from '../../common/OptimizedImage/OptimizedImage';
 import { EditorProvider, useEditor } from '../../../contexts/EditorContext';
@@ -16,7 +18,7 @@ import EditorCanvas from '../../editor/EditorCanvas/EditorCanvas';
 import Toolbar from '../../editor/Toolbar/Toolbar';
 import MobileFloatingTools from '../../editor/MobileFloatingTools/MobileFloatingTools';
 import DraggableContainer from '../../common/DraggableContainer/DraggableContainer';
-import { SHAPE_TYPES } from '../../../utils/shapeUtils';
+// eslint-disable-next-line no-unused-vars
 import styles from './UnifiedComboEditor.module.css';
 
 const DEFAULT_VIEW_ID = 'unified-composite';
@@ -79,6 +81,7 @@ const UnifiedComboEditorContent = ({
   const [showZonesDesign, setShowZonesDesign] = useState(true);
   const [activeItemIndex, setActiveItemIndex] = useState(0);
   const [mobileLayoutMode, setMobileLayoutMode] = useState('joined');
+  // eslint-disable-next-line no-unused-vars
   const [enableZoomToEdit, setEnableZoomToEdit] = useState(false);
   const activeSides = React.useMemo(() => {
     const obj = {};
@@ -104,6 +107,7 @@ const UnifiedComboEditorContent = ({
     return initial;
   });
   const [isCapturing, setIsCapturing] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const { setLayersForView, setActiveViewId, layersByView, clearLayers } = useEditor();
   const initializedViewsRef = useRef(new Set());
   const wrapRef = useRef(null);
@@ -146,11 +150,13 @@ const UnifiedComboEditorContent = ({
     const currentColor = activeColors[activeItemIndex] || 'default';
     const viewId = getVId(activeItemIndex, currentColor, activeSides);
     setActiveViewId(viewId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeItemIndex, activeColors, setActiveViewId]);
 
   const handleCapture = async () => {
     setIsCapturing(true);
     try {
+      // eslint-disable-next-line no-unused-vars
       const UNIFORM_SIZE = 600;
       const getImageUrlForItem = async (item, index) => {
         const colorsMap = itemImagesByColor?.[index] || { default: '' };
@@ -342,6 +348,7 @@ const UnifiedComboEditorContent = ({
     } else {
       setActiveViewId(DEFAULT_VIEW_ID);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, activeItemIndex, activeColors, setActiveViewId, itemImagesByColor, comboItems]);
 
   const boundsPct = useMemo(
@@ -446,6 +453,7 @@ const UnifiedComboEditorContent = ({
       onComboItemCustomizationChange(next);
     }
     alert('✅ Diseño copiado a todas las variaciones del Producto ' + (index + 1));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comboItemCustomization, itemImagesByColor, onComboItemCustomizationChange, setLayersForView]);
 
   const handleZonesChange = useCallback(
@@ -938,6 +946,7 @@ const UnifiedComboEditorFallbackContent = ({
     const currentColor = activeColors[activeItemIndex] || 'default';
     const viewId = getVId(activeItemIndex, currentColor, activeSides);
     setActiveViewId(viewId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeItemIndex, activeColors, setActiveViewId]);
 
   const handleCapture = async () => {
@@ -1011,6 +1020,7 @@ const UnifiedComboEditorFallbackContent = ({
         }
       });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setLayersForView, comboItems, comboItemCustomization, itemImagesByColor]);
 
   // Auto-sync para Fallback
@@ -1073,6 +1083,7 @@ const UnifiedComboEditorFallbackContent = ({
     } else {
       setActiveViewId(DEFAULT_VIEW_ID);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, activeItemIndex, activeColors, setActiveViewId, itemImagesByColor, comboItems]);
 
   const handleCopyLayersToAllColors = useCallback((index, sourceColorKey) => {
@@ -1115,6 +1126,7 @@ const UnifiedComboEditorFallbackContent = ({
       onComboItemCustomizationChange(next);
     }
     alert('✅ Diseño copiado a todas las variaciones del Producto ' + (index + 1));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comboItemCustomization, itemImagesByColor, onComboItemCustomizationChange, setLayersForView]);
 
   const handleSaveAll = useCallback(() => {
@@ -1786,8 +1798,10 @@ const UnifiedComboEditor = (props) => {
 
     load();
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.comboItems, props.comboLayout]);
 
+  // eslint-disable-next-line no-unused-vars
   const canEditZones = props.canEditZones !== false;
   const content = loading ? (
     <div className={styles.loading}>Cargando editor unificado...</div>

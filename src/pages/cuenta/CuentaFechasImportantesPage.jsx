@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Gift, Calendar, Plus, Edit2, Trash2, X, Heart, Users, UserPlus, UserCircle } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import { Gift, Calendar, Plus, Edit2, Trash2, X, Globe } from 'lucide-react';
 import styles from './CuentaFechasImportantesPage.module.css';
 
 const EVENT_TYPES = [
@@ -21,8 +23,24 @@ const ROLES_MAP = {
   otros: { label: 'Otros', singular: 'Otra persona' }
 };
 
+const getGlobalDates = (roleKey, gender) => {
+  const dates = [];
+  if (gender === 'Femenino') dates.push('Día de la Mujer');
+  if (gender === 'Masculino') dates.push('Día del Hombre');
+  
+  if (roleKey === 'pareja') dates.push('San Valentín');
+  if (roleKey === 'padres' && gender === 'Femenino') dates.push('Día de la Madre');
+  if (roleKey === 'padres' && gender === 'Masculino') dates.push('Día del Padre');
+  if (roleKey === 'hijos') dates.push('Día del Niño');
+  if (roleKey === 'amigos') dates.push('Día de la Amistad');
+  
+  return dates;
+};
+
 const CuentaFechasImportantesPage = () => {
+  // eslint-disable-next-line no-unused-vars
   const { userProfile, updateUserProfile } = useAuth();
+  // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -166,6 +184,15 @@ const CuentaFechasImportantesPage = () => {
                 <div>
                   <h3 className={styles.cardTitle}>{rec.name}</h3>
                   <span className={styles.cardRole}>{rec.roleDisplay}</span>
+                  {getGlobalDates(rec.roleKey, rec.gender).length > 0 && (
+                    <div className={styles.globalDatesContainer}>
+                      {getGlobalDates(rec.roleKey, rec.gender).map((gDate, i) => (
+                        <span key={i} className={styles.globalDateBadge}>
+                          <Globe size={12} /> {gDate}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className={styles.cardActions}>
                   <button onClick={() => handleEdit(rec)} className={styles.iconBtn} title="Editar">

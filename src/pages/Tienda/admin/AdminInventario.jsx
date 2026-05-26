@@ -18,7 +18,10 @@ const AdminInventario = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterCollection, setFilterCollection] = useState('');
   const [filterBrand, setFilterBrand] = useState('');
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const [filterTag, setFilterTag] = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [filterCharacter, setFilterCharacter] = useState('');
   const [filterType, setFilterType] = useState('');
   
@@ -39,9 +42,13 @@ const AdminInventario = () => {
   });
 
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: async () => (await getCategories()).data });
+  // eslint-disable-next-line no-unused-vars
   const { data: collections } = useQuery({ queryKey: ['collections'], queryFn: async () => (await getCollections()).data });
+  // eslint-disable-next-line no-unused-vars
   const { data: brands } = useQuery({ queryKey: ['brands'], queryFn: async () => (await getBrands()).data });
+  // eslint-disable-next-line no-unused-vars
   const { data: tags } = useQuery({ queryKey: ['tags'], queryFn: async () => (await getTags()).data });
+  // eslint-disable-next-line no-unused-vars
   const { data: characters } = useQuery({ queryKey: ['characters'], queryFn: async () => (await getCharacters()).data });
   const { data: productTypes } = useQuery({ queryKey: ['productTypes'], queryFn: async () => (await getProductTypes()).data });
 

@@ -1,0 +1,203 @@
+.pageContainer {
+  min-height: calc(100vh - 80px);
+  background: var(--gris-fondo);
+  color: var(--gris-texto-principal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  overflow: hidden;
+}
+
+.header {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.backBtn {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: bold;
+  margin-right: auto;
+}
+
+.header h1 {
+  margin: 0 auto;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--primary-color);
+  font-size: 1.8rem;
+  white-space: nowrap;
+}
+
+.gameArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  background: var(--blanco);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: var(--sombra-media);
+  border: 1px solid var(--gris-borde);
+}
+
+.tubesContainer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  justify-items: center;
+}
+
+@media (min-width: 576px) {
+  .tubesContainer {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+  }
+}
+
+.tubeWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 12px;
+  transition: var(--transicion-rapida);
+}
+
+.tubeWrapper:hover {
+  background: var(--gris-hover);
+}
+
+.tubeWrapper.selected {
+  background: var(--primary-light);
+}
+
+.tube {
+  width: 50px;
+  height: 200px;
+  border: 3px solid rgba(15, 23, 42, 0.2);
+  border-top: none;
+  border-bottom-left-radius: 25px;
+  border-bottom-right-radius: 25px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  padding-bottom: 5px;
+  position: relative;
+  background: rgba(255,255,255,0.5);
+  box-shadow: inset 0 -5px 10px rgba(0,0,0,0.05);
+}
+
+.ball {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-bottom: 4px;
+  box-shadow: inset -5px -5px 10px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
+  transition: transform 0.3s cubic-bezier(0.17, 0.67, 0.12, 1.5);
+  animation: dropIn 0.3s cubic-bezier(0.17, 0.67, 0.12, 1) forwards;
+}
+
+.selectedBall {
+  transform: translateY(-20px);
+  box-shadow: 0 10px 15px rgba(0,0,0,0.3), inset -5px -5px 10px rgba(0,0,0,0.3);
+  z-index: 10;
+}
+
+@keyframes dropIn {
+  0% { transform: translateY(-100px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: var(--transicion-rapida);
+  font-size: 1rem;
+}
+
+.resetBtn {
+  background: var(--gris-borde);
+  color: var(--gris-texto-principal);
+}
+
+.resetBtn:hover {
+  background: var(--gris-texto-secundario);
+  color: white;
+}
+
+.winBanner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--blanco);
+  border: 2px solid var(--verde-exito);
+  padding: 2rem;
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: var(--sombra-profunda);
+  z-index: 100;
+  animation: popIn 0.5s cubic-bezier(0.17, 0.67, 0.12, 1.5);
+}
+
+.winBanner h2 {
+  color: var(--verde-exito);
+  margin-top: 0;
+  font-size: 2rem;
+}
+
+.winBanner p {
+  color: var(--gris-texto-principal);
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.actionBtn {
+  background: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: bold;
+  display: inline-block;
+  transition: var(--transicion-rapida);
+}
+
+.actionBtn:hover {
+  background: var(--primary-hover);
+  transform: scale(1.05);
+}
+
+.errorBanner {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #fca5a5;
+  width: 100%;
+  text-align: center;
+}
+
+@keyframes popIn {
+  from { transform: translate(-50%, -40%) scale(0.8); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}

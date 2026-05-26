@@ -83,6 +83,7 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
 
   const enviarComprobanteWA = () => {
     if (!configPagos?.whatsapp_pagos) return;
+    // eslint-disable-next-line no-useless-escape
     const cleanNum = configPagos.whatsapp_pagos.replace(/[^\d\+]/g, '');
     const num = cleanNum.startsWith('+') ? cleanNum : `+51${cleanNum}`;
     let baseText = configPagos.whatsapp_pagos_text;
@@ -182,25 +183,27 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
         </div>
         
         <div className={styles.headerRight}>
-          {canClaimCoins && (
-            <button 
-              type="button" 
-              className={`${styles.reclamarChip} ${claimingCoins ? styles.claiming : ''}`}
-              onClick={handleClaimCoins}
-              title="Ganar 10 monedas"
-            >
-             🪙 Reclamar
-            </button>
-          )}
-          {isCompleted && !canClaimCoins && <span className={styles.canjeadoChip}>🪙 Reclamado</span>}
-          
-          <span className={pedido.conDeuda ? styles.deudaChipCon : styles.deudaChipSin}>
-            {pedido.conDeuda ? 'DEUDA' : 'SIN DEUDA'}
-          </span>
+          <div className={styles.badgesScrollable}>
+            {canClaimCoins && (
+              <button 
+                type="button" 
+                className={`${styles.reclamarChip} ${claimingCoins ? styles.claiming : ''}`}
+                onClick={handleClaimCoins}
+                title="Ganar 10 monedas"
+              >
+               🪙 Reclamar
+              </button>
+            )}
+            {isCompleted && !canClaimCoins && <span className={styles.canjeadoChip}>🪙 Reclamado</span>}
+            
+            <span className={pedido.conDeuda ? styles.deudaChipCon : styles.deudaChipSin}>
+              {pedido.conDeuda ? 'DEUDA' : 'SIN DEUDA'}
+            </span>
 
-          <span className={styles.badge} style={{ backgroundColor: badgeBg }}>
-            {badgeLabel}
-          </span>
+            <span className={styles.badge} style={{ backgroundColor: badgeBg }}>
+              {badgeLabel}
+            </span>
+          </div>
           {isExpanded ? <ChevronUp size={20} className={styles.iconoChevron} /> : <ChevronDown size={20} className={styles.iconoChevron} />}
         </div>
       </div>

@@ -5,6 +5,7 @@ import Button from '../../common/Button';
 import PackageCreatorModal from './PackageCreatorModal';
 import styles from './fechasStyles.module.css';
 
+// eslint-disable-next-line no-unused-vars
 const ITEMS_PER_PAGE = 10;
 
 const UsuariosView = () => {

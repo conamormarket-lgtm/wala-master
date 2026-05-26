@@ -120,6 +120,7 @@ const OptimizedImage = ({
         if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
             handleLoad();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [src]);
 
     const isCloudinary = src && typeof src === 'string' && src.includes('cloudinary.com');

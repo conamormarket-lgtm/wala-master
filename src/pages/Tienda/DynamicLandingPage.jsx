@@ -67,7 +67,7 @@ const DynamicLandingPage = () => {
         TiendaPage internamente usa la ruta para definir el pageId,
         así que ya renderizará las secciones correctas para esta landing.
       */}
-      <TiendaPage />
+      <TiendaPage isLandingPage={true} />
     </div>
   );
 };

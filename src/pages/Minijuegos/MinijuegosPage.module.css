@@ -1,9 +1,9 @@
 .pageContainer {
   min-height: calc(100vh - 80px);
   padding: 2rem 1rem;
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-  color: white;
-  font-family: 'Inter', sans-serif;
+  background: var(--gris-fondo);
+  color: var(--gris-texto-principal);
+  font-family: 'Poppins', sans-serif;
 }
 
 .header {
@@ -16,16 +16,13 @@
   font-size: 3rem;
   font-weight: 900;
   margin: 0;
-  background: linear-gradient(to right, #a855f7, #ec4899, #ef4444);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+  color: var(--primary-color);
   letter-spacing: -1px;
 }
 
 .subtitle {
   font-size: 1.1rem;
-  color: #94a3b8;
+  color: var(--gris-texto-secundario);
   margin-top: 0.5rem;
 }
 
@@ -40,22 +37,22 @@
 
 .gameCard {
   position: relative;
-  background: rgba(30, 41, 59, 0.7);
+  background: var(--blanco);
   border-radius: 24px;
   padding: 2rem;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+  border: 1px solid var(--gris-borde);
+  transition: var(--transicion-suave);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   min-height: 340px;
-  backdrop-filter: blur(10px);
+  box-shadow: var(--sombra-suave);
 }
 
 .gameCard:hover {
   transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--sombra-hover);
 }
 
 .cardContent {
@@ -69,7 +66,7 @@
 .gameIcon {
   width: 64px;
   height: 64px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--gris-fondo);
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -77,18 +74,17 @@
   font-size: 2rem;
   margin-bottom: 1.5rem;
   font-weight: bold;
-  box-shadow: inset 0 2px 4px rgba(255,255,255,0.1);
 }
 
 .gameTitle {
   font-size: 1.5rem;
   font-weight: 800;
   margin: 0 0 0.5rem 0;
-  color: #f8fafc;
+  color: var(--gris-texto-principal);
 }
 
 .gameDesc {
-  color: #cbd5e1;
+  color: var(--gris-texto-secundario);
   font-size: 0.95rem;
   line-height: 1.5;
   margin-bottom: 2rem;
@@ -136,13 +132,13 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: #cbd5e1;
+  color: var(--gris-texto-secundario);
   margin-bottom: 0.5rem;
   font-weight: 600;
 }
 .progressBar {
   height: 8px;
-  background: rgba(255,255,255,0.1);
+  background: var(--gris-borde);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -169,7 +165,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(4px);
   z-index: 10;
   display: flex;
@@ -178,7 +174,7 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 0.3s;
-  color: white;
+  color: var(--gris-texto-principal);
   text-align: center;
   padding: 2rem;
 }

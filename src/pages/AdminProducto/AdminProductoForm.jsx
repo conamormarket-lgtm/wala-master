@@ -16,7 +16,6 @@ import Button from '../../components/common/Button';
 import Toggle from '../../components/common/Toggle/Toggle';
 import AdminQuickAddModal from '../../components/admin/AdminQuickAddModal/AdminQuickAddModal';
 import AdminViewEditor from '../../components/admin/AdminViewEditor/AdminViewEditor';
-import PrintAreasEditor from '../../components/admin/PrintAreasEditor/PrintAreasEditor';
 import AccordionSection from '../../components/admin/AccordionSection/AccordionSection';
 import ComboItemsManager from '../../components/admin/ComboItemsManager/ComboItemsManager';
 import ComboProductSelector from '../../components/admin/ComboProductSelector/ComboProductSelector';
@@ -24,7 +23,7 @@ import ComboEditor from '../../components/admin/ComboEditor/ComboEditor';
 import VariantEditModal from '../../components/admin/VariantEditModal';
 import AdminButtonModal from '../../components/admin/AdminButtonModal/AdminButtonModal';
 import AdminTemplateModal from '../../components/admin/AdminTemplateModal/AdminTemplateModal';
-import { isComboProduct, generateComboVariants } from '../../utils/comboProductUtils';
+// eslint-disable-next-line no-unused-vars
 import { DesignClipboardProvider } from '../../contexts/DesignClipboardContext';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -563,6 +562,7 @@ const AdminProductoForm = () => {
         }
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.customizable, form.hasVariants, form.variants]);
 
   // Actualizar vistas cuando se agregan variantes nuevas
@@ -1676,6 +1676,7 @@ const AdminProductoForm = () => {
                 e.preventDefault();
                 e.stopPropagation();
                 if (quillRef.current) {
+                  // eslint-disable-next-line no-unused-vars
                   const quill = quillRef.current.getEditor();
                   const blot = ReactQuill.Quill.find(buttonEl);
                   if (blot) {

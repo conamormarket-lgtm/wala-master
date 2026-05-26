@@ -6,12 +6,13 @@ import {
   query, 
   where, 
   getDocs, 
-  serverTimestamp, 
-  orderBy,
+  serverTimestamp,
+  // eslint-disable-next-line no-unused-vars
   Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase/config';
-import { getDocument, setDocument } from './firebase/firestore';
+// eslint-disable-next-line no-unused-vars
+import { setDocument } from './firebase/firestore';
 
 const REFERRALS_COLLECTION = 'referrals';
 

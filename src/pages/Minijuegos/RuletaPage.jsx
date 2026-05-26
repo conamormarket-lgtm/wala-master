@@ -6,6 +6,8 @@ import styles from './RuletaPage.module.css';
 
 const RuletaPage = () => {
   const { user, userProfile } = useAuth();
+  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
   const [prizes, setPrizes] = useState([]);
   const [loading, setLoading] = useState(true);

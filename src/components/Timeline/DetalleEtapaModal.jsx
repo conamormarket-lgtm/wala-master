@@ -1,5 +1,6 @@
 import React from 'react';
-import { ETAPAS_TIMELINE, estadoToKey, getQueueStage } from '../../utils/constants';
+// eslint-disable-next-line no-unused-vars
+import { ETAPAS_TIMELINE, getQueueStage } from '../../utils/constants';
 import { toDirectImageUrl, toThumbnailImageUrl } from '../../utils/imageUrl';
 import styles from './DetalleEtapaModal.module.css';
 

@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { setDocument, createDocument, getDocument } from '../../../services/firebase/firestore';
 import { saveStorefrontConfig, getStorefrontConfig } from '../services/storefront';

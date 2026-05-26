@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { scheduleKapiNotifications } from '../../../services/kapiNotifications';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import styles from './KapiPet.module.css';
 
 const KapiPet = () => {
@@ -12,6 +14,7 @@ const KapiPet = () => {
   const [submittingEv, setSubmittingEv] = useState(false);
 
   // Placeholders para las imágenes que luego proveerá el cliente
+  // eslint-disable-next-line no-unused-vars
   const IMAGES = {
     happy: '/assets/kapi/kapi-happy.png',
     sad: '/assets/kapi/kapi-sad.png',
@@ -56,11 +59,50 @@ const KapiPet = () => {
     }
   }, [activeWeeklyChallenge, userProfile]);
 
+  // Hook para disparar Onboarding Tutorial a usuarios nuevos
+  useEffect(() => {
+    if (userProfile) {
+      const tutorialCompleted = localStorage.getItem('kapiTutorialCompleted');
+      if (!tutorialCompleted) {
+        // Abrir modal automáticamente si no ha completado el tutorial
+        setIsOpen(true);
+      }
+    }
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const tutorialCompleted = localStorage.getItem('kapiTutorialCompleted');
+      if (!tutorialCompleted) {
+        setTimeout(() => {
+          const driverObj = driver({
+            showProgress: true,
+            animate: true,
+            nextBtnText: 'Siguiente',
+            prevBtnText: 'Atrás',
+            doneBtnText: '¡Entendido!',
+            steps: [
+              { element: '#kapi-pet-container', popover: { title: 'Conoce a Kapi', description: '¡Esta es tu mascota virtual! Crecerá contigo mientras usas la app.', side: "top" } },
+              { element: '#kapi-stats', popover: { title: 'Felicidad de Kapi', description: 'Kapi necesita atención. Si olvidas alimentarlo, se pondrá triste y su barra de felicidad bajará.', side: "bottom" } },
+              { element: '#kapi-feed-btn', popover: { title: '¡A comer!', description: 'Aliméntalo todos los días aquí. A cambio, él te premiará con KapiCoins que puedes canjear por recompensas reales.', side: "top" } }
+            ],
+            onDestroyed: () => {
+              localStorage.setItem('kapiTutorialCompleted', 'true');
+            }
+          });
+          driverObj.drive();
+        }, 500); // 500ms para asegurar que el DOM cargó los IDs del modal
+      }
+    }
+  }, [isOpen]);
+
   if (!user || !userProfile) return null;
 
   const todayStr = new Date().toISOString().split('T')[0];
   const lastClaim = userProfile.lastKapiClaimDate;
   const hasClaimedToday = lastClaim === todayStr;
+
+  if (hasClaimedToday) return null;
 
   let kapiState = 'happy';
   if (!hasClaimedToday) {
@@ -120,6 +162,7 @@ const KapiPet = () => {
   const progressData = userProfile?.weeklyChallengeProgress || {};
   const isChallengeCompleted = progressData.challengeId === activeWeeklyChallenge?.challengeId && progressData.completed;
   const currentProgress = progressData.challengeId === activeWeeklyChallenge?.challengeId ? (progressData.progress || 0) : 0;
+  // eslint-disable-next-line no-unused-vars
   const isPendingApproval = userProfile?.challengeEvidencesApproved?.includes(activeWeeklyChallenge?.challengeId);
   // Wait, actually challengeEvidencesApproved means it IS approved.
   const isManualApproved = userProfile?.challengeEvidencesApproved?.includes(activeWeeklyChallenge?.challengeId);
@@ -146,7 +189,7 @@ const KapiPet = () => {
               Alimenta a Kapi todos los días para ganar Kapi Coins.
             </p>
 
-            <div className={styles.petContainer}>
+            <div className={styles.petContainer} id="kapi-pet-container">
               <div className={`${styles.petImageWrapper} ${isFeeding ? styles.eating : ''}`}>
                 {/* Fallback temporario con emoji si la imagen no carga, dado que no hay assets aún */}
                 <div className={styles.emojiFallback}>
@@ -155,7 +198,7 @@ const KapiPet = () => {
                 {/* <img src={IMAGES[kapiState]} alt={`Kapi ${kapiState}`} className={styles.petImage} style={{display: 'none'}} /> */}
               </div>
               
-              <div className={styles.stats}>
+              <div className={styles.stats} id="kapi-stats">
                 <span>Felicidad: {userProfile.kapiHappiness || 0}/100</span>
                 <div className={styles.happinessBar}>
                   <div className={styles.happinessFill} style={{ width: `${Math.min(100, userProfile.kapiHappiness || 0)}%` }} />
@@ -216,6 +259,7 @@ const KapiPet = () => {
                 </div>
               ) : (
                 <button 
+                  id="kapi-feed-btn"
                   className={`${styles.feedBtn} ${isFeeding ? styles.feedingBtn : ''}`}
                   onClick={handleFeed}
                   disabled={isFeeding}

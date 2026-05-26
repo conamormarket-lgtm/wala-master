@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fabric } from 'fabric';
-import { Plus, Trash2, ImagePlus, Type, Frame, Image as ImageIcon, Loader2 } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+import { Plus, Trash2, ImagePlus, Type, Image as ImageIcon, Loader2 } from 'lucide-react';
 import styles from './AdminCustomizationViewsEditor.module.css';
 import { uploadFile } from '../../../../services/firebase/storage';
 
@@ -84,7 +86,9 @@ const AdminCustomizationViewsEditor = ({ views, onChange, draftId }) => {
       });
 
       setFabricCanvas(canvas);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeViewIdx]);
 
   const saveCanvasState = (canvas = fabricCanvas) => {

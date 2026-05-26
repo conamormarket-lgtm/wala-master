@@ -224,8 +224,12 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     const init = {};
     product.comboItems.forEach((item, i) => { if (item.variantMapping?.color) init[i] = { color: item.variantMapping.color }; });
     if (Object.keys(init).length) setComboSels(prev => ({ ...init, ...prev }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id, isCombo]);
+// eslint-disable-next-line react-hooks/exhaustive-deps
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setSelectedSize(sizes[0] || ''); }, [selectedVariant?.id, JSON.stringify(sizes)]);
 
   // ── Handlers

@@ -92,6 +92,7 @@ const WhatsAppButton = () => {
   if (!rawWhatsappNumber) return null;
 
   // Limpiar número
+  // eslint-disable-next-line no-useless-escape
   const cleanNumber = rawWhatsappNumber.replace(/[\s\-\(\)]/g, '');
   const formattedNumber = cleanNumber.startsWith('+') ? cleanNumber : `+51${cleanNumber}`;
 

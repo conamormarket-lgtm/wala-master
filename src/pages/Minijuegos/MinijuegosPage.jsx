@@ -1,18 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+// eslint-disable-next-line no-unused-vars
+import React from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRuletaEligibility } from '../../services/firebase/ruleta';
 import styles from './MinijuegosPage.module.css';
 
 const MinijuegosPage = () => {
+  // eslint-disable-next-line no-unused-vars
   const { user, userProfile } = useAuth();
   
   const todayStr = new Date().toISOString().split('T')[0];
   const hasClaimedToday = userProfile?.lastDailyReward === todayStr;
+  const hasClaimedBallSort = userProfile?.lastBallSortReward === todayStr;
 
   const { isUnlocked: isRuletaUnlocked, days: ruletaDays, hasLost } = getRuletaEligibility(userProfile);
 
+  const handleProtectedPlay = (e) => {
+    if (!user) {
+      e.preventDefault();
+      alert("Debes iniciar sesión para jugar y ganar recompensas.");
+    }
+  };
+
   const handleOpenDailyReward = () => {
+    if (!user) {
+      alert("Debes iniciar sesión para jugar y ganar recompensas.");
+      return;
+    }
     if (hasClaimedToday) {
       alert("¡Ya alimentaste a Kapi hoy! Vuelve mañana.");
       return;
@@ -36,7 +50,7 @@ const MinijuegosPage = () => {
             <div className={styles.gameIcon}>A</div>
             <h2 className={styles.gameTitle}>Palabra del Día</h2>
             <p className={styles.gameDesc}>Adivina la palabra oculta en 6 intentos y compite en el ranking global.</p>
-            <Link to="/palabra-del-dia" className={styles.playButton}>Jugar Ahora</Link>
+            <Link to="/palabra-del-dia" className={styles.playButton} onClick={handleProtectedPlay}>Jugar Ahora</Link>
           </div>
           <div className={styles.cardBg}></div>
         </div>
@@ -75,7 +89,7 @@ const MinijuegosPage = () => {
             </div>
 
             {isRuletaUnlocked ? (
-              <Link to="/ruleta" className={styles.playButton}>Girar Ruleta</Link>
+              <Link to="/ruleta" className={styles.playButton} onClick={handleProtectedPlay}>Girar Ruleta</Link>
             ) : (
               <button className={`${styles.playButton} ${styles.lockedBtn}`} disabled>Bloqueado</button>
             )}
@@ -89,6 +103,24 @@ const MinijuegosPage = () => {
           )}
           <div className={styles.cardBg}></div>
         </div>
+
+        {/* Card 4: Ball Sort */}
+        <div className={`${styles.gameCard}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.gameIcon}>🧪</div>
+            <h2 className={styles.gameTitle}>Las Bolitas de Kapi</h2>
+            <p className={styles.gameDesc}>Ordena los colores en los tubos para ganar 2 Wala Coins diarios.</p>
+            {hasClaimedBallSort ? (
+              <button className={`${styles.playButton} ${styles.disabledBtn}`} disabled>
+                Completado hoy ✓
+              </button>
+            ) : (
+              <Link to="/ball-sort" className={styles.playButton} style={{ background: '#3b82f6', color: 'white', textDecoration: 'none' }} onClick={handleProtectedPlay}>Jugar Ahora</Link>
+            )}
+          </div>
+          <div className={styles.cardBg}></div>
+        </div>
+
       </div>
     </div>
   );
