@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { showFlyingCoins } from '../../../utils/animations';
 import { scheduleKapiNotifications } from '../../../services/kapiNotifications';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { driver } from 'driver.js';
@@ -134,7 +135,18 @@ const KapiPet = () => {
       const res = await feedKapi();
       setIsFeeding(false);
       if (!res?.error) {
-        // Lanzar animación de moneda global (para que se sume en el header visualmente)
+        // Obtener posición del botón para la animación
+        const feedBtn = document.getElementById('kapi-feed-btn');
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+        if (feedBtn) {
+          const rect = feedBtn.getBoundingClientRect();
+          x = rect.left + rect.width / 2;
+          y = rect.top;
+        }
+        // Lanzar animación visual de monedas volando al header
+        showFlyingCoins(x, y, 1);
+        // También disparar el evento de kapi coins para el bounce del header
         window.dispatchEvent(new CustomEvent('kapi-coins-animation-start', { detail: { amount: 1 } }));
       }
     }, 1500);

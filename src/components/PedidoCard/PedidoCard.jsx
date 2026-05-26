@@ -175,7 +175,20 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
             </div>
           </div>
           <div className={styles.headerTitleGroup}>
-            <span className={styles.headerTitle}>Pedido: #{pedido.id}</span>
+            <div className={styles.titleRow}>
+              <span className={styles.headerTitle}>Pedido: #{pedido.id}</span>
+              {canClaimCoins && (
+                <button 
+                  type="button" 
+                  className={`${styles.reclamarChip} ${claimingCoins ? styles.claiming : ''}`}
+                  onClick={handleClaimCoins}
+                  title="Ganar 10 monedas"
+                >
+                 🪙 Reclamar
+                </button>
+              )}
+              {isCompleted && !canClaimCoins && <span className={styles.canjeadoChip}>🪙 Reclamado</span>}
+            </div>
             {pedido.numeroColaDisplay != null && pedido.numeroColaDisplay !== '' && getQueueStage(pedido.estadoGeneral) && (
               <span className={styles.colaBadge}>🎟️ {pedido.numeroColaDisplay}</span>
             )}
@@ -184,17 +197,7 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
         
         <div className={styles.headerRight}>
           <div className={styles.badgesScrollable}>
-            {canClaimCoins && (
-              <button 
-                type="button" 
-                className={`${styles.reclamarChip} ${claimingCoins ? styles.claiming : ''}`}
-                onClick={handleClaimCoins}
-                title="Ganar 10 monedas"
-              >
-               🪙 Reclamar
-              </button>
-            )}
-            {isCompleted && !canClaimCoins && <span className={styles.canjeadoChip}>🪙 Reclamado</span>}
+
             
             <span className={pedido.conDeuda ? styles.deudaChipCon : styles.deudaChipSin}>
               {pedido.conDeuda ? 'DEUDA' : 'SIN DEUDA'}

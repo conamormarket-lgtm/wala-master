@@ -1048,3 +1048,50 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ── Floating Survey Button (Native App Only) ── */
+.floatingSurveyBtn {
+  position: fixed;
+  bottom: 85px;
+  right: 16px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  animation: floatingSurveyPulse 2.5s ease-in-out infinite;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floatingSurveyBtn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.3);
+}
+
+.floatingSurveyIcon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.floatingSurveyLabel {
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+@keyframes floatingSurveyPulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(139, 92, 246, 0.7);
+  }
+}

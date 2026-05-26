@@ -217,6 +217,7 @@ const Header = () => {
   const isNativeApp = Capacitor.isNativePlatform();
 
   return (
+    <>
     <header className={`${styles.header} ${forceHideDropdowns ? styles.forceHideHover : ''}`}>
       <div className={styles.container}>
         {isNativeApp ? (
@@ -493,6 +494,76 @@ const Header = () => {
           
           {user && <NotificationTray />}
 
+          {!isNativeApp && (
+          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'cuenta' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'cuenta' ? styles.forceHideHover : ''}`}>
+            <Link to="/cuenta" className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'cuenta')} aria-label="Mi cuenta">
+              <User strokeWidth={1.5} className={styles.icon} />
+            </Link>
+            
+            <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
+              <EditableSection sectionId="accountPopup" currentConfig={activeConfig} label="Pop-up de Cuenta">
+                <div className={styles.accountPopupContent}>
+                  {user ? (
+                    <>
+                      <h3>Hola, {userProfile?.displayName || userProfile?.nombre || user.email?.split('@')[0]}</h3>
+                      <p>Bienvenido a tu cuenta</p>
+                      
+                      {!userProfile?.hasCompletedSurvey && (
+                        <div style={{ background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', border: '1px solid #e2e8f0', textAlign: 'left' }}>
+                          <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '0.9rem', color: '#111827', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            🎁 Perfil de Regalos
+                          </h4>
+                          <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.75rem', color: '#4b5563', lineHeight: '1.3' }}>
+                            Gana recompensas diciéndonos qué te gusta.
+                          </p>
+                          <Link to="/encuesta-suscripcion" className={styles.primaryButton} onClick={closeDropdowns} style={{ background: '#8b5cf6', color: 'white', padding: '0.5rem', fontSize: '0.85rem' }}>
+                            Completar Encuesta
+                          </Link>
+                        </div>
+                      )}
+
+                      <div className={styles.accountButtons}>
+                        <Link to="/cuenta" className={styles.primaryButton} onClick={closeDropdowns}>
+                          Mi Perfil
+                        </Link>
+                        <button onClick={() => { logout(); closeDropdowns(); }} className={styles.secondaryButton} style={{ width: '100%', cursor: 'pointer', border: '1px solid #ccc' }}>
+                          Cerrar sesión
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3>{accountPopup.title}</h3>
+                      <p>{accountPopup.description}</p>
+                      
+                      <div className={styles.accountButtons}>
+                        <Link to={accountPopup.loginButtonUrl || '/login'} className={styles.primaryButton} onClick={closeDropdowns}>
+                          {accountPopup.loginButtonText || 'Iniciar sesión'}
+                        </Link>
+                        <Link to={accountPopup.registerButtonUrl || '/registro'} className={styles.secondaryButton} onClick={closeDropdowns}>
+                          {accountPopup.registerButtonText || 'Crear cuenta'}
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                  
+                  {accountPopup.brands && accountPopup.brands.length > 0 && (
+                    <div className={styles.brandsSection}>
+                      <h4>NUESTRAS MARCAS</h4>
+                      <div className={styles.brandsList}>
+                        {accountPopup.brands.map(brand => (
+                          <a key={brand.id} href={brand.url || '#'} className={styles.brandLink} title={brand.name}>
+                            <img src={brand.imageUrl || 'https://via.placeholder.com/150'} alt={brand.name} className={styles.brandLogo} />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </EditableSection>
+            </div>
+          </div>
+          )}
 
           <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'carrito' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'carrito' ? styles.forceHideHover : ''}`}>
             <Link to="/carrito" className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'carrito')} aria-label="Carrito de compras">
@@ -546,6 +617,14 @@ const Header = () => {
         </div>
       </div>
     </header>
+
+      {isNativeApp && user && !userProfile?.hasCompletedSurvey && (
+        <Link to="/encuesta-suscripcion" className={styles.floatingSurveyBtn} onClick={closeDropdowns}>
+          <span className={styles.floatingSurveyIcon}>🎁</span>
+          <span className={styles.floatingSurveyLabel}>Completar Encuesta</span>
+        </Link>
+      )}
+    </>
   );
 };
 
