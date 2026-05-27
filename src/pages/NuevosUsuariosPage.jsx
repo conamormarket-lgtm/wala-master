@@ -38,8 +38,8 @@ const NuevosUsuariosPage = () => {
 
   // ARREGLO DE PARES DE IMÁGENES PARA EL BLOQUE VS (4 imágenes = 2 pares)
   const vsSlidesData = [
-    { left: 'tiempo/antes-1.jpeg', right: 'tiempo/despues-1.jpeg' },
-    { left: 'tiempo/antes-2.jpeg', right: 'tiempo/despues-2.jpeg' }
+    { left: 'tiempo/antes-1.jpeg', right: 'tiempo/antes-2.jpeg' },
+    { left: 'tiempo/despues-1.jpeg', right: 'tiempo/despues-2.jpeg' }
   ];
 
   const handleNextVsSlide = () => {
@@ -673,7 +673,7 @@ const NuevosUsuariosPage = () => {
                   transform: `translateX(-${vsSlideIndex * 100}%)`
                 }}>
                   {vsSlidesData.map((slide, index) => {
-                    const labelText = index === 0 ? 'Antes' : 'Después';
+                    const labelText = index === 0 ? 'Antes' : '5 años después';
                     const badgeBg = index === 0 ? 'rgba(0,0,0,0.6)' : '#FF8B6F';
 
                     return (
@@ -748,7 +748,7 @@ const NuevosUsuariosPage = () => {
             </div>
 
             {/* Botón Descubre la diferencia (Responsivo) */}
-            <div className="discover-btn" style={{
+            <div className="discover-btn" onClick={handleNextVsSlide} style={{
               backgroundColor: '#292929',
               color: '#ffffff',
               borderRadius: '50px',
@@ -1127,14 +1127,9 @@ const NuevosUsuariosPage = () => {
 
           {/* UNDÉCIMO BLOQUE: TÉRMINOS Y CONDICIONES */}
           <div className="terms-container" style={{ fontFamily: 'Arial, sans-serif' }}>
-            <h4 className="terms-title">Términos y Condiciones</h4>
+            <h4 className="terms-title">Términos, Condiciones y Privacidad</h4>
             <p className="terms-text">
-              El uso de esta aplicación y sitio web está sujeto a los presentes Términos y Condiciones.
-              Al acceder o utilizar nuestros servicios, usted acepta estar sujeto a estas políticas.
-              Nos reservamos el derecho de modificar, actualizar o cambiar cualquier parte de estos términos
-              sin previo aviso. Es responsabilidad del usuario revisar periódicamente esta sección para
-              estar al tanto de posibles cambios. Todas las promociones y ofertas están sujetas a
-              disponibilidad. Las imágenes presentadas son referenciales.
+              La descarga y el uso de la aplicación Wala están sujetos a nuestros Términos y Condiciones y Política de Privacidad. Al acceder a nuestros servicios, el usuario acepta el tratamiento de sus datos de acuerdo con las leyes aplicables. La bonificación de S/15 en KapiCoins es una promoción exclusiva para nuevos usuarios que descarguen la app y completen su perfil de fechas importantes, sujeta a disponibilidad y posibles modificaciones sin previo aviso. Google Play y el logotipo de Google Play son marcas comerciales de Google LLC. Las imágenes, mockups e interfaces aquí presentadas son estrictamente referenciales.
             </p>
             <p className="terms-copy">
               &copy; {new Date().getFullYear()} Wala. Todos los derechos reservados.

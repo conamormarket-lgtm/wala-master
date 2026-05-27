@@ -618,7 +618,7 @@ const Header = () => {
       </div>
     </header>
 
-      {user && !userProfile?.hasCompletedSurvey && (
+      {user && !userProfile?.hasCompletedSurvey && location.pathname !== '/encuesta-suscripcion' && (
         <Link to="/encuesta-suscripcion" className={styles.floatingSurveyBtn} onClick={closeDropdowns}>
           <span className={styles.floatingSurveyIcon}>🎁</span>
           <span className={styles.floatingSurveyLabel}>Completar Encuesta</span>
