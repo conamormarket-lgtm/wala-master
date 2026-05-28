@@ -111,5 +111,11 @@ service cloud.firestore {
                     ));
       allow delete: if isAdmin();
     }
+
+    // Heatmap Events - Todos pueden escribir, solo admin puede leer
+    match /heatmap_events/{eventId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
   }
 }

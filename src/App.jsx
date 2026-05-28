@@ -17,6 +17,7 @@ import PageLoading from './components/common/PageLoading/PageLoading';
 import AppPrefetcher from './components/common/AppPrefetcher/AppPrefetcher';
 import NavProgressBar from './components/common/NavProgressBar/NavProgressBar';
 import CustomFontsInjector from './components/common/CustomFontsInjector/CustomFontsInjector';
+import { useHeatmapTracker } from './hooks/useHeatmapTracker';
 import './App.css';
 
 // ── Páginas principales y Layout Crítico (Carga Inmediata para evitar efecto Waterfall de Suspense) ──
@@ -130,6 +131,9 @@ const RestrictedRoute = ({ children }) => {
 const GlobalLayout = ({ children }) => {
   const location = useLocation();
   const isIndependentRoute = location.pathname.startsWith('/regalos-con-amor');
+  
+  // Activar Heatmap Tracker globalmente
+  useHeatmapTracker(true, 10); // Batch de 10 clics
 
   if (isIndependentRoute) {
     return (

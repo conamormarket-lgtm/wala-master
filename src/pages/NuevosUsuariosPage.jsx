@@ -315,15 +315,15 @@ const NuevosUsuariosPage = () => {
         /* --- CONTENEDOR SÉPTIMO BLOQUE (PC) --- */
         .download-section {
           width: 100%;
-          height: 100%;
           display: flex;
           justify-content: center;
           align-items: center;
           padding: 0 1rem;
           margin-top: -6rem; /* 👈 Margen ajustado para PC que querías (-17rem) */
           margin-bottom: 14rem; /* 👈 Margen ajustado para PC que querías (-12rem) */
-          position: relative; /* Necesario para que el z-index funcione */
-          z-index: 10; /* Fomenta que su hitbox esté por ENCIMA de las capas del collage */
+          position: sticky; /* 👈 Se volvió Sticky */
+          bottom: 20px; /* 👈 Flota a 20px del fondo */
+          z-index: 100; /* 👈 Alto para que pase sobre todo */
         }
 
         /* --- CLASES SEXTO BLOQUE TEXTOS RESPONSIVOS --- */
@@ -451,6 +451,7 @@ const NuevosUsuariosPage = () => {
           .download-section {
             margin-top: -2rem !important; /* 👈 Protegido estrictamente para Móvil */
             margin-bottom: 14rem !important; /* 👈 Protegido estrictamente para Móvil */
+            bottom: 10px !important; /* 👈 En celular más pegado al fondo */
           }
 
           /* --- SEXTO BLOQUE (KAPI COLLAGE) MÓVIL --- */
