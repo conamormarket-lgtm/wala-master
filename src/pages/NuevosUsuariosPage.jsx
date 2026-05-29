@@ -7,6 +7,27 @@ const NuevosUsuariosPage = () => {
   const [reviewsSlideIndex, setReviewsSlideIndex] = React.useState(14); // Empezamos en la copia del medio
   const [isTransitioning, setIsTransitioning] = React.useState(true);
   const [storeSlideIndex, setStoreSlideIndex] = React.useState(0);
+  const [showFixedBtn, setShowFixedBtn] = React.useState(false);
+  const placeholderRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      if (placeholderRef.current) {
+        const rect = placeholderRef.current.getBoundingClientRect();
+        if (rect.bottom < 0) {
+          setShowFixedBtn(true);
+        } else {
+          setShowFixedBtn(false);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    // Verificación inicial
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // DATOS PARA LAS TARJETAS DE RESEÑAS
   const reviewsData = [
@@ -313,17 +334,36 @@ const NuevosUsuariosPage = () => {
         }
 
         /* --- CONTENEDOR SÉPTIMO BLOQUE (PC) --- */
-        .download-section {
+        .download-section-placeholder {
           width: 100%;
           display: flex;
           justify-content: center;
           align-items: center;
           padding: 0 1rem;
-          margin-top: -6rem; /* 👈 Margen ajustado para PC que querías (-17rem) */
-          margin-bottom: 14rem; /* 👈 Margen ajustado para PC que querías (-12rem) */
-          position: sticky; /* 👈 Se volvió Sticky */
-          bottom: 20px; /* 👈 Flota a 20px del fondo */
-          z-index: 100; /* 👈 Alto para que pase sobre todo */
+          margin-top: -6rem; 
+          margin-bottom: 14rem; 
+        }
+        .download-section-fixed {
+          position: fixed; 
+          bottom: 20px; 
+          left: 0;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 0 1rem;
+          z-index: 1000; 
+          pointer-events: none;
+          transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+          transform: translateY(150px);
+          opacity: 0;
+        }
+        .download-section-fixed.show {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        .download-section-fixed .download-img-wrapper {
+          pointer-events: auto;
         }
 
         /* --- CLASES SEXTO BLOQUE TEXTOS RESPONSIVOS --- */
@@ -387,7 +427,7 @@ const NuevosUsuariosPage = () => {
         .enc-franja-blanca { flex: 1; background-color: white; width: 90%; max-width: 100%; box-sizing: border-box; overflow: hidden; border-top-right-radius: 50px; border-bottom-right-radius: 50px; display: flex; align-items: center; margin-left: -0.4rem; padding-left: 0.4rem; padding-right: 1rem; z-index: 1; }
 
         /* ESTILOS TÉRMINOS Y CONDICIONES (PC) */
-        .terms-container { width: 100%; background-color: transparent; padding: 4rem 10%; margin-top: 5rem; text-align: center; color: #666; }
+        .terms-container { width: 100%; background-color: transparent; padding: 4rem 10% 150px 10%; margin-top: 5rem; text-align: center; color: #666; }
         .terms-title { margin: 0 0 1.5rem 0; color: #333; font-size: 1.2rem; }
         .terms-text { max-width: 1000px; margin: 0 auto; line-height: 1.8; font-size: 0.9rem; }
         .terms-copy { margin-top: 2rem; font-size: 0.8rem; }
@@ -448,10 +488,12 @@ const NuevosUsuariosPage = () => {
           }
 
           /* --- CONTENEDOR SÉPTIMO BLOQUE (MÓVIL) --- */
-          .download-section {
-            margin-top: -2rem !important; /* 👈 Protegido estrictamente para Móvil */
-            margin-bottom: 14rem !important; /* 👈 Protegido estrictamente para Móvil */
-            bottom: 10px !important; /* 👈 En celular más pegado al fondo */
+          .download-section-placeholder {
+            margin-top: -2rem !important; 
+            margin-bottom: 14rem !important; 
+          }
+          .download-section-fixed {
+            bottom: 10px !important; 
           }
 
           /* --- SEXTO BLOQUE (KAPI COLLAGE) MÓVIL --- */
@@ -492,7 +534,7 @@ const NuevosUsuariosPage = () => {
           .enc-guiones { width: 0% !important; }
 
           /* TÉRMINOS MÓVIL */
-          .terms-container { padding: 2rem 5% !important; margin-top: 3rem !important; }
+          .terms-container { padding: 2rem 5% 150px 5% !important; margin-top: 3rem !important; }
           .terms-title { font-size: 0.9rem !important; margin-bottom: 1rem !important; }
           .terms-text { font-size: 0.7rem !important; line-height: 1.5 !important; max-width: 100% !important; }
           .terms-copy { font-size: 0.6rem !important; margin-top: 1rem !important; }
@@ -796,6 +838,9 @@ const NuevosUsuariosPage = () => {
                 // 1. AQUÍ AGREGAS TUS LOGOS (ej: 'logo_1.png', 'logo_2.png')
                 const marcasUnicas = [
                   'wala 900x900.png',
+                  '../familia.png',
+                  '../geek.png',
+                  '../deporte.png'
                 ];
 
                 const multiplicador = 100; // Multiplicamos para crear la cinta infinita
@@ -888,8 +933,15 @@ const NuevosUsuariosPage = () => {
 
           </div>
 
-          {/* SÉPTIMO BLOQUE: BOTÓN DE DESCARGA (REEMPLAZADO POR IMAGEN) */}
-          <div className="download-section">
+          {/* SÉPTIMO BLOQUE: BOTÓN DE DESCARGA (NORMAL) */}
+          <div className="download-section-placeholder" ref={placeholderRef}>
+            <a href="https://play.google.com/store/apps/details?id=com.wala.tienda" target="_blank" rel="noopener noreferrer" className="download-img-wrapper">
+              {renderMedia(`${process.env.PUBLIC_URL}/diseno/descarga.png`, 'Descarga la App', { width: '100%', height: 'auto', cursor: 'pointer', objectFit: 'contain' })}
+            </a>
+          </div>
+
+          {/* SÉPTIMO BLOQUE: BOTÓN DE DESCARGA (FLOTANTE INFERIOR) */}
+          <div className={`download-section-fixed ${showFixedBtn ? 'show' : ''}`}>
             <a href="https://play.google.com/store/apps/details?id=com.wala.tienda" target="_blank" rel="noopener noreferrer" className="download-img-wrapper">
               {renderMedia(`${process.env.PUBLIC_URL}/diseno/descarga.png`, 'Descarga la App', { width: '100%', height: 'auto', cursor: 'pointer', objectFit: 'contain' })}
             </a>
