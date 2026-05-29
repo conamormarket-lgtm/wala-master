@@ -34,7 +34,7 @@ import AdminBar from './components/common/AdminBar/AdminBar';
 import PackageBubble from './components/common/PackageBubble/PackageBubble';
 import VisualEditorPanel from './pages/Tienda/admin/VisualEditorPanel';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
-
+import SystemAlert from './components/common/SystemAlert/SystemAlert';
 
 // ── Páginas secundarias — lazy para no bloquear ──────────
 const ProductPage = lazy(() => import('./pages/ProductPage'));
@@ -147,6 +147,7 @@ const GlobalLayout = ({ children }) => {
 
   return (
     <div className="App">
+      <SystemAlert />
       <NavProgressBar />
       <RouteTracker />
       <ReferralTracker />
