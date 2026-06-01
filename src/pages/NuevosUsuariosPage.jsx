@@ -318,6 +318,26 @@ const NuevosUsuariosPage = () => {
           font-size: 1.25rem;
         }
 
+        /* --- ANIMACIÓN PULSO Y TAMBALEO BOTÓN DE DESCARGA (PC) --- */
+        @keyframes pulse-btn {
+          0% { transform: scale(1) rotate(0deg); }
+          20% { transform: scale(1.1) rotate(-2deg); }
+          40% { transform: scale(1.15) rotate(3deg); }
+          60% { transform: scale(1.15) rotate(-3deg); }
+          80% { transform: scale(1.1) rotate(2deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+        
+        /* --- ANIMACIÓN PULSO Y TAMBALEO BOTÓN DE DESCARGA (MÓVIL) --- */
+        @keyframes pulse-btn-mobile {
+          0% { transform: scale(1) rotate(0deg); }
+          20% { transform: scale(1.03) rotate(-2deg); }
+          40% { transform: scale(1.05) rotate(3deg); }
+          60% { transform: scale(1.05) rotate(-3deg); }
+          80% { transform: scale(1.03) rotate(2deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+
         /* --- CLASES RESPONSIVAS PARA IMAGEN DE DESCARGA (PC por defecto) --- */
         .download-img-wrapper {
           display: flex;
@@ -325,12 +345,14 @@ const NuevosUsuariosPage = () => {
           align-items: center;
           height: 50%;
           width: 100%;
-          max-width: 600px; /* 👈 Tamaño aún más grande para PC (Ajustado) */
+          max-width: 800px; /* 👈 Tamaño GIGANTE para PC */
           transition: transform 0.2s ease;
           transform-origin: center; /* Asegura que escale siempre desde el puro centro */
+          animation: pulse-btn 1.5s infinite ease-in-out; /* Animación intermitente */
         }
         .download-img-wrapper:hover {
-          transform: scale(1.05); /* Pequeño efecto al pasar el mouse en PC */
+          transform: scale(1.08); /* Crece un poquito más si le pasas el mouse */
+          animation-play-state: paused;
         }
 
         /* --- CONTENEDOR SÉPTIMO BLOQUE (PC) --- */
@@ -484,7 +506,9 @@ const NuevosUsuariosPage = () => {
 
           /* --- IMAGEN DE DESCARGA MÓVIL --- */
           .download-img-wrapper {
-            max-width: 300px !important; /* 👈 Tamaño fijo para móvil */
+            max-width: 400px !important; /* 👈 Tamaño fijo aún mayor para móvil */
+            width: 90% !important; /* Se expande casi al borde en pantallas chicas */
+            animation: pulse-btn-mobile 1.5s infinite ease-in-out !important; /* Usa la animación proporcional */
           }
 
           /* --- CONTENEDOR SÉPTIMO BLOQUE (MÓVIL) --- */
