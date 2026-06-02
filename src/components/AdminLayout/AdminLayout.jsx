@@ -214,6 +214,12 @@ const AdminLayout = () => {
                 Métodos de Pago
               </NavLink>
               <NavLink
+                to="/admin/generador-pagos"
+                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
+              >
+                Generador de Enlaces
+              </NavLink>
+              <NavLink
                 to="/admin/referidos"
                 className={({ isActive }) => getLinkClass(isActive, 'clientes')}
               >

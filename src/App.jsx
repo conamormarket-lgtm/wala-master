@@ -90,8 +90,10 @@ const AdminStoreEditor = lazy(() => import('./pages/Tienda/admin/AdminStoreEdito
 const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
+const AdminGeneradorPagos = lazy(() => import('./pages/admin/AdminGeneradorPagos'));
 
 const AppRedirect = lazy(() => import('./pages/AppRedirect'));
+const PagoRapidoPage = lazy(() => import('./pages/PagoRapidoPage'));
 
 // ── Cuenta ────────────────────────────────────────────────────────────────────
 const CuentaLayout = lazy(() => import('./pages/CuentaLayout'));
@@ -209,6 +211,7 @@ function App() {
                         <Route path="/wishlist/:userCode" element={<WishlistPublicPage />} />
                         <Route path="/app" element={<AppRedirect />} />
                         <Route path="/descargar" element={<AppRedirect />} />
+                        <Route path="/pago-rapido/:id" element={<PagoRapidoPage />} />
 
                         <Route path="/pedidos" element={<Navigate to="/cuenta/pedidos" replace />} />
 
@@ -237,6 +240,7 @@ function App() {
                             <Route path="whatsapp" element={<AdminWhatsApp />} />
                             <Route path="referidos" element={<AdminReferidos />} />
                             <Route path="pagos" element={<AdminPagos />} />
+                            <Route path="generador-pagos" element={<AdminGeneradorPagos />} />
                             <Route path="retos" element={<AdminRetos />} />
                             <Route path="destacados" element={<AdminDestacados />} />
                             <Route path="zonas" element={<Navigate to="/admin" replace />} />

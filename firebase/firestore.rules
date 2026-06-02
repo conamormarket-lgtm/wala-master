@@ -117,5 +117,12 @@ service cloud.firestore {
       allow create: if true;
       allow read, update, delete: if isAdmin();
     }
+
+    // Enlaces de pago rápidos (PayPal)
+    match /enlaces_pago/{enlaceId} {
+      allow read: if true; // Público para el que tiene el link
+      allow create: if isAdmin(); // Solo admin puede generarlos
+      allow update, delete: if true; // Público para marcarse como pagado o borrarse si expira
+    }
   }
 }

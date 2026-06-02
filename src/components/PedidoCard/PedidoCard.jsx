@@ -4,6 +4,7 @@ import Timeline from '../Timeline';
 import DetalleEtapaModal from '../Timeline/DetalleEtapaModal';
 import Modal from '../common/Modal';
 import HistorialPagos from './HistorialPagos';
+import PaypalCheckout from '../PaypalCheckout';
 import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../../services/messages';
 import { getEtapaBadgeLabel, ETAPAS_TIMELINE, estadoToKey, getQueueStage } from '../../utils/constants';
@@ -428,6 +429,15 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
                    🚀 Enviar comprobante por WhatsApp
                 </button>
               </div>
+
+              <PaypalCheckout 
+                pedido={pedido} 
+                onSuccess={(details) => {
+                  console.log("Pago de PayPal completado:", details);
+                  setShowPagoModal(false);
+                  // Mostrar éxito o refrescar si es necesario
+                }} 
+              />
             </div>
           )}
         </div>
