@@ -141,7 +141,7 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
     setLoadingBoletasEnvio(false);
   };
 
-  const badgeLabel = getEtapaBadgeLabel(pedido.estadoGeneral);
+  let badgeLabel = getEtapaBadgeLabel(pedido.estadoGeneral);
   
   const getBadgeColor = (estadoKey) => {
     switch(estadoKey) {
@@ -154,7 +154,16 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
        default: return '#8b5cf6'; // violet-500 (pendiente/diseno)
     }
   };
-  const badgeBg = getBadgeColor(estadoToKey(pedido.estadoGeneral));
+  let badgeBg = getBadgeColor(estadoToKey(pedido.estadoGeneral));
+
+  // Parseo especial: si hay deuda y falta de stock (el estado incluye 'STOCK')
+  const estadoStr = String(pedido.estadoGeneral || '').toUpperCase();
+  const isProblemaStock = estadoStr.includes('STOCK');
+  
+  if (pedido.conDeuda && isProblemaStock) {
+    badgeLabel = 'PAGAR DEUDA';
+    badgeBg = '#ef4444'; // rojo-500 para alertar de la deuda
+  }
 
   const notes = pedido.detallesEtapas?.compra?.observación || pedido.observacion || '';
 
