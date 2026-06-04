@@ -54,6 +54,7 @@ const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
 const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
+const MussaPlaceholderPage = lazy(() => import('./pages/MussaPlaceholderPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -275,6 +276,16 @@ function App() {
                         <Route path="/regalos-con-amor" element={<NuevosUsuariosPage />} />
                         <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
                         <Route path="/regalo/:orderId" element={<GiftExperiencePage />} />
+                        
+                        {/* Mussa Placeholder Routes */}
+                        <Route path="/mussa/acne" element={<MussaPlaceholderPage />} />
+                        <Route path="/mussa/manchas" element={<MussaPlaceholderPage />} />
+                        <Route path="/mussa/poros-y-grasa" element={<MussaPlaceholderPage />} />
+                        <Route path="/mussa/deshidratacion" element={<MussaPlaceholderPage />} />
+                        <Route path="/mussa/anti-edad" element={<MussaPlaceholderPage />} />
+                        <Route path="/mussa/piel-sensible" element={<MussaPlaceholderPage />} />
+                        <Route path="/mussa/glass-skin" element={<MussaPlaceholderPage />} />
+                        <Route path="/mussa/piel-seca" element={<MussaPlaceholderPage />} />
                         
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />
