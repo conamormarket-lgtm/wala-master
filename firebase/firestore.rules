@@ -118,6 +118,12 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Libro de Reclamaciones (INDECOPI) - cualquiera puede registrar uno; solo admin lee/responde
+    match /libro_reclamaciones/{reclamoId} {
+      allow create: if true; // Formulario público de reclamaciones
+      allow read, update, delete: if isAdmin();
+    }
+
     // Enlaces de pago rápidos (PayPal)
     match /enlaces_pago/{enlaceId} {
       allow read: if true; // Público para el que tiene el link

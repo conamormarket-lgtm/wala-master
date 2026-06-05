@@ -531,5 +531,55 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
   return { success: true };
 });
 
+/**
+ * Callable Function: Procesar pago con Culqi
+ */
+exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
+  const { amount, currency_code, email, source_id, order_id } = data;
+
+  if (!amount || !email || !source_id) {
+    throw new functions.https.HttpsError("invalid-argument", "Faltan datos requeridos para el pago.");
+  }
+
+  // La llave privada debe venir de variables de entorno
+  const secretKey = process.env.REACT_APP_CULQI_SECRET_KEY || "sk_test_dummy_key"; // Nota: Usar Firebase Config o SecretsManager en producción
+
+  try {
+    const response = await fetch("https://api.culqi.com/v2/charges", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${secretKey}`
+      },
+      body: JSON.stringify({
+        amount: Math.round(amount * 100), // Culqi espera céntimos (ej. 10.50 PEN -> 1050)
+        currency_code: currency_code || "PEN",
+        email: email,
+        source_id: source_id, // El token de la tarjeta generado en el frontend
+        metadata: {
+          order_id: order_id || "desconocido"
+        }
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Error de Culqi:", result);
+      throw new functions.https.HttpsError("internal", result.user_message || "Error al procesar la tarjeta con Culqi.");
+    }
+
+    return {
+      success: true,
+      charge_id: result.id,
+      outcome: result.outcome
+    };
+
+  } catch (err) {
+    console.error("Excepción en processCulqiPayment:", err);
+    throw new functions.https.HttpsError("internal", err.message || "Excepción interna al procesar el pago.");
+  }
+});
+
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;

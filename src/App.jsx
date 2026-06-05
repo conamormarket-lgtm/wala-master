@@ -47,6 +47,7 @@ const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const PoliticasPrivacidadPage = lazy(() => import('./pages/PoliticasPrivacidadPage'));
 const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
+const LibroReclamacionesPage = lazy(() => import('./pages/LibroReclamacionesPage'));
 const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'));
 const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage'));
 const SubscriptionLandingPage = lazy(() => import('./pages/SubscriptionLandingPage'));
@@ -93,6 +94,7 @@ const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
 const AdminGeneradorPagos = lazy(() => import('./pages/admin/AdminGeneradorPagos'));
+const AdminLibroReclamaciones = lazy(() => import('./pages/admin/AdminLibroReclamaciones'));
 
 const AppRedirect = lazy(() => import('./pages/AppRedirect'));
 const PagoRapidoPage = lazy(() => import('./pages/PagoRapidoPage'));
@@ -244,6 +246,7 @@ function App() {
                             <Route path="referidos" element={<AdminReferidos />} />
                             <Route path="pagos" element={<AdminPagos />} />
                             <Route path="generador-pagos" element={<AdminGeneradorPagos />} />
+                            <Route path="libro-reclamaciones" element={<AdminLibroReclamaciones />} />
                             <Route path="retos" element={<AdminRetos />} />
                             <Route path="destacados" element={<AdminDestacados />} />
                             <Route path="zonas" element={<Navigate to="/admin" replace />} />
@@ -275,6 +278,7 @@ function App() {
                         <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                         <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                         <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
+                        <Route path="/libro-de-reclamaciones" element={<LibroReclamacionesPage />} />
                         <Route path="/regalos-con-amor" element={<NuevosUsuariosPage />} />
                         <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
                         <Route path="/regalo/:orderId" element={<GiftExperiencePage />} />

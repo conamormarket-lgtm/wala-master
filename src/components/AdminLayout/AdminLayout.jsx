@@ -220,6 +220,12 @@ const AdminLayout = () => {
                 Generador de Enlaces
               </NavLink>
               <NavLink
+                to="/admin/libro-reclamaciones"
+                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
+              >
+                Libro de Reclamaciones
+              </NavLink>
+              <NavLink
                 to="/admin/referidos"
                 className={({ isActive }) => getLinkClass(isActive, 'clientes')}
               >

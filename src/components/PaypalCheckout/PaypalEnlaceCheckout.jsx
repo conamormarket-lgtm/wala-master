@@ -79,6 +79,7 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
       <div style={{ display: isProcessing ? 'none' : 'block' }}>
         <PayPalScriptProvider options={initialOptions}>
           <PayPalButtons 
+            fundingSource="paypal"
             createOrder={createOrder}
             onApprove={onApprove}
             onError={onError}

@@ -5,6 +5,7 @@ import DetalleEtapaModal from '../Timeline/DetalleEtapaModal';
 import Modal from '../common/Modal';
 import HistorialPagos from './HistorialPagos';
 import PaypalCheckout from '../PaypalCheckout';
+import CulqiCheckout from '../CulqiCheckout';
 import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../../services/messages';
 import { getEtapaBadgeLabel, ETAPAS_TIMELINE, estadoToKey, getQueueStage } from '../../utils/constants';
@@ -402,51 +403,72 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
             <p style={{ textAlign: 'center', fontSize: '0.9rem', color: '#666' }}>Cargando información de pago...</p>
           ) : (
             <div className={styles.opcionesPago}>
-              {configPagos.yape_number && (
-                <div className={styles.metodoPago}>
-                  <img src="https://i.imgur.com/gK1NpxI.png" alt="Yape" style={{ width: 60 }} />
-                  <div>
-                    <strong style={{ fontSize: '1.15rem', color: '#333' }}>{configPagos.yape_number}</strong>
-                    {configPagos.yape_name && <p style={{ fontSize: '0.85rem', color: '#555', margin: 0 }}>{configPagos.yape_name}</p>}
-                  </div>
+              
+              {/* SECCIÓN 1: Tarjetas */}
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#334155', fontSize: '0.95rem' }}>Pago con Tarjeta (Recomendado)</h4>
+                <p style={{ margin: '0 0 0.5rem 0', color: '#64748b', fontSize: '0.85rem' }}>Aprobación inmediata, no necesitas enviar comprobante.</p>
+                <div style={{ marginTop: '-1rem' }}>
+                  <CulqiCheckout 
+                    pedido={pedido} 
+                    onSuccess={(details) => {
+                      console.log("Pago de Culqi completado:", details);
+                      setShowPagoModal(false);
+                    }} 
+                  />
+                  <PaypalCheckout 
+                    pedido={pedido} 
+                    onSuccess={(details) => {
+                      console.log("Pago de PayPal completado:", details);
+                      setShowPagoModal(false);
+                    }} 
+                  />
                 </div>
-              )}
-              {configPagos.plin_number && (
-                <div className={styles.metodoPago}>
-                  <img src="https://i.imgur.com/K1R9Ifn.png" alt="Plin" style={{ width: 60 }} />
-                  <div>
-                    <strong style={{ fontSize: '1.15rem', color: '#333' }}>{configPagos.plin_number}</strong>
-                    {configPagos.plin_name && <p style={{ fontSize: '0.85rem', color: '#555', margin: 0 }}>{configPagos.plin_name}</p>}
-                  </div>
-                </div>
-              )}
-
-              {(!configPagos.yape_number && !configPagos.plin_number) && (
-                <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>Las cuentas de pago no están configuradas temporalmente.</p>
-              )}
-
-              <div style={{ marginTop: '1.5rem' }}>
-                <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.5rem', textAlign: 'center' }}>
-                  Una vez realizado el depósito, por favor envíanos la captura:
-                </p>
-                <button 
-                  className={styles.waBoton}
-                  onClick={enviarComprobanteWA}
-                  disabled={!configPagos.whatsapp_pagos}
-                  style={!configPagos.whatsapp_pagos ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                >
-                   🚀 Enviar comprobante por WhatsApp
-                </button>
               </div>
 
-              <PaypalCheckout 
-                pedido={pedido} 
-                onSuccess={(details) => {
-                  console.log("Pago de PayPal completado:", details);
-                  setShowPagoModal(false);
-                  // Mostrar éxito o refrescar si es necesario
-                }} 
-              />
+              <div style={{ display: 'flex', alignItems: 'center', margin: '0.5rem 0' }}>
+                 <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }}></div>
+                 <span style={{ padding: '0 1rem', color: '#94a3b8', fontSize: '0.85rem' }}>o transferencia local</span>
+                 <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }}></div>
+              </div>
+
+              {/* SECCIÓN 2: Transferencias / Yape / Plin */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {configPagos.yape_number && (
+                  <div className={styles.metodoPago}>
+                    <img src="https://i.imgur.com/gK1NpxI.png" alt="Yape" style={{ width: 50 }} />
+                    <div>
+                      <strong style={{ fontSize: '1rem', color: '#333' }}>{configPagos.yape_number}</strong>
+                      {configPagos.yape_name && <p style={{ fontSize: '0.8rem', color: '#555', margin: 0 }}>{configPagos.yape_name}</p>}
+                    </div>
+                  </div>
+                )}
+                {configPagos.plin_number && (
+                  <div className={styles.metodoPago}>
+                    <img src="https://i.imgur.com/K1R9Ifn.png" alt="Plin" style={{ width: 50 }} />
+                    <div>
+                      <strong style={{ fontSize: '1rem', color: '#333' }}>{configPagos.plin_number}</strong>
+                      {configPagos.plin_name && <p style={{ fontSize: '0.8rem', color: '#555', margin: 0 }}>{configPagos.plin_name}</p>}
+                    </div>
+                  </div>
+                )}
+
+                {(!configPagos.yape_number && !configPagos.plin_number) && (
+                  <p style={{ textAlign: 'center', color: '#888', fontSize: '0.85rem' }}>Transferencias no disponibles.</p>
+                )}
+
+                <div style={{ marginTop: '0.5rem' }}>
+                  <button 
+                    className={styles.waBoton}
+                    onClick={enviarComprobanteWA}
+                    disabled={!configPagos.whatsapp_pagos}
+                    style={!configPagos.whatsapp_pagos ? { opacity: 0.5, cursor: 'not-allowed', padding: '0.75rem', fontSize: '0.9rem' } : { padding: '0.75rem', fontSize: '0.9rem' }}
+                  >
+                     🚀 Enviar comprobante
+                  </button>
+                </div>
+              </div>
+
             </div>
           )}
         </div>

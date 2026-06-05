@@ -51,7 +51,7 @@ const AdminGeneradorPagos = () => {
       <h1 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#1e293b' }}>Generador de Enlaces de Pago</h1>
       <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.95rem' }}>
         Crea enlaces únicos para cobrar a clientes por conceptos que no son pedidos de la tienda (ej. saldos extras, envíos internacionales). 
-        El pago se procesará vía PayPal en <strong>Dólares (USD)</strong>.
+        El pago se procesará en <strong>Dólares (USD)</strong> a través de Tarjeta (Culqi) o PayPal.
       </p>
 
       {error && (
