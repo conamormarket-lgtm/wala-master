@@ -145,6 +145,103 @@ function computeLastAccess(events = [], sessions = []) {
   return Math.max(eventMax, sessionMax) || null;
 }
 
+function aggregateTopSearches(events = []) {
+  const byQuery = new Map();
+  events.forEach((ev) => {
+    if (ev.type === ANALYTICS_EVENT_TYPES.SEARCH_QUERY && ev.eventData?.query) {
+      const q = ev.eventData.query.toLowerCase();
+      const type = ev.clientType === 'APP' ? 'app' : 'web';
+      if (!byQuery.has(q)) byQuery.set(q, { total: 0, app: 0, web: 0 });
+      byQuery.get(q).total++;
+      byQuery.get(q)[type]++;
+    }
+  });
+  return [...byQuery.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 10)
+    .map(([query, stats]) => ({ query, ...stats }));
+}
+
+function aggregateTopProducts(events = []) {
+  const byProduct = new Map();
+  events.forEach((ev) => {
+    if (ev.type === ANALYTICS_EVENT_TYPES.PRODUCT_VIEW && ev.eventData?.productId) {
+      const id = ev.eventData.productId;
+      const type = ev.clientType === 'APP' ? 'app' : 'web';
+      if (!byProduct.has(id)) byProduct.set(id, { name: ev.eventData.name, total: 0, app: 0, web: 0 });
+      byProduct.get(id).total++;
+      byProduct.get(id)[type]++;
+    }
+  });
+  return [...byProduct.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
+}
+
+function aggregateBannerClicks(events = []) {
+  const byBanner = new Map();
+  events.forEach((ev) => {
+    if (ev.type === ANALYTICS_EVENT_TYPES.BANNER_CLICK && ev.eventData?.bannerId) {
+      const id = ev.eventData.bannerId;
+      const type = ev.clientType === 'APP' ? 'app' : 'web';
+      if (!byBanner.has(id)) byBanner.set(id, { total: 0, app: 0, web: 0 });
+      byBanner.get(id).total++;
+      byBanner.get(id)[type]++;
+    }
+  });
+  return [...byBanner.entries()]
+    .map(([bannerId, stats]) => ({ bannerId, ...stats }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
+}
+
+function aggregateScrollDepth(events = []) {
+  let count = { total: 0, app: 0, web: 0 };
+  let sum = { total: 0, app: 0, web: 0 };
+
+  events.forEach((ev) => {
+    if (ev.type === ANALYTICS_EVENT_TYPES.SCROLL_DEPTH && typeof ev.eventData?.depth === 'number') {
+      const depth = ev.eventData.depth;
+      const type = ev.clientType === 'APP' ? 'app' : 'web';
+      count.total++; sum.total += depth;
+      count[type]++; sum[type] += depth;
+    }
+  });
+
+  return {
+    avgTotal: count.total > 0 ? Math.round(sum.total / count.total) : 0,
+    avgApp: count.app > 0 ? Math.round(sum.app / count.app) : 0,
+    avgWeb: count.web > 0 ? Math.round(sum.web / count.web) : 0,
+  };
+}
+
+function aggregateBounceRate(events = [], sessions = []) {
+  let count = { total: 0, app: 0, web: 0 };
+  let bounced = { total: 0, app: 0, web: 0 };
+
+  sessions.forEach(s => {
+    const id = s.id || s.sessionKey;
+    const type = s.clientType === 'APP' ? 'app' : 'web';
+    const sEvents = events.filter(e => e.sessionId === id);
+    if (sEvents.length > 0) {
+      count.total++;
+      count[type]++;
+      // Consider bounce if they only had 1 page_view and no other meaningful interactions
+      const hasInteraction = sEvents.some(e => e.type !== ANALYTICS_EVENT_TYPES.SESSION_START && e.type !== ANALYTICS_EVENT_TYPES.SESSION_END && e.type !== ANALYTICS_EVENT_TYPES.PAGE_VIEW);
+      if (!hasInteraction && sEvents.filter(e => e.type === ANALYTICS_EVENT_TYPES.PAGE_VIEW).length <= 1) {
+        bounced.total++;
+        bounced[type]++;
+      }
+    }
+  });
+
+  return {
+    total: count.total > 0 ? Math.round((bounced.total / count.total) * 100) : 0,
+    app: count.app > 0 ? Math.round((bounced.app / count.app) * 100) : 0,
+    web: count.web > 0 ? Math.round((bounced.web / count.web) * 100) : 0,
+  };
+}
+
 function aggregateFunnel(events = []) {
   const counters = {
     views: { total: 0, app: 0, web: 0 },
@@ -477,6 +574,11 @@ export async function getGlobalAnalytics(dateFilter = {}) {
       topRoutesByViews: routeStats.topRoutesByViews,
       topRoutesByDwell: routeStats.topRoutesByDwell,
       mostTimeRoute: routeStats.mostTimeRoute,
+      topSearches: aggregateTopSearches(events),
+      topProducts: aggregateTopProducts(events),
+      bannerClicks: aggregateBannerClicks(events),
+      scrollDepth: aggregateScrollDepth(events),
+      bounceRate: aggregateBounceRate(events, sessions),
       deviceStats: aggregateDevices(sessions),
       utmStats: aggregateUTM(sessions),
       geographyStats: aggregateGeography(sessions),

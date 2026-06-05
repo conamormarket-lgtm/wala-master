@@ -364,6 +364,15 @@ const AdminUsuariosAnalyticsPage = () => {
                 <MetricCard3Way label="Eventos" metric={globalQuery.data.totalEvents} />
                 <MetricCard3Way label="Tiempo total navegado" metric={globalQuery.data.totalDwellMs} isDuration />
                 <MetricCard3Way label="Tiempo promedio por sesión" metric={globalQuery.data.avgDwellPerSessionMs} isDuration />
+                <MetricCard3Way label="Tasa de Rebote (%)" metric={globalQuery.data.bounceRate} />
+                <MetricCard3Way 
+                  label="Scroll Promedio (%)" 
+                  metric={{ 
+                    total: globalQuery.data.scrollDepth?.avgTotal, 
+                    app: globalQuery.data.scrollDepth?.avgApp, 
+                    web: globalQuery.data.scrollDepth?.avgWeb 
+                  }} 
+                />
               </div>
 
               <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
@@ -394,26 +403,26 @@ const AdminUsuariosAnalyticsPage = () => {
                   </ul>
                 </div>
                 <div>
-                  <h3 className={styles.sectionTitle}>Top rutas por tiempo</h3>
+                  <h3 className={styles.sectionTitle}>Top Búsquedas</h3>
                   <ul className={styles.list}>
-                    {(globalQuery.data.topRoutesByDwell || []).map((r) => (
-                      <li key={r.path}>{r.path}: {fmtDuration(r.dwellMs)}</li>
+                    {(globalQuery.data.topSearches || []).map((q) => (
+                      <li key={q.query}>{q.query}: {fmtNumber(q.total)} ({fmtNumber(q.app)} APP / {fmtNumber(q.web)} WEB)</li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <h3 className={styles.sectionTitle}>Dispositivos</h3>
+                  <h3 className={styles.sectionTitle}>Top Productos Vistos</h3>
                   <ul className={styles.list}>
-                    {(globalQuery.data.deviceStats?.topDevices || []).map((d) => (
-                      <li key={d.name}>{d.name}: {fmtNumber(d.count)}</li>
+                    {(globalQuery.data.topProducts || []).map((p) => (
+                      <li key={p.name}>{p.name}: {fmtNumber(p.total)} ({fmtNumber(p.app)} APP / {fmtNumber(p.web)} WEB)</li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <h3 className={styles.sectionTitle}>Navegadores</h3>
+                  <h3 className={styles.sectionTitle}>Clics en Banners</h3>
                   <ul className={styles.list}>
-                    {(globalQuery.data.deviceStats?.topBrowsers || []).map((b) => (
-                      <li key={b.name}>{b.name}: {fmtNumber(b.count)}</li>
+                    {(globalQuery.data.bannerClicks || []).map((b) => (
+                      <li key={b.bannerId}>{b.bannerId}: {fmtNumber(b.total)} ({fmtNumber(b.app)} APP / {fmtNumber(b.web)} WEB)</li>
                     ))}
                   </ul>
                 </div>

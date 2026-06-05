@@ -1,9 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../../components/common/Button';
+import { trackBannerClick } from '../../../services/analytics/tracker';
+import { useAuth } from '../../../contexts/AuthContext';
 import styles from './HeroBanner.module.css';
 
 const HeroBanner = ({ config }) => {
+  const { user } = useAuth();
   const { 
     mediaType = 'image', 
     mediaUrl, 
@@ -41,6 +44,10 @@ const HeroBanner = ({ config }) => {
 
   const handleVideoCanPlay = () => {
     setIsVideoLoaded(true);
+  };
+
+  const handleBannerClick = () => {
+    trackBannerClick(config.id || title || 'hero_banner', user).catch(console.error);
   };
 
   // Convertir alineación a flexbox
@@ -114,7 +121,7 @@ const HeroBanner = ({ config }) => {
             </p>
           )}
           {buttonText && buttonLink && (
-            <Link to={buttonLink}>
+            <Link to={buttonLink} onClick={handleBannerClick}>
               <Button 
                 variant="primary" 
                 className={styles.actionButton}

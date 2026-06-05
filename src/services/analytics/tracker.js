@@ -259,3 +259,75 @@ export async function trackPurchaseComplete(orderInfo = {}, userCtx = {}) {
   });
 }
 
+export async function trackProductView(productInfo = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.PRODUCT_VIEW,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: productInfo // Expected: { productId, name, category, isCombo }
+  });
+}
+
+export async function trackSearchQuery(query, userCtx = {}) {
+  if (!query) return;
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.SEARCH_QUERY,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: { query: query.trim() }
+  });
+}
+
+export async function trackScrollDepth(percentage, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.SCROLL_DEPTH,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: { depth: percentage }
+  });
+}
+
+export async function trackBannerClick(bannerId, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.BANNER_CLICK,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: { bannerId }
+  });
+}

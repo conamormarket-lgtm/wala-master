@@ -18,6 +18,7 @@ import AppPrefetcher from './components/common/AppPrefetcher/AppPrefetcher';
 import NavProgressBar from './components/common/NavProgressBar/NavProgressBar';
 import CustomFontsInjector from './components/common/CustomFontsInjector/CustomFontsInjector';
 import { useHeatmapTracker } from './hooks/useHeatmapTracker';
+import ScrollTracker from './components/analytics/ScrollTracker';
 import './App.css';
 
 // ── Páginas principales y Layout Crítico (Carga Inmediata para evitar efecto Waterfall de Suspense) ──
@@ -154,6 +155,7 @@ const GlobalLayout = ({ children }) => {
       <NavProgressBar />
       <RouteTracker />
       <ReferralTracker />
+      <ScrollTracker />
       <AdminBar />
       <VisualEditorPanel />
       <Header />
