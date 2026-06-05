@@ -57,6 +57,7 @@ const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
 const MussaPlaceholderPage = lazy(() => import('./pages/MussaPlaceholderPage'));
+const MussaPage = lazy(() => import('./pages/MussaPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -283,6 +284,8 @@ function App() {
                         <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
                         <Route path="/regalo/:orderId" element={<GiftExperiencePage />} />
                         
+                        {/* Mussa */}
+                        <Route path="/mussa" element={<MussaPage />} />
                         {/* Mussa Placeholder Routes */}
                         <Route path="/mussa/acne" element={<MussaPlaceholderPage />} />
                         <Route path="/mussa/manchas" element={<MussaPlaceholderPage />} />
