@@ -297,7 +297,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
     const sizeUI = cSizes.length > 0 && (
       <div className={styles.selectorGroup}>
-        <span className={styles.selectorLabel}>Talla</span>
+        <span className={styles.selectorLabel}>{hasColors ? (selVar?.sizeLabel || "Talla") : "Talla"}</span>
         <DraggableContainer className={styles.pillRow}>
           {cSizes.map(s => (
             <button key={s} className={`${styles.sizePill} ${sel.size === s ? styles.sizePillActive : ''}`}
@@ -431,7 +431,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
           {/* Size selector */}
           {sizes.length > 0 && (
             <div className={styles.selectorGroup}>
-              <span className={styles.selectorLabel}>Talla: <em>{selectedSize}</em></span>
+              <span className={styles.selectorLabel}>{selectedVariant?.sizeLabel || "Talla"}: <em>{selectedSize}</em></span>
               <DraggableContainer className={styles.pillRow}>
                 {sizes.map(s => (
                   <button key={s}
