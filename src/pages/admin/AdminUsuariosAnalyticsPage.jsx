@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, PieChart, Pie, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, PieChart, Pie, Legend, LineChart, Line } from 'recharts';
 import Button from '../../components/common/Button';
 import { getGlobalAnalytics, getUserAnalytics, getUsersBaseList } from '../../services/adminAnalytics';
 import { rebuildHistoricalAnalyticsSummary } from '../../services/adminAnalyticsBackfill';
@@ -29,10 +29,33 @@ function fmtDate(ms) {
   return new Date(ms).toLocaleString('es-PE');
 }
 
+function MetricCard3Way({ label, metric, isDuration }) {
+  if (!metric) return null;
+  const valTotal = isDuration ? fmtDuration(metric.total) : fmtNumber(metric.total);
+  const valApp = isDuration ? fmtDuration(metric.app) : fmtNumber(metric.app);
+  const valWeb = isDuration ? fmtDuration(metric.web) : fmtNumber(metric.web);
+  
+  return (
+    <div className={styles.metricCard}>
+      <span className={styles.metricLabel}>{label}</span>
+      <span className={styles.metricValue}>{valTotal}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#666', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #eaeaea' }}>
+        <span>APP: <strong>{valApp}</strong></span>
+        <span>WEB: <strong>{valWeb}</strong></span>
+      </div>
+    </div>
+  );
+}
+
 const AdminUsuariosAnalyticsPage = () => {
   const [tab, setTab] = useState('usuarios');
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
+
+  const [dateRange, setDateRange] = useState({ label: 'Todo el tiempo', start: null, end: null });
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+
   const queryClient = useQueryClient();
 
   const usersQuery = useQuery({
@@ -45,9 +68,9 @@ const AdminUsuariosAnalyticsPage = () => {
   });
 
   const globalQuery = useQuery({
-    queryKey: ['admin-analytics-global'],
+    queryKey: ['admin-analytics-global', dateRange.start, dateRange.end],
     queryFn: async () => {
-      const { data, error } = await getGlobalAnalytics();
+      const { data, error } = await getGlobalAnalytics({ startDateMs: dateRange.start, endDateMs: dateRange.end });
       if (error) throw new Error(error);
       return data;
     },
@@ -94,6 +117,50 @@ const AdminUsuariosAnalyticsPage = () => {
   const detail = userInfoQuery.data;
   const detailMetrics = detail?.metrics;
 
+  const handlePreset = (label, days) => {
+    if (days === null) {
+      setDateRange({ label, start: null, end: null });
+      return;
+    }
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    const start = new Date();
+    if (days === 0) {
+      start.setHours(0, 0, 0, 0);
+    } else if (days === 1) {
+      start.setDate(start.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+      end.setDate(end.getDate() - 1);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      start.setDate(start.getDate() - days);
+      start.setHours(0, 0, 0, 0);
+    }
+    setDateRange({ label, start: start.getTime(), end: end.getTime() });
+  };
+
+  const handleCustomRange = () => {
+    if (!customStart || !customEnd) return;
+    const s = new Date(customStart + 'T00:00:00').getTime();
+    const e = new Date(customEnd + 'T23:59:59').getTime();
+    setDateRange({ label: 'Personalizado', start: s, end: e });
+  };
+  
+  const chartData = useMemo(() => {
+    if (!globalQuery.data?.eventsForCharts) return [];
+    const events = globalQuery.data.eventsForCharts;
+    const byDay = new Map();
+    events.forEach(e => {
+      if (e.type !== 'page_view') return;
+      const d = new Date(e.clientTsMs || e.createdAt || 0);
+      const key = `${d.getDate()}/${d.getMonth()+1}`;
+      if (!byDay.has(key)) byDay.set(key, { name: key, total: 0, app: 0, web: 0, timestamp: d.setHours(0,0,0,0) });
+      byDay.get(key).total++;
+      if (e.clientType === 'APP') byDay.get(key).app++; else byDay.get(key).web++;
+    });
+    return Array.from(byDay.values()).sort((a,b) => a.timestamp - b.timestamp);
+  }, [globalQuery.data?.eventsForCharts]);
+
   return (
     <div className={styles.wrapper}>
       <h1 className={styles.title}>Usuarios y métricas</h1>
@@ -101,6 +168,24 @@ const AdminUsuariosAnalyticsPage = () => {
         Vista completa por usuario y resumen general. Incluye métricas reales de navegación (desde ahora)
         y estimaciones históricas basadas en datos existentes.
       </p>
+
+      <section className={styles.card} style={{ marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <strong style={{marginRight: '1rem'}}>Filtro de Fecha:</strong>
+          <Button variant={dateRange.label === 'Hoy' ? 'primary' : 'secondary'} onClick={() => handlePreset('Hoy', 0)}>Hoy</Button>
+          <Button variant={dateRange.label === 'Ayer' ? 'primary' : 'secondary'} onClick={() => handlePreset('Ayer', 1)}>Ayer</Button>
+          <Button variant={dateRange.label === 'Últimos 7 días' ? 'primary' : 'secondary'} onClick={() => handlePreset('Últimos 7 días', 7)}>Últimos 7 días</Button>
+          <Button variant={dateRange.label === 'Este mes' ? 'primary' : 'secondary'} onClick={() => handlePreset('Este mes', 30)}>Este mes</Button>
+          <Button variant={dateRange.label === 'Todo el tiempo' ? 'primary' : 'secondary'} onClick={() => handlePreset('Todo el tiempo', null)}>Todo el tiempo</Button>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <input type="date" className={styles.input} style={{ width: 'auto' }} value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+          <span> - </span>
+          <input type="date" className={styles.input} style={{ width: 'auto' }} value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+          <Button variant="secondary" onClick={handleCustomRange}>Aplicar rango</Button>
+          <span style={{ marginLeft: '1rem', fontSize: '0.9rem', color: '#666' }}>Mostrando: <strong>{dateRange.label}</strong></span>
+        </div>
+      </section>
 
       <section className={styles.card}>
         <h2 className={styles.sectionTitle}>Dashboard en tiempo real</h2>
@@ -113,14 +198,8 @@ const AdminUsuariosAnalyticsPage = () => {
                 <span className={styles.metricLabel}>Usuarios (total histórico)</span>
                 <span className={styles.metricValue}>{fmtNumber(globalQuery.data.totalRegisteredUsers)}</span>
               </div>
-              <div className={styles.metricCard}>
-                <span className={styles.metricLabel}>En línea (con cuenta)</span>
-                <span className={styles.metricValue}>{fmtNumber(globalQuery.data.realtimeActiveLoggedUsers)}</span>
-              </div>
-              <div className={styles.metricCard}>
-                <span className={styles.metricLabel}>En línea (sin cuenta)</span>
-                <span className={styles.metricValue}>{fmtNumber(globalQuery.data.realtimeActiveVisitors)}</span>
-              </div>
+              <MetricCard3Way label="En línea (con cuenta)" metric={globalQuery.data.realtimeActiveLoggedUsers} />
+              <MetricCard3Way label="En línea (sin cuenta)" metric={globalQuery.data.realtimeActiveVisitors} />
             </div>
 
             <div style={{ marginTop: '1.5rem' }}>
@@ -280,27 +359,31 @@ const AdminUsuariosAnalyticsPage = () => {
                   <span className={styles.metricLabel}>Usuarios registrados</span>
                   <span className={styles.metricValue}>{fmtNumber(globalQuery.data.totalRegisteredUsers)}</span>
                 </div>
-                <div className={styles.metricCard}>
-                  <span className={styles.metricLabel}>Identidades activas</span>
-                  <span className={styles.metricValue}>{fmtNumber(globalQuery.data.activeIdentities)}</span>
-                </div>
-                <div className={styles.metricCard}>
-                  <span className={styles.metricLabel}>Sesiones</span>
-                  <span className={styles.metricValue}>{fmtNumber(globalQuery.data.totalSessions)}</span>
-                </div>
-                <div className={styles.metricCard}>
-                  <span className={styles.metricLabel}>Eventos</span>
-                  <span className={styles.metricValue}>{fmtNumber(globalQuery.data.totalEvents)}</span>
-                </div>
-                <div className={styles.metricCard}>
-                  <span className={styles.metricLabel}>Tiempo total navegado</span>
-                  <span className={styles.metricValue}>{fmtDuration(globalQuery.data.totalDwellMs)}</span>
-                </div>
-                <div className={styles.metricCard}>
-                  <span className={styles.metricLabel}>Tiempo promedio por sesión</span>
-                  <span className={styles.metricValue}>{fmtDuration(globalQuery.data.avgDwellPerSessionMs)}</span>
+                <MetricCard3Way label="Identidades activas" metric={globalQuery.data.activeIdentities} />
+                <MetricCard3Way label="Sesiones" metric={globalQuery.data.totalSessions} />
+                <MetricCard3Way label="Eventos" metric={globalQuery.data.totalEvents} />
+                <MetricCard3Way label="Tiempo total navegado" metric={globalQuery.data.totalDwellMs} isDuration />
+                <MetricCard3Way label="Tiempo promedio por sesión" metric={globalQuery.data.avgDwellPerSessionMs} isDuration />
+              </div>
+
+              <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+                <h3 className={styles.sectionTitle}>Tráfico a lo largo del tiempo (Page Views)</h3>
+                <div style={{ width: '100%', height: 300 }}>
+                  <ResponsiveContainer>
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="total" stroke="#8884d8" name="Total" strokeWidth={3} />
+                      <Line type="monotone" dataKey="app" stroke="#82ca9d" name="App" strokeWidth={2} />
+                      <Line type="monotone" dataKey="web" stroke="#ffc658" name="Web" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
+
               <div className={styles.listsGrid}>
                 <div>
                   <h3 className={styles.sectionTitle}>Top rutas por visitas</h3>
@@ -398,10 +481,10 @@ const AdminUsuariosAnalyticsPage = () => {
                 <ResponsiveContainer>
                   <BarChart
                     data={[
-                      { name: 'Ven la tienda', count: globalQuery.data.funnelStats?.users?.views || 0, color: '#8884d8' },
-                      { name: 'Añaden al Carrito', count: globalQuery.data.funnelStats?.users?.adds || 0, color: '#82ca9d' },
-                      { name: 'Inician Pago', count: globalQuery.data.funnelStats?.users?.checkouts || 0, color: '#ffc658' },
-                      { name: 'Compran', count: globalQuery.data.funnelStats?.users?.purchases || 0, color: '#ff8042' },
+                      { name: 'Ven la tienda', Total: globalQuery.data.funnelStats?.users?.views?.total || 0, App: globalQuery.data.funnelStats?.users?.views?.app || 0, Web: globalQuery.data.funnelStats?.users?.views?.web || 0 },
+                      { name: 'Añaden al Carrito', Total: globalQuery.data.funnelStats?.users?.adds?.total || 0, App: globalQuery.data.funnelStats?.users?.adds?.app || 0, Web: globalQuery.data.funnelStats?.users?.adds?.web || 0 },
+                      { name: 'Inician Pago', Total: globalQuery.data.funnelStats?.users?.checkouts?.total || 0, App: globalQuery.data.funnelStats?.users?.checkouts?.app || 0, Web: globalQuery.data.funnelStats?.users?.checkouts?.web || 0 },
+                      { name: 'Compran', Total: globalQuery.data.funnelStats?.users?.purchases?.total || 0, App: globalQuery.data.funnelStats?.users?.purchases?.app || 0, Web: globalQuery.data.funnelStats?.users?.purchases?.web || 0 },
                     ]}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
@@ -409,18 +492,10 @@ const AdminUsuariosAnalyticsPage = () => {
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip cursor={{fill: 'transparent'}} />
-                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                      {
-                        [
-                          { name: 'Ven la tienda', count: globalQuery.data.funnelStats?.users?.views || 0, color: '#8884d8' },
-                          { name: 'Añaden al Carrito', count: globalQuery.data.funnelStats?.users?.adds || 0, color: '#82ca9d' },
-                          { name: 'Inician Pago', count: globalQuery.data.funnelStats?.users?.checkouts || 0, color: '#ffc658' },
-                          { name: 'Compran', count: globalQuery.data.funnelStats?.users?.purchases || 0, color: '#ff8042' },
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))
-                      }
-                    </Bar>
+                    <Legend />
+                    <Bar dataKey="Total" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="App" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Web" fill="#ffc658" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

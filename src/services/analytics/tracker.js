@@ -40,9 +40,13 @@ function setStoredSessionId(id) {
   window.sessionStorage.setItem(ANALYTICS_KEYS.SESSION_ID, id);
 }
 
+function getClientType() {
+  return typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.() ? 'APP' : 'WEB';
+}
+
 function getClientMeta() {
   if (typeof window === 'undefined') {
-    return { referrer: null, userAgent: null, language: null, platform: null, timeZone: null };
+    return { referrer: null, userAgent: null, language: null, platform: null, timeZone: null, clientType: 'WEB' };
   }
   return {
     referrer: document?.referrer || null,
@@ -50,6 +54,7 @@ function getClientMeta() {
     language: window.navigator?.language || null,
     platform: window.navigator?.platform || null,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+    clientType: getClientType(),
   };
 }
 
@@ -106,6 +111,7 @@ export async function ensureAnalyticsSession(userCtx = {}, entryPath = '/') {
     displayName: userCtx?.displayName || null,
     path: normalizeRoute(entryPath),
     clientTsMs: now,
+    clientType: getClientType(),
   });
   return runtimeSessionDocId;
 }
@@ -124,6 +130,7 @@ export async function trackPageView(pathname, userCtx = {}) {
     anonymousId,
     sessionId: sessionId || null,
     clientTsMs: now,
+    clientType: getClientType(),
   });
   if (sessionId) {
     await updateDocument(ANALYTICS_COLLECTIONS.SESSIONS, sessionId, {
@@ -153,6 +160,7 @@ export async function trackRouteDwell(pathname, dwellMs, userCtx = {}) {
     anonymousId,
     sessionId: sessionId || null,
     clientTsMs: now,
+    clientType: getClientType(),
   });
   if (sessionId) {
     await updateDocument(ANALYTICS_COLLECTIONS.SESSIONS, sessionId, {
@@ -186,6 +194,7 @@ export async function endAnalyticsSession(userCtx = {}, lastPath = '/') {
     anonymousId: getAnonymousId(),
     sessionId,
     clientTsMs: now,
+    clientType: getClientType(),
   });
   await updateDocument(ANALYTICS_COLLECTIONS.SESSIONS, sessionId, {
     endedAtClientMs: now,
@@ -209,6 +218,7 @@ export async function trackAddToCart(productInfo = {}, userCtx = {}) {
     anonymousId,
     sessionId: sessionId || null,
     clientTsMs: now,
+    clientType: getClientType(),
     eventData: productInfo // Expected: { totalCents, currency, items: [...] }
   });
 }
@@ -226,6 +236,7 @@ export async function trackCheckoutStart(checkoutInfo = {}, userCtx = {}) {
     anonymousId,
     sessionId: sessionId || null,
     clientTsMs: now,
+    clientType: getClientType(),
     eventData: checkoutInfo
   });
 }
@@ -243,6 +254,7 @@ export async function trackPurchaseComplete(orderInfo = {}, userCtx = {}) {
     anonymousId,
     sessionId: sessionId || null,
     clientTsMs: now,
+    clientType: getClientType(),
     eventData: orderInfo // Expected: { orderId, totalCents, currency }
   });
 }

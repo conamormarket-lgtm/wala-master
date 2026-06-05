@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getProducts, updateProduct } from '../../services/products';
+import { getProducts, updateProduct, updateProductField } from '../../services/products';
 import { getCategories } from '../../services/products'; // O de categories si está ahí
 import { getCollections } from '../../services/collections';
 import { getBrands } from '../../services/brands';
@@ -72,7 +72,7 @@ const AdminInventario = () => {
       try {
         const oldStock = initialStockRefs.current[id] || 0;
         if (oldStock !== newStock) {
-          await updateProduct(id, { inStock: newStock });
+          await updateProductField(id, { inStock: newStock });
           await logInventoryChange(id, productName, oldStock, newStock, user?.email || 'Admin');
           initialStockRefs.current[id] = newStock;
         }
