@@ -1205,7 +1205,7 @@ const AdminProductoFormV2 = () => {
                         {activeVariant.mockupState.selectedMockupId && (
                           <button type="button" onClick={handleCaptureMockup} className={styles.captureBtn} disabled={uploading}>
                             {uploading ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />} 
-                            {uploading ? 'Capturando...' : 'Capturar y Fijar Imagen'}
+                            <span>{uploading ? 'Capturando...' : 'Capturar y Fijar Imagen'}</span>
                           </button>
                         )}
                       </>
@@ -1339,7 +1339,17 @@ const AdminProductoFormV2 = () => {
               className={styles.saveBtn}
               disabled={uploading || saveMutation.isPending}
             >
-              {uploading ? <><Loader2 className="animate-spin" size={18} /> Procesando...</> : <><Save size={18} /> {isNew ? 'Guardar Producto (Oficial)' : 'Guardar Cambios'}</>}
+              {uploading ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  <span>Procesando...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  <span>{isNew ? 'Guardar Producto (Oficial)' : 'Guardar Cambios'}</span>
+                </>
+              )}
             </Button>
           </div>
 

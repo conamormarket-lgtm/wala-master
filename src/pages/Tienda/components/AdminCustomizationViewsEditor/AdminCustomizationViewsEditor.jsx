@@ -256,7 +256,7 @@ const AdminCustomizationViewsEditor = ({ views, onChange, draftId }) => {
             />
             <label className={styles.btn}>
               {uploading ? <Loader2 className="animate-spin" size={16} /> : <ImageIcon size={16} />}
-              Subir Imagen Base
+              <span>Subir Imagen Base</span>
               <input type="file" hidden accept="image/*" onChange={handleBaseImageUpload} disabled={uploading} />
             </label>
             <button type="button" className={`${styles.btn} ${styles.btnDanger}`} onClick={removeView}>
@@ -271,7 +271,7 @@ const AdminCustomizationViewsEditor = ({ views, onChange, draftId }) => {
             </button>
             <label className={styles.btn}>
               {uploading ? <Loader2 className="animate-spin" size={16} /> : <ImagePlus size={16} />}
-              Añadir Diseño / Mockup
+              <span>Añadir Diseño / Mockup</span>
               <input type="file" hidden accept="image/*" onChange={handleImageUpload} disabled={uploading} />
             </label>
             

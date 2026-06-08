@@ -390,7 +390,6 @@ exports.notifyWishlistBirthdays = onSchedule("0 9 * * *", async (event) => {
       console.log("No users match the 14-day birthday criteria with active wishlists.");
     }
 
-    }
   } catch (error) {
     console.error("Error in notifyWishlistBirthdays:", error);
   }
