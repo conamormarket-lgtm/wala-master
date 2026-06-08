@@ -389,6 +389,16 @@ export const updateProduct = async (id, data) => {
 };
 
 /**
+ * Actualizar producto parcialmente (sin normalizar todo el payload)
+ */
+export const updateProductField = async (id, partialData) => {
+  const result = await updateDocument(COLLECTION, id, partialData);
+  if (result.error) throw new Error(result.error);
+  clearProductCaches();
+  return result;
+};
+
+/**
  * Eliminar producto
  */
 export const deleteProduct = async (id) => {

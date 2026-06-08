@@ -390,7 +390,6 @@ exports.notifyWishlistBirthdays = onSchedule("0 9 * * *", async (event) => {
       console.log("No users match the 14-day birthday criteria with active wishlists.");
     }
 
-    }
   } catch (error) {
     console.error("Error in notifyWishlistBirthdays:", error);
   }
@@ -529,6 +528,55 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
   });
 
   return { success: true };
+});
+
+/**
+ * Callable Function: Procesar pago con Culqi
+ */
+exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
+  const { amount, currency, email, tokenId, description, metadata } = data;
+
+  if (!amount || !email || !tokenId) {
+    throw new functions.https.HttpsError("invalid-argument", "Faltan datos requeridos para el pago.");
+  }
+
+  // La llave privada debe venir de variables de entorno
+  const secretKey = process.env.CULQI_SECRET_KEY || process.env.REACT_APP_CULQI_SECRET_KEY || "sk_test_dummy_key";
+
+  try {
+    const response = await fetch("https://api.culqi.com/v2/charges", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${secretKey}`
+      },
+      body: JSON.stringify({
+        amount: amount, // El frontend ya lo envía en céntimos (integer)
+        currency_code: currency || "PEN",
+        email: email,
+        source_id: tokenId,
+        description: description || "Pago en Walá",
+        metadata: metadata || {}
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Error de Culqi:", result);
+      throw new functions.https.HttpsError("internal", result.user_message || "Error al procesar la tarjeta con Culqi.");
+    }
+
+    return {
+      success: true,
+      charge_id: result.id,
+      outcome: result.outcome
+    };
+
+  } catch (err) {
+    console.error("Excepción en processCulqiPayment:", err);
+    throw new functions.https.HttpsError("internal", err.message || "Excepción interna al procesar el pago.");
+  }
 });
 
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;

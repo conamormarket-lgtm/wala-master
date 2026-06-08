@@ -1,61 +1,48 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import styles from './BrandMarquee.module.css';
-import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
 
-const BrandMarquee = ({ items = [], speed = 20000 }) => {
-  if (!items || items.length === 0) return null;
+const BrandMarquee = () => {
+  const marcasUnicas = [
+    'wala 900x900.png',
+    '../familia.png',
+    '../geek.png',
+    '../deporte.png'
+  ];
 
-  // Si hay pocos items, duplicamos el array para asegurar que el efecto infinito de css no se rompa
-  const displayItems = items.length < 8 ? [...items, ...items, ...items, ...items] : [...items, ...items];
+  const multiplicador = 100; // Multiplicamos para crear la cinta infinita
+  const totalItems = marcasUnicas.length * multiplicador;
 
-  // Convertimos milisegundos a segundos para el CSS animation
-  const animationDuration = `${speed / 1000}s`;
+  // 1.25 segundos por cada ítem generado para mantener la misma velocidad siempre
+  const duracionAnimacion = totalItems * 1.25;
 
   return (
-    <div className={styles.marqueeContainer}>
-      <div 
-        className={styles.marqueeTrack}
-        style={{ animationDuration }}
-      >
-        {displayItems.map((item, index) => (
-          <div key={index} className={styles.brandItem}>
-            {item.link ? (
-              <Link to={item.link} className={styles.brandLink}>
-                <div className={styles.imageWrapper}>
-                  {item.imageUrl ? (
-                    <OptimizedImage 
-                      src={item.imageUrl} 
-                      alt={item.name || 'Marca'} 
-                      className={styles.brandImage}
-                    />
-                  ) : (
-                    <div className={styles.placeholderCircle}></div>
-                  )}
-                </div>
-                {item.name && <span className={styles.brandName}>{item.name}</span>}
-              </Link>
-            ) : (
-              <div className={styles.brandLink}>
-                <div className={styles.imageWrapper}>
-                  {item.imageUrl ? (
-                    <OptimizedImage 
-                      src={item.imageUrl} 
-                      alt={item.name || 'Marca'} 
-                      className={styles.brandImage}
-                    />
-                  ) : (
-                    <div className={styles.placeholderCircle}></div>
-                  )}
-                </div>
-                {item.name && <span className={styles.brandName}>{item.name}</span>}
+    <div className={styles.mainContainer}>
+      {/* Título Estilo Píldora Gris */}
+      <div className={styles.brandsTitle}>
+        <span className={styles.brandsTitleSpan}>
+          Empresas con las que trabajamos
+        </span>
+      </div>
+
+      {/* Carrusel Deslizable Infinito */}
+      <div className={styles.marqueeContainer}>
+        <div className={styles.marqueeTrack} style={{ animationDuration: `${duracionAnimacion}s` }}>
+          {Array(multiplicador).fill(marcasUnicas).flat().map((imagen, index) => (
+            <div key={index} className={styles.logoCircleWrapper}>
+              <div className={styles.logoCircle}>
+                <img
+                  src={`${process.env.PUBLIC_URL}/diseno/${imagen}`}
+                  alt={`Logo Empresa ${index}`}
+                  className={styles.brandImage}
+                />
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
 export default BrandMarquee;
+

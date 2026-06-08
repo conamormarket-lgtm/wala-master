@@ -140,7 +140,7 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
           <div style={{ marginTop: '1rem' }}>
             <label className={styles.uploadBtn}>
               {uploading ? <Loader2 className="animate-spin" size={18} /> : <ImagePlus size={18} />}
-              {uploading ? 'Subiendo...' : 'Subir Portada del Combo'}
+              <span>{uploading ? 'Subiendo...' : 'Subir Portada del Combo'}</span>
               <input type="file" accept="image/*" onChange={handleImageUpload} hidden disabled={uploading} />
             </label>
           </div>

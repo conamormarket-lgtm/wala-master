@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFeaturedProducts, updateProduct } from '../../services/products';
+import { getFeaturedProducts, updateProductField } from '../../services/products';
 import Button from '../../components/common/Button';
 import styles from './AdminDestacados.module.css';
 
@@ -18,7 +18,7 @@ const AdminDestacados = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => updateProduct(id, data),
+    mutationFn: ({ id, data }) => updateProductField(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-featured'] });
       queryClient.invalidateQueries({ queryKey: ['featured-products'] });
@@ -39,14 +39,6 @@ const AdminDestacados = () => {
     updateMutation.mutate({
       id: product.id,
       data: {
-        name: product.name,
-        categories: product.categories ?? (product.category ? [product.category] : []),
-        price: product.price,
-        images: product.images ?? [],
-        description: product.description ?? '',
-        inStock: product.inStock ?? 0,
-        customizable: Boolean(product.customizable),
-        variants: product.variants ?? { sizes: [], colors: [] },
         featured: true,
         featuredOrder: newOrder
       }
@@ -57,14 +49,6 @@ const AdminDestacados = () => {
     updateMutation.mutate({
       id: product.id,
       data: {
-        name: product.name,
-        categories: product.categories ?? (product.category ? [product.category] : []),
-        price: product.price,
-        images: product.images ?? [],
-        description: product.description ?? '',
-        inStock: product.inStock ?? 0,
-        customizable: Boolean(product.customizable),
-        variants: product.variants ?? { sizes: [], colors: [] },
         featured: false,
         featuredOrder: 0
       }

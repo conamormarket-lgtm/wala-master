@@ -8,6 +8,7 @@ import { createReferralShare } from '../../../../services/referrals';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { recordProductClick, recordVariantViewTime } from '../../../../utils/productVariantBehavior';
+import { trackProductView } from '../../../../services/analytics/tracker';
 import { getFallbackHex } from '../../../../utils/colors';
 import { getBrands } from '../../../../services/brands';
 import { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
@@ -205,7 +206,17 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   useImagePreloader(allUrls);
 
   useEffect(() => { setImgIdx(0); }, [selectedVariant?.id, selectedVariant?.name]);
-  useEffect(() => { if (product?.id) recordProductClick(product.id); }, [product?.id]);
+  useEffect(() => { 
+    if (product?.id) {
+      recordProductClick(product.id);
+      trackProductView({
+        productId: product.id,
+        name: product.name,
+        category: getCategory(product, categories),
+        isCombo: isCombo
+      }, user).catch(console.error);
+    }
+  }, [product?.id, categories, isCombo, user]);
 
   useEffect(() => {
     if (!product?.id || !selectedVariant?.id) return;
@@ -286,7 +297,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
     const sizeUI = cSizes.length > 0 && (
       <div className={styles.selectorGroup}>
-        <span className={styles.selectorLabel}>Talla</span>
+        <span className={styles.selectorLabel}>{hasColors ? (selVar?.sizeLabel || "Talla") : "Talla"}</span>
         <DraggableContainer className={styles.pillRow}>
           {cSizes.map(s => (
             <button key={s} className={`${styles.sizePill} ${sel.size === s ? styles.sizePillActive : ''}`}
@@ -420,7 +431,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
           {/* Size selector */}
           {sizes.length > 0 && (
             <div className={styles.selectorGroup}>
-              <span className={styles.selectorLabel}>Talla: <em>{selectedSize}</em></span>
+              <span className={styles.selectorLabel}>{selectedVariant?.sizeLabel || "Talla"}: <em>{selectedSize}</em></span>
               <DraggableContainer className={styles.pillRow}>
                 {sizes.map(s => (
                   <button key={s}

@@ -18,6 +18,7 @@ import AppPrefetcher from './components/common/AppPrefetcher/AppPrefetcher';
 import NavProgressBar from './components/common/NavProgressBar/NavProgressBar';
 import CustomFontsInjector from './components/common/CustomFontsInjector/CustomFontsInjector';
 import { useHeatmapTracker } from './hooks/useHeatmapTracker';
+import ScrollTracker from './components/analytics/ScrollTracker';
 import './App.css';
 
 // ── Páginas principales y Layout Crítico (Carga Inmediata para evitar efecto Waterfall de Suspense) ──
@@ -46,6 +47,7 @@ const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const PoliticasPrivacidadPage = lazy(() => import('./pages/PoliticasPrivacidadPage'));
 const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
+const LibroReclamacionesPage = lazy(() => import('./pages/LibroReclamacionesPage'));
 const DynamicLandingPage = lazy(() => import('./pages/Tienda/DynamicLandingPage'));
 const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage'));
 const SubscriptionLandingPage = lazy(() => import('./pages/SubscriptionLandingPage'));
@@ -54,6 +56,7 @@ const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
 const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
+const MussaPage = lazy(() => import('./pages/MussaPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -91,6 +94,7 @@ const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
 const AdminGeneradorPagos = lazy(() => import('./pages/admin/AdminGeneradorPagos'));
+const AdminLibroReclamaciones = lazy(() => import('./pages/admin/AdminLibroReclamaciones'));
 
 const AppRedirect = lazy(() => import('./pages/AppRedirect'));
 const PagoRapidoPage = lazy(() => import('./pages/PagoRapidoPage'));
@@ -153,6 +157,7 @@ const GlobalLayout = ({ children }) => {
       <NavProgressBar />
       <RouteTracker />
       <ReferralTracker />
+      <ScrollTracker />
       <AdminBar />
       <VisualEditorPanel />
       <Header />
@@ -241,6 +246,7 @@ function App() {
                             <Route path="referidos" element={<AdminReferidos />} />
                             <Route path="pagos" element={<AdminPagos />} />
                             <Route path="generador-pagos" element={<AdminGeneradorPagos />} />
+                            <Route path="libro-reclamaciones" element={<AdminLibroReclamaciones />} />
                             <Route path="retos" element={<AdminRetos />} />
                             <Route path="destacados" element={<AdminDestacados />} />
                             <Route path="zonas" element={<Navigate to="/admin" replace />} />
@@ -272,9 +278,13 @@ function App() {
                         <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                         <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                         <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
+                        <Route path="/libro-de-reclamaciones" element={<LibroReclamacionesPage />} />
                         <Route path="/regalos-con-amor" element={<NuevosUsuariosPage />} />
                         <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
                         <Route path="/regalo/:orderId" element={<GiftExperiencePage />} />
+                        
+                        {/* Mussa */}
+                        <Route path="/mussa" element={<MussaPage />} />
                         
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />

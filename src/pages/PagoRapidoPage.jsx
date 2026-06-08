@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDocument, deleteDocument } from '../services/firebase/firestore';
 import PaypalEnlaceCheckout from '../components/PaypalCheckout/PaypalEnlaceCheckout';
+import CulqiCustomCheckout from '../components/CulqiCustomCheckout';
 
 const PagoRapidoPage = () => {
   const { id } = useParams();
@@ -108,11 +109,15 @@ const PagoRapidoPage = () => {
               </div>
             </div>
 
-            <PaypalEnlaceCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
+            <CulqiCustomCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
             
-            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#94a3b8', marginTop: '2rem' }}>
-              Pagos procesados de forma segura a través de PayPal.
-            </p>
+            <div style={{ margin: '1.5rem 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }}></div>
+               <span style={{ padding: '0 1rem', color: '#94a3b8', fontSize: '0.9rem' }}>o paga con</span>
+               <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }}></div>
+            </div>
+
+            <PaypalEnlaceCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
           </>
         )}
         

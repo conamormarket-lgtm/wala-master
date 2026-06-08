@@ -24,21 +24,28 @@ function aggregateRouteMetrics(events = []) {
   const byDwell = new Map();
   events.forEach((ev) => {
     const route = ev.path || 'unknown';
+    const type = ev.clientType === 'APP' ? 'app' : 'web';
+    if (!byViews.has(route)) byViews.set(route, { total: 0, app: 0, web: 0 });
+    if (!byDwell.has(route)) byDwell.set(route, { total: 0, app: 0, web: 0 });
+
     if (ev.type === ANALYTICS_EVENT_TYPES.PAGE_VIEW) {
-      byViews.set(route, (byViews.get(route) || 0) + 1);
+      byViews.get(route).total += 1;
+      byViews.get(route)[type] += 1;
     }
     if (ev.type === ANALYTICS_EVENT_TYPES.ROUTE_DWELL) {
-      byDwell.set(route, (byDwell.get(route) || 0) + safeNumber(ev.dwellMs));
+      const dwell = safeNumber(ev.dwellMs);
+      byDwell.get(route).total += dwell;
+      byDwell.get(route)[type] += dwell;
     }
   });
 
   const topRoutesByViews = [...byViews.entries()]
-    .sort((a, b) => b[1] - a[1])
+    .sort((a, b) => b[1].total - a[1].total)
     .slice(0, 10)
     .map(([path, views]) => ({ path, views }));
 
   const topRoutesByDwell = [...byDwell.entries()]
-    .sort((a, b) => b[1] - a[1])
+    .sort((a, b) => b[1].total - a[1].total)
     .slice(0, 10)
     .map(([path, dwellMs]) => ({ path, dwellMs }));
 
@@ -138,40 +145,142 @@ function computeLastAccess(events = [], sessions = []) {
   return Math.max(eventMax, sessionMax) || null;
 }
 
-function aggregateFunnel(events = []) {
-  let views = 0;
-  let adds = 0;
-  let checkouts = 0;
-  let purchases = 0;
-  const uniqueUsersInFunnel = { views: new Set(), adds: new Set(), checkouts: new Set(), purchases: new Set() };
+function aggregateTopSearches(events = []) {
+  const byQuery = new Map();
+  events.forEach((ev) => {
+    if (ev.type === ANALYTICS_EVENT_TYPES.SEARCH_QUERY && ev.eventData?.query) {
+      const q = ev.eventData.query.toLowerCase();
+      const type = ev.clientType === 'APP' ? 'app' : 'web';
+      if (!byQuery.has(q)) byQuery.set(q, { total: 0, app: 0, web: 0 });
+      byQuery.get(q).total++;
+      byQuery.get(q)[type]++;
+    }
+  });
+  return [...byQuery.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 10)
+    .map(([query, stats]) => ({ query, ...stats }));
+}
 
-  events.forEach(e => {
-    const id = e.uid || e.anonymousId || e.sessionId;
-    if (e.type === ANALYTICS_EVENT_TYPES.PAGE_VIEW || e.type === ANALYTICS_EVENT_TYPES.ROUTE_DWELL) {
-      views++;
-      if (id) uniqueUsersInFunnel.views.add(id);
+function aggregateTopProducts(events = []) {
+  const byProduct = new Map();
+  events.forEach((ev) => {
+    if (ev.type === ANALYTICS_EVENT_TYPES.PRODUCT_VIEW && ev.eventData?.productId) {
+      const id = ev.eventData.productId;
+      const type = ev.clientType === 'APP' ? 'app' : 'web';
+      if (!byProduct.has(id)) byProduct.set(id, { name: ev.eventData.name, total: 0, app: 0, web: 0 });
+      byProduct.get(id).total++;
+      byProduct.get(id)[type]++;
     }
-    if (e.type === ANALYTICS_EVENT_TYPES.ADD_TO_CART) {
-      adds++;
-      if (id) uniqueUsersInFunnel.adds.add(id);
+  });
+  return [...byProduct.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
+}
+
+function aggregateBannerClicks(events = []) {
+  const byBanner = new Map();
+  events.forEach((ev) => {
+    if (ev.type === ANALYTICS_EVENT_TYPES.BANNER_CLICK && ev.eventData?.bannerId) {
+      const id = ev.eventData.bannerId;
+      const type = ev.clientType === 'APP' ? 'app' : 'web';
+      if (!byBanner.has(id)) byBanner.set(id, { total: 0, app: 0, web: 0 });
+      byBanner.get(id).total++;
+      byBanner.get(id)[type]++;
     }
-    if (e.type === ANALYTICS_EVENT_TYPES.CHECKOUT_START) {
-      checkouts++;
-      if (id) uniqueUsersInFunnel.checkouts.add(id);
-    }
-    if (e.type === ANALYTICS_EVENT_TYPES.PURCHASE_COMPLETE) {
-      purchases++;
-      if (id) uniqueUsersInFunnel.purchases.add(id);
+  });
+  return [...byBanner.entries()]
+    .map(([bannerId, stats]) => ({ bannerId, ...stats }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
+}
+
+function aggregateScrollDepth(events = []) {
+  let count = { total: 0, app: 0, web: 0 };
+  let sum = { total: 0, app: 0, web: 0 };
+
+  events.forEach((ev) => {
+    if (ev.type === ANALYTICS_EVENT_TYPES.SCROLL_DEPTH && typeof ev.eventData?.depth === 'number') {
+      const depth = ev.eventData.depth;
+      const type = ev.clientType === 'APP' ? 'app' : 'web';
+      count.total++; sum.total += depth;
+      count[type]++; sum[type] += depth;
     }
   });
 
   return {
-    events: { views, adds, checkouts, purchases },
+    avgTotal: count.total > 0 ? Math.round(sum.total / count.total) : 0,
+    avgApp: count.app > 0 ? Math.round(sum.app / count.app) : 0,
+    avgWeb: count.web > 0 ? Math.round(sum.web / count.web) : 0,
+  };
+}
+
+function aggregateBounceRate(events = [], sessions = []) {
+  let count = { total: 0, app: 0, web: 0 };
+  let bounced = { total: 0, app: 0, web: 0 };
+
+  sessions.forEach(s => {
+    const id = s.id || s.sessionKey;
+    const type = s.clientType === 'APP' ? 'app' : 'web';
+    const sEvents = events.filter(e => e.sessionId === id);
+    if (sEvents.length > 0) {
+      count.total++;
+      count[type]++;
+      // Consider bounce if they only had 1 page_view and no other meaningful interactions
+      const hasInteraction = sEvents.some(e => e.type !== ANALYTICS_EVENT_TYPES.SESSION_START && e.type !== ANALYTICS_EVENT_TYPES.SESSION_END && e.type !== ANALYTICS_EVENT_TYPES.PAGE_VIEW);
+      if (!hasInteraction && sEvents.filter(e => e.type === ANALYTICS_EVENT_TYPES.PAGE_VIEW).length <= 1) {
+        bounced.total++;
+        bounced[type]++;
+      }
+    }
+  });
+
+  return {
+    total: count.total > 0 ? Math.round((bounced.total / count.total) * 100) : 0,
+    app: count.app > 0 ? Math.round((bounced.app / count.app) * 100) : 0,
+    web: count.web > 0 ? Math.round((bounced.web / count.web) * 100) : 0,
+  };
+}
+
+function aggregateFunnel(events = []) {
+  const counters = {
+    views: { total: 0, app: 0, web: 0 },
+    adds: { total: 0, app: 0, web: 0 },
+    checkouts: { total: 0, app: 0, web: 0 },
+    purchases: { total: 0, app: 0, web: 0 },
+  };
+  const uniqueUsersInFunnel = {
+    views: { total: new Set(), app: new Set(), web: new Set() },
+    adds: { total: new Set(), app: new Set(), web: new Set() },
+    checkouts: { total: new Set(), app: new Set(), web: new Set() },
+    purchases: { total: new Set(), app: new Set(), web: new Set() },
+  };
+
+  events.forEach(e => {
+    const id = e.uid || e.anonymousId || e.sessionId;
+    const type = e.clientType === 'APP' ? 'app' : 'web';
+    const track = (key) => {
+      counters[key].total++;
+      counters[key][type]++;
+      if (id) {
+        uniqueUsersInFunnel[key].total.add(id);
+        uniqueUsersInFunnel[key][type].add(id);
+      }
+    };
+    
+    if (e.type === ANALYTICS_EVENT_TYPES.PAGE_VIEW || e.type === ANALYTICS_EVENT_TYPES.ROUTE_DWELL) track('views');
+    if (e.type === ANALYTICS_EVENT_TYPES.ADD_TO_CART) track('adds');
+    if (e.type === ANALYTICS_EVENT_TYPES.CHECKOUT_START) track('checkouts');
+    if (e.type === ANALYTICS_EVENT_TYPES.PURCHASE_COMPLETE) track('purchases');
+  });
+
+  return {
+    events: counters,
     users: {
-      views: uniqueUsersInFunnel.views.size,
-      adds: uniqueUsersInFunnel.adds.size,
-      checkouts: uniqueUsersInFunnel.checkouts.size,
-      purchases: uniqueUsersInFunnel.purchases.size,
+      views: { total: uniqueUsersInFunnel.views.total.size, app: uniqueUsersInFunnel.views.app.size, web: uniqueUsersInFunnel.views.web.size },
+      adds: { total: uniqueUsersInFunnel.adds.total.size, app: uniqueUsersInFunnel.adds.app.size, web: uniqueUsersInFunnel.adds.web.size },
+      checkouts: { total: uniqueUsersInFunnel.checkouts.total.size, app: uniqueUsersInFunnel.checkouts.app.size, web: uniqueUsersInFunnel.checkouts.web.size },
+      purchases: { total: uniqueUsersInFunnel.purchases.total.size, app: uniqueUsersInFunnel.purchases.app.size, web: uniqueUsersInFunnel.purchases.web.size },
     }
   };
 }
@@ -326,8 +435,21 @@ export async function getUserAnalytics(uid, email) {
   };
 }
 
-export async function getGlobalAnalytics() {
+export async function getGlobalAnalytics(dateFilter = {}) {
+  const { startDateMs, endDateMs } = dateFilter;
   const realtimeThreshold = Date.now() - REALTIME_WINDOW_MS;
+
+  const eventFilters = [];
+  const sessionFilters = [];
+  if (startDateMs) {
+    eventFilters.push({ field: 'clientTsMs', operator: '>=', value: startDateMs });
+    sessionFilters.push({ field: 'startedAtClientMs', operator: '>=', value: startDateMs });
+  }
+  if (endDateMs) {
+    eventFilters.push({ field: 'clientTsMs', operator: '<=', value: endDateMs });
+    sessionFilters.push({ field: 'startedAtClientMs', operator: '<=', value: endDateMs });
+  }
+
   const [
     usersResult,
     eventsResult,
@@ -336,8 +458,8 @@ export async function getGlobalAnalytics() {
     realtimeSessionsResult,
   ] = await Promise.all([
     getUsersBaseList(),
-    getCollection(ANALYTICS_COLLECTIONS.EVENTS, [], { field: 'createdAt', direction: 'desc' }, DEFAULT_EVENTS_LIMIT),
-    getCollection(ANALYTICS_COLLECTIONS.SESSIONS, [], { field: 'createdAt', direction: 'desc' }, DEFAULT_SESSIONS_LIMIT),
+    getCollection(ANALYTICS_COLLECTIONS.EVENTS, eventFilters, { field: 'clientTsMs', direction: 'desc' }, startDateMs ? 10000 : DEFAULT_EVENTS_LIMIT),
+    getCollection(ANALYTICS_COLLECTIONS.SESSIONS, sessionFilters, { field: 'startedAtClientMs', direction: 'desc' }, startDateMs ? 10000 : DEFAULT_SESSIONS_LIMIT),
     getDocument(ANALYTICS_COLLECTIONS.GLOBAL_SUMMARY, 'latest'),
     getCollection(
       ANALYTICS_COLLECTIONS.SESSIONS,
@@ -351,15 +473,49 @@ export async function getGlobalAnalytics() {
   const sessions = sessionsResult.data || [];
   const users = usersResult.data || [];
   const existingUserUids = new Set(users.map((u) => u.uid).filter(Boolean));
-  const uniqueUsers = new Set(
-    events
-      .map((e) => e.uid || e.email || e.anonymousId)
-      .filter(Boolean)
-  );
+  
+  const countArr = (arr, cond = () => true) => {
+    let t = 0, a = 0, w = 0;
+    arr.forEach(i => {
+      if (!cond(i)) return;
+      t++;
+      if (i.clientType === 'APP') a++; else w++;
+    });
+    return { total: t, app: a, web: w };
+  };
+
+  const getUnique = (arr) => {
+    const sT = new Set(), sA = new Set(), sW = new Set();
+    arr.forEach(e => {
+      const id = e.uid || e.email || e.anonymousId;
+      if (!id) return;
+      sT.add(id);
+      if (e.clientType === 'APP') sA.add(id); else sW.add(id);
+    });
+    return { total: sT.size, app: sA.size, web: sW.size };
+  };
+
+  const activeIdentities = getUnique(events);
+  const totalSessions = countArr(sessions);
+  const totalEvents = countArr(events);
+
+  const globalDwellMs = { total: 0, app: 0, web: 0 };
+  events.forEach(e => {
+    if (e.type === ANALYTICS_EVENT_TYPES.ROUTE_DWELL) {
+      const d = safeNumber(e.dwellMs);
+      globalDwellMs.total += d;
+      if (e.clientType === 'APP') globalDwellMs.app += d; else globalDwellMs.web += d;
+    }
+  });
+
+  const avgDwellPerSessionMs = {
+    total: totalSessions.total > 0 ? Math.round(globalDwellMs.total / totalSessions.total) : 0,
+    app: totalSessions.app > 0 ? Math.round(globalDwellMs.app / totalSessions.app) : 0,
+    web: totalSessions.web > 0 ? Math.round(globalDwellMs.web / totalSessions.web) : 0,
+  };
+
   const routeStats = aggregateRouteMetrics(events);
-  const globalDwellMs = events
-    .filter((e) => e.type === ANALYTICS_EVENT_TYPES.ROUTE_DWELL)
-    .reduce((acc, e) => acc + safeNumber(e.dwellMs), 0);
+  
   const realtimeSessions = (realtimeSessionsResult.data || []).filter((s) => {
     const seenAt = toMillis(s.lastSeenAtClientMs || s.updatedAt || s.createdAt);
     const endedAt = toMillis(s.endedAtClientMs);
@@ -383,9 +539,9 @@ export async function getGlobalAnalytics() {
 
   const uniqueRealtimeSessions = Array.from(latestSessionsByIdentity.values());
 
-  const activeLogged = uniqueRealtimeSessions.filter(s => !!s.uid).length;
-  const activeRegistered = uniqueRealtimeSessions.filter(s => s.uid && existingUserUids.has(s.uid)).length;
-  const activeVisitors = uniqueRealtimeSessions.filter(s => !s.uid).length;
+  const realtimeActiveLoggedUsers = countArr(uniqueRealtimeSessions, s => !!s.uid);
+  const realtimeActiveRegisteredUsers = countArr(uniqueRealtimeSessions, s => s.uid && existingUserUids.has(s.uid));
+  const realtimeActiveVisitors = countArr(uniqueRealtimeSessions, s => !s.uid);
   
   const realtimeSessionsDetails = uniqueRealtimeSessions.map(s => ({
     id: s.id || s.sessionKey,
@@ -401,34 +557,41 @@ export async function getGlobalAnalytics() {
     browser: parseUserAgent(s.userAgent).browser,
     referrer: s.referrer,
     isRegistered: s.uid ? existingUserUids.has(s.uid) : false,
-    hasAccount: !!s.uid
+    hasAccount: !!s.uid,
+    clientType: s.clientType || 'WEB'
   })).sort((a, b) => b.lastSeenAtMs - a.lastSeenAtMs);
 
   return {
     data: {
       totalRegisteredUsers: users.length,
-      activeIdentities: uniqueUsers.size,
-      totalSessions: sessions.length,
-      totalEvents: events.length,
+      activeIdentities,
+      totalSessions,
+      totalEvents,
       totalDwellMs: globalDwellMs,
-      avgDwellPerSessionMs: sessions.length > 0 ? Math.round(globalDwellMs / sessions.length) : 0,
+      avgDwellPerSessionMs,
       funnelStats: aggregateFunnel(events),
       abandonedCarts: aggregateAbandonedCarts(events, sessions),
       topRoutesByViews: routeStats.topRoutesByViews,
       topRoutesByDwell: routeStats.topRoutesByDwell,
       mostTimeRoute: routeStats.mostTimeRoute,
+      topSearches: aggregateTopSearches(events),
+      topProducts: aggregateTopProducts(events),
+      bannerClicks: aggregateBannerClicks(events),
+      scrollDepth: aggregateScrollDepth(events),
+      bounceRate: aggregateBounceRate(events, sessions),
       deviceStats: aggregateDevices(sessions),
       utmStats: aggregateUTM(sessions),
       geographyStats: aggregateGeography(sessions),
       realtimeWindowMs: REALTIME_WINDOW_MS,
-      realtimeActiveSessions: uniqueRealtimeSessions.length,
-      realtimeActiveIdentities: uniqueRealtimeSessions.length,
-      realtimeActiveLoggedUsers: activeLogged,
-      realtimeActiveRegisteredUsers: activeRegistered,
-      realtimeActiveVisitors: activeVisitors,
+      realtimeActiveSessions: countArr(uniqueRealtimeSessions),
+      realtimeActiveIdentities: countArr(uniqueRealtimeSessions),
+      realtimeActiveLoggedUsers,
+      realtimeActiveRegisteredUsers,
+      realtimeActiveVisitors,
       realtimeSessionsDetails,
       realtimeRefreshedAtMs: Date.now(),
       estimatedSummary: globalSummaryResult.data || null,
+      eventsForCharts: events // Para graficar
     },
     error:
       usersResult.error ||

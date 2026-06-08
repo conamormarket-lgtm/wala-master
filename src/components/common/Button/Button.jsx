@@ -30,7 +30,7 @@ const Button = ({
       type={type}
       {...props}
     >
-      {loading ? 'Cargando...' : children}
+      {loading ? <span>Cargando...</span> : <span>{children}</span>}
     </button>
   );
 };

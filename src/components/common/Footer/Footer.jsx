@@ -5,6 +5,7 @@ import { getStorefrontConfig } from '../../../pages/Tienda/services/storefront';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { Capacitor } from '@capacitor/core';
+import { empresa } from '../../../config/empresa';
 import styles from './Footer.module.css';
 
 // Importamos algunos de los bloques que pueden renderizarse en el footer
@@ -238,6 +239,22 @@ const Footer = () => {
         {isEditModeActive && isEditingFooter && renderSection({ id: 'dummy_inserter', type: 'dummy' }, displaySections.length)}
 
         <div className={styles.copyright} style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <p style={{ fontSize: '0.82rem', opacity: 0.8, marginBottom: '0.75rem', lineHeight: 1.6 }}>
+            {empresa.nombreComercial} · {empresa.email} · Tel. {empresa.telefono}
+            {empresa.domicilioFiscal && !empresa.domicilioFiscal.startsWith('RELLENAR') && (
+              <> · {empresa.domicilioFiscal}</>
+            )}
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 18px', marginBottom: '1rem', fontSize: '0.85rem' }}>
+            <Link to="/terminos-y-condiciones" style={{ color: 'inherit', textDecoration: 'none', opacity: 0.85 }}>Términos y Condiciones</Link>
+            <Link to="/politicas-privacidad" style={{ color: 'inherit', textDecoration: 'none', opacity: 0.85 }}>Políticas de Privacidad</Link>
+            <Link
+              to="/libro-de-reclamaciones"
+              style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.35)', borderRadius: '6px', padding: '4px 10px' }}
+            >
+              📕 Libro de Reclamaciones
+            </Link>
+          </div>
           <p>&copy; {new Date().getFullYear()} Walá. Todos los derechos reservados.</p>
         </div>
       </div>

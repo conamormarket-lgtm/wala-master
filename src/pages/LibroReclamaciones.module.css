@@ -1,0 +1,184 @@
+.container {
+  max-width: 820px;
+  margin: 2rem auto;
+  padding: 40px 28px;
+  background-color: var(--surface-color, #ffffff);
+  color: var(--text-color, #1a202c);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.book {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--primary-color, #4f46e5);
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: var(--text-color-light, #64748b);
+  margin: 4px 0 0 0;
+}
+
+.empresaBox {
+  background-color: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.empresaBox strong { color: var(--text-color, #1e293b); }
+
+.legend {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-color, #0f172a);
+  margin: 28px 0 14px;
+  padding-left: 12px;
+  border-left: 4px solid var(--primary-color, #4f46e5);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+.fieldFull { grid-column: 1 / -1; }
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #334155);
+}
+.req { color: #ef4444; }
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fff;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-color, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+.textarea { resize: vertical; min-height: 90px; }
+
+.radioRow { display: flex; gap: 20px; flex-wrap: wrap; }
+.radioOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  flex: 1;
+  min-width: 200px;
+}
+.radioOption input { margin-top: 3px; }
+.radioOption.active { border-color: var(--primary-color, #4f46e5); background: rgba(79,70,229,0.05); }
+.radioHint { display: block; font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+
+.checkRow { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0; font-size: 0.88rem; color: #475569; }
+.checkRow input { margin-top: 3px; }
+
+.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+}
+
+.submit {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px;
+  background: var(--primary-color, #4f46e5);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.note {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-align: center;
+  margin-top: 14px;
+  line-height: 1.5;
+}
+
+/* Pantalla de éxito */
+.success { text-align: center; padding: 20px 0; }
+.successIcon { font-size: 4rem; }
+.successTitle { color: #16a34a; font-size: 1.6rem; font-weight: 800; margin: 12px 0 6px; }
+.codeBox {
+  display: inline-block;
+  background: #f0fdf4;
+  border: 1px dashed #86efac;
+  color: #166534;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+  padding: 12px 22px;
+  border-radius: 10px;
+  margin: 16px 0;
+}
+.successText { color: #475569; font-size: 0.95rem; line-height: 1.6; max-width: 540px; margin: 0 auto 10px; }
+
+.secondaryBtn {
+  margin-top: 18px;
+  padding: 10px 22px;
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #334155;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .container { padding: 24px 16px; margin: 1rem; border-radius: 0; box-shadow: none; }
+  .grid { grid-template-columns: 1fr; }
+  .title { font-size: 1.5rem; }
+}

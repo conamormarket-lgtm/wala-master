@@ -13,6 +13,10 @@ export const ANALYTICS_EVENT_TYPES = {
   ADD_TO_CART: 'add_to_cart',
   CHECKOUT_START: 'checkout_start',
   PURCHASE_COMPLETE: 'purchase_complete',
+  PRODUCT_VIEW: 'product_view',
+  SEARCH_QUERY: 'search_query',
+  SCROLL_DEPTH: 'scroll_depth',
+  BANNER_CLICK: 'banner_click',
 };
 
 export const ANALYTICS_KEYS = {

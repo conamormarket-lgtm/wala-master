@@ -259,7 +259,7 @@ const TextEditor = ({ layerId }) => {
                   Cancelar
                 </button>
                 <button type="submit" className={styles.modalBtnPrimary} disabled={uploading}>
-                  {uploading ? 'Subiendo...' : 'Subir'}
+                  <span>{uploading ? 'Subiendo...' : 'Subir'}</span>
                 </button>
               </div>
             </form>

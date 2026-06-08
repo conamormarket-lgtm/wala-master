@@ -117,6 +117,7 @@ const AdminProductoFormV2 = () => {
     comboItems: [],
     comboPreviewImage: '',
     featured: false,
+    inStock: 0,
   });
 
   const [initialFormState, setInitialFormState] = useState(null);
@@ -169,6 +170,8 @@ const AdminProductoFormV2 = () => {
         // Asegurar que images y sizes siempre sean arrays
         images: Array.isArray(v.images) ? v.images : [],
         sizes: Array.isArray(v.sizes) ? v.sizes : [],
+        sizeLabel: v.sizeLabel || 'Talla',
+        showSizeConfig: v.showSizeConfig || (Array.isArray(v.sizes) && v.sizes.length > 0),
       }));
 
       // ── FALLBACK: producto sin variants[] (legacy o guardado sin hasVariants) ──
@@ -184,6 +187,8 @@ const AdminProductoFormV2 = () => {
           imageUrl: productData.mainImage || '',
           images: Array.isArray(productData.images) ? productData.images.filter(u => u !== productData.mainImage) : [],
           sizes: Array.isArray(productData.mainSizes) ? productData.mainSizes : [],
+          sizeLabel: 'Talla',
+          showSizeConfig: Array.isArray(productData.mainSizes) && productData.mainSizes.length > 0,
           mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
         }];
       }
@@ -209,6 +214,7 @@ const AdminProductoFormV2 = () => {
         characters: productData.characters || [],
         tags: productData.tags || [],
         featured: productData.featured || false,
+        inStock: productData.inStock || 0,
       };
       setForm(newForm);
       setInitialFormState(JSON.stringify(newForm));
@@ -249,7 +255,7 @@ const AdminProductoFormV2 = () => {
       const newForm = {
         ...f,
         defaultVariantId: initialVariantId,
-        variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '' }],
+        variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '', sizes: [], sizeLabel: 'Talla', showSizeConfig: false }],
         customizable: false,
         customizationViews: [],
         characters: [],
@@ -258,6 +264,7 @@ const AdminProductoFormV2 = () => {
         comboItems: [],
         comboPreviewImage: '',
         featured: false,
+        inStock: 0,
       };
       setInitialFormState(JSON.stringify(newForm));
       return newForm;
@@ -578,6 +585,8 @@ const AdminProductoFormV2 = () => {
         imageUrl: v.imageUrl || '',
         images: Array.isArray(v.images) ? v.images : [],
         sizes: Array.isArray(v.sizes) ? v.sizes : [],
+        sizeLabel: v.sizeLabel || 'Talla',
+        showSizeConfig: v.showSizeConfig || false,
       }));
 
       // Identify main image
@@ -590,6 +599,7 @@ const AdminProductoFormV2 = () => {
         description: form.description,
         price: Number(form.price) || 0,
         salePrice: Number(form.salePrice) || 0,
+        inStock: Number(form.inStock) || 0,
         sku: form.sku,
         brandId: form.brandId,
         category: form.category ? { id: form.category } : null,
@@ -782,6 +792,17 @@ const AdminProductoFormV2 = () => {
                   value={form.sku}
                   onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
                   placeholder="Ej. HOOD-BLK-01"
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Stock</label>
+                <input
+                  type="number"
+                  min="0"
+                  className={styles.input}
+                  value={form.inStock}
+                  onChange={e => setForm(f => ({ ...f, inStock: e.target.value }))}
+                  placeholder="0"
                 />
               </div>
             </div>
@@ -989,6 +1010,86 @@ const AdminProductoFormV2 = () => {
                      </div>
                    </div>
 
+                   <div className={styles.fieldRow} style={{ marginTop: '1rem', alignItems: 'flex-start' }}>
+                     {!activeVariant.showSizeConfig ? (
+                       <button 
+                         type="button" 
+                         onClick={() => updateActiveVariant({ showSizeConfig: true, sizeLabel: 'Talla' })} 
+                         style={{ padding: '8px 16px', background: '#f3f4f6', border: '1px dashed #9ca3af', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, color: '#4b5563', width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px' }}
+                       >
+                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                         Añadir Medidas / Tallas (Opcional)
+                       </button>
+                     ) : (
+                       <div style={{ width: '100%', padding: '1rem', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                           <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#111' }}>Tallas y Medidas</h4>
+                           <button 
+                             type="button" 
+                             onClick={() => updateActiveVariant({ showSizeConfig: false, sizes: [], sizeLabel: 'Talla' })} 
+                             style={{ color: '#ef4444', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                           >
+                             Desactivar
+                           </button>
+                         </div>
+                         <div className={styles.fieldRow} style={{ marginBottom: 0 }}>
+                           <div className={styles.field} style={{ marginBottom: 0, flex: 1 }}>
+                             <label className={styles.label}>Tipo de Medida (Etiqueta)</label>
+                             <input 
+                               type="text" 
+                               className={styles.input} 
+                               value={activeVariant.sizeLabel || ''}
+                               onChange={e => updateActiveVariant({ sizeLabel: e.target.value })}
+                               placeholder="Ej. Talla, Número, Tamaño, etc."
+                             />
+                             <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px', display: 'block' }}>
+                               Esto verá el cliente. Ej: "Selecciona tu {activeVariant.sizeLabel || 'Talla'}"
+                             </span>
+                           </div>
+                           <div className={styles.field} style={{ marginBottom: 0, flex: 2 }}>
+                             <label className={styles.label}>Opciones disponibles (Escribe y presiona Enter o Coma)</label>
+                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', padding: '0.4rem 0.6rem', border: '1px solid #ccc', borderRadius: '4px', background: '#fff', alignItems: 'center', minHeight: '42px' }}>
+                               {(activeVariant.sizes || []).map((s, idx) => (
+                                 <span key={idx} style={{ background: '#e5e7eb', color: '#374151', padding: '0.2rem 0.6rem', borderRadius: '16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
+                                   {s}
+                                   <button 
+                                     type="button" 
+                                     onClick={() => updateActiveVariant({ sizes: activeVariant.sizes.filter((_, i) => i !== idx) })} 
+                                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 0, display: 'flex', alignItems: 'center' }}
+                                   >
+                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
+                                   </button>
+                                 </span>
+                               ))}
+                               <input 
+                                 type="text" 
+                                 placeholder={(!activeVariant.sizes || activeVariant.sizes.length === 0) ? "Ej. S, M, L..." : ""}
+                                 style={{ border: 'none', outline: 'none', flex: 1, minWidth: '100px', fontSize: '0.9rem', background: 'transparent' }}
+                                 onKeyDown={(e) => {
+                                   if (e.key === ',' || e.key === 'Enter') {
+                                     e.preventDefault();
+                                     const val = e.currentTarget.value.trim();
+                                     if (val && !(activeVariant.sizes || []).includes(val)) {
+                                       updateActiveVariant({ sizes: [...(activeVariant.sizes || []), val] });
+                                     }
+                                     e.currentTarget.value = '';
+                                   }
+                                 }}
+                                 onBlur={(e) => {
+                                   const val = e.target.value.trim();
+                                   if (val && !(activeVariant.sizes || []).includes(val)) {
+                                     updateActiveVariant({ sizes: [...(activeVariant.sizes || []), val] });
+                                   }
+                                   e.target.value = '';
+                                 }}
+                               />
+                             </div>
+                           </div>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+
                    <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
                      <button
                        type="button"
@@ -1104,7 +1205,7 @@ const AdminProductoFormV2 = () => {
                         {activeVariant.mockupState.selectedMockupId && (
                           <button type="button" onClick={handleCaptureMockup} className={styles.captureBtn} disabled={uploading}>
                             {uploading ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />} 
-                            {uploading ? 'Capturando...' : 'Capturar y Fijar Imagen'}
+                            <span>{uploading ? 'Capturando...' : 'Capturar y Fijar Imagen'}</span>
                           </button>
                         )}
                       </>
@@ -1238,7 +1339,17 @@ const AdminProductoFormV2 = () => {
               className={styles.saveBtn}
               disabled={uploading || saveMutation.isPending}
             >
-              {uploading ? <><Loader2 className="animate-spin" size={18} /> Procesando...</> : <><Save size={18} /> {isNew ? 'Guardar Producto (Oficial)' : 'Guardar Cambios'}</>}
+              {uploading ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  <span>Procesando...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  <span>{isNew ? 'Guardar Producto (Oficial)' : 'Guardar Cambios'}</span>
+                </>
+              )}
             </Button>
           </div>
 

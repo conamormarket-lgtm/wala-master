@@ -1,134 +1,86 @@
+/* --- CLASES PARA EL CARRUSEL INFINITO DE MARCAS --- */
+@keyframes scrollMarquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 .marqueeContainer {
   width: 100%;
   overflow: hidden;
-  background-color: var(--gris-fondo, #f9f9f9);
-  padding: 3rem 0;
-  position: relative;
-  display: flex;
-}
-
-/* Bordes difuminados para suavizar entrada y salida */
-.marqueeContainer::before,
-.marqueeContainer::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  width: 50px;
-  height: 100%;
-  z-index: 2;
-}
-
-.marqueeContainer::before {
-  left: 0;
-  background: linear-gradient(to right, var(--gris-fondo, #f9f9f9), transparent);
-}
-
-.marqueeContainer::after {
-  right: 0;
-  background: linear-gradient(to left, var(--gris-fondo, #f9f9f9), transparent);
+  padding: 1rem 0;
 }
 
 .marqueeTrack {
   display: flex;
-  gap: 3rem;
-  padding-left: 3rem; /* Same as gap to ensure smooth loop */
-  /* El width será el 100% de sus items en fila india */
   width: max-content;
-  animation: scrollTrack linear infinite;
+  animation: scrollMarquee 25s linear infinite;
 }
 
 .marqueeTrack:hover {
   animation-play-state: paused;
 }
 
-.brandItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+.logoCircleWrapper {
+  padding-right: 2rem;
+}
+
+.logoCircle {
   flex-shrink: 0;
-  width: 120px; /* Ancho fijo para mantener la estructura redonda */
-}
-
-.brandLink {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.3s ease;
-  cursor: pointer;
-}
-
-.brandLink:hover {
-  transform: scale(1.05);
-}
-
-.imageWrapper {
-  width: 100px;
-  height: 100px;
+  width: 90px;
+  height: 90px;
+  background-color: #ffffff;
+  border: 1px solid #ffffff;
   border-radius: 50%;
-  overflow: hidden;
-  background-color: white;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1rem;
-  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  overflow: hidden;
 }
 
 .brandImage {
-  width: 100%;
-  height: 100%;
+  width: 70%;
+  height: 70%;
   object-fit: contain;
 }
 
-.placeholderCircle {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #e0e0e0, #f5f5f5);
-}
-
-.brandName {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--gris-texto-principal, #333);
+.brandsTitle {
+  font-size: 0.75rem;
+  font-weight: bold;
+  -webkit-text-stroke: 0.6px #000000;
+  border: 1px solid #FF8B6F;
+  background-color: rgba(255, 255, 255, 1);
+  color: #000000;
+  padding: 6px 20px;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
   text-align: center;
 }
 
-@keyframes scrollTrack {
-  0% {
-    transform: translateX(0);
+.brandsTitleSpan {
+  font-family: Georgia, serif;
+}
+
+@media (min-width: 769px) {
+  .logoCircle {
+    width: 120px !important;
+    height: 120px !important;
   }
-  100% {
-    /* Translate to half width since items array is duplicated */
-    transform: translateX(-50%);
+  .brandsTitle {
+    font-size: 1.5rem;
+    -webkit-text-stroke: 1px #000000;
   }
 }
 
-/* Responsividad para móviles */
-@media (max-width: 768px) {
-  .marqueeContainer {
-    padding: 2rem 0;
-  }
-  
-  .marqueeTrack {
-    gap: 1.5rem;
-    padding-left: 1.5rem;
-  }
-  
-  .brandItem {
-    width: 90px;
-  }
-  
-  .imageWrapper {
-    width: 75px;
-    height: 75px;
-    margin-bottom: 0.75rem;
-  }
-  
-  .brandName {
-    font-size: 0.85rem;
-  }
+.mainContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 0.2rem;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 }

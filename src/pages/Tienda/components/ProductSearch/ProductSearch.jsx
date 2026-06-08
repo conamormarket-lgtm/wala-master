@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
+import { trackSearchQuery } from '../../../../services/analytics/tracker';
+import { useAuth } from '../../../../contexts/AuthContext';
 import styles from './ProductSearch.module.css';
 
 const ProductSearch = ({ onSearch, placeholder = 'Buscar productos...' }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { user } = useAuth();
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (searchTerm.trim()) {
+      trackSearchQuery(searchTerm, user).catch(console.error);
+    }
     onSearch(searchTerm);
   };
 
