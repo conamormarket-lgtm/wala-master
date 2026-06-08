@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDocument, deleteDocument } from '../services/firebase/firestore';
 import PaypalEnlaceCheckout from '../components/PaypalCheckout/PaypalEnlaceCheckout';
-import CulqiEnlaceCheckout from '../components/CulqiCheckout/CulqiEnlaceCheckout';
+import CulqiCustomCheckout from '../components/CulqiCustomCheckout';
 
 const PagoRapidoPage = () => {
   const { id } = useParams();
@@ -109,7 +109,7 @@ const PagoRapidoPage = () => {
               </div>
             </div>
 
-            <CulqiEnlaceCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
+            <CulqiCustomCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
             
             <div style={{ margin: '1.5rem 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }}></div>

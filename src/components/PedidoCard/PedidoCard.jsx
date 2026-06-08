@@ -5,7 +5,7 @@ import DetalleEtapaModal from '../Timeline/DetalleEtapaModal';
 import Modal from '../common/Modal';
 import HistorialPagos from './HistorialPagos';
 import PaypalCheckout from '../PaypalCheckout';
-import CulqiCheckout from '../CulqiCheckout';
+import CulqiCustomCheckout from '../CulqiCustomCheckout';
 import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../../services/messages';
 import { getEtapaBadgeLabel, ETAPAS_TIMELINE, estadoToKey, getQueueStage } from '../../utils/constants';
@@ -409,7 +409,7 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
                 <h4 style={{ margin: '0 0 0.5rem 0', color: '#334155', fontSize: '0.95rem' }}>Pago con Tarjeta (Recomendado)</h4>
                 <p style={{ margin: '0 0 0.5rem 0', color: '#64748b', fontSize: '0.85rem' }}>Aprobación inmediata, no necesitas enviar comprobante.</p>
                 <div style={{ marginTop: '-1rem' }}>
-                  <CulqiCheckout 
+                  <CulqiCustomCheckout 
                     pedido={pedido} 
                     onSuccess={(details) => {
                       console.log("Pago de Culqi completado:", details);

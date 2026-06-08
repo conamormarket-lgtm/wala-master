@@ -535,14 +535,14 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
  * Callable Function: Procesar pago con Culqi
  */
 exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
-  const { amount, currency_code, email, source_id, order_id } = data;
+  const { amount, currency, email, tokenId, description, metadata } = data;
 
-  if (!amount || !email || !source_id) {
+  if (!amount || !email || !tokenId) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan datos requeridos para el pago.");
   }
 
   // La llave privada debe venir de variables de entorno
-  const secretKey = process.env.REACT_APP_CULQI_SECRET_KEY || "sk_test_dummy_key"; // Nota: Usar Firebase Config o SecretsManager en producción
+  const secretKey = process.env.CULQI_SECRET_KEY || process.env.REACT_APP_CULQI_SECRET_KEY || "sk_test_dummy_key";
 
   try {
     const response = await fetch("https://api.culqi.com/v2/charges", {
@@ -552,13 +552,12 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
         "Authorization": `Bearer ${secretKey}`
       },
       body: JSON.stringify({
-        amount: Math.round(amount * 100), // Culqi espera céntimos (ej. 10.50 PEN -> 1050)
-        currency_code: currency_code || "PEN",
+        amount: amount, // El frontend ya lo envía en céntimos (integer)
+        currency_code: currency || "PEN",
         email: email,
-        source_id: source_id, // El token de la tarjeta generado en el frontend
-        metadata: {
-          order_id: order_id || "desconocido"
-        }
+        source_id: tokenId,
+        description: description || "Pago en Walá",
+        metadata: metadata || {}
       })
     });
 
