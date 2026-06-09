@@ -716,7 +716,7 @@ const AdminProductoFormV2 = () => {
                 }}
                 disabled={creatingBrand}
               >
-                {creatingBrand ? 'Creando...' : 'Guardar Marca'}
+                {creatingBrand ? <span key="creating">Creando...</span> : <span key="default">Guardar Marca</span>}
               </button>
             </div>
           </div>
@@ -1098,7 +1098,7 @@ const AdminProductoFormV2 = () => {
                        disabled={form.defaultVariantId === activeVariant.id}
                      >
                        <Star size={16} fill={form.defaultVariantId === activeVariant.id ? "#f59f00" : "none"} color={form.defaultVariantId === activeVariant.id ? "#f59f00" : "#666"} />
-                       {form.defaultVariantId === activeVariant.id ? 'Variante Principal' : 'Establecer como Principal'}
+                       {form.defaultVariantId === activeVariant.id ? <span key="main">Variante Principal</span> : <span key="set">Establecer como Principal</span>}
                      </button>
                      <button
                        type="button"
@@ -1199,13 +1199,15 @@ const AdminProductoFormV2 = () => {
                               <span>Selecciona un mockup para empezar a editar</span>
                             </div>
                           )}
-                          <canvas ref={canvasElRef} className={styles.fabricCanvasEl} />
+                          <div>
+                            <canvas ref={canvasElRef} className={styles.fabricCanvasEl} />
+                          </div>
                         </ProductImageContainer>
 
                         {activeVariant.mockupState.selectedMockupId && (
                           <button type="button" onClick={handleCaptureMockup} className={styles.captureBtn} disabled={uploading}>
                             {uploading ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />} 
-                            <span>{uploading ? 'Capturando...' : 'Capturar y Fijar Imagen'}</span>
+                            {uploading ? <span key="uploading">Capturando...</span> : <span key="default">Capturar y Fijar Imagen</span>}
                           </button>
                         )}
                       </>
@@ -1222,7 +1224,7 @@ const AdminProductoFormV2 = () => {
                     <div className={styles.field} style={{ marginTop: '1rem' }}>
                       <label className={styles.uploadImageLabel}>
                         <ImagePlus size={24} />
-                        <span>{uploading ? 'Subiendo...' : 'Subir Imagen Directa'}</span>
+                        {uploading ? <span key="uploading">Subiendo...</span> : <span key="default">Subir Imagen Directa</span>}
                         <input type="file" accept="image/*" onChange={handleDirectImageUpload} disabled={uploading} hidden />
                       </label>
                     </div>
@@ -1256,7 +1258,7 @@ const AdminProductoFormV2 = () => {
 
                   <label className={styles.addGalleryBtn}>
                     <ImagePlus size={24} />
-                    <span>{uploading ? 'Subiendo...' : 'Agregar Fotos'}</span>
+                    {uploading ? <span key="uploading">Subiendo...</span> : <span key="default">Agregar Fotos</span>}
                     <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} disabled={uploading} hidden />
                   </label>
                 </div>
@@ -1273,8 +1275,8 @@ const AdminProductoFormV2 = () => {
                 <h2 className={styles.cardTitle} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>Producto Personalizable</h2>
                 <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem' }}>
                   {form.isComboProduct 
-                    ? 'Permite a los clientes personalizar los productos de este paquete usando las vistas originales de cada uno.'
-                    : 'Permite a los clientes añadir sus propios textos y diseños sobre este producto en la tienda.'}
+                    ? <span key="combo">Permite a los clientes personalizar los productos de este paquete usando las vistas originales de cada uno.</span>
+                    : <span key="single">Permite a los clientes añadir sus propios textos y diseños sobre este producto en la tienda.</span>}
                 </p>
               </div>
               <label className={styles.toggleSwitch}>
@@ -1339,17 +1341,8 @@ const AdminProductoFormV2 = () => {
               className={styles.saveBtn}
               disabled={uploading || saveMutation.isPending}
             >
-              {uploading ? (
-                <>
-                  <Loader2 className="animate-spin" size={18} />
-                  <span>Procesando...</span>
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  <span>{isNew ? 'Guardar Producto (Oficial)' : 'Guardar Cambios'}</span>
-                </>
-              )}
+              {uploading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              {uploading ? <span key="uploading">Procesando...</span> : <span key="default">{isNew ? 'Guardar Producto (Oficial)' : 'Guardar Cambios'}</span>}
             </Button>
           </div>
 

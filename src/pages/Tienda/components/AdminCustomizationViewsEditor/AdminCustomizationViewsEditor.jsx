@@ -235,7 +235,7 @@ const AdminCustomizationViewsEditor = ({ views, onChange, draftId }) => {
             onClick={() => setActiveViewIdx(i)}
             type="button"
           >
-            {v.name}
+            <span>{v.name}</span>
           </button>
         ))}
         <button type="button" onClick={addView} className={styles.addTabBtn} title="Añadir Vista">
@@ -295,11 +295,13 @@ const AdminCustomizationViewsEditor = ({ views, onChange, draftId }) => {
         {/* Canvas */}
         <div className={styles.canvasContainer}>
           {!activeView.imagesByColor?.default && (
-            <div style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:'#999'}}>
-              Sube la imagen base de la prenda
+            <div style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:'#999', zIndex: 10}}>
+              <span>Sube la imagen base de la prenda</span>
             </div>
           )}
-          <canvas ref={canvasElRef} className={styles.fabricCanvasEl} />
+          <div>
+            <canvas ref={canvasElRef} className={styles.fabricCanvasEl} />
+          </div>
         </div>
       </div>
     </div>

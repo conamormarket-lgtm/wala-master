@@ -1,4 +1,5 @@
 import { getCollection, getDocument, getCollectionPaginated, createDocument, updateDocument, deleteDocument, setDocument } from './firebase/firestore';
+import { deleteFile } from './firebase/storage';
 import { collection, doc } from 'firebase/firestore';
 import { db } from './firebase/config';
 
@@ -402,6 +403,46 @@ export const updateProductField = async (id, partialData) => {
  * Eliminar producto
  */
 export const deleteProduct = async (id) => {
+  try {
+    const productResult = await getProduct(id);
+    const product = productResult?.data;
+
+    if (product) {
+      const urlsToDelete = new Set();
+
+      // Recopilar URLs principales y galería
+      if (product.mainImage) urlsToDelete.add(product.mainImage);
+      if (Array.isArray(product.images)) {
+        product.images.forEach(url => urlsToDelete.add(url));
+      }
+
+      // Recopilar URLs de variantes
+      if (Array.isArray(product.variants)) {
+        product.variants.forEach(variant => {
+          if (variant.imageUrl) urlsToDelete.add(variant.imageUrl);
+          if (Array.isArray(variant.images)) {
+            variant.images.forEach(url => urlsToDelete.add(url));
+          }
+          if (Array.isArray(variant.galleryImages)) {
+            variant.galleryImages.forEach(url => urlsToDelete.add(url));
+          }
+        });
+      }
+
+      // Solo borrar URLs de Firebase Storage
+      const firebaseUrls = Array.from(urlsToDelete).filter(url => 
+        typeof url === 'string' && url.includes('firebasestorage.googleapis.com')
+      );
+
+      // Eliminar de Storage
+      for (const url of firebaseUrls) {
+        await deleteFile(url).catch(() => {});
+      }
+    }
+  } catch (error) {
+    console.warn("Error eliminando imágenes de storage:", error);
+  }
+
   const result = await deleteDocument(COLLECTION, id);
   clearProductCaches();
   return result;

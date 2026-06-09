@@ -11,6 +11,8 @@ import { linkPurchaseToReferral } from '../services/referrals';
 import { createWebOrder } from '../services/erp/firebase';
 import { markItemAsGifted } from '../services/wishlist';
 import Button from '../components/common/Button';
+import CulqiCustomCheckout from '../components/CulqiCustomCheckout/CulqiCustomCheckout';
+import PaypalCheckout from '../components/PaypalCheckout/PaypalCheckout';
 import styles from './CheckoutPage.module.css';
 
 // Reutilizamos el mini componente de la moneda KapiSol para darle branding
@@ -66,6 +68,7 @@ const CheckoutPage = () => {
 
   const [processing, setProcessing] = useState(false);
   const [useCoinsToggle, setUseCoinsToggle] = useState(false);
+  const [paymentStepData, setPaymentStepData] = useState(null);
   
   const subtotal = getTotalPrice();
   const monedasCount = activeMainCoins || 0;
@@ -615,10 +618,13 @@ const CheckoutPage = () => {
           }
         }
 
-        // ── 7. Abrir WhatsApp ─────────────────────────────────────────────
-        toast.success('¡Redirigiendo a WhatsApp para finalizar tu pedido!');
-        window.open(waLink, '_blank');
-        navigate('/carrito');
+        // ── 7. Pasar a Opciones de Pago ─────────────────────────────────────────────
+        toast.success('¡Pedido generado! Por favor, selecciona tu método de pago.');
+        setPaymentStepData({
+          id: webOrderId || pseudoOrderId,
+          montoDeuda: total,
+          waLink: waLink
+        });
       } catch (error) {
         console.error('Error al generar pedido:', error);
         toast.error('Error al procesar el pedido. Inténtalo de nuevo.');
@@ -643,6 +649,50 @@ const CheckoutPage = () => {
 
       <div className={styles.layout}>
         <div className={styles.formContainer}>
+          {paymentStepData ? (
+            <div style={{ background: '#fff', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', border: '1px solid #e2e8f0' }}>
+              <h2 style={{ marginBottom: '1rem', textAlign: 'center', color: '#1e293b' }}>Selecciona tu método de pago</h2>
+              <p style={{ textAlign: 'center', marginBottom: '2rem', color: '#64748b' }}>
+                Tu pedido se ha generado correctamente. Para confirmarlo, realiza el pago.
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {user?.email === 'pruebas001@gmail.com' && (
+                  <>
+                    <CulqiCustomCheckout 
+                      pedido={paymentStepData}
+                      onSuccess={() => {
+                        clearCart();
+                        navigate('/cuenta/pedidos');
+                      }}
+                    />
+                    
+                    <PaypalCheckout 
+                      pedido={paymentStepData}
+                      onSuccess={() => {
+                        clearCart();
+                        navigate('/cuenta/pedidos');
+                      }}
+                    />
+                    
+                    <div style={{ textAlign: 'center', margin: '1rem 0', color: '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>O</div>
+                  </>
+                )}
+                
+                <Button 
+                  onClick={() => {
+                    window.open(paymentStepData.waLink, '_blank');
+                    clearCart();
+                    navigate('/cuenta/pedidos');
+                  }}
+                  variant="outline"
+                  fullWidth
+                >
+                  Acordar pago por WhatsApp (Yape / Plin / Transf)
+                </Button>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={formik.handleSubmit} className={styles.form}>
             <h2>Detalles de Envío</h2>
 
@@ -830,10 +880,11 @@ const CheckoutPage = () => {
                 Volver al carrito
               </Button>
               <Button type="submit" variant="primary" disabled={processing} fullWidth>
-                {processing ? 'Generando...' : 'Confirmar y Enviar por WhatsApp'}
+                {processing ? 'Generando...' : 'Confirmar y Seleccionar Pago'}
               </Button>
             </div>
           </form>
+          )}
         </div>
 
         <div className={styles.summary}>

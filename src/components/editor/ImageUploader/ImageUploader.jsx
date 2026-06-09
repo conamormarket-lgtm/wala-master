@@ -66,7 +66,7 @@ const ImageUploader = ({ onImageSelect, onUploadComplete, label = 'Subir Imagen'
         id="image-upload"
       />
       <label htmlFor="image-upload" className={styles.uploadButton}>
-        <span>{uploading ? 'Subiendo...' : `📷 ${label}`}</span>
+        {uploading ? <span key="uploading">Subiendo...</span> : <span key="default">{`📷 ${label}`}</span>}
       </label>
       {uploadError && <p className={styles.uploadError}>{uploadError}</p>}
     </div>
