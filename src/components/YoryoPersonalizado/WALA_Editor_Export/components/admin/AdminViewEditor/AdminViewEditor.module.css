@@ -1,0 +1,315 @@
+.container {
+  margin-top: 1rem;
+  border: 2px solid var(--gris-borde, #e0e0e0);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--gris-fondo, #f5f5f5);
+  max-width: 100%;
+  overflow: visible;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.colorSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.colorLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gris-texto-principal, #333);
+  white-space: nowrap;
+}
+
+.colorSelect {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.colorSelect:hover {
+  border-color: var(--rojo-principal, #b4171e);
+}
+
+.colorSelect:focus {
+  outline: none;
+  border-color: var(--rojo-principal, #b4171e);
+  box-shadow: 0 0 0 2px rgba(180, 23, 30, 0.1);
+}
+
+.copyToAllBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--rojo-principal, #b4171e);
+  background: rgba(180, 23, 30, 0.05);
+  border: 1px solid rgba(180, 23, 30, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copyToAllBtn:hover {
+  background: rgba(180, 23, 30, 0.1);
+  border-color: rgba(180, 23, 30, 0.4);
+}
+
+.copyToAllBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.copyToAllText {
+  white-space: nowrap;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #333);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modeToggle {
+  display: flex;
+  gap: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  background: #fff;
+}
+
+.modeBtn,
+.modeBtnActive {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  background: #fff;
+  color: var(--gris-texto-secundario, #666);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.modeBtn:hover {
+  background: var(--gris-fondo, #f5f5f5);
+  color: var(--gris-texto-principal, #333);
+}
+
+.modeBtnActive {
+  background: var(--rojo-principal, #b4171e);
+  color: #fff;
+}
+
+.unifiedPreview {
+  margin-top: 0;
+}
+
+.printAreaSection {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* Misma cuadrícula que el editor: imagen/lienzo al mismo ancho que el canvas de abajo */
+.printAreaLayout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.printAreaLayout>*:first-child {
+  min-width: 0;
+}
+
+@media (max-width: 968px) {
+  .printAreaLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.editorLayout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.canvasSection {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.toolbarSection {
+  max-height: 600px;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.placeholder {
+  padding: 2rem;
+  text-align: center;
+  color: var(--gris-texto-secundario, #666);
+  border: 2px dashed var(--gris-borde, #e0e0e0);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 3rem;
+  color: var(--gris-texto-secundario, #666);
+  font-size: 0.9375rem;
+}
+
+.loadingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rojo-principal, #b4171e);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 968px) {
+  .editorLayout {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .toolbarSection {
+    max-height: none;
+    order: 2;
+  }
+
+  .canvasSection {
+    order: 1;
+    min-height: 300px;
+  }
+}
+
+/* Experiencia tipo app nativa para móviles */
+@media (max-width: 768px) {
+  .container {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    margin-top: 0;
+    background: transparent;
+  }
+
+  .header {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0;
+    background: #fff;
+    border-bottom: 1px solid var(--gris-borde, #e0e0e0);
+    border-radius: 0;
+  }
+
+  .editorLayout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .canvasSection {
+    position: sticky;
+    top: 56px;
+    /* offset si hay un header arriba */
+    z-index: 10;
+    min-height: 45vh;
+    height: 45vh;
+    width: 100%;
+    order: 1;
+    background: #e8e8e8;
+    border-bottom: 1px solid var(--gris-borde, #e0e0e0);
+    overflow: hidden;
+    /* prevent double scroll inside canvas mostly */
+  }
+
+  .toolbarSection {
+    order: 2;
+    padding: 0;
+    background: #fff;
+    min-height: 50vh;
+    overflow-y: visible;
+  }
+}
+
+.unifiedModePanel {
+  margin-top: 1rem;
+}
+
+.unifiedModePanelHidden {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.designOnlyWrapper {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-width: 100%;
+}

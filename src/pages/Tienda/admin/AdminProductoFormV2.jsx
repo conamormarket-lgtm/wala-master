@@ -15,6 +15,7 @@ import Button from '../../../components/common/Button';
 import ProductImageContainer from '../components/ProductImageContainer/ProductImageContainer';
 import AdminCustomizationViewsEditor from '../components/AdminCustomizationViewsEditor/AdminCustomizationViewsEditor';
 import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
+import YoryoPersonalizado from '../../../components/YoryoPersonalizado/YoryoPersonalizado';
 import { fabric } from 'fabric';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -89,6 +90,9 @@ const AdminProductoFormV2 = () => {
   const queryClient = useQueryClient();
   // Si no hay draftId en la URL, se genera uno nuevo (o se usa el id del producto si estamos editando)
   const [draftId] = useState(() => urlDraftId || (isNew ? generateProductId() : id));
+  
+  // Ref para comunicar la orden de guardado al componente YoryoPersonalizado
+  const yoryoRef = useRef(null);
 
   // Prevenir duplicación de borradores: inyectar el draftId en la URL si es un producto nuevo
   // De esta manera, si el usuario recarga la página (F5), se leerá de la URL y reutilizará el mismo borrador.
@@ -623,6 +627,12 @@ const AdminProductoFormV2 = () => {
       };
 
       await saveMutation.mutateAsync(payload);
+      
+      // Guardar de forma independiente los datos del editor de YoryoPersonalizado
+      if (form.customizable && yoryoRef.current) {
+        await yoryoRef.current.saveYoryoData();
+      }
+      
     } finally {
       setUploading(false);
     }
@@ -1306,6 +1316,15 @@ const AdminProductoFormV2 = () => {
             )}
           </div>
 
+          {form.customizable && (
+            <div className={styles.card} style={{ marginTop: '1.5rem' }}>
+              <YoryoPersonalizado 
+                ref={yoryoRef}
+                productImage={form.isComboProduct ? form.comboPreviewImage : form.variants?.[0]?.designImage || form.variants?.[0]?.imageUrl || ''}
+                draftId={draftId}
+              />
+            </div>
+          )}
 
           <div className={styles.card} style={{ marginTop: '1.5rem' }}>
             <div className={styles.cardHeaderFlex} style={{ borderBottom: 'none', paddingBottom: 0 }}>

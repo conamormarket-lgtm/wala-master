@@ -169,6 +169,12 @@ const AdminProductos = () => {
     localStorage.setItem('admin-products-view-mode', viewMode);
   }, [viewMode]);
 
+  const categoryName = (p) => {
+    const ids = p.categories ?? (p.category ? [p.category] : []);
+    if (!ids.length) return '—';
+    return ids.map((id) => categoriesData.find((c) => c.id === id)?.name || id).join(', ');
+  };
+
   const products = useMemo(() => {
     if (!productsData) return [];
     let filtered = productsData.map((p) => {
@@ -194,12 +200,6 @@ const AdminProductos = () => {
     return filtered;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productsData, optimisticVisibility, searchQuery]);
-
-  const categoryName = (p) => {
-    const ids = p.categories ?? (p.category ? [p.category] : []);
-    if (!ids.length) return '—';
-    return ids.map((id) => categoriesData.find((c) => c.id === id)?.name || id).join(', ');
-  };
 
   const handleToggleVisibility = (product) => {
     const newVisible = !(product.visible !== false);
