@@ -3,14 +3,15 @@ import { createDocument } from '../../services/firebase/firestore';
 
 const AdminGeneradorPagos = () => {
   const [concepto, setConcepto] = useState('');
-  const [montoUSD, setMontoUSD] = useState('');
+  const [moneda, setMoneda] = useState('PEN');
+  const [monto, setMonto] = useState('');
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState(null);
   const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!concepto.trim() || !montoUSD || isNaN(montoUSD) || Number(montoUSD) <= 0) {
+    if (!concepto.trim() || !monto || isNaN(monto) || Number(monto) <= 0) {
       setError('Por favor, ingresa un concepto válido y un monto mayor a 0.');
       return;
     }
@@ -21,7 +22,10 @@ const AdminGeneradorPagos = () => {
 
     const payload = {
       concepto: concepto.trim(),
-      montoUSD: Number(montoUSD),
+      moneda: moneda,
+      monto: Number(monto),
+      // Mantenemos montoUSD o montoPEN por retrocompatibilidad/referencia
+      ...(moneda === 'USD' ? { montoUSD: Number(monto) } : { montoPEN: Number(monto) }),
       estado: 'pendiente'
     };
 
@@ -33,7 +37,7 @@ const AdminGeneradorPagos = () => {
       const link = `${window.location.origin}/pago-rapido/${id}`;
       setGeneratedLink(link);
       setConcepto('');
-      setMontoUSD('');
+      setMonto('');
     }
 
     setLoading(false);
@@ -51,7 +55,7 @@ const AdminGeneradorPagos = () => {
       <h1 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#1e293b' }}>Generador de Enlaces de Pago</h1>
       <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.95rem' }}>
         Crea enlaces únicos para cobrar a clientes por conceptos que no son pedidos de la tienda (ej. saldos extras, envíos internacionales). 
-        El pago se procesará en <strong>Dólares (USD)</strong> a través de Tarjeta (Culqi) o PayPal.
+        Los cobros en <strong>Soles (PEN)</strong> usarán Culqi y los cobros en <strong>Dólares (USD)</strong> usarán PayPal.
       </p>
 
       {error && (
@@ -75,22 +79,40 @@ const AdminGeneradorPagos = () => {
           />
         </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: '#334155' }}>
-            Monto (en USD)
-          </label>
-          <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>$</span>
-            <input 
-              type="number" 
-              step="0.01"
-              min="0.10"
-              value={montoUSD}
-              onChange={(e) => setMontoUSD(e.target.value)}
-              placeholder="0.00"
-              style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
-              required
-            />
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: '#334155' }}>
+              Moneda
+            </label>
+            <select
+              value={moneda}
+              onChange={(e) => setMoneda(e.target.value)}
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#fff' }}
+            >
+              <option value="PEN">Soles (S/)</option>
+              <option value="USD">Dólares ($)</option>
+            </select>
+          </div>
+          
+          <div style={{ flex: 2 }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: '#334155' }}>
+              Monto
+            </label>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>
+                {moneda === 'PEN' ? 'S/' : '$'}
+              </span>
+              <input 
+                type="number" 
+                step="0.01"
+                min="0.10"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                placeholder="0.00"
+                style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                required
+              />
+            </div>
           </div>
         </div>
 

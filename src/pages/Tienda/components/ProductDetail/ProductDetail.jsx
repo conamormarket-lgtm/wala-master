@@ -16,6 +16,7 @@ import OptimizedImage from '../../../../components/common/OptimizedImage/Optimiz
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import DraggableContainer from '../../../../components/common/DraggableContainer/DraggableContainer';
 import ProductCuestionarioModal from '../ProductCuestionarioModal/ProductCuestionarioModal';
+import YoryoPersonalizadoCliente from '../../../../components/YoryoPersonalizadoCliente/YoryoPersonalizadoCliente';
 import ProductReviews from '../ProductReviews';
 import { Truck, RefreshCw, ShieldCheck, Share2 } from 'lucide-react';
 import styles from './ProductDetail.module.css';
@@ -163,6 +164,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const [imgIdx, setImgIdx] = useState(0);
   const [cuestionario, setCuestionario] = useState(null);
   const [sharing, setSharing] = useState(false);
+  const [showYoryoPersonalizado, setShowYoryoPersonalizado] = useState(false);
 
   const secsRef = useRef(0);
   const lastVariantRef = useRef(null);
@@ -238,7 +240,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id, isCombo]);
-// eslint-disable-next-line react-hooks/exhaustive-deps
+// eslint-disable-next-line react-hooks/exhaustive-deps
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setSelectedSize(sizes[0] || ''); }, [selectedVariant?.id, JSON.stringify(sizes)]);
@@ -463,7 +465,11 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             ) : (
               <button className={styles.btnPrimary} disabled>Agotado</button>
             )}
-            {product.customizable && (
+            {product.YoryoPersonalizado ? (
+              <button className={styles.btnOutline} onClick={() => setShowYoryoPersonalizado(true)}>
+                Personalizable
+              </button>
+            ) : product.customizable && (
               <button className={styles.btnOutline} onClick={handlePersonalize}>
                 Personalizar
               </button>
@@ -505,6 +511,18 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
         quantity={qty}
         comboVariantSelections={comboSels}
       />
+
+      {showYoryoPersonalizado && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 9999, backgroundColor: '#fff', overflowY: 'auto' }}>
+          <button 
+            onClick={() => setShowYoryoPersonalizado(false)}
+            style={{ position: 'absolute', top: 20, right: 20, padding: '10px 20px', background: '#000', color: '#fff', borderRadius: 8, zIndex: 10000 }}
+          >
+            Cerrar Personalizador
+          </button>
+          <YoryoPersonalizadoCliente productData={product} />
+        </div>
+      )}
     </>
   );
 };

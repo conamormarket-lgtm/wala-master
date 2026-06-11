@@ -36,8 +36,8 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess }) => {
 
     const isEnlace = !!enlace;
     const title = isEnlace ? 'Pago Seguro' : 'Pago de Saldo - Walá';
-    const amountFloat = isEnlace ? Number(enlace.montoUSD || 0) : Number(pedido?.montoDeuda || 0);
-    const currency = isEnlace ? 'USD' : 'PEN';
+    const currency = isEnlace ? (enlace.moneda || 'USD') : 'PEN';
+    const amountFloat = isEnlace ? Number(enlace.monto || enlace.montoUSD || enlace.montoPEN || 0) : Number(pedido?.montoDeuda || 0);
     const amountInt = Math.round(amountFloat * 100);
 
     const publicKey = process.env.REACT_APP_CULQI_PUBLIC_KEY;

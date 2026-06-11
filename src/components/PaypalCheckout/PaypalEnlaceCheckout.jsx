@@ -6,7 +6,7 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const amountInUSD = Number(enlace.montoUSD || 0).toFixed(2);
+  const amountInUSD = Number(enlace.monto || enlace.montoUSD || 0).toFixed(2);
 
   // Si el .env dice 'sb' o está vacío, usamos 'test' que es el sandbox oficial del SDK
   const actualClientId = (!process.env.REACT_APP_PAYPAL_CLIENT_ID || process.env.REACT_APP_PAYPAL_CLIENT_ID === 'sb') 

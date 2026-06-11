@@ -89,7 +89,7 @@ const PagoRapidoPage = () => {
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
             <h2 style={{ color: '#16a34a', marginBottom: '0.5rem', fontSize: '1.5rem' }}>¡Pago Exitoso!</h2>
             <p style={{ color: '#475569' }}>
-              Tu pago por <strong>${Number(enlace.montoUSD).toFixed(2)} USD</strong> se ha procesado correctamente.
+              Tu pago por <strong>{enlace.moneda === 'PEN' ? 'S/' : '$'}{Number(enlace.monto || enlace.montoUSD || 0).toFixed(2)} {enlace.moneda || 'USD'}</strong> se ha procesado correctamente.
             </p>
             <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '1.5rem' }}>
               ID de Transacción: {enlace?.paypalOrderId || 'Procesado'}
@@ -104,20 +104,16 @@ const PagoRapidoPage = () => {
               <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <span style={{ color: '#64748b' }}>Total a pagar</span>
                 <span style={{ color: '#0f172a', fontSize: '1.75rem', fontWeight: 'bold' }}>
-                  ${Number(enlace.montoUSD).toFixed(2)} <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: 'normal' }}>USD</span>
+                  {enlace.moneda === 'PEN' ? 'S/' : '$'}{Number(enlace.monto || enlace.montoUSD || 0).toFixed(2)} <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: 'normal' }}>{enlace.moneda || 'USD'}</span>
                 </span>
               </div>
             </div>
 
-            <CulqiCustomCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
-            
-            <div style={{ margin: '1.5rem 0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-               <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }}></div>
-               <span style={{ padding: '0 1rem', color: '#94a3b8', fontSize: '0.9rem' }}>o paga con</span>
-               <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }}></div>
-            </div>
-
-            <PaypalEnlaceCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
+            {(!enlace.moneda || enlace.moneda === 'USD') ? (
+              <PaypalEnlaceCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
+            ) : (
+              <CulqiCustomCheckout enlace={enlace} onSuccess={handlePagoExitoso} />
+            )}
           </>
         )}
         
