@@ -156,8 +156,10 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess }) => {
       return;
     }
 
-    const amountFloat = enlace ? Number(enlace.montoUSD || 0) : Number(pedido?.montoDeuda || 0);
-    const currency = enlace ? 'USD' : 'PEN';
+    const isEnlace = !!enlace;
+    const currency = isEnlace ? (enlace.moneda || 'USD') : 'PEN';
+    const amountFloat = isEnlace ? Number(enlace.monto || enlace.montoUSD || enlace.montoPEN || 0) : Number(pedido?.montoDeuda || 0);
+
     if ((currency === 'USD' && amountFloat < 1) || (currency === 'PEN' && amountFloat < 3)) {
        toast.error(`El monto mínimo de Culqi es ${currency === 'USD' ? '$1.00 USD' : 'S/ 3.00 PEN'}`);
        return;
