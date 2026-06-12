@@ -598,6 +598,16 @@ const AdminProductoFormV2 = () => {
       const mainImage = defaultVariant?.imageUrl || '';
       const isCombo = form.isComboProduct;
 
+      let currentComboPreview = form.comboPreviewImage;
+
+      // ── CRÍTICO: Capturar la foto del lienzo unificado ANTES de armar el payload ──
+      if (isCombo && form.customizable && yoryoRef.current) {
+        const newPreviewUrl = await yoryoRef.current.saveYoryoData();
+        if (newPreviewUrl) {
+          currentComboPreview = newPreviewUrl;
+        }
+      }
+
       const payload = {
         name: form.name,
         description: form.description,
@@ -617,7 +627,7 @@ const AdminProductoFormV2 = () => {
         customizationViews: form.customizationViews,
         isComboProduct: isCombo,
         comboItems: isCombo ? form.comboItems : [],
-        comboPreviewImage: isCombo ? form.comboPreviewImage : '',
+        comboPreviewImage: isCombo ? currentComboPreview : '',
         characters: form.characters || [],
         tags: form.tags || [],
         variants: isCombo ? [] : finalVariants,
@@ -628,8 +638,8 @@ const AdminProductoFormV2 = () => {
 
       await saveMutation.mutateAsync(payload);
       
-      // Guardar de forma independiente los datos del editor de YoryoPersonalizado
-      if (form.customizable && yoryoRef.current) {
+      // Guardar de forma independiente los datos del editor de YoryoPersonalizado para productos individuales
+      if (!isCombo && form.customizable && yoryoRef.current) {
         await yoryoRef.current.saveYoryoData();
       }
       

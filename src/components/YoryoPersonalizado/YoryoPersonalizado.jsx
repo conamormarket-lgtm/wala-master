@@ -1,13 +1,15 @@
-import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import html2canvas from 'html2canvas';
 import { uploadFile } from '../../services/firebase/storage';
 import { getProduct, updateProductField } from '../../services/products';
 import AdminViewEditor from './WALA_Editor_Export/components/admin/AdminViewEditor/AdminViewEditor';
+import { toCanvasImageUrl } from '../../utils/imageUrl';
 
-const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, comboItems, onComboItemsChange }, ref) => {
+const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, comboItems, onComboItemsChange, onCapture }, ref) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeComboTab, setActiveComboTab] = useState(null);
   const containerRef = useRef(null);
 
   const [data, setData] = useState({
@@ -40,6 +42,17 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
     fetchInitialData();
   }, [draftId]);
 
+  // Setear la pestaña inicial del combo si no hay ninguna seleccionada
+  useEffect(() => {
+    if (isComboProduct && comboItems?.length > 0 && !activeComboTab) {
+      const firstWithYoryo = comboItems.find(i => i.YoryoPersonalizado);
+      if (firstWithYoryo) {
+        const idx = comboItems.indexOf(firstWithYoryo);
+        setActiveComboTab(firstWithYoryo._uid || `${firstWithYoryo.productId}_${idx}`);
+      }
+    }
+  }, [isComboProduct, comboItems, activeComboTab]);
+
   // 2. Guardar en base de datos de manera independiente
   const saveToDatabase = async (newData) => {
     if (!draftId || isComboProduct) return; // En combo se guarda junto con el form principal
@@ -56,8 +69,13 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
 
   // Exponer métodos al componente padre (AdminProductoFormV2)
   useImperativeHandle(ref, () => ({
-    saveYoryoData: () => {
-      if (!isComboProduct) saveToDatabase(data);
+    saveYoryoData: async () => {
+      if (!isComboProduct) {
+        saveToDatabase(data);
+        return null;
+      } else {
+        return await handleSaveAndCapture();
+      }
     }
   }));
 
@@ -81,7 +99,7 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
   };
 
   const handleSaveAndCapture = async () => {
-    if (!containerRef.current || isComboProduct) return;
+    if (!containerRef.current) return null;
     
     const captureTarget = containerRef.current.querySelector('[class*="canvasSection"]') || containerRef.current;
     
@@ -92,34 +110,257 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
     // Pequeño delay para asegurar que React/Fabric apliquen los cambios visuales
     await new Promise(resolve => setTimeout(resolve, 100));
 
+    let captureUrl = null;
     try {
       const canvas = await html2canvas(captureTarget, { useCORS: true, backgroundColor: null });
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      
-      // Restaurar zonas de impresión
-      window.dispatchEvent(new Event('after-yoryo-capture'));
-      
-      const path = `YoryoPersonalizado/capturas/${draftId || 'default'}_screenshot.png`;
-      const { url, error } = await uploadFile(blob, path);
-      
-      if (url && !error) {
-        const newData = { ...data, capturaPersonalizadoDefinido: url };
-        setData(newData);
-        await saveToDatabase(newData);
-        alert('Configuración y captura guardadas en la base de datos.');
+      const captureFile = new File([blob], `preview_${draftId}.png`, { type: 'image/png' });
+
+      if (isComboProduct) {
+        if (onCapture) {
+           captureUrl = await onCapture(captureFile);
+        }
+        window.dispatchEvent(new Event('after-yoryo-capture'));
+        setIsCapturing(false);
+        return captureUrl;
       } else {
-        alert('Error al subir captura: ' + error);
+        window.dispatchEvent(new Event('after-yoryo-capture'));
+        const path = `YoryoPersonalizado/capturas/${draftId || 'default'}_screenshot.png`;
+        const { url, error } = await uploadFile(blob, path);
+        
+        if (url && !error) {
+          const newData = { ...data, capturaPersonalizadoDefinido: url };
+          setData(newData);
+          await saveToDatabase(newData);
+          alert('Configuración y captura guardadas en la base de datos.');
+        } else {
+          alert('Error al subir captura: ' + error);
+        }
+        setIsCapturing(false);
+        return url;
       }
     } catch (err) {
       console.error(err);
       alert('Error al procesar la captura.');
-      window.dispatchEvent(new Event('after-yoryo-capture')); // Restaurar por si hay error
-    } finally {
+      window.dispatchEvent(new Event('after-yoryo-capture'));
       setIsCapturing(false);
+      setIsSaving(false);
+      return captureUrl;
     }
   };
 
   const initialLayersByColor = { default: data.Capas || [] };
+
+  const customItems = useMemo(() => (comboItems || []).filter(i => i.YoryoPersonalizado), [comboItems]);
+  const N = customItems.length;
+
+  const [combinedImageUrl, setCombinedImageUrl] = useState(null);
+
+  useEffect(() => {
+    if (!isComboProduct || N === 0) return;
+
+    let isMounted = true;
+    const generateImage = async () => {
+      const loadedImages = await Promise.all(
+        customItems.map(item => {
+          return new Promise(resolve => {
+            if (!item.imageUrl) {
+              resolve(null);
+              return;
+            }
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            // Usa toCanvasImageUrl para evitar CORS
+            img.src = toCanvasImageUrl(item.imageUrl) || item.imageUrl;
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+          });
+        })
+      );
+
+      if (!isMounted) return;
+
+      const CELL_WIDTH = 500;
+      const CELL_HEIGHT = 600;
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = CELL_WIDTH * N;
+      canvas.height = CELL_HEIGHT;
+      const ctx = canvas.getContext('2d');
+
+      let currentX = 0;
+      loadedImages.forEach((img, idx) => {
+        if (img) {
+          const scale = Math.min(CELL_WIDTH / img.width, CELL_HEIGHT / img.height);
+          const drawW = img.width * scale;
+          const drawH = img.height * scale;
+          const dx = currentX + (CELL_WIDTH - drawW) / 2;
+          const dy = (CELL_HEIGHT - drawH) / 2;
+          ctx.drawImage(img, dx, dy, drawW, drawH);
+        } else {
+          ctx.fillStyle = "#f3f4f6";
+          ctx.fillRect(currentX, 0, CELL_WIDTH, CELL_HEIGHT);
+          ctx.fillStyle = "#9ca3af";
+          ctx.font = "20px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(customItems[idx].name, currentX + CELL_WIDTH / 2, CELL_HEIGHT / 2);
+        }
+        currentX += CELL_WIDTH;
+      });
+
+      setCombinedImageUrl(canvas.toDataURL('image/png'));
+    };
+
+    generateImage();
+
+    return () => { isMounted = false; };
+  }, [isComboProduct, customItems, N]);
+
+  const unifiedPrintAreas = useMemo(() => {
+     if (N === 0) return [];
+     let unified = [];
+     customItems.forEach((item, i) => {
+        const zonas = item.YoryoPersonalizado?.Zonas || [];
+        zonas.forEach(z => {
+          unified.push({ ...z, id: z.id ? `${z.id}_product_${i}` : z.id, width: z.width / N, x: (i * 100 / N) + (z.x / N) });
+        });
+     });
+     return unified;
+  }, [customItems, N]);
+
+  const unifiedLayers = useMemo(() => {
+     if (N === 0) return { default: [] };
+     const CELL_WIDTH = 500;
+     const CELL_HEIGHT = 600;
+     let unified = [];
+     customItems.forEach((item, i) => {
+        const capas = item.YoryoPersonalizado?.Capas || [];
+        capas.forEach(c => {
+          const scaleRatioX = c.baseW ? (CELL_WIDTH / c.baseW) : 1;
+          const scaleRatioY = c.baseH ? (CELL_HEIGHT / c.baseH) : scaleRatioX;
+          
+          let scaledFontSize = c.fontSize;
+          if (c.fontSize && (c.type === 'i-text' || c.type === 'text')) {
+             scaledFontSize = c.fontSize * scaleRatioY;
+          }
+
+          unified.push({
+            ...c,
+            id: c.id ? `${c.id}_product_${i}` : c.id,
+            customId: c.customId ? `${c.customId}_product_${i}` : c.customId,
+            baseW: CELL_WIDTH * N,
+            baseH: CELL_HEIGHT,
+            x: (c.x * scaleRatioX) + (i * CELL_WIDTH),
+            y: c.y * scaleRatioY,
+            scaleX: (c.scaleX || 1) * scaleRatioX,
+            scaleY: (c.scaleY || 1) * scaleRatioY,
+            fontSize: scaledFontSize,
+          });
+        });
+     });
+     return { default: unified };
+  }, [customItems, N]);
+
+  const latestComboItemsRef = useRef(comboItems);
+  useEffect(() => {
+    latestComboItemsRef.current = comboItems;
+  }, [comboItems]);
+
+  const handleUnifiedPrintAreasChange = useCallback((newZones) => {
+    if (!onComboItemsChange) return;
+    const currentComboItems = latestComboItemsRef.current || [];
+    const newComboItems = [...currentComboItems];
+    
+    customItems.forEach(item => {
+      const idx = currentComboItems.findIndex(ci => (ci._uid && ci._uid === item._uid) || ci === item);
+      if (idx !== -1 && newComboItems[idx].YoryoPersonalizado) {
+         newComboItems[idx] = {
+           ...newComboItems[idx],
+           YoryoPersonalizado: { ...newComboItems[idx].YoryoPersonalizado, Zonas: [] }
+         };
+      }
+    });
+
+    newZones.forEach(z => {
+      const absPos = z.x * N / 100;
+      let cellIndex = Math.floor(absPos);
+      if (cellIndex < 0) cellIndex = 0;
+      if (cellIndex >= N) cellIndex = N - 1;
+
+      const item = customItems[cellIndex];
+      const originalIdx = currentComboItems.findIndex(ci => (ci._uid && ci._uid === item._uid) || ci === item);
+      
+      const localX = (absPos - cellIndex) * 100;
+      
+      if (originalIdx !== -1 && newComboItems[originalIdx].YoryoPersonalizado) {
+        newComboItems[originalIdx].YoryoPersonalizado.Zonas.push({
+          ...z,
+          id: z.id ? String(z.id).replace(/_product_\d+$/, '') : z.id,
+          width: z.width * N,
+          x: localX
+        });
+      }
+    });
+
+    latestComboItemsRef.current = newComboItems;
+    onComboItemsChange(newComboItems);
+  }, [customItems, N, onComboItemsChange]);
+
+  const handleUnifiedLayersChange = useCallback((color, newLayers) => {
+    if (!onComboItemsChange) return;
+    const CELL_WIDTH = 500;
+    const unifiedW = CELL_WIDTH * N;
+    const currentComboItems = latestComboItemsRef.current || [];
+    const newComboItems = [...currentComboItems];
+    
+    customItems.forEach(item => {
+      const idx = currentComboItems.findIndex(ci => (ci._uid && ci._uid === item._uid) || ci === item);
+      if (idx !== -1 && newComboItems[idx].YoryoPersonalizado) {
+         newComboItems[idx] = {
+           ...newComboItems[idx],
+           YoryoPersonalizado: { 
+             ...newComboItems[idx].YoryoPersonalizado, 
+             Capas: [], 
+             "Imagenes del mockup": [] 
+           }
+         };
+      }
+    });
+
+    newLayers.forEach(layer => {
+      const scaleToUnified = layer.baseW ? (unifiedW / layer.baseW) : 1;
+      const absX = layer.x * scaleToUnified;
+      let cellIndex = Math.floor(absX / CELL_WIDTH);
+      
+      if (cellIndex < 0) cellIndex = 0;
+      if (cellIndex >= N) cellIndex = N - 1;
+
+      const item = customItems[cellIndex];
+      const originalIdx = currentComboItems.findIndex(ci => (ci._uid && ci._uid === item._uid) || ci === item);
+      
+      const localX = absX - (cellIndex * CELL_WIDTH);
+      const localLayer = {
+        ...layer,
+        id: layer.id ? String(layer.id).replace(/_product_\d+$/, '') : layer.id,
+        customId: layer.customId ? String(layer.customId).replace(/_product_\d+$/, '') : layer.customId,
+        baseW: CELL_WIDTH,
+        baseH: 600,
+        x: localX,
+      };
+
+      if (originalIdx !== -1 && newComboItems[originalIdx].YoryoPersonalizado) {
+        newComboItems[originalIdx].YoryoPersonalizado.Capas.push(localLayer);
+        if (localLayer.type === 'image') {
+           newComboItems[originalIdx].YoryoPersonalizado["Imagenes del mockup"].push({
+               src: localLayer.src, x: localLayer.x, y: localLayer.y, scaleX: localLayer.scaleX, scaleY: localLayer.scaleY, angle: localLayer.angle
+           });
+        }
+      }
+    });
+
+    latestComboItemsRef.current = newComboItems;
+    onComboItemsChange(newComboItems);
+  }, [customItems, N, onComboItemsChange]);
 
   if (isLoading) {
     return <div style={{ padding: '20px', textAlign: 'center' }}>Cargando editor personalizado...</div>;
@@ -155,56 +396,34 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
       {isComboProduct ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>
-            Este es un producto Combo. A continuación se muestran las áreas de personalización heredadas de cada ítem del paquete. Los cambios aquí se guardarán al oprimir "Guardar Cambios" al final del formulario principal.
+            Este es un producto Combo unificado. Ambos productos comparten un solo lienzo maestro. Las áreas y diseños se asignarán automáticamente al producto correspondiente basándose en su ubicación (lado izquierdo o derecho).
           </p>
-          {comboItems?.map((item, idx) => {
-            if (!item.YoryoPersonalizado) return null;
-            
-            return (
-              <div key={idx} style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#f9fafb' }}>
-                <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#111' }}>
-                  {item.name} <span style={{ fontWeight: 'normal', color: '#666' }}>(Producto #{idx + 1})</span>
-                </h4>
-                <AdminViewEditor
-                  viewId={`combo_view_${item.productId}_${idx}`}
-                  productImage={item.imageUrl}
-                  printAreas={item.YoryoPersonalizado.Zonas || []}
-                  initialLayersByColor={{ default: item.YoryoPersonalizado.Capas || [] }}
-                  currentColor="default"
-                  onPrintAreasChange={(newZones) => {
-                    if (onComboItemsChange) {
-                      const newComboItems = [...comboItems];
-                      newComboItems[idx] = {
-                        ...newComboItems[idx],
-                        YoryoPersonalizado: {
-                          ...newComboItems[idx].YoryoPersonalizado,
-                          Zonas: newZones
-                        }
-                      };
-                      onComboItemsChange(newComboItems);
-                    }
-                  }}
-                  onLayersChange={(color, newLayers) => {
-                    if (onComboItemsChange) {
-                      const newComboItems = [...comboItems];
-                      newComboItems[idx] = {
-                        ...newComboItems[idx],
-                        YoryoPersonalizado: {
-                          ...newComboItems[idx].YoryoPersonalizado,
-                          Capas: newLayers,
-                          "Imagenes del mockup": newLayers.filter(l => l.type === 'image').map(l => ({
-                             src: l.src, x: l.x, y: l.y, scaleX: l.scaleX, scaleY: l.scaleY, angle: l.angle
-                          }))
-                        }
-                      };
-                      onComboItemsChange(newComboItems);
-                    }
-                  }}
-                />
+
+          {N > 0 ? (
+            <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#f9fafb' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                {customItems.map((item, idx) => (
+                  <h4 key={idx} style={{ margin: 0, fontSize: '0.9rem', color: '#333', textAlign: 'center', flex: 1 }}>
+                    {item.name} <br/> <span style={{ fontSize: '0.75rem', color: '#666' }}>(Producto #{idx + 1})</span>
+                  </h4>
+                ))}
               </div>
-            );
-          })}
-          {(!comboItems || !comboItems.some(item => item.YoryoPersonalizado)) && (
+              
+              {!combinedImageUrl ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Generando lienzo unificado...</div>
+              ) : (
+                <AdminViewEditor
+                  viewId={`combo_view_master`}
+                  productImage={combinedImageUrl}
+                  printAreas={unifiedPrintAreas}
+                  initialLayersByColor={unifiedLayers}
+                  currentColor="default"
+                  onPrintAreasChange={handleUnifiedPrintAreasChange}
+                  onLayersChange={handleUnifiedLayersChange}
+                />
+              )}
+            </div>
+          ) : (
             <div style={{ padding: '20px', textAlign: 'center', background: '#f8f9fa', border: '1px dashed #ccc', borderRadius: '8px' }}>
               <p style={{ margin: 0, color: '#666' }}>Ninguno de los productos agregados a este combo tiene opciones de personalización (YoryoPersonalizado).</p>
             </div>

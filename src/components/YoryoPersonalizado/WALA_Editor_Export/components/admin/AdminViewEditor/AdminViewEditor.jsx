@@ -67,6 +67,11 @@ const AdminViewEditorContent = ({
     seededDesignViewsRef.current.add(activeViewId);
   }, [selectedColor, activeViewId, initialLayers, setLayersForView, designOnly, layersByView]);
 
+  const onLayersChangeRef = useRef(onLayersChange);
+  useEffect(() => {
+    onLayersChangeRef.current = onLayersChange;
+  }, [onLayersChange]);
+
   // Propagate canvas changes UP to parent — but skip the seed echo cycles
   useEffect(() => {
     if (suppressNotifyCountRef.current > 0) {
@@ -79,10 +84,10 @@ const AdminViewEditorContent = ({
     if (!seededRef.current.has(seedKey)) return; // not yet seeded, skip
 
     const currentLayers = layersByView[activeViewId] ?? [];
-    if (onLayersChange) {
-      onLayersChange(selectedColor, currentLayers);
+    if (onLayersChangeRef.current) {
+      onLayersChangeRef.current(selectedColor, currentLayers);
     }
-  }, [layersByView, activeViewId, selectedColor, onLayersChange]);
+  }, [layersByView, activeViewId, selectedColor]);
 
   const handleColorChange = useCallback((color) => {
     setSelectedColor(color);

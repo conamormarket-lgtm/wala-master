@@ -32,6 +32,7 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
 
   const addProductToCombo = (product) => {
     const newItem = {
+      _uid: Math.random().toString(36).substring(2, 10), // Unique ID para React keys
       productId: product.id,
       name: product.name,
       imageUrl: product.images?.[0] || product.mainImage || '',
@@ -113,7 +114,7 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
         ) : (
           <div className={styles.comboItemsList}>
             {comboItems.map((item, idx) => (
-              <div key={idx} className={styles.comboItem}>
+              <div key={item._uid || `${item.productId}_${idx}`} className={styles.comboItem}>
                 <img src={item.imageUrl || 'https://via.placeholder.com/60'} alt={item.name} />
                 <div className={styles.comboItemDetails}>
                   <strong>{item.name}</strong>
