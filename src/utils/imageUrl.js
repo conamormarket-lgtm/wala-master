@@ -55,11 +55,9 @@ export function toDirectImageUrl(url) {
   }
   
   if (isFirebaseStorageUrl(trimmed)) {
-    const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    if (!isLocalhost) {
-      // Optimización nativa de Vercel (1200px máx para vistas de detalle)
-      return `/_vercel/image?url=${encodeURIComponent(trimmed)}&w=1200&q=80`;
-    }
+    // Vercel quota exhausted (402 Payment Required). 
+    // Serving directly from Firebase Storage to avoid broken images in production.
+    return trimmed;
   }
 
   // Fallback
@@ -80,11 +78,9 @@ export function toThumbnailImageUrl(url) {
   }
   
   if (isFirebaseStorageUrl(trimmed)) {
-    const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    if (!isLocalhost) {
-      // Usar la optimización de imágenes nativa de Vercel en producción
-      return `/_vercel/image?url=${encodeURIComponent(trimmed)}&w=640&q=75`;
-    }
+    // Vercel quota exhausted (402 Payment Required). 
+    // Serving directly from Firebase Storage to avoid broken images in production.
+    return trimmed;
   }
 
   return trimmed;
