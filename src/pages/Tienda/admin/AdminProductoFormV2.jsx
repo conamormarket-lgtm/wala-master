@@ -595,16 +595,19 @@ const AdminProductoFormV2 = () => {
 
       // Identify main image
       const defaultVariant = finalVariants.find(v => v.id === form.defaultVariantId) || finalVariants[0];
-      const mainImage = defaultVariant?.imageUrl || '';
+      let currentMainImage = defaultVariant?.imageUrl || '';
       const isCombo = form.isComboProduct;
 
       let currentComboPreview = form.comboPreviewImage;
 
       // ── CRÍTICO: Capturar la foto del lienzo unificado ANTES de armar el payload ──
-      if (isCombo && form.customizable && yoryoRef.current) {
+      if (form.customizable && yoryoRef.current) {
         const newPreviewUrl = await yoryoRef.current.saveYoryoData();
         if (newPreviewUrl) {
-          currentComboPreview = newPreviewUrl;
+          if (isCombo) {
+            currentComboPreview = newPreviewUrl;
+          }
+          currentMainImage = newPreviewUrl;
         }
       }
 
@@ -618,7 +621,8 @@ const AdminProductoFormV2 = () => {
         brandId: form.brandId,
         category: form.category ? { id: form.category } : null,
         collections: form.collection ? [{ id: form.collection }] : [],
-        mainImage: mainImage,
+        mainImage: currentMainImage,
+        thumbnailWithDesignUrl: form.customizable ? currentMainImage : '',
         mainSizes: [],                     // Las tallas viven dentro de cada variante
         defaultVariantId: defaultVariant?.id || '',
         // ── CRÍTICO: persistir hasVariants para que normalizeProductForRead lo lea ──
@@ -637,11 +641,6 @@ const AdminProductoFormV2 = () => {
       };
 
       await saveMutation.mutateAsync(payload);
-      
-      // Guardar de forma independiente los datos del editor de YoryoPersonalizado para productos individuales
-      if (!isCombo && form.customizable && yoryoRef.current) {
-        await yoryoRef.current.saveYoryoData();
-      }
       
     } finally {
       setUploading(false);

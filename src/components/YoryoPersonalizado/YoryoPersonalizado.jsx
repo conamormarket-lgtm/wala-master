@@ -70,12 +70,7 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
   // Exponer métodos al componente padre (AdminProductoFormV2)
   useImperativeHandle(ref, () => ({
     saveYoryoData: async () => {
-      if (!isComboProduct) {
-        saveToDatabase(data);
-        return null;
-      } else {
-        return await handleSaveAndCapture();
-      }
+      return await handleSaveAndCapture();
     }
   }));
 
@@ -116,29 +111,21 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
       const captureFile = new File([blob], `preview_${draftId}.png`, { type: 'image/png' });
 
-      if (isComboProduct) {
-        if (onCapture) {
-           captureUrl = await onCapture(captureFile);
-        }
-        window.dispatchEvent(new Event('after-yoryo-capture'));
-        setIsCapturing(false);
-        return captureUrl;
-      } else {
-        window.dispatchEvent(new Event('after-yoryo-capture'));
-        const path = `YoryoPersonalizado/capturas/${draftId || 'default'}_screenshot.png`;
-        const { url, error } = await uploadFile(blob, path);
-        
-        if (url && !error) {
-          const newData = { ...data, capturaPersonalizadoDefinido: url };
-          setData(newData);
-          await saveToDatabase(newData);
-          alert('Configuración y captura guardadas en la base de datos.');
-        } else {
-          alert('Error al subir captura: ' + error);
-        }
-        setIsCapturing(false);
-        return url;
+      const path = `YoryoPersonalizado/capturas/${draftId || 'default'}_screenshot.png`;
+      const { url, error } = await uploadFile(blob, path);
+      
+      if (error) {
+        console.error('Error al subir captura:', error);
+      } else if (url && !isComboProduct) {
+        // Para productos individuales, guardar config en Yoryo db
+        const newData = { ...data, capturaPersonalizadoDefinido: url };
+        setData(newData);
+        await saveToDatabase(newData);
       }
+      
+      window.dispatchEvent(new Event('after-yoryo-capture'));
+      setIsCapturing(false);
+      return url || null;
     } catch (err) {
       console.error(err);
       alert('Error al procesar la captura.');

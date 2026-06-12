@@ -8,7 +8,7 @@ import { uploadFile } from '../../../../services/firebase/storage';
 
 const AdminCustomizationViewsEditor = ({ views, onChange, draftId }) => {
   const [activeViewIdx, setActiveViewIdx] = useState(0);
-  const activeView = views[activeViewIdx];
+  const activeView = views && views[activeViewIdx] ? views[activeViewIdx] : (views && views[0]);
   const [fabricCanvas, setFabricCanvas] = useState(null);
   const canvasElRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -223,7 +223,7 @@ const AdminCustomizationViewsEditor = ({ views, onChange, draftId }) => {
     setActiveViewIdx(Math.max(0, activeViewIdx - 1));
   };
 
-  if (!views || views.length === 0) return null;
+  if (!views || views.length === 0 || !activeView) return null;
 
   return (
     <div className={styles.wrapper}>
