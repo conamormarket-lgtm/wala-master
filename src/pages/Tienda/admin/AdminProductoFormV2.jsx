@@ -577,7 +577,7 @@ const AdminProductoFormV2 = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || form.variants.length === 0) return;
+    if (!form.name.trim() || (!form.isComboProduct && form.variants.length === 0)) return;
 
     // Validación de imagen eliminada para permitir productos sin foto
     setUploading(true);
@@ -1322,6 +1322,9 @@ const AdminProductoFormV2 = () => {
                 ref={yoryoRef}
                 productImage={form.isComboProduct ? form.comboPreviewImage : form.variants?.[0]?.designImage || form.variants?.[0]?.imageUrl || ''}
                 draftId={draftId}
+                isComboProduct={form.isComboProduct}
+                comboItems={form.comboItems}
+                onComboItemsChange={(newItems) => setForm(f => ({ ...f, comboItems: newItems }))}
               />
             </div>
           )}

@@ -665,12 +665,16 @@ function normalizeComboItem(item, defaultPosition = 0) {
 
   return {
     productId: String(item.productId || ''),
+    name: String(item.name || ''),
+    imageUrl: String(item.imageUrl || ''),
     viewId: String(item.viewId || ''),
     position: typeof item.position === 'number' ? item.position : defaultPosition,
     scale: typeof item.scale === 'number' && item.scale > 0 ? item.scale : 1,
+    customizable: Boolean(item.customizable),
     variantMapping: item.variantMapping && typeof item.variantMapping === 'object'
       ? item.variantMapping
-      : {}
+      : {},
+    ...(item.YoryoPersonalizado ? { YoryoPersonalizado: item.YoryoPersonalizado } : {})
   };
 }
 

@@ -21,7 +21,8 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
       setIsSearching(true);
       const res = await searchProducts(searchTerm);
       if (!res.error) {
-        setSearchResults(res.data.slice(0, 5)); // Limit to 5 results
+        const customizables = res.data.filter(p => p.customizable === true);
+        setSearchResults(customizables.slice(0, 5)); // Limit to 5 results
       }
       setIsSearching(false);
     }, 500);
@@ -35,7 +36,8 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
       name: product.name,
       imageUrl: product.images?.[0] || product.mainImage || '',
       position: comboItems.length,
-      scale: 1
+      scale: 1,
+      ...(product.YoryoPersonalizado ? { YoryoPersonalizado: product.YoryoPersonalizado } : {})
     };
     setComboItems([...comboItems, newItem]);
     setSearchTerm('');

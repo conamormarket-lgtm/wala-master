@@ -4,7 +4,7 @@ import { uploadFile } from '../../services/firebase/storage';
 import { getProduct, updateProductField } from '../../services/products';
 import AdminViewEditor from './WALA_Editor_Export/components/admin/AdminViewEditor/AdminViewEditor';
 
-const YoryoPersonalizado = forwardRef(({ productImage, draftId }, ref) => {
+const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, comboItems, onComboItemsChange }, ref) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +42,7 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId }, ref) => {
 
   // 2. Guardar en base de datos de manera independiente
   const saveToDatabase = async (newData) => {
-    if (!draftId) return;
+    if (!draftId || isComboProduct) return; // En combo se guarda junto con el form principal
     setIsSaving(true);
     try {
       await updateProductField(draftId, { YoryoPersonalizado: newData });
@@ -56,13 +56,14 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId }, ref) => {
 
   // Exponer métodos al componente padre (AdminProductoFormV2)
   useImperativeHandle(ref, () => ({
-    saveYoryoData: () => saveToDatabase(data)
+    saveYoryoData: () => {
+      if (!isComboProduct) saveToDatabase(data);
+    }
   }));
 
   const handlePrintAreasChange = (newPrintAreas) => {
     const newData = { ...data, Zonas: newPrintAreas };
     setData(newData);
-    // Podrías hacer autosave aquí, pero es mejor requerir guardar explícitamente para evitar exceso de escrituras
   };
 
   const handleLayersChange = (colorKey, layers) => {
@@ -80,7 +81,7 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId }, ref) => {
   };
 
   const handleSaveAndCapture = async () => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || isComboProduct) return;
     
     const captureTarget = containerRef.current.querySelector('[class*="canvasSection"]') || containerRef.current;
     
@@ -128,51 +129,116 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId }, ref) => {
     <div ref={containerRef} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', background: '#fff', borderRadius: '8px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
         <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#333' }}>Yoryo Personalizado - Editor Integrado</h3>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            type="button" 
-            onClick={() => saveToDatabase(data)}
-            disabled={isSaving || isCapturing}
-            style={{ padding: '8px 16px', background: '#f3f4f6', color: '#374151', borderRadius: '4px', border: '1px solid #d1d5db', cursor: isSaving ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-          >
-            {isSaving ? 'Guardando...' : '💾 Guardar Datos'}
-          </button>
-          <button 
-            type="button" 
-            onClick={handleSaveAndCapture}
-            disabled={isCapturing || isSaving}
-            style={{ padding: '8px 16px', background: '#000', color: '#fff', borderRadius: '4px', border: 'none', cursor: isCapturing ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-          >
-            {isCapturing ? 'Capturando...' : '📸 Guardar y Generar Captura'}
-          </button>
-        </div>
+        
+        {!isComboProduct && (
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              type="button" 
+              onClick={() => saveToDatabase(data)}
+              disabled={isSaving || isCapturing}
+              style={{ padding: '8px 16px', background: '#f3f4f6', color: '#374151', borderRadius: '4px', border: '1px solid #d1d5db', cursor: isSaving ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+            >
+              {isSaving ? 'Guardando...' : '💾 Guardar Datos'}
+            </button>
+            <button 
+              type="button" 
+              onClick={handleSaveAndCapture}
+              disabled={isCapturing || isSaving}
+              style={{ padding: '8px 16px', background: '#000', color: '#fff', borderRadius: '4px', border: 'none', cursor: isCapturing ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
+            >
+              {isCapturing ? 'Capturando...' : '📸 Guardar y Generar Captura'}
+            </button>
+          </div>
+        )}
       </div>
       
-      <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>
-        Dibuja las zonas de impresión y añade el diseño base. La información se guarda de manera independiente al formulario principal pulsando en los botones superiores.
-      </p>
-
-      <AdminViewEditor
-        viewId="yoryo_default_view"
-        productImage={productImage}
-        printAreas={data.Zonas || []}
-        initialLayersByColor={initialLayersByColor}
-        currentColor="default"
-        onPrintAreasChange={handlePrintAreasChange}
-        onLayersChange={handleLayersChange}
-      />
-
-      {data.capturaPersonalizadoDefinido && (
-        <div style={{ marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px dashed #ccc', display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <img src={data.capturaPersonalizadoDefinido} alt="Captura generada" style={{ width: '100px', height: 'auto', borderRadius: '4px', border: '1px solid #eee', objectFit: 'contain' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', overflow: 'hidden' }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#333' }}>✅ Captura guardada exitosamente</span>
-            <span style={{ fontSize: '0.8rem', color: '#666' }}>URL de la imagen:</span>
-            <a href={data.capturaPersonalizadoDefinido} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: '#0066cc', wordBreak: 'break-all', textDecoration: 'underline' }}>
-              {data.capturaPersonalizadoDefinido}
-            </a>
-          </div>
+      {isComboProduct ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>
+            Este es un producto Combo. A continuación se muestran las áreas de personalización heredadas de cada ítem del paquete. Los cambios aquí se guardarán al oprimir "Guardar Cambios" al final del formulario principal.
+          </p>
+          {comboItems?.map((item, idx) => {
+            if (!item.YoryoPersonalizado) return null;
+            
+            return (
+              <div key={idx} style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#f9fafb' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#111' }}>
+                  {item.name} <span style={{ fontWeight: 'normal', color: '#666' }}>(Producto #{idx + 1})</span>
+                </h4>
+                <AdminViewEditor
+                  viewId={`combo_view_${item.productId}_${idx}`}
+                  productImage={item.imageUrl}
+                  printAreas={item.YoryoPersonalizado.Zonas || []}
+                  initialLayersByColor={{ default: item.YoryoPersonalizado.Capas || [] }}
+                  currentColor="default"
+                  onPrintAreasChange={(newZones) => {
+                    if (onComboItemsChange) {
+                      const newComboItems = [...comboItems];
+                      newComboItems[idx] = {
+                        ...newComboItems[idx],
+                        YoryoPersonalizado: {
+                          ...newComboItems[idx].YoryoPersonalizado,
+                          Zonas: newZones
+                        }
+                      };
+                      onComboItemsChange(newComboItems);
+                    }
+                  }}
+                  onLayersChange={(color, newLayers) => {
+                    if (onComboItemsChange) {
+                      const newComboItems = [...comboItems];
+                      newComboItems[idx] = {
+                        ...newComboItems[idx],
+                        YoryoPersonalizado: {
+                          ...newComboItems[idx].YoryoPersonalizado,
+                          Capas: newLayers,
+                          "Imagenes del mockup": newLayers.filter(l => l.type === 'image').map(l => ({
+                             src: l.src, x: l.x, y: l.y, scaleX: l.scaleX, scaleY: l.scaleY, angle: l.angle
+                          }))
+                        }
+                      };
+                      onComboItemsChange(newComboItems);
+                    }
+                  }}
+                />
+              </div>
+            );
+          })}
+          {(!comboItems || !comboItems.some(item => item.YoryoPersonalizado)) && (
+            <div style={{ padding: '20px', textAlign: 'center', background: '#f8f9fa', border: '1px dashed #ccc', borderRadius: '8px' }}>
+              <p style={{ margin: 0, color: '#666' }}>Ninguno de los productos agregados a este combo tiene opciones de personalización (YoryoPersonalizado).</p>
+            </div>
+          )}
         </div>
+      ) : (
+        <>
+          <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>
+            Dibuja las zonas de impresión y añade el diseño base. La información se guarda de manera independiente al formulario principal pulsando en los botones superiores.
+          </p>
+
+          <AdminViewEditor
+            viewId="yoryo_default_view"
+            productImage={productImage}
+            printAreas={data.Zonas || []}
+            initialLayersByColor={initialLayersByColor}
+            currentColor="default"
+            onPrintAreasChange={handlePrintAreasChange}
+            onLayersChange={handleLayersChange}
+          />
+
+          {data.capturaPersonalizadoDefinido && (
+            <div style={{ marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px dashed #ccc', display: 'flex', gap: '15px', alignItems: 'center' }}>
+              <img src={data.capturaPersonalizadoDefinido} alt="Captura generada" style={{ width: '100px', height: 'auto', borderRadius: '4px', border: '1px solid #eee', objectFit: 'contain' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', overflow: 'hidden' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#333' }}>✅ Captura guardada exitosamente</span>
+                <span style={{ fontSize: '0.8rem', color: '#666' }}>URL de la imagen:</span>
+                <a href={data.capturaPersonalizadoDefinido} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: '#0066cc', wordBreak: 'break-all', textDecoration: 'underline' }}>
+                  {data.capturaPersonalizadoDefinido}
+                </a>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
