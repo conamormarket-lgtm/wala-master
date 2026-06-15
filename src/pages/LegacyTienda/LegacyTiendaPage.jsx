@@ -25,7 +25,7 @@ const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que 
 const LegacyTiendaPage = () => {
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('name');
+  const [sortBy, setSortBy] = useState('newest');
   const categoryId = searchParams.get('categoria');
 
   const { data: storeMessages } = useQuery({
@@ -74,13 +74,23 @@ const LegacyTiendaPage = () => {
         sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
       } else if (sortBy === 'price-desc') {
         sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+      } else if (sortBy === 'newest') {
+        sorted.sort((a, b) => {
+          const getTime = (val) => {
+            if (!val) return 0;
+            if (typeof val.toDate === 'function') return val.toDate().getTime();
+            if (val.seconds) return val.seconds * 1000;
+            return new Date(val).getTime() || 0;
+          };
+          return getTime(b.createdAt) - getTime(a.createdAt);
+        });
       } else {
         sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       }
       return sorted;
     },
     placeholderData: keepPreviousData,
-    initialData: (!searchTerm && !categoryId && sortBy === 'name') ? getCachedProducts() : undefined,
+    initialData: (!searchTerm && !categoryId && sortBy === 'newest') ? getCachedProducts() : undefined,
   });
 
   const handleSearch = (term) => setSearchTerm(term);
@@ -135,6 +145,7 @@ const LegacyTiendaPage = () => {
             </span>
             <div className={styles.sortWrap}>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={styles.sortSelect}>
+                <option value="newest">Más recientes</option>
                 <option value="name">Ordenar: A-Z</option>
                 <option value="price">Menor precio</option>
                 <option value="price-desc">Mayor precio</option>
