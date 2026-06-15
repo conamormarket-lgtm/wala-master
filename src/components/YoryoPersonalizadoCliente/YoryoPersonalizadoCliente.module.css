@@ -1,0 +1,66 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  margin-top: 60px; /* Leave space for the absolute close button in parent */
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+.saveButton {
+  background-color: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: #374151;
+}
+
+.saveButton:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.editorWrapper {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  background-color: #e5e7eb;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+}
+
+.editorInner {
+  width: 100%;
+  max-width: 800px; /* Constrain max width so it scales down */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  overflow: hidden;
+}

@@ -57,6 +57,7 @@ const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
 const MussaPage = lazy(() => import('./pages/MussaPage'));
+const RegalosCatasPage = lazy(() => import('./pages/RegalosCatasPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -285,6 +286,7 @@ function App() {
                         
                         {/* Mussa */}
                         <Route path="/mussa" element={<MussaPage />} />
+                        <Route path="/regalos-catas" element={<RegalosCatasPage />} />
                         
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />

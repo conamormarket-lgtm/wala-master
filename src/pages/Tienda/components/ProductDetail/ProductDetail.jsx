@@ -17,6 +17,8 @@ import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import DraggableContainer from '../../../../components/common/DraggableContainer/DraggableContainer';
 import ProductCuestionarioModal from '../ProductCuestionarioModal/ProductCuestionarioModal';
 import YoryoPersonalizadoCliente from '../../../../components/YoryoPersonalizadoCliente/YoryoPersonalizadoCliente';
+import HistorialPersonalizacionesModal from '../../../../components/YoryoPersonalizadoCliente/HistorialPersonalizacionesModal';
+import { getCustomerCustomProductsByUser } from '../../../../services/customerCustomProducts';
 import ProductReviews from '../ProductReviews';
 import { Truck, RefreshCw, ShieldCheck, Share2 } from 'lucide-react';
 import styles from './ProductDetail.module.css';
@@ -165,6 +167,40 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const [cuestionario, setCuestionario] = useState(null);
   const [sharing, setSharing] = useState(false);
   const [showYoryoPersonalizado, setShowYoryoPersonalizado] = useState(false);
+  const [pastDesigns, setPastDesigns] = useState([]);
+  const [showPastDesignsModal, setShowPastDesignsModal] = useState(false);
+  const [selectedPastDesign, setSelectedPastDesign] = useState(null);
+
+  const handleYoryoPersonalizableClick = async () => {
+    if (!user) {
+      setSelectedPastDesign(null);
+      setShowYoryoPersonalizado(true);
+      return;
+    }
+
+    try {
+      const { data, error } = await getCustomerCustomProductsByUser(user.uid);
+      if (error) {
+        console.error('Error al obtener historiales', error);
+        setSelectedPastDesign(null);
+        setShowYoryoPersonalizado(true);
+        return;
+      }
+      
+      const historyForProduct = data.filter(d => d.originalProductId === product.id);
+      if (historyForProduct.length > 0) {
+        setPastDesigns(historyForProduct);
+        setShowPastDesignsModal(true);
+      } else {
+        setSelectedPastDesign(null);
+        setShowYoryoPersonalizado(true);
+      }
+    } catch (e) {
+      console.error(e);
+      setSelectedPastDesign(null);
+      setShowYoryoPersonalizado(true);
+    }
+  };
 
   const secsRef = useRef(0);
   const lastVariantRef = useRef(null);
@@ -466,7 +502,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
               <button className={styles.btnPrimary} disabled>Agotado</button>
             )}
             {product.YoryoPersonalizado ? (
-              <button className={styles.btnOutline} onClick={() => setShowYoryoPersonalizado(true)}>
+              <button className={styles.btnOutline} onClick={handleYoryoPersonalizableClick}>
                 Personalizable
               </button>
             ) : product.customizable && (
@@ -514,14 +550,48 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
       {showYoryoPersonalizado && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 9999, backgroundColor: '#fff', overflowY: 'auto' }}>
-          <button 
-            onClick={() => setShowYoryoPersonalizado(false)}
-            style={{ position: 'absolute', top: 20, right: 20, padding: '10px 20px', background: '#000', color: '#fff', borderRadius: 8, zIndex: 10000 }}
-          >
-            Cerrar Personalizador
-          </button>
-          <YoryoPersonalizadoCliente productData={product} />
+          <div style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowYoryoPersonalizado(false)}
+              style={{ position: 'absolute', top: '15px', right: '15px', padding: '8px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', zIndex: 10000 }}
+            >
+              Cerrar (X)
+            </button>
+            <YoryoPersonalizadoCliente 
+              productData={product} 
+              existingDesignData={selectedPastDesign}
+              onSaved={(customizedProduct) => {
+                setShowYoryoPersonalizado(false);
+                addToCart(
+                  customizedProduct,
+                  { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
+                  null,
+                  qty,
+                  isCombo ? { variantSelections: comboSels, customizations: {}, subProductsData: comboProd } : null
+                );
+                toast.success('¡Diseño guardado y agregado al carrito!');
+                navigate('/carrito');
+              }} 
+            />
+          </div>
         </div>
+      )}
+
+      {showPastDesignsModal && (
+        <HistorialPersonalizacionesModal
+          pastDesigns={pastDesigns}
+          onClose={() => setShowPastDesignsModal(false)}
+          onCreateNew={() => {
+            setSelectedPastDesign(null);
+            setShowPastDesignsModal(false);
+            setShowYoryoPersonalizado(true);
+          }}
+          onSelectDesign={(design) => {
+            setSelectedPastDesign(design);
+            setShowPastDesignsModal(false);
+            setShowYoryoPersonalizado(true);
+          }}
+        />
       )}
     </>
   );

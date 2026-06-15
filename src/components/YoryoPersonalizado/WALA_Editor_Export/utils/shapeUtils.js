@@ -25,13 +25,12 @@ export async function loadCustomShape(customShapeId) {
   }
 
   try {
-    const { getCustomShape } = await import('../services/customShapes');
-    const { data, error } = await getCustomShape(customShapeId);
-    if (error || !data) return '';
-
-    const svgPath = data.svgPath || '';
-    customShapesCache[customShapeId] = svgPath;
-    return svgPath;
+    // const { getCustomShape } = await import('../services/customShapes');
+    // const { data, error } = await getCustomShape(customShapeId);
+    // if (error || !data) return '';
+    
+    // El servicio customShapes no existe actualmente, retornamos vacío
+    return '';
   } catch (error) {
     console.error('Error loading custom shape:', error);
     return '';
