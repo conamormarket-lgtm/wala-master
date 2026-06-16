@@ -86,12 +86,13 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true 
 
   // Escuchar eventos globales para esconder zonas durante capturas
   useEffect(() => {
-    if (!localCanvasReady || !localCanvasRef.current) return;
-    const fabricCanvas = localCanvasRef.current;
-    
     const handleBeforeCapture = () => {
+      const fabricCanvas = localCanvasRef.current;
+      if (!fabricCanvas) return;
+      // also discard active object to remove selection controls
+      fabricCanvas.discardActiveObject();
       fabricCanvas.getObjects().forEach(obj => {
-        if (obj.printAreaId) {
+        if (obj.printAreaId || obj.isPrintAreaMask || obj.strokeDashArray) {
           obj.set('visible', false);
         }
       });
@@ -99,8 +100,10 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true 
     };
 
     const handleAfterCapture = () => {
+      const fabricCanvas = localCanvasRef.current;
+      if (!fabricCanvas) return;
       fabricCanvas.getObjects().forEach(obj => {
-        if (obj.printAreaId) {
+        if (obj.printAreaId || obj.isPrintAreaMask || obj.strokeDashArray) {
           obj.set('visible', showZones);
         }
       });
@@ -114,7 +117,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true 
       window.removeEventListener('before-yoryo-capture', handleBeforeCapture);
       window.removeEventListener('after-yoryo-capture', handleAfterCapture);
     };
-  }, [localCanvasReady, showZones]);
+  }, [showZones]);
 
   const safeRequestRenderAll = (c) => {
     if (!isCanvasValid(c)) return;

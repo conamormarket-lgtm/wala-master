@@ -208,7 +208,21 @@ const AdminViewEditorContent = ({
 }) => {
   const { activeViewId } = useEditor();
   const [mode, setMode] = useState('design');
+  const [isCapturing, setIsCapturing] = useState(false);
   const sidebarId = `admin-sidebar-${viewId || activeViewId || 'default'}`;
+
+  useEffect(() => {
+    const handleBeforeCapture = () => setIsCapturing(true);
+    const handleAfterCapture = () => setIsCapturing(false);
+
+    window.addEventListener('before-yoryo-capture', handleBeforeCapture);
+    window.addEventListener('after-yoryo-capture', handleAfterCapture);
+
+    return () => {
+      window.removeEventListener('before-yoryo-capture', handleBeforeCapture);
+      window.removeEventListener('after-yoryo-capture', handleAfterCapture);
+    };
+  }, []);
 
   const { selectedColor, handleColorChange, seededRef, layersByView } =
     useEditorSeeding({
@@ -254,11 +268,11 @@ const AdminViewEditorContent = ({
         <>
           <div
             className={
-              mode === 'design'
+              mode === 'design' || isCapturing
                 ? styles.unifiedModePanel
                 : styles.unifiedModePanelHidden
             }
-            aria-hidden={mode !== 'design'}
+            aria-hidden={mode !== 'design' && !isCapturing}
           >
             <div className={styles.editorLayout}>
               <div className={styles.canvasSection}>
@@ -278,11 +292,11 @@ const AdminViewEditorContent = ({
 
           <div
             className={
-              mode === 'zones' && !designOnly
+              (mode === 'zones' && !designOnly) && !isCapturing
                 ? styles.unifiedModePanel
                 : styles.unifiedModePanelHidden
             }
-            aria-hidden={mode !== 'zones' || designOnly}
+            aria-hidden={(mode !== 'zones' || designOnly) || isCapturing}
           >
             <div className={styles.editorLayout}>
               <div className={styles.canvasSection}>

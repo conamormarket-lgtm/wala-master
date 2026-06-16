@@ -173,8 +173,8 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
   const handleYoryoPersonalizableClick = async () => {
     if (!user) {
-      setSelectedPastDesign(null);
-      setShowYoryoPersonalizado(true);
+      toast.error('Debes iniciar sesión para poder personalizar este producto.');
+      navigate('/login');
       return;
     }
 
@@ -560,6 +560,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             <YoryoPersonalizadoCliente 
               productData={product} 
               existingDesignData={selectedPastDesign}
+              userId={user?.uid}
               onSaved={(customizedProduct) => {
                 setShowYoryoPersonalizado(false);
                 addToCart(

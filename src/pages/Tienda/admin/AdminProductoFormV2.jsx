@@ -126,6 +126,8 @@ const AdminProductoFormV2 = () => {
 
   const [initialFormState, setInitialFormState] = useState(null);
   const [activeGalleryTabId, setActiveGalleryTabId] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [designUrlInput, setDesignUrlInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const canvasElRef = useRef(null);
 
@@ -374,6 +376,26 @@ const AdminProductoFormV2 = () => {
       });
     }
     e.target.value = ''; 
+  };
+
+  const handleDesignUrlSubmit = () => {
+    if (!designUrlInput.trim() || !fabricCanvas) return;
+    const url = designUrlInput.trim();
+    fabric.Image.fromURL(url, (img) => {
+      if (!img) {
+        alert("No se pudo cargar la imagen desde la URL. Asegúrate de que sea pública o válida.");
+        return;
+      }
+      img.scaleToWidth(120);
+      img.set({
+        originX: 'center', originY: 'center', left: 150, top: 150,
+        transparentCorners: false, cornerColor: '#111', borderColor: '#111', cornerSize: 10, padding: 5
+      });
+      fabricCanvas.add(img);
+      fabricCanvas.setActiveObject(img);
+      fabricCanvas.renderAll();
+      setDesignUrlInput('');
+    }, { crossOrigin: 'anonymous' });
   };
 
   const safelyDeleteOldImage = async (url) => {
@@ -1224,10 +1246,39 @@ const AdminProductoFormV2 = () => {
                         </ProductImageContainer>
 
                         {activeVariant.mockupState.selectedMockupId && (
-                          <button type="button" onClick={handleCaptureMockup} className={styles.captureBtn} disabled={uploading}>
-                            {uploading ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />} 
-                            {uploading ? <span key="uploading">Capturando...</span> : <span key="default">Capturar y Fijar Imagen</span>}
-                          </button>
+                          <>
+                            <button type="button" onClick={handleCaptureMockup} className={styles.captureBtn} disabled={uploading}>
+                              {uploading ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />} 
+                              {uploading ? <span key="uploading">Capturando...</span> : <span key="default">Capturar y Fijar Imagen</span>}
+                            </button>
+                            
+                            <div style={{ marginTop: '15px', padding: '10px', background: '#f8f9fa', borderRadius: '6px', border: '1px solid #ddd' }}>
+                              <span style={{ fontSize: '0.85rem', color: '#666', display: 'block', marginBottom: '8px' }}>O pega un enlace de diseño:</span>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <input 
+                                  type="text" 
+                                  placeholder="https://..." 
+                                  value={designUrlInput}
+                                  onChange={(e) => setDesignUrlInput(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleDesignUrlSubmit();
+                                    }
+                                  }}
+                                  style={{ flex: 1, padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '0.85rem' }}
+                                />
+                                <button 
+                                  type="button"
+                                  onClick={handleDesignUrlSubmit}
+                                  disabled={!designUrlInput.trim()}
+                                  style={{ padding: '6px 12px', background: '#e5e7eb', border: 'none', borderRadius: '4px', cursor: designUrlInput.trim() ? 'pointer' : 'not-allowed' }}
+                                >
+                                  Cargar
+                                </button>
+                              </div>
+                            </div>
+                          </>
                         )}
                       </>
                     )}
@@ -1246,6 +1297,40 @@ const AdminProductoFormV2 = () => {
                         {uploading ? <span key="uploading">Subiendo...</span> : <span key="default">Subir Imagen Directa</span>}
                         <input type="file" accept="image/*" onChange={handleDirectImageUpload} disabled={uploading} hidden />
                       </label>
+                      <div style={{ marginTop: '10px', padding: '10px', background: '#f8f9fa', borderRadius: '6px', border: '1px solid #ddd' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#666', display: 'block', marginBottom: '8px' }}>O pega un enlace de imagen externa:</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input 
+                            type="text" 
+                            placeholder="https://..." 
+                            value={designUrlInput}
+                            onChange={(e) => setDesignUrlInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (designUrlInput.trim()) {
+                                  updateActiveVariant({ imageUrl: designUrlInput.trim() });
+                                  setDesignUrlInput('');
+                                }
+                              }
+                            }}
+                            style={{ flex: 1, padding: '6px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '0.85rem' }}
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              if (designUrlInput.trim()) {
+                                updateActiveVariant({ imageUrl: designUrlInput.trim() });
+                                setDesignUrlInput('');
+                              }
+                            }}
+                            disabled={!designUrlInput.trim()}
+                            style={{ padding: '6px 12px', background: '#e5e7eb', border: 'none', borderRadius: '4px', cursor: designUrlInput.trim() ? 'pointer' : 'not-allowed' }}
+                          >
+                            Fijar URL
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

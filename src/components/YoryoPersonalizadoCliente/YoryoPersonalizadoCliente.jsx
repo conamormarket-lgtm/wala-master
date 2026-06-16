@@ -6,8 +6,10 @@ import { EditorProvider } from '../YoryoPersonalizado/WALA_Editor_Export/context
 import { createCustomerCustomProduct } from '../../services/customerCustomProducts';
 import styles from './YoryoPersonalizadoCliente.module.css';
 
-const YoryoPersonalizadoClienteContent = ({ productData, existingDesignData, onSaved }) => {
+const YoryoPersonalizadoClienteContent = ({ productData, existingDesignData, userId, onSaved }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [customBaseImage, setCustomBaseImage] = useState(null);
+  const [imageUrlInput, setImageUrlInput] = useState('');
   const containerRef = useRef(null);
   
   // Extraemos la info de Yoryo (configurada por el admin o proveniente de un diseño previo)
@@ -44,7 +46,8 @@ const YoryoPersonalizadoClienteContent = ({ productData, existingDesignData, onS
            
            // Subir a Firebase Storage
            const storage = getStorage();
-           const filename = `customer_designs/${productData.id}_${Date.now()}.jpg`;
+           const clientId = userId || 'invitados';
+           const filename = `YoryoPersonalizadoClientes/${clientId}/capturas/${productData.id}_${Date.now()}.jpg`;
            const storageRef = ref(storage, filename);
            await uploadString(storageRef, dataUrl, 'data_url');
            captureUrl = await getDownloadURL(storageRef);
@@ -119,7 +122,7 @@ const YoryoPersonalizadoClienteContent = ({ productData, existingDesignData, onS
         <div className={styles.editorInner}>
           <AdminViewEditor
             viewId="yoryo_default_view"
-            productImage={baseImage || fallbackImage}
+            productImage={customBaseImage || baseImage || fallbackImage}
             printAreas={adminYoryo.Zonas || []}
             initialLayersByColor={{ default: existingDesignData ? existingDesignData.YoryoPersonalizado?.Capas || [] : adminYoryo.Capas || [] }}
             currentColor="default"
@@ -129,6 +132,36 @@ const YoryoPersonalizadoClienteContent = ({ productData, existingDesignData, onS
           />
         </div>
       </div>
+
+      {!productData.isComboProduct && (
+        <div style={{ marginTop: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#374151' }}>Usar una imagen desde URL</h4>
+          <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 10px 0' }}>
+            Puedes pegar el link de una imagen externa. Esta imagen se cargará en el diseño y podrás trabajar tus ediciones sobre ella.
+          </p>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input 
+              type="text" 
+              placeholder="https://ejemplo.com/imagen.jpg" 
+              value={imageUrlInput}
+              onChange={(e) => setImageUrlInput(e.target.value)}
+              style={{ flex: 1, padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '0.9rem' }}
+            />
+            <button 
+              type="button"
+              onClick={() => {
+                if (imageUrlInput.trim()) {
+                  setCustomBaseImage(imageUrlInput.trim());
+                }
+              }}
+              disabled={!imageUrlInput.trim()}
+              style={{ padding: '8px 16px', background: '#4b5563', color: 'white', border: 'none', borderRadius: '4px', cursor: imageUrlInput.trim() ? 'pointer' : 'not-allowed', fontWeight: '500' }}
+            >
+              Cargar Imagen
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

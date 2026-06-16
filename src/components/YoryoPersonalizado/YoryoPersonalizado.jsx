@@ -94,8 +94,6 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
   };
 
   const handleSaveAndCapture = async () => {
-    if (!containerRef.current) return null;
-    
     const captureTarget = containerRef.current.querySelector('[class*="canvasSection"]') || containerRef.current;
     
     setIsCapturing(true);
@@ -208,8 +206,13 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
      let unified = [];
      customItems.forEach((item, i) => {
         const zonas = item.YoryoPersonalizado?.Zonas || [];
-        zonas.forEach(z => {
-          unified.push({ ...z, id: z.id ? `${z.id}_product_${i}` : z.id, width: z.width / N, x: (i * 100 / N) + (z.x / N) });
+        zonas.forEach((z, zIndex) => {
+          unified.push({ 
+            ...z, 
+            id: `${z.id || 'zona'}_${i}_${zIndex}`, 
+            width: z.width / N, 
+            x: (i * 100 / N) + (z.x / N) 
+          });
         });
      });
      return unified;

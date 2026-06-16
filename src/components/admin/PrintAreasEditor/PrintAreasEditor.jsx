@@ -159,7 +159,21 @@ const PrintAreasEditor = ({
   const [editingPointIndex, setEditingPointIndex] = useState(null); // Índice del punto que se está editando
   // eslint-disable-next-line no-unused-vars
   const [editingZoneId, setEditingZoneId] = useState(null); // ID de la zona que se está editando
+  const [isCapturing, setIsCapturing] = useState(false);
   const [isMouseOver, setIsMouseOver] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeCapture = () => setIsCapturing(true);
+    const handleAfterCapture = () => setIsCapturing(false);
+
+    window.addEventListener('before-yoryo-capture', handleBeforeCapture);
+    window.addEventListener('after-yoryo-capture', handleAfterCapture);
+
+    return () => {
+      window.removeEventListener('before-yoryo-capture', handleBeforeCapture);
+      window.removeEventListener('after-yoryo-capture', handleAfterCapture);
+    };
+  }, []);
 
   // Efecto para detectar si una zona está siendo arrastrada HACIA este lienzo desde afuera
   useEffect(() => {
@@ -1460,7 +1474,7 @@ const PrintAreasEditor = ({
           className={styles.image}
         />
 
-        {zones.map((zone) => {
+        {!isCapturing && zones.map((zone) => {
           const isSelected = zone.id === selectedZoneId;
           const zoneStyle = getZoneStyle(zone);
 
