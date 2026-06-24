@@ -6,7 +6,7 @@
 Este documento es el **snapshot del estado actual de producción** y sirve como respaldo
 documental del punto de partida ("estado conocido bueno") antes de aplicar cambios. Si algo
 se rompe, este es el estado al que se vuelve. Acompáñalo siempre de un respaldo real de datos
-(ver [ops/backup/README.md](./ops/backup/README.md)) y de un **commit/tag baseline en git**
+(ver [ops/backup/README.md](../../ops/backup/README.md)) y de un **commit/tag baseline en git**
 (ver §8).
 
 Todos los valores aquí provienen del repositorio en el momento del baseline. Los valores
@@ -184,4 +184,4 @@ Antes de cualquier cambio, congelar el punto de partida en el repositorio para p
    (export de Firestore/Storage y copia de reglas) generado con `ops/backup/`.
 
 > Con el tag de git + el export de datos + este snapshot documental, el estado de producción
-> queda **completamente reproducible** y se puede revertir vía [ops/restore/](./ops/restore/README.md).
+> queda **completamente reproducible** y se puede revertir vía [ops/restore/](../../ops/restore/README.md).
