@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createProduct, updateProduct, getProduct, generateProductId } from '../../../services/products';
 import { getMockups } from '../../../services/mockups';
 import { getBrands, createBrand, updateBrand } from '../../../services/brands';
+import { getNiches } from '../../../services/niches';
+import { getVendors } from '../../../services/vendors';
 import { getCategories, createCategory } from '../../../services/categories';
 import { getCollections, createCollection } from '../../../services/collections';
 import { getTags, createTag } from '../../../services/tags';
@@ -109,6 +111,9 @@ const AdminProductoFormV2 = () => {
     salePrice: '',
     sku: '',
     brandId: '',
+    nicheId: '',
+    vendorId: '',
+    fulfillmentType: '',
     category: '',
     collection: '',
     defaultVariantId: '', // ID de la variante principal
@@ -157,6 +162,8 @@ const AdminProductoFormV2 = () => {
   const { data: collections } = useQuery({ queryKey: ['admin-collections'], queryFn: async () => (await getCollections()).data });
   const { data: tags } = useQuery({ queryKey: ['admin-tags'], queryFn: async () => (await getTags()).data });
   const { data: characters } = useQuery({ queryKey: ['admin-characters'], queryFn: async () => (await getCharacters()).data });
+  const { data: nicheOptions } = useQuery({ queryKey: ['admin-niches'], queryFn: async () => (await getNiches()).data });
+  const { data: vendorOptions } = useQuery({ queryKey: ['admin-vendors'], queryFn: async () => (await getVendors()).data });
 
   // Si editamos un producto existente en DB
   const { data: productData, isLoading: loadingProduct } = useQuery({
@@ -208,6 +215,9 @@ const AdminProductoFormV2 = () => {
         salePrice: productData.salePrice || '',
         sku: productData.sku || '',
         brandId: productData.brandId || '',
+        nicheId: productData.nicheId || '',
+        vendorId: productData.vendorId || '',
+        fulfillmentType: productData.fulfillmentType || '',
         category: productData.category ? productData.category.id || productData.category : '',
         collection: productData.collections?.[0]?.id || productData.collections?.[0] || '',
         defaultVariantId: productData.defaultVariantId || firstVariantId,
@@ -641,6 +651,9 @@ const AdminProductoFormV2 = () => {
         inStock: Number(form.inStock) || 0,
         sku: form.sku,
         brandId: form.brandId,
+        nicheId: form.nicheId || undefined,
+        vendorId: form.vendorId || undefined,
+        fulfillmentType: form.fulfillmentType || undefined,
         category: form.category ? { id: form.category } : null,
         collections: form.collection ? [{ id: form.collection }] : [],
         mainImage: currentMainImage,
@@ -869,6 +882,34 @@ const AdminProductoFormV2 = () => {
               <button type="button" onClick={() => setShowBrandModal(true)} className={styles.addBrandBtn}>
                 + Crear Marca
               </button>
+            </div>
+
+            {/* Marketplace: nicho, vendedor y tipo de cumplimiento (Fase 1) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, margin: '12px 0' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', fontSize: 13, gap: 4 }}>
+                Nicho
+                <select value={form.nicheId} onChange={(e) => setForm(f => ({ ...f, nicheId: e.target.value }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+                  <option value="">(por defecto: regala-con-amor)</option>
+                  {(nicheOptions || []).map(n => <option key={n.id} value={n.slug || n.id}>{n.name || n.slug || n.id}</option>)}
+                </select>
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', fontSize: 13, gap: 4 }}>
+                Vendedor
+                <select value={form.vendorId} onChange={(e) => setForm(f => ({ ...f, vendorId: e.target.value }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+                  <option value="">(por defecto: casa)</option>
+                  {(vendorOptions || []).map(v => <option key={v.id} value={v.id}>{v.displayName || v.name || v.id}</option>)}
+                </select>
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', fontSize: 13, gap: 4 }}>
+                Tipo de cumplimiento
+                <select value={form.fulfillmentType} onChange={(e) => setForm(f => ({ ...f, fulfillmentType: e.target.value }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+                  <option value="">(auto)</option>
+                  <option value="print_on_demand">Personalizado (POD)</option>
+                  <option value="stock">En stock</option>
+                  <option value="made_to_order">Bajo pedido</option>
+                  <option value="dropship">Dropship</option>
+                </select>
+              </label>
             </div>
 
             {/* Fila de Marcas (Miniviews) */}

@@ -61,6 +61,8 @@ const RegalosCatasPage = lazy(() => import('./pages/RegalosCatasPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const NichePage = lazy(() => import('./pages/NichePage'));
 const VendorPanel = lazy(() => import('./pages/VendorPanel'));
+const NichesPage = lazy(() => import('./pages/NichesPage'));
+const VendorStorefrontPage = lazy(() => import('./pages/VendorStorefrontPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -78,6 +80,8 @@ const AdminReferidos = lazy(() => import('./pages/admin/AdminReferidos'));
 const AdminProductoFormV2 = lazy(() => import('./pages/Tienda/admin/AdminProductoFormV2'));
 const AdminCategorias = lazy(() => import('./pages/admin/AdminCategorias'));
 const AdminColecciones = lazy(() => import('./pages/admin/AdminColecciones'));
+const AdminNichos = lazy(() => import('./pages/admin/AdminNichos'));
+const AdminVendors = lazy(() => import('./pages/admin/AdminVendors'));
 
 const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminPagos = lazy(() => import('./pages/admin/AdminPagos'));
@@ -236,6 +240,8 @@ function App() {
                             <Route path="productos/:id" element={<AdminProductoFormV2 />} />
                             <Route path="categorias" element={<AdminCategorias />} />
                             <Route path="colecciones" element={<AdminColecciones />} />
+                            <Route path="nichos" element={<AdminNichos />} />
+                            <Route path="vendedores" element={<AdminVendors />} />
 
                             <Route path="whatsapp" element={<AdminWhatsApp />} />
                             <Route path="referidos" element={<AdminReferidos />} />
@@ -285,7 +291,9 @@ function App() {
                         {/* Fase 1: búsqueda con facetas y páginas de nicho (multi-vendor) */}
                         <Route path="/buscar" element={<SearchPage />} />
                         <Route path="/nicho/:slug" element={<NichePage />} />
+                        <Route path="/nichos" element={<NichesPage />} />
                         <Route path="/vendedor" element={<VendorPanel />} />
+                        <Route path="/tienda-vendedor/:slug" element={<VendorStorefrontPage />} />
 
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />

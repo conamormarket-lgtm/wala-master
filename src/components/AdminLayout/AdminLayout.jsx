@@ -169,6 +169,18 @@ const AdminLayout = () => {
                     Colecciones
                   </NavLink>
                   <NavLink
+                    to="/admin/nichos"
+                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
+                  >
+                    Nichos
+                  </NavLink>
+                  <NavLink
+                    to="/admin/vendedores"
+                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
+                  >
+                    Vendedores
+                  </NavLink>
+                  <NavLink
                     to="/admin/marcas"
                     className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
                   >
