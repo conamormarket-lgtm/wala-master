@@ -1,12 +1,16 @@
 /**
  * Cloud Function HTTP: el ERP debe llamar a esta URL cuando cree un pedido.
  * Crea la cuenta en el Portal (Auth + Firestore users) si el correo no tiene cuenta.
- * Una sola cuenta por email; contraseña inicial = DNI (mín. 6 caracteres).
+ * Una sola cuenta por email; contraseña inicial ALEATORIA + enlace de restablecimiento (H-03).
  */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const {
+  KAPI_MONTHLY_CAP, BALLSORT_REWARD, STREAK_DATES_BONUS, SURVEY_REWARD_MAX, REWARD_COINS_PER_ORDER,
+  limaTodayStr, limaWeekStartStr, applyDebit, randomPassword, pickWeightedPrize, verifyWebhookSignature,
+} = require("./economyLogic");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -51,10 +55,6 @@ function getErpDb() {
   }
   return erpApp.firestore();
 }
-
-// Monto fijo de monedas por pedido reclamado (server-authoritative, ignora el
-// valor enviado por el cliente). Centralizado para no confiar en el front.
-const REWARD_COINS_PER_ORDER = 10;
 
 const ERP_NOMBRE = [
   "clienteNombre",
@@ -111,17 +111,8 @@ function isValidEmail(str) {
   return t.includes("@") && t.length >= 5;
 }
 
-// SEGURIDAD (H-03 — PENDIENTE): la contraseña inicial = DNI es débil (el DNI es
-// semipúblico en Perú). Migrar a cuenta SIN password + enlace de definición de
-// contraseña (auth.generatePasswordResetLink / email-link). Requiere decisión de
-// producto y configuración de correo; hasta entonces se mantiene para no romper el
-// login de las cuentas creadas por el ERP.
-function buildPassword(dni) {
-  if (dni == null || String(dni).trim() === "") return null;
-  const n = String(dni).trim().replace(/\s/g, "");
-  if (n.length >= MIN_PASSWORD_LENGTH) return n;
-  return n.padStart(MIN_PASSWORD_LENGTH, "0");
-}
+// H-03: la contraseña inicial ya NO es el DNI; se usa randomPassword() de economyLogic
+// más un enlace de restablecimiento. El DNI se conserva solo como dato, no credencial.
 
 /**
  * URL: https://<region>-<project>.cloudfunctions.net/ensureAccountFromOrder
@@ -158,14 +149,8 @@ exports.ensureAccountFromOrder = functions.https.onRequest(async (req, res) => {
   // configurar ERP_WEBHOOK_SECRET y firmar desde el ERP para cerrar el agujero).
   const webhookSecret = process.env.ERP_WEBHOOK_SECRET;
   if (webhookSecret) {
-    const provided = String(req.get("X-Webhook-Signature") || "");
-    const expected = crypto
-      .createHmac("sha256", webhookSecret)
-      .update(req.rawBody || Buffer.from(JSON.stringify(req.body || {})))
-      .digest("hex");
-    const valid =
-      provided.length === expected.length &&
-      crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
+    const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
+    const valid = verifyWebhookSignature(rawBody, req.get("X-Webhook-Signature"), webhookSecret);
     if (!valid) {
       console.warn("ensureAccountFromOrder: firma HMAC inválida o ausente.");
       res.status(401).json({ created: false, error: "INVALID_SIGNATURE" });
@@ -186,11 +171,7 @@ exports.ensureAccountFromOrder = functions.https.onRequest(async (req, res) => {
     return;
   }
 
-  const password = buildPassword(dni);
-  if (!password) {
-    res.status(400).json({ created: false, error: "NO_DNI" });
-    return;
-  }
+  // H-03: el DNI ya no es obligatorio para crear la cuenta (no se usa como contraseña).
 
   try {
     let existingUser = null;
@@ -209,7 +190,7 @@ exports.ensureAccountFromOrder = functions.https.onRequest(async (req, res) => {
 
     const userRecord = await auth.createUser({
       email,
-      password,
+      password: randomPassword(), // H-03: aleatoria, nunca el DNI
       displayName: displayName || email,
     });
     const uid = userRecord.uid;
@@ -229,7 +210,17 @@ exports.ensureAccountFromOrder = functions.https.onRequest(async (req, res) => {
       { merge: true }
     );
 
-    res.status(200).json({ created: true, userId: uid });
+    // H-03: enlace para que el cliente DEFINA su propia contraseña. El ERP/portal lo
+    // entrega por correo. (El envío del correo es responsabilidad del ERP o de una
+    // extensión "Trigger Email"; aquí solo se genera el enlace.)
+    let passwordSetupLink = null;
+    try {
+      passwordSetupLink = await auth.generatePasswordResetLink(email);
+    } catch (linkErr) {
+      console.warn("ensureAccountFromOrder: no se pudo generar el enlace de contraseña:", linkErr.message);
+    }
+
+    res.status(200).json({ created: true, userId: uid, passwordSetupLink });
   } catch (err) {
     console.error("ensureAccountFromOrder error:", err);
     const code = err.code || "";
@@ -253,7 +244,8 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
     );
   }
 
-  const { pedidoId } = data || {};
+  // Normalizado a string una sola vez (H-06 #6): evita doble reclamo por '123' vs 123.
+  const pedidoId = data && data.pedidoId != null ? String(data.pedidoId) : null;
   if (!pedidoId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
@@ -731,42 +723,9 @@ exports.setAdminClaim = functions.https.onCall(async (data, context) => {
 // ECONOMÍA SERVER-AUTHORITATIVE (Fase 0, H-06)
 // Todo earn/spend de monedas/kapiCoins se hace aquí, transaccional e idempotente.
 // El cliente solo invoca estas callables; nunca escribe campos de saldo (las reglas
-// los bloquean). Fechas en America/Lima (UTC-5) para evitar el bug de rachas.
+// los bloquean). La lógica pura (fechas Lima, débito FIFO, sorteo, HMAC) está en
+// ./economyLogic y se prueba en functions/test/economyLogic.test.js.
 // ════════════════════════════════════════════════════════════════════════════
-
-const KAPI_MONTHLY_CAP = 31;
-const BALLSORT_REWARD = 2;
-const STREAK_DATES_BONUS = 25;
-const SURVEY_REWARD_MAX = 50;
-
-function limaNow() {
-  return new Date(Date.now() - 5 * 60 * 60 * 1000); // UTC-5, Perú no usa DST
-}
-function limaTodayStr() {
-  return limaNow().toISOString().split("T")[0];
-}
-function limaWeekStartStr() {
-  const lima = limaNow();
-  const day = lima.getUTCDay();
-  const diff = lima.getUTCDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(Date.UTC(lima.getUTCFullYear(), lima.getUTCMonth(), diff));
-  return monday.toISOString().split("T")[0];
-}
-
-// Resta `amount` de monedas y, best-effort, recorta monedasActivas FIFO.
-function applyDebit(userData, amount) {
-  const monedas = Math.max(0, (userData.monedas || 0) - amount);
-  let activas = Array.isArray(userData.monedasActivas) ? userData.monedasActivas.map((b) => ({ ...b })) : [];
-  let remaining = amount;
-  activas = activas.filter((b) => {
-    if (remaining <= 0) return true;
-    const take = Math.min(remaining, b.amount || 0);
-    b.amount = (b.amount || 0) - take;
-    remaining -= take;
-    return b.amount > 0;
-  });
-  return { monedas, monedasActivas: activas };
-}
 
 function requireAuth(context) {
   if (!context.auth) {
@@ -855,13 +814,7 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("failed-precondition", "No hay premios configurados.");
   }
   const prizes = prizesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  const rand = Math.random() * 100;
-  let acc = 0;
-  let selected = prizes[prizes.length - 1];
-  for (const p of prizes) {
-    acc += Number(p.probability) || 0;
-    if (rand <= acc) { selected = p; break; }
-  }
+  const selected = pickWeightedPrize(prizes, Math.random() * 100);
 
   try {
     return await db.runTransaction(async (t) => {
@@ -893,7 +846,11 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
 // ── Progreso de reto semanal ──────────────────────────────────────────────────
 exports.recordChallengeEventSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
-  const { actionType, count = 1 } = data || {};
+  const actionType = data && data.actionType;
+  // H-05: el conteo se FUERZA a 1 por llamada (no se confía en el cliente). La
+  // verificación real de que la acción ocurrió debe moverse a triggers server-side
+  // (p.ej. onWrite de wishlist/compra/reseña) en Fase 2; hoy esto solo limita el abuso.
+  const count = 1;
   if (!actionType) {
     throw new functions.https.HttpsError("invalid-argument", "Falta actionType.");
   }
@@ -1050,17 +1007,52 @@ exports.claimDatesStreakSecure = functions.https.onCall(async (data, context) =>
 });
 
 // ── Reclamar monedas de un referido completado ────────────────────────────────
+const REFERRAL_REWARD = 10; // server-authoritative; se ignora earnedCoins del cliente (H-05)
+
 exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const referralId = data && data.referralId;
   if (!referralId) {
     throw new functions.https.HttpsError("invalid-argument", "Falta referralId.");
   }
+
+  // El doc de referrals es escribible por el cliente, así que NO se confía en sus
+  // campos (status/earnedCoins). La legitimidad se valida contra el ERP: debe existir
+  // una compra (orderId) real y finalizada. FALLA CERRADO sin credencial del ERP.
+  const erpDb = getErpDb();
+  if (!erpDb) {
+    console.error("claimReferralSecure: ERP_SERVICE_ACCOUNT no configurado; rechazado (fail-closed).");
+    throw new functions.https.HttpsError("failed-precondition", "Validación de referidos no disponible temporalmente.");
+  }
+
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
   const refRef = db.collection("referrals").doc(String(referralId));
+
+  const refSnap0 = await refRef.get();
+  if (!refSnap0.exists) throw new functions.https.HttpsError("not-found", "Referido no encontrado.");
+  const orderId = refSnap0.data().orderId;
+  if (!orderId) {
+    throw new functions.https.HttpsError("failed-precondition", "El referido no tiene una compra asociada.");
+  }
+
+  // El pedido referido debe existir y estar finalizado en el ERP.
+  let orderData = null;
+  for (const coll of ["pedidos_web", "pedidos"]) {
+    const snap = await erpDb.collection(coll).doc(String(orderId)).get();
+    if (snap.exists) { orderData = snap.data(); break; }
+  }
+  if (!orderData) throw new functions.https.HttpsError("not-found", "La compra del referido no existe.");
+  const estado = (orderData.estadoGeneral || orderData.estado || "")
+    .toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (!["finalizado", "entregado", "completado"].includes(estado)) {
+    throw new functions.https.HttpsError("failed-precondition", "La compra del referido aún no está finalizada.");
+  }
+
+  // Lock GLOBAL por pedido: doc keyed por orderId en referralOrderClaims.
+  const claimRef = db.collection("referralOrderClaims").doc(String(orderId));
   try {
     return await db.runTransaction(async (t) => {
-      const [userSnap, refSnap] = await Promise.all([t.get(userRef), t.get(refRef)]);
+      const [userSnap, refSnap, claimSnap] = await Promise.all([t.get(userRef), t.get(refRef), t.get(claimRef)]);
       if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       if (!refSnap.exists) throw new functions.https.HttpsError("not-found", "Referido no encontrado.");
       const u = userSnap.data();
@@ -1069,16 +1061,28 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
       if (!u.referralCode || r.referrerCode !== u.referralCode) {
         throw new functions.https.HttpsError("permission-denied", "Este referido no le pertenece.");
       }
+      // No puede referirse a sí mismo (la compra no puede ser del propio referrer).
+      const ownOrder = (orderData.userId && orderData.userId === uid) ||
+        (orderData.dni && u.dni && String(orderData.dni) === String(u.dni));
+      if (ownOrder) {
+        throw new functions.https.HttpsError("permission-denied", "No puede referirse a sí mismo.");
+      }
       if (r.status === "claimed") {
         throw new functions.https.HttpsError("already-exists", "Este referido ya fue reclamado.");
       }
-      if (r.status !== "completed") {
-        throw new functions.https.HttpsError("failed-precondition", "El referido aún no está listo para reclamar.");
+      // Dedup GLOBAL por pedido: cada compra otorga UN solo premio de referido (a quien
+      // reclame primero), no uno por usuario. Evita que varios cosechen el mismo pedido ajeno.
+      if (claimSnap.exists) {
+        throw new functions.https.HttpsError("already-exists", "Esta compra ya otorgó un premio de referido.");
       }
-      const earned = Number(r.earnedCoins) || 0;
+
+      t.set(claimRef, { uid, referralId: String(referralId), at: admin.firestore.FieldValue.serverTimestamp() });
       t.update(refRef, { status: "claimed", claimedAt: admin.firestore.FieldValue.serverTimestamp() });
-      t.update(userRef, { monedas: (u.monedas || 0) + earned });
-      return { success: true, earned };
+      t.update(userRef, {
+        monedas: (u.monedas || 0) + REFERRAL_REWARD,
+        referralOrdersClaimed: admin.firestore.FieldValue.arrayUnion(String(orderId)),
+      });
+      return { success: true, earned: REFERRAL_REWARD };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;

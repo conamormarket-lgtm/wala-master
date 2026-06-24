@@ -201,17 +201,6 @@ const Header = () => {
     }
   };
 
-  const handleResetCoinsForTesting = async () => {
-    if (user?.email?.toLowerCase() === 'yorh001@gmail.com') {
-      const confirmReset = window.confirm('DEV MODE: ¿Quieres resetear tus Kapicoins a 0 y limpiar el historial de reclamos para testear de nuevo?');
-      if (confirmReset && updateUserProfile) {
-        await updateUserProfile({ monedas: 0, monedasReclamadas: [] });
-        setDisplayCoins(0);
-        alert('Monedas e historial reseteados.');
-      }
-    }
-  };
-
   if (!isHeaderVisible) return null;
 
   const isNativeApp = Capacitor.isNativePlatform();
@@ -351,18 +340,14 @@ const Header = () => {
                 {/* --- DESKTOP VIEW --- */}
                 <div className={styles.desktopWalletsOnly}>
                   {/* Billetera Principal (Wala Coins) */}
-                  <div 
-                    className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`} 
-                    onClick={handleResetCoinsForTesting}
-                    style={user?.email === 'yorh001@gmail.com' ? { cursor: 'pointer' } : {}}
+                  <div
+                    className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`}
                   >
                     <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
                       🪙 {Math.floor(displayCoins)}
                     </div>
                     <div className={styles.tooltipText}>
                       Billetera Principal - ¡Canjea tus monedas en el catálogo o checkout!
-                      {user?.email === 'yorh001@gmail.com' && <br/>}
-                      {user?.email === 'yorh001@gmail.com' && <small style={{color:'#f1c40f'}}>(Click para Reset Test)</small>}
                     </div>
                   </div>
 

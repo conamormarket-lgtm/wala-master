@@ -126,15 +126,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// ── Restricted route config for maintenance ─────────────────────────────────────
-const RestrictedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  const isYorh = user?.email?.toLowerCase() === 'yorh001@gmail.com';
-  if (isYorh) return children;
-  return <Navigate to="/cuenta" replace />;
-};
-
 const GlobalLayout = ({ children }) => {
   const location = useLocation();
   const isIndependentRoute = location.pathname.startsWith('/regalos-con-amor');

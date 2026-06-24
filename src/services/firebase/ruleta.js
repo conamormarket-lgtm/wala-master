@@ -21,7 +21,7 @@ export const isSameWeek = (date1, date2) => {
 };
 
 export const getRuletaEligibility = (userProfile) => {
-  if (!userProfile) return { isUnlocked: false, days: 0, lost: false };
+  if (!userProfile) return { isUnlocked: false, days: 0, hasLost: false };
 
   const currentWeekStart = getStartOfWeek();
   
@@ -31,7 +31,7 @@ export const getRuletaEligibility = (userProfile) => {
   
   if (data.weekStart !== formatIsoDate(currentWeekStart)) {
     // Si la semana guardada no es la actual, entonces tiene 0 días esta semana
-    return { isUnlocked: false, days: 0, lost: false };
+    return { isUnlocked: false, days: 0, hasLost: false };
   }
 
   const daysCount = data.daysClaimed.length;

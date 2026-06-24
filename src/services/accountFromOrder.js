@@ -1,11 +1,12 @@
 /**
  * Creación automática de cuentas de usuario desde datos de pedidos/ventas del ERP.
- * Una sola cuenta por email; contraseña inicial = DNI (mínimo 6 caracteres por política Firebase).
+ * Una sola cuenta por email; contraseña inicial ALEATORIA + correo de restablecimiento (H-03).
  */
 import {
   createUserWithEmailAndPassword,
   updateProfile,
   fetchSignInMethodsForEmail,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth, getFirebaseConfigMessage } from './firebase/config';
 import { deleteDocument, getDocument, setDocument } from './firebase/firestore';
@@ -84,13 +85,16 @@ function isValidEmail(str) {
 }
 
 /**
- * Genera contraseña para Firebase (mínimo 6 caracteres). Usa DNI; si es corto, rellena con ceros.
+ * H-03: NUNCA usar el DNI como contraseña (es semipúblico y adivinable en Perú).
+ * Se crea la cuenta con una contraseña aleatoria fuerte (que el usuario no necesita
+ * conocer) y luego se envía un correo de restablecimiento para que defina la suya.
  */
-function buildPasswordFromDni(dni) {
-  if (dni == null || String(dni).trim() === '') return null;
-  const normalized = String(dni).trim().replace(/\s/g, '');
-  if (normalized.length >= MIN_PASSWORD_LENGTH) return normalized;
-  return normalized.padStart(MIN_PASSWORD_LENGTH, '0');
+function randomClientPassword() {
+  const arr = new Uint8Array(18);
+  window.crypto.getRandomValues(arr);
+  let s = '';
+  for (let i = 0; i < arr.length; i++) s += (arr[i] % 36).toString(36);
+  return s.slice(0, 16) + 'Aa1!';
 }
 
 /**
@@ -115,10 +119,7 @@ export async function ensureAccountFromOrderData(pedidoRaw, options = {}) {
     return { created: false, error: 'NO_EMAIL' };
   }
 
-  const password = buildPasswordFromDni(dni);
-  if (!password) {
-    return { created: false, error: 'NO_DNI' };
-  }
+  // H-03: el DNI ya no es obligatorio (no se usa como contraseña).
 
   try {
     const methods = await fetchSignInMethodsForEmail(auth, email);
@@ -133,7 +134,7 @@ export async function ensureAccountFromOrderData(pedidoRaw, options = {}) {
   }
 
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, randomClientPassword());
     const user = userCredential.user;
 
     if (displayName) {
@@ -161,6 +162,13 @@ export async function ensureAccountFromOrderData(pedidoRaw, options = {}) {
 
     if (linkOrderId && pedidoRaw.id) {
       await updateOrderInERP(pedidoRaw.id, { userId: user.uid });
+    }
+
+    // H-03: enviar correo para que el usuario defina su propia contraseña (best-effort).
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (mailErr) {
+      // no bloquea la creación de la cuenta
     }
 
     return { created: true, userId: user.uid };

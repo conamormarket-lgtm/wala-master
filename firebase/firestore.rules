@@ -28,13 +28,27 @@ service cloud.firestore {
     // que esas Functions estén desplegadas ANTES de publicar estas reglas, o se
     // romperán juegos/recompensas. 'referralCode'/'referralCodeEdited'/'lastAppOpen'
     // NO se bloquean porque el cliente los escribe legítimamente.
-    function noTocaCamposSensibles() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+    function camposSaldo() {
+      return [
         'monedas', 'monedasReclamadas', 'monedasEnEspera', 'historialMonedasEspera', 'role',
         'monedasActivas', 'kapiCoins', 'kapiHappiness', 'lastKapiClaimDate', 'weeklyClaimsData',
         'activeMultiplier', 'multiplierExpiresAt', 'weeklyChallengeProgress',
-        'lastBallSortReward', 'lastRuletaSpinWeek', 'streakBonusReceived', 'surveyRewardClaimed'
-      ]);
+        'lastBallSortReward', 'lastRuletaSpinWeek', 'streakBonusReceived', 'surveyRewardClaimed',
+        'referralOrdersClaimed'
+      ];
+    }
+    function noTocaCamposSensibles() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(camposSaldo());
+    }
+    // H-06 #4: en la CREACIÓN del perfil tampoco se pueden incluir campos de saldo
+    // (setDoc(merge:true) dispara create cuando el doc aún no existe).
+    function sinSaldoEnCreate() {
+      return !request.resource.data.keys().hasAny(camposSaldo());
+    }
+    // H-06 #3: el DNI solo puede fijarse cuando está vacío; una vez puesto es inmutable
+    // para el propio usuario (evita "cosechar" pedidos ajenos cambiando el DNI).
+    function dniInmutable() {
+      return resource.data.dni == null || request.resource.data.dni == resource.data.dni;
     }
 
     // ── Catálogo y taxonomías (lectura pública, escritura admin) ─────────────────
@@ -105,8 +119,8 @@ service cloud.firestore {
     // ── Datos de usuario ─────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles());
+      allow create: if isAuthenticated() && isOwner(userId) && sinSaldoEnCreate();
+      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles() && dniInmutable());
       allow delete: if isAdmin();
       match /notifications/{notifId} {
         allow read, update: if isOwner(userId) || isAdmin();
@@ -115,8 +129,8 @@ service cloud.firestore {
     }
     match /portal_clientes_users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles());
+      allow create: if isAuthenticated() && isOwner(userId) && sinSaldoEnCreate();
+      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles() && dniInmutable());
       allow delete: if isAdmin();
       match /notifications/{notifId} {
         allow read, update: if isOwner(userId) || isAdmin();
@@ -170,6 +184,8 @@ service cloud.firestore {
     match /storeConfigLogs/{id}       { allow read, write: if isAdmin(); }
     match /inventoryLogs/{id}         { allow read, write: if isAdmin(); }
     match /analytics_kapi/{id}        { allow read, write: if isAdmin(); }
+    // Lock de dedup de referidos (H-05): solo lo escribe Cloud Functions (admin SDK).
+    match /referralOrderClaims/{id}   { allow read, write: if isAdmin(); }
 
     // ── Ingestión pública controlada ─────────────────────────────────────────────
     match /heatmap_events/{eventId} {
