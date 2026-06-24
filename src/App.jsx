@@ -58,6 +58,9 @@ const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
 const MussaPage = lazy(() => import('./pages/MussaPage'));
 const RegalosCatasPage = lazy(() => import('./pages/RegalosCatasPage'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
+const NichePage = lazy(() => import('./pages/NichePage'));
+const VendorPanel = lazy(() => import('./pages/VendorPanel'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -278,7 +281,12 @@ function App() {
                         {/* Mussa */}
                         <Route path="/mussa" element={<MussaPage />} />
                         <Route path="/regalos-catas" element={<RegalosCatasPage />} />
-                        
+
+                        {/* Fase 1: búsqueda con facetas y páginas de nicho (multi-vendor) */}
+                        <Route path="/buscar" element={<SearchPage />} />
+                        <Route path="/nicho/:slug" element={<NichePage />} />
+                        <Route path="/vendedor" element={<VendorPanel />} />
+
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />
                         
