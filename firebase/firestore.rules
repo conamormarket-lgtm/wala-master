@@ -69,6 +69,7 @@ service cloud.firestore {
     match /fonts/{id}                 { allow read: if true; allow write: if isAdmin(); }
     match /templates/{id}             { allow read: if true; allow write: if isAdmin(); }
     match /vendors/{id}               { allow read: if true; allow write: if isAdmin(); }
+    match /niches/{id}                { allow read: if true; allow write: if isAdmin(); }
     match /storefront/{id}            { allow read: if true; allow write: if isAdmin(); }
     match /storeConfig/{id}           { allow read: if true; allow write: if isAdmin(); }
     match /configuracion/{id}         { allow read: if true; allow write: if isAdmin(); }

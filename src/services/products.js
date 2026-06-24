@@ -2,6 +2,7 @@ import { getCollection, getDocument, getCollectionPaginated, createDocument, upd
 import { deleteFile } from './firebase/storage';
 import { collection, doc } from 'firebase/firestore';
 import { db } from './firebase/config';
+import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '../constants/marketplace';
 
 const COLLECTION = 'productos_wala';
 const CACHE_VERSION = 'v2'; // Cambiar esto invalida la caché de todos los usuarios
@@ -214,6 +215,13 @@ function normalizeProductForRead(doc) {
     whatsappNumber: doc.whatsappNumber ?? '+51912881722',
     productType: doc.productType ?? '',
     brandId: doc.brandId ?? '',
+    // Base multi-vendor / multi-nicho (Fase 1) — defaults aditivos.
+    vendorId: doc.vendorId || DEFAULT_VENDOR_ID,
+    nicheId: doc.nicheId || DEFAULT_NICHE_ID,
+    fulfillmentType: normalizeFulfillmentType(
+      doc.fulfillmentType,
+      Boolean(doc.customizable) || customizationViews.length > 0
+    ),
     customizationViews,
     customizable: Boolean(doc.customizable) || customizationViews.length > 0,
     hasVariants: Boolean(hasVariants),
@@ -789,6 +797,10 @@ function normalizeProductPayload(data) {
     whatsappMessage: String(data.whatsappMessage || '').trim(),
     productType,
     brandId,
+    // Base multi-vendor / multi-nicho (Fase 1).
+    vendorId: (data.vendorId ? String(data.vendorId).trim() : '') || DEFAULT_VENDOR_ID,
+    nicheId: (data.nicheId ? String(data.nicheId).trim() : '') || DEFAULT_NICHE_ID,
+    fulfillmentType: normalizeFulfillmentType(data.fulfillmentType, Boolean(data.customizable)),
     price,
     salePrice: finalSalePrice,
     images: images.length ? images : [],
