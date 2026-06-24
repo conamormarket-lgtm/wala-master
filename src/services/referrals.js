@@ -13,6 +13,7 @@ import {
 import { db } from './firebase/config';
 // eslint-disable-next-line no-unused-vars
 import { setDocument } from './firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const REFERRALS_COLLECTION = 'referrals';
 
@@ -172,22 +173,12 @@ export async function getReferralsByReferrer(referrerCode) {
 /**
  * Reclama las monedas de un referido (Etapa 4 -> Finalizado/Reclamado)
  */
-export async function claimReferralCoins(referralId, earnedCoins, uid, currentMonedas = 0) {
+export async function claimReferralCoins(referralId) {
+  // H-06: el reclamo (marcar 'claimed' + acreditar monedas) se hace server-side en
+  // transacción (callable claimReferralSecure), validando propiedad y estado. Se
+  // ignoran earnedCoins/currentMonedas que antes venían del cliente (falsificables).
   try {
-    // 1. Actualizar el doc del referido a 'claimed'
-    const docRef = doc(db, REFERRALS_COLLECTION, referralId);
-    await updateDoc(docRef, {
-      status: 'claimed',
-      claimedAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-
-    // 2. Sumar monedas al perfil
-    await setDocument('portal_clientes_users', uid, {
-      monedas: currentMonedas + earnedCoins,
-      updatedAt: serverTimestamp()
-    });
-
+    await httpsCallable(getFunctions(), 'claimReferralSecure')({ referralId });
     return { error: null };
   } catch (error) {
     return { error: error.message };

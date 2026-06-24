@@ -25,7 +25,7 @@ const ROLES_MAP = {
 };
 
 const SubscriptionSurveyPage = () => {
-  const { userProfile, updateUserProfile, loading: authLoading, earnMainCoins } = useAuth();
+  const { userProfile, updateUserProfile, loading: authLoading, grantSurveyReward } = useAuth();
   const navigate = useNavigate();
   
   const [config, setConfig] = useState(DEFAULT_SURVEY_CONFIG);
@@ -294,7 +294,8 @@ const SubscriptionSurveyPage = () => {
       });
 
       if (coinsEarned > 0) {
-        await earnMainCoins(coinsEarned, 'Fechas registradas en encuesta');
+        // H-06: el bono se acredita server-side (idempotente, con tope anti-abuso).
+        await grantSurveyReward(coinsEarned);
         window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: coinsEarned } }));
       }
 

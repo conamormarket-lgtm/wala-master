@@ -727,5 +727,365 @@ exports.setAdminClaim = functions.https.onCall(async (data, context) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// ECONOMÍA SERVER-AUTHORITATIVE (Fase 0, H-06)
+// Todo earn/spend de monedas/kapiCoins se hace aquí, transaccional e idempotente.
+// El cliente solo invoca estas callables; nunca escribe campos de saldo (las reglas
+// los bloquean). Fechas en America/Lima (UTC-5) para evitar el bug de rachas.
+// ════════════════════════════════════════════════════════════════════════════
+
+const KAPI_MONTHLY_CAP = 31;
+const BALLSORT_REWARD = 2;
+const STREAK_DATES_BONUS = 25;
+const SURVEY_REWARD_MAX = 50;
+
+function limaNow() {
+  return new Date(Date.now() - 5 * 60 * 60 * 1000); // UTC-5, Perú no usa DST
+}
+function limaTodayStr() {
+  return limaNow().toISOString().split("T")[0];
+}
+function limaWeekStartStr() {
+  const lima = limaNow();
+  const day = lima.getUTCDay();
+  const diff = lima.getUTCDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(Date.UTC(lima.getUTCFullYear(), lima.getUTCMonth(), diff));
+  return monday.toISOString().split("T")[0];
+}
+
+// Resta `amount` de monedas y, best-effort, recorta monedasActivas FIFO.
+function applyDebit(userData, amount) {
+  const monedas = Math.max(0, (userData.monedas || 0) - amount);
+  let activas = Array.isArray(userData.monedasActivas) ? userData.monedasActivas.map((b) => ({ ...b })) : [];
+  let remaining = amount;
+  activas = activas.filter((b) => {
+    if (remaining <= 0) return true;
+    const take = Math.min(remaining, b.amount || 0);
+    b.amount = (b.amount || 0) - take;
+    remaining -= take;
+    return b.amount > 0;
+  });
+  return { monedas, monedasActivas: activas };
+}
+
+function requireAuth(context) {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
+  }
+  return context.auth.uid;
+}
+
+// ── Alimentar a Kapi (kapiCoins + racha) ──────────────────────────────────────
+exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const today = limaTodayStr();
+  const weekStart = limaWeekStartStr();
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+      if (u.lastKapiClaimDate === today) {
+        throw new functions.https.HttpsError("already-exists", "Ya alimentaste a Kapi hoy.");
+      }
+      const currentKapi = u.kapiCoins || 0;
+      if (currentKapi >= KAPI_MONTHLY_CAP) {
+        throw new functions.https.HttpsError("failed-precondition", "Límite mensual de Kapi Coins alcanzado.");
+      }
+      let weekly = u.weeklyClaimsData || { weekStart, daysClaimed: [] };
+      if (weekly.weekStart !== weekStart) weekly = { weekStart, daysClaimed: [today] };
+      else if (!weekly.daysClaimed.includes(today)) weekly.daysClaimed.push(today);
+
+      let add = 1;
+      if (u.activeMultiplier === "kapi_double_3d" && u.multiplierExpiresAt &&
+          new Date(u.multiplierExpiresAt) > new Date()) {
+        add = 2;
+      }
+      const updates = {
+        kapiCoins: currentKapi + add,
+        lastKapiClaimDate: today,
+        kapiHappiness: Math.min(100, (u.kapiHappiness || 0) + 10),
+        weeklyClaimsData: weekly,
+      };
+      t.update(userRef, updates);
+      return { success: true, ...updates };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("feedKapiSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al alimentar a Kapi.");
+  }
+});
+
+// ── Recompensa diaria de Ball Sort ────────────────────────────────────────────
+exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const today = limaTodayStr();
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+      if (u.lastBallSortReward === today) {
+        throw new functions.https.HttpsError("already-exists", "Ya reclamaste tu recompensa de hoy.");
+      }
+      t.update(userRef, {
+        monedas: (u.monedas || 0) + BALLSORT_REWARD,
+        lastBallSortReward: today,
+      });
+      return { success: true, reward: BALLSORT_REWARD };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("claimBallSortRewardSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al reclamar la recompensa.");
+  }
+});
+
+// ── Girar la ruleta (RNG server-side) ─────────────────────────────────────────
+exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const weekStart = limaWeekStartStr();
+
+  const prizesSnap = await db.collection("ruletaPrizes").orderBy("probability", "desc").get();
+  if (prizesSnap.empty) {
+    throw new functions.https.HttpsError("failed-precondition", "No hay premios configurados.");
+  }
+  const prizes = prizesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const rand = Math.random() * 100;
+  let acc = 0;
+  let selected = prizes[prizes.length - 1];
+  for (const p of prizes) {
+    acc += Number(p.probability) || 0;
+    if (rand <= acc) { selected = p; break; }
+  }
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+      const weekly = u.weeklyClaimsData || { weekStart: "", daysClaimed: [] };
+      const daysCount = weekly.weekStart === weekStart ? (weekly.daysClaimed || []).length : 0;
+      if (daysCount < 7) {
+        throw new functions.https.HttpsError("failed-precondition", "Ruleta no desbloqueada.");
+      }
+      if (u.lastRuletaSpinWeek === weekStart) {
+        throw new functions.https.HttpsError("already-exists", "Ya giraste la ruleta esta semana.");
+      }
+      const updates = { lastRuletaSpinWeek: weekStart };
+      if (selected.type === "Monedas") {
+        updates.monedas = (u.monedas || 0) + Number(selected.amount || 0);
+      }
+      t.update(userRef, updates);
+      return { success: true, prize: selected };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("spinRuletaSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al girar la ruleta.");
+  }
+});
+
+// ── Progreso de reto semanal ──────────────────────────────────────────────────
+exports.recordChallengeEventSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const { actionType, count = 1 } = data || {};
+  if (!actionType) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta actionType.");
+  }
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const challengeSnap = await db.collection("globals").doc("activeChallenge").get();
+  if (!challengeSnap.exists) return { success: true, noActiveChallenge: true };
+  const ch = challengeSnap.data();
+  if (ch.actionType !== actionType) return { success: true, noMatch: true };
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+      let progress = u.weeklyChallengeProgress || {};
+      if (progress.challengeId !== ch.challengeId) {
+        progress = { challengeId: ch.challengeId, progress: 0, completed: false };
+      }
+      if (progress.completed) return { success: true, alreadyCompleted: true };
+
+      const newProgress = Math.min((progress.progress || 0) + count, ch.goal);
+      const nowCompleted = newProgress >= ch.goal;
+      const updates = {
+        weeklyChallengeProgress: { challengeId: ch.challengeId, progress: newProgress, completed: nowCompleted },
+      };
+      if (nowCompleted) {
+        if (ch.rewardType === "kapi_double_3d") {
+          updates.activeMultiplier = "kapi_double_3d";
+          updates.multiplierExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+        } else {
+          updates.monedas = (u.monedas || 0) + (Number(ch.rewardCoins) || 0);
+        }
+      }
+      t.update(userRef, updates);
+      return { success: true, completed: nowCompleted };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("recordChallengeEventSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al registrar el progreso.");
+  }
+});
+
+// ── Gastar monedas (canje de catálogo) ────────────────────────────────────────
+exports.spendCoinsSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const amount = Number(data && data.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new functions.https.HttpsError("invalid-argument", "Monto inválido.");
+  }
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+      if ((u.monedas || 0) < amount) {
+        throw new functions.https.HttpsError("failed-precondition", "Monedas insuficientes.");
+      }
+      t.update(userRef, applyDebit(u, amount));
+      return { success: true };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("spendCoinsSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al gastar monedas.");
+  }
+});
+
+// ── Congelar monedas para un pedido (descuento en checkout) ────────────────────
+exports.freezeCoinsSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const amount = Number(data && data.amount);
+  const orderId = data && data.orderId;
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new functions.https.HttpsError("invalid-argument", "Monto inválido.");
+  }
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+      if ((u.monedas || 0) < amount) {
+        throw new functions.https.HttpsError("failed-precondition", "Monedas insuficientes.");
+      }
+      const debit = applyDebit(u, amount);
+      const history = u.historialMonedasEspera || [];
+      t.update(userRef, {
+        ...debit,
+        monedasEnEspera: (u.monedasEnEspera || 0) + amount,
+        historialMonedasEspera: [
+          ...history,
+          { orderId: orderId || null, amount, status: "pending", date: new Date().toISOString() },
+        ],
+      });
+      return { success: true };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("freezeCoinsSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al congelar monedas.");
+  }
+});
+
+// ── Bono por encuesta (idempotente) ───────────────────────────────────────────
+exports.grantSurveyRewardSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const requested = Number(data && data.coins) || 0;
+  const reward = Math.max(0, Math.min(requested, SURVEY_REWARD_MAX)); // clamp anti-abuso
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+      if (u.surveyRewardClaimed) return { success: true, alreadyClaimed: true };
+      t.update(userRef, {
+        monedas: (u.monedas || 0) + reward,
+        surveyRewardClaimed: true,
+      });
+      return { success: true, reward };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("grantSurveyRewardSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al otorgar el bono.");
+  }
+});
+
+// ── Bono por streak de fechas (idempotente) ───────────────────────────────────
+exports.claimDatesStreakSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const uniqueDates = Number(data && data.uniqueDates) || 0;
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+      if (u.streakBonusReceived) return { success: true, alreadyClaimed: true };
+      if (uniqueDates < 3) return { success: true, notEligible: true };
+      t.update(userRef, {
+        monedas: (u.monedas || 0) + STREAK_DATES_BONUS,
+        streakBonusReceived: true,
+      });
+      return { success: true, reward: STREAK_DATES_BONUS };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("claimDatesStreakSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al otorgar el bono.");
+  }
+});
+
+// ── Reclamar monedas de un referido completado ────────────────────────────────
+exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const referralId = data && data.referralId;
+  if (!referralId) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta referralId.");
+  }
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const refRef = db.collection("referrals").doc(String(referralId));
+  try {
+    return await db.runTransaction(async (t) => {
+      const [userSnap, refSnap] = await Promise.all([t.get(userRef), t.get(refRef)]);
+      if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      if (!refSnap.exists) throw new functions.https.HttpsError("not-found", "Referido no encontrado.");
+      const u = userSnap.data();
+      const r = refSnap.data();
+
+      if (!u.referralCode || r.referrerCode !== u.referralCode) {
+        throw new functions.https.HttpsError("permission-denied", "Este referido no le pertenece.");
+      }
+      if (r.status === "claimed") {
+        throw new functions.https.HttpsError("already-exists", "Este referido ya fue reclamado.");
+      }
+      if (r.status !== "completed") {
+        throw new functions.https.HttpsError("failed-precondition", "El referido aún no está listo para reclamar.");
+      }
+      const earned = Number(r.earnedCoins) || 0;
+      t.update(refRef, { status: "claimed", claimedAt: admin.firestore.FieldValue.serverTimestamp() });
+      t.update(userRef, { monedas: (u.monedas || 0) + earned });
+      return { success: true, earned };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("claimReferralSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al reclamar el referido.");
+  }
+});
+
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;

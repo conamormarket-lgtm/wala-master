@@ -1,47 +1,18 @@
-import { db } from './config';
-import { doc, runTransaction } from 'firebase/firestore';
-import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
-export const REWARD_AMOUNT = 2; // 2 monedas por ganar
+export const REWARD_AMOUNT = 2; // 2 monedas por ganar (referencia de UI)
 
-// Obtener fecha actual en formato YYYY-MM-DD
-const getTodayString = () => {
-  return new Date().toISOString().split('T')[0];
-};
-
-export const claimBallSortReward = async (userId, userProfile) => {
-  if (!userId || !userProfile) {
-    return { success: false, error: 'Usuario no autenticado' };
-  }
-
-  const todayStr = getTodayString();
-  if (userProfile.lastBallSortReward === todayStr) {
-    return { success: false, error: 'Ya reclamaste tu recompensa de este juego hoy' };
-  }
-
+/**
+ * Reclama la recompensa diaria de Ball Sort.
+ * H-06: la acreditación se hace server-side (callable claimBallSortRewardSecure),
+ * que valida "una vez por día" y acredita en transacción. La firma se mantiene
+ * (userId, userProfile) por compatibilidad, pero el servidor usa el uid del token.
+ */
+export const claimBallSortReward = async () => {
   try {
-    const userRef = doc(db, PORTAL_USERS_COLLECTION, userId);
-    
-    await runTransaction(db, async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists()) throw new Error('User does not exist');
-      const data = userDoc.data();
-      
-      // Doble verificación en la transacción por si hubo un claim simultáneo
-      if (data.lastBallSortReward === todayStr) {
-        throw new Error('Ya reclamaste tu recompensa de este juego hoy');
-      }
-
-      transaction.update(userRef, {
-        monedas: (data.monedas || 0) + REWARD_AMOUNT,
-        lastBallSortReward: todayStr,
-        updatedAt: new Date()
-      });
-    });
-
-    return { success: true, reward: REWARD_AMOUNT };
+    const res = await httpsCallable(getFunctions(), 'claimBallSortRewardSecure')();
+    return { success: true, reward: res.data?.reward ?? REWARD_AMOUNT };
   } catch (error) {
-    console.error('Error claiming Ball Sort reward:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message || 'Error al reclamar la recompensa' };
   }
 };

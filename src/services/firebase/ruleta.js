@@ -1,5 +1,7 @@
 import { db } from './config';
 import { doc, getDoc, updateDoc, setDoc, collection, getDocs, addDoc, deleteDoc, query, orderBy, runTransaction } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+// eslint-disable-next-line no-unused-vars
 import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
 
 // --- UTILIDADES DE FECHA ---
@@ -93,61 +95,17 @@ export const deleteRuletaPrize = async (id) => {
 };
 
 // --- SPIN ---
-export const spinRuleta = async (userId, userProfile) => {
-  const eligibility = getRuletaEligibility(userProfile);
-  if (!eligibility.isUnlocked) {
-    return { success: false, error: 'Ruleta no desbloqueada' };
-  }
-
-  // Comprobar si ya giró esta semana
-  const currentWeekStart = formatIsoDate(getStartOfWeek());
-  if (userProfile.lastRuletaSpinWeek === currentWeekStart) {
-    return { success: false, error: 'Ya giraste la ruleta esta semana' };
-  }
-
+/**
+ * Gira la ruleta. H-06: el sorteo (RNG) y la acreditación se hacen server-side
+ * (callable spinRuletaSecure), que valida elegibilidad (7 días reclamados) y que
+ * no se haya girado esta semana. La firma se mantiene por compatibilidad; el
+ * servidor usa el uid del token y su propio estado, no los argumentos del cliente.
+ */
+export const spinRuleta = async () => {
   try {
-    const prizes = await getRuletaPrizes();
-    if (prizes.length === 0) throw new Error("No hay premios configurados");
-
-    // Sorteo basado en probabilidades
-    const rand = Math.random() * 100;
-    let accumulated = 0;
-    let selectedPrize = prizes[prizes.length - 1]; // Fallback
-
-    for (const prize of prizes) {
-      accumulated += Number(prize.probability);
-      if (rand <= accumulated) {
-        selectedPrize = prize;
-        break;
-      }
-    }
-
-    // Usar transacción para asignar premio y marcar que ya giró
-    const userRef = doc(db, PORTAL_USERS_COLLECTION, userId);
-    
-    await runTransaction(db, async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists()) throw new Error("User does not exist");
-      const data = userDoc.data();
-
-      const updateData = {
-        lastRuletaSpinWeek: currentWeekStart
-      };
-
-      // Si es de tipo Monedas
-      if (selectedPrize.type === 'Monedas') {
-        updateData.monedas = (data.monedas || 0) + Number(selectedPrize.amount || 0);
-      }
-      
-      // Aquí se pueden agregar lógicas para otros tipos de premios
-      // Ej. Accesorio (agregarlo a la mochila), Descuento (crear código y agregarlo al perfil), etc.
-
-      transaction.update(userRef, updateData);
-    });
-
-    return { success: true, prize: selectedPrize };
+    const res = await httpsCallable(getFunctions(), 'spinRuletaSecure')();
+    return { success: true, prize: res.data?.prize };
   } catch (error) {
-    console.error('Error spinning ruleta:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message || 'Error al girar la ruleta' };
   }
 };

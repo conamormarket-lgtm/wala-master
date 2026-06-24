@@ -4,9 +4,9 @@ import { onAuthChange } from '../services/firebase/auth';
 // eslint-disable-next-line no-unused-vars
 import { getDocument, setDocument } from '../services/firebase/firestore';
 import { getAdminRoleByEmail } from '../services/adminRoles';
-import { getStartOfWeek, formatIsoDate } from '../services/firebase/ruleta';
 import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../services/firebase/config';
 
 const AuthContext = createContext();
@@ -128,184 +128,70 @@ export const AuthProvider = ({ children }) => {
     return userProfile?.monedas || 0;
   }, [userProfile]);
 
-  const earnMainCoins = React.useCallback(async (amount, reason = 'Bono') => {
-    if (!userProfile) return { error: 'No profile' };
-    
-    const currentGlobal = userProfile.monedas || 0;
-    return await updateUserProfile({
-      monedas: currentGlobal + amount
-    });
-  }, [userProfile, updateUserProfile]);
-
-  const claimMonedas = React.useCallback(async (pedidoId, amount = 10) => {
-    if (!userProfile) return { error: 'No profile' };
-    const reclamadas = userProfile.monedasReclamadas || [];
-    if (reclamadas.includes(pedidoId)) return { error: 'Ya reclamado' };
-    
+  // ── Economía SERVER-AUTHORITATIVE (Fase 0, H-06) ────────────────────
+  // El cliente nunca escribe campos de saldo; invoca Cloud Functions callable.
+  const callFn = React.useCallback(async (name, payload = {}) => {
     try {
-      const { error } = await earnMainCoins(amount, "pedido_" + pedidoId);
-      if (error) throw new Error(error);
-      
-      const nuevasReclamadas = [...reclamadas, pedidoId];
-      await updateUserProfile({
-        monedasReclamadas: nuevasReclamadas
-      });
-      
-      return { error: null, data: { success: true } };
-    } catch (error) {
-      console.error("Error al reclamar monedas:", error);
-      return { error: error.message || 'Error al procesar el reclamo' };
+      const res = await httpsCallable(getFunctions(), name)(payload);
+      return { error: null, data: res.data };
+    } catch (e) {
+      return { error: e?.message || 'Error en el servidor' };
     }
-  }, [userProfile, earnMainCoins, updateUserProfile]);
+  }, []);
+
+  // Recarga el perfil tras una mutación server-side (saldos, rachas, etc.).
+  const reloadProfile = React.useCallback(async () => {
+    if (!user) return;
+    const { data } = await getDocument(PORTAL_USERS_COLLECTION, user.uid);
+    if (data) setUserProfile(data);
+  }, [user]);
+
+  const claimMonedas = React.useCallback(async (pedidoId) => {
+    const res = await callFn('secureClaimMonedas', { pedidoId });
+    if (!res.error) await reloadProfile();
+    return res;
+  }, [callFn, reloadProfile]);
 
   const spendMonedas = React.useCallback(async (amount) => {
-    if (!userProfile) return { error: 'No profile' };
-    
-    let activeCoins = calculateActiveCoins();
-    if (activeCoins < amount) return { error: 'Monedas insuficientes' };
+    const res = await callFn('spendCoinsSecure', { amount });
+    if (!res.error) await reloadProfile();
+    return res;
+  }, [callFn, reloadProfile]);
 
-    const currentMonedas = userProfile.monedas || 0;
-    return await updateUserProfile({
-      monedas: Math.max(0, currentMonedas - amount)
-    });
-  }, [userProfile, calculateActiveCoins, updateUserProfile]);
-
-  const freezeMonedas = React.useCallback(async (amount, pseudoOrderId) => {
-    if (!userProfile) return { error: 'No profile' };
-    const activeCoins = calculateActiveCoins();
-    if (activeCoins < amount) return { error: 'Monedas insuficientes' };
-    
-    const monedasEnEspera = userProfile.monedasEnEspera || 0;
-    const historyEspera = userProfile.historialMonedasEspera || [];
-    
-    const spendRes = await spendMonedas(amount);
-    if (spendRes.error) return spendRes;
-    
-    return await updateUserProfile({
-      monedasEnEspera: monedasEnEspera + amount,
-      historialMonedasEspera: [
-        ...historyEspera,
-        {
-          orderId: pseudoOrderId,
-          amount: amount,
-          status: 'pending',
-          date: new Date().toISOString()
-        }
-      ]
-    });
-  }, [userProfile, calculateActiveCoins, spendMonedas, updateUserProfile]);
-
-  const processChallengeEvent = React.useCallback(async (actionType, count = 1) => {
-    if (!userProfile || !activeWeeklyChallenge) return;
-    
-    // Si el tipo de evento coincide
-    if (activeWeeklyChallenge.actionType === actionType) {
-      const challengeId = activeWeeklyChallenge.challengeId;
-      const currentProgress = userProfile.weeklyChallengeProgress || {};
-      
-      // Si ya lo completó o es de otro challenge, reseteamos/ignoramos
-      if (currentProgress.challengeId !== challengeId) {
-         currentProgress.challengeId = challengeId;
-         currentProgress.progress = 0;
-         currentProgress.completed = false;
-      }
-      
-      if (currentProgress.completed) return; // Ya lo completó
-      
-      const newProgress = Math.min((currentProgress.progress || 0) + count, activeWeeklyChallenge.goal);
-      const isNowCompleted = newProgress >= activeWeeklyChallenge.goal;
-      
-      let updates = {
-         weeklyChallengeProgress: {
-            challengeId,
-            progress: newProgress,
-            completed: isNowCompleted
-         }
-      };
-
-      // Si se acaba de completar, acreditamos
-      if (isNowCompleted) {
-         if (activeWeeklyChallenge.rewardType === 'kapi_double_3d') {
-             updates.activeMultiplier = 'kapi_double_3d';
-             updates.multiplierExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-         }
-         window.dispatchEvent(new CustomEvent('weekly-challenge-completed'));
-      }
-      
-      await updateUserProfile(updates);
-
-      // Si es "main", acreditamos aparte para asegurar consistencia
-      if (isNowCompleted && activeWeeklyChallenge.rewardType === 'main') {
-          await earnMainCoins(activeWeeklyChallenge.rewardCoins, 'Reto Semanal Completado');
-      }
-    }
-  }, [userProfile, activeWeeklyChallenge, updateUserProfile, earnMainCoins]);
+  const freezeMonedas = React.useCallback(async (amount, orderId) => {
+    const res = await callFn('freezeCoinsSecure', { amount, orderId });
+    if (!res.error) await reloadProfile();
+    return res;
+  }, [callFn, reloadProfile]);
 
   const feedKapi = React.useCallback(async () => {
-    if (!userProfile) return { error: 'No profile' };
-    
-    const _d2 = new Date();
-    const todayStr = `${_d2.getFullYear()}-${String(_d2.getMonth()+1).padStart(2, '0')}-${String(_d2.getDate()).padStart(2, '0')}`;
-    if (userProfile.lastKapiClaimDate === todayStr) {
-      return { error: 'Ya alimentaste a Kapi hoy' };
-    }
-    
-    const currentKapiCoins = userProfile.kapiCoins || 0;
-    if (currentKapiCoins >= 31) {
-      return { error: 'Límite de Kapi Coins mensual alcanzado' };
-    }
+    const res = await callFn('feedKapiSecure');
+    if (!res.error) await reloadProfile();
+    return res;
+  }, [callFn, reloadProfile]);
 
-    const currentHappiness = userProfile.kapiHappiness || 0;
+  const processChallengeEvent = React.useCallback(async (actionType, count = 1) => {
+    if (!activeWeeklyChallenge) return { error: null };
+    const res = await callFn('recordChallengeEventSecure', { actionType, count });
+    if (!res.error) await reloadProfile();
+    return res;
+  }, [callFn, reloadProfile, activeWeeklyChallenge]);
 
-    // Calcular racha semanal para la ruleta
-    const currentWeekStart = formatIsoDate(getStartOfWeek());
-    let weeklyData = userProfile.weeklyClaimsData || { weekStart: currentWeekStart, daysClaimed: [] };
-    
-    if (weeklyData.weekStart !== currentWeekStart) {
-      // Nueva semana
-      weeklyData = { weekStart: currentWeekStart, daysClaimed: [todayStr] };
-    } else {
-      // Misma semana
-      if (!weeklyData.daysClaimed.includes(todayStr)) {
-        weeklyData.daysClaimed.push(todayStr);
-      }
-    }
-
-    let coinsToAdd = 1;
-    if (userProfile.activeMultiplier === 'kapi_double_3d') {
-      if (userProfile.multiplierExpiresAt && new Date(userProfile.multiplierExpiresAt) > new Date()) {
-         coinsToAdd = 2;
-      }
-    }
-
-    return await updateUserProfile({
-      kapiCoins: currentKapiCoins + coinsToAdd,
-      lastKapiClaimDate: todayStr,
-      kapiHappiness: Math.min(100, currentHappiness + 10),
-      weeklyClaimsData: weeklyData
-    });
-  }, [userProfile, updateUserProfile]);
+  const grantSurveyReward = React.useCallback(async (coins) => {
+    const res = await callFn('grantSurveyRewardSecure', { coins });
+    if (!res.error) await reloadProfile();
+    return res;
+  }, [callFn, reloadProfile]);
 
   const validateDatesStreak = React.useCallback(async (completedOrders) => {
-    if (!userProfile) return { error: 'No profile' };
-    
-    // CompletedOrders should be an array of orders. 
-    // We check how many unique special dates this user has covered.
-    const coveredDates = completedOrders
-      .filter(o => o.fechaEspecial || o.motivoRegalo)
-      .map(o => o.fechaEspecial || o.motivoRegalo);
-      
-    const uniqueDates = [...new Set(coveredDates)];
-    const hasReceivedBonus = userProfile.streakBonusReceived === true;
-    
-    // Streak: 3 fechas cubiertas = 25 bonus permanente
-    if (uniqueDates.length >= 3 && !hasReceivedBonus) {
-      await earnMainCoins(25, 'Streak 3 fechas cubiertas');
-      return await updateUserProfile({ streakBonusReceived: true });
-    }
-    
-    return { status: 'no_action' };
-  }, [userProfile, earnMainCoins, updateUserProfile]);
+    const covered = (completedOrders || [])
+      .filter((o) => o.fechaEspecial || o.motivoRegalo)
+      .map((o) => o.fechaEspecial || o.motivoRegalo);
+    const uniqueDates = [...new Set(covered)].length;
+    const res = await callFn('claimDatesStreakSecure', { uniqueDates });
+    if (!res.error) await reloadProfile();
+    return res;
+  }, [callFn, reloadProfile]);
 
   const profileIncomplete = !!user && !!userProfile && (!userProfile.dni || !userProfile.phone);
 
@@ -327,16 +213,17 @@ export const AuthProvider = ({ children }) => {
     claimMonedas,
     spendMonedas,
     freezeMonedas,
-    earnMainCoins,
+    grantSurveyReward,
     feedKapi,
     validateDatesStreak,
     processChallengeEvent,
+    reloadProfile,
     activeWeeklyChallenge,
     activeMainCoins: calculateActiveCoins(),
     isAuthenticated: !!user,
     isAdmin,
     profileIncomplete,
-  }), [user, userProfile, effectiveAdminPermissions, loading, updateUserProfile, linkDNI, claimMonedas, spendMonedas, freezeMonedas, earnMainCoins, feedKapi, validateDatesStreak, processChallengeEvent, activeWeeklyChallenge, calculateActiveCoins, profileIncomplete, isAdmin]);
+  }), [user, userProfile, effectiveAdminPermissions, loading, updateUserProfile, linkDNI, claimMonedas, spendMonedas, freezeMonedas, grantSurveyReward, feedKapi, validateDatesStreak, processChallengeEvent, reloadProfile, activeWeeklyChallenge, calculateActiveCoins, profileIncomplete, isAdmin]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

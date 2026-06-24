@@ -22,15 +22,19 @@ service cloud.firestore {
       );
     }
 
-    // Campos sensibles que el propio usuario NUNCA puede auto-modificar.
-    // TODO (H-06): añadir 'monedasActivas','kapiCoins','activeMultiplier',
-    // 'multiplierExpiresAt','referralCode','referralCodeEdited' cuando earn/spend se
-    // muevan a Cloud Functions (hoy el cliente aún escribe esos campos y bloquearlos
-    // ahora rompería feedKapi/ruleta/referidos).
+    // Campos sensibles que el propio usuario NUNCA puede auto-modificar (H-06).
+    // Todo earn/spend de estos campos se hace SOLO desde Cloud Functions
+    // (feedKapiSecure, spendCoinsSecure, spinRuletaSecure, etc.). NOTA: requiere
+    // que esas Functions estén desplegadas ANTES de publicar estas reglas, o se
+    // romperán juegos/recompensas. 'referralCode'/'referralCodeEdited'/'lastAppOpen'
+    // NO se bloquean porque el cliente los escribe legítimamente.
     function noTocaCamposSensibles() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(
-        ['monedas', 'monedasReclamadas', 'monedasEnEspera', 'historialMonedasEspera', 'role']
-      );
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'monedas', 'monedasReclamadas', 'monedasEnEspera', 'historialMonedasEspera', 'role',
+        'monedasActivas', 'kapiCoins', 'kapiHappiness', 'lastKapiClaimDate', 'weeklyClaimsData',
+        'activeMultiplier', 'multiplierExpiresAt', 'weeklyChallengeProgress',
+        'lastBallSortReward', 'lastRuletaSpinWeek', 'streakBonusReceived', 'surveyRewardClaimed'
+      ]);
     }
 
     // ── Catálogo y taxonomías (lectura pública, escritura admin) ─────────────────
