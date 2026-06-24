@@ -29,7 +29,7 @@ import {
   getCachedFeaturedProducts
 } from '../../services/products';
 import { getMessage } from '../../services/messages';
-import { getStorefrontConfig } from './services/storefront';
+import { getStorefrontConfig, SECTION_TYPES, getDefaultSettings } from './services/storefront';
 import { getDocument } from '../../services/firebase/firestore';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import OptimizedImage from '../../components/common/OptimizedImage/OptimizedImage';
@@ -490,7 +490,6 @@ const TiendaPage = ({ isLandingPage = false }) => {
     if (!isEditModeActive) return null;
 
     const handleInsert = (type) => {
-      const { SECTION_TYPES, getDefaultSettings } = require('./services/storefront');
       const newSections = [...displaySections];
       newSections.splice(index, 0, {
         id: `section_${Date.now()}`,
@@ -547,8 +546,6 @@ const TiendaPage = ({ isLandingPage = false }) => {
       </div>
     );
   }
-
-  const { SECTION_TYPES } = require('./services/storefront');
 
   return (
     <div className={styles.container}>

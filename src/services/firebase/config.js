@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
-import { initializeFirestore, persistentLocalCache } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, isSupported } from 'firebase/messaging';
@@ -47,7 +47,6 @@ if (isFirebaseConfigured()) {
       });
     } catch (firestoreErr) {
       // Si initializeFirestore falla (ya inicializado, etc.), usar getFirestore
-      const { getFirestore } = require('firebase/firestore');
       db = getFirestore(app);
       console.warn('Firestore: usando caché en memoria (IndexedDB no disponible).');
     }

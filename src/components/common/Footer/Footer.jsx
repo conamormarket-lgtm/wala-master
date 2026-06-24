@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getStorefrontConfig } from '../../../pages/Tienda/services/storefront';
+import { getStorefrontConfig, getDefaultSettings } from '../../../pages/Tienda/services/storefront';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { Capacitor } from '@capacitor/core';
@@ -48,7 +48,6 @@ const Footer = () => {
       if (!isEditModeActive || !isEditingFooter) return null;
       
       const handleInsert = (type) => {
-        const { getDefaultSettings } = require('../../../pages/Tienda/services/storefront');
         const newSections = [...displaySections];
         newSections.splice(idx, 0, {
           id: `section_${Date.now()}`,
