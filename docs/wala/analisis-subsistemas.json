@@ -1,0 +1,1419 @@
+[
+  {
+    "subsystem": "Núcleo de marketplace (catálogo no personalizado): productos, categorías, colecciones, marcas, vendors, productTypes, combos, inventario, tags, mockups, reviews.",
+    "whatExists": [
+      "Catálogo de productos en Firestore (colección 'productos_wala', constante COLLECTION en src/services/products.js:6). CRUD completo + caché en localStorage versionada (CACHE_VERSION 'v2', src/services/products.js:7-12) para productos, destacados y categorías.",
+      "Modelo de producto rico y normalizado en lectura/escritura (normalizeProductForRead / normalizeProductPayload en products.js). Campos: name, sku, description (HTML Quill), price, salePrice (solo aplica si salePrice<price, products.js:734), inStock, visible, featured, featuredOrder, brandId, categories[], collections[], tags[], characters[], vendors[], productType, whatsapp{Enabled,Number,Message}.",
+      "Variantes por color: hasVariants + variants[] (id, name, imageUrl, sizes[], images/galleryImages, thumbnailCrop, colorHex), defaultVariantId, variantDisplayBehavior ('default_only'|'after_impressions'|'by_engagement'|'both') con behaviorImpressionsThreshold. Deriva images e imagesByColor para la tienda.",
+      "Migración legacy embebida: convierte el formato viejo variants.colors + imagesByColor al nuevo variants[] (products.js:108-124) y soporta category(string) -> categories[] y vendor(string) -> vendors[].",
+      "Productos combo: isComboProduct, comboItems[] (productId, name, imageUrl, viewId, position, scale, customizable, variantMapping), comboLayout (orientation/spacing), comboPreviewImage y comboItemCustomization. Editor en src/pages/Tienda/components/AdminComboEditor y render en ComboProductImage.",
+      "Taxonomías como colecciones Firestore independientes con CRUD: categorías ('tienda_categories', con order e imageUrl), colecciones ('tienda_collections'), marcas ('tienda_brands', con logoUrl/bgColor/bgImage/bgOpacity), productTypes ('productTypes'), tags ('tags'), characters ('characters'), mockups ('tienda_mockups').",
+      "Búsqueda y filtrado: searchProducts hace fetch de TODA la colección y filtra en cliente por name/description/categorías (products.js:273-290). getProductsByCategory usa array-contains sobre 'categories' con fallback a 'category' legacy (products.js:295-308). getProductsByCollection vía array-contains.",
+      "Filtros de catálogo multi-faceta del lado cliente en SidebarCatalogLayout.jsx: categoría, colección, marca, tag, personaje y tipo de producto (combina varios a la vez sobre productsData ya cargado).",
+      "Ordenamiento en TiendaPage (sortBy: newest/price/price-desc/alfabético) ejecutado en cliente tras traer todos los productos (TiendaPage.jsx:190-208).",
+      "Reseñas (colección 'product_reviews', src/services/reviews.js): addReview con rating, comment, imágenes a Storage, helpfulVotes[]; getProductReviews (where productId + orderBy createdAt, requiere índice compuesto); toggleHelpfulVote. UI estilo Amazon en ProductReviews.jsx con media, histograma por estrellas y reseña destacada por votos.",
+      "Inventario: stock global entero por producto (inStock). AdminInventario.jsx permite edición rápida con autosave (debounce 1s), badges Disponible/Últimas uds (<=3)/Agotado, filtros y búsqueda por nombre/SKU. Cada cambio registra inventoryLogs (productId, productName, oldStock, newStock, userEmail, timestamp).",
+      "Admin de productos: ProductTable.jsx (tabla estilo Shopify: orden por nombre/precio/stock/categoría, toggle visibilidad optimista, duplicar, eliminar, selección múltiple) y formulario AdminProductoFormV2.jsx (crea/edita con autoguardado por draftId, mockups, variantes, CreatableSelect para marca/categoría/colección/tag/personaje, editor Quill, isV2:true).",
+      "Storefront configurable por secciones (getStorefrontConfig) renderizado en TiendaPage.jsx: hero, carruseles, flash sales, bestsellers, testimonios, trust badges, marquee de marcas, grid de productos, catálogo con sidebar, etc., con editor visual en vivo (VisualEditorContext, EditableSection)."
+    ],
+    "keyFiles": [
+      {
+        "path": "src/services/products.js",
+        "role": "Servicio central del catálogo (~860 líneas): CRUD sobre 'productos_wala', normalización lectura/escritura, variantes, combos, customizationViews, búsqueda, filtros por categoría/colección, destacados, caché localStorage y borrado de imágenes en Storage."
+      },
+      {
+        "path": "src/models/producto_wala_schema.json",
+        "role": "Esquema real documentado del documento de producto en Firestore (campos, variantes, customizationViews, combos). Fuente de verdad del modelo de datos en producción."
+      },
+      {
+        "path": "src/models/tienda_producto_schema.json",
+        "role": "Esquema V2 alternativo (con isV2 obligatorio y sizes[].stock por talla); aspiracional: el formulario real NO persiste stock por talla."
+      },
+      {
+        "path": "src/services/categories.js",
+        "role": "CRUD de 'tienda_categories' (name, imageUrl, order)."
+      },
+      {
+        "path": "src/services/collections.js",
+        "role": "CRUD de 'tienda_collections' (name, imageUrl, order)."
+      },
+      {
+        "path": "src/services/brands.js",
+        "role": "CRUD de 'tienda_brands' (name, logoUrl, order, bgColor, bgImage, bgOpacity)."
+      },
+      {
+        "path": "src/services/vendors.js",
+        "role": "Servicio mínimo de 'vendors': solo getVendors y createVendor (name, createdAt). No hay update/delete ni cuentas de seller."
+      },
+      {
+        "path": "src/services/productTypes.js",
+        "role": "CRUD de 'productTypes' (solo name)."
+      },
+      {
+        "path": "src/services/tags.js",
+        "role": "CRUD de 'tags' (solo name)."
+      },
+      {
+        "path": "src/services/mockups.js",
+        "role": "CRUD de 'tienda_mockups' (name, category, baseImageUrl, variants[]) para generar imágenes de variantes por color."
+      },
+      {
+        "path": "src/services/reviews.js",
+        "role": "Reseñas en 'product_reviews': addReview con imágenes a Storage, getProductReviews, toggleHelpfulVote."
+      },
+      {
+        "path": "src/services/inventoryLogs.js",
+        "role": "Auditoría de cambios de stock en 'inventoryLogs'."
+      },
+      {
+        "path": "src/pages/Tienda/TiendaPage.jsx",
+        "role": "Landing/tienda por secciones configurables; query principal de productos con búsqueda/categoría/orden ejecutado en cliente."
+      },
+      {
+        "path": "src/pages/Tienda/components/SidebarCatalogLayout.jsx",
+        "role": "Catálogo con filtros facetados client-side (categoría, colección, marca, tag, personaje, tipo)."
+      },
+      {
+        "path": "src/pages/Tienda/components/ProductSearch/ProductSearch.jsx",
+        "role": "Caja de búsqueda simple; dispara trackSearchQuery y onSearch (filtrado en cliente)."
+      },
+      {
+        "path": "src/pages/ProductPage.jsx",
+        "role": "Página de detalle: usa useProduct(id) y renderiza ProductDetail con categorías."
+      },
+      {
+        "path": "src/pages/Tienda/admin/AdminProductoFormV2.jsx",
+        "role": "Formulario admin de creación/edición de producto (variantes, mockups, combos, autoguardado por draftId, isV2). Persiste inStock global y sizes como strings."
+      },
+      {
+        "path": "src/components/admin/ProductTable/ProductTable.jsx",
+        "role": "Tabla admin de productos estilo Shopify (orden, visibilidad, duplicar, borrar, selección múltiple)."
+      },
+      {
+        "path": "src/components/admin/ComboEditor/ComboEditor.jsx",
+        "role": "Editor de combos (delega en UnifiedComboEditor) y ComboPreview."
+      },
+      {
+        "path": "src/pages/Tienda/admin/AdminInventario.jsx",
+        "role": "Gestión rápida de stock con autosave, badges de disponibilidad y logging."
+      }
+    ],
+    "dataModel": [
+      "productos_wala (productos): name, sku, description(HTML), price, salePrice, inStock(entero global), visible, featured, featuredOrder, brandId, categories[], collections[], tags[], characters[], vendors[], productType, hasVariants, defaultVariantId, variantDisplayBehavior, behaviorImpressionsThreshold, variants[]{id,name,imageUrl,sizes[](strings),images[],thumbnailCrop,colorHex}, customizable, customizationViews[], productCliparts[], isComboProduct, comboItems[], comboLayout, comboPreviewImage, comboItemCustomization[], whatsappEnabled/Number/Message, thumbnailWithDesignUrl, createdAt, isV2.",
+      "tienda_categories: name, imageUrl, order, createdAt/updatedAt.",
+      "tienda_collections: name, imageUrl, order.",
+      "tienda_brands: name, logoUrl(/imageUrl), order, bgColor, bgImage, bgOpacity (schema doc menciona description y config{colorHex,bgOpacity,backgroundImageUrl}).",
+      "productTypes: name. tags: name. characters: name (servicio characters.js).",
+      "vendors: name, createdAt (solo lectura/creación; usado únicamente como array de strings en el producto).",
+      "tienda_mockups: name, category, baseImageUrl, variants[], createdAt.",
+      "product_reviews: productId, userId, userName, rating, comment, imageUrls[], helpfulVotes[](userIds), createdAt(serverTimestamp).",
+      "inventoryLogs: productId, productName, oldStock, newStock, userEmail, timestamp.",
+      "Convención de relaciones por ID-string en arrays (array-contains) en lugar de subcolecciones o referencias Firestore."
+    ],
+    "strengths": [
+      "Modelo de producto muy completo y robusto frente a datos legacy: la normalización en products.js absorbe múltiples formatos históricos (variants.colors/imagesByColor antiguos, category->categories, vendor->vendors, initialLayers->initialLayersByColor) sin romper la tienda.",
+      "Taxonomías bien separadas en colecciones propias con CRUD (categorías, colecciones, marcas, tipos, tags, personajes), lo que permite navegación y filtrado multi-faceta ya funcionando en SidebarCatalogLayout.",
+      "Buena experiencia de admin: tabla tipo Shopify, edición de inventario con autosave y auditoría (inventoryLogs), formulario con autoguardado por draftId que evita duplicar borradores.",
+      "Sistema de reseñas funcional y pulido (media, histograma, fotos de usuarios, votos de utilidad, reseña destacada).",
+      "Soporte de variantes por color y de productos combo no triviales, integrados con el editor de personalización.",
+      "Storefront totalmente configurable por secciones con editor visual en vivo, lo que da flexibilidad de merchandising sin tocar código.",
+      "Estrategia de caché (localStorage versionada + React Query con initialData) que da arranque instantáneo del catálogo."
+    ],
+    "gaps": [
+      "NO es multi-vendor real: 'vendors' es solo un array de strings/etiqueta en el producto (vendors.js solo crea y lista por nombre, sin update/delete). No existen cuentas de vendedor, ownership de productos, ni vínculo entre productos y un usuario seller. Es una tienda mono-marca (la marca dueña es 'Wala'/'CON AMOR'); brands/marcas son catálogo de fabricantes, no sellers.",
+      "Sin onboarding/perfil/dashboard de vendedor, ni separación de inventario, precios o pedidos por vendedor.",
+      "Sin comisiones, splits de pago ni payouts por vendedor; el checkout es único (modelo whatsapp/pago propio, no por seller).",
+      "Búsqueda muy limitada: descarga toda la colección y filtra en memoria por substring (name/description/categorías). No hay índice de búsqueda (Algolia/Typesense/Meili), ni full-text, ni tolerancia a errores, ni sinónimos, ni búsqueda por SKU/marca/tag en la caja pública.",
+      "Filtros y ordenamiento operan client-side sobre todo el dataset: no escala a miles de productos; getProducts sin filtros trae la colección completa. No hay paginación real en la tienda (existe getProductsPaginated pero no se usa en TiendaPage).",
+      "Sin ranking/relevancia: orden solo por fecha/precio/nombre; no hay popularidad, ventas, rating promedio persistido en el producto, ni boost. averageRating se calcula en cliente y no se guarda en el producto (no se puede ordenar/filtrar por valoración).",
+      "Inventario plano: inStock es un entero global por producto; las tallas (sizes) son solo strings sin stock por variante/talla, pese a que tienda_producto_schema.json describe sizes[].stock. No hay control de stock por variante/talla ni reserva en checkout.",
+      "Sin gestión de envíos: no hay zonas, tarifas, métodos de entrega, tiempos ni cálculo de costos de envío en este subsistema.",
+      "Sin atributos estructurados de producto (peso, dimensiones, especificaciones, garantía) ni Q&A de producto; reviews no están moderadas ni verifican compra.",
+      "Categorización plana: categorías y colecciones no son jerárquicas (sin árbol padre/hijo ni breadcrumbs por nivel)."
+    ],
+    "techDebt": [
+      "Duplicación de servicios getCategories: existe en categories.js (colección 'tienda_categories') y otra getCategories en products.js (colección 'categories'); coexisten dos nombres de colección de categorías, riesgo de inconsistencia.",
+      "Dos modelos de esquema de producto divergentes: producto_wala_schema.json (real, en uso) vs tienda_producto_schema.json (V2 con category objeto, collections de objetos {id} y sizes[].stock). El código a veces escribe category como objeto {id} (AdminProductoFormV2 línea ~644) pero normalizeProductPayload espera strings, generando formas mixtas en Firestore.",
+      "Páginas/pantallas duplicadas: existen src/pages/admin/AdminProductos.jsx y src/pages/Tienda/admin/AdminProductos.jsx, además de TiendaPage.jsx y LegacyTienda/LegacyTiendaPage.jsx; ambigüedad sobre cuál está activa.",
+      "searchProducts descarga toda la colección en cada búsqueda (coste de lecturas Firestore y memoria) y se reutiliza incluso dentro de AdminComboEditor.",
+      "Uso de placeholders externos (via.placeholder.com) como fallback de imágenes en código de producción (products.js).",
+      "imagesByColor mantiene dos convenciones (objeto {color:[url]} vs {default:url}) y se derivan campos redundantes (images, galleryImages) para compatibilidad, aumentando complejidad de mantenimiento.",
+      "Muchos eslint-disable no-unused-vars y variables de filtro declaradas-no-conectadas (p. ej. filterTag/filterCharacter en AdminInventario), indicio de funcionalidad a medio cablear.",
+      "averageRating no se desnormaliza al documento de producto, obligando a leer todas las reseñas por producto para mostrar/usar la nota."
+    ],
+    "recommendations": [
+      "Definir explícitamente la estrategia: si el objetivo es marketplace multi-seller (MercadoLibre/Temu), introducir entidad Seller (colección sellers + rol en usuario), añadir sellerId/ownerId a cada producto y reglas de seguridad Firestore por propietario; migrar 'vendors' (hoy etiqueta) a referencia real de seller.",
+      "Mover búsqueda/filtrado/orden a servidor: integrar un motor de búsqueda (Algolia/Typesense/Meilisearch) con índice de productos (name, sku, brand, tags, categorías, rating, precio, ventas) para full-text, facetas y ranking por relevancia; reservar Firestore para la persistencia.",
+      "Implementar paginación/infinite scroll real en la tienda usando getProductsPaginated (ya existe) en lugar de cargar toda la colección y filtrar en cliente.",
+      "Rediseñar inventario a nivel variante/talla: estructurar sizes como [{size, stock}] (como prevé tienda_producto_schema.json) y descontar stock en el checkout con transacción; conservar inventoryLogs por variante.",
+      "Desnormalizar métricas de ranking al documento de producto: ratingAverage, ratingCount, salesCount, viewsCount, para poder ordenar/filtrar por valoración y popularidad sin leer subcolecciones.",
+      "Añadir subsistema de envíos (zonas/tarifas/tiempos por seller y por producto: peso/dimensiones) y, si es multi-seller, lógica de comisiones y payouts (split de pago, estado de liquidación por vendedor).",
+      "Unificar el modelo de producto: eliminar la ambigüedad category objeto {id} vs string, consolidar las dos getCategories y los dos AdminProductos/TiendaPage, y fijar un único schema versionado.",
+      "Convertir categorías/colecciones en jerárquicas (parentId) para árboles de navegación y breadcrumbs propios de un marketplace amplio multi-nicho.",
+      "Añadir moderación de reseñas y 'compra verificada' (vincular review a un pedido), y opcionalmente Q&A de producto.",
+      "Cargar atributos estructurados/ficha técnica por productType (specs configurables) para soportar múltiples nichos heterogéneos."
+    ]
+  },
+  {
+    "subsystem": "Personalización / Editor (fabric.js) estilo Printful + Pacdora — Wala / Regala Con Amor",
+    "whatExists": [
+      "Editor 2D basado en fabric.js completo para productos simples y combos. El flujo de usuario vive en src/pages/EditorPage.jsx, que delega el canvas real a AdminViewEditor (mismo componente que usa el admin) en modo designOnly, reutilizando 100% el motor de edición entre admin y cliente.",
+      "Capas de TEXTO: agregar, editar inline en canvas (i-text), fuente, tamaño (8-200px), color, negrita/cursiva, alineación izq/centro/der. Toolbar flotante inline sobre el texto al editarlo (createPortal). Soporta fuentes del sistema (constants/fonts EDITOR_FONTS) + fuentes personalizadas subidas por admin (.ttf/.otf/.woff/.woff2) inyectadas vía @font-face dinámico (TextEditor.jsx + services/fonts.js, colección Firestore 'fonts' + Storage).",
+      "Capas de IMAGEN: subir foto del usuario (ImageUploader -> Firebase Storage, preview inmediato con blob: y reemplazo por URL final), recorte manual (crop con sliders X/Y/W/H), quitar fondo por color+tolerancia (makeColorTransparent en imageBackgroundRemoval), máscara circular/cuadrada (clipPath), tinte/colorear cliparts con source-atop custom _render (sin requerir CORS) con opacidad ajustable.",
+      "Cliparts: galería global Firestore (colección 'cliparts') + cliparts por producto (product.productCliparts), seleccionables desde Toolbar (ClipartSelector.jsx, services/cliparts.js).",
+      "Formas básicas: rectángulo, círculo, triángulo agregables como capas (Toolbar SHAPE_OPTIONS).",
+      "Gestión de CAPAS: lista con reordenamiento (subir/bajar z-index), seleccionar, eliminar, transferir capa entre vistas/sub-productos del combo (transferLayer). Undo/Redo (stack de 10) con Ctrl+Z/Shift, copiar/pegar (Ctrl+C/V con clipboard global cross-view en DesignClipboardContext), duplicar con Alt+drag (mimic Photoshop), mover con flechas, borrar con Delete/Backspace.",
+      "Múltiples VISTAS por producto (customizationViews: frente, espalda, etc.) con pestañas, más soporte explícito de 'hasBackSide'/'backSide' por vista para diseñar la espalda. Cada vista mantiene su propio layersByView.",
+      "ÁREAS DE IMPRESIÓN (print areas) por vista, definidas en % (x,y,width,height) relativas a la imagen. Formas de zona: rectángulo, cuadrado, círculo, elipse, corazón, formas personalizadas (customShapeId) y dibujo libre de polígonos (freeDrawPath). Editor admin con resize por 8 handles, rotación, skew/deformación X-Y, undo/redo, copiar/pegar zona y transferencia de zona entre lienzos vía localStorage (PrintAreasEditor.jsx, ShapeSelector, ShapeCreator con pen tool tipo Illustrator y auto-escaneo de contornos desde imagen).",
+      "Confinamiento de capas a la zona (clampToPrintAreas) con efecto magnético: si sueltas una capa fuera, salta a la zona más cercana. Selector de 'zona activa' cuando hay varias zonas; nuevos elementos se centran en la zona activa.",
+      "MOCKUPS por color y talla: imagen base por vista y por color (view.imagesByColor[color] | default), variantes de color/talla en barra superior, capas iniciales por color (initialLayersByColor) que el admin puede sembrar y 'Copiar a todos los colores'. Existe también colección 'tienda_mockups' (services/mockups.js: name, category, baseImageUrl, variants) como catálogo de mockups reutilizables.",
+      "COMBOS personalizados por el usuario: ComboUserEditor renderiza varios sub-productos (cada uno su vista frente/espalda y color), permite arrastrar capas entre sub-productos (eventos DOM 'design:layer-drop' cross-canvas), elegir variante por sub-item, y genera al carrito un thumbnail unificado (generateFullUserComboCartPreview) + renders individuales frente/espalda por sub-producto para el ERP (generatePerItemSidePreviews).",
+      "Persistencia de DISEÑOS del usuario: colección Firestore 'designs' (services/designs.js) con layersByView, layers (flatten legacy), variant, comboItemCustomization, isUserComboDesign. Autosave silencioso al añadir al carrito, prompt 'continuar diseño previo', guardas de salida (beforeunload + interceptación de back/links). Sanitización de capas blob: muertas antes de guardar.",
+      "Productos personalizados del cliente: colección 'producto_cliente_personalizado' (services/customerCustomProducts.js) que clona el producto entero + YoryoPersonalizado del cliente + captura como mainImage; usada por el sistema YoryoPersonalizado (segundo motor de edición paralelo en src/components/YoryoPersonalizado).",
+      "Render del arte para preview/ERP: thumbnailWithDesign.js compone base+capas en StaticCanvas y exporta (generateThumbnailWithDesign -> webp 0.85; generateDesignOnlyOverlay -> PNG transparente solo diseño). comboImageComposer compone múltiples canvases (html2canvas para captura del DOM del combo). El checkout (CheckoutPage.jsx) serializa el pedido al ERP con capas clasificadas frente/espalda, textos, src de imágenes, designId y urlImagenPersonalizada.",
+      "Móvil: UI dedicada con bottom-sheet/tab-bar (Añadir/Editar/Capas), controles fabric agrandados (cornerSize 24, handles circle), edición de texto deshabilitada inline para no abrir teclado nativo, parche fabricPatch.js para evitar crashes de clearRect al desmontar canvas."
+    ],
+    "keyFiles": [
+      {
+        "path": "src/pages/EditorPage.jsx",
+        "role": "Página del editor de usuario (956 líneas): orquesta carga de producto/diseño, vistas, espalda, combos, guardado, autosave, add-to-cart y generación de previews. Delega el canvas a AdminViewEditor."
+      },
+      {
+        "path": "src/contexts/EditorContext.jsx",
+        "role": "Estado central del editor: layersByView, capas, undo/redo, clipboard, print area activa, canvasDimensions, cálculo de precio (text=+5, image/shape=+10) y helpers de posición en zona."
+      },
+      {
+        "path": "src/components/editor/EditorCanvas/EditorCanvas.jsx",
+        "role": "Núcleo fabric.js (1979 líneas): instancia canvas transparente sobre <img> HTML, dibuja zonas/formas, sincroniza capas in-situ, clamp magnético a zonas, tinte custom, máscaras, drag cross-canvas, atajos de teclado, escalado responsive."
+      },
+      {
+        "path": "src/components/admin/AdminViewEditor/AdminViewEditor.jsx",
+        "role": "Contenedor compartido admin/cliente. Hook useEditorSeeding siembra capas iniciales por vista/color y emite cambios. Modos 'Diseño' y 'Zonas de impresión'."
+      },
+      {
+        "path": "src/components/admin/PrintAreasEditor/PrintAreasEditor.jsx",
+        "role": "Editor de zonas de impresión (1634 líneas): crear/mover/resize/rotar/skew zonas en %, formas predefinidas + dibujo libre de polígonos editables punto a punto, transferencia entre lienzos."
+      },
+      {
+        "path": "src/components/admin/ShapeCreator/ShapeCreator.jsx",
+        "role": "Editor vectorial tipo pluma (Bézier) para crear formas custom; incluye auto-escaneo de contornos desde imagen (threshold + seguimiento de contornos). Guarda svgPath en 'customShapes'."
+      },
+      {
+        "path": "src/components/editor/Toolbar/Toolbar.jsx",
+        "role": "Barra de herramientas desktop+móvil: añadir texto/imagen/forma/clipart, propiedades de capa, lista de capas, selector de zona activa."
+      },
+      {
+        "path": "src/components/editor/TextEditor/TextEditor.jsx",
+        "role": "Propiedades de texto + carga de fuentes personalizadas (admin) con @font-face dinámico."
+      },
+      {
+        "path": "src/components/editor/ImageProperties/ImageProperties.jsx",
+        "role": "Recorte, quitar fondo por color, máscara y tinte/color de imágenes; sube ediciones a Storage para no exceder 1MB de Firestore."
+      },
+      {
+        "path": "src/utils/thumbnailWithDesign.js",
+        "role": "Render del arte (base+capas) a webp/PNG vía fabric.StaticCanvas; lógica de escalado por baseW/baseH para alinear con el editor. Contiene console.log de debug en rojo en producción."
+      },
+      {
+        "path": "src/utils/comboImageComposer.js",
+        "role": "Composición de imágenes de combo (multi-canvas + html2canvas) y generación de previews unificados e individuales por lado para el ERP."
+      },
+      {
+        "path": "src/services/designs.js",
+        "role": "CRUD de diseños del usuario (colección 'designs') + sanitización de capas blob:."
+      },
+      {
+        "path": "src/services/customerCustomProducts.js",
+        "role": "Clona producto + YoryoPersonalizado del cliente en 'producto_cliente_personalizado' (motor paralelo)."
+      },
+      {
+        "path": "src/components/YoryoPersonalizado/YoryoPersonalizado.jsx",
+        "role": "Segundo motor de personalización (admin) con su propia copia del editor en WALA_Editor_Export/, captura html2canvas y estructura Zonas/Capas/capturaPersonalizadoDefinido."
+      },
+      {
+        "path": "src/pages/CheckoutPage.jsx",
+        "role": "Serializa el pedido al ERP: clasifica capas frente/espalda, extrae src de imágenes/textos, designId y urlImagenPersonalizada por producto y sub-producto de combo."
+      },
+      {
+        "path": "src/services/mockups.js",
+        "role": "CRUD de catálogo de mockups reutilizables (colección 'tienda_mockups')."
+      },
+      {
+        "path": "src/fabricPatch.js",
+        "role": "Parche global que silencia errores clearRect de fabric al desmontar/disponer canvas."
+      }
+    ],
+    "dataModel": [
+      "Firestore 'designs': { userId, productId, productName, layers[] (flatten legacy), layersByView{ [viewId]: Layer[] }, variant{size,color}, name, comboItemCustomization[]?, isUserComboDesign? }",
+      "Firestore 'producto_cliente_personalizado': clon completo del producto + { originalProductId, userId, sessionId, isCustomerCustomized, status:'in_cart', YoryoPersonalizado{Zonas,Imagenes del mockup,Capas,capturaPersonalizadoDefinido}, mainImage, thumbnailWithDesignUrl }",
+      "Firestore 'cliparts': { name, url, category }",
+      "Firestore 'customShapes': { name, svgPath, createdAt }",
+      "Firestore 'fonts': { name, family, url, storagePath } (+ archivo en Storage)",
+      "Firestore 'characters': { name } (solo nombre; sin assets — placeholder/incompleto)",
+      "Firestore 'tienda_mockups': { name, category, baseImageUrl, variants[] }",
+      "Producto (services/products.js) campos de personalización: customizable, isClothing, variants{sizes[],colors[]}, customizationViews[]{ id, name, imagesByColor{[color]:url, default}, printAreas[]{ id, shape, x,y,width,height (%), customShapeId?, freeDrawPath?, rotation, skewX, skewY }, initialLayers[]/initialLayersByColor{}, hasBackSide, backSide{...mismo shape...} }, comboItems[]{productId,viewId,scale,variantMapping}, comboItemCustomization[], comboLayout{orientation,spacing}, productCliparts[], YoryoPersonalizado{}",
+      "Layer (en runtime/JSON): { id, type:'text'|'image'|'shape', x,y, scaleX,scaleY, angle, flipX,flipY, zIndex, baseW,baseH (tamaño del canvas de origen para reescalar); text/fontSize/fontFamily/fontWeight/fontStyle/color/textAlign | src/tintColor/tintOpacity/maskShape | shapeType/fill/stroke/radius/width/height }"
+    ],
+    "strengths": [
+      "Editor 2D sorprendentemente completo para un marketplace regional: texto enriquecido, imágenes con quitar-fondo/recorte/tinte/máscara, cliparts, formas, multi-vista frente/espalda, multi-zona con formas arbitrarias y dibujo libre, undo/redo, clipboard cross-view, atajos de teclado, móvil bien resuelto.",
+      "Reutilización del MISMO motor de canvas entre admin (definir zonas/mockups) y cliente (diseñar), reduciendo divergencia visual: el cliente ve exactamente las zonas que el admin definió.",
+      "Sistema de áreas de impresión muy por encima del promedio: % relativos, formas custom vectoriales (pen tool + auto-trace de contornos), rotación/skew, confinamiento magnético de capas a la zona.",
+      "Modelo de datos de diseño limpio y serializable (layersByView con baseW/baseH para reescalado proporcional entre tamaños de imagen distintos), con sanitización de blobs muertos y manejo del límite de 1MB de Firestore subiendo imágenes editadas a Storage.",
+      "Combos personalizables por el usuario con arrastre de capas entre sub-productos y generación de renders por lado para el ERP — funcionalidad avanzada y poco común.",
+      "Robustez frente a CORS/Drive/Firebase: múltiples estrategias de carga de imagen (proxy wsrv.nl, allorigins, fetch+blob, cache-busting) y tinte vía _render custom que evita taint del canvas.",
+      "Buen cuidado UX: guardas de salida sin guardar, prompt de continuar diseño previo, autosave al carrito, precarga de imágenes del producto, soporte Capacitor/móvil."
+    ],
+    "gaps": [
+      "NO hay catálogo print-on-demand al estilo Printful: los productos y mockups los crea manualmente el admin (subiendo imágenes por color); no hay integración con proveedores POD, ni sincronización de catálogo, ni fulfillment automático, ni variantes/tallas/precios derivados de un proveedor.",
+      "NO hay generación de mockups automáticos: el 'mockup' es una foto plana subida por color. No hay warp/desplazamiento sobre la prenda (displacement map), ni sombras/iluminación realistas, ni mockups generados por plantilla. El arte se superpone plano sobre la imagen 2D.",
+      "NO existe NADA de 3D ni packaging tipo Pacdora: no hay three.js/WebGL, ni modelos 3D, ni desplegado de cajas/dielines, ni vista 360°, ni preview de empaque. Es estrictamente 2D plano.",
+      "NO hay salida de arte de PRODUCCIÓN real: no se genera PDF, ni PNG/SVG de alta resolución con DPI/sangrado, ni separación de capas/colores, ni perfil de color (CMYK), ni archivo vectorial. Para producción solo se envían: el JSON de capas, los src de las imágenes y, en el mejor caso, un webp comprimido (0.85) de ~600-800px.",
+      "Inconsistencia crítica de render para PRODUCTO SIMPLE: en EditorPage.handleAddToCart el render final (finalCustomizedImage) SOLO se genera para combos; para productos simples imageURL queda null. El checkout entonces manda urlImagenPersonalizada vacía y el ERP recibe únicamente layersByView crudo (coordenadas + URLs de imágenes), sin una imagen compuesta del arte. El operario debe recomponer el diseño manualmente.",
+      "Resolución de salida insuficiente para impresión: generateThumbnailWithDesign usa maxWidth 600 (combos 600-800) y webp lossy; sirve para thumbnail pero no para DTF/serigrafía/bordado. No se conserva la resolución nativa de las imágenes subidas en el arte compuesto.",
+      "Las coordenadas/escala del arte dependen de baseW/baseH del canvas del editor (ej. ~441x565 de Drive), no de medidas físicas reales (cm/pulgadas) ni del DPI del área de impresión. No hay puente entre el diseño en pantalla y dimensiones de impresión reales.",
+      "Duplicación de motores: coexisten el editor 'designs/EditorContext' y el sistema 'YoryoPersonalizado' (con una copia entera del editor en WALA_Editor_Export/). Dos verdades para 'personalización' aumentan superficie de bugs y mantenimiento.",
+      "'characters' (services/characters.js) solo guarda un nombre, sin assets ni uso real en el editor: feature incompleta/muerta.",
+      "Sin biblioteca de plantillas de diseño prearmadas, sin generación por IA, sin curvado de texto (text on path/arc), sin degradados/sombras/contornos de texto — features estándar que Printful/Canva ofrecen.",
+      "Validación de imprimibilidad ausente: no se avisa si la imagen del usuario es de baja resolución para el tamaño de impresión, ni se valida DPI mínimo."
+    ],
+    "techDebt": [
+      "EditorCanvas.jsx tiene 1979 líneas con lógica de zonas duplicada (creación inicial dentro del useEffect de init Y re-creación/actualización en el useEffect de sync) — alto riesgo de drift y bugs sutiles de z-order/posición.",
+      "console.log de DEBUG permanente en producción: thumbnailWithDesign.js imprime '[THUMBNAIL DEBUG]' con fondo rojo en cada render del arte.",
+      "Uso de window globals como acoplamiento implícito: window.__FABRIC_CANVAS_DIMS y eventos DOM globales ('design:layer-drop', 'before/after-yoryo-capture') para comunicación entre canvases; frágil y difícil de testear.",
+      "Transferencia de zonas entre lienzos vía localStorage ('transferringZone','copiedZone') — patrón hacky y propenso a estados residuales.",
+      "API legacy/sobrecargada en EditorContext (addLayer/updateLayer/removeLayer/reorderLayers detectan 'isLegacyCall' por aridad), señal de migración incompleta de firma de funciones.",
+      "fabricPatch.js silencia errores de clearRect globalmente parcheando prototipos de fabric — oculta síntomas de canvas disposed en vez de resolver el ciclo de vida.",
+      "Dos editores paralelos (editor/ y YoryoPersonalizado/WALA_Editor_Export/ con archivos casi idénticos: EditorCanvas, ImageUploader, ImageProperties, AdminViewEditor duplicados).",
+      "Muchos eslint-disable (exhaustive-deps, no-unused-vars) y variables muertas (undo/redo no usados vs handleUndo/handleRedo) acumuladas.",
+      "generateComboPreview() es esencialmente un stub lleno de eslint-disable que siempre retorna null.",
+      "Manejo de errores con alert()/window.confirm nativos en flujos de guardado y reset, inconsistente con el sistema de Toast existente (ToastContext)."
+    ],
+    "recommendations": [
+      "URGENTE: unificar el render de producción para productos simples — generar finalCustomizedImage (vía generateThumbnailWithDesign) también en el flujo no-combo de handleAddToCart, para que el ERP siempre reciba una imagen compuesta del arte, no solo JSON de capas.",
+      "Definir un pipeline de ARTE DE PRODUCCIÓN separado del thumbnail: exportar por zona/vista un PNG de alta resolución con fondo transparente (generateDesignOnlyOverlay ya existe) a la resolución nativa de las imágenes del usuario, idealmente subido a Storage y referenciado por el pedido. Considerar PDF (pdf-lib/jsPDF) con sangrado y, a mediano plazo, exportación SVG vectorial para texto/formas (serigrafía/corte/bordado).",
+      "Introducir medidas físicas: que cada printArea tenga dimensiones reales (cm) y DPI objetivo; mapear baseW/baseH del canvas a esas medidas para validar resolución mínima de imágenes y producir arte al DPI correcto. Mostrar advertencia de baja resolución al usuario.",
+      "Para igualar mockups de Printful: implementar mockups realistas con displacement map + multiply de sombras (puede hacerse en canvas/WebGL sin proveedor externo) o integrar una API de mockups. Permitir múltiples ángulos y plano de impresión.",
+      "Para la dimensión Pacdora (3D/packaging): es un proyecto aparte; evaluar three.js con un modelo glTF de prenda y proyección de textura del arte sobre UVs, y para packaging un sistema de dielines 2D->3D. No reutilizable del código actual; planear como módulo nuevo.",
+      "Consolidar los dos motores de edición: deprecar YoryoPersonalizado/WALA_Editor_Export o el editor principal y dejar una sola fuente de verdad para reducir deuda y bugs.",
+      "Refactor de EditorCanvas: extraer la creación/sincronización de zonas y la sincronización de capas a módulos/hook propios; eliminar la duplicación zona-init vs zona-sync; reemplazar window globals y localStorage por contexto/React state o un event bus tipado.",
+      "Higiene de producción: quitar el console.log [THUMBNAIL DEBUG], reemplazar alert/confirm por Toast/Modal, limpiar código muerto (generateComboPreview, characters, undo/redo no usados).",
+      "Añadir features de alto valor/bajo costo relativo: plantillas de diseño prearmadas por categoría, curvado/arco de texto (text-on-path de fabric), contorno y sombra de texto, degradados — acercan la herramienta a Canva/Printful sin infra nueva.",
+      "Persistir el render del arte (no solo data URLs en memoria/pedido): subir a Storage los PNG/PDF de producción y guardar sus URLs en el pedido/diseño para trazabilidad y reproducibilidad del ERP."
+    ]
+  },
+  {
+    "subsystem": "Gamificación y Fidelidad (Wala / Regala Con Amor)",
+    "whatExists": [
+      "Wordle 'Palabra del Día' (src/pages/Tienda/WordlePage.jsx + src/services/wordle.js): palabra diaria por fecha (colección wordle_daily_words con fallback hash sobre wordleDictionary), rejilla 6 intentos, soporta longitud variable, estado persistido en localStorage (wala_wordle_<fecha>), evaluación de letras repetidas, racha diaria (wordleCurrentStreak/wordleMaxStreak), 2 rankings: 'Hoy' (ganadores ordenados por intentos y luego tiempo) y 'Global' (por maxStreak/wins). IMPORTANTE: el Wordle NO otorga monedas, solo estadísticas y ranking.",
+      "Ruleta Semanal (src/pages/Minijuegos/RuletaPage.jsx + src/services/firebase/ruleta.js): se desbloquea al reclamar a Kapi los 7 días de la semana (weeklyClaimsData), 1 giro por semana (lastRuletaSpinWeek), sorteo por probabilidades configurables, premios en colección ruletaPrizes con tipos Monedas/Accesorio/Descuento/Beneficio/Producto. Solo el tipo 'Monedas' está implementado (suma a userProfile.monedas vía runTransaction); los demás tipos no tienen lógica de entrega (TODO en el código).",
+      "Ball Sort 'Las Bolitas de Kapi' (src/pages/Minijuegos/BallSortPage.jsx + src/services/firebase/ballSort.js): puzzle de ordenar bolitas por color con framer-motion y confeti; otorga 2 'Wala Coins' (campo monedas) una vez al día (lastBallSortReward) mediante runTransaction con doble verificación.",
+      "Mascota KapiPet (src/components/common/KapiPet/KapiPet.jsx + feedKapi en AuthContext): FAB flotante con estados happy/sad/hungry, barra de felicidad (kapiHappiness +10/día hasta 100), 'alimentar' una vez al día (lastKapiClaimDate) otorga 1 kapiCoin (o 2 con multiplicador kapi_double_3d activo), tope mensual de 31 kapiCoins, tutorial onboarding con driver.js, y alimentar también acumula los 'daysClaimed' que desbloquean la Ruleta.",
+      "Retos/Misiones semanales (functions/index.js rotateWeeklyChallenge + AdminRetos.jsx + processChallengeEvent en AuthContext): catálogo weeklyChallenges, un reto activo global en globals/activeChallenge, rotación automática cada lunes (cron America/Lima) o forzada por admin; progreso por usuario en weeklyChallengeProgress; recompensa tipo 'main' (Wala Coins) o 'kapi_double_3d' (multiplicador 3 días). Retos manuales: el usuario sube evidencia (link/foto) vía Cloud Function submitChallengeEvidence -> colección challengeEvidences -> admin aprueba/rechaza con approveChallengeEvidence (acredita monedas en backend).",
+      "Referidos (src/services/referrals.js + CuentaReferidosPage.jsx + AdminReferidos.jsx): código por usuario (referralCode 'KS-XXXXXX' autogenerado, editable 1 vez), embudo de 4 etapas (sent->clicked->purchased->completed/claimed) en colección referrals, límite 50 compartidos/mes, recompensa 10 monedas por venta (20 a partir de la 3ª del mes), aprobación manual por admin (porque las ventas se cierran por WhatsApp/ERP externo), ranking Top 10 mensual.",
+      "Reseñas con foto (src/services/reviews.js + ProductReviews.jsx): colección product_reviews con rating, comentario, imágenes a Storage y votos 'útil' (helpfulVotes). IMPORTANTE: NO existe recompensa por dejar reseña pese al nombre del subsistema; no acredita monedas ni dispara processChallengeEvent.",
+      "Fechas importantes (src/services/fechasImportantes.js + CuentaFechasImportantesPage.jsx + SubscriptionSurveyPage.jsx): el usuario registra personas/eventos (giftRecipients) y fechas universales; la encuesta de suscripción otorga 5 monedas por fecha nueva (máx 3 = 15); paquetes sugeridos por destinatario; Cloud Function notifyWishlistBirthdays notifica 14 días antes del cumpleaños. validateDatesStreak da bono único de 25 monedas al cubrir 3 fechas en pedidos.",
+      "Recompensas por pedido: claimMonedas/PedidoCard otorga 10 monedas por pedido (anti-doble vía monedasReclamadas). Existe Cloud Function secureClaimMonedas (con lógica de lotes TTL 90 días en monedasActivas) pero el cliente NO la usa: PedidoCard llama al path inseguro de AuthContext.",
+      "Catálogo de recompensas (src/pages/cuenta/CatalogReward.jsx): 4 recompensas HARDCODEADAS en el componente (stickers 30, personalización 60, accesorio 100, descuento S/30 a 200 monedas). Canjea con spendMonedas pero solo descuenta monedas: NO genera cupón/perk persistente (comentario explícito 'en el futuro se guardaría un perk').",
+      "Cron jobs (functions/index.js): resetKapiCoins (reset mensual de kapiCoins a 0 + analytics_kapi de monedas no gastadas), rotateWeeklyChallenge (semanal), notifyWishlistBirthdays (diario)."
+    ],
+    "keyFiles": [
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\contexts\\AuthContext.jsx",
+        "role": "Núcleo de la economía: define monedas (Wala Coins) y kapiCoins, funciones earnMainCoins/spendMonedas/claimMonedas/freezeMonedas/feedKapi/processChallengeEvent/validateDatesStreak. Casi toda la lógica de saldo vive aquí en cliente."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\functions\\index.js",
+        "role": "Cloud Functions: secureClaimMonedas (con TTL/lotes), submitChallengeEvidence, approveChallengeEvidence, rotateWeeklyChallenge, resetKapiCoins, notifyWishlistBirthdays, processCulqiPayment, ensureAccountFromOrder."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\firebase\\firestore.rules",
+        "role": "Reglas de seguridad. Bloquea escritura de campos de moneda solo para 'monedas','monedasReclamadas','monedasEnEspera','historialMonedasEspera','role'; deja sin proteger kapiCoins, weeklyClaimsData, lastBallSortReward, etc. isAdmin() apunta a colección 'adminUsers' (mismatch con 'adminRoles')."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\firebase\\ruleta.js",
+        "role": "Elegibilidad semanal, premios y giro de ruleta; escribe monedas en cliente vía runTransaction (chocaría con las reglas que bloquean 'monedas')."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\firebase\\ballSort.js",
+        "role": "Recompensa diaria de 2 monedas del Ball Sort; también escribe monedas en cliente."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\wordle.js",
+        "role": "Palabra del día, guardado de resultados, rachas y rankings. No toca monedas."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\referrals.js",
+        "role": "Embudo de referidos y claim de monedas. BUG: claimReferralCoins y updateReferralCode escriben en 'portal_users' en vez de 'portal_clientes_users'."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\cuenta\\CatalogReward.jsx",
+        "role": "Catálogo de canje con recompensas hardcodeadas; canje sin generación de cupón persistente."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\components\\common\\KapiPet\\KapiPet.jsx",
+        "role": "Mascota virtual, alimentación diaria, banner del reto semanal y envío de evidencia."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\admin\\AdminRetos.jsx",
+        "role": "Panel admin de retos: CRUD, activación manual y moderación de evidencias."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\components\\common\\Header\\Header.jsx",
+        "role": "Billetera en header: muestra el total como Math.floor(monedas)+kapiCoins (línea 388), evidenciando dos monedas distintas sumadas solo en UI."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\contexts\\WishlistContext.jsx",
+        "role": "Único lugar que dispara processChallengeEvent ('add_wishlist'); el resto de actionTypes de retos no tienen emisor."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\constants\\userCollections.js",
+        "role": "Define PORTAL_USERS_COLLECTION='portal_clientes_users' (la colección canónica de perfiles)."
+      }
+    ],
+    "dataModel": [
+      "portal_clientes_users (perfil canónico): monedas (Wala Coins), monedasActivas (lotes con amount/expiresAt/source para TTL), monedasReclamadas[], monedasEnEspera, historialMonedasEspera[], kapiCoins, kapiHappiness, lastKapiClaimDate, lastBallSortReward, lastDailyReward, lastAppOpen, weeklyClaimsData{weekStart,daysClaimed[]}, lastRuletaSpinWeek, weeklyChallengeProgress{challengeId,progress,completed}, challengeEvidencesApproved[], activeMultiplier, multiplierExpiresAt, streakBonusReceived, referralCode, referralCodeEdited, giftRecipients[], hasCompletedSurvey, birthDate, wordlePlayed/wordleWins/wordleCurrentStreak/wordleMaxStreak/wordleTotalAttempts/lastWordleDate/wordleTodayAttempts/wordleTodayWon",
+      "portal_users: colección PARALELA usada por error solo en referrals.js (claimReferralCoins/updateReferralCode) y como destino de referralCode; desincronizada del perfil real",
+      "users (LEGACY_USERS_COLLECTION): fallback de perfil",
+      "wordle: registros por <uid>_<fecha> (userId, displayName, date, word, length, attempts, timeSeconds, won, currentStreak)",
+      "wordle_daily_words: palabra por día (doc id = fecha)",
+      "referrals: referrerCode, status(sent/clicked/purchased/completed/claimed/ineligible), orderId, orderTotal, earnedCoins, timestamps",
+      "ruletaPrizes: name, type, probability, amount; ruletaConfig/settings",
+      "weeklyChallenges (catálogo) y globals/activeChallenge (reto activo): challengeId,title,description,actionType,goal,rewardCoins,rewardType('main'|'kapi_double_3d'),startedAt,expiresAt",
+      "challengeEvidences: userId, userName, challengeId, evidenceUrl, evidenceType, status(pending/approved/rejected)",
+      "product_reviews: productId, userId, userName, rating, comment, imageUrls[], helpfulVotes[]",
+      "universal_dates, organizable_events, suggested_packages (fechas importantes)",
+      "analytics_kapi: snapshot mensual de kapiCoins no gastadas",
+      "adminRoles (roles reales) vs adminUsers (referenciado en reglas, aparentemente inexistente)"
+    ],
+    "strengths": [
+      "Variedad de mecánicas ya en producción: Wordle, Ruleta, Ball Sort, mascota, retos, referidos y fechas: base sólida de retención que muchos marketplaces no tienen.",
+      "La mascota KapiPet es un buen 'hook' diario que además encadena la racha de 7 días que desbloquea la Ruleta: bucle de hábito bien pensado.",
+      "Retos semanales con rotación automática por cron (America/Lima) y aprobación de evidencia por admin: permite campañas UGC (stories/fotos) de bajo costo.",
+      "Algunas operaciones críticas SÍ usan runTransaction (ruleta, ballSort) y/o Cloud Functions con doble verificación (secureClaimMonedas con lotes TTL, approveChallengeEvidence), mostrando intención de robustez.",
+      "Las reglas de Firestore ya bloquean la escritura directa de los campos de saldo más sensibles (monedas, monedasReclamadas) por parte del usuario.",
+      "Sistema de expiración de monedas (monedasActivas con expiresAt a 90 días) y reset mensual de kapiCoins: control de pasivo contable de la economía.",
+      "Embudo de referidos visual de 4 etapas con notificaciones y ranking mensual: buen incentivo social adaptado a ventas por WhatsApp."
+    ],
+    "gaps": [
+      "NO hay una moneda unificada: coexisten 'monedas' (Wala Coins) y 'kapiCoins' como campos separados, con reglas de gasto, expiración y topes distintos; el header solo las SUMA visualmente (Math.floor(monedas)+kapiCoins) pero spendMonedas/CatalogReward solo gastan 'monedas'. Para una visión multi-nicho conviene una sola moneda (o un ledger de transacciones) consistente.",
+      "NO hay misiones diarias reales (solo claims diarios de Kapi/BallSort y un Wordle sin recompensa). Los 'retos' son semanales y casi todos manuales; solo 'add_wishlist' está cableado a processChallengeEvent, faltan emisores para compras, reseñas, visitas, etc.",
+      "Las rachas existen pero fragmentadas (racha de Wordle, racha de claims para Ruleta) y no premian económicamente la constancia de forma unificada; no hay 'streak' transversal de compra/visita.",
+      "Reseñas SIN recompensa pese a ser parte del subsistema de fidelidad: no se otorgan monedas ni puntos por reseñar (oportunidad clara de impulso post-compra).",
+      "El catálogo de recompensas está hardcodeado en CatalogReward.jsx y el canje NO genera un cupón/perk persistente ni integra con checkout: el usuario 'gasta' monedas sin recibir un beneficio canjeable verificable.",
+      "Tipos de premio de la Ruleta (Accesorio/Descuento/Beneficio/Producto) no implementados: solo se entregan monedas.",
+      "Mecánicas de 'compra por impulso' débiles: no hay puntos por monto de compra en tiempo real, ni 'te faltan X monedas para…', ni ofertas relámpago, ni cashback inmediato, ni multiplicadores por categoría/nicho. La acreditación por pedido es manual (claimMonedas 10 fijas) y depende de cierre por WhatsApp/ERP.",
+      "Sin sistema de niveles/tiers de cliente (VIP), sin badges/logros persistentes, sin onboarding de bienvenida con monedas, sin caducidad visible al usuario ni recordatorios de 'tus monedas vencen'.",
+      "Sin internacionalización/multi-nicho de la economía: textos, valores y catálogo asumen un solo negocio; no hay segmentación de recompensas por vertical."
+    ],
+    "techDebt": [
+      "BUG de colección: referrals.js (claimReferralCoins y updateReferralCode) escribe en 'portal_users' mientras toda la app lee/escribe 'portal_clientes_users' (constants/userCollections.js). El usuario reclama monedas de referido y su saldo real NO se actualiza.",
+      "Contradicción reglas vs cliente: firestore.rules bloquea escritura de 'monedas' por el usuario, pero ruleta.js y ballSort.js escriben 'monedas' desde transacciones del CLIENTE; en producción con reglas activas esos premios fallarían (o las reglas no están realmente desplegadas, lo que sería un agujero).",
+      "isAdmin() en firestore.rules valida la colección 'adminUsers' con role=='admin', pero los roles reales viven en 'adminRoles' (adminRoles.js) / portal_clientes_users.role / emails hardcodeados: probablemente isAdmin() nunca es true en reglas, dejando operaciones admin client-side dependiendo de huecos en las reglas.",
+      "Doble fuente de verdad para el saldo: campo escalar 'monedas' vs array 'monedasActivas' (lotes TTL). secureClaimMonedas mantiene ambos 'por compatibilidad'; el cliente calcula sobre 'monedas' (calculateActiveCoins solo devuelve userProfile.monedas), ignorando expiración: las monedas vencidas no se descuentan realmente del gasto.",
+      "Lógica de economía mayormente en cliente (AuthContext): earnMainCoins, feedKapi, processChallengeEvent, validateDatesStreak escriben directo a Firestore; manipulables si las reglas no cubren todos los campos (kapiCoins, weeklyClaimsData, lastBallSortReward, activeMultiplier, etc. NO están protegidos).",
+      "Fórmulas de recompensa de referido inconsistentes: referrals.js usa 10/20 fijas; AdminReferidos.jsx calcula floor(orderTotal/100)*5; CuentaReferidosPage muestra 'por cada S/100'. Tres definiciones distintas del mismo premio.",
+      "claimReferralCoins recibe currentMonedas desde el cliente y hace setDocument({monedas: currentMonedas+earnedCoins}) (no transacción): condición de carrera y posible manipulación del saldo.",
+      "Wordle: getWordleRankingToday lee TODA la colección 'wordle' y filtra en memoria (no escala); rankings con orderBy compuesto requieren índices no garantizados.",
+      "Premio de Ruleta calcula ángulo y resultado en cliente (Math.random en spinRuleta del lado cliente): el sorteo no es server-authoritative.",
+      "Mucho código con eslint-disable y comentarios 'TODO/para el futuro' (KapiPet daily_visit nunca se dispara; CatalogReward sin perk; tipos de premio sin entregar)."
+    ],
+    "recommendations": [
+      "Unificar la economía en una sola moneda lógica con un LEDGER de transacciones (subcolección users/{uid}/coinLedger: tipo, monto, motivo, source, expiresAt, balanceAfter). Derivar el saldo del ledger en backend; deprecar la dualidad monedas/kapiCoins y el campo escalar suelto. Esto es prerequisito para multi-nicho y auditabilidad.",
+      "Mover TODA acreditación/gasto a Cloud Functions callable server-authoritative (feedKapi, ballSort, ruleta spin con RNG en servidor, retos, referidos, canjes) y dejar el cliente solo como disparador. Hoy ruleta/ballSort escriben monedas desde cliente y chocan con las reglas.",
+      "Corregir el bug crítico de referidos: cambiar 'portal_users' por PORTAL_USERS_COLLECTION en referrals.js y migrar/consolidar cualquier dato ya escrito en 'portal_users'. Hacer el claim transaccional en backend.",
+      "Arreglar las reglas de Firestore: alinear isAdmin() con la colección real (adminRoles), y proteger TODOS los campos económicos (kapiCoins, monedasActivas, weeklyClaimsData, lastBallSortReward, lastKapiClaimDate, kapiHappiness, activeMultiplier, multiplierExpiresAt, lastRuletaSpinWeek, weeklyChallengeProgress) contra escritura directa del usuario; permitir su escritura solo vía Functions.",
+      "Introducir MISIONES DIARIAS reales y una racha transversal con recompensa creciente (D1..D7), y cablear processChallengeEvent a eventos clave (compra, reseña, visita, compartir) para que los rewardType/actionType ya existentes se usen de verdad.",
+      "Activar la 'compra por impulso': cashback inmediato en monedas proporcional al monto, banner 'te faltan X monedas para [recompensa]', multiplicadores por categoría/nicho y eventos relámpago; otorgar monedas por RESEÑA con foto (con anti-abuso) para cerrar el loop post-compra.",
+      "Hacer el catálogo de recompensas dinámico (colección rewardsCatalog administrable, por nicho) y que el canje genere un CUPÓN/PERK persistente verificable e integrado al checkout (estado: emitido/aplicado/expirado).",
+      "Unificar la fórmula de premio de referido en un solo lugar (config en Firestore) y consumirla desde cliente, admin y backend; idealmente automatizar la confirmación de venta vía webhook del ERP (ya existe ensureAccountFromOrder como precedente) en lugar de aprobación 100% manual.",
+      "Añadir niveles/tiers de cliente (p. ej. por gasto acumulado) y logros/badges persistentes para retención de largo plazo; mostrar al usuario la expiración de monedas y recordatorios.",
+      "Para escalar el ranking de Wordle, crear documentos agregados por día (o usar consultas con índices) en vez de leer toda la colección y filtrar en memoria; mover RNG de ruleta y validación de Wordle ganador al servidor para evitar trampas."
+    ]
+  },
+  {
+    "subsystem": "Notificaciones y Push (FCM/Capacitor + notificaciones locales + in-app + panel admin + deep links)",
+    "whatExists": [
+      "PUSH POR FCM (server-side): functions/notificationsEngine.js envía push vía Admin SDK admin.messaging().sendToDevice(tokens, payload). El payload es { notification:{title,body}, data:{type} }. NO hay envío FCM directo desde el cliente; todo push sale del backend.",
+      "FUNCION PROGRAMADA (cron horario): notificationEngine es onSchedule('0 * * * *', timeZone America/Lima). Cada hora recorre TODOS los docs de portal_clientes_users con .get() (full scan) y evalua reglas por usuario.",
+      "REGLA 1 Carrito abandonado: lee data.cart.{items,cartUpdatedAt,abandonedLevel}; dispara a 1h, 24h, 48h con niveles 1/2/3 para no repetir. Copys 24h personalizan segun data.monedas. Si envia carrito, hace continue (corta reglas de menor prioridad ese ciclo).",
+      "REGLA 2 Retencion Kapi: lee data.lastAppOpen; dispara a 7d y 14d. Copys personalizados con primer nombre (displayName) y data.monedas. Mensajes emocionales centrados en la mascota Kapi.",
+      "ANTI-SPAM global: canSendPush() limita a max 2 push/dia por usuario, ventana horaria 9:00-21:00 hora local del servidor, y evita 2 push del mismo type el mismo dia. Se registra en data.antiSpamLog (array de {date,type}).",
+      "PUSH MANUAL/CAMPAÑAS: sendManualPromoNotification (functions.https.onCall) recibe {title,body,segment}. Segmentos: 'all', 'vip' (monedas>=50), 'inactive' (lastAppOpen>30d). Recorre todos los usuarios y envia sendToDevice. Devuelve {success,count}.",
+      "REGISTRO DE TOKENS (cliente): src/hooks/useNotifications.js. En nativo (Capacitor.isNativePlatform) usa @capacitor/push-notifications: checkPermissions/requestPermissions/register, y en listener 'registration' guarda el token con arrayUnion en portal_clientes_users/{uid}.fcmTokens. En web usa firebase/messaging getToken con VAPID key (env REACT_APP_FIREBASE_VAPID_KEY) y onMessage para foreground.",
+      "NOTIFICACIONES IN-APP (campana): useNotifications escucha onSnapshot de users/{uid}/notifications ordenado por createdAt desc; expone notifications, unreadCount, markAsRead, markAllAsRead. Render en src/components/common/Header/NotificationTray.jsx (icono Bell + badge). El engine y otras functions ESCRIBEN esas notifs en users/${uid}/notifications.",
+      "NOTIFICACIONES LOCALES (cliente, on-device): src/services/kapiNotifications.js con @capacitor/local-notifications. scheduleKapiNotifications(userProfile) programa hasta IDs 11-16: recordatorios mensuales de monedas (dia 15, 25, ultimo-3, ultimo dia, dia 1 del proximo mes) y recordatorio diario contextual de la 'Ruleta Semanal'/alimentar a Kapi (ID 16, +2h tras abrir app). Cancela y reprograma IDs 10-19 en cada ejecucion. Se invoca desde KapiPet.jsx useEffect([userProfile]).",
+      "TRIGGERS POR EVENTO/FECHA (otras functions en index.js): notifyWishlistBirthdays (cron diario 9:00) crea notif in-app 14 dias antes del cumple si hay wishlist; resetKapiCoins (cron fin de mes); rotateWeeklyChallenge (cron lunes 00:00). Son triggers de calendario, no triggers Firestore onWrite/onCreate.",
+      "DEEP LINKS: src/components/common/DeepLinkHandler.jsx usa @capacitor/app addListener('appUrlOpen'); valida hostname wala.pe/www.wala.pe y hace navigate(path). Montado globalmente en App.jsx dentro del Router (linea 194). NO procesa data.type del push ni el tap de la notificacion para navegar.",
+      "PANEL ADMIN: src/pages/admin/AdminNotifications/AdminNotifications.jsx con 3 tabs: 'Configuracion & Copys' (toggles de categorias, horarios por categoria, editor de copys con A/B variante B) persistidos en notification_settings/global; 'Envio Manual' (llama sendManualPromoNotification); 'Metricas' (recharts con datos HARDCODEADOS/falsos).",
+      "INFRA Android lista: capacitor.config.ts (appId com.wala.tienda); android/app/build.gradle aplica com.google.gms.google-services condicionalmente si existe google-services.json (project_id real 'sistema-gestion-3b225'); plugins @capacitor/push-notifications ^8.1.1 y @capacitor/local-notifications ^8.0.2 instalados."
+    ],
+    "keyFiles": [
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\functions\\notificationsEngine.js",
+        "role": "Motor de push server-side: cron horario (notificationEngine) con reglas de carrito abandonado y retencion Kapi + anti-spam; y campana manual segmentada (sendManualPromoNotification). Usa Admin SDK sendToDevice."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\functions\\index.js",
+        "role": "Re-exporta notificationEngine y sendManualPromoNotification (lineas 582-583). Contiene otros crons que generan notifs in-app: notifyWishlistBirthdays, resetKapiCoins, rotateWeeklyChallenge."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\hooks\\useNotifications.js",
+        "role": "Registro de tokens FCM (nativo via @capacitor/push-notifications, web via firebase/messaging getToken+VAPID), guarda fcmTokens en portal_clientes_users; lee notifs in-app de users/{uid}/notifications; markAsRead/markAllAsRead."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\kapiNotifications.js",
+        "role": "Notificaciones LOCALES on-device (@capacitor/local-notifications): recordatorios de monedas mensuales y de ruleta/alimentar a Kapi. IDs 11-16."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\admin\\AdminNotifications\\AdminNotifications.jsx",
+        "role": "Panel admin: settings/copys/A-B (notification_settings/global), envio manual segmentado, tab de metricas con datos falsos hardcodeados."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\components\\common\\DeepLinkHandler.jsx",
+        "role": "Deep links Capacitor (appUrlOpen) restringidos a wala.pe; navega a la ruta. No conecta el tap de push a navegacion."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\components\\common\\Header\\NotificationTray.jsx",
+        "role": "UI de la campana de notificaciones in-app; llama requestPermission() al montar (puede pedir permiso push en cualquier visita con sesion)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\public\\firebase-messaging-sw.js",
+        "role": "Service Worker FCM para push web en background. ESTA VACIO/comentado con placeholders (TU_API_KEY). El push web background NO funciona."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\firebase\\config.js",
+        "role": "Inicializa messaging via getMessaging solo si isSupported(); exporta messaging (puede ser null por carga asincrona)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\contexts\\AuthContext.jsx",
+        "role": "Setea lastAppOpen=YYYY-MM-DD una vez al dia en portal_clientes_users (lineas 83-89): insumo de las reglas de retencion."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\contexts\\CartContext.jsx",
+        "role": "Escribe cart.cartUpdatedAt y cart.abandonedLevel=0 (lineas 48-49): insumo de la regla de carrito abandonado."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\capacitor.config.ts",
+        "role": "Config Capacitor (appId com.wala.tienda). NO declara config del plugin PushNotifications (presentationOptions, etc.)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\android\\app\\build.gradle",
+        "role": "Aplica google-services condicional; google-services.json presente (project_id sistema-gestion-3b225). Solo declara firebase-auth en BoM; messaging lo aporta el plugin Capacitor."
+      }
+    ],
+    "dataModel": [
+      "portal_clientes_users/{uid}: fcmTokens (array de tokens FCM, arrayUnion), lastAppOpen (string YYYY-MM-DD), antiSpamLog (array {date,type}), monedas (number global), monedasActivas (array lotes con TTL), kapiCoins, displayName, birthDate, cart:{items,cartUpdatedAt,abandonedLevel}, weeklyClaimsData, lastKapiClaimDate.",
+      "users/{uid}/notifications/{id}: notificaciones IN-APP. Campos title, body, type, read(bool), createdAt(ISO string). OJO: subcoleccion bajo 'users' (LEGACY_USERS_COLLECTION), no bajo portal_clientes_users.",
+      "notification_settings/global: { categories:{cart_abandoned,retention,orders,promos:bool}, schedules:{cat:{start,end}}, copys:{cart_1h/24h/48h, retention_7d/14d : {a:{text,emoji,cta}, b}} }. Solo cart_* y retention_* se consumen parcialmente en el engine.",
+      "wishlists/{uid}: items[] (usado por notifyWishlistBirthdays).",
+      "analytics_kapi/{YYYY-MM}: agregados de reset mensual (no de notificaciones).",
+      "globals/activeChallenge, weeklyChallenges/*, challengeEvidences/* (retos, generan notifs in-app indirectamente)."
+    ],
+    "strengths": [
+      "Arquitectura correcta de seguridad: el envio de push es 100% server-side (Admin SDK); el cliente solo registra tokens. No hay server key expuesta en el frontend.",
+      "Reglas de retencion ya implementadas y razonadas: carrito 1h/24h/48h con escalado por niveles y retencion 7d/14d, con copys personalizados (nombre, saldo de monedas).",
+      "Anti-spam global sensato: tope 2/dia, ventana horaria, dedupe por tipo/dia. Buena base para no quemar la base de usuarios.",
+      "Doble canal coherente: push remoto (FCM, eventos server-driven) + notificaciones locales on-device (gamificacion Kapi/monedas/ruleta) que no consumen invocaciones de servidor.",
+      "Panel admin funcional con settings persistidos, editor de copys con soporte A/B (variante B) y envio manual segmentado por VIP/inactivos.",
+      "Manejo correcto de permisos por plataforma (Capacitor nativo vs Notification API web) y guardas de isSupported() para messaging.",
+      "Deep linking nativo verificando el dominio antes de navegar (evita open redirect basico)."
+    ],
+    "gaps": [
+      "NO existe motor de campañas programables/agendadas: solo hay envio manual inmediato (sendManualPromoNotification) y crons fijos hardcodeados. No se puede crear una campaña con fecha/hora de envio futura, recurrencia, ni guardarla.",
+      "NO hay sistema de misiones/quests escalable: la gamificacion esta hardcodeada (reglas Kapi en kapiNotifications.js y retos en index.js). No hay coleccion de 'misiones' con progreso, recompensa y trigger configurable desde admin.",
+      "Segmentacion muy pobre y no escalable: el engine y la campaña manual hacen FULL SCAN de portal_clientes_users en memoria. Segmentos fijos (all/vip/inactive). Sin segmentos por nicho/categoria/comportamiento/RFM ni audiencias guardadas. Esto NO escala a una base grande (costo de lecturas + timeouts de la function).",
+      "Sin topics FCM: no se usa messaging.subscribeToTopic / sendToTopic. Toda campaña itera usuario por usuario; imposible enviar a millones eficientemente. Para retencion diaria a escala se necesita topics o batching real.",
+      "API FCM legacy/deprecada: usa sendToDevice (API legacy de FCM). Debe migrar a sendEachForMulticast/send (API HTTP v1). Riesgo de roto a futuro y sin limpieza de tokens invalidos.",
+      "NO se limpian tokens invalidos: nunca se eliminan tokens caducados/desinstalados de fcmTokens; el array crece y degrada entregabilidad y costos.",
+      "Service worker web (public/firebase-messaging-sw.js) NO esta configurado (placeholders TU_API_KEY, codigo comentado): el push WEB en background no funciona; solo foreground.",
+      "Tap del push no navega: el payload lleva data.type pero ni el listener nativo (pushNotificationReceived) ni DeepLinkHandler enrutan al tocar la notificacion. No hay listener pushNotificationActionPerformed. Las notifs locales tampoco definen extra/url para deep link.",
+      "Metricas inexistentes: el tab Metricas muestra datos hardcodeados. No se trackea entrega, apertura (open rate), conversion ni opt-out. Sin esto no se puede operar retencion ni A/B real.",
+      "A/B testing es solo UI: se puede definir variante B en el panel pero el engine NUNCA elige entre a/b ni mide ganador; ademas el engine usa copys planos (settings.copys.cart_1h como string) incompatibles con la estructura {a:{text,emoji,cta},b} que guarda el admin.",
+      "Desfase admin<->engine en copys: AdminNotifications guarda copys como objetos {a,b}; el engine los lee como strings. Editar copys en el panel NO afecta los push reales. Categories/schedules del panel tampoco se respetan (el engine hardcodea 9-21 y no consulta settings.categories).",
+      "Sin verificacion de rol admin: sendManualPromoNotification solo valida context.auth (cualquier usuario logueado podria invocarla); el comentario dice 'Opcional: validar admin' pero NO esta implementado. Riesgo de spam masivo.",
+      "Modelo de datos dividido: tokens/perfil en portal_clientes_users pero notifs in-app en users/{uid}/notifications. Inconsistente; complica reglas de seguridad y consultas.",
+      "Sin idempotencia/colas: el cron horario muta abandonedLevel y antiSpamLog con multiples update() por usuario en un loop secuencial; sin batching ni tolerancia a fallos parciales; no escala."
+    ],
+    "techDebt": [
+      "sendToDevice (FCM legacy API) en functions/notificationsEngine.js lineas 35 y 196: API deprecada por Google, debe migrarse a HTTP v1 (sendEachForMulticast).",
+      "notificationEngine hace db.collection(PORTAL_USERS_COLLECTION).get() completo cada hora (linea 75) y itera secuencialmente con awaits por usuario: O(n) lecturas/escrituras, no batchea, riesgo de timeout y costo creciente.",
+      "Copys del panel (estructura {a,b}) incompatibles con el consumo del engine (espera string): la edicion admin no tiene efecto real en cart_24h/retencion (usa fallbacks inline).",
+      "public/firebase-messaging-sw.js con credenciales placeholder y codigo comentado (no operativo).",
+      "Metricas del panel 100% hardcodeadas (AdminNotifications.jsx lineas 43-47) con setMetricsData nunca alimentado por datos reales.",
+      "Falta validacion de admin en sendManualPromoNotification (functions/notificationsEngine.js linea 159 es solo un comentario TODO).",
+      "Tokens FCM nunca depurados: respuestas de messaging con failureCount/invalid tokens se ignoran (solo se mira successCount).",
+      "Notificacion in-app se escribe en jerarquia 'users' mientras todo lo demas del usuario vive en portal_clientes_users (acoplamiento/legacy).",
+      "requestPermission() se dispara en cada montaje de NotificationTray (Header), pidiendo permiso push de forma agresiva sin contexto de valor.",
+      "capacitor.config.ts sin bloque de configuracion para PushNotifications (presentationOptions) ni iconos/canales de notificacion Android."
+    ],
+    "recommendations": [
+      "Migrar de sendToDevice a la API HTTP v1 con messaging.sendEachForMulticast (lotes de 500) y procesar la respuesta para ELIMINAR tokens invalidos (messaging/registration-token-not-registered) de fcmTokens. Resuelve deprecacion + entregabilidad.",
+      "Introducir FCM Topics por nicho/segmento (ej. topic por categoria de marketplace, por ciudad, por estado de fidelidad) y suscribir/desuscribir tokens al registrarse; enviar campañas masivas con sendToTopic en vez de iterar usuarios. Habilita escala real para retencion diaria.",
+      "Crear una coleccion 'campaigns' (programables): {titulo, body, deepLink, segmento/topic, scheduledAt, recurrencia, variantes A/B, estado}. Un cron generico (cada 5-15 min) procesa campañas due. Asi el admin agenda campañas futuras y recurrentes sin redeploy.",
+      "Construir un motor de MISIONES configurable: coleccion 'missions' {tipo, objetivo, recompensaMonedas, trigger, ventana} + progreso por usuario; recordatorios automaticos (push/local) y deep link a la mision. Reemplaza la gamificacion hardcodeada de Kapi/retos.",
+      "Implementar tracking de eventos de notificacion: registrar delivered/opened/converted/opt-out en una coleccion (o BigQuery/GA4) usando el data.type y un id de campaña; alimentar el tab Metricas con datos reales y decidir ganador A/B automaticamente.",
+      "Conectar copys del admin con el engine: unificar el esquema {a,b} y hacer que el engine lea notification_settings/global, respete categories (on/off), schedules por categoria y elija variante A/B con asignacion determinista por uid.",
+      "Cablear el deep link del push: anadir data.deepLink/url en payloads, listener pushNotificationActionPerformed (nativo) que navegue, y extra.url en notificaciones locales -> reutilizar DeepLinkHandler. Cierra el loop push->pantalla->conversion.",
+      "Configurar el service worker web (public/firebase-messaging-sw.js) con la config real e inyeccion segura para habilitar push web en background.",
+      "Anadir verificacion de rol admin en sendManualPromoNotification (consultar adminRoles/permissions) antes de permitir envios; mover a la API v1 con batching.",
+      "Para escalar el cron de retencion: precalcular campos indexables (birthMonthDay ya sugerido en el codigo, segmentos/flags) y consultar con .where() en vez de full scan; batchear writes; considerar Tasks/colas para fan-out.",
+      "Crear un canal de notificaciones Android e iconos (small icon, color) y declarar presentationOptions en capacitor.config.ts para foreground en iOS; mejora la presentacion de push.",
+      "Migrar la subcoleccion de notifs in-app a portal_clientes_users/{uid}/notifications para unificar el modelo de datos y simplificar reglas de seguridad."
+    ]
+  },
+  {
+    "subsystem": "Carrito, Checkout y Pagos (Wala / Regala Con Amor)",
+    "whatExists": [
+      "CARRITO (CartContext.jsx): estado en localStorage (clave 'shopping_cart'), persistencia espejo en Firestore portal_clientes_users/{uid}.cart para 'carrito abandonado' (abandonedLevel:0, cartUpdatedAt). addToCart soporta productos simples y combos (isComboProduct con comboItems, comboVariantSelections, comboCustomizations, comboSubProductsData). getTotalPrice usa customization.finalPrice||price. Listeners onSnapshot sobre erpDb pedidos_web/{webOrderId}: cuando el doc se borra o web===false, considera el pedido 'aprobado', limpia esos items del carrito y muestra toast.",
+      "CHECKOUT (CheckoutPage.jsx, ~950 lineas): formulario Formik+Yup (nombre, DNI, telefono, email, direccion, distrito, ciudad [Lima/Callao/Provincias], modo regalo con destinatario/mensaje/sticker). Calcula subtotal, descuento por monedas KapiSol (max 50% del subtotal, 1 moneda = S/1), envio fijo (gratis si subtotalConDescuento>100, si no S/15) y total. Al enviar: genera pseudoOrderId (PD-<timestamp36>), construye un payload ERP muy completo (clienteNombre/Apellidos, datos envio, montoTotal/montoAdelanto:0/montoPendiente, productos map con sub-productos de combo y disenoFrente/disenoEspalda, submaps de etapas impresion/diseno/preparacion/estampado/empaquetado/reparto), lo guarda en pedidos_web (ERP) via createWebOrder, procesa regalos de wishlist (markItemAsGifted), procesa referidos (linkPurchaseToReferral si cookie <36h), arma mensaje WhatsApp, marca items locales como pending_confirmation con webOrderId, congela monedas (freezeMonedas) y auto-actualiza perfil. Luego pasa a paso de seleccion de pago (paymentStepData).",
+      "PASARELAS DE PAGO: (1) Culqi (CulqiCustomCheckout.jsx) carga js.culqi.com/checkout-js, tokeniza la tarjeta en cliente con REACT_APP_CULQI_PUBLIC_KEY, y envia el token a la Cloud Function callable processCulqiPayment que hace el cargo real (api.culqi.com/v2/charges con CULQI_SECRET_KEY en backend). Maneja PEN (pedido) y USD/PEN (enlace). (2) PayPal (PaypalCheckout.jsx y PaypalEnlaceCheckout.jsx) via @paypal/react-paypal-js, createOrder+capture 100% en cliente, sin verificacion en backend. Convierte PEN->USD con CONVERSION_RATE=3.8 hardcodeado. (3) Yape/Plin/Transferencia: no es pasarela, se 'acuerda por WhatsApp' (boton que abre wa.me y limpia el carrito). Numeros Yape/Plin configurables en AdminPagos.",
+      "PAGO RAPIDO / ENLACES (AdminGeneradorPagos.jsx + PagoRapidoPage.jsx): admin crea documentos en coleccion enlaces_pago {concepto, moneda PEN|USD, monto, estado:'pendiente'} y genera URL /pago-rapido/:id. La pagina publica lee el enlace, valida expiracion (36h, y si expira borra el doc), y enruta: USD->PayPal, PEN->Culqi. Pensado para cobros fuera de tienda (saldos, diferencias de envio internacional).",
+      "LIBRO DE RECLAMACIONES INDECOPI (LibroReclamacionesPage.jsx publico + AdminLibroReclamaciones.jsx): formulario conforme a Ley 29571 (consumidor, bien producto/servicio, reclamo|queja, monto reclamado, soporte para menor de edad+apoderado, aceptacion de veracidad). Genera codigo WALA-YYYYMMDD-####, guarda snapshot del proveedor (razonSocial/ruc/domicilio desde config/empresa.js) en coleccion libro_reclamaciones con estado pendiente|respondido. Admin filtra, responde y marca como respondido (respuestaProveedor, respondidoEn). Plazo legal 15 dias habiles.",
+      "MONEDAS / FIDELIDAD KapiSol: integrado en checkout (descuento), freezeMonedas mueve monedas a 'en espera' por pseudoOrderId, descuentoMonedas/monedasEnEspera viajan al payload ERP. Backend secureClaimMonedas (callable transaccional, con TTL 90 dias y lotes monedasActivas) y resetKapiCoins (cron mensual). Existen kapiCoins separados de monedas.",
+      "ADMIN PAGOS (AdminPagos.jsx): no gestiona transacciones; solo configura textos/numeros Yape (yape_number/name), Plin (plin_number/name) y WhatsApp de validacion de comprobantes via coleccion messages (getMessage/setMessage).",
+      "ENVIO: regla unica y global, no por zona real: gratis si > S/100, si no S/15. Duplicada en Cart.jsx (sobre subtotal sin descuento) y CheckoutPage.jsx (sobre subtotal con descuento)."
+    ],
+    "keyFiles": [
+      {
+        "path": "src/contexts/CartContext.jsx",
+        "role": "Estado del carrito (localStorage + espejo Firestore), combos, listeners de aprobacion sobre pedidos_web"
+      },
+      {
+        "path": "src/pages/CheckoutPage.jsx",
+        "role": "Checkout completo: formulario, calculo de totales/monedas/envio, construccion del payload ERP, createWebOrder, paso de seleccion de pago"
+      },
+      {
+        "path": "src/pages/CartPage.jsx",
+        "role": "Wrapper de pagina del carrito (usa Tienda/components/Cart)"
+      },
+      {
+        "path": "src/pages/Tienda/components/Cart/Cart.jsx",
+        "role": "UI del carrito con resumen, envio estimado y aviso de pedido pendiente de confirmacion"
+      },
+      {
+        "path": "src/components/CulqiCustomCheckout/CulqiCustomCheckout.jsx",
+        "role": "Pasarela Culqi: tokenizacion en cliente + llamada a Cloud Function processCulqiPayment"
+      },
+      {
+        "path": "src/components/PaypalCheckout/PaypalCheckout.jsx",
+        "role": "PayPal para saldo de pedido ERP (capture en cliente, conversion PEN->USD 3.8 hardcode, escribe historialPagos)"
+      },
+      {
+        "path": "src/components/PaypalCheckout/PaypalEnlaceCheckout.jsx",
+        "role": "PayPal para enlaces_pago (capture en cliente, marca estado:'pagado')"
+      },
+      {
+        "path": "src/pages/PagoRapidoPage.jsx",
+        "role": "Pagina publica de pago por enlace; valida expiracion 36h, enruta USD->PayPal / PEN->Culqi"
+      },
+      {
+        "path": "src/pages/admin/AdminGeneradorPagos.jsx",
+        "role": "Generador de enlaces_pago (concepto/moneda/monto)"
+      },
+      {
+        "path": "src/pages/admin/AdminPagos.jsx",
+        "role": "Config de metodos manuales Yape/Plin/WhatsApp (coleccion messages)"
+      },
+      {
+        "path": "src/pages/LibroReclamacionesPage.jsx",
+        "role": "Formulario publico Libro de Reclamaciones INDECOPI"
+      },
+      {
+        "path": "src/pages/admin/AdminLibroReclamaciones.jsx",
+        "role": "Bandeja admin de reclamaciones (responder/marcar respondido)"
+      },
+      {
+        "path": "src/pages/admin/AdminZonas.jsx",
+        "role": "ATENCION: NO son zonas de envio; es el editor de secciones/zonas del layout de la tienda (estilo Shopify)"
+      },
+      {
+        "path": "src/services/erp/firebase.js",
+        "role": "Segunda instancia Firebase 'erp-firebase'; createWebOrder/createOrderInERP/updateOrderInERP, busqueda de pedidos por DNI en pedidos y pedidos_web"
+      },
+      {
+        "path": "src/services/firebase/firestore.js",
+        "role": "CRUD generico sobre el db Portal (usado por enlaces_pago y libro_reclamaciones)"
+      },
+      {
+        "path": "functions/index.js",
+        "role": "Cloud Functions: processCulqiPayment (cargo seguro), secureClaimMonedas, ensureAccountFromOrder, crons de fidelidad"
+      },
+      {
+        "path": "firebase/firestore.rules",
+        "role": "Reglas de seguridad (orders, users, libro_reclamaciones, enlaces_pago)"
+      },
+      {
+        "path": "src/config/empresa.js",
+        "role": "Datos legales (razonSocial/RUC/domicilio) para INDECOPI"
+      }
+    ],
+    "dataModel": [
+      "pedidos_web (erpDb): cola de validacion previa. Campos: numeroPedido, cliente* (Nombre/Apellidos/NombreCompleto/NumeroDocumento/TipoDocumento DNI/Contacto/Correo/Departamento/Distrito/Provincia), envio* (Nombres/Apellidos/Contacto/Direccion/Distrito/Departamento), canalVenta:'Portal Web', web:true, activador, vendedor:'Portal Web' (HARDCODE), montoTotal, montoAdelanto:0, montoPendiente, descuentoMonedas, monedasEnEspera, estadoGeneral/status:'Nuevo', prendas (string), cantidad, productos{item_N:{productoId,producto,cantidad,talla,color,precio,subtotal,personalizado,esCombo,subProductos{subItem_N:{...disenoFrente/disenoEspalda}}}}, imageURLs[], submaps impresion/diseno/preparacion/estampado/empaquetado/reparto, giftDetails, userId, portalPseudoOrderId, estadoValidacion:'pendiente', createdAt/updatedAt",
+      "pedidos (erpDb): pedidos ERP reales/aprobados (misma forma). Tienen historialPagos[] {fecha,hora,monto,metodo,paypalOrderId,estado,nota}, montoDeuda, conDeuda. Busqueda por clienteNumeroDocumento o dni",
+      "enlaces_pago (db Portal): {concepto, moneda PEN|USD, monto, montoUSD/montoPEN, estado pendiente|pagado, paypalOrderId, pagadoEn, createdAt}",
+      "libro_reclamaciones (db Portal): {codigo WALA-..., estado pendiente|respondido, proveedor{razonSocial,ruc,domicilioFiscal}, consumidor{...esMenor,apoderado}, bien{tipo,montoReclamado,descripcion}, reclamo{tipo,detalle,pedido}, respuestaProveedor, respondidoEn, createdAt}",
+      "portal_clientes_users / users (db Portal): perfil + cart{items,cartUpdatedAt,abandonedLevel} + monedas, monedasActivas[]{amount,expiresAt,source,createdAt}, monedasReclamadas[], monedasEnEspera, kapiCoins",
+      "messages (db Portal): config clave-valor (yape_number/name, plin_number/name, whatsapp_number_pagos, whatsapp_text_pagos, whatsapp_number_tienda, etc.)",
+      "DOS PROYECTOS FIREBASE: 'db' (Portal: auth/users/enlaces_pago/libro_reclamaciones/messages) y 'erpDb' (erp-firebase: pedidos/pedidos_web). Las pasarelas de PayPal de pedido escriben a erpDb; enlaces_pago vive en db Portal"
+    ],
+    "strengths": [
+      "Culqi esta bien resuelto: el cargo real se hace en Cloud Function (processCulqiPayment) con la clave secreta en backend; el cliente solo tokeniza con la clave publica. Patron correcto.",
+      "Payload de pedido muy rico y alineado al ERP (etapas de produccion, combos con disenos por vista frente/espalda, renders), facilitando la integracion con el taller textil.",
+      "Separacion pedidos_web (cola de validacion) vs pedidos (ERP real) da control humano antes de producir; el carrito se auto-limpia via onSnapshot cuando el pedido se aprueba.",
+      "Libro de Reclamaciones cumple bien la forma INDECOPI (Ley 29571): codigo, snapshot del proveedor, soporte menor de edad, distincion reclamo/queja, plazo de respuesta y nota legal; reglas Firestore correctas (create publico, read/update solo admin).",
+      "Sistema de fidelidad KapiSol integrado de extremo a extremo en el checkout (tope 50%, congelado de monedas, TTL 90 dias, claim transaccional en backend).",
+      "UX de pago flexible para el mercado peruano: tarjeta (Culqi), internacional (PayPal) y el canal real dominante Yape/Plin/Transferencia via WhatsApp."
+    ],
+    "gaps": [
+      "NO existe modelo multi-seller en absoluto. El campo 'vendedor' esta hardcodeado a 'Portal Web'; no hay sellerId/tiendaId en productos, items del carrito ni en el pedido. Todo el GMV es de un unico comercio (CATAS GROUP S.A.C.).",
+      "NO hay split de pagos. Culqi cobra el total a una sola cuenta (CULQI_SECRET_KEY unica); PayPal captura a una sola cuenta. No hay Culqi Connect / PayPal Marketplace / Stripe Connect ni reparto por vendedor.",
+      "NO hay comisiones, payouts ni liquidaciones. No existe coleccion de balances por vendedor, reglas de comision, ni proceso de pago a terceros. (SubscriptionLandingPage menciona 'comisiones bajas' pero es solo copy de marketing, sin implementacion).",
+      "El carrito no esta segmentado por vendedor: si hubiera varios sellers, no se podria dividir la orden ni calcular envios/comisiones por seller.",
+      "Calculo de envio simplista y NO por zona: regla global S/15 / gratis>S/100. No hay tabla de tarifas por departamento/distrito/agencia pese a capturar Departamento/Provincia. AdminZonas NO gestiona zonas de envio (es el editor de layout de la tienda).",
+      "Sin soporte multi-nicho/multi-moneda real: precios solo en PEN; PayPal usa una tasa fija 3.8 hardcodeada (riesgo cambiario y de redondeo).",
+      "El precio se confia al cliente: addToCart/getTotalPrice y el monto enviado a Culqi/PayPal salen del front; no hay revalidacion del precio/total en backend contra el catalogo (riesgo de manipulacion de monto).",
+      "No hay estados de orden ligados al pago: tras pagar con Culqi NO se actualiza pedidos_web/pedidos (no se marca pagado ni se mueve montoAdelanto/montoPendiente); el flujo de Culqi en checkout solo limpia el carrito y navega.",
+      "El flujo Culqi de ENLACE no marca el enlace como pagado: en CulqiCustomCheckout onSuccess solo cambia estado local; solo PayPal escribe estado:'pagado' en enlaces_pago. Un enlace PEN pagado por Culqi queda 'pendiente' y reutilizable hasta expirar.",
+      "No hay idempotencia ni webhooks de Culqi/PayPal: dobles cargos o capturas no se concilian; el exito depende del cliente (PayPal captura 100% en front).",
+      "Las pasarelas de pago en CheckoutPage estan ocultas tras user.email==='pruebas001@gmail.com' (flag de pruebas); en produccion el flujo real es pagar por WhatsApp, no online."
+    ],
+    "techDebt": [
+      "secureClaimMonedas tiene la verificacion de propiedad/estado del pedido COMENTADA (porque los pedidos viven en el ERP, no en el db del callable). Confia en la UI: cualquier pedidoId no reclamado antes acredita monedas -> vulnerable a farmeo de monedas.",
+      "@stripe/stripe-js y @stripe/react-stripe-js estan en package.json pero NO se usan en src (dependencias muertas; unica referencia 'Stripe' es un comentario CSS).",
+      "PayPal captura y confirma el pago integramente en el cliente (actions.order.capture en onApprove); sin verificacion server-side de la orden -> el estado 'pagado' es manipulable desde el navegador.",
+      "CONVERSION_RATE=3.8 PEN/USD hardcodeada en PaypalCheckout.jsx; deberia venir de config/tasa en vivo.",
+      "Logica de envio duplicada y divergente: Cart.jsx calcula envio sobre subtotal sin descuento; CheckoutPage.jsx sobre subtotal con descuento. Inconsistencia visible al usuario.",
+      "Regla Firestore de enlaces_pago: 'allow update, delete: if true' (cualquiera puede marcar pagado/borrar un enlace); ademas create:if isAdmin() en reglas pero AdminGeneradorPagos usa createDocument sobre el db Portal sin verificacion explicita de admin en codigo.",
+      "Reglas Firestore definen orders/designs/templates en el db Portal, pero los pedidos reales viven en erpDb 'pedidos'/'pedidos_web' (otro proyecto) cuyas reglas no estan en este repo -> superficie de seguridad fuera de control de este codebase.",
+      "fallback de CULQI_SECRET_KEY a 'sk_test_dummy_key' y de PayPal clientId a 'test'/'sb': si faltan envs en prod, se procesan pagos en sandbox silenciosamente.",
+      "Comentarios eslint-disable y codigo muerto/duplicado en CheckoutPage (doble eslint-disable no-unused-vars consecutivos).",
+      "AdminPagos importa estilos de AdminTiendaTextos.module.css (acoplamiento de estilos por nombre)."
+    ],
+    "recommendations": [
+      "Introducir el concepto de seller/tienda como entidad de primera clase: sellerId en producto, item de carrito y linea de pedido; agrupar el carrito y la orden por seller (sub-ordenes) para poder dividir pagos, envios y comisiones.",
+      "Migrar el cobro online a una pasarela con split nativo: Culqi no soporta marketplace split de forma directa, evaluar Mercado Pago Marketplace (muy usado en Peru) o Stripe Connect (ya hay deps de Stripe) para retener comision y hacer payouts automaticos a vendedores.",
+      "Crear el modelo de liquidaciones: colecciones seller_balances, transactions (cargo, comision, payout, reembolso) y payouts; calcular comision por seller/nicho como % configurable; conciliar contra los charge_id de la pasarela.",
+      "Mover TODO el calculo de montos a backend: una Cloud Function debe recomputar subtotal/envio/descuento/comision desde el catalogo y crear la orden + el cargo (server-authoritative), nunca confiar en el total del cliente.",
+      "Reemplazar el flujo de PayPal de captura en cliente por crear/capturar la orden en una Cloud Function y validar el monto; idem agregar webhooks de Culqi y PayPal con idempotencia para conciliar estado de pago y mover montoAdelanto/montoPendiente y estado del pedido.",
+      "Implementar tarifas de envio por zona reales: coleccion zonas_envio (departamento/provincia/distrito/agencia -> costo y tiempo), y un calculo por seller; renombrar el actual AdminZonas (layout) para no confundir con envios y crear un AdminEnviosZonas real.",
+      "Cerrar la brecha Culqi-enlace: en onSuccess de CulqiCustomCheckout para enlaces, escribir estado:'pagado'+charge_id en enlaces_pago (idealmente desde la Cloud Function), y endurecer la regla 'update if true'.",
+      "Reactivar la verificacion de propiedad y estado del pedido en secureClaimMonedas usando el SDK del ERP (admin) o moviendo el claim al backend del ERP, para evitar acreditacion fraudulenta de monedas.",
+      "Soporte multi-moneda/multi-nicho: tabla de tasas de cambio en config (no hardcode 3.8), precios por moneda y formateo centralizado; preparar i18n de PEN/USD.",
+      "Quitar el gate user.email==='pruebas001@gmail.com' y habilitar pago online real con feature flag por entorno; eliminar deps muertas de Stripe si no se adoptan.",
+      "Persistir la relacion pago<->orden: al pagar (Culqi/PayPal/Yape validado) registrar pago en la orden (historialPagos, estadoPago) y disparar la transicion de estado, para tener trazabilidad contable y base de las liquidaciones."
+    ]
+  },
+  {
+    "subsystem": "Autenticación, cuenta y modelo de usuario (Wala / Regala Con Amor)",
+    "whatExists": [
+      "AuthContext (src/contexts/AuthContext.jsx) centraliza sesión y perfil: escucha onAuthStateChanged, carga el perfil desde 'portal_clientes_users/{uid}' con fallback a legacy 'users/{uid}', y si no existe crea un objeto mínimo {email, role:'client'}. Expone user, userProfile, adminPermissions, isAuthenticated, isAdmin, profileIncomplete y un set grande de mutadores de gamificación.",
+      "Login (LoginPage.jsx): email/password y Google. Incluye un backdoor hardcodeado: email 'AdminWalaPro' + password 'LaClaveDeWala2020' -> localStorage 'adminWalaPro'='true' y redirige a /admin. Tras login redirige según perfil: si falta dni/phone va a /completar-perfil; si procede encuesta a /encuesta-suscripcion; si no a /.",
+      "Registro (RegisterPage.jsx): wizard de 2 pasos. Paso 1 crea credencial Firebase (email+password con requisitos: 8+ chars, mayúscula, minúscula, número, especial de !#%&@*). Paso 2 captura tipoDocumento (DNI/CE), documento, nombre completo y teléfono (9 dígitos empezando por 9); valida unicidad de DNI por query a portal_clientes_users; escribe el doc con accessSystem='portal_clientes', accountOrigin='register_form'. Termina en /encuesta-suscripcion.",
+      "Google Auth (services/firebase/auth.js): en web usa signInWithPopup; en nativo Capacitor usa @codetrix-studio/capacitor-google-auth con clientId hardcodeado y signInWithCredential. Tras Google siempre se navega a /completar-perfil.",
+      "CompleteProfilePage.jsx: captura DNI/CE + nombre + teléfono para cuentas (típicamente Google) sin datos; valida unicidad de DNI; setea accountOrigin='google_auth' por defecto. Es la puerta a la encuesta.",
+      "Onboarding por encuesta (SubscriptionSurveyPage.jsx): flujo multi-paso tipo hub-and-spoke. Captura surveyBasicData (campos configurables desde Firestore via getSurveyConfig), giftRoles (pareja, hijos, padres, hermanos, sobrinos, primos, amigos, otros) y giftRecipients[] con {name, gender, events[{type,date,customName}], selectedCategories, categoryAnswers, familySet, familyAnswers}. Marca hasCompletedSurvey=true y otorga 5 monedas por fecha nueva (tope 15).",
+      "shouldPromptSurvey (utils/surveyHelper.js): muestra la encuesta si no se completó y han pasado >=14 días desde lastSurveyPromptedAt (handleSkip guarda ese timestamp).",
+      "SubscriptionLandingPage.jsx: landing de marketing del 'modelo suscripción' (cajas de regalo por fechas, pago mensual en cuotas). Es puramente informativa; el CTA solo lleva a la encuesta. NO existe lógica de suscripción real (sin planes, sin pasarela, sin estado de suscripción en el modelo).",
+      "NuevosUsuariosPage.jsx: landing promocional (web) para captar descargas de la app, con reseñas hardcodeadas, mapa de tienda física y promo de 'S/15 en KapiCoins de bienvenida' al completar fechas. No persiste nada; es marketing puro.",
+      "CuentaLayout.jsx: layout de /cuenta con tabs (Pedidos, Lista de Deseos, Creaciones, Referidos, Fechas Importantes, Catálogo Recompensas) + botón Mi Perfil. Si no hay user muestra CuentaLoginPrompt.",
+      "PerfilPage.jsx: edición de datos personales (nombre, DNI/CE, teléfono, birthDate), wallet KapiSol (monedas + monedasEnEspera), código de referido, y AvatarStudio (avatarConfig: skinTone, hairStyle, hairColor, eyeStyle, mouthStyle, accessory, weight, height, activeItemId).",
+      "Wishlist (WishlistContext.jsx + services/wishlist.js): colección 'wishlists/{uid}' con {userId, userCode=referralCode, items[]}. Items con {productId, productName, productImage, addedAt, isGifted, giftedBy}. toggleFavorite con UI optimista y hook a reto semanal (processChallengeEvent 'add_wishlist'). markItemAsGifted permite que terceros marquen regalado vía userCode y crea notificación en users/{uid}/notifications.",
+      "WishlistPage.jsx: lista de deseos del dueño, botón 'Compartir mi lista' que genera /wishlist/{referralCode}, y nudge para registrar birthDate. WishlistPublic lee el perfil del dueño desde portal_clientes_users.",
+      "Programa de fidelidad existente (todo dentro del doc de usuario, no en colección aparte): monedas (KapiSol/Wala Coins, permanentes), monedasEnEspera + historialMonedasEspera (congeladas en checkout), monedasReclamadas[] (anti-doble-reclamo por pedido), kapiCoins + kapiHappiness + lastKapiClaimDate (mascota Kapi, tope 31/mes), weeklyClaimsData (racha para ruleta), weeklyChallengeProgress + activeMultiplier/multiplierExpiresAt (reto semanal con multiplicador kapi_double_3d), streakBonusReceived (bono por 3 fechas cubiertas).",
+      "Referidos (services/referrals.js): colección 'referrals' con embudo status sent->clicked->purchased->completed->claimed; referralCode propio (KS-XXXXXX autogenerado en AuthContext); límite 50 compartidos/mes; recompensa 10 monedas (20 a partir de la 3a compra completada del mes); ranking Top 10 mensual; updateReferralCode permite editar el código una vez (referralCodeEdited).",
+      "Roles/permisos: rol básico en doc ('client'/'admin'); admins gestionados en colección separada 'adminRoles/{email}' con permissions[] (incl. 'superadmin'); super-admins hardcodeados por email (yorh001@gmail.com, heyeru24@gmail.com) auto-persistidos; vendors es solo un catálogo de nombres (services/vendors.js), NO un rol de usuario.",
+      "Creación de cuenta desde ERP/pedido (services/accountFromOrder.js): genera cuenta Firebase con email del pedido y password = DNI (padded a 6), perfil con accountOrigin='erp_auto', createdForPortalClientes=true; idempotente por email. Incluye migración legacy users -> portal_clientes_users."
+    ],
+    "keyFiles": [
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\contexts\\AuthContext.jsx",
+        "role": "Núcleo de sesión y modelo de usuario: carga/crea perfil, calcula roles/admin, y concentra TODA la lógica de fidelidad (monedas, kapiCoins, retos, rachas, multiplicadores)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\constants\\userCollections.js",
+        "role": "Define PORTAL_USERS_COLLECTION='portal_clientes_users' y LEGACY_USERS_COLLECTION='users'. Fuente de verdad de la colección de usuarios."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\RegisterPage.jsx",
+        "role": "Registro email+password de 2 pasos con captura de DNI/CE/teléfono y validación de unicidad de DNI."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\LoginPage.jsx",
+        "role": "Login email/Google; contiene backdoor admin hardcodeado y redirección por estado de perfil/encuesta."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\CompleteProfilePage.jsx",
+        "role": "Completar perfil obligatorio (DNI+teléfono) para cuentas Google antes de operar."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\SubscriptionSurveyPage.jsx",
+        "role": "Onboarding real: captura de datos de perfilamiento (roles, destinatarios, fechas, categorías/conjuntos) en giftRecipients[]."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\firebase\\auth.js",
+        "role": "Wrappers de Firebase Auth (email, Google web/nativo Capacitor, logout, reset password)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\referrals.js",
+        "role": "Programa de referidos completo (embudo, recompensas, ranking). Contiene bug de colección 'portal_users'."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\wishlist.js",
+        "role": "Wishlist persistida en 'wishlists/{uid}', con 'regalado por terceros' vía userCode y notificaciones."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\accountFromOrder.js",
+        "role": "Auto-creación de cuentas desde pedidos del ERP (password=DNI) y migración legacy->portal."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\adminRoles.js",
+        "role": "Roles de admin granulares en colección 'adminRoles/{email}' con permissions[]."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\firebase\\firestore.rules",
+        "role": "Reglas de seguridad: bloquean edición de campos sensibles (monedas, role, etc.) por el propio usuario; isAdmin() basado en colección 'adminUsers' (no 'adminRoles')."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\fechasImportantes.js",
+        "role": "Lee giftRecipients de todos los usuarios para construir el calendario de fechas/eventos organizables."
+      }
+    ],
+    "dataModel": [
+      "Colección principal: 'portal_clientes_users/{uid}' (alias PORTAL_USERS_COLLECTION). Colección legacy en migración: 'users/{uid}'.",
+      "Identidad/perfil: email, displayName, dni, tipoDocumento ('DNI'|'CE'), phone, birthDate, role ('client'|'admin'), accessSystem ('portal_clientes'), accountOrigin ('register_form'|'google_auth'|'erp_auto'), createdForPortalClientes, migratedFromLegacyUsers, lastAppOpen (YYYY-MM-DD), avatarConfig{skinTone,hairStyle,hairColor,eyeStyle,mouthStyle,accessory,weight,height,activeItemId}.",
+      "Fidelidad/wallet (en el mismo doc): monedas (saldo permanente KapiSol), monedasEnEspera + historialMonedasEspera[{orderId,amount,status,date}], monedasReclamadas[] (pedidoIds), kapiCoins, kapiHappiness, lastKapiClaimDate, weeklyClaimsData{weekStart,daysClaimed[]}, weeklyChallengeProgress{challengeId,progress,completed}, activeMultiplier + multiplierExpiresAt, streakBonusReceived.",
+      "Referidos (en doc usuario): referralCode (KS-XXXXXX), referralCodeEdited. Embudo en colección aparte 'referrals' {referrerCode,status,createdAt,clickedAt,orderId,orderTotal,earnedCoins,completedAt,claimedAt}.",
+      "Perfilamiento/encuesta (en doc usuario): surveyBasicData (campos dinámicos), giftRoles{pareja,hijos,padres,...}, hasCompletedSurvey, lastSurveyPromptedAt, giftRecipients[]{id,roleKey,roleDisplay,name,gender,events[{id,type,date,customName}],selectedCategories[],categoryAnswers{},familySet,familyAnswers{q1,q2,q3}}.",
+      "Wishlist: colección 'wishlists/{uid}' {userId,userCode,createdAt,items[{productId,productName,productImage,addedAt,isGifted,giftedBy}]}.",
+      "Roles admin: colección 'adminRoles/{email}' {email,name,permissions[],updatedAt}. Reglas usan otra colección 'adminUsers/{uid}'.",
+      "Otras colecciones tocadas por el subsistema: 'vendors' (catálogo de nombres), 'globals/activeChallenge' (reto semanal global), users/{uid}/notifications (subcolección de notificaciones), 'universal_dates'/'organizable_events'/'suggested_packages' (fechas y paquetes)."
+    ],
+    "strengths": [
+      "Separación limpia de la colección de clientes (portal_clientes_users) respecto a admins (adminRoles), con migración explícita desde legacy 'users'.",
+      "Captura de datos de perfilamiento muy rica para un marketplace de regalos: roles de destinatarios, fechas importantes por persona, género y 'conjuntos'/categorías configurables desde Firestore (encuesta data-driven sin recompilar).",
+      "Reglas de Firestore protegen los campos económicos: el usuario no puede auto-modificar monedas, monedasReclamadas, monedasEnEspera, historialMonedasEspera ni role (solo admin).",
+      "Múltiples mecánicas de gamificación ya implementadas (wallet permanente, monedas en espera/congeladas en checkout, mascota Kapi diaria con tope mensual, retos semanales con multiplicador, racha de fechas, referidos con embudo y ranking).",
+      "Google Auth resuelto correctamente para web (popup) y nativo Capacitor (plugin + signInWithCredential), con manejo de cancelación de usuario.",
+      "Onboarding con redirección coherente por estado (completar-perfil -> encuesta -> home) y re-prompt de encuesta cada 14 días sin ser intrusivo.",
+      "Wishlist con capacidad social (compartir por referralCode y 'regalado por terceros' con notificación al dueño), base sólida para el ángulo 'regala con amor'."
+    ],
+    "gaps": [
+      "NO existe modelo de suscripción real: SubscriptionLandingPage es solo marketing. Faltan entidades de plan/suscripción (planId, estado, ciclo de facturación, próximas cajas, método de pago), por lo que el 'modelo de cuotas mensuales' prometido no tiene backend.",
+      "Modelo monolítico mono-nicho: todo está en un único doc de usuario pensado para Wala (KapiSol, Kapi, Wala Box). Para un marketplace MULTI-NICHO no hay concepto de tenant/marca/nicho: ni en el usuario (preferencias por nicho), ni en wallet (saldos por marca), ni en fidelidad (programas por comercio).",
+      "Sin segmentos ni atributos de marketing en el usuario: no hay tags, segmento, lifecycle stage, RFM, fuente de adquisición real (más allá de accountOrigin), consentimiento de marketing/notificaciones, ni preferencias de comunicación.",
+      "Sin rol 'vendor/seller' como usuario: vendors es solo un catálogo de strings; un marketplace requiere usuarios-vendedor con su tienda, comisiones, payouts y permisos propios.",
+      "Fidelidad acoplada al cliente y no auditable: las transacciones de puntos no viven en un ledger; se mutan campos sueltos (monedas +=). No hay historial unificado de ganancia/gasto, ni caducidad, ni niveles/tiers, ni reglas configurables de 'earn'.",
+      "Perfilamiento de destinatarios (giftRecipients) embebido como array en el doc del usuario: no es consultable eficientemente, no escala y obliga a leer toda la colección (ver fechasImportantes.getUserDates que recorre TODOS los usuarios).",
+      "Falta normalización del perfil propio del usuario como 'persona regalable' (su propio cumpleaños/gustos) separado de los destinatarios; birthDate existe pero gustos/tallas/intereses propios no."
+    ],
+    "techDebt": [
+      "Bug de colección en referrals.js: claimReferralCoins y updateReferralCode escriben/consultan en 'portal_users' (líneas 186, 205, 211) en lugar de 'portal_clientes_users'. El reclamo de monedas por referido y la unicidad de referralCode operan sobre una colección equivocada (los puntos podrían no acreditarse al doc real).",
+      "Backdoor de admin hardcodeado en LoginPage.jsx (email 'AdminWalaPro' / password 'LaClaveDeWala2020' -> localStorage adminWalaPro='true') y super-admins por email hardcodeado en AuthContext: riesgo de seguridad serio en producción.",
+      "Desalineación de reglas vs código: firestore.rules define isAdmin() leyendo 'adminUsers/{uid}'.role=='admin', pero el código usa la colección 'adminRoles/{email}' con permissions[]. Las reglas no reconocen a los admins reales, así que la protección admin del backend es inconsistente.",
+      "claimReferralCoins acredita monedas con setDocument cliente, pero las reglas bloquean que el usuario modifique 'monedas'; si corre con credenciales de usuario fallará silenciosamente (depende de quién ejecute). Mismo patrón frágil en toda la fidelidad escrita desde el cliente.",
+      "referralCode incoherente: AuthContext y referrals.js usan KS-<random> persistido, pero PerfilPage.jsx muestra y copia KS-<primeros 6 del uid> (no es el referralCode real almacenado). El usuario copia un código distinto al que valida el sistema.",
+      "Doble fuente de verdad de roles (role en doc + adminRoles + localStorage + emails hardcodeados) calculada en isLegacyAdmin/effectiveAdminPermissions: difícil de auditar.",
+      "accountFromOrder.js usa password = DNI (dato público en Perú), riesgo de cuentas adivinables masivamente.",
+      "getUserDates() y fechasImportantes hacen full-scan de portal_clientes_users en cliente: no escala y expone potencialmente datos si las reglas no lo cubren.",
+      "Validación de unicidad de DNI por query desde cliente (RegisterPage/CompleteProfile) es propensa a carreras y no garantiza unicidad real."
+    ],
+    "recommendations": [
+      "Introducir un modelo de identidad multi-tenant/multi-nicho: separar 'cuenta global' del usuario de sus 'membresías por marca/nicho' (p.ej. subcolección users/{uid}/memberships/{tenantId} con saldo, tier, preferencias y estado de fidelidad por comercio). Esto habilita el marketplace sin reescribir el wallet único.",
+      "Crear un ledger de fidelidad (colección 'loyalty_transactions' con {uid, tenantId, type:earn|spend|expire|adjust, amount, reason, sourceRef, createdAt, expiresAt}) y derivar el saldo desde ahí; añadir tiers configurables y reglas de 'earn' data-driven (como ya se hace con la encuesta).",
+      "Mover toda mutación de puntos/economía a Cloud Functions (server-authoritative) y dejar al cliente solo lectura; alinear firestore.rules para que escrituras de monedas solo provengan del backend. Esto cierra el hueco de claimReferralCoins y del resto de la fidelidad.",
+      "Corregir de inmediato el bug 'portal_users' en referrals.js -> usar PORTAL_USERS_COLLECTION, y unificar el referralCode (que PerfilPage muestre/copie userProfile.referralCode real, no KS-<uid>).",
+      "Eliminar el backdoor de admin y los emails hardcodeados; unificar autorización en una sola colección de roles consistente con firestore.rules (decidir entre adminRoles por email o custom claims de Firebase Auth; los custom claims son lo idóneo para reglas).",
+      "Normalizar el perfilamiento: extraer giftRecipients a una colección consultable (users/{uid}/recipients/{id}) con eventos indexables, para campañas por fecha/segmento sin full-scan; añadir índice por fecha para recordatorios.",
+      "Enriquecer el doc de usuario para segmentación: consent de marketing/push, idioma, ubicación (departamento/distrito), canal de adquisición, intereses/nichos preferidos, RFM y lifecycleStage; poblarlos desde la encuesta y el comportamiento (lastAppOpen ya es un buen inicio).",
+      "Diseñar el modelo de suscripción real (colección 'subscriptions' con plan, estado, ciclo, próximas Wala Box, método de pago) antes de habilitar la pasarela, para que la landing tenga backend.",
+      "Para el lado vendedor del marketplace, añadir rol/usuario 'vendor' con su tienda, comisiones y payouts, y permisos propios separados de los de admin.",
+      "Sustituir password=DNI por flujo de invitación/restablecimiento (magic link o set-password en primer acceso) en cuentas creadas desde ERP."
+    ]
+  },
+  {
+    "subsystem": "Panel admin, backend (Express + Cloud Functions), integración ERP por Firestore, analytics propio, heatmap, backups, configuración y editor visual / landing pages dinámicas / temas",
+    "whatExists": [
+      "TRES backends coexisten: (1) Cloud Functions Firebase (functions/index.js) con HTTP onRequest ensureAccountFromOrder (webhook que el ERP llama al crear pedido: crea cuenta Auth + doc en portal_clientes_users con contraseña=DNI); callables onCall secureClaimMonedas, submitChallengeEvidence, approveChallengeEvidence, processCulqiPayment (cobro con Culqi server-side); y crons onSchedule resetKapiCoins (último día de mes), notifyWishlistBirthdays (diario 9am), rotateWeeklyChallenge (lunes 00:00 America/Lima). (2) functions/notificationsEngine.js: motor de notificaciones push FCM por cron horario con reglas de carrito abandonado (1h/24h/48h), retención Kapi (7d/14d), anti-spam (max 2/día, 9-21h) + callable sendManualPromoNotification con segmentación vip/inactive. (3) backend/server.js: Express MOCK en localhost:3001 con una sola ruta POST /api/pedidos/buscar que lee de backend/data/mockData (datos de prueba Juan Pérez/María García); CORS hardcodeado a localhost:3000; es solo para desarrollo, no está en producción.",
+      "Integración ERP en DOS modos paralelos: (a) REST API configurable vía src/config/erp.js + src/services/erp/integration.js + useERP.js (sendOrderToERP, getOrderStatus, searchOrdersByCustomer, syncCustomerData, getProductInventory, checkErpHealth) con endpoints /orders, /customers/dni, /inventory; timeout AbortController, header X-API-Key; cola de reintentos en localStorage (src/services/erp/queue.js, MAX_ATTEMPTS, RETRY_DELAY). (b) Conexión DIRECTA cliente→Firestore de un SEGUNDO proyecto Firebase del ERP (src/services/erp/firebase.js, app nombrada 'erp-firebase'): createOrderInERP, createWebOrder (cola pedidos_web con estadoValidacion='pendiente'), searchOrdersByDniInERP (busca en pedidos y pedidos_web por clienteNumeroDocumento/dni), getPedidosForAccountSync (paginación para sync de cuentas), updateOrderInERP, getOrderGiftDetails. El flujo real productivo usa (b), el REST (a) parece vestigial/alternativo.",
+      "Editor visual no-code completo (VisualEditorPanel.jsx, 2680 líneas) montado sobre la propia tienda con iframe + postMessage: modo edición drag de panel flotante, 18 tipos de sección (SECTION_TYPES en storefront.js: hero_banner, hero_carousel, announcement_bar, featured_products, collection_carousel, sidebar_catalog estilo Mercado Libre, flash_sales con countdown, testimonials, marquee de marcas, bestsellers_row, trust_badges, footer_columns, map_location, etc.), controles de tipografía y fondo (editor/controls/), preview móvil. Persiste secciones por pageId en colección 'pages' (+ copia legacy en 'storefront/config' para home).",
+      "Landing pages dinámicas (AdminLandingPages.jsx + DynamicLandingPage.jsx): el admin crea páginas con slug propio, hideHeader/hideFooter, themeId, y productos enlazados con stockType (global/exclusive/infinite) y allocatedStock. DynamicLandingPage resuelve el slug en runtime, ajusta visibilidad header/footer vía LayoutContext, inyecta CSS del tema y reutiliza TiendaPage con isLandingPage. Las secciones de cada landing se editan con el mismo Editor Visual.",
+      "Gestor de temas (AdminThemes.jsx + services/themes.js, colección tienda_themes): creación manual de CSS o IMPORTACIÓN de temas WordPress vía .zip (JSZip dinámico) extrayendo todos los .css y metadatos (Theme Name/Author/Version); el CSS se guarda crudo en Firestore y se inyecta con dangerouslySetInnerHTML en DynamicLandingPage.jsx (scoped al contenedor de la landing).",
+      "Analytics PROPIO (no GA): src/services/analytics/tracker.js + schema.js escriben eventos a analytics_events y sesiones a analytics_sessions (page_view, route_dwell, session_start/end, add_to_cart, checkout_start, purchase_complete, product_view, search_query, scroll_depth, banner_click) con anonymousId (localStorage), sessionId (sessionStorage), uid/email, clientType WEB/APP (detecta Capacitor), UTM, userAgent, timeZone. src/services/adminAnalytics.js agrega en cliente: funnel (views→adds→checkouts→purchases con usuarios únicos), carritos abandonados, top rutas por vistas/dwell, top búsquedas, top productos, clics de banner, scroll depth, bounce rate, dispositivos/navegadores/OS, fuentes UTM, geografía por timezone, y sesiones en tiempo real (ventana 5 min) con distinción logueados/registrados/visitantes. Resúmenes pre-agregados en analytics_global_summary y analytics_user_summary.",
+      "Heatmap propio (src/hooks/useHeatmapTracker.js): captura clics globales con coordenadas (clientX/Y, pageX/Y), tamaño de pantalla, ruta, identificador del elemento (id/data-track/texto/clase), buffer por lotes (batchSize) a colección heatmap_events; además modo iframe que sincroniza altura/scroll al dashboard padre vía postMessage (WALA_HEATMAP_SYNC) para superponer el mapa de calor sobre la página real.",
+      "Backups / historial (AdminBackups.jsx): cada guardado del Editor Visual crea un log en storeConfigLogs (VisualEditorContext.saveDraftToFirestore) con config completa, timestamp, usuario, descripción; el admin lista los últimos 50 y puede RESTAURAR sobreescribiendo storeConfig/homePage. Segundo tab: logs de inventario (inventoryLogs) con exportación a CSV (oldStock→newStock, userEmail).",
+      "Configuración y RBAC del equipo (AdminConfiguracion.jsx + services/adminRoles.js, colección adminRoles keyed por email en minúsculas): super admin gestiona administradores con 6 permisos granulares (superadmin, manage_design, manage_products, manage_inventory, manage_clients, manage_landing_pages). Segundo tab 'páginas fijas': bloqueo (lockedPages) de home/tienda/footer y landings para impedir guardados accidentales del editor visual (verificado en saveDraftToFirestore).",
+      "Sistema de fidelización/gamificación administrado: monedas con TTL de 90 días por lotes (monedasActivas), kapiCoins mensuales, retos semanales (weeklyChallenges/globals/activeChallenge), evidencias de retos con aprobación admin (challengeEvidences), mascota Kapi, wishlists con recordatorio de cumpleaños. Todo orquestado por las Cloud Functions y reflejado en el panel (AdminRetos, AdminRuleta, AdminWordle, etc.)."
+    ],
+    "keyFiles": [
+      {
+        "path": "functions/index.js",
+        "role": "Cloud Functions: webhook ensureAccountFromOrder (crea cuenta con contraseña=DNI), callables (secureClaimMonedas, processCulqiPayment, retos) y crons (resetKapiCoins, notifyWishlistBirthdays, rotateWeeklyChallenge)"
+      },
+      {
+        "path": "functions/notificationsEngine.js",
+        "role": "Motor de push FCM por cron horario: carrito abandonado, retención Kapi, anti-spam; callable sendManualPromoNotification con segmentación"
+      },
+      {
+        "path": "functions/README-ERP-WEBHOOK.md",
+        "role": "Documenta el contrato del webhook ERP→Portal; revela que el webhook NO valida secreto (header X-Webhook-Secret se permite por CORS pero nunca se verifica)"
+      },
+      {
+        "path": "backend/server.js",
+        "role": "Express MOCK de desarrollo (localhost:3001), una sola ruta de búsqueda de pedidos sobre datos hardcodeados; no productivo"
+      },
+      {
+        "path": "backend/routes/pedidos.js",
+        "role": "Ruta mock POST /api/pedidos/buscar contra mockData"
+      },
+      {
+        "path": "src/config/erp.js",
+        "role": "Config de la API REST del ERP (baseUrl, apiKey, endpoints, retries) vía env REACT_APP_ERP_*"
+      },
+      {
+        "path": "src/services/erp/firebase.js",
+        "role": "CLAVE: inicializa segundo proyecto Firebase 'erp-firebase' y opera directamente desde el cliente sobre colecciones pedidos / pedidos_web del ERP"
+      },
+      {
+        "path": "src/services/erp/integration.js",
+        "role": "Cliente REST alternativo del ERP (sendOrderToERP, getOrderStatus, syncCustomerData, getProductInventory)"
+      },
+      {
+        "path": "src/services/erp/queue.js",
+        "role": "Cola de reintentos de sincronización de pedidos en localStorage"
+      },
+      {
+        "path": "src/hooks/useERP.js",
+        "role": "Hook React que envuelve el cliente REST del ERP"
+      },
+      {
+        "path": "src/services/adminAnalytics.js",
+        "role": "Agregación en cliente de funnel, carritos abandonados, dispositivos, UTM, geografía, tiempo real; lee analytics_events/sessions"
+      },
+      {
+        "path": "src/services/analytics/tracker.js",
+        "role": "Escritor de eventos/sesiones de analytics propio (page_view, add_to_cart, purchase_complete, etc.)"
+      },
+      {
+        "path": "src/services/analytics/schema.js",
+        "role": "Constantes de colecciones y tipos de evento de analytics + helpers"
+      },
+      {
+        "path": "src/services/adminRoles.js",
+        "role": "CRUD de roles admin en colección adminRoles keyed por email (NO coincide con lo que validan las reglas Firestore)"
+      },
+      {
+        "path": "src/contexts/AuthContext.jsx",
+        "role": "CLAVE: deriva isAdmin/adminPermissions; superadmins hardcodeados (yorh001@, heyeru24@) y bypass localStorage adminWalaPro==='true' (líneas 71, 308-312)"
+      },
+      {
+        "path": "src/components/AdminRoute/AdminRoute.jsx",
+        "role": "Gate de rutas /admin SOLO en cliente, basado en isAdmin de AuthContext"
+      },
+      {
+        "path": "src/hooks/useHeatmapTracker.js",
+        "role": "Captura de clics a heatmap_events + sync iframe vía postMessage"
+      },
+      {
+        "path": "src/pages/admin/AdminConfiguracion.jsx",
+        "role": "UI de gestión de administradores (6 permisos) y bloqueo de páginas (lockedPages)"
+      },
+      {
+        "path": "src/pages/admin/AdminBackups.jsx",
+        "role": "Historial/restauración de diseño (storeConfigLogs) y logs de inventario con export CSV"
+      },
+      {
+        "path": "src/pages/admin/AdminUsuariosAnalyticsPage.jsx",
+        "role": "Dashboard de analytics de usuarios (658 líneas)"
+      },
+      {
+        "path": "src/pages/Tienda/admin/VisualEditorPanel.jsx",
+        "role": "Editor visual no-code (2680 líneas): secciones, controles, preview, selector de tema por landing"
+      },
+      {
+        "path": "src/pages/Tienda/contexts/VisualEditorContext.jsx",
+        "role": "Estado del editor: carga/guarda draft a storeConfig + pages, valida lockedPages, crea backup en storeConfigLogs"
+      },
+      {
+        "path": "src/pages/Tienda/services/storefront.js",
+        "role": "SECTION_TYPES (18 módulos), defaults y persistencia de secciones en 'pages' (+ legacy 'storefront')"
+      },
+      {
+        "path": "src/pages/Tienda/admin/AdminLandingPages.jsx",
+        "role": "CRUD de landings (slug, header/footer, themeId, productos enlazados con stockType)"
+      },
+      {
+        "path": "src/pages/Tienda/admin/AdminThemes.jsx",
+        "role": "Importación de temas WordPress .zip y CSS manual; guarda CSS crudo"
+      },
+      {
+        "path": "src/pages/Tienda/admin/AdminStoreEditor.jsx",
+        "role": "Editor simple de hero banner + layout (anterior al editor visual)"
+      },
+      {
+        "path": "src/pages/Tienda/DynamicLandingPage.jsx",
+        "role": "Render runtime de landing por slug; inyecta CSS de tema con dangerouslySetInnerHTML"
+      },
+      {
+        "path": "src/pages/Tienda/services/landingPages.js",
+        "role": "CRUD de colección landingPages + borrado de doc 'pages' asociado"
+      },
+      {
+        "path": "src/pages/Tienda/services/themes.js",
+        "role": "CRUD de colección tienda_themes"
+      },
+      {
+        "path": "firebase/firestore.rules",
+        "role": "CRÍTICO: reglas de seguridad; isAdmin() valida adminUsers/{uid}.role=='admin' (colección que la app no usa) y NO cubre storeConfig/pages/landingPages/tienda_themes/adminRoles/lockedPages/analytics_*/storeConfigLogs"
+      },
+      {
+        "path": "firebase.json",
+        "role": "Apunta a firebase/firestore.rules y firebase/storage.rules; functions source=functions; hosting build"
+      }
+    ],
+    "dataModel": [
+      "Proyecto Firebase PRINCIPAL (Portal): portal_clientes_users (perfil cliente: email, displayName, dni, phone, monedas, monedasActivas[{amount,expiresAt,source}], monedasReclamadas[], kapiCoins, fcmTokens[], antiSpamLog[], cart{items,cartUpdatedAt,abandonedLevel}, lastAppOpen, birthDate, referralCode, activeMultiplier), users (legacy)",
+      "adminRoles (doc id = email minúscula; {email, name, permissions[]}) — sistema RBAC real del app",
+      "adminUsers (referenciada SOLO por firestore.rules isAdmin() con role=='admin'; la app nunca la escribe → desincronización)",
+      "storeConfig/homePage (config global: heroBanner, layout, header), pages/{pageId} ({sections:[{id,type,order,settings}]}), storefront/config (legacy home), storeConfigLogs (backups de diseño)",
+      "landingPages/{id} ({title, slug, hideHeader, hideFooter, themeId, linkedProducts:[{productId,stockType,allocatedStock}]}), tienda_themes/{id} ({name, author, type:custom_css|wordpress_import, cssContent}), lockedPages (bloqueo de edición visual)",
+      "analytics_events, analytics_sessions, analytics_user_summary, analytics_global_summary, analytics_kapi (reporte mensual de monedas no gastadas), heatmap_events",
+      "products, categories, collections, marcas, settings, messages (textos/mascota/WhatsApp), enlaces_pago (PayPal), libro_reclamaciones (INDECOPI), wishlists, weeklyChallenges, globals/activeChallenge, challengeEvidences, notification_settings/global, inventoryLogs, users/{uid}/notifications (subcolección)",
+      "Proyecto Firebase SECUNDARIO (ERP, app 'erp-firebase'): pedidos (pedidos validados del ERP, campos clienteNumeroDocumento, dni, phone, clienteNombre/Apellidos, clienteCorreo, numeroPedido, giftDetails, estadoGeneral, createdAt), pedidos_web (cola de pedidos web con web:true, estadoValidacion:'pendiente')"
+    ],
+    "strengths": [
+      "Buena separación de responsabilidades servidor vs cliente en lo sensible: el cobro con tarjeta (Culqi) y el reclamo de monedas (secureClaimMonedas con transacción Firestore + arrayUnion idempotente) están en Cloud Functions, no en el cliente; la llave secreta de Culqi vive en variable de entorno del backend",
+      "Arquitectura no-code muy ambiciosa y funcional: 18 tipos de sección reutilizables, editor visual WYSIWYG sobre la propia tienda con iframe+postMessage y preview móvil, landings dinámicas por slug con tema CSS propio, e importación de temas WordPress — es realmente un mini page-builder tipo Shopify/Wix",
+      "Analytics y heatmap 100% propios, sin depender de GA, con distinción WEB/APP (Capacitor), funnel con usuarios únicos, tiempo real, UTM y geografía; capa de resúmenes pre-agregados (analytics_*_summary) para escalar lecturas",
+      "RBAC granular por permisos (6 roles funcionales) y mecanismo de bloqueo de páginas (lockedPages) para evitar daños accidentales en producción; historial de cambios de diseño con restauración (storeConfigLogs) y logs de inventario exportables",
+      "Integración ERP desacoplada con cola de reintentos en localStorage y separación pedidos_web (validación manual) vs pedidos (oficiales), evitando que pedidos web crudos contaminen el ERP real",
+      "Webhook ERP→Portal robusto en parsing: normaliza múltiples alias de campos (clienteCorreo/correo/email, clienteNumeroDocumento/dni, etc.), idempotente (no duplica cuentas por email), maneja CORS y OPTIONS"
+    ],
+    "gaps": [
+      "No hay verdadero multi-nicho/multi-tenant: la tienda es un único storefront (storeConfig/homePage, pages, una colección products). No existe noción de 'tienda' o 'vendedor' como entidad; un marketplace multi-nicho requeriría un modelo tenant/seller con aislamiento de catálogo, branding y permisos por tenant",
+      "No hay backend de marketplace para vendedores: todo el 'admin' es para el operador único (Wala). Falta onboarding de comercios, comisiones, liquidaciones/payouts, catálogo por vendedor, y panel del vendedor distinto del super admin",
+      "Fidelización monolítica y única: monedas/kapiCoins/retos están cableados a un solo programa global (constantes en functions). Para fidelidad multi-nicho haría falta parametrizar programas por tienda/categoría (reglas de acumulación, TTL, multiplicadores configurables, catálogo de canje)",
+      "El ERP es un sistema externo de un único proyecto Firebase accedido directamente desde el navegador del cliente con credenciales en bundle; no hay capa de API propia que medie ni control por tenant. No escala a múltiples ERPs/vendedores",
+      "Backups de diseño limitados: storeConfigLogs guarda diseño visual e inventario, pero no hay backup/export de catálogo, pedidos, usuarios ni fidelización; restauración solo sobreescribe storeConfig/homePage (no pages/landings/temas)",
+      "No hay panel de comisiones, reportes financieros, conciliación de pagos (Culqi/PayPal/enlaces_pago) ni reporting consolidado de ventas — pieza esencial para un marketplace"
+    ],
+    "techDebt": [
+      "DESINCRONIZACIÓN CRÍTICA reglas vs app: firestore.rules isAdmin() exige adminUsers/{uid}.role=='admin', pero el RBAC real vive en adminRoles keyed por EMAIL y la app jamás escribe adminUsers. En consecuencia, o las reglas de admin nunca dan true (y la escritura admin depende de reglas faltantes/permisivas) o hay otra versión de reglas desplegada distinta del repo. El archivo del repo no es la fuente de verdad confiable.",
+      "COLECCIONES SIN REGLAS en firestore.rules: storeConfig, pages, storefront, landingPages, tienda_themes, adminRoles, lockedPages, storeConfigLogs, analytics_events/sessions/summary, notification_settings, weeklyChallenges, globals, challengeEvidences, wishlists, inventoryLogs, analytics_kapi. Bajo rules_version 2 con default-deny eso ROMPERÍA la app en producción; como la app funciona, casi seguro hay reglas reales más amplias/permisivas no versionadas — riesgo de configuración fantasma.",
+      "Doble/triple ruta de integración ERP redundante: existe el cliente REST (config/erp + integration.js + useERP) y la conexión directa Firestore (erp/firebase.js). El backend Express es un mock muerto. Hay deuda de claridad sobre cuál es el camino oficial.",
+      "secureClaimMonedas tiene comentada toda la validación de propiedad/estado del pedido (confía en la UI); solo evita doble reclamo. Un cliente puede reclamar monedas por cualquier pedidoId arbitrario no reclamado aún.",
+      "Lógica de negocio duplicada cliente/servidor: acumulación de monedas con TTL implementada tanto en functions (secureClaimMonedas, approveChallengeEvidence) como en el cliente (calculateActiveCoins, earnMainCoins) — riesgo de divergencia.",
+      "Crons que leen TODA la colección portal_clientes_users en memoria (notifyWishlistBirthdays, notificationEngine, sendManualPromoNotification) sin paginación ni índices por birthDate/fcm — no escala a decenas de miles de usuarios.",
+      "firebase-functions ^4 / firebase-admin ^11 (index.js mezcla v1 functions.https y v2 onSchedule); messaging.sendToDevice está DEPRECADO (legacy FCM) y dejará de funcionar — riesgo de que las push ya no envíen.",
+      "Numerosos // eslint-disable-next-line no-unused-vars duplicados y código legacy (storefront/config, users vs portal_clientes_users) acumulado; eslint_report.json de 1.7MB sugiere deuda de lint extensa."
+    ],
+    "recommendations": [
+      "SEGURIDAD INMEDIATA: versionar y desplegar reglas Firestore reales que (a) deriven isAdmin() de la MISMA fuente que la app (adminRoles por email, idealmente migrado a custom claims de Firebase Auth set por Cloud Function), y (b) cubran TODAS las colecciones admin (storeConfig, pages, landingPages, tienda_themes, adminRoles, lockedPages, storeConfigLogs, analytics_*, notification_settings, etc.) con write restringido a admin. Hoy la administración es no-code pero la autorización es solo de UI (AdminRoute) + localStorage adminWalaPro bypass.",
+      "Eliminar el bypass localStorage 'adminWalaPro' y los superadmins hardcodeados en el bundle (AuthContext líneas 71/308); migrar a custom claims verificables server-side; cualquier persona puede ejecutar localStorage.setItem('adminWalaPro','true') y entrar al panel.",
+      "Mover la lógica de escritura sensible (monedas, retos, diseño/landings/temas, roles) a Cloud Functions callable con verificación de rol; reactivar la validación de propiedad/estado del pedido en secureClaimMonedas. No confiar en que el cliente no puede escribir.",
+      "Sanitizar/escapar el CSS de temas: tienda_themes guarda CSS crudo importado de .zip WordPress e inyectado con dangerouslySetInnerHTML; aunque sea CSS, validar que no contenga expression()/url(javascript:)/@import a dominios externos y limitar el scope; idealmente whitelist de propiedades.",
+      "Asegurar el webhook ensureAccountFromOrder: hoy NO verifica X-Webhook-Secret (lo permite por CORS pero no lo lee) y CORS es '*'; cualquiera puede crear cuentas con contraseña=DNI (PII adivinable). Exigir secreto/HMAC y NO usar el DNI como contraseña inicial (forzar cambio / enviar magic link).",
+      "Para la visión marketplace multi-nicho: introducir entidad tenant/seller y reescribir products/pages/storeConfig/fidelización con tenantId; separar panel de super-operador del panel de vendedor; añadir comisiones, payouts y reporting financiero consolidado.",
+      "Parametrizar el programa de fidelidad (reglas de acumulación, TTL, multiplicadores, catálogo de canje) en documentos de configuración por tienda/categoría en vez de constantes en functions, para soportar fidelidad por nicho.",
+      "Migrar messaging.sendToDevice a la API moderna sendEachForMulticast (firebase-admin v12+) antes de que la API legacy se apague; paginar los crons que recorren toda la colección de usuarios y añadir campo indexado birthMonthDay.",
+      "Consolidar la integración ERP en un único camino (preferiblemente una API/Cloud Function que medie en vez de exponer un segundo proyecto Firebase al navegador) y borrar el backend Express mock y el cliente REST no usado.",
+      "Ampliar backups a export programado (catálogo, pedidos, usuarios, fidelización) y hacer que la restauración cubra pages/landings/temas, no solo storeConfig/homePage."
+    ]
+  },
+  {
+    "subsystem": "Infraestructura, build y plataforma (CRA + Firebase + Capacitor/Android + Vercel + Cloud Functions)",
+    "whatExists": [
+      "Stack web: Create React App (react-scripts 5.0.1) sobre React 18.3.1 (declarado ^18.2.0). Build con `cross-env CI=false react-scripts build` -> carpeta `build/`. Scripts start/dev usan NODE_OPTIONS=--no-deprecation y GENERATE_SOURCEMAP=false (sourcemaps desactivados en prod). Hay variante dev:3001 con PORT=3001.",
+      "Routing SPA con react-router-dom 6.30.3; rewrites a /index.html configurados tanto en vercel.json como en firebase.json hosting (doble destino de despliegue posible).",
+      "Firebase web SDK 10.14.1 (declarado ^10.7.0). Firestore inicializado con persistencia offline (persistentLocalCache simple, sin multi-tab por compatibilidad Capacitor/Android) en src/services/firebase/config.js, con fallback a getFirestore via require() en catch. Auth, Storage y Messaging (con isSupported) tambien inicializados de forma defensiva.",
+      "Doble instancia Firebase: una para el Portal (config.js) y otra nombrada 'erp-firebase' en src/services/erp/firebase.js para pedidos del ERP (colecciones pedidos, pedidos_web). Variables REACT_APP_ERP_FIREBASE_* con fallback a las del portal.",
+      "Capacitor 8.2.0 (core/android/cli) con appId com.wala.tienda, appName WALA, webDir build. Plugins: GoogleAuth (@codetrix-studio), App, LocalNotifications, PushNotifications, SplashScreen. capacitor.config.ts incluye serverClientId de Google OAuth hardcodeado.",
+      "App Android nativa (android/) configurada: versionCode 25, versionName 1.3.21, namespace/applicationId com.wala.tienda. minSdk 24, compileSdk/targetSdk 36. Android Gradle Plugin 9.2.1, Gradle wrapper 9.4.1, Firebase BoM 33.14.0 (firebase-auth nativo), google-services 4.4.4. mise.toml fija Java 21.",
+      "App Links verificados: AndroidManifest con intent-filter autoVerify para wala.pe/www.wala.pe (http+https), y public/.well-known/assetlinks.json con 3 huellas SHA256 (delegate handle_all_urls + get_login_creds). singleTask launchMode.",
+      "Despliegue Vercel: vercel.json con rewrites SPA, header Cross-Origin-Opener-Policy=same-origin-allow-popups (necesario para popups de Google Auth), config de imagenes (dominios firebasestorage y drive.google.com). .vercel/ y .vercelignore presentes. Deploy automatico por push a rama principal segun README.",
+      "Despliegue Firebase: firebase.json declara firestore, storage, functions y hosting (public=build). .firebaserc apunta a proyecto default 'pruebas-cd728'. Scripts npm deploy:firestore-rules y deploy:storage-rules leen REACT_APP_FIREBASE_PROJECT_ID de .env y ejecutan firebase CLI; deploy:functions via firebase deploy --only functions.",
+      "Cloud Functions (functions/, Node 22, firebase-functions ^4.5.0, firebase-admin ^11.11.0): ensureAccountFromOrder (HTTP webhook ERP->crea cuenta Auth+Firestore, password=DNI), secureClaimMonedas (callable, transaccion de monedas con TTL 90 dias), processCulqiPayment (callable, cobro con Culqi usando CULQI_SECRET_KEY), submitChallengeEvidence/approveChallengeEvidence, y crons onSchedule: resetKapiCoins (fin de mes), notifyWishlistBirthdays (diario 9am), rotateWeeklyChallenge, notificationEngine (cada hora, timeZone America/Lima), sendManualPromoNotification.",
+      "Backend Express mock (backend/server.js, puerto 3001, express 4 + cors) para pruebas locales de busqueda de pedidos; NO es produccion (datos hardcodeados).",
+      "Reglas de seguridad escritas: firebase/firestore.rules y firebase/storage.rules (rules_version 2) con helpers isAuthenticated/isOwner/isAdmin (isAdmin consulta doc en coleccion adminUsers). cors.json para Storage (GET, origin *).",
+      "Documentacion de migracion CRA->Vite (docs/migracion-cra-vite.md) con plan paso a paso (~30 min): instalar vite + @vitejs/plugin-react, vite.config.js, mover index.html a raiz, renombrar REACT_APP_* a VITE_*, corregir el require() de Firestore, etc. Estado: Pendiente.",
+      "Pagos: PayPal (@paypal/react-paypal-js, REACT_APP_PAYPAL_CLIENT_ID), Stripe (@stripe/*) y Culqi (pasarela peruana, via Cloud Function). Editor de productos con Fabric.js 5.5.2."
+    ],
+    "keyFiles": [
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\package.json",
+        "role": "Manifiesto web: deps (React 18, firebase 10, Capacitor 8, Fabric, Stripe/PayPal), scripts CRA y de despliegue. typescript 4.9.5 en devDeps pero 0 archivos .ts en src."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\capacitor.config.ts",
+        "role": "Config Capacitor: appId com.wala.tienda, plugins GoogleAuth (serverClientId hardcodeado) y SplashScreen."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\firebase.json",
+        "role": "Define firestore/storage/functions/hosting. Hosting con public=build y rewrite SPA (compite con Vercel)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\.firebaserc",
+        "role": "Proyecto Firebase default: 'pruebas-cd728' (nombre de proyecto de pruebas usado como produccion)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\vercel.json",
+        "role": "Rewrites SPA, header COOP same-origin-allow-popups para Google Auth, dominios de imagenes."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\firebase\\firestore.rules",
+        "role": "Reglas Firestore: lecturas publicas amplias, proteccion de campos de monedas/role, regla de orders por DNI, enlaces_pago con update/delete publicos."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\firebase\\storage.rules",
+        "role": "Reglas Storage: lecturas publicas, escritura por owner (uid) o admin. Precedencia de operadores en delete (sin parentesis)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\firebase\\config.js",
+        "role": "Init Firebase web del portal con persistencia offline y fallback require() (incompatible con ESM/Vite)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\erp\\firebase.js",
+        "role": "Segunda instancia Firebase 'erp-firebase' para pedidos/pedidos_web; queries con filtros en memoria."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\functions\\index.js",
+        "role": "Cloud Functions: webhook ERP, claim de monedas, pago Culqi, crons de fidelizacion (resetKapiCoins, retos, cumpleanos)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\functions\\notificationsEngine.js",
+        "role": "Cron notificationEngine cada hora (America/Lima) + envio manual de promos."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\android\\app\\build.gradle",
+        "role": "Build Android: versionCode 25 / versionName 1.3.21, Firebase BoM 33.14.0, minifyEnabled false (sin ofuscacion/shrink)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\android\\variables.gradle",
+        "role": "compileSdk/targetSdk 36, minSdk 24, AGP/androidx versions."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\android\\app\\src\\main\\AndroidManifest.xml",
+        "role": "App Links autoVerify para wala.pe; solo permiso INTERNET."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\public\\.well-known\\assetlinks.json",
+        "role": "Verificacion Digital Asset Links con 3 fingerprints (debug/upload/play)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\docs\\migracion-cra-vite.md",
+        "role": "Plan documentado de migracion CRA->Vite (pendiente)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\scripts\\deploy-firestore-rules.js",
+        "role": "Despliegue de reglas leyendo project ID de .env via firebase CLI."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\mise.toml",
+        "role": "Toolchain: java 21, node latest, npm latest (no pinea versiones exactas)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\.npmrc",
+        "role": "legacy-peer-deps=true (resuelve conflictos de peer deps, sintoma de deuda en arbol de dependencias)."
+      }
+    ],
+    "dataModel": [
+      "Firestore principal (proyecto pruebas-cd728): products/productos_wala, categories/tienda_categories, tienda_brands, tienda_collections, tienda_landing_pages, tienda_mockups, designs, orders, templates, cliparts, customShapes, fonts, adminUsers, settings, messages, users (legacy), portal_clientes_users, heatmap_events, libro_reclamaciones (INDECOPI), enlaces_pago, ruletaPrizes, wordle/wordle_daily_words, referrals, wishlists, product_reviews, notification_settings, analytics_kapi.",
+      "Firestore ERP (instancia 'erp-firebase'): pedidos, pedidos_web (cola de validacion con estadoValidacion=pendiente), busqueda por clienteNumeroDocumento/dni/phone (filtros y orden en memoria).",
+      "Storage paths: products/{productId}/**, designs/{userId}/**, users/{userId}/**, admin/**, cliparts/**, fonts/**, config/**.",
+      "Campos sensibles protegidos en reglas (no editables por el usuario): monedas, monedasReclamadas, monedasEnEspera, historialMonedasEspera, role. Sistema de monedas con lotes TTL (monedasActivas[].expiresAt) y kapiCoins reseteable mensual.",
+      "Imagenes servidas desde Cloudinary (res.cloudinary.com/dtixoxgsf), Firebase Storage y residual Google Drive; migracion Drive->Cloudinary via script con URLs hardcodeadas."
+    ],
+    "strengths": [
+      "Reglas Firestore/Storage existen y versionadas en repo + scripts de despliegue dedicados; protegen explicitamente los campos de fidelizacion (monedas/role) contra manipulacion del cliente via diff().affectedKeys().",
+      "La logica sensible (cobro Culqi con secret key, claim de monedas con transaccion e idempotencia por pedidoId, creacion de cuentas desde ERP) esta en Cloud Functions del lado servidor, no en el cliente.",
+      "App movil real y publicada (versionCode 25, Capacitor 8 al dia, SDKs Android 36 modernos, App Links con assetlinks verificados y multiples fingerprints incluyendo Play App Signing).",
+      "Migracion offline/Android bien pensada: persistentLocalCache sin multi-tab por compatibilidad Capacitor; COOP same-origin-allow-popups para que el login Google funcione en web.",
+      "Plan de migracion CRA->Vite ya documentado y detallado (archivos afectados, conteo de ocurrencias REACT_APP_*, el gotcha del require() en config.js), reduce mucho el esfuerzo real de ejecutarlo.",
+      "Separacion limpia de la base de pedidos (ERP) en una segunda app Firebase nombrada, evitando acoplar el dato transaccional con el portal.",
+      "Inicializacion de Firebase defensiva (no rompe si faltan envs; muestra FirebaseWarning y mensaje especifico para Vercel)."
+    ],
+    "gaps": [
+      "No hay pipeline CI/CD versionado (no existe .github/workflows): los despliegues a Vercel/Firebase/Play son manuales o por push, sin lint/test/build gate automatico. eslint_report.json (1.7 MB) sugiere muchos warnings sin tratar.",
+      "Sin suite de pruebas efectiva: 0 archivos .ts y test es react-scripts test por defecto; no se observan tests. TypeScript instalado pero sin usar en src (363 archivos .jsx/.js).",
+      "Proyecto Firebase de produccion se llama 'pruebas-cd728' (proyecto de pruebas usado como prod): riesgo de gobernanza, cuotas y separacion de entornos. No hay separacion dev/staging/prod ni .firebaserc multi-proyecto.",
+      "Doble destino de hosting (firebase hosting + Vercel) ambos con rewrites SPA: ambiguedad sobre cual es el canonico y posibilidad de servir builds desync.",
+      "No hay configuracion de indices compuestos de Firestore en repo (firestore.indexes.json ausente); varias queries del ERP evitan indices ordenando/filtrando en memoria (no escala con volumen de pedidos).",
+      "Para un marketplace multi-nicho/multi-vendedor no hay capa de tenancy: reglas asumen un unico admin global (adminUsers.role=='admin'), no hay roles por vendedor/tienda ni aislamiento de datos por seller. Falta modelo de comisiones/payouts en infra.",
+      "No hay observabilidad: sin Sentry/error tracking, sin logs estructurados centralizados, sin alertas de costos Firestore/Functions ni Crashlytics en Android (solo firebase-auth nativo en BoM).",
+      "Toolchain no fijado (mise.toml usa node/npm 'latest'); builds no reproducibles. README pide Node 18 pero functions exigen Node 22.",
+      "Sin App Check / rate limiting: lecturas publicas masivas (products, cliparts, fonts, messages, settings) sin proteccion contra scraping/abuso de cuota."
+    ],
+    "techDebt": [
+      "CRA / react-scripts 5.0.1 oficialmente deprecado y sin mantenimiento; arrastra webpack 4/5 mix, builds lentos y vulnerabilidades transitivas. .npmrc con legacy-peer-deps=true enmascara conflictos de peer deps.",
+      "Archivos basura/one-off en la raiz versionados: update.js, update2.js, patch_checkout.js, patch_lines.js, patch_safe.js, patch_tienda.js, test_firestore.js, header_diff.patch, prod_map.json (154 KB), eslint_report.json (1.7 MB), carpeta scratch/ con scripts ad-hoc (append_*.js, check_culqi*.js, find_scripts.js, generate_splash.ps1).",
+      "Secretos/identificadores en codigo: serverClientId de Google OAuth en capacitor.config.ts; CULQI_SECRET_KEY con fallback 'sk_test_dummy_key' en functions/index.js; google-services.json y assetlinks con fingerprints en repo (algunos esperables, pero conviene revisar gestion).",
+      "config.js usa require('firebase/firestore') en un catch: rompera con Vite (ESM-only), ya identificado en el doc de migracion pero no corregido.",
+      "Inconsistencia de modelos: dualidad products vs productos_wala, users vs portal_clientes_users, adminUsers vs adminRoles; reglas cubren users y portal_clientes_users pero el codigo/ERP usa nombres mixtos.",
+      "secureClaimMonedas tiene toda la verificacion de pertenencia/estado del pedido COMENTADA (confia en la UI): cualquier usuario autenticado puede reclamar monedas de cualquier pedidoId no reclamado -> riesgo de fraude de fidelizacion.",
+      "Android release con minifyEnabled false (sin R8/proguard ni resource shrinking): APK/AAB mas pesado y codigo web/Java sin ofuscar.",
+      "backend/ (Express mock) sigue en el repo y en deps aunque es solo para pruebas; confunde el modelo de despliegue real.",
+      "Imagenes muy pesadas en public/ servidas estaticamente (geek.png 1.1 MB, familia.png 600 KB, logo-wala.png 285 KB) sin optimizacion -> impacta LCP."
+    ],
+    "recommendations": [
+      "Ejecutar la migracion CRA->Vite ya documentada (corrigiendo el require() de Firestore y renombrando REACT_APP_*->VITE_* en Vercel): builds ~3-4x mas rapidos, HMR instantaneo y salir de una herramienta abandonada. Para vision marketplace con SEO/landings dinamicas, evaluar despues Next.js (SSR/ISR para fichas de producto y tienda_landing_pages).",
+      "Crear proyectos Firebase separados (prod real con nombre propio + staging) y .firebaserc multi-target; dejar de usar 'pruebas-cd728' como produccion. Migrar datos con un plan de cutover.",
+      "Establecer CI/CD (GitHub Actions): lint + build + tests + deploy. Gatear despliegue de reglas con firebase emulators y tests de reglas (rules-unit-testing). Decidir un unico hosting canonico (Vercel o Firebase) y eliminar el otro rewrite.",
+      "Cerrar el agujero de secureClaimMonedas: re-activar la verificacion de propiedad/estado del pedido contra la base ERP (inicializar SDK ERP en la funcion o pasar por webhook firmado) antes de acreditar monedas. Activar Firebase App Check en web y Android.",
+      "Anadir firestore.indexes.json versionado y mover las busquedas del ERP a queries con indices compuestos (clienteNumeroDocumento + createdAt, pedidos_web) en vez de filtrar/ordenar en memoria; esto es critico al crecer el volumen de pedidos del marketplace.",
+      "Diseñar tenancy para marketplace multi-nicho: roles por vendedor (sellerId en products/pedidos), reglas que aislen datos por seller, coleccion de comisiones/payouts y panel por tienda; hoy todo asume un admin unico.",
+      "Limpiar la raiz del repo (mover/borrar update*.js, patch_*.js, scratch/, prod_map.json, eslint_report.json, header_diff.patch) y sacar backend/ mock a otro repo o carpeta tools/. Resolver los warnings de eslint en lugar de archivarlos.",
+      "Activar minifyEnabled true + R8 + resourceShrinking en Android release y añadir Crashlytics + Performance Monitoring (ya hay Firebase BoM). Pinear versiones en mise.toml (node 22 para alinear con functions, npm fijo) para builds reproducibles.",
+      "Controlar costos/escalabilidad: limitar lecturas publicas con App Check y caching/CDN, paginar listados de products, mover imagenes pesadas de public/ a Cloudinary/Storage con transformaciones, y configurar presupuestos/alertas en GCP para Firestore reads y Functions invocations (notificationEngine corre cada hora y escanea usuarios).",
+      "Gestionar secretos via firebase functions:secrets / variables de entorno de Vercel (no fallback 'sk_test_dummy_key'); revisar exposicion de serverClientId y rotacion si aplica."
+    ]
+  },
+  {
+    "subsystem": "Diseño de fidelización (futuro)",
+    "whatExists": [
+      "Wordle diario ('Palabra del Día') con racha (wordleCurrentStreak/wordleMaxStreak), ranking global Top 50 y ranking del día por intentos+tiempo. Reutilizable como misión diaria que otorgue puntos. Hoy NO da monedas, solo gloria/ranking (src/services/wordle.js, src/pages/Minijuegos via /palabra-del-dia).",
+      "Mascota Kapi (tamagotchi) con barra de felicidad (kapiHappiness 0-100, +10 por alimentar), estado happy/hungry/sad, FAB flotante con badge '!', onboarding tutorial con driver.js. feedKapi() es el claim diario que ya implementa el corazón del streak (src/components/common/KapiPet/KapiPet.jsx, AuthContext.feedKapi).",
+      "Claim diario 'Alimenta a Kapi' = +1 kapiCoin/día (o +2 con multiplicador kapi_double_3d activo), tope mensual 31 kapiCoins, lastKapiClaimDate evita doble claim. Es la mecánica de retención diaria núcleo (AuthContext.feedKapi).",
+      "Sistema de racha semanal real: weeklyClaimsData {weekStart, daysClaimed[]}. Alimentar a Kapi los 7 días desbloquea la Ruleta Semanal; getRuletaEligibility calcula días, hasLost e isUnlocked (src/services/firebase/ruleta.js).",
+      "Ruleta Semanal con premios configurables por admin (colección ruletaPrizes con probability), sorteo ponderado server-side dentro de runTransaction, lastRuletaSpinWeek evita doble giro, premios tipo 'Monedas' acreditan directo. Mecánica de cofre/recompensa aleatoria ya construida (RuletaPage.jsx + ruleta.js).",
+      "Ball Sort ('Las Bolitas de Kapi'): puzzle diario con framer-motion que da +2 'Wala Coins' (monedas) al ganar, lastBallSortReward evita doble claim, claim atómico vía runTransaction (BallSortPage.jsx + ballSort.js).",
+      "Retos Semanales rotativos: Cloud Function rotateWeeklyChallenge elige uno de la colección weeklyChallenges y lo publica en globals/activeChallenge; el cliente lo escucha vía onSnapshot. processChallengeEvent acumula progreso por actionType y acredita recompensa 'main' (WalaCoins) o 'kapi_double_3d' (multiplicador 3 días). Retos manuales aceptan evidencia (link) con submitChallengeEvidence + approveChallengeEvidence del admin (AuthContext, KapiPet, functions/index.js).",
+      "Sistema de referidos por código (KS-XXXXXX autogenerado) con embudo de 4 etapas sent->clicked->purchased->completed->claimed, límite 50/mes, recompensa escalonada (10 monedas, 20 a partir del 3er referido del mes), ranking Top 10 mensual, edición única del código (src/services/referrals.js).",
+      "Doble economía de moneda ya viva: (a) monedas/monedasActivas (WalaCoins) cuasi-permanentes con TTL por lote (90 días en pedidos), canjeables; (b) kapiCoins diarias que se RESETEAN a 0 fin de mes (Cloud Function resetKapiCoins + analytics_kapi). Esto crea urgencia mensual.",
+      "Sumidero real en checkout: toggle 'usar monedas' aplica 1 moneda = S/1 de descuento, tope 50% del subtotal, congela monedas a monedasEnEspera vía freezeMonedas (CheckoutPage.jsx, lineas 66-934).",
+      "Catálogo de recompensas (canje de monedas por perks: stickers 30, premium 60, accesorio 100, S/30 box 200) — sumidero alternativo, pero hardcodeado en el componente sin persistir el perk (src/pages/cuenta/CatalogReward.jsx).",
+      "Motor de notificaciones server-side por hora (notificationEngine) con anti-spam (máx 2/día, ventana 9:00-21:00 Lima, sin duplicar tipo/día), reglas de carrito abandonado escalonadas (1h/24h/48h) y retención por inactividad (7d/14d) con copys personalizados y monedas como gancho. Push manual segmentado (vip por monedas>=50, inactive por >30 días) vía sendManualPromoNotification (functions/notificationsEngine.js).",
+      "Notificaciones locales (Capacitor) programadas client-side para urgencia de fin de mes de kapiCoins (días 15/25/-3/último/día 1) y contextuales de ruleta semanal por día de la semana (src/services/kapiNotifications.js).",
+      "Recordatorio de cumpleaños 14 días antes para compartir wishlist (notifyWishlistBirthdays), gancho social/estacional ya operativo.",
+      "Hooks de gamificación ya cableados en AuthContext: earnMainCoins, validateDatesStreak (bono 25 por cubrir 3 fechas especiales), evento global 'coins-animation-start'/'kapi-coins-animation-start'/'weekly-challenge-completed' para feedback visual (showFlyingCoins)."
+    ],
+    "keyFiles": [
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\contexts\\AuthContext.jsx",
+        "role": "Núcleo de la economía y gamificación en cliente: calculateActiveCoins, earnMainCoins, spendMonedas, freezeMonedas, feedKapi (racha+kapiCoins+multiplicador), processChallengeEvent, validateDatesStreak, suscripción a globals/activeChallenge. Es el lugar donde debe centralizarse el motor de puntos unificado."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\functions\\index.js",
+        "role": "Cloud Functions de la economía: secureClaimMonedas (TTL por lote), resetKapiCoins (reset mensual + analytics), rotateWeeklyChallenge, submitChallengeEvidence, approveChallengeEvidence, notifyWishlistBirthdays. Backend donde deben vivir las acreditaciones seguras y antifraude."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\functions\\notificationsEngine.js",
+        "role": "Motor de push de retención por hora con anti-spam y segmentación + push manual. Base para la segmentación por tier/ciclo de vida y los disparadores de FOMO."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\components\\common\\KapiPet\\KapiPet.jsx",
+        "role": "Mascota/centro emocional de retención diaria; FAB omnipresente, claim diario, banner de reto semanal y evidencia. Candidato a ser el 'home' del sistema de misiones diarias."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\firebase\\ruleta.js",
+        "role": "Elegibilidad de racha semanal (getRuletaEligibility/getStartOfWeek) y sorteo ponderado server-ish. Reutilizable para cofres, ruleta diaria y cualquier recompensa aleatoria."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\wordle.js",
+        "role": "Mini-juego diario con rachas y rankings; reutilizable como misión diaria que otorgue puntos en la economía unificada (hoy desconectado de monedas)."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\referrals.js",
+        "role": "Embudo de referidos y ranking mensual; loop de crecimiento a integrar como fuente de puntos y misión social."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\cuenta\\CatalogReward.jsx",
+        "role": "Sumidero de canje hardcodeado; debe migrar a colección rewardsCatalog + emisión de cupones/perks persistidos."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\CheckoutPage.jsx",
+        "role": "Sumidero principal (monedas->descuento, tope 50%, freezeMonedas). Punto donde cerrar el ciclo ganar->gastar y disparar eventos de misión 'primera compra/compra del día'."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\services\\kapiNotifications.js",
+        "role": "Notificaciones locales de urgencia (fin de mes kapiCoins, ruleta semanal). Base para recordatorios de racha en riesgo y ventanas de misión."
+      },
+      {
+        "path": "C:\\Users\\heyer\\OneDrive\\Documents\\Desarrollo de Software\\wala-master\\src\\pages\\Minijuegos\\MinijuegosPage.jsx",
+        "role": "Hub 'Zona Arcade' que agrega los juegos y estados de claim diario. Candidato a convertirse en el dashboard de misiones diarias/semanales unificado."
+      }
+    ],
+    "dataModel": [
+      "portal_clientes_users (EXISTENTE, extender): añadir loyaltyPoints (saldo de puntos canjeables propuesto), xp (experiencia acumulada solo-sube para tier), tier ('bronce'|'plata'|'oro'|'diamante'), tierExpiresAt, dailyStreak {count,lastDate,freezeTokens}, longestStreak, missionState (mapa misionId->{progress,claimed,date}), lastSpinDailyDate, chestKeys, riskSegment (cache de segmento ciclo de vida), antiFraudFlags {velocityScore,deviceIds[],blocked}. Reutiliza kapiCoins, monedas, monedasActivas, weeklyClaimsData ya existentes.",
+      "loyaltyLedger (NUEVA): libro mayor inmutable de cada movimiento de puntos/monedas {uid, type:'earn'|'spend'|'expire'|'adjust', source:'wordle'|'ballsort'|'kapi'|'ruleta'|'mission'|'referral'|'purchase'|'redeem'|'admin', amount, currency:'points'|'walacoins'|'kapicoins', balanceAfter, refId, createdAt, idempotencyKey}. Resuelve la ausencia de auditoría y habilita antifraude.",
+      "missions (NUEVA, catálogo configurable por admin): {id, scope:'daily'|'weekly'|'seasonal', title, description, actionType (login, play_wordle, win_ballsort, spin_ruleta, feed_kapi, add_to_wishlist, complete_purchase, refer_friend, review_product), goal, rewardPoints, rewardCurrency, tierMultiplier, segment (targeting), activeFrom, activeTo, icon, weight}. Generaliza weeklyChallenges actual a misiones diarias/semanales/estacionales.",
+      "userMissions (NUEVA o subcolección users/{uid}/missions): instancia diaria por usuario {missionId, date, progress, goal, status:'active'|'completed'|'claimed', expiresAt}. Permite rotación diaria sin pisar progreso y antifraude por idempotencia.",
+      "tiers (NUEVA, config): {id, name, minXp, perks:{coinMultiplier, freeShippingThreshold, exclusiveChests, badge}, color}. Define niveles y beneficios escalables por nicho.",
+      "rewardsCatalog (NUEVA, reemplaza REWARDS hardcodeado): {id, title, costPoints, type:'coupon'|'perk'|'physical'|'cosmetic', value, stock, tierRequired, nicheTag, active}. Sumidero gestionable.",
+      "userCoupons (NUEVA): cupones/perks emitidos al canjear {uid, rewardId, code, status:'issued'|'redeemed'|'expired', expiresAt, orderId}. Cierra el hueco del catálogo que hoy no persiste el perk.",
+      "dailySpins / chests (NUEVA): config de ruleta diaria y cofres {id, type, prizeTable[], probability, cooldown, keyCost} + users/{uid}/chestHistory para antifraude y pity-timer.",
+      "flashOffers (NUEVA): ofertas relámpago {id, productId|category, discount, startsAt, endsAt, stock, segment, nicheTag} para FOMO; consumida por home y push.",
+      "segments (NUEVA, derivada por CF diaria): {uid, lifecycle:'new'|'active'|'at_risk'|'churned'|'vip', rfmScore, lastComputedAt} para targeting de push y misiones, reemplaza la segmentación ad-hoc por monedas.",
+      "loyaltyConfig/global (NUEVA, singleton): tasas de ganancia por evento, topes diarios/mensuales, equivalencia puntos<->soles, reglas antifraude (límites de velocidad), feature flags. Centraliza la economía hoy dispersa en constantes."
+    ],
+    "strengths": [
+      "Ya existe un loop de retención diario emocional y funcional (Kapi + claim diario) con racha semanal real y desbloqueo de recompensa (ruleta). Es una base de hábito mucho más madura que el típico 'check-in' vacío.",
+      "La doble moneda con semánticas distintas ya está implementada: kapiCoins efímeras (reset mensual = urgencia recurrente) y monedas/monedasActivas con TTL por lote y sumidero real en checkout (1 moneda=S/1, tope 50%). El ciclo ganar->gastar ya cierra.",
+      "Acreditaciones críticas ya son atómicas y server-side donde importa (runTransaction en ballSort y ruleta, secureClaimMonedas con TTL y arrayUnion idempotente por pedido).",
+      "Infraestructura de misiones genérica ya existe: rotateWeeklyChallenge + globals/activeChallenge + processChallengeEvent por actionType + evidencia manual con aprobación admin. Generalizar a diarias/estacionales es incremental, no greenfield.",
+      "Motor de push de retención robusto: anti-spam (2/día, ventana horaria Lima), escalado de carrito abandonado, retención por inactividad con copys personalizados y multimoneda como gancho, más push manual segmentado.",
+      "Notificaciones locales contextuales (Capacitor) que ya generan FOMO de fin de mes y de racha de ruleta — base de FOMO ya operativa.",
+      "Loop de crecimiento (referidos con embudo y ranking) y ganchos estacionales (cumpleaños/wishlist, fechas especiales) ya conectados a la economía.",
+      "Feedback visual gamificado (monedas volando, confeti, mascota celebrando) ya integrado, clave para la sensación de recompensa."
+    ],
+    "gaps": [
+      "No existe una economía de puntos UNIFICADA: hay 'kapiCoins', 'monedas/WalaCoins/monedasActivas' y 'Wala Coins' usados como sinónimos confusos; el Wordle no da nada canjeable; no hay un saldo único ni tasa de conversión documentada. El usuario no entiende qué gana ni para qué.",
+      "No hay tabla de niveles/tiers ni XP: no existe progresión de estatus ni beneficios crecientes (multiplicadores, envío gratis, cofres exclusivos). La fidelidad es plana.",
+      "No hay sistema de misiones DIARIAS configurables: solo un reto semanal único global. Falta variedad diaria que motive entrar todos los días por objetivos frescos.",
+      "La racha real (streak) solo existe acoplada a 'alimentar a Kapi' para la ruleta semanal; no hay racha global de días-de-actividad con recompensas crecientes ni 'freeze/streak save' para reducir el dolor de romperla.",
+      "Falta libro mayor (ledger) de transacciones: las monedas se mutan con updateUserProfile sin auditoría; imposible reconstruir saldos, detectar fraude o dar transparencia ('tu historial').",
+      "Antifraude/abuso casi inexistente en cliente: feedKapi, spendMonedas y processChallengeEvent corren con updateUserProfile desde el cliente (reglas de Firestore son la única defensa); referidos se trackean sin verificar identidad real ni autocomscripción; no hay límites de velocidad ni detección de multicuenta/device.",
+      "Mecánicas de impulso ausentes: no hay ruleta DIARIA (solo semanal), ni cofres con llaves, ni ofertas relámpago con stock/contador, ni 'misterio del día'. El catálogo de canje está hardcodeado y no emite cupón persistente.",
+      "Segmentación de push primitiva (vip=monedas>=50, inactive=>30 días) sin RFM ni ciclo de vida; el notificationEngine recorre TODA la colección de usuarios cada hora (no escala y no segmenta por tier/racha en riesgo).",
+      "Sin orientación multi-nicho: no hay etiquetado por nicho (nicheTag) en recompensas/ofertas/misiones para personalizar la economía por categoría del marketplace.",
+      "El reto de 'visita diaria' está literalmente a medias (comentarios 'For now it is just prepared' en KapiPet.jsx, lineas 50-62): la infraestructura de tracking diario consecutivo no está terminada.",
+      "Sin panel de control de economía: tasas, topes y costos están hardcodeados (REWARD_AMOUNT=2, tope 31 kapiCoins, 90 días TTL, costos del catálogo) en código, no en config editable por negocio."
+    ],
+    "techDebt": [
+      "Cálculo de fechas inconsistente y propenso a bugs de zona horaria: unos módulos usan new Date().toISOString().split('T')[0] (UTC) y otros construyen YYYY-MM-DD con getFullYear/getMonth local (Wordle/Kapi/BallSort). En Perú (UTC-5) esto causa que 'hoy' difiera entre módulos cerca de medianoche, rompiendo rachas y permitiendo o bloqueando claims indebidamente.",
+      "Doble fuente de verdad de saldo: campo plano 'monedas' (usado por feedKapi/ballSort/ruleta/spendMonedas) vs 'monedasActivas' con TTL (usado por secureClaimMonedas/approveChallengeEvidence). Se mantienen 'por compatibilidad' pero pueden divergir; calculateActiveCoins ignora monedasActivas y solo devuelve monedas.",
+      "Mutaciones de economía desde el cliente vía updateUserProfile (feedKapi, spendMonedas, freezeMonedas, processChallengeEvent, earnMainCoins): superficie de abuso amplia; deberían ser callables server-side idempotentes.",
+      "getRuletaEligibility tiene lógica de 'hasLost' compleja y comentada como aproximación ('Simplificación de pérdida'), con riesgo de falsos positivos/negativos al perder la racha.",
+      "getWordleRankingToday descarga TODA la colección 'wordle' y filtra/ordena en cliente (no escala); falta índice compuesto.",
+      "notificationEngine hace un .get() de toda portal_clientes_users cada hora y updates por usuario en bucle — costo y latencia crecen linealmente; sin paginación ni colas.",
+      "REWARDS del catálogo y costos están hardcodeados y el canje NO persiste ningún perk/cupón (comentario explícito 'Aquí en el futuro se guardaría'), por lo que el usuario paga monedas y no recibe artefacto verificable en checkout.",
+      "Multiplicador kapi_double_3d se almacena en el perfil de usuario y se evalúa en cliente; sin verificación server-side puede ser manipulado.",
+      "Mezcla de sendToDevice (API legacy de FCM) en notificationsEngine — API obsoleta, conviene migrar a sendEachForMulticast.",
+      "Strings de moneda inconsistentes en UI ('Kapicoin', 'Wala Coins', 'WalaCoins', 'monedas', 'KapiCoins') confunden y dificultan i18n."
+    ],
+    "recommendations": [
+      "FASE 0 (fundamentos, 1-2 semanas) — Unificar la economía: definir UN punto canjeable ('Puntos Wala' o mantener WalaCoins como moneda dura) y declarar kapiCoins como 'racha/XP diario' que se convierte en puntos, no como segunda moneda gastable. Crear loyaltyConfig/global con tasas, topes y equivalencia puntos<->soles editables. Crear loyaltyLedger y migrar TODA acreditación/gasto a escribir en el ledger (fuente de verdad), recomputando el saldo. Centralizar el helper de fecha en zona America/Lima en un solo util y reemplazar los 3 cálculos divergentes.",
+      "FASE 0b (seguridad) — Mover feedKapi, gasto de monedas, processChallengeEvent y todo earn a Cloud Functions callables idempotentes (idempotencyKey = uid+source+fecha) que validen topes y escriban ledger en transacción. El cliente solo lee saldo (onSnapshot). Endurecer reglas de Firestore para que loyaltyPoints/monedas/kapiCoins/xp NO sean escribibles por el cliente.",
+      "FASE 1 (hábito diario, 2-3 semanas) — Lanzar MISIONES DIARIAS: generalizar weeklyChallenges->missions con scope daily/weekly/seasonal y una CF generateDailyMissions (cron 00:05 Lima) que asigna 3 misiones/día por segmento a users/{uid}/missions. Reusar processChallengeEvent y los actionType que ya existen (play_wordle, win_ballsort, feed_kapi, spin_ruleta, add_to_wishlist, complete_purchase). Convertir el Wordle y Ball Sort en misiones que SÍ otorguen puntos. Construir el dashboard de misiones sobre MinijuegosPage/KapiPet.",
+      "FASE 1b — RACHA GLOBAL real: implementar dailyStreak {count,lastDate,freezeTokens} desacoplada de la ruleta, con recompensas crecientes (día 3, 7, 14, 30) y 'streak freeze' (1-2 protecciones/mes, ganables o por tier) para reducir churn por racha rota. Terminar el tracking de 'daily_visit' que quedó a medias en KapiPet.jsx.",
+      "FASE 2 (estatus, 2 semanas) — Implementar TIERS/XP: xp solo-sube alimenta tier (bronce/plata/oro/diamante) con beneficios crecientes (coinMultiplier, envío gratis desde umbral, cofres exclusivos, badge en perfil/ranking). Mostrar barra de progreso al siguiente tier en el perfil. Tier define el multiplicador aplicado server-side en cada earn.",
+      "FASE 2b (sumidero gestionable) — Migrar CatalogReward a rewardsCatalog (Firestore, editable por admin, con stock, tierRequired y nicheTag) y emitir userCoupons al canjear, integrados en CheckoutPage (validación y consumo del cupón). Cierra el ciclo ganar->canjear->usar con artefacto verificable.",
+      "FASE 3 (impulso/FOMO, 2-3 semanas) — Añadir RULETA DIARIA y COFRES con llaves (chestKeys ganables por misiones/racha) reutilizando el sorteo ponderado de ruleta.js + pity-timer en chestHistory. Lanzar OFERTAS RELÁMPAGO (flashOffers) con contador y stock visibles en home y disparadas por push. Añadir 'misterio del día' y barras de progreso de FOMO ('faltan X puntos para tu cofre').",
+      "FASE 3b (retención inteligente) — Reemplazar la segmentación ad-hoc por una CF diaria computeSegments (RFM + ciclo de vida new/active/at_risk/churned/vip) cacheada en segments/{uid}; el notificationEngine consulta segmentos en vez de recorrer toda la colección. Añadir disparador 'racha en riesgo hoy' y 'misión diaria sin completar a las 19:00'. Migrar de sendToDevice a sendEachForMulticast.",
+      "ANTIFRAUDE (transversal) — Registrar deviceIds (Capacitor) por cuenta, límites de velocidad de earn por uid/día en loyaltyConfig, detección de multicuenta por device/IP en referidos (no acreditar si referrer y referido comparten device), exigir compra real verificada (orderId completado por admin) antes de acreditar referido, y velocityScore que bloquee earn anómalo. Todo earn pasa por la CF que valida topes y escribe ledger.",
+      "MULTI-NICHO — Etiquetar missions/rewardsCatalog/flashOffers con nicheTag y permitir multiplicadores/recompensas por categoría, de modo que la economía se personalice por nicho del marketplace (la misma maquinaria sirve para cada vertical sin duplicar lógica).",
+      "MEDICIÓN — Ampliar analytics_kapi a un panel de economía: puntos emitidos vs gastados (inflación), DAU/WAU por misión, retención D1/D7/D30, distribución por tier, redención del catálogo y ROI de cada sumidero, para ajustar tasas desde loyaltyConfig sin desplegar código."
+    ]
+  },
+  {
+    "subsystem": "Diseño de marketplace multi-nicho (futuro)",
+    "whatExists": [
+      "Catálogo único en Firestore colección `productos_wala` (src/services/products.js, const COLLECTION='productos_wala'). Todo producto es un documento plano con normalización fuerte en lectura/escritura (normalizeProductForRead / normalizeProductPayload).",
+      "Soporte de personalización print-on-demand ya implementado a nivel de producto: campos `customizable`, `customizationViews[]` (cada vista con printAreas[], imagesByColor, initialLayersByColor, hasBackSide+backSide), `productCliparts[]`, capas tipo text/image/shape normalizadas (normalizeLayer/normalizeCustomizationView). Esto ES un mini-Printful funcional.",
+      "Variantes por color/talla en el nuevo modelo: `hasVariants`, `variants[]` (id, name, imageUrl, sizes[], images[], colorHex), `defaultVariantId`, `variantDisplayBehavior` (default_only/after_impressions/by_engagement/both) con migración desde formato legacy (variants.colors + imagesByColor).",
+      "Combos/paquetes multi-producto: `isComboProduct`, `comboItems[]`, `comboLayout`, `comboItemCustomization[]` con diseño por sub-producto y por vista frente/espalda (normalizeComboItem).",
+      "Taxonomías existentes como colecciones separadas: `tienda_categories` (categories.js: name, imageUrl, order), `tienda_collections` (collections.js), `tienda_brands` (brands.js: logoUrl, bgColor, bgImage, order), `productTypes` (productTypes.js: solo name), `vendors` (vendors.js: solo name + createdAt). El producto referencia estas vía arrays de strings: categories[], collections[], tags[], characters[], vendors[], y campos brandId, productType.",
+      "Editor de personalización con rutas dedicadas: /personalizar (PersonalizarPage), /editor/:id (EditorPage), /producto/:id (ProductPage). Diseños del cliente persistidos en colección `designs` (designs.js: layers, layersByView, variant, comboItemCustomization) y copias completas de producto personalizado en `producto_cliente_personalizado` (customerCustomProducts.js: clona el producto + YoryoPersonalizado + captura miniatura).",
+      "Pipeline de producción YA EXISTE vía ERP en un segundo proyecto Firebase ('erp-firebase', src/services/erp/firebase.js). CheckoutPage.jsx arma un payload ERP completísimo con etapas: impresion, diseño, preparación, estampado, empaquetado, reparto (cada una con estado/operador/fechas), y escribe en `pedidos_web` (createWebOrder) con estadoValidacion='pendiente' para validación manual antes de pasar a `pedidos`.",
+      "Sistema de fidelidad (economía de puntos) consolidado en AuthContext.jsx: `monedas` (saldo gastable), `monedasEnEspera` (congeladas en checkout vía freezeMonedas), `monedasReclamadas[]`, `kapiCoins`/`kapiHappiness` (mascota Kapi), retos semanales (weeklyChallengeProgress, activeMultiplier kapi_double_3d), ruleta, wordle, minijuegos. Canje: en checkout las monedas valen S/1 c/u con tope del 50% del subtotal (maxCoinsAllowed = subtotal/2).",
+      "Referidos completos (referrals.js): código KS-XXXX por usuario, máquina de estados sent->clicked->purchased->completed->claimed, monedas escaladas (10, o 20 desde la 3ra del mes), ranking Top 10 mensual, cookie wala_referral de 36h enlazada en CheckoutPage.",
+      "Búsqueda y descubrimiento básicos: searchProducts (filtro client-side sobre name/description/categories), getProductsByCategory (array-contains + fallback legacy 'category'), getProductsByCollection, getFeaturedProducts (featured + featuredOrder). Caché en localStorage versionada (CACHE_VERSION='v2').",
+      "Page builder de tienda: colección `storefront/config` (storefront.js) con SECTION_TYPES (hero, sidebar_catalog estilo Mercado Libre, flash_sales, marquee de marcas, etc.) y editor visual admin (AdminStoreEditor, VisualEditorPanel).",
+      "Pagos múltiples: Culqi (CulqiCustomCheckout, hoy gateado solo a pruebas001@gmail.com), PayPal (PaypalCheckout), enlaces de pago rápido (enlaces_pago, PagoRapidoPage) y acuerdo por WhatsApp (wa.me con mensaje pre-armado).",
+      "Doble colección de usuarios: `portal_clientes_users` (activa, PORTAL_USERS_COLLECTION) y `users` (legacy). Roles admin en `adminUsers`/adminRoles con permisos granulares."
+    ],
+    "keyFiles": [
+      {
+        "path": "src/services/products.js",
+        "role": "Núcleo del catálogo: colección 'productos_wala', normalización de variantes, personalización, combos. Punto único donde hoy conviven TODOS los tipos de producto."
+      },
+      {
+        "path": "src/services/vendors.js",
+        "role": "Servicio de 'vendor' actual: trivial (solo name+createdAt). Evidencia de que NO existe modelo multi-vendor real; vendor es solo un tag string en producto.vendors[]."
+      },
+      {
+        "path": "src/services/categories.js",
+        "role": "Taxonomía 'tienda_categories' plana (name, imageUrl, order). No jerárquica ni segmentada por nicho."
+      },
+      {
+        "path": "src/services/productTypes.js",
+        "role": "Tipo de producto 'productTypes' (solo name). Candidato natural a evolucionar a 'blueprint/plantilla POD' para personalizados."
+      },
+      {
+        "path": "src/pages/CheckoutPage.jsx",
+        "role": "Orquestador de pedido y economía: arma payload ERP con etapas de producción, congela monedas, procesa referidos/regalos. Es el cuello de botella donde habría que ramificar por tipo de fulfillment (POD vs marketplace vs stock)."
+      },
+      {
+        "path": "firebase/firestore.rules",
+        "role": "Reglas de seguridad. CRÍTICO: las reglas actuales NO cubren 'productos_wala' (solo 'products'), no contemplan ownership por vendor, y bloquean escritura de monedas solo a admin. Base insuficiente para multi-vendor."
+      },
+      {
+        "path": "src/contexts/AuthContext.jsx",
+        "role": "Economía de puntos (monedas, kapiCoins, retos, multiplicadores). Única fuente de verdad de fidelidad; debe permanecer transversal a todos los nichos."
+      },
+      {
+        "path": "src/services/erp/firebase.js",
+        "role": "Conexión al segundo Firebase (ERP) y colecciones 'pedidos'/'pedidos_web'. Es el pipeline de producción real para personalizados; clave para integrar fulfillment de vendors POD."
+      },
+      {
+        "path": "src/services/customerCustomProducts.js",
+        "role": "Persistencia de producto personalizado por cliente ('producto_cliente_personalizado'): clona el producto base + diseño. Modelo a generalizar para 'line item personalizado'."
+      },
+      {
+        "path": "src/services/designs.js",
+        "role": "Diseños del usuario (capas, layersByView, combos). Activo reutilizable del área de personalizados."
+      },
+      {
+        "path": "src/App.jsx",
+        "role": "Routing global de un solo storefront. Muestra que no hay segmentación de rutas por nicho ni panel de vendor; todo /admin es admin único."
+      },
+      {
+        "path": "src/pages/Tienda/services/storefront.js",
+        "role": "Page builder global 'storefront/config' (un solo documento). Punto de partida para storefronts por nicho/vendor si se multiplica el doc."
+      }
+    ],
+    "dataModel": [
+      "niches/{nicheId}: { slug, name, type ('pod'|'standard'|'mixed'), commissionPct, theme, storefrontConfigId, active, order }. Segmenta catálogo, descubrimiento y reglas de comisión por nicho (ropa-personalizada, regalos, etc.).",
+      "vendors/{vendorId} (REDISEÑAR): { displayName, ownerUid, status ('pending'|'active'|'suspended'), type ('pod'|'reseller'|'self-fulfill'|'house'), niches[], commissionPct (override), payout: { method, bankAccount, cci, walletPhone }, ratings: { avg, count }, slug, logoUrl, createdAt }. Vendor pasa de tag-string a ENTIDAD con dueño y economía.",
+      "productos_wala/{productId} (EXTENDER, no migrar): añadir vendorId (string canónico, no array), nicheId, fulfillmentType ('print_on_demand'|'stock'|'made_to_order'|'dropship'), productionBlueprintId (para POD), commissionPctOverride, vendorSku, leadTimeDays, shippingProfileId. Mantener customizable/customizationViews/variants tal cual (ya sirven a POD).",
+      "blueprints/{blueprintId}: plantilla POD reutilizable (evolución de productTypes): { name, baseGarment, printAreas[], mockupTemplates[], variantMatrix (colores x tallas), basePrintCost, decorationMethods[] ('dtf'|'bordado'|'sublimacion') }. Permite que varios vendors personalizados publiquen sobre el mismo blueprint.",
+      "categories (UNIFICAR/JERARQUIZAR): tienda_categories/{id} -> añadir { nicheId, parentId, level }. Hoy 'tienda_categories' (UI) y 'categories' (rules) están desalineadas.",
+      "orders/{orderId} (MAESTRO en proyecto principal): { buyerUid, status, totals, loyalty: { coinsSpent, coinsEarned }, subOrders: [vendorId] }. Hoy el pedido vive en ERP; falta un pedido maestro multi-vendor en el proyecto principal.",
+      "subOrders/{subOrderId}: split por vendor de un order: { orderId, vendorId, nicheId, items[], fulfillmentType, vendorSubtotal, commissionAmount, vendorPayoutAmount, productionStage (mapea etapas ERP: diseño/preparación/estampado/empaquetado/reparto), erpPedidoId }.",
+      "payouts/{payoutId}: { vendorId, periodStart, periodEnd, grossSales, commissionTotal, refunds, netPayable, status ('pending'|'paid'), subOrderIds[], paidAt }. Liquidación periódica por vendor.",
+      "ledger/{entryId}: libro contable inmutable por transacción (venta, comisión, payout, reembolso, monedas) para auditoría y conciliación con ERP.",
+      "loyaltyAccounts (CONSOLIDAR sobre portal_clientes_users): mantener monedas/kapiCoins UNICAS por usuario (cuenta única transversal). Añadir loyaltyLedger/{id}: { uid, delta, reason, nicheId, orderId, createdAt } para trazabilidad multi-nicho de la economía.",
+      "designs / producto_cliente_personalizado (CONSERVAR): añadir vendorId/blueprintId para enrutar la producción del diseño al vendor/POD correcto.",
+      "searchIndex (NUEVO, externo): documentos planos para Algolia/Typesense con facets nicheId, vendorId, categories, fulfillmentType, customizable, price; reemplaza el filtrado client-side de searchProducts."
+    ],
+    "strengths": [
+      "El motor de personalización (customizationViews, printAreas, capas, combos, mockups) ya es un POD funcional y bien normalizado: el área de 'personalizados' no parte de cero, solo necesita multi-vendor y blueprints reutilizables.",
+      "Pipeline de producción real ya operativo en el ERP con etapas granulares (diseño->preparación->estampado->empaquetado->reparto); es directamente mapeable a sub-pedidos de vendors POD.",
+      "Economía de puntos (monedas) ya es transversal al usuario y desacoplada del producto: encaja perfecto con 'misma cuenta/economía' a través de nichos sin rediseño del lado del cliente.",
+      "Capa de acceso a datos uniforme (firebase/firestore.js con getCollection/createDocument y limpieza de payloads) y normalización defensiva con migraciones legacy: facilita extender el esquema de producto sin romper datos en producción.",
+      "Taxonomías ya externalizadas en colecciones (categories, collections, brands, productTypes, vendors): la base para multi-nicho existe, solo está infrautilizada (vendors/productTypes casi vacíos).",
+      "Page builder por secciones (storefront/config) y temas: permite crear storefronts diferenciados por nicho replicando el documento de configuración.",
+      "Multi-pasarela ya integrada (Culqi, PayPal, enlaces de pago, WhatsApp), requisito clave para payouts y cobros de marketplace."
+    ],
+    "gaps": [
+      "NO existe modelo multi-vendor real: 'vendor' es solo un tag string en producto.vendors[]; vendors.js no tiene dueño (ownerUid), estado, comisión ni payout. No hay relación producto->vendor canónica (es array, no FK).",
+      "NO existe concepto de nicho: ningún campo nicheId, ninguna segmentación de catálogo/rutas/storefront por nicho. El catálogo es un solo pool 'productos_wala'.",
+      "NO hay separación de catálogos POD vs marketplace general: el único discriminante es 'customizable'/'isComboProduct'; falta fulfillmentType para distinguir stock propio, made-to-order, dropship, POD.",
+      "NO hay comisiones ni payouts: no existe cálculo de comisión, split por vendor, ni colección de liquidaciones; CheckoutPage trata todo como venta de la casa.",
+      "NO hay pedido maestro multi-vendor en el proyecto principal: el pedido se escribe directo al ERP (pedidos_web) como un único bloque, sin split por vendor ni sub-pedidos.",
+      "Reglas de seguridad desalineadas y peligrosas para multi-tenant: firestore.rules protege 'products'/'categories' pero el catálogo real es 'productos_wala'/'tienda_categories' (no cubiertos => dependientes de reglas por defecto); enlaces_pago permite update/delete a cualquiera; no hay ownership por vendor.",
+      "Búsqueda no escalable: searchProducts descarga TODA la colección y filtra en cliente; sin índice, sin facets por nicho/vendor, sin relevancia ni paginación de búsqueda.",
+      "Doble proyecto Firebase (principal + ERP) sin contrato de sincronización formal: estados de producción y pagos viven en el ERP, no hay webhook/función que devuelva estado al pedido maestro ni concilie monedasEnEspera->monedas al completar.",
+      "Onboarding/panel de vendor inexistente: no hay rutas, UI ni roles para que un tercero publique productos, gestione su catálogo o vea sus ventas/payouts. Todo es admin único.",
+      "Taxonomía de categorías plana y duplicada (tienda_categories vs categories), sin jerarquía padre/hijo necesaria para múltiples nichos."
+    ],
+    "techDebt": [
+      "Inconsistencia de nombres de colección entre reglas y código: rules referencian 'products'/'categories'/'users'; el código usa 'productos_wala'/'tienda_categories'/'portal_clientes_users'. Riesgo de seguridad real en producción.",
+      "Producto sobre-normalizado y monolítico: normalizeProductForRead/Payload en products.js mezclan personalización, variantes, combos y compatibilidad legacy en un solo documento; añadir multi-vendor/nicho sin refactor aumentará la complejidad.",
+      "vendors[] como array de strings además de la colección 'vendors' separada: ambigüedad sobre qué es la fuente de verdad de 'vendedor'.",
+      "Doble colección de usuarios (portal_clientes_users + users legacy) con lógica de fallback en AuthContext: complica una 'cuenta única' limpia.",
+      "Lógica de negocio crítica embebida en la UI: CheckoutPage.jsx (~950 líneas) construye el payload ERP, congela monedas y procesa referidos; debería vivir en Cloud Functions para integridad transaccional multi-vendor.",
+      "Economía de puntos manejada client-side (updateUserProfile escribe monedas vía setDocument); aunque rules bloquean el campo a no-admin, freezeMonedas/earnMainCoins corren en el cliente: frágil para un marketplace con dinero real.",
+      "Caché de productos en localStorage que guarda el catálogo completo (CACHE_KEYS.products): no escala con catálogo multi-vendor grande.",
+      "Archivos de parcheo sueltos en la raíz (patch_checkout.js, patch_tienda.js, update.js, prod_map.json, header_diff.patch): señal de cambios manuales fuera de control de versiones limpio."
+    ],
+    "recommendations": [
+      "FASE 0 (fundaciones, antes de cualquier feature de marketplace): (a) Alinear firestore.rules con las colecciones reales (productos_wala, tienda_categories, portal_clientes_users) y cerrar el agujero de enlaces_pago. (b) Mover la economía de monedas (freeze/earn/claim) y la creación de pedidos a Cloud Functions para integridad transaccional. Sin esto, el dinero/comisiones del marketplace no son confiables.",
+      "FASE 1 (modelo de datos, no destructivo): Introducir los campos transversales en producto SIN migrar nada: vendorId (default = vendor 'casa'), nicheId (default = nicho 'regala-con-amor'), fulfillmentType (derivar: customizable=>'print_on_demand', resto=>'stock'). Backfill por script. Esto habilita segmentación y comisiones sin romper la tienda actual.",
+      "FASE 2 (vendor como entidad + panel mínimo): Rediseñar vendors/{vendorId} con ownerUid, status, type, commissionPct, payout. Añadir rol 'vendor' y un panel /vendedor con CRUD de SU catálogo (filtrado por vendorId) reusando AdminProductoFormV2. Empezar con vendors curados manualmente (la casa + 1-2 partners de ropa personalizada).",
+      "FASE 3 (split de pedido + comisiones): Crear order maestro + subOrders por vendorId en el proyecto principal; al checkout, calcular commissionAmount y vendorPayoutAmount por sub-pedido, y enviar cada sub-pedido POD al ERP (pedidos_web) etiquetado con vendorId. Conciliar monedasEnEspera->monedas vía Cloud Function cuando el ERP marca completado.",
+      "FASE 4 (área de personalizados como nicho POD escalable): Promover productTypes a blueprints reutilizables (printAreas + matriz de variantes + costo base de impresión); permitir que varios vendors publiquen sobre el mismo blueprint. Mantener el editor actual (customizationViews/designs) como front del blueprint.",
+      "FASE 5 (descubrimiento): Sustituir searchProducts client-side por un índice externo (Typesense/Algolia o Firestore + extensión) alimentado por Cloud Function on-write, con facets nicheId/vendorId/categories/fulfillmentType/price. Añadir páginas de nicho (/nicho/:slug) y de vendor (/vendedor/:slug) reutilizando el page builder (un storefront/config por nicho).",
+      "FASE 6 (payouts): Implementar payouts/{payoutId} y un ledger inmutable; liquidación periódica por vendor reutilizando las pasarelas ya integradas. Reportes de comisiones en el panel admin.",
+      "Principio transversal: la economía de puntos (monedas/kapiCoins) y la cuenta de usuario permanecen ÚNICAS y globales a todos los nichos/vendors (ya lo están en AuthContext): nunca segmentar la fidelidad por vendor; las comisiones se calculan sobre el valor neto pagado, descontando la parte cubierta por monedas a cargo de la casa."
+    ]
+  }
+]
