@@ -45,6 +45,8 @@
     "dev:3001": "vite --port 3001",
     "build": "vite build",
     "preview": "vite preview",
+    "emulators": "node scripts/emulators.js",
+    "seed": "node scripts/seed-emulator.js",
     "deploy:firestore-rules": "node scripts/deploy-firestore-rules.js",
     "deploy:storage-rules": "node scripts/deploy-storage-rules.js",
     "deploy:functions": "firebase deploy --only functions",

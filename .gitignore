@@ -106,3 +106,10 @@ node_modules/
 
 # Context mapping for V2 migration
 contexto.md
+
+# Firebase emulators (local)
+.emulator-data/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*-debug.log

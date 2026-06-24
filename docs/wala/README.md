@@ -22,6 +22,7 @@ cambio → desplegar → verificar**.
 | # | Documento | Qué contiene | Cuándo leerlo |
 |---|-----------|--------------|---------------|
 | 0 | [ESTADO-DEL-PROYECTO.md](./ESTADO-DEL-PROYECTO.md) | Panorama ejecutivo: qué es Wala, cronología del trabajo, tabla de las 6 fases, inventario de los 8 commits, estado de despliegue, cómo correr en local, riesgos residuales y próximos pasos. | Primero, para situarte en el estado real. |
+| 0.5 | [EMULADOR-LOCAL.md](./EMULADOR-LOCAL.md) | Cómo correr TODO en local con el Emulador de Firebase (Firestore/Auth/Functions/Storage), datos de ejemplo y usuarios de prueba. | Para levantar y ver la app funcionando en tu PC. |
 | 1 | [PLAN-MAESTRO.md](./PLAN-MAESTRO.md) | Visión, arquitectura objetivo, roadmap por fases (0–5), decisiones técnicas y riesgos. | Para entender hacia dónde va el producto. |
 | 2 | [fases/README.md](./fases/README.md) | Índice de la carpeta de fases: tabla por fase con estado y documento asociado, leyenda y flujo de lectura. | Para navegar el roadmap fase a fase. |
 | 3 | [MODELO-DATOS.md](./MODELO-DATOS.md) | Colecciones Firestore actuales y objetivo (productos, fidelización, marketplace, ERP). | Antes de tocar datos o reglas. |

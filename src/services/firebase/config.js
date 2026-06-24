@@ -1,9 +1,10 @@
 import { initializeApp } from 'firebase/app';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
-import { initializeFirestore, persistentLocalCache, getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { getStorage } from 'firebase/storage';
+import { initializeFirestore, persistentLocalCache, getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getMessaging, isSupported } from 'firebase/messaging';
 
 // Verificar si Firebase está configurado
@@ -22,7 +23,25 @@ let auth = null;
 let storage = null;
 let messaging = null;
 
-if (isFirebaseConfigured()) {
+// En DEV usamos los EMULADORES de Firebase (proyecto demo aislado 'demo-wala'), salvo que
+// VITE_USE_EMULATORS='false'. En build/producción se usa el Firebase real del .env.
+const USE_EMULATORS = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS !== 'false';
+
+if (USE_EMULATORS) {
+  try {
+    app = initializeApp({ projectId: 'demo-wala', apiKey: 'demo-emulator', authDomain: 'localhost' });
+    db = getFirestore(app);
+    auth = getAuth(app);
+    storage = getStorage(app);
+    connectFirestoreEmulator(db, 'localhost', 8080);
+    connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+    connectStorageEmulator(storage, 'localhost', 9199);
+    try { connectFunctionsEmulator(getFunctions(app), 'localhost', 5001); } catch (e) { /* functions opcional */ }
+    console.info('[Wala] EMULADORES de Firebase activos (proyecto demo-wala) — datos locales, sin tocar producción.');
+  } catch (error) {
+    console.warn('No se pudo conectar a los emuladores. ¿Están corriendo? (npm run emulators):', error?.message || error);
+  }
+} else if (isFirebaseConfigured()) {
   try {
     const projectId = process.env.REACT_APP_FIREBASE_PROJECT_ID;
     const firebaseConfig = {

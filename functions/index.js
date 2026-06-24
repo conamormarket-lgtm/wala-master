@@ -43,7 +43,12 @@ async function callerIsAdmin(context) {
 let erpApp = null;
 function getErpDb() {
   const raw = process.env.ERP_SERVICE_ACCOUNT;
-  if (!raw) return null;
+  if (!raw) {
+    // En el emulador, los pedidos del ERP se siembran en el MISMO proyecto demo,
+    // así que se usa el Firestore por defecto (evita exigir credenciales del ERP en local).
+    if (process.env.FUNCTIONS_EMULATOR === "true") return db;
+    return null;
+  }
   if (!erpApp) {
     try {
       const sa = JSON.parse(raw);

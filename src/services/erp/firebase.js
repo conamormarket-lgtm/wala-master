@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import {
   collection,
   doc,
@@ -31,12 +31,19 @@ const erpFirebaseConfig = {
 let erpApp = null;
 let erpDb = null;
 
+const ERP_USE_EMULATORS = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS !== 'false';
+
 try {
   // Verificar si ya existe una instancia con el nombre 'erp-firebase'
   const existingApps = getApps();
   const existingErpApp = existingApps.find(app => app.name === 'erp-firebase');
 
-  if (existingErpApp) {
+  if (ERP_USE_EMULATORS) {
+    // En dev, el ERP también apunta al emulador (mismo proyecto demo aislado 'demo-wala').
+    erpApp = existingErpApp || initializeApp({ projectId: 'demo-wala', apiKey: 'demo-emulator' }, 'erp-firebase');
+    erpDb = getFirestore(erpApp);
+    if (!existingErpApp) connectFirestoreEmulator(erpDb, 'localhost', 8080);
+  } else if (existingErpApp) {
     erpApp = existingErpApp;
     erpDb = getFirestore(erpApp);
   } else {
