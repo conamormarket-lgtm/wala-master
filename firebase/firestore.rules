@@ -1,134 +1,185 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-    
+
+    // ⚠️ FASE 0: Estas reglas se reescribieron para cubrir las colecciones REALES de la
+    // app y cerrar agujeros (ver docs/wala/FASE-0-SEGURIDAD.md, H-06/H-07/H-08/H-09).
+    // ANTES DE DESPLEGAR A PRODUCCIÓN: comparar con las reglas actualmente desplegadas en
+    // la consola (pueden ser más permisivas que el repo) y probar en el Rules Playground /
+    // staging. Cualquier colección NO listada aquí queda DENEGADA por defecto.
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function isAuthenticated() { return request.auth != null; }
+    function isOwner(userId) { return isAuthenticated() && request.auth.uid == userId; }
+
+    // Admin = custom claim `admin: true` (fuente de verdad, H-09) o, como puente de
+    // bootstrap, doc adminUsers/{uid} con role 'admin'. Meta: depender solo del claim.
     function isAdmin() {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        (exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin')
+      );
     }
-    
-    // Products - públicos para lectura, solo admin puede escribir
-    match /products/{productId} {
-      allow read: if true; // Todos pueden leer productos
-      allow write: if isAdmin();
+
+    // Campos sensibles que el propio usuario NUNCA puede auto-modificar.
+    // TODO (H-06): añadir 'monedasActivas','kapiCoins','activeMultiplier',
+    // 'multiplierExpiresAt','referralCode','referralCodeEdited' cuando earn/spend se
+    // muevan a Cloud Functions (hoy el cliente aún escribe esos campos y bloquearlos
+    // ahora rompería feedKapi/ruleta/referidos).
+    function noTocaCamposSensibles() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(
+        ['monedas', 'monedasReclamadas', 'monedasEnEspera', 'historialMonedasEspera', 'role']
+      );
     }
-    
-    // Categories - públicos para lectura, solo admin puede escribir
-    match /categories/{categoryId} {
+
+    // ── Catálogo y taxonomías (lectura pública, escritura admin) ─────────────────
+    match /productos_wala/{id}        { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_categories/{id}     { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_collections/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_brands/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_mockups/{id}        { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_themes/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_landing_pages/{id}  { allow read: if true; allow write: if isAdmin(); }
+    match /pages/{id}                 { allow read: if true; allow write: if isAdmin(); }
+    match /landingPages/{id}          { allow read: if true; allow write: if isAdmin(); }
+    match /productTypes/{id}          { allow read: if true; allow write: if isAdmin(); }
+    match /tags/{id}                  { allow read: if true; allow write: if isAdmin(); }
+    match /characters/{id}            { allow read: if true; allow write: if isAdmin(); }
+    match /cliparts/{id}              { allow read: if true; allow write: if isAdmin(); }
+    match /customShapes/{id}          { allow read: if true; allow write: if isAdmin(); }
+    match /fonts/{id}                 { allow read: if true; allow write: if isAdmin(); }
+    match /templates/{id}             { allow read: if true; allow write: if isAdmin(); }
+    match /vendors/{id}               { allow read: if true; allow write: if isAdmin(); }
+    match /storefront/{id}            { allow read: if true; allow write: if isAdmin(); }
+    match /storeConfig/{id}           { allow read: if true; allow write: if isAdmin(); }
+    match /configuracion/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{id}              { allow read: if true; allow write: if isAdmin(); }
+    match /messages/{id}              { allow read: if true; allow write: if isAdmin(); }
+    match /suggested_packages/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /universal_dates/{id}       { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_encuesta_config/{id}{ allow read: if true; allow write: if isAdmin(); }
+    match /cuestionarios_templates/{id}{ allow read: if true; allow write: if isAdmin(); }
+
+    // Compat: colecciones legacy (mantener hasta confirmar que no se usan en producción).
+    match /products/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /categories/{id}  { allow read: if true; allow write: if isAdmin(); }
+
+    // ── Gamificación / fidelización ──────────────────────────────────────────────
+    match /globals/{id}            { allow read: if true;  allow write: if isAdmin(); } // activeChallenge
+    match /weeklyChallenges/{id}   { allow read: if true;  allow write: if isAdmin(); }
+    match /ruletaPrizes/{id}       { allow read: if true;  allow write: if isAdmin(); }
+    match /wordle_daily_words/{id} { allow read: if true;  allow write: if isAdmin(); }
+
+    // Partidas de Wordle: lectura pública (ranking); el usuario solo escribe su registro.
+    match /wordle/{id} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin();
     }
-    
-    // Orders - usuarios pueden crear y leer sus propios pedidos
+
+    // Evidencias de retos: se crean vía Cloud Function (admin SDK, evade reglas); el
+    // cliente solo necesita leerlas como admin.
+    match /challengeEvidences/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
+
+    // Referidos: tracking que puede ocurrir SIN sesión (clic en el enlace). La
+    // acreditación de monedas está protegida en el doc de usuario (no aquí).
+    // TODO (H-05): mover claimReferralCoins a una Cloud Function y endurecer esto.
+    match /referrals/{id} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    // Eventos/fechas importantes del usuario (cumpleaños, aniversarios).
+    // TODO: acotar por owner si los documentos llevan userId.
+    match /organizable_events/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated() || isAdmin();
+    }
+
+    // ── Datos de usuario ─────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles());
+      allow delete: if isAdmin();
+      match /notifications/{notifId} {
+        allow read, update: if isOwner(userId) || isAdmin();
+        allow create, delete: if isAdmin();
+      }
+    }
+    match /portal_clientes_users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles());
+      allow delete: if isAdmin();
+      match /notifications/{notifId} {
+        allow read, update: if isOwner(userId) || isAdmin();
+        allow create, delete: if isAdmin();
+      }
+    }
+
     match /orders/{orderId} {
-      allow read: if isOwner(resource.data.userId) || 
-                     (request.resource.data.dni != null && 
-                      resource.data.dni == request.resource.data.dni) ||
-                     isAdmin();
+      allow read: if isOwner(resource.data.userId) || isAdmin();
       allow create: if isAuthenticated() || request.resource.data.dni != null;
       allow update: if isAdmin() || isOwner(resource.data.userId);
       allow delete: if isAdmin();
     }
-    
-    // Designs - usuarios pueden crear y leer sus propios diseños
+
     match /designs/{designId} {
-      allow read: if isOwner(resource.data.userId) || 
-                     resource.data.isPublic == true ||
-                     isAdmin();
+      allow read: if isOwner(resource.data.userId) || resource.data.isPublic == true || isAdmin();
       allow create: if isAuthenticated();
       allow update, delete: if isOwner(resource.data.userId) || isAdmin();
     }
-    
-    // Templates - públicos para lectura, solo admin puede escribir
-    match /templates/{templateId} {
+
+    // Productos personalizados creados por el cliente (pre-compra).
+    match /producto_cliente_personalizado/{id} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() || isAdmin();
     }
 
-    // Cliparts (galería global) - públicos para lectura, solo admin puede escribir
-    match /cliparts/{clipartId} {
+    // Wishlists (doc id = uid). Lectura pública para compartir por enlace.
+    match /wishlists/{userId} {
       allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    // Custom Shapes (formas personalizadas) - públicos para lectura, solo admin puede escribir
-    match /customShapes/{shapeId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
     }
 
-    // Fonts (tipografías personalizadas) - públicos para lectura, solo admin puede escribir
-    match /fonts/{fontId} {
+    // Reseñas de productos. Lectura pública; crear autenticado; update permitido para
+    // votos útiles. TODO: restringir update a solo 'helpfulVotes' con diff().
+    match /product_reviews/{id} {
       allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    // Admin users - solo admin puede leer y escribir
-    match /adminUsers/{userId} {
-      allow read, write: if isAdmin();
-    }
-    
-    // Settings - solo lectura para todos, solo admin puede escribir
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Messages (textos tienda, WhatsApp, mascota, etc.) - lectura pública para que la app muestre la mascota y textos sin login
-    match /messages/{messageId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    // Users - usuarios pueden leer y actualizar su propio perfil
-    // Users - usuarios pueden leer y actualizar su propio perfil (pero no campos sensibles)
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAdmin() || (isOwner(userId) && 
-                    !request.resource.data.diff(resource.data).affectedKeys().hasAny(
-                      ['monedas', 'monedasReclamadas', 'monedasEnEspera', 'historialMonedasEspera', 'role']
-                    ));
-      allow delete: if isAdmin();
-    }
-    
-    // Portal Users - usuarios pueden leer y actualizar su propio perfil (pero no campos sensibles)
-    match /portal_clientes_users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAdmin() || (isOwner(userId) && 
-                    !request.resource.data.diff(resource.data).affectedKeys().hasAny(
-                      ['monedas', 'monedasReclamadas', 'monedasEnEspera', 'historialMonedasEspera', 'role']
-                    ));
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
       allow delete: if isAdmin();
     }
 
-    // Heatmap Events - Todos pueden escribir, solo admin puede leer
+    // ── Admin / configuración restringida ────────────────────────────────────────
+    match /adminUsers/{userId} { allow read, write: if isAdmin(); }
+    // adminRoles: el cliente autenticado lee su propio rol para computar permisos de UI.
+    match /adminRoles/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    match /notification_settings/{id} { allow read, write: if isAdmin(); }
+    match /storeConfigLogs/{id}       { allow read, write: if isAdmin(); }
+    match /inventoryLogs/{id}         { allow read, write: if isAdmin(); }
+    match /analytics_kapi/{id}        { allow read, write: if isAdmin(); }
+
+    // ── Ingestión pública controlada ─────────────────────────────────────────────
     match /heatmap_events/{eventId} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
     }
-
-    // Libro de Reclamaciones (INDECOPI) - cualquiera puede registrar uno; solo admin lee/responde
     match /libro_reclamaciones/{reclamoId} {
-      allow create: if true; // Formulario público de reclamaciones
+      allow create: if true;             // Formulario público de reclamaciones (INDECOPI)
       allow read, update, delete: if isAdmin();
     }
-
-    // Enlaces de pago rápidos (PayPal)
     match /enlaces_pago/{enlaceId} {
-      allow read: if true; // Público para el que tiene el link
-      allow create: if isAdmin(); // Solo admin puede generarlos
-      allow update, delete: if true; // Público para marcarse como pagado o borrarse si expira
+      allow read: if true;               // Público para quien tiene el link (id no adivinable)
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin(); // H-08: antes era 'if true' (fraude/DoS)
     }
   }
 }

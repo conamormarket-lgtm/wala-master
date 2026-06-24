@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthChange } from '../services/firebase/auth';
 // eslint-disable-next-line no-unused-vars
 import { getDocument, setDocument } from '../services/firebase/firestore';
-import { getAdminRoleByEmail, setAdminRole } from '../services/adminRoles';
+import { getAdminRoleByEmail } from '../services/adminRoles';
 import { getStartOfWeek, formatIsoDate } from '../services/firebase/ruleta';
 import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [adminPermissions, setAdminPermissions] = useState(null);
+  const [isAdminClaim, setIsAdminClaim] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeWeeklyChallenge, setActiveWeeklyChallenge] = useState(null);
 
@@ -42,6 +43,16 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
+
+        // Rol admin desde custom claims de Firebase Auth (fuente de verdad).
+        // Nunca desde localStorage ni emails hardcodeados (ver FASE-0-SEGURIDAD.md, H-01/H-09).
+        try {
+          const tokenResult = await firebaseUser.getIdTokenResult();
+          setIsAdminClaim(tokenResult.claims?.admin === true);
+        } catch (e) {
+          setIsAdminClaim(false);
+        }
+
         const { data: portalDoc } = await getDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid);
         
         let profileData = null;
@@ -64,20 +75,12 @@ export const AuthProvider = ({ children }) => {
           setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { referralCode: newCode });
         }
 
-        // Fetch admin permissions if user exists
+        // Permisos admin desde adminRoles (RBAC por email). El bootstrap por email
+        // hardcodeado fue eliminado (H-01); conceder admin se hace con custom claims
+        // vía la Cloud Function setAdminClaim / el script scripts/set-admin-claims.js.
         if (firebaseUser.email) {
           const roleData = await getAdminRoleByEmail(firebaseUser.email);
-          // Hardcode de super admins iniciales por si no están en DB
-          if (!roleData && (firebaseUser.email === 'yorh001@gmail.com' || firebaseUser.email === 'heyeru24@gmail.com')) {
-            const defaultSuperAdmin = { 
-              permissions: ['superadmin'] 
-            };
-            setAdminPermissions(defaultSuperAdmin.permissions);
-            // Auto-guardarlos en la db para que ya aparezcan en la configuración
-            await setAdminRole(firebaseUser.email, { name: profileData.name || 'Admin', permissions: ['superadmin'] });
-          } else {
-            setAdminPermissions(roleData ? roleData.permissions || [] : []);
-          }
+          setAdminPermissions(roleData ? roleData.permissions || [] : []);
         }
 
         // Update lastAppOpen if not updated today
@@ -93,6 +96,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setUserProfile(null);
         setAdminPermissions(null);
+        setIsAdminClaim(false);
       }
       setLoading(false);
     });
@@ -305,11 +309,13 @@ export const AuthProvider = ({ children }) => {
 
   const profileIncomplete = !!user && !!userProfile && (!userProfile.dni || !userProfile.phone);
 
-  const isLegacyAdmin = userProfile?.role === 'admin' || user?.email === 'yorh001@gmail.com' || user?.email === 'heyeru24@gmail.com' || localStorage.getItem('adminWalaPro') === 'true';
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const effectiveAdminPermissions = (adminPermissions && adminPermissions.length > 0) ? adminPermissions : (isLegacyAdmin ? ['superadmin'] : []);
-  
-  const isAdmin = isLegacyAdmin || effectiveAdminPermissions.length > 0;
+  // Admin = custom claim (fuente de verdad) o permisos en adminRoles (RBAC).
+  // Sin localStorage ni emails hardcodeados (eliminados en Fase 0, H-01/H-09).
+  const effectiveAdminPermissions = (adminPermissions && adminPermissions.length > 0)
+    ? adminPermissions
+    : (isAdminClaim ? ['superadmin'] : []);
+
+  const isAdmin = isAdminClaim || effectiveAdminPermissions.length > 0;
 
   const value = React.useMemo(() => ({
     user,

@@ -183,7 +183,7 @@ export async function claimReferralCoins(referralId, earnedCoins, uid, currentMo
     });
 
     // 2. Sumar monedas al perfil
-    await setDocument('portal_users', uid, {
+    await setDocument('portal_clientes_users', uid, {
       monedas: currentMonedas + earnedCoins,
       updatedAt: serverTimestamp()
     });
@@ -202,13 +202,13 @@ export async function updateReferralCode(uid, newCode) {
     const cleanCode = newCode.trim().toUpperCase();
     
     // Verificar que no esté en uso
-    const q = query(collection(db, 'portal_users'), where('referralCode', '==', cleanCode));
+    const q = query(collection(db, 'portal_clientes_users'), where('referralCode', '==', cleanCode));
     const snap = await getDocs(q);
     if (!snap.empty) {
       return { error: 'El código ya está en uso' };
     }
     
-    await setDocument('portal_users', uid, {
+    await setDocument('portal_clientes_users', uid, {
       referralCode: cleanCode,
       referralCodeEdited: true,
       updatedAt: serverTimestamp()

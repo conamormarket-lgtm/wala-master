@@ -5,14 +5,56 @@
  */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const crypto = require("crypto");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 admin.initializeApp();
 const auth = admin.auth();
 const db = admin.firestore();
 const PORTAL_USERS_COLLECTION = "portal_clientes_users";
+const ADMIN_USERS_COLLECTION = "adminUsers";
 
 const MIN_PASSWORD_LENGTH = 6;
+
+// ── Autorización (Fase 0, H-01/H-09) ──────────────────────────────────────────
+// El llamante es admin si tiene el custom claim `admin: true`. Como puente de
+// bootstrap (mientras se asignan los claims) se acepta también un doc
+// adminUsers/{uid} con role 'admin'. La meta es depender solo del claim.
+async function callerIsAdmin(context) {
+  if (!context || !context.auth) return false;
+  if (context.auth.token && context.auth.token.admin === true) return true;
+  try {
+    const snap = await db.collection(ADMIN_USERS_COLLECTION).doc(context.auth.uid).get();
+    return snap.exists && snap.data().role === "admin";
+  } catch (e) {
+    return false;
+  }
+}
+
+// ── Acceso al Firebase del ERP (Fase 0, H-02) ─────────────────────────────────
+// Los pedidos viven en el proyecto del ERP. Para validarlos server-side se
+// inicializa una segunda app con la cuenta de servicio del ERP, provista como
+// secret JSON en ERP_SERVICE_ACCOUNT. Si no está configurada, devuelve null y
+// el llamador debe FALLAR CERRADO (no acreditar monedas sin validar el pedido).
+let erpApp = null;
+function getErpDb() {
+  const raw = process.env.ERP_SERVICE_ACCOUNT;
+  if (!raw) return null;
+  if (!erpApp) {
+    try {
+      const sa = JSON.parse(raw);
+      erpApp = admin.initializeApp({ credential: admin.credential.cert(sa) }, "erp");
+    } catch (e) {
+      console.error("ERP_SERVICE_ACCOUNT inválido (no es JSON de service account):", e.message);
+      return null;
+    }
+  }
+  return erpApp.firestore();
+}
+
+// Monto fijo de monedas por pedido reclamado (server-authoritative, ignora el
+// valor enviado por el cliente). Centralizado para no confiar en el front.
+const REWARD_COINS_PER_ORDER = 10;
 
 const ERP_NOMBRE = [
   "clienteNombre",
@@ -69,6 +111,11 @@ function isValidEmail(str) {
   return t.includes("@") && t.length >= 5;
 }
 
+// SEGURIDAD (H-03 — PENDIENTE): la contraseña inicial = DNI es débil (el DNI es
+// semipúblico en Perú). Migrar a cuenta SIN password + enlace de definición de
+// contraseña (auth.generatePasswordResetLink / email-link). Requiere decisión de
+// producto y configuración de correo; hasta entonces se mantiene para no romper el
+// login de las cuentas creadas por el ERP.
 function buildPassword(dni) {
   if (dni == null || String(dni).trim() === "") return null;
   const n = String(dni).trim().replace(/\s/g, "");
@@ -87,10 +134,15 @@ function buildPassword(dni) {
  *   { "created": true, "userId": "..." }  o  { "created": false, "existing": true }  o  { "created": false, "error": "..." }
  */
 exports.ensureAccountFromOrder = functions.https.onRequest(async (req, res) => {
-  res.set("Access-Control-Allow-Origin", "*");
+  // CORS: webhook server-to-server. NO se emite Access-Control-Allow-Origin: * (H-03);
+  // solo se expone el origen del ERP si se configura ERP_ALLOWED_ORIGIN.
+  const allowedOrigin = process.env.ERP_ALLOWED_ORIGIN;
+  if (allowedOrigin) res.set("Access-Control-Allow-Origin", allowedOrigin);
+  res.set("Vary", "Origin");
+
   if (req.method === "OPTIONS") {
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type, X-Webhook-Secret");
+    res.set("Access-Control-Allow-Headers", "Content-Type, X-Webhook-Signature");
     res.status(204).end();
     return;
   }
@@ -98,6 +150,32 @@ exports.ensureAccountFromOrder = functions.https.onRequest(async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Método no permitido. Use POST." });
     return;
+  }
+
+  // Autenticación del webhook por HMAC-SHA256 (H-03). El ERP firma el body crudo con
+  // ERP_WEBHOOK_SECRET y envía la firma hex en X-Webhook-Signature. Si el secreto está
+  // configurado se exige y valida; si no, se advierte y se permite (transición —
+  // configurar ERP_WEBHOOK_SECRET y firmar desde el ERP para cerrar el agujero).
+  const webhookSecret = process.env.ERP_WEBHOOK_SECRET;
+  if (webhookSecret) {
+    const provided = String(req.get("X-Webhook-Signature") || "");
+    const expected = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(req.rawBody || Buffer.from(JSON.stringify(req.body || {})))
+      .digest("hex");
+    const valid =
+      provided.length === expected.length &&
+      crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
+    if (!valid) {
+      console.warn("ensureAccountFromOrder: firma HMAC inválida o ausente.");
+      res.status(401).json({ created: false, error: "INVALID_SIGNATURE" });
+      return;
+    }
+  } else {
+    console.warn(
+      "ensureAccountFromOrder: ERP_WEBHOOK_SECRET no configurado; webhook SIN autenticar. " +
+      "Configúrelo y firme el payload desde el ERP para cerrar H-03."
+    );
   }
 
   const body = typeof req.body === "object" ? req.body : {};
@@ -175,7 +253,7 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
     );
   }
 
-  const { pedidoId, amount = 10 } = data;
+  const { pedidoId } = data || {};
   if (!pedidoId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
@@ -185,39 +263,56 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
 
   const uid = context.auth.uid;
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
-  // const orderRef = db.collection("orders").doc(pedidoId);
+
+  // Monto SERVER-AUTHORITATIVE: se ignora cualquier `amount` enviado por el cliente (H-02/H-06).
+  const amount = REWARD_COINS_PER_ORDER;
+
+  // 1) Validar el pedido contra el ERP (H-02). FALLA CERRADO si el ERP no está
+  //    configurado: sin verificar propiedad/estado del pedido NO se acuñan monedas.
+  const erpDb = getErpDb();
+  if (!erpDb) {
+    console.error("secureClaimMonedas: ERP_SERVICE_ACCOUNT no configurado; reclamo rechazado (fail-closed).");
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "La validación de pedidos no está disponible temporalmente. Intenta más tarde."
+    );
+  }
+
+  const preUserDoc = await userRef.get();
+  if (!preUserDoc.exists) {
+    throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+  }
+  const userData0 = preUserDoc.data();
+
+  // Buscar el pedido en el ERP (pedidos_web o pedidos).
+  let orderData = null;
+  for (const coll of ["pedidos_web", "pedidos"]) {
+    const snap = await erpDb.collection(coll).doc(String(pedidoId)).get();
+    if (snap.exists) { orderData = snap.data(); break; }
+  }
+  if (!orderData) {
+    throw new functions.https.HttpsError("not-found", "Pedido no encontrado.");
+  }
+
+  // Propiedad: por userId o por DNI del usuario.
+  const ownsByUid = orderData.userId && orderData.userId === uid;
+  const ownsByDni = orderData.dni && userData0.dni && String(orderData.dni) === String(userData0.dni);
+  if (!ownsByUid && !ownsByDni) {
+    throw new functions.https.HttpsError("permission-denied", "Este pedido no le pertenece.");
+  }
+
+  // Estado: debe estar finalizado/entregado/completado.
+  const estado = (orderData.estadoGeneral || orderData.estado || "")
+    .toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (!["finalizado", "entregado", "completado"].includes(estado)) {
+    throw new functions.https.HttpsError("failed-precondition", "El pedido aún no está finalizado.");
+  }
 
   try {
     return await db.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) {
-        throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
-      }
-      const userData = userDoc.data();
+      const userData = userDoc.data() || {};
 
-      // NOTA: Los pedidos ahora están en el Firebase del ERP, por lo que no podemos
-      // verificarlos directamente desde la base de datos web sin inicializar el SDK del ERP aquí.
-      // Se omite la verificación de estado por ahora, confiando en la UI, pero 
-      // manteniendo la regla de que el pedidoId no puede ser reclamado dos veces.
-      /*
-      const orderDoc = await transaction.get(orderRef);
-      if (!orderDoc.exists) {
-        throw new functions.https.HttpsError("not-found", "Pedido no encontrado.");
-      }
-
-      const orderData = orderDoc.data();
-
-      // Check if order belongs to user (using userId or DNI)
-      if (orderData.userId !== uid && orderData.dni !== userData.dni) {
-        throw new functions.https.HttpsError("permission-denied", "Este pedido no le pertenece.");
-      }
-
-      // Check if order is completed
-      const estado = (orderData.estadoGeneral || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      if (!["finalizado", "entregado", "completado"].includes(estado)) {
-         throw new functions.https.HttpsError("failed-precondition", "El pedido no está finalizado.");
-      }
-      */
 
       // Check if already claimed
       const reclamadas = userData.monedasReclamadas || [];
@@ -262,6 +357,7 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
       return { success: true, nuevasMonedas: currentMonedas + amount, monedasActivas };
     });
   } catch (error) {
+    if (error instanceof functions.https.HttpsError) throw error;
     console.error("secureClaimMonedas error:", error);
     throw new functions.https.HttpsError("internal", error.message || "Error al procesar el reclamo.");
   }
@@ -534,14 +630,30 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
  * Callable Function: Procesar pago con Culqi
  */
 exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
-  const { amount, currency, email, tokenId, description, metadata } = data;
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado para pagar.");
+  }
+
+  const { amount, currency, email, tokenId, description, metadata } = data || {};
 
   if (!amount || !email || !tokenId) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan datos requeridos para el pago.");
   }
 
-  // La llave privada debe venir de variables de entorno
-  const secretKey = process.env.CULQI_SECRET_KEY || process.env.REACT_APP_CULQI_SECRET_KEY || "sk_test_dummy_key";
+  // El monto llega en céntimos (integer). Validación básica server-side (H-11).
+  // TODO (H-11 / Fase 3): recalcular el monto desde el pedido/carrito real en backend,
+  // sin confiar en el valor enviado por el cliente.
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new functions.https.HttpsError("invalid-argument", "Monto inválido.");
+  }
+
+  // La llave privada de Culqi DEBE venir de un secret de Functions. Sin fallback dummy
+  // y sin prefijo REACT_APP_ (que se expondría en el bundle del cliente).
+  const secretKey = process.env.CULQI_SECRET_KEY;
+  if (!secretKey) {
+    console.error("processCulqiPayment: CULQI_SECRET_KEY no configurada.");
+    throw new functions.https.HttpsError("failed-precondition", "Pago no disponible temporalmente.");
+  }
 
   try {
     const response = await fetch("https://api.culqi.com/v2/charges", {
@@ -576,6 +688,42 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
   } catch (err) {
     console.error("Excepción en processCulqiPayment:", err);
     throw new functions.https.HttpsError("internal", err.message || "Excepción interna al procesar el pago.");
+  }
+});
+
+/**
+ * Callable (Admin): asigna o revoca el rol admin de un usuario vía custom claims (H-01/H-09).
+ * Solo un admin (claim o, como puente de bootstrap, doc adminUsers) puede ejecutarla.
+ * El bootstrap inicial de los primeros superadmins se hace con scripts/set-admin-claims.js
+ * (cuenta de servicio), porque al inicio nadie tiene aún el claim.
+ */
+exports.setAdminClaim = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
+  }
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede asignar roles.");
+  }
+
+  let { targetUid, targetEmail, makeAdmin = true } = data || {};
+  if (!targetUid && !targetEmail) {
+    throw new functions.https.HttpsError("invalid-argument", "Se requiere targetUid o targetEmail.");
+  }
+
+  try {
+    if (!targetUid) {
+      const u = await auth.getUserByEmail(String(targetEmail).trim().toLowerCase());
+      targetUid = u.uid;
+    }
+    await auth.setCustomUserClaims(
+      targetUid,
+      makeAdmin === true ? { admin: true, role: "superadmin" } : { admin: false }
+    );
+    return { success: true, uid: targetUid, admin: makeAdmin === true };
+  } catch (err) {
+    if (err instanceof functions.https.HttpsError) throw err;
+    console.error("setAdminClaim error:", err);
+    throw new functions.https.HttpsError("internal", err.message || "No se pudo asignar el claim.");
   }
 });
 

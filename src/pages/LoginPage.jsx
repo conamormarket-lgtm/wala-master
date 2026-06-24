@@ -35,13 +35,6 @@ const LoginPage = () => {
     setError(null);
     setLoading(true);
 
-    if (email === 'AdminWalaPro' && password === 'LaClaveDeWala2020') {
-      localStorage.setItem('adminWalaPro', 'true');
-      // Forzar recarga completa para que el AuthContext lea el localStorage y actualice isAdmin
-      window.location.href = '/admin';
-      return;
-    }
-
     const { error: err, errorCode } = await signInWithEmail(email, password);
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
@@ -114,7 +107,7 @@ const LoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                placeholder="tu@email.com o Usuario Admin"
+                placeholder="tu@email.com"
               />
             </div>
             

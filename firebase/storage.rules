@@ -6,9 +6,13 @@ service firebase.storage {
       return request.auth != null;
     }
     
+    // Admin = custom claim `admin: true` (H-09) o, como puente, doc adminUsers/{uid}.
     function isAdmin() {
-      return isAuthenticated() && 
-             firestore.get(/databases/(default)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        (firestore.exists(/databases/(default)/documents/adminUsers/$(request.auth.uid)) &&
+         firestore.get(/databases/(default)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin')
+      );
     }
     
     // Product images - públicos para lectura, solo admin puede escribir

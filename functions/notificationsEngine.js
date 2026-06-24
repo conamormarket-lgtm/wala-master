@@ -6,6 +6,29 @@ const db = admin.firestore();
 const messaging = admin.messaging();
 const PORTAL_USERS_COLLECTION = "portal_clientes_users";
 
+// Limpia de fcmTokens los tokens que FCM reporta como inválidos/no registrados (H-10).
+const INVALID_TOKEN_CODES = [
+  "messaging/registration-token-not-registered",
+  "messaging/invalid-registration-token",
+  "messaging/invalid-argument",
+];
+async function removeInvalidTokens(userRef, tokens, response) {
+  try {
+    if (!response || !Array.isArray(response.responses)) return;
+    const invalid = [];
+    response.responses.forEach((r, i) => {
+      if (!r.success && r.error && INVALID_TOKEN_CODES.includes(r.error.code)) {
+        invalid.push(tokens[i]);
+      }
+    });
+    if (invalid.length > 0) {
+      await userRef.update({ fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalid) });
+    }
+  } catch (e) {
+    console.warn("removeInvalidTokens error:", e.message);
+  }
+}
+
 // Helper para validar reglas anti-spam globales (máximo 2 por día, horas 9:00 a 21:00)
 const canSendPush = (userData, type, currentHourPeru) => {
   if (currentHourPeru < 9 || currentHourPeru >= 21) return false;
@@ -26,14 +49,18 @@ const canSendPush = (userData, type, currentHourPeru) => {
 const sendPush = async (uid, tokens, title, body, type, userRef, currentLog) => {
   if (!tokens || tokens.length === 0) return false;
 
-  const payload = {
+  const message = {
+    tokens,
     notification: { title, body },
     data: { type }
   };
 
   try {
-    const response = await messaging.sendToDevice(tokens, payload);
-    
+    const response = await messaging.sendEachForMulticast(message);
+
+    // Limpiar tokens inválidos del usuario (H-10).
+    await removeInvalidTokens(userRef, tokens, response);
+
     if (response.successCount > 0) {
       // Registrar in-app notification
       await db.collection(`users/${uid}/notifications`).add({
@@ -155,9 +182,17 @@ exports.sendManualPromoNotification = functions.https.onCall(async (data, contex
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
   }
-  
-  // Opcional: Validar si context.auth.uid es admin consultando portal_clientes_users
-  
+
+  // Solo admins pueden enviar push masivos (H-04). Admin = custom claim o, como
+  // puente de bootstrap, doc adminUsers/{uid} con role 'admin'.
+  const isCallerAdmin = context.auth.token?.admin === true
+    || (await db.collection('adminUsers').doc(context.auth.uid).get()
+          .then((s) => s.exists && s.data().role === 'admin')
+          .catch(() => false));
+  if (!isCallerAdmin) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede enviar notificaciones.");
+  }
+
   const { title, body, segment } = data;
   if (!title || !body) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan título o cuerpo de mensaje.");
@@ -187,13 +222,15 @@ exports.sendManualPromoNotification = functions.https.onCall(async (data, contex
       }
 
       // Enviar
-      const payload = {
+      const message = {
+        tokens: fcmTokens,
         notification: { title, body },
         data: { type: 'manual_promo' }
       };
 
       try {
-        const response = await messaging.sendToDevice(fcmTokens, payload);
+        const response = await messaging.sendEachForMulticast(message);
+        await removeInvalidTokens(doc.ref, fcmTokens, response);
         if (response.successCount > 0) {
           count++;
           // Guardar in-app notif
