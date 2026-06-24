@@ -10,7 +10,7 @@ import { getDocument } from '../../../services/firebase/firestore';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
-import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
 import styles from './Header.module.css';
@@ -399,6 +399,10 @@ const Header = () => {
               </>
             )}
           </div>
+
+          <Link to="/buscar" className={styles.iconButton} aria-label="Buscar">
+            <Search strokeWidth={1.5} className={styles.icon} />
+          </Link>
 
           <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`}>
             <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'favoritos')} aria-label="Favoritos">

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus } from 'lucide-react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import ProductGrid from './components/ProductGrid';
 import VisualCategoryNav from './components/VisualCategoryNav/VisualCategoryNav';
@@ -94,6 +94,7 @@ const SectionBackground = ({ config }) => {
 const TiendaPage = ({ isLandingPage = false }) => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const categoryId = searchParams.get('categoria');
@@ -211,7 +212,13 @@ const TiendaPage = ({ isLandingPage = false }) => {
     initialData: (!searchTerm && !categoryId && sortBy === 'newest') ? getCachedProducts() : undefined,
   });
 
-  const handleSearch = (term) => setSearchTerm(term);
+  // Fase 1: la búsqueda de la tienda lleva a la página facetada /buscar (searchCatalog).
+  // Si el término viene vacío, mantiene el filtrado en página (comportamiento previo).
+  const handleSearch = (term) => {
+    const q = (term || '').trim();
+    if (q) navigate(`/buscar?q=${encodeURIComponent(q)}`);
+    else setSearchTerm('');
+  };
 
   // ── Valores con fallback inmediato — NUNCA esperar a que carguen ──
   const title = storeMessages?.title ?? DEFAULT_STORE_TITLE;
