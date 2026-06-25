@@ -18,12 +18,30 @@
 > de los flujos núcleo (carrito → orden multi-vendedor → subórdenes → pago simulado →
 > payouts; cofre diario; segmentación RFM).
 >
-> ⛔ **NADA está desplegado todavía.** El usuario **aún no tiene acceso a Firebase**
-> (`pruebas-cd728`); el cobro real, la búsqueda externa, el push y los schedulers requieren
-> servicios externos no configurados. Ver §5 (Despliegue) y §9 (Qué falta).
+> ⚠️ **Actualizado 2026-06-25 (ver incidente abajo):** el **frontend (Vite) YA está en
+> producción en Vercel**; el **backend** todavía no está bien desplegado en el proyecto
+> correcto (`sistema-gestion-3b225`). Históricamente este banner decía "nada desplegado"
+> porque el usuario aún no tenía acceso a Firebase; el cobro real, la búsqueda externa, el
+> push y los schedulers siguen requiriendo servicios externos no configurados. Ver §5
+> (Despliegue) y §9 (Qué falta).
 >
 > **Super usuario local (solo emulador):** `admin@wala.test` / `wala1234` (admin) ·
 > `cliente@wala.test` / `wala1234` (cliente).
+
+> ## 🚨 Incidente 2026-06-25 — Deploy al proyecto equivocado
+>
+> - **Frontend en producción:** el frontend nuevo (migrado a Vite) **ya está desplegado en
+>   producción en Vercel**. Esto actualiza el estado previo de "nada desplegado": el web ya
+>   salió a producción.
+> - **Error de topología en el backend:** hubo un **deploy al proyecto Firebase equivocado
+>   (`pruebas-cd728`)**. El proyecto **correcto y ÚNICO de producción es
+>   `sistema-gestion-3b225`** (portal + ERP comparten ese proyecto y su base Firestore).
+>   `pruebas-cd728` **NO debe usarse**.
+> - **Pendiente:** **re-desplegar el backend** (reglas Firestore, Cloud Functions, índices) a
+>   `sistema-gestion-3b225`, asegurando que las reglas cubren tanto las colecciones del portal
+>   como las del ERP (`pedidos`, `pedidos_web`) y las de analytics (`analytics_*`), que viven
+>   todas en ese mismo proyecto. Ver [DESPLIEGUE.md](./DESPLIEGUE.md) (topología + deploy
+>   granular desde Google Cloud Shell) y [MODELO-DATOS.md](./MODELO-DATOS.md).
 
 ---
 
@@ -31,7 +49,8 @@
 
 Wala (marca legal **CATAS GROUP S.A.C. / "CON AMOR"**, también referida como "Regala Con
 Amor") es un **marketplace peruano** construido sobre **React + Vite + Firebase +
-Capacitor**, con el proyecto Firebase de producción `pruebas-cd728`. Hoy es, en la práctica,
+Capacitor**, con el proyecto Firebase de producción `sistema-gestion-3b225` (portal + ERP
+comparten ese proyecto y base Firestore; `pruebas-cd728` NO se usa). Hoy es, en la práctica,
 una **tienda mono-marca con personalización print-on-demand 2D** más un sistema de
 **fidelización diaria** ya en producción, y el objetivo de la iniciativa es convertirla en
 un **marketplace multi-vendedor / multi-nicho estilo MercadoLibre + Temu con fidelización
@@ -238,8 +257,12 @@ fidelización) se resume en §2 (Paso 5) y §3.1.
 
 ## 5. Estado de despliegue
 
-> ⛔ **Nada está desplegado todavía.** El usuario **aún no tiene acceso a Firebase**
-> (`pruebas-cd728`); mover a Vercel/Firebase es un paso **posterior**.
+> ⚠️ **Actualización 2026-06-25 (ver incidente arriba):** el **frontend (Vite) YA está en
+> producción en Vercel**. El **backend** (reglas, functions, índices) **aún NO está bien
+> desplegado**: hubo un deploy al proyecto equivocado (`pruebas-cd728`) y queda **pendiente
+> re-desplegarlo al proyecto correcto y único de producción `sistema-gestion-3b225`** (portal
+> + ERP comparten ese proyecto y base Firestore). El texto de emulador que sigue describe el
+> estado de verificación previo del backend; tenlo en cuenta junto con esta actualización.
 
 Todo el trabajo de las fases **0, 1, 2, 2b, 3 (core + pago), 4 (base) y 5 (base)** está
 **verificado únicamente en LOCAL**, sobre el **emulador de Firebase** (proyecto demo
@@ -264,7 +287,7 @@ Consecuencias mientras no haya acceso a Firebase:
   la economía real sigue gobernada por lo que esté desplegado hoy.
 - Los scripts que requieren credenciales (`scripts/set-admin-claims.js`,
   `scripts/backfill-vendor-niche.js`) **no se han ejecutado**: necesitan
-  `GOOGLE_APPLICATION_CREDENTIALS` apuntando a la cuenta de servicio de `pruebas-cd728`.
+  `GOOGLE_APPLICATION_CREDENTIALS` apuntando a la cuenta de servicio de `sistema-gestion-3b225`.
 - El backfill multi-vendor/nicho **no se ha aplicado**; en runtime los productos sin
   `vendorId`/`nicheId` se leen con los defaults de `src/constants/marketplace.js`.
 
@@ -303,7 +326,7 @@ configurados:
 
 | Pendiente | Fase | Por qué falta |
 |-----------|------|---------------|
-| **Despliegue a producción** (reglas, functions, hosting) | Global | El usuario **aún no tiene acceso a Firebase** (`pruebas-cd728`). Todo está verificado solo en emulador. |
+| **Re-desplegar backend a producción** (reglas, functions, índices) al proyecto correcto `sistema-gestion-3b225` | Global | Hubo un deploy al proyecto equivocado (`pruebas-cd728`); el backend debe re-desplegarse a `sistema-gestion-3b225` (portal + ERP comparten proyecto y base Firestore). El frontend ya está en Vercel. Ver incidente 2026-06-25. |
 | **Cobro REAL con Mercado Pago Marketplace** | 3 | Falta configurar `MERCADOPAGO_ACCESS_TOKEN`, `MP_WEBHOOK_URL`, `MP_BACK_URL_BASE`. Hoy el split funciona en modo **simulado**. |
 | **Integrar el checkout REAL (`CheckoutPage`)** al flujo de subórdenes/split | 3 | El flujo verificado usa rutas demo (`/checkout-demo`, `/pago-demo/:orderId`); falta cablear el checkout de producción. |
 | **Búsqueda con índice externo (Algolia / Typesense)** on-write | 1 / 3 | Requiere servicio externo y credenciales; hoy la búsqueda es la capa interna. |
@@ -312,7 +335,7 @@ configurados:
 | **Campañas programadas (Cloud Scheduler)** | 5 | Requiere infraestructura GCP desplegada. |
 | **Recomendación por IA / countdown de ofertas flash en home** | 5 | Funcionalidad de producto pendiente sobre la base ya verificada. |
 | **Integrar `productionArt` en `EditorPage`, PDF de producción, fix `finalCustomizedImage`** | 4 | Requiere trabajo en el editor/navegador; hoy existe la **base** (`blueprints` + utilidades). |
-| **Bootstrap de admin y backfill multi-vendor/nicho en prod** | 0 / 1 | `scripts/set-admin-claims.js` y `scripts/backfill-vendor-niche.js` necesitan `GOOGLE_APPLICATION_CREDENTIALS` de `pruebas-cd728`. |
+| **Bootstrap de admin y backfill multi-vendor/nicho en prod** | 0 / 1 | `scripts/set-admin-claims.js` y `scripts/backfill-vendor-niche.js` necesitan `GOOGLE_APPLICATION_CREDENTIALS` de `sistema-gestion-3b225`. |
 
 Riesgos residuales de seguridad siguen en §6.
 
@@ -341,7 +364,7 @@ de Firebase del Portal (`REACT_APP_FIREBASE_*`), del ERP (`REACT_APP_ERP_FIREBAS
 pagos/Cloudinary. Sin un `.env` válido la app arranca pero no conecta a backend.
 
 Scripts con credenciales (requieren `GOOGLE_APPLICATION_CREDENTIALS` → service account de
-`pruebas-cd728`; **no ejecutados aún**):
+`sistema-gestion-3b225`; **no ejecutados aún**):
 
 ```bash
 node scripts/set-admin-claims.js yorh001@gmail.com heyeru24@gmail.com   # bootstrap admin
@@ -356,7 +379,7 @@ node scripts/backfill-vendor-niche.js                                  # aplica 
 El **núcleo de las fases 0–5 ya está construido y verificado en el emulador**; el siguiente
 gran salto es **salir del emulador a producción** y conectar los servicios externos (ver §7).
 
-1. **Obtener acceso a Firebase** (`pruebas-cd728`) — desbloquea todo lo de abajo.
+1. **Re-desplegar el backend al proyecto correcto** `sistema-gestion-3b225` (NO `pruebas-cd728`) — el deploy se hace desde Google Cloud Shell (ya autenticado). Ver incidente 2026-06-25 y [DESPLIEGUE.md](./DESPLIEGUE.md).
 2. **Respaldar producción** con `ops/backup/` y fijar el baseline
    ([BASELINE-PRODUCCION.md](./BASELINE-PRODUCCION.md)).
 3. **Desplegar a staging y luego a prod** (reglas → functions → hosting, una pieza a la vez,

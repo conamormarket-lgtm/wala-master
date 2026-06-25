@@ -406,7 +406,7 @@ const UsuariosView = () => {
                                                 {(pkg.products || []).map((prod, j) => (
                                                   <div key={j} className={styles.packageProductThumb}>
                                                     <img 
-                                                      src={prod.image || 'https://via.placeholder.com/50'} 
+                                                      src={prod.image || '/images/placeholder.svg'}
                                                       alt={prod.name} 
                                                     />
                                                     <span>{prod.name}</span>

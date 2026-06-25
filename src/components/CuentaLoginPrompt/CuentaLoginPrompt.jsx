@@ -52,7 +52,7 @@ const CuentaLoginPrompt = () => {
               {(accountPopup.brands || []).map(brand => (
                 <a key={brand.id} href={brand.url || '#'} title={brand.name} style={{ display: 'block', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
                   <img 
-                    src={brand.imageUrl || 'https://via.placeholder.com/150'} 
+                    src={brand.imageUrl || '/images/placeholder.svg'}
                     alt={brand.name} 
                     style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid transparent', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
                   />

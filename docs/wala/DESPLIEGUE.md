@@ -1,8 +1,14 @@
 # RUNBOOK DE DESPLIEGUE A LA NUBE — WALA / Portal de Clientes
 
-> Objetivo: aplicar cambios sobre el sistema **ya desplegado** (Firebase PROD `pruebas-cd728` + Vercel `portal-clientes-regala-con-amor` + App Android Capacitor) de forma segura, con respaldo previo, prueba en staging y rollback documentado.
+> Objetivo: aplicar cambios sobre el sistema **ya desplegado** (Firebase PROD `sistema-gestion-3b225` + Vercel `portal-clientes-regala-con-amor` + App Android Capacitor) de forma segura, con respaldo previo, prueba en staging y rollback documentado.
 >
-> **Plataforma del operador:** Windows 11, PowerShell 7 (pwsh). Todos los comandos de este runbook se ejecutan en pwsh salvo que se indique lo contrario.
+> **Plataforma del operador:** Windows 11, PowerShell 7 (pwsh) para el trabajo local (build, git, Vercel). **El deploy a Firebase se ejecuta desde Google Cloud Shell** (ya autenticado contra `sistema-gestion-3b225`, sin `firebase login`). Donde un comando deba correr en Cloud Shell se indica explícitamente; el resto es pwsh.
+>
+> ## ⚠️ TOPOLOGÍA DE PROYECTOS (LEER PRIMERO)
+>
+> - **`sistema-gestion-3b225` es el ÚNICO proyecto de producción.** Portal de clientes **y** ERP comparten **el mismo proyecto Firebase y la misma base Firestore**. NO hay un proyecto Firebase separado para el ERP: las colecciones del portal (`productos_wala`, `portal_clientes_users`, economía/gamificación…) y las del ERP (`pedidos`, `pedidos_web`, `analytics_*`) conviven en `sistema-gestion-3b225` y deben estar **todas** en las mismas reglas Firestore.
+> - **`pruebas-cd728` NO debe usarse.** Pese a documentación previa que lo trataba como "PROD", es un proyecto equivocado. No despliegues nada ahí (ver incidente 2026-06-25 en [ESTADO-DEL-PROYECTO.md](./ESTADO-DEL-PROYECTO.md)).
+> - **`.firebaserc` default ahora apunta a `sistema-gestion-3b225`.** Todos los comandos `firebase deploy` de este runbook usan `--project sistema-gestion-3b225` para ser explícitos, aunque el default ya sea el correcto.
 >
 > **REGLA DE ORO:** Nunca despliegues a producción sin (1) respaldo reciente y (2) haberlo probado en STAGING. Ver sección 2.
 
@@ -14,11 +20,13 @@
 |---|---|
 | Repo raíz local | `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master` |
 | Remoto git | `github.com/conamormarket-lgtm/wala-master` (ramas `master`, `dev`) |
-| Firebase PROD (Portal) | project id **`pruebas-cd728`** (default en `.firebaserc`). Es PRODUCCIÓN real pese al nombre. |
-| Firebase ERP | proyecto SEPARADO, vía env `REACT_APP_ERP_FIREBASE_*` (id `<ERP_PROJECT_ID>`, lo rellena el usuario). Colecciones `pedidos` / `pedidos_web`. |
+| Firebase PROD (Portal + ERP) | project id **`sistema-gestion-3b225`** (default en `.firebaserc`). ÚNICO proyecto de producción: portal y ERP comparten proyecto y base Firestore. |
+| Colecciones ERP | `pedidos` / `pedidos_web` viven en el MISMO proyecto `sistema-gestion-3b225` (no en un proyecto separado). Sus reglas e índices se gestionan junto con las del portal. |
+| Proyecto a NO usar | **`pruebas-cd728`** — NO es producción; no desplegar ahí (ver incidente 2026-06-25). |
+| Deploy de Firebase | se ejecuta desde **Google Cloud Shell** (ya autenticado contra `sistema-gestion-3b225`; no requiere `firebase login`). |
 | Vercel | proyecto `portal-clientes-regala-con-amor` (projectId `prj_uptUytGsDu5LfHikK8zVlWfA8VjI`, orgId `team_yhD2v1G3hjm0PjX8TvCdu4KV`). `.vercel/project.json` ya existe. |
 | Capacitor | appId `com.wala.tienda`, appName `WALA`, webDir `build` |
-| Storage bucket | `pruebas-cd728.appspot.com` (verificar; puede ser `pruebas-cd728.firebasestorage.app`) |
+| Storage bucket | `sistema-gestion-3b225.appspot.com` (verificar; puede ser `sistema-gestion-3b225.firebasestorage.app`) |
 | Cloud Functions runtime | **Node 22** (`functions/package.json` → `engines.node: "22"`) |
 
 **`firebase.json`** define: `firestore.rules=firebase/firestore.rules`, `storage.rules=firebase/storage.rules`, `functions.source=functions`, `hosting.public=build` con rewrite SPA a `/index.html`.
@@ -58,11 +66,19 @@ node -v   # debe imprimir v22.x
 
 ### 1.2 Firebase CLI
 
+> **El deploy a Firebase se hace desde Google Cloud Shell**, que ya trae `firebase-tools` instalado y la sesión autenticada contra `sistema-gestion-3b225` (no necesitas `firebase login`). Instalar la CLI local solo es útil para inspección/emulador en Windows.
+
+```bash
+# En Google Cloud Shell (ya autenticado):
+firebase --version          # >= 13.x  (preinstalado)
+firebase projects:list      # confirma que ves sistema-gestion-3b225
+firebase use sistema-gestion-3b225
+```
+
 ```powershell
+# (Opcional) CLI local en Windows para inspección/emulador:
 npm install -g firebase-tools
-firebase --version          # >= 13.x
-firebase login              # abre el navegador; usa la cuenta con acceso a pruebas-cd728
-firebase projects:list      # confirma que ves pruebas-cd728
+firebase --version
 ```
 
 ### 1.3 Google Cloud SDK (gcloud + gsutil) — para backups de Firestore/Storage
@@ -72,7 +88,7 @@ firebase projects:list      # confirma que ves pruebas-cd728
 # Reabrir pwsh tras instalar para refrescar PATH.
 gcloud --version
 gcloud auth login
-gcloud config set project pruebas-cd728
+gcloud config set project sistema-gestion-3b225
 gsutil version              # gsutil viene con el SDK
 ```
 
@@ -93,7 +109,7 @@ vercel link                # ya existe .vercel/project.json; confirma el víncul
 
 ```powershell
 Select-String -Path ".env" -Pattern "REACT_APP_FIREBASE_PROJECT_ID"
-# Debe valer pruebas-cd728 para PROD (o el id de staging cuando trabajes en staging).
+# Debe valer sistema-gestion-3b225 para PROD (o el id de staging cuando trabajes en staging).
 ```
 
 ---
@@ -113,7 +129,7 @@ Select-String -Path ".env" -Pattern "REACT_APP_FIREBASE_PROJECT_ID"
 Antes de CUALQUIER deploy a PROD ejecuta el script de respaldo:
 
 ```powershell
-.\ops\backup\backup-all.ps1 -Project pruebas-cd728
+.\ops\backup\backup-all.ps1 -Project sistema-gestion-3b225
 ```
 
 Qué debe respaldar (referencia; el script de backup vive aparte):
@@ -121,25 +137,25 @@ Qué debe respaldar (referencia; el script de backup vive aparte):
 - **Firestore** → export a un bucket GCS:
   ```powershell
   $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
-  gcloud firestore export gs://pruebas-cd728-backups/firestore/$stamp --project pruebas-cd728
+  gcloud firestore export gs://sistema-gestion-3b225-backups/firestore/$stamp --project sistema-gestion-3b225
   ```
 - **Storage** → copia del bucket:
   ```powershell
-  gsutil -m cp -r gs://pruebas-cd728.appspot.com gs://pruebas-cd728-backups/storage/$stamp
+  gsutil -m cp -r gs://sistema-gestion-3b225.appspot.com gs://sistema-gestion-3b225-backups/storage/$stamp
   ```
 - **Snapshot de reglas e índices actuales** (para rollback de reglas):
   ```powershell
   New-Item -ItemType Directory -Force ".\ops\backup\snapshots\$stamp" | Out-Null
   Copy-Item ".\firebase\firestore.rules" ".\ops\backup\snapshots\$stamp\"
   Copy-Item ".\firebase\storage.rules"   ".\ops\backup\snapshots\$stamp\"
-  firebase firestore:indexes --project pruebas-cd728 > ".\ops\backup\snapshots\$stamp\firestore.indexes.json"
+  firebase firestore:indexes --project sistema-gestion-3b225 > ".\ops\backup\snapshots\$stamp\firestore.indexes.json"
   ```
 - **Tag git del commit desplegado** (clave para rollback de functions/hosting):
   ```powershell
   git tag "deploy-prod-$stamp"; git push origin "deploy-prod-$stamp"
   ```
 
-> Crea el bucket de backups una vez: `gsutil mb -p pruebas-cd728 -l us-central1 gs://pruebas-cd728-backups` (ajusta región a la del proyecto).
+> Crea el bucket de backups una vez: `gsutil mb -p sistema-gestion-3b225 -l us-central1 gs://sistema-gestion-3b225-backups` (ajusta región a la del proyecto).
 
 ---
 
@@ -156,7 +172,7 @@ firebase projects:create wala-staging --display-name "WALA Staging"
 # 2) Añadir alias en .firebaserc sin perder el default de PROD:
 firebase use --add
 #   -> selecciona wala-staging y dale el alias "staging"
-#   -> el alias "default" debe seguir apuntando a pruebas-cd728
+#   -> el alias "default" debe seguir apuntando a sistema-gestion-3b225
 
 firebase use staging        # cambia el proyecto activo a staging
 firebase use default        # vuelve a PROD cuando termines
@@ -167,7 +183,7 @@ Tras esto `.firebaserc` debe verse así (no borres `default`):
 ```json
 {
   "projects": {
-    "default": "pruebas-cd728",
+    "default": "sistema-gestion-3b225",
     "staging": "wala-staging"
   }
 }
@@ -198,7 +214,7 @@ Importa el último export de PROD a staging para probar con datos realistas:
 
 ```powershell
 # Copia el export de PROD al bucket de staging y luego impórtalo:
-gsutil -m cp -r gs://pruebas-cd728-backups/firestore/<stamp> gs://wala-staging.appspot.com/seed/<stamp>
+gsutil -m cp -r gs://sistema-gestion-3b225-backups/firestore/<stamp> gs://wala-staging.appspot.com/seed/<stamp>
 gcloud firestore import gs://wala-staging.appspot.com/seed/<stamp> --project wala-staging
 ```
 
@@ -224,8 +240,8 @@ vercel env add REACT_APP_FIREBASE_PROJECT_ID preview      # valor: wala-staging
 vercel env add REACT_APP_FIREBASE_API_KEY preview
 # ...resto de REACT_APP_FIREBASE_* y REACT_APP_ERP_FIREBASE_* para preview
 
-# Production (apunta a pruebas-cd728):
-vercel env add REACT_APP_FIREBASE_PROJECT_ID production    # valor: pruebas-cd728
+# Production (apunta a sistema-gestion-3b225):
+vercel env add REACT_APP_FIREBASE_PROJECT_ID production    # valor: sistema-gestion-3b225
 # ...resto para production
 
 vercel env ls                                              # revisa todo
@@ -237,7 +253,24 @@ vercel env ls                                              # revisa todo
 
 ## 5. Deploy por artefacto (a STAGING primero, luego PROD)
 
-> En todos los comandos, `--project staging` despliega a staging y `--project pruebas-cd728` (o `--project default`) a PROD. **Siempre prueba en staging antes.**
+> En todos los comandos, `--project staging` despliega a staging y `--project sistema-gestion-3b225` (o `--project default`) a PROD. **Siempre prueba en staging antes.**
+
+> ### Deploy granular a PROD (referencia rápida — desde Google Cloud Shell)
+>
+> Todos estos comandos van **a `sistema-gestion-3b225`** (portal + ERP comparten proyecto y base Firestore) y se ejecutan **desde Google Cloud Shell** (ya autenticado, sin `firebase login`). Se usa `--project sistema-gestion-3b225` de forma explícita aunque sea el default:
+>
+> ```bash
+> # Reglas Firestore (vía script del repo; lee REACT_APP_FIREBASE_PROJECT_ID de .env):
+> npm run deploy:firestore-rules
+>
+> # Funciones (todas):
+> firebase deploy --only functions --project sistema-gestion-3b225
+>
+> # Índices Firestore (requiere la clave firestore.indexes en firebase.json, ver 5.b):
+> firebase deploy --only firestore:indexes --project sistema-gestion-3b225
+> ```
+>
+> ⚠️ Verifica SIEMPRE que el proyecto activo es `sistema-gestion-3b225` y **nunca** `pruebas-cd728` antes de cada `firebase deploy` (ver incidente 2026-06-25).
 
 ### (a) Reglas Firestore + Storage
 
@@ -246,7 +279,7 @@ vercel env ls                                              # revisa todo
 firebase deploy --only firestore:rules,storage --project staging
 
 # PROD (tras validar en staging):
-firebase deploy --only firestore:rules,storage --project pruebas-cd728
+firebase deploy --only firestore:rules,storage --project sistema-gestion-3b225
 ```
 
 Alternativa con los scripts del repo (solo PROD, leen `REACT_APP_FIREBASE_PROJECT_ID` de `.env`):
@@ -274,13 +307,13 @@ Genera el archivo base a partir del estado actual del proyecto y luego despliega
 
 ```powershell
 # Exporta los índices existentes como punto de partida:
-firebase firestore:indexes --project pruebas-cd728 > firebase\firestore.indexes.json
+firebase firestore:indexes --project sistema-gestion-3b225 > firebase\firestore.indexes.json
 
 # STAGING:
 firebase deploy --only firestore:indexes --project staging
 
 # PROD:
-firebase deploy --only firestore:indexes --project pruebas-cd728
+firebase deploy --only firestore:indexes --project sistema-gestion-3b225
 ```
 
 > La creación de índices en Firestore es asíncrona: tras el deploy pueden tardar minutos en quedar `Enabled`. Verifica en la consola → Firestore → Índices.
@@ -295,7 +328,7 @@ npm --prefix functions ci              # instala deps exactas de functions/packa
 firebase deploy --only functions --project staging
 
 # PROD:
-firebase deploy --only functions --project pruebas-cd728
+firebase deploy --only functions --project sistema-gestion-3b225
 # (equivale a: npm run deploy:functions, que despliega al proyecto activo/ default)
 ```
 
@@ -329,7 +362,7 @@ npm run build                                   # genera ./build con cross-env C
 firebase deploy --only hosting --project staging
 
 # PROD:
-firebase deploy --only hosting --project pruebas-cd728
+firebase deploy --only hosting --project sistema-gestion-3b225
 ```
 > El build de Firebase usa el `.env` local en tiempo de `npm run build`; asegúrate de que `REACT_APP_FIREBASE_PROJECT_ID` apunte al proyecto correcto ANTES de construir.
 
@@ -368,10 +401,10 @@ nvm use 22
 npm --prefix functions ci
 
 # Una función concreta a PROD:
-firebase deploy --only functions:secureClaimMonedas --project pruebas-cd728
+firebase deploy --only functions:secureClaimMonedas --project sistema-gestion-3b225
 
 # Varias a la vez:
-firebase deploy --only "functions:secureClaimMonedas,functions:processCulqiPayment" --project pruebas-cd728
+firebase deploy --only "functions:secureClaimMonedas,functions:processCulqiPayment" --project sistema-gestion-3b225
 ```
 
 > Útil cuando arreglas una función con deuda de seguridad sin tocar las demás. Para schedules (p.ej. `notificationEngine`) el redeploy actualiza también el cron declarado en el código.
@@ -395,8 +428,8 @@ Monitoreo:
 
 ```powershell
 # Logs de functions en vivo:
-firebase functions:log --project pruebas-cd728
-firebase functions:log --only secureClaimMonedas --project pruebas-cd728
+firebase functions:log --project sistema-gestion-3b225
+firebase functions:log --only secureClaimMonedas --project sistema-gestion-3b225
 ```
 
 También: Consola Firebase (Functions → métricas/errores, Firestore → uso), y Vercel Dashboard (Deployments → Logs / Runtime Logs).
@@ -407,10 +440,10 @@ También: Consola Firebase (Functions → métricas/errores, Firestore → uso),
 
 ```powershell
 # 1) Logs de las funciones críticas (últimas líneas):
-firebase functions:log --only secureClaimMonedas,processCulqiPayment --project pruebas-cd728
+firebase functions:log --only secureClaimMonedas,processCulqiPayment --project sistema-gestion-3b225
 
 # 2) Estado de índices:
-firebase firestore:indexes --project pruebas-cd728
+firebase firestore:indexes --project sistema-gestion-3b225
 
 # 3) Último deployment de Vercel:
 vercel ls portal-clientes-regala-con-amor
@@ -428,10 +461,10 @@ vercel ls portal-clientes-regala-con-amor
 git checkout deploy-prod-<stamp_anterior>     # o el SHA bueno conocido
 nvm use 22
 npm --prefix functions ci
-firebase deploy --only functions --project pruebas-cd728
+firebase deploy --only functions --project sistema-gestion-3b225
 git checkout master                           # vuelve a tu rama
 ```
-Para una sola función: `firebase deploy --only functions:<nombre> --project pruebas-cd728` desde el commit bueno.
+Para una sola función: `firebase deploy --only functions:<nombre> --project sistema-gestion-3b225` desde el commit bueno.
 
 ### 9.2 Hosting Vercel
 
@@ -448,7 +481,7 @@ vercel promote <DEPLOYMENT_URL_o_ID>           # promueve ese deployment a Produ
 # Opción B: redeploy del build del commit bueno:
 git checkout deploy-prod-<stamp_anterior>
 npm run build
-firebase deploy --only hosting --project pruebas-cd728
+firebase deploy --only hosting --project sistema-gestion-3b225
 git checkout master
 ```
 
@@ -459,7 +492,7 @@ Redeploy del snapshot guardado en el backup:
 ```powershell
 Copy-Item ".\ops\backup\snapshots\<stamp_anterior>\firestore.rules" ".\firebase\firestore.rules" -Force
 Copy-Item ".\ops\backup\snapshots\<stamp_anterior>\storage.rules"   ".\firebase\storage.rules"   -Force
-firebase deploy --only firestore:rules,storage --project pruebas-cd728
+firebase deploy --only firestore:rules,storage --project sistema-gestion-3b225
 ```
 
 ### 9.5 Índices Firestore
@@ -471,8 +504,8 @@ Los índices se **añaden** sin downtime; un índice malo se borra desde la cons
 Solo si un deploy corrompió datos. Restaura el export del backup:
 
 ```powershell
-gcloud firestore import gs://pruebas-cd728-backups/firestore/<stamp_anterior> --project pruebas-cd728
-gsutil -m cp -r gs://pruebas-cd728-backups/storage/<stamp_anterior>/* gs://pruebas-cd728.appspot.com
+gcloud firestore import gs://sistema-gestion-3b225-backups/firestore/<stamp_anterior> --project sistema-gestion-3b225
+gsutil -m cp -r gs://sistema-gestion-3b225-backups/storage/<stamp_anterior>/* gs://sistema-gestion-3b225.appspot.com
 ```
 > CUIDADO: `import` de Firestore es destructivo sobre las colecciones importadas. Confirma el stamp correcto.
 
@@ -484,18 +517,18 @@ gsutil -m cp -r gs://pruebas-cd728-backups/storage/<stamp_anterior>/* gs://prueb
 [ ] nvm use 22  (node -v == v22.x)
 [ ] firebase login OK / vercel login OK / gcloud auth OK
 [ ] git: rama y commit correctos; árbol limpio (git status)
-[ ] RESPALDO ejecutado:  .\ops\backup\backup-all.ps1 -Project pruebas-cd728
+[ ] RESPALDO ejecutado:  .\ops\backup\backup-all.ps1 -Project sistema-gestion-3b225
       [ ] export Firestore  [ ] copia Storage  [ ] snapshot reglas+indices  [ ] tag git deploy-prod-<stamp>
 [ ] Probado en STAGING (firebase --project staging + Vercel preview)  -> smoke tests OK
 [ ] Decisión de hosting canónico respetada (Vercel XOR Firebase)
 [ ] Deploy a PROD del artefacto:
-      [ ] reglas    firebase deploy --only firestore:rules,storage --project pruebas-cd728
-      [ ] indices   firebase deploy --only firestore:indexes --project pruebas-cd728  (requiere clave en firebase.json)
-      [ ] functions nvm use 22; npm --prefix functions ci; firebase deploy --only functions --project pruebas-cd728
+      [ ] reglas    firebase deploy --only firestore:rules,storage --project sistema-gestion-3b225
+      [ ] indices   firebase deploy --only firestore:indexes --project sistema-gestion-3b225  (requiere clave en firebase.json)
+      [ ] functions nvm use 22; npm --prefix functions ci; firebase deploy --only functions --project sistema-gestion-3b225
       [ ] web       npm run deploy:vercel:prod   (o npm run build; firebase deploy --only hosting)
       [ ] android   npm run build; npx cap sync android; gradlew bundleRelease; subir a Play Console
 [ ] Verificación post-deploy: login / productos / checkout / push / claim monedas / reglas
-[ ] Monitoreo: firebase functions:log --project pruebas-cd728 + consolas
+[ ] Monitoreo: firebase functions:log --project sistema-gestion-3b225 + consolas
 [ ] Plan de ROLLBACK a mano (commit bueno + stamp de backup anotados)
 ```
 
@@ -506,10 +539,10 @@ gsutil -m cp -r gs://pruebas-cd728-backups/storage/<stamp_anterior>/* gs://prueb
 En lugar de recordar cada comando, usa `ops/deploy/deploy.ps1` (incluido en este repo):
 
 ```powershell
-.\ops\deploy\deploy.ps1 -Target rules            -Project pruebas-cd728
-.\ops\deploy\deploy.ps1 -Target indexes          -Project pruebas-cd728
-.\ops\deploy\deploy.ps1 -Target functions        -Project pruebas-cd728
-.\ops\deploy\deploy.ps1 -Target hosting-firebase -Project pruebas-cd728
-.\ops\deploy\deploy.ps1 -Target hosting-vercel   -Project pruebas-cd728
-.\ops\deploy\deploy.ps1 -Target all              -Project pruebas-cd728   # pedirá confirmación
+.\ops\deploy\deploy.ps1 -Target rules            -Project sistema-gestion-3b225
+.\ops\deploy\deploy.ps1 -Target indexes          -Project sistema-gestion-3b225
+.\ops\deploy\deploy.ps1 -Target functions        -Project sistema-gestion-3b225
+.\ops\deploy\deploy.ps1 -Target hosting-firebase -Project sistema-gestion-3b225
+.\ops\deploy\deploy.ps1 -Target hosting-vercel   -Project sistema-gestion-3b225
+.\ops\deploy\deploy.ps1 -Target all              -Project sistema-gestion-3b225   # pedirá confirmación
 ```

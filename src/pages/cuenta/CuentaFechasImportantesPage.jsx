@@ -267,7 +267,7 @@ const CuentaFechasImportantesPage = () => {
                             {(pkg.products || []).map((prod, i) => (
                               <div key={i} className={styles.suggestedProductItem}>
                                 <img 
-                                  src={prod.image || 'https://via.placeholder.com/60'} 
+                                  src={prod.image || '/images/placeholder.svg'}
                                   alt={prod.name} 
                                 />
                                 <div className={styles.suggestedProductInfo}>

@@ -207,7 +207,7 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
                   <div className={styles.selectedList}>
                     {selectedProducts.map(prod => (
                       <div key={prod.id} className={styles.selectedItem}>
-                        <img src={prod.images?.[0] || prod.image || 'https://via.placeholder.com/50'} alt={prod.name} />
+                        <img src={prod.images?.[0] || prod.image || '/images/placeholder.svg'} alt={prod.name} />
                         <div className={styles.itemInfo}>
                           <h4>{prod.name}</h4>
                           <p>S/ {prod.price}</p>
@@ -242,7 +242,7 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
                 <div className={styles.catalogGrid}>
                   {filteredCatalog.map(prod => (
                     <div key={prod.id} className={styles.catalogItem}>
-                      <img src={prod.images?.[0] || 'https://via.placeholder.com/100'} alt={prod.name} />
+                      <img src={prod.images?.[0] || '/images/placeholder.svg'} alt={prod.name} />
                       <h4>{prod.name}</h4>
                       <p>S/ {prod.price}</p>
                       <button onClick={() => addProduct(prod)} className={styles.addBtn}>

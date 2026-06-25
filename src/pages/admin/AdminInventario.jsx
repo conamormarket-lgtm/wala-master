@@ -180,7 +180,7 @@ const AdminInventario = () => {
                     <td>
                       <div className={styles.productCell}>
                         <img 
-                          src={product.images && product.images[0] ? product.images[0] : 'https://via.placeholder.com/50'} 
+                          src={product.images && product.images[0] ? product.images[0] : '/images/placeholder.svg'}
                           alt={product.name} 
                           className={styles.productImage}
                         />

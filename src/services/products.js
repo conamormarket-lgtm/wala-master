@@ -3,6 +3,7 @@ import { deleteFile } from './firebase/storage';
 import { collection, doc } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '../constants/marketplace';
+import { PLACEHOLDER_IMG } from '../constants/placeholder';
 
 const COLLECTION = 'productos_wala';
 const CACHE_VERSION = 'v2'; // Cambiar esto invalida la caché de todos los usuarios
@@ -186,12 +187,12 @@ function normalizeProductForRead(doc) {
   if (isComboProduct) {
     images = doc.comboPreviewImage
       ? [doc.comboPreviewImage]
-      : ['https://via.placeholder.com/400x400/eee/999?text=Combo'];
+      : [PLACEHOLDER_IMG];
   }
 
   // Fallback final: ningÃºn producto sin miniatura (admin y tienda)
   if (!Array.isArray(images) || images.length === 0) {
-    images = ['https://via.placeholder.com/400x400/eee/999?text=Producto'];
+    images = [PLACEHOLDER_IMG];
   }
 
   const behaviorImpressionsThreshold =

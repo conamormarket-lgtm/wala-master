@@ -75,7 +75,7 @@ const AdminDestacados = () => {
             <li key={product.id} className={styles.item}>
               <div className={styles.itemImage}>
                 <img
-                  src={product.images?.[0] || 'https://via.placeholder.com/80x80'}
+                  src={product.images?.[0] || '/images/placeholder.svg'}
                   alt={product.name}
                 />
               </div>

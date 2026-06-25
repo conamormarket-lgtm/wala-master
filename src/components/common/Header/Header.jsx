@@ -542,7 +542,7 @@ const Header = () => {
                       <div className={styles.brandsList}>
                         {accountPopup.brands.map(brand => (
                           <a key={brand.id} href={brand.url || '#'} className={styles.brandLink} title={brand.name}>
-                            <img src={brand.imageUrl || 'https://via.placeholder.com/150'} alt={brand.name} className={styles.brandLogo} />
+                            <img src={brand.imageUrl || '/images/placeholder.svg'} alt={brand.name} className={styles.brandLogo} />
                           </a>
                         ))}
                       </div>

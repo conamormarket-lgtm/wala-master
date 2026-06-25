@@ -492,7 +492,7 @@ const EditorPage = () => {
     navigate('/carrito');
   };
 
-  const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/500x600';
+  const PLACEHOLDER_IMAGE = '/images/placeholder.svg';
 
   // Misma lógica que en AdminProductoForm: view.imagesByColor?.[currentColor] || view.imagesByColor?.default
   const colorKey = product?.isClothing && variant?.color ? variant.color : 'default';

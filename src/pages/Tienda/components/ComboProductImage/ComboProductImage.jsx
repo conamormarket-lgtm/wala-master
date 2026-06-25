@@ -146,7 +146,7 @@ const ComboProductImage = ({
     return () => observer.disconnect();
   }, [comboItems]);
 
-  const placeholderUrl = 'https://via.placeholder.com/400x400/eee/999?text=Combo';
+  const placeholderUrl = '/images/placeholder.svg';
 
   // Cargar imágenes de cada producto del combo según la variante elegida
   useEffect(() => {

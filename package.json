@@ -49,7 +49,8 @@
     "seed": "node scripts/seed-emulator.js",
     "deploy:firestore-rules": "node scripts/deploy-firestore-rules.js",
     "deploy:storage-rules": "node scripts/deploy-storage-rules.js",
-    "deploy:functions": "firebase deploy --only functions",
+    "deploy:functions": "firebase deploy --only functions --project sistema-gestion-3b225",
+    "deploy:indexes": "firebase deploy --only firestore:indexes --project sistema-gestion-3b225",
     "deploy:vercel": "npx vercel",
     "deploy:vercel:prod": "npx vercel --prod",
     "test:functions": "node functions/test/economyLogic.test.js"

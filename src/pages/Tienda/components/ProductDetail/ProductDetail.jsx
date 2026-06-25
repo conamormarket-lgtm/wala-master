@@ -83,7 +83,7 @@ const buildImages = (product, variant, isCombo, comboSels, comboProd) => {
       (product?.images || []).forEach(u => push(u));
     }
   }
-  if (!list.length) list.push({ url: 'https://via.placeholder.com/600x750', isComboView: false });
+  if (!list.length) list.push({ url: '/images/placeholder.svg', isComboView: false });
   return list;
 };
 

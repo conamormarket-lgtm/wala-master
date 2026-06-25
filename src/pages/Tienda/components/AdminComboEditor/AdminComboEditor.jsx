@@ -87,7 +87,7 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
           <div className={styles.searchResults}>
             {searchResults.map(p => (
               <div key={p.id} className={styles.searchResultItem}>
-                <img src={p.images?.[0] || p.mainImage || 'https://via.placeholder.com/40'} alt={p.name} />
+                <img src={p.images?.[0] || p.mainImage || '/images/placeholder.svg'} alt={p.name} />
                 <div className={styles.searchResultInfo}>
                   <strong>{p.name}</strong>
                   <span>{p.sku || 'Sin SKU'}</span>
@@ -115,7 +115,7 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
           <div className={styles.comboItemsList}>
             {comboItems.map((item, idx) => (
               <div key={item._uid || `${item.productId}_${idx}`} className={styles.comboItem}>
-                <img src={item.imageUrl || 'https://via.placeholder.com/60'} alt={item.name} />
+                <img src={item.imageUrl || '/images/placeholder.svg'} alt={item.name} />
                 <div className={styles.comboItemDetails}>
                   <strong>{item.name}</strong>
                   <span>Producto #{idx + 1}</span>

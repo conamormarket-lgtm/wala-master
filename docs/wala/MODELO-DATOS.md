@@ -1,13 +1,20 @@
 # Modelo de datos WALA — Actual vs Objetivo
 
 > Documento de arquitectura de datos. Fuente: lectura directa de `src/services/*` y
-> `src/models/*.json` (estado real del código en producción `pruebas-cd728`) + sección
+> `src/models/*.json` (estado real del código en producción `sistema-gestion-3b225`) + sección
 > "3.4 Modelo de datos objetivo" de `docs/wala_synthesis.md`.
+>
+> **⚠️ Topología (corregida):** `sistema-gestion-3b225` es el ÚNICO proyecto de producción.
+> El portal de clientes **y** el ERP comparten **el mismo proyecto Firebase y la misma base
+> Firestore**. Por tanto las colecciones del ERP (`pedidos`, `pedidos_web`) y las de analytics
+> (`analytics_events`, `analytics_sessions`, `analytics_user_summary`, `analytics_global_summary`)
+> NO viven en un proyecto separado: están en `sistema-gestion-3b225` junto con las del portal y
+> **deben estar cubiertas por las reglas Firestore de ese proyecto**. `pruebas-cd728` NO se usa.
 >
 > Acompaña a `firestore.indexes.json` (raíz del repo), que declara los índices
 > compuestos que el código ACTUAL ya necesita.
 
-> **Estado de implementación (rama `fase-0-seguridad`, EMULADOR local `demo-wala`, NO desplegado a `pruebas-cd728`):**
+> **Estado de implementación (rama `fase-0-seguridad`, EMULADOR local `demo-wala`, NO desplegado a `sistema-gestion-3b225`):**
 > Buena parte del "Modelo OBJETIVO" de la §3 YA está implementado y verificado E2E en el
 > emulador (Fases 2, 2b, 3, 4, 5). Las colecciones nuevas que ya existen en código se
 > marcan abajo con ✅ y se documentan con sus **campos EXACTOS** en la nueva §3.4. Lo que
@@ -38,8 +45,8 @@
 El archivo `firestore.indexes.json` está en la raíz del repo y es válido para:
 
 ```powershell
-# Proyecto PROD (default en .firebaserc = pruebas-cd728)
-firebase deploy --only firestore:indexes
+# Proyecto PROD (default en .firebaserc = sistema-gestion-3b225)
+firebase deploy --only firestore:indexes --project sistema-gestion-3b225
 ```
 
 Importante sobre `firebase.json`: hoy el bloque `firestore` solo declara `rules`.
@@ -53,17 +60,20 @@ declarado, pero es recomendable hacerlo explícito para evitar ambigüedad:
 }
 ```
 
-Los índices de la base ERP (colecciones `pedidos` / `pedidos_web`) NO están en este
-archivo porque viven en un PROYECTO FIREBASE DISTINTO (`REACT_APP_ERP_FIREBASE_*`).
-Ver sección 3: hay que desplegarlos apuntando a ese proyecto, o crearlos manualmente
-desde la consola del ERP.
+Los índices de las colecciones ERP (`pedidos` / `pedidos_web`) van en **este mismo
+archivo** y se despliegan al **mismo proyecto** `sistema-gestion-3b225`, porque el ERP y el
+portal comparten proyecto y base Firestore. (La documentación previa asumía un proyecto ERP
+separado vía `REACT_APP_ERP_FIREBASE_*`; eso ya no aplica para producción.) Ver sección 2 y
+la nota de topología arriba.
 
 ---
 
 ## 1. Colecciones ACTUALES (estado real del código)
 
-Nombres reales tal como aparecen en `src/services/*`. Marcadas con (PROD) las del
-proyecto principal `pruebas-cd728`; (ERP) las del proyecto Firebase separado.
+Nombres reales tal como aparecen en `src/services/*`. **Todas viven en el ÚNICO proyecto de
+producción `sistema-gestion-3b225`.** La etiqueta (PROD) marca las del portal y (ERP) las del
+flujo ERP, pero **ambas comparten el mismo proyecto Firebase y la misma base Firestore** (no
+hay proyecto ERP separado en producción), así que todas deben estar en las mismas reglas.
 
 | Colección (real) | Proyecto | Propósito | Campos clave |
 |---|---|---|---|
@@ -86,8 +96,12 @@ proyecto principal `pruebas-cd728`; (ERP) las del proyecto Firebase separado.
 | `inventoryLogs` | PROD | Auditoría de cambios de stock. | `productId`, `productName`, `oldStock`, `newStock`, `userEmail`, `timestamp` (millis) |
 | `enlaces_pago` | PROD | Enlaces de pago. **Reglas inseguras** (`allow update,delete: if true`, ver synthesis). | — |
 | (ruleta) `PRIZES_COLLECTION` | PROD | Premios de ruleta. | `probability` |
-| `pedidos` | ERP | Pedidos legacy del ERP. | `phone`, `dni`, `clienteNumeroDocumento`, `numeroPedido`, `createdAt`, `email` |
-| `pedidos_web` | ERP | Pedidos web del ERP. | `phone`, `dni`, `numeroPedido`, `createdAt` |
+| `pedidos` | ERP (mismo proyecto `sistema-gestion-3b225`) | Pedidos legacy del ERP. **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`, `clienteNumeroDocumento`, `numeroPedido`, `createdAt`, `email` |
+| `pedidos_web` | ERP (mismo proyecto `sistema-gestion-3b225`) | Pedidos web del ERP. **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`, `numeroPedido`, `createdAt` |
+| `analytics_events` | PROD (analytics) | Eventos de analytics/heatmap propios. **Mismo proyecto `sistema-gestion-3b225`; deben estar en las reglas.** | evento, sesión, ts, UTM, geo |
+| `analytics_sessions` | PROD (analytics) | Sesiones de analytics. **Mismo proyecto; deben estar en las reglas.** | sessionId, uid, inicio/fin, fuente |
+| `analytics_user_summary` | PROD (analytics) | Resumen agregado por usuario. **Mismo proyecto; deben estar en las reglas.** | uid, métricas agregadas |
+| `analytics_global_summary` | PROD (analytics) | Resumen global agregado. **Mismo proyecto; deben estar en las reglas.** | métricas globales |
 
 ### Notas de inconsistencia ya detectadas (no inventadas)
 - **Producto:** el modelo en `productos_wala_schema.json` usa `vendor` (string) y
@@ -117,8 +131,8 @@ mismo campo del rango.
 | 3 | `referrals` | `createReferralShare` (`referrals.js`): `where referrerCode ==` + `where createdAt >=` (rango) | `referrerCode ASC`, `createdAt ASC` | ✅ Sí (PROD) |
 | 4 | `referrals` | `updateReferralToCompletedByOrder` (`referrals.js`): `where referrerCode ==` + `where status in [...]` + `where completedAt >=` | `referrerCode ASC`, `status ASC`, `completedAt ASC` | ✅ Sí (PROD) |
 | 5 | `productos_wala` | `getFeaturedProducts` (`products.js`): `where featured == true` + `orderBy featuredOrder asc` | `featured ASC`, `featuredOrder ASC` | ✅ Sí (PROD) |
-| 6 | `pedidos` (ERP) | `searchOrdersInERP` (`erp/firebase.js`): `where phone ==` + `where dni ==` + `orderBy createdAt desc` | `phone ASC`, `dni ASC`, `createdAt DESC` | ⚠️ Proyecto ERP (abajo) |
-| 7 | `pedidos_web` (ERP) | `searchOrdersInERP` (`erp/firebase.js`): igual que #6 sobre `pedidos_web` | `phone ASC`, `dni ASC`, `createdAt DESC` | ⚠️ Proyecto ERP (abajo) |
+| 6 | `pedidos` (ERP) | `searchOrdersInERP` (`erp/firebase.js`): `where phone ==` + `where dni ==` + `orderBy createdAt desc` | `phone ASC`, `dni ASC`, `createdAt DESC` | Mismo proyecto `sistema-gestion-3b225` (abajo) |
+| 7 | `pedidos_web` (ERP) | `searchOrdersInERP` (`erp/firebase.js`): igual que #6 sobre `pedidos_web` | `phone ASC`, `dni ASC`, `createdAt DESC` | Mismo proyecto `sistema-gestion-3b225` (abajo) |
 
 ### Queries que NO requieren índice compuesto (verificado)
 - `suggested_packages` / `fechasImportantes`: dos `where ==` de IGUALDAD solamente
@@ -130,10 +144,12 @@ mismo campo del rango.
 - `getWordleRankingToday`: descarga toda la colección `wordle` y filtra/ordena en cliente
   (a propósito, para evitar índices). Candidato a optimizar (ver objetivo).
 
-### Índices del proyecto ERP (desplegar aparte)
+### Índices ERP (`pedidos` / `pedidos_web`) — MISMO proyecto
 
-Crear estos en el proyecto Firebase del ERP (`REACT_APP_ERP_FIREBASE_*`), NO en PROD.
-Contenido de un `firestore.indexes.erp.json` para ese proyecto:
+Estos índices van al **mismo proyecto de producción `sistema-gestion-3b225`** (el ERP comparte
+proyecto y base Firestore con el portal), no a un proyecto aparte. Lo más limpio es incluirlos
+en el `firestore.indexes.json` raíz y desplegar con `--project sistema-gestion-3b225`.
+Los bloques a añadir son:
 
 ```json
 {
@@ -161,10 +177,10 @@ Contenido de un `firestore.indexes.erp.json` para ese proyecto:
 }
 ```
 
-Despliegue:
+Despliegue (desde Google Cloud Shell, ya autenticado):
 
-```powershell
-firebase deploy --only firestore:indexes --project <ERP_PROJECT_ID> --config firebase.erp.json
+```bash
+firebase deploy --only firestore:indexes --project sistema-gestion-3b225
 ```
 
 (o crear ambos índices a mano desde la consola del proyecto ERP).
@@ -175,7 +191,7 @@ firebase deploy --only firestore:indexes --project <ERP_PROJECT_ID> --config fir
 
 Fuente: `docs/wala_synthesis.md` §3.4. La migración es **aditiva**: se extienden
 documentos existentes con defaults y backfill; nunca se borra ni se rompe el catálogo
-vivo en `pruebas-cd728`.
+vivo en `sistema-gestion-3b225`.
 
 ### 3.1 Extensiones a colecciones existentes
 
@@ -430,7 +446,7 @@ Verificado simulado: order 179.7 / comisión 14.38 → `paid` + 2 payouts (49.9,
 
 Lo que sigue ⬜ (requiere servicios externos, navegador/editor o despliegue):
 
-- **Despliegue:** nada está en `pruebas-cd728`; todo verificado en build (Vite) + emulador.
+- **Despliegue:** nada está en `sistema-gestion-3b225`; todo verificado en build (Vite) + emulador.
 - **Fase 3:** cobro REAL Mercado Pago (tokens/URLs), búsqueda Algolia/Typesense on-write
   (`searchIndex`), rol vendor por claims, integrar `CheckoutPage` real al flujo de split.
 - **Fase 4:** integrar `productionArt` en EditorPage (arte de producción al agregar al

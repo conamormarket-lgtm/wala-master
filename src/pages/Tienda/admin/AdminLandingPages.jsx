@@ -232,7 +232,7 @@ const AdminLandingPages = () => {
                   <ul className={styles.searchResults}>
                     {filteredProducts.map(p => (
                       <li key={p.id} onClick={() => { addLinkedProduct(p); setSearchProduct(''); }}>
-                        <img src={p.images?.[0] || 'https://via.placeholder.com/40'} alt={p.name} />
+                        <img src={p.images?.[0] || '/images/placeholder.svg'} alt={p.name} />
                         <span>{p.name}</span>
                       </li>
                     ))}

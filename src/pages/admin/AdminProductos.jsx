@@ -487,7 +487,7 @@ const AdminProductos = () => {
                   ) : (() => {
                     const principalVariant = p.variants?.find(v => v.id === p.defaultVariantId) || p.variants?.[0];
                     const adminImageStr = p.thumbnailImageUrl || principalVariant?.imageUrl || p.mainImage || p.images?.[0] || '';
-                    const displayUrl = adminImageStr || 'https://via.placeholder.com/400x400/eee/999?text=Producto';
+                    const displayUrl = adminImageStr || '/images/placeholder.svg';
                     const adminCrop = principalVariant?.thumbnailCrop?.percentages;
 
                     return (

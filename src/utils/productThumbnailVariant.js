@@ -4,6 +4,7 @@
  */
 
 import { getBehavior } from './productVariantBehavior';
+import { PLACEHOLDER_IMG } from '../constants/placeholder';
 
 /**
  * Obtiene el índice de la variante a mostrar en miniatura y su URL.
@@ -18,7 +19,7 @@ import { getBehavior } from './productVariantBehavior';
  * @param {{ impressions: number, clicked: boolean, variantSeconds: Record<string, number> }} [behavior] - Si no se pasa, se lee de localStorage
  * @returns {{ variantIndex: number, imageUrl: string }}
  */
-const COMBO_PLACEHOLDER = 'https://via.placeholder.com/400x400/eee/999?text=Combo';
+const COMBO_PLACEHOLDER = PLACEHOLDER_IMG;
 
 export function getThumbnailVariant(product, behavior = null) {
   // Combos: miniatura siempre desde images (ya normalizado) o placeholder; no usar variantes

@@ -28,7 +28,7 @@ export default function HistorialPersonalizacionesModal({ pastDesigns, onSelectD
               <div key={design.id} className={styles.card}>
                 <div className={styles.imageContainer}>
                   <img 
-                    src={design.mainImage || design.thumbnailWithDesignUrl || design.variants?.[0]?.designImage || 'https://via.placeholder.com/150'} 
+                    src={design.mainImage || design.thumbnailWithDesignUrl || design.variants?.[0]?.designImage || '/images/placeholder.svg'}
                     alt="Diseño previo" 
                     className={styles.image}
                   />
