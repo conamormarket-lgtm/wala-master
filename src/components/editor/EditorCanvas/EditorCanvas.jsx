@@ -1334,12 +1334,12 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
       const activeArea = activePrintAreaId
         ? printAreasToRender.find(a => a.id === activePrintAreaId)
         : null;
-      const areaToUse = activeArea || printAreasToRender[0];
+      const areaToUse = activeArea || printAreasToRender[0] || { x: 0, y: 0, width: 40, height: 40 };
       const defaultPa = {
-        x: (imageDimensions.padding || 0) + (imageDimensions.width * (areaToUse.x || 0)) / 100,
-        y: (imageDimensions.padding || 0) + (imageDimensions.height * (areaToUse.y || 0)) / 100,
-        width: (imageDimensions.width * (areaToUse.width || 40)) / 100,
-        height: (imageDimensions.height * (areaToUse.height || 40)) / 100,
+        x: (imageDimensions.padding || 0) + (imageDimensions.width * (areaToUse?.x || 0)) / 100,
+        y: (imageDimensions.padding || 0) + (imageDimensions.height * (areaToUse?.y || 0)) / 100,
+        width: (imageDimensions.width * (areaToUse?.width || 40)) / 100,
+        height: (imageDimensions.height * (areaToUse?.height || 40)) / 100,
       };
       const defaultLeft = defaultPa.x + defaultPa.width / 2 - 50;
       const defaultTop = defaultPa.y + defaultPa.height / 2 - 25;

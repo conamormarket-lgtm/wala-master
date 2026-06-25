@@ -17,6 +17,15 @@ export const generateProductId = () => {
   return doc(collection(db, COLLECTION)).id;
 };
 
+// Tolerante a objetos/strings: extrae un ID string limpio de categorías/colecciones.
+// Soporta docs viejos corruptos ([{id}], ['[object Object]']) y guardados nuevos (string).
+const toId = (c) => {
+  if (c == null) return '';
+  if (typeof c === 'object') return String(c.id ?? c.slug ?? c.name ?? '').trim();
+  const s = String(c).trim();
+  return s === '[object Object]' ? '' : s;
+};
+
 // Limpiar cachés antiguas para liberar espacio
 try {
   localStorage.removeItem('conamor_products_cache');
@@ -207,7 +216,13 @@ function normalizeProductForRead(doc) {
     name: doc.name ?? '',
     visible,
     whatsappMessage: doc.whatsappMessage ?? 'Hola CON AMOR: Me interesa este producto de tu página: {url}',
-    collections: Array.isArray(doc.collections) ? doc.collections : [],
+    // Tolerante al LEER: docs viejos ([{id}] o ['[object Object]']) salen como IDs string limpios.
+    categories: Array.isArray(doc.categories)
+      ? doc.categories.map(toId).filter(Boolean)
+      : (doc.category ? [toId(doc.category)].filter(Boolean) : []),
+    collections: Array.isArray(doc.collections)
+      ? doc.collections.map(toId).filter(Boolean)
+      : (doc.collection ? [toId(doc.collection)].filter(Boolean) : []),
     tags: Array.isArray(doc.tags) ? doc.tags : [],
     characters: Array.isArray(doc.characters) ? doc.characters : [],
     vendors: Array.isArray(doc.vendors) ? doc.vendors : (doc.vendor ? [doc.vendor] : []),
@@ -710,15 +725,16 @@ function normalizeProductPayload(data) {
     ? data.productCliparts.map(normalizeProductClipart).filter(Boolean)
     : [];
 
-  const categories = Array.isArray(data.categories)
-    ? data.categories.filter(Boolean)
-    : data.category
-      ? [data.category]
-      : [];
+  // Tolerante al GUARDAR: normaliza objetos/strings a IDs string limpios.
+  const categories = (Array.isArray(data.categories)
+    ? data.categories
+    : (data.category != null ? [data.category] : []))
+    .map(toId).filter(Boolean);
 
-  const collections = Array.isArray(data.collections)
-    ? data.collections.filter(Boolean).map(c => String(c).trim()).filter(Boolean)
-    : [];
+  const collections = (Array.isArray(data.collections)
+    ? data.collections
+    : (data.collection != null ? [data.collection] : []))
+    .map(toId).filter(Boolean);
 
   const tags = Array.isArray(data.tags)
     ? data.tags.filter(Boolean).map(c => String(c).trim()).filter(Boolean)

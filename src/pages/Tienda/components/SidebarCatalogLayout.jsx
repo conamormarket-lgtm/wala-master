@@ -48,12 +48,14 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
     setIsMobileDrawerOpen(false);
   };
 
+  const idOf = (c) => (c && typeof c === 'object') ? (c.id || c.slug || c.name || '') : c;
+
   const filteredProducts = (productsData || []).filter(p => {
-    if (activeCategory && p.categoryId !== activeCategory && p.category !== activeCategory && !(p.categories || []).includes(activeCategory)) return false;
-    if (activeCollection && !(p.collections || []).includes(activeCollection)) return false;
+    if (activeCategory && p.categoryId !== activeCategory && p.category !== activeCategory && !(p.categories || []).map(idOf).includes(activeCategory)) return false;
+    if (activeCollection && !(p.collections || []).map(idOf).includes(activeCollection)) return false;
     if (activeBrand && p.brandId !== activeBrand) return false;
-    if (activeTag && !(p.tags || []).includes(activeTag)) return false;
-    if (activeCharacter && !(p.characters || []).includes(activeCharacter)) return false;
+    if (activeTag && !(p.tags || []).map(idOf).includes(activeTag)) return false;
+    if (activeCharacter && !(p.characters || []).map(idOf).includes(activeCharacter)) return false;
     if (activeType && p.productType !== activeType) return false;
     return true;
   });

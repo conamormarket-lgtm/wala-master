@@ -218,8 +218,18 @@ const AdminProductoFormV2 = () => {
         nicheId: productData.nicheId || '',
         vendorId: productData.vendorId || '',
         fulfillmentType: productData.fulfillmentType || '',
-        category: productData.category ? productData.category.id || productData.category : '',
-        collection: productData.collections?.[0]?.id || productData.collections?.[0] || '',
+        category: (() => {
+          const raw = Array.isArray(productData.categories)
+            ? (productData.categories[0]?.id || productData.categories[0] || '')
+            : (productData.category?.id || productData.category || '');
+          return raw === '[object Object]' ? '' : raw;
+        })(),
+        collection: (() => {
+          const raw = Array.isArray(productData.collections)
+            ? (productData.collections[0]?.id || productData.collections[0] || '')
+            : '';
+          return raw === '[object Object]' ? '' : raw;
+        })(),
         defaultVariantId: productData.defaultVariantId || firstVariantId,
         variants: mappedVariants,
         customizable: productData.customizable || false,
@@ -654,8 +664,8 @@ const AdminProductoFormV2 = () => {
         nicheId: form.nicheId || undefined,
         vendorId: form.vendorId || undefined,
         fulfillmentType: form.fulfillmentType || undefined,
-        category: form.category ? { id: form.category } : null,
-        collections: form.collection ? [{ id: form.collection }] : [],
+        categories: form.category ? [form.category] : [],
+        collections: form.collection ? [form.collection] : [],
         mainImage: currentMainImage,
         thumbnailWithDesignUrl: form.customizable ? currentMainImage : '',
         mainSizes: [],                     // Las tallas viven dentro de cada variante

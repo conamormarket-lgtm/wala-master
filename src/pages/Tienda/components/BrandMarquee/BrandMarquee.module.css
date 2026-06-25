@@ -24,6 +24,26 @@
   padding-right: 2rem;
 }
 
+/* Enlace que envuelve logo + nombre: sin estilos de anchor por defecto */
+.brandLink {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Nombre de la marca debajo del logo */
+.brandName {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: #ffffff;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .logoCircle {
   flex-shrink: 0;
   width: 90px;
