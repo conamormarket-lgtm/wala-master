@@ -8,6 +8,14 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
+## [Sin liberar] — Fase 4: POD / arte de producción (base) ✅ (verificado en emulador)
+- **Blueprints** (`blueprints`): prendas base imprimibles con `printAreas` (cm + dpi), `decorationMethods`,
+  `basePrintCost`. Admin **/admin/blueprints** (CRUD) + `services/blueprints.js`. Regla pública/admin. Seed `bp-polo`.
+- **Utilidad de arte** `src/utils/productionArt.js`: `pxFromCm(cm,dpi)`, `exportProductionArtPNG(canvas,{dpiMultiplier})`
+  (export alta resolución del lienzo fabric), `validatePrintResolution(...)`. Verificado: 30cm@300dpi = 3543px.
+- ⬜ Pendiente Fase 4 (requiere editor/navegador): integrar `productionArt` en EditorPage (generar arte al
+  agregar al carrito, recorte por área del blueprint, PDF de producción), validar resolución de imágenes colocadas.
+
 ## [Sin liberar] — Fase 3: Split de pago (Mercado Pago Marketplace) ✅ (verificado E2E simulado)
 Cobro con **comisión de marketplace** + creación de pedido y **payouts** por vendedor.
 - **Functions**: `createCheckoutPreferenceSecure({items,shippingZoneId})` (recalcula carrito server-side,

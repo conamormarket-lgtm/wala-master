@@ -86,6 +86,7 @@ const AdminVendors = lazy(() => import('./pages/admin/AdminVendors'));
 const AdminRecompensas = lazy(() => import('./pages/admin/AdminRecompensas'));
 const AdminEnviosZonas = lazy(() => import('./pages/admin/AdminEnviosZonas'));
 const AdminPayouts = lazy(() => import('./pages/admin/AdminPayouts'));
+const AdminBlueprints = lazy(() => import('./pages/admin/AdminBlueprints'));
 
 const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminPagos = lazy(() => import('./pages/admin/AdminPagos'));
@@ -251,6 +252,7 @@ function App() {
                             <Route path="recompensas" element={<AdminRecompensas />} />
                             <Route path="envios" element={<AdminEnviosZonas />} />
                             <Route path="payouts" element={<AdminPayouts />} />
+                            <Route path="blueprints" element={<AdminBlueprints />} />
 
                             <Route path="whatsapp" element={<AdminWhatsApp />} />
                             <Route path="referidos" element={<AdminReferidos />} />

@@ -99,6 +99,22 @@ async function ensureUser(uid, email, password, claims) {
   // Campos escritos por servidor en producción; aquí los sembramos con merge para probar la UI.
   await setDoc("portal_clientes_users", "cliente-uid", { xp: 120, dailyStreak: { count: 2, lastDate: null, freezeTokens: 1 } });
 
+  // ── Blueprints POD (Fase 4; lectura pública, escritura admin) ──────────────────
+  // Plantillas de producto estilo Printful: prenda base + áreas de impresión + métodos.
+  // CRUD admin en AdminBlueprints / service blueprints.js. basePrintCost en soles.
+  await setDoc("blueprints", "bp-polo", {
+    name: "Polo clásico",
+    baseGarment: "polo",
+    printAreas: [
+      { name: "Frente", widthCm: 30, heightCm: 40, dpi: 300 },
+      { name: "Espalda", widthCm: 30, heightCm: 40, dpi: 300 },
+    ],
+    decorationMethods: ["DTG", "vinilo"],
+    basePrintCost: 8,
+    active: true,
+    order: 0,
+  });
+
   // ── Catálogo de recompensas (Fase 2b; lectura pública, escritura admin) ─────────
   // 'cost' está en puntos ('monedas'). Se canjean con la Cloud Function redeemRewardSecure.
   await setDoc("rewardsCatalog", "rw-stickers", { title: "Pack de stickers", description: "Set de stickers Wala de edición coleccionable", cost: 30, value: "Pack de stickers físico", active: true, order: 0 });
@@ -106,7 +122,7 @@ async function ensureUser(uid, email, password, claims) {
   await setDoc("rewardsCatalog", "rw-accesorio", { title: "Accesorio de regalo", description: "Llévate un accesorio sorpresa con tu próximo pedido", cost: 100, value: "Accesorio físico de regalo", active: true, order: 2 });
   await setDoc("rewardsCatalog", "rw-descuento-30", { title: "Cupón S/30 de descuento", description: "Descuento de S/30 aplicable a tu siguiente compra", cost: 200, value: "S/30 de descuento", active: true, order: 3 });
 
-  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores (casa 0 / estampados-lima 12%), 2 categorías, 2 zonas de envío, ruleta, reto activo, 3 misiones diarias, 4 recompensas, admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
+  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores (casa 0 / estampados-lima 12%), 2 categorías, 2 zonas de envío, ruleta, reto activo, 3 misiones diarias, 4 recompensas, 1 blueprint POD (bp-polo: Polo clásico), admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
   console.log("ℹ Pago: el checkout usa Mercado Pago (gateado por MERCADOPAGO_ACCESS_TOKEN). En este emulador NO hay token → el pago se SIMULA (init_point /pago-demo/{orderId}) y confirmPaymentSecure marca 'paid' + genera payouts. orders/subOrders/payouts las crean las Cloud Functions, no este seed.");
   process.exit(0);
 })().catch((e) => { console.error("Error sembrando:", e); process.exit(1); });
