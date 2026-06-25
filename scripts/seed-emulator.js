@@ -45,6 +45,14 @@ async function ensureUser(uid, email, password, claims) {
   await setDoc("tienda_categories", "tazas", { name: "Tazas", imageUrl: "", order: 1 });
 
   // ── Zonas de envío (Fase 3: checkout multi-vendor con costo de envío) ─────────
+  // Nota de pago (Fase 4 – Split de pago marketplace): el checkout usa Mercado Pago
+  // mediante las Cloud Functions createCheckoutPreferenceSecure / confirmPaymentSecure.
+  // El cobro real (con marketplace_fee = comisión Wala) está GATEADO por la env var
+  // MERCADOPAGO_ACCESS_TOKEN: si está presente, se crea una preferencia real en MP;
+  // si NO está (como en este EMULADOR / local), el pago se SIMULA — init_point apunta
+  // a /pago-demo/{orderId} y confirmPaymentSecure marca el order como 'paid' y genera
+  // los payouts a vendedores. No hace falta sembrar colecciones nuevas para esto:
+  // orders / subOrders / payouts las crean las propias Cloud Functions en tiempo de checkout.
   await setDoc("shippingZones", "lima-metropolitana", { name: "Lima Metropolitana", departamento: "Lima", cost: 10, etaDays: 2, active: true, order: 0 });
   await setDoc("shippingZones", "provincias", { name: "Provincias", departamento: "Otros", cost: 20, etaDays: 5, active: true, order: 1 });
 
@@ -99,5 +107,6 @@ async function ensureUser(uid, email, password, claims) {
   await setDoc("rewardsCatalog", "rw-descuento-30", { title: "Cupón S/30 de descuento", description: "Descuento de S/30 aplicable a tu siguiente compra", cost: 200, value: "S/30 de descuento", active: true, order: 3 });
 
   console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores (casa 0 / estampados-lima 12%), 2 categorías, 2 zonas de envío, ruleta, reto activo, 3 misiones diarias, 4 recompensas, admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
+  console.log("ℹ Pago: el checkout usa Mercado Pago (gateado por MERCADOPAGO_ACCESS_TOKEN). En este emulador NO hay token → el pago se SIMULA (init_point /pago-demo/{orderId}) y confirmPaymentSecure marca 'paid' + genera payouts. orders/subOrders/payouts las crean las Cloud Functions, no este seed.");
   process.exit(0);
 })().catch((e) => { console.error("Error sembrando:", e); process.exit(1); });

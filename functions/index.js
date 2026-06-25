@@ -1505,25 +1505,17 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
 // Colecciones: orders (con reglas), subOrders, shippingZones, payouts.
 // ════════════════════════════════════════════════════════════════════════════
 
-// ── Crear orden con subórdenes (transaccional, server-authoritative) ───────────
-// items = [{ productId, qty }]. Por cada producto lee productos_wala/{productId}
-// (precio = salePrice si < price, si no price; toma vendorId, nicheId, name).
-// Agrupa por vendorId; por vendedor: vendorSubtotal = Σ(precio*qty),
-// commissionPct = vendors/{vendorId}.commissionPct||0,
-// commissionAmount = +(vendorSubtotal*commissionPct/100).toFixed(2),
-// vendorPayoutAmount = +(vendorSubtotal - commissionAmount).toFixed(2).
-// shipping = shippingZones/{shippingZoneId}.cost||0 (si se pasó).
-exports.createOrderWithSubordersSecure = functions.https.onCall(async (data, context) => {
-  const uid = requireAuth(context);
+// ── Helpers internos: validación de items y recálculo server-authoritative ─────
+// Factorizados para ser reutilizados por createOrderWithSubordersSecure y
+// createCheckoutPreferenceSecure (mismo recálculo: lee productos_wala, agrupa por
+// vendorId, comisión por vendors/{id}.commissionPct, envío por shippingZones/{id}.cost).
 
-  // Validación de items: arreglo no vacío de { productId, qty }.
+// Normaliza data.items -> Map(productId -> qty) y devuelve { qtyByProduct, shippingZoneId }.
+function normalizeOrderInput(data) {
   const rawItems = data && Array.isArray(data.items) ? data.items : null;
   if (!rawItems || rawItems.length === 0) {
     throw new functions.https.HttpsError("invalid-argument", "Se requiere al menos un ítem.");
   }
-
-  // Normaliza y agrega cantidades por productId (qty entero > 0). Falla si algún
-  // ítem no tiene productId o qty inválida.
   const qtyByProduct = new Map();
   for (const it of rawItems) {
     const productId = it && it.productId != null ? String(it.productId) : null;
@@ -1536,136 +1528,168 @@ exports.createOrderWithSubordersSecure = functions.https.onCall(async (data, con
     }
     qtyByProduct.set(productId, (qtyByProduct.get(productId) || 0) + qty);
   }
-
   const shippingZoneId = data && data.shippingZoneId != null ? String(data.shippingZoneId) : null;
+  return { qtyByProduct, shippingZoneId };
+}
 
+// Dentro de una transacción t: lee productos/vendors/shippingZone (TODAS las lecturas
+// antes que cualquier escritura), recalcula precios, agrupa por vendorId y construye
+// las subórdenes + totales para una orden con id orderId / comprador buyerUid.
+// Devuelve { totals, subOrderRefs, subOrderDocs, subOrderSummaries } SIN escribir nada;
+// el llamador decide qué escribir y con qué status.
+async function buildOrderInTransaction(t, { qtyByProduct, shippingZoneId, orderId, buyerUid }) {
   const productIds = Array.from(qtyByProduct.keys());
+
+  // 1) Lee TODOS los productos primero (regla de Firestore: lecturas antes que escrituras).
+  const productRefs = productIds.map((id) => db.collection("productos_wala").doc(id));
+  const shippingRef = shippingZoneId
+    ? db.collection("shippingZones").doc(shippingZoneId)
+    : null;
+
+  const productSnaps = await Promise.all(productRefs.map((ref) => t.get(ref)));
+  const shippingSnap = shippingRef ? await t.get(shippingRef) : null;
+
+  // 2) Recalcula precios server-side y agrupa por vendorId.
+  const groups = new Map(); // vendorId -> { vendorId, nicheId, items[], vendorSubtotal }
+  const vendorIds = new Set();
+
+  for (let i = 0; i < productIds.length; i++) {
+    const productId = productIds[i];
+    const snap = productSnaps[i];
+    if (!snap.exists) {
+      throw new functions.https.HttpsError("not-found", "Producto no encontrado: " + productId + ".");
+    }
+    const p = snap.data();
+    const vendorId = p.vendorId;
+    if (!vendorId) {
+      throw new functions.https.HttpsError("failed-precondition", "El producto " + productId + " no tiene vendedor.");
+    }
+
+    // Precio server-authoritative: salePrice si < price, si no price.
+    const price = Number(p.price);
+    const salePrice = Number(p.salePrice);
+    let unitPrice = price;
+    if (Number.isFinite(salePrice) && salePrice < price) {
+      unitPrice = salePrice;
+    }
+    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+      throw new functions.https.HttpsError("failed-precondition", "Precio inválido para " + productId + ".");
+    }
+
+    const qty = qtyByProduct.get(productId);
+    const lineTotal = unitPrice * qty;
+
+    vendorIds.add(vendorId);
+    let g = groups.get(vendorId);
+    if (!g) {
+      g = { vendorId, nicheId: p.nicheId || null, items: [], vendorSubtotal: 0 };
+      groups.set(vendorId, g);
+    }
+    g.items.push({
+      productId,
+      name: p.name || "",
+      qty,
+      unitPrice: +unitPrice.toFixed(2),
+    });
+    g.vendorSubtotal += lineTotal;
+  }
+
+  // 3) Lee los vendors (para commissionPct) dentro de la transacción.
+  const vendorIdList = Array.from(vendorIds);
+  const vendorSnaps = await Promise.all(
+    vendorIdList.map((vid) => t.get(db.collection("vendors").doc(String(vid))))
+  );
+  const commissionPctByVendor = new Map();
+  for (let i = 0; i < vendorIdList.length; i++) {
+    const vSnap = vendorSnaps[i];
+    const pct = vSnap.exists ? Number(vSnap.data().commissionPct) : 0;
+    commissionPctByVendor.set(vendorIdList[i], Number.isFinite(pct) ? pct : 0);
+  }
+
+  // 4) Envío server-authoritative desde shippingZones.
+  const shipping = shippingSnap && shippingSnap.exists
+    ? Number(shippingSnap.data().cost) || 0
+    : 0;
+
+  // 5) Construye subórdenes + totales (sin escribir).
+  let subtotal = 0;
+  let commissionTotal = 0;
+  const subOrderRefs = [];
+  const subOrderDocs = [];
+  const subOrderSummaries = [];
+
+  for (const g of groups.values()) {
+    const vendorSubtotal = +g.vendorSubtotal.toFixed(2);
+    const commissionPct = commissionPctByVendor.get(g.vendorId) || 0;
+    const commissionAmount = +(vendorSubtotal * commissionPct / 100).toFixed(2);
+    const vendorPayoutAmount = +(vendorSubtotal - commissionAmount).toFixed(2);
+
+    subtotal += vendorSubtotal;
+    commissionTotal += commissionAmount;
+
+    const subRef = db.collection("subOrders").doc();
+    const subDoc = {
+      orderId,
+      buyerUid,
+      vendorId: g.vendorId,
+      nicheId: g.nicheId || null,
+      items: g.items,
+      vendorSubtotal,
+      commissionPct,
+      commissionAmount,
+      vendorPayoutAmount,
+      status: "pending",
+      createdAt: FieldValue.serverTimestamp(),
+    };
+    subOrderRefs.push(subRef);
+    subOrderDocs.push(subDoc);
+    subOrderSummaries.push({
+      id: subRef.id,
+      vendorId: g.vendorId,
+      vendorSubtotal,
+      commissionPct,
+      commissionAmount,
+      vendorPayoutAmount,
+    });
+  }
+
+  subtotal = +subtotal.toFixed(2);
+  commissionTotal = +commissionTotal.toFixed(2);
+  const total = +(subtotal + shipping).toFixed(2);
+
+  const totals = { subtotal, shipping, commissionTotal, total };
+
+  return { totals, subOrderRefs, subOrderDocs, subOrderSummaries };
+}
+
+// ── Crear orden con subórdenes (transaccional, server-authoritative) ───────────
+// items = [{ productId, qty }]. Por cada producto lee productos_wala/{productId}
+// (precio = salePrice si < price, si no price; toma vendorId, nicheId, name).
+// Agrupa por vendorId; por vendedor: vendorSubtotal = Σ(precio*qty),
+// commissionPct = vendors/{vendorId}.commissionPct||0,
+// commissionAmount = +(vendorSubtotal*commissionPct/100).toFixed(2),
+// vendorPayoutAmount = +(vendorSubtotal - commissionAmount).toFixed(2).
+// shipping = shippingZones/{shippingZoneId}.cost||0 (si se pasó).
+exports.createOrderWithSubordersSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+
+  const { qtyByProduct, shippingZoneId } = normalizeOrderInput(data);
 
   try {
     return await db.runTransaction(async (t) => {
-      // 1) Lee TODOS los productos primero (regla de Firestore: lecturas antes que escrituras).
-      const productRefs = productIds.map((id) => db.collection("productos_wala").doc(id));
-      const shippingRef = shippingZoneId
-        ? db.collection("shippingZones").doc(shippingZoneId)
-        : null;
-
-      const productSnaps = await Promise.all(productRefs.map((ref) => t.get(ref)));
-      const shippingSnap = shippingRef ? await t.get(shippingRef) : null;
-
-      // 2) Recalcula precios server-side y agrupa por vendorId.
-      const groups = new Map(); // vendorId -> { vendorId, nicheId, items[], vendorSubtotal }
-      const vendorIds = new Set();
-
-      for (let i = 0; i < productIds.length; i++) {
-        const productId = productIds[i];
-        const snap = productSnaps[i];
-        if (!snap.exists) {
-          throw new functions.https.HttpsError("not-found", "Producto no encontrado: " + productId + ".");
-        }
-        const p = snap.data();
-        const vendorId = p.vendorId;
-        if (!vendorId) {
-          throw new functions.https.HttpsError("failed-precondition", "El producto " + productId + " no tiene vendedor.");
-        }
-
-        // Precio server-authoritative: salePrice si < price, si no price.
-        const price = Number(p.price);
-        const salePrice = Number(p.salePrice);
-        let unitPrice = price;
-        if (Number.isFinite(salePrice) && salePrice < price) {
-          unitPrice = salePrice;
-        }
-        if (!Number.isFinite(unitPrice) || unitPrice < 0) {
-          throw new functions.https.HttpsError("failed-precondition", "Precio inválido para " + productId + ".");
-        }
-
-        const qty = qtyByProduct.get(productId);
-        const lineTotal = unitPrice * qty;
-
-        vendorIds.add(vendorId);
-        let g = groups.get(vendorId);
-        if (!g) {
-          g = { vendorId, nicheId: p.nicheId || null, items: [], vendorSubtotal: 0 };
-          groups.set(vendorId, g);
-        }
-        g.items.push({
-          productId,
-          name: p.name || "",
-          qty,
-          unitPrice: +unitPrice.toFixed(2),
-        });
-        g.vendorSubtotal += lineTotal;
-      }
-
-      // 3) Lee los vendors (para commissionPct) dentro de la transacción.
-      const vendorIdList = Array.from(vendorIds);
-      const vendorSnaps = await Promise.all(
-        vendorIdList.map((vid) => t.get(db.collection("vendors").doc(String(vid))))
-      );
-      const commissionPctByVendor = new Map();
-      for (let i = 0; i < vendorIdList.length; i++) {
-        const vSnap = vendorSnaps[i];
-        const pct = vSnap.exists ? Number(vSnap.data().commissionPct) : 0;
-        commissionPctByVendor.set(vendorIdList[i], Number.isFinite(pct) ? pct : 0);
-      }
-
-      // 4) Envío server-authoritative desde shippingZones.
-      const shipping = shippingSnap && shippingSnap.exists
-        ? Number(shippingSnap.data().cost) || 0
-        : 0;
-
-      // 5) Construye subórdenes + totales.
       const orderRef = db.collection("orders").doc();
       const orderId = orderRef.id;
 
-      let subtotal = 0;
-      let commissionTotal = 0;
-      const subOrderRefs = [];
-      const subOrderDocs = [];
-      const subOrderSummaries = [];
-
-      for (const g of groups.values()) {
-        const vendorSubtotal = +g.vendorSubtotal.toFixed(2);
-        const commissionPct = commissionPctByVendor.get(g.vendorId) || 0;
-        const commissionAmount = +(vendorSubtotal * commissionPct / 100).toFixed(2);
-        const vendorPayoutAmount = +(vendorSubtotal - commissionAmount).toFixed(2);
-
-        subtotal += vendorSubtotal;
-        commissionTotal += commissionAmount;
-
-        const subRef = db.collection("subOrders").doc();
-        const subDoc = {
+      // Recálculo server-authoritative (lecturas antes que escrituras dentro de t).
+      const { totals, subOrderRefs, subOrderDocs, subOrderSummaries } =
+        await buildOrderInTransaction(t, {
+          qtyByProduct,
+          shippingZoneId,
           orderId,
           buyerUid: uid,
-          vendorId: g.vendorId,
-          nicheId: g.nicheId || null,
-          items: g.items,
-          vendorSubtotal,
-          commissionPct,
-          commissionAmount,
-          vendorPayoutAmount,
-          status: "pending",
-          createdAt: FieldValue.serverTimestamp(),
-        };
-        subOrderRefs.push(subRef);
-        subOrderDocs.push(subDoc);
-        subOrderSummaries.push({
-          id: subRef.id,
-          vendorId: g.vendorId,
-          vendorSubtotal,
-          commissionPct,
-          commissionAmount,
-          vendorPayoutAmount,
         });
-      }
 
-      subtotal = +subtotal.toFixed(2);
-      commissionTotal = +commissionTotal.toFixed(2);
-      const total = +(subtotal + shipping).toFixed(2);
-
-      const totals = { subtotal, shipping, commissionTotal, total };
-
-      // 6) Escribe order + subOrders (todas las escrituras al final).
+      // Escribe order + subOrders (todas las escrituras al final).
       t.set(orderRef, {
         buyerUid: uid,
         status: "pending",
@@ -1683,6 +1707,251 @@ exports.createOrderWithSubordersSecure = functions.https.onCall(async (data, con
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("createOrderWithSubordersSecure error:", e);
     throw new functions.https.HttpsError("internal", "Error al crear la orden.");
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// SPLIT DE PAGO — Mercado Pago marketplace (Perú). Fase 3.
+// ────────────────────────────────────────────────────────────────────────────
+// createCheckoutPreferenceSecure: recalcula el carrito server-side (misma lógica que
+// createOrderWithSubordersSecure), crea orders/{orderId} con status 'pending_payment'
+// + subOrders, y devuelve un init_point de Mercado Pago (o uno simulado en local).
+// confirmPaymentSecure: marca la orden como 'paid' y genera los payouts (idempotente).
+// mercadoPagoWebhook: en producción, dispara confirmPayment desde la notificación de MP.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Lógica compartida: marca orders/{orderId}='paid' (solo si era 'pending_payment') y
+// crea un doc en 'payouts' por cada subOrder. Idempotente: si ya está 'paid', no
+// duplica. Lecturas (order + subOrders) ANTES que escrituras, todo en una transacción.
+async function confirmPaymentForOrder(orderId) {
+  const oid = orderId != null ? String(orderId) : null;
+  if (!oid) {
+    throw new functions.https.HttpsError("invalid-argument", "Se requiere orderId.");
+  }
+
+  return await db.runTransaction(async (t) => {
+    // 1) LECTURAS primero.
+    const orderRef = db.collection("orders").doc(oid);
+    const orderSnap = await t.get(orderRef);
+    if (!orderSnap.exists) {
+      throw new functions.https.HttpsError("not-found", "Orden no encontrada: " + oid + ".");
+    }
+    const order = orderSnap.data();
+
+    // Idempotencia: si ya está pagada, no duplica payouts.
+    if (order.status === "paid") {
+      return { orderId: oid, status: "paid", payoutsCreated: 0, alreadyPaid: true };
+    }
+    // Solo se confirma desde 'pending_payment' (o 'pending' por compatibilidad).
+    if (order.status !== "pending_payment" && order.status !== "pending") {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        "La orden no está pendiente de pago (status actual: " + order.status + ")."
+      );
+    }
+
+    // Lee las subOrders de esta orden (dentro de la transacción, antes de escribir).
+    const subSnap = await t.get(
+      db.collection("subOrders").where("orderId", "==", oid)
+    );
+
+    // 2) ESCRITURAS.
+    const payoutRefs = [];
+    subSnap.forEach((doc) => {
+      const sub = doc.data();
+      const payoutRef = db.collection("payouts").doc();
+      payoutRefs.push({ ref: payoutRef, data: {
+        vendorId: sub.vendorId,
+        orderId: oid,
+        subOrderId: doc.id,
+        amount: sub.vendorPayoutAmount,
+        status: "pending",
+        createdAt: FieldValue.serverTimestamp(),
+      }});
+    });
+
+    t.update(orderRef, {
+      status: "paid",
+      paidAt: FieldValue.serverTimestamp(),
+    });
+    for (const p of payoutRefs) {
+      t.set(p.ref, p.data);
+    }
+
+    return { orderId: oid, status: "paid", payoutsCreated: payoutRefs.length, alreadyPaid: false };
+  });
+}
+
+// ── createCheckoutPreferenceSecure({ items, shippingZoneId }) ──────────────────
+exports.createCheckoutPreferenceSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+
+  const { qtyByProduct, shippingZoneId } = normalizeOrderInput(data);
+
+  let orderId;
+  let totals;
+  try {
+    const res = await db.runTransaction(async (t) => {
+      const orderRef = db.collection("orders").doc();
+      const oid = orderRef.id;
+
+      // Mismo recálculo server-authoritative (lecturas antes que escrituras).
+      const { totals: tot, subOrderRefs, subOrderDocs } =
+        await buildOrderInTransaction(t, {
+          qtyByProduct,
+          shippingZoneId,
+          orderId: oid,
+          buyerUid: uid,
+        });
+
+      // Orden con status 'pending_payment' (a la espera del pago en Mercado Pago).
+      t.set(orderRef, {
+        buyerUid: uid,
+        status: "pending_payment",
+        totals: tot,
+        subOrderIds: subOrderRefs.map((r) => r.id),
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      for (let i = 0; i < subOrderRefs.length; i++) {
+        t.set(subOrderRefs[i], subOrderDocs[i]);
+      }
+
+      return { orderId: oid, totals: tot };
+    });
+    orderId = res.orderId;
+    totals = res.totals;
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("createCheckoutPreferenceSecure (order) error:", e);
+    throw new functions.https.HttpsError("internal", "Error al crear la preferencia de pago.");
+  }
+
+  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+
+  // Sin token (emulador/local): NO se llama a Mercado Pago; init_point simulado.
+  if (!accessToken) {
+    return { orderId, init_point: "/pago-demo/" + orderId, simulated: true };
+  }
+
+  // Con token: crea la preferencia real en Mercado Pago con split (marketplace_fee).
+  try {
+    const backBase = process.env.MP_BACK_URL_BASE || "";
+    const body = {
+      items: [
+        {
+          title: "Pedido Wala",
+          quantity: 1,
+          unit_price: totals.total,
+          currency_id: "PEN",
+        },
+      ],
+      marketplace_fee: totals.commissionTotal,
+      external_reference: orderId,
+      back_urls: {
+        success: backBase + "/pago-exito/" + orderId,
+        failure: backBase + "/pago-error/" + orderId,
+        pending: backBase + "/pago-pendiente/" + orderId,
+      },
+      notification_url: process.env.MP_WEBHOOK_URL || undefined,
+    };
+
+    const resp = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + accessToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "");
+      console.error("Mercado Pago preferences error:", resp.status, errText);
+      throw new functions.https.HttpsError("internal", "Mercado Pago rechazó la preferencia.");
+    }
+
+    const pref = await resp.json();
+    return { orderId, init_point: pref.init_point, simulated: false };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("createCheckoutPreferenceSecure (MP) error:", e);
+    throw new functions.https.HttpsError("internal", "Error al contactar a Mercado Pago.");
+  }
+});
+
+// ── confirmPaymentSecure({ orderId }) ──────────────────────────────────────────
+// Marca la orden como 'paid' y genera los payouts pendientes. Idempotente.
+// En PRODUCCIÓN lo dispararía el webhook de Mercado Pago; en local simula el pago OK.
+exports.confirmPaymentSecure = functions.https.onCall(async (data, context) => {
+  requireAuth(context);
+  const orderId = data && data.orderId != null ? String(data.orderId) : null;
+  try {
+    return await confirmPaymentForOrder(orderId);
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("confirmPaymentSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al confirmar el pago.");
+  }
+});
+
+// ── mercadoPagoWebhook (onRequest, opcional) ───────────────────────────────────
+// Recibe notificaciones de Mercado Pago. Ante un 'payment' aprobado, resuelve la
+// orden por external_reference y reutiliza confirmPaymentForOrder. Verificación básica.
+exports.mercadoPagoWebhook = functions.https.onRequest(async (req, res) => {
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).send("Method Not Allowed");
+    }
+
+    const body = req.body || {};
+    const type = body.type || body.topic || (req.query && req.query.type);
+
+    // Solo nos interesan notificaciones de pago.
+    if (type !== "payment") {
+      return res.status(200).send("ignored");
+    }
+
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+    const paymentId =
+      (body.data && body.data.id) ||
+      body["data.id"] ||
+      (req.query && (req.query["data.id"] || req.query.id));
+
+    if (!paymentId) {
+      return res.status(200).send("no payment id");
+    }
+
+    // Sin token no podemos verificar el pago contra Mercado Pago.
+    if (!accessToken) {
+      console.warn("mercadoPagoWebhook: sin MERCADOPAGO_ACCESS_TOKEN, no se puede verificar.");
+      return res.status(200).send("no token");
+    }
+
+    // Verificación básica: consulta el pago real a Mercado Pago.
+    const payResp = await fetch("https://api.mercadopago.com/v1/payments/" + paymentId, {
+      headers: { "Authorization": "Bearer " + accessToken },
+    });
+    if (!payResp.ok) {
+      console.error("mercadoPagoWebhook: error consultando pago", payResp.status);
+      return res.status(200).send("payment lookup failed");
+    }
+    const payment = await payResp.json();
+
+    if (payment.status !== "approved") {
+      return res.status(200).send("not approved");
+    }
+
+    const orderId = payment.external_reference;
+    if (!orderId) {
+      return res.status(200).send("no external_reference");
+    }
+
+    await confirmPaymentForOrder(orderId);
+    return res.status(200).send("ok");
+  } catch (e) {
+    console.error("mercadoPagoWebhook error:", e);
+    // 200 para evitar reintentos infinitos de MP ante errores no recuperables.
+    return res.status(200).send("error handled");
   }
 });
 

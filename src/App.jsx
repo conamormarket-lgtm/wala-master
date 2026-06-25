@@ -63,6 +63,7 @@ const NichePage = lazy(() => import('./pages/NichePage'));
 const VendorPanel = lazy(() => import('./pages/VendorPanel'));
 const NichesPage = lazy(() => import('./pages/NichesPage'));
 const VendorStorefrontPage = lazy(() => import('./pages/VendorStorefrontPage'));
+const CheckoutDemoPage = lazy(() => import('./pages/CheckoutDemoPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -302,6 +303,8 @@ function App() {
                         <Route path="/nichos" element={<NichesPage />} />
                         <Route path="/vendedor" element={<VendorPanel />} />
                         <Route path="/tienda-vendedor/:slug" element={<VendorStorefrontPage />} />
+                        <Route path="/checkout-demo" element={<CheckoutDemoPage />} />
+                        <Route path="/pago-demo/:orderId" element={<CheckoutDemoPage />} />
 
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />

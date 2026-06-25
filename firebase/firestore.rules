@@ -183,7 +183,9 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow read: if isOwner(resource.data.userId)
+                     || (isAuthenticated() && resource.data.buyerUid == request.auth.uid)
+                     || isAdmin();
       allow create: if isAuthenticated() || request.resource.data.dni != null;
       allow update: if isAdmin() || isOwner(resource.data.userId);
       allow delete: if isAdmin();

@@ -8,6 +8,18 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
+## [Sin liberar] — Fase 3: Split de pago (Mercado Pago Marketplace) ✅ (verificado E2E simulado)
+Cobro con **comisión de marketplace** + creación de pedido y **payouts** por vendedor.
+- **Functions**: `createCheckoutPreferenceSecure({items,shippingZoneId})` (recalcula carrito server-side,
+  crea order `pending_payment` + subOrders; con `MERCADOPAGO_ACCESS_TOKEN` crea preferencia real de
+  Mercado Pago con `marketplace_fee`=comisión total; sin token → init_point simulado para local),
+  `confirmPaymentSecure({orderId})` (marca `paid` + genera `payouts` por vendedor, idempotente),
+  `mercadoPagoWebhook` (HTTP, para producción).
+- **Cliente**: `services/payments.js` + `/checkout-demo` y `/pago-demo/:orderId` (CheckoutDemoPage).
+- **Reglas**: `orders` legible por `buyerUid`.
+- Verificado E2E (simulado): order total 179.7 / comisión 14.38 → `paid` + 2 payouts (casa 49.9, estampados-lima 105.42).
+- ⛔ Para cobro REAL: configurar `MERCADOPAGO_ACCESS_TOKEN` (+ `MP_WEBHOOK_URL`, `MP_BACK_URL_BASE`) — requiere cuenta Mercado Pago.
+
 ## [Sin liberar] — Fase 3: Marketplace multi-vendor (core local) ✅ (verificado E2E)
 Pedido maestro + sub-órdenes por vendedor con comisión, envíos por zona y pagos a vendedores.
 Verificado E2E: carrito p1(casa)+p3×2(estampados-lima) → order + 2 subOrders (casa com 0/payout 49.9;
