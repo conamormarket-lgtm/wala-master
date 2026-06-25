@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { logout } from '../../services/firebase/auth';
-import { validateDNI, validateCE, validatePhone } from '../../utils/helpers';
+import { validateDNI, validateCE, validatePhone, validateDocInternacional } from '../../utils/helpers';
 import { useProducts } from '../../hooks/useProducts';
 import AvatarStudio from '../../components/profile/AvatarStudio';
+import CountrySelect from '../../components/intl/CountrySelect';
+import PhoneIntlInput from '../../components/intl/PhoneIntlInput';
+import { dialCodeByCountry } from '../../constants/countries';
 import styles from './PerfilPage.module.css';
 
 const Icons = {
@@ -50,10 +53,13 @@ const PerfilPage = () => {
 
   // Form State
   const [fullName, setFullName] = useState('');
+  const [country, setCountry] = useState('PE');
   const [tipoDoc, setTipoDoc] = useState('DNI');
   const [documento, setDocumento] = useState('');
   const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
+
+  const isPE = country === 'PE';
 
   // Avatar config state
   const [avatarConfig, setAvatarConfig] = useState({
@@ -90,9 +96,19 @@ const PerfilPage = () => {
   useEffect(() => {
     if (userProfile) {
       setFullName(userProfile.displayName || user?.displayName || '');
-      setTipoDoc(userProfile.tipoDocumento || 'DNI');
+      const profileCountry = userProfile.country || 'PE';
+      setCountry(profileCountry);
+      // PE conserva el toggle DNI/CE original; fuera de PE el tipo es 'OTRO'.
+      setTipoDoc(userProfile.tipoDocumento === 'CE' ? 'CE' : (userProfile.tipoDocumento || 'DNI'));
       setDocumento(userProfile.dni ? String(userProfile.dni).trim() : '');
-      setPhone(userProfile.phone ? String(userProfile.phone).replace(/\D/g, '') : '');
+      // En PE el teléfono se guarda sin formato (solo dígitos). Fuera de PE puede
+      // venir con código internacional; mostramos lo guardado tal cual / sin código.
+      if (profileCountry === 'PE') {
+        setPhone(userProfile.phone ? String(userProfile.phone).replace(/\D/g, '') : '');
+      } else {
+        const savedLocal = userProfile.phoneIntl?.localNumber;
+        setPhone(savedLocal != null ? String(savedLocal) : (userProfile.phone ? String(userProfile.phone) : ''));
+      }
       setBirthDate(userProfile.birthDate || '');
 
       if (userProfile.avatarConfig) {
@@ -103,21 +119,43 @@ const PerfilPage = () => {
 
   if (!user || !userProfile) return null;
 
-  const docValid = tipoDoc === 'DNI' ? validateDNI(documento) : validateCE(documento);
-  const formValid = docValid && fullName.trim() && validatePhone(phone);
+  // Validación ESTRICTA peruana solo si country === 'PE'. Fuera de PE el documento
+  // es texto libre (>=3) y el teléfono internacional (cualquier número no vacío).
+  const docValid = isPE
+    ? (tipoDoc === 'DNI' ? validateDNI(documento) : validateCE(documento))
+    : validateDocInternacional(documento);
+  const phoneValid = isPE ? validatePhone(phone) : String(phone || '').trim().length >= 4;
+  const formValid = docValid && fullName.trim() && phoneValid;
 
   const handleSaveInfo = async (e) => {
     e.preventDefault();
     setError(null);
     if (!formValid) return;
     setLoading(true);
+    const documentoNorm = isPE ? documento.replace(/\s/g, '') : documento.trim();
+    // ERP: el documento SIEMPRE va en dni (y clienteNumeroDocumento / envioNumeroDocumento).
+    // tipoDocumento = 'DNI'/'CE' si PE, 'OTRO' si extranjero.
     const updates = {
       displayName: fullName.trim(),
-      dni: documento,
-      tipoDocumento: tipoDoc,
-      phone: phone.replace(/\D/g, ''),
-      birthDate: birthDate
+      country,
+      dni: documentoNorm,
+      clienteNumeroDocumento: documentoNorm,
+      envioNumeroDocumento: documentoNorm,
+      tipoDocumento: isPE ? tipoDoc : 'OTRO',
+      clienteTipoDocumento: isPE ? tipoDoc : 'OTRO',
+      birthDate: birthDate,
     };
+    if (isPE) {
+      // Comportamiento peruano EXACTO: teléfono solo dígitos, sin phoneIntl.
+      updates.phone = phone.replace(/\D/g, '');
+    } else {
+      // Extranjero: teléfono internacional con código de país; phoneIntl es aditivo.
+      const dialCode = dialCodeByCountry(country) || '';
+      const localNumber = String(phone || '').trim();
+      const full = `${dialCode}${localNumber}`;
+      updates.phone = full;
+      updates.phoneIntl = { dialCode, localNumber, full };
+    }
     const { error: err } = await updateUserProfile(updates);
     setLoading(false);
     if (err) {
@@ -190,18 +228,41 @@ const PerfilPage = () => {
                   <label>Nombre completo</label>
                   <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={loading} />
                 </div>
-                <div className={styles.toggleRow}>
-                  <button type="button" className={`${styles.toggle} ${tipoDoc === 'DNI' ? styles.active : ''}`} onClick={() => setTipoDoc('DNI')}>DNI</button>
-                  <button type="button" className={`${styles.toggle} ${tipoDoc === 'CE' ? styles.active : ''}`} onClick={() => setTipoDoc('CE')}>CE</button>
-                </div>
                 <div className={styles.formGroup}>
-                  <label>{tipoDoc === 'DNI' ? 'Número de DNI' : 'Número de CE'}</label>
-                  <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\s/g, ''))} disabled={loading} maxLength={tipoDoc === 'CE' ? 12 : 8} />
+                  <label>País</label>
+                  <CountrySelect value={country} onChange={(code) => setCountry(code || 'PE')} />
                 </div>
-                <div className={styles.formGroup}>
-                  <label>Teléfono</label>
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} disabled={loading} />
-                </div>
+                {isPE ? (
+                  <>
+                    <div className={styles.toggleRow}>
+                      <button type="button" className={`${styles.toggle} ${tipoDoc === 'DNI' ? styles.active : ''}`} onClick={() => setTipoDoc('DNI')}>DNI</button>
+                      <button type="button" className={`${styles.toggle} ${tipoDoc === 'CE' ? styles.active : ''}`} onClick={() => setTipoDoc('CE')}>CE</button>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>{tipoDoc === 'DNI' ? 'Número de DNI' : 'Número de CE'}</label>
+                      <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\s/g, ''))} disabled={loading} maxLength={tipoDoc === 'CE' ? 12 : 8} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Teléfono</label>
+                      <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} disabled={loading} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.formGroup}>
+                      <label>Documento de identidad</label>
+                      <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value)} disabled={loading} placeholder="Pasaporte, ID o documento" />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Teléfono</label>
+                      <PhoneIntlInput
+                        countryCode={country}
+                        value={phone}
+                        onChange={({ localNumber }) => setPhone(localNumber)}
+                      />
+                    </div>
+                  </>
+                )}
                 <div className={styles.formGroup}>
                   <label>Fecha de Nacimiento</label>
                   <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} disabled={loading} />

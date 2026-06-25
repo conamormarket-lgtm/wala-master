@@ -193,7 +193,11 @@ export const AuthProvider = ({ children }) => {
     return res;
   }, [callFn, reloadProfile]);
 
-  const profileIncomplete = !!user && !!userProfile && (!userProfile.dni || !userProfile.phone);
+  // Perfil incompleto SOLO si faltan dni o phone (vacíos). NO se exige formato
+  // peruano: un extranjero guarda su documento en `dni` y su teléfono internacional
+  // en `phone`, así que con ambos no vacíos su perfil queda completo (no se bloquea).
+  const profileIncomplete = !!user && !!userProfile &&
+    (!String(userProfile.dni || '').trim() || !String(userProfile.phone || '').trim());
 
   // Admin = custom claim (fuente de verdad) o permisos en adminRoles (RBAC).
   // Sin localStorage ni emails hardcodeados (eliminados en Fase 0, H-01/H-09).

@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { updateOrderInERP } from '../../services/erp/firebase';
 
-const PaypalCheckout = ({ pedido, onSuccess }) => {
+const PaypalCheckout = ({ pedido, onSuccess, conversionRate = 3.8 }) => {
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Tasa de conversión de ejemplo para convertir la deuda en PEN a USD,
-  // ya que PayPal generalmente usa USD para cuentas internacionales
-  const CONVERSION_RATE = 3.8; 
+  // Tasa de conversión para convertir la deuda en PEN a USD,
+  // ya que PayPal generalmente usa USD para cuentas internacionales.
+  // Configurable vía la prop opcional 'conversionRate' (default 3.8).
+  // Se valida que sea un número positivo; si no, se usa 3.8 como respaldo.
+  const CONVERSION_RATE = (Number(conversionRate) > 0) ? Number(conversionRate) : 3.8;
   const montoDeuda = Number(pedido.montoDeuda || 0);
   const amountInUSD = (montoDeuda / CONVERSION_RATE).toFixed(2);
 
@@ -63,10 +65,19 @@ const PaypalCheckout = ({ pedido, onSuccess }) => {
         // Si tienes otros campos de estado relacionados con el pago, se pueden agregar aquí
       };
 
-      const { error: updateError } = await updateOrderInERP(pedido.id, updates);
-      
-      if (updateError) {
-        throw new Error(updateError);
+      // IMPORTANTE: el cobro YA fue capturado por PayPal en este punto.
+      // updateOrderInERP escribe en la colección 'pedidos', pero en el
+      // checkout el pedido vive en 'pedidos_web' con otro id, por lo que
+      // esta actualización puede fallar / no encontrar el documento. Un
+      // fallo aquí NO debe romper la experiencia de pago: lo registramos
+      // y continuamos para que onSuccess siempre se ejecute.
+      try {
+        const { error: updateError } = await updateOrderInERP(pedido.id, updates);
+        if (updateError) {
+          throw new Error(updateError);
+        }
+      } catch (erpErr) {
+        console.error("PayPal: el cobro se capturó pero falló la actualización del pedido en el ERP:", erpErr);
       }
 
       if (onSuccess) {

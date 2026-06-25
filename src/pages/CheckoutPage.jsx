@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -10,6 +10,10 @@ import { getMessage } from '../services/messages';
 import { linkPurchaseToReferral } from '../services/referrals';
 import { createWebOrder } from '../services/erp/firebase';
 import { markItemAsGifted } from '../services/wishlist';
+import { validateDNI } from '../utils/helpers';
+import { detectCountry } from '../services/geo';
+import CountrySelect from '../components/intl/CountrySelect';
+import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import Button from '../components/common/Button';
 import CulqiCustomCheckout from '../components/CulqiCustomCheckout/CulqiCustomCheckout';
 import PaypalCheckout from '../components/PaypalCheckout/PaypalCheckout';
@@ -40,7 +44,17 @@ const KapiSolCoinMini = () => (
 
 const validationSchema = Yup.object({
   customerName: Yup.string().required('Nombre requerido'),
-  dni: Yup.string().required('DNI requerido'),
+  country: Yup.string().required('País requerido'),
+  // DNI condicional: si el país es Perú se aplica la validación estricta de DNI (8 dígitos);
+  // para cualquier otro país el documento es texto libre (solo requerido).
+  dni: Yup.string().when('country', {
+    is: (country) => country === 'PE' || !country,
+    then: () =>
+      Yup.string()
+        .required('DNI requerido')
+        .test('dni-valido', 'DNI inválido (8 dígitos)', (value) => validateDNI(value)),
+    otherwise: () => Yup.string().required('Documento requerido')
+  }),
   phone: Yup.string().required('Teléfono requerido'),
   address: Yup.string().required('Dirección requerida'),
   district: Yup.string().required('Distrito requerido'),
@@ -69,6 +83,10 @@ const CheckoutPage = () => {
   const [processing, setProcessing] = useState(false);
   const [useCoinsToggle, setUseCoinsToggle] = useState(false);
   const [paymentStepData, setPaymentStepData] = useState(null);
+  // Teléfono internacional: guardamos el número en formato completo (dialCode + número local).
+  const [phoneFull, setPhoneFull] = useState('');
+  // Marca si el usuario tocó manualmente el selector de país (para no pisar su elección con la autodetección).
+  const countryTouchedRef = useRef(false);
   
   const subtotal = getTotalPrice();
   const monedasCount = activeMainCoins || 0;
@@ -127,6 +145,8 @@ const CheckoutPage = () => {
     enableReinitialize: true,
     initialValues: {
       customerName: userProfile?.displayName || user?.displayName || guestSavedInfo.customerName || '',
+      // País: prefill desde el perfil del usuario o lo guardado como invitado; default Perú ('PE').
+      country: userProfile?.country || guestSavedInfo.country || 'PE',
       dni: userProfile?.dni || guestSavedInfo.dni || '',
       phone: userProfile?.phone || guestSavedInfo.phone || '',
       address: guestSavedInfo.address || '',
@@ -145,6 +165,13 @@ const CheckoutPage = () => {
 
       try {
         const pseudoOrderId = `PD-${Date.now().toString(36).toUpperCase()}`;
+
+        // ── País / tipo de documento ──────────────────────────────────────
+        // esPeru = true cuando el país es 'PE' o no está definido (default seguro).
+        const esPeru = values.country === 'PE' || !values.country;
+        const tipoDocumento = esPeru ? 'DNI' : 'OTRO';
+        // Teléfono internacional en formato completo (dialCode + número); fallback al phone local.
+        const phoneIntl = phoneFull || values.phone;
 
         // ── Separar nombre en partes (nombre / apellidos) ─────────────────
         const nameParts = values.customerName.trim().split(/\s+/);
@@ -362,12 +389,19 @@ const CheckoutPage = () => {
           // ─ Número de referencia ─
           numeroPedido: pseudoOrderId,
 
+          // ─ Documento principal (el ERP busca el pedido por 'dni') ─
+          dni: values.dni,
+
+          // ─ Datos internacionales (aditivos; PE sigue funcionando igual) ─
+          country: values.country,
+          phoneIntl,
+
           // ─ Datos del cliente (campos ERP oficiales) ─
           clienteNombre,
           clienteApellidos,
           clienteNombreCompleto: values.customerName,
           clienteNumeroDocumento: values.dni,
-          clienteTipoDocumento: 'DNI',
+          clienteTipoDocumento: tipoDocumento,
           clienteContacto: values.phone,
           clienteContactoSecundario: '',
           clienteCorreo: values.email,
@@ -380,7 +414,7 @@ const CheckoutPage = () => {
           envioApellidos: clienteApellidos,
           envioContacto: values.phone,
           envioNumeroDocumento: values.dni,
-          envioTipoDocumento: 'DNI',
+          envioTipoDocumento: tipoDocumento,
           envioDireccion: values.address,
           envioDistrito: values.district,
           envioDepartamento: values.city,
@@ -573,6 +607,11 @@ const CheckoutPage = () => {
         message += `Envío: ${shipping === 0 ? 'Gratis' : `S/ ${shipping.toFixed(2)}`}\n`;
         message += `TOTAL A PAGAR: S/ ${total.toFixed(2)}\n\n`;
 
+        // ── Aviso de envío internacional (solo si NO es Perú) ──────────────
+        if (!esPeru) {
+          message += `\nEnvíos internacionales: la entrega demora de 7 a 30 días hábiles.\n`;
+        }
+
         message += whatsappConfig?.customText?.replace('{id}', pseudoOrderId) || `Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código ${pseudoOrderId}.`;
         if (referralTag) message += referralTag;
 
@@ -623,7 +662,10 @@ const CheckoutPage = () => {
         setPaymentStepData({
           id: webOrderId || pseudoOrderId,
           montoDeuda: total,
-          waLink: waLink
+          waLink: waLink,
+          // Bandera para la pantalla de pago: define método (Culqi vs Paypal) y aviso internacional.
+          esPeru: esPeru,
+          country: values.country
         });
       } catch (error) {
         console.error('Error al generar pedido:', error);
@@ -633,6 +675,31 @@ const CheckoutPage = () => {
       }
     }
   });
+
+  const { setFieldValue } = formik;
+
+  // ── Autodetección de país (solo si el usuario NO ha tocado el selector y no hay país en perfil) ──
+  // No pisa la elección manual del usuario ni un país ya cargado desde el perfil/invitado.
+  useEffect(() => {
+    let active = true;
+    if (userProfile?.country || guestSavedInfo.country) return; // ya hay país conocido
+    (async () => {
+      try {
+        const detected = await detectCountry();
+        if (active && detected?.code && !countryTouchedRef.current) {
+          setFieldValue('country', detected.code);
+        }
+      } catch (e) {
+        // Si la detección falla, se mantiene el default 'PE' (no rompe el flujo peruano).
+        console.warn('No se pudo autodetectar el país:', e);
+      }
+    })();
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // País actual del formulario; esPeru gobierna qué UI/validación mostrar (default seguro: Perú).
+  const formIsPeru = formik.values.country === 'PE' || !formik.values.country;
 
   if (items.length === 0) {
     return (
@@ -655,46 +722,86 @@ const CheckoutPage = () => {
               <p style={{ textAlign: 'center', marginBottom: '2rem', color: '#64748b' }}>
                 Tu pedido se ha generado correctamente. Para confirmarlo, realiza el pago.
               </p>
-              
+
+              {/* Aviso de envío internacional (solo si NO es Perú) */}
+              {!paymentStepData.esPeru && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '1rem', marginBottom: '1.5rem', color: '#1e40af', fontSize: '0.9rem', fontWeight: 500 }}>
+                  <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>✈️</span>
+                  <span>Envíos internacionales: la entrega demora de <strong>7 a 30 días hábiles</strong>.</span>
+                </div>
+              )}
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {user?.email === 'pruebas001@gmail.com' && (
+                {paymentStepData.esPeru ? (
                   <>
-                    <CulqiCustomCheckout 
+                    {/* PERÚ: Culqi (idéntico a hoy) + acuerdo por WhatsApp/Yape */}
+                    <CulqiCustomCheckout
                       pedido={paymentStepData}
                       onSuccess={() => {
                         clearCart();
                         navigate('/cuenta/pedidos');
                       }}
                     />
-                    
-                    <PaypalCheckout 
-                      pedido={paymentStepData}
-                      onSuccess={() => {
-                        clearCart();
-                        navigate('/cuenta/pedidos');
-                      }}
-                    />
-                    
+
                     <div style={{ textAlign: 'center', margin: '1rem 0', color: '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>O</div>
+
+                    <Button
+                      onClick={() => {
+                        window.open(paymentStepData.waLink, '_blank');
+                        clearCart();
+                        navigate('/cuenta/pedidos');
+                      }}
+                      variant="outline"
+                      fullWidth
+                    >
+                      Acordar pago por WhatsApp (Yape / Plin / Transf)
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {/* INTERNACIONAL: PayPal (Culqi oculto) + acuerdo por WhatsApp */}
+                    <PaypalCheckout
+                      pedido={paymentStepData}
+                      onSuccess={() => {
+                        clearCart();
+                        navigate('/cuenta/pedidos');
+                      }}
+                    />
+
+                    <div style={{ textAlign: 'center', margin: '1rem 0', color: '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>O</div>
+
+                    <Button
+                      onClick={() => {
+                        window.open(paymentStepData.waLink, '_blank');
+                        clearCart();
+                        navigate('/cuenta/pedidos');
+                      }}
+                      variant="outline"
+                      fullWidth
+                    >
+                      Acordar pago por WhatsApp
+                    </Button>
                   </>
                 )}
-                
-                <Button 
-                  onClick={() => {
-                    window.open(paymentStepData.waLink, '_blank');
-                    clearCart();
-                    navigate('/cuenta/pedidos');
-                  }}
-                  variant="outline"
-                  fullWidth
-                >
-                  Acordar pago por WhatsApp (Yape / Plin / Transf)
-                </Button>
               </div>
             </div>
           ) : (
           <form onSubmit={formik.handleSubmit} className={styles.form}>
             <h2>Detalles de Envío</h2>
+
+            <div className={styles.field}>
+              <label>País *</label>
+              <CountrySelect
+                value={formik.values.country}
+                onChange={(code) => {
+                  countryTouchedRef.current = true;
+                  formik.setFieldValue('country', code);
+                }}
+              />
+              {formik.touched.country && formik.errors.country && (
+                <span className={styles.error}>{formik.errors.country}</span>
+              )}
+            </div>
 
             <div className={styles.field}>
               <label>Nombre Completo *</label>
@@ -713,14 +820,14 @@ const CheckoutPage = () => {
 
             <div className={styles.row}>
               <div className={styles.field}>
-                <label>DNI *</label>
+                <label>Documento *</label>
                 <input
                   type="text"
                   name="dni"
                   value={formik.values.dni}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  placeholder="Documento de Identidad"
+                  placeholder={formIsPeru ? 'DNI (8 dígitos)' : 'Documento de identidad'}
                 />
                 {formik.touched.dni && formik.errors.dni && (
                   <span className={styles.error}>{formik.errors.dni}</span>
@@ -728,13 +835,13 @@ const CheckoutPage = () => {
               </div>
               <div className={styles.field}>
                 <label>Teléfono *</label>
-                <input
-                  type="tel"
-                  name="phone"
+                <PhoneIntlInput
+                  countryCode={formik.values.country}
                   value={formik.values.phone}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="Celular"
+                  onChange={({ localNumber, full }) => {
+                    formik.setFieldValue('phone', localNumber);
+                    setPhoneFull(full);
+                  }}
                 />
                 {formik.touched.phone && formik.errors.phone && (
                   <span className={styles.error}>{formik.errors.phone}</span>

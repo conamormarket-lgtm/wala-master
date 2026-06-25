@@ -49,6 +49,15 @@ export const validatePhone = (phone) => {
 };
 
 /**
+ * Valida documento internacional (para clientes fuera de Perú).
+ * No exige formato peruano: basta texto de al menos 3 caracteres.
+ */
+export const validateDocInternacional = (doc) => {
+  if (!doc) return false;
+  return doc.trim().length >= 3;
+};
+
+/**
  * Requisitos de contraseña para mostrar en tiempo real
  */
 export const getPasswordRequirements = (password) => {

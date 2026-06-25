@@ -6,10 +6,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
 import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
-import { validateDNI, validateCE, validatePhone, getPasswordRequirements, isPasswordValid } from '../utils/helpers';
+import { validateDNI, validateCE, validatePhone, validateDocInternacional, getPasswordRequirements, isPasswordValid } from '../utils/helpers';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import Modal from '../components/common/Modal/Modal';
+import CountrySelect from '../components/intl/CountrySelect';
+import PhoneIntlInput from '../components/intl/PhoneIntlInput';
+import { dialCodeByCountry } from '../constants/countries';
+import { detectCountry } from '../services/geo';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import styles from './RegisterPage.module.css';
 
@@ -26,6 +30,7 @@ const RegisterPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const [country, setCountry] = useState('PE');
   const [tipoDoc, setTipoDoc] = useState('DNI');
   const [documento, setDocumento] = useState('');
   const [fullName, setFullName] = useState('');
@@ -33,12 +38,27 @@ const RegisterPage = () => {
 
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
+  const isPE = country === 'PE';
+
+  // Detección de país por IP. Default 'PE' si falla (PRINCIPIO DE SEGURIDAD).
+  React.useEffect(() => {
+    let active = true;
+    detectCountry()
+      .then((res) => { if (active && res?.code) setCountry(res.code); })
+      .catch(() => { if (active) setCountry('PE'); });
+    return () => { active = false; };
+  }, []);
+
   const passwordReqs = getPasswordRequirements(password);
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
   const step1Valid = email && isPasswordValid(password) && passwordsMatch;
 
-  const docValid = tipoDoc === 'DNI' ? validateDNI(documento) : validateCE(documento);
-  const step2Valid = docValid && fullName.trim() && validatePhone(phone);
+  // Validación ESTRICTA peruana solo si country === 'PE'.
+  const docValid = isPE
+    ? (tipoDoc === 'DNI' ? validateDNI(documento) : validateCE(documento))
+    : validateDocInternacional(documento);
+  const phoneValid = isPE ? validatePhone(phone) : String(phone || '').trim().length >= 4;
+  const step2Valid = docValid && fullName.trim() && phoneValid;
 
   React.useEffect(() => {
     if (authLoading || !user) return;
@@ -78,7 +98,7 @@ const RegisterPage = () => {
     setConfirmModalOpen(false);
     setError(null);
     if (!user || !step2Valid) return;
-    const documentoNorm = documento.trim().replace(/\s/g, '');
+    const documentoNorm = isPE ? documento.trim().replace(/\s/g, '') : documento.trim();
     const { data: usersWithDni, error: queryErr } = await getCollection(PORTAL_USERS_COLLECTION, [
       { field: 'dni', operator: '==', value: documentoNorm }
     ]);
@@ -88,19 +108,33 @@ const RegisterPage = () => {
     }
     const otherUserWithDni = usersWithDni.some((doc) => doc.id !== user.uid);
     if (otherUserWithDni) {
-      setError('Este DNI ya está registrado en otra cuenta. Si es su DNI, use "Iniciar sesión" o recupere su acceso.');
+      setError('Este documento ya está registrado en otra cuenta. Si es suyo, use "Iniciar sesión" o recupere su acceso.');
       return;
     }
     setLoading(true);
-    const { error: err } = await setDocument(PORTAL_USERS_COLLECTION, user.uid, {
+    // ERP: el documento SIEMPRE en dni / clienteNumeroDocumento / envioNumeroDocumento.
+    const docFields = {
       email: user.email,
       displayName: fullName.trim(),
+      country,
       dni: documentoNorm,
-      tipoDocumento: tipoDoc,
-      phone: phone.replace(/\D/g, ''),
+      clienteNumeroDocumento: documentoNorm,
+      envioNumeroDocumento: documentoNorm,
+      tipoDocumento: isPE ? tipoDoc : 'OTRO',
+      clienteTipoDocumento: isPE ? tipoDoc : 'OTRO',
       accessSystem: 'portal_clientes',
       accountOrigin: 'register_form',
-    });
+    };
+    if (isPE) {
+      docFields.phone = phone.replace(/\D/g, '');
+    } else {
+      const dialCode = dialCodeByCountry(country) || '';
+      const localNumber = String(phone || '').trim();
+      const full = `${dialCode}${localNumber}`;
+      docFields.phone = full;
+      docFields.phoneIntl = { dialCode, localNumber, full };
+    }
+    const { error: err } = await setDocument(PORTAL_USERS_COLLECTION, user.uid, docFields);
     setLoading(false);
     if (err) {
       setError(err);
