@@ -1,6 +1,9 @@
 # FASE 3 — Marketplace multi-vendor
 
-> **Estado global de la fase: POR HACER.**
+> **Estado global: CORE LOCAL HECHO y verificado en emulador** (pedido maestro + sub-órdenes por
+> vendedor con comisión/payout, zonas de envío, pagos a vendedores). Ver `CHANGELOG.md`.
+> Pendiente (REQUIERE SERVICIOS EXTERNOS): split de pago real (Mercado Pago Marketplace / Stripe
+> Connect), búsqueda Algolia/Typesense, rol `vendor` por claims, e integrar el checkout real al flujo.
 > Documento de diseño a profundidad. Fuente: `docs/wala/PLAN-MAESTRO.md` §5 y §6 (FASE 3), `docs/wala/MODELO-DATOS.md` §3, y lectura directa del código real (`src/services/{vendors,niches,search,products}.js`, `src/constants/marketplace.js`, `src/pages/{SearchPage,NichePage,VendorPanel}.jsx`, `functions/index.js`).
 >
 > **Base ya colocada por Fase 1** (commits `a652f60`, `0f2414f`): existen `src/services/vendors.js` (entidad con `ownerUid/status/type/commissionPct/payout/niches`), `src/services/niches.js` (colección `niches`), `src/constants/marketplace.js` (`DEFAULT_VENDOR_ID='casa'`, `DEFAULT_NICHE_ID='regala-con-amor'`, `FULFILLMENT_TYPES`), `src/services/search.js` (búsqueda facetada en memoria con **seam documentado** para Algolia/Typesense), `scripts/backfill-vendor-niche.js`, y la UI cableada (`SearchPage`, `NichePage`, `VendorPanel`). Fase 3 **convierte esa base aditiva en un marketplace operativo con dinero real**.

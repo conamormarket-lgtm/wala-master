@@ -1,6 +1,8 @@
 # FASE 2 — Fidelización unificada
 
-> **Estado global de la fase: POR HACER.**
+> **Estado global: CORE + 2b HECHOS y verificados en emulador** (misiones diarias, racha/check-in,
+> ledger de puntos, tiers/niveles, catálogo de recompensas dinámico + canje). Ver `CHANGELOG.md`.
+> Pendiente: push v2 (FCM real, no emulable) y verificación de retos por triggers server-side.
 > Documento de diseño a profundidad. Fuente: `docs/wala/PLAN-MAESTRO.md` §4 y §6 (FASE 2), `docs/wala/MODELO-DATOS.md` §3.2, y lectura directa del código real (`functions/index.js`, `functions/economyLogic.js`, `functions/notificationsEngine.js`, `src/contexts/AuthContext.jsx`, `src/services/firebase/{ruleta,ballSort}.js`, `src/components/common/KapiPet/KapiPet.jsx`).
 >
 > **Precondición ya satisfecha por Fase 0** (commits `3d53501`, `9e84990`, `f0e4aa0`): la economía dejó de ser client-side. Hoy existen y están desplegables las Cloud Functions callable `feedKapiSecure`, `claimBallSortRewardSecure`, `spinRuletaSecure`, `recordChallengeEventSecure`, `spendCoinsSecure`, `freezeCoinsSecure`, `grantSurveyRewardSecure`, `claimDatesStreakSecure`, `claimReferralSecure` (`functions/index.js:738-1092`), más la lógica pura testeada en `functions/economyLogic.js` (44/44 tests). Fase 2 **no reabre** ese trabajo: lo **consolida** sobre un ledger único y un config central, y cierra el **residual** explícito de Fase 0.
