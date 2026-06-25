@@ -1,6 +1,8 @@
 # FASE 5 — Impulso, FOMO e inteligencia
 
-> **Estado global de la fase: POR HACER.**
+> **Estado global de la fase: BASE HECHA Y VERIFICADA E2E (emulador local) · resto POR HACER.**
+> El **núcleo de impulso e inteligencia** está implementado y verificado de extremo a extremo en el emulador local (`demo-wala`, rama `fase-0-seguridad`, **no desplegado**): **cofre diario** (`openDailyChestSecure`), **segmentación RFM** (`computeSegmentsSecure`, solo admin) y **ofertas relámpago** (`flashOffers`) con su UI de admin (`/admin/flash-offers`) y vitrina pública (`/ofertas`). Lo que sigue POR HACER requiere servicios externos / scheduler (push segmentado FCM, campañas programadas con Cloud Scheduler, recomendación por IA, countdown en home) o piezas de fases previas (push v2 de Fase 2, webhook ERP de Fase 3).
+>
 > Documento de diseño a profundidad. Fuente: `docs/wala/PLAN-MAESTRO.md` §4.4 y §6 (FASE 5), `docs/wala/MODELO-DATOS.md` §3.2, y lectura directa del código real (`functions/notificationsEngine.js`, `functions/index.js`, `src/services/firebase/ruleta.js`, `functions/economyLogic.js`).
 >
 > Es la fase de **cierre del bucle de retención**: mecánicas de impulso/FOMO, **inteligencia de segmentación** que elimina los full-scans, **campañas programables** y **antifraude + panel de economía**. Se apoya en los cimientos de Fase 2 (ledger, config, tiers, push v2) y en el RNG server-side ya existente de la ruleta.
@@ -16,10 +18,53 @@
 | `notifyWishlistBirthdays` | EN PROGRESO | `functions/index.js:422` — **full scan** diario |
 | Validación de admin en envío manual | HECHO (Fase 0, H-04) | `sendManualPromoNotification` (`notificationsEngine.js:181`) |
 | Push v2 (HTTP v1, deep links, topics, copys) | DEPENDE de Fase 2 | ver `docs/wala/fases/FASE-2-fidelizacion.md` §6 |
-| Ruleta diaria, cofres, ofertas relámpago | POR HACER | — |
-| `computeSegments` (RFM) | POR HACER | — |
-| Campañas programables / topics por nicho-ciudad | POR HACER | — |
-| Antifraude completo + panel de economía | POR HACER | — |
+| **Cofre diario** (`openDailyChestSecure`) | ✅ HECHO Y VERIFICADO (emulador) | recompensa 5–20 monedas/día, idempotente por `lastChestDate`, ledger `source: 'cofre_diario'` |
+| **Segmentación RFM** (`computeSegmentsSecure`, solo admin) | ✅ HECHO Y VERIFICADO (emulador) | RFM sobre `orders` pagadas → `portal_clientes_users/{uid}.segment` |
+| **Ofertas relámpago** (`flashOffers` + `/admin/flash-offers` + `/ofertas`) | ✅ HECHO Y VERIFICADO (emulador) | CRUD admin, vitrina pública, 2 ofertas seed |
+| Ruleta diaria, cofres con llaves/pity-timer | 🔧 PARCIAL | cofre **diario** hecho; cofres con **llaves + pity-timer** y ruleta diaria, POR HACER |
+| Push segmentado (FCM) / campañas programables / topics | ⬜ POR HACER | requiere FCM + Cloud Scheduler |
+| Antifraude completo + panel de economía | ⬜ POR HACER | — |
+
+> Convención de estado: ✅ hecho y verificado · 🔧 parcial · ⬜ por hacer.
+
+---
+
+## 0.bis Estado de implementación (local, verificado E2E)
+
+> Todo lo siguiente fue implementado y **verificado de extremo a extremo en el emulador local** (`demo-wala`, rama `fase-0-seguridad`, **no desplegado**). Usuarios de prueba: super usuario `admin@wala.test` / `wala1234`, cliente `cliente@wala.test` / `wala1234`. Build con `vite` + emuladores Firebase.
+
+### A. Cofre diario — `openDailyChestSecure` ✅
+
+- Recompensa **determinista** de **5–20 monedas**, **una sola vez por día** (zona horaria **Lima**).
+- **Idempotente** por campo `lastChestDate`: una segunda apertura el mismo día responde `alreadyOpened` sin volver a acreditar.
+- Acredita al ledger con `source: 'cofre_diario'`.
+- **Servicio:** `src/services/...` (`services/chest`).
+- **Verificación:** saldo inicial **50** → tras abrir cofre **68** (+18 monedas); segunda apertura el mismo día → `alreadyOpened` (sin doble crédito). ✔
+
+### B. Segmentación RFM — `computeSegmentsSecure` (SOLO admin) ✅
+
+- Calcula **RFM** sobre `orders` **pagadas** y deriva el `segment`:
+  - **`vip`** → `monetary >= 500` **o** `frequency >= 3`.
+  - **`activo`** → `frequency >= 1` **y** `recency <= 60` días.
+  - **`en_riesgo`** → tiene pedidos pero `recency > 60` días.
+  - **`nuevo`** → sin pedidos.
+- Escribe el resultado en `portal_clientes_users/{uid}.segment`.
+- **Solo admin:** un cliente sin permiso recibe `PERMISSION_DENIED`. El campo `segment` (y `lastChestDate`) están **bloqueados al cliente** en reglas (escritura **server-only**).
+- **Servicio:** `services/intelligence`.
+- **Verificación:** `processed 2` → `{ activo: 1, nuevo: 1 }`, el cliente queda `activo`; cliente invocando directamente → `PERMISSION_DENIED`. ✔
+
+### C. Ofertas relámpago — `flashOffers` ✅
+
+- Colección **pública (lectura) / admin (escritura)**: `{ title, productId, discountPct, startsAt, endsAt, active, order }`.
+- **Admin:** `/admin/flash-offers` — CRUD de ofertas + botón **"Recalcular segmentos"** (dispara `computeSegmentsSecure`).
+- **Vitrina pública:** `/ofertas` — lista ofertas + botón **"Cofre diario"** (dispara `openDailyChestSecure`).
+- **Servicios:** `services/flashOffers`.
+- **Seed:** 2 ofertas relámpago. ✔
+
+### Reglas de seguridad (verificadas)
+
+- `segment` y `lastChestDate` en `portal_clientes_users` → **bloqueados al cliente** (solo el servidor los escribe).
+- `flashOffers` → **lectura pública**, **escritura admin**.
 
 ---
 
@@ -106,18 +151,20 @@ Referencia: `docs/wala/MODELO-DATOS.md` §3.2. Todo **POR HACER**.
 
 ---
 
-## 4. Tareas detalladas (checklist) — POR HACER
+## 4. Tareas detalladas (checklist)
+
+> ✅ hecho y verificado (emulador) · 🔧 parcial · ⬜ por hacer.
 
 ### Bloque A — Impulso / FOMO
-- [ ] A1. Ruleta diaria: CF `spinDailySecure` reusando `pickWeightedPrize`; premios al `loyaltyLedger` (Fase 2).
-- [ ] A2. Cofres con llaves + pity-timer; llaves emitidas por misiones/racha (Fase 2).
-- [ ] A3. `flashOffers` con stock/contador y ventana; UI con cuenta regresiva y "quedan N".
-- [ ] A4. Banner "te faltan X puntos para [recompensa]" (usa saldo del ledger y `rewardsCatalog`).
+- [ ] A1. Ruleta diaria: CF `spinDailySecure` reusando `pickWeightedPrize`; premios al `loyaltyLedger` (Fase 2). ⬜
+- [x] A2🔧. **Cofre diario** (`openDailyChestSecure`) hecho y verificado (5–20 monedas/día, idempotente, ledger `cofre_diario`). **Pendiente:** cofres con **llaves + pity-timer** y llaves emitidas por misiones/racha (Fase 2). 🔧
+- [x] A3🔧. `flashOffers` con **ventana temporal** + admin (`/admin/flash-offers`) + vitrina pública (`/ofertas`) hecho y verificado. **Pendiente:** **stock/contador FOMO** ("quedan N") y **cuenta regresiva** (countdown) en UI. 🔧
+- [ ] A4. Banner "te faltan X puntos para [recompensa]" (usa saldo del ledger y `rewardsCatalog`). ⬜
 
 ### Bloque B — Inteligencia / segmentación
-- [ ] B1. CF `computeSegments` (cron diario): calcula RFM + ciclo de vida → `segments/{uid}`.
-- [ ] B2. Refactor de `notificationEngine` (`notificationsEngine.js:85`) y `notifyWishlistBirthdays` (`index.js:422`) para **consultar `segments`** en vez de full-scan.
-- [ ] B3. Disparadores de comportamiento: "racha en riesgo" (antes de medianoche Lima), "misión sin completar 19:00".
+- [x] B1🔧. **`computeSegmentsSecure`** (SOLO admin) hecho y verificado: RFM sobre `orders` pagadas → `portal_clientes_users/{uid}.segment` (`vip`/`activo`/`en_riesgo`/`nuevo`). **Pendiente:** convertirlo en **cron diario** automático (hoy se dispara manualmente desde admin / botón "Recalcular segmentos"). 🔧
+- [ ] B2. Refactor de `notificationEngine` (`notificationsEngine.js:85`) y `notifyWishlistBirthdays` (`index.js:422`) para **consultar `segments`** en vez de full-scan. ⬜
+- [ ] B3. Disparadores de comportamiento: "racha en riesgo" (antes de medianoche Lima), "misión sin completar 19:00". ⬜
 
 ### Bloque C — Campañas y topics
 - [ ] C1. Colección `campaigns` + admin CRUD (programadas/comportamiento/manual).
@@ -138,6 +185,22 @@ Referencia: `docs/wala/MODELO-DATOS.md` §3.2. Todo **POR HACER**.
 - [ ] F1. El engine ya no escanea toda la colección (medir lecturas Firestore antes/después).
 - [ ] F2. Pity-timer garantiza premio mayor tras N aperturas.
 - [ ] F3. Referido con device compartido → no acredita.
+
+---
+
+## 4.bis Pendiente Fase 5
+
+> El núcleo (cofre diario, segmentación RFM, ofertas relámpago) está ✅ hecho y verificado en emulador. Lo que sigue **requiere servicios externos / scheduler** o piezas de fases previas, y por eso queda ⬜ POR HACER:
+
+- ⬜ **Push segmentado (FCM):** enviar notificaciones por `segment` (apoyado en push v2 de Fase 2).
+- ⬜ **Campañas programadas (Cloud Scheduler):** colección `campaigns` + CF programada que dispara por topic/segmento a la hora indicada.
+- ⬜ **`computeSegments` como cron diario** automático (hoy se ejecuta manualmente desde admin).
+- ⬜ **Recomendación por IA** (sugerencias personalizadas).
+- ⬜ **Countdown de ofertas relámpago en home** + **stock/contador FOMO** ("quedan N").
+- ⬜ **Ruleta diaria** (`spinDailySecure`) y **cofres con llaves + pity-timer**.
+- ⬜ **Refactor de full-scans** (`notificationEngine`, `notifyWishlistBirthdays`) para consultar segmentos.
+- ⬜ **Antifraude completo** (deviceIds, velocity, multicuenta, referidos con device/IP compartido) y **panel de economía** (emisión vs sumidero, DAU/WAU, retención, ROI de recompensas).
+- ⬜ **Despliegue:** todo lo anterior verificado solo en build (`vite`) + emulador; aún **sin acceso a Firebase** para desplegar.
 
 ---
 

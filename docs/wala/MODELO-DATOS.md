@@ -7,6 +7,30 @@
 > Acompaña a `firestore.indexes.json` (raíz del repo), que declara los índices
 > compuestos que el código ACTUAL ya necesita.
 
+> **Estado de implementación (rama `fase-0-seguridad`, EMULADOR local `demo-wala`, NO desplegado a `pruebas-cd728`):**
+> Buena parte del "Modelo OBJETIVO" de la §3 YA está implementado y verificado E2E en el
+> emulador (Fases 2, 2b, 3, 4, 5). Las colecciones nuevas que ya existen en código se
+> marcan abajo con ✅ y se documentan con sus **campos EXACTOS** en la nueva §3.4. Lo que
+> sigue siendo objetivo de diseño (sin código) se mantiene como ⬜.
+>
+> Convención de estado: ✅ hecho y verificado · 🔧 parcial · ⬜ por hacer.
+>
+> Resumen de lo IMPLEMENTADO y verificado en emulador (verificado leyendo
+> `functions/index.js` + `scripts/seed-emulator.js`):
+> - **Fase 2 (fidelización diaria):** `loyaltyLedger`, `missions`, `userMissions`,
+>   + campos `xp`/`dailyStreak`/`lastCheckInDate` en el doc de usuario (check-in,
+>   misiones diarias). ✅
+> - **Fase 2b (canje):** `rewardsCatalog`, `userCoupons` (cupón real `WALA-XXXXXX`). ✅
+> - **Fase 3 (multi-vendor):** `niches` y `vendors` (ENTIDADES, sembradas y leídas en
+>   checkout), `orders`, `subOrders`, `shippingZones`, `payouts`
+>   (+ split de pago Mercado Pago Marketplace simulado). ✅
+> - **Fase 4 (POD):** `blueprints` (base mínima del modelo objetivo). ✅
+> - **Fase 5 (impulso/inteligencia):** `flashOffers` + campos `segment`/`lastChestDate`
+>   server-only en el doc de usuario (cofre diario + segmentación RFM). ✅
+> - **⬜ Aún objetivo (sin código):** `loyaltyConfig/global`, `tiers`, `ledger` contable,
+>   `searchIndex` (Algolia/Typesense), `dailySpins`/`chests`/`segments` como colecciones
+>   propias; y los campos objetivo que faltan en colecciones ya creadas (ver §3.4 / §3.5).
+
 ---
 
 ## 0. Cómo desplegar los índices
@@ -51,7 +75,7 @@ proyecto principal `pruebas-cd728`; (ERP) las del proyecto Firebase separado.
 | `tienda_landing_pages` | PROD | Landings dinámicas por slug. | `title`, `slug`, `heroImage`, `theme{}`, `targetBrandId`, `targetCollectionId`, `isActive` |
 | `tienda_mockups` | PROD | Prendas en blanco base para crear productos. | `name`, `category`, `baseImageUrl`, `variants[{colorName,colorHex,imageUrl}]` |
 | `product_reviews` | PROD | Reseñas de producto + votos "útil". | `productId`, `userId`, `userName`, `rating`, `comment`, `imageUrls[]`, `helpfulVotes[]`, `createdAt` |
-| `portal_clientes_users` | PROD | Perfil del cliente del portal + stats Wordle + economía de puntos. | `displayName`, `email`, `nombres`, `monedas`, `kapiCoins`, `wordlePlayed`, `wordleWins`, `wordleCurrentStreak`, `wordleMaxStreak`, `wordleTotalAttempts`, `lastWordleDate`, `wordleTodayAttempts`, `wordleTodayWon`, `referralCode` |
+| `portal_clientes_users` | PROD | Perfil del cliente del portal + stats Wordle + economía de puntos + gamificación/segmentación. | `displayName`, `email`, `nombres`, `monedas`, `kapiCoins`, `wordlePlayed`, `wordleWins`, `wordleCurrentStreak`, `wordleMaxStreak`, `wordleTotalAttempts`, `lastWordleDate`, `wordleTodayAttempts`, `wordleTodayWon`, `referralCode` · **(Fase 5 ✅) campos nuevos:** `xp`, `dailyStreak`, `lastCheckInDate`, `segment` 🔒, `lastChestDate` 🔒 (🔒 = server-only, ver §3.4.8) |
 | `portal_users` | PROD | **Colección "fantasma" por bug** (`referrals.js:205` y memoria del proyecto). El código de resolución de referidos consulta `portal_users` cuando debería ser `portal_clientes_users`. | `referralCode` |
 | `wordle` | PROD | Registro por partida diaria (1 doc por `${uid}_${YYYY-MM-DD}`). | `userId`, `displayName`, `date`, `word`, `length`, `attempts`, `timeSeconds`, `won`, `currentStreak` |
 | `wordle_daily_words` | PROD | Palabra del día (docId = fecha). | `word` |
@@ -157,7 +181,7 @@ vivo en `pruebas-cd728`.
 
 | Colección | Cambio | Tipo |
 |---|---|---|
-| `productos_wala` | + `vendorId` (FK string canónica, NO array), `nicheId`, `fulfillmentType` (`print_on_demand`\|`stock`\|`made_to_order`\|`dropship`), `productionBlueprintId`, `commissionPctOverride`, `vendorSku`, `leadTimeDays`, `shippingProfileId`. Métricas desnormalizadas: `ratingAverage`, `ratingCount`, `salesCount`, `viewsCount`. Reestructurar `sizes` → `[{size, stock}]`. | Extensión |
+| `productos_wala` | 🔧 **Parcial:** ya en uso/seed `vendorId` (FK string canónica), `nicheId`, `fulfillmentType` (`print_on_demand`\|`stock`\|… objetivo: `made_to_order`/`dropship`), `customizable`, `sku`. Backfill disponible en `scripts/backfill-vendor-niche.js`. **⬜ Aún objetivo:** `productionBlueprintId`, `commissionPctOverride`, `vendorSku`, `leadTimeDays`, `shippingProfileId`, métricas desnormalizadas `ratingAverage`/`ratingCount`/`salesCount`/`viewsCount`, reestructurar `sizes` → `[{size, stock}]`. | Extensión |
 | `tienda_categories` / `categories` | Consolidar en UNA colección; jerarquizar con `parentId`, `level`, `nicheId`. | Extensión + consolidación |
 | `portal_clientes_users` | El saldo deja de ser fuente de verdad: `monedas`/`kapiCoins` se derivan de `loyaltyLedger`. Se conservan campos pero se recalculan. | Extensión (semántica) |
 
@@ -165,22 +189,23 @@ vivo en `pruebas-cd728`.
 
 | Colección | Estado | Propósito y campos clave |
 |---|---|---|
-| `niches/{nicheId}` | 🆕 Nueva | Nichos/verticales: `slug`, `name`, `type`, `commissionPct`, `theme`, `storefrontConfigId`, `active`, `order`. |
-| `vendors/{vendorId}` | 🔁 Rediseño (de tag-string `vendors[]` a ENTIDAD) | `displayName`, `ownerUid`, `status`, `type` (`pod`\|`reseller`\|`self-fulfill`\|`house`), `niches[]`, `commissionPct`, `payout{method,cci,walletPhone}`, `ratings{avg,count}`, `slug`, `logoUrl`. |
-| `blueprints/{id}` | 🆕 Nueva (evolución de `productTypes`/`tienda_mockups`) | Plantilla POD reutilizable: `name`, `baseGarment`, `printAreas[]`, `mockupTemplates[]`, `variantMatrix`, `basePrintCost`, `decorationMethods[]`. Varios vendors POD publican sobre el mismo blueprint. |
-| `orders/{orderId}` | 🆕 Nueva (maestro) | `buyerUid`, `status`, `totals`, `loyalty{coinsSpent,coinsEarned}`, `subOrders[]`. |
-| `subOrders/{id}` | 🆕 Nueva (split por vendor) | `orderId`, `vendorId`, `nicheId`, `items[]`, `fulfillmentType`, `vendorSubtotal`, `commissionAmount`, `vendorPayoutAmount`, `productionStage`, `erpPedidoId`. |
-| `loyaltyLedger/{id}` | 🆕 Nueva (**fuente de verdad del saldo**) | `uid`, `type` (`earn`\|`spend`\|`expire`\|`adjust`), `source`, `amount`, `currency` (`points`\|`walacoins`\|`kapicoins`), `balanceAfter`, `refId`, `nicheId`, `idempotencyKey`, `createdAt`. Entrada inmutable; el saldo se deriva. Resuelve la divergencia `monedas` vs `monedasActivas`. |
-| `loyaltyConfig/global` | 🆕 Nueva (doc único) | Tasas, topes diarios/mensuales, equivalencia puntos↔soles, TTL, feature flags. Hoy hardcodeado (`REWARD_AMOUNT=2`, tope 31 kapiCoins, TTL 90 días). |
-| `missions/{id}` | 🆕 Nueva (generaliza `weeklyChallenges`) | `scope` (`daily`\|`weekly`\|`seasonal`), `actionType`, `goal`, `rewardPoints`, `tierMultiplier`, `segment`, `nicheTag`, `activeFrom`/`activeTo`. |
-| `users/{uid}/missions/{date}` (`userMissions`) | 🆕 Nueva (subcolección) | Instancia diaria de misión: `progress`, `status`, `expiresAt`. |
-| `tiers/{id}` | 🆕 Nueva | Niveles/XP con beneficios. |
-| `rewardsCatalog/{id}` | 🆕 Nueva (hoy hardcodeado en `CatalogReward.jsx`) | Catálogo de canje dinámico. |
-| `userCoupons/{id}` | 🆕 Nueva | Cupones emitidos al canjear, integrados al checkout (hoy el canje "gasta" sin generar nada). |
-| `shippingZones/{id}` | 🆕 Nueva | Departamento/provincia/distrito/agencia → costo + tiempo, **por vendor**. Sustituye la regla global S/15 / gratis > S/100 hoy duplicada y divergente entre `Cart.jsx` y `CheckoutPage.jsx`. |
-| `payouts/{id}` | 🆕 Nueva | Pagos a vendors. |
-| `ledger/{id}` (contable) | 🆕 Nueva | Contable inmutable: venta, comisión, payout, reembolso. |
-| `dailySpins` / `chests` / `flashOffers` / `segments/{uid}` | 🆕 Nuevas | Mecánicas de gamificación y segmentación. |
+| `niches/{nicheId}` | ✅ **Implementada** (seed + leída en checkout) | Nichos/verticales. Campos REALES: `slug`, `name`, `type`, `commissionPct`, `active`, `order`, `imageUrl`. **⬜ Aún objetivo:** `theme`, `storefrontConfigId`. Detalle en §3.4.9. |
+| `vendors/{vendorId}` | ✅ **Implementada** (entidad; seed + leída en checkout para `commissionPct`) — rediseño de tag-string `vendors[]` a ENTIDAD | Campos REALES: `name`, `displayName`, `slug`, `type` (`house`\|`pod`\|… objetivo: `reseller`/`self-fulfill`), `status`, `commissionPct`, `logoUrl`. **⬜ Aún objetivo:** `ownerUid`, `niches[]`, `payout{method,cci,walletPhone}`, `ratings{avg,count}`. Detalle en §3.4.9. |
+| `blueprints/{id}` | ✅ **Implementada** (Fase 4, base mínima) — evolución de `productTypes`/`tienda_mockups` | Plantilla POD reutilizable. Campos REALES hoy: `name`, `baseGarment`, `printAreas[{name,widthCm,heightCm,dpi}]`, `decorationMethods[]`, `basePrintCost`, `active`, `order`. **⬜ Aún objetivo:** `mockupTemplates[]`, `variantMatrix`. Detalle en §3.4.4. |
+| `orders/{orderId}` | ✅ **Implementada** (Fase 3, maestro) | Campos REALES: `buyerUid`, `status` (`pending_payment`\|`paid`), `totals{subtotal,shipping,commissionTotal,total}`, `subOrderIds[]`. Detalle en §3.4.1. |
+| `subOrders/{id}` | ✅ **Implementada** (Fase 3, split por vendor) | Campos REALES: `orderId`, `buyerUid`, `vendorId`, `nicheId`, `items[]`, `vendorSubtotal`, `commissionPct`, `commissionAmount`, `vendorPayoutAmount`, `status`. **⬜ Aún objetivo:** `fulfillmentType`, `productionStage`, `erpPedidoId`. Detalle en §3.4.2. |
+| `loyaltyLedger/{id}` | 🔧 **Parcial** (objetivo de diseño; el patrón "ledger inmutable" YA se usa en Fase 5 pero con otro nombre, ver nota) | `uid`, `type` (`earn`\|`spend`\|`expire`\|`adjust`), `source`, `amount`, `currency` (`points`\|`walacoins`\|`kapicoins`), `balanceAfter`, `refId`, `nicheId`, `idempotencyKey`, `createdAt`. Entrada inmutable; el saldo se deriva. Resuelve la divergencia `monedas` vs `monedasActivas`. **Nota:** el cofre diario (Fase 5) ya escribe entradas de ledger con `source: 'cofre_diario'` (ver §3.4.7); falta consolidar este diseño como fuente única de verdad. |
+| `loyaltyConfig/global` | ⬜ Objetivo (sin código aún) | Tasas, topes diarios/mensuales, equivalencia puntos↔soles, TTL, feature flags. Hoy las constantes de Fase 2 siguen hardcodeadas en `functions/index.js` (`XP_CHECKIN=10`, `XP_MISSION=5`, hitos de racha D3=5/D7=15/D30=50, cofre 5..20). |
+| `missions/{id}` | ✅ **Implementada** (Fase 2; generaliza `weeklyChallenges`) | Config de misión diaria. Campos REALES: `title`, `description`, `type` (`daily`), `actionKey`, `rewardPoints`, `active`, `order`. **⬜ Aún objetivo:** `scope` weekly/seasonal, `goal`, `tierMultiplier`, `segment`, `nicheTag`, `activeFrom`/`activeTo`. Detalle en §3.4.10. |
+| `userMissions/{uid}_{YYYY-MM-DD}` | ✅ **Implementada** (Fase 2; colección TOP-LEVEL con id determinista, NO subcolección) | Instancia diaria por usuario. Campos REALES: `userId`, `date`, `items[{missionId,completed,claimedAt}]`. **⬜ Aún objetivo:** `progress`/`status`/`expiresAt` por ítem. Detalle en §3.4.10. |
+| `tiers/{id}` | ⬜ Objetivo (sin código) | Niveles/XP con beneficios. (Hoy `xp` se acumula en el doc de usuario pero no hay colección de tiers.) |
+| `rewardsCatalog/{id}` | ✅ **Implementada** (Fase 2b; ya NO hardcodeado) | Catálogo de canje dinámico. Campos REALES: `title`, `description`, `cost` (número, en puntos `monedas`), `value` (texto ref), `active`, `order`. Detalle en §3.4.10. |
+| `userCoupons/{id}` | ✅ **Implementada** (Fase 2b; cupón real al canjear) | Cupones emitidos al canjear. Campos REALES: `uid`, `rewardId`, `title`, `code` (`WALA-XXXXXX`), `status` (`active`), `createdAt`. **⬜ Aún objetivo:** integración al checkout (consumo). Detalle en §3.4.10. |
+| `shippingZones/{id}` | ✅ **Implementada** (Fase 3, base mínima) | Zona de envío → costo + tiempo. Campos REALES: `name`, `departamento`, `cost`, `etaDays`, `active`, `order`. **⬜ Aún objetivo:** desglose provincia/distrito/agencia y costo **por vendor** (hoy zona global). Sustituye la regla global S/15 / gratis > S/100 divergente entre `Cart.jsx` y `CheckoutPage.jsx`. Detalle en §3.4.3. |
+| `payouts/{id}` | ✅ **Implementada** (Fase 3) | Pagos a vendors. Campos REALES: `vendorId`, `orderId`, `subOrderId`, `amount`, `status`. Detalle en §3.4.5. |
+| `ledger/{id}` (contable) | ⬜ Objetivo (sin código) | Contable inmutable: venta, comisión, payout, reembolso. |
+| `flashOffers/{id}` | ✅ **Implementada** (Fase 5) | Ofertas flash públicas. Campos REALES: `title`, `productId`, `discountPct`, `startsAt`, `endsAt`, `active`, `order`. Detalle en §3.4.6. |
+| `dailySpins` / `chests` / `segments/{uid}` | ⬜ Objetivo (sin código) | Mecánicas de gamificación y segmentación independientes. **Nota:** el cofre diario y la segmentación RFM de Fase 5 NO usan colecciones propias: persisten en campos del doc de usuario (`lastChestDate`, `segment`), ver §3.4.8. |
 | `searchIndex` (Algolia/Typesense, externo) | 🆕 Nuevo (no Firestore) | Docs planos con facets `nicheId`, `vendorId`, `categories`, `fulfillmentType`, `customizable`, `price`, `rating`. Reemplaza `searchProducts` (que hoy descarga toda la colección). |
 
 ### 3.3 Índices compuestos previsibles para el modelo OBJETIVO
@@ -199,6 +224,225 @@ No se incluyen aún en `firestore.indexes.json` (el código no existe), pero ant
 | `userCoupons` | cupones vigentes del usuario | `uid ASC`, `status ASC`, `expiresAt ASC` |
 | `missions` | misiones activas por scope/nicho | `scope ASC`, `active ASC`, `activeFrom ASC` |
 | `shippingZones` | zona por vendor + ubicación | `vendorId ASC`, `departamento ASC`, `provincia ASC` |
+
+> **Nota sobre lo IMPLEMENTADO:** `getDailyMissionsSecure` consulta `missions`
+> con `where type=='daily'` + `where active==true` (dos igualdades → índice de campo
+> único, NO requiere compuesto; el `order` se ordena en memoria). El checkout
+> multi-vendor lee documentos por id (`vendors/{id}`, `shippingZones/{id}`,
+> `productos_wala/{id}`) dentro de transacción, sin queries → tampoco requiere índices
+> compuestos hoy. Los de la tabla siguen siendo previsibles para cuando haya listados.
+
+---
+
+## 3.4 Colecciones IMPLEMENTADAS y verificadas (EMULADOR `demo-wala`)
+
+> Esta sección documenta con **campos EXACTOS** lo que ya existe en código
+> (`functions/index.js`, `scripts/seed-emulator.js`, `src/services/*`). Estado:
+> ✅ verificado E2E en emulador (rama `fase-0-seguridad`), ⬜ NO desplegado a prod.
+> Todas las mutaciones de saldo/estado pasan por Cloud Functions idempotentes; las
+> colecciones de gamificación/economía son **server-only** (las reglas bloquean la
+> escritura desde el cliente).
+
+### 3.4.1 `orders/{orderId}` (Fase 3, maestro) ✅
+
+Creada por `createOrderWithSubordersSecure` (status `pending`) o por
+`createCheckoutPreferenceSecure` (status `pending_payment`); confirmada a `paid` por
+`confirmPaymentSecure`. Precios recalculados server-side (nunca se confía en el cliente).
+
+```jsonc
+{
+  "buyerUid": "cliente-uid",
+  "status": "pending_payment",          // pending_payment | pending | paid
+  "totals": {
+    "subtotal": 169.7,                  // Σ vendorSubtotal (sin envío)
+    "shipping": 10,                     // shippingZones/{id}.cost
+    "commissionTotal": 14.38,           // Σ commissionAmount de subOrders
+    "total": 179.7                      // subtotal + shipping
+  },
+  "subOrderIds": ["<id1>", "<id2>"],
+  "createdAt": "<serverTimestamp>"
+}
+```
+⬜ Aún objetivo: `loyalty{coinsSpent,coinsEarned}`.
+
+### 3.4.2 `subOrders/{id}` (Fase 3, split por vendedor) ✅
+
+Una por `vendorId` presente en el carrito. `commissionPct` viene de
+`vendors/{vendorId}.commissionPct`.
+
+```jsonc
+{
+  "orderId": "<orderId>",
+  "buyerUid": "cliente-uid",
+  "vendorId": "estampados-lima",
+  "nicheId": "ropa-personalizada",      // de productos_wala, puede ser null
+  "items": [
+    { "productId": "p3", "name": "Polo edición Lima", "qty": 2, "unitPrice": 59.9 }
+  ],
+  "vendorSubtotal": 119.8,
+  "commissionPct": 12,
+  "commissionAmount": 14.38,            // vendorSubtotal * pct / 100
+  "vendorPayoutAmount": 105.42,         // vendorSubtotal - commissionAmount
+  "status": "pending",
+  "createdAt": "<serverTimestamp>"
+}
+```
+⬜ Aún objetivo: `fulfillmentType`, `productionStage`, `erpPedidoId`.
+
+### 3.4.3 `shippingZones/{id}` (Fase 3) ✅
+
+Lectura pública, escritura admin. CRUD en `/admin/envios` (AdminEnviosZonas),
+service `shippingZones.js`. Seed: `lima-metropolitana` (S/10, 2 días),
+`provincias` (S/20, 5 días).
+
+```jsonc
+{ "name": "Lima Metropolitana", "departamento": "Lima", "cost": 10, "etaDays": 2, "active": true, "order": 0 }
+```
+⬜ Aún objetivo: provincia/distrito/agencia y costo **por vendor**.
+
+### 3.4.4 `blueprints/{id}` (Fase 4 POD) ✅
+
+Lectura pública, escritura admin. CRUD en `/admin/blueprints`, service `blueprints.js`.
+Soporte de arte de producción en `src/utils/productionArt.js`
+(`pxFromCm`, `exportProductionArtPNG`, `validatePrintResolution`; verificado 30cm@300dpi = 3543px).
+
+```jsonc
+{
+  "name": "Polo clásico",
+  "baseGarment": "polo",
+  "printAreas": [
+    { "name": "Frente",  "widthCm": 30, "heightCm": 40, "dpi": 300 },
+    { "name": "Espalda", "widthCm": 30, "heightCm": 40, "dpi": 300 }
+  ],
+  "decorationMethods": ["DTG", "vinilo"],
+  "basePrintCost": 8,                    // soles
+  "active": true,
+  "order": 0
+}
+```
+⬜ Aún objetivo: `mockupTemplates[]`, `variantMatrix`; integrar productionArt en EditorPage.
+
+### 3.4.5 `payouts/{id}` (Fase 3) ✅
+
+Creados por `confirmPaymentSecure` (uno por subOrder pagada, idempotente). Escritura
+solo admin/servidor. CRUD/lectura en `/admin/payouts`, service `payouts.js`.
+
+```jsonc
+{ "vendorId": "estampados-lima", "orderId": "<orderId>", "subOrderId": "<subOrderId>", "amount": 105.42, "status": "pending", "createdAt": "<serverTimestamp>" }
+```
+
+### 3.4.6 `flashOffers/{id}` (Fase 5) ✅
+
+Lectura pública, escritura admin. CRUD en `/admin/flash-offers`, vitrina en `/ofertas`,
+service `flashOffers.js`. Seed: `fo-polos-30` (p1, -30%), `fo-tazas-2x1` (p2, -50%).
+
+```jsonc
+{ "title": "Polos -30% hoy", "productId": "p1", "discountPct": 30, "startsAt": "<ISO>", "endsAt": "<ISO>", "active": true, "order": 0 }
+```
+⬜ Aún objetivo: countdown en home.
+
+### 3.4.7 `loyaltyLedger/{id}` (Fase 2 — fuente de verdad del saldo) ✅
+
+Entrada **inmutable, solo servidor** (helper `writeLedger` dentro de transacción).
+La escriben: check-in en hitos (`source: 'checkin_d3'|'checkin_d7'|'checkin_d30'`),
+misiones (`source: 'mision_<missionId>'`), canje de recompensa (`type:'spend'`,
+`source: 'reward_<rewardId>'`) y cofre diario (`source: 'cofre_diario'`).
+
+```jsonc
+{
+  "uid": "cliente-uid",
+  "type": "earn",                       // earn | spend
+  "amount": 5,
+  "source": "cofre_diario",
+  "balanceAfter": 55,                   // saldo de 'monedas' tras la operación
+  "createdAt": "<serverTimestamp>"
+}
+```
+⬜ Aún objetivo del diseño completo (§3.2): `currency` (points/walacoins/kapicoins),
+`refId`, `nicheId`, `idempotencyKey`, `expiresAt`, tipos `expire`/`adjust`, y derivar
+`monedas` 100% del ledger (hoy `monedas` se actualiza en paralelo en el doc de usuario).
+
+### 3.4.8 Campos nuevos en `portal_clientes_users` (Fases 2 y 5) ✅
+
+Extensión del doc de usuario. Los marcados 🔒 son **server-only** (las reglas
+Firestore bloquean su escritura desde el cliente).
+
+| Campo | Tipo | Quién lo escribe | Notas |
+|---|---|---|---|
+| `monedas` | number | servidor (Fase 2) y cliente (legacy) | Puntos canjeables; saldo. |
+| `xp` | number | servidor (`dailyCheckInSecure` +10, `completeMissionSecure` +5) | Experiencia acumulativa, solo sube. |
+| `dailyStreak` | object | servidor (`dailyCheckInSecure`) | `{ count, lastDate, freezeTokens }`. |
+| `lastCheckInDate` | string `YYYY-MM-DD` (Lima) 🔒 | servidor | Idempotencia del check-in diario. |
+| `segment` | string 🔒 | servidor (`computeSegmentsSecure`, solo admin) | `vip`\|`activo`\|`en_riesgo`\|`nuevo` (RFM sobre orders pagadas). |
+| `lastChestDate` | string `YYYY-MM-DD` (Lima) 🔒 | servidor (`openDailyChestSecure`) | Idempotencia del cofre diario. |
+
+Verificado: cofre 50→68 (+ 2da apertura `alreadyOpened`); segmentación processed 2 →
+`{activo:1,nuevo:1}` (cliente=`activo`); cliente sin permiso → `PERMISSION_DENIED`.
+
+### 3.4.9 `niches/{nicheId}` y `vendors/{vendorId}` (entidades) ✅
+
+Sembradas y **leídas por id** en el checkout (vendor → `commissionPct`). Los productos
+(`productos_wala`) ya llevan `vendorId` (FK string canónica) y `nicheId`.
+
+```jsonc
+// niches/regala-con-amor
+{ "slug": "regala-con-amor", "name": "Regala Con Amor", "type": "general", "commissionPct": 0, "active": true, "order": 0, "imageUrl": "" }
+// vendors/estampados-lima
+{ "name": "Estampados Lima", "displayName": "Estampados Lima", "slug": "estampados-lima", "type": "pod", "status": "active", "commissionPct": 12, "logoUrl": "" }
+```
+⬜ Aún objetivo (vendors): `ownerUid`, `niches[]`, `payout{}`, `ratings{}`; rol vendor por claims.
+
+### 3.4.10 Gamificación de fidelización: `missions`, `userMissions`, `rewardsCatalog`, `userCoupons` (Fases 2 y 2b) ✅
+
+Funciones: `getDailyMissionsSecure`, `completeMissionSecure`, `dailyCheckInSecure`,
+`redeemRewardSecure` (todas server-authoritative e idempotentes por día Lima / por estado).
+
+```jsonc
+// missions/m1 (config; lectura pública, escritura admin)
+{ "title": "Visita diaria", "description": "Entra a la app hoy", "type": "daily", "actionKey": "visit", "rewardPoints": 2, "active": true, "order": 0 }
+
+// userMissions/<uid>_<YYYY-MM-DD> (TOP-LEVEL, id determinista; escritura solo servidor)
+{ "userId": "cliente-uid", "date": "2026-06-24", "items": [ { "missionId": "m1", "completed": true, "claimedAt": "<ISO>" } ] }
+
+// rewardsCatalog/rw-stickers (lectura pública, escritura admin; cost en puntos 'monedas')
+{ "title": "Pack de stickers", "description": "...", "cost": 30, "value": "Pack de stickers físico", "active": true, "order": 0 }
+
+// userCoupons/<auto> (lectura dueño, escritura solo servidor)
+{ "uid": "cliente-uid", "rewardId": "rw-stickers", "title": "Pack de stickers", "code": "WALA-7H2KQ9", "status": "active", "createdAt": "<serverTimestamp>" }
+```
+⬜ Aún objetivo: `tiers/{id}` (XP→niveles), consumir `userCoupons` en el checkout,
+`missions` con scope weekly/seasonal + `goal`/`segment`/`nicheTag`.
+
+### 3.4.11 Split de pago (Mercado Pago Marketplace, simulado) ✅
+
+`createCheckoutPreferenceSecure` crea `orders` (`pending_payment`) + `subOrders`; con
+`MERCADOPAGO_ACCESS_TOKEN` genera preferencia real con `marketplace_fee` = comisión
+total; sin token → `init_point` simulado `/pago-demo/{orderId}`. `confirmPaymentSecure`
+marca `paid` + crea `payouts` por vendedor (idempotente). `mercadoPagoWebhook` (HTTP)
+para producción. service `src/services/payments.js`; rutas `/checkout-demo`, `/pago-demo/:orderId`.
+Verificado simulado: order 179.7 / comisión 14.38 → `paid` + 2 payouts (49.9, 105.42).
+⬜ Aún objetivo: cobro REAL (configurar `MERCADOPAGO_ACCESS_TOKEN`, `MP_WEBHOOK_URL`,
+`MP_BACK_URL_BASE`), integrar `CheckoutPage` real a este flujo.
+
+---
+
+## 3.5 Pendiente (resumen consolidado)
+
+Lo que sigue ⬜ (requiere servicios externos, navegador/editor o despliegue):
+
+- **Despliegue:** nada está en `pruebas-cd728`; todo verificado en build (Vite) + emulador.
+- **Fase 3:** cobro REAL Mercado Pago (tokens/URLs), búsqueda Algolia/Typesense on-write
+  (`searchIndex`), rol vendor por claims, integrar `CheckoutPage` real al flujo de split.
+- **Fase 4:** integrar `productionArt` en EditorPage (arte de producción al agregar al
+  carrito, recorte por área del blueprint, validar resolución), PDF de producción,
+  fix de `finalCustomizedImage` para productos simples.
+- **Fase 5:** push segmentado (FCM), campañas programadas (Cloud Scheduler),
+  recomendación por IA, countdown de ofertas flash en home.
+- **Economía:** consolidar `loyaltyLedger` como fuente ÚNICA de saldo + `loyaltyConfig/global`
+  (sacar constantes hardcodeadas), `tiers`, consumo de `userCoupons` en checkout,
+  `currency`/`expiryDate`/`idempotencyKey` en el ledger.
+- **Datos:** `niches`/`vendors` con campos objetivo completos, `ledger` contable,
+  consolidar `categories` ↔ `tienda_categories`, fix del bug `portal_users` (referrals.js).
 
 ---
 

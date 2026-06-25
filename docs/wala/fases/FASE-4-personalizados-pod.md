@@ -1,7 +1,10 @@
 # FASE 4 — Personalizados como nicho POD escalable
 
-> **Estado global de la fase: POR HACER.**
-> Documento de diseño a profundidad. Fuente: `docs/wala/PLAN-MAESTRO.md` §3.2, §5.6 y §6 (FASE 4), `docs/wala/MODELO-DATOS.md` §3.2, y lectura directa del código real (`src/services/productTypes.js`, `src/services/mockups.js`, `src/services/designs.js`, `src/pages/EditorPage.jsx`, `src/pages/CheckoutPage.jsx`, `src/components/YoryoPersonalizado/**`, `src/utils/comboImageComposer.js`).
+> **Estado global de la fase: 🔧 PARCIAL — BASE hecha y verificada (local, emulador `demo-wala`, rama `fase-0-seguridad`, NO desplegado).**
+> La **base POD** ya existe y está verificada en emulador: colección `blueprints` con CRUD + admin (`/admin/blueprints`) y la **utilidad de arte de producción** (`src/utils/productionArt.js`: cm→px por DPI, export PNG en alta resolución, validación de imprimibilidad). Lo **pendiente** es la integración real en el editor (EditorPage), el PDF de producción y el fix de `finalCustomizedImage` para productos simples (ver §"Estado de implementación" y §"Pendiente Fase 4").
+> Documento de diseño a profundidad. Fuente: `docs/wala/PLAN-MAESTRO.md` §3.2, §5.6 y §6 (FASE 4), `docs/wala/MODELO-DATOS.md` §3.2, y lectura directa del código real (`src/services/blueprints.js`, `src/utils/productionArt.js`, `src/pages/admin/AdminBlueprints.jsx`, `src/services/productTypes.js`, `src/services/mockups.js`, `src/services/designs.js`, `src/pages/EditorPage.jsx`, `src/pages/CheckoutPage.jsx`, `src/components/YoryoPersonalizado/**`, `src/utils/comboImageComposer.js`).
+>
+> Convención de estado: ✅ hecho y verificado · 🔧 parcial · ⬜ por hacer.
 >
 > Objetivo de la fase: llevar el **editor POD ya funcional** (fabric.js: texto enriquecido, imágenes con quitar-fondo/recorte/tinte/máscara, cliparts, formas, multi-vista frente/espalda, zonas de impresión, undo/redo, combos) de "mini-Printful que produce miniaturas" a un **sistema de producción real estilo Printful**: blueprints reutilizables, arte de producción de alta resolución y un solo motor de edición.
 
@@ -20,6 +23,31 @@ El editor es un activo diferencial, pero **no emite arte de producción** y tien
 | **`productTypes` no es reutilizable entre vendedores POD** | `src/services/productTypes.js` | MEDIO (no escala a multi-vendor POD de Fase 3) |
 
 > Nota de priorización (del PLAN-MAESTRO §6): **el fix del render de producción simple puede adelantarse a Fase 0/operación** si la operación actual sufre. El resto (blueprints, DPI, PDF) es propio de Fase 4.
+
+---
+
+## 0bis. Estado de implementación (local, verificado en emulador)
+
+> Verificado en **emulador local `demo-wala`**, rama `fase-0-seguridad`, build con Vite. **NO desplegado** (sin acceso a Firebase aún). Super usuario local: `admin@wala.test / wala1234`; cliente: `cliente@wala.test / wala1234`.
+
+### ✅ Blueprints — plantilla POD reutilizable (BASE verificada)
+
+- ✅ Colección **`blueprints`** (Firestore): lectura **pública**, escritura **admin**. Servicio `src/services/blueprints.js` con CRUD completo (`getBlueprints` ordenado por `order` asc, `getBlueprint`, `createBlueprint`, `updateBlueprint`, `deleteBlueprint`).
+- ✅ Forma del documento (verificada en el servicio):
+  `{ name, baseGarment, printAreas:[{ name, widthCm, heightCm, dpi }], decorationMethods:[], basePrintCost, active, order }`
+  con `createdAt`/`updatedAt`. `normalizePrintArea` fuerza tipos numéricos (Firestore rechaza `NaN`/`undefined`) y aplica **`dpi=300` por defecto** (estándar de imprenta POD).
+- ✅ Admin CRUD en **`/admin/blueprints`** (`src/pages/admin/AdminBlueprints.jsx`), enlazado desde `src/components/AdminLayout/AdminLayout.jsx`.
+- ✅ **Seed** `bp-polo`: "Polo clásico", **2 áreas** (Frente / Espalda) de **30×40 cm @ 300 dpi**.
+
+### ✅ Utilidad de arte de producción (BASE verificada)
+
+`src/utils/productionArt.js` — lógica pura/reutilizable (sin acoplarse aún al editor):
+
+- ✅ **`pxFromCm(cm, dpi)`** → `Math.round((cm / 2.54) * dpi)`. **Verificado: 30 cm @ 300 dpi = 3543 px** (la medida nativa para imprenta del área del polo).
+- ✅ **`exportProductionArtPNG(fabricCanvas, { dpiMultiplier = 4 })`** → exporta el lienzo fabric en **alta resolución** vía `toDataURL({ format:'png', multiplier })` (escala por encima del tamaño visible para calidad de impresión).
+- ✅ **`validatePrintResolution({ imgWidthPx, areaWidthCm, dpi = 300 })`** → calcula los px necesarios (`(areaWidthCm/2.54)*dpi`) y compara con el ancho real de la imagen; devuelve `{ ok, needed, have }` para advertir/rechazar arte de baja resolución.
+
+> En la práctica: estas piezas son la **base** del pipeline (medidas físicas → píxeles, export alta-res, validación de imprimibilidad). Todavía **no** están cableadas al flujo del editor ni al pedido; esa integración es el grueso de lo pendiente (ver abajo).
 
 ---
 
@@ -97,10 +125,12 @@ Estructura del artefacto generado (referenciada desde `pedidos_web`/`subOrders`)
 - [ ] B4. Referenciar `productionArt[]` en el pedido/sub-orden; reglas de Storage que solo permitan a admin/operario ERP leer el arte.
 
 ### Bloque C — Blueprints y medidas físicas/DPI
-- [ ] C1. Diseñar `blueprints` y migrar `productTypes`/`tienda_mockups` a esa forma (aditivo: conservar campos actuales).
-- [ ] C2. Añadir `widthCm`/`heightCm`/`dpi`/`bleedMm` a cada `printArea`.
-- [ ] C3. Admin de blueprints reutilizables (reusar `PrintAreaEditor`/`AdminViewEditor` del editor consolidado).
-- [ ] C4. Vincular productos a blueprint vía `productionBlueprintId`.
+- [x] ✅ C1. Diseñar `blueprints` — colección + servicio `src/services/blueprints.js` con CRUD (lectura pública / escritura admin). Verificado en emulador. _Migración aditiva de `productTypes`/`tienda_mockups`: ⬜ pendiente._
+- [🔧] 🔧 C2. `printArea` con `widthCm`/`heightCm`/`dpi` ✅ (seed `bp-polo` 30×40 cm @ 300 dpi). Falta `bleedMm`/`shape`/`maskUrl`: ⬜.
+- [x] ✅ C3. Admin de blueprints reutilizables — `/admin/blueprints` (`src/pages/admin/AdminBlueprints.jsx`). _Reúso de `PrintAreaEditor`/`AdminViewEditor`: ⬜ pendiente (depende del editor consolidado)._
+- [ ] ⬜ C4. Vincular productos a blueprint vía `productionBlueprintId`.
+
+> Nota Bloque C: la **base** de blueprints está hecha y verificada; queda la migración aditiva de los campos legados, `bleedMm`/`shape`/`maskUrl` y el enlace producto→blueprint.
 
 ### Bloque D — Validación de imprimibilidad
 - [ ] D1. Calcular DPI efectivo de cada imagen colocada (px de la imagen / tamaño físico en la zona).
@@ -117,6 +147,19 @@ Estructura del artefacto generado (referenciada desde `pedidos_web`/`subOrders`)
 - [ ] F1. Producto simple personalizado → pedido con `productionArt` a DPI correcto.
 - [ ] F2. Imagen de baja resolución → advertencia/bloqueo según umbral.
 - [ ] F3. Mismo blueprint usado por dos productos/vendedores POD.
+
+---
+
+## 4bis. Pendiente Fase 4 (requiere editor/navegador y servicios externos)
+
+> La **base** (blueprints + utilidad `productionArt`) está hecha y verificada en emulador. Lo que sigue requiere trabajo dentro del **editor fabric** (navegador) y/o servicios externos (Storage, CF):
+
+- ⬜ **Integrar `productionArt` en `EditorPage`**: generar el **arte de producción** al agregar al carrito, **recortar por el área** del blueprint (`printAreas[].widthCm/heightCm/dpi`) y **validar la resolución** de las imágenes colocadas con `validatePrintResolution` (advertir bajo el DPI objetivo, bloquear bajo el mínimo duro). Hoy `productionArt.js` es lógica pura **no cableada** al flujo del editor ni al pedido.
+- ⬜ **Fix del render de producto simple** (`finalCustomizedImage`): hoy solo se genera para combos; el producto simple deja `imageURL=null` y el ERP recibe solo JSON de capas (ver §0 Bloque A). Todo producto personalizado debe emitir `finalCustomizedImage`.
+- ⬜ **Generación de PDF de producción** (y, opcional, SVG con `bleedMm`) por zona, además del PNG alta-res.
+- ⬜ **Pipeline al pedido**: subir el arte a **Storage** (`production-art/{orderId}/{subOrderId}/{printAreaId}.png`) y referenciar `productionArt[]` en `subOrders[].items[].customizationRef`/`pedidos_web`; reglas de Storage que restrinjan la lectura a admin/operario.
+- ⬜ **Blueprints — completar el modelo**: `bleedMm`/`shape`/`maskUrl` por área, `mockupTemplates[]`, `variantMatrix`, enlace `productionBlueprintId` y migración aditiva de `productTypes`/`tienda_mockups`.
+- ⬜ **Consolidación de editores**: deprecar/eliminar `src/components/YoryoPersonalizado/WALA_Editor_Export/**` y dejar un solo motor (Bloque E).
 
 ---
 

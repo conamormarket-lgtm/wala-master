@@ -1,12 +1,17 @@
 # FASE 3 — Marketplace multi-vendor
 
-> **Estado global: CORE LOCAL HECHO y verificado en emulador** (pedido maestro + sub-órdenes por
-> vendedor con comisión/payout, zonas de envío, pagos a vendedores). Ver `CHANGELOG.md`.
-> Pendiente (REQUIERE SERVICIOS EXTERNOS): split de pago real (Mercado Pago Marketplace / Stripe
-> Connect), búsqueda Algolia/Typesense, rol `vendor` por claims, e integrar el checkout real al flujo.
-> Documento de diseño a profundidad. Fuente: `docs/wala/PLAN-MAESTRO.md` §5 y §6 (FASE 3), `docs/wala/MODELO-DATOS.md` §3, y lectura directa del código real (`src/services/{vendors,niches,search,products}.js`, `src/constants/marketplace.js`, `src/pages/{SearchPage,NichePage,VendorPanel}.jsx`, `functions/index.js`).
+> **Estado global: CORE LOCAL ✅ HECHO y verificado E2E en emulador** (`demo-wala`, rama
+> `fase-0-seguridad`, NO desplegado): pedido maestro + sub-órdenes por vendedor con
+> comisión/payout, zonas de envío, pagos a vendedores, **y SPLIT DE PAGO (Mercado Pago
+> Marketplace) verificado en modo simulado**. Ver §9 "Estado de implementación" y `CHANGELOG.md`.
+> ⬜ Pendiente (REQUIERE SERVICIOS EXTERNOS): cobro REAL (configurar `MERCADOPAGO_ACCESS_TOKEN` /
+> webhooks), búsqueda Algolia/Typesense on-write, rol `vendor` por claims, integrar el checkout
+> REAL (`CheckoutPage`) a este flujo, y despliegue.
+> Documento de diseño a profundidad. Fuente: `docs/wala/PLAN-MAESTRO.md` §5 y §6 (FASE 3), `docs/wala/MODELO-DATOS.md` §3, y lectura directa del código real (`functions/index.js`, `src/services/{orders,payments,shippingZones,payouts,vendors,niches,search,products}.js`, `src/constants/marketplace.js`, `src/pages/{SearchPage,NichePage,VendorPanel,CheckoutDemoPage,PagoDemo}.jsx`, `src/pages/admin/{AdminEnviosZonas,AdminPayouts}.jsx`, `firebase/firestore.rules`).
 >
-> **Base ya colocada por Fase 1** (commits `a652f60`, `0f2414f`): existen `src/services/vendors.js` (entidad con `ownerUid/status/type/commissionPct/payout/niches`), `src/services/niches.js` (colección `niches`), `src/constants/marketplace.js` (`DEFAULT_VENDOR_ID='casa'`, `DEFAULT_NICHE_ID='regala-con-amor'`, `FULFILLMENT_TYPES`), `src/services/search.js` (búsqueda facetada en memoria con **seam documentado** para Algolia/Typesense), `scripts/backfill-vendor-niche.js`, y la UI cableada (`SearchPage`, `NichePage`, `VendorPanel`). Fase 3 **convierte esa base aditiva en un marketplace operativo con dinero real**.
+> **Base ya colocada por Fase 1** (commits `a652f60`, `0f2414f`): existen `src/services/vendors.js` (entidad con `ownerUid/status/type/commissionPct/payout/niches`), `src/services/niches.js` (colección `niches`), `src/constants/marketplace.js` (`DEFAULT_VENDOR_ID='casa'`, `DEFAULT_NICHE_ID='regala-con-amor'`, `FULFILLMENT_TYPES`), `src/services/search.js` (búsqueda facetada en memoria con **seam documentado** para Algolia/Typesense), `scripts/backfill-vendor-niche.js`, y la UI cableada (`SearchPage`, `NichePage`, `VendorPanel`). Fase 3 **convierte esa base aditiva en un marketplace operativo con dinero real** — CORE ya construido y verificado en emulador (ver §9).
+>
+> **Convención de estado:** ✅ hecho y verificado · 🔧 parcial · ⬜ por hacer.
 
 ---
 
@@ -14,16 +19,18 @@
 
 | Pieza | Estado real | Archivo |
 |---|---|---|
-| Entidad `vendors` (no tag-string) | EN PROGRESO — CRUD existe, falta rol/claims y operación | `src/services/vendors.js` |
-| Colección `niches` | EN PROGRESO — CRUD existe, falta storefront por nicho | `src/services/niches.js` |
-| Campos `vendorId`/`nicheId`/`fulfillmentType` en producto | PARCIAL — defaults aditivos + backfill listo, falta correr backfill en prod | `src/constants/marketplace.js`, `scripts/backfill-vendor-niche.js` |
-| Búsqueda facetada + paginación | PARCIAL — funciona en memoria; **seam** para servicio externo declarado | `src/services/search.js:8-11` |
-| Panel `/vendedor` | EN PROGRESO — `VendorPanel.jsx` cableado a la UI (commit `0f2414f`), falta CRUD propio + ventas + payouts | `src/pages/VendorPanel.jsx` |
-| `order` maestro + `subOrders` | POR HACER | — |
-| Split de pago / payouts / ledger contable | POR HACER | — |
-| Envíos por zona (`shippingZones`) | POR HACER | — |
-| Pago online real (gate de email) | POR HACER — bloqueado tras `user.email === 'pruebas001@gmail.com'` | CheckoutPage / pasarelas |
-| Pagos server-side seguros (Culqi monto validado, PayPal capturado en CF) | PARCIAL — Fase 0 endureció `processCulqiPayment` (H-11); PayPal sigue capturado en cliente | `functions/index.js:624` (`processCulqiPayment`) |
+| Entidad `vendors` (no tag-string) | 🔧 CRUD existe; falta rol/claims `vendor` | `src/services/vendors.js` |
+| Colección `niches` | 🔧 CRUD existe; falta storefront por nicho | `src/services/niches.js` |
+| Campos `vendorId`/`nicheId`/`fulfillmentType` en producto | 🔧 defaults aditivos + backfill listo; falta correr backfill en prod | `src/constants/marketplace.js`, `scripts/backfill-vendor-niche.js` |
+| Búsqueda facetada + paginación | 🔧 funciona en memoria; **seam** para servicio externo declarado | `src/services/search.js:8-11` |
+| Panel `/vendedor` | 🔧 `VendorPanel.jsx` ve sus sub-órdenes (verificado); falta CRUD propio de catálogo completo | `src/pages/VendorPanel.jsx` |
+| `order` maestro + `subOrders` | ✅ HECHO y verificado E2E (emulador) | `functions/index.js` (`createOrderWithSubordersSecure`), `src/services/orders.js` |
+| Split de pago (Mercado Pago Marketplace) | ✅ HECHO y verificado simulado (emulador) | `functions/index.js` (`createCheckoutPreferenceSecure`/`confirmPaymentSecure`/`mercadoPagoWebhook`), `src/services/payments.js` |
+| `payouts` por vendedor | ✅ HECHO y verificado; admin `/admin/payouts` | `functions/index.js`, `src/services/payouts.js`, `src/pages/admin/AdminPayouts.jsx` |
+| Envíos por zona (`shippingZones`) | ✅ HECHO y verificado; admin `/admin/envios` | `src/services/shippingZones.js`, `src/pages/admin/AdminEnviosZonas.jsx` |
+| `ledger` contable inmutable | ⬜ POR HACER (los `payouts` ya registran monto/estado; falta libro contable separado) | — |
+| Pago online real (gate de email) en `CheckoutPage` | ⬜ POR HACER — flujo real bloqueado tras `user.email === 'pruebas001@gmail.com'`; el split nuevo vive en `/checkout-demo`+`/pago-demo` | `CheckoutPage` / pasarelas |
+| Pagos server-side seguros (Culqi monto validado, PayPal capturado en CF) | 🔧 Fase 0 endureció `processCulqiPayment` (H-11); PayPal sigue capturado en cliente | `functions/index.js:624` (`processCulqiPayment`) |
 
 ---
 
@@ -225,3 +232,81 @@ Docs planos con facets `nicheId`, `vendorId`, `categories`, `fulfillmentType`, `
 | G — Conciliación ERP | ~0.5 sem |
 
 > Punto fino del cronograma: integración del split de pago (C2) y su KYC; presupuestar holgura por dependencia externa del proveedor.
+
+---
+
+## 9. Estado de implementación (local, verificado)
+
+> Todo lo siguiente está **construido y verificado en el EMULADOR local** (proyecto `demo-wala`,
+> rama `fase-0-seguridad`). **NO está desplegado.** Verificación hecha con super usuario local
+> `admin@wala.test` / `wala1234` y cliente `cliente@wala.test` / `wala1234`. Build con Vite +
+> emulador de Firebase.
+
+### 9.1 Pedido maestro + sub-órdenes por vendedor — ✅ verificado E2E
+
+- **CF `createOrderWithSubordersSecure(items, shippingZoneId)`** (`functions/index.js`): **recalcula
+  precios server-side** desde `productos_wala`, agrupa los items por `vendorId`, y crea en una
+  operación el `order` (maestro) + los `subOrders` (uno por vendedor), con
+  `vendorSubtotal` / `commissionPct` / `commissionAmount` / `vendorPayoutAmount`. El **envío se
+  resuelve por zona** (`shippingZoneId`). **Ignora cualquier total del cliente.**
+- **Colecciones creadas:**
+  - `orders` → `{ buyerUid, status, totals:{ subtotal, shipping, commissionTotal, total }, subOrderIds }`.
+  - `subOrders` → `{ orderId, buyerUid, vendorId, nicheId, items[], vendorSubtotal, commissionPct, commissionAmount, vendorPayoutAmount, status }`.
+  - `shippingZones` → `{ name, departamento, cost, etaDays, active, order }`.
+  - `payouts` → `{ vendorId, orderId, subOrderId, amount, status }`.
+- **Servicios cliente:** `src/services/orders.js`, `src/services/shippingZones.js`,
+  `src/services/payouts.js`.
+- **UI:** `/admin/envios` (`AdminEnviosZonas` — CRUD de zonas), `/admin/payouts`
+  (`AdminPayouts`), y `VendorPanel` muestra las sub-órdenes del vendedor.
+- **Reglas Firestore** (`firebase/firestore.rules`): `subOrders` legible por dueño/admin;
+  `shippingZones` lectura pública / escritura admin; `payouts` solo admin; `orders` legible por su
+  `buyerUid`.
+- **Verificación E2E:** carrito con `p1` (vendedor `casa`) + `p3 ×2` (vendedor `estampados-lima`)
+  → **1 `order` + 2 `subOrders`**:
+  - `casa`: comisión 0 → payout **49.9**.
+  - `estampados-lima`: comisión **12% = 14.38** → payout **105.42**.
+  - shipping **10**, **total 179.7**.
+
+### 9.2 Split de pago (Mercado Pago Marketplace) — ✅ verificado simulado
+
+- **CF `createCheckoutPreferenceSecure({ items, shippingZoneId })`** (`functions/index.js`): usa el
+  **mismo recálculo server-side** que `createOrderWithSubordersSecure`; crea el `order`
+  (`status: 'pending_payment'`) + sus `subOrders`.
+  - **Con `MERCADOPAGO_ACCESS_TOKEN`** configurado → crea la **preferencia real** en Mercado Pago
+    con `marketplace_fee = comisión total` (split de pago del marketplace).
+  - **Sin token** → devuelve un `init_point` **simulado** apuntando a `/pago-demo/:orderId`.
+- **CF `confirmPaymentSecure({ orderId })`**: marca el `order` como `'paid'` y **crea los `payouts`
+  por vendedor**. Es **idempotente** (no duplica payouts si se reinvoca).
+- **CF `mercadoPagoWebhook`** (`onRequest`, HTTP): pensada para **producción** — dispara
+  `confirmPayment` desde la notificación verificada de Mercado Pago.
+- **Servicio cliente:** `src/services/payments.js`. **Rutas:** `/checkout-demo`
+  (`CheckoutDemoPage`) y `/pago-demo/:orderId` (`PagoDemo`).
+- **Verificación simulada:** `order` **179.7** / comisión **14.38** → tras confirmar pasa a
+  **`paid`** + se generan **2 `payouts`** (**49.9** y **105.42**).
+
+---
+
+## 10. Pendiente (⬜ requiere servicios externos / integración)
+
+> Lo construido vive en el flujo **demo** (`/checkout-demo` + `/pago-demo`) y en el emulador. Lo
+> que falta requiere cuentas/servicios externos, claims, o conmutar el checkout real.
+
+- **Cobro REAL con Mercado Pago:** configurar `MERCADOPAGO_ACCESS_TOKEN`, `MP_WEBHOOK_URL` y
+  `MP_BACK_URL_BASE` para que `createCheckoutPreferenceSecure` genere la preferencia real y
+  `mercadoPagoWebhook` reciba y verifique las notificaciones.
+- **Integrar el checkout REAL:** conectar `CheckoutPage` (flujo de producción, hoy detrás del gate
+  `pruebas001@gmail.com`) a este flujo de `orders`/`subOrders`/split, en lugar del demo.
+- **Búsqueda escalable:** índice Algolia/Typesense alimentado **on-write** (CF de sync de
+  `productos_wala`), reemplazando el filtrado en memoria de `src/services/search.js` (seam ya
+  marcado).
+- **Rol `vendor` por custom claims:** `setVendorClaim`, onboarding/aprobación, y restringir el
+  panel `/vendedor` a su propio catálogo (hoy `VendorPanel` ya ve sus sub-órdenes, falta el CRUD
+  propio del catálogo).
+- **`ledger` contable inmutable** separado (`sale`/`commission`/`payout`/`refund`) conciliable
+  contra el `charge_id` de la pasarela; hoy los `payouts` registran monto/estado pero no hay libro
+  contable aparte.
+- **`runPayouts` (cron)** que agrupe y dispare transferencias reales al proveedor.
+- **Despliegue:** sin acceso a Firebase aún; todo verificado solo en build (Vite) + emulador.
+
+> Nota: las piezas heredadas de Fase 1 que siguen 🔧 (entidad `vendors`, `niches`, búsqueda en
+> memoria, backfill en prod) se detallan en §0 y §4.
