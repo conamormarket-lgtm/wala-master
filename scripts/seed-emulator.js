@@ -44,6 +44,10 @@ async function ensureUser(uid, email, password, claims) {
   await setDoc("tienda_categories", "polos", { name: "Polos", imageUrl: "", order: 0 });
   await setDoc("tienda_categories", "tazas", { name: "Tazas", imageUrl: "", order: 1 });
 
+  // ── Zonas de envío (Fase 3: checkout multi-vendor con costo de envío) ─────────
+  await setDoc("shippingZones", "lima-metropolitana", { name: "Lima Metropolitana", departamento: "Lima", cost: 10, etaDays: 2, active: true, order: 0 });
+  await setDoc("shippingZones", "provincias", { name: "Provincias", departamento: "Otros", cost: 20, etaDays: 5, active: true, order: 1 });
+
   // ── Productos ───────────────────────────────────────────────────────────────
   const products = [
     { id: "p1", name: "Polo personalizado", sku: "POLO-001", price: 49.9, vendorId: "casa", nicheId: "ropa-personalizada", fulfillmentType: "print_on_demand", customizable: true, categories: ["polos"] },
@@ -94,6 +98,6 @@ async function ensureUser(uid, email, password, claims) {
   await setDoc("rewardsCatalog", "rw-accesorio", { title: "Accesorio de regalo", description: "Llévate un accesorio sorpresa con tu próximo pedido", cost: 100, value: "Accesorio físico de regalo", active: true, order: 2 });
   await setDoc("rewardsCatalog", "rw-descuento-30", { title: "Cupón S/30 de descuento", description: "Descuento de S/30 aplicable a tu siguiente compra", cost: 200, value: "S/30 de descuento", active: true, order: 3 });
 
-  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores, 2 categorías, ruleta, reto activo, 3 misiones diarias, 4 recompensas, admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
+  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores (casa 0 / estampados-lima 12%), 2 categorías, 2 zonas de envío, ruleta, reto activo, 3 misiones diarias, 4 recompensas, admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
   process.exit(0);
 })().catch((e) => { console.error("Error sembrando:", e); process.exit(1); });

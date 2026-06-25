@@ -124,6 +124,15 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Fase 3 — Marketplace multi-vendor.
+    // subOrders: las crea el servidor (createOrderWithSubordersSecure); lee el comprador o admin.
+    match /subOrders/{id} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+    match /shippingZones/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /payouts/{id} { allow read, write: if isAdmin(); }
+
     // Partidas de Wordle: lectura pública (ranking); el usuario solo escribe su registro.
     match /wordle/{id} {
       allow read: if true;

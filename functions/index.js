@@ -1497,5 +1497,194 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// CHECKOUT MULTI-VENDEDOR (Fase 3): order + subOrders server-authoritative.
+// Recalcula precios leyendo productos_wala/{productId} (NUNCA confía en el cliente),
+// agrupa por vendorId, calcula comisión/payout por vendedor y crea la orden con sus
+// subórdenes en una sola transacción. NO procesa pago real (eso es Fase 3 externa).
+// Colecciones: orders (con reglas), subOrders, shippingZones, payouts.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Crear orden con subórdenes (transaccional, server-authoritative) ───────────
+// items = [{ productId, qty }]. Por cada producto lee productos_wala/{productId}
+// (precio = salePrice si < price, si no price; toma vendorId, nicheId, name).
+// Agrupa por vendorId; por vendedor: vendorSubtotal = Σ(precio*qty),
+// commissionPct = vendors/{vendorId}.commissionPct||0,
+// commissionAmount = +(vendorSubtotal*commissionPct/100).toFixed(2),
+// vendorPayoutAmount = +(vendorSubtotal - commissionAmount).toFixed(2).
+// shipping = shippingZones/{shippingZoneId}.cost||0 (si se pasó).
+exports.createOrderWithSubordersSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+
+  // Validación de items: arreglo no vacío de { productId, qty }.
+  const rawItems = data && Array.isArray(data.items) ? data.items : null;
+  if (!rawItems || rawItems.length === 0) {
+    throw new functions.https.HttpsError("invalid-argument", "Se requiere al menos un ítem.");
+  }
+
+  // Normaliza y agrega cantidades por productId (qty entero > 0). Falla si algún
+  // ítem no tiene productId o qty inválida.
+  const qtyByProduct = new Map();
+  for (const it of rawItems) {
+    const productId = it && it.productId != null ? String(it.productId) : null;
+    const qty = Number(it && it.qty);
+    if (!productId) {
+      throw new functions.https.HttpsError("invalid-argument", "Cada ítem requiere productId.");
+    }
+    if (!Number.isInteger(qty) || qty <= 0) {
+      throw new functions.https.HttpsError("invalid-argument", "Cantidad inválida para " + productId + ".");
+    }
+    qtyByProduct.set(productId, (qtyByProduct.get(productId) || 0) + qty);
+  }
+
+  const shippingZoneId = data && data.shippingZoneId != null ? String(data.shippingZoneId) : null;
+
+  const productIds = Array.from(qtyByProduct.keys());
+
+  try {
+    return await db.runTransaction(async (t) => {
+      // 1) Lee TODOS los productos primero (regla de Firestore: lecturas antes que escrituras).
+      const productRefs = productIds.map((id) => db.collection("productos_wala").doc(id));
+      const shippingRef = shippingZoneId
+        ? db.collection("shippingZones").doc(shippingZoneId)
+        : null;
+
+      const productSnaps = await Promise.all(productRefs.map((ref) => t.get(ref)));
+      const shippingSnap = shippingRef ? await t.get(shippingRef) : null;
+
+      // 2) Recalcula precios server-side y agrupa por vendorId.
+      const groups = new Map(); // vendorId -> { vendorId, nicheId, items[], vendorSubtotal }
+      const vendorIds = new Set();
+
+      for (let i = 0; i < productIds.length; i++) {
+        const productId = productIds[i];
+        const snap = productSnaps[i];
+        if (!snap.exists) {
+          throw new functions.https.HttpsError("not-found", "Producto no encontrado: " + productId + ".");
+        }
+        const p = snap.data();
+        const vendorId = p.vendorId;
+        if (!vendorId) {
+          throw new functions.https.HttpsError("failed-precondition", "El producto " + productId + " no tiene vendedor.");
+        }
+
+        // Precio server-authoritative: salePrice si < price, si no price.
+        const price = Number(p.price);
+        const salePrice = Number(p.salePrice);
+        let unitPrice = price;
+        if (Number.isFinite(salePrice) && salePrice < price) {
+          unitPrice = salePrice;
+        }
+        if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+          throw new functions.https.HttpsError("failed-precondition", "Precio inválido para " + productId + ".");
+        }
+
+        const qty = qtyByProduct.get(productId);
+        const lineTotal = unitPrice * qty;
+
+        vendorIds.add(vendorId);
+        let g = groups.get(vendorId);
+        if (!g) {
+          g = { vendorId, nicheId: p.nicheId || null, items: [], vendorSubtotal: 0 };
+          groups.set(vendorId, g);
+        }
+        g.items.push({
+          productId,
+          name: p.name || "",
+          qty,
+          unitPrice: +unitPrice.toFixed(2),
+        });
+        g.vendorSubtotal += lineTotal;
+      }
+
+      // 3) Lee los vendors (para commissionPct) dentro de la transacción.
+      const vendorIdList = Array.from(vendorIds);
+      const vendorSnaps = await Promise.all(
+        vendorIdList.map((vid) => t.get(db.collection("vendors").doc(String(vid))))
+      );
+      const commissionPctByVendor = new Map();
+      for (let i = 0; i < vendorIdList.length; i++) {
+        const vSnap = vendorSnaps[i];
+        const pct = vSnap.exists ? Number(vSnap.data().commissionPct) : 0;
+        commissionPctByVendor.set(vendorIdList[i], Number.isFinite(pct) ? pct : 0);
+      }
+
+      // 4) Envío server-authoritative desde shippingZones.
+      const shipping = shippingSnap && shippingSnap.exists
+        ? Number(shippingSnap.data().cost) || 0
+        : 0;
+
+      // 5) Construye subórdenes + totales.
+      const orderRef = db.collection("orders").doc();
+      const orderId = orderRef.id;
+
+      let subtotal = 0;
+      let commissionTotal = 0;
+      const subOrderRefs = [];
+      const subOrderDocs = [];
+      const subOrderSummaries = [];
+
+      for (const g of groups.values()) {
+        const vendorSubtotal = +g.vendorSubtotal.toFixed(2);
+        const commissionPct = commissionPctByVendor.get(g.vendorId) || 0;
+        const commissionAmount = +(vendorSubtotal * commissionPct / 100).toFixed(2);
+        const vendorPayoutAmount = +(vendorSubtotal - commissionAmount).toFixed(2);
+
+        subtotal += vendorSubtotal;
+        commissionTotal += commissionAmount;
+
+        const subRef = db.collection("subOrders").doc();
+        const subDoc = {
+          orderId,
+          buyerUid: uid,
+          vendorId: g.vendorId,
+          nicheId: g.nicheId || null,
+          items: g.items,
+          vendorSubtotal,
+          commissionPct,
+          commissionAmount,
+          vendorPayoutAmount,
+          status: "pending",
+          createdAt: FieldValue.serverTimestamp(),
+        };
+        subOrderRefs.push(subRef);
+        subOrderDocs.push(subDoc);
+        subOrderSummaries.push({
+          id: subRef.id,
+          vendorId: g.vendorId,
+          vendorSubtotal,
+          commissionPct,
+          commissionAmount,
+          vendorPayoutAmount,
+        });
+      }
+
+      subtotal = +subtotal.toFixed(2);
+      commissionTotal = +commissionTotal.toFixed(2);
+      const total = +(subtotal + shipping).toFixed(2);
+
+      const totals = { subtotal, shipping, commissionTotal, total };
+
+      // 6) Escribe order + subOrders (todas las escrituras al final).
+      t.set(orderRef, {
+        buyerUid: uid,
+        status: "pending",
+        totals,
+        subOrderIds: subOrderRefs.map((r) => r.id),
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      for (let i = 0; i < subOrderRefs.length; i++) {
+        t.set(subOrderRefs[i], subOrderDocs[i]);
+      }
+
+      return { orderId, totals, subOrders: subOrderSummaries };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("createOrderWithSubordersSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al crear la orden.");
+  }
+});
+
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;

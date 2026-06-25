@@ -187,6 +187,18 @@ const AdminLayout = () => {
                     Recompensas
                   </NavLink>
                   <NavLink
+                    to="/admin/envios"
+                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
+                  >
+                    Zonas de Envío
+                  </NavLink>
+                  <NavLink
+                    to="/admin/payouts"
+                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
+                  >
+                    Pagos a Vendedores
+                  </NavLink>
+                  <NavLink
                     to="/admin/marcas"
                     className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
                   >

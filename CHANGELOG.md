@@ -8,6 +8,20 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
+## [Sin liberar] — Fase 3: Marketplace multi-vendor (core local) ✅ (verificado E2E)
+Pedido maestro + sub-órdenes por vendedor con comisión, envíos por zona y pagos a vendedores.
+Verificado E2E: carrito p1(casa)+p3×2(estampados-lima) → order + 2 subOrders (casa com 0/payout 49.9;
+estampados-lima com 12%=14.38/payout 105.42), shipping 10, total 179.7.
+- **Cloud Function** `createOrderWithSubordersSecure({items, shippingZoneId})`: recalcula precios server-side,
+  agrupa por vendorId, crea `orders` (maestro) + `subOrders` (con vendorSubtotal/commission/payout). Sin pago real.
+- **Reglas**: `subOrders` (dueño/admin), `shippingZones` (pública/admin), `payouts` (admin).
+- **Cliente/Admin**: `services/orders.js`, `services/shippingZones.js`, `services/payouts.js`;
+  `/admin/envios` (AdminEnviosZonas, CRUD zonas), `/admin/payouts` (AdminPayouts, liquidación a vendedores);
+  VendorPanel muestra las sub-órdenes del vendedor.
+- **Seed**: 2 zonas de envío.
+- ⬜ Pendiente Fase 3 (requiere servicios externos): split de pago real (Mercado Pago Marketplace / Stripe
+  Connect), búsqueda Algolia/Typesense on-write, rol `vendor` por claims, integrar el checkout real a este flujo.
+
 ## [Sin liberar] — Fase 2: Fidelización (core) ✅ (verificado en emulador)
 Economía unificada (monedas = puntos; xp = experiencia) con **ledger de puntos**, **misiones
 diarias** y **racha diaria**. Verificado E2E en el emulador (login cliente → callables →
