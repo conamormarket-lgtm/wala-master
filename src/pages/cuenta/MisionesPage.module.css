@@ -1,0 +1,229 @@
+.container {
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-top: 20px;
+}
+
+.title {
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: #111827;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+/* Resumen de saldos */
+.statsRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.statCard {
+  flex: 1;
+  min-width: 140px;
+  background: #fdfbfb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Tarjeta de racha */
+.streakCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.streakInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.streakIcon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.streakCount {
+  font-size: 22px;
+  font-weight: 800;
+  color: #9a3412;
+}
+
+.streakLabel {
+  font-size: 13px;
+  color: #b45309;
+  font-weight: 500;
+}
+
+.streakStatus {
+  font-size: 14px;
+}
+
+.checkedIn {
+  color: #065f46;
+  font-weight: 600;
+}
+
+.checkPending {
+  color: #92400e;
+}
+
+/* Mensajes */
+.messageBox {
+  background: #ecfdf5;
+  color: #065f46;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #a7f3d0;
+}
+
+.errorBox {
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #fecaca;
+}
+
+.loading,
+.empty {
+  color: #6b7280;
+  padding: 24px 0;
+  text-align: center;
+}
+
+/* Lista de misiones */
+.missionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.missionItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: #fdfbfb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.missionItem:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.missionDone {
+  opacity: 0.75;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.missionMain {
+  flex: 1;
+  min-width: 200px;
+}
+
+.missionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #1f2937;
+}
+
+.missionDesc {
+  font-size: 14px;
+  color: #4b5563;
+  margin: 0;
+}
+
+.missionAside {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rewardBadge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.doneBadge {
+  color: #15803d;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.completeBtn {
+  background: var(--rojo-principal, #e11d48);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.completeBtn:hover:not(:disabled) {
+  background: #be123c;
+}
+
+.completeBtn:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.dateNote {
+  margin-top: 20px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: right;
+}

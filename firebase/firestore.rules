@@ -34,7 +34,10 @@ service cloud.firestore {
         'monedasActivas', 'kapiCoins', 'kapiHappiness', 'lastKapiClaimDate', 'weeklyClaimsData',
         'activeMultiplier', 'multiplierExpiresAt', 'weeklyChallengeProgress',
         'lastBallSortReward', 'lastRuletaSpinWeek', 'streakBonusReceived', 'surveyRewardClaimed',
-        'referralOrdersClaimed'
+        'referralOrdersClaimed',
+        // Fase 2 (fidelización): los escribe SOLO el servidor (dailyCheckInSecure,
+        // completeMissionSecure). El cliente nunca puede auto-modificar XP/racha/check-in.
+        'xp', 'dailyStreak', 'lastCheckInDate'
       ];
     }
     function noTocaCamposSensibles() {
@@ -89,6 +92,24 @@ service cloud.firestore {
     match /weeklyChallenges/{id}   { allow read: if true;  allow write: if isAdmin(); }
     match /ruletaPrizes/{id}       { allow read: if true;  allow write: if isAdmin(); }
     match /wordle_daily_words/{id} { allow read: if true;  allow write: if isAdmin(); }
+
+    // ── Fase 2: misiones diarias y libro mayor de fidelización ───────────────────
+    // Config de misiones: lectura pública, escritura solo admin.
+    match /missions/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // Progreso diario por usuario (id '<uid>_<YYYY-MM-DD>'). Lo escribe el servidor
+    // (getDailyMissionsSecure / completeMissionSecure vía admin SDK). El dueño solo lee.
+    match /userMissions/{id} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow write: if isAdmin();
+    }
+    // Libro mayor de puntos (earn/spend). Solo el servidor escribe; el dueño lo lee.
+    match /loyaltyLedger/{id} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if isAdmin();
+    }
 
     // Partidas de Wordle: lectura pública (ranking); el usuario solo escribe su registro.
     match /wordle/{id} {

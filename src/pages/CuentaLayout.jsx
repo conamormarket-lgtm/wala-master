@@ -68,6 +68,12 @@ const CuentaLayout = () => {
               Fechas Importantes
             </NavLink>
             <NavLink
+              to="/cuenta/misiones"
+              className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
+            >
+              Misiones
+            </NavLink>
+            <NavLink
               to="/cuenta/catalogo"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
             >

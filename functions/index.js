@@ -5,6 +5,7 @@
  */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore"); // robusto en emulador (FieldValue puede ser undefined ahí)
 const crypto = require("crypto");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const {
@@ -210,7 +211,7 @@ exports.ensureAccountFromOrder = functions.https.onRequest(async (req, res) => {
         accessSystem: "portal_clientes",
         accountOrigin: "erp_auto",
         createdForPortalClientes: true,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
@@ -345,13 +346,21 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
 
       // Update user document safely
       const currentMonedas = userData.monedas || 0;
+      const newBalance = currentMonedas + amount;
       transaction.update(userRef, {
-        monedas: currentMonedas + amount, // Mantenemos el campo global por compatibilidad, aunque el cliente calculará sobre monedasActivas
+        monedas: newBalance, // Mantenemos el campo global por compatibilidad, aunque el cliente calculará sobre monedasActivas
         monedasActivas: monedasActivas,
-        monedasReclamadas: admin.firestore.FieldValue.arrayUnion(pedidoId)
+        monedasReclamadas: FieldValue.arrayUnion(pedidoId)
       });
 
-      return { success: true, nuevasMonedas: currentMonedas + amount, monedasActivas };
+      writeLedger(transaction, uid, {
+        type: "earn",
+        amount,
+        source: "pedido_" + pedidoId,
+        balanceAfter: newBalance,
+      });
+
+      return { success: true, nuevasMonedas: newBalance, monedasActivas };
     });
   } catch (error) {
     if (error instanceof functions.https.HttpsError) throw error;
@@ -409,7 +418,7 @@ exports.resetKapiCoins = onSchedule("59 23 28-31 * *", async (event) => {
       month: currentMonthStr,
       totalUnspentCoins: totalUnspent,
       usersAffected: usersSnapshot.size,
-      timestamp: admin.firestore.FieldValue.serverTimestamp()
+      timestamp: FieldValue.serverTimestamp()
     }, { merge: true });
 
     await batch.commit();
@@ -556,7 +565,7 @@ exports.submitChallengeEvidence = functions.https.onCall(async (data, context) =
     evidenceUrl,
     evidenceType: evidenceType || "image",
     status: "pending",
-    submittedAt: admin.firestore.FieldValue.serverTimestamp()
+    submittedAt: FieldValue.serverTimestamp()
   });
 
   return { success: true };
@@ -589,7 +598,7 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
 
     transaction.update(evidenceRef, { 
       status: action === "approve" ? "approved" : "rejected",
-      processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      processedAt: FieldValue.serverTimestamp(),
       processedBy: context.auth.uid
     });
 
@@ -599,7 +608,7 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
       if(userDoc.exists) {
         const userData = userDoc.data();
         let updates = {
-           challengeEvidencesApproved: admin.firestore.FieldValue.arrayUnion(evData.challengeId)
+           challengeEvidencesApproved: FieldValue.arrayUnion(evData.challengeId)
         };
         // Acreditar monedas si se aprobaron directamente acá
         if (rewardType === 'main') {
@@ -773,6 +782,14 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
         weeklyClaimsData: weekly,
       };
       t.update(userRef, updates);
+      // Ledger: feedKapi otorga kapiCoins (no monedas). Se registra el evento con el
+      // monto de kapiCoins; balanceAfter refleja el saldo de monedas sin cambios.
+      writeLedger(t, uid, {
+        type: "earn",
+        amount: add,
+        source: "feed_kapi",
+        balanceAfter: u.monedas || 0,
+      });
       return { success: true, ...updates };
     });
   } catch (e) {
@@ -795,9 +812,16 @@ exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context)
       if (u.lastBallSortReward === today) {
         throw new functions.https.HttpsError("already-exists", "Ya reclamaste tu recompensa de hoy.");
       }
+      const newBalance = (u.monedas || 0) + BALLSORT_REWARD;
       t.update(userRef, {
-        monedas: (u.monedas || 0) + BALLSORT_REWARD,
+        monedas: newBalance,
         lastBallSortReward: today,
+      });
+      writeLedger(t, uid, {
+        type: "earn",
+        amount: BALLSORT_REWARD,
+        source: "ball_sort_daily",
+        balanceAfter: newBalance,
       });
       return { success: true, reward: BALLSORT_REWARD };
     });
@@ -835,10 +859,20 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("already-exists", "Ya giraste la ruleta esta semana.");
       }
       const updates = { lastRuletaSpinWeek: weekStart };
+      let ruletaEarn = 0;
       if (selected.type === "Monedas") {
-        updates.monedas = (u.monedas || 0) + Number(selected.amount || 0);
+        ruletaEarn = Number(selected.amount || 0);
+        updates.monedas = (u.monedas || 0) + ruletaEarn;
       }
       t.update(userRef, updates);
+      if (ruletaEarn > 0) {
+        writeLedger(t, uid, {
+          type: "earn",
+          amount: ruletaEarn,
+          source: "ruleta_semanal",
+          balanceAfter: updates.monedas,
+        });
+      }
       return { success: true, prize: selected };
     });
   } catch (e) {
@@ -881,15 +915,25 @@ exports.recordChallengeEventSecure = functions.https.onCall(async (data, context
       const updates = {
         weeklyChallengeProgress: { challengeId: ch.challengeId, progress: newProgress, completed: nowCompleted },
       };
+      let challengeEarn = 0;
       if (nowCompleted) {
         if (ch.rewardType === "kapi_double_3d") {
           updates.activeMultiplier = "kapi_double_3d";
           updates.multiplierExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
         } else {
-          updates.monedas = (u.monedas || 0) + (Number(ch.rewardCoins) || 0);
+          challengeEarn = Number(ch.rewardCoins) || 0;
+          updates.monedas = (u.monedas || 0) + challengeEarn;
         }
       }
       t.update(userRef, updates);
+      if (challengeEarn > 0) {
+        writeLedger(t, uid, {
+          type: "earn",
+          amount: challengeEarn,
+          source: "reto_semanal_" + ch.challengeId,
+          balanceAfter: updates.monedas,
+        });
+      }
       return { success: true, completed: nowCompleted };
     });
   } catch (e) {
@@ -973,10 +1017,19 @@ exports.grantSurveyRewardSecure = functions.https.onCall(async (data, context) =
       if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = snap.data();
       if (u.surveyRewardClaimed) return { success: true, alreadyClaimed: true };
+      const newBalance = (u.monedas || 0) + reward;
       t.update(userRef, {
-        monedas: (u.monedas || 0) + reward,
+        monedas: newBalance,
         surveyRewardClaimed: true,
       });
+      if (reward > 0) {
+        writeLedger(t, uid, {
+          type: "earn",
+          amount: reward,
+          source: "encuesta",
+          balanceAfter: newBalance,
+        });
+      }
       return { success: true, reward };
     });
   } catch (e) {
@@ -998,9 +1051,16 @@ exports.claimDatesStreakSecure = functions.https.onCall(async (data, context) =>
       const u = snap.data();
       if (u.streakBonusReceived) return { success: true, alreadyClaimed: true };
       if (uniqueDates < 3) return { success: true, notEligible: true };
+      const newBalance = (u.monedas || 0) + STREAK_DATES_BONUS;
       t.update(userRef, {
-        monedas: (u.monedas || 0) + STREAK_DATES_BONUS,
+        monedas: newBalance,
         streakBonusReceived: true,
+      });
+      writeLedger(t, uid, {
+        type: "earn",
+        amount: STREAK_DATES_BONUS,
+        source: "streak_fechas",
+        balanceAfter: newBalance,
       });
       return { success: true, reward: STREAK_DATES_BONUS };
     });
@@ -1081,11 +1141,18 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("already-exists", "Esta compra ya otorgó un premio de referido.");
       }
 
-      t.set(claimRef, { uid, referralId: String(referralId), at: admin.firestore.FieldValue.serverTimestamp() });
-      t.update(refRef, { status: "claimed", claimedAt: admin.firestore.FieldValue.serverTimestamp() });
+      const newBalance = (u.monedas || 0) + REFERRAL_REWARD;
+      t.set(claimRef, { uid, referralId: String(referralId), at: FieldValue.serverTimestamp() });
+      t.update(refRef, { status: "claimed", claimedAt: FieldValue.serverTimestamp() });
       t.update(userRef, {
-        monedas: (u.monedas || 0) + REFERRAL_REWARD,
-        referralOrdersClaimed: admin.firestore.FieldValue.arrayUnion(String(orderId)),
+        monedas: newBalance,
+        referralOrdersClaimed: FieldValue.arrayUnion(String(orderId)),
+      });
+      writeLedger(t, uid, {
+        type: "earn",
+        amount: REFERRAL_REWARD,
+        source: "referido_" + String(orderId),
+        balanceAfter: newBalance,
       });
       return { success: true, earned: REFERRAL_REWARD };
     });
@@ -1093,6 +1160,244 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("claimReferralSecure error:", e);
     throw new functions.https.HttpsError("internal", "Error al reclamar el referido.");
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// FIDELIZACIÓN DIARIA (Fase 2): check-in, misiones diarias y ledger de lealtad.
+// Contrato compartido Fase 2:
+//   - 'monedas' = puntos canjeables; 'xp' = experiencia acumulativa (solo sube).
+//   - 'loyaltyLedger' (id auto): { uid, type:'earn'|'spend', amount, source,
+//     balanceAfter, createdAt }. Escritura solo servidor.
+//   - 'missions' (config admin): { title, description, type:'daily', actionKey,
+//     rewardPoints, active, order }.
+//   - 'userMissions' id '<uid>_<YYYY-MM-DD>': { userId, date, items:[{ missionId,
+//     completed, claimedAt }] }.
+//   - 'dailyStreak' = { count, lastDate, freezeTokens }; 'lastCheckInDate'; 'xp'
+//     escritos SOLO por el servidor (reglas los bloquean al cliente).
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Helper: escribe una entrada en loyaltyLedger dentro de una transacción ─────
+// transaction.set sobre un doc con id auto-generado. createdAt = serverTimestamp.
+function writeLedger(transaction, uid, { type, amount, source, balanceAfter }) {
+  transaction.set(db.collection("loyaltyLedger").doc(), {
+    uid,
+    type,
+    amount,
+    source,
+    balanceAfter,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+}
+
+// XP otorgada por cada acción de fidelización (acumulativa, solo sube).
+const XP_CHECKIN = 10;
+const XP_MISSION = 5;
+// Hitos de racha que otorgan bono de monedas en el check-in diario.
+const CHECKIN_MILESTONES = { 3: 5, 7: 15, 30: 50 };
+
+// ── Check-in diario seguro (idempotente por día Lima) ──────────────────────────
+// Incrementa la racha si el último check-in fue ayer; la reinicia a 1 si hubo un
+// hueco. En hitos (D3=5, D7=15, D30=50) otorga bono de monedas + ledger. Suma XP.
+exports.dailyCheckInSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const today = limaTodayStr();
+  // "Ayer" en zona Lima: hoy menos 24h, formateado igual que limaTodayStr.
+  const yesterday = limaTodayStr(Date.now() - 24 * 60 * 60 * 1000);
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+
+      // Idempotencia por día: si ya hizo check-in hoy, no se altera nada.
+      if (u.lastCheckInDate === today) {
+        const cur = u.dailyStreak || { count: 0, lastDate: null, freezeTokens: 0 };
+        return { streak: cur.count || 0, reward: 0, alreadyCheckedIn: true };
+      }
+
+      const prev = u.dailyStreak || { count: 0, lastDate: null, freezeTokens: 0 };
+      const continues = prev.lastDate === yesterday;
+      const newCount = continues ? (prev.count || 0) + 1 : 1;
+
+      const newStreak = {
+        count: newCount,
+        lastDate: today,
+        freezeTokens: prev.freezeTokens || 0,
+      };
+
+      const reward = CHECKIN_MILESTONES[newCount] || 0;
+      const currentMonedas = u.monedas || 0;
+      const newBalance = currentMonedas + reward;
+
+      const updates = {
+        dailyStreak: newStreak,
+        lastCheckInDate: today,
+        xp: (u.xp || 0) + XP_CHECKIN,
+      };
+      if (reward > 0) updates.monedas = newBalance;
+      t.update(userRef, updates);
+
+      if (reward > 0) {
+        writeLedger(t, uid, {
+          type: "earn",
+          amount: reward,
+          source: "checkin_d" + newCount,
+          balanceAfter: newBalance,
+        });
+      }
+
+      return { streak: newCount, reward };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("dailyCheckInSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al registrar el check-in.");
+  }
+});
+
+// ── Asegura/devuelve las misiones diarias de hoy ───────────────────────────────
+// Si el doc userMissions de hoy no existe, lo crea con las misiones activas
+// (type 'daily'). Devuelve { date, items:[{ missionId, title, description,
+// rewardPoints, completed }] }.
+exports.getDailyMissionsSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const today = limaTodayStr();
+  const docId = uid + "_" + today;
+  const umRef = db.collection("userMissions").doc(docId);
+
+  try {
+    // Misiones activas diarias, ordenadas por `order`.
+    const missionsSnap = await db
+      .collection("missions")
+      .where("type", "==", "daily")
+      .where("active", "==", true)
+      .get();
+    const missions = missionsSnap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    // Crea el doc de hoy si no existe (idempotente por id determinista).
+    const completedMap = await db.runTransaction(async (t) => {
+      const umSnap = await t.get(umRef);
+      if (!umSnap.exists) {
+        const items = missions.map((m) => ({
+          missionId: m.id,
+          completed: false,
+          claimedAt: null,
+        }));
+        t.set(umRef, { userId: uid, date: today, items });
+        return {};
+      }
+      const items = umSnap.data().items || [];
+      const map = {};
+      for (const it of items) map[it.missionId] = !!it.completed;
+      return map;
+    });
+
+    const items = missions.map((m) => ({
+      missionId: m.id,
+      title: m.title || "",
+      description: m.description || "",
+      rewardPoints: Number(m.rewardPoints) || 0,
+      completed: !!completedMap[m.id],
+    }));
+
+    return { date: today, items };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("getDailyMissionsSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al obtener las misiones diarias.");
+  }
+});
+
+// ── Completar una misión diaria (idempotente) ──────────────────────────────────
+// Valida que la misión esté activa y no completada hoy; marca completed en el doc
+// userMissions de hoy; otorga rewardPoints a 'monedas' + XP; escribe ledger.
+exports.completeMissionSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const missionId = data && data.missionId;
+  if (!missionId) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta missionId.");
+  }
+  const today = limaTodayStr();
+  const docId = uid + "_" + today;
+  const umRef = db.collection("userMissions").doc(docId);
+  const missionRef = db.collection("missions").doc(String(missionId));
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const [missionSnap, umSnap, userSnap] = await Promise.all([
+        t.get(missionRef),
+        t.get(umRef),
+        t.get(userRef),
+      ]);
+
+      if (!missionSnap.exists) {
+        throw new functions.https.HttpsError("not-found", "Misión no encontrada.");
+      }
+      const mission = missionSnap.data();
+      if (mission.active !== true) {
+        throw new functions.https.HttpsError("failed-precondition", "La misión no está activa.");
+      }
+      if (!userSnap.exists) {
+        throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      }
+      const u = userSnap.data();
+
+      // Asegura el doc userMissions de hoy si aún no existe.
+      let items;
+      if (!umSnap.exists) {
+        items = [{ missionId: String(missionId), completed: false, claimedAt: null }];
+      } else {
+        items = (umSnap.data().items || []).map((it) => ({ ...it }));
+      }
+
+      let idx = items.findIndex((it) => it.missionId === String(missionId));
+      if (idx < 0) {
+        items.push({ missionId: String(missionId), completed: false, claimedAt: null });
+        idx = items.length - 1;
+      }
+
+      // Idempotencia: si ya está completada hoy, no se vuelve a otorgar.
+      if (items[idx].completed) {
+        return { success: true, alreadyCompleted: true, reward: 0 };
+      }
+
+      const reward = Number(mission.rewardPoints) || 0;
+      const newBalance = (u.monedas || 0) + reward;
+
+      items[idx].completed = true;
+      items[idx].claimedAt = new Date().toISOString();
+
+      if (umSnap.exists) {
+        t.update(umRef, { items });
+      } else {
+        t.set(umRef, { userId: uid, date: today, items });
+      }
+
+      t.update(userRef, {
+        monedas: newBalance,
+        xp: (u.xp || 0) + XP_MISSION,
+      });
+
+      if (reward > 0) {
+        writeLedger(t, uid, {
+          type: "earn",
+          amount: reward,
+          source: "mision_" + String(missionId),
+          balanceAfter: newBalance,
+        });
+      }
+
+      return { success: true, reward };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("completeMissionSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al completar la misión.");
   }
 });
 

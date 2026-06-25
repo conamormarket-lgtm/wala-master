@@ -78,6 +78,15 @@ async function ensureUser(uid, email, password, claims) {
   // ── Pedido finalizado (para probar reclamo de monedas) ────────────────────────
   await setDoc("pedidos_web", "order-1", { userId: "cliente-uid", dni: "12345678", estadoGeneral: "finalizado", total: 120, clienteCorreo: "cliente@wala.test", createdAt: new Date().toISOString() });
 
-  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores, 2 categorías, ruleta, reto activo, admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
+  // ── Misiones diarias (config; lectura pública, escritura admin) ────────────────
+  await setDoc("missions", "m1", { title: "Visita diaria", description: "Entra a la app hoy", type: "daily", actionKey: "visit", rewardPoints: 2, active: true, order: 0 });
+  await setDoc("missions", "m2", { title: "Juega un minijuego", description: "Juega Wordle, Ruleta o Ball Sort", type: "daily", actionKey: "play_game", rewardPoints: 3, active: true, order: 1 });
+  await setDoc("missions", "m3", { title: "Explora un producto", description: "Mira el detalle de un producto", type: "daily", actionKey: "view_product", rewardPoints: 2, active: true, order: 2 });
+
+  // ── Fidelización del cliente demo (xp + racha diaria) ──────────────────────────
+  // Campos escritos por servidor en producción; aquí los sembramos con merge para probar la UI.
+  await setDoc("portal_clientes_users", "cliente-uid", { xp: 120, dailyStreak: { count: 2, lastDate: null, freezeTokens: 1 } });
+
+  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores, 2 categorías, ruleta, reto activo, 3 misiones diarias, admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
   process.exit(0);
 })().catch((e) => { console.error("Error sembrando:", e); process.exit(1); });

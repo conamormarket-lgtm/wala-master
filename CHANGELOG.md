@@ -8,6 +8,22 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
+## [Sin liberar] — Fase 2: Fidelización (core) ✅ (verificado en emulador)
+Economía unificada (monedas = puntos; xp = experiencia) con **ledger de puntos**, **misiones
+diarias** y **racha diaria**. Verificado E2E en el emulador (login cliente → callables →
+monedas/xp/racha/ledger actualizados; idempotencia OK). UI en `/cuenta/misiones`.
+- **Cloud Functions** (`functions/index.js`): `dailyCheckInSecure` (racha + bonos por hito D3/D7/D30 + xp),
+  `getDailyMissionsSecure` (asigna/lee misiones del día), `completeMissionSecure` (otorga puntos+xp, idempotente).
+  Helper `writeLedger()` y entradas de `loyaltyLedger` en TODAS las funciones de economía.
+  Fix: uso de `FieldValue` modular (`firebase-admin/firestore`) — `admin.firestore.FieldValue` daba
+  undefined en el emulador.
+- **Reglas** (`firestore.rules`): colecciones `missions` (lectura pública/escritura admin),
+  `userMissions` y `loyaltyLedger` (lectura dueño/escritura servidor); campos `xp`/`dailyStreak`/`lastCheckInDate` bloqueados al cliente.
+- **Cliente**: `src/services/loyalty.js` (wrappers + `getLedger`), `src/pages/cuenta/MisionesPage.jsx`
+  (racha + misiones del día + puntos), tab "Misiones" en `CuentaLayout`, ruta `/cuenta/misiones`.
+- **Seed**: 3 misiones diarias + xp/racha en el cliente demo.
+- ⬜ Pendiente Fase 2: niveles/tiers (UI), catálogo de recompensas dinámico (mover de hardcode a Firestore + admin), push v2 (deep links/topics), verificación de retos por triggers server-side.
+
 ## [Sin liberar] — Entorno local con Emulador de Firebase ✅
 Permite ver y probar **todo** en local (catálogo, login, economía, guardado) sin tocar
 producción. Ver [docs/wala/EMULADOR-LOCAL.md](docs/wala/EMULADOR-LOCAL.md).
