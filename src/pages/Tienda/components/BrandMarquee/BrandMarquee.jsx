@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styles from './BrandMarquee.module.css';
 
-const BrandMarquee = ({ items = [], speed = 15 }) => {
+const BrandMarquee = ({ items = [], speed = 15, title = 'Empresas con las que trabajamos' }) => {
   // Si no hay items, no renderizamos nada.
   if (!items || items.length === 0) {
     return null;
@@ -31,12 +31,14 @@ const BrandMarquee = ({ items = [], speed = 15 }) => {
 
   return (
     <div className={styles.mainContainer}>
-      {/* Título Estilo Píldora Gris */}
-      <div className={styles.brandsTitle}>
-        <span className={styles.brandsTitleSpan}>
-          Empresas con las que trabajamos
-        </span>
-      </div>
+      {/* Título Estilo Píldora Gris (oculto si title es '' o null) */}
+      {title && (
+        <div className={styles.brandsTitle}>
+          <span className={styles.brandsTitleSpan}>
+            {title}
+          </span>
+        </div>
+      )}
 
       {/* Carrusel Deslizable Infinito */}
       <div className={styles.marqueeContainer}>

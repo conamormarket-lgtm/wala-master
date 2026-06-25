@@ -48,6 +48,23 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
     setIsMobileDrawerOpen(false);
   };
 
+  // ¿Hay algún filtro activo? (categoría, colección/temporada, marca, tipo, etiqueta, personaje)
+  const hasActiveFilters = !!(
+    activeCategory || activeCollection || activeBrand ||
+    activeType || activeTag || activeCharacter
+  );
+
+  // Resetea TODOS los filtros a su estado inicial.
+  const clearAllFilters = () => {
+    setActiveCategory(null);
+    setActiveCollection(null);
+    setActiveBrand(null);
+    setActiveType(null);
+    setActiveTag(null);
+    setActiveCharacter(null);
+    setIsMobileDrawerOpen(false);
+  };
+
   const idOf = (c) => (c && typeof c === 'object') ? (c.id || c.slug || c.name || '') : c;
 
   // No existe un campo/colección propio de "temporadas" en el modelo de datos.
@@ -56,15 +73,33 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
   // las temporadas de las mismas colecciones, separando por palabras clave estacionales.
   const SEASON_KEYWORDS = [
     'verano', 'invierno', 'otoño', 'otono', 'primavera',
-    'navidad', 'navideñ', 'navideno', 'fiestas', 'año nuevo', 'ano nuevo',
+    'navidad', 'navideno', 'fiestas', 'año nuevo', 'ano nuevo',
     'pascua', 'halloween', 'san valentín', 'san valentin', 'valentín', 'valentin',
     'día de la madre', 'dia de la madre', 'día del padre', 'dia del padre',
     'temporada', 'spring', 'summer', 'autumn', 'fall', 'winter', 'holiday', 'xmas', 'christmas', 'easter'
   ];
+  // Raíces intencionalmente parciales: coinciden por prefijo de palabra
+  // ('navideñ' -> 'navideña', 'navideño', 'navideñas'...).
+  const SEASON_KEYWORD_PREFIXES = ['navideñ'];
   const isSeasonCollection = (c) => {
     const name = String((c && c.name) || '').toLowerCase();
     if (!name) return false;
-    return SEASON_KEYWORDS.some(k => name.includes(k));
+    // Tokens del nombre separados por cualquier carácter que no sea letra
+    // (incluye letras acentuadas y ñ). Evita falsos positivos por substring
+    // (p. ej. 'fall' dentro de 'football').
+    const tokens = name.split(/[^a-záéíóúüñ]+/i).filter(Boolean);
+    const matchesKeyword = SEASON_KEYWORDS.some(k => {
+      if (k.includes(' ')) {
+        // Frases ('año nuevo', 'san valentín'): palabra completa con límites \b.
+        const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`\\b${escaped}\\b`, 'i').test(name);
+      }
+      // Token único: coincidencia por palabra completa exacta.
+      return tokens.includes(k);
+    });
+    if (matchesKeyword) return true;
+    // Raíces parciales por prefijo de token.
+    return SEASON_KEYWORD_PREFIXES.some(p => tokens.some(t => t.startsWith(p)));
   };
 
   const allCollections = collections || [];
@@ -78,10 +113,10 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
   const filteredProducts = (productsData || []).filter(p => {
     if (activeCategory && p.categoryId !== activeCategory && p.category !== activeCategory && !(p.categories || []).map(idOf).includes(activeCategory)) return false;
     if (activeCollection && !(p.collections || []).map(idOf).includes(activeCollection)) return false;
-    if (activeBrand && p.brandId !== activeBrand) return false;
+    if (activeBrand && idOf(p.brandId) !== activeBrand) return false;
     if (activeTag && !(p.tags || []).map(idOf).includes(activeTag)) return false;
     if (activeCharacter && !(p.characters || []).map(idOf).includes(activeCharacter)) return false;
-    if (activeType && p.productType !== activeType) return false;
+    if (activeType && idOf(p.productType) !== activeType) return false;
     return true;
   });
 
@@ -115,6 +150,18 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
               <X size={24} color="#666" />
             </button>
           </div>
+
+          {hasActiveFilters && (
+            <div className={styles.sidebarSection} style={{ marginBottom: '1.5rem' }}>
+              <button
+                type="button"
+                className={styles.mobileFilterBtn}
+                onClick={clearAllFilters}
+              >
+                <X size={18} /> Limpiar filtros
+              </button>
+            </div>
+          )}
 
           <div className={styles.sidebarSection}>
             <h3>Categorías</h3>

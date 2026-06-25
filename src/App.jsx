@@ -23,7 +23,6 @@ import './App.css';
 
 // ── Páginas principales y Layout Crítico (Carga Inmediata para evitar efecto Waterfall de Suspense) ──
 import TiendaPage from './pages/Tienda/TiendaPage';
-import LegacyTiendaPage from './pages/LegacyTienda/LegacyTiendaPage';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import WordlePage from './pages/Tienda/WordlePage';
@@ -204,7 +203,10 @@ function App() {
                       <Routes>
                         {/* Tienda abierta para todos */}
                         <Route path="/" element={<TiendaPage />} />
-                        <Route path="/tienda" element={<LegacyTiendaPage />} />
+                        {/* /tienda usa el MISMO catálogo escalable que la home (TiendaPage deriva pageId='tienda'
+                            de la URL y monta el módulo sidebar_catalog con todos los filtros). Antes usaba la
+                            LegacyTiendaPage (solo categoría); unificado el 2026-06-25. */}
+                        <Route path="/tienda" element={<TiendaPage />} />
                         <Route path="/encuesta-suscripcion" element={
                           <Suspense fallback={<PageLoading />}>
                             <SubscriptionSurveyPage />

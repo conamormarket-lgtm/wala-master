@@ -230,17 +230,23 @@ const TiendaPage = ({ isLandingPage = false }) => {
   // Usar el borrador en vivo si existe, si no usar el de Firestore
   let activeConfig = storeConfigDraft || storeConfig || {};
 
-  // Configuración por defecto estilo Nude Project si está vacía
+  // Fallback neutro cuando no hay heroBanner configurado:
+  // sin imágenes demo externas (p.ej. Unsplash) ni textos de marketing falsos.
+  // Usamos un pixel transparente (data-URI, sin petición externa) para que no
+  // aparezca el icono de imagen rota; el fondo neutro del .heroContainer queda
+  // a la vista y los textos se dejan vacíos para que el page-builder los rellene.
   if (!activeConfig.heroBanner || !activeConfig.heroBanner.mediaUrl) {
+    const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     activeConfig = {
       ...activeConfig,
       heroBanner: {
+        ...(activeConfig.heroBanner || {}),
         mediaType: 'image',
-        mediaUrl: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=2070&auto=format&fit=crop',
-        title: 'NUEVA COLECCIÓN',
-        subtitle: 'Diseñada para destacar. Construida para durar.',
-        buttonText: 'COMPRAR AHORA',
-        buttonLink: '/tienda'
+        mediaUrl: TRANSPARENT_PIXEL,
+        title: activeConfig.heroBanner?.title || '',
+        subtitle: activeConfig.heroBanner?.subtitle || '',
+        buttonText: activeConfig.heroBanner?.buttonText || '',
+        buttonLink: activeConfig.heroBanner?.buttonLink || ''
       }
     };
   }
@@ -405,7 +411,7 @@ const TiendaPage = ({ isLandingPage = false }) => {
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
-            <BrandMarquee items={s.items} speed={s.speed} />
+            <BrandMarquee items={s.items} speed={s.speed} title={s.title} />
           </section>
         );
       case 'bestsellers_row':

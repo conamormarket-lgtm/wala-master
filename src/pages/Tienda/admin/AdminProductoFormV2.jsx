@@ -115,7 +115,7 @@ const AdminProductoFormV2 = () => {
     vendorId: '',
     fulfillmentType: '',
     category: '',
-    collection: '',
+    collections: [],
     defaultVariantId: '', // ID de la variante principal
     variants: [], 
     customizable: false,
@@ -224,11 +224,13 @@ const AdminProductoFormV2 = () => {
             : (productData.category?.id || productData.category || '');
           return raw === '[object Object]' ? '' : raw;
         })(),
-        collection: (() => {
-          const raw = Array.isArray(productData.collections)
-            ? (productData.collections[0]?.id || productData.collections[0] || '')
-            : '';
-          return raw === '[object Object]' ? '' : raw;
+        collections: (() => {
+          const raw = productData.collections;
+          // Retrocompat: array de ids, array de objetos {id}, un solo string o {id}
+          const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+          return arr
+            .map(c => (c && typeof c === 'object' ? c.id : c) || '')
+            .filter(c => c && c !== '[object Object]');
         })(),
         defaultVariantId: productData.defaultVariantId || firstVariantId,
         variants: mappedVariants,
@@ -665,7 +667,7 @@ const AdminProductoFormV2 = () => {
         vendorId: form.vendorId || undefined,
         fulfillmentType: form.fulfillmentType || undefined,
         categories: form.category ? [form.category] : [],
-        collections: form.collection ? [form.collection] : [],
+        collections: Array.isArray(form.collections) ? form.collections : [],
         mainImage: currentMainImage,
         thumbnailWithDesignUrl: form.customizable ? currentMainImage : '',
         mainSizes: [],                     // Las tallas viven dentro de cada variante
@@ -974,16 +976,19 @@ const AdminProductoFormV2 = () => {
               <div className={styles.field}>
                 <label className={styles.label}>Colección</label>
                 <CreatableSelect
-                  isClearable
+                  isMulti
                   placeholder="Seleccionar o escribir..."
-                  onChange={(val) => setForm(f => ({ ...f, collection: val ? val.value : '' }))}
+                  onChange={(val) => setForm(f => ({ ...f, collections: (val || []).map(v => v.value) }))}
                   onCreateOption={async (inputValue) => {
                     const res = await createCollection({ name: inputValue });
                     queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
-                    setForm(f => ({ ...f, collection: res.id }));
+                    setForm(f => ({ ...f, collections: [...(f.collections || []), res.id] }));
                   }}
                   options={collections?.map(c => ({ label: c.name, value: c.id })) || []}
-                  value={collections?.find(c => c.id === form.collection) ? { label: collections.find(c => c.id === form.collection).name, value: form.collection } : null}
+                  value={(form.collections || []).map(id => {
+                    const col = collections?.find(c => c.id === id);
+                    return col ? { label: col.name, value: id } : { label: id, value: id };
+                  })}
                 />
               </div>
             </div>
