@@ -8,7 +8,7 @@ cambio → desplegar → verificar**.
 
 > Regla de oro: **producción primero se respalda, después se toca.** Ningún cambio en
 > Firestore, Storage, Cloud Functions, hosting o reglas se hace directamente contra el
-> proyecto de producción `pruebas-cd728` sin un respaldo previo y una verificación en
+> proyecto de producción `sistema-gestion-3b225` sin un respaldo previo y una verificación en
 > staging.
 
 > ¿Buscas el panorama rápido? Empieza por
@@ -57,8 +57,9 @@ El ciclo de cualquier cambio que toque producción es siempre el mismo:
 ```
 
 1. **Respaldar** (`ops/backup/`): exportar Firestore, Storage, reglas y configuración del
-   proyecto de producción `pruebas-cd728` (y del ERP si el cambio lo afecta). Anotar la
-   fecha y el commit/tag baseline. Ver [BASELINE-PRODUCCION.md](./BASELINE-PRODUCCION.md).
+   proyecto de producción `sistema-gestion-3b225` (portal y ERP comparten ese mismo proyecto
+   y la misma base Firestore). Anotar la fecha y el commit/tag baseline. Ver
+   [BASELINE-PRODUCCION.md](./BASELINE-PRODUCCION.md).
 2. **Staging**: aplicar y probar el cambio en un proyecto separado (objetivo del roadmap:
    separar `prod` real de `staging`; ver Fase 0 del plan). Nunca probar en producción.
 3. **Cambio**: implementar en una rama (`dev` o feature), nunca commitear directo a `master`.
@@ -78,10 +79,15 @@ El ciclo de cualquier cambio que toque producción es siempre el mismo:
 
 ## 3. Notas importantes
 
-- **Producción se llama `pruebas-cd728`.** Pese al nombre, es el entorno real (es el
-  `default` en `.firebaserc`). No confundir con un entorno de pruebas.
-- **Hay dos proyectos Firebase**: el Portal (`pruebas-cd728`) y un ERP separado configurado
-  por variables `REACT_APP_ERP_FIREBASE_*`. Un cambio puede afectar a uno o a ambos.
+- **Producción es `sistema-gestion-3b225`** (ÚNICO proyecto de producción, `default` en
+  `.firebaserc`). El antiguo `pruebas-cd728` **NO debe usarse**: era el proyecto equivocado
+  (hubo un deploy por error ahí el 2026-06-25; ver
+  [ESTADO-DEL-PROYECTO.md](./ESTADO-DEL-PROYECTO.md)).
+- **Un solo proyecto Firebase compartido**: el Portal de clientes **y** el ERP viven en el
+  mismo proyecto `sistema-gestion-3b225` y la misma base Firestore. Las colecciones del ERP
+  (`pedidos`/`pedidos_web`) y las de analytics conviven ahí y deben estar cubiertas por sus
+  reglas. **No hay un proyecto Firebase separado para el ERP**; las variables
+  `REACT_APP_ERP_FIREBASE_*` quedaron obsoletas para producción.
 - **Doble hosting**: Vercel (`portal-clientes-regala-con-amor`) **y** Firebase Hosting.
   Confirmar a cuál apunta el dominio antes de desplegar (ver BASELINE y DESPLIEGUE).
 - **La app migró de CRA a Vite** (commit `a3c4d66`); el dev server corre en

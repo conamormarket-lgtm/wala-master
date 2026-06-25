@@ -17,9 +17,9 @@ Wala (marca legal CATAS GROUP S.A.C. / "CON AMOR") es **hoy una tienda mono-marc
 - **Un page-builder no-code real** (18 tipos de sección, editor visual WYSIWYG sobre iframe+postMessage, landings dinámicas por slug, temas CSS, importación de temas WordPress).
 - **Analytics y heatmap propios** (sin GA), con funnel, tiempo real, UTM y geografía.
 - **Pagos para el mercado peruano**: Culqi (cargo seguro en Cloud Function), PayPal (captura en cliente), Yape/Plin/transferencia "por WhatsApp", enlaces de pago. **El canal real dominante es cerrar por WhatsApp**; las pasarelas online están gateadas tras `user.email === 'pruebas001@gmail.com'`.
-- **Integración con un ERP externo** (segundo proyecto Firebase `erp-firebase`, colecciones `pedidos`/`pedidos_web`) con pipeline de producción granular (diseño → preparación → estampado → empaquetado → reparto). El cierre de venta es semi-manual (validación humana en `pedidos_web`).
+- **Integración con un ERP** (colecciones `pedidos`/`pedidos_web`) que en producción vive en el **mismo proyecto Firebase** `sistema-gestion-3b225`, no en un proyecto separado (la config `erp-firebase` / `REACT_APP_ERP_FIREBASE_*` quedó obsoleta para producción). Pipeline de producción granular (diseño → preparación → estampado → empaquetado → reparto). El cierre de venta es semi-manual (validación humana en `pedidos_web`).
 
-**Conclusión honesta:** Wala tiene **tres activos diferenciales ya construidos** (editor POD, gamificación de retención, page-builder) sobre una **base técnica frágil** (CRA deprecado, lógica económica en cliente, reglas Firestore desalineadas, proyecto Firebase llamado `pruebas-cd728` usado como producción). La visión MercadoLibre+Temu **no requiere reescribir los activos**, sino (a) tapar agujeros de seguridad, (b) introducir la entidad vendedor/nicho que hoy no existe, y (c) profesionalizar economía y búsqueda.
+**Conclusión honesta:** Wala tiene **tres activos diferenciales ya construidos** (editor POD, gamificación de retención, page-builder) sobre una **base técnica frágil** (CRA deprecado, lógica económica en cliente, reglas Firestore desalineadas, confusión de proyectos Firebase: se trató `pruebas-cd728` como producción cuando el proyecto real y ÚNICO es `sistema-gestion-3b225`). La visión MercadoLibre+Temu **no requiere reescribir los activos**, sino (a) tapar agujeros de seguridad, (b) introducir la entidad vendedor/nicho que hoy no existe, y (c) profesionalizar economía y búsqueda.
 
 ---
 
@@ -33,7 +33,7 @@ Wala (marca legal CATAS GROUP S.A.C. / "CON AMOR") es **hoy una tienda mono-marc
 | Móvil | Capacitor 8 (Android publicado: versionCode 25, v1.3.21; App Links verificados para wala.pe) |
 | Editor | fabric.js 5.5.2 |
 | Backend | Cloud Functions (firebase-functions ^4 / firebase-admin ^11, Node 22) + Express mock muerto (`backend/`) |
-| Datos | Firestore (2 proyectos: Portal `pruebas-cd728` + ERP `erp-firebase`) |
+| Datos | Firestore (1 solo proyecto compartido `sistema-gestion-3b225`: portal + ERP en la misma base; `pruebas-cd728` / `erp-firebase` obsoletos) |
 | Hosting | Vercel **y** Firebase Hosting (doble destino, ambiguo) |
 | Pagos | Culqi (server-side), PayPal (client-side), Stripe (deps muertas) |
 | Imágenes | Cloudinary + Firebase Storage + residual Google Drive |
@@ -46,7 +46,7 @@ Cliente React (CRA/Capacitor)
   ├─ AuthContext  →  TODA la economía de puntos (earn/spend/freeze) escrita desde cliente
   ├─ products.js  →  CRUD directo a Firestore + caché localStorage del catálogo completo
   ├─ CheckoutPage →  arma payload ERP, congela monedas, procesa referidos (≈950 líneas de negocio en UI)
-  ├─ erp/firebase.js → escribe DIRECTO al 2º proyecto Firebase del ERP desde el navegador
+  ├─ erp/firebase.js → escribe DIRECTO a las colecciones del ERP (pedidos/pedidos_web) desde el navegador
   └─ Cloud Functions (lo único server-authoritative): Culqi charge, secureClaimMonedas, crons
 ```
 
@@ -77,7 +77,7 @@ Cliente React (CRA/Capacitor)
 
 **Plataforma**
 - **CRA deprecado** (sin mantenimiento, builds lentos, vulnerabilidades transitivas; `.npmrc` con `legacy-peer-deps=true`).
-- Proyecto Firebase de prod se llama `pruebas-cd728`; sin separación dev/staging/prod.
+- Proyecto Firebase de prod es `sistema-gestion-3b225` (se usó por error `pruebas-cd728`, que NO debe usarse); sin separación dev/staging/prod.
 - Sin CI/CD, sin tests, sin `firestore.indexes.json`, sin observabilidad (Sentry/Crashlytics), sin App Check.
 - Doble motor de personalización (`editor/` + `YoryoPersonalizado/WALA_Editor_Export/` casi idéntico).
 - Archivos basura versionados en raíz (`update*.js`, `patch_*.js`, `scratch/`, `eslint_report.json` 1.7 MB).
@@ -249,7 +249,7 @@ Hoy no existe nada multi-vendor. Pasos:
 - 🔧 Mover economía (earn/spend/freeze/claim) a **Cloud Functions idempotentes** + `loyaltyLedger`.
 - 🔧 Bug `portal_users` → `portal_clientes_users` en `referrals.js`; unificar `referralCode` en `PerfilPage`.
 - 🔧 Util único de fecha en **America/Lima** (arregla rachas rotas).
-- 🆕 **App Check** (web + Android); separar proyectos Firebase (prod real + staging), dejar de usar `pruebas-cd728`.
+- 🆕 **App Check** (web + Android); crear un proyecto de staging separado del prod real `sistema-gestion-3b225` y dejar de usar `pruebas-cd728`.
 - 🆕 CI/CD mínimo (lint+build+tests de reglas), `firestore.indexes.json`, limpiar raíz del repo.
 
 ### FASE 1 — Plataforma y datos base (~3–4 semanas)
@@ -304,8 +304,8 @@ Hoy no existe nada multi-vendor. Pasos:
 | **Custom claims para roles** | Las reglas Firestore pueden leerlos directamente; elimina el desfase `adminUsers`/`adminRoles` y el backdoor. |
 | **FCM HTTP v1 + topics + multicast** | `sendToDevice` está deprecado; topics evitan el full scan horario y escalan la retención diaria. |
 | **App Check + paginación + índices** | Protege lecturas públicas masivas y controla costos Firestore. |
-| **Proyectos Firebase separados (prod/staging)** | `pruebas-cd728` como prod es riesgo de gobernanza y entornos. |
-| **Un único camino ERP** (CF mediadora) | Hoy el navegador escribe directo a un 2º proyecto Firebase; borrar el Express mock y el cliente REST no usado. |
+| **Proyectos Firebase separados (prod/staging)** | Falta un staging aparte del prod real `sistema-gestion-3b225`; usar `pruebas-cd728` (proyecto equivocado) es riesgo de gobernanza y entornos. |
+| **Un único camino ERP** (CF mediadora) | Hoy el navegador escribe directo a las colecciones del ERP (mismo proyecto `sistema-gestion-3b225`); borrar el Express mock y el cliente REST no usado. |
 
 ---
 

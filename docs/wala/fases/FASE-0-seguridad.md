@@ -1,7 +1,7 @@
 # FASE 0 — SEGURIDAD (server-authoritative) — **HECHA**
 
 > Estado global de la fase: **HECHA** (verificada en LOCAL).
-> Rama: `fase-0-seguridad`. Proyecto PROD del Portal: `pruebas-cd728` (es producción real pese al nombre). Proyecto ERP: separado, accedido vía cuenta de servicio en el secret `ERP_SERVICE_ACCOUNT`.
+> Rama: `fase-0-seguridad`. Proyecto PROD (portal + ERP): `sistema-gestion-3b225` — ÚNICO proyecto de producción; portal y ERP comparten proyecto y base Firestore. `pruebas-cd728` **NO debe usarse** (proyecto equivocado; ver incidente 2026-06-25). El backend accede a las colecciones del ERP vía la cuenta de servicio del secret `ERP_SERVICE_ACCOUNT`.
 > Despliegue a Vercel/Firebase: **PENDIENTE** — el usuario aún no tiene acceso a la consola de Firebase. Todo lo de esta fase está validado en local (`vite build`, dev server en `http://localhost:3000`, suite de economía 44/44, y revisión adversarial con agentes). Mover a Vercel/Firebase es posterior.
 >
 > Este documento es el **registro de cierre** del runbook pre-implementación `docs/wala/FASE-0-SEGURIDAD.md` (los 11 hallazgos H-01..H-11). Para cada hallazgo se describe qué era, **qué fix se aplicó realmente** (nombres de función/archivo reales) y cómo verificarlo.
@@ -274,7 +274,7 @@ node functions/test/economyLogic.test.js
 
 ## 7. Despliegue de esta fase (PENDIENTE — falta acceso a Firebase)
 
-> **Estado:** nada desplegado. El usuario aún no tiene acceso a la consola de Firebase. Lo de abajo es el runbook a ejecutar cuando lo tenga. Prerrequisito: `npm install -g firebase-tools`, `firebase login`, `firebase use pruebas-cd728`.
+> **Estado:** el backend aún no está desplegado al proyecto correcto. Lo de abajo es el runbook a ejecutar. El deploy a Firebase se hace **desde Google Cloud Shell** (ya trae `firebase-tools` y la sesión autenticada contra `sistema-gestion-3b225`, sin `firebase login`). Antes de desplegar, confirma el proyecto activo con `firebase use sistema-gestion-3b225` — **nunca** `pruebas-cd728` (ver incidente 2026-06-25).
 
 ### 7.1. Secrets necesarios
 
@@ -302,7 +302,7 @@ El orden importa por la dependencia descrita en H-06 (las reglas bloquean los ca
 4. **Web** → `npm run build` (Vite) + despliegue a Vercel/Hosting.
 5. **Bootstrap de admins** → `scripts/set-admin-claims.js` con la cuenta de servicio del Portal:
    ```powershell
-   $env:GOOGLE_APPLICATION_CREDENTIALS = "C:\ruta\serviceAccount-pruebas-cd728.json"
+   $env:GOOGLE_APPLICATION_CREDENTIALS = "C:\ruta\serviceAccount-sistema-gestion-3b225.json"
    node scripts/set-admin-claims.js yorh001@gmail.com heyeru24@gmail.com
    ```
    Los admins deben **cerrar sesión y volver a entrar** para refrescar el token (y que el claim surta efecto en cliente y reglas).

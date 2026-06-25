@@ -7,7 +7,7 @@
 > descubrimiento**, sin romper el catálogo ni el editor existentes. Todo lo aquí
 > documentado está verificado en **LOCAL** (vite build + dev server en
 > `http://localhost:3000`). **Nada está desplegado todavía**; el usuario aún no tiene
-> acceso a Firebase (proyecto de producción `pruebas-cd728`). El movimiento a
+> acceso a Firebase (proyecto de producción `sistema-gestion-3b225`; `pruebas-cd728` NO se usa). El movimiento a
 > Vercel/Firebase es posterior.
 
 Proyecto / repo: `wala-master`, rama `fase-0-seguridad`.
@@ -295,7 +295,7 @@ Garantías:
 - Modo simulación: `node scripts/backfill-vendor-niche.js --dry` (no escribe; imprime
   el conteo). Sin `--dry` aplica.
 - Requiere `GOOGLE_APPLICATION_CREDENTIALS` apuntando al service account de
-  `pruebas-cd728`; aborta si falta.
+  `sistema-gestion-3b225`; aborta si falta.
 - Salida: `Productos actualizados: N, sin cambios: M, total: T`.
 
 **Estado:** el script está listo pero **NO se ha ejecutado** (no hay acceso a Firebase
@@ -467,7 +467,7 @@ descubrible, conectar la home y completar la administración de nichos.
 ### 6.4 Correr el backfill cuando haya Firebase
 
 - **Por hacer (bloqueado por acceso a Firebase).** Ejecutar primero en seco
-  (`--dry`) y luego aplicar `scripts/backfill-vendor-niche.js` en `pruebas-cd728`,
+  (`--dry`) y luego aplicar `scripts/backfill-vendor-niche.js` en `sistema-gestion-3b225`,
   con `GOOGLE_APPLICATION_CREDENTIALS` apuntando al service account.
 - **Criterio de aceptación:** tras correrlo, **todos** los docs de `productos_wala`
   tienen `vendorId`, `nicheId` y `fulfillmentType` persistidos; el conteo `sin cambios`

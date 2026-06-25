@@ -19,12 +19,13 @@ variables (ver §7).
 
 | Entorno / servicio | Identificador | Notas |
 |---|---|---|
-| **Firebase — Portal (PRODUCCIÓN)** | `pruebas-cd728` | Es producción real pese al nombre. `default` en `.firebaserc`. Auth, usuarios, diseños, catálogo, fidelización, analytics. |
-| **Firebase — ERP** | `<ERP_PROJECT_ID>` (configurar) | Proyecto **separado**, vía variables `REACT_APP_ERP_FIREBASE_*`. Colecciones `pedidos` / `pedidos_web` (pipeline de producción). El id real lo rellena el usuario. |
+| **Firebase — Producción (Portal + ERP)** | `sistema-gestion-3b225` | ÚNICO proyecto de producción, `default` en `.firebaserc`. Portal y ERP comparten **el mismo proyecto y la misma base Firestore**. Auth, usuarios, diseños, catálogo, fidelización, analytics y los pedidos del ERP (`pedidos`/`pedidos_web`). |
+| **Firebase — ERP** | (mismo proyecto: `sistema-gestion-3b225`) | **No es un proyecto separado.** Las colecciones del ERP `pedidos` / `pedidos_web` (pipeline de producción) viven en `sistema-gestion-3b225`. Las variables `REACT_APP_ERP_FIREBASE_*` quedaron **obsoletas para producción**. |
+| **Firebase — proyecto a NO usar** | `pruebas-cd728` | **No es producción.** Documentación previa lo trataba como PROD; es el proyecto equivocado. No desplegar ni respaldar ahí (ver incidente 2026-06-25 en [ESTADO-DEL-PROYECTO.md](./ESTADO-DEL-PROYECTO.md)). |
 | **Vercel** | Proyecto `portal-clientes-regala-con-amor` | `projectId` `prj_uptUytGsDu5LfHikK8zVlWfA8VjI`, `orgId` `team_yhD2v1G3hjm0PjX8TvCdu4KV`. Definido en `.vercel/project.json`. |
 | **Capacitor (app móvil)** | `appId` `com.wala.tienda`, `appName` `WALA` | `webDir` `build`. Android publicado (App Links verificados para wala.pe). |
 | **Repositorio** | `github.com/conamormarket-lgtm/wala-master` | Ramas `master` y `dev`. Clon local en Windows. |
-| **Storage bucket (Portal)** | `pruebas-cd728.appspot.com` _(verificar)_ | Puede ser `pruebas-cd728.firebasestorage.app` según el formato del proyecto. Confirmar en Firebase Console antes de respaldar. |
+| **Storage bucket** | `sistema-gestion-3b225.appspot.com` _(verificar)_ | Puede ser `sistema-gestion-3b225.firebasestorage.app` según el formato del proyecto. Confirmar en Firebase Console antes de respaldar. |
 
 ---
 
@@ -135,7 +136,12 @@ versionado) y en la configuración de Vercel; **no se documentan aquí**.
 - `REACT_APP_FIREBASE_MEASUREMENT_ID`
 - `REACT_APP_FIREBASE_VAPID_KEY` _(push web / FCM)_
 
-### 7.2 Firebase — ERP (proyecto separado)
+### 7.2 Firebase — ERP (variables obsoletas para producción)
+
+> El ERP **no usa un proyecto Firebase separado** en producción: vive en
+> `sistema-gestion-3b225` junto con el portal. Estos nombres `REACT_APP_ERP_FIREBASE_*`
+> se conservan solo como inventario histórico del código.
+
 - `REACT_APP_ERP_FIREBASE_API_KEY`
 - `REACT_APP_ERP_FIREBASE_AUTH_DOMAIN`
 - `REACT_APP_ERP_FIREBASE_PROJECT_ID`
