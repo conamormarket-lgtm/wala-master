@@ -223,17 +223,19 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
       setCanvas(fabricCanvas);
 
       // Crear zonas de personalización desde printAreas (tamaño inicial; el efecto de zonas las actualizará al cargar la imagen)
-      const printAreasToRender = Array.isArray(printAreas)
+      // BLINDADO: filtramos elementos falsy (undefined/null) para que ningún forEach lea .x sobre undefined
+      const printAreasToRender = (Array.isArray(printAreas)
         ? printAreas
-        : [];
+        : []).filter(Boolean);
 
       printAreasToRender.forEach((area) => {
-        const dims = imageDimensionsRef.current;
+        if (!area) return; // guarda temprana: nunca leer propiedades de un area undefined
+        const dims = imageDimensionsRef.current || {};
         const pa = {
-          x: dims.padding + (dims.width * (area.x || 0)) / 100,
-          y: dims.padding + (dims.height * (area.y || 0)) / 100,
-          width: (dims.width * (area.width || 40)) / 100,
-          height: (dims.height * (area.height || 40)) / 100,
+          x: (dims.padding || 0) + ((dims.width || 0) * (area?.x || 0)) / 100,
+          y: (dims.padding || 0) + ((dims.height || 0) * (area?.y || 0)) / 100,
+          width: ((dims.width || 0) * (area?.width || 40)) / 100,
+          height: ((dims.height || 0) * (area?.height || 40)) / 100,
         };
 
         const isActive = activePrintAreaId === area.id;
@@ -380,8 +382,8 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
       });
 
       const clampToPrintAreas = (obj) => {
-        if (!obj.customId) return;
-        const dims = imageDimensionsRef.current;
+        if (!obj || !obj.customId) return;
+        const dims = imageDimensionsRef.current || {};
         const w = (obj.width || 0) * (obj.scaleX || 1);
         const h = (obj.height || 0) * (obj.scaleY || 1);
         const centerX = (obj.left ?? 0) + w / 2;
@@ -390,11 +392,12 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
         // Verificar si el objeto está dentro de alguna zona
         let isInsideAnyZone = false;
         for (const area of printAreasToRender) {
+          if (!area) continue; // guarda: saltar areas undefined
           const pa = {
-            x: (dims.padding || 0) + (dims.width * (area.x || 0)) / 100,
-            y: (dims.padding || 0) + (dims.height * (area.y || 0)) / 100,
-            width: (dims.width * (area.width || 40)) / 100,
-            height: (dims.height * (area.height || 40)) / 100,
+            x: (dims.padding || 0) + ((dims.width || 0) * (area?.x || 0)) / 100,
+            y: (dims.padding || 0) + ((dims.height || 0) * (area?.y || 0)) / 100,
+            width: ((dims.width || 0) * (area?.width || 40)) / 100,
+            height: ((dims.height || 0) * (area?.height || 40)) / 100,
           };
 
           const areaWithCustom = {
@@ -428,13 +431,14 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
           let minDistance = Infinity;
 
           for (const area of printAreasToRender) {
-             const paX = (dims.padding || 0) + (dims.width * (area.x || 0)) / 100;
-             const paY = (dims.padding || 0) + (dims.height * (area.y || 0)) / 100;
-             const paW = (dims.width * (area.width || 40)) / 100;
-             const paH = (dims.height * (area.height || 40)) / 100;
+             if (!area) continue; // guarda: saltar areas undefined
+             const paX = (dims.padding || 0) + ((dims.width || 0) * (area?.x || 0)) / 100;
+             const paY = (dims.padding || 0) + ((dims.height || 0) * (area?.y || 0)) / 100;
+             const paW = ((dims.width || 0) * (area?.width || 40)) / 100;
+             const paH = ((dims.height || 0) * (area?.height || 40)) / 100;
              const areaCenterX = paX + paW / 2;
              const areaCenterY = paY + paH / 2;
-             
+
              const distance = Math.sqrt(Math.pow(centerX - areaCenterX, 2) + Math.pow(centerY - areaCenterY, 2));
              if (distance < minDistance) {
                minDistance = distance;
@@ -442,18 +446,19 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
              }
           }
 
+          // BLINDADO: nearestArea podría ser undefined si el primer elemento lo era
           const pa = {
-            x: (dims.padding || 0) + (dims.width * (nearestArea.x || 0)) / 100,
-            y: (dims.padding || 0) + (dims.height * (nearestArea.y || 0)) / 100,
-            width: (dims.width * (nearestArea.width || 40)) / 100,
-            height: (dims.height * (nearestArea.height || 40)) / 100,
+            x: (dims.padding || 0) + ((dims.width || 0) * (nearestArea?.x || 0)) / 100,
+            y: (dims.padding || 0) + ((dims.height || 0) * (nearestArea?.y || 0)) / 100,
+            width: ((dims.width || 0) * (nearestArea?.width || 40)) / 100,
+            height: ((dims.height || 0) * (nearestArea?.height || 40)) / 100,
           };
           let left = Math.max(pa.x, Math.min(pa.x + pa.width - w, obj.left ?? pa.x));
           let top = Math.max(pa.y, Math.min(pa.y + pa.height - h, obj.top ?? pa.y));
           obj.set({ left, top });
-          
+
           // Además, activamos la zona en la que acaba de caer magnéticamente para feedback visual
-          if (activePrintAreaId !== nearestArea.id) {
+          if (nearestArea && activePrintAreaId !== nearestArea.id) {
             setActivePrintAreaId(viewIdToUse, nearestArea.id);
           }
         }
@@ -763,7 +768,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
           const ids = active.type === 'activeSelection'
             ? (active.get('objects') || []).map((o) => o.customId).filter(Boolean)
             : active.customId ? [active.customId] : [];
-          const layerData = ids.map((id) => layers.find((l) => l.id === id)).filter(Boolean);
+          const layerData = ids.map((id) => layers.find((l) => l && l.id === id)).filter(Boolean);
           const cloned = layerData.map((layer) => {
             const copy = JSON.parse(JSON.stringify(layer));
             delete copy.id;
@@ -780,13 +785,14 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
           
           let activeArea;
           if (activePrintAreaId && Array.isArray(printAreas)) {
-             activeArea = printAreas.find(a => a.id === activePrintAreaId);
+             activeArea = printAreas.find(a => a && a.id === activePrintAreaId);
           }
 
           let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
           clipboardLayers.forEach(l => {
-              const lx = l.x ?? 0;
-              const ly = l.y ?? 0;
+              if (!l) return; // guarda: saltar capas undefined
+              const lx = l?.x ?? 0;
+              const ly = l?.y ?? 0;
               if (lx < minX) minX = lx;
               if (ly < minY) minY = ly;
               if (lx > maxX) maxX = lx;
@@ -799,11 +805,11 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
           let deltaY = 15;
 
           if (activeArea && imageDimensionsRef.current) {
-             const { width, height, padding = 0 } = imageDimensionsRef.current;
-             const zX = padding + (width * (activeArea.x || 0)) / 100;
-             const zY = padding + (height * (activeArea.y || 0)) / 100;
-             const zW = (width * (activeArea.width || 40)) / 100;
-             const zH = (height * (activeArea.height || 40)) / 100;
+             const { width = 0, height = 0, padding = 0 } = imageDimensionsRef.current || {};
+             const zX = padding + (width * (activeArea?.x || 0)) / 100;
+             const zY = padding + (height * (activeArea?.y || 0)) / 100;
+             const zW = (width * (activeArea?.width || 40)) / 100;
+             const zH = (height * (activeArea?.height || 40)) / 100;
              
              const isInside = groupCenterX >= zX && groupCenterX <= zX + zW && groupCenterY >= zY && groupCenterY <= zY + zH;
              if (!isInside) {
@@ -813,8 +819,9 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
           }
 
           clipboardLayers.forEach((layerData) => {
-            const spawnX = (layerData.x ?? 0) + deltaX;
-            const spawnY = (layerData.y ?? 0) + deltaY;
+            if (!layerData) return; // guarda: saltar capas undefined
+            const spawnX = (layerData?.x ?? 0) + deltaX;
+            const spawnY = (layerData?.y ?? 0) + deltaY;
 
             const newId = addLayer(viewIdToUse, {
               ...layerData,
@@ -880,25 +887,27 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
   // Función centralizada para actualizar posiciones de zonas y capas
   const updateZonesAndLayers = (lc) => {
     if (!lc || !isCanvasValid(lc)) return;
-    const { width, height, padding = 0 } = imageDimensionsRef.current;
-    if (width === 0) return;
+    const { width = 0, height = 0, padding = 0 } = imageDimensionsRef.current || {};
+    if (!width) return;
 
-    const printAreasToRender = Array.isArray(printAreas)
+    // BLINDADO: filtramos elementos falsy para que find/forEach nunca lean .id/.x sobre undefined
+    const printAreasToRender = (Array.isArray(printAreas)
       ? printAreas
-      : [];
+      : []).filter(Boolean);
 
     // 1. Sincronizar Zonas (Dashed boxes)
-    const existingZones = lc.getObjects().filter(obj => obj.printAreaId);
+    const existingZones = lc.getObjects().filter(obj => obj && obj.printAreaId);
     existingZones.forEach(ez => {
-      const area = printAreasToRender.find(a => a.id === ez.printAreaId);
+      if (!ez) return;
+      const area = printAreasToRender.find(a => a && a.id === ez.printAreaId);
       if (!area) {
         lc.remove(ez);
       } else {
         const pa = {
-          x: padding + (width * (area.x || 0)) / 100,
-          y: padding + (height * (area.y || 0)) / 100,
-          width: (width * (area.width || 40)) / 100,
-          height: (height * (area.height || 40)) / 100,
+          x: padding + (width * (area?.x || 0)) / 100,
+          y: padding + (height * (area?.y || 0)) / 100,
+          width: (width * (area?.width || 40)) / 100,
+          height: (height * (area?.height || 40)) / 100,
         };
         ez.set({
           left: (area.shape === 'circle' || area.shape === 'ellipse') ? pa.x + pa.width / 2 : pa.x,
@@ -941,7 +950,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
 
         const viewLayers = layersByViewRef.current[viewIdToUse] ?? [];
         idsToDuplicate.forEach(customId => {
-          const layer = viewLayers.find((l) => l.id === customId);
+          const layer = viewLayers.find((l) => l && l.id === customId);
           if (layer) {
             const duplicate = JSON.parse(JSON.stringify(layer));
             delete duplicate.id;
@@ -987,7 +996,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
 
       const viewLayers = layersByViewRef.current[viewIdToUse] ?? [];
       const dropObjects = isGroup ? obj.getObjects() : [obj];
-      const packagedLayers = dropObjects.map(o => viewLayers.find(l => l.id === o.customId)).filter(Boolean);
+      const packagedLayers = dropObjects.map(o => viewLayers.find(l => l && o && l.id === o.customId)).filter(Boolean);
 
       if (packagedLayers.length === 0) return;
 
@@ -1049,10 +1058,11 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
 
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       inLayers.forEach(l => {
-          if ((l.x ?? 0) < minX) minX = (l.x ?? 0);
-          if ((l.y ?? 0) < minY) minY = (l.y ?? 0);
-          if ((l.x ?? 0) > maxX) maxX = (l.x ?? 0);
-          if ((l.y ?? 0) > maxY) maxY = (l.y ?? 0);
+          if (!l) return; // guarda: saltar capas undefined
+          if ((l?.x ?? 0) < minX) minX = (l?.x ?? 0);
+          if ((l?.y ?? 0) < minY) minY = (l?.y ?? 0);
+          if ((l?.x ?? 0) > maxX) maxX = (l?.x ?? 0);
+          if ((l?.y ?? 0) > maxY) maxY = (l?.y ?? 0);
       });
       const groupCenterX = minX + (maxX - minX) / 2;
       const groupCenterY = minY + (maxY - minY) / 2;
@@ -1062,10 +1072,11 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
       const dropDeltaY = relY - Math.max(0, groupCenterY);
 
       inLayers.forEach(layer => {
+         if (!layer) return; // guarda: saltar capas undefined
          const incoming = JSON.parse(JSON.stringify(layer));
          delete incoming.id;
-         incoming.x = (layer.x ?? 0) + dropDeltaX;
-         incoming.y = (layer.y ?? 0) + dropDeltaY;
+         incoming.x = (layer?.x ?? 0) + dropDeltaX;
+         incoming.y = (layer?.y ?? 0) + dropDeltaY;
          
          // Permitir que retenga offset y layout al 100%
          incoming.baseW = imageDimensions.width;
@@ -1081,17 +1092,19 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
   useEffect(() => {
     const lc = localCanvasRef.current;
     // eslint-disable-next-line no-unused-vars
-    const { totalW, totalH, padding = 0 } = imageDimensions;
+    const { totalW = 0, totalH = 0, padding = 0 } = imageDimensions || {};
     if (!lc || !isCanvasValid(lc) || totalW === 0 || totalH === 0) return;
     try {
-      const printAreasToRender = Array.isArray(printAreas)
+      // BLINDADO: filtramos elementos falsy para que map/forEach nunca lean .id/.x sobre undefined
+      const printAreasToRender = (Array.isArray(printAreas)
         ? printAreas
-        : [];
+        : []).filter(Boolean);
 
       // Eliminar zonas existentes que no están en printAreas
-      const existingZones = lc.getObjects().filter(obj => obj.printAreaId);
-      const currentZoneIds = printAreasToRender.map(a => a.id);
+      const existingZones = lc.getObjects().filter(obj => obj && obj.printAreaId);
+      const currentZoneIds = printAreasToRender.map(a => a?.id);
       existingZones.forEach(zone => {
+        if (!zone) return;
         if (!currentZoneIds.includes(zone.printAreaId)) {
           lc.remove(zone);
         }
@@ -1099,13 +1112,14 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
 
       // Actualizar o crear zonas con cálculo robusto de padding
       printAreasToRender.forEach((area) => {
-        const dims = imageDimensions;
+        if (!area) return; // guarda temprana: nunca leer .x/.shape/.id sobre un area undefined
+        const dims = imageDimensions || {};
         const padding = dims.padding || 0;
         const pa = {
-          x: padding + (dims.width * (area.x || 0)) / 100,
-          y: padding + (dims.height * (area.y || 0)) / 100,
-          width: (dims.width * (area.width || 40)) / 100,
-          height: (dims.height * (area.height || 40)) / 100,
+          x: padding + ((dims.width || 0) * (area?.x || 0)) / 100,
+          y: padding + ((dims.height || 0) * (area?.y || 0)) / 100,
+          width: ((dims.width || 0) * (area?.width || 40)) / 100,
+          height: ((dims.height || 0) * (area?.height || 40)) / 100,
         };
 
         const isActive = activePrintAreaId === area.id;
@@ -1331,24 +1345,30 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
       safeRenderAll(lc);
 
       // Sincronizar layers: actualizar objetos existentes in situ para no perder selección ni modo edición
+      // BLINDADO: dims y arrays seguros para que ninguna lectura de .x/.y reviente
+      const dimsSafe = imageDimensions || {};
       const activeArea = activePrintAreaId
-        ? printAreasToRender.find(a => a.id === activePrintAreaId)
+        ? printAreasToRender.find(a => a && a.id === activePrintAreaId)
         : null;
+      // areaToUse SIEMPRE termina siendo un objeto con defaults (nunca undefined)
       const areaToUse = activeArea || printAreasToRender[0] || { x: 0, y: 0, width: 40, height: 40 };
       const defaultPa = {
-        x: (imageDimensions.padding || 0) + (imageDimensions.width * (areaToUse?.x || 0)) / 100,
-        y: (imageDimensions.padding || 0) + (imageDimensions.height * (areaToUse?.y || 0)) / 100,
-        width: (imageDimensions.width * (areaToUse?.width || 40)) / 100,
-        height: (imageDimensions.height * (areaToUse?.height || 40)) / 100,
+        x: (dimsSafe.padding || 0) + ((dimsSafe.width || 0) * (areaToUse?.x || 0)) / 100,
+        y: (dimsSafe.padding || 0) + ((dimsSafe.height || 0) * (areaToUse?.y || 0)) / 100,
+        width: ((dimsSafe.width || 0) * (areaToUse?.width || 40)) / 100,
+        height: ((dimsSafe.height || 0) * (areaToUse?.height || 40)) / 100,
       };
       const defaultLeft = defaultPa.x + defaultPa.width / 2 - 50;
       const defaultTop = defaultPa.y + defaultPa.height / 2 - 25;
 
-      const layerIds = new Set(layers.map((l) => l.id));
-      const existingObjects = lc.getObjects().filter((o) => o.customId && !o.printAreaId && !o._isTintOverlay);
+      // BLINDADO: filtramos capas falsy antes de mapear/iterar para no leer .id/.x sobre undefined
+      const layersSafe = (Array.isArray(layers) ? layers : []).filter(Boolean);
+      const layerIds = new Set(layersSafe.map((l) => l?.id));
+      const existingObjects = lc.getObjects().filter((o) => o && o.customId && !o.printAreaId && !o._isTintOverlay);
 
       // Eliminar solo los objetos cuya capa ya no existe
       existingObjects.forEach((obj) => {
+        if (!obj) return;
         if (!layerIds.has(obj.customId)) {
           // Eliminar también el overlay de tinte si existe
           if (obj._tintOverlay) {
@@ -1363,10 +1383,11 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
         }
       });
 
-      layers.forEach((rawLayer) => {
+      layersSafe.forEach((rawLayer) => {
+        if (!rawLayer) return; // guarda: nunca leer propiedades sobre una capa undefined
         const layer = { ...rawLayer };
-        const dW = imageDimensions.width;
-        const dH = imageDimensions.height;
+        const dW = dimsSafe.width || 0;
+        const dH = dimsSafe.height || 0;
         // Si el layer viene de otra vista (ej. con "Copiar a todos") y el tamaño original de 
         // la prenda es distinto, adaptamos coordenadas exactas proporcionalmente
         if (layer.baseW && dW && layer.baseW !== dW && layer.x != null) {
@@ -1378,7 +1399,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
           layer.scaleY = (layer.scaleY ?? 1) * rY;
         }
 
-        const existing = lc.getObjects().find((o) => o.customId === layer.id);
+        const existing = lc.getObjects().find((o) => o && o.customId === layer.id);
 
         if (layer.type === 'text') {
           if (existing && (existing.type === 'i-text' || existing.type === 'text')) {
@@ -1586,7 +1607,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
               if (lc.getObjects().some(o => o.customId === tempLayerId)) return;
 
               // Obtener estado mas actualizado para sortear la condición de carrera
-              const _latestLayer = (layersByViewRef.current[viewIdToUse] || []).find(l => l.id === tempLayerId) || rawLayer;
+              const _latestLayer = (layersByViewRef.current[viewIdToUse] || []).find(l => l && l.id === tempLayerId) || rawLayer;
               const safeLayer = { ..._latestLayer };
               const currentW = imageDimensionsRef.current.width;
               const currentH = imageDimensionsRef.current.height;
@@ -1690,8 +1711,9 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
       });
 
       // Asegurar el orden de apilamiento correcto (Z-order)
-      layers.forEach((layer) => {
-        const obj = lc.getObjects().find((o) => o.customId === layer.id);
+      layersSafe.forEach((layer) => {
+        if (!layer) return; // guarda: saltar capas undefined
+        const obj = lc.getObjects().find((o) => o && o.customId === layer.id);
         if (obj) {
           obj.bringToFront();
           // El overlay de tinte también debe estar encima de la imagen
@@ -1702,7 +1724,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
       safeRenderAll(lc);
 
       if (pendingActiveLayerIdRef.current) {
-        const obj = lc.getObjects().find((o) => o.customId === pendingActiveLayerIdRef.current);
+        const obj = lc.getObjects().find((o) => o && o.customId === pendingActiveLayerIdRef.current);
         if (obj) lc.setActiveObject(obj);
         safeRequestRenderAll(lc);
         pendingActiveLayerIdRef.current = null;
@@ -1746,7 +1768,7 @@ const EditorCanvas = ({ productImage, printAreas = [], viewId, showZones = true,
     }
   }, [editingTextId, canvas]);
 
-  const editingLayer = editingTextId ? layers.find((l) => l.id === editingTextId) : null;
+  const editingLayer = editingTextId ? layers.find((l) => l && l.id === editingTextId) : null;
   const inlineToolbarContent = editingTextId && canvas && toolbarRect && (
     <div
       className={styles.inlineTextToolbar}

@@ -50,6 +50,31 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
 
   const idOf = (c) => (c && typeof c === 'object') ? (c.id || c.slug || c.name || '') : c;
 
+  // No existe un campo/colección propio de "temporadas" en el modelo de datos.
+  // Las temporadas se modelan como colecciones (drops estacionales: Verano, Navidad, etc.),
+  // p. ej. el placeholder del admin de Colecciones es "Summer 2024". Por eso derivamos
+  // las temporadas de las mismas colecciones, separando por palabras clave estacionales.
+  const SEASON_KEYWORDS = [
+    'verano', 'invierno', 'otoño', 'otono', 'primavera',
+    'navidad', 'navideñ', 'navideno', 'fiestas', 'año nuevo', 'ano nuevo',
+    'pascua', 'halloween', 'san valentín', 'san valentin', 'valentín', 'valentin',
+    'día de la madre', 'dia de la madre', 'día del padre', 'dia del padre',
+    'temporada', 'spring', 'summer', 'autumn', 'fall', 'winter', 'holiday', 'xmas', 'christmas', 'easter'
+  ];
+  const isSeasonCollection = (c) => {
+    const name = String((c && c.name) || '').toLowerCase();
+    if (!name) return false;
+    return SEASON_KEYWORDS.some(k => name.includes(k));
+  };
+
+  const allCollections = collections || [];
+  // Temporadas = colecciones cuyo nombre coincide con una palabra clave estacional.
+  const seasonCollections = allCollections.filter(isSeasonCollection);
+  // Colecciones (no estacionales). Si ninguna coincide como temporada, aquí salen todas.
+  const nonSeasonCollections = seasonCollections.length > 0
+    ? allCollections.filter(c => !isSeasonCollection(c))
+    : allCollections;
+
   const filteredProducts = (productsData || []).filter(p => {
     if (activeCategory && p.categoryId !== activeCategory && p.category !== activeCategory && !(p.categories || []).map(idOf).includes(activeCategory)) return false;
     if (activeCollection && !(p.collections || []).map(idOf).includes(activeCollection)) return false;
@@ -112,12 +137,27 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
             </ul>
           </div>
 
-          {(collections || []).length > 0 && (
+          {/* Temporadas: derivadas de las colecciones estacionales (mismo estado activeCollection). */}
+          {seasonCollections.length > 0 && (
+            <div className={styles.sidebarSection}>
+              <h3>Temporadas</h3>
+              <ul className={styles.categoryList}>
+                <li className={activeCollection === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, null)}>Todas</li>
+                {seasonCollections.map(c => (
+                  <li key={c.id} className={activeCollection === c.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, c.id)}>
+                    {c.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {nonSeasonCollections.length > 0 && (
             <div className={styles.sidebarSection}>
               <h3>Colecciones</h3>
               <ul className={styles.categoryList}>
                 <li className={activeCollection === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, null)}>Todas</li>
-                {(collections || []).map(c => (
+                {nonSeasonCollections.map(c => (
                   <li key={c.id} className={activeCollection === c.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, c.id)}>
                     {c.name}
                   </li>
