@@ -187,6 +187,12 @@ const AdminLayout = () => {
                     Blueprints (POD)
                   </NavLink>
                   <NavLink
+                    to="/admin/flash-offers"
+                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
+                  >
+                    Ofertas Flash
+                  </NavLink>
+                  <NavLink
                     to="/admin/recompensas"
                     className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
                   >

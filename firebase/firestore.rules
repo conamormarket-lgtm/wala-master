@@ -37,7 +37,10 @@ service cloud.firestore {
         'referralOrdersClaimed',
         // Fase 2 (fidelización): los escribe SOLO el servidor (dailyCheckInSecure,
         // completeMissionSecure). El cliente nunca puede auto-modificar XP/racha/check-in.
-        'xp', 'dailyStreak', 'lastCheckInDate'
+        'xp', 'dailyStreak', 'lastCheckInDate',
+        // Fase 5 (fidelización): los escribe SOLO el servidor (openDailyChestSecure,
+        // computeSegmentsSecure). El cliente nunca puede auto-modificar cofre/segmento.
+        'segment', 'lastChestDate'
       ];
     }
     function noTocaCamposSensibles() {
@@ -87,6 +90,9 @@ service cloud.firestore {
     // Compat: colecciones legacy (mantener hasta confirmar que no se usan en producción).
     match /products/{id}    { allow read: if true; allow write: if isAdmin(); }
     match /categories/{id}  { allow read: if true; allow write: if isAdmin(); }
+
+    // Fase 5: ofertas flash (lectura pública para la vitrina; escritura solo admin).
+    match /flashOffers/{id} { allow read: if true; allow write: if isAdmin(); }
 
     // ── Gamificación / fidelización ──────────────────────────────────────────────
     match /globals/{id}            { allow read: if true;  allow write: if isAdmin(); } // activeChallenge

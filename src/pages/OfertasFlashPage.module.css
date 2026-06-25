@@ -1,0 +1,190 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #111;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+/* Cofre diario */
+.chestCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, #fff7ed, #fef2f2);
+  border: 1px solid #fde2c8;
+  border-radius: 18px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 1rem;
+}
+
+.chestInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.chestIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #ffedd5;
+  color: #ea580c;
+  flex-shrink: 0;
+}
+
+.chestTitle {
+  margin: 0 0 0.2rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.chestText {
+  margin: 0;
+  color: #777;
+  font-size: 0.9rem;
+}
+
+.chestAction {
+  flex-shrink: 0;
+}
+
+.loginLink {
+  display: inline-block;
+  padding: 0.65rem 1.1rem;
+  border-radius: 10px;
+  background: #111;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.loginLink:hover {
+  background: #000;
+}
+
+/* Cajas de feedback */
+.rewardBox,
+.infoBox,
+.errorBox {
+  border-radius: 12px;
+  padding: 0.9rem 1.2rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.rewardBox {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.infoBox {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.errorBox {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+/* Lista de ofertas */
+.offersSection {
+  margin-top: 2rem;
+}
+
+.loading,
+.empty {
+  text-align: center;
+  padding: 3rem 0;
+  color: #888;
+}
+
+.offersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.offerCard {
+  position: relative;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.offerCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+}
+
+.discountPill {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #ff4757;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  padding: 0.3rem 0.7rem;
+  border-radius: 10px;
+}
+
+.offerName {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 3rem 0.5rem 0;
+}
+
+.offerDates {
+  margin: 0 0 1rem 0;
+  font-size: 0.82rem;
+  color: #999;
+}
+
+.offerLink {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #ea580c;
+  text-decoration: none;
+}
+
+.offerLink:hover {
+  text-decoration: underline;
+}

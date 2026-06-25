@@ -1955,5 +1955,183 @@ exports.mercadoPagoWebhook = functions.https.onRequest(async (req, res) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// FIDELIZACIÓN AVANZADA (Fase 5): cofre diario + segmentación RFM + ofertas flash.
+// Contrato Fase 5:
+//   - openDailyChestSecure (callable, requireAuth): cofre diario idempotente por
+//     día Lima (campo lastChestDate). Recompensa 5..20 monedas DETERMINISTA
+//     (derivada de uid+fecha, NUNCA Math.random porque rompe la repetibilidad y la
+//     trazabilidad del ledger). writeLedger 'earn' source 'cofre_diario'.
+//   - computeSegmentsSecure (callable, SOLO admin): segmentación RFM sobre 'orders'
+//     con status 'paid'. Escribe portal_clientes_users/{uid}.segment.
+//   - 'flashOffers' (lectura pública, escritura admin): { title, productId?,
+//     discountPct (number), startsAt, endsAt, active (bool), order (number) }.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Rango de la recompensa del cofre diario (ambos inclusive).
+const CHEST_MIN_REWARD = 5;
+const CHEST_MAX_REWARD = 20;
+
+// ── Recompensa determinista del cofre (uid + fecha Lima) ───────────────────────
+// Se deriva de un hash SHA-256 de `uid|fecha`, NO de Math.random (que rompería la
+// idempotencia y haría irreproducible el valor ante reintentos del cliente o del
+// emulador). Mapea el hash a [CHEST_MIN_REWARD, CHEST_MAX_REWARD].
+function chestRewardFor(uid, dateStr) {
+  const span = CHEST_MAX_REWARD - CHEST_MIN_REWARD + 1; // 5..20 -> 16 valores
+  const digest = crypto.createHash("sha256").update(uid + "|" + dateStr).digest();
+  // Toma 4 bytes como entero sin signo y reduce al rango.
+  const n = digest.readUInt32BE(0);
+  return CHEST_MIN_REWARD + (n % span);
+}
+
+// ── Cofre diario seguro (idempotente por día Lima) ─────────────────────────────
+// Si lastChestDate == hoy(Lima) -> { alreadyOpened:true }. Si no, acredita una
+// recompensa determinista 5..20, fija lastChestDate=hoy, escribe ledger y devuelve
+// { reward, monedas:balanceAfter }. Transaccional (lee el user antes de escribir).
+exports.openDailyChestSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const today = limaTodayStr();
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+
+      // Idempotencia por día: si ya abrió el cofre hoy, no se altera nada.
+      if (u.lastChestDate === today) {
+        return { alreadyOpened: true, monedas: u.monedas || 0 };
+      }
+
+      const reward = chestRewardFor(uid, today);
+      const newBalance = (u.monedas || 0) + reward;
+
+      t.update(userRef, {
+        monedas: newBalance,
+        lastChestDate: today,
+      });
+
+      writeLedger(t, uid, {
+        type: "earn",
+        amount: reward,
+        source: "cofre_diario",
+        balanceAfter: newBalance,
+      });
+
+      return { reward, monedas: newBalance };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("openDailyChestSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al abrir el cofre diario.");
+  }
+});
+
+// ── Segmentación RFM (SOLO admin) ──────────────────────────────────────────────
+// Lee 'orders' con status 'paid', agrupa por buyerUid y calcula:
+//   frequency = #pedidos pagados, monetary = Σ totals.total,
+//   recency = días desde el createdAt más reciente.
+// Asigna segment a portal_clientes_users/{uid}:
+//   'vip'       -> monetary alto (>= VIP_MONETARY) o frequency >= 3
+//   'activo'    -> frequency >= 1 y recency <= RISK_DAYS
+//   'en_riesgo' -> tiene pedidos pero recency > RISK_DAYS
+//   'nuevo'     -> usuario registrado sin pedidos pagados
+// Devuelve { processed, counts:{ vip, activo, en_riesgo, nuevo } }.
+const RFM_VIP_MONETARY = 500;  // umbral de gasto acumulado para VIP
+const RFM_RISK_DAYS = 60;      // días sin comprar para considerar "en riesgo"
+
+exports.computeSegmentsSecure = functions.https.onCall(async (data, context) => {
+  requireAuth(context);
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede segmentar clientes.");
+  }
+
+  try {
+    // 1) Agregar pedidos pagados por comprador.
+    const ordersSnap = await db.collection("orders").where("status", "==", "paid").get();
+    const byBuyer = new Map(); // buyerUid -> { frequency, monetary, lastMs }
+
+    ordersSnap.forEach((doc) => {
+      const o = doc.data();
+      const buyerUid = o.buyerUid;
+      if (!buyerUid) return;
+
+      const total = Number(o.totals && o.totals.total) || 0;
+
+      // createdAt puede ser Timestamp (Firestore), Date o ISO string.
+      let createdMs = 0;
+      const c = o.createdAt;
+      if (c) {
+        if (typeof c.toMillis === "function") createdMs = c.toMillis();
+        else if (c instanceof Date) createdMs = c.getTime();
+        else if (typeof c === "string") createdMs = Date.parse(c) || 0;
+        else if (typeof c.seconds === "number") createdMs = c.seconds * 1000;
+      }
+
+      const agg = byBuyer.get(buyerUid) || { frequency: 0, monetary: 0, lastMs: 0 };
+      agg.frequency += 1;
+      agg.monetary += total;
+      if (createdMs > agg.lastMs) agg.lastMs = createdMs;
+      byBuyer.set(buyerUid, agg);
+    });
+
+    // 2) Recorrer TODOS los usuarios del portal (los sin pedidos = 'nuevo').
+    const usersSnap = await db.collection(PORTAL_USERS_COLLECTION).get();
+    const counts = { vip: 0, activo: 0, en_riesgo: 0, nuevo: 0 };
+    const now = Date.now();
+    let processed = 0;
+
+    // Batch para escribir el segment de cada usuario.
+    let batch = db.batch();
+    let pending = 0;
+    const commitIfNeeded = async (force) => {
+      if (pending >= 400 || (force && pending > 0)) {
+        await batch.commit();
+        batch = db.batch();
+        pending = 0;
+      }
+    };
+
+    for (const userDoc of usersSnap.docs) {
+      const uid = userDoc.id;
+      const agg = byBuyer.get(uid);
+
+      let segment;
+      if (!agg || agg.frequency === 0) {
+        segment = "nuevo";
+      } else {
+        const recencyDays = agg.lastMs > 0
+          ? Math.floor((now - agg.lastMs) / (24 * 60 * 60 * 1000))
+          : Infinity;
+        if (agg.monetary >= RFM_VIP_MONETARY || agg.frequency >= 3) {
+          segment = "vip";
+        } else if (recencyDays > RFM_RISK_DAYS) {
+          segment = "en_riesgo";
+        } else {
+          segment = "activo";
+        }
+      }
+
+      counts[segment] = (counts[segment] || 0) + 1;
+      processed += 1;
+
+      batch.set(userDoc.ref, {
+        segment,
+        segmentUpdatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      pending += 1;
+      await commitIfNeeded(false);
+    }
+
+    await commitIfNeeded(true);
+
+    return { processed, counts };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("computeSegmentsSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al segmentar clientes.");
+  }
+});
+
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;

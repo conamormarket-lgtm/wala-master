@@ -122,7 +122,14 @@ async function ensureUser(uid, email, password, claims) {
   await setDoc("rewardsCatalog", "rw-accesorio", { title: "Accesorio de regalo", description: "Llévate un accesorio sorpresa con tu próximo pedido", cost: 100, value: "Accesorio físico de regalo", active: true, order: 2 });
   await setDoc("rewardsCatalog", "rw-descuento-30", { title: "Cupón S/30 de descuento", description: "Descuento de S/30 aplicable a tu siguiente compra", cost: 200, value: "S/30 de descuento", active: true, order: 3 });
 
-  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores (casa 0 / estampados-lima 12%), 2 categorías, 2 zonas de envío, ruleta, reto activo, 3 misiones diarias, 4 recompensas, 1 blueprint POD (bp-polo: Polo clásico), admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
+  // ── Flash offers (Fase 5; lectura pública, escritura admin) ────────────────────
+  // Ofertas relámpago para la home. startsAt/endsAt opcionales (aquí dejamos una ventana
+  // amplia: empezó hace 1h, termina en 24h) para que salgan activas en el emulador.
+  const _now = Date.now();
+  await setDoc("flashOffers", "fo-polos-30", { title: "Polos -30% hoy", productId: "p1", discountPct: 30, startsAt: new Date(_now - 36e5).toISOString(), endsAt: new Date(_now + 864e5).toISOString(), active: true, order: 0 });
+  await setDoc("flashOffers", "fo-tazas-2x1", { title: "Tazas 2x1", productId: "p2", discountPct: 50, startsAt: new Date(_now - 36e5).toISOString(), endsAt: new Date(_now + 864e5).toISOString(), active: true, order: 1 });
+
+  console.log("✓ Emulador sembrado: 4 productos, 2 nichos, 2 vendedores (casa 0 / estampados-lima 12%), 2 categorías, 2 zonas de envío, ruleta, reto activo, 3 misiones diarias, 4 recompensas, 1 blueprint POD (bp-polo: Polo clásico), 2 flash offers (Polos -30% / Tazas 2x1), admin@wala.test / cliente@wala.test (pass: wala1234), pedido finalizado order-1.");
   console.log("ℹ Pago: el checkout usa Mercado Pago (gateado por MERCADOPAGO_ACCESS_TOKEN). En este emulador NO hay token → el pago se SIMULA (init_point /pago-demo/{orderId}) y confirmPaymentSecure marca 'paid' + genera payouts. orders/subOrders/payouts las crean las Cloud Functions, no este seed.");
   process.exit(0);
 })().catch((e) => { console.error("Error sembrando:", e); process.exit(1); });

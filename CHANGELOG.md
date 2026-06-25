@@ -8,6 +8,17 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
+## [Sin liberar] — Fase 5: Impulso e inteligencia (base) ✅ (verificado E2E)
+- **Cofre diario** `openDailyChestSecure` (callable): recompensa 5–20 monedas una vez por día (Lima),
+  idempotente vía `lastChestDate`, escribe ledger `cofre_diario`. Página pública **/ofertas**.
+- **Segmentación RFM** `computeSegmentsSecure` (solo admin): recencia/frecuencia/monto sobre `orders` pagadas →
+  asigna `segment` (vip/activo/en_riesgo/nuevo) a cada usuario. Botón "Recalcular segmentos" en admin.
+- **Ofertas flash** (`flashOffers`): admin **/admin/flash-offers** (CRUD) + vitrina en /ofertas. Regla pública/admin.
+  Campos sensibles `segment`/`lastChestDate` bloqueados al cliente (solo servidor). Seed 2 ofertas.
+- Verificado E2E: cofre 50→68 + idempotente; RFM {activo:1, nuevo:1}; cliente sin permiso de segmentar (PERMISSION_DENIED).
+- ⬜ Pendiente Fase 5 (servicios externos / scheduler): push segmentado (FCM), campañas programadas
+  (Cloud Scheduler), recomendación por IA, ofertas flash con countdown en home.
+
 ## [Sin liberar] — Fase 4: POD / arte de producción (base) ✅ (verificado en emulador)
 - **Blueprints** (`blueprints`): prendas base imprimibles con `printAreas` (cm + dpi), `decorationMethods`,
   `basePrintCost`. Admin **/admin/blueprints** (CRUD) + `services/blueprints.js`. Regla pública/admin. Seed `bp-polo`.
