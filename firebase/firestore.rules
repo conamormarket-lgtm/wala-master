@@ -111,6 +111,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Fase 2b: catálogo de recompensas y cupones canjeados ─────────────────────
+    // Catálogo de recompensas: lectura pública (vitrina), escritura solo admin.
+    match /rewardsCatalog/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // Cupones del usuario: los crea SOLO el servidor (redeemRewardSecure vía admin
+    // SDK); el dueño solo los lee. 'write' restringido a admin (Cloud Functions).
+    match /userCoupons/{id} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if isAdmin();
+    }
+
     // Partidas de Wordle: lectura pública (ranking); el usuario solo escribe su registro.
     match /wordle/{id} {
       allow read: if true;

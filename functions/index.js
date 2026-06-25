@@ -1401,5 +1401,101 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
   }
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// CANJE DE RECOMPENSAS (Fase 2b): catálogo público + cupones server-authoritative.
+// Contrato Fase 2b:
+//   - 'rewardsCatalog' (lectura pública, escritura admin): { title, description,
+//     cost (number, en puntos), value (texto ref), active (bool), order (number) }.
+//   - 'userCoupons' (lectura dueño, escritura solo servidor): { uid, rewardId,
+//     title, code, status:'active', createdAt }.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Helper: genera un code aleatorio de cupón tipo 'WALA-XXXXXX' ────────────────
+// 6 caracteres alfanuméricos en mayúsculas (sin O/0/I/1 para evitar confusiones),
+// obtenidos de bytes criptográficamente seguros (crypto ya importado arriba).
+function generateCouponCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 32 símbolos, sin O/0/I/1
+  const bytes = crypto.randomBytes(6);
+  let suffix = "";
+  for (let i = 0; i < 6; i++) {
+    suffix += alphabet[bytes[i] % alphabet.length];
+  }
+  return "WALA-" + suffix;
+}
+
+// ── Canjear una recompensa del catálogo (transaccional, server-authoritative) ──
+// Lee rewardsCatalog/{rewardId}; valida active y que el usuario tenga monedas
+// suficientes (>= cost); descuenta con applyDebit; escribe ledger type 'spend';
+// crea un cupón en userCoupons con un code aleatorio 'WALA-XXXXXX'.
+exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const rewardId = data && data.rewardId;
+  if (!rewardId) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta rewardId.");
+  }
+
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const rewardRef = db.collection("rewardsCatalog").doc(String(rewardId));
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const [rewardSnap, userSnap] = await Promise.all([t.get(rewardRef), t.get(userRef)]);
+
+      if (!rewardSnap.exists) {
+        throw new functions.https.HttpsError("not-found", "Recompensa no encontrada.");
+      }
+      const reward = rewardSnap.data();
+      if (reward.active !== true) {
+        throw new functions.https.HttpsError("failed-precondition", "La recompensa no está disponible.");
+      }
+      if (!userSnap.exists) {
+        throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      }
+      const u = userSnap.data();
+
+      // Costo SERVER-AUTHORITATIVE: se toma del catálogo, no del cliente.
+      const cost = Number(reward.cost);
+      if (!Number.isFinite(cost) || cost <= 0) {
+        throw new functions.https.HttpsError("failed-precondition", "Costo de recompensa inválido.");
+      }
+
+      const currentMonedas = u.monedas || 0;
+      if (currentMonedas < cost) {
+        throw new functions.https.HttpsError("failed-precondition", "Monedas insuficientes.");
+      }
+
+      // Descuento FIFO + saldo global (applyDebit de economyLogic).
+      const debit = applyDebit(u, cost);
+      t.update(userRef, debit);
+      const balanceAfter = currentMonedas - cost;
+
+      writeLedger(t, uid, {
+        type: "spend",
+        amount: cost,
+        source: "reward_" + String(rewardId),
+        balanceAfter,
+      });
+
+      // Crea el cupón (id auto) con un code aleatorio.
+      const code = generateCouponCode();
+      const couponRef = db.collection("userCoupons").doc();
+      t.set(couponRef, {
+        uid,
+        rewardId: String(rewardId),
+        title: reward.title || "",
+        code,
+        status: "active",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
+      return { success: true, coupon: { rewardId: String(rewardId), code } };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("redeemRewardSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al canjear la recompensa.");
+  }
+});
+
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;

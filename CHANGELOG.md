@@ -22,7 +22,8 @@ monedas/xp/racha/ledger actualizados; idempotencia OK). UI en `/cuenta/misiones`
 - **Cliente**: `src/services/loyalty.js` (wrappers + `getLedger`), `src/pages/cuenta/MisionesPage.jsx`
   (racha + misiones del día + puntos), tab "Misiones" en `CuentaLayout`, ruta `/cuenta/misiones`.
 - **Seed**: 3 misiones diarias + xp/racha en el cliente demo.
-- ⬜ Pendiente Fase 2: niveles/tiers (UI), catálogo de recompensas dinámico (mover de hardcode a Firestore + admin), push v2 (deep links/topics), verificación de retos por triggers server-side.
+- **Fase 2b** ✅ (verificado E2E): niveles/tiers (`src/constants/tiers.js`, mostrados en MisionesPage con barra de progreso); **catálogo de recompensas dinámico** (`rewardsCatalog` en Firestore + admin `/admin/recompensas` + `services/rewardsCatalog.js`); canje server-side `redeemRewardSecure` (costo del catálogo, debita, ledger 'spend', genera `userCoupons` con code). Verificado: canje 30 pts → 50→20 + cupón.
+- ⬜ Pendiente Fase 2: push v2 (deep links/topics; requiere FCM real, no emulable), verificación de retos por triggers server-side.
 
 ## [Sin liberar] — Entorno local con Emulador de Firebase ✅
 Permite ver y probar **todo** en local (catálogo, login, economía, guardado) sin tocar

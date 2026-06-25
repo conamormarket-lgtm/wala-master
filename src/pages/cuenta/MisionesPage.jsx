@@ -5,6 +5,7 @@ import {
   getDailyMissions,
   completeMission,
 } from '../../services/loyalty';
+import { tierForXp } from '../../constants/tiers';
 import styles from './MisionesPage.module.css';
 
 const MisionesPage = () => {
@@ -81,6 +82,10 @@ const MisionesPage = () => {
     checkInInfo?.streak ?? userProfile?.dailyStreak?.count ?? 0;
   const checkInReward = checkInInfo?.reward ?? 0;
 
+  // Nivel/tier derivado de la XP acumulada (solo presentación).
+  const tier = tierForXp(xp);
+  const progressPct = Math.round(tier.progress * 100);
+
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>Misiones diarias</h2>
@@ -98,6 +103,35 @@ const MisionesPage = () => {
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Experiencia</span>
           <span className={styles.statValue}>⭐ {xp} XP</span>
+        </div>
+      </div>
+
+      {/* Nivel / tier por XP */}
+      <div className={styles.tierCard}>
+        <div className={styles.tierHeader}>
+          <div className={styles.tierInfo}>
+            <span className={styles.tierBadge}>Nivel {tier.current.name}</span>
+            <span className={styles.tierXp}>{xp} XP acumulada</span>
+          </div>
+          {!tier.isMax ? (
+            <span className={styles.tierNext}>
+              Faltan {tier.xpRemaining} XP para {tier.next.name}
+            </span>
+          ) : (
+            <span className={styles.tierNext}>¡Nivel máximo alcanzado!</span>
+          )}
+        </div>
+        <div
+          className={styles.progressTrack}
+          role="progressbar"
+          aria-valuenow={progressPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className={styles.progressFill}
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
       </div>
 

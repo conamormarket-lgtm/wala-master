@@ -181,6 +181,12 @@ const AdminLayout = () => {
                     Vendedores
                   </NavLink>
                   <NavLink
+                    to="/admin/recompensas"
+                    className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
+                  >
+                    Recompensas
+                  </NavLink>
+                  <NavLink
                     to="/admin/marcas"
                     className={({ isActive }) => getLinkClass(isActive, 'catalogo')}
                   >
