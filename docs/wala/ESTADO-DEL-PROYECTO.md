@@ -18,12 +18,14 @@
 > de los flujos núcleo (carrito → orden multi-vendedor → subórdenes → pago simulado →
 > payouts; cofre diario; segmentación RFM).
 >
-> ⚠️ **Actualizado 2026-06-25 (ver incidente abajo):** el **frontend (Vite) YA está en
-> producción en Vercel**; el **backend** todavía no está bien desplegado en el proyecto
-> correcto (`sistema-gestion-3b225`). Históricamente este banner decía "nada desplegado"
-> porque el usuario aún no tenía acceso a Firebase; el cobro real, la búsqueda externa, el
-> push y los schedulers siguen requiriendo servicios externos no configurados. Ver §5
-> (Despliegue) y §9 (Qué falta).
+> ⚠️ **Actualizado 2026-06-25 — EN PRODUCCIÓN.** El **frontend (Vite) está en vivo en Vercel**
+> (wala.pe) y el **backend ya se desplegó al proyecto CORRECTO `sistema-gestion-3b225`**:
+> **Cloud Functions ✅** (arregla el Kapi/juegos) e **índices ✅** (Wordle). **Pendiente:** secretos
+> de Functions (Culqi/ERP), **fusión** de reglas con las del ERP/CRM (NO desplegar tal cual),
+> admin claims, y re-promover el frontend `35ba2a2` (iconos/placeholders). El cobro real, la
+> búsqueda externa, el push y los schedulers siguen requiriendo servicios externos.
+>
+> 👉 **Estado de despliegue detallado y "qué toca hacer": [DESPLIEGUE-ESTADO.md](./DESPLIEGUE-ESTADO.md).**
 >
 > **Super usuario local (solo emulador):** `admin@wala.test` / `wala1234` (admin) ·
 > `cliente@wala.test` / `wala1234` (cliente).

@@ -8,6 +8,17 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
+## [2026-06-25] — DESPLIEGUE A PRODUCCIÓN (sistema-gestion-3b225)
+Ver detalle y pendientes en [docs/wala/DESPLIEGUE-ESTADO.md](docs/wala/DESPLIEGUE-ESTADO.md).
+- ✅ **Cloud Functions** desplegadas al proyecto correcto `sistema-gestion-3b225` (no `pruebas-cd728`).
+  Arregla el Kapi/juegos (feedKapiSecure y demás ya existen). Se conservaron las 6 funciones del ERP.
+- ✅ **Índices** desplegados (Wordle). Se conservaron los del ERP/CRM (multi-tenant).
+- 🛠️ Fix de incidente: `.firebaserc` default → `sistema-gestion-3b225`, `deploy:functions --project`,
+  reglas completadas con `pedidos`/`pedidos_web`/`analytics_*` (sin romper ERP), iconos PWA en `public/icons/`,
+  `via.placeholder.com` (caído) → `/images/placeholder.svg` local.
+- ⬜ Pendiente: secretos de Functions (Culqi/ERP), **fusión** de reglas con las vivas del ERP/CRM,
+  admin claims, re-promover frontend `35ba2a2`.
+
 ## [Sin liberar] — Fase 5: Impulso e inteligencia (base) ✅ (verificado E2E)
 - **Cofre diario** `openDailyChestSecure` (callable): recompensa 5–20 monedas una vez por día (Lima),
   idempotente vía `lastChestDate`, escribe ledger `cofre_diario`. Página pública **/ofertas**.
