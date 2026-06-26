@@ -195,6 +195,60 @@ function humanizeToken(token) {
     .trim();
 }
 
+/* ------------------------------------------------------------------ *
+ *  EMOJIS POR TIPO DE ELEMENTO
+ *  Un prefijo visual ayuda a leer el ranking de un vistazo y evita
+ *  mostrar etiquetas crudas tipo [svg] / [img].
+ * ------------------------------------------------------------------ */
+
+const EMOJI_BUTTON = '🔘';
+const EMOJI_LINK = '🔗';
+const EMOJI_IMAGE = '🖼️';
+const EMOJI_INPUT = '📝';
+const EMOJI_ICON = '🔣';
+const EMOJI_GENERIC = '📦';
+
+// Devuelve el emoji que mejor representa un tag concreto.
+function emojiForTag(tag) {
+  switch (tag) {
+    case 'BUTTON':
+      return EMOJI_BUTTON;
+    case 'A':
+      return EMOJI_LINK;
+    case 'IMG':
+    case 'IMAGE':
+    case 'PICTURE':
+      return EMOJI_IMAGE;
+    case 'INPUT':
+    case 'TEXTAREA':
+    case 'SELECT':
+      return EMOJI_INPUT;
+    case 'SVG':
+    case 'PATH':
+    case 'USE':
+    case 'G':
+    case 'CIRCLE':
+    case 'RECT':
+    case 'POLYGON':
+    case 'LINE':
+      return EMOJI_ICON;
+    case 'CANVAS':
+      return EMOJI_ICON;
+    default:
+      return EMOJI_GENERIC;
+  }
+}
+
+// Antepone un emoji a una etiqueta, evitando duplicarlo si ya empieza por uno.
+function withEmoji(emoji, label) {
+  const text = (label || '').trim();
+  if (!emoji) return text;
+  if (!text) return emoji;
+  // Si la etiqueta ya arranca con el mismo emoji, no lo repetimos.
+  if (text.startsWith(emoji)) return text;
+  return `${emoji} ${text}`;
+}
+
 // Nombre amigable de un tag genérico cuando no hay texto.
 function genericTagLabel(tag) {
   switch (tag) {
@@ -248,49 +302,68 @@ function deriveElementLabel(raw, zoneIndex) {
   const parsed = parseElementInfo(raw);
 
   if (!parsed) {
-    return { label: 'Elemento sin identificar', key: 'unknown', generic: true };
+    return { label: `${EMOJI_GENERIC} Elemento sin identificar`, key: 'unknown', generic: true };
   }
 
   const { tag, kind, value } = parsed;
+
+  // Guarda: si el elemento llegó SIN tag parseable y tampoco trae un texto/valor
+  // útil, devolvemos SIEMPRE una etiqueta genérica con emoji (nunca un string
+  // crudo). Evita que se filtren etiquetas tipo '[svg]' o basura sin formato.
+  if (!tag && (!value || !String(value).trim())) {
+    const zoneLabel = Number.isFinite(zoneIndex)
+      ? `Elemento (zona ${zoneIndex})`
+      : 'Elemento sin identificar';
+    return { label: withEmoji(EMOJI_GENERIC, zoneLabel), key: 'unknown', generic: true };
+  }
 
   // 1) Prioridad máxima: texto visible (enlace/botón) o data-track/aria/alt/title.
   if (kind === 'text' && value) {
     const clean = value.replace(/\s+/g, ' ').trim();
     const prefix = interactiveTagPrefix(tag);
-    const label = prefix ? `${prefix}: ${clean}` : clean;
-    return { label, key: `text:${clean.toLowerCase()}`, generic: false };
+    const base = prefix ? `${prefix}: ${clean}` : clean;
+    const emoji = prefix ? emojiForTag(tag) : EMOJI_LINK;
+    return { label: withEmoji(emoji, base), key: `text:${clean.toLowerCase()}`, generic: false };
   }
 
   if (kind === 'track' && value) {
     const human = humanizeToken(value);
     const clean = (human || value).replace(/\s+/g, ' ').trim();
-    return { label: clean, key: `track:${value.toLowerCase()}`, generic: false };
+    const emoji = tag ? emojiForTag(tag) : EMOJI_LINK;
+    return { label: withEmoji(emoji, clean), key: `track:${value.toLowerCase()}`, generic: false };
   }
 
   // 2) Id legible (si parece descriptivo).
   if (kind === 'id' && value) {
     const human = humanizeToken(value);
-    return { label: human || value, key: `id:${value.toLowerCase()}`, generic: false };
+    const emoji = tag ? emojiForTag(tag) : EMOJI_GENERIC;
+    return { label: withEmoji(emoji, human || value), key: `id:${value.toLowerCase()}`, generic: false };
   }
 
   // 3) Genéricos / visuales sin texto: imagen / ícono por zona.
   const isGeneric = GENERIC_TAGS.has(tag) || kind === 'bare' || kind === 'class';
   if (isGeneric) {
     const base = genericTagLabel(tag);
+    const emoji = emojiForTag(tag);
     // Si tenía una clase, la usamos como pista discreta.
     if (kind === 'class' && value) {
       const human = humanizeToken(value);
       if (human && human.length <= 22) {
-        return { label: `${base} · ${human}`, key: `gen:${tag}:${value.toLowerCase()}`, generic: true };
+        return {
+          label: withEmoji(emoji, `${base} · ${human}`),
+          key: `gen:${tag}:${value.toLowerCase()}`,
+          generic: true,
+        };
       }
     }
     const zoneLabel = Number.isFinite(zoneIndex) ? `${base} (zona ${zoneIndex})` : base;
-    return { label: zoneLabel, key: `gen:${tag}:zone${zoneIndex}`, generic: true };
+    return { label: withEmoji(emoji, zoneLabel), key: `gen:${tag}:zone${zoneIndex}`, generic: true };
   }
 
   // 4) Fallback final.
   const fallback = humanizeToken(value) || tag || 'Elemento';
-  return { label: fallback, key: `tag:${tag}:${(value || '').toLowerCase()}`, generic: false };
+  const emoji = tag ? emojiForTag(tag) : EMOJI_GENERIC;
+  return { label: withEmoji(emoji, fallback), key: `tag:${tag}:${(value || '').toLowerCase()}`, generic: false };
 }
 
 /**
@@ -303,6 +376,7 @@ function deriveElementLabel(raw, zoneIndex) {
  *   pageNames: Record<string,string>,
  *   pointsByPath: Record<string, Array<{xNorm:number,yNorm:number,weight:number}>>,
  *   clicksByPath: Record<string, number>,
+ *   maxClicks: number,
  *   topElementsByPath: Record<string, Array<{label:string,count:number,generic:boolean}>>,
  *   totalClicks: number,
  *   totalDocs: number,
@@ -387,10 +461,13 @@ export async function getHeatmapByPage(options = {}) {
     if (!paths.includes(path)) paths.push(path);
   });
 
-  // clicksByPath: total de clics ubicables por página (para los chips).
+  // clicksByPath: total de clics ubicables por página (para las mini-tarjetas).
   const clicksByPath = {};
+  let maxClicks = 0;
   paths.forEach((path) => {
-    clicksByPath[path] = clickCountByPath.get(path) || 0;
+    const c = clickCountByPath.get(path) || 0;
+    clicksByPath[path] = c;
+    if (c > maxClicks) maxClicks = c;
   });
 
   // pageNames: path -> nombre legible.
@@ -412,6 +489,7 @@ export async function getHeatmapByPage(options = {}) {
     pageNames,
     pointsByPath,
     clicksByPath,
+    maxClicks,
     topElementsByPath,
     totalClicks,
     totalDocs: docs.length,

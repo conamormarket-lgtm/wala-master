@@ -1,0 +1,153 @@
+/* =========================================================================
+   AdminDashboard.extra.module.css
+   -------------------------------------------------------------------------
+   Estilos NUEVOS y co-localizados para el HUB "Resumen" del panel de
+   analítica (AdminDashboard.jsx). Es ADITIVO: complementa la hoja compartida
+   AdminDashboard.module.css sin tocarla. Todo usa los tokens del sistema de
+   diseño (NO se hardcodean hex ni blur). Mobile-first.
+   ========================================================================= */
+
+/* Capa de atmósfera Aurora: vive detrás de todo el contenido del hub, sin
+   capturar clics y sin alterar el flujo. Se ancla al viewport del .page. */
+.aurora {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Tarjeta grande que envuelve el gráfico de tendencia de tráfico. Superficie
+   de vidrio del sistema, con el degradado de marca como acento superior. */
+.trendCard {
+  position: relative;
+  padding: 1.25rem 1.25rem 0.75rem;
+  border-radius: var(--radio-grande, 24px);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
+  box-shadow: var(--glass-shadow, var(--sombra-media, 0 8px 24px rgba(15, 23, 42, 0.08)));
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+  overflow: hidden;
+}
+
+/* Filo superior con el degradado de marca: detalle de acento del tema. */
+.trendCard::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--gradient-brand, linear-gradient(90deg, var(--violet-500, #8b5cf6), var(--primary-color, #6d28d9)));
+  opacity: 0.9;
+}
+
+/* Cabecera de la tarjeta de tendencia: título + acciones (toggle). */
+.trendHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.trendTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.trendSubtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+/* Grupo de botones de segmentación (TOTAL / APP / WEB) para el gráfico. */
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: var(--radio-medio, 14px);
+  background: var(--glass-bg-soft, rgba(255, 255, 255, 0.4));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
+}
+
+.segmentBtn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0.32rem 0.7rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--gris-texto-secundario, #475569);
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.segmentBtn:hover {
+  color: var(--primary-color, #6d28d9);
+}
+
+.segmentActive {
+  background: var(--gradient-brand, linear-gradient(90deg, var(--violet-500, #8b5cf6), var(--primary-color, #6d28d9)));
+  color: #fff;
+  box-shadow: var(--sombra-suave, 0 2px 8px rgba(109, 40, 217, 0.25));
+}
+
+/* Pie de la tarjeta de tendencia: resumen numérico discreto. */
+.trendFoot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--gris-borde, #e2e8f0);
+}
+
+.trendStat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.trendStatLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.trendStatValue {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+/* Tarjeta de navegación NUEVA (Uso de la app): comparte aspecto con las
+   existentes pero recibe un acento propio para diferenciarla con gracia. */
+.navCardAccent::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: var(--gradient-brand, linear-gradient(90deg, var(--violet-500, #8b5cf6), var(--primary-color, #6d28d9)));
+  opacity: 0.85;
+  border-radius: 0 0 var(--radio-grande, 24px) var(--radio-grande, 24px);
+}
+
+/* Móvil: el gráfico de tendencia respira con menos padding lateral. */
+@media (max-width: 640px) {
+  .trendCard {
+    padding: 1rem 0.9rem 0.6rem;
+  }
+
+  .trendFoot {
+    gap: 0.9rem;
+  }
+}

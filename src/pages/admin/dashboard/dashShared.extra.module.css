@@ -1,0 +1,230 @@
+/* =========================================================================
+   dashShared.extra — estilos NUEVOS co-localizados para el design system.
+   -------------------------------------------------------------------------
+   Capa ADITIVA sobre AdminDashboard.module.css (compartida, NO se toca).
+   Eleva el acabado de DashBackground, RangePicker, RefreshButton y DashHeader
+   con la familia "Aurora Violeta Serena". Usa SOLO CSS vars de tokens.css /
+   variables.css (sin hex/blur hardcodeado). Mobile-first y respeta
+   prefers-reduced-motion.
+   ========================================================================= */
+
+/* ---------- Fondo: lavado aurora premium + AuroraBackground encima ---------- */
+/* Capa base de gradiente casi blanco que vive bajo la malla aurora. */
+.bgBase {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--gradient-aurora-soft, linear-gradient(160deg, #fbfaff 0%, #f5f3ff 40%, #f8fafc 100%));
+}
+
+/* ---------- Selector de rango (segmentado glass premium) ---------- */
+.rangePicker {
+  position: relative;
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.3rem;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  -webkit-backdrop-filter: var(--glass-blur, blur(18px) saturate(140%));
+  backdrop-filter: var(--glass-blur, blur(18px) saturate(140%));
+  border: var(--glass-border-strong, 1px solid rgba(255, 255, 255, 0.6));
+  border-radius: 999px;
+  box-shadow:
+    var(--glass-shadow, 0 10px 30px -12px rgba(15, 23, 42, 0.18), 0 2px 8px -4px rgba(109, 40, 217, 0.12)),
+    var(--glass-inset-top, inset 0 1px 0 0 rgba(255, 255, 255, 0.6));
+}
+
+.rangeBtn {
+  position: relative;
+  border: none;
+  background: transparent;
+  color: var(--gris-texto-secundario, #475569);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: -0.01em;
+  padding: 0.44rem 1rem;
+  min-height: var(--touch-target, 44px);
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-rapida, 180ms) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)),
+    background var(--dur-rapida, 180ms) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.rangeBtn:hover {
+  color: var(--primary-color, #6d28d9);
+  background: var(--primary-light, rgba(109, 40, 217, 0.08));
+}
+
+.rangeActive,
+.rangeActive:hover {
+  color: #ffffff;
+  background: var(--gradient-brand, linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%));
+  box-shadow:
+    0 6px 16px -6px rgba(76, 29, 149, 0.45),
+    var(--glass-inset-top, inset 0 1px 0 0 rgba(255, 255, 255, 0.4));
+}
+
+.rangeBtn:focus-visible {
+  outline: 2px solid var(--primary-color, #6d28d9);
+  outline-offset: 2px;
+}
+
+/* ---------- Icono giratorio del botón Actualizar ---------- */
+.refreshIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.spinning {
+  animation: dashExtraSpin 0.9s linear infinite;
+}
+
+@keyframes dashExtraSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Header premium: enlace volver + título con acento de marca ---------- */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.headerMain {
+  min-width: 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+  padding: 0.28rem 0.7rem 0.28rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--primary-color, #6d28d9);
+  text-decoration: none;
+  background: var(--glass-bg-tint, rgba(245, 243, 255, 0.55));
+  border: var(--glass-border-tint, 1px solid rgba(167, 139, 250, 0.4));
+  border-radius: 999px;
+  transition: transform var(--dur-rapida, 180ms) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)),
+    box-shadow var(--dur-rapida, 180ms) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.backLink:hover {
+  transform: translateX(-2px);
+  box-shadow: var(--elev-1, 0 4px 12px -4px rgba(76, 29, 149, 0.15));
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--primary-color, #6d28d9);
+  outline-offset: 2px;
+}
+
+.backArrow {
+  transition: transform var(--dur-rapida, 180ms) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.backLink:hover .backArrow {
+  transform: translateX(-2px);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.2rem + 1.6vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+  /* Título con degradado de marca (con fallback de color sólido). */
+  color: var(--gris-texto-principal, #0f172a);
+  background: var(--gradient-brand, linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  margin: 0.4rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  color: var(--gris-texto-secundario, #475569);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.subtitleUpdated {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary-color, #6d28d9);
+  white-space: nowrap;
+}
+
+.subtitleDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--verde-exito, #10b981);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+
+.headerControls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+/* ---------- Fallback opaco sin blur (Capacitor / navegadores viejos) ---------- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rangePicker {
+    background: #ffffff;
+    border-color: var(--gris-borde, #e2e8f0);
+  }
+}
+
+/* ---------- Fallback de degradado en texto (si no soporta background-clip) ---------- */
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .title {
+    background: none;
+    -webkit-text-fill-color: var(--gris-texto-principal, #0f172a);
+    color: var(--gris-texto-principal, #0f172a);
+  }
+}
+
+/* ---------- Movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .spinning {
+    animation: none;
+  }
+  .backLink,
+  .backArrow,
+  .rangeBtn {
+    transition: none;
+  }
+}
+
+/* ---------- Móvil: header apila controles a ancho completo ---------- */
+@media (max-width: 520px) {
+  .header {
+    align-items: stretch;
+  }
+  .headerControls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

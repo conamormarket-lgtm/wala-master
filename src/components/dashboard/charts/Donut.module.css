@@ -1,0 +1,158 @@
+/* =========================================================================
+   Donut — gráfico de dona reutilizable del dashboard
+   -------------------------------------------------------------------------
+   Mobile-first: la dona arriba y la leyenda debajo. En contenedores anchos
+   (>=560px) la leyenda se acomoda al lado para aprovechar el espacio.
+   Sin hex ni blur hardcodeados: todo vía tokens del sistema. Respeta
+   prefers-reduced-motion anulando cualquier transición/animación heredada.
+   ========================================================================= */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0; /* permite que el flex hijo (leyenda) trunque sin desbordar */
+}
+
+/* Lienzo de la dona: posición relativa para anclar la etiqueta central. */
+.chartBox {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  /* La altura efectiva la fija el inline style (prop height); este es el piso. */
+  min-height: 180px;
+}
+
+/* -------------------------------------------------------------------------
+   ETIQUETA CENTRAL
+   Centrada sobre el hueco de la dona; no intercepta el hover del gráfico.
+   ------------------------------------------------------------------------- */
+.center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  pointer-events: none;
+  text-align: center;
+  padding: 0 12%; /* deja respirar el texto dentro del anillo */
+}
+
+.centerLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--gris-texto-secundario);
+  line-height: 1.2;
+}
+
+.centerValue {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--gris-texto-principal);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------------
+   LEYENDA COMPACTA
+   ------------------------------------------------------------------------- */
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.legendDot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  /* Canto sutil para que el color no flote sobre el fondo claro. */
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.legendName {
+  min-width: 0;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--gris-texto-secundario);
+}
+
+.legendValue {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--gris-texto-principal);
+}
+
+/* -------------------------------------------------------------------------
+   ESTADO VACÍO
+   ------------------------------------------------------------------------- */
+.empty {
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+}
+
+.emptyText {
+  margin: 0;
+  padding: 1.25rem 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario);
+}
+
+/* -------------------------------------------------------------------------
+   RESPONSIVE: en contenedores anchos, dona y leyenda en fila.
+   Se usa el ancho de viewport como aproximación (el dashboard apila en móvil).
+   ------------------------------------------------------------------------- */
+@media (min-width: 560px) {
+  .wrap {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .chartBox {
+    flex: 1 1 60%;
+  }
+
+  .legend {
+    flex: 1 1 40%;
+    max-width: 16rem;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   MOVIMIENTO REDUCIDO: la animación de recharts se controla por prop, pero
+   anulamos cualquier transición CSS heredada por accesibilidad.
+   ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .wrap,
+  .center,
+  .centerValue {
+    transition: none;
+    animation: none;
+  }
+}

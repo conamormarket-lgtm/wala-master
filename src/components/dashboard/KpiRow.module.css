@@ -1,0 +1,133 @@
+/* =========================================================================
+   KpiRow — estilos de la grilla de KPIs premium
+   -------------------------------------------------------------------------
+   Mobile-first: una columna en móvil; 2 columnas en tablet; hasta 4 en
+   desktop. La superficie de vidrio la pone ui/GlassPanel; aquí sólo
+   estructuramos el interior (cabecera, número, pie) y damos el padding.
+   Usa SIEMPRE los tokens del tema (--radio-*, --gris-*, --primary-color…),
+   nunca hex ni blur hardcodeados.
+   ========================================================================= */
+
+/* --- Rejilla responsive -------------------------------------------------- */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr; /* móvil: una sola columna */
+  gap: 0.9rem;
+  width: 100%;
+}
+
+/* Tablet: dos columnas. */
+@media (min-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* Desktop: hasta cuatro columnas, ajustándose al ancho disponible. */
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+/* --- Item (envoltorio del StaggerItem) ----------------------------------- */
+.item {
+  display: flex;
+  min-width: 0; /* permite que el contenido encoja sin desbordar la grilla */
+}
+
+/* --- Panel de vidrio (GlassPanel) ---------------------------------------- */
+.panel {
+  position: relative;
+  flex: 1;
+  border-radius: var(--radio-mediano, 16px);
+  overflow: hidden;
+  transition: transform var(--dur-rapida, 180ms) var(--ease-signature, ease),
+    box-shadow var(--dur-rapida, 180ms) var(--ease-signature, ease);
+}
+
+/* Realce sutil al pasar el cursor (sin movimiento si el usuario lo pidió). */
+@media (hover: hover) {
+  .panel:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-lg, 0 18px 40px -18px rgba(15, 23, 42, 0.28));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: none;
+  }
+  .panel:hover {
+    transform: none;
+  }
+}
+
+/* --- Contenido interno --------------------------------------------------- */
+.contenido {
+  position: relative;
+  z-index: 1; /* por encima del brillo decorativo del GlassPanel */
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 132px;
+  padding: 1rem 1.1rem;
+}
+
+/* Cabecera: etiqueta a la izquierda, icono a la derecha. */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: var(--radio-pequeno, 10px);
+  /* Halo violeta tenue del acento (color del icono lo pone el JSX inline). */
+  background: rgba(109, 40, 217, 0.1);
+}
+
+/* Número grande con tabular-nums para que no “baile” mientras anima. */
+.value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pie: delta a la izquierda, sparkline empujada a la derecha. */
+.footer {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 42px;
+}
+
+.delta {
+  align-self: center;
+}
+
+.spark {
+  flex: 1;
+  height: 42px;
+  max-width: 130px;
+  margin-left: auto;
+}

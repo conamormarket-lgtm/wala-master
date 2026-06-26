@@ -56,7 +56,7 @@ export default function KpiCard({
   label,
   value = 0,
   format,
-  accent = 'var(--primary-color, #6D28D9)',
+  accent = '#6D28D9',
   icon,
   sparkData = [],
   delta,

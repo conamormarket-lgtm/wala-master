@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { getGlobalAnalytics } from '../../../services/adminAnalytics';
+import { AuroraBackground, GlassButton } from '../../../components/ui';
 import styles from '../AdminDashboard.module.css';
+import extra from './dashShared.extra.module.css';
 
 /* ============================================================================
  * dashShared — utilidades compartidas por el HUB y las sub-páginas del panel.
@@ -157,41 +159,64 @@ export function useGlobalAnalytics(dateRange) {
 
 /* ------------------------------ controles UI ------------------------------ */
 
-/** Selector de rango 7/30/90 (idéntico look al del hub). */
+/**
+ * RangePicker — selector de rango 7/30/90 (segmentado glass premium).
+ * Mantiene la misma API y semántica tablist; el look se eleva con el design
+ * system (superficie glass + píldora activa con gradiente de marca).
+ */
 export function RangePicker({ rangeDays, setRangeDays }) {
   return (
-    <div className={styles.rangePicker} role="tablist" aria-label="Rango de fechas">
-      {RANGES.map((r) => (
-        <button
-          key={r.days}
-          type="button"
-          role="tab"
-          aria-selected={rangeDays === r.days}
-          className={`${styles.rangeBtn} ${rangeDays === r.days ? styles.rangeActive : ''}`}
-          onClick={() => setRangeDays(r.days)}
-        >
-          {r.label}
-        </button>
-      ))}
+    <div
+      className={`${styles.rangePicker} ${extra.rangePicker}`}
+      role="tablist"
+      aria-label="Rango de fechas"
+    >
+      {RANGES.map((r) => {
+        const activo = rangeDays === r.days;
+        return (
+          <button
+            key={r.days}
+            type="button"
+            role="tab"
+            aria-selected={activo}
+            className={`${styles.rangeBtn} ${extra.rangeBtn} ${
+              activo ? `${styles.rangeActive} ${extra.rangeActive}` : ''
+            }`}
+            onClick={() => setRangeDays(r.days)}
+          >
+            {r.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-/** Botón "Actualizar" (refresco manual). */
+/**
+ * RefreshButton — botón de refresco manual sobre GlassButton (variante glass).
+ * Preserva el comportamiento: onClick dispara la recarga, isFetching deshabilita
+ * e indica el estado. Usa el icono ⟳ giratorio propio (en vez del spinner de
+ * carga de GlassButton) para mantener la metáfora visual de "actualizar".
+ */
 export function RefreshButton({ onClick, isFetching }) {
   return (
-    <button
-      type="button"
-      className={styles.refreshBtn}
+    <GlassButton
+      variant="glass"
+      size="sm"
       onClick={onClick}
       disabled={isFetching}
       title="Actualizar datos"
+      icon={
+        <span
+          className={`${extra.refreshIcon} ${isFetching ? extra.spinning : ''}`}
+          aria-hidden="true"
+        >
+          ⟳
+        </span>
+      }
     >
-      <span className={`${styles.refreshIcon} ${isFetching ? styles.spinning : ''}`} aria-hidden="true">
-        ⟳
-      </span>
       {isFetching ? 'Actualizando…' : 'Actualizar'}
-    </button>
+    </GlassButton>
   );
 }
 
@@ -211,20 +236,28 @@ export function DashHeader({
   lastUpdated,
 }) {
   return (
-    <header className={styles.header}>
-      <div>
-        <Link to="/admin/dashboard" className={styles.backLink}>
-          ← Volver al resumen
+    <header className={`${styles.header} ${extra.header}`}>
+      <div className={extra.headerMain}>
+        <Link to="/admin/dashboard" className={`${styles.backLink} ${extra.backLink}`}>
+          <span className={extra.backArrow} aria-hidden="true">
+            ←
+          </span>
+          Volver al resumen
         </Link>
-        <h1 className={styles.title}>{title}</h1>
+        <h1 className={`${styles.title} ${extra.title}`}>{title}</h1>
         {subtitle && (
-          <p className={styles.subtitle}>
-            {subtitle}
-            {lastUpdated ? ` · actualizado ${lastUpdated}` : ''}
+          <p className={`${styles.subtitle} ${extra.subtitle}`}>
+            <span>{subtitle}</span>
+            {lastUpdated && (
+              <span className={extra.subtitleUpdated}>
+                <span className={extra.subtitleDot} aria-hidden="true" />
+                actualizado {lastUpdated}
+              </span>
+            )}
           </p>
         )}
       </div>
-      <div className={styles.headerControls}>
+      <div className={`${styles.headerControls} ${extra.headerControls}`}>
         {showRange && setRangeDays && (
           <RangePicker rangeDays={rangeDays} setRangeDays={setRangeDays} />
         )}
@@ -234,13 +267,16 @@ export function DashHeader({
   );
 }
 
-/** Fondo violeta con orbes difuminados (reutilizado en todas las páginas). */
+/**
+ * DashBackground — fondo de marca reutilizado en todas las páginas del panel.
+ * Eleva los orbes manuales a la malla "aurora" del design system
+ * (AuroraBackground), sobre un lavado de gradiente premium casi blanco. Sigue
+ * siendo puramente decorativo (aria-hidden, detrás del contenido).
+ */
 export function DashBackground() {
   return (
-    <div className={styles.bg} aria-hidden="true">
-      <span className={`${styles.orb} ${styles.orb1}`} />
-      <span className={`${styles.orb} ${styles.orb2}`} />
-      <span className={`${styles.orb} ${styles.orb3}`} />
+    <div className={extra.bgBase} aria-hidden="true">
+      <AuroraBackground variant="vivid" />
     </div>
   );
 }

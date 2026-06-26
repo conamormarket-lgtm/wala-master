@@ -1,0 +1,41 @@
+/* =========================================================================
+   CompareBars — barras horizontales de comparación / ranking
+   -------------------------------------------------------------------------
+   Estilos co-localizados del componente. Solo se ocupan del contenedor del
+   gráfico, las etiquetas de valor y el estado vacío. Los colores de las
+   barras los aporta recharts vía gradiente (prop `color`); aquí se usan SIEMPRE
+   las CSS vars del sistema, nunca hex sueltos.
+   ========================================================================= */
+
+/* Envoltorio del ResponsiveContainer. La altura la fija el JS (derivada del
+   nº de barras) por estilo en línea; aquí solo aseguramos el ancho completo. */
+.wrapper {
+  width: 100%;
+  min-height: 96px;
+}
+
+/* Etiqueta del valor al final de cada barra (texto SVG renderizado por
+   recharts/LabelList). Tono secundario coherente con los ejes. */
+.valueLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  fill: var(--gris-texto-secundario, #475569);
+}
+
+/* Estado vacío tolerante: mensaje sereno, sin saltos de layout. */
+.empty {
+  margin: 0;
+  padding: var(--radio-md, 0.75rem) 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--gris-texto-secundario, #475569);
+  text-align: center;
+}
+
+/* Respeto a quien pide menos movimiento: sin transiciones añadidas.
+   (La animación de entrada de las barras ya se desactiva desde el JS.) */
+@media (prefers-reduced-motion: reduce) {
+  .wrapper {
+    scroll-behavior: auto;
+  }
+}

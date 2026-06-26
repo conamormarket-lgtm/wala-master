@@ -1,0 +1,172 @@
+/* ============================================================================
+ * DashUso.module.css — estilos NUEVOS y co-localizados de la sub-página
+ * "Uso de la app". Complementa (no sustituye) al módulo COMPARTIDO
+ * AdminDashboard.module.css: aquí viven solo las piezas propias de esta página
+ * (rankings con barra de progreso y chips de búsquedas).
+ *
+ * Usa exclusivamente los tokens del sistema de diseño (variables.css + tokens.css):
+ * --primary-color, --gris-*, --radio-*, --glass-*, --ease-signature, --dur-*.
+ * Mobile-first y tolerante a prefers-reduced-motion.
+ * ========================================================================== */
+
+/* ------------------------------ ranking de rutas ------------------------------ */
+
+.ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rankRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radio-mediano, 16px);
+  background: var(--glass-bg-tint, rgba(245, 243, 255, 0.55));
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.45));
+  transition: transform var(--dur-rapida, 0.18s) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)),
+    background var(--dur-rapida, 0.18s) ease;
+}
+
+.rankRow:hover {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  transform: translateX(2px);
+}
+
+/* posición (1, 2, 3…) — los tres primeros con acento de marca */
+.rankPos {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario, #475569);
+  background: var(--violet-50, rgba(109, 40, 217, 0.08));
+  font-variant-numeric: tabular-nums;
+}
+
+.rankPos[data-top='true'] {
+  color: #fff;
+  background: linear-gradient(135deg, var(--chart-2, #8b5cf6), var(--primary-color, #6d28d9));
+  box-shadow: 0 4px 12px -4px var(--primary-color, #6d28d9);
+}
+
+.rankInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rankName {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rankSub {
+  font-size: 0.74rem;
+  color: var(--gris-texto-secundario, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* barra de progreso relativa al máximo del ranking */
+.rankBarTrack {
+  position: relative;
+  height: 6px;
+  margin-top: 0.15rem;
+  border-radius: 999px;
+  background: var(--violet-50, rgba(109, 40, 217, 0.08));
+  overflow: hidden;
+}
+
+.rankBarFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  border-radius: 999px;
+  transition: width var(--dur-lenta, 0.6s) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.rankValue {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary-color, #6d28d9);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ------------------------------ chips de búsquedas ------------------------------ */
+
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem 0.4rem 0.85rem;
+  border-radius: 999px;
+  background: var(--glass-bg-tint, rgba(245, 243, 255, 0.55));
+  border: var(--glass-border-tint, 1px solid rgba(167, 139, 250, 0.40));
+  transition: transform var(--dur-rapida, 0.18s) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)),
+    box-shadow var(--dur-rapida, 0.18s) ease;
+}
+
+.chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -8px var(--primary-color, #6d28d9);
+}
+
+.chipText {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gris-texto-principal, #1e293b);
+  max-width: 14rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chipCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--chart-2, #8b5cf6), var(--primary-color, #6d28d9));
+  font-variant-numeric: tabular-nums;
+}
+
+/* En pantallas pequeñas las búsquedas no deben crecer de más */
+@media (max-width: 520px) {
+  .chipText {
+    max-width: 9rem;
+  }
+}

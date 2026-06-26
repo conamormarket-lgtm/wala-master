@@ -1,0 +1,98 @@
+/* =========================================================================
+   GlassTooltip — tooltip de vidrio para recharts (nivel "solid")
+   -------------------------------------------------------------------------
+   Superficie translúcida destacada: lo bastante opaca para leerse sobre
+   cualquier gráfico, con el halo violeta de elevación del sistema.
+   Robustez obligatoria: -webkit-backdrop-filter junto a backdrop-filter,
+   fallback @supports a fondo sólido (Capacitor/Android) y respeto a
+   prefers-reduced-motion.
+   ========================================================================= */
+
+.tooltip {
+  /* Nivel solid: card destacada flotando sobre datos densos. */
+  background: var(--glass-bg-solid);
+  -webkit-backdrop-filter: var(--glass-blur-solid);
+  backdrop-filter: var(--glass-blur-solid);
+  border: var(--glass-border);
+  border-radius: var(--radio-mediano);
+  box-shadow: var(--glass-shadow-lg);
+
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--gris-texto-principal);
+
+  /* El tooltip nunca debe robar el hover del gráfico. */
+  pointer-events: none;
+  /* Evita que una serie con nombre largo lo estire de forma incómoda. */
+  max-width: 16rem;
+}
+
+/* Etiqueta del eje (categoría / fecha): ancla de la lectura. */
+.label {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--gris-texto-principal);
+}
+
+/* Fila de una serie: swatch + nombre + valor. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.row + .row {
+  margin-top: 0.15rem;
+}
+
+/* Cuadrito (círculo) de color de la serie. */
+.swatch {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  /* Sutil canto para que el color no flote sobre el vidrio. */
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+/* Nombre de la serie: secundario, cede el protagonismo al valor. */
+.name {
+  color: var(--gris-texto-secundario);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Valor: empuja a la derecha y se destaca con peso. */
+.value {
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--gris-texto-principal);
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------
+   FALLBACK SÓLIDO (Capacitor/Android y navegadores sin backdrop-filter):
+   sin desenfoque, el vidrio se sustituye por blanco opaco con borde Slate.
+   ------------------------------------------------------------------------- */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .tooltip {
+    background: #ffffff;
+    border-color: var(--gris-borde);
+  }
+}
+
+/* -------------------------------------------------------------------------
+   MOVIMIENTO REDUCIDO: el tooltip no anima por sí mismo, pero anulamos
+   cualquier transición/animación heredada por accesibilidad.
+   ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    transition: none;
+    animation: none;
+  }
+}

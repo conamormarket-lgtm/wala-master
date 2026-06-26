@@ -1,0 +1,149 @@
+/* =========================================================================
+   DashCategorias.extra — estilos CO-LOCALIZADOS y ADITIVOS
+   -------------------------------------------------------------------------
+   Solo para los bloques nuevos de esta página (Líneas vistas vs. vendidas
+   y la tabla de conversión por línea). NO toca AdminDashboard.module.css.
+   Usa exclusivamente tokens del sistema de diseño (--violet-*, --chart-*,
+   --gris-*, --radio-*, --primary-color, --verde-exito, etc.).
+   ========================================================================= */
+
+/* Pie de cada tarjeta de líneas: total destacado (vistas o ingresos). */
+.lineFoot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--glass-border, rgba(109, 40, 217, 0.12));
+}
+
+.lineFootLabel {
+  font-size: 0.78rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.lineFootValue {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary-color, #6d28d9);
+}
+
+.lineFootValue.green {
+  color: var(--verde-exito, #10b981);
+}
+
+/* ------------------------------ tabla de conversión por línea ------------- */
+.convWrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.convTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.convTable thead th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris-texto-secundario, #475569);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--glass-border, rgba(109, 40, 217, 0.12));
+  white-space: nowrap;
+}
+
+.convTable tbody td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--glass-border, rgba(109, 40, 217, 0.06));
+  color: var(--gris-texto-principal, #1e293b);
+  vertical-align: middle;
+}
+
+.convTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.alignRight {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.lineName {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.lineDot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.lineNameText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 16rem;
+}
+
+/* Celda de conversión: porcentaje + mini-barra de progreso. */
+.convCell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.convPct {
+  font-weight: 700;
+  color: var(--primary-color, #6d28d9);
+  min-width: 3.2rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.convBar {
+  flex: 0 0 88px;
+  height: 7px;
+  border-radius: var(--radio-pill, 999px);
+  background: var(--violet-100, rgba(109, 40, 217, 0.12));
+  overflow: hidden;
+}
+
+.convBarFill {
+  height: 100%;
+  border-radius: var(--radio-pill, 999px);
+  background: linear-gradient(
+    90deg,
+    var(--violet-400, #8b5cf6),
+    var(--primary-color, #6d28d9)
+  );
+}
+
+/* Nota/leyenda discreta bajo la tabla. */
+.convHint {
+  margin-top: 0.7rem;
+  font-size: 0.76rem;
+  color: var(--gris-texto-secundario, #475569);
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .convTable {
+    font-size: 0.8rem;
+  }
+  .convBar {
+    flex-basis: 56px;
+  }
+  .lineNameText {
+    max-width: 9rem;
+  }
+}

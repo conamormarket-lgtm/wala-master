@@ -1,0 +1,584 @@
+/* =========================================================================
+   Walá Design System — Vitrina (DesignSystemPage)
+   -------------------------------------------------------------------------
+   Layout de la guía de estilo viva. Las superficies de vidrio reales las
+   aportan los componentes ui/ (GlassCard, GlassPanel, GlassModal), que ya
+   traen su propio fallback @supports y su rama prefers-reduced-motion. Aquí
+   solo vive el ANDAMIAJE: contenedor centrado, secciones con aire generoso,
+   grids responsive para swatches/cards, las muestras de gradiente (que son
+   fondos sólidos, no glass) y la tipografía de la vitrina.
+
+   Mobile-first: las grillas arrancan en 1–2 columnas y crecen con el ancho.
+   Sin hardcodear colores que existan como token: todo vía var(--*).
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   PÁGINA Y CONTENEDOR
+   ------------------------------------------------------------------------- */
+.page {
+  position: relative;
+  min-height: 100vh;
+  /* Lavado casi blanco de marca por debajo de la aurora. */
+  background: var(--gradient-aurora-soft, var(--gris-fondo));
+  /* Respeta el notch / barra de estado en móvil. */
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.container {
+  position: relative;
+  z-index: 1; /* por encima de AuroraBackground (z negativo) */
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem var(--page-padding-md, 1.25rem) 4rem;
+  /* Ritmo vertical generoso entre secciones. */
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 4rem var(--page-padding-lg, 2rem) 6rem;
+    gap: 5.5rem;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   HERO
+   ------------------------------------------------------------------------- */
+.hero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  padding-top: 1rem;
+}
+
+.heroTitle {
+  margin: 0;
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.4rem, 8vw, 4.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  /* El título "display" lleva el gradiente de marca recortado al texto. */
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--primary-color); /* fallback si el clip de texto no aplica */
+}
+
+.heroSubtitle {
+  margin: 0;
+  max-width: 60ch;
+  font-size: clamp(1rem, 2.6vw, 1.2rem);
+  line-height: 1.6;
+  color: var(--gris-texto-secundario);
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.heroBadges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+/* -------------------------------------------------------------------------
+   CABECERA DE SECCIÓN
+   ------------------------------------------------------------------------- */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 70ch;
+}
+
+.kicker {
+  display: inline-block;
+  width: fit-content;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary-color);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.5rem, 4.5vw, 2.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal);
+}
+
+.sectionDesc {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--gris-texto-secundario);
+}
+
+.subheading {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal);
+}
+
+/* -------------------------------------------------------------------------
+   GRID DE SWATCHES (paleta)
+   ------------------------------------------------------------------------- */
+.swatchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.85rem;
+}
+
+.swatch {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem;
+  border-radius: var(--radio-mediano);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--gris-borde);
+}
+
+/* El cuadro de color de la muestra. El color real llega por style inline. */
+.swatchChip {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radio-pequeno);
+  /* Borde interno tenue para que los colores claros no se pierdan en el blanco. */
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.swatchMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.swatchLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal);
+}
+
+.swatchToken {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal);
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.swatchHex {
+  font-size: 0.7rem;
+  color: var(--gris-texto-secundario);
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+}
+
+/* -------------------------------------------------------------------------
+   GRID DE GRADIENTES
+   ------------------------------------------------------------------------- */
+.gradientGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+/* Las tarjetas de gradiente son fondos SÓLIDOS (el gradiente es el contenido a
+   mostrar), no superficies glass: no necesitan blur ni fallback @supports. */
+.gradientCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  min-height: 130px;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radio-grande);
+  border: 1px solid var(--gris-borde);
+  box-shadow: var(--sombra-media);
+  /* backgroundImage (el gradiente) llega por style inline desde el JSX. */
+  background-color: var(--gris-fondo);
+  overflow: hidden;
+}
+
+/* Sobre gradientes oscuros (marca / dorado) el texto va en blanco. */
+.gradientCardDark {
+  border-color: transparent;
+}
+.gradientCardDark .gradientLabel,
+.gradientCardDark .gradientToken {
+  color: #ffffff;
+}
+.gradientCardDark .gradientToken {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.gradientLabel {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+}
+
+.gradientToken {
+  font-size: 0.74rem;
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  color: var(--gris-texto-secundario);
+}
+
+/* -------------------------------------------------------------------------
+   TIPOGRAFÍA
+   ------------------------------------------------------------------------- */
+.typePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.typeDisplay {
+  margin: 0;
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--primary-color);
+}
+
+.typeH1 {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+  line-height: 1.15;
+  color: var(--gris-texto-principal);
+}
+
+.typeH2 {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(1.35rem, 3.5vw, 1.8rem);
+  line-height: 1.2;
+  color: var(--gris-texto-principal);
+}
+
+.typeH3 {
+  margin: 0;
+  font-weight: 600;
+  font-size: clamp(1.1rem, 3vw, 1.35rem);
+  line-height: 1.25;
+  color: var(--gris-texto-principal);
+}
+
+.typeBody {
+  margin: 0;
+  max-width: 65ch;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--gris-texto-secundario);
+}
+
+.typeCaption {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--gris-texto-secundario);
+  opacity: 0.85;
+}
+
+/* -------------------------------------------------------------------------
+   FILAS DE BOTONES
+   ------------------------------------------------------------------------- */
+.btnRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--gris-borde);
+}
+.btnRow:last-of-type {
+  border-bottom: none;
+}
+
+.btnRowLabel {
+  flex: 0 0 5.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris-texto-secundario);
+}
+
+.btnGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.btnFullWrap {
+  margin-top: 1rem;
+}
+
+/* -------------------------------------------------------------------------
+   GRID DE TARJETAS (GlassCard intensidades)
+   ------------------------------------------------------------------------- */
+.cardGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+}
+
+@media (min-width: 768px) {
+  .cardGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.cardText {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--gris-texto-secundario);
+}
+
+/* -------------------------------------------------------------------------
+   FILAS DE BADGES
+   ------------------------------------------------------------------------- */
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--gris-borde);
+}
+.badgeRow:last-of-type {
+  border-bottom: none;
+}
+
+.badgeGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+/* -------------------------------------------------------------------------
+   FORMULARIO (GlassInput)
+   ------------------------------------------------------------------------- */
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+}
+
+@media (min-width: 640px) {
+  .formGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* El textarea ocupa toda la fila. */
+.formFull {
+  grid-column: 1 / -1;
+}
+
+/* -------------------------------------------------------------------------
+   MODAL DEMO
+   ------------------------------------------------------------------------- */
+.modalDemo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.1rem;
+}
+
+.modalBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+/* -------------------------------------------------------------------------
+   CONTADORES (AnimatedNumber)
+   ------------------------------------------------------------------------- */
+.statGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+}
+
+@media (min-width: 640px) {
+  .statGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris-texto-secundario);
+}
+
+.statValue {
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--gris-texto-principal);
+}
+
+/* -------------------------------------------------------------------------
+   GRID DE MOVIMIENTO
+   ------------------------------------------------------------------------- */
+.motionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.9rem;
+}
+
+@media (min-width: 768px) {
+  .motionGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.motionCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 90px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal);
+}
+
+/* -------------------------------------------------------------------------
+   GRÁFICO
+   ------------------------------------------------------------------------- */
+.chartWrap {
+  width: 100%;
+  height: 260px;
+  /* Margen superior para separar las barras del header de la tarjeta. */
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .chartWrap {
+    height: 320px;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   PIE
+   ------------------------------------------------------------------------- */
+.pageFooter {
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--gris-texto-secundario);
+  padding-top: 1rem;
+  /* Respeta la safe-area inferior en móvil (gesto de inicio iOS). */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.pageFooter code {
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+}
+
+/* =========================================================================
+   ROBUSTEZ — SUPERFICIES TRANSLÚCIDAS PROPIAS DE LA VITRINA
+   -------------------------------------------------------------------------
+   Las ÚNICAS superficies semitransparentes que dibuja ESTE módulo (no las de
+   los componentes ui/, que traen su propio fallback) son los .swatch. Si el
+   navegador no soporta backdrop-filter NO usamos blur aquí, pero igual damos
+   un fondo sólido coherente para Capacitor/Android.
+   ========================================================================= */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .swatch {
+    background: #ffffff;
+    border-color: var(--gris-borde);
+  }
+  .page {
+    /* Sin la aurora translúcida detrás, aseguramos un fondo legible. */
+    background: var(--gris-fondo);
+  }
+}
+
+/* =========================================================================
+   TÁCTIL — punteros gruesos sin hover real
+   -------------------------------------------------------------------------
+   En móvil desactivamos cualquier elevación por hover de las tarjetas de
+   gradiente y damos feedback de pulsación con un leve scale.
+   ========================================================================= */
+@media (hover: none) and (pointer: coarse) {
+  .gradientCard:active {
+    transform: scale(0.97);
+  }
+}
+
+/* =========================================================================
+   MENOS MOVIMIENTO
+   -------------------------------------------------------------------------
+   Anulamos toda transición/transformación propia de esta página. El movimiento
+   de los componentes (Reveal, AnimatedNumber, GlassModal) ya se neutraliza en
+   sus propios módulos; aquí cubrimos lo que pintamos nosotros.
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .page,
+  .container,
+  .swatch,
+  .gradientCard,
+  .motionCell,
+  .statCard {
+    transition: none !important;
+    animation: none !important;
+  }
+  .gradientCard:active {
+    transform: none;
+  }
+}

@@ -1,0 +1,298 @@
+/* =========================================================================
+   GlassButton — botón premium del sistema "Aurora Violeta Serena".
+   Mobile-first. Consume las CSS vars del repo y de tokens.css (sin hardcode).
+   ========================================================================= */
+
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  /* Alto táctil mínimo accesible. */
+  min-height: var(--touch-target, 44px);
+  border: 1px solid transparent;
+  border-radius: var(--radio-mediano, 16px);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: var(--transicion-suave, all 0.4s cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* El contenido va por encima del ripple decorativo. */
+.content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.label {
+  display: inline-block;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Iconos SVG dentro de .icon heredan tamaño coherente. */
+.icon svg {
+  width: 1.1em;
+  height: 1.1em;
+  display: block;
+}
+
+/* ---------------------------------------------------------------------------
+   TAMAÑOS — padding por size (el min-height garantiza el área táctil).
+   --------------------------------------------------------------------------- */
+.sm {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  border-radius: var(--radio-pequeno, 10px);
+}
+
+.md {
+  padding: 0.65rem 1.25rem;
+  font-size: 0.95rem;
+}
+
+.lg {
+  padding: 0.85rem 1.6rem;
+  font-size: 1.05rem;
+}
+
+.full {
+  width: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+   RIPPLE — círculo blanco que crece desde el centro en hover (variante primary
+   sobre todo). Reposo: escala 0; hover: ~300px. Una sola capa, suave.
+   --------------------------------------------------------------------------- */
+.ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition:
+    transform var(--dur-media, 320ms) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)),
+    opacity var(--dur-media, 320ms) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* ---------------------------------------------------------------------------
+   VARIANTE PRIMARY — gradiente de marca + sombra tintada violeta.
+   --------------------------------------------------------------------------- */
+.primary {
+  background: var(--gradient-brand, linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%));
+  color: #ffffff;
+  box-shadow:
+    0 4px 12px -4px rgba(76, 29, 149, 0.35),
+    var(--glass-inset-top, inset 0 1px 0 0 rgba(255, 255, 255, 0.4));
+}
+
+.primary:hover {
+  /* El translateY lo hace framer-motion (whileHover); aquí extendemos la
+     sombra para acompañar el "levantamiento". */
+  box-shadow:
+    0 10px 24px -8px rgba(76, 29, 149, 0.45),
+    var(--glass-inset-top, inset 0 1px 0 0 rgba(255, 255, 255, 0.4));
+}
+
+.primary:hover .ripple {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.primary:active {
+  /* Pequeño asentamiento al presionar (complementa el whileTap). */
+  box-shadow:
+    0 3px 8px -4px rgba(76, 29, 149, 0.4),
+    var(--glass-inset-top, inset 0 1px 0 0 rgba(255, 255, 255, 0.4));
+}
+
+/* ---------------------------------------------------------------------------
+   VARIANTE GHOST — transparente, texto de marca, fondo violeta tenue en hover.
+   --------------------------------------------------------------------------- */
+.ghost {
+  background: transparent;
+  color: var(--primary-color, #6d28d9);
+  border-color: transparent;
+}
+
+.ghost:hover {
+  background: var(--primary-light, rgba(109, 40, 217, 0.08));
+}
+
+.ghost:active {
+  background: var(--primary-light, rgba(109, 40, 217, 0.08));
+}
+
+/* ---------------------------------------------------------------------------
+   VARIANTE GLASS — superficie liquid-glass nivel soft, texto Slate.
+   --------------------------------------------------------------------------- */
+.glass {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.6));
+  -webkit-backdrop-filter: var(--glass-blur, blur(18px) saturate(140%));
+  backdrop-filter: var(--glass-blur, blur(18px) saturate(140%));
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.45));
+  color: var(--gris-texto-principal, #0f172a);
+  box-shadow: var(--glass-shadow,
+    0 10px 30px -12px rgba(15, 23, 42, 0.18),
+    0 2px 8px -4px rgba(109, 40, 217, 0.12));
+}
+
+.glass:hover {
+  box-shadow: var(--glass-shadow-lg,
+    0 24px 60px -20px rgba(15, 23, 42, 0.28),
+    0 8px 20px -10px rgba(109, 40, 217, 0.16));
+}
+
+.glass:hover .ripple {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   VARIANTE DANGER — acción destructiva, rojo de marca.
+   --------------------------------------------------------------------------- */
+.danger {
+  background: var(--danger, #ef4444);
+  color: #ffffff;
+  box-shadow:
+    0 4px 12px -4px rgba(239, 68, 68, 0.4),
+    var(--glass-inset-top, inset 0 1px 0 0 rgba(255, 255, 255, 0.3));
+}
+
+.danger:hover {
+  background: var(--danger-hover, #dc2626);
+  box-shadow:
+    0 10px 24px -8px rgba(239, 68, 68, 0.5),
+    var(--glass-inset-top, inset 0 1px 0 0 rgba(255, 255, 255, 0.3));
+}
+
+.danger:hover .ripple {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   FOCUS VISIBLE — anillo violeta accesible.
+   --------------------------------------------------------------------------- */
+.button:focus-visible {
+  outline: 2px solid var(--primary-color, #6d28d9);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   ESTADOS DESHABILITADO / CARGANDO.
+   --------------------------------------------------------------------------- */
+.button:disabled,
+.button[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.button:disabled .ripple,
+.button[aria-disabled='true'] .ripple {
+  display: none;
+}
+
+.loading {
+  cursor: progress;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   SPINNER — círculo que gira inline, acompaña a los children.
+   --------------------------------------------------------------------------- */
+.spinner {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  /* currentColor heredado: en primary/danger es blanco, en ghost/glass violeta/Slate. */
+  animation: glassButtonSpin 0.7s linear infinite;
+}
+
+@keyframes glassButtonSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   FALLBACK GLASS — sólido en navegadores/Capacitor sin backdrop-filter.
+   --------------------------------------------------------------------------- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: #ffffff;
+    border-color: var(--gris-borde, #e2e8f0);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   TÁCTIL (sin hover real) — sin levantamiento ni ripple expansivo; feedback
+   por :active con un scale sutil.
+   --------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) {
+  .button:active {
+    transform: scale(0.97);
+  }
+
+  .primary:hover,
+  .danger:hover,
+  .glass:hover {
+    box-shadow: inherit;
+  }
+
+  .ripple {
+    display: none;
+  }
+
+  .ghost:hover {
+    background: transparent;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   MOVIMIENTO REDUCIDO — sin ripple, sin transiciones, sin giro del spinner.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+
+  .ripple {
+    display: none;
+  }
+
+  .spinner {
+    animation: none;
+    /* Sin giro: dejamos el aro visible como indicador estático. */
+    border-top-color: currentColor;
+    opacity: 0.6;
+  }
+}

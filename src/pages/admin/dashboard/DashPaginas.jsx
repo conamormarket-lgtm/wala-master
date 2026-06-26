@@ -1,19 +1,19 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   Cell,
   ResponsiveContainer,
 } from 'recharts';
 import GlassCard from '../../../components/dashboard/GlassCard';
 import RankingConMiniaturas from '../../../components/dashboard/RankingConMiniaturas';
+import KpiRow from '../../../components/dashboard/KpiRow';
+import TrendChart from '../../../components/dashboard/charts/TrendChart';
+import { AnimatedNumber } from '../../../components/ui';
 import {
   CHART_COLORS,
   DashBackground,
@@ -30,20 +30,28 @@ import {
   useGlobalAnalytics,
 } from './dashShared';
 import styles from '../AdminDashboard.module.css';
+import extra from './DashPaginas.extra.module.css';
 
 /**
  * DashPaginas — sub-página de PÁGINAS:
- *   - Tráfico por día (AreaChart de page_views, toggle total/app/web)
+ *   - Fila de KPIs resumen (page views, días con tráfico, ruta líder, búsquedas)
+ *   - Tráfico por día (TrendChart de page_views, toggle total/app/web)
  *   - Top rutas por page views (BarChart horizontal)
  *   - Páginas más visitadas (RankingConMiniaturas)
  *   - Búsquedas más frecuentes
+ *
+ * Conserva el comportamiento original: mismo origen de datos
+ * (useGlobalAnalytics), misma serie temporal derivada de `eventsForCharts`,
+ * el toggle Total/App/Web, el ranking de rutas y el de búsquedas. La capa
+ * visual se eleva al sistema de diseño (TrendChart + KpiRow + AnimatedNumber +
+ * tooltips glass) sin alterar la lógica.
  */
 export default function DashPaginas() {
   const { rangeDays, setRangeDays, dateRange } = useDateRange(30);
   const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useGlobalAnalytics(dateRange);
   const [trafficMode, setTrafficMode] = useState('total');
 
-  /* ----- series temporales de page_views por dia ----- */
+  /* ----- series temporales de page_views por dia (mismo origen que antes) ----- */
   const trafficByDay = useMemo(() => {
     const events = data?.eventsForCharts || [];
     const byDay = new Map();
@@ -67,6 +75,68 @@ export default function DashPaginas() {
     () => trafficByDay.some((d) => d.app > 0) || (data?.totalEvents?.app || 0) > 0,
     [trafficByDay, data?.totalEvents]
   );
+
+  /* Serie del TrendChart según el modo activo: una sola serie cuyo color y
+     etiqueta dependen del toggle. La `key` apunta a la métrica correspondiente
+     de cada fila (total/app/web), preservando el comportamiento del toggle. */
+  const trafficSeries = useMemo(() => {
+    const meta = {
+      total: { name: 'Page views', color: CHART_COLORS[0] },
+      app: { name: 'APP', color: CHART_COLORS[4] },
+      web: { name: 'WEB', color: CHART_COLORS[1] },
+    };
+    const m = meta[trafficMode] || meta.total;
+    return [{ key: trafficMode, name: m.name, color: m.color }];
+  }, [trafficMode]);
+
+  /* ----- KPIs resumen derivados de los datos ya disponibles ----- */
+  const kpiItems = useMemo(() => {
+    // Total de page views en el rango (según el modo activo del toggle).
+    const totalPageViews = trafficByDay.reduce((acc, d) => acc + (d[trafficMode] || 0), 0);
+    // Días con al menos una visita registrada.
+    const daysWithTraffic = trafficByDay.filter((d) => (d[trafficMode] || 0) > 0).length;
+    // Ruta líder por page views (la primera del ranking ya ordenado).
+    const topRoute = (data?.topRoutesByViews || [])[0];
+    const topRouteViews = topRoute ? (topRoute.views?.total ?? topRoute.views ?? 0) : 0;
+    // Total de búsquedas registradas (suma de los términos disponibles).
+    const totalSearches = (data?.topSearches || []).reduce((acc, s) => acc + (Number(s.total) || 0), 0);
+    // Sparkline reutilizable: la propia curva de tráfico por día.
+    const trafficSpark = trafficByDay.map((d) => d[trafficMode] || 0);
+
+    return [
+      {
+        label: trafficMode === 'total' ? 'Page views' : `Page views · ${trafficMode.toUpperCase()}`,
+        value: totalPageViews,
+        format: fmtInt,
+        accent: trafficSeries[0]?.color || CHART_COLORS[0],
+        sparkData: trafficSpark,
+        icon: '👁️',
+      },
+      {
+        label: 'Días con tráfico',
+        value: daysWithTraffic,
+        format: fmtInt,
+        accent: CHART_COLORS[2],
+        icon: '📅',
+      },
+      {
+        label: 'Ruta líder',
+        value: topRouteViews,
+        format: fmtInt,
+        accent: CHART_COLORS[1],
+        delta: topRoute ? prettyRouteName(topRoute.path) : undefined,
+        deltaPositive: true,
+        icon: '🏆',
+      },
+      {
+        label: 'Búsquedas',
+        value: totalSearches,
+        format: fmtInt,
+        accent: CHART_COLORS[6],
+        icon: '🔎',
+      },
+    ];
+  }, [trafficByDay, trafficMode, trafficSeries, data?.topRoutesByViews, data?.topSearches]);
 
   /* ----- top rutas para BarChart horizontal ----- */
   const routeBars = useMemo(
@@ -98,6 +168,12 @@ export default function DashPaginas() {
     [data?.topRoutesByViews]
   );
 
+  // Total de búsquedas (para el contador animado del encabezado de la sección).
+  const totalSearchesCount = useMemo(
+    () => (data?.topSearches || []).reduce((acc, s) => acc + (Number(s.total) || 0), 0),
+    [data?.topSearches]
+  );
+
   const lastUpdated = dataUpdatedAt ? fmtTime(dataUpdatedAt) : null;
 
   return (
@@ -123,6 +199,11 @@ export default function DashPaginas() {
 
         <DashStates isLoading={isLoading} hasData={!!data} error={error} />
 
+        {/* KPIs resumen — números con contador animado (KpiRow usa AnimatedNumber). */}
+        <motion.div variants={itemVariants}>
+          <KpiRow items={kpiItems} />
+        </motion.div>
+
         {/* Tráfico por día */}
         <motion.div variants={itemVariants}>
           <GlassCard
@@ -143,31 +224,17 @@ export default function DashPaginas() {
               </div>
             }
           >
-            <div className={styles.chartBox}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trafficByDay} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="dashPagTrafficGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6D28D9" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="#6D28D9" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} minTickGap={18} />
-                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={36} allowDecimals={false} />
-                  <Tooltip content={<GlassTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey={trafficMode}
-                    name={trafficMode === 'total' ? 'Page views' : trafficMode.toUpperCase()}
-                    stroke="#6D28D9"
-                    strokeWidth={2.5}
-                    fill="url(#dashPagTrafficGrad)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-              {!trafficByDay.length && <p className={styles.empty}>Sin tráfico en el rango seleccionado.</p>}
-            </div>
+            {/* Migrado a TrendChart del sistema de diseño: áreas con degradado
+                animado, ejes finos y GlassTooltip. Mantiene el toggle vía la
+                serie dinámica `trafficSeries`. */}
+            <TrendChart
+              data={trafficByDay}
+              series={trafficSeries}
+              xKey="name"
+              height={280}
+              formatY={fmtInt}
+              emptyText="Sin tráfico en el rango seleccionado."
+            />
           </GlassCard>
         </motion.div>
 
@@ -192,7 +259,7 @@ export default function DashPaginas() {
                         type="category"
                         dataKey="shortName"
                         width={130}
-                        tick={{ fontSize: 12, fill: 'var(--gris-texto-secundario, #475569)' }}
+                        tick={{ fontSize: 12, fill: '#475569' }}
                         axisLine={false}
                         tickLine={false}
                       />
@@ -224,7 +291,17 @@ export default function DashPaginas() {
 
         {/* Búsquedas */}
         <motion.div variants={itemVariants}>
-          <GlassCard title="Búsquedas" subtitle="Términos más buscados por tus visitantes">
+          <GlassCard
+            title="Búsquedas"
+            subtitle="Términos más buscados por tus visitantes"
+            actions={
+              totalSearchesCount > 0 ? (
+                <span className={extra.cardBadge}>
+                  <AnimatedNumber value={totalSearchesCount} format={fmtInt} /> totales
+                </span>
+              ) : null
+            }
+          >
             <ul className={styles.miniList}>
               {(data?.topSearches || []).length ? (
                 (data?.topSearches || []).slice(0, 15).map((s) => (

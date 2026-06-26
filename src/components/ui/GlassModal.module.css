@@ -1,0 +1,222 @@
+/* =========================================================================
+   Walá Design System — GlassModal.module.css
+   -------------------------------------------------------------------------
+   Overlay con blur + panel glass nivel "intense". Mobile-first: en pantallas
+   pequeñas el panel se comporta como bottom-sheet. Incluye fallbacks @supports
+   (sin backdrop-filter -> fondo sólido) y rama prefers-reduced-motion.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------------
+   OVERLAY
+   --------------------------------------------------------------------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--page-padding-movil, 16px);
+  /* Velo oscuro translúcido con un leve desenfoque del fondo. */
+  background: rgba(15, 23, 42, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  /* Respeta el área segura (notch / barra inferior). */
+  padding-top: max(var(--page-padding-movil, 16px), env(safe-area-inset-top));
+  padding-bottom: max(var(--page-padding-movil, 16px), env(safe-area-inset-bottom));
+}
+
+/* Sin soporte de backdrop-filter (Capacitor/Android antiguo): velo sólido. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .overlay {
+    background: rgba(15, 23, 42, 0.75);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   PANEL (vidrio nivel "intense")
+   --------------------------------------------------------------------- */
+.panel {
+  position: relative;
+  width: 100%;
+  max-width: 560px; /* default = md */
+  max-height: 85vh;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+
+  border: var(--glass-border-strong);
+  border-radius: var(--radio-grande);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  backdrop-filter: var(--glass-blur-deep);
+  box-shadow: var(--glass-shadow-intense), var(--glass-inset-top);
+
+  color: var(--gris-texto-principal);
+}
+
+/* Tamaños: controlan el ancho máximo. */
+.sm {
+  max-width: 420px;
+}
+
+.md {
+  max-width: 560px;
+}
+
+.lg {
+  max-width: 720px;
+}
+
+/* Sin backdrop-filter: fondo blanco sólido y borde Slate coherente. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .panel {
+    background: #ffffff;
+    border-color: var(--gris-borde);
+  }
+}
+
+/* Brillo superior del cristal (iluminado desde arriba). */
+.highlight {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 50%;
+  border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  background: var(--glass-highlight);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---------------------------------------------------------------------
+   HEADER / BODY / FOOTER
+   --------------------------------------------------------------------- */
+.header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--gris-texto-principal);
+}
+
+.body {
+  position: relative;
+  z-index: 1;
+  padding: 12px 24px;
+  color: var(--gris-texto-secundario);
+  line-height: 1.55;
+}
+
+.footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 24px 24px;
+}
+
+/* ---------------------------------------------------------------------
+   BOTÓN DE CIERRE (rota 90° en hover)
+   --------------------------------------------------------------------- */
+.closeButton {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target, 44px);
+  height: var(--touch-target, 44px);
+  min-width: var(--touch-target, 44px);
+  min-height: var(--touch-target, 44px);
+  margin: -8px -8px 0 0; /* compensa el padding para alinear con el canto */
+  padding: 0;
+  border: none;
+  border-radius: var(--radio-pequeno);
+  background: transparent;
+  color: var(--gris-texto-secundario);
+  cursor: pointer;
+  transition: transform var(--dur-rapida, 180ms) var(--ease-signature),
+    background var(--dur-rapida, 180ms) var(--ease-signature),
+    color var(--dur-rapida, 180ms) var(--ease-signature);
+}
+
+.closeButton:hover {
+  background: var(--gris-hover);
+  color: var(--gris-texto-principal);
+  transform: rotate(90deg);
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------
+   RESPONSIVE — bottom-sheet en móvil (<=600px)
+   --------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .panel,
+  .sm,
+  .md,
+  .lg {
+    max-width: 100%;
+    max-height: 90vh;
+    /* Redondeado sólo en la parte superior (lengüeta de hoja). */
+    border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  }
+
+  .highlight {
+    border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   INTERACCIÓN TÁCTIL — sin hover en pantallas táctiles
+   --------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) {
+  .closeButton:hover {
+    background: transparent;
+    color: var(--gris-texto-secundario);
+    transform: none;
+  }
+
+  .closeButton:active {
+    transform: scale(0.97);
+    background: var(--gris-hover);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   MOVIMIENTO REDUCIDO — sin transform/rotación, sólo opacidad
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .closeButton {
+    transition: background var(--dur-rapida, 180ms) ease, color var(--dur-rapida, 180ms) ease;
+  }
+
+  .closeButton:hover {
+    transform: none;
+  }
+
+  .closeButton:active {
+    transform: none;
+  }
+}

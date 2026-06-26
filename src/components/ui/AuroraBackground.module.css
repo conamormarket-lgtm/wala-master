@@ -1,0 +1,127 @@
+/* =========================================================================
+   AuroraBackground — fondo decorativo (orbes violeta / malla aurora)
+   -------------------------------------------------------------------------
+   Vive DETRÁS del contenido: pointer-events none, aria-hidden, z-index -1.
+   No usa backdrop-filter (solo gradientes), así que no requiere fallback
+   @supports. El drift de los orbes se anula en prefers-reduced-motion.
+   Mobile-first.
+   ========================================================================= */
+
+.root {
+  /* El contenedor se extiende un 10% fuera de su caja para que el blur y el
+     drift de los orbes nunca dejen ver un borde duro. */
+  inset: -10%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+  /* Opacidad global de la malla; intensity la sobrescribe vía inline. */
+  --aurora-intensity: 1;
+}
+
+/* Posición: absolute (anclado al contenedor relativo) vs fixed (sigue scroll). */
+.absolute {
+  position: absolute;
+}
+
+.fixed {
+  position: fixed;
+}
+
+/* -------------------------------------------------------------------------
+   Capas de la malla aurora
+   ------------------------------------------------------------------------- */
+.layer {
+  position: absolute;
+  inset: 0;
+  opacity: var(--aurora-intensity);
+  /* will-change para que el drift sea fluido sin repintar el resto. */
+  will-change: transform;
+  /* Cada capa lleva su gradiente vía la variante (.violet/.subtle/.vivid). */
+  background-repeat: no-repeat;
+}
+
+/* Capa base: la malla completa, drift estándar. */
+.layerBase {
+  animation: auroraDrift var(--dur-aurora, 22s) var(--ease-entrance, ease-in-out)
+    infinite;
+}
+
+/* Capa eco: misma malla, escala y desfase distintos para dar profundidad.
+   Ligeramente más tenue y con un drift inverso/más lento. */
+.layerEcho {
+  opacity: calc(var(--aurora-intensity) * 0.6);
+  transform: scale(1.15);
+  animation: auroraDriftEcho calc(var(--dur-aurora, 22s) * 1.35)
+    var(--ease-entrance, ease-in-out) infinite;
+}
+
+/* -------------------------------------------------------------------------
+   Variantes de color/intensidad
+   ------------------------------------------------------------------------- */
+/* violet (default): malla aurora estándar. */
+.violet .layer {
+  background-image: var(--gradient-aurora);
+}
+
+/* subtle: misma malla, más tenue (la dejamos más translúcida). */
+.subtle .layer {
+  background-image: var(--gradient-aurora);
+  opacity: calc(var(--aurora-intensity) * 0.55);
+}
+
+.subtle .layerEcho {
+  opacity: calc(var(--aurora-intensity) * 0.32);
+}
+
+/* vivid: malla más saturada con chispa magenta contenida. */
+.vivid .layer {
+  background-image: var(--gradient-aurora-vivid);
+}
+
+/* -------------------------------------------------------------------------
+   Keyframes del drift (respiración lenta de la luz)
+   ------------------------------------------------------------------------- */
+@keyframes auroraDrift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2.5%, -2%, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes auroraDriftEcho {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1.15);
+  }
+  50% {
+    transform: translate3d(-3%, 2.5%, 0) scale(1.2);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.15);
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Reduced motion: malla estática (sin deriva). Sigue siendo bonita.
+   ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .layerBase,
+  .layerEcho {
+    animation: none;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Táctil / sin hover: en móviles el fondo nunca debe consumir recursos en
+   transforms innecesarios; el drift es informativo, no interactivo, así que
+   se mantiene, pero garantizamos que no intercepte gestos.
+   ------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) {
+  .root {
+    pointer-events: none;
+  }
+}

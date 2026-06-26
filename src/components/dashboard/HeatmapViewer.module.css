@@ -136,87 +136,140 @@
   to { transform: rotate(360deg); }
 }
 
-/* ---------- Selector de página ---------- */
-.pathSelector {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+/* ---------- Selector de página (mini-tarjetas) ---------- */
+.pageCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.7rem;
   margin-bottom: 1.25rem;
 }
 
-.pathChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  max-width: 280px;
-  padding: 0.4rem 0.6rem 0.4rem 0.85rem;
-  border-radius: 18px;
+.pageCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.75rem 0.85rem 0.85rem;
+  border-radius: var(--radio-mediano, 16px);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.5);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  backdrop-filter: blur(14px) saturate(140%);
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.06));
   color: var(--gris-texto-secundario, #475569);
-  font-size: 0.82rem;
-  font-weight: 600;
   cursor: pointer;
   text-align: left;
+  overflow: hidden;
   transition: var(--transicion-rapida, all 0.2s ease);
 }
 
-.pathChip:hover {
-  background: rgba(255, 255, 255, 0.75);
-  color: var(--gris-texto-principal, #0F172A);
-  transform: translateY(-1px);
+.pageCard:hover {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(109, 40, 217, 0.25);
 }
 
-.pathChipActive {
-  background: linear-gradient(135deg, var(--primary-color, #6D28D9), var(--primary-hover, #5B21B6));
-  border-color: rgba(255, 255, 255, 0.4);
-  color: #fff;
-  box-shadow: 0 6px 16px -6px rgba(109, 40, 217, 0.6);
+.pageCard:focus-visible {
+  outline: 2px solid var(--primary-color, #6D28D9);
+  outline-offset: 2px;
 }
 
-.pathChipMeta {
+.pageCardActive {
+  border-color: rgba(109, 40, 217, 0.45);
+  background:
+    linear-gradient(135deg, rgba(109, 40, 217, 0.16), rgba(91, 33, 182, 0.06)),
+    rgba(255, 255, 255, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 10px 24px -12px rgba(109, 40, 217, 0.7);
+}
+
+/* Filete de acento superior en la tarjeta activa. */
+.pageCardActive::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color, #6D28D9), var(--verde-exito, #10B981));
+}
+
+.pageCardTop {
   display: flex;
-  flex-direction: column;
-  min-width: 0;
-  line-height: 1.15;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  width: 100%;
 }
 
-.pathChipName {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.pageCardName {
+  font-size: 0.82rem;
   font-weight: 700;
-}
-
-.pathChipRoute {
+  line-height: 1.2;
+  color: var(--gris-texto-principal, #0F172A);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.68rem;
+}
+
+.pageCardDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-color, #6D28D9);
+  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.15);
+}
+
+.pageCardCount {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--primary-color, #6D28D9);
+}
+
+.pageCardCountLabel {
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+/* Barra de intensidad (gradiente violeta proporcional al máximo). */
+.pageCardTrack {
+  width: 100%;
+  height: 6px;
+  margin-top: 0.6rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+}
+
+.pageCardFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--violet-400, #a78bfa), var(--primary-color, #6D28D9));
+  transition: width 0.5s var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.pageCardRoute {
+  margin-top: 0.5rem;
+  max-width: 100%;
+  font-size: 0.66rem;
   font-weight: 500;
   opacity: 0.6;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.pathChipActive .pathChipRoute {
-  opacity: 0.85;
-}
-
-.pathChipCount {
-  flex-shrink: 0;
-  min-width: 20px;
-  padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  background: rgba(0, 0, 0, 0.08);
-  color: inherit;
-}
-
-.pathChipActive .pathChipCount {
-  background: rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Grid: canvas + panel lateral ---------- */
@@ -336,10 +389,89 @@
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.75rem;
   background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   z-index: 3;
+}
+
+.previewLoadingText {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+/* ---------- Fallback elegante (sin preview) ---------- */
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1.5rem;
+  text-align: center;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(109, 40, 217, 0.12), transparent 60%),
+    radial-gradient(circle at 70% 80%, rgba(16, 185, 129, 0.10), transparent 60%),
+    rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(140%);
+  z-index: 1;
+}
+
+.fallbackBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radio-mediano, 16px);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-color, #6D28D9), var(--primary-hover, #5B21B6));
+  box-shadow: 0 12px 28px -12px rgba(109, 40, 217, 0.7);
+}
+
+.fallbackName {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal, #0F172A);
+}
+
+.fallbackHint {
+  max-width: 360px;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.fallbackRetry {
+  margin-top: 0.35rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(109, 40, 217, 0.3);
+  background: rgba(109, 40, 217, 0.08);
+  color: var(--primary-color, #6D28D9);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.fallbackRetry:hover {
+  background: rgba(109, 40, 217, 0.16);
+}
+
+.fallbackRetry:focus-visible {
+  outline: 2px solid var(--primary-color, #6D28D9);
+  outline-offset: 2px;
 }
 
 .canvasEmpty {
@@ -486,13 +618,16 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .statsPill,
   .stateBox,
-  .pathChip,
+  .pageCard,
   .canvasCard,
-  .sideCard {
+  .sideCard,
+  .fallback {
     background: #ffffff;
   }
-  .pathChipActive {
-    background: var(--primary-color, #6D28D9);
+  .pageCardActive {
+    background:
+      linear-gradient(135deg, rgba(109, 40, 217, 0.12), rgba(91, 33, 182, 0.05)),
+      #ffffff;
   }
 }
 
@@ -501,7 +636,7 @@
   .spinner {
     animation-duration: 1.6s;
   }
-  .pathChip:hover {
-    transform: none;
+  .pageCardFill {
+    transition: none;
   }
 }

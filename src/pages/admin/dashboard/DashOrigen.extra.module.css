@@ -1,0 +1,118 @@
+/* =========================================================================
+   DashOrigen.extra.module.css
+   -------------------------------------------------------------------------
+   Estilos NUEVOS y co-localizados de la sub-página "Origen y tráfico". NO
+   tocan el módulo compartido (AdminDashboard.module.css): solo añaden el
+   andamiaje que necesitan las secciones nuevas (rejilla de KPIs, encabezados
+   de panel con acento, listas con barra de proporción y chips de tráfico
+   directo). Todo se apoya en los tokens del sistema (var(--...)); sin hex ni
+   blur hardcodeados.
+   ========================================================================= */
+
+/* --- Separación vertical entre las nuevas secciones ---------------------- */
+.section {
+  margin-top: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+/* --- Encabezado interno de bloque con punto de acento ------------------- */
+.blockHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.65rem;
+}
+
+.blockHead:not(:first-child) {
+  margin-top: 1.1rem;
+}
+
+.blockDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radio-full, 999px);
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.blockTitle {
+  margin: 0;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--gris-700, #374151);
+}
+
+/* --- Lista con valor + barra de proporción ------------------------------ */
+.propList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.propItem {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 0.75rem;
+  row-gap: 0.3rem;
+  align-items: center;
+}
+
+.propName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+  color: var(--gris-800, #1f2937);
+}
+
+.propValue {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--primary-color, #6d28d9);
+}
+
+.propTrack {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: var(--radio-full, 999px);
+  background: var(--glass-stroke, rgba(109, 40, 217, 0.12));
+  overflow: hidden;
+}
+
+.propFill {
+  height: 100%;
+  border-radius: var(--radio-full, 999px);
+  background: var(--gradient-brand, linear-gradient(90deg, #8b5cf6, #6d28d9));
+  transition: width var(--dur-md, 420ms) var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* --- Estado vacío sereno (chip) ----------------------------------------- */
+.emptyChip {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radio-md, 14px);
+  background: var(--glass-fill, rgba(255, 255, 255, 0.4));
+  border: 1px dashed var(--glass-stroke, rgba(109, 40, 217, 0.18));
+  font-size: 0.85rem;
+  color: var(--gris-600, #4b5563);
+}
+
+/* --- Pie informativo bajo una dona -------------------------------------- */
+.donutCaption {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--gris-500, #6b7280);
+}
+
+/* --- Espaciado responsive de la rejilla de KPIs ------------------------- */
+.kpis {
+  margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+}

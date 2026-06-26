@@ -17,8 +17,8 @@ import KpiCard from './KpiCard';
 import { getTopSelling } from '../../services/salesAnalytics';
 import styles from './MasVendidosSection.module.css';
 
-const PRIMARY = 'var(--primary-color, #6D28D9)';
-const GREEN = 'var(--verde-exito, #10B981)';
+const PRIMARY = '#6D28D9';
+const GREEN = '#10B981';
 
 // Paleta para el donut de líneas (violeta de marca + acentos coherentes).
 const LINE_COLORS = ['#6D28D9', '#8B5CF6', '#A78BFA', '#10B981', '#34D399', '#C4B5FD', '#7C3AED'];
@@ -256,7 +256,7 @@ export default function MasVendidosSection({ rangeDays = 30 }) {
                       type="category"
                       dataKey="shortName"
                       width={130}
-                      tick={{ fontSize: 12, fill: 'var(--gris-texto-secundario, #475569)' }}
+                      tick={{ fontSize: 12, fill: '#475569' }}
                       axisLine={false}
                       tickLine={false}
                     />

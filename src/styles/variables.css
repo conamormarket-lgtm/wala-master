@@ -16,6 +16,7 @@
   --page-padding-sm: 0.875rem;
   --page-padding-md: 1.25rem;
   --page-padding-lg: 2rem;
+  --page-padding-movil: 1rem; /* padding lateral en móvil (modales/bottom-sheets) */
 
   /* Colores Premium E-commerce Walá */
   --primary-color: #6D28D9; /* Violeta Premium Profundo (Violet 700) */

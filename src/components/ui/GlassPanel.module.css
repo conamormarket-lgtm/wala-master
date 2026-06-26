@@ -1,0 +1,127 @@
+/* =========================================================================
+   GlassPanel — Superficie glass simple (sin header)
+   -------------------------------------------------------------------------
+   Tres niveles de cristal alineados con GlassCard y los tokens de
+   src/theme/tokens.css: .soft (default), .solid (destacada), .intense
+   (modal/hero). Mobile-first. Cada superficie trae su fallback solido
+   (@supports) y su rama de movimiento reducido. -webkit-backdrop-filter
+   SIEMPRE declarado justo antes de backdrop-filter (Safari/iOS/Capacitor).
+   ========================================================================= */
+
+.panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radio-grande);
+  /* El highlight se posiciona sobre el contenido; el contenido por encima de el. */
+  isolation: isolate;
+}
+
+/* El brillo decorativo del vidrio: labio de luz en el borde superior. */
+.highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  pointer-events: none;
+  background: var(--glass-highlight);
+  z-index: 0;
+}
+
+/* El contenido real va por encima del highlight. */
+.panel > *:not(.highlight) {
+  position: relative;
+  z-index: 1;
+}
+
+/* -------------------------------------------------------------------------
+   NIVELES DE CRISTAL
+   ------------------------------------------------------------------------- */
+
+/* soft — default, ~90% de los casos. */
+.soft {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inset-top);
+}
+
+/* solid — secciones destacadas, algo mas opacas y elevadas. */
+.solid {
+  background: var(--glass-bg-solid);
+  -webkit-backdrop-filter: var(--glass-blur-solid);
+  backdrop-filter: var(--glass-blur-solid);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inset-top);
+}
+
+/* intense — modal / hero, cristal profundo con halo violeta protagonista. */
+.intense {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  backdrop-filter: var(--glass-blur-deep);
+  border: var(--glass-border-strong);
+  box-shadow: var(--glass-shadow-intense), var(--glass-inset-top);
+}
+
+/* -------------------------------------------------------------------------
+   PADDING (mobile-first; el aire se relaja un poco en pantallas grandes)
+   ------------------------------------------------------------------------- */
+.padNone {
+  padding: 0;
+}
+
+.padSm {
+  padding: 0.75rem;
+}
+
+.padMd {
+  padding: 1.25rem;
+}
+
+.padLg {
+  padding: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .padSm {
+    padding: 1rem;
+  }
+  .padMd {
+    padding: 1.75rem;
+  }
+  .padLg {
+    padding: 2.5rem;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   FALLBACK SOLIDO — innegociable por Capacitor/Android y navegadores sin
+   soporte de backdrop-filter. Sustituye el cristal por blanco solido y
+   apaga el highlight para que no ensucie el fondo opaco.
+   ------------------------------------------------------------------------- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .soft,
+  .solid,
+  .intense {
+    background: #ffffff;
+    border-color: var(--gris-borde);
+  }
+
+  .highlight {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   MOVIMIENTO REDUCIDO — GlassPanel no anima por si mismo, pero anulamos
+   cualquier transicion/animacion heredada por defensa.
+   ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .highlight {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -1,0 +1,127 @@
+/* =========================================================================
+   Badge — Etiqueta de estado de Walá
+   -------------------------------------------------------------------------
+   Pequeña, sobria y legible. Tres ejes:
+     - tone:    neutral | violet | success | warning | danger
+     - variant: solid (fondo color + texto blanco) | soft (fondo tenue + texto
+                color) | outline (transparente + borde + texto color)
+     - size:    sm | md
+   El color de cada tone se resuelve con dos variables locales (--badge-color
+   para el color "fuerte" y --badge-soft para el fondo tenue) que cada variante
+   reutiliza. Así no repetimos la matriz tone x variant a mano.
+   Sin glass aquí (es un elemento de texto, no una superficie): no necesita
+   backdrop-filter ni fallback @supports de blur.
+   ========================================================================= */
+
+.badge {
+  /* Color "fuerte" y fondo tenue por defecto (tone neutral). Cada tone los pisa. */
+  --badge-color: var(--gris-texto-secundario);
+  --badge-soft: var(--gris-hover);
+  --badge-on-solid: #ffffff;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: var(--radio-pequeno);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  vertical-align: middle;
+  border: 1px solid transparent; /* reservado para outline; mantiene la métrica estable */
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------------
+   TAMAÑOS
+   --------------------------------------------------------------------- */
+.sm {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+}
+
+.md {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+}
+
+/* ---------------------------------------------------------------------
+   TONES — solo definen las variables de color; las variantes las consumen.
+   --------------------------------------------------------------------- */
+.neutral {
+  --badge-color: var(--gris-texto-secundario);
+  --badge-soft: var(--gris-hover);
+}
+
+.violet {
+  --badge-color: var(--primary-color);
+  --badge-soft: var(--primary-light);
+}
+
+.success {
+  --badge-color: var(--verde-exito);
+  /* Verde tenue derivado (no hay token soft de éxito): emerald al 10%. */
+  --badge-soft: rgba(16, 185, 129, 0.12);
+}
+
+.warning {
+  --badge-color: var(--warning);
+  --badge-soft: var(--warning-soft);
+}
+
+.danger {
+  --badge-color: var(--danger);
+  --badge-soft: var(--danger-soft);
+}
+
+/* ---------------------------------------------------------------------
+   VARIANTES — resuelven fondo / texto / borde con las vars del tone.
+   --------------------------------------------------------------------- */
+/* solid: fondo color + texto blanco. */
+.solid {
+  background: var(--badge-color);
+  color: var(--badge-on-solid);
+  border-color: transparent;
+}
+
+/* soft (default): fondo tenue + texto color. */
+.soft {
+  background: var(--badge-soft);
+  color: var(--badge-color);
+  border-color: transparent;
+}
+
+/* outline: transparente + borde 1px color + texto color. */
+.outline {
+  background: transparent;
+  color: var(--badge-color);
+  border-color: var(--badge-color);
+}
+
+/* ---------------------------------------------------------------------
+   PUNTO DE ESTADO — círculo 6px con el color del tone.
+   En variante solid el fondo ya es el color, así que el punto va en blanco
+   para que se vea; en soft/outline usa el color del tone.
+   --------------------------------------------------------------------- */
+.dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--badge-color);
+}
+
+.solid .dot {
+  background: var(--badge-on-solid);
+}
+
+/* ---------------------------------------------------------------------
+   ROBUSTEZ — el Badge no anima por sí mismo, pero respetamos la preferencia
+   por si se envuelve/hereda alguna transición desde el contenedor.
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    transition: none;
+    animation: none;
+  }
+}

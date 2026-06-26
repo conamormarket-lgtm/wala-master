@@ -1,9 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
-import KpiCard from '../../components/dashboard/KpiCard';
 import GlassCard from '../../components/dashboard/GlassCard';
+import KpiRow from '../../components/dashboard/KpiRow';
+import TrendChart from '../../components/dashboard/charts/TrendChart';
+import { AuroraBackground, Reveal, Stagger, StaggerItem } from '../../components/ui';
+import { deriveConversion } from '../../services/analytics/derive';
 import {
   DashBackground,
   RangePicker,
@@ -18,6 +21,7 @@ import {
   useGlobalAnalytics,
 } from './dashboard/dashShared';
 import styles from './AdminDashboard.module.css';
+import extra from './AdminDashboard.extra.module.css';
 
 /* ----------------------------------------------------------------------------
  * AdminDashboard — HUB "Resumen" del panel de analítica.
@@ -64,13 +68,28 @@ const NAV_CARDS = [
     title: 'Categorías y tags',
     desc: 'Líneas más vistas, etiquetas y embudo de conversión.',
   },
+  {
+    // Tarjeta NUEVA: enlaza a la sub-página de Uso de la app.
+    to: 'uso',
+    icon: '📱',
+    title: 'Uso de la app',
+    desc: 'Áreas más usadas, sesiones por dispositivo y permanencia.',
+    accent: true,
+  },
 ];
 
 export default function AdminDashboard() {
   const { rangeDays, setRangeDays, dateRange } = useDateRange(30);
   const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useGlobalAnalytics(dateRange);
 
-  /* ----- sparkline ligero de page_views por día (para los KPIs) ----- */
+  // Segmentación del gráfico de tendencia: total / app / web.
+  const [trafficMode, setTrafficMode] = useState('total');
+
+  /* ----- serie temporal de page_views por día -----
+     MISMO origen que DashPaginas (data.eventsForCharts → page_view por día):
+     reutilizamos su construcción para alimentar tanto los sparklines de los
+     KPIs como el gráfico grande de tendencia. Cada fila lleva `name` (DD/MM)
+     para servir de eje X en TrendChart. */
   const trafficByDay = useMemo(() => {
     const events = data?.eventsForCharts || [];
     const byDay = new Map();
@@ -81,7 +100,7 @@ export default function AdminDashboard() {
       if (Number.isNaN(d.getTime())) return;
       const key = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
       const dayStart = new Date(d).setHours(0, 0, 0, 0);
-      if (!byDay.has(key)) byDay.set(key, { total: 0, app: 0, web: 0, ts: dayStart });
+      if (!byDay.has(key)) byDay.set(key, { name: key, total: 0, app: 0, web: 0, ts: dayStart });
       const row = byDay.get(key);
       row.total += 1;
       if (e.clientType === 'APP') row.app += 1;
@@ -90,35 +109,77 @@ export default function AdminDashboard() {
     return [...byDay.values()].sort((a, b) => a.ts - b.ts);
   }, [data?.eventsForCharts]);
 
+  // ¿Hay tráfico desde la APP? Si no, ocultamos el segmento APP del toggle.
+  const hasAppData = useMemo(
+    () => trafficByDay.some((d) => d.app > 0) || (data?.totalEvents?.app || 0) > 0,
+    [trafficByDay, data?.totalEvents]
+  );
+
+  // Totales del rango para el pie de la tarjeta de tendencia.
+  const trafficTotals = useMemo(
+    () =>
+      trafficByDay.reduce(
+        (acc, d) => ({
+          total: acc.total + d.total,
+          app: acc.app + d.app,
+          web: acc.web + d.web,
+        }),
+        { total: 0, app: 0, web: 0 }
+      ),
+    [trafficByDay]
+  );
+
+  // Conversión del embudo (vista → compra) derivada de funnelStats.
+  const conversion = useMemo(() => deriveConversion(data?.funnelStats), [data?.funnelStats]);
+
+  // Serie de tendencia para TrendChart (una sola serie según el modo activo).
+  const trendSeries = useMemo(
+    () => [
+      {
+        key: trafficMode,
+        name: trafficMode === 'total' ? 'Page views' : trafficMode.toUpperCase(),
+        color: '#6D28D9',
+      },
+    ],
+    [trafficMode]
+  );
+
   const kpis = useMemo(
     () => [
       {
         label: 'Sesiones',
         value: data?.totalSessions?.total || 0,
-        accent: 'var(--primary-color, #6D28D9)',
-        spark: trafficByDay.map((d) => d.total),
+        accent: '#6D28D9',
+        sparkData: trafficByDay.map((d) => d.total),
       },
       {
         label: 'Identidades activas',
         value: data?.activeIdentities?.total || 0,
         accent: '#8B5CF6',
-        spark: trafficByDay.map((d) => d.web),
+        sparkData: trafficByDay.map((d) => d.web),
       },
       {
         label: 'Page views',
-        value: trafficByDay.reduce((a, d) => a + d.total, 0),
+        value: trafficTotals.total,
         accent: '#10B981',
-        spark: trafficByDay.map((d) => d.total),
+        sparkData: trafficByDay.map((d) => d.total),
       },
       {
         label: 'Tiempo navegado',
         value: data?.totalDwellMs?.total || 0,
         format: fmtDuration,
         accent: '#F59E0B',
-        spark: trafficByDay.map((d) => d.app + d.web),
+        sparkData: trafficByDay.map((d) => d.app + d.web),
+      },
+      {
+        // KPI de conversión global (vista → compra) vía deriveConversion.
+        label: 'Conversión',
+        value: conversion?.global || 0,
+        format: (v) => `${(Number(v) || 0).toLocaleString('es-PE', { maximumFractionDigits: 1 })}%`,
+        accent: '#EC4899',
       },
     ],
-    [data, trafficByDay]
+    [data, trafficByDay, trafficTotals, conversion]
   );
 
   const liveSessions = data?.realtimeSessionsDetails || [];
@@ -127,6 +188,10 @@ export default function AdminDashboard() {
 
   return (
     <div className={styles.page}>
+      {/* Atmósfera Aurora del sistema de diseño (decorativa, detrás de todo). */}
+      <div className={extra.aurora} aria-hidden="true">
+        <AuroraBackground />
+      </div>
       <DashBackground />
 
       <motion.div
@@ -153,34 +218,83 @@ export default function AdminDashboard() {
         {error && <div className={styles.errorBox}>Error al cargar datos: {error.message}</div>}
         {isLoading && !data && <div className={styles.loading}>Cargando analítica…</div>}
 
-        {/* (1) Fila de KPIs */}
-        <motion.section className={styles.kpiRow} variants={containerVariants}>
-          {kpis.map((k) => (
-            <KpiCard
-              key={k.label}
-              label={k.label}
-              value={k.value}
-              format={k.format}
-              accent={k.accent}
-              sparkData={k.spark}
-            />
-          ))}
-        </motion.section>
+        {/* (1) Fila de KPIs (sistema de diseño: KpiRow con sparklines) */}
+        <Reveal>
+          <KpiRow items={kpis} />
+        </Reveal>
 
-        {/* (2) Grid de tarjetas-botón hacia cada sub-página */}
-        <motion.section className={styles.navGrid} variants={containerVariants}>
-          {NAV_CARDS.map((c) => (
-            <motion.div key={c.to} variants={itemVariants}>
-              <Link to={c.to} className={styles.navCard}>
-                <span className={styles.highlight} aria-hidden="true" />
-                <span className={styles.navIcon} aria-hidden="true">{c.icon}</span>
-                <h3 className={styles.navCardTitle}>{c.title}</h3>
-                <p className={styles.navCardDesc}>{c.desc}</p>
-                <span className={styles.navArrow} aria-hidden="true">→</span>
-              </Link>
-            </motion.div>
-          ))}
-        </motion.section>
+        {/* (2) Gráfico grande de tendencia de tráfico.
+             Reutiliza la MISMA serie temporal que DashPaginas (page_views por
+             día). Si no hay datos, TrendChart muestra su propio estado vacío. */}
+        <Reveal delay={0.05}>
+          <section className={extra.trendCard}>
+            <div className={extra.trendHead}>
+              <div>
+                <h2 className={extra.trendTitle}>Tráfico</h2>
+                <p className={extra.trendSubtitle}>Page views por día · últimos {rangeDays} días</p>
+              </div>
+              <div className={extra.segment} role="group" aria-label="Segmentar tráfico">
+                {['total', hasAppData ? 'app' : null, 'web'].filter(Boolean).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={`${extra.segmentBtn} ${trafficMode === m ? extra.segmentActive : ''}`}
+                    onClick={() => setTrafficMode(m)}
+                    aria-pressed={trafficMode === m}
+                  >
+                    {m.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <TrendChart
+              data={trafficByDay}
+              series={trendSeries}
+              xKey="name"
+              height={300}
+              formatY={(v) => fmtInt(v)}
+              emptyText="Sin tráfico en el rango seleccionado."
+            />
+
+            <div className={extra.trendFoot}>
+              <div className={extra.trendStat}>
+                <span className={extra.trendStatLabel}>Total</span>
+                <span className={extra.trendStatValue}>{fmtInt(trafficTotals.total)}</span>
+              </div>
+              {hasAppData && (
+                <div className={extra.trendStat}>
+                  <span className={extra.trendStatLabel}>App</span>
+                  <span className={extra.trendStatValue}>{fmtInt(trafficTotals.app)}</span>
+                </div>
+              )}
+              <div className={extra.trendStat}>
+                <span className={extra.trendStatLabel}>Web</span>
+                <span className={extra.trendStatValue}>{fmtInt(trafficTotals.web)}</span>
+              </div>
+            </div>
+          </section>
+        </Reveal>
+
+        {/* (3) Grid de tarjetas-botón hacia cada sub-página (entrada escalonada) */}
+        <Reveal delay={0.1}>
+          <Stagger className={styles.navGrid}>
+            {NAV_CARDS.map((c) => (
+              <StaggerItem key={c.to}>
+                <Link
+                  to={c.to}
+                  className={`${styles.navCard} ${c.accent ? extra.navCardAccent : ''}`}
+                >
+                  <span className={styles.highlight} aria-hidden="true" />
+                  <span className={styles.navIcon} aria-hidden="true">{c.icon}</span>
+                  <h3 className={styles.navCardTitle}>{c.title}</h3>
+                  <p className={styles.navCardDesc}>{c.desc}</p>
+                  <span className={styles.navArrow} aria-hidden="true">→</span>
+                </Link>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </Reveal>
 
         {/* (3) Panel "En vivo" */}
         <motion.div variants={itemVariants}>

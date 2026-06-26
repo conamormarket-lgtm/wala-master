@@ -1,13 +1,14 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import GlassCard from '../../../components/dashboard/GlassCard';
+import Donut from '../../../components/dashboard/charts/Donut';
+import KpiRow from '../../../components/dashboard/KpiRow';
+import { Reveal } from '../../../components/ui';
+import { chartColors } from '../../../theme';
 import {
-  CHART_COLORS,
   DashBackground,
   DashHeader,
   DashStates,
-  GlassTooltip,
   containerVariants,
   itemVariants,
   fmtInt,
@@ -17,71 +18,91 @@ import {
   useGlobalAnalytics,
 } from './dashShared';
 import styles from '../AdminDashboard.module.css';
+import extra from './DashOrigen.extra.module.css';
+
+/* =========================================================================
+ * DashOrigen — sub-página de ORIGEN / TRÁFICO (versión "Aurora Violeta Serena")
+ *   - KPIs de cabecera (sesiones en vivo, muestras de dispositivo, fuente y
+ *     región líder) con número animado.
+ *   - Dispositivos / Navegador / Sistema operativo: donuts del design system.
+ *   - Fuentes UTM, campañas y regiones (utmStats / geographyStats) con barra
+ *     de proporción.
+ *   - Panel "En vivo" (sesiones activas en tiempo real).
+ *   - Búsquedas más frecuentes (topSearches).
+ *
+ * Conserva intacto el comportamiento: el fetching compartido
+ * (useGlobalAnalytics), el rango 7/30/90, el refresco manual y las rutas.
+ * ========================================================================= */
 
 /**
- * Donut reutilizable: recibe items {name,value} y pinta un PieChart con leyenda.
+ * BloqueDona — envoltura fina sobre el <Donut> del sistema para reutilizar el
+ * mismo encabezado con acento, el total al centro y un pie informativo. Recibe
+ * items {name, value} ya preparados por el consumidor; tolera datos vacíos.
  */
-function DonutBlock({ title, items, emptyText }) {
-  const data = (items || []).filter((d) => (d.value || 0) > 0).slice(0, 7);
+function BloqueDona({ titulo, accent, items, emptyText, caption }) {
+  // Solo segmentos con valor positivo cuentan para el total del centro.
+  const total = (items || []).reduce(
+    (acc, d) => acc + (Number(d?.value) > 0 ? Number(d.value) : 0),
+    0
+  );
+
   return (
     <div>
-      <h4 className={styles.subhead}>{title}</h4>
-      {data.length === 0 ? (
-        <p className={styles.empty}>{emptyText}</p>
-      ) : (
-        <>
-          <div className={styles.chartBoxSm}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={44}
-                  outerRadius={72}
-                  paddingAngle={2}
-                  stroke="rgba(255,255,255,0.6)"
-                  strokeWidth={2}
-                >
-                  {data.map((entry, i) => (
-                    <Cell key={entry.name || i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<GlassTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <ul className={styles.legend}>
-            {data.map((entry, i) => (
-              <li key={entry.name || i}>
-                <span
-                  className={styles.legendDot}
-                  style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
-                  aria-hidden="true"
-                />
-                <span className={styles.ellipsis}>{entry.name}</span>
-                <strong>{fmtInt(entry.value)}</strong>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      <div className={extra.blockHead} style={{ color: accent }}>
+        <span className={extra.blockDot} aria-hidden="true" />
+        <h4 className={extra.blockTitle}>{titulo}</h4>
+      </div>
+      <Donut
+        data={items}
+        colors={chartColors}
+        height={210}
+        centerLabel="Muestras"
+        centerValue={total}
+        formatValue={(n) => fmtInt(n)}
+        emptyText={emptyText}
+      />
+      {total > 0 && caption && <p className={extra.donutCaption}>{caption}</p>}
     </div>
   );
 }
 
 /**
- * DashOrigen — sub-página de ORIGEN / TRÁFICO:
- *   - Dispositivos / Navegador / Sistema operativo (donuts de deviceStats)
- *   - Fuentes UTM y regiones (utmStats / geographyStats)
- *   - Panel "En vivo" (sesiones activas en tiempo real)
+ * ListaProporcion — lista compacta con nombre, valor y barra de proporción
+ * (relativa al valor máximo de la propia lista). Cae a un chip vacío sereno.
  */
+function ListaProporcion({ items, accent, emptyText }) {
+  const lista = Array.isArray(items) ? items : [];
+  if (!lista.length) {
+    return <p className={extra.emptyChip}>{emptyText}</p>;
+  }
+  const max = Math.max(...lista.map((d) => Number(d.value) || 0), 1);
+  return (
+    <ul className={extra.propList}>
+      {lista.map((d) => {
+        const valor = Number(d.value) || 0;
+        const pct = Math.max(6, Math.round((valor / max) * 100));
+        return (
+          <li key={d.key} className={extra.propItem}>
+            <span className={extra.propName}>{d.name}</span>
+            <strong className={extra.propValue}>{fmtInt(valor)}</strong>
+            <span className={extra.propTrack} aria-hidden="true">
+              <span
+                className={extra.propFill}
+                style={{ width: `${pct}%`, background: accent }}
+              />
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export default function DashOrigen() {
   const { rangeDays, setRangeDays, dateRange } = useDateRange(30);
   const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useGlobalAnalytics(dateRange);
 
+  /* ----- donuts de dispositivo / navegador / OS (sin cambios de origen) ----- */
   const deviceItems = useMemo(
     () => (data?.deviceStats?.topDevices || []).map((d) => ({ name: d.name, value: d.count })),
     [data?.deviceStats]
@@ -95,12 +116,89 @@ export default function DashOrigen() {
     [data?.deviceStats]
   );
 
-  const utmSources = data?.utmStats?.topSources || [];
-  const utmCampaigns = data?.utmStats?.topCampaigns || [];
-  const regions = data?.geographyStats?.topRegions || [];
+  /* ----- listas de origen / geografía / búsquedas (mismas fuentes) ----- */
+  const utmSources = useMemo(
+    () =>
+      (data?.utmStats?.topSources || []).slice(0, 6).map((s) => ({
+        key: s.name,
+        name: s.name,
+        value: s.value,
+      })),
+    [data?.utmStats]
+  );
+  const utmCampaigns = useMemo(
+    () =>
+      (data?.utmStats?.topCampaigns || []).slice(0, 5).map((c) => ({
+        key: c.name,
+        name: c.name,
+        value: c.count,
+      })),
+    [data?.utmStats]
+  );
+  const regions = useMemo(
+    () =>
+      (data?.geographyStats?.topRegions || []).slice(0, 6).map((r) => ({
+        key: r.name,
+        name: r.name,
+        value: r.count,
+      })),
+    [data?.geographyStats]
+  );
+  const searches = useMemo(
+    () =>
+      (data?.topSearches || []).slice(0, 12).map((s) => ({
+        key: s.query,
+        name: s.query,
+        value: s.total,
+      })),
+    [data?.topSearches]
+  );
+
   const liveSessions = data?.realtimeSessionsDetails || [];
   const liveCount = data?.realtimeActiveSessions?.total || 0;
   const lastUpdated = dataUpdatedAt ? fmtTime(dataUpdatedAt) : null;
+
+  /* ----- KPIs de cabecera derivados de los mismos datos ----- */
+  const totalDeviceSamples = useMemo(
+    () => deviceItems.reduce((acc, d) => acc + (Number(d.value) || 0), 0),
+    [deviceItems]
+  );
+  const topSource = utmSources[0] || null;
+  const topRegion = regions[0] || null;
+
+  const kpiItems = useMemo(
+    () => [
+      {
+        label: 'Sesiones en vivo',
+        value: liveCount,
+        format: fmtInt,
+        accent: '#10B981',
+        icon: '🟢',
+      },
+      {
+        label: 'Muestras de dispositivo',
+        value: totalDeviceSamples,
+        format: fmtInt,
+        accent: '#6D28D9',
+        icon: '🖥️',
+      },
+      {
+        label: topSource ? `Fuente líder · ${topSource.name}` : 'Fuente líder',
+        value: topSource ? topSource.value : 0,
+        format: fmtInt,
+        accent: '#8B5CF6',
+        icon: '🌐',
+      },
+      {
+        label: topRegion ? `Región líder · ${topRegion.name}` : 'Región líder',
+        value: topRegion ? topRegion.value : 0,
+        format: fmtInt,
+        accent: '#F59E0B',
+        icon: '📍',
+      },
+    ],
+    [liveCount, totalDeviceSamples, topSource, topRegion]
+  );
 
   return (
     <div className={styles.page}>
@@ -125,74 +223,85 @@ export default function DashOrigen() {
 
         <DashStates isLoading={isLoading} hasData={!!data} error={error} />
 
-        {/* Dispositivos / navegador / OS */}
-        <motion.div className={styles.grid3} variants={containerVariants}>
-          <motion.div variants={itemVariants}>
+        {/* KPIs de cabecera */}
+        <Reveal className={extra.kpis}>
+          <KpiRow items={kpiItems} />
+        </Reveal>
+
+        {/* Dispositivos / navegador / OS — donuts del design system */}
+        <Reveal as="section" className={`${styles.grid3} ${extra.section}`}>
+          <Reveal>
             <GlassCard title="Dispositivos" subtitle="Escritorio vs. móvil">
-              <DonutBlock title="Tipo de dispositivo" items={deviceItems} emptyText="Sin datos de dispositivo aún." />
+              <BloqueDona
+                titulo="Tipo de dispositivo"
+                accent={chartColors[0]}
+                items={deviceItems}
+                emptyText="Sin datos de dispositivo aún."
+                caption="Distribución de sesiones por tipo de dispositivo."
+              />
             </GlassCard>
-          </motion.div>
-          <motion.div variants={itemVariants}>
+          </Reveal>
+          <Reveal delay={0.05}>
             <GlassCard title="Navegador" subtitle="Navegadores más usados">
-              <DonutBlock title="Navegador" items={browserItems} emptyText="Sin datos de navegador aún." />
+              <BloqueDona
+                titulo="Navegador"
+                accent={chartColors[1]}
+                items={browserItems}
+                emptyText="Sin datos de navegador aún."
+                caption="Reparto de sesiones por navegador."
+              />
             </GlassCard>
-          </motion.div>
-          <motion.div variants={itemVariants}>
+          </Reveal>
+          <Reveal delay={0.1}>
             <GlassCard title="Sistema operativo" subtitle="Plataformas de tus visitantes">
-              <DonutBlock title="Sistema operativo" items={osItems} emptyText="Sin datos de sistema operativo aún." />
+              <BloqueDona
+                titulo="Sistema operativo"
+                accent={chartColors[2]}
+                items={osItems}
+                emptyText="Sin datos de sistema operativo aún."
+                caption="Plataformas desde las que navegan tus visitantes."
+              />
             </GlassCard>
-          </motion.div>
-        </motion.div>
+          </Reveal>
+        </Reveal>
 
         {/* UTM / regiones / en vivo */}
-        <motion.div className={styles.grid3} variants={containerVariants}>
-          <motion.div variants={itemVariants}>
+        <Reveal as="section" className={`${styles.grid3} ${extra.section}`}>
+          <Reveal>
             <GlassCard title="Origen y región" subtitle="Fuentes UTM y geografía">
-              <h4 className={styles.subhead}>Fuentes de tráfico</h4>
-              <ul className={styles.miniList}>
-                {utmSources.length ? (
-                  utmSources.slice(0, 6).map((s) => (
-                    <li key={s.name}>
-                      <span className={styles.ellipsis}>{s.name}</span>
-                      <strong>{fmtInt(s.value)}</strong>
-                    </li>
-                  ))
-                ) : (
-                  <li className={styles.empty}>Solo tráfico directo.</li>
-                )}
-              </ul>
+              <div className={extra.blockHead} style={{ color: chartColors[0] }}>
+                <span className={extra.blockDot} aria-hidden="true" />
+                <h4 className={extra.blockTitle}>Fuentes de tráfico</h4>
+              </div>
+              <ListaProporcion
+                items={utmSources}
+                accent={chartColors[0]}
+                emptyText="Solo tráfico directo."
+              />
 
-              <h4 className={styles.subhead}>Campañas</h4>
-              <ul className={styles.miniList}>
-                {utmCampaigns.length ? (
-                  utmCampaigns.slice(0, 5).map((c) => (
-                    <li key={c.name}>
-                      <span className={styles.ellipsis}>{c.name}</span>
-                      <strong>{fmtInt(c.count)}</strong>
-                    </li>
-                  ))
-                ) : (
-                  <li className={styles.empty}>Sin campañas UTM registradas.</li>
-                )}
-              </ul>
+              <div className={extra.blockHead} style={{ color: chartColors[1] }}>
+                <span className={extra.blockDot} aria-hidden="true" />
+                <h4 className={extra.blockTitle}>Campañas</h4>
+              </div>
+              <ListaProporcion
+                items={utmCampaigns}
+                accent={chartColors[1]}
+                emptyText="Sin campañas UTM registradas."
+              />
 
-              <h4 className={styles.subhead}>Regiones</h4>
-              <ul className={styles.miniList}>
-                {regions.length ? (
-                  regions.slice(0, 6).map((r) => (
-                    <li key={r.name}>
-                      <span className={styles.ellipsis}>{r.name}</span>
-                      <strong>{fmtInt(r.count)}</strong>
-                    </li>
-                  ))
-                ) : (
-                  <li className={styles.empty}>Sin datos regionales aún.</li>
-                )}
-              </ul>
+              <div className={extra.blockHead} style={{ color: chartColors[6] }}>
+                <span className={extra.blockDot} aria-hidden="true" />
+                <h4 className={extra.blockTitle}>Regiones</h4>
+              </div>
+              <ListaProporcion
+                items={regions}
+                accent={chartColors[6]}
+                emptyText="Sin datos regionales aún."
+              />
             </GlassCard>
-          </motion.div>
+          </Reveal>
 
-          <motion.div variants={itemVariants}>
+          <Reveal delay={0.05}>
             <GlassCard
               title="En vivo"
               subtitle={`${fmtInt(liveCount)} sesión(es) activas`}
@@ -223,25 +332,18 @@ export default function DashOrigen() {
                 )}
               </ul>
             </GlassCard>
-          </motion.div>
+          </Reveal>
 
-          <motion.div variants={itemVariants}>
+          <Reveal delay={0.1}>
             <GlassCard title="Búsquedas" subtitle="Términos más buscados">
-              <ul className={styles.miniList}>
-                {(data?.topSearches || []).length ? (
-                  (data?.topSearches || []).slice(0, 12).map((s) => (
-                    <li key={s.query}>
-                      <span className={styles.ellipsis}>{s.query}</span>
-                      <strong>{fmtInt(s.total)}</strong>
-                    </li>
-                  ))
-                ) : (
-                  <li className={styles.empty}>Sin búsquedas registradas aún.</li>
-                )}
-              </ul>
+              <ListaProporcion
+                items={searches}
+                accent={chartColors[1]}
+                emptyText="Sin búsquedas registradas aún."
+              />
             </GlassCard>
-          </motion.div>
-        </motion.div>
+          </Reveal>
+        </Reveal>
       </motion.div>
     </div>
   );

@@ -1,0 +1,170 @@
+/* =========================================================================
+   Walá Design System — Tokens "Aurora Violeta Serena"
+   -------------------------------------------------------------------------
+   Solo variables NUEVAS, con prefijo claro. NO se redefine ninguna var que
+   ya exista en src/styles/variables.css (--primary-color, --gris-*, --radio-*,
+   --transicion-*, --sombra-*, --verde-exito, etc.). Este archivo lo importa
+   globalmente el orquestador. Sin @supports: aqui solo viven los defaults de
+   :root; los fallbacks de blur (@supports) y reduced-motion van en cada
+   .module.css de componente.
+   ========================================================================= */
+
+:root {
+  /* ---------------------------------------------------------------------
+     ESCALA VIOLETA CANONICA
+     Ancla la marca. 700 = --primary-color existente (#6D28D9, NO se redefine),
+     500 = inicio del gradiente del logo, 800 = --primary-hover / fin del logo.
+     --------------------------------------------------------------------- */
+  --violet-50:  #F5F3FF;
+  --violet-100: #EDE9FE;
+  --violet-200: #DDD6FE;
+  --violet-300: #C4B5FD;
+  --violet-400: #A78BFA;
+  --violet-500: #8B5CF6; /* inicio del gradiente de marca (logo walaGradient) */
+  --violet-600: #7C3AED;
+  --violet-700: #6D28D9; /* espejo de --primary-color (referencia, no se usa para redefinir) */
+  --violet-800: #5B21B6; /* espejo de --primary-hover, fin del gradiente */
+  --violet-900: #4C1D95;
+
+  /* ---------------------------------------------------------------------
+     GRADIENTES DE MARCA
+     --------------------------------------------------------------------- */
+  /* Gradiente EXACTO del logo (walaGradient). Botones primarios, CTAs, acentos. */
+  --gradient-brand: linear-gradient(135deg, #8B5CF6 0%, #5B21B6 100%);
+  /* Variante un punto mas profunda para hover/press de superficies de marca. */
+  --gradient-brand-deep: linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%);
+
+  /* Aurora: malla de luz violeta-lavanda que vive DETRAS del vidrio, nunca en el.
+     Translucida (<14% alpha en su punto mas fuerte); el blur del glass la difumina
+     en un halo. Para fondos hero/dashboard/vitrina via AuroraBackground. */
+  --gradient-aurora:
+    radial-gradient(120% 120% at 15% 0%,   rgba(139, 92, 246, 0.14) 0%, rgba(139, 92, 246, 0) 45%),
+    radial-gradient(120% 120% at 100% 10%, rgba(167, 139, 250, 0.10) 0%, rgba(167, 139, 250, 0) 50%),
+    radial-gradient(140% 140% at 60% 100%, rgba(91, 33, 182, 0.08) 0%,  rgba(91, 33, 182, 0) 55%);
+  /* Variante "vivid": misma estructura, mas saturada y con una chispa magenta
+     contenida (energia Temu domesticada). Para AuroraBackground variant="vivid". */
+  --gradient-aurora-vivid:
+    radial-gradient(120% 120% at 12% 0%,   rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0) 48%),
+    radial-gradient(110% 110% at 88% 8%,   rgba(217, 70, 239, 0.16) 0%, rgba(217, 70, 239, 0) 46%),
+    radial-gradient(140% 140% at 65% 100%, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0) 52%);
+  /* Lavado lineal sutil para fondos de pagina grandes (premium, casi blanco). */
+  --gradient-aurora-soft: linear-gradient(160deg, #FBFAFF 0%, #F5F3FF 40%, #F8FAFC 100%);
+
+  /* Sheen: banda de luz diagonal que cruza el vidrio UNA vez (revelado/hover).
+     Se usa con translateX(-120%) -> translateX(120%). */
+  --gradient-sheen: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 70%
+  );
+
+  /* Dorado de fidelizacion (hoy hardcodeado en Header). Monedas, rachas, recompensa. */
+  --gradient-gold: linear-gradient(135deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%);
+
+  /* ---------------------------------------------------------------------
+     SUPERFICIES GLASS (formalizadas del recipe vivo de dashboard/GlassCard)
+     Tres niveles de intensidad: soft (default 90% de los casos),
+     solid (cards destacadas), intense (modales/hero).
+     --------------------------------------------------------------------- */
+  /* Fondos translucidos */
+  --glass-bg:         rgba(255, 255, 255, 0.60); /* soft / default */
+  --glass-bg-solid:   rgba(255, 255, 255, 0.68); /* cards destacadas */
+  --glass-bg-strong:  rgba(255, 255, 255, 0.72); /* modales / hero */
+  --glass-bg-tint:    rgba(245, 243, 255, 0.55); /* violet-50 translucido: glass de marca */
+
+  /* Desenfoques (incluyen saturate para avivar el color que pasa por detras) */
+  --glass-blur:       blur(18px) saturate(140%); /* soft */
+  --glass-blur-solid: blur(22px) saturate(150%); /* solid */
+  --glass-blur-deep:  blur(28px) saturate(160%); /* intense / modal sobre contenido denso */
+
+  /* Bordes translucidos (el canto de luz del cristal) */
+  --glass-border:        1px solid rgba(255, 255, 255, 0.45);
+  --glass-border-strong: 1px solid rgba(255, 255, 255, 0.60);
+  --glass-border-tint:   1px solid rgba(167, 139, 250, 0.40);
+
+  /* Sombras dobles y TENIDAS (Slate fria de elevacion + halo violeta calido).
+     Spread negativo (-12/-20px) => difusas y suaves, nunca duras. */
+  --glass-shadow:
+    0 10px 30px -12px rgba(15, 23, 42, 0.18),
+    0 2px 8px -4px rgba(109, 40, 217, 0.12);
+  --glass-shadow-lg:
+    0 24px 60px -20px rgba(15, 23, 42, 0.28),
+    0 8px 20px -10px rgba(109, 40, 217, 0.16);
+  /* Variante intense con halo violeta protagonista (modal/hero). */
+  --glass-shadow-intense:
+    0 28px 70px -22px rgba(76, 29, 149, 0.32),
+    0 8px 24px -12px rgba(15, 23, 42, 0.20);
+
+  /* Highlight superior (vidrio iluminado desde arriba) + labio de luz del canto. */
+  --glass-highlight: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  /* Inset hairline para el borde superior interno ("tallado", no plano). */
+  --glass-inset-top: inset 0 1px 0 0 rgba(255, 255, 255, 0.60);
+
+  /* ---------------------------------------------------------------------
+     SUPERFICIES GLASS OSCURAS (el footer ya insinua el modo oscuro de marca).
+     El oscuro de Wala es violeta profundo, NO gris carbon.
+     --------------------------------------------------------------------- */
+  --surface-dark:      #14121C; /* slate-violeta profundo */
+  --surface-dark-2:    #1E1B2E;
+  --glass-bg-dark:     rgba(30, 27, 46, 0.55);
+  --glass-border-dark: 1px solid rgba(167, 139, 250, 0.18);
+  --glass-shadow-dark:
+    0 24px 60px -20px rgba(0, 0, 0, 0.55),
+    0 2px 8px -4px rgba(139, 92, 246, 0.20);
+
+  /* ---------------------------------------------------------------------
+     ELEVACIONES GLASS (sistema de profundidad en 3 pasos, halo violeta).
+     Para hover/reposo de superficies interactivas.
+     --------------------------------------------------------------------- */
+  --elev-1: 0 4px 12px -4px rgba(76, 29, 149, 0.15);
+  --elev-2: 0 12px 32px -12px rgba(76, 29, 149, 0.22);
+  --elev-3: 0 24px 60px -20px rgba(76, 29, 149, 0.30);
+
+  /* ---------------------------------------------------------------------
+     ESTADOS Y ACENTOS CALIDOS (hoy hardcodeados; tokenizados aqui).
+     --------------------------------------------------------------------- */
+  --danger:        #EF4444;
+  --danger-hover:  #DC2626;
+  --danger-soft:   rgba(239, 68, 68, 0.10);
+  --warning:       #F59E0B;
+  --warning-soft:  rgba(245, 158, 11, 0.12);
+
+  /* Dorado fidelizacion (Wala Coins / Kapi Coins / rachas) */
+  --gold-500: #F59E0B;
+  --gold-600: #D97706;
+  --gold-700: #B45309;
+  --gold-soft: rgba(245, 158, 11, 0.12);
+  --gold-text: #92400E;
+
+  /* ---------------------------------------------------------------------
+     PALETA DE DATOS (espejo de CHART_COLORS, hoy hardcode en dashShared).
+     Tambien re-exportada como JS en src/theme/index.js (chartColors).
+     --------------------------------------------------------------------- */
+  --chart-1: #6D28D9;
+  --chart-2: #8B5CF6;
+  --chart-3: #A78BFA;
+  --chart-4: #C4B5FD;
+  --chart-5: #10B981;
+  --chart-6: #34D399;
+  --chart-7: #F59E0B;
+
+  /* ---------------------------------------------------------------------
+     MOVIMIENTO (fuente de verdad CSS, espejo de motion.js).
+     La curva firma ya existe en variables.css dentro de --transicion-suave;
+     aqui se expone aislada para reutilizar en transforms/keyframes propios.
+     --------------------------------------------------------------------- */
+  --ease-signature: cubic-bezier(0.16, 1, 0.3, 1); /* expo-out: arranca rapido, asienta con calma */
+  --ease-entrance:  cubic-bezier(0.22, 1, 0.36, 1); /* entradas largas / sheen / aurora */
+
+  --dur-rapida: 180ms; /* hover, toggles, feedback tactil */
+  --dur-media:  320ms; /* transiciones de estado */
+  --dur-lenta:  500ms; /* entradas de contenido */
+
+  /* Duracion del drift de la aurora (respiracion lenta) */
+  --dur-aurora: 22s;
+}
