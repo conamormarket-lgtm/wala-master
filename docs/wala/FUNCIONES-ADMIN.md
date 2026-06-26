@@ -1,0 +1,301 @@
+# FUNCIONES DEL PANEL ADMIN (`/admin`)
+
+> Referencia funcional del panel de administración de Walá (wala.pe).
+> Pensada para el dueño del negocio: explica **qué hace cada sección** y **dónde está** (su ruta).
+> Fiel al código a fecha de esta guía. Archivos de referencia:
+> `src/components/AdminLayout/AdminLayout.jsx` (el menú lateral) y `src/App.jsx` (las rutas `/admin/*`).
+
+---
+
+## Cómo está organizado el panel
+
+Al entrar a `/admin` se ve una **barra lateral izquierda** (el menú) y, a la derecha, el contenido de la sección que elijas. El menú está dividido en **grupos plegables** (puedes abrir/cerrar cada grupo haciendo clic en su título):
+
+1. **Ajustes** — solo para Super Admin.
+2. **Diseño de Tienda** — apariencia de la tienda, analítica y juegos.
+3. **Catálogo** — productos, inventario, vendedores, envíos, ofertas, etc.
+4. **Clientes y Pagos** — usuarios, métodos de pago, reclamos, referidos, etc.
+
+### Quién ve qué (permisos)
+
+El menú **se adapta al permiso** de cada administrador. Los permisos se asignan en *Ajustes → Configuración*. Resumen (de `AdminLayout.jsx` y `AdminConfiguracion.jsx`):
+
+| Permiso | Qué desbloquea |
+|---|---|
+| **Super Admin** | Acceso total, incluido el grupo *Ajustes* y poder crear otros administradores. |
+| **Diseño de Tienda** (`manage_design`) | Grupo *Diseño de Tienda*: editor visual, banners, destacados, WhatsApp, mascota, juegos, backups. |
+| **Catálogo de Productos** (`manage_products`) | Productos, categorías, colecciones, marcas, nichos, vendedores, blueprints, ofertas flash, recompensas, envíos, payouts, cliparts. |
+| **Gestión de Inventario** (`manage_inventory`) | Acceso a la tabla de *Inventario*. |
+| **Clientes y Pagos** (`manage_clients`) | Grupo *Clientes y Pagos*. |
+| **Embudos y Landing Pages** (`manage_landing_pages`) | *Landing Pages* y *Gestor de Temas*. |
+
+> El grupo *Catálogo* aparece si el admin tiene **alguno** de: productos, inventario o landing pages.
+
+---
+
+## Tabla resumen (Sección · Ruta · Qué hace)
+
+| Sección | Ruta | Qué hace |
+|---|---|---|
+| **Panel Principal** | `/admin` | Pantalla de bienvenida con accesos rápidos a las secciones más usadas. |
+| **Dashboard Analítica** | `/admin/dashboard` | Tablero de métricas (estilo liquid-glass): KPIs, tráfico por día, productos más vistos/agregados al carrito, categorías, páginas más visitadas, tags, embudo de conversión, origen/región, sesiones en vivo, búsquedas, más vendidos y **mapa de calor**. |
+| **Vista Tienda (WYSIWYG)** | `/tienda` | Abre la tienda real con el **Editor Visual** flotante para construir las páginas arrastrando módulos (Hero, carruseles, catálogo, testimonios, etc.). |
+| **Destacados** | `/admin/destacados` | Ordena qué productos salen como "destacados" en la portada. |
+| **WhatsApp** | `/admin/whatsapp` | Números y mensajes prearmados de WhatsApp (tienda, creador libre, cuenta). |
+| **Historial y Backups** | `/admin/backups` | Historial de cambios del diseño (restaurar versiones) y registro de movimientos de inventario (exportable a CSV). |
+| **Mascota** | `/admin/mascota` | Imagen de la mascota de retención (Kapi) que aparece flotando en la tienda. |
+| **La Palabra del Día (Wordle)** | `/admin/wordle` | Define la palabra del minijuego diario por fecha. |
+| **Ruleta Semanal** | `/admin/ruleta` | Premios de la ruleta y sus probabilidades. |
+| **Productos** | `/admin/productos` | Lista de productos: crear, editar, duplicar, ocultar/mostrar, eliminar, acciones masivas, exportar. |
+| **Inventario** | `/admin/inventario` | Tabla rápida para editar el stock de muchos productos a la vez. |
+| **Mockups Base** | `/admin/mockups` | Plantillas/mockups base de prendas (con variantes) para los productos personalizables. |
+| **Categorías** | `/admin/categorias` | Categorías del catálogo (con imagen y orden). |
+| **Colecciones** | `/admin/colecciones` | Colecciones del catálogo (con imagen y orden). |
+| **Nichos** | `/admin/nichos` | Nichos/tiendas temáticas (slug, comisión, imagen). |
+| **Vendedores** | `/admin/vendedores` | Vendedores del marketplace (tipo, estado, comisión, logo). |
+| **Blueprints (POD)** | `/admin/blueprints` | Plantillas de impresión bajo demanda: prenda base, costo, áreas de impresión (cm/dpi) y métodos. |
+| **Ofertas Flash** | `/admin/flash-offers` | Ofertas con descuento y cuenta regresiva + cálculo de segmentos de clientes (RFM). |
+| **Recompensas** | `/admin/recompensas` | Catálogo de recompensas canjeables con monedas. |
+| **Zonas de Envío** | `/admin/envios` | Zonas/departamentos con su costo y días estimados de entrega. |
+| **Pagos a Vendedores (Payouts)** | `/admin/payouts` | Pagos a vendedores: saldos a pagar, registrar pagos, estado. |
+| **Marcas** | `/admin/marcas` | Marcas de producto (logo, color y fondo). |
+| **Landing Pages** | `/admin/landing-pages` | Páginas de aterrizaje/embudos (slug, tema, productos enlazados con su stock). |
+| **Gestor de Temas** | `/admin/temas` | Temas visuales (CSS) que se aplican a landing pages o a toda la tienda. |
+| **Cliparts** | `/admin/cliparts` | Galería de cliparts para el editor de personalización. |
+| **Métodos de Pago** | `/admin/pagos` | Datos de Yape/Plin y WhatsApp de pagos. |
+| **Generador de Enlaces** | `/admin/generador-pagos` | Crea enlaces de cobro rápido (concepto + monto) para enviar al cliente. |
+| **Libro de Reclamaciones** | `/admin/libro-reclamaciones` | Bandeja de reclamos: ver, responder y marcar como atendidos. |
+| **Gestión de Referidos** | `/admin/referidos` | Aprobar/rechazar referidos y liberar las monedas ganadas. |
+| **Crear cuentas de pedidos** | `/admin/crear-cuentas-pedidos` | Crea cuentas de cliente automáticamente a partir de pedidos del ERP. |
+| **Usuarios y métricas** | `/admin/usuarios-analytics` | Lista de usuarios con sus métricas individuales (web/app) y reconstrucción del histórico. |
+| **Encuesta de Suscripción** | `/admin/encuestas` | Configura la encuesta de suscripción (textos, marcas, diseño). |
+| **Fechas Importantes** | `/admin/fechas-importantes` | Calendario de campañas, fechas universales, fechas de usuarios y eventos. |
+| **Retos Semanales** | `/admin/retos` | Retos semanales con recompensas y revisión de evidencias enviadas. |
+
+> **Configuración** (Ajustes) — `/admin/configuracion` — solo Super Admin. Gestiona administradores/permisos y bloqueo de páginas.
+
+> **Page Builder (Editor Visual WYSIWYG)** — se usa desde *Vista Tienda* (`/tienda`), no es un enlace propio del menú. Detalle más abajo.
+
+---
+
+# Detalle por sección
+
+## Grupo: Ajustes (solo Super Admin)
+
+### Configuración — `/admin/configuracion`
+Archivo: `src/pages/admin/AdminConfiguracion.jsx`.
+Dos pestañas:
+- **Administradores**: añadir/editar admins por correo, asignándoles los permisos de la tabla de arriba (Super Admin, Diseño, Catálogo, Inventario, Clientes y Pagos, Landing Pages).
+- **Bloqueos (locks)**: bloquear/desbloquear páginas (incluidas landing pages) para que no sean accesibles.
+
+---
+
+## Grupo: Diseño de Tienda
+
+### Panel Principal — `/admin`
+Archivo: `src/pages/AdminDashboard.jsx`.
+Es la **pantalla de inicio** del panel. Muestra un mensaje de bienvenida y una rejilla de **accesos rápidos** a: Productos, Fechas Importantes, Categorías, Colecciones, Marcas, Destacados, Cliparts, Mascota Virtual e Historial y Backups. Indica que, para editar el diseño visualmente, se use *Vista Tienda* + el Editor Visual de la barra superior.
+
+### Dashboard Analítica — `/admin/dashboard`
+Archivo: `src/pages/admin/AdminDashboard.jsx`.
+Tablero de analítica con diseño "liquid-glass" (fondo violeta con orbes y tarjetas de vidrio). Tiene un **selector de rango** (7 / 30 / 90 días) y un botón **Actualizar** (refresco manual; no recarga solo para no consumir lecturas de la base de datos). Incluye:
+- **Fila de KPIs**: Sesiones, Identidades activas, Page views y Tiempo navegado (cada uno con mini-gráfico).
+- **Tráfico por día**: gráfico de área de las visitas, con conmutador TOTAL / APP / WEB.
+- **Productos más vistos**: top 10 por vistas, con miniatura y cuántas veces se agregó al carrito.
+- **Carrito**: productos más agregados al carrito.
+- **Categorías más vistas** y **Páginas más visitadas** (landings/rutas).
+- **Tags populares**: etiquetas de los productos más vistos.
+- **Embudo de conversión**: Visitas → Al carrito → Checkout → Compras, con % de caída por paso.
+- **Origen y región**: fuentes de tráfico (UTM) y regiones.
+- **En vivo**: sesiones navegando ahora mismo (con su última página).
+- **Búsquedas**: términos más buscados.
+- **Más vendidos** (sección dedicada) y **Mapa de calor** (`HeatmapViewer`): dónde hacen clic los usuarios.
+
+### Vista Tienda (WYSIWYG) — `/tienda`
+Enlace directo a la tienda. Es la puerta de entrada al **Page Builder / Editor Visual** (ver sección "Page Builder" al final).
+
+### Destacados — `/admin/destacados`
+Archivo: `src/pages/admin/AdminDestacados.jsx`.
+Lista los productos marcados como destacados y permite **cambiar su orden** (campo de orden por producto) para decidir cómo aparecen en la portada.
+
+### WhatsApp — `/admin/whatsapp`
+Archivo: `src/pages/admin/AdminWhatsApp.jsx`.
+Configura **tres números de WhatsApp** y sus mensajes prearmados según el contexto: *Tienda* (confirmar pedido), *Creador libre* (cotizar un diseño) y *Cuenta* (ayuda). Hay un número general de respaldo.
+
+### Historial y Backups — `/admin/backups`
+Archivo: `src/pages/admin/AdminBackups.jsx`.
+Dos pestañas:
+- **Diseño**: historial de cambios del diseño de la tienda (`storeConfigLogs`) para **restaurar** una versión anterior.
+- **Inventario**: registro de cambios de stock, **exportable a CSV** (fecha, hora, usuario, producto, stock anterior y nuevo).
+
+### Mascota — `/admin/mascota`
+Archivo: `src/pages/admin/AdminMascota.jsx`.
+Define la **imagen de la mascota** (Kapi) que flota en la tienda como elemento de retención. Permite pegar una URL o subir una imagen, con vista previa.
+
+### La Palabra del Día (Wordle) — `/admin/wordle`
+Archivo: `src/pages/admin/AdminWordlePage.jsx`.
+Programa la **palabra del minijuego diario** por fecha (5 a 8 letras, solo letras; quita tildes y la guarda en mayúsculas). Lista las palabras ya programadas y permite eliminarlas.
+
+### Ruleta Semanal — `/admin/ruleta`
+Archivo: `src/pages/admin/AdminRuletaPage.jsx`.
+Gestiona los **premios de la ruleta** (nombre, tipo —ej. Monedas—, monto y **probabilidad**). Muestra la suma total de probabilidades para que cuadre el sorteo.
+
+---
+
+## Grupo: Catálogo
+
+### Productos — `/admin/productos`
+Archivo: `src/pages/Tienda/admin/AdminProductos.jsx`.
+Gestión completa del catálogo: ver en **tarjetas o tabla**, **buscar**, crear, **editar**, **duplicar**, ocultar/mostrar (visibilidad), eliminar, **acciones masivas** (selección múltiple) y **exportar** productos. Conserva borradores locales. El alta/edición abre el formulario en `/admin/productos/nuevo` o `/admin/productos/:id`.
+
+> **Editor de producto** — `/admin/productos/nuevo` y `/admin/productos/:id` (`AdminProductoFormV2.jsx`). Formulario avanzado del producto: imágenes, mockups, marca/nicho/vendedor, categorías, colecciones, tags, personajes, descripción con editor de texto enriquecido (ReactQuill), vistas de personalización (canvas con Fabric.js) y editor de combos.
+
+### Inventario — `/admin/inventario`
+Archivo: `src/pages/Tienda/admin/AdminInventario.jsx`.
+**Tabla rápida de stock**: edita el inventario de muchos productos a la vez, con **filtros** (búsqueda, categoría, colección, marca, tipo). Guarda automáticamente y registra cada cambio en el historial de inventario.
+
+### Mockups Base — `/admin/mockups`
+Archivo: `src/pages/Tienda/admin/AdminMockups.jsx`.
+Plantillas base de prendas (mockups) con **variantes**, imagen base y categoría. Son la base sobre la que se montan los productos personalizables.
+
+### Categorías — `/admin/categorias`
+Archivo: `src/pages/admin/AdminCategorias.jsx`.
+CRUD de **categorías** del catálogo: nombre, **orden** e imagen (con recorte de imagen integrado).
+
+### Colecciones — `/admin/colecciones`
+Archivo: `src/pages/admin/AdminColecciones.jsx`.
+CRUD de **colecciones** (igual que categorías: nombre, orden e imagen con recorte). Las colecciones se usan, por ejemplo, en los carruseles del Page Builder.
+
+### Nichos — `/admin/nichos`
+Archivo: `src/pages/admin/AdminNichos.jsx`.
+CRUD de **nichos** (tiendas temáticas multi-vendor): nombre, slug, tipo, **% de comisión**, orden, imagen y activo/inactivo. Cada nicho tiene su página pública en `/nicho/:slug`.
+
+### Vendedores — `/admin/vendedores`
+Archivo: `src/pages/admin/AdminVendors.jsx`.
+CRUD de **vendedores del marketplace**: nombre, nombre visible, slug, **tipo** (House, POD, Reseller, Self-fulfill), **estado** (Activo, Pendiente, Suspendido), **% de comisión** y logo.
+
+### Blueprints (POD) — `/admin/blueprints`
+Archivo: `src/pages/admin/AdminBlueprints.jsx`.
+Plantillas de **impresión bajo demanda (Print On Demand)**: prenda base, **costo base de impresión**, orden, activo, **áreas de impresión** (nombre, ancho y alto en cm, dpi) y **métodos de decoración** (ej. DTG). Son la base técnica de los productos personalizables fabricados por POD.
+
+### Ofertas Flash — `/admin/flash-offers`
+Archivo: `src/pages/admin/AdminFlashOffers.jsx`.
+Crea **ofertas relámpago**: producto, **% de descuento**, fecha de inicio y fin, orden, activo. Además calcula **segmentos de clientes (RFM)** para dirigir las ofertas a los grupos correctos.
+
+### Recompensas — `/admin/recompensas`
+Archivo: `src/pages/admin/AdminRecompensas.jsx`.
+Catálogo de **recompensas canjeables con monedas** (fidelización): título, descripción, **costo en monedas**, valor, orden y activo.
+
+### Zonas de Envío — `/admin/envios`
+Archivo: `src/pages/admin/AdminEnviosZonas.jsx`.
+CRUD de **zonas de envío**: nombre, departamento, **costo**, **días estimados de entrega**, orden y activo.
+
+### Pagos a Vendedores — `/admin/payouts`
+Archivo: `src/pages/admin/AdminPayouts.jsx`.
+**Payouts a vendedores**: muestra un **resumen de saldos** por vendedor y permite **registrar pagos** (vendedor, monto, estado —Por pagar / Pagado / Cancelado— y nota). Cierra el ciclo del marketplace junto con comisiones y sub-órdenes.
+
+### Marcas — `/admin/marcas`
+Archivo: `src/pages/admin/AdminMarcas.jsx`.
+CRUD de **marcas**: nombre, logo (subida con recorte), orden, color de fondo, imagen de fondo y opacidad. Estas marcas alimentan el módulo "Carrusel de Logos / Marcas" del Page Builder.
+
+### Landing Pages — `/admin/landing-pages` *(requiere permiso de Landing Pages)*
+Archivo: `src/pages/Tienda/admin/AdminLandingPages.jsx`.
+Crea y edita **páginas de aterrizaje / embudos**: título, **slug** (su URL), ocultar header/footer, **tema** aplicado y **productos enlazados** con su tipo de stock (global, infinito o exclusivo) y stock asignado. El contenido de cada landing se diseña con el Page Builder.
+
+### Gestor de Temas — `/admin/temas` *(requiere permiso de Landing Pages)*
+Archivo: `src/pages/Tienda/admin/AdminThemes.jsx`.
+Gestiona **temas visuales (CSS)**: crearlos manualmente (nombre, autor, CSS) o subirlos, editarlos y eliminarlos. Los temas se asignan a landing pages (o como tema global) para cambiar el aspecto sin tocar el código.
+
+### Cliparts — `/admin/cliparts`
+Archivo: `src/pages/admin/AdminCliparts.jsx`.
+Galería de **cliparts** (nombre, URL/imagen subida y categoría) que los clientes pueden usar en el editor de personalización.
+
+---
+
+## Grupo: Clientes y Pagos
+
+### Métodos de Pago — `/admin/pagos`
+Archivo: `src/pages/admin/AdminPagos.jsx`.
+Configura los **datos de cobro**: número y nombre de **Yape**, número y nombre de **Plin**, y el **WhatsApp de pagos** con su mensaje prearmado (con variables como el código de pedido y el monto).
+
+### Generador de Enlaces — `/admin/generador-pagos`
+Archivo: `src/pages/admin/AdminGeneradorPagos.jsx`.
+Crea **enlaces de cobro rápido**: ingresas concepto, moneda (PEN/USD) y monto, y genera un enlace tipo `wala.pe/pago-rapido/...` para enviar al cliente y que pague.
+
+### Libro de Reclamaciones — `/admin/libro-reclamaciones`
+Archivo: `src/pages/admin/AdminLibroReclamaciones.jsx`.
+Bandeja del **libro de reclamaciones** (obligatorio en Perú): lista los reclamos con su estado (Pendiente / Respondido), permite **filtrar**, escribir una **respuesta** y marcarlos como atendidos.
+
+### Gestión de Referidos — `/admin/referidos`
+Archivo: `src/pages/admin/AdminReferidos.jsx`.
+Revisa los **referidos**: cuando un pedido referido se entrega, el admin **aprueba** para liberar las monedas ganadas, o **rechaza** el referido.
+
+### Crear cuentas de pedidos — `/admin/crear-cuentas-pedidos`
+Archivo: `src/pages/admin/AdminCrearCuentasPedidos.jsx`.
+Herramienta para **crear cuentas de cliente automáticamente** a partir de los pedidos del ERP (toma el correo del pedido). Procesa por lotes, evita duplicados por correo y puede migrar usuarios auto-creados antiguos.
+
+### Usuarios y métricas — `/admin/usuarios-analytics`
+Archivo: `src/pages/admin/AdminUsuariosAnalyticsPage.jsx`.
+Listado de **usuarios con sus métricas individuales** (separadas en APP / WEB / Total): visitas, tiempo, compras, etc., con gráficos. Incluye la opción de **reconstruir el resumen histórico** de analítica.
+
+### Encuesta de Suscripción — `/admin/encuestas`
+Archivo: `src/pages/admin/AdminEncuestas.jsx`.
+Configura la **encuesta de suscripción** que se muestra a los clientes, por pestañas: introducción, datos básicos, marcas, pantalla final y diseño.
+
+### Fechas Importantes — `/admin/fechas-importantes`
+Archivo: `src/pages/admin/AdminFechasImportantesPage.jsx`.
+Centro de **campañas y fechas**, con un sub-menú interno de 4 vistas:
+- **Calendario Global**: vista de calendario de todas las fechas.
+- **Fechas Universales**: fechas comerciales para todos (ej. Día de la Madre).
+- **Fechas de Usuarios**: cumpleaños/aniversarios que registran los clientes.
+- **Eventos Organizables**: eventos para organizar campañas.
+
+### Retos Semanales — `/admin/retos`
+Archivo: `src/pages/admin/AdminRetos.jsx`.
+Gestiona los **retos semanales** de fidelización: crear retos (título, descripción, tipo de acción, meta, **recompensa en monedas**), activar el reto global y **revisar las evidencias** que envían los clientes (aprobar/rechazar lo pendiente).
+
+---
+
+## Page Builder — Editor Visual WYSIWYG de la tienda
+
+El **Page Builder** es el editor visual con el que se arma la apariencia de la tienda y de cada página, **arrastrando módulos**. No es un enlace propio del menú: se entra desde **Vista Tienda** (`/tienda`) y se activa el **Editor Visual** desde la barra superior de administrador.
+
+- Componente del panel flotante: `src/pages/Tienda/admin/VisualEditorPanel.jsx`.
+- Tipos de sección/módulo y sus opciones: `src/pages/Tienda/services/storefront.js`.
+
+El panel flotante (se puede arrastrar, anclar a izquierda/derecha y **previsualizar en móvil**) tiene dos pestañas: **Módulos** (las secciones de la página) y **Ajustes**. Permite añadir, reordenar (arrastrar), editar, ocultar y eliminar secciones, y guardar los cambios. En landing pages también se elige el **tema** a aplicar.
+
+> Existe además un editor más simple en `/admin/store-editor` (`AdminStoreEditor.jsx`) para el Hero principal y el layout de la grilla (columnas en PC/móvil, imagen secundaria al pasar el mouse). No está enlazado en el menú actual; el flujo recomendado es el Editor Visual descrito arriba.
+
+### Módulos disponibles (de `SECTION_TYPES`)
+
+| Módulo | Para qué sirve |
+|---|---|
+| **Banner Principal (Hero)** | Imagen/video grande con título, subtítulo y botón. |
+| **Encabezado** | Título + subtítulo de una sección. |
+| **Texto** | Bloque de texto con título y contenido. |
+| **Imagen** | Una imagen (con alt y enlace opcional). |
+| **Video** | Un video (con poster opcional). |
+| **Productos destacados** | Muestra los productos marcados como destacados. |
+| **Carrusel de colección** | Carrusel con los productos de una colección elegida. |
+| **Navegación por categorías** | Fila de accesos a las categorías. |
+| **Grid de productos simple** | Rejilla de productos (con búsqueda/orden opcional). |
+| **Catálogo con Sidebar (estilo Mercado Libre)** | Catálogo completo con barra lateral de filtros. |
+| **Barra de Anuncios Superior** | Banda de avisos rotativos (colores y velocidad configurables). |
+| **Carrusel Principal (Hero Slider)** | Carrusel de varias imágenes en la cabecera. |
+| **Íconos de Confianza (Badges)** | Fila de íconos (envío, pago seguro, etc.). |
+| **Ofertas Flash (Cuenta Regresiva)** | Sección de oferta con temporizador, sobre una colección. |
+| **Testimonios / Opiniones** | Opiniones de clientes para dar confianza. |
+| **Carrusel de Logos / Marcas** | Carrusel rotativo de logos de marcas. |
+| **Lo Más Vendido (Fila de 5)** | Fila de 5 tarjetas destacadas. |
+| **Pie de Página (Columnas/Enlaces)** | Footer configurable por columnas y enlaces. |
+| **Ubicación / Mapa** | Bloque con mapa embebido y datos de la tienda física. |
+
+---
+
+## Notas de fidelidad al código
+
+- **Hay dos "dashboards" distintos**: el **Panel Principal** (`/admin`, `src/pages/AdminDashboard.jsx`, accesos rápidos) y el **Dashboard Analítica** (`/admin/dashboard`, `src/pages/admin/AdminDashboard.jsx`, métricas).
+- **Rutas existentes que no figuran en el menú actual**: `/admin/store-editor` (editor simple del Hero/layout) y `/admin/notificaciones` (`AdminNotifications`). Funcionan por URL aunque no tengan enlace en la barra.
+- La ruta antigua `/admin/zonas` redirige a `/admin`.
+- Los enlaces del grupo *Catálogo* (Productos, Inventario, Mockups, etc.) y de *Clientes y Pagos* solo aparecen si el admin tiene el permiso correspondiente; **Marcas, Landing Pages y Gestor de Temas** están dentro del grupo Catálogo en el menú.

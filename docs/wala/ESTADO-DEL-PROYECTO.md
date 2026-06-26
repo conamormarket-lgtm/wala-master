@@ -3,47 +3,49 @@
 > Documento vivo de **estado general**. Resume qué es Wala, qué trabajo se ha hecho en esta
 > iniciativa, en qué fase estamos, qué hay realmente desplegado y qué falta. Es el punto de
 > entrada de alto nivel; el detalle vive en [PLAN-MAESTRO.md](./PLAN-MAESTRO.md),
-> [FASE-0-SEGURIDAD.md](./FASE-0-SEGURIDAD.md), [MODELO-DATOS.md](./MODELO-DATOS.md),
-> [BASELINE-PRODUCCION.md](./BASELINE-PRODUCCION.md), [DESPLIEGUE.md](./DESPLIEGUE.md) y la
+> [FASE-0-SEGURIDAD.md](./FASE-0-SEGURIDAD.md), [PLAN-SEGURIDAD-REGLAS.md](./PLAN-SEGURIDAD-REGLAS.md),
+> [MODELO-DATOS.md](./MODELO-DATOS.md), [BASELINE-PRODUCCION.md](./BASELINE-PRODUCCION.md),
+> [DESPLIEGUE.md](./DESPLIEGUE.md), [DESPLIEGUE-ESTADO.md](./DESPLIEGUE-ESTADO.md),
+> [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md), [FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md) y la
 > carpeta [`fases/`](./fases/README.md).
 >
 > **Convención de estado:** ✅ **HECHO** · 🔧 **EN PROGRESO / PARCIAL** · ⬜ **POR HACER**.
 > En lo HECHO se anota además el estado real: **cerrado**, **parcial** o **residual**.
+>
+> Para el detalle de **qué puede hacer cada quién** en la app que ya está en vivo, ver
+> [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md) (lo que ve y hace el cliente) y
+> [FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md) (lo que controla el administrador).
 
-> ## 📌 Banner de estado (actualizado 2026-06-24)
+> ## 📌 Banner de estado (actualizado 2026-06-26)
 >
-> **Fases 0, 1, 2, 2b, 3 (core + split de pago), 4 (base) y 5 (base) están HECHAS y
-> VERIFICADAS EN LOCAL** sobre el **emulador de Firebase** (proyecto `demo-wala`), en la
-> rama `fase-0-seguridad`. La verificación es **build (Vite) + emulador**, con pruebas E2E
-> de los flujos núcleo (carrito → orden multi-vendedor → subórdenes → pago simulado →
-> payouts; cofre diario; segmentación RFM).
+> **Wala ya está EN PRODUCCIÓN.** El **frontend (Vite) está en vivo en Vercel** (wala.pe, con
+> **auto-deploy desde `master`** — la rama de trabajo `fase-0-seguridad` es hoy `master`) y el
+> **backend está desplegado en el proyecto correcto y único `sistema-gestion-3b225`** (el
+> portal de la tienda y el ERP/CRM "Sistema gestión" comparten ese proyecto y su base
+> Firestore). `pruebas-cd728` quedó huérfano y **no se usa**.
 >
-> ⚠️ **Actualizado 2026-06-25 — EN PRODUCCIÓN.** El **frontend (Vite) está en vivo en Vercel**
-> (wala.pe) y el **backend ya se desplegó al proyecto CORRECTO `sistema-gestion-3b225`**:
-> **Cloud Functions ✅** (arregla el Kapi/juegos) e **índices ✅** (Wordle). **Pendiente:** secretos
-> de Functions (Culqi/ERP), **fusión** de reglas con las del ERP/CRM (NO desplegar tal cual),
-> admin claims, y re-promover el frontend `35ba2a2` (iconos/placeholders). El cobro real, la
-> búsqueda externa, el push y los schedulers siguen requiriendo servicios externos.
+> Están **hechas y desplegadas las Fases 0–5**: seguridad (claims, economía server-side),
+> plataforma Vite + multi-vendor/nicho + búsqueda con facetas, fidelización diaria
+> (misiones, racha, ledger, tiers, recompensas y canje), marketplace (subórdenes + comisión +
+> envíos + payouts + split de pago Mercado Pago), POD (blueprints + arte de producción) e
+> impulso (cofre diario + segmentación RFM + ofertas flash). Encima se sumaron la **venta
+> internacional** (documento + país + teléfono internacional, PayPal para compradores del
+> extranjero, aviso de envío 7–30 días) y un **dashboard de analítica v2 liquid-glass**
+> (`/admin/dashboard`) con heatmap, tráfico, productos más vistos/vendidos y más. El **admin
+> claim ya está asignado** y el panel `/admin` opera con normalidad.
+>
+> 🚨 **Lo más urgente que falta (seguridad — fuga de datos ACTIVA):** las **reglas vivas** de
+> Firestore estaban **100 % abiertas** (`allow read, write: if true`). Como mitigación de
+> emergencia se aplicó un **bloqueo de borrado (delete-block)**, pero **la lectura anónima de
+> datos personales (PII) sigue abierta hoy**. Las **reglas completas ya están escritas y
+> listas** (`firebase/firestore.rules.produccion`) pero **AÚN NO se han publicado**:
+> publicarlas (con respaldo y prueba en el Rules Playground) es la **prioridad #1**. Ver
+> [PLAN-SEGURIDAD-REGLAS.md](./PLAN-SEGURIDAD-REGLAS.md), §6 y §7.
 >
 > 👉 **Estado de despliegue detallado y "qué toca hacer": [DESPLIEGUE-ESTADO.md](./DESPLIEGUE-ESTADO.md).**
 >
 > **Super usuario local (solo emulador):** `admin@wala.test` / `wala1234` (admin) ·
 > `cliente@wala.test` / `wala1234` (cliente).
-
-> ## 🚨 Incidente 2026-06-25 — Deploy al proyecto equivocado
->
-> - **Frontend en producción:** el frontend nuevo (migrado a Vite) **ya está desplegado en
->   producción en Vercel**. Esto actualiza el estado previo de "nada desplegado": el web ya
->   salió a producción.
-> - **Error de topología en el backend:** hubo un **deploy al proyecto Firebase equivocado
->   (`pruebas-cd728`)**. El proyecto **correcto y ÚNICO de producción es
->   `sistema-gestion-3b225`** (portal + ERP comparten ese proyecto y su base Firestore).
->   `pruebas-cd728` **NO debe usarse**.
-> - **Pendiente:** **re-desplegar el backend** (reglas Firestore, Cloud Functions, índices) a
->   `sistema-gestion-3b225`, asegurando que las reglas cubren tanto las colecciones del portal
->   como las del ERP (`pedidos`, `pedidos_web`) y las de analytics (`analytics_*`), que viven
->   todas en ese mismo proyecto. Ver [DESPLIEGUE.md](./DESPLIEGUE.md) (topología + deploy
->   granular desde Google Cloud Shell) y [MODELO-DATOS.md](./MODELO-DATOS.md).
 
 ---
 
@@ -71,11 +73,44 @@ El diagnóstico completo (stack, capas, deuda técnica) está en
 
 ---
 
+## 1.bis Resumen en una tabla: qué está HECHO y qué está PENDIENTE
+
+Vista rápida para el dueño del negocio. El detalle está en las secciones siguientes.
+
+### ✅ Lo que ya está HECHO y EN PRODUCCIÓN
+
+| Bloque | Qué quedó funcionando | Dónde verlo |
+|--------|-----------------------|-------------|
+| **Fase 0 — Seguridad (código)** | Sin backdoor de admin; admin por *custom claims* (**ya asignado**); economía (monedas/puntos) gobernada desde el servidor, no desde el navegador; 44 tests verdes. | `/admin` (acceso con tu cuenta) |
+| **Fase 1 — Plataforma** | Migración a Vite (web más rápida); base multi-vendedor / multi-nicho; **búsqueda con facetas/filtros**; páginas de búsqueda, nicho y panel de vendedor. | `/buscar`, `/nicho/...`, catálogo |
+| **Fase 2 / 2b — Fidelización diaria** | Misiones diarias, **racha / check-in**, libro de puntos (`loyaltyLedger`), **niveles (tiers)**, catálogo de recompensas y **canje**. | Cuenta del cliente, misiones, recompensas |
+| **Fase 3 — Marketplace** | Pedido con **subórdenes por vendedor**, comisión, **envíos por zona**, **payouts** y **split de pago Mercado Pago**. | `/admin/envios`, `/admin/payouts`, panel vendedor |
+| **Fase 4 — POD (base)** | **Blueprints** (plantillas de prenda con áreas de impresión) y utilidades de **arte de producción** (resolución/DPI). | `/admin/blueprints` |
+| **Fase 5 — Impulso** | **Cofre diario**, **segmentación RFM** de clientes (VIP/activo/en riesgo/nuevo) y **ofertas flash**. | `/ofertas`, `/admin/flash-offers` |
+| **Venta internacional** | Documento + país + **teléfono internacional**, **PayPal** para compradores del extranjero, aviso de envío **7–30 días**. | Checkout |
+| **Dashboard de analítica v2** | Panel liquid-glass con **heatmap**, tráfico, **productos más vistos / más vendidos**, origen, páginas, categorías, miniaturas; lecturas optimizadas (cuota). | `/admin/dashboard` |
+| **Despliegue real** | **Frontend en Vercel** (wala.pe, auto-deploy desde `master`); **Cloud Functions** e **índices** desplegados en `sistema-gestion-3b225`. | wala.pe |
+| **Seguridad (mitigación viva)** | **Bloqueo de borrado (delete-block)** aplicado a las reglas vivas para frenar el destrozo anónimo. | Consola Firebase |
+
+### ⬜ Lo que está PENDIENTE (por prioridad)
+
+| Prioridad | Pendiente | Por qué importa |
+|-----------|-----------|-----------------|
+| **1 — CRÍTICA** | **Publicar las reglas de seguridad completas** (`firebase/firestore.rules.produccion`). | Hoy la **lectura anónima de datos personales (PII) sigue abierta**: cualquiera en internet puede leer clientes/pedidos. Es la única fuga grave que queda. |
+| **2 — Alta** | **Reestructurar el dashboard en páginas por área** (resumen, heatmap, productos, origen, páginas, categorías) con rutas propias; **arreglar el iframe de preview** (doble init de Firebase) y el **warning `willReadFrequently`** del canvas del heatmap. | El dashboard es hoy una sola página muy pesada; dividirlo lo hace usable y corrige errores de consola. |
+| **3 — Media** | **Push v2 (FCM)**, **Cloud Scheduler / cron** de segmentación y campañas, **Algolia / Typesense** (búsqueda externa), **integración del editor POD** (arte / PDF de producción), **rol `vendor` por claims** y **scoping por dueño/rol en las reglas (Fase C)**. | Son mejoras de alcance y automatización sobre lo ya construido; no bloquean la operación diaria. |
+
+El desglose completo de pendientes (incluido lo bloqueado por servicios externos) está en §7;
+los riesgos de seguridad residuales, en §6.
+
+---
+
 ## 2. Cronología del trabajo realizado en esta iniciativa
 
-Todo lo siguiente se realizó **en esta iniciativa**, en la rama `fase-0-seguridad`, y está
-**verificado en LOCAL** (no desplegado — ver §5). El orden refleja la secuencia real de
-trabajo.
+Todo lo siguiente se realizó **en esta iniciativa**, en la rama `fase-0-seguridad` (hoy
+`master`). El núcleo se construyó y **verificó en el emulador** y **ya está desplegado a
+producción** (frontend en Vercel; functions e índices en `sistema-gestion-3b225`) — ver §5
+para el estado exacto de despliegue. El orden refleja la secuencia real de trabajo.
 
 ### Paso 1 — Análisis multi-agente del repositorio *(✅ HECHO)*
 
@@ -132,10 +167,11 @@ Cuatro commits que preparan el terreno multi-vendor y la velocidad:
 - **`0f2414f`** — **cablea búsqueda / nichos / vendedor a la UI**: rutas/páginas nuevas
   `SearchPage.jsx`, `NichePage.jsx`, `VendorPanel.jsx` y su registro en `App.jsx`.
 
-### Paso 5 — Fases 2, 2b, 3, 4 y 5 sobre emulador *(✅ HECHO — verificado en LOCAL)*
+### Paso 5 — Fases 2, 2b, 3, 4 y 5 (verificadas en emulador, luego desplegadas) *(✅ HECHO)*
 
-Con la plataforma base lista, se construyó y **verificó E2E sobre el emulador `demo-wala`**
-el núcleo del marketplace y la fidelización:
+Con la plataforma base lista, se construyó y **verificó E2E sobre el emulador `demo-wala`** el
+núcleo del marketplace y la fidelización, y luego se **desplegó a producción** (functions e
+índices en `sistema-gestion-3b225`; frontend en Vercel):
 
 - **Fase 2 / 2b — Fidelización unificada (✅ base, local):** economía sobre `loyaltyLedger`,
   misiones/rachas y configuración de fidelización; consolidación en 2b.
@@ -152,24 +188,28 @@ el núcleo del marketplace y la fidelización:
   + vitrina `/ofertas`).
 
 Verificado con el super usuario local `admin@wala.test` / `wala1234` (y cliente
-`cliente@wala.test` / `wala1234`). Lo que falta para producción (cobro real, búsqueda
-externa, push, schedulers, integración de editor/checkout) está en §7.
+`cliente@wala.test` / `wala1234`), y luego **desplegado a producción**. Después se sumaron la
+**venta internacional** (commit `8191f5a`) y el **dashboard de analítica v2 liquid-glass**
+(commits `ea25a82` y `84603db`). Lo que aún falta (publicar reglas, cobro real, búsqueda
+externa, push v2, schedulers, integración editor/checkout, reestructurar el dashboard) está en §7.
 
 ---
 
 ## 3. Tabla resumen de fases (0–5)
 
-> Todo lo marcado ✅ está **verificado en LOCAL (emulador `demo-wala`)**, **no desplegado**.
+> Todo lo marcado ✅ se **verificó primero en el emulador `demo-wala`** y **ya está desplegado
+> a producción** (frontend en Vercel; Cloud Functions e índices en `sistema-gestion-3b225`).
+> Lo único que NO está publicado son las **reglas de seguridad completas** (ver §6/§7).
 
 | Fase | Objetivo | Estado | Entregables principales |
 |------|----------|--------|-------------------------|
-| **0 — Estabilización y seguridad** | Sellar dinero/puntos manipulables, eliminar backdoor, reglas reales, economía server-side. Bloqueante de todo lo demás. | ✅ **HECHO (parcial sobre 11 hallazgos)** | Commits `3d53501`, `9e84990`, `f0e4aa0`; custom claims; `firestore.rules`/`storage.rules` reescritas; CFs de economía + 44 tests; `scripts/set-admin-claims.js`. |
-| **1 — Plataforma y datos base** | Migrar CRA→Vite, introducir `vendorId`/`nicheId`/`fulfillmentType` aditivos, búsqueda y paginación. | ✅ **HECHO (búsqueda externa pendiente)** | Commits `a3c4d66`, `a652f60`, `f188260`, `0f2414f`; `vite.config.js`; servicios niches/vendors/search; `backfill-vendor-niche.js`; páginas Search/Niche/Vendor. |
-| **2 — Fidelización unificada** | Economía única sobre `loyaltyLedger`, misiones diarias, racha global, tiers/XP, push v2. | ✅ **HECHO (base, local)** | `loyaltyLedger`, misiones/rachas y configuración de fidelización verificadas en emulador. Push FCM v1 y campañas programadas pendientes (→ Fase 5 / Qué falta). |
-| **2b — Refuerzo de fidelización** | Ajustes y consolidación sobre la base de Fase 2. | ✅ **HECHO (local)** | Verificado en emulador. |
-| **3 — Marketplace multi-vendor** | Entidad `vendors` + panel, `orders`/`subOrders`, split de pago, payouts, envíos por zona. | ✅ **HECHO (core + split de pago, local)** | `createOrderWithSubordersSecure`; colecciones `orders`/`subOrders`/`shippingZones`/`payouts`; UI `/admin/envios`, `/admin/payouts`, `VendorPanel`; **split Mercado Pago Marketplace simulado** (`createCheckoutPreferenceSecure`, `confirmPaymentSecure`, `mercadoPagoWebhook`). Cobro REAL, Algolia, rol vendor por claims e integración de `CheckoutPage` pendientes. |
-| **4 — Personalizados como nicho POD** | Arte de producción real (DPI/PDF), `blueprints` reutilizables, consolidar editores. | 🔧 **PARCIAL (base, local)** | `blueprints` (CRUD `/admin/blueprints` + seed `bp-polo`); `src/utils/productionArt.js` (`pxFromCm`, `exportProductionArtPNG`, `validatePrintResolution`). Integración con `EditorPage`, PDF de producción y fix de `finalCustomizedImage` pendientes. |
-| **5 — Impulso, FOMO e inteligencia** | Cofres diarios, segmentación RFM, campañas programables, ofertas flash, antifraude. | ✅ **HECHO (base, local)** | `openDailyChestSecure` (cofre diario), `computeSegmentsSecure` (RFM solo admin), `flashOffers` (CRUD `/admin/flash-offers` + vitrina `/ofertas`). Push segmentado (FCM), campañas (Cloud Scheduler), recomendación IA y countdown en home pendientes. |
+| **0 — Estabilización y seguridad** | Sellar dinero/puntos manipulables, eliminar backdoor, reglas reales, economía server-side. Bloqueante de todo lo demás. | ✅ **HECHO (parcial; reglas sin publicar)** | Commits `3d53501`, `9e84990`, `f0e4aa0`; custom claims (**admin claim asignado**); CFs de economía + 44 tests desplegadas. ⚠️ Las **reglas completas** (`firestore.rules.produccion`) están **listas pero NO publicadas** → fuga de PII (§6/§7). |
+| **1 — Plataforma y datos base** | Migrar CRA→Vite, introducir `vendorId`/`nicheId`/`fulfillmentType` aditivos, búsqueda y paginación. | ✅ **HECHO (desplegado; búsqueda externa y backfill pendientes)** | Commits `a3c4d66`, `a652f60`, `f188260`, `0f2414f`; `vite.config.js`; servicios niches/vendors/search; páginas Search/Niche/Vendor. `backfill-vendor-niche.js` aún sin correr en prod. |
+| **2 — Fidelización unificada** | Economía única sobre `loyaltyLedger`, misiones diarias, racha global, tiers/XP, push v2. | ✅ **HECHO (desplegado)** | `loyaltyLedger`, misiones/rachas y configuración de fidelización (verificadas en emulador y desplegadas). Push v2 (FCM) y campañas programadas pendientes (→ Fase 5 / §7). |
+| **2b — Refuerzo de fidelización** | Tiers/niveles + catálogo de recompensas + canje, sobre la base de Fase 2. | ✅ **HECHO (desplegado)** | Tiers, catálogo de recompensas y canje. Verificado en emulador y desplegado. |
+| **3 — Marketplace multi-vendor** | Entidad `vendors` + panel, `orders`/`subOrders`, split de pago, payouts, envíos por zona. | ✅ **HECHO (core + split desplegados; cobro real pendiente)** | `createOrderWithSubordersSecure`; colecciones `orders`/`subOrders`/`shippingZones`/`payouts`; UI `/admin/envios`, `/admin/payouts`, `VendorPanel`; **split Mercado Pago Marketplace (simulado)** (`createCheckoutPreferenceSecure`, `confirmPaymentSecure`, `mercadoPagoWebhook`). Cobro REAL, Algolia, rol vendor por claims e integración de `CheckoutPage` pendientes. |
+| **4 — Personalizados como nicho POD** | Arte de producción real (DPI/PDF), `blueprints` reutilizables, consolidar editores. | 🔧 **PARCIAL (base desplegada)** | `blueprints` (CRUD `/admin/blueprints` + seed `bp-polo`); `src/utils/productionArt.js` (`pxFromCm`, `exportProductionArtPNG`, `validatePrintResolution`). Integración con `EditorPage`, PDF de producción y fix de `finalCustomizedImage` pendientes. |
+| **5 — Impulso, FOMO e inteligencia** | Cofres diarios, segmentación RFM, campañas programables, ofertas flash, antifraude. | ✅ **HECHO (base desplegada)** | `openDailyChestSecure` (cofre diario), `computeSegmentsSecure` (RFM solo admin), `flashOffers` (CRUD `/admin/flash-offers` + vitrina `/ofertas`). Push v2 segmentado (FCM), campañas (Cloud Scheduler), recomendación IA y countdown en home pendientes. |
 
 El detalle de cada fase está en la sección 6 del [PLAN-MAESTRO.md](./PLAN-MAESTRO.md) y en
 el índice de [`fases/`](./fases/README.md).
@@ -257,89 +297,101 @@ fidelización) se resume en §2 (Paso 5) y §3.1.
 
 ---
 
-## 5. Estado de despliegue
+## 5. Estado de despliegue (actualizado 2026-06-26)
 
-> ⚠️ **Actualización 2026-06-25 (ver incidente arriba):** el **frontend (Vite) YA está en
-> producción en Vercel**. El **backend** (reglas, functions, índices) **aún NO está bien
-> desplegado**: hubo un deploy al proyecto equivocado (`pruebas-cd728`) y queda **pendiente
-> re-desplegarlo al proyecto correcto y único de producción `sistema-gestion-3b225`** (portal
-> + ERP comparten ese proyecto y base Firestore). El texto de emulador que sigue describe el
-> estado de verificación previo del backend; tenlo en cuenta junto con esta actualización.
+> ✅ **Wala ya está en producción.** El detalle vivo y "qué toca hacer" está en
+> [DESPLIEGUE-ESTADO.md](./DESPLIEGUE-ESTADO.md); aquí va el resumen.
 
-Todo el trabajo de las fases **0, 1, 2, 2b, 3 (core + pago), 4 (base) y 5 (base)** está
-**verificado únicamente en LOCAL**, sobre el **emulador de Firebase** (proyecto demo
-`demo-wala`):
+**Topología real:** el proyecto Firebase de producción es **`sistema-gestion-3b225`** (NO
+`pruebas-cd728`, que quedó huérfano y no se usa). Es la misma base Firestore que comparte el
+**ERP/CRM "Sistema gestión"** con el portal de la tienda. La web **wala.pe** la sirve **Vercel**
+(proyecto `portal-clientes-regala-con-amor`), con **auto-deploy desde `master`**.
 
-- `vite build` ejecuta correctamente (migración Vite verificada).
-- Servidor de desarrollo en **http://localhost:3000** (`vite.config.js` → `server.port: 3000`).
-- **Emulador de Firebase (`demo-wala`)** con datos sembrados (seeds) y los flujos núcleo
-  probados **E2E**: carrito → `order` multi-vendedor → `subOrders` → pago simulado →
-  `payouts`; cofre diario; segmentación RFM.
-- **Super usuario / usuarios de prueba (solo emulador):** `admin@wala.test` / `wala1234`
-  (admin) · `cliente@wala.test` / `wala1234` (cliente).
-- Tests de economía: **44/44 verdes** (`npm run test:functions`).
+| Artefacto | Estado | Notas |
+|-----------|--------|-------|
+| **Frontend (wala.pe / Vercel)** | ✅ en vivo | Build Vite; auto-deploy desde `master`. Las variables de entorno se hornean en build (cambiar env exige Redeploy). |
+| **Cloud Functions** | ✅ desplegadas | Economía, juegos/Kapi, misiones, cofre, pedidos. Se conservaron las funciones del ERP (no se borraron). |
+| **Índices Firestore** | ✅ desplegados | Incluye el índice de Wordle. Se conservaron los del ERP/CRM. |
+| **Admin claims** | ✅ asignado | La cuenta de administrador ya tiene `admin:true`; el panel `/admin` opera. |
+| **Reglas Firestore** | ⛔ **PENDIENTE de publicar** | Las **reglas vivas siguen 100 % abiertas** salvo el **delete-block** de mitigación. Las reglas completas (`firebase/firestore.rules.produccion`) están **listas pero sin publicar** → **fuga de lectura/PII activa**. **Prioridad #1.** |
+| **Secretos de Functions** | ⬜ pendiente | Sin `MERCADOPAGO_ACCESS_TOKEN`/Culqi/ERP en este proyecto → el cobro real y algún reclamo quedan en modo simulado o *fail-closed*. |
+| **Storage** | ⏭️ omitido | Firebase Storage no activado; la app no lo usa en este proyecto. |
+
+**Cómo se verificó antes de desplegar** (sigue siendo el respaldo de calidad):
+
+- `vite build` correcto (migración Vite verificada). Dev en **http://localhost:3000**.
+- **Emulador `demo-wala`** con seeds y flujos núcleo probados **E2E**: carrito → `order`
+  multi-vendedor → `subOrders` → pago simulado → `payouts`; cofre diario; segmentación RFM.
+- Tests de economía **44/44 verdes** (`npm run test:functions`).
 - Revisión adversarial con agentes sobre los cambios de seguridad.
+- Usuarios de prueba (solo emulador): `admin@wala.test` / `wala1234` y `cliente@wala.test` / `wala1234`.
 
-Consecuencias mientras no haya acceso a Firebase:
+**Lo que aún falta cerrar en backend** (detalle en §7):
 
-- Las **reglas Firestore/Storage** reescritas en el repo **no están desplegadas**: el riesgo
-  de "reglas fantasma" (repo ≠ producción) sigue vigente hasta que se desplieguen desde el
-  repo (ver [DESPLIEGUE.md](./DESPLIEGUE.md)).
-- Las **Cloud Functions** de economía existen y pasan tests, pero **no corren en producción**;
-  la economía real sigue gobernada por lo que esté desplegado hoy.
-- Los scripts que requieren credenciales (`scripts/set-admin-claims.js`,
-  `scripts/backfill-vendor-niche.js`) **no se han ejecutado**: necesitan
-  `GOOGLE_APPLICATION_CREDENTIALS` apuntando a la cuenta de servicio de `sistema-gestion-3b225`.
-- El backfill multi-vendor/nicho **no se ha aplicado**; en runtime los productos sin
-  `vendorId`/`nicheId` se leen con los defaults de `src/constants/marketplace.js`.
-
-Secuencia de salida a producción cuando haya acceso: **respaldar** (`ops/backup/`) →
-**staging** → **desplegar** reglas/functions/hosting por separado (`ops/deploy/`,
-[DESPLIEGUE.md](./DESPLIEGUE.md)) → **verificar** → **rollback** si falla (`ops/restore/`).
+- **Publicar las reglas completas** (`firestore.rules.produccion`) fusionándolas con/validando
+  contra las del ERP, en el Rules Playground, con respaldo previo → cierra la fuga de PII.
+- **Cobro real Mercado Pago** (secretos `MERCADOPAGO_ACCESS_TOKEN`, `MP_WEBHOOK_URL`,
+  `MP_BACK_URL_BASE`) e integrar el checkout real al flujo de subórdenes/split.
+- **Backfill multi-vendor/nicho** (`scripts/backfill-vendor-niche.js`): hasta correrlo, los
+  productos sin `vendorId`/`nicheId` usan los defaults de `src/constants/marketplace.js`.
 
 ---
 
 ## 6. Riesgos residuales vigentes
 
-Estos riesgos **siguen abiertos** (residuales o parciales), aun con las fases 0–5 ya
-construidas y verificadas en emulador, y deben cerrarse **al desplegar**. Referencias al
-runbook [FASE-0-SEGURIDAD.md](./FASE-0-SEGURIDAD.md).
+Estos riesgos **siguen abiertos** (residuales o parciales), aun con las fases 0–5 ya en
+producción. El **#1 es la fuga de PII por reglas abiertas** y es lo más urgente de cerrar.
+Referencias al runbook [FASE-0-SEGURIDAD.md](./FASE-0-SEGURIDAD.md) y al plan de reglas
+[PLAN-SEGURIDAD-REGLAS.md](./PLAN-SEGURIDAD-REGLAS.md).
 
 | Riesgo | Hallazgo | Estado | Nota |
 |--------|----------|--------|------|
-| **Reglas no desplegadas (repo ≠ prod)** | H-07/H-09 | 🔧 residual | Reescritas en repo, pero sin acceso a Firebase no están en producción; el desfase real persiste hasta desplegar. |
+| **🚨 Reglas vivas abiertas — fuga de PII activa** | H-07/H-09 | ⬜ **abierto (CRÍTICO)** | Las reglas vivas de `sistema-gestion-3b225` son `allow read, write: if true`. Se aplicó un **delete-block** de mitigación (frena el borrado anónimo), pero **cualquiera en internet puede LEER clientes/pedidos/PII**. Las reglas completas (`firebase/firestore.rules.produccion`) están **listas pero sin publicar**. **Cerrar primero.** |
 | **`orders`/pedidos con `create` público** | — | ⬜ abierto | La creación de pedidos sigue abierta; debe pasar por CF con recompute de totales server-side. |
 | **`product_reviews` con `update` laxo** | — | ⬜ abierto | La actualización de reseñas no está suficientemente restringida; riesgo de manipulación de rating. |
+| **Sin scoping por dueño/rol en reglas (Fase C)** | — | 🔧 parcial | Las reglas completas listas bloquean el acceso anónimo, pero un usuario **logueado** todavía puede leer/escribir más de lo ideal. El cierre fino por dueño/rol y el rol `vendor` por claims es la Fase C. |
 | **Desync `monedas` vs `monedasActivas`** | H-06 | 🔧 parcial | La economía se movió a CF, pero la dualidad escalar (`monedas`) vs lotes TTL (`monedasActivas`) sigue; se resuelve al adoptar `loyaltyLedger` (Fase 2). |
 | **Desync `monedas` (gastable) vs `kapiCoins` (XP)** | H-06 | ⬜ abierto | El header suma ambas pero solo `monedas` se gasta; unificación pendiente (Fase 2). |
 | **Verificación real de retos/misiones** | H-04/H-06 | ⬜ abierto | Los `actionType` (compra/reseña/visita/compartir) aún no tienen emisor verificado server-side; antifraude pendiente. |
-| **PayPal capturado en cliente / precio confiado al cliente** | H-11 | 🔧 parcial | El nuevo flujo seguro **recalcula precios y comisiones server-side** (`createOrderWithSubordersSecure` / `createCheckoutPreferenceSecure`, Fase 3), pero el checkout REAL aún no está integrado y la captura/validación de pago real (Mercado Pago/PayPal) sigue pendiente de configurar. |
-| **FCM `sendToDevice` deprecado** | H-10 | ⬜ abierto | Migración a `sendEachForMulticast` (HTTP v1) pendiente (Fase 2). |
+| **PayPal capturado en cliente / precio confiado al cliente** | H-11 | 🔧 parcial | El flujo seguro **recalcula precios y comisiones server-side** (`createOrderWithSubordersSecure` / `createCheckoutPreferenceSecure`, Fase 3), pero el checkout REAL aún no está integrado y la captura/validación de pago real (Mercado Pago/PayPal) sigue pendiente de configurar. |
+| **FCM `sendToDevice` deprecado** | H-10 | ⬜ abierto | Migración a `sendEachForMulticast` (HTTP v1 / push v2) pendiente (Fase 2/5). |
 | **Password = DNI en webhook de cuentas** | H-03 | ✅ cerrado | Resuelto migrando a **magic link / set-password**; webhook con secreto y CORS restringido. |
-| **Backdoor admin / emails hardcodeados** | H-01 | ✅ cerrado | Eliminado; admin vía custom claims (`scripts/set-admin-claims.js` para bootstrap). Queda pendiente **ejecutar** el bootstrap cuando haya acceso. |
+| **Backdoor admin / emails hardcodeados** | H-01 | ✅ cerrado | Eliminado; admin vía custom claims. El **admin claim ya está asignado** en `sistema-gestion-3b225`. |
 
 ---
 
-## 7. Qué falta (bloqueado por servicios externos / despliegue)
+## 7. Qué falta (por prioridad)
 
-Lo construido en las fases 3–5 funciona **en el emulador**; lo siguiente queda pendiente
-porque depende de **acceso a Firebase, credenciales o servicios externos** que aún no están
-configurados:
+Wala ya está en producción; lo siguiente es lo que queda, ordenado por urgencia.
+
+### Prioridad 1 — Seguridad (hacer YA)
+
+| Pendiente | Fase | Por qué importa |
+|-----------|------|-----------------|
+| **🚨 Publicar las reglas de seguridad completas** (`firebase/firestore.rules.produccion`) | 0 / C | Hoy hay **fuga de PII activa**: la lectura anónima de clientes/pedidos sigue abierta. Hay que **respaldar** las reglas vivas, **fusionar/validar** con las del ERP, probar en el **Rules Playground** y publicar. Es lo único catastrófico que queda. Ver [PLAN-SEGURIDAD-REGLAS.md](./PLAN-SEGURIDAD-REGLAS.md). |
+
+### Prioridad 2 — Reestructurar el dashboard de analítica
+
+| Pendiente | Fase | Por qué importa |
+|-----------|------|-----------------|
+| **Partir el dashboard en páginas por área** (resumen, heatmap, productos, origen, páginas, categorías) con **rutas propias** | Dashboard | Hoy `/admin/dashboard` es una sola página muy pesada. Separarla por área (cada una con su ruta) la hace usable y más rápida. |
+| **Arreglar el iframe de preview del heatmap** (doble init de Firebase) | Dashboard | El preview de página dentro del `<iframe>` (en `HeatmapViewer.jsx`) carga la app de nuevo y **vuelve a inicializar Firebase** → errores en consola; hay que aislar el preview o evitar el doble init. |
+| **Quitar el warning `willReadFrequently`** del canvas del heatmap | Dashboard | El canvas que dibuja el mapa de calor (`getContext('2d')` en `HeatmapViewer.jsx`) debe crearse con `{ willReadFrequently: true }` para no ensuciar la consola y mejorar el rendimiento. |
+
+### Prioridad 3 — Alcance y automatización (sobre la base ya hecha)
 
 | Pendiente | Fase | Por qué falta |
 |-----------|------|---------------|
-| **Re-desplegar backend a producción** (reglas, functions, índices) al proyecto correcto `sistema-gestion-3b225` | Global | Hubo un deploy al proyecto equivocado (`pruebas-cd728`); el backend debe re-desplegarse a `sistema-gestion-3b225` (portal + ERP comparten proyecto y base Firestore). El frontend ya está en Vercel. Ver incidente 2026-06-25. |
-| **Cobro REAL con Mercado Pago Marketplace** | 3 | Falta configurar `MERCADOPAGO_ACCESS_TOKEN`, `MP_WEBHOOK_URL`, `MP_BACK_URL_BASE`. Hoy el split funciona en modo **simulado**. |
-| **Integrar el checkout REAL (`CheckoutPage`)** al flujo de subórdenes/split | 3 | El flujo verificado usa rutas demo (`/checkout-demo`, `/pago-demo/:orderId`); falta cablear el checkout de producción. |
-| **Búsqueda con índice externo (Algolia / Typesense)** on-write | 1 / 3 | Requiere servicio externo y credenciales; hoy la búsqueda es la capa interna. |
-| **Rol `vendor` por custom claims** | 3 | Requiere desplegar y emitir claims con credenciales de servicio. |
-| **Push segmentado (FCM HTTP v1)** | 2 / 5 | Requiere credenciales y dispositivos reales; `sendToDevice` deprecado por migrar. |
-| **Campañas programadas (Cloud Scheduler)** | 5 | Requiere infraestructura GCP desplegada. |
-| **Recomendación por IA / countdown de ofertas flash en home** | 5 | Funcionalidad de producto pendiente sobre la base ya verificada. |
-| **Integrar `productionArt` en `EditorPage`, PDF de producción, fix `finalCustomizedImage`** | 4 | Requiere trabajo en el editor/navegador; hoy existe la **base** (`blueprints` + utilidades). |
-| **Bootstrap de admin y backfill multi-vendor/nicho en prod** | 0 / 1 | `scripts/set-admin-claims.js` y `scripts/backfill-vendor-niche.js` necesitan `GOOGLE_APPLICATION_CREDENTIALS` de `sistema-gestion-3b225`. |
+| **Push v2 (FCM HTTP v1)** segmentado | 2 / 5 | `sendToDevice` está deprecado; hay que migrar a `sendEachForMulticast` y conectar dispositivos reales. |
+| **Cloud Scheduler / cron** de segmentación y campañas | 5 | Hoy la segmentación RFM (`computeSegmentsSecure`) se dispara a mano desde el panel; falta programarla y agendar campañas. |
+| **Búsqueda con índice externo (Algolia / Typesense)** on-write | 1 / 3 | Hoy la búsqueda es la capa interna; el índice externo da relevancia y escala (requiere servicio + credenciales). |
+| **Integrar el editor POD** (`productionArt` en `EditorPage`, **PDF de producción**, fix `finalCustomizedImage`) | 4 | Existe la **base** (`blueprints` + utilidades de arte); falta conectarla al editor en el navegador para generar el arte/PDF de producción. |
+| **Rol `vendor` por custom claims** + **scoping por dueño/rol en reglas (Fase C)** | 3 / C | Cierre fino de permisos: que cada vendedor vea solo lo suyo y cada usuario solo sus datos. |
+| **Cobro REAL Mercado Pago** + integrar checkout real | 3 | Configurar `MERCADOPAGO_ACCESS_TOKEN`, `MP_WEBHOOK_URL`, `MP_BACK_URL_BASE` y cablear `CheckoutPage` (hoy el split es **simulado** vía `/checkout-demo`, `/pago-demo/:orderId`). |
+| **Recomendación por IA / countdown de ofertas flash en home** | 5 | Funcionalidad de producto sobre la base ya verificada. |
+| **Backfill multi-vendor/nicho en prod** (`scripts/backfill-vendor-niche.js`) | 1 | Hasta correrlo, los productos sin `vendorId`/`nicheId` usan los defaults de `src/constants/marketplace.js`. Requiere `GOOGLE_APPLICATION_CREDENTIALS` de `sistema-gestion-3b225`. |
 
-Riesgos residuales de seguridad siguen en §6.
+Los riesgos de seguridad residuales (más allá de la fuga de reglas) siguen en §6.
 
 ---
 
@@ -358,7 +410,10 @@ npm run test:functions      # tests de economía de Cloud Functions (44/44)
 
 Scripts adicionales relevantes (`package.json`): `dev:3001` (Vite en puerto 3001),
 `deploy:firestore-rules`, `deploy:storage-rules`, `deploy:functions`, `deploy:vercel` /
-`deploy:vercel:prod` (estos de despliegue **no se usan todavía** — sin acceso a Firebase/Vercel).
+`deploy:vercel:prod`. El frontend se despliega solo (Vercel auto-deploy desde `master`); el
+deploy de backend a `sistema-gestion-3b225` se hace desde **Google Cloud Shell** (ver
+[DESPLIEGUE.md](./DESPLIEGUE.md)). Recordatorio: **nunca** desplegar `firestore:rules` sin
+fusionar/validar antes contra las reglas vivas del ERP.
 
 **Variables de entorno (`.env`):** la app sigue usando el prefijo **`REACT_APP_*`** (no se
 renombró a `VITE_*` en la migración; ver nota en `vite.config.js`). Se necesitan las claves
@@ -366,34 +421,38 @@ de Firebase del Portal (`REACT_APP_FIREBASE_*`), del ERP (`REACT_APP_ERP_FIREBAS
 pagos/Cloudinary. Sin un `.env` válido la app arranca pero no conecta a backend.
 
 Scripts con credenciales (requieren `GOOGLE_APPLICATION_CREDENTIALS` → service account de
-`sistema-gestion-3b225`; **no ejecutados aún**):
+`sistema-gestion-3b225`). El **bootstrap de admin ya se ejecutó** (el admin claim está
+asignado); el **backfill de vendor/nicho aún NO se ha corrido**:
 
 ```bash
-node scripts/set-admin-claims.js yorh001@gmail.com heyeru24@gmail.com   # bootstrap admin
-node scripts/backfill-vendor-niche.js --dry                            # simula backfill
-node scripts/backfill-vendor-niche.js                                  # aplica backfill
+node scripts/set-admin-claims.js yorh001@gmail.com heyeru24@gmail.com   # bootstrap admin (ya hecho)
+node scripts/backfill-vendor-niche.js --dry                            # simula backfill (pendiente)
+node scripts/backfill-vendor-niche.js                                  # aplica backfill (pendiente)
 ```
 
 ---
 
 ## 9. Próximos pasos
 
-El **núcleo de las fases 0–5 ya está construido y verificado en el emulador**; el siguiente
-gran salto es **salir del emulador a producción** y conectar los servicios externos (ver §7).
+Las **fases 0–5 ya están en producción**. El orden de lo que sigue es el de §7:
 
-1. **Re-desplegar el backend al proyecto correcto** `sistema-gestion-3b225` (NO `pruebas-cd728`) — el deploy se hace desde Google Cloud Shell (ya autenticado). Ver incidente 2026-06-25 y [DESPLIEGUE.md](./DESPLIEGUE.md).
-2. **Respaldar producción** con `ops/backup/` y fijar el baseline
-   ([BASELINE-PRODUCCION.md](./BASELINE-PRODUCCION.md)).
-3. **Desplegar a staging y luego a prod** (reglas → functions → hosting, una pieza a la vez,
-   [DESPLIEGUE.md](./DESPLIEGUE.md)); **ejecutar el bootstrap de admin** y verificar que las
-   reglas desplegadas coinciden con el repo (cierra el riesgo de reglas fantasma).
-4. **Cerrar residuales de Fase 0**: `orders create` público, `product_reviews update`,
-   FCM v1, PayPal/precio server-side.
-5. **Activar el cobro REAL (Fase 3):** configurar `MERCADOPAGO_ACCESS_TOKEN`,
+1. **🚨 Publicar las reglas de seguridad completas** (`firebase/firestore.rules.produccion`):
+   respaldar las reglas vivas → fusionar/validar con las del ERP → probar en el Rules
+   Playground → publicar → verificar portal **y** CRM. **Cierra la fuga de PII (lo más urgente).**
+   Ver [PLAN-SEGURIDAD-REGLAS.md](./PLAN-SEGURIDAD-REGLAS.md).
+2. **Reestructurar el dashboard** en páginas por área con rutas propias (resumen, heatmap,
+   productos, origen, páginas, categorías); **arreglar el iframe de preview** (doble init de
+   Firebase) y el **warning `willReadFrequently`** del canvas del heatmap.
+3. **Cerrar residuales de Fase 0**: `orders create` público, `product_reviews update`,
+   PayPal/precio server-side.
+4. **Activar el cobro REAL (Fase 3):** configurar `MERCADOPAGO_ACCESS_TOKEN`,
    `MP_WEBHOOK_URL`, `MP_BACK_URL_BASE` e integrar `CheckoutPage` al flujo de subórdenes/split.
-6. **Conectar servicios externos:** índice de búsqueda (Algolia/Typesense), push FCM v1,
-   Cloud Scheduler para campañas; ejecutar `backfill-vendor-niche.js` y emitir el rol `vendor`.
-7. **Cerrar Fase 4:** integrar `productionArt` en `EditorPage`, generar el PDF de producción
+5. **Conectar servicios externos y automatización:** push v2 (FCM HTTP v1), Cloud Scheduler /
+   cron para segmentación y campañas, índice de búsqueda (Algolia/Typesense); ejecutar
+   `backfill-vendor-niche.js` y emitir el rol `vendor`; scoping por dueño/rol en reglas (Fase C).
+6. **Cerrar Fase 4:** integrar `productionArt` en `EditorPage`, generar el PDF de producción
    y arreglar `finalCustomizedImage`.
 
-Ver roadmap completo y decisiones técnicas en [PLAN-MAESTRO.md](./PLAN-MAESTRO.md).
+Ver roadmap completo y decisiones técnicas en [PLAN-MAESTRO.md](./PLAN-MAESTRO.md); el detalle
+de funciones por usuario, en [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md) y
+[FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md).
