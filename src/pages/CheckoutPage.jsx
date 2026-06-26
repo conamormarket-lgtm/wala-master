@@ -12,6 +12,7 @@ import { createWebOrder } from '../services/erp/firebase';
 import { markItemAsGifted } from '../services/wishlist';
 import { validateDNI } from '../utils/helpers';
 import { detectCountry } from '../services/geo';
+import { trackCheckoutStart, trackPurchaseComplete } from '../services/analytics/tracker';
 import CountrySelect from '../components/intl/CountrySelect';
 import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import Button from '../components/common/Button';
@@ -678,6 +679,65 @@ const CheckoutPage = () => {
 
   const { setFieldValue } = formik;
 
+  // ── Analytics: contexto de usuario reutilizable para los eventos del embudo ──
+  const analyticsUserCtx = React.useMemo(
+    () =>
+      user?.uid
+        ? { uid: user.uid, email: user.email, displayName: user.displayName }
+        : {},
+    [user?.uid, user?.email, user?.displayName]
+  );
+
+  // ── Analytics: emitir checkout_start una sola vez al montar (si hay ítems) ──
+  // Envuelto en try/catch y .catch(); nunca debe afectar el checkout.
+  const checkoutStartSentRef = useRef(false);
+  useEffect(() => {
+    if (checkoutStartSentRef.current) return;
+    if (!items || items.length === 0) return;
+    checkoutStartSentRef.current = true;
+    try {
+      trackCheckoutStart(
+        {
+          totalCents: Math.round((getTotalPrice() || 0) * 100),
+          itemsCount: items.reduce((acc, i) => acc + (i.quantity || 1), 0),
+          currency: 'PEN',
+        },
+        analyticsUserCtx
+      ).catch(() => {});
+    } catch (_e) {
+      // Tracking nunca debe afectar la experiencia de compra.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length]);
+
+  // ── Analytics: emitir purchase_complete al confirmar el pedido ──────────────
+  // Se invoca en el onSuccess de Culqi/PayPal y al confirmar por WhatsApp.
+  // Captura los datos ANTES de clearCart() (que vacía el carrito). Idempotente.
+  const purchaseSentRef = useRef(false);
+  const emitPurchaseComplete = React.useCallback(
+    (method) => {
+      if (purchaseSentRef.current) return;
+      purchaseSentRef.current = true;
+      try {
+        const orderTotal = paymentStepData?.montoDeuda ?? total;
+        trackPurchaseComplete(
+          {
+            orderId: paymentStepData?.id || null,
+            total: orderTotal,
+            totalCents: Math.round((orderTotal || 0) * 100),
+            itemsCount: items.reduce((acc, i) => acc + (i.quantity || 1), 0),
+            method,
+            currency: 'PEN',
+          },
+          analyticsUserCtx
+        ).catch(() => {});
+      } catch (_e) {
+        // Tracking nunca debe afectar la confirmación del pedido.
+      }
+    },
+    [paymentStepData, total, items, analyticsUserCtx]
+  );
+
   // ── Autodetección de país (solo si el usuario NO ha tocado el selector y no hay país en perfil) ──
   // No pisa la elección manual del usuario ni un país ya cargado desde el perfil/invitado.
   useEffect(() => {
@@ -738,6 +798,7 @@ const CheckoutPage = () => {
                     <CulqiCustomCheckout
                       pedido={paymentStepData}
                       onSuccess={() => {
+                        emitPurchaseComplete('culqi');
                         clearCart();
                         navigate('/cuenta/pedidos');
                       }}
@@ -747,6 +808,7 @@ const CheckoutPage = () => {
 
                     <Button
                       onClick={() => {
+                        emitPurchaseComplete('whatsapp');
                         window.open(paymentStepData.waLink, '_blank');
                         clearCart();
                         navigate('/cuenta/pedidos');
@@ -763,6 +825,7 @@ const CheckoutPage = () => {
                     <PaypalCheckout
                       pedido={paymentStepData}
                       onSuccess={() => {
+                        emitPurchaseComplete('paypal');
                         clearCart();
                         navigate('/cuenta/pedidos');
                       }}
@@ -772,6 +835,7 @@ const CheckoutPage = () => {
 
                     <Button
                       onClick={() => {
+                        emitPurchaseComplete('whatsapp');
                         window.open(paymentStepData.waLink, '_blank');
                         clearCart();
                         navigate('/cuenta/pedidos');

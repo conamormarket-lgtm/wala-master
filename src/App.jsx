@@ -72,6 +72,7 @@ const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
 const EditorPage = lazy(() => import('./pages/EditorPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminDashboardAnalytics = lazy(() => import('./pages/admin/AdminDashboard'));
 
 // ── Admin pages ───────────────────────────────────────────────────────────────
 const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'));
@@ -244,6 +245,7 @@ function App() {
                         <Route path="/admin" element={<AdminRoute />}>
                           <Route element={<AdminLayout />}>
                             <Route index element={<AdminDashboard />} />
+                            <Route path="dashboard" element={<AdminDashboardAnalytics />} />
                             <Route path="productos" element={<AdminProductos />} />
                             <Route path="inventario" element={<AdminInventario />} />
                             <Route path="mockups" element={<AdminMockups />} />

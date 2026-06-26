@@ -4,6 +4,7 @@ import { onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { erpDb } from '../services/erp/firebase';
 import { db, auth } from '../services/firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
+import { trackAddToCart } from '../services/analytics/tracker';
 
 const CartContext = createContext();
 
@@ -175,6 +176,31 @@ export const CartProvider = ({ children }) => {
         comboSubProductsData: comboData?.subProductsData || {},
       })
     };
+
+    // ── Analytics: emitir evento add_to_cart (embudo) ─────────────────────
+    // No bloquea ni rompe el flujo del carrito: cualquier error se ignora.
+    try {
+      const unitPrice = customization?.finalPrice || itemPrice || 0;
+      trackAddToCart(
+        {
+          productId: product.id,
+          name: product.name,
+          price: unitPrice,
+          qty: quantity,
+          totalCents: Math.round(unitPrice * quantity * 100),
+          currency: 'PEN',
+        },
+        auth?.currentUser
+          ? {
+              uid: auth.currentUser.uid,
+              email: auth.currentUser.email,
+              displayName: auth.currentUser.displayName,
+            }
+          : {}
+      ).catch(() => {});
+    } catch (_e) {
+      // Tracking nunca debe afectar la experiencia de compra.
+    }
 
     setItems(prev => {
       const sameVariant = (a, b) =>

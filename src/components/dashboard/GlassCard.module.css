@@ -1,0 +1,83 @@
+.card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radio-grande, 24px);
+  box-shadow:
+    0 10px 30px -12px rgba(15, 23, 42, 0.18),
+    0 2px 8px -4px rgba(109, 40, 217, 0.12);
+  padding: 1.25rem 1.35rem;
+  overflow: hidden;
+  transition: var(--transicion-suave, all 0.4s cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* Highlight superior translucido (efecto vidrio iluminado) */
+.highlight {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 60%;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-radius: var(--radio-grande, 24px) var(--radio-grande, 24px) 0 0;
+  opacity: 0.7;
+}
+
+.header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.headTexts {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.body {
+  position: relative;
+  z-index: 1;
+}
+
+/* Fallback opaco para navegadores/Capacitor sin soporte de blur */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card {
+    background: #ffffff;
+    border-color: var(--gris-borde, #e2e8f0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}

@@ -79,6 +79,12 @@ const AdminLayout = () => {
               >
                 Panel Principal
               </NavLink>
+              <NavLink
+                to="/admin/dashboard"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                📊 Dashboard Analítica
+              </NavLink>
               <a
                 href="/tienda"
                 className={getLinkClass(false, 'diseno')}
