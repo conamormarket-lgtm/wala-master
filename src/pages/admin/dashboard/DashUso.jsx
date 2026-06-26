@@ -100,6 +100,29 @@ export default function DashUso() {
   /* ----- Áreas más usadas (CompareBars con deriveAppUsage) ----- */
   const appUsage = useMemo(() => deriveAppUsage(data?.topRoutesByViews), [data?.topRoutesByViews]);
 
+  /* ----- Uso de funciones (datos PRECISOS en vivo) -----
+   * getGlobalAnalytics ahora expone featureUsage: [{ area, total }] con áreas
+   * funcionales (editor, minijuegos, misiones, wishlist, búsqueda) contadas a
+   * partir de eventos reales. Mapeamos las claves internas a etiquetas legibles.
+   * Si viene vacío/undefined el bloque no se renderiza (aditivo, sin romper). */
+  const FEATURE_LABELS = {
+    editor: 'Editor de prendas',
+    minijuegos: 'Minijuegos',
+    misiones: 'Misiones',
+    wishlist: 'Lista de deseos',
+    busqueda: 'Búsqueda',
+  };
+  const featureUsage = useMemo(() => {
+    const list = Array.isArray(data?.featureUsage) ? data.featureUsage : [];
+    return list
+      .map((f) => ({
+        area: FEATURE_LABELS[f?.area] || f?.area || null,
+        views: Number(f?.total) || 0,
+      }))
+      .filter((f) => f.area && f.views > 0)
+      .sort((a, b) => b.views - a.views);
+  }, [data?.featureUsage]);
+
   /* ----- Ranking: rutas más visitadas ----- */
   const routesByViews = useMemo(
     () =>
@@ -176,6 +199,28 @@ export default function DashUso() {
             />
           </GlassCard>
         </motion.div>
+
+        {/* (2b) Uso de funciones (datos PRECISOS en vivo) — solo si hay datos.
+            Complementa "Áreas más usadas" (por ruta) con la adopción real de
+            funciones clave. Si featureUsage está vacío no se renderiza nada. */}
+        {featureUsage.length > 0 && (
+          <motion.div variants={itemVariants}>
+            <GlassCard
+              title="Uso de funciones"
+              subtitle="Adopción de funciones clave · datos en vivo"
+            >
+              <CompareBars
+                data={featureUsage}
+                nameKey="area"
+                valueKey="views"
+                color="#8B5CF6"
+                max={8}
+                formatValue={(v) => fmtInt(v)}
+                emptyText="Aún sin uso registrado de estas funciones."
+              />
+            </GlassCard>
+          </motion.div>
+        )}
 
         {/* (3) Rankings: rutas más visitadas + mayor permanencia */}
         <motion.div className={styles.grid2} variants={containerVariants}>

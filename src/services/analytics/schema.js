@@ -17,6 +17,17 @@ export const ANALYTICS_EVENT_TYPES = {
   SEARCH_QUERY: 'search_query',
   SCROLL_DEPTH: 'scroll_depth',
   BANNER_CLICK: 'banner_click',
+  // Eventos de navegacion por categoria/coleccion
+  CATEGORY_VIEW: 'category_view',
+  COLLECTION_VIEW: 'collection_view',
+  // Eventos del editor de prendas
+  EDITOR_OPEN: 'editor_open',
+  EDITOR_SAVE: 'editor_save',
+  // Eventos de gamificacion / fidelizacion
+  MINIGAME_START: 'minigame_start',
+  MINIGAME_COMPLETE: 'minigame_complete',
+  MISSION_COMPLETE: 'mission_complete',
+  WISHLIST_ADD: 'wishlist_add',
 };
 
 export const ANALYTICS_KEYS = {

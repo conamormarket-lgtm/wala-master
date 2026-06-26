@@ -720,12 +720,23 @@ const CheckoutPage = () => {
       purchaseSentRef.current = true;
       try {
         const orderTotal = paymentStepData?.montoDeuda ?? total;
+        // ── Detalle por ítem del carrito (aditivo): solo se añaden los campos
+        // que el ítem realmente tenga; los IDs ausentes se omiten (no se inventan). ──
+        const purchaseItems = items.map((i) => ({
+          productId: i.productId,
+          qty: i.quantity || 1,
+          price: i.customization?.finalPrice || i.price || 0,
+          ...(i.categoryId && { categoryId: i.categoryId }),
+          ...(i.lineaProducto && { lineaProducto: i.lineaProducto }),
+          ...((i.lineId ?? i.lineaProducto) && { lineId: i.lineId ?? i.lineaProducto }),
+        }));
         trackPurchaseComplete(
           {
             orderId: paymentStepData?.id || null,
             total: orderTotal,
             totalCents: Math.round((orderTotal || 0) * 100),
             itemsCount: items.reduce((acc, i) => acc + (i.quantity || 1), 0),
+            items: purchaseItems,
             method,
             currency: 'PEN',
           },

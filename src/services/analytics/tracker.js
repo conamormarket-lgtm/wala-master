@@ -331,3 +331,133 @@ export async function trackBannerClick(bannerId, userCtx = {}) {
     eventData: { bannerId }
   });
 }
+
+export async function trackCategoryView(categoryInfo = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.CATEGORY_VIEW,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: categoryInfo // Esperado: { categoryId, categoryName }
+  });
+}
+
+export async function trackCollectionView(collectionInfo = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.COLLECTION_VIEW,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: collectionInfo // Esperado: { collectionId, collectionName }
+  });
+}
+
+export async function trackEditorOpen(editorInfo = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.EDITOR_OPEN,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: editorInfo // Esperado: { productId, editorType }
+  });
+}
+
+export async function trackEditorSave(editorInfo = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.EDITOR_SAVE,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: editorInfo // Esperado: { productId, editorType }
+  });
+}
+
+export async function trackMinigame(type, gameInfo = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  // Selecciona el tipo de evento segun 'type' (start o complete)
+  const eventType = type === 'complete'
+    ? ANALYTICS_EVENT_TYPES.MINIGAME_COMPLETE
+    : ANALYTICS_EVENT_TYPES.MINIGAME_START;
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: eventType,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: gameInfo // Esperado: { gameId, gameName, ... }
+  });
+}
+
+export async function trackMissionComplete(missionInfo = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.MISSION_COMPLETE,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: missionInfo // Esperado: { missionId, missionName, coins }
+  });
+}
+
+export async function trackWishlist(wishlistInfo = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.WISHLIST_ADD,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: wishlistInfo // Esperado: { action, productId, categoryId }
+  });
+}

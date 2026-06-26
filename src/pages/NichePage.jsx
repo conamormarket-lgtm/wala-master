@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { searchCatalog } from '../services/search';
 import { getNiches } from '../services/niches';
 import { getCategories } from '../services/products';
 import ProductCard from './Tienda/components/ProductCard/ProductCard';
+import { useAuth } from '../contexts/AuthContext';
+import { trackCollectionView } from '../services/analytics/tracker';
 
 // Página de NICHO (Fase 1): /nicho/:slug. Filtra el catálogo por nicheId usando
 // searchCatalog. El slug se usa como nicheId; si existe un doc en 'niches' con ese
@@ -18,8 +20,24 @@ const NichePage = () => {
   const [categories, setCategories] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => { getCategories().then((r) => setCategories(r.data || [])); }, []);
+
+  // Analytics aditivo (fire-and-forget): registra la vista de la colección/nicho al montar.
+  // El nicho funciona como agrupación tipo colección; se usa su id/slug y nombre reales.
+  // Guard por slug: se emite UNA sola vez por nicho (evita duplicar collection_view en re-render).
+  const trackedSlugRef = useRef(null);
+  useEffect(() => {
+    if (!slug || trackedSlugRef.current === slug) return;
+    trackedSlugRef.current = slug;
+    try {
+      trackCollectionView(
+        { collectionId: niche?.id || slug, collectionName: niche?.name || slug },
+        { uid: user?.uid, email: user?.email, displayName: user?.displayName }
+      ).catch(() => {});
+    } catch {}
+  }, [slug, niche, user]);
 
   useEffect(() => {
     getNiches().then((r) => {

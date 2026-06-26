@@ -15,6 +15,7 @@ import Button from '../components/common/Button';
 import Modal from '../components/common/Modal/Modal';
 import DraggableContainer from '../components/common/DraggableContainer/DraggableContainer';
 import { useImagePreloader } from '../components/common/OptimizedImage/OptimizedImage';
+import { trackEditorOpen } from '../services/analytics/tracker';
 import styles from './EditorPage.module.css';
 
 const DEFAULT_VIEW_ID = 'default';
@@ -147,6 +148,20 @@ const EditorPage = () => {
   }, []);
 
   const isCombo = isComboProduct(product || {});
+
+  // Analytics aditivo (fire-and-forget): registra la apertura del editor.
+  // Se dispara una sola vez cuando el producto está disponible (para conocer si es combo).
+  const editorOpenTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!product || editorOpenTrackedRef.current) return;
+    editorOpenTrackedRef.current = true;
+    try {
+      trackEditorOpen(
+        { productId: product?.id || id, editorType: isCombo ? 'combo' : 'single' },
+        { uid: user?.uid, email: user?.email, displayName: user?.displayName }
+      ).catch(() => {});
+    } catch {}
+  }, [product, id, isCombo, user]);
 
   const hasUnsavedLayers = useMemo(() => {
     let hasAnyLayer = false;

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRuletaPrizes, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
+import { trackMinigame } from '../../services/analytics/tracker';
 import styles from './RuletaPage.module.css';
 
 const RuletaPage = () => {
@@ -29,6 +30,15 @@ const RuletaPage = () => {
       setLoading(false);
     };
     fetchPrizes();
+  }, []);
+
+  // Analytics aditivo (fire-and-forget): inicio del minijuego de ruleta al montar.
+  useEffect(() => {
+    try {
+      trackMinigame('start', { gameId: 'ruleta', gameName: 'Ruleta Semanal' },
+        { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const { isUnlocked, hasLost } = getRuletaEligibility(userProfile);
@@ -70,6 +80,12 @@ const RuletaPage = () => {
     setTimeout(() => {
       setSpinning(false);
       setResult(winningPrize);
+      // Analytics aditivo (fire-and-forget): fin del minijuego de ruleta con el premio obtenido.
+      try {
+        trackMinigame('complete',
+          { gameId: 'ruleta', gameName: 'Ruleta Semanal', prizeId: winningPrize?.id, prizeName: winningPrize?.name },
+          { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
+      } catch {}
       // Disparar confeti/kapi-coins
       if (winningPrize.type === 'Monedas') {
         window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: Number(winningPrize.amount) } }));

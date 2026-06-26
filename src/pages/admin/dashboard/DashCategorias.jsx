@@ -104,14 +104,44 @@ export default function DashCategorias() {
     return deriveLinesViewed(enriched).filter((l) => l.name !== 'Sin categoría');
   }, [topProducts, thumbs]);
 
-  const viewedDonut = useMemo(
-    () => linesViewed.map((l) => ({ name: l.name, value: l.views })),
-    [linesViewed]
-  );
+  /* ----- categorías más VISTAS desde datos PRECISOS (analítica en vivo) -----
+   * getGlobalAnalytics ahora expone topCategoriesByViews: [{ id, name, total }]
+   * contando eventos reales de vista. Si llega con elementos lo usamos como
+   * fuente principal; si está vacío (aún sin datos), caemos al cálculo
+   * aproximado vía deriveLinesViewed para no romper ni mostrar vacío. */
+  const liveCategories = useMemo(() => {
+    const list = Array.isArray(data?.topCategoriesByViews) ? data.topCategoriesByViews : [];
+    return list
+      .map((c) => ({ name: c?.name || c?.id || null, value: Number(c?.total) || 0 }))
+      .filter((c) => c.name && c.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+  }, [data?.topCategoriesByViews]);
+
+  // ¿Tenemos datos precisos en vivo? Si no, usamos el donut aproximado.
+  const usingLiveCategories = liveCategories.length > 0;
+
+  const viewedDonut = useMemo(() => {
+    if (usingLiveCategories) return liveCategories;
+    return linesViewed.map((l) => ({ name: l.name, value: l.views }));
+  }, [usingLiveCategories, liveCategories, linesViewed]);
+
   const totalViewsLines = useMemo(
-    () => linesViewed.reduce((acc, l) => acc + (l.views || 0), 0),
-    [linesViewed]
+    () => viewedDonut.reduce((acc, l) => acc + (Number(l.value) || 0), 0),
+    [viewedDonut]
   );
+
+  /* ----- colecciones más VISTAS desde datos PRECISOS (analítica en vivo) -----
+   * getGlobalAnalytics expone topCollectionsByViews: [{ id, name, total }].
+   * Solo se renderiza el bloque si hay datos (tolera vacío/undefined). */
+  const liveCollections = useMemo(() => {
+    const list = Array.isArray(data?.topCollectionsByViews) ? data.topCollectionsByViews : [];
+    return list
+      .map((c) => ({ name: c?.name || c?.id || null, value: Number(c?.total) || 0 }))
+      .filter((c) => c.name && c.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+  }, [data?.topCollectionsByViews]);
 
   /* ----- líneas más VENDIDAS (ERP, getTopSelling().topLines) ----- */
   const linesSold = useMemo(() => {
@@ -287,7 +317,11 @@ export default function DashCategorias() {
           <motion.div variants={itemVariants}>
             <GlassCard
               title="Líneas más vistas"
-              subtitle="Categorías por vistas de producto (analítica)"
+              subtitle={
+                usingLiveCategories
+                  ? 'Categorías por vistas reales · datos en vivo'
+                  : 'Categorías por vistas de producto · aproximado'
+              }
             >
               <Reveal>
                 <Donut
@@ -302,7 +336,9 @@ export default function DashCategorias() {
               </Reveal>
               {totalViewsLines > 0 && (
                 <div className={extra.lineFoot}>
-                  <span className={extra.lineFootLabel}>Total de vistas en líneas</span>
+                  <span className={extra.lineFootLabel}>
+                    {usingLiveCategories ? 'Vistas registradas (en vivo)' : 'Total de vistas en líneas'}
+                  </span>
                   <span className={extra.lineFootValue}>{fmtInt(totalViewsLines)}</span>
                 </div>
               )}
@@ -340,6 +376,29 @@ export default function DashCategorias() {
             </GlassCard>
           </motion.div>
         </motion.div>
+
+        {/* Colecciones más vistas (datos PRECISOS en vivo) — solo si hay datos.
+            Bloque aditivo: si topCollectionsByViews viene vacío no se renderiza
+            nada, evitando tarjetas huérfanas mientras no haya eventos. */}
+        {liveCollections.length > 0 && (
+          <motion.div variants={itemVariants}>
+            <GlassCard
+              title="Colecciones más vistas"
+              subtitle="Colecciones por vistas reales · datos en vivo"
+            >
+              <Reveal>
+                <CompareBars
+                  data={liveCollections}
+                  nameKey="name"
+                  valueKey="value"
+                  formatValue={fmtInt}
+                  max={8}
+                  emptyText="Aún sin vistas de colecciones registradas."
+                />
+              </Reveal>
+            </GlassCard>
+          </motion.div>
+        )}
 
         {/* Conversión por línea: Vistas | Ventas | Conv% */}
         <motion.div variants={itemVariants}>

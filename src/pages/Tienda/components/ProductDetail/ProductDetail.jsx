@@ -251,7 +251,13 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
         productId: product.id,
         name: product.name,
         category: getCategory(product, categories),
-        isCombo: isCombo
+        isCombo: isCombo,
+        // ── Enriquecimiento aditivo: solo se incluyen los IDs que el producto
+        // realmente tenga (se omiten si son undefined; no se inventan). ──
+        ...(product.categoryId && { categoryId: product.categoryId }),
+        ...(product.collectionId && { collectionId: product.collectionId }),
+        ...(product.lineaProducto && { lineaProducto: product.lineaProducto }),
+        ...(product.brandId && { brandId: product.brandId }),
       }, user).catch(console.error);
     }
   }, [product?.id, categories, isCombo, user]);

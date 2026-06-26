@@ -206,6 +206,96 @@ function aggregateTopProducts(events = []) {
     .slice(0, 10);
 }
 
+// Top categorias por vistas: cuenta eventos que llevan categoryId/categoryName
+// en eventData. Se nutre de PRODUCT_VIEW, CATEGORY_VIEW y ADD_TO_CART.
+// Tolera la ausencia de estos campos (devuelve [] si no hay datos).
+function aggregateTopCategories(events = []) {
+  const RELEVANT = new Set([
+    ANALYTICS_EVENT_TYPES.PRODUCT_VIEW,
+    ANALYTICS_EVENT_TYPES.CATEGORY_VIEW,
+    ANALYTICS_EVENT_TYPES.ADD_TO_CART,
+  ]);
+  const byCategory = new Map();
+  events.forEach((ev) => {
+    if (!RELEVANT.has(ev.type)) return;
+    const id = ev.eventData?.categoryId;
+    const name = ev.eventData?.categoryName;
+    // Solo agregamos si hay un identificador o un nombre de categoria.
+    const key = id || name;
+    if (!key) return;
+    if (!byCategory.has(key)) byCategory.set(key, { id: id || null, name: name || id || null, total: 0 });
+    byCategory.get(key).total++;
+    // Si llega un nombre legible mas tarde, lo conservamos.
+    if (name && !byCategory.get(key).name) byCategory.get(key).name = name;
+  });
+  return [...byCategory.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+}
+
+// Top colecciones por vistas: cuenta eventos con collectionId/collectionName.
+// Se nutre de COLLECTION_VIEW y PRODUCT_VIEW. Tolera ausencia de campos.
+function aggregateTopCollections(events = []) {
+  const RELEVANT = new Set([
+    ANALYTICS_EVENT_TYPES.COLLECTION_VIEW,
+    ANALYTICS_EVENT_TYPES.PRODUCT_VIEW,
+  ]);
+  const byCollection = new Map();
+  events.forEach((ev) => {
+    if (!RELEVANT.has(ev.type)) return;
+    const id = ev.eventData?.collectionId;
+    const name = ev.eventData?.collectionName;
+    const key = id || name;
+    if (!key) return;
+    if (!byCollection.has(key)) byCollection.set(key, { id: id || null, name: name || id || null, total: 0 });
+    byCollection.get(key).total++;
+    if (name && !byCollection.get(key).name) byCollection.get(key).name = name;
+  });
+  return [...byCollection.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+}
+
+// Uso de funcionalidades: agrupa eventos por area funcional para medir adopcion.
+// editor (EDITOR_OPEN/SAVE), minijuegos (MINIGAME_*), misiones (MISSION_COMPLETE),
+// wishlist (WISHLIST_ADD) y busqueda (SEARCH_QUERY). Devuelve solo areas con uso > 0.
+function aggregateFeatureUsage(events = []) {
+  const counters = {
+    editor: 0,
+    minijuegos: 0,
+    misiones: 0,
+    wishlist: 0,
+    busqueda: 0,
+  };
+  events.forEach((ev) => {
+    switch (ev.type) {
+      case ANALYTICS_EVENT_TYPES.EDITOR_OPEN:
+      case ANALYTICS_EVENT_TYPES.EDITOR_SAVE:
+        counters.editor++;
+        break;
+      case ANALYTICS_EVENT_TYPES.MINIGAME_START:
+      case ANALYTICS_EVENT_TYPES.MINIGAME_COMPLETE:
+        counters.minijuegos++;
+        break;
+      case ANALYTICS_EVENT_TYPES.MISSION_COMPLETE:
+        counters.misiones++;
+        break;
+      case ANALYTICS_EVENT_TYPES.WISHLIST_ADD:
+        counters.wishlist++;
+        break;
+      case ANALYTICS_EVENT_TYPES.SEARCH_QUERY:
+        counters.busqueda++;
+        break;
+      default:
+        break;
+    }
+  });
+  return Object.entries(counters)
+    .filter(([, total]) => total > 0)
+    .map(([area, total]) => ({ area, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
 function aggregateBannerClicks(events = []) {
   const byBanner = new Map();
   events.forEach((ev) => {
@@ -641,6 +731,10 @@ export async function getGlobalAnalytics(dateFilter = {}) {
     mostTimeRoute: routeStats.mostTimeRoute,
     topSearches: aggregateTopSearches(events),
     topProducts: aggregateTopProducts(events),
+    // Nuevas metricas aditivas: categorias/colecciones por vistas y uso de funciones.
+    topCategoriesByViews: aggregateTopCategories(events),
+    topCollectionsByViews: aggregateTopCollections(events),
+    featureUsage: aggregateFeatureUsage(events),
     bannerClicks: aggregateBannerClicks(events),
     scrollDepth: aggregateScrollDepth(events),
     bounceRate: aggregateBounceRate(events, sessions),

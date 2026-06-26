@@ -6,10 +6,11 @@ import {
   completeMission,
 } from '../../services/loyalty';
 import { tierForXp } from '../../constants/tiers';
+import { trackMissionComplete } from '../../services/analytics/tracker';
 import styles from './MisionesPage.module.css';
 
 const MisionesPage = () => {
-  const { userProfile, reloadProfile } = useAuth();
+  const { user, userProfile, reloadProfile } = useAuth();
   const [missions, setMissions] = useState([]);
   const [missionsDate, setMissionsDate] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +72,19 @@ const MisionesPage = () => {
     } else {
       setMessage('¡Misión completada!');
     }
+    // Analytics aditivo (fire-and-forget): registra el éxito de completar la misión.
+    // Usa el id/nombre/recompensa reales de la misión en scope; tolera undefined.
+    try {
+      const completed = missions.find((mm) => mm.missionId === missionId);
+      trackMissionComplete(
+        {
+          missionId,
+          missionName: completed?.title,
+          coins: data?.reward ?? completed?.rewardPoints,
+        },
+        { uid: user?.uid, email: user?.email, displayName: user?.displayName }
+      ).catch(() => {});
+    } catch {}
     // Refresca lista de misiones y saldos del perfil.
     await loadMissions();
     await refreshProfile();

@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { claimBallSortReward } from '../../services/firebase/ballSort';
+import { trackMinigame } from '../../services/analytics/tracker';
 import styles from './BallSortPage.module.css';
 
 // Colores disponibles
@@ -106,11 +107,23 @@ const BallSortPage = () => {
   useEffect(() => {
     // Inicializar juego
     setTubes(generateLevel());
+    // Analytics aditivo (fire-and-forget): inicio del minijuego de bolitas.
+    try {
+      trackMinigame('start', { gameId: 'ball-sort', gameName: 'Las Bolitas de Kapi' },
+        { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleWin = useCallback(async () => {
     setHasWon(true);
-    
+
+    // Analytics aditivo (fire-and-forget): fin del minijuego de bolitas.
+    try {
+      trackMinigame('complete', { gameId: 'ball-sort', gameName: 'Las Bolitas de Kapi' },
+        { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
+    } catch {}
+
     // Disparar confeti básico si hay alguna librería o simplemente monedas
     window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: 2 } }));
 

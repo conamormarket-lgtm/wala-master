@@ -184,6 +184,13 @@ export const CartProvider = ({ children }) => {
     try {
       const unitPrice = customization?.finalPrice || itemPrice || 0;
       const productName = product.name || product.productName || 'Producto sin nombre';
+      // ── Variante seleccionada (color/talla) si existe en este add to cart. ──
+      const varianteSel = {
+        ...((selectedVariant?.name ?? variant.color) && {
+          color: selectedVariant?.name ?? variant.color,
+        }),
+        ...(variant.size && { talla: variant.size }),
+      };
       trackAddToCart(
         {
           productId: product.id,
@@ -193,6 +200,12 @@ export const CartProvider = ({ children }) => {
           category: product.category || product.categoria || null,
           totalCents: Math.round(unitPrice * quantity * 100),
           currency: 'PEN',
+          // ── Enriquecimiento aditivo: solo IDs que el producto realmente tenga. ──
+          ...(product.categoryId && { categoryId: product.categoryId }),
+          ...(product.collectionId && { collectionId: product.collectionId }),
+          ...(product.lineaProducto && { lineaProducto: product.lineaProducto }),
+          ...(product.brandId && { brandId: product.brandId }),
+          ...(Object.keys(varianteSel).length > 0 && { variante: varianteSel }),
         },
         auth?.currentUser
           ? {
