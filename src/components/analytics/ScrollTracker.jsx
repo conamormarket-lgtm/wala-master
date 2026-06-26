@@ -3,12 +3,17 @@ import { useLocation } from 'react-router-dom';
 import { trackScrollDepth } from '../../services/analytics/tracker';
 import { useAuth } from '../../contexts/AuthContext';
 
+// Si la app corre dentro de un iframe (preview del mapa de calor) NO registramos
+// scroll: evita doble-conteo y escrituras innecesarias en Firestore.
+const IN_IFRAME = (typeof window !== 'undefined') && window.self !== window.top;
+
 export default function ScrollTracker() {
   const location = useLocation();
   const { user } = useAuth();
   const reportedDepths = useRef(new Set());
 
   useEffect(() => {
+    if (IN_IFRAME) return undefined;
     // Reset reported depths on route change
     reportedDepths.current.clear();
 

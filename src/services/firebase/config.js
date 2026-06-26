@@ -59,15 +59,28 @@ if (USE_EMULATORS) {
     app = initializeApp(firebaseConfig);
     storage = getStorage(app);
 
+    // ── Detección de iframe ─────────────────────────────────────────────
+    // Si la app corre DENTRO de un iframe (p. ej. la PREVIEW del mapa de calor en
+    // el dashboard), una 2ª instancia compite por el lock de IndexedDB de la
+    // persistencia y lanza "Failed to obtain exclusive access to the persistence
+    // layer". En ese caso usamos CACHÉ EN MEMORIA (getFirestore normal) para no
+    // tocar IndexedDB. Fuera del iframe el comportamiento no cambia.
+    const inIframe = (typeof window !== 'undefined') && window.self !== window.top;
+
     // ── Firestore con persistencia offline ─────────────────────────────
-    try {
-      db = initializeFirestore(app, {
-        localCache: persistentLocalCache(), // Cache simple sin multi-tab para mejor compatibilidad en Capacitor/Android
-      });
-    } catch (firestoreErr) {
-      // Si initializeFirestore falla (ya inicializado, etc.), usar getFirestore
+    if (inIframe) {
+      // Dentro de un iframe: caché en memoria, sin IndexedDB (evita el conflicto de lock).
       db = getFirestore(app);
-      console.warn('Firestore: usando caché en memoria (IndexedDB no disponible).');
+    } else {
+      try {
+        db = initializeFirestore(app, {
+          localCache: persistentLocalCache(), // Cache simple sin multi-tab para mejor compatibilidad en Capacitor/Android
+        });
+      } catch (firestoreErr) {
+        // Si initializeFirestore falla (ya inicializado, etc.), usar getFirestore
+        db = getFirestore(app);
+        console.warn('Firestore: usando caché en memoria (IndexedDB no disponible).');
+      }
     }
 
     try {

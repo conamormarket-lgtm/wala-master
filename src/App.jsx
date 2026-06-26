@@ -73,6 +73,11 @@ const EditorPage = lazy(() => import('./pages/EditorPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminDashboardAnalytics = lazy(() => import('./pages/admin/AdminDashboard'));
+const DashHeatmap = lazy(() => import('./pages/admin/dashboard/DashHeatmap'));
+const DashProductos = lazy(() => import('./pages/admin/dashboard/DashProductos'));
+const DashOrigen = lazy(() => import('./pages/admin/dashboard/DashOrigen'));
+const DashPaginas = lazy(() => import('./pages/admin/dashboard/DashPaginas'));
+const DashCategorias = lazy(() => import('./pages/admin/dashboard/DashCategorias'));
 
 // ── Admin pages ───────────────────────────────────────────────────────────────
 const AdminProductos = lazy(() => import('./pages/Tienda/admin/AdminProductos'));
@@ -246,6 +251,11 @@ function App() {
                           <Route element={<AdminLayout />}>
                             <Route index element={<AdminDashboard />} />
                             <Route path="dashboard" element={<AdminDashboardAnalytics />} />
+                            <Route path="dashboard/heatmap" element={<DashHeatmap />} />
+                            <Route path="dashboard/productos" element={<DashProductos />} />
+                            <Route path="dashboard/origen" element={<DashOrigen />} />
+                            <Route path="dashboard/paginas" element={<DashPaginas />} />
+                            <Route path="dashboard/categorias" element={<DashCategorias />} />
                             <Route path="productos" element={<AdminProductos />} />
                             <Route path="inventario" element={<AdminInventario />} />
                             <Route path="mockups" element={<AdminMockups />} />

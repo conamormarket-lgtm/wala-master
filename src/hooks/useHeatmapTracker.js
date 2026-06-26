@@ -8,12 +8,19 @@ import { useLocation } from 'react-router-dom';
  * @param {boolean} enabled - Si el tracking está activo
  * @param {number} batchSize - Cuántos clics agrupar antes de enviar
  */
+// Si la app corre dentro de un iframe (preview del mapa de calor en el dashboard)
+// NO registramos clics: evita doble-conteo y escrituras innecesarias en Firestore.
+// (El efecto de sincronización de scroll de más abajo SÍ debe seguir activo dentro
+// del iframe, ya que es justo lo que alimenta la preview del dashboard.)
+const IN_IFRAME = (typeof window !== 'undefined') && window.self !== window.top;
+
 export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
   const location = useLocation();
   const clickBuffer = useRef([]);
 
   useEffect(() => {
     if (!enabled) return;
+    if (IN_IFRAME) return;
 
     const flushBuffer = async () => {
       if (clickBuffer.current.length === 0) return;

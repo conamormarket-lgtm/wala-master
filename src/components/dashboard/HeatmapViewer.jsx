@@ -52,7 +52,9 @@ function drawHeatmap(canvas, points, w, h) {
   if (canvas.width !== width) canvas.width = width;
   if (canvas.height !== height) canvas.height = height;
 
-  const ctx = canvas.getContext('2d');
+  // willReadFrequently: true porque hacemos getImageData en cada redibujado
+  // (recoloreado del heatmap). Evita el warning de rendimiento de Canvas2D.
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return;
 
   ctx.clearRect(0, 0, width, height);
@@ -335,7 +337,16 @@ export default function HeatmapViewer() {
                 ref={frameRef}
                 className={`${styles.canvasFrame} ${showIframe ? styles.canvasFrameLive : ''}`}
               >
-                {/* PREVIEW real de la página (misma-origen wala.pe). */}
+                {/*
+                  * PREVIEW real de la página (misma-origen wala.pe).
+                  * Wala es una SPA client-side (Vite): el #root solo trae un splash y
+                  * TODO el contenido lo pinta JavaScript. Sin 'allow-scripts' el iframe
+                  * quedaría en blanco y la preview sería inservible (siempre fallback a
+                  * cuadrícula). Por eso mantenemos 'allow-same-origin allow-scripts' y
+                  * confiamos en (1) caché en memoria de Firestore dentro del iframe y
+                  * (2) tracking desactivado dentro del iframe para evitar el conflicto
+                  * del lock de persistencia, el doble-conteo y las escrituras 404/400.
+                  */}
                 {iframeSrc && iframeState !== 'failed' && (
                   <iframe
                     key={iframeSrc}

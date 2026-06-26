@@ -70,6 +70,24 @@
   color: var(--gris-texto-principal, #0f172a);
 }
 
+/* ---------- Enlace "← Volver al resumen" (sub-páginas) ---------- */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary-color, #6d28d9);
+  text-decoration: none;
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.backLink:hover {
+  opacity: 0.75;
+  transform: translateX(-2px);
+}
+
 .subtitle {
   margin: 0.25rem 0 0;
   color: var(--gris-texto-secundario, #475569);
@@ -197,6 +215,90 @@
   .kpiRow {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---------- HUB: grid de tarjetas-botón (navegación por área) ---------- */
+.navGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.1rem;
+}
+
+.navCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: var(--radio-grande, 24px);
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 10px 30px -12px rgba(15, 23, 42, 0.18),
+    0 2px 8px -4px rgba(109, 40, 217, 0.12);
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  transition: var(--transicion-suave, all 0.3s cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.navCard:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 18px 40px -14px rgba(109, 40, 217, 0.32),
+    0 4px 12px -4px rgba(109, 40, 217, 0.16);
+}
+
+.navCard:focus-visible {
+  outline: 2px solid var(--primary-color, #6d28d9);
+  outline-offset: 2px;
+}
+
+.navIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 1.5rem;
+  background: rgba(109, 40, 217, 0.1);
+}
+
+.navCardTitle {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.navCardDesc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario, #475569);
+  line-height: 1.35;
+}
+
+.navArrow {
+  margin-top: auto;
+  align-self: flex-end;
+  font-size: 1.1rem;
+  color: var(--primary-color, #6d28d9);
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.navCard:hover .navArrow {
+  transform: translateX(4px);
+}
+
+/* ---------- Mapa de calor a tamaño grande (sub-página dedicada) ---------- */
+/* Da el ancho completo del contenedor al HeatmapViewer en su página dedicada. */
+.heatmapFull {
+  display: block;
+  width: 100%;
 }
 
 /* ---------- Charts ---------- */

@@ -9,6 +9,10 @@ import {
   trackRouteDwell,
 } from '../../services/analytics/tracker';
 
+// Si la app corre dentro de un iframe (p. ej. la preview del mapa de calor en el
+// dashboard) NO registramos eventos: evita doble-conteo y escrituras innecesarias.
+const IN_IFRAME = (typeof window !== 'undefined') && window.self !== window.top;
+
 const RouteTracker = () => {
   const location = useLocation();
   const { user, userProfile } = useAuth();
@@ -22,10 +26,12 @@ const RouteTracker = () => {
   };
 
   useEffect(() => {
+    if (IN_IFRAME) return;
     ensureAnalyticsSession(userCtx, location.pathname || '/').catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (IN_IFRAME) return;
     const previousPath = lastPathRef.current;
     const now = Date.now();
     const dwell = now - enteredAtRef.current;
@@ -38,11 +44,13 @@ const RouteTracker = () => {
   }, [location.pathname, userCtx.uid, userCtx.email]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (IN_IFRAME) return;
     if (!userCtx.uid) return;
     linkSessionToUser(userCtx).catch(() => {});
   }, [userCtx.uid, userCtx.email]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (IN_IFRAME) return undefined;
     const handleVisibilityChange = () => {
       const path = lastPathRef.current;
       if (!path) return;
