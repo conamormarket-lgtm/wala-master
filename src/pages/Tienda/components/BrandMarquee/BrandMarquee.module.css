@@ -103,4 +103,13 @@
   margin-bottom: 0.2rem;
   padding-top: 2rem;
   padding-bottom: 2rem;
+  /* Ancla para la aurora decorativa (absolute) que vive detrás del bloque. */
+  position: relative;
+}
+
+/* Aurora MUY suave del bloque de marcas: el componente ya va con z-index -1, por
+   lo que se pinta por encima del fondo de la página pero por debajo del título y
+   del marquee. La atenuamos al máximo para que sea apenas un velo de marca. */
+.aurora {
+  opacity: 0.6;
 }

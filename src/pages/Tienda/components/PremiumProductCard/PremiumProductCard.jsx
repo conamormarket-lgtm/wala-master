@@ -2,6 +2,7 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { getBrands } from '../../../../services/brands';
 import { useCart } from '../../../../contexts/CartContext';
@@ -12,7 +13,15 @@ import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
+import { Badge } from '../../../../components/ui';
+import { fadeUp, neutralVariants, useReducedMotionSafe } from '../../../../theme/motion';
 import styles from './PremiumProductCard.module.css';
+
+// Raíz animada de la tarjeta: el <Link> sigue siendo el elemento raíz (no se
+// envuelve en ningún div que rompa el grid del catálogo); solo lo dotamos de
+// motion para la entrada al viewport. Se crea UNA vez a nivel de módulo para no
+// recrear el componente animado en cada render (framer-motion lo penaliza).
+const MotionLink = motion(Link);
 
 const hexToRgba = (hex, alpha) => {
   const cleanHex = hex ? hex.replace('#', '') : 'ffffff';
@@ -31,6 +40,10 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
 
   const { isFavorite, toggleFavorite } = useWishlist();
   const { addToast } = useGlobalToast();
+
+  // Respeta prefers-reduced-motion: con menos movimiento, entrada de solo opacity.
+  const reducido = useReducedMotionSafe();
+  const variantsEntrada = reducido ? neutralVariants : fadeUp;
 
   const { data: brandsData } = useQuery({
     queryKey: ['brands'],
@@ -150,11 +163,15 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   })();
 
   return (
-    <Link
+    <MotionLink
       to={`/producto/${product.id}`}
       className={styles.card}
       onMouseEnter={handlePrefetch}
       onTouchStart={handlePrefetch}
+      variants={variantsEntrada}
+      initial={reducido ? 'show' : 'hidden'}
+      whileInView="show"
+      viewport={{ once: true, margin: '-40px' }}
     >
       <div className={styles.imageContainer} ref={imageContainerRef} style={brandBgStyle}>
         {isCombo ? (
@@ -200,7 +217,9 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
             <span className={styles.badgeSold}>{product.inStock} disponibles</span>
           )}
           {isNew && <span className={styles.badgeNew}>NEW IN</span>}
-          {product.salePrice && <span className={styles.badgeSale}>SALE</span>}
+          {product.salePrice && (
+            <Badge tone="danger" variant="solid" size="sm">SALE</Badge>
+          )}
           {!product.inStock && <span className={styles.badgeOut}>SOLD OUT</span>}
         </div>
 
@@ -248,7 +267,7 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
           {categories.length > 0 ? categories[0].name : (product.customizable ? 'Customizable' : 'Essential')}
         </div>
       </div>
-    </Link>
+    </MotionLink>
   );
 });
 

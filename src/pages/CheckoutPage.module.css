@@ -8,6 +8,8 @@
   padding: var(--page-padding-lg, 2rem);
   width: 100%;
   box-sizing: border-box;
+  /* Ancla para el AuroraBackground decorativo (position:absolute interno). */
+  position: relative;
   /* Espacio para BottomNav en móvil */
 }
 
@@ -379,4 +381,126 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ═══════════════════════════════════════════
+   CAPA GLASS (Design System) — solo presentación
+   El GlassCard provee la superficie de vidrio del
+   resumen; .summaryGlass deja el wrapper transparente
+   conservando el comportamiento sticky/layout.
+   ═══════════════════════════════════════════ */
+.summaryGlass {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* El cuerpo del GlassCard reproduce la disposición vertical previa. */
+.summaryBody {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Aviso de monedas (glass cálido) ── */
+.coinsNotice {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+  border-radius: var(--radio-medio, 12px);
+  border: 1px solid rgba(252, 211, 77, 0.65);
+  background:
+    linear-gradient(145deg, rgba(255, 251, 235, 0.92), rgba(254, 243, 199, 0.92));
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.12);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+/* Fallback sólido cuando no hay soporte de backdrop-filter. */
+@supports not ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
+  .coinsNotice {
+    background: linear-gradient(145deg, #fffbeb, #fef3c7);
+  }
+}
+
+.coinsNoticeInner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.coinsNoticeHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.coinsNoticeTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coinsNoticeLabel {
+  font-weight: 700;
+  font-size: 15px;
+  color: #92400e;
+  margin: 0;
+  line-height: 1;
+}
+
+.coinsNoticeToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coinsNoticeHint {
+  font-size: 0.8rem;
+  color: #b45309;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ── Tarjeta del paso de pago ── */
+.payCard {
+  text-align: left;
+}
+
+/* Separador "O" entre métodos de pago. */
+.payDivider {
+  text-align: center;
+  margin: 1rem 0;
+  color: var(--violet-400, #94a3b8);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+/* ── Aviso de envío internacional (glass frío) ── */
+.intlNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: var(--radio-medio, 10px);
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  background: linear-gradient(145deg, rgba(239, 246, 255, 0.92), rgba(219, 234, 254, 0.85));
+  color: #1e40af;
+  font-size: 0.9rem;
+  font-weight: 500;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+@supports not ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
+  .intlNotice {
+    background: #eff6ff;
+  }
+}
+
+.intlNoticeIcon {
+  font-size: 1.25rem;
+  line-height: 1;
 }

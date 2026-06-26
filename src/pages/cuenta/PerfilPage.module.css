@@ -150,6 +150,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Toque dorado/glass: halo cálido + reflejo superior sutil sobre el cristal. */
+  box-shadow: 0 0 18px rgba(218, 165, 32, 0.55), inset 0 2px 6px rgba(255, 255, 255, 0.45);
 }
 
 .coinBack {
@@ -289,6 +291,14 @@
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
+}
+
+/* Los GlassButton del sistema de diseño ocupan toda su caja (fullWidth); aquí
+   los hacemos compartir la fila en partes iguales, como hacían los botones
+   originales con flex:1. Aditivo: no cambia ninguna lógica. */
+.actionsGroup > * {
+  flex: 1;
+  min-width: 0;
 }
 
 .btnSave {

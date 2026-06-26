@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Button from '../../../components/common/Button';
+import { AuroraBackground, GlassButton, Reveal } from '../../../components/ui';
 import { trackBannerClick } from '../../../services/analytics/tracker';
 import { useAuth } from '../../../contexts/AuthContext';
 import styles from './HeroBanner.module.css';
@@ -59,6 +59,11 @@ const HeroBanner = ({ config }) => {
 
   return (
     <div className={styles.heroContainer} style={{ minHeight }}>
+      {/* Capa de atmósfera de marca: vive DETRÁS del media y del overlay, así que
+          es puramente decorativa y no altera el contraste del texto (el overlay
+          oscuro queda siempre por encima). variant 'subtle' = aurora muy tenue. */}
+      <AuroraBackground variant="subtle" className={styles.aurora} intensity={0.5} />
+
       <div className={styles.mediaWrapper}>
         {mediaType === 'video' ? (
           <>
@@ -91,7 +96,7 @@ const HeroBanner = ({ config }) => {
           background: `linear-gradient(to bottom, rgba(0,0,0,${overlayOpacity/100 * 0.2}) 0%, rgba(0,0,0,${overlayOpacity/100 * 0.7}) 50%, rgba(0,0,0,${overlayOpacity/100}) 100%)`
         }}
       >
-        <div className={styles.content}>
+        <Reveal className={styles.content}>
           {title && (
             <h1 
               className={styles.title} 
@@ -122,20 +127,20 @@ const HeroBanner = ({ config }) => {
           )}
           {buttonText && buttonLink && (
             <Link to={buttonLink} onClick={handleBannerClick}>
-              <Button 
-                variant="primary" 
+              <GlassButton
+                variant="glass"
                 className={styles.actionButton}
-                style={{ 
-                  backgroundColor: buttonBgColor, 
+                style={{
+                  backgroundColor: buttonBgColor,
                   color: buttonTextColor,
-                  borderColor: buttonBgColor 
+                  borderColor: buttonBgColor
                 }}
               >
                 {buttonText}
-              </Button>
+              </GlassButton>
             </Link>
           )}
-        </div>
+        </Reveal>
       </div>
     </div>
   );

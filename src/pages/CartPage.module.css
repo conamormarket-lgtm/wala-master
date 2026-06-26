@@ -8,6 +8,8 @@
   padding: var(--page-padding-lg, 2rem);
   width: 100%;
   box-sizing: border-box;
+  /* Ancla para el AuroraBackground decorativo (position:absolute interno). */
+  position: relative;
 }
 
 .header {

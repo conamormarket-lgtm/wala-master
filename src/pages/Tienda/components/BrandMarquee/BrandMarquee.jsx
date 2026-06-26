@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { AuroraBackground, Reveal } from '../../../../components/ui';
 import styles from './BrandMarquee.module.css';
 
 const BrandMarquee = ({ items = [], speed = 15, title = 'Empresas con las que trabajamos' }) => {
@@ -30,7 +31,13 @@ const BrandMarquee = ({ items = [], speed = 15, title = 'Empresas con las que tr
   );
 
   return (
-    <div className={styles.mainContainer}>
+    // Reveal a nivel del CONTENEDOR (no del track): la cascada de entrada del
+    // bloque no interfiere con la animación/pausa infinita del marquee interno.
+    <Reveal className={styles.mainContainer}>
+      {/* Aurora MUY suave detrás de todo el bloque; decorativa, no afecta a los
+          logos ni intercepta gestos (el componente ya va con z-index -1). */}
+      <AuroraBackground variant="subtle" className={styles.aurora} intensity={0.3} />
+
       {/* Título Estilo Píldora Gris (oculto si title es '' o null) */}
       {title && (
         <div className={styles.brandsTitle}>
@@ -83,7 +90,7 @@ const BrandMarquee = ({ items = [], speed = 15, title = 'Empresas con las que tr
           })}
         </div>
       </div>
-    </div>
+    </Reveal>
   );
 };
 

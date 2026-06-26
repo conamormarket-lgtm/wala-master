@@ -3,8 +3,13 @@ import { Link } from 'react-router-dom';
 import Results from '../../components/Results';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useAuth } from '../../contexts/AuthContext';
-import Button from '../../components/common/Button';
+// Sistema de diseño Walá: botón premium y envoltorio de entrada. SOLO estética;
+// no se altera la búsqueda de pedidos por DNI ni el flujo de datos del hook.
+import { GlassButton, Reveal } from '../../components/ui';
 import styles from '../PedidosPage.module.css';
+// CSS Module propio (aditivo) para los toques glass de esta vista, sin tocar el
+// PedidosPage.module.css compartido con la página de pedidos pública.
+import glass from './CuentaPedidosPage.module.css';
 
 /**
  * Contenido de "Mis Pedidos" dentro de Mi cuenta. Carga pedidos por DNI del perfil (clienteNumeroDocumento en ERP).
@@ -40,13 +45,11 @@ const CuentaPedidosPage = () => {
   if (!userProfile || !hasDni) {
     return (
       <div className={styles.content}>
-        <div className={styles.profileCard}>
+        <Reveal className={`${styles.profileCard} ${glass.card}`}>
           <h2>Completa tu perfil</h2>
           <p>Para ver tus pedidos necesitamos tu DNI o CE en tu perfil.</p>
-          <Link to="/completar-perfil">
-            <Button variant="primary">Completar perfil</Button>
-          </Link>
-        </div>
+          <GlassButton as={Link} to="/completar-perfil" variant="primary">Completar perfil</GlassButton>
+        </Reveal>
       </div>
     );
   }
@@ -83,13 +86,11 @@ const CuentaPedidosPage = () => {
   if (showEmpty) {
     return (
       <div className={styles.content}>
-        <div className={styles.profileCard}>
+        <Reveal className={`${styles.profileCard} ${glass.card}`}>
           <h2>No hay pedidos</h2>
           <p>Aún no tienes pedidos asociados a tu cuenta. Cuando hagas un pedido, aparecerá aquí.</p>
-          <Link to="/tienda">
-            <Button variant="primary">Ir a la tienda</Button>
-          </Link>
-        </div>
+          <GlassButton as={Link} to="/tienda" variant="primary">Ir a la tienda</GlassButton>
+        </Reveal>
       </div>
     );
   }
@@ -97,13 +98,13 @@ const CuentaPedidosPage = () => {
   if (error) {
     return (
       <div className={styles.content}>
-        <div className={styles.profileCard}>
+        <Reveal className={`${styles.profileCard} ${glass.card}`}>
           <h2>Error al cargar pedidos</h2>
           <p className={styles.errorText}>{error}</p>
-          <Button variant="primary" onClick={() => setHasFetched(false)}>
+          <GlassButton variant="primary" onClick={() => setHasFetched(false)}>
             Reintentar
-          </Button>
-        </div>
+          </GlassButton>
+        </Reveal>
       </div>
     );
   }

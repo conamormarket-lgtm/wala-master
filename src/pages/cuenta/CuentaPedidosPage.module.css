@@ -1,0 +1,46 @@
+/* =========================================================================
+   CuentaPedidosPage — toques glass ADITIVOS
+   -------------------------------------------------------------------------
+   CSS Module propio de esta vista (Mis Pedidos dentro de Mi cuenta). Existe
+   para no tocar el PedidosPage.module.css compartido con la página pública de
+   pedidos. SOLO presentación: estas clases se SUMAN a las del módulo
+   compartido (styles.profileCard) sobre las tarjetas de estado vacío / error
+   / perfil incompleto. No alteran ninguna lógica.
+
+   Consume los tokens del sistema (--glass-*) y trae el fallback sólido
+   obligatorio (@supports) para Capacitor/Android.
+   ========================================================================= */
+
+/* Superficie de cristal suave para las tarjetas de estado. Se aplica junto a
+   .profileCard, así que hereda su ancho, centrado, padding y radio; aquí solo
+   refinamos borde, sombra y un velo de vidrio translúcido. */
+.card {
+  position: relative;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.7));
+  -webkit-backdrop-filter: var(--glass-blur, blur(16px));
+  backdrop-filter: var(--glass-blur, blur(16px));
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.5));
+  box-shadow: var(--glass-shadow, 0 10px 40px -10px rgba(17, 24, 39, 0.12));
+  overflow: hidden;
+}
+
+/* Brillo superior tallado del cristal (decorativo, no interactivo). */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 55%;
+  pointer-events: none;
+  background: var(--glass-highlight, linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent));
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+/* Fallback innegociable: si el navegador no soporta backdrop-filter (algunos
+   WebView de Capacitor/Android), usamos un fondo sólido del sistema. */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .card {
+    background: #ffffff;
+    border-color: var(--gris-borde, rgba(229, 231, 235, 0.9));
+  }
+}

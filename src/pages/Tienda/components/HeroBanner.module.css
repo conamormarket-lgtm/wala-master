@@ -10,6 +10,16 @@
   background: #000;
 }
 
+/* Aurora de marca: anclada al hero. El componente ya se pinta con z-index -1,
+   lo que la sitúa por ENCIMA del fondo negro del contenedor pero por DEBAJO del
+   media (z-index 2) y del overlay (z-index 3). Así aporta atmósfera en los
+   bordes/letterbox sin tocar nunca el contraste del texto, que siempre queda
+   sobre el overlay oscuro. Aquí solo afinamos su opacidad para mantenerla muy
+   contenida (la atenúa aún más por debajo de la propia intensity). */
+.aurora {
+  opacity: 0.85;
+}
+
 .mediaWrapper {
   position: absolute;
   top: 0;
@@ -68,12 +78,9 @@
 
 .content {
   max-width: 900px;
-  animation: fadeUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(50px); }
-  to { opacity: 1; transform: translateY(0); }
+  /* La entrada (fundido + desplazamiento) ahora la gestiona <Reveal>, que sí
+     respeta prefers-reduced-motion. Se elimina la animación CSS local para no
+     competir con el transform inline de framer-motion (doble transform). */
 }
 
 .title {

@@ -9,6 +9,9 @@ import AvatarStudio from '../../components/profile/AvatarStudio';
 import CountrySelect from '../../components/intl/CountrySelect';
 import PhoneIntlInput from '../../components/intl/PhoneIntlInput';
 import { dialCodeByCountry } from '../../constants/countries';
+// Sistema de diseño Walá: superficies de vidrio, botón premium y envoltorios de
+// entrada. SOLO presentación/animación; no alteran la lógica del formulario.
+import { GlassCard, GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
 import styles from './PerfilPage.module.css';
 
 const Icons = {
@@ -189,14 +192,14 @@ const PerfilPage = () => {
 
   return (
     <div className={styles.container}>
-      <header className={styles.pageHeader}>
+      <Reveal as="header" className={styles.pageHeader}>
         <h1>Mi Perfil</h1>
         <p>Personaliza tus datos, tu avatar y revisa tus recompensas KapiSol.</p>
-      </header>
+      </Reveal>
 
-      <div className={styles.grid}>
+      <Stagger className={styles.grid}>
         {/* Left Column: Wallet + Info */}
-        <div className={styles.leftColumn}>
+        <StaggerItem className={styles.leftColumn}>
 
           <div className={styles.walletBanner}>
             <div className={styles.walletTitle}><Icons.Gift /> Recompensas</div>
@@ -216,7 +219,7 @@ const PerfilPage = () => {
             </div>
           </div>
 
-          <div className={styles.glassCard}>
+          <GlassCard variant="solid" animate={false} padding="lg" hover>
             <div className={styles.cardHeader}>
               <div className={styles.headerIcon}><Icons.User /></div>
               <h3>Datos Personales</h3>
@@ -270,8 +273,8 @@ const PerfilPage = () => {
                 {error && <div className={styles.errorMessage}>{error}</div>}
 
                 <div className={styles.actionsGroup}>
-                  <button type="button" className={styles.btnCancel} onClick={() => setEditing(false)} disabled={loading}>Cancelar</button>
-                  <button type="submit" className={styles.btnSave} disabled={!formValid || loading}>{loading ? 'Guardando...' : 'Guardar'}</button>
+                  <GlassButton type="button" variant="ghost" fullWidth onClick={() => setEditing(false)} disabled={loading}>Cancelar</GlassButton>
+                  <GlassButton type="submit" variant="primary" fullWidth loading={loading} disabled={!formValid || loading}>{loading ? 'Guardando...' : 'Guardar'}</GlassButton>
                 </div>
               </form>
             ) : (
@@ -286,29 +289,31 @@ const PerfilPage = () => {
                   <div className={styles.errorMessage}>Para ver tus pedidos necesitamos tu DNI y número de teléfono.</div>
                 )}
                 <div className={styles.actionsGroup}>
-                  <button className={styles.btnSave} onClick={() => setEditing(true)}>Editar</button>
-                  <button className={styles.btnSecondary} onClick={async () => { await logout(); navigate('/'); }}>Cerrar sesión</button>
+                  <GlassButton variant="primary" fullWidth onClick={() => setEditing(true)}>Editar</GlassButton>
+                  <GlassButton variant="danger" fullWidth onClick={async () => { await logout(); navigate('/'); }}>Cerrar sesión</GlassButton>
                 </div>
               </div>
             )}
-          </div>
-        </div>
+          </GlassCard>
+        </StaggerItem>
 
         {/* Right Column: Avatar Configurator */}
-        <div className={styles.glassCard}>
-          <div className={styles.cardHeader}>
-            <div className={styles.headerIcon}><Icons.Shirt /></div>
-            <h3>Avatar Studio</h3>
-          </div>
-          <AvatarStudio
-            config={avatarConfig}
-            setConfig={setAvatarConfig}
-            clothingItems={clothingItems}
-            onSave={handleSaveAvatar}
-            isSaving={isAvatarSaving}
-          />
-        </div>
-      </div>
+        <StaggerItem as="div">
+          <GlassCard variant="solid" animate={false} padding="lg" hover>
+            <div className={styles.cardHeader}>
+              <div className={styles.headerIcon}><Icons.Shirt /></div>
+              <h3>Avatar Studio</h3>
+            </div>
+            <AvatarStudio
+              config={avatarConfig}
+              setConfig={setAvatarConfig}
+              clothingItems={clothingItems}
+              onSave={handleSaveAvatar}
+              isSaving={isAvatarSaving}
+            />
+          </GlassCard>
+        </StaggerItem>
+      </Stagger>
     </div>
   );
 };

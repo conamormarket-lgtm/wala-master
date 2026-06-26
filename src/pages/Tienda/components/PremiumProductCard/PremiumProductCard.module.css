@@ -5,20 +5,43 @@
   color: inherit;
   width: 100%;
   position: relative;
-  transition: opacity 0.2s ease;
+  /* Superficie glass sutil: el cristal vive sobre todo en el contenedor de
+     imagen; aquí mantenemos la tarjeta como lienzo elevable. */
+  border-radius: var(--radio-grande, 16px);
+  /* Eleva la tarjeta al hover con la curva firma del sistema. */
+  transition: transform var(--dur-media) var(--ease-signature),
+    box-shadow var(--dur-media) var(--ease-signature),
+    opacity var(--dur-rapida) var(--ease-signature);
+  will-change: transform;
 }
 
-.card:hover {
-  opacity: 1;
+@media (hover: hover) {
+  .card:hover {
+    opacity: 1;
+    transform: translateY(-4px);
+    box-shadow: var(--glass-shadow-lg);
+  }
 }
 
 .imageContainer {
   position: relative;
   width: 100%;
   aspect-ratio: 3 / 4; /* Gymshark/Nude Project tall aspect ratio */
-  background-color: #f7f7f7;
+  /* Vidrio sutil tras la imagen: fondo translúcido + canto de luz + sombra
+     suave de reposo. El blur sólo aplica si el navegador lo soporta. */
+  background-color: var(--glass-bg, #f7f7f7);
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.45));
+  border-radius: var(--radio-grande, 16px);
+  box-shadow: var(--glass-shadow);
   overflow: hidden;
   margin-bottom: 0.75rem;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .imageContainer {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
 }
 
 .imageWrapper {
@@ -27,7 +50,20 @@
   position: absolute;
   top: 0;
   left: 0;
-  transition: opacity 0.4s ease;
+  /* Microinteracción: además del swap de opacidad, animamos el zoom/brillo de
+     la imagen con la curva firma. */
+  transition: opacity 0.4s ease,
+    transform var(--dur-media) var(--ease-signature),
+    filter var(--dur-media) var(--ease-signature);
+}
+
+/* Zoom + brillo + saturación al hover de la tarjeta (sobre primaria y
+   secundaria por igual). */
+@media (hover: hover) {
+  .card:hover .imageWrapper {
+    transform: scale(1.05);
+    filter: brightness(1.06) saturate(1.1);
+  }
 }
 
 .primaryImage {
@@ -97,24 +133,34 @@
   color: #333;
 }
 
-/* Favorite Button */
+/* Favorite Button — acabado glass */
 .favoriteBtn {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
+  background: var(--glass-bg-strong, rgba(255, 255, 255, 0.95));
+  border: var(--glass-border, none);
   color: #111;
   cursor: pointer;
   z-index: 10;
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition: transform 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+  box-shadow: var(--glass-shadow);
+  transition: transform var(--dur-rapida) var(--ease-signature),
+    color var(--dur-rapida) var(--ease-signature),
+    background-color var(--dur-rapida) var(--ease-signature),
+    box-shadow var(--dur-rapida) var(--ease-signature);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .favoriteBtn {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
 }
 
 .favoriteBtn svg {
@@ -122,7 +168,9 @@
 }
 
 .favoriteBtn:hover {
-  transform: scale(1.1);
+  /* Lift + sombra glass elevada. */
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: var(--glass-shadow-lg);
 }
 
 .favoriteBtnActive {
@@ -149,27 +197,41 @@
 
 .quickAddBtn {
   width: 100%;
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: var(--glass-bg-strong, rgba(255, 255, 255, 0.95));
   backdrop-filter: blur(4px);
+  border: var(--glass-border, none);
   color: #000;
-  border: none;
   padding: 12px;
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  box-shadow: var(--glass-shadow);
+  transition: background-color var(--dur-rapida) var(--ease-signature),
+    color var(--dur-rapida) var(--ease-signature),
+    transform var(--dur-rapida) var(--ease-signature),
+    box-shadow var(--dur-rapida) var(--ease-signature);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 2px;
+  border-radius: var(--radio-pequeno, 2px);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .quickAddBtn {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
 }
 
 .quickAddBtn:hover:not(:disabled) {
   background-color: #000;
   color: #fff;
+  /* Lift + sombra glass elevada, manteniendo la inversión de marca. */
+  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow-lg);
 }
 
 .quickAddBtn:disabled {
@@ -287,5 +349,28 @@
   .badgeNew, .badgeSale, .badgeOut {
     font-size: 0.55rem;
     padding: 3px 6px;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   ACCESIBILIDAD: prefiere-menos-movimiento
+   Neutraliza las microinteracciones de transform/filter (lift de la tarjeta,
+   zoom de imagen, lift de botones). El swap de opacidad se conserva por ser
+   un cambio puro de opacidad, no de movimiento.
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .imageWrapper,
+  .favoriteBtn,
+  .quickAddBtn {
+    transition: opacity var(--dur-rapida) ease;
+  }
+
+  .card:hover,
+  .card:hover .imageWrapper,
+  .favoriteBtn:hover,
+  .quickAddBtn:hover:not(:disabled) {
+    transform: none;
+    filter: none;
   }
 }

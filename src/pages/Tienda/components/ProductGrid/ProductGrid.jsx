@@ -7,14 +7,22 @@ import styles from './ProductGrid.module.css';
 
 const SKELETON_COUNT = 6;
 
+// Esqueleto glass premium: imagen 3:4 + 2 lineas de titulo + fila de precio.
+// El shimmer (banda de luz que recorre ~1.6s) vive en una capa overlay con
+// aria-hidden; se desactiva por completo con prefers-reduced-motion (ver CSS).
 const SkeletonCard = () => (
-  <div className={styles.skeletonCard}>
+  <div className={styles.skeletonCard} aria-hidden="true">
     <div className={styles.skeletonImage} />
     <div className={styles.skeletonContent}>
       <div className={styles.skeletonLine} />
       <div className={styles.skeletonLineShort} />
-      <div className={styles.skeletonPrice} />
+      <div className={styles.skeletonPriceRow}>
+        <div className={styles.skeletonPrice} />
+        <div className={styles.skeletonChip} />
+      </div>
     </div>
+    {/* Capa de brillo (sheen) que recorre la tarjeta en bucle */}
+    <div className={styles.skeletonShimmer} />
   </div>
 );
 

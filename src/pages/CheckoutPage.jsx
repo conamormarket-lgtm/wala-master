@@ -18,6 +18,9 @@ import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import Button from '../components/common/Button';
 import CulqiCustomCheckout from '../components/CulqiCustomCheckout/CulqiCustomCheckout';
 import PaypalCheckout from '../components/PaypalCheckout/PaypalCheckout';
+// Design System "Aurora Violeta Serena": superficies de vidrio y CTAs premium.
+// Uso SOLO presentacional (aditivo); no altera lógica de compra/pago/totales.
+import { GlassCard, GlassButton, Badge, AuroraBackground } from '../components/ui';
 import styles from './CheckoutPage.module.css';
 
 // Reutilizamos el mini componente de la moneda KapiSol para darle branding
@@ -783,12 +786,14 @@ const CheckoutPage = () => {
 
   return (
     <div className={styles.container}>
+      {/* Fondo de marca MUY suave detrás del contenido (decorativo, no interactivo). */}
+      <AuroraBackground variant="subtle" intensity={0.18} />
       <h1>Checkout</h1>
 
       <div className={styles.layout}>
         <div className={styles.formContainer}>
           {paymentStepData ? (
-            <div style={{ background: '#fff', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', border: '1px solid #e2e8f0' }}>
+            <GlassCard variant="solid" padding="lg" className={styles.payCard}>
               <h2 style={{ marginBottom: '1rem', textAlign: 'center', color: '#1e293b' }}>Selecciona tu método de pago</h2>
               <p style={{ textAlign: 'center', marginBottom: '2rem', color: '#64748b' }}>
                 Tu pedido se ha generado correctamente. Para confirmarlo, realiza el pago.
@@ -796,8 +801,8 @@ const CheckoutPage = () => {
 
               {/* Aviso de envío internacional (solo si NO es Perú) */}
               {!paymentStepData.esPeru && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '1rem', marginBottom: '1.5rem', color: '#1e40af', fontSize: '0.9rem', fontWeight: 500 }}>
-                  <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>✈️</span>
+                <div className={styles.intlNotice}>
+                  <span className={styles.intlNoticeIcon} aria-hidden="true">✈️</span>
                   <span>Envíos internacionales: la entrega demora de <strong>7 a 30 días hábiles</strong>.</span>
                 </div>
               )}
@@ -815,20 +820,20 @@ const CheckoutPage = () => {
                       }}
                     />
 
-                    <div style={{ textAlign: 'center', margin: '1rem 0', color: '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>O</div>
+                    <div className={styles.payDivider}>O</div>
 
-                    <Button
+                    <GlassButton
                       onClick={() => {
                         emitPurchaseComplete('whatsapp');
                         window.open(paymentStepData.waLink, '_blank');
                         clearCart();
                         navigate('/cuenta/pedidos');
                       }}
-                      variant="outline"
+                      variant="ghost"
                       fullWidth
                     >
                       Acordar pago por WhatsApp (Yape / Plin / Transf)
-                    </Button>
+                    </GlassButton>
                   </>
                 ) : (
                   <>
@@ -842,24 +847,24 @@ const CheckoutPage = () => {
                       }}
                     />
 
-                    <div style={{ textAlign: 'center', margin: '1rem 0', color: '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>O</div>
+                    <div className={styles.payDivider}>O</div>
 
-                    <Button
+                    <GlassButton
                       onClick={() => {
                         emitPurchaseComplete('whatsapp');
                         window.open(paymentStepData.waLink, '_blank');
                         clearCart();
                         navigate('/cuenta/pedidos');
                       }}
-                      variant="outline"
+                      variant="ghost"
                       fullWidth
                     >
                       Acordar pago por WhatsApp
-                    </Button>
+                    </GlassButton>
                   </>
                 )}
               </div>
-            </div>
+            </GlassCard>
           ) : (
           <form onSubmit={formik.handleSubmit} className={styles.form}>
             <h2>Detalles de Envío</h2>
@@ -1061,15 +1066,16 @@ const CheckoutPage = () => {
               <Button type="button" variant="outline" onClick={() => navigate('/carrito')} disabled={processing} fullWidth>
                 Volver al carrito
               </Button>
-              <Button type="submit" variant="primary" disabled={processing} fullWidth>
+              <GlassButton type="submit" variant="primary" loading={processing} disabled={processing} fullWidth>
                 {processing ? 'Generando...' : 'Confirmar y Seleccionar Pago'}
-              </Button>
+              </GlassButton>
             </div>
           </form>
           )}
         </div>
 
-        <div className={styles.summary}>
+        <div className={`${styles.summary} ${styles.summaryGlass}`}>
+          <GlassCard variant="solid" padding="lg" animate={false} bodyClassName={styles.summaryBody}>
           <h2>Resumen del Pedido</h2>
           <div className={styles.items}>
             {items.map(item => (
@@ -1085,26 +1091,26 @@ const CheckoutPage = () => {
                 <span>S/ {subtotal.toFixed(2)}</span>
               </div>
               {canUseCoins && (
-                <div style={{ marginTop: '1rem', marginBottom: '1rem', background: 'linear-gradient(145deg, #fffbeb, #fef3c7)', padding: '1.25rem', borderRadius: '12px', border: '1px solid #fcd34d', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.1)' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className={styles.coinsNotice}>
+                  <div className={styles.coinsNoticeInner}>
+                    <div className={styles.coinsNoticeHead}>
+                      <div className={styles.coinsNoticeTitle}>
                         <KapiSolCoinMini />
-                        <label style={{ fontWeight: 700, fontSize: '15px', color: '#92400e', margin: 0, lineHeight: 1 }}>
+                        <label className={styles.coinsNoticeLabel}>
                           Tienes {monedasCount} monedas = S/{monedasCount.toFixed(2)}
                         </label>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#b45309' }}>¿Aplicar?</span>
-                        <input 
-                          type="checkbox" 
-                          checked={useCoinsToggle} 
+                      <div className={styles.coinsNoticeToggle}>
+                        <Badge tone="warning" variant="soft" size="sm">¿Aplicar?</Badge>
+                        <input
+                          type="checkbox"
+                          checked={useCoinsToggle}
                           onChange={handleToggleCoins}
                           style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#e11d48' }}
                         />
                       </div>
                     </div>
-                    <p style={{ fontSize: '0.8rem', color: '#b45309', margin: '0', fontWeight: 500 }}>
+                    <p className={styles.coinsNoticeHint}>
                       Se aplicará automáticamente el descuento máximo permitido ({availableCoins} monedas = S/{availableCoins.toFixed(2)}).
                     </p>
                   </div>
@@ -1127,6 +1133,7 @@ const CheckoutPage = () => {
               <span>S/ {total.toFixed(2)}</span>
             </div>
           </div>
+          </GlassCard>
         </div>
       </div>
     </div>
