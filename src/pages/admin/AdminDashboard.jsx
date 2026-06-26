@@ -4,11 +4,6 @@ import { motion } from 'framer-motion';
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -19,6 +14,8 @@ import {
 import { getGlobalAnalytics } from '../../services/adminAnalytics';
 import GlassCard from '../../components/dashboard/GlassCard';
 import KpiCard from '../../components/dashboard/KpiCard';
+import RankingConMiniaturas from '../../components/dashboard/RankingConMiniaturas';
+import { useProductThumbs } from '../../components/dashboard/useProductThumbs';
 // Componentes provistos por OTROS agentes (existiran al compilar):
 import MasVendidosSection from '../../components/dashboard/MasVendidosSection';
 import HeatmapViewer from '../../components/dashboard/HeatmapViewer';
@@ -48,13 +45,39 @@ function shortPath(path) {
   return path.length > 26 ? `…${path.slice(-25)}` : path;
 }
 
-const DONUT_COLORS = ['#6D28D9', '#8B5CF6', '#A78BFA', '#C4B5FD', '#10B981', '#34D399', '#F59E0B'];
+/* Convierte una ruta en un nombre legible para humanos. */
+function prettyRouteName(path) {
+  if (!path || path === '/') return 'Inicio';
+  const clean = path.split('?')[0].replace(/\/+$/, '');
+  const segs = clean.split('/').filter(Boolean);
+  if (!segs.length) return 'Inicio';
+  const map = {
+    tienda: 'Tienda',
+    producto: 'Producto',
+    productos: 'Productos',
+    categoria: 'Categoría',
+    categorias: 'Categorías',
+    coleccion: 'Colección',
+    colecciones: 'Colecciones',
+    checkout: 'Checkout',
+    carrito: 'Carrito',
+    cuenta: 'Mi cuenta',
+    wishlist: 'Lista de deseos',
+    editor: 'Editor',
+    ofertas: 'Ofertas',
+    buscar: 'Búsqueda',
+  };
+  const titled = segs.map((s) => {
+    if (map[s]) return map[s];
+    const decoded = decodeURIComponent(s).replace(/[-_]/g, ' ');
+    return decoded.charAt(0).toUpperCase() + decoded.slice(1);
+  });
+  // Nombre principal = último segmento legible, con contexto del primero.
+  if (titled.length === 1) return titled[0];
+  return `${titled[0]} · ${titled[titled.length - 1]}`;
+}
 
-const RANGES = [
-  { label: '7 días', days: 7 },
-  { label: '30 días', days: 30 },
-  { label: '90 días', days: 90 },
-];
+const ADD_TO_CART = 'add_to_cart';
 
 /* Tooltip con estilo glass reutilizable */
 function GlassTooltip({ active, payload, label, suffix = '', formatter }) {
@@ -83,6 +106,12 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
 };
 
+const RANGES = [
+  { label: '7 días', days: 7 },
+  { label: '30 días', days: 30 },
+  { label: '90 días', days: 90 },
+];
+
 /* ------------------------------ page ------------------------------ */
 
 export default function AdminDashboard() {
@@ -98,15 +127,28 @@ export default function AdminDashboard() {
     return { startDateMs: start.getTime(), endDateMs: end.getTime() };
   }, [rangeDays]);
 
-  const { data, isLoading, error } = useQuery({
+  /* ----------------------------------------------------------------
+   * RENDIMIENTO / control de lecturas (evita "Quota exceeded"):
+   *  - Sin refetchInterval automático (antes refrescaba cada 20s y
+   *    disparaba lecturas masivas en bucle).
+   *  - staleTime de 5 min: cambiar de rango o re-montar no reconsulta
+   *    si los datos siguen frescos.
+   *  - refetchOnWindowFocus desactivado para no reconsultar al volver
+   *    a la pestaña.
+   *  - Refresco SOLO manual mediante el botón "Actualizar".
+   * ---------------------------------------------------------------- */
+  const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ['admin-dashboard-global', dateRange.startDateMs, dateRange.endDateMs],
     queryFn: async () => {
       const res = await getGlobalAnalytics(dateRange);
       if (res.error) throw new Error(res.error);
       return res.data;
     },
-    refetchInterval: 20000,
-    refetchIntervalInBackground: true,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   /* ----- series temporales de page_views por dia ----- */
@@ -134,45 +176,142 @@ export default function AdminDashboard() {
     [trafficByDay, data?.totalEvents]
   );
 
-  /* ----- top rutas (barras horizontales) ----- */
-  const topRoutes = useMemo(
-    () =>
-      (data?.topRoutesByViews || []).slice(0, 8).map((r) => ({
-        name: shortPath(r.path),
-        fullPath: r.path,
-        views: r.views?.total ?? r.views ?? 0,
-      })),
-    [data?.topRoutesByViews]
-  );
+  /* ----- agregados de carrito (add_to_cart) desde eventos crudos ----- */
+  const cartAgg = useMemo(() => {
+    const events = data?.eventsForCharts || [];
+    const byProduct = new Map(); // productId -> { name, adds, qty, category }
+    events.forEach((e) => {
+      if (e.type !== ADD_TO_CART) return;
+      const ed = e.eventData || {};
+      const id = ed.productId || ed.name;
+      if (!id) return;
+      if (!byProduct.has(id)) {
+        byProduct.set(id, {
+          productId: ed.productId || null,
+          name: ed.name || 'Producto',
+          adds: 0,
+          qty: 0,
+          category: ed.category || null,
+        });
+      }
+      const row = byProduct.get(id);
+      row.adds += 1;
+      row.qty += Number(ed.qty) || 1;
+    });
+    return [...byProduct.values()].sort((a, b) => b.adds - a.adds);
+  }, [data?.eventsForCharts]);
+
+  /* mapa rápido productId -> nº de "agregar al carrito" para los productos vistos */
+  const cartAddsByProductId = useMemo(() => {
+    const m = new Map();
+    cartAgg.forEach((c) => {
+      if (c.productId) m.set(c.productId, c.adds);
+    });
+    return m;
+  }, [cartAgg]);
 
   /* ----- top productos vistos ----- */
   const topProducts = useMemo(
     () =>
       (data?.topProducts || []).slice(0, 10).map((p) => ({
+        productId: p.productId || null,
         name: p.name || p.productId || 'Producto',
         total: p.total || 0,
-        app: p.app || 0,
-        web: p.web || 0,
         category: p.category || null,
       })),
     [data?.topProducts]
   );
 
-  /* ----- categorias / lineas mas vistas (donut) ----- */
-  const categoryData = useMemo(() => {
+  /* ----- IDs a resolver para miniaturas/tags (productos vistos + carrito) ----- */
+  const productIdsForThumbs = useMemo(() => {
+    const ids = [];
+    topProducts.forEach((p) => p.productId && ids.push(p.productId));
+    cartAgg.slice(0, 10).forEach((c) => c.productId && ids.push(c.productId));
+    return ids;
+  }, [topProducts, cartAgg]);
+
+  const { thumbs } = useProductThumbs(productIdsForThumbs);
+
+  /* ----- items para el panel "Productos más vistos" ----- */
+  const topProductItems = useMemo(
+    () =>
+      topProducts.map((p) => {
+        const meta = (p.productId && thumbs[p.productId]) || {};
+        const adds = p.productId ? cartAddsByProductId.get(p.productId) : 0;
+        return {
+          id: p.productId || p.name,
+          label: p.name,
+          value: p.total,
+          sub: meta.category || p.category || null,
+          image: meta.mainImage || null,
+          badge: adds ? `${fmtInt(adds)} al carrito` : null,
+        };
+      }),
+    [topProducts, thumbs, cartAddsByProductId]
+  );
+
+  /* ----- items para el panel "Carrito" (más agregados) ----- */
+  const cartItems = useMemo(
+    () =>
+      cartAgg.slice(0, 10).map((c) => {
+        const meta = (c.productId && thumbs[c.productId]) || {};
+        return {
+          id: c.productId || c.name,
+          label: c.name,
+          value: c.adds,
+          sub: c.qty > c.adds ? `${fmtInt(c.qty)} uds. agregadas` : (meta.category || c.category || null),
+          image: meta.mainImage || null,
+        };
+      }),
+    [cartAgg, thumbs]
+  );
+
+  /* ----- categorias / lineas mas vistas ----- */
+  const categoryItems = useMemo(() => {
     const byCat = new Map();
-    (data?.topProducts || []).forEach((p) => {
-      const cat = p.category || 'Sin categoría';
+    topProducts.forEach((p) => {
+      const meta = (p.productId && thumbs[p.productId]) || {};
+      const cat = meta.category || p.category || 'Sin categoría';
       byCat.set(cat, (byCat.get(cat) || 0) + (p.total || 0));
     });
-    return [...byCat.entries()]
-      .map(([name, value]) => ({ name, value }))
+    const arr = [...byCat.entries()]
+      .filter(([name]) => name && name !== 'Sin categoría')
+      .map(([name, value]) => ({ id: name, label: name, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 7);
-  }, [data?.topProducts]);
+      .slice(0, 8);
+    return arr;
+  }, [topProducts, thumbs]);
 
-  const hasCategoryData =
-    categoryData.length > 0 && !(categoryData.length === 1 && categoryData[0].name === 'Sin categoría');
+  /* ----- landing / páginas más visitadas ----- */
+  const routeItems = useMemo(
+    () =>
+      (data?.topRoutesByViews || []).slice(0, 10).map((r) => ({
+        id: r.path,
+        label: prettyRouteName(r.path),
+        value: r.views?.total ?? r.views ?? 0,
+        sub: shortPath(r.path),
+      })),
+    [data?.topRoutesByViews]
+  );
+
+  /* ----- tags populares (derivados de los tags de los productos vistos) ----- */
+  const tagItems = useMemo(() => {
+    const byTag = new Map();
+    topProducts.forEach((p) => {
+      const meta = (p.productId && thumbs[p.productId]) || {};
+      const tags = Array.isArray(meta.tags) ? meta.tags : [];
+      tags.forEach((t) => {
+        const tag = String(t || '').trim();
+        if (!tag) return;
+        // Pondera el tag por las vistas del producto que lo lleva.
+        byTag.set(tag, (byTag.get(tag) || 0) + (p.total || 0));
+      });
+    });
+    return [...byTag.entries()]
+      .map(([name, value]) => ({ id: name, label: `#${name}`, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+  }, [topProducts, thumbs]);
 
   /* ----- embudo de conversion ----- */
   const funnel = useMemo(() => {
@@ -193,12 +332,6 @@ export default function AdminDashboard() {
   }, [data?.funnelStats]);
 
   const funnelEmpty = funnel.slice(1).every((s) => s.value === 0);
-
-  /* ----- dispositivos (donut) ----- */
-  const deviceData = useMemo(
-    () => (data?.deviceStats?.topDevices || []).map((d) => ({ name: d.name, value: d.count })),
-    [data?.deviceStats]
-  );
 
   const utmSources = data?.utmStats?.topSources || [];
   const regions = data?.geographyStats?.topRegions || [];
@@ -237,6 +370,9 @@ export default function AdminDashboard() {
   );
 
   const liveCount = data?.realtimeActiveSessions?.total || 0;
+  const lastUpdated = dataUpdatedAt ? fmtTime(dataUpdatedAt) : null;
+
+  const PCROFFEE_COLORS = ['#6D28D9', '#8B5CF6', '#A78BFA', '#C4B5FD', '#10B981', '#34D399', '#F59E0B'];
 
   return (
     <div className={styles.page}>
@@ -253,27 +389,42 @@ export default function AdminDashboard() {
         initial="hidden"
         animate="show"
       >
-        {/* Header + selector de rango */}
+        {/* Header + selector de rango + actualizar */}
         <motion.header className={styles.header} variants={itemVariants}>
           <div>
             <h1 className={styles.title}>Panel de Analítica</h1>
             <p className={styles.subtitle}>
-              Comportamiento de la tienda en los últimos {rangeDays} días · datos en vivo
+              Comportamiento de la tienda en los últimos {rangeDays} días
+              {lastUpdated ? ` · actualizado ${lastUpdated}` : ''}
             </p>
           </div>
-          <div className={styles.rangePicker} role="tablist" aria-label="Rango de fechas">
-            {RANGES.map((r) => (
-              <button
-                key={r.days}
-                type="button"
-                role="tab"
-                aria-selected={rangeDays === r.days}
-                className={`${styles.rangeBtn} ${rangeDays === r.days ? styles.rangeActive : ''}`}
-                onClick={() => setRangeDays(r.days)}
-              >
-                {r.label}
-              </button>
-            ))}
+          <div className={styles.headerControls}>
+            <div className={styles.rangePicker} role="tablist" aria-label="Rango de fechas">
+              {RANGES.map((r) => (
+                <button
+                  key={r.days}
+                  type="button"
+                  role="tab"
+                  aria-selected={rangeDays === r.days}
+                  className={`${styles.rangeBtn} ${rangeDays === r.days ? styles.rangeActive : ''}`}
+                  onClick={() => setRangeDays(r.days)}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className={styles.refreshBtn}
+              onClick={() => refetch()}
+              disabled={isFetching}
+              title="Actualizar datos"
+            >
+              <span className={`${styles.refreshIcon} ${isFetching ? styles.spinning : ''}`} aria-hidden="true">
+                ⟳
+              </span>
+              {isFetching ? 'Actualizando…' : 'Actualizar'}
+            </button>
           </div>
         </motion.header>
 
@@ -294,8 +445,8 @@ export default function AdminDashboard() {
           ))}
         </motion.section>
 
-        {/* (2) Trafico por pagina */}
-        <motion.div className={styles.grid2} variants={containerVariants}>
+        {/* (2) Trafico por dia */}
+        <motion.div variants={itemVariants}>
           <GlassCard
             title="Tráfico por día"
             subtitle="Page views a lo largo del tiempo"
@@ -342,116 +493,62 @@ export default function AdminDashboard() {
               {!trafficByDay.length && <p className={styles.empty}>Sin tráfico en el rango seleccionado.</p>}
             </div>
           </GlassCard>
+        </motion.div>
 
-          <GlassCard title="Rutas más visitadas" subtitle="Top páginas por page views">
-            <div className={styles.chartBox}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={topRoutes}
-                  layout="vertical"
-                  margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={120}
-                    tick={{ fontSize: 11, fill: '#475569' }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <Tooltip content={<GlassTooltip />} cursor={{ fill: 'rgba(109,40,217,0.06)' }} />
-                  <Bar dataKey="views" name="Visitas" fill="#8B5CF6" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-              {!topRoutes.length && <p className={styles.empty}>Sin rutas registradas aún.</p>}
-            </div>
+        {/* (3) PANELES CATEGORIZADOS CON MINIATURAS */}
+        <motion.div className={styles.grid2} variants={containerVariants}>
+          {/* Productos más vistos */}
+          <GlassCard title="Productos más vistos" subtitle="Top 10 por vistas de producto · con miniatura">
+            <RankingConMiniaturas
+              items={topProductItems}
+              valueLabel="vistas"
+              emptyIcon="👀"
+              emptyText="Aún sin vistas de producto en este rango."
+            />
+          </GlassCard>
+
+          {/* Carrito: más agregados */}
+          <GlassCard title="Carrito" subtitle="Productos más agregados al carrito">
+            <RankingConMiniaturas
+              items={cartItems}
+              valueLabel="al carrito"
+              emptyIcon="🛒"
+              emptyText="Aún sin eventos de añadir al carrito en este rango."
+            />
           </GlassCard>
         </motion.div>
 
-        {/* (3) Productos mas vistos + (4) categorias */}
         <motion.div className={styles.grid2} variants={containerVariants}>
-          <GlassCard title="Productos más vistos" subtitle="Top 10 por vistas de producto">
-            <div className={styles.chartBox}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topProducts} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 11, fill: '#475569' }} tickLine={false} axisLine={false} />
-                  <Tooltip content={<GlassTooltip />} cursor={{ fill: 'rgba(109,40,217,0.06)' }} />
-                  <Bar dataKey="total" name="Vistas" fill="#6D28D9" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-              {!topProducts.length && <p className={styles.empty}>Sin vistas de producto en el rango.</p>}
-            </div>
-            {!!topProducts.length && (
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Producto</th>
-                      <th className={styles.num}>App</th>
-                      <th className={styles.num}>Web</th>
-                      <th className={styles.num}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topProducts.map((p) => (
-                      <tr key={p.name}>
-                        <td className={styles.ellipsis}>{p.name}</td>
-                        <td className={styles.num}>{fmtInt(p.app)}</td>
-                        <td className={styles.num}>{fmtInt(p.web)}</td>
-                        <td className={styles.num}><strong>{fmtInt(p.total)}</strong></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          {/* Categorías / líneas más vistas */}
+          <GlassCard title="Categorías más vistas" subtitle="Líneas de producto por vistas">
+            <RankingConMiniaturas
+              items={categoryItems}
+              valueLabel="vistas"
+              emptyIcon="🏷️"
+              emptyText="Aún sin categoría asociada a los productos vistos."
+            />
           </GlassCard>
 
-          <GlassCard title="Categorías más vistas" subtitle="Distribución por línea de producto">
-            {hasCategoryData ? (
-              <div className={styles.chartBox}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={58}
-                      outerRadius={92}
-                      paddingAngle={2}
-                      stroke="rgba(255,255,255,0.6)"
-                      strokeWidth={2}
-                    >
-                      {categoryData.map((entry, i) => (
-                        <Cell key={entry.name} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<GlassTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <p className={styles.empty}>
-                Aún sin categoría asociada a los productos vistos.
-              </p>
-            )}
-            {hasCategoryData && (
-              <ul className={styles.legend}>
-                {categoryData.map((c, i) => (
-                  <li key={c.name}>
-                    <span className={styles.legendDot} style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
-                    <span className={styles.ellipsis}>{c.name}</span>
-                    <strong>{fmtInt(c.value)}</strong>
-                  </li>
-                ))}
-              </ul>
-            )}
+          {/* Landing / páginas más visitadas */}
+          <GlassCard title="Páginas más visitadas" subtitle="Landings y rutas por page views">
+            <RankingConMiniaturas
+              items={routeItems}
+              valueLabel="visitas"
+              emptyIcon="🧭"
+              emptyText="Sin rutas registradas aún."
+            />
+          </GlassCard>
+        </motion.div>
+
+        {/* (4) Tags populares (ancho completo) */}
+        <motion.div variants={itemVariants}>
+          <GlassCard title="Tags populares" subtitle="Etiquetas de los productos más vistos">
+            <RankingConMiniaturas
+              items={tagItems}
+              valueLabel="vistas"
+              emptyIcon="🔖"
+              emptyText="Aún sin datos de tags. Cuando los productos vistos tengan etiquetas, aparecerán aquí ponderadas por sus vistas."
+            />
           </GlassCard>
         </motion.div>
 
@@ -489,7 +586,7 @@ export default function AdminDashboard() {
                         className={styles.funnelFill}
                         style={{
                           width: `${widthPct}%`,
-                          background: DONUT_COLORS[i % DONUT_COLORS.length],
+                          background: PCROFFEE_COLORS[i % PCROFFEE_COLORS.length],
                         }}
                       />
                     </div>
@@ -506,49 +603,8 @@ export default function AdminDashboard() {
           </GlassCard>
         </motion.div>
 
-        {/* (6) Uso / Tiempo real */}
+        {/* (6) Origen / region / En vivo */}
         <motion.div className={styles.grid3} variants={containerVariants}>
-          <GlassCard title="Dispositivos" subtitle="Sesiones por tipo de dispositivo">
-            {deviceData.length ? (
-              <>
-                <div className={styles.chartBoxSm}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={deviceData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={46}
-                        outerRadius={74}
-                        paddingAngle={2}
-                        stroke="rgba(255,255,255,0.6)"
-                        strokeWidth={2}
-                      >
-                        {deviceData.map((entry, i) => (
-                          <Cell key={entry.name} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<GlassTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <ul className={styles.legend}>
-                  {deviceData.map((d, i) => (
-                    <li key={d.name}>
-                      <span className={styles.legendDot} style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
-                      <span className={styles.ellipsis}>{d.name}</span>
-                      <strong>{fmtInt(d.value)}</strong>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <p className={styles.empty}>Sin datos de dispositivos.</p>
-            )}
-          </GlassCard>
-
           <GlassCard title="Origen y región" subtitle="Fuentes UTM y geografía">
             <h4 className={styles.subhead}>Fuentes de tráfico</h4>
             <ul className={styles.miniList}>
@@ -605,6 +661,21 @@ export default function AdminDashboard() {
                 ))
               ) : (
                 <li className={styles.empty}>Nadie navegando ahora mismo.</li>
+              )}
+            </ul>
+          </GlassCard>
+
+          <GlassCard title="Búsquedas" subtitle="Términos más buscados">
+            <ul className={styles.miniList}>
+              {(data?.topSearches || []).length ? (
+                (data?.topSearches || []).slice(0, 8).map((s) => (
+                  <li key={s.query}>
+                    <span className={styles.ellipsis}>{s.query}</span>
+                    <strong>{fmtInt(s.total)}</strong>
+                  </li>
+                ))
+              ) : (
+                <li className={styles.empty}>Sin búsquedas registradas aún.</li>
               )}
             </ul>
           </GlassCard>

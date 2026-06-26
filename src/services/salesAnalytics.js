@@ -26,7 +26,10 @@ import { erpDb, isErpFirestoreAvailable } from './erp/firebase';
  *      alias legacy: items: [{ productId, productName/name, quantity, price, ... }]
  */
 
-const MAX_ORDERS_PER_COLLECTION = 1500;
+// Límite de pedidos leídos por colección (ordenados por createdAt desc).
+// Bajado de 1500 a 400 para reducir lecturas de Firestore y evitar "Quota exceeded".
+// Con 2 colecciones (pedidos_web + pedidos) son como máximo 800 docs por consulta.
+const MAX_ORDERS_PER_COLLECTION = 400;
 const ERP_COLLECTIONS = ['pedidos_web', 'pedidos'];
 
 function toMillis(value) {

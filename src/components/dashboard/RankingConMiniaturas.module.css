@@ -1,0 +1,168 @@
+/* Lista rankeada con miniatura/avatar + etiqueta + valor + barra de proporción.
+   Reutiliza tokens liquid-glass del dashboard. */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.4rem 0.45rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.08));
+}
+
+/* Posición / ranking */
+.rank {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.rankTop {
+  color: var(--primary-color, #6d28d9);
+}
+
+/* Miniatura / avatar */
+.thumb {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: rgba(109, 40, 217, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  display: grid;
+  place-items: center;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumbFallback {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--primary-color, #6d28d9);
+  text-transform: uppercase;
+}
+
+/* Texto + barra */
+.main {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.track {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8b5cf6, #6d28d9);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+/* Valor a la derecha */
+.value {
+  flex-shrink: 0;
+  text-align: right;
+  display: grid;
+  gap: 0.05rem;
+  justify-items: end;
+}
+
+.valueNum {
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.valueLabel {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+/* Pill secundaria (p.ej. nº de "agregar al carrito") */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.1rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--verde-exito, #10b981);
+  background: rgba(16, 185, 129, 0.12);
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+}
+
+/* Estado vacío */
+.empty {
+  margin: 0.5rem 0;
+  padding: 1rem 0.75rem;
+  text-align: center;
+  font-size: 0.84rem;
+  color: var(--gris-texto-secundario, #475569);
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px dashed rgba(109, 40, 217, 0.2);
+  border-radius: var(--radio-mediano, 16px);
+}
+
+.emptyIcon {
+  display: block;
+  font-size: 1.5rem;
+  margin-bottom: 0.35rem;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .row {
+    background: #ffffff;
+  }
+}

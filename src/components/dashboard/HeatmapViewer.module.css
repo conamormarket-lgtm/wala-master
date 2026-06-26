@@ -147,10 +147,10 @@
 .pathChip {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  max-width: 260px;
-  padding: 0.45rem 0.7rem 0.45rem 0.85rem;
-  border-radius: 999px;
+  gap: 0.6rem;
+  max-width: 280px;
+  padding: 0.4rem 0.6rem 0.4rem 0.85rem;
+  border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.5);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
@@ -159,6 +159,7 @@
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
+  text-align: left;
   transition: var(--transicion-rapida, all 0.2s ease);
 }
 
@@ -175,10 +176,32 @@
   box-shadow: 0 6px 16px -6px rgba(109, 40, 217, 0.6);
 }
 
-.pathChipLabel {
+.pathChipMeta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.pathChipName {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 700;
+}
+
+.pathChipRoute {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.68rem;
+  font-weight: 500;
+  opacity: 0.6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.pathChipActive .pathChipRoute {
+  opacity: 0.85;
 }
 
 .pathChipCount {
@@ -232,9 +255,23 @@
 }
 
 .canvasPath {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   font-weight: 700;
   font-size: 0.95rem;
   color: var(--gris-texto-principal, #0F172A);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.canvasRoute {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--gris-texto-secundario, #475569);
+  opacity: 0.75;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -260,11 +297,49 @@
   border: 1px solid rgba(15, 23, 42, 0.06);
 }
 
+/* Cuando hay preview real, el fondo de cuadrícula se oculta para no mezclarse. */
+.canvasFrameLive {
+  background: #ffffff;
+}
+
+/* Iframe con la página real (misma-origen). No interactivo: solo vista. */
+.previewFrame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #ffffff;
+  /* La preview no debe ser clicable: es un lienzo de referencia. */
+  pointer-events: none;
+}
+
+/* Velo translúcido sobre la preview para que el calor resalte. */
+.previewScrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(248, 250, 252, 0.45);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.previewLoading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.55);
+  z-index: 3;
 }
 
 .canvasEmpty {
@@ -275,13 +350,35 @@
   justify-content: center;
   font-size: 0.85rem;
   color: var(--gris-texto-secundario, #475569);
+  z-index: 3;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.previewTag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  color: var(--primary-color, #6D28D9);
+  background: rgba(109, 40, 217, 0.1);
 }
 
 .legend {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-top: 0.75rem;
+  flex: 1;
+  min-width: 160px;
 }
 
 .legendLabel {
@@ -357,6 +454,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Etiquetas derivadas de imágenes / íconos sin texto: tono más tenue. */
+.rankLabelGeneric {
+  color: var(--gris-texto-secundario, #475569);
+  font-style: italic;
 }
 
 .rankTrack {

@@ -6,6 +6,34 @@ const DEFAULT_EVENTS_LIMIT = 1200;
 const DEFAULT_SESSIONS_LIMIT = 400;
 const REALTIME_WINDOW_MS = 5 * 60 * 1000;
 
+// --- Límites de lectura para el dashboard global (anti "Quota exceeded") ---
+// El dashboard refetchea cada 20s y SIEMPRE envía un rango de fechas, por lo que
+// estos límites se aplican casi siempre. Mantenerlos bajos es clave para no
+// agotar la cuota de lecturas de Firestore.
+const GLOBAL_EVENTS_LIMIT = 1500;   // antes: 10000 con filtro de fecha
+const GLOBAL_SESSIONS_LIMIT = 300;  // antes: 10000 con filtro de fecha
+const GLOBAL_REALTIME_SESSIONS_LIMIT = 150; // antes: 1000
+const GLOBAL_USERS_LIMIT = 400;     // base de usuarios para enriquecer realtime
+
+// --- Cache en memoria para absorber el refetch cada 20s ---
+// La misma query (mismo rango de fechas) se sirve desde cache durante este TTL
+// en vez de releer miles de documentos en cada ciclo de polling.
+const GLOBAL_CACHE_TTL_MS = 30 * 1000;
+const globalAnalyticsCache = new Map(); // key -> { expiresAt, payload }
+
+function readGlobalCache(key) {
+  const hit = globalAnalyticsCache.get(key);
+  if (hit && hit.expiresAt > Date.now()) return hit.payload;
+  if (hit) globalAnalyticsCache.delete(key);
+  return null;
+}
+
+function writeGlobalCache(key, payload) {
+  // El campo realtime se recalcula al servir desde cache (ver getGlobalAnalytics),
+  // por lo que cachear el resto durante 30s es seguro para el dashboard.
+  globalAnalyticsCache.set(key, { expiresAt: Date.now() + GLOBAL_CACHE_TTL_MS, payload });
+}
+
 function normalizeEmail(value) {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
@@ -321,12 +349,78 @@ function aggregateAbandonedCarts(events = [], sessions = []) {
   return abandoned.sort((a,b) => b.abandonedAtMs - a.abandonedAtMs).slice(0, 50);
 }
 
-export async function getUsersBaseList() {
+// Calcula el bloque de métricas "en vivo" a partir de las sesiones realtime.
+// Aislado para poder recomputarlo barato en cada refetch sin releer eventos/sesiones.
+function computeRealtimeBlock(realtimeSessionsData = [], realtimeThreshold, existingUserUids = new Set()) {
+  const countArr = (arr, cond = () => true) => {
+    let t = 0, a = 0, w = 0;
+    arr.forEach(i => {
+      if (!cond(i)) return;
+      t++;
+      if (i.clientType === 'APP') a++; else w++;
+    });
+    return { total: t, app: a, web: w };
+  };
+
+  const realtimeSessions = realtimeSessionsData.filter((s) => {
+    const seenAt = toMillis(s.lastSeenAtClientMs || s.updatedAt || s.createdAt);
+    const endedAt = toMillis(s.endedAtClientMs);
+    return seenAt >= realtimeThreshold && (!endedAt || endedAt < seenAt);
+  });
+
+  const latestSessionsByIdentity = new Map();
+  realtimeSessions.forEach(s => {
+    const identityKey = s.uid || s.anonymousId || s.email || s.sessionKey || s.id;
+    const seenAt = toMillis(s.lastSeenAtClientMs || s.updatedAt || s.createdAt);
+    if (!latestSessionsByIdentity.has(identityKey)) {
+      latestSessionsByIdentity.set(identityKey, s);
+    } else {
+      const existing = latestSessionsByIdentity.get(identityKey);
+      const existingSeenAt = toMillis(existing.lastSeenAtClientMs || existing.updatedAt || existing.createdAt);
+      if (seenAt > existingSeenAt) {
+        latestSessionsByIdentity.set(identityKey, s);
+      }
+    }
+  });
+
+  const uniqueRealtimeSessions = Array.from(latestSessionsByIdentity.values());
+
+  const realtimeSessionsDetails = uniqueRealtimeSessions.map(s => ({
+    id: s.id || s.sessionKey,
+    uid: s.uid,
+    email: s.email,
+    displayName: s.displayName,
+    anonymousId: s.anonymousId,
+    lastPath: s.lastPath || 'Desconocido',
+    lastSeenAtMs: toMillis(s.lastSeenAtClientMs || s.updatedAt || s.createdAt),
+    startedAtMs: toMillis(s.startedAtClientMs || s.createdAt),
+    platform: s.platform || parseUserAgent(s.userAgent).os,
+    device: parseUserAgent(s.userAgent).device,
+    browser: parseUserAgent(s.userAgent).browser,
+    referrer: s.referrer,
+    isRegistered: s.uid ? existingUserUids.has(s.uid) : false,
+    hasAccount: !!s.uid,
+    clientType: s.clientType || 'WEB'
+  })).sort((a, b) => b.lastSeenAtMs - a.lastSeenAtMs);
+
+  return {
+    realtimeWindowMs: REALTIME_WINDOW_MS,
+    realtimeActiveSessions: countArr(uniqueRealtimeSessions),
+    realtimeActiveIdentities: countArr(uniqueRealtimeSessions),
+    realtimeActiveLoggedUsers: countArr(uniqueRealtimeSessions, s => !!s.uid),
+    realtimeActiveRegisteredUsers: countArr(uniqueRealtimeSessions, s => s.uid && existingUserUids.has(s.uid)),
+    realtimeActiveVisitors: countArr(uniqueRealtimeSessions, s => !s.uid),
+    realtimeSessionsDetails,
+    realtimeRefreshedAtMs: Date.now(),
+  };
+}
+
+export async function getUsersBaseList(limitCount = 800) {
   const { data, error } = await getCollection(
     PORTAL_USERS_COLLECTION,
     [],
     { field: 'updatedAt', direction: 'desc' },
-    800
+    limitCount
   );
   if (error) return { data: [], error };
   const users = (data || []).map((u) => ({
@@ -438,6 +532,27 @@ export async function getUserAnalytics(uid, email) {
 export async function getGlobalAnalytics(dateFilter = {}) {
   const { startDateMs, endDateMs } = dateFilter;
   const realtimeThreshold = Date.now() - REALTIME_WINDOW_MS;
+  const cacheKey = `${startDateMs || 0}:${endDateMs || 0}`;
+
+  // --- Realtime: lectura barata y siempre fresca (no se cachea) ---
+  // Se calcula incluso en cache HIT para que el panel "en vivo" no quede congelado.
+  const realtimeSessionsResult = await getCollection(
+    ANALYTICS_COLLECTIONS.SESSIONS,
+    [{ field: 'lastSeenAtClientMs', operator: '>=', value: realtimeThreshold }],
+    { field: 'lastSeenAtClientMs', direction: 'desc' },
+    GLOBAL_REALTIME_SESSIONS_LIMIT
+  );
+
+  // --- Cache HIT: reusar la parte pesada y solo recomputar realtime ---
+  const cached = readGlobalCache(cacheKey);
+  if (cached) {
+    const existingUserUids = cached.__existingUserUids || new Set();
+    const realtime = computeRealtimeBlock(realtimeSessionsResult.data || [], realtimeThreshold, existingUserUids);
+    return {
+      data: { ...cached.data, ...realtime },
+      error: realtimeSessionsResult.error || null,
+    };
+  }
 
   const eventFilters = [];
   const sessionFilters = [];
@@ -455,25 +570,18 @@ export async function getGlobalAnalytics(dateFilter = {}) {
     eventsResult,
     sessionsResult,
     globalSummaryResult,
-    realtimeSessionsResult,
   ] = await Promise.all([
-    getUsersBaseList(),
-    getCollection(ANALYTICS_COLLECTIONS.EVENTS, eventFilters, { field: 'clientTsMs', direction: 'desc' }, startDateMs ? 10000 : DEFAULT_EVENTS_LIMIT),
-    getCollection(ANALYTICS_COLLECTIONS.SESSIONS, sessionFilters, { field: 'startedAtClientMs', direction: 'desc' }, startDateMs ? 10000 : DEFAULT_SESSIONS_LIMIT),
+    getUsersBaseList(GLOBAL_USERS_LIMIT),
+    getCollection(ANALYTICS_COLLECTIONS.EVENTS, eventFilters, { field: 'clientTsMs', direction: 'desc' }, GLOBAL_EVENTS_LIMIT),
+    getCollection(ANALYTICS_COLLECTIONS.SESSIONS, sessionFilters, { field: 'startedAtClientMs', direction: 'desc' }, GLOBAL_SESSIONS_LIMIT),
     getDocument(ANALYTICS_COLLECTIONS.GLOBAL_SUMMARY, 'latest'),
-    getCollection(
-      ANALYTICS_COLLECTIONS.SESSIONS,
-      [{ field: 'lastSeenAtClientMs', operator: '>=', value: realtimeThreshold }],
-      { field: 'lastSeenAtClientMs', direction: 'desc' },
-      1000
-    ),
   ]);
 
   const events = eventsResult.data || [];
   const sessions = sessionsResult.data || [];
   const users = usersResult.data || [];
   const existingUserUids = new Set(users.map((u) => u.uid).filter(Boolean));
-  
+
   const countArr = (arr, cond = () => true) => {
     let t = 0, a = 0, w = 0;
     arr.forEach(i => {
@@ -515,83 +623,44 @@ export async function getGlobalAnalytics(dateFilter = {}) {
   };
 
   const routeStats = aggregateRouteMetrics(events);
-  
-  const realtimeSessions = (realtimeSessionsResult.data || []).filter((s) => {
-    const seenAt = toMillis(s.lastSeenAtClientMs || s.updatedAt || s.createdAt);
-    const endedAt = toMillis(s.endedAtClientMs);
-    return seenAt >= realtimeThreshold && (!endedAt || endedAt < seenAt);
-  });
 
-  const latestSessionsByIdentity = new Map();
-  realtimeSessions.forEach(s => {
-    const identityKey = s.uid || s.anonymousId || s.email || s.sessionKey || s.id;
-    const seenAt = toMillis(s.lastSeenAtClientMs || s.updatedAt || s.createdAt);
-    if (!latestSessionsByIdentity.has(identityKey)) {
-      latestSessionsByIdentity.set(identityKey, s);
-    } else {
-      const existing = latestSessionsByIdentity.get(identityKey);
-      const existingSeenAt = toMillis(existing.lastSeenAtClientMs || existing.updatedAt || existing.createdAt);
-      if (seenAt > existingSeenAt) {
-        latestSessionsByIdentity.set(identityKey, s);
-      }
-    }
-  });
+  // Parte "pesada" (cacheable durante GLOBAL_CACHE_TTL_MS): depende solo del rango
+  // de fechas, no del instante exacto. Excluye el bloque realtime, que se recalcula
+  // siempre con datos frescos.
+  const cacheableData = {
+    totalRegisteredUsers: users.length,
+    activeIdentities,
+    totalSessions,
+    totalEvents,
+    totalDwellMs: globalDwellMs,
+    avgDwellPerSessionMs,
+    funnelStats: aggregateFunnel(events),
+    abandonedCarts: aggregateAbandonedCarts(events, sessions),
+    topRoutesByViews: routeStats.topRoutesByViews,
+    topRoutesByDwell: routeStats.topRoutesByDwell,
+    mostTimeRoute: routeStats.mostTimeRoute,
+    topSearches: aggregateTopSearches(events),
+    topProducts: aggregateTopProducts(events),
+    bannerClicks: aggregateBannerClicks(events),
+    scrollDepth: aggregateScrollDepth(events),
+    bounceRate: aggregateBounceRate(events, sessions),
+    deviceStats: aggregateDevices(sessions),
+    utmStats: aggregateUTM(sessions),
+    geographyStats: aggregateGeography(sessions),
+    estimatedSummary: globalSummaryResult.data || null,
+    eventsForCharts: events, // Para graficar
+  };
 
-  const uniqueRealtimeSessions = Array.from(latestSessionsByIdentity.values());
+  // Guardar en cache (incluye el set de uids registrados para recomputar realtime
+  // en próximos cache hits sin volver a leer la base de usuarios).
+  writeGlobalCache(cacheKey, { data: cacheableData, __existingUserUids: existingUserUids });
 
-  const realtimeActiveLoggedUsers = countArr(uniqueRealtimeSessions, s => !!s.uid);
-  const realtimeActiveRegisteredUsers = countArr(uniqueRealtimeSessions, s => s.uid && existingUserUids.has(s.uid));
-  const realtimeActiveVisitors = countArr(uniqueRealtimeSessions, s => !s.uid);
-  
-  const realtimeSessionsDetails = uniqueRealtimeSessions.map(s => ({
-    id: s.id || s.sessionKey,
-    uid: s.uid,
-    email: s.email,
-    displayName: s.displayName,
-    anonymousId: s.anonymousId,
-    lastPath: s.lastPath || 'Desconocido',
-    lastSeenAtMs: toMillis(s.lastSeenAtClientMs || s.updatedAt || s.createdAt),
-    startedAtMs: toMillis(s.startedAtClientMs || s.createdAt),
-    platform: s.platform || parseUserAgent(s.userAgent).os,
-    device: parseUserAgent(s.userAgent).device,
-    browser: parseUserAgent(s.userAgent).browser,
-    referrer: s.referrer,
-    isRegistered: s.uid ? existingUserUids.has(s.uid) : false,
-    hasAccount: !!s.uid,
-    clientType: s.clientType || 'WEB'
-  })).sort((a, b) => b.lastSeenAtMs - a.lastSeenAtMs);
+  const realtimeBlock = computeRealtimeBlock(realtimeSessionsResult.data || [], realtimeThreshold, existingUserUids);
 
   return {
     data: {
-      totalRegisteredUsers: users.length,
-      activeIdentities,
-      totalSessions,
-      totalEvents,
-      totalDwellMs: globalDwellMs,
-      avgDwellPerSessionMs,
-      funnelStats: aggregateFunnel(events),
-      abandonedCarts: aggregateAbandonedCarts(events, sessions),
-      topRoutesByViews: routeStats.topRoutesByViews,
-      topRoutesByDwell: routeStats.topRoutesByDwell,
-      mostTimeRoute: routeStats.mostTimeRoute,
-      topSearches: aggregateTopSearches(events),
-      topProducts: aggregateTopProducts(events),
-      bannerClicks: aggregateBannerClicks(events),
-      scrollDepth: aggregateScrollDepth(events),
-      bounceRate: aggregateBounceRate(events, sessions),
-      deviceStats: aggregateDevices(sessions),
-      utmStats: aggregateUTM(sessions),
-      geographyStats: aggregateGeography(sessions),
-      realtimeWindowMs: REALTIME_WINDOW_MS,
-      realtimeActiveSessions: countArr(uniqueRealtimeSessions),
-      realtimeActiveIdentities: countArr(uniqueRealtimeSessions),
-      realtimeActiveLoggedUsers,
-      realtimeActiveRegisteredUsers,
-      realtimeActiveVisitors,
-      realtimeSessionsDetails,
-      realtimeRefreshedAtMs: Date.now(),
-      estimatedSummary: globalSummaryResult.data || null,
-      eventsForCharts: events // Para graficar
+      ...cacheableData,
+      ...realtimeBlock,
     },
     error:
       usersResult.error ||

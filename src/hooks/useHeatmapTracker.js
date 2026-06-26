@@ -36,31 +36,58 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
       // Ignorar clics si no tenemos base de datos configurada
       if (!db) return;
 
-      // Función auxiliar para identificar el elemento
+      // Función auxiliar: limpia y recorta un texto para que sea legible
+      const cleanLabel = (raw, max = 40) => {
+        if (!raw) return '';
+        return String(raw).replace(/\s+/g, ' ').trim().substring(0, max);
+      };
+
+      // Función auxiliar: identifica el elemento de forma LEGIBLE para humanos.
+      // Sube por el DOM buscando el ancestro accionable (<a>/<button>/[role])
+      // y prioriza texto visible, aria-label/title/alt y data-track sobre
+      // etiquetas genéricas como 'svg'/'path'.
       const getElementIdentifier = (target) => {
-        if (!target) return 'Desconocido';
-        
-        // 1. Si tiene ID, es lo más exacto
-        if (target.id) return `[${target.tagName}] #${target.id}`;
-        
-        // 2. Si tiene data-track (ideal para el futuro)
-        if (target.getAttribute('data-track')) return `[${target.tagName}] ${target.getAttribute('data-track')}`;
-        
-        // 3. Buscar si es un botón o enlace con texto
-        const text = target.innerText || target.textContent;
-        const cleanText = text ? text.trim().substring(0, 30).replace(/\n/g, ' ') : '';
-        
-        if (cleanText) {
-          return `[${target.tagName}] "${cleanText}"`;
+        if (!target || !target.tagName) return 'Desconocido';
+
+        // Si el clic cayó sobre un icono (svg/path/img sin texto), buscamos el
+        // ancestro accionable más cercano para describir la ACCIÓN real.
+        const actionable =
+          (target.closest && target.closest('a, button, [role="button"], [data-track], [aria-label]')) || target;
+
+        const el = actionable || target;
+        const tag = el.tagName || target.tagName;
+
+        // 1. data-track explícito (lo más fiable para el futuro)
+        const dataTrack = el.getAttribute && el.getAttribute('data-track');
+        if (dataTrack) return `[${tag}] ${cleanLabel(dataTrack)}`;
+
+        // 2. Texto visible del elemento accionable o de su entorno cercano
+        const directText = cleanLabel(el.innerText || el.textContent);
+        if (directText) return `[${tag}] "${directText}"`;
+
+        // 3. Atributos accesibles: aria-label / title / alt (en el elemento o hijo img)
+        const aria =
+          (el.getAttribute && (el.getAttribute('aria-label') || el.getAttribute('title'))) ||
+          (target.getAttribute && (target.getAttribute('aria-label') || target.getAttribute('title') || target.getAttribute('alt')));
+        const imgAlt = el.querySelector && el.querySelector('img[alt]')?.getAttribute('alt');
+        const label = cleanLabel(aria || imgAlt);
+        if (label) return `[${tag}] ${label}`;
+
+        // 4. ID como referencia técnica
+        if (el.id) return `[${tag}] #${el.id}`;
+
+        // 5. Clase principal (evitando volcar utilidades sin sentido)
+        const cls = el.className;
+        if (cls && typeof cls === 'string') {
+          const mainClass = cls.split(' ').filter(Boolean)[0];
+          if (mainClass) return `[${tag}] .${mainClass}`;
         }
-        
-        // 4. Si no tiene texto pero tiene clases
-        if (target.className && typeof target.className === 'string') {
-          const mainClass = target.className.split(' ')[0];
-          if (mainClass) return `[${target.tagName}] .${mainClass}`;
-        }
-        
-        return `[${target.tagName}]`;
+
+        // 6. Último recurso: nunca dejar solo 'svg'/'path' si hay algo mejor arriba
+        const upperText = cleanLabel(target.closest && target.closest('a, button, li, [class]')?.innerText);
+        if (upperText) return `[${tag}] "${upperText}"`;
+
+        return `[${tag}]`;
       };
 
       const elementInfo = getElementIdentifier(e.target);

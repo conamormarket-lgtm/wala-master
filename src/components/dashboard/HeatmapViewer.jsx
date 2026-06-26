@@ -7,18 +7,23 @@ import styles from './HeatmapViewer.module.css';
  * VISOR DE MAPA DE CALOR (HeatmapViewer)
  *
  * Lee los clics agregados desde services/heatmapData.getHeatmapByPage(), permite
- * elegir una página (los paths con más clics) y dibuja, sobre un <canvas> nativo,
- * "blobs" radiales por densidad de clics (rojo -> amarillo -> transparente).
+ * elegir una página (chips con NOMBRE legible + ruta + nº de clics) y muestra una
+ * PREVIEW real de la página dentro de un <iframe src={path}> (misma-origen, wala.pe)
+ * con el canvas del heatmap superpuesto encima (puntos escalados al tamaño del
+ * iframe). Si el iframe falla o no carga, hace FALLBACK a un canvas sobre una
+ * cuadrícula neutra.
  *
- * Panel lateral con el ranking de elementos más clicados de la página seleccionada.
+ * Panel lateral con el ranking de elementos más clicados (etiquetas legibles).
  * Estética liquid-glass, entrada con framer-motion. Sin props requeridas.
  */
 
-// Proporción del lienzo del heatmap (16:10, similar a un viewport de escritorio).
-const CANVAS_W = 960;
-const CANVAS_H = 600;
-// Radio del blob de cada clic, en px del canvas.
-const BLOB_RADIUS = 42;
+// Proporción del lienzo de respaldo (16:10, similar a un viewport de escritorio).
+const FALLBACK_W = 960;
+const FALLBACK_H = 600;
+// Radio base del blob de cada clic, como fracción del ancho del lienzo.
+const BLOB_RADIUS_RATIO = 0.044;
+// Tiempo máximo de espera a que el iframe cargue antes de asumir fallo.
+const IFRAME_TIMEOUT_MS = 6000;
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -33,42 +38,49 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
 };
 
-function prettyPath(path) {
-  if (!path || path === 'unknown') return 'Desconocida';
-  return path;
-}
-
 /**
- * Dibuja el heatmap en el canvas:
+ * Dibuja el heatmap en el canvas a la resolución indicada (w x h en px reales).
  *  1) Pinta cada clic como un gradiente radial en escala de grises (alpha acumulada).
- *  2) Recorre los píxeles y mapea la intensidad acumulada a una rampa de color
- *     (transparente -> azul tenue -> verde -> amarillo -> rojo).
+ *  2) Recolorea según la intensidad acumulada (rampa azul -> verde -> amarillo -> rojo).
  */
-function drawHeatmap(canvas, points) {
+function drawHeatmap(canvas, points, w, h) {
   if (!canvas) return;
+  const width = Math.max(1, Math.round(w));
+  const height = Math.max(1, Math.round(h));
+
+  // Ajustar el tamaño interno del canvas solo si cambió (evita reflows).
+  if (canvas.width !== width) canvas.width = width;
+  if (canvas.height !== height) canvas.height = height;
+
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.clearRect(0, 0, width, height);
   if (!points || points.length === 0) return;
+
+  const radius = Math.max(14, Math.round(width * BLOB_RADIUS_RATIO));
 
   // Paso 1: acumulación de densidad en escala de grises.
   ctx.globalCompositeOperation = 'source-over';
   points.forEach((p) => {
-    const cx = p.xNorm * CANVAS_W;
-    const cy = p.yNorm * CANVAS_H;
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, BLOB_RADIUS);
-    // Alpha baja por clic para que la superposición construya densidad.
+    const cx = p.xNorm * width;
+    const cy = p.yNorm * height;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
     grad.addColorStop(0, 'rgba(0,0,0,0.28)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(cx, cy, BLOB_RADIUS, 0, Math.PI * 2);
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
   });
 
   // Paso 2: recolorear según intensidad acumulada (canal alpha).
-  const image = ctx.getImageData(0, 0, CANVAS_W, CANVAS_H);
+  let image;
+  try {
+    image = ctx.getImageData(0, 0, width, height);
+  } catch (e) {
+    return; // Por seguridad (canvas "tainted"); no debería ocurrir aquí.
+  }
   const data = image.data;
   for (let i = 0; i < data.length; i += 4) {
     const alpha = data[i + 3];
@@ -88,7 +100,6 @@ function drawHeatmap(canvas, points) {
  * Devuelve [r,g,b,a] (a en 0..255).
  */
 function ramp(t) {
-  // Tramos: 0 transparente -> 0.25 azul -> 0.5 verde -> 0.75 amarillo -> 1 rojo
   const stops = [
     { p: 0.0, c: [69, 117, 255, 0] },
     { p: 0.25, c: [56, 132, 255, 150] },
@@ -116,9 +127,22 @@ function ramp(t) {
 export default function HeatmapViewer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [data, setData] = useState({ paths: [], pointsByPath: {}, topElementsByPath: {}, totalClicks: 0, totalDocs: 0 });
+  const [data, setData] = useState({
+    paths: [],
+    pageNames: {},
+    pointsByPath: {},
+    clicksByPath: {},
+    topElementsByPath: {},
+    totalClicks: 0,
+    totalDocs: 0,
+  });
   const [selectedPath, setSelectedPath] = useState(null);
+  // Estado de la preview con iframe: 'loading' | 'ready' | 'failed'
+  const [iframeState, setIframeState] = useState('loading');
+
   const canvasRef = useRef(null);
+  const frameRef = useRef(null); // contenedor que define el tamaño de overlay
+  const iframeTimerRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -152,12 +176,77 @@ export default function HeatmapViewer() {
     [selectedPath, data.topElementsByPath]
   );
 
+  const pageName = selectedPath ? (data.pageNames[selectedPath] || selectedPath) : '';
+  // Para el iframe usamos la ruta tal cual (relativa al mismo origen = wala.pe).
+  const iframeSrc = selectedPath && selectedPath !== 'unknown' ? selectedPath : null;
+
+  // Reinicia el estado del iframe cada vez que cambia la página seleccionada.
   useEffect(() => {
-    drawHeatmap(canvasRef.current, points);
-  }, [points]);
+    if (iframeTimerRef.current) {
+      clearTimeout(iframeTimerRef.current);
+      iframeTimerRef.current = null;
+    }
+    if (!iframeSrc) {
+      setIframeState('failed'); // sin ruta navegable -> fallback al canvas/grid
+      return undefined;
+    }
+    setIframeState('loading');
+    iframeTimerRef.current = setTimeout(() => {
+      setIframeState((s) => (s === 'ready' ? s : 'failed'));
+    }, IFRAME_TIMEOUT_MS);
+    return () => {
+      if (iframeTimerRef.current) {
+        clearTimeout(iframeTimerRef.current);
+        iframeTimerRef.current = null;
+      }
+    };
+  }, [iframeSrc]);
+
+  // (Re)dibuja el overlay del heatmap ajustado al tamaño REAL del contenedor.
+  useEffect(() => {
+    const redraw = () => {
+      const frame = frameRef.current;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      let w = FALLBACK_W;
+      let h = FALLBACK_H;
+      if (frame) {
+        const rect = frame.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          w = rect.width;
+          h = rect.height;
+        }
+      }
+      drawHeatmap(canvas, points, w, h);
+    };
+
+    redraw();
+
+    // Redibuja al redimensionar el contenedor (responsive / cambio de layout).
+    let ro;
+    if (typeof ResizeObserver !== 'undefined' && frameRef.current) {
+      ro = new ResizeObserver(() => redraw());
+      ro.observe(frameRef.current);
+    } else if (typeof window !== 'undefined') {
+      window.addEventListener('resize', redraw);
+    }
+    return () => {
+      if (ro) ro.disconnect();
+      else if (typeof window !== 'undefined') window.removeEventListener('resize', redraw);
+    };
+  }, [points, iframeState]);
+
+  const handleIframeLoad = () => {
+    // 'load' dispara tanto en éxito como en about:blank; si hay src, lo damos por
+    // bueno (el navegador no expone errores cross-doc por seguridad).
+    if (iframeSrc) setIframeState('ready');
+  };
+
+  const handleIframeError = () => setIframeState('failed');
 
   const hasData = !loading && !error && data.totalClicks > 0;
   const maxElementCount = topElements.length > 0 ? topElements[0].count : 0;
+  const showIframe = iframeState !== 'failed' && !!iframeSrc;
 
   return (
     <motion.section
@@ -211,7 +300,8 @@ export default function HeatmapViewer() {
         <>
           <motion.div className={styles.pathSelector} variants={itemVariants}>
             {data.paths.map((path) => {
-              const count = (data.pointsByPath[path] || []).length;
+              const count = data.clicksByPath?.[path] ?? (data.pointsByPath[path] || []).length;
+              const name = data.pageNames?.[path] || path;
               const active = path === selectedPath;
               return (
                 <button
@@ -219,9 +309,12 @@ export default function HeatmapViewer() {
                   type="button"
                   className={`${styles.pathChip} ${active ? styles.pathChipActive : ''}`}
                   onClick={() => setSelectedPath(path)}
-                  title={prettyPath(path)}
+                  title={`${name} — ${path}`}
                 >
-                  <span className={styles.pathChipLabel}>{prettyPath(path)}</span>
+                  <span className={styles.pathChipMeta}>
+                    <span className={styles.pathChipName}>{name}</span>
+                    <span className={styles.pathChipRoute}>{path}</span>
+                  </span>
                   <span className={styles.pathChipCount}>{count}</span>
                 </button>
               );
@@ -231,24 +324,59 @@ export default function HeatmapViewer() {
           <motion.div className={styles.grid} variants={itemVariants}>
             <div className={styles.canvasCard}>
               <div className={styles.canvasHead}>
-                <span className={styles.canvasPath}>{prettyPath(selectedPath)}</span>
+                <span className={styles.canvasPath} title={selectedPath}>
+                  {pageName}
+                  <span className={styles.canvasRoute}>{selectedPath}</span>
+                </span>
                 <span className={styles.canvasCount}>{points.length} clics</span>
               </div>
-              <div className={styles.canvasFrame}>
-                <canvas
-                  ref={canvasRef}
-                  width={CANVAS_W}
-                  height={CANVAS_H}
-                  className={styles.canvas}
-                />
+
+              <div
+                ref={frameRef}
+                className={`${styles.canvasFrame} ${showIframe ? styles.canvasFrameLive : ''}`}
+              >
+                {/* PREVIEW real de la página (misma-origen wala.pe). */}
+                {iframeSrc && iframeState !== 'failed' && (
+                  <iframe
+                    key={iframeSrc}
+                    src={iframeSrc}
+                    title={`Vista previa de ${pageName}`}
+                    className={styles.previewFrame}
+                    loading="lazy"
+                    sandbox="allow-same-origin allow-scripts"
+                    scrolling="no"
+                    onLoad={handleIframeLoad}
+                    onError={handleIframeError}
+                  />
+                )}
+
+                {/* Capa de atenuación para que el calor resalte sobre la preview. */}
+                {showIframe && <div className={styles.previewScrim} aria-hidden="true" />}
+
+                {/* Canvas del heatmap superpuesto (no captura el puntero). */}
+                <canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />
+
+                {/* Spinner mientras carga el iframe. */}
+                {showIframe && iframeState === 'loading' && (
+                  <div className={styles.previewLoading}>
+                    <span className={styles.spinner} aria-hidden="true" />
+                  </div>
+                )}
+
                 {points.length === 0 && (
                   <div className={styles.canvasEmpty}>Sin clics ubicables en esta página.</div>
                 )}
               </div>
-              <div className={styles.legend}>
-                <span className={styles.legendLabel}>Menos</span>
-                <span className={styles.legendBar} aria-hidden="true" />
-                <span className={styles.legendLabel}>Más</span>
+
+              <div className={styles.legendRow}>
+                <span className={styles.previewTag}>
+                  {showIframe ? 'Sobre la página real' : 'Vista de cuadrícula'}
+                </span>
+                <div className={styles.legend}>
+                  <span className={styles.legendLabel}>Menos</span>
+                  <span className={styles.legendBar} aria-hidden="true" />
+                  <span className={styles.legendLabel}>Más</span>
+                </div>
               </div>
             </div>
 
@@ -262,7 +390,7 @@ export default function HeatmapViewer() {
                     const pct = maxElementCount > 0 ? (el.count / maxElementCount) * 100 : 0;
                     return (
                       <motion.li
-                        key={`${el.elementInfo}-${idx}`}
+                        key={`${el.label}-${idx}`}
                         className={styles.rankItem}
                         initial={{ opacity: 0, x: 12 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -270,8 +398,11 @@ export default function HeatmapViewer() {
                       >
                         <span className={styles.rankPos}>{idx + 1}</span>
                         <div className={styles.rankBody}>
-                          <span className={styles.rankLabel} title={el.elementInfo}>
-                            {el.elementInfo}
+                          <span
+                            className={`${styles.rankLabel} ${el.generic ? styles.rankLabelGeneric : ''}`}
+                            title={el.label}
+                          >
+                            {el.label}
                           </span>
                           <span className={styles.rankTrack}>
                             <span className={styles.rankFill} style={{ width: `${pct}%` }} />

@@ -179,14 +179,18 @@ export const CartProvider = ({ children }) => {
 
     // ── Analytics: emitir evento add_to_cart (embudo) ─────────────────────
     // No bloquea ni rompe el flujo del carrito: cualquier error se ignora.
+    // Enviamos datos REALES del producto (id, nombre, precio, cantidad) para
+    // que el panel 'Carrito' del dashboard sea legible sin lecturas extra.
     try {
       const unitPrice = customization?.finalPrice || itemPrice || 0;
+      const productName = product.name || product.productName || 'Producto sin nombre';
       trackAddToCart(
         {
           productId: product.id,
-          name: product.name,
+          name: productName,
           price: unitPrice,
           qty: quantity,
+          category: product.category || product.categoria || null,
           totalCents: Math.round(unitPrice * quantity * 100),
           currency: 'PEN',
         },

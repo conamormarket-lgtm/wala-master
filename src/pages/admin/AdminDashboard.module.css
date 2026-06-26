@@ -76,6 +76,60 @@
   font-size: 0.9rem;
 }
 
+/* ---------- Controles del header (rango + actualizar) ---------- */
+.headerControls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* ---------- Botón "Actualizar" (refresco manual) ---------- */
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  color: var(--primary-color, #6d28d9);
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.06));
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.refreshBtn:hover:not(:disabled) {
+  background: var(--primary-color, #6d28d9);
+  color: #fff;
+  box-shadow: 0 4px 12px -4px rgba(109, 40, 217, 0.5);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.refreshIcon {
+  display: inline-block;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.spinning {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ---------- Selector de rango (glass) ---------- */
 .rangePicker {
   display: inline-flex;
@@ -501,5 +555,8 @@
 @media (prefers-reduced-motion: reduce) {
   .funnelFill {
     transition: none;
+  }
+  .spinning {
+    animation: none;
   }
 }
