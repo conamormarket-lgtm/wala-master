@@ -1,0 +1,95 @@
+rules_version = '2';
+// ============================================================================
+// REGLAS DE PRODUCCIÓN — base (default) de sistema-gestion-3b225
+// (Portal wala.pe + CRM/ERP "Sistema gestión" multi-tenant comparten esta base.)
+//
+// OBJETIVO: cerrar la fuga (hoy todo es `if true`). Principio:
+//   - PÚBLICO (anónimo): solo el catálogo/config que la tienda muestra sin login,
+//     y la CREACIÓN de los flujos anónimos legítimos (checkout, analítica, heatmap,
+//     libro de reclamaciones, referidos).
+//   - TODO LO DEMÁS (clientes, pedidos, perfiles, y TODO el CRM): requiere LOGIN.
+//
+// Esto BLOQUEA la lectura/escritura/borrado ANÓNIMO de datos sensibles, sin romper
+// al personal del CRM (que entra con sesión → request.auth != null).
+//
+// ⚠️ RESIDUAL (a refinar en una Fase C con roles): un usuario logueado puede leer/
+//    escribir más de lo ideal (no hay scoping por dueño/rol todavía). Pero ya NO hay
+//    exposición a internet anónima, que es la vulnerabilidad activa.
+// ⚠️ ANTES DE PUBLICAR: respaldar las reglas actuales y verificar el CRM tras publicar
+//    (ver docs/wala/PLAN-SEGURIDAD-REGLAS.md). Probar en el Rules Playground.
+// ============================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() { return request.auth != null; }
+    function isAdmin() {
+      return isAuth() && (
+        request.auth.token.admin == true ||
+        (exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // ── PÚBLICO: catálogo y configuración del storefront ───────────────────────
+    // Lectura anónima (la tienda los muestra sin login); escritura solo admin.
+    match /productos_wala/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /products/{id}               { allow read: if true; allow write: if isAdmin(); }
+    match /categories/{id}             { allow read: if true; allow write: if isAdmin(); }
+    match /categoriasProductos/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_categories/{id}      { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_collections/{id}     { allow read: if true; allow write: if isAdmin(); }
+    match /collections/{id}            { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_brands/{id}          { allow read: if true; allow write: if isAdmin(); }
+    match /brands/{id}                 { allow read: if true; allow write: if isAdmin(); }
+    match /marcasProducto/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_mockups/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /characters/{id}             { allow read: if true; allow write: if isAdmin(); }
+    match /cliparts/{id}               { allow read: if true; allow write: if isAdmin(); }
+    match /customShapes/{id}           { allow read: if true; allow write: if isAdmin(); }
+    match /fonts/{id}                  { allow read: if true; allow write: if isAdmin(); }
+    match /templates/{id}              { allow read: if true; allow write: if isAdmin(); }
+    match /productTypes/{id}           { allow read: if true; allow write: if isAdmin(); }
+    match /tags/{id}                   { allow read: if true; allow write: if isAdmin(); }
+    match /niches/{id}                 { allow read: if true; allow write: if isAdmin(); }
+    match /vendors/{id}                { allow read: if true; allow write: if isAdmin(); }
+    match /blueprints/{id}             { allow read: if true; allow write: if isAdmin(); }
+    match /flashOffers/{id}            { allow read: if true; allow write: if isAdmin(); }
+    match /rewardsCatalog/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /storefront/{id}             { allow read: if true; allow write: if isAdmin(); }
+    match /storeConfig/{id}            { allow read: if true; allow write: if isAdmin(); }
+    match /configuracion/{id}          { allow read: if true; allow write: if isAdmin(); }
+    match /config/{id}                 { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{id}               { allow read: if true; allow write: if isAdmin(); }
+    match /messages/{id}               { allow read: if true; allow write: if isAdmin(); }
+    match /pages/{id}                  { allow read: if true; allow write: if isAdmin(); }
+    match /landingPages/{id}           { allow read: if true; allow write: if isAdmin(); }
+    match /suggested_packages/{id}     { allow read: if true; allow write: if isAdmin(); }
+    match /universal_dates/{id}        { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_encuesta_config/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /cuestionarios_templates/{id}{ allow read: if true; allow write: if isAdmin(); }
+    match /globals/{id}                { allow read: if true; allow write: if isAdmin(); }
+    match /weeklyChallenges/{id}       { allow read: if true; allow write: if isAdmin(); }
+    match /ruletaPrizes/{id}           { allow read: if true; allow write: if isAdmin(); }
+    match /wordle_daily_words/{id}     { allow read: if true; allow write: if isAdmin(); }
+    match /missions/{id}               { allow read: if true; allow write: if isAdmin(); }
+    // Enlace de pago: se abre por su id (link) sin login; gestión solo admin.
+    match /enlaces_pago/{id}           { allow read: if true; allow write: if isAdmin(); }
+    // Ranking de Wordle público; el registro de partida lo crea el jugador.
+    match /wordle/{id}                 { allow read: if true; allow create, update: if true; allow delete: if isAuth(); }
+
+    // ── ANÓNIMO solo CREATE: flujos públicos legítimos del portal ──────────────
+    // (la lectura/edición/borrado de estas requiere login)
+    match /analytics_events/{id}       { allow create: if true; allow read, update, delete: if isAuth(); }
+    match /analytics_sessions/{id}     { allow create, update: if true; allow read, delete: if isAuth(); }
+    match /heatmap_events/{id}         { allow create: if true; allow read, update, delete: if isAuth(); }
+    match /pedidos_web/{id}            { allow create: if true; allow read, update, delete: if isAuth(); }
+    match /pedidos/{id}                { allow create: if true; allow read, update, delete: if isAuth(); }
+    match /libro_reclamaciones/{id}    { allow create: if true; allow read, update, delete: if isAuth(); }
+    match /referrals/{id}              { allow create, update: if true; allow read, delete: if isAuth(); }
+
+    // ── TODO LO DEMÁS: clientes, pedidos*, perfiles, y TODO el CRM → requiere LOGIN ──
+    // Bloquea el acceso ANÓNIMO de internet (la fuga activa). El personal del CRM y
+    // los clientes logueados siguen operando. (Refinar por dueño/rol en Fase C.)
+    match /{document=**} { allow read, write: if isAuth(); }
+  }
+}
