@@ -51,14 +51,11 @@ const validationSchema = Yup.object({
   country: Yup.string().required('País requerido'),
   // DNI condicional: si el país es Perú se aplica la validación estricta de DNI (8 dígitos);
   // para cualquier otro país el documento es texto libre (solo requerido).
-  dni: Yup.string().when('country', {
-    is: (country) => country === 'PE' || !country,
-    then: () =>
-      Yup.string()
-        .required('DNI requerido')
-        .test('dni-valido', 'DNI inválido (8 dígitos)', (value) => validateDNI(value)),
-    otherwise: () => Yup.string().required('Documento requerido')
-  }),
+  // Documento: se acepta cualquier tipo (DNI/CE/RUC/pasaporte/doc extranjero).
+  // Solo requerido y con un mínimo razonable; el tipo exacto se interpreta en el ERP.
+  dni: Yup.string()
+    .required('Documento requerido')
+    .min(3, 'Documento inválido (mínimo 3 caracteres)'),
   phone: Yup.string().required('Teléfono requerido'),
   address: Yup.string().required('Dirección requerida'),
   district: Yup.string().required('Distrito requerido'),
@@ -866,7 +863,29 @@ const CheckoutPage = () => {
               </div>
             </GlassCard>
           ) : (
-          <form onSubmit={formik.handleSubmit} className={styles.form}>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              // Valida primero; si hay errores, AVISA y lleva al primer campo (antes el bloqueo era silencioso).
+              const errs = await formik.validateForm();
+              if (Object.keys(errs).length > 0) {
+                formik.setTouched(
+                  Object.keys(errs).reduce((acc, k) => { acc[k] = true; return acc; }, {}),
+                  false,
+                );
+                toast.error('Revisa los campos marcados en rojo para continuar.');
+                const firstKey = Object.keys(errs)[0];
+                const el = document.querySelector(`[name="${firstKey}"]`);
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  if (typeof el.focus === 'function') el.focus();
+                }
+                return;
+              }
+              formik.handleSubmit(e);
+            }}
+            className={styles.form}
+          >
             <h2>Detalles de Envío</h2>
 
             <div className={styles.field}>
@@ -907,7 +926,7 @@ const CheckoutPage = () => {
                   value={formik.values.dni}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  placeholder={formIsPeru ? 'DNI (8 dígitos)' : 'Documento de identidad'}
+                  placeholder={formIsPeru ? 'DNI, CE, RUC o pasaporte' : 'Documento de identidad'}
                 />
                 {formik.touched.dni && formik.errors.dni && (
                   <span className={styles.error}>{formik.errors.dni}</span>
