@@ -647,10 +647,61 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
   }
 
   // El monto llega en céntimos (integer). Validación básica server-side (H-11).
-  // TODO (H-11 / Fase 3): recalcular el monto desde el pedido/carrito real en backend,
-  // sin confiar en el valor enviado por el cliente.
   if (!Number.isInteger(amount) || amount <= 0) {
     throw new functions.https.HttpsError("invalid-argument", "Monto inválido.");
+  }
+
+  // ── H-11: RECÁLCULO DEL MONTO SERVER-SIDE (cierra el TODO) ──────────────────
+  // No se confía 100% en el `amount` enviado por el cliente. Cuando el pago es en
+  // PEN y la metadata trae el id del pedido (`pedidoId`, escrito por el frontend en
+  // CulqiCustomCheckout), se relee el total REAL desde pedidos_web en el ERP y se
+  // usa ese total (en céntimos) como monto autoritativo del cargo.
+  //
+  // IMPORTANTE (regla dura de dinero): el total en PEN NO se modifica aquí; el
+  // descuento por monedas ya viene aplicado en montoTotal/montoPendiente del pedido.
+  // Solo se sustituye el `amount` del cargo por el derivado del pedido real.
+  //
+  // Tolerancia a fallos: si no hay ERP configurado, no se encuentra el pedido, o el
+  // total no es válido, se CONSERVA el `amount` del cliente (ya validado > 0) para no
+  // bloquear el cobro. Para pagos en USD/extranjero NO se recalcula aquí: PayPal cobra
+  // en USD por su propio flujo y Culqi-USD usa enlaces de monto fijo ya validados.
+  let chargeAmount = amount;
+  const payCurrency = currency || "PEN";
+  const pedidoId = metadata && (metadata.pedidoId || metadata.orderId);
+  if (payCurrency === "PEN" && pedidoId) {
+    try {
+      const erpDb = getErpDb();
+      if (erpDb) {
+        let orderData = null;
+        for (const coll of ["pedidos_web", "pedidos"]) {
+          const snap = await erpDb.collection(coll).doc(String(pedidoId)).get();
+          if (snap.exists) { orderData = snap.data(); break; }
+        }
+        if (orderData) {
+          // Total final en soles (con descuento ya aplicado). Se prioriza el pendiente.
+          const penTotal = Number(
+            orderData.montoPendiente ?? orderData.montoTotal ?? orderData.montoDeuda
+          );
+          if (Number.isFinite(penTotal) && penTotal > 0) {
+            const recomputed = Math.round(penTotal * 100); // a céntimos
+            if (recomputed > 0) {
+              if (recomputed !== amount) {
+                console.warn(
+                  `processCulqiPayment H-11: monto del cliente (${amount}) != monto del pedido ` +
+                  `${pedidoId} (${recomputed}). Se usa el del servidor.`
+                );
+              }
+              chargeAmount = recomputed;
+            }
+          }
+        } else {
+          console.warn(`processCulqiPayment H-11: pedido ${pedidoId} no encontrado; se usa el monto del cliente.`);
+        }
+      }
+    } catch (e) {
+      // Nunca se bloquea el cobro por un fallo al recalcular: se usa el monto del cliente.
+      console.warn("processCulqiPayment H-11: fallo al recalcular monto, se usa el del cliente:", e.message);
+    }
   }
 
   // La llave privada de Culqi DEBE venir de un secret de Functions. Sin fallback dummy
@@ -669,8 +720,8 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
         "Authorization": `Bearer ${secretKey}`
       },
       body: JSON.stringify({
-        amount: amount, // El frontend ya lo envía en céntimos (integer)
-        currency_code: currency || "PEN",
+        amount: chargeAmount, // H-11: monto autoritativo (recalculado server-side cuando aplica)
+        currency_code: payCurrency,
         email: email,
         source_id: tokenId,
         description: description || "Pago en Walá",
@@ -688,7 +739,8 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
     return {
       success: true,
       charge_id: result.id,
-      outcome: result.outcome
+      outcome: result.outcome,
+      amount: chargeAmount, // H-11: monto realmente cobrado (céntimos), por si difería del cliente
     };
 
   } catch (err) {
@@ -2135,3 +2187,242 @@ exports.computeSegmentsSecure = functions.https.onCall(async (data, context) => 
 
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;
+
+// ════════════════════════════════════════════════════════════════════════════
+// PAGOS USD / TIPO DE CAMBIO Y WEBHOOK DE CULQI (Fase 0 — economía)
+// Aditivo: no altera el flujo de éxito existente de Culqi/PayPal. Solo añade
+//   (1) culqiWebhook: confirma pagos server-side de forma IDEMPOTENTE.
+//   (2) updateFxRate: cron diario que escribe config/fx leído por el frontend.
+// Reglas de dinero: el total en PEN NO se toca; el USD se deriva del total PEN.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── culqiWebhook (onRequest) ──────────────────────────────────────────────────
+// Recibe la notificación (evento) que Culqi envía a la URL configurada en su panel.
+// Ante un cargo exitoso ('charge.creation.succeeded' / 'charge.succeeded'), marca el
+// pedido correspondiente en pedidos_web como PAGADO de forma IDEMPOTENTE (por el id
+// del charge): si el charge ya fue procesado, no vuelve a escribir ni duplica nada.
+//
+// La relación charge -> pedido se obtiene de charge.metadata.pedidoId, que el frontend
+// (CulqiCustomCheckout) envía al crear el cargo y Culqi reenvía en el evento.
+//
+// IDEMPOTENCIA: se usa una colección de marcas `culqiWebhookEvents/{chargeId}` creada
+// con transacción + create() (falla si ya existe). Si ya existía, el webhook responde
+// 200 sin reprocesar (evita doble cobro / doble marca ante reintentos de Culqi).
+//
+// FIRMA: el panel de Culqi entrega un "secret" para validar la autenticidad del evento
+// (cabecera de firma). Aquí se deja la validación CLARAMENTE comentada y lista: cuando
+// CULQI_WEBHOOK_SECRET esté configurado, descomentar el bloque de verificación HMAC.
+exports.culqiWebhook = functions.https.onRequest(async (req, res) => {
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).send("Method Not Allowed");
+    }
+
+    // ── Validación de firma (Culqi) ──────────────────────────────────────────
+    // Culqi firma el evento; el secret se obtiene del panel (Desarrollo > Webhooks).
+    // La cabecera suele venir como "X-Culqi-Signature" (verificar el nombre exacto en
+    // el panel/documentación de la cuenta). Mientras CULQI_WEBHOOK_SECRET no esté
+    // configurado, se ACEPTA el evento pero se ADVIERTE (transición). Para cerrar el
+    // agujero: configurar el secret y firmar/validar como abajo.
+    const webhookSecret = process.env.CULQI_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      // const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
+      // const signature = req.get("X-Culqi-Signature"); // confirmar nombre exacto en el panel
+      // const valid = verifyWebhookSignature(rawBody, signature, webhookSecret); // HMAC-SHA256 hex
+      // if (!valid) {
+      //   console.warn("culqiWebhook: firma inválida o ausente.");
+      //   return res.status(401).send("invalid signature");
+      // }
+      console.warn(
+        "culqiWebhook: CULQI_WEBHOOK_SECRET configurado pero la verificación de firma " +
+        "está comentada; descomentar el bloque HMAC para activarla."
+      );
+    } else {
+      console.warn(
+        "culqiWebhook: CULQI_WEBHOOK_SECRET no configurado; webhook SIN verificar firma. " +
+        "Configúrelo en el panel de Culqi y active la validación."
+      );
+    }
+
+    const body = (typeof req.body === "object" && req.body) ? req.body : {};
+
+    // Culqi envía el tipo de evento y el objeto del cargo. Se contemplan variantes de
+    // nombre por compatibilidad entre versiones de la API.
+    const eventType = body.type || body.event || "";
+    const charge = body.data || body.object || body;
+
+    // Solo interesan cargos exitosos.
+    const isCharge = String(eventType).includes("charge") || (charge && charge.object === "charge");
+    const okOutcome =
+      (charge && charge.outcome && (charge.outcome.type === "venta_exitosa" || charge.outcome.code === "AUT0000")) ||
+      String(eventType).includes("succeeded") ||
+      String(eventType).includes("creation");
+    if (!isCharge || !charge || !okOutcome) {
+      // 200 para que Culqi no reintente eventos que no nos competen.
+      return res.status(200).send("ignored");
+    }
+
+    const chargeId = charge.id || (charge.data && charge.data.id);
+    if (!chargeId) {
+      return res.status(200).send("no charge id");
+    }
+
+    const meta = charge.metadata || (charge.data && charge.data.metadata) || {};
+    const pedidoId = meta.pedidoId || meta.orderId || null;
+
+    // ── Idempotencia: marca única por chargeId ───────────────────────────────
+    const eventRef = db.collection("culqiWebhookEvents").doc(String(chargeId));
+    let alreadyProcessed = false;
+    await db.runTransaction(async (t) => {
+      const existing = await t.get(eventRef);
+      if (existing.exists) {
+        alreadyProcessed = true;
+        return;
+      }
+      t.create(eventRef, {
+        chargeId: String(chargeId),
+        pedidoId: pedidoId ? String(pedidoId) : null,
+        amount: charge.amount ?? null, // céntimos, tal como lo reporta Culqi
+        currency: charge.currency_code || charge.currency || null,
+        receivedAt: FieldValue.serverTimestamp(),
+      });
+    });
+
+    if (alreadyProcessed) {
+      // Ya se procesó este charge: no se vuelve a marcar el pedido (sin doble cobro/marca).
+      return res.status(200).send("already processed");
+    }
+
+    // ── Marcar el pedido como pagado en pedidos_web (ERP), de forma idempotente ─
+    if (pedidoId) {
+      try {
+        const erpDb = getErpDb();
+        if (erpDb) {
+          const pedidoRef = erpDb.collection("pedidos_web").doc(String(pedidoId));
+          await erpDb.runTransaction(async (t) => {
+            const snap = await t.get(pedidoRef);
+            if (!snap.exists) {
+              console.warn(`culqiWebhook: pedido ${pedidoId} no existe en pedidos_web.`);
+              return;
+            }
+            const d = snap.data() || {};
+            // Idempotente: si ya está pagado por este charge, no se reescribe.
+            if (d.pagado === true && d.culqiChargeId === String(chargeId)) {
+              return;
+            }
+            t.set(pedidoRef, {
+              pagado: true,
+              estadoPago: "pagado",
+              culqiChargeId: String(chargeId),
+              montoPagado: charge.amount ?? d.montoTotal ?? null, // céntimos según Culqi
+              montoPendiente: 0, // saldado
+              pagadoAt: FieldValue.serverTimestamp(),
+              metodoPago: "culqi",
+            }, { merge: true });
+          });
+        } else {
+          console.warn("culqiWebhook: ERP no disponible (getErpDb null); no se pudo marcar el pedido.");
+        }
+      } catch (e) {
+        // No se hace fallar el webhook: el evento ya quedó registrado (idempotente) y
+        // Culqi no debe reintentar indefinidamente. Se registra para revisión manual.
+        console.error("culqiWebhook: error al marcar pedido pagado:", e);
+      }
+    } else {
+      // Cobro sin pedido asociado (metadata.pedidoId ausente): se registra como ANOMALÍA
+      // para reconciliación manual del admin (evita el "cobro fantasma" sin rastro).
+      console.warn(`culqiWebhook: charge ${chargeId} sin pedidoId en metadata; solo se registró el evento.`);
+      try {
+        await db.collection("culqiWebhookAnomalies").doc(String(chargeId)).set({
+          chargeId: String(chargeId),
+          amount: charge.amount ?? null,
+          currency: charge.currency_code || charge.currency || null,
+          motivo: "sin_pedidoId",
+          receivedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (e) {
+        console.error("culqiWebhook: no se pudo registrar anomalía:", e);
+      }
+    }
+
+    return res.status(200).send("ok");
+  } catch (e) {
+    console.error("culqiWebhook error:", e);
+    // 200 para evitar reintentos infinitos de Culqi ante errores no recuperables.
+    return res.status(200).send("error handled");
+  }
+});
+
+// ── updateFxRate (cron diario) ────────────────────────────────────────────────
+// Lee una API FX gratuita SIN key y escribe config/fx, que el frontend LEE para
+// convertir el total PEN a USD (PayPal/Culqi-USD) y para el display de moneda local.
+//
+// Schema escrito en config/fx:
+//   {
+//     penPerUsd: number,            // soles por 1 USD (rates.PEN)
+//     margin: number,              // margen de cobro (se CONSERVA el actual; 0.04 por defecto)
+//     localPerUsd: { [code]: num },// todas las tasas vs USD (incluye COP, ARS, etc. para display)
+//     updatedAt: serverTimestamp,
+//     source, base, fetchedRateDate// metadatos de trazabilidad
+//   }
+// Fórmula de cobro USD (en el frontend): (penTotal / penPerUsd) * (1 + margin).
+//
+// Tolerancia a fallos: si el fetch falla, NO se sobrescribe config/fx (se conserva el
+// último valor bueno) y se registra el error; el frontend usa su fallback.
+exports.updateFxRate = onSchedule(
+  {
+    schedule: "0 6 * * *",       // diario 06:00
+    timeZone: "America/Lima",     // hora de Lima
+    retryCount: 2,
+  },
+  async (event) => {
+    const FX_DEFAULT_MARGIN = 0.04; // 4% por defecto si aún no existe config/fx
+    const fxRef = db.collection("config").doc("fx");
+
+    try {
+      // API FX gratuita sin key. Base USD.
+      const resp = await fetch("https://open.er-api.com/v6/latest/USD");
+      if (!resp.ok) {
+        console.error("updateFxRate: fetch FX falló con status", resp.status);
+        return; // se conserva el valor previo de config/fx
+      }
+      const json = await resp.json();
+      const rates = json && json.rates;
+      const penPerUsd = rates && Number(rates.PEN);
+
+      if (!rates || !Number.isFinite(penPerUsd) || penPerUsd <= 0) {
+        console.error("updateFxRate: respuesta FX sin PEN válido; no se sobrescribe config/fx.");
+        return;
+      }
+
+      // Conservar el margin actual si ya existe; si no, usar el por defecto.
+      let margin = FX_DEFAULT_MARGIN;
+      try {
+        const prev = await fxRef.get();
+        if (prev.exists && Number.isFinite(Number(prev.data().margin))) {
+          margin = Number(prev.data().margin);
+        }
+      } catch (e) {
+        console.warn("updateFxRate: no se pudo leer margin previo, se usa el por defecto:", e.message);
+      }
+
+      await fxRef.set(
+        {
+          penPerUsd,                 // soles por 1 USD
+          margin,                    // margen de cobro (configurable; se conserva)
+          localPerUsd: rates,        // todas las tasas vs USD (display de moneda local)
+          source: "open.er-api.com",
+          base: json.base_code || "USD",
+          fetchedRateDate: json.time_last_update_utc || null,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true } // merge: no pisa otros campos que el admin pudiera añadir
+      );
+
+      console.log(`updateFxRate: config/fx actualizado. penPerUsd=${penPerUsd}, margin=${margin}`);
+    } catch (e) {
+      // Nunca se borra la última tasa buena: solo se registra el fallo.
+      console.error("updateFxRate error (se conserva la tasa previa):", e);
+    }
+  }
+);

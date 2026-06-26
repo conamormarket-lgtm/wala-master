@@ -2,11 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-const CulqiCustomCheckout = ({ pedido, enlace, onSuccess }) => {
+const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, autoOpen = false }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const culqiRef = useRef(null);
+  // Guard para asegurar que el auto-abrir solo se dispare UNA vez (no en cada render).
+  const autoOpenedRef = useRef(false);
+  // Guard SÍNCRONO anti doble-cobro: isProcessing es estado (async) y no frena una
+  // segunda invocación inmediata del callback de Culqi; este ref sí (se evalúa al instante).
+  const processingRef = useRef(false);
 
   useEffect(() => {
     const scriptId = 'culqi-js-v4';
@@ -85,10 +90,13 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess }) => {
     // Manejador de acciones (reemplaza a window.culqi = ...)
     culqiInstance.culqi = async () => {
       if (culqiInstance.token) {
+        // Evita un SEGUNDO cargo si el callback se dispara dos veces (glitch/SDK/doble token).
+        if (processingRef.current) return;
+        processingRef.current = true;
         const token = culqiInstance.token.id;
         const email = culqiInstance.token.email;
         culqiInstance.close();
-        
+
         setIsProcessing(true);
         toast.info('Procesando pago seguro con Culqi...');
 
@@ -119,6 +127,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess }) => {
           toast.error(error.message || 'Error de comunicación con el servidor.');
         } finally {
           setIsProcessing(false);
+          processingRef.current = false; // libera el guard (permite reintento si falló)
         }
         
       } else if (culqiInstance.error) {
@@ -167,6 +176,18 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess }) => {
 
     culqiRef.current.open();
   };
+
+  // Auto-abrir el checkout de Culqi cuando el padre lo solicite (UX Opción A).
+  // Solo se dispara una vez (autoOpenedRef) y unicamente cuando el checkout
+  // esta listo (isReady) y la instancia de Culqi ya fue construida (culqiRef).
+  // No altera el flujo de token/charge/onSuccess existente: reutiliza handleOpenCheckout.
+  useEffect(() => {
+    if (autoOpen && isReady && culqiRef.current && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      handleOpenCheckout();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpen, isReady]);
 
   return (
     <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>

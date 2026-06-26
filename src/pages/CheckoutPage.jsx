@@ -18,6 +18,12 @@ import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import Button from '../components/common/Button';
 import CulqiCustomCheckout from '../components/CulqiCustomCheckout/CulqiCustomCheckout';
 import PaypalCheckout from '../components/PaypalCheckout/PaypalCheckout';
+// ── Internacionalización de cobro (aditivo) ───────────────────────────────────
+// getFx/penToUsd/penToLocal: tasa de cambio (config/fx + fallback en cascada).
+// getCurrency/formatMoney: catálogo de moneda local y formateo del resumen.
+// NO alteran los totales/descuentos en PEN; el USD se deriva del total final PEN.
+import { getFx, penToUsd, penToLocal } from '../services/fx';
+import { getCurrency, formatMoney } from '../constants/currencies';
 // Design System "Aurora Violeta Serena": superficies de vidrio y CTAs premium.
 // Uso SOLO presentacional (aditivo); no altera lógica de compra/pago/totales.
 import { GlassCard, GlassButton, Badge, AuroraBackground } from '../components/ui';
@@ -103,7 +109,26 @@ const CheckoutPage = () => {
   const subtotalWithDiscount = Math.max(0, subtotal - discount);
   const shipping = subtotalWithDiscount > 100 ? 0 : 15;
   const total = subtotalWithDiscount + shipping;
-  
+
+  // ── FX: tasa de cambio para mostrar moneda local y cobrar en USD ────────────
+  // Se carga una vez al montar con getFx() (Firestore -> caché -> fallback).
+  // NUNCA bloquea el checkout: si falla, getFx ya devuelve el fallback interno.
+  const [fx, setFx] = useState(null);
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const data = await getFx();
+        if (active) setFx(data);
+      } catch (e) {
+        // getFx no lanza, pero por seguridad: dejamos fx en null y los helpers
+        // (penToUsd/penToLocal) aplican su fallback interno. Nunca bloqueamos.
+        console.warn('No se pudo cargar la tasa FX:', e);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
   const handleToggleCoins = () => {
     setUseCoinsToggle(!useCoinsToggle);
   };
@@ -772,6 +797,18 @@ const CheckoutPage = () => {
   // País actual del formulario; esPeru gobierna qué UI/validación mostrar (default seguro: Perú).
   const formIsPeru = formik.values.country === 'PE' || !formik.values.country;
 
+  // ── Display multi-moneda del RESUMEN (aditivo, NO toca los totales PEN) ──────
+  // Para Perú: se sigue mostrando 'S/ total' como hoy.
+  // Para extranjero: se muestra el equivalente local informativo (penToLocal)
+  // y se deja claro cuánto pagará en USD por PayPal (penToUsd, con margen).
+  // Se recomputa cuando cambia el país (formik.values.country), el total o la tasa fx.
+  const summaryCountry = formik.values.country;
+  const summaryCurrency = getCurrency(summaryCountry);
+  // USD final a cobrar por PayPal: derivado del TOTAL final en PEN (con descuento).
+  const summaryAmountUsd = penToUsd(total, fx);
+  // Equivalente local informativo (puede ser null si no hay tasa para el país).
+  const summaryLocalAmount = !formIsPeru ? penToLocal(total, summaryCountry, fx) : null;
+
   if (items.length === 0) {
     return (
       <div className={styles.empty}>
@@ -807,9 +844,12 @@ const CheckoutPage = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {paymentStepData.esPeru ? (
                   <>
-                    {/* PERÚ: Culqi (idéntico a hoy) + acuerdo por WhatsApp/Yape */}
+                    {/* PERÚ: Culqi (idéntico a hoy) + acuerdo por WhatsApp/Yape.
+                        autoOpen (Opción A): al entrar al paso de pago tras confirmar,
+                        se abre automáticamente el modal de Culqi una sola vez. */}
                     <CulqiCustomCheckout
                       pedido={paymentStepData}
+                      autoOpen={true}
                       onSuccess={() => {
                         emitPurchaseComplete('culqi');
                         clearCart();
@@ -834,9 +874,21 @@ const CheckoutPage = () => {
                   </>
                 ) : (
                   <>
-                    {/* INTERNACIONAL: PayPal (Culqi oculto) + acuerdo por WhatsApp */}
+                    {/* INTERNACIONAL: PayPal (Culqi oculto) + acuerdo por WhatsApp.
+                        amountUsd = USD final a cobrar, derivado del TOTAL final en PEN
+                        (paymentStepData.montoDeuda) con el margen FX aplicado.
+                        PayPal SIEMPRE cobra en USD; la moneda local es solo display. */}
                     <PaypalCheckout
                       pedido={paymentStepData}
+                      amountUsd={penToUsd(paymentStepData.montoDeuda, fx)}
+                      webOrderId={paymentStepData.id}
+                      localLabel={(() => {
+                        // Etiqueta local SOLO informativa (PayPal cobra en USD).
+                        const localAmt = penToLocal(paymentStepData.montoDeuda, paymentStepData.country, fx);
+                        return localAmt != null
+                          ? formatMoney(localAmt, getCurrency(paymentStepData.country))
+                          : undefined;
+                      })()}
                       onSuccess={() => {
                         emitPurchaseComplete('paypal');
                         clearCart();
@@ -1100,7 +1152,7 @@ const CheckoutPage = () => {
             {items.map(item => (
               <div key={item.id} className={styles.summaryItem}>
                 <span>{item.productName} x{item.quantity}</span>
-                <span>S/ {(item.customization?.finalPrice || item.price * item.quantity).toFixed(2)}</span>
+                <span>S/ {((item.customization?.finalPrice || item.price) * item.quantity).toFixed(2)}</span>
               </div>
             ))}
           </div>
@@ -1149,8 +1201,31 @@ const CheckoutPage = () => {
             </div>
             <div className={styles.totalRow + ' ' + styles.finalTotal}>
               <span>Total a Pagar:</span>
+              {/* Perú: 'S/ total' (como hoy). El total real SIEMPRE se procesa en PEN. */}
               <span>S/ {total.toFixed(2)}</span>
             </div>
+
+            {/* ── Bloque informativo internacional (solo si NO es Perú) ──────────
+                Muestra el equivalente local (display) y deja claro el cobro en USD.
+                No reemplaza el total PEN: es información adicional para el comprador. */}
+            {!formIsPeru && (
+              <div className={styles.intlPriceInfo} style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px dashed #cbd5e1', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                {summaryLocalAmount != null && (
+                  <div className={styles.totalRow}>
+                    <span>Equivalente aprox.:</span>
+                    <span>{formatMoney(summaryLocalAmount, summaryCurrency)}</span>
+                  </div>
+                )}
+                <div className={styles.totalRow} style={{ fontWeight: 600, color: '#0f172a' }}>
+                  <span>Pagarás por PayPal:</span>
+                  <span>{summaryAmountUsd.toFixed(2)} USD</span>
+                </div>
+                <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                  El cobro internacional se realiza en dólares (USD). La moneda local
+                  es solo una referencia informativa.
+                </p>
+              </div>
+            )}
           </div>
           </GlassCard>
         </div>
