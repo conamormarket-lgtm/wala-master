@@ -36,6 +36,32 @@ import VisualEditorPanel from './pages/Tienda/admin/VisualEditorPanel';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 import SystemAlert from './components/common/SystemAlert/SystemAlert';
 
+// ── Auto-recuperación de bundle obsoleto tras un deploy ───
+// Si una pestaña tenía cacheado un build viejo y al navegar a una página lazy
+// el chunk ya no existe (cambió de hash), la importación dinámica falla
+// ("Failed to fetch dynamically imported module"). Recargamos UNA vez para traer
+// los assets nuevos; el flag evita bucles de recarga.
+if (typeof window !== 'undefined') {
+  const reloadOnceForStaleChunk = () => {
+    try {
+      const KEY = 'wala_chunk_reload_ts';
+      const last = Number(sessionStorage.getItem(KEY) || 0);
+      if (Date.now() - last > 15000) {
+        sessionStorage.setItem(KEY, String(Date.now()));
+        window.location.reload();
+      }
+    } catch { window.location.reload(); }
+  };
+  // Vite emite este evento cuando falla el preload de un chunk.
+  window.addEventListener('vite:preloadError', (e) => { e?.preventDefault?.(); reloadOnceForStaleChunk(); });
+  window.addEventListener('unhandledrejection', (e) => {
+    const msg = String(e?.reason?.message || e?.reason || '');
+    if (/Failed to fetch dynamically imported module|Failed to load module script|Importing a module script failed|error loading dynamically imported module/i.test(msg)) {
+      reloadOnceForStaleChunk();
+    }
+  });
+}
+
 // ── Páginas secundarias — lazy para no bloquear ──────────
 const ProductPage = lazy(() => import('./pages/ProductPage'));
 const PersonalizarPage = lazy(() => import('./pages/PersonalizarPage'));
