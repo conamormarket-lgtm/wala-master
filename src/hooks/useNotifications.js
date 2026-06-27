@@ -79,9 +79,17 @@ export const useNotifications = () => {
     } else {
       // Web: Firebase Cloud Messaging
       if (!messaging) return;
-      
+      if (typeof Notification === 'undefined') return;
+
       try {
-        const permission = await Notification.requestPermission();
+        // Solo pedimos permiso si NUNCA se decidió ('default'). Si ya está 'denied'
+        // (o el navegador lo bloqueó) o 'granted', NO volvemos a llamar
+        // requestPermission — eso evita el warning repetido de Chrome por insistir
+        // tras un rechazo. Si ya está 'granted', seguimos directo a obtener el token.
+        let permission = Notification.permission;
+        if (permission === 'default') {
+          permission = await Notification.requestPermission();
+        }
         if (permission === 'granted') {
           // Reemplaza con tu VAPID KEY de Firebase Console > Project Settings > Cloud Messaging > Web configuration
           const currentToken = await getToken(messaging, {

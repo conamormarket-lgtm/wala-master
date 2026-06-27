@@ -64,26 +64,42 @@ const Header = () => {
     staleTime: 15 * 60 * 1000,
   });
 
-  const { data: storeConfig } = useQuery({
+  const { data: storeConfig, isFetching: storeConfigFetching } = useQuery({
     queryKey: ['store-config-custom'],
     queryFn: async () => {
       const { data, error } = await getDocument('storeConfig', 'homePage');
       if (error) return null;
-      return data;
+      // Cache local: en la próxima carga el menú real aparece de inmediato (sin parpadeo).
+      try { if (data) localStorage.setItem('wala_store_config', JSON.stringify(data)); } catch (_) { /* storage no disponible */ }
+      return data ?? null;
+    },
+    // placeholderData desde el cache local: el primer render ya muestra el menú real
+    // mientras se revalida en segundo plano. Elimina el flash "Suscripciones" → menú real.
+    placeholderData: () => {
+      try {
+        const cached = localStorage.getItem('wala_store_config');
+        return cached ? JSON.parse(cached) : undefined;
+      } catch (_) { return undefined; }
     },
     staleTime: 5 * 60 * 1000,
   });
 
   const activeConfig = storeConfigDraft || storeConfig || {};
   let navLinks = activeConfig?.header?.navLinks;
-  
+
   if (!navLinks || navLinks.length === 0) {
-    // Configuración por defecto si no hay nada en Firebase
-    navLinks = [
-      { id: '1', text: 'Tienda', type: 'dropdown', url: '/tienda', isCategoryAuto: true },
-      { id: '2', text: 'Suscripciones', type: 'link', url: '/suscripciones' },
-      { id: '3', text: 'Crear', type: 'link', url: '/personalizar' }
-    ];
+    // Anti-parpadeo: en la PRIMERA carga sin cache (storeConfig aún undefined y todavía
+    // revalidando) NO mostramos el menú por defecto (el del "Suscripciones") que causaba
+    // el flash; dejamos el menú vacío un instante hasta que llega la config real. Solo
+    // usamos el default cuando ya se resolvió y de verdad no hay configuración guardada.
+    const configAunCargandoSinCache = storeConfig === undefined && storeConfigFetching;
+    navLinks = configAunCargandoSinCache
+      ? []
+      : [
+          { id: '1', text: 'Tienda', type: 'dropdown', url: '/tienda', isCategoryAuto: true },
+          { id: '2', text: 'Suscripciones', type: 'link', url: '/suscripciones' },
+          { id: '3', text: 'Crear', type: 'link', url: '/personalizar' }
+        ];
   }
 
   const accountPopup = activeConfig?.accountPopup || {
