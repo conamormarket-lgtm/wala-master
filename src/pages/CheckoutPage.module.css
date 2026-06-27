@@ -551,3 +551,22 @@
   gap: 0.5rem;
   margin-top: 0.35rem;
 }
+
+/* ── Panel de WhatsApp dividido por marca (un asesor por marca) ── */
+.brandWaPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  border: 1px dashed var(--violet-300, #C4B5FD);
+  background: var(--violet-50, #F5F3FF);
+}
+
+.brandWaTitle {
+  margin: 0 0 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--violet-800, #5B21B6);
+  text-align: center;
+}

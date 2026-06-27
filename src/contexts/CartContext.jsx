@@ -159,6 +159,9 @@ export const CartProvider = ({ children }) => {
       productId: product.id,
       productName: product.name,
       productImage,
+      // Marca del producto: permite dividir el WhatsApp del checkout por marca
+      // (cada asesor recibe solo sus productos). Aditivo; null si no tiene marca.
+      brandId: product.brandId || null,
       price: itemPrice,
       basePrice: product.basePrice || itemPrice,
       regularPrice,

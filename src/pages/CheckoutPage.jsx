@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useGlobalToast } from '../contexts/ToastContext';
 import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../services/messages';
+import { getBrands } from '../services/brands';
 import { linkPurchaseToReferral } from '../services/referrals';
 import { createWebOrder } from '../services/erp/firebase';
 import { markItemAsGifted } from '../services/wishlist';
@@ -108,6 +109,56 @@ const CheckoutPage = () => {
   const [culqiClosed, setCulqiClosed] = useState(false);
   const [culqiKey, setCulqiKey] = useState(0);
 
+  // Render del/los botón(es) de "terminar por WhatsApp". Si el pedido tiene
+  // productos de varias marcas con asesor propio (paymentStepData.waGroups),
+  // muestra un botón por marca (cada asesor recibe SOLO sus productos) + un
+  // "Listo" para finalizar. Si no, un único botón (comportamiento de siempre).
+  const renderWhatsAppFinish = (asPrimary = false) => {
+    if (!paymentStepData) return null;
+    const groups = paymentStepData.waGroups || [];
+    const finalize = () => {
+      // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
+      clearSelectedItems();
+      navigate('/cuenta/pedidos');
+    };
+    if (groups.length > 1) {
+      return (
+        <div className={styles.brandWaPanel}>
+          <p className={styles.brandWaTitle}>
+            Tu pedido tiene productos de varias marcas. Envía cada parte a su asesor:
+          </p>
+          {groups.map((g, i) => (
+            <GlassButton
+              key={i}
+              variant="ghost"
+              fullWidth
+              onClick={() => { emitPurchaseComplete('whatsapp'); window.open(g.link, '_blank'); }}
+            >
+              💬 Enviar a {g.label} ({g.count})
+            </GlassButton>
+          ))}
+          <GlassButton variant="primary" fullWidth onClick={finalize}>
+            Listo, ya envié mis pedidos ✓
+          </GlassButton>
+        </div>
+      );
+    }
+    const single = groups.length === 1 ? groups[0] : null;
+    const link = single ? single.link : paymentStepData.waLink;
+    const label = single
+      ? `Acordar pago por WhatsApp (asesor de ${single.label})`
+      : 'Acordar pago por WhatsApp (Yape / Plin / Transf)';
+    return (
+      <GlassButton
+        variant={asPrimary ? 'primary' : 'ghost'}
+        fullWidth
+        onClick={() => { emitPurchaseComplete('whatsapp'); window.open(link, '_blank'); finalize(); }}
+      >
+        {asPrimary ? '💬 Terminar mi compra por WhatsApp' : label}
+      </GlassButton>
+    );
+  };
+
   const [processing, setProcessing] = useState(false);
   const [useCoinsToggle, setUseCoinsToggle] = useState(false);
   const [paymentStepData, setPaymentStepData] = useState(null);
@@ -153,7 +204,17 @@ const CheckoutPage = () => {
   const handleToggleCoins = () => {
     setUseCoinsToggle(!useCoinsToggle);
   };
-  
+
+  // Marcas (para dividir el WhatsApp por marca: cada asesor recibe sus productos).
+  const { data: brandsList } = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => {
+      const res = await getBrands();
+      return res.data || [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
   // Config WhatsApp
 
   const { data: whatsappConfig } = useQuery({
@@ -756,6 +817,94 @@ const CheckoutPage = () => {
 
         const waLink = `https://wa.me/${whatsappConfig?.number}?text=${encodeURIComponent(message)}`;
 
+        // ── 3.b WhatsApp DIVIDIDO POR MARCA ───────────────────────────────
+        // Cada marca con número de asesor configurado recibe su PROPIO mensaje
+        // (solo sus productos). Los items sin marca o cuya marca no tiene número
+        // caen al número general. NO toca pago/totales; solo enrutamiento de WA.
+        const buildMessageForItems = (its, brandLabel) => {
+          let m = `SOLICITUD DE PEDIDO (${pseudoOrderId})`;
+          if (brandLabel) m += ` — Marca: ${brandLabel}`;
+          m += `\n\nDatos del Cliente:\n`;
+          m += `Nombre: ${values.customerName}\n`;
+          m += `DNI: ${values.dni}\n`;
+          m += `Teléfono: ${values.phone}\n`;
+          m += `Email: ${values.email}\n`;
+          m += `Dirección: ${values.address}, ${values.district}, ${values.city}\n\n`;
+          if (values.isGiftMode) {
+            m += `🎁 *MODO REGALO ACTIVO*\n   Para: ${values.giftRecipientName}\n   Mensaje: "${values.giftMessage}"\n`;
+            if (values.deliveryDate) {
+              m += `   📅 Entrega programada: ${formatDeliveryDate(values.deliveryDate)}`;
+              if (registryEventLabel) m += ` (${registryEventLabel})`;
+              m += `\n`;
+            }
+            m += `\n`;
+          }
+          m += `Detalle${brandLabel ? ` (productos de ${brandLabel})` : ''}:\n`;
+          let sub = 0;
+          its.forEach((item, index) => {
+            m += `${index + 1}. ${item.productName}\n`;
+            m += `   Cantidad: ${item.quantity}\n`;
+            if (item.variant && item.variant.size) m += `   Talla/Modelo: ${item.variant.size}\n`;
+            if (item.customization && item.customization.text) m += `   Texto: ${item.customization.text}\n`;
+            const price = item.customization?.finalPrice || item.price;
+            sub += price * item.quantity;
+            m += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
+            m += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
+          });
+          m += `Subtotal${brandLabel ? ` de ${brandLabel}` : ''}: S/ ${sub.toFixed(2)}\n`;
+          if (brandLabel) {
+            m += `(Parte del pedido #${pseudoOrderId}; puede incluir productos de otras marcas con otros asesores.)\n`;
+          } else {
+            if (discount > 0) m += `Descuento (Monedas): - S/ ${discount.toFixed(2)}\n`;
+            m += `Envío: ${shipping === 0 ? 'Gratis' : `S/ ${shipping.toFixed(2)}`}\n`;
+            m += `TOTAL A PAGAR: S/ ${total.toFixed(2)}\n`;
+          }
+          if (!esPeru) m += `\nEnvíos internacionales: la entrega demora de 7 a 30 días hábiles.\n`;
+          m += `\n` + (whatsappConfig?.customText?.replace('{id}', pseudoOrderId) || `Hola! Quiero confirmar mi pedido con código ${pseudoOrderId}.`);
+          if (referralTag) m += referralTag;
+          return m;
+        };
+
+        let waGroups = [];
+        try {
+          // brandId -> { name, number } SOLO para marcas con número configurado.
+          const numByBrand = new Map();
+          (brandsList || []).forEach((b) => {
+            const raw = (b.whatsappNumber || '').replace(/[\s\-()]/g, '');
+            const n = raw.startsWith('+') ? raw.replace(/\+/g, '') : raw;
+            if (n) numByBrand.set(b.id, { name: b.name, number: n });
+          });
+          // Agrupa los items seleccionados por asesor (marca con número) o general.
+          const groupsMap = new Map();
+          selectedItems.forEach((item) => {
+            const info = item.brandId ? numByBrand.get(item.brandId) : null;
+            const key = info ? item.brandId : '__general__';
+            if (!groupsMap.has(key)) {
+              groupsMap.set(key, {
+                label: info ? info.name : 'Tienda (general)',
+                number: info ? info.number : (whatsappConfig?.number || ''),
+                isGeneral: !info,
+                items: [],
+              });
+            }
+            groupsMap.get(key).items.push(item);
+          });
+          // Solo dividimos si hay AL MENOS un grupo de MARCA (asesor propio distinto al general).
+          const hasBrandGroup = [...groupsMap.values()].some((g) => !g.isGeneral);
+          if (hasBrandGroup) {
+            waGroups = [...groupsMap.values()]
+              .filter((g) => g.number)
+              .map((g) => ({
+                label: g.label,
+                count: g.items.length,
+                link: `https://wa.me/${g.number}?text=${encodeURIComponent(buildMessageForItems(g.items, g.isGeneral ? null : g.label))}`,
+              }));
+          }
+        } catch (e) {
+          console.warn('No se pudo armar WhatsApp por marca:', e);
+          waGroups = [];
+        }
+
         // ── 4. Guardar en localStorage (pendiente de confirmación) ─────────
         const currentCart = JSON.parse(localStorage.getItem('shopping_cart') || '[]');
         const updatedCart = currentCart.map((item) => ({
@@ -802,6 +951,7 @@ const CheckoutPage = () => {
           id: webOrderId || pseudoOrderId,
           montoDeuda: total,
           waLink: waLink,
+          waGroups: waGroups, // [] si no aplica; si no, un grupo (asesor) por marca
           // Bandera para la pantalla de pago: define método (Culqi vs Paypal) y aviso internacional.
           esPeru: esPeru,
           country: values.country
@@ -970,18 +1120,7 @@ const CheckoutPage = () => {
                             pago por Yape, Plin o transferencia.
                           </p>
                           <div className={styles.recoveryActions}>
-                            <GlassButton
-                              variant="primary"
-                              fullWidth
-                              onClick={() => {
-                                emitPurchaseComplete('whatsapp');
-                                window.open(paymentStepData.waLink, '_blank');
-                                clearSelectedItems();
-                                navigate('/cuenta/pedidos');
-                              }}
-                            >
-                              💬 Terminar mi compra por WhatsApp
-                            </GlassButton>
+                            {renderWhatsAppFinish(true)}
                             <GlassButton
                               variant="ghost"
                               fullWidth
@@ -1012,19 +1151,7 @@ const CheckoutPage = () => {
 
                     <div className={styles.payDivider}>O</div>
 
-                    <GlassButton
-                      onClick={() => {
-                        emitPurchaseComplete('whatsapp');
-                        window.open(paymentStepData.waLink, '_blank');
-                        // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
-                        clearSelectedItems();
-                        navigate('/cuenta/pedidos');
-                      }}
-                      variant="ghost"
-                      fullWidth
-                    >
-                      Acordar pago por WhatsApp (Yape / Plin / Transf)
-                    </GlassButton>
+                    {renderWhatsAppFinish()}
                   </>
                 ) : (
                   <>
@@ -1053,19 +1180,7 @@ const CheckoutPage = () => {
 
                     <div className={styles.payDivider}>O</div>
 
-                    <GlassButton
-                      onClick={() => {
-                        emitPurchaseComplete('whatsapp');
-                        window.open(paymentStepData.waLink, '_blank');
-                        // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
-                        clearSelectedItems();
-                        navigate('/cuenta/pedidos');
-                      }}
-                      variant="ghost"
-                      fullWidth
-                    >
-                      Acordar pago por WhatsApp
-                    </GlassButton>
+                    {renderWhatsAppFinish()}
                   </>
                 )}
               </div>
