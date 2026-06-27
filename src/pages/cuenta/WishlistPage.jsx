@@ -4,6 +4,7 @@ import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { useProducts } from '../../hooks/useProducts';
+import { useCart } from '../../contexts/CartContext';
 import ProductCard from '../Tienda/components/ProductCard/ProductCard';
 import styles from './WishlistPage.module.css';
 
@@ -12,7 +13,9 @@ const WishlistPage = () => {
   const { data: allProducts, isLoading: productsLoading } = useProducts([]);
   const { userProfile } = useAuth();
   const { addToast } = useGlobalToast();
+  const { addToCart, items: cartItems } = useCart();
   const [copying, setCopying] = useState(false);
+  const [addingAll, setAddingAll] = useState(false);
 
   const shareLink = userProfile?.referralCode 
     ? `${window.location.origin}/wishlist/${userProfile.referralCode}` 
@@ -24,6 +27,39 @@ const WishlistPage = () => {
     setCopying(true);
     addToast('Enlace copiado al portapapeles', 'success');
     setTimeout(() => setCopying(false), 2000);
+  };
+
+  // Agrega de un golpe TODOS los productos disponibles de la wishlist PERSONAL al carrito propio.
+  // No es modo regalo (es un atajo de compra para uno mismo). Reutiliza allProducts (ya cargado,
+  // con precio) para no leer Firestore por item; omite borrados, sin stock y los que ya están en
+  // el carrito. Usa addToCart en modo silent para mostrar UN solo toast resumen.
+  const handleAddAll = () => {
+    const pendientes = wishlistItems.filter((i) => !i.isGifted);
+    setAddingAll(true);
+    let added = 0;
+    let skipped = 0;
+    for (const item of pendientes) {
+      const p = allProducts?.find((fp) => fp.id === item.productId);
+      if (!p) { skipped++; continue; }                                    // producto borrado
+      if (p.stock === 0 || p.isActive === false) { skipped++; continue; } // sin stock / inactivo
+      if (cartItems.some((ci) => ci.productId === p.id)) { skipped++; continue; } // ya en carrito
+      addToCart(p, {}, null, 1, null, { silent: true });
+      added++;
+    }
+    setAddingAll(false);
+    if (added === 0) {
+      addToast(
+        skipped ? 'Esos productos ya están en tu carrito o no están disponibles.' : 'No hay productos para agregar.',
+        'info'
+      );
+    } else {
+      addToast(
+        skipped
+          ? `${added} producto${added !== 1 ? 's' : ''} agregado${added !== 1 ? 's' : ''} al carrito 🛒 · ${skipped} omitido${skipped !== 1 ? 's' : ''}`
+          : `${added} producto${added !== 1 ? 's' : ''} agregado${added !== 1 ? 's' : ''} al carrito 🛒`,
+        'success'
+      );
+    }
   };
 
   // eslint-disable-next-line no-unused-vars
@@ -41,14 +77,26 @@ const WishlistPage = () => {
     <div className={styles.container}>
       <div className={styles.headerRow}>
         <h1 className={styles.title}>Mi Lista de Deseos</h1>
-        {wishlistItems.length > 0 && shareLink && (
-          <button 
-            className={styles.primaryBtn} 
-            onClick={handleCopyLink}
-            disabled={copying}
-          >
-            {copying ? '¡Copiado!' : 'Compartir mi lista'}
-          </button>
+        {wishlistItems.length > 0 && (
+          <div className={styles.headerActions}>
+            <button
+              className={styles.addAllBtn}
+              onClick={handleAddAll}
+              disabled={addingAll}
+              title="Agrega todos tus productos guardados a tu carrito"
+            >
+              {addingAll ? 'Agregando…' : '🛒 Agregar todo al carrito'}
+            </button>
+            {shareLink && (
+              <button
+                className={styles.primaryBtn}
+                onClick={handleCopyLink}
+                disabled={copying}
+              >
+                {copying ? '¡Copiado!' : 'Compartir mi lista'}
+              </button>
+            )}
+          </div>
         )}
       </div>
 

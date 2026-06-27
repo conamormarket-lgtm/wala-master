@@ -126,7 +126,7 @@ export const CartProvider = ({ children }) => {
     };
   }, []);
 
-  const addToCart = React.useCallback((product, variant = {}, customization = null, quantity = 1, comboData = null) => {
+  const addToCart = React.useCallback((product, variant = {}, customization = null, quantity = 1, comboData = null, options = {}) => {
     const selectedVariant = variant.selectedVariant;
 
     let productImage = '';
@@ -232,10 +232,10 @@ export const CartProvider = ({ children }) => {
       if (existingIndex >= 0) {
         const updated = [...prev];
         updated[existingIndex].quantity += quantity;
-        toast.success(`Se agregaron ${quantity} unidades de ${product.name} a tu carrito`);
+        if (!options.silent) toast.success(`Se agregaron ${quantity} unidades de ${product.name} a tu carrito`);
         return updated;
       } else {
-        toast.success(`Se agregó ${product.name} a tu carrito`);
+        if (!options.silent) toast.success(`Se agregó ${product.name} a tu carrito`);
         return [...prev, cartItem];
       }
     });
