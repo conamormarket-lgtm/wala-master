@@ -27,7 +27,8 @@ export const createBrand = async (data) => {
     order: typeof data.order === 'number' ? data.order : 0,
     bgColor: data.bgColor || '#ffffff',
     bgImage: data.bgImage || '',
-    bgOpacity: typeof data.bgOpacity === 'number' ? data.bgOpacity : 100
+    bgOpacity: typeof data.bgOpacity === 'number' ? data.bgOpacity : 100,
+    whatsappNumber: data.whatsappNumber || ''
   });
 };
 
@@ -44,6 +45,7 @@ export const updateBrand = async (id, data) => {
   if (data.bgColor !== undefined) payload.bgColor = data.bgColor;
   if (data.bgImage !== undefined) payload.bgImage = data.bgImage;
   if (data.bgOpacity !== undefined) payload.bgOpacity = data.bgOpacity;
+  if (data.whatsappNumber !== undefined) payload.whatsappNumber = data.whatsappNumber;
   return await updateDocument(COLLECTION, id, payload);
 };
 

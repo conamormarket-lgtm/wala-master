@@ -18,7 +18,7 @@ const hexToRgba = (hex, alpha) => {
 const AdminMarcas = () => {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100 });
+  const [form, setForm] = useState({ name: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [bgUploading, setBgUploading] = useState(false);
@@ -39,7 +39,7 @@ const AdminMarcas = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      setForm({ name: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100 });
+      setForm({ name: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
     }
   });
 
@@ -49,7 +49,7 @@ const AdminMarcas = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setEditingId(null);
-      setForm({ name: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100 });
+      setForm({ name: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
     }
   });
 
@@ -73,7 +73,8 @@ const AdminMarcas = () => {
       order: Number(form.order),
       bgColor: form.bgColor,
       bgImage: form.bgImage.trim(),
-      bgOpacity: Number(form.bgOpacity)
+      bgOpacity: Number(form.bgOpacity),
+      whatsappNumber: (form.whatsappNumber || '').trim()
     };
     if (editingId) {
       updateMutation.mutate({ id: editingId, data: payload });
@@ -90,14 +91,15 @@ const AdminMarcas = () => {
       order: brand.order ?? 0,
       bgColor: brand.bgColor || '#ffffff',
       bgImage: brand.bgImage || '',
-      bgOpacity: brand.bgOpacity ?? 100
+      bgOpacity: brand.bgOpacity ?? 100,
+      whatsappNumber: brand.whatsappNumber || ''
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm({ name: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100 });
+    setForm({ name: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
   };
 
   const handleLogoUpload = async (e) => {
@@ -148,7 +150,7 @@ const AdminMarcas = () => {
         <div className={styles.headerTitles}>
           <h1 className={styles.title}>Gestión de Marcas</h1>
           <p className={styles.subtitle}>
-            Diseña identidades visuales únicas para cada marca. Los productos heredarán estos fondos en la tienda.
+            Diseña identidades visuales únicas para cada marca y asigna el WhatsApp del asesor de cada una. Los productos heredarán estos fondos en la tienda.
           </p>
         </div>
       </div>
@@ -204,6 +206,22 @@ const AdminMarcas = () => {
                   className={styles.input}
                 />
               </div>
+            </div>
+
+            {/* WhatsApp del asesor de ESTA marca (se guarda en el doc de la marca). */}
+            <div className={styles.field}>
+              <label className={styles.label}>WhatsApp del asesor de esta marca</label>
+              <input
+                type="text"
+                placeholder="Ej: +51 987 654 321"
+                value={form.whatsappNumber}
+                onChange={(e) => setForm((f) => ({ ...f, whatsappNumber: e.target.value.replace(/[^\d\s\-\(\)\+]/g, '') }))}
+                className={styles.input}
+              />
+              <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>
+                Las consultas y pedidos de productos de esta marca se enviarán a este número.
+                Si lo dejas vacío, se usa el número general de la tienda.
+              </small>
             </div>
           </div>
 
@@ -360,6 +378,7 @@ const AdminMarcas = () => {
                   <h3 className={styles.brandCardName}>{brand.name}</h3>
                   <div className={styles.brandCardMeta}>
                     <span className={styles.metaPill}>Orden: {brand.order ?? 0}</span>
+                    {brand.whatsappNumber && <span className={styles.metaPill}>📱 {brand.whatsappNumber}</span>}
                   </div>
                 </div>
               </div>
