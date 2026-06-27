@@ -1,0 +1,430 @@
+/* =========================================================================
+   CuentaCompraDetallePage — "Estado de la compra" (estilo MercadoLibre)
+   -------------------------------------------------------------------------
+   Estética "Aurora Violeta Serena": superficies de cristal, acentos violeta y
+   mobile-first. SOLO presentación; ninguna clase aquí altera lógica de
+   cobro/totales (esos valores se derivan en JS y solo se pintan).
+
+   Convención del repo: consumimos los tokens del sistema (--glass-*, --violet-*,
+   --gris-*) y SIEMPRE traemos el fallback sólido obligatorio (@supports) para los
+   WebView de Capacitor/Android que no soportan backdrop-filter.
+   ========================================================================= */
+
+/* ── Contenedor general ─────────────────────────────────────────────────── */
+.page {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Breadcrumb ─────────────────────────────────────────────────────────── */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario, #6b7280);
+}
+
+.breadcrumbLink {
+  color: var(--violet-600, #7c3aed);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.breadcrumbLink:hover {
+  text-decoration: underline;
+}
+
+.breadcrumbSep {
+  opacity: 0.6;
+}
+
+.breadcrumbCurrent {
+  color: var(--gris-texto-principal, #111827);
+  font-weight: 600;
+}
+
+/* ── Rejilla responsive: una columna en móvil; detalle a la derecha en desktop ── */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+.mainCol,
+.sideCol {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* La columna de detalle se "pega" al hacer scroll en desktop. */
+@media (min-width: 900px) {
+  .sideCol {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+/* ── Superficie de cristal genérica (se aplica junto a las tarjetas) ─────── */
+.glass {
+  position: relative;
+  border-radius: var(--radio-grande, 18px);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.72));
+  -webkit-backdrop-filter: var(--glass-blur, blur(16px));
+  backdrop-filter: var(--glass-blur, blur(16px));
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.5));
+  box-shadow: var(--glass-shadow, 0 10px 40px -10px rgba(17, 24, 39, 0.12));
+  padding: 1.1rem 1.15rem;
+  overflow: hidden;
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 52%;
+  pointer-events: none;
+  background: var(--glass-highlight, linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent));
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass {
+    background: #ffffff;
+    border-color: var(--gris-borde, rgba(229, 231, 235, 0.9));
+  }
+}
+
+.cardTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #111827);
+}
+
+/* ── Encabezado: código + fecha + badge grande ──────────────────────────── */
+.headerCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.headerTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.headerMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.codigo {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal, #111827);
+  word-break: break-word;
+}
+
+.fecha {
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario, #6b7280);
+}
+
+/* Badge grande de estado (color inyectado por estilo inline desde JS). */
+.estadoBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px -6px rgba(17, 24, 39, 0.35);
+}
+
+.estadoDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.pagoLinea {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: var(--gris-texto-secundario, #4b5563);
+}
+
+.pagoDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+/* ── Lista de productos ─────────────────────────────────────────────────── */
+.linea {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--gris-borde, rgba(229, 231, 235, 0.7));
+}
+
+.linea:last-child {
+  border-bottom: none;
+}
+
+.lineaImgWrap {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radio-mediano, 12px);
+  overflow: hidden;
+  background: var(--violet-50, #f5f3ff);
+  border: 1px solid var(--gris-borde, rgba(229, 231, 235, 0.7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lineaImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lineaImgPlaceholder {
+  font-size: 1.5rem;
+  color: var(--violet-300, #c4b5fd);
+}
+
+.lineaInfo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.lineaNombre {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #111827);
+  line-height: 1.3;
+}
+
+.lineaAtributos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--violet-700, #6d28d9);
+  background: var(--violet-50, #f5f3ff);
+  border: 1px solid var(--violet-100, #ede9fe);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+}
+
+.lineaFooter {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.lineaCantidad {
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario, #6b7280);
+}
+
+.lineaSubtotal {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #111827);
+  white-space: nowrap;
+}
+
+/* ── Dirección de entrega ───────────────────────────────────────────────── */
+.direccionTexto {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--gris-texto-principal, #1f2937);
+}
+
+.direccionSecundaria {
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario, #6b7280);
+}
+
+/* ── Detalle de la compra (resumen de totales) ──────────────────────────── */
+.resumenRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  padding: 0.3rem 0;
+  color: var(--gris-texto-principal, #1f2937);
+}
+
+.resumenLabel {
+  color: var(--gris-texto-secundario, #6b7280);
+}
+
+.resumenGratis {
+  color: var(--verde-exito, #16a34a);
+  font-weight: 700;
+}
+
+.resumenDescuento {
+  color: var(--verde-exito, #16a34a);
+  font-weight: 600;
+}
+
+.resumenDivider {
+  height: 1px;
+  background: var(--gris-borde, rgba(229, 231, 235, 0.8));
+  margin: 0.5rem 0;
+  border: none;
+}
+
+.resumenTotal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal, #111827);
+}
+
+.resumenPago {
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario, #6b7280);
+}
+
+/* ── Botones de WhatsApp ────────────────────────────────────────────────── */
+.waBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.waHint {
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario, #6b7280);
+  margin: 0 0 0.1rem;
+}
+
+/* ── Sección "También te puede interesar" ───────────────────────────────── */
+.relacionados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.relacionadosTitulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal, #111827);
+}
+
+/* ── Estados de carga / vacío ───────────────────────────────────────────── */
+.skeletonWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeletonBlock {
+  border-radius: var(--radio-grande, 18px);
+  background: linear-gradient(
+    100deg,
+    rgba(229, 231, 235, 0.45) 30%,
+    rgba(243, 244, 246, 0.85) 50%,
+    rgba(229, 231, 235, 0.45) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeletonHeader {
+  height: 120px;
+}
+
+.skeletonList {
+  height: 280px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonBlock {
+    animation: none;
+  }
+}
+
+.noEncontrado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.25rem;
+}
+
+.noEncontradoTitulo {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal, #111827);
+}
+
+.noEncontradoTexto {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--gris-texto-secundario, #6b7280);
+  max-width: 32ch;
+}

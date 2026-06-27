@@ -537,6 +537,8 @@ const CheckoutPage = () => {
             productosMap[`item_${idx}`] = {
               productoId: item.productId || '',
               producto: item.productName || '',
+              // Marca del producto (para enrutar el WhatsApp de "Mis Compras" al asesor correcto)
+              brandId: item.brandId || null,
               cantidad: item.quantity || 1,
               precio: precioItem,
               subtotal: subtotalItem,
@@ -553,6 +555,8 @@ const CheckoutPage = () => {
             productosMap[`item_${idx}`] = {
               productoId: item.productId || '',
               producto: item.productName || '',
+              // Marca del producto (para enrutar el WhatsApp de "Mis Compras" al asesor correcto)
+              brandId: item.brandId || null,
               cantidad: item.quantity || 1,
               talla: item.variant?.size || '',
               color: item.variant?.color || '',

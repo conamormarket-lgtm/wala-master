@@ -41,7 +41,7 @@ const CuentaLayout = () => {
               to="/cuenta/pedidos"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
             >
-              Mis Pedidos
+              Mis Compras
             </NavLink>
             <NavLink
               to="/cuenta/wishlist"

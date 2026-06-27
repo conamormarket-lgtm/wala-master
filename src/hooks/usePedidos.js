@@ -64,7 +64,13 @@ export const usePedidos = (initialDni) => {
           return;
         }
         const list = Array.isArray(erpPedidos) ? erpPedidos : [];
-        const pedidos = list.map(normalizarPedidoParaVista)
+        const pedidos = list
+                            .map((raw) => {
+                              const norm = normalizarPedidoParaVista(raw);
+                              // Adjuntamos el doc CRUDO (_raw) con productos/dirección/pago/numeroPedido,
+                              // que la normalización descarta, para que "Mis Compras" y el detalle los usen.
+                              return norm ? { ...norm, _raw: raw } : null;
+                            })
                             .filter(Boolean)
                             .sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
         const clientData = extraerDatosClienteDesdePedidos(list);
@@ -91,7 +97,10 @@ export const usePedidos = (initialDni) => {
       if (dniStr) {
         const resultado = await buscarPedidoCliente('', dniStr);
         const pedidosList = (resultado.pedidos || [])
-                              .map(normalizarPedidoParaVista)
+                              .map((raw) => {
+                                const norm = normalizarPedidoParaVista(raw);
+                                return norm ? { ...norm, _raw: raw } : null;
+                              })
                               .filter(Boolean)
                               .sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
         const result = { pedidos: pedidosList, dataSource: 'api' };

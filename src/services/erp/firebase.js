@@ -251,6 +251,32 @@ export async function getOrderFromERP(orderId) {
 }
 
 /**
+ * Obtener un pedido por ID buscando en AMBAS colecciones del ERP: primero
+ * 'pedidos' (oficial/validado) y, si no existe, 'pedidos_web' (cola web pendiente
+ * de validación). Devuelve el documento CRUDO completo (productos, dirección,
+ * pago, numeroPedido…), que es lo que necesita el detalle de "Mis Compras".
+ * @param {string} orderId
+ * @returns {Promise<{ data: Object | null, error: string | null }>}
+ */
+export async function getOrderByIdAnyCollection(orderId) {
+  if (!isErpFirestoreAvailable()) {
+    return { data: null, error: 'Firestore del ERP no está disponible' };
+  }
+  try {
+    for (const col of ['pedidos', 'pedidos_web']) {
+      const snap = await getDoc(doc(erpDb, col, orderId));
+      if (snap.exists()) {
+        return { data: { id: snap.id, _coleccion: col, ...snap.data() }, error: null };
+      }
+    }
+    return { data: null, error: 'Pedido no encontrado' };
+  } catch (error) {
+    console.error('Error al obtener pedido (ambas colecciones):', error);
+    return { data: null, error: error.message };
+  }
+}
+
+/**
  * Actualizar un pedido en el Firestore del ERP
  * @param {string} orderId
  * @param {Object} updates

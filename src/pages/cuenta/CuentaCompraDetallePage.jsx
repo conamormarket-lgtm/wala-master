@@ -1,0 +1,482 @@
+import React, { useEffect, useState, useMemo } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+
+import { useAuth } from '../../contexts/AuthContext';
+import { usePedidos } from '../../hooks/usePedidos';
+import { useProducts } from '../../hooks/useProducts';
+
+import { GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
+
+import {
+  derivarEstadoCompra,
+  getProductosPedido,
+  getCodigoPedido,
+  getBrandIdsDePedido,
+} from '../../utils/estadoCompra';
+import { formatCurrency } from '../../utils/formatters';
+import { toThumbnailImageUrl } from '../../utils/imageUrl';
+
+import { getBrands } from '../../services/brands';
+import { getMessage } from '../../services/messages';
+import { getFeaturedProducts } from '../../services/products';
+import { getOrderByIdAnyCollection } from '../../services/erp/firebase';
+
+import ProductGrid from '../Tienda/components/ProductGrid/ProductGrid';
+
+import styles from './CuentaCompraDetallePage.module.css';
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Helpers locales (presentación / lectura defensiva)
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Normaliza un número de WhatsApp como en el resto del repo:
+ * quita espacios/guiones/paréntesis/+, y antepone 51 (Perú) si tiene <=9 dígitos.
+ */
+function normalizarWhatsapp(num) {
+  if (!num) return '';
+  let clean = String(num).replace(/[\s\-()+]/g, '');
+  if (clean && !clean.startsWith('51') && clean.length <= 9) {
+    clean = `51${clean}`;
+  }
+  return clean;
+}
+
+/** Construye el enlace wa.me con el mensaje de consulta de estado. */
+function construirWaLink(numero, codigo) {
+  const n = normalizarWhatsapp(numero);
+  if (!n) return null;
+  const mensaje = `Hola, quiero consultar el estado de mi pedido #${codigo}`;
+  return `https://wa.me/${n}?text=${encodeURIComponent(mensaje)}`;
+}
+
+/** Convierte a número de forma segura (acepta strings tipo "120.00"). */
+function toNum(v) {
+  if (v == null || v === '') return 0;
+  const n = Number(v);
+  return Number.isNaN(n) ? 0 : n;
+}
+
+/** Imagen de una línea: usa el producto del catálogo o la imagen personalizada. */
+function imagenDeLinea(linea, productoCatalogo) {
+  const fromCatalogo =
+    productoCatalogo?.mainImage ||
+    productoCatalogo?.images?.[0] ||
+    productoCatalogo?.imageUrl ||
+    null;
+  const url = linea?.urlImagenPersonalizada || fromCatalogo;
+  return url ? toThumbnailImageUrl(url) : null;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Página de detalle "Estado de la compra"
+ * ────────────────────────────────────────────────────────────────────────── */
+const CuentaCompraDetallePage = () => {
+  const { id } = useParams();
+  const { userProfile, loading: authLoading } = useAuth();
+  const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
+
+  // 1) Reutilizamos el MISMO hook de la lista (usePedidos por DNI). Sirve para
+  //    encontrar el pedido normalizado y disparar la búsqueda si hace falta.
+  const { loading: pedidosLoading, data, buscar } = usePedidos(dni);
+  const [hasFetched, setHasFetched] = useState(false);
+
+  useEffect(() => {
+    if (authLoading || !dni || hasFetched) return;
+    setHasFetched(true);
+    buscar(dni);
+  }, [authLoading, dni, hasFetched, buscar]);
+
+  const pedidoNormalizado = useMemo(
+    () => (data?.pedidos || []).find((p) => p.id === id) || null,
+    [data, id]
+  );
+
+  // 2) El pedido normalizado NO conserva los campos crudos (productos,
+  //    numeroPedido, metodoPago, envioDireccion, pagado, web...). Para el
+  //    DETALLE necesitamos el pedido CRUDO: lo traemos por id del ERP.
+  const {
+    data: pedidoRaw,
+    isLoading: rawLoading,
+    isError: rawError,
+  } = useQuery({
+    queryKey: ['pedido-erp', id],
+    queryFn: async () => {
+      // Lee el pedido CRUDO por id en AMBAS colecciones del ERP (pedidos +
+      // pedidos_web), así el detalle está completo tanto para pedidos validados
+      // como para los recién comprados que siguen en la cola web. Si no se
+      // encuentra, devolvemos null y caemos al crudo adjunto del normalizado.
+      const { data: raw } = await getOrderByIdAnyCollection(id);
+      return raw || null;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 2,
+    retry: 1,
+  });
+
+  // Pedido efectivo: preferimos el crudo del ERP (detalle completo); si no, el
+  // crudo adjunto (_raw) del normalizado de usePedidos; y por último el normalizado.
+  const pedido = pedidoRaw || pedidoNormalizado?._raw || pedidoNormalizado;
+
+  // 3) Catálogo (imágenes + inferencia de marca) y marcas (números de asesor).
+  const { data: catalogo = [] } = useProducts([]);
+
+  const { data: brands = [] } = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => {
+      const { data: b, error } = await getBrands();
+      if (error) throw new Error(error);
+      return b || [];
+    },
+    staleTime: 1000 * 60 * 10,
+  });
+
+  // Número general de respaldo (cuenta) para el botón de WhatsApp.
+  const { data: numeroGeneral } = useQuery({
+    queryKey: ['whatsapp_number_cuenta'],
+    queryFn: async () => {
+      const cuenta = await getMessage('whatsapp_number_cuenta');
+      if (cuenta.data && cuenta.data.trim()) return cuenta.data.trim();
+      const general = await getMessage('whatsapp_number');
+      return general.data?.trim() || '';
+    },
+    staleTime: 1000 * 60 * 10,
+  });
+
+  // 4) "También te puede interesar": destacados, excluyendo lo ya comprado.
+  const { data: featured = [] } = useQuery({
+    queryKey: ['featured-products'],
+    queryFn: async () => {
+      const { data: f, error } = await getFeaturedProducts();
+      if (error) throw new Error(error);
+      return f || [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  /* ── Estados de carga / no encontrado ─────────────────────────────────── */
+
+  const cargando =
+    authLoading || rawLoading || (pedidosLoading && !pedidoNormalizado);
+
+  if (cargando && !pedido) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.skeletonWrap}>
+          <div className={`${styles.skeletonBlock} ${styles.skeletonHeader}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skeletonList}`} />
+        </div>
+      </div>
+    );
+  }
+
+  // Si terminó la carga (ambas fuentes) y no hay pedido -> no encontrado.
+  // La búsqueda por lista solo aplica si hay DNI: sin DNI, basta con que el
+  // lookup directo por id (pedidoRaw) haya terminado para decidir.
+  const listaResuelta = !dni || (hasFetched && !pedidosLoading);
+  if (!pedido && !rawLoading && (rawError || listaResuelta)) {
+    return (
+      <div className={styles.page}>
+        <Reveal className={`${styles.glass} ${styles.noEncontrado}`}>
+          <h2 className={styles.noEncontradoTitulo}>No encontramos esta compra</h2>
+          <p className={styles.noEncontradoTexto}>
+            Es posible que el pedido ya no esté disponible o que no pertenezca a tu
+            cuenta.
+          </p>
+          <GlassButton as={Link} to="/cuenta/pedidos" variant="primary">
+            Volver a Mis Compras
+          </GlassButton>
+        </Reveal>
+      </div>
+    );
+  }
+
+  if (!pedido) {
+    // Aún resolviendo alguna fuente: mantenemos el skeleton.
+    return (
+      <div className={styles.page}>
+        <div className={styles.skeletonWrap}>
+          <div className={`${styles.skeletonBlock} ${styles.skeletonHeader}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skeletonList}`} />
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Derivaciones para la vista ───────────────────────────────────────── */
+
+  const estado = derivarEstadoCompra(pedido);
+  const codigo = getCodigoPedido(pedido);
+  const lineas = getProductosPedido(pedido);
+
+  // Índice productoId -> producto del catálogo (para imagen).
+  const catalogoPorId = new Map();
+  (catalogo || []).forEach((p) => {
+    if (p && p.id != null) catalogoPorId.set(String(p.id), p);
+  });
+
+  // Fecha legible (createdAt puede ser Timestamp Firestore, Date o string).
+  const fechaLegible = (() => {
+    const raw = pedido.createdAt ?? pedido.fechaCompra;
+    if (!raw) return null;
+    if (typeof raw === 'string') return raw;
+    const d = raw?.toDate?.() ?? (raw instanceof Date ? raw : null);
+    return d ? d.toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' }) : null;
+  })();
+
+  // Dirección de entrega (alias defensivos: campos de envío o de cliente).
+  const direccion =
+    pedido.envioDireccion || pedido.direccion || pedido.clienteDireccion || '';
+  const distrito =
+    pedido.envioDistrito || pedido.clienteDistrito || pedido.distrito || '';
+  const departamento =
+    pedido.envioDepartamento ||
+    pedido.envioCiudad ||
+    pedido.clienteDepartamento ||
+    pedido.ciudad ||
+    '';
+  const partesDireccionSecundaria = [distrito, departamento].filter(Boolean);
+
+  // Totales (SOLO se leen y se pintan; no se recalcula ningún cobro).
+  const totalProductos = lineas.reduce((acc, l) => {
+    const sub = l?.subtotal != null ? toNum(l.subtotal) : toNum(l?.precio) * toNum(l?.cantidad);
+    return acc + sub;
+  }, 0);
+  const descuentoMonedas = toNum(pedido.descuentoMonedas);
+  const envioMonto = toNum(pedido.costoEnvio ?? pedido.envioMonto ?? pedido.montoEnvio);
+  const total = toNum(pedido.montoTotal ?? pedido.total);
+
+  // ── WhatsApp por marca ──────────────────────────────────────────────────
+  const brandIds = getBrandIdsDePedido(pedido, catalogo);
+  const brandsConNumero = brandIds
+    .map((bid) => {
+      const b = (brands || []).find((x) => x.id === bid);
+      const numero = b?.whatsappNumber ? normalizarWhatsapp(b.whatsappNumber) : '';
+      return numero ? { id: bid, name: b?.name || 'la marca', link: construirWaLink(numero, codigo) } : null;
+    })
+    .filter(Boolean);
+
+  // Si ninguna marca tiene número, caemos al número general de la cuenta.
+  const waGeneralLink = construirWaLink(numeroGeneral, codigo);
+
+  // ── Relacionados (excluye productos ya comprados, máx ~8) ────────────────
+  const idsComprados = new Set(lineas.map((l) => String(l?.productoId)).filter(Boolean));
+  const relacionados = (featured || [])
+    .filter((p) => p && !idsComprados.has(String(p.id)))
+    .slice(0, 8);
+
+  /* ── Render ───────────────────────────────────────────────────────────── */
+  return (
+    <div className={styles.page}>
+      {/* Breadcrumb */}
+      <nav className={styles.breadcrumb} aria-label="Ruta de navegación">
+        <Link to="/cuenta/pedidos" className={styles.breadcrumbLink}>
+          Compras
+        </Link>
+        <span className={styles.breadcrumbSep} aria-hidden="true">
+          ›
+        </span>
+        <span className={styles.breadcrumbCurrent}>Estado de la compra</span>
+      </nav>
+
+      <div className={styles.layout}>
+        {/* ── Columna principal ──────────────────────────────────────────── */}
+        <div className={styles.mainCol}>
+          {/* Encabezado: código + fecha + badge de estado + pago */}
+          <Reveal className={`${styles.glass} ${styles.headerCard}`}>
+            <div className={styles.headerTop}>
+              <div className={styles.headerMeta}>
+                <span className={styles.codigo}>Pedido #{codigo || '—'}</span>
+                {fechaLegible && (
+                  <span className={styles.fecha}>Realizado el {fechaLegible}</span>
+                )}
+              </div>
+              <span
+                className={styles.estadoBadge}
+                style={{ background: estado.color }}
+              >
+                <span className={styles.estadoDot} aria-hidden="true" />
+                {estado.label}
+              </span>
+            </div>
+            <div className={styles.pagoLinea}>
+              <span
+                className={styles.pagoDot}
+                style={{ background: estado.color }}
+                aria-hidden="true"
+              />
+              {estado.paymentLabel}
+            </div>
+          </Reveal>
+
+          {/* Lista de productos */}
+          <Reveal className={styles.glass}>
+            <h2 className={styles.cardTitle}>
+              Producto{lineas.length === 1 ? '' : 's'}
+            </h2>
+            {lineas.length === 0 ? (
+              <p className={styles.direccionSecundaria}>
+                No hay detalle de productos para este pedido.
+              </p>
+            ) : (
+              <Stagger>
+                {lineas.map((linea, i) => {
+                  const prodCat = catalogoPorId.get(String(linea?.productoId));
+                  const img = imagenDeLinea(linea, prodCat);
+                  const nombre = linea?.producto || prodCat?.name || 'Producto';
+                  const cantidad = toNum(linea?.cantidad) || 1;
+                  const subtotal =
+                    linea?.subtotal != null
+                      ? toNum(linea.subtotal)
+                      : toNum(linea?.precio) * cantidad;
+                  return (
+                    <StaggerItem
+                      key={`${linea?.productoId || 'item'}-${i}`}
+                      className={styles.linea}
+                    >
+                      <div className={styles.lineaImgWrap}>
+                        {img ? (
+                          <img
+                            className={styles.lineaImg}
+                            src={img}
+                            alt={nombre}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className={styles.lineaImgPlaceholder} aria-hidden="true">
+                            ◇
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.lineaInfo}>
+                        <span className={styles.lineaNombre}>{nombre}</span>
+                        <div className={styles.lineaAtributos}>
+                          {linea?.talla && (
+                            <span className={styles.chip}>Talla: {linea.talla}</span>
+                          )}
+                          {linea?.color && (
+                            <span className={styles.chip}>Color: {linea.color}</span>
+                          )}
+                          {linea?.personalizado && (
+                            <span className={styles.chip}>Personalizado</span>
+                          )}
+                        </div>
+                        <div className={styles.lineaFooter}>
+                          <span className={styles.lineaCantidad}>
+                            Cantidad: {cantidad}
+                          </span>
+                          <span className={styles.lineaSubtotal}>
+                            {formatCurrency(subtotal)}
+                          </span>
+                        </div>
+                      </div>
+                    </StaggerItem>
+                  );
+                })}
+              </Stagger>
+            )}
+          </Reveal>
+
+          {/* Dirección de entrega */}
+          {(direccion || partesDireccionSecundaria.length > 0) && (
+            <Reveal className={styles.glass}>
+              <h2 className={styles.cardTitle}>Dirección de entrega</h2>
+              {direccion && <p className={styles.direccionTexto}>{direccion}</p>}
+              {partesDireccionSecundaria.length > 0 && (
+                <p className={styles.direccionSecundaria}>
+                  {partesDireccionSecundaria.join(', ')}
+                </p>
+              )}
+            </Reveal>
+          )}
+        </div>
+
+        {/* ── Columna lateral: detalle de la compra + WhatsApp ───────────── */}
+        <div className={styles.sideCol}>
+          <Reveal className={styles.glass}>
+            <h2 className={styles.cardTitle}>Detalle de la compra</h2>
+
+            <div className={styles.resumenRow}>
+              <span className={styles.resumenLabel}>
+                Producto{lineas.length === 1 ? '' : 's'}
+              </span>
+              <span>{formatCurrency(totalProductos)}</span>
+            </div>
+
+            {descuentoMonedas > 0 && (
+              <div className={styles.resumenRow}>
+                <span className={styles.resumenLabel}>Descuento (monedas)</span>
+                <span className={styles.resumenDescuento}>
+                  -{formatCurrency(descuentoMonedas)}
+                </span>
+              </div>
+            )}
+
+            <div className={styles.resumenRow}>
+              <span className={styles.resumenLabel}>Envío</span>
+              {envioMonto > 0 ? (
+                <span>{formatCurrency(envioMonto)}</span>
+              ) : (
+                <span className={styles.resumenGratis}>Gratis</span>
+              )}
+            </div>
+
+            <hr className={styles.resumenDivider} />
+
+            <div className={styles.resumenTotal}>
+              <span>Total</span>
+              <span>{formatCurrency(total)}</span>
+            </div>
+
+            <p className={styles.resumenPago}>{estado.paymentLabel}</p>
+          </Reveal>
+
+          {/* WhatsApp al asesor de la marca (o general) */}
+          <Reveal className={`${styles.glass} ${styles.waBlock}`}>
+            <p className={styles.waHint}>¿Dudas con tu pedido?</p>
+            {brandsConNumero.length > 1 ? (
+              brandsConNumero.map((b) => (
+                <GlassButton
+                  key={b.id}
+                  as="a"
+                  href={b.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="primary"
+                  fullWidth
+                >
+                  Consultar a {b.name} por WhatsApp
+                </GlassButton>
+              ))
+            ) : (
+              <GlassButton
+                as="a"
+                href={
+                  brandsConNumero[0]?.link || waGeneralLink || undefined
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="primary"
+                fullWidth
+                disabled={!(brandsConNumero[0]?.link || waGeneralLink)}
+              >
+                Consultar estado de mi pedido
+              </GlassButton>
+            )}
+          </Reveal>
+        </div>
+      </div>
+
+      {/* También te puede interesar */}
+      {relacionados.length > 0 && (
+        <Reveal className={styles.relacionados}>
+          <h2 className={styles.relacionadosTitulo}>También te puede interesar</h2>
+          <ProductGrid products={relacionados} categories={[]} />
+        </Reveal>
+      )}
+    </div>
+  );
+};
+
+export default CuentaCompraDetallePage;
