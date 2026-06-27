@@ -423,6 +423,11 @@ const Header = () => {
           <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`}>
             <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'favoritos')} aria-label="Favoritos">
               <Heart strokeWidth={1.5} className={styles.icon} />
+              {user && wishlistItems.length > 0 && (
+                <span className={styles.cartBadge} style={{ background: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)' }}>
+                  {wishlistItems.length}
+                </span>
+              )}
             </Link>
             
             <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
@@ -456,7 +461,27 @@ const Header = () => {
                       return (
                         <>
                           <h3>Tu Lista de Deseos</h3>
-                          <p style={textStyle}>Tienes {wishlistItems.length} productos guardados en tu lista.</p>
+                          <p style={textStyle}>Tienes {wishlistItems.length} producto{wishlistItems.length !== 1 ? 's' : ''} guardado{wishlistItems.length !== 1 ? 's' : ''} en tu lista.</p>
+                          <div className={styles.wishlistPreviewStrip}>
+                            {wishlistItems.slice(0, 4).map((item) => (
+                              <Link
+                                key={item.productId}
+                                to="/cuenta/wishlist"
+                                onClick={closeDropdowns}
+                                className={styles.wishlistThumb}
+                                title={item.productName}
+                              >
+                                <img
+                                  src={item.productImage || '/images/placeholder.svg'}
+                                  alt={item.productName || 'Producto'}
+                                  onError={(e) => { e.currentTarget.src = '/images/placeholder.svg'; }}
+                                />
+                              </Link>
+                            ))}
+                            {wishlistItems.length > 4 && (
+                              <span className={styles.wishlistThumbMore}>+{wishlistItems.length - 4}</span>
+                            )}
+                          </div>
                           <div className={styles.accountButtons}>
                             <Link to="/cuenta/wishlist" className={styles.primaryButton} onClick={closeDropdowns}>
                               Ver mi lista
