@@ -243,15 +243,22 @@
 - **Qué es:** los productos que el cliente guardó como favoritos.
 - **Qué hace:** muestra la grilla de favoritos; permite **compartir la lista** (genera enlace público `/wishlist/<código>`); marca con un badge los productos que ya le regalaron. Sugiere registrar el cumpleaños para recordatorios.
 - **Acceso desde el header (sesión 2026-06-27):** el corazón de favoritos del header muestra un **badge con la cantidad** de productos guardados y, al abrir el desplegable de favoritos, una **tira de miniaturas** de los productos en la lista.
-- **Por implementar (ver [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md)):** dos botones nuevos en la cabecera de la wishlist —
-  - **"Agregar todo al carrito":** atajo para agregar de un golpe todos los productos no regalados de la lista al propio carrito (compra para uno mismo, bajo riesgo, solo frontend).
-  - **"Mis fechas especiales":** copia/abre una **URL pública** (`/regalar/:referralCode`) que funciona como **registro de regalos por fecha** — quien la abre ve las fechas especiales del dueño + su wishlist, elige una fecha de entrega y un regalo y compra en Modo Regalo. **Tiene consideración de privacidad:** expone fechas/PII del dueño, así que **no se publica hasta cerrar reglas + una Cloud Function** que devuelva solo datos mínimos (ligado a H-07/H-09).
+- **Botones de la cabecera (sesión 2026-06-27, ✅ desplegados):**
+  - **"🛒 Agregar todo al carrito":** atajo que agrega de un golpe todos los productos no regalados de la lista al propio carrito (compra para uno mismo, no es modo regalo). Omite productos borrados, sin stock/inactivos y los que ya están en el carrito; muestra un toast resumen.
+  - **"📅 Mis fechas especiales":** copia y abre la **URL pública** del **registro de regalos por fecha** (`/regalar/:referralCode`, ver §7.4). Privacidad resuelta: la página pública consume una **Cloud Function** (`getPublicGiftRegistry`) que devuelve solo datos mínimos, no lee Firestore directo.
+- **Estado y detalle completo:** ver [PLAN-FECHAS-ESPECIALES.md → "ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (/regalar)"](./PLAN-FECHAS-ESPECIALES.md). Pendiente: REDESPLEGAR la Cloud Function `getPublicGiftRegistry` (fix del bug de wishlist vacía) + drag-and-drop en progreso.
 - **Archivos clave:** `src/pages/cuenta/WishlistPage.jsx`, `src/contexts/WishlistContext.jsx`
 
 ### 7.4 Lista de Deseos pública (`/wishlist/:userCode`)
 - **Qué es:** la versión **compartible** de la wishlist (la ve cualquiera con el enlace).
 - **Qué hace:** muestra la lista de deseos de una persona (con su nombre) para que amigos/familia puedan comprarle y regalarle.
 - **Archivos clave:** `src/pages/WishlistPublic/WishlistPublic.jsx`
+
+### 7.4-bis Registro de regalos por fecha (`/regalar/:referralCode`) — "Mis fechas especiales"
+- **Qué es:** página pública que funciona como **registro de regalos por fecha**. El dueño la comparte (botón "📅 Mis fechas especiales" de su wishlist); quien la abre ve las **fechas especiales del dueño** (cumpleaños/aniversarios/fechas especiales de su perfil) como **selector de fecha de entrega** + su **wishlist**.
+- **Cómo funciona:** elige una fecha + un producto → "Regalar este 🎁" agrega el item al carrito en **Modo Regalo** con `deliveryDate` + el dueño como destinatario → el checkout preselecciona Modo Regalo y la fecha, guarda `giftDetails.deliveryDate` en el pedido (y lo pone en el WhatsApp) → al confirmar marca el producto como regalado y **notifica al dueño** (`markItemAsGifted`). La página **no lee Firestore directo**: pide los datos mínimos a la Cloud Function `getPublicGiftRegistry` (sin email/teléfono/dni del dueño ni datos sensibles de terceros).
+- **Estado (✅ desplegado y funcionando):** flujo completo operativo. **Pendiente:** REDESPLEGAR la Cloud Function `getPublicGiftRegistry` por Cloud Shell (corrige un bug por el que la wishlist salía vacía aunque el dueño tuviera productos). **En progreso:** drag-and-drop (arrastrar productos sobre las fechas). Detalle completo, bugs y decisiones abiertas en [PLAN-FECHAS-ESPECIALES.md → "ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (/regalar)"](./PLAN-FECHAS-ESPECIALES.md).
+- **Archivos clave:** `src/pages/GiftRegistry/GiftRegistryPage.jsx`, `functions/index.js` (`getPublicGiftRegistry`), `src/contexts/CartContext.jsx`, `src/pages/CheckoutPage.jsx`, `src/services/wishlist.js`, `src/App.jsx`
 
 ### 7.5 Mis Creaciones (`/cuenta/creaciones`)
 - **Qué es:** los **diseños personalizados guardados** por el usuario en el editor.

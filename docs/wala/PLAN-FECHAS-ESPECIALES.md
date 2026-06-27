@@ -1,4 +1,4 @@
-<!-- Generado 2026-06-27. Estado: POR IMPLEMENTAR. Plan de los features "Mis fechas especiales" + "Agregar todo al carrito" para la wishlist. -->
+<!-- Generado 2026-06-27. Estado: DESPLEGADO Y FUNCIONANDO (con bug corregido pendiente de redeploy de la CF + drag-and-drop en progreso). Plan de los features "Mis fechas especiales" + "Agregar todo al carrito" para la wishlist. El estado REAL del código está documentado al final, en la sección "ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (/regalar)". -->
 
 # Plan — "Mis fechas especiales" + "Agregar todo al carrito"
 
@@ -233,3 +233,74 @@ Archivos clave referenciados (rutas absolutas):
 - `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master\src\pages\SubscriptionSurveyPage.jsx`
 - `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master\src\App.jsx`
 - A crear: `src\pages\GiftRegistry\GiftRegistryPage.jsx`, `...GiftRegistryPage.module.css`, `docs\wala\PLAN-WISHLIST-REGALO.md`
+
+---
+
+# ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (`/regalar`)
+
+> **Actualizado 2026-06-27.** Esta sección refleja el estado REAL del código (verificado leyendo los archivos), no el plan. La feature pasó de "por implementar" a **desplegada y funcionando**, con un bug de carga ya corregido (pendiente de redeploy de la Cloud Function) y el drag-and-drop en progreso. Las secciones 1-6 de arriba son el plan original; lo que sigue es lo que de verdad está construido.
+
+## A. Cómo funciona (flujo paso a paso)
+
+1. **El dueño comparte el enlace.** En `/cuenta/wishlist` (`src/pages/cuenta/WishlistPage.jsx`), el botón **"📅 Mis fechas especiales"** (`handleShareGiftRegistry`, líneas 41-46) copia al portapapeles `${origin}/regalar/${userProfile.referralCode}` y lo abre en una pestaña nueva. El `referralCode` (formato `KS-XXXXXX`) es el mismo que usa la wishlist pública.
+2. **La ruta carga la página pública.** `/regalar/:referralCode` está cableada en `src/App.jsx` (línea 261) → `GiftRegistryPage`.
+3. **La página pide los datos a la Cloud Function.** `GiftRegistryPage` (`src/pages/GiftRegistry/GiftRegistryPage.jsx`) llama `httpsCallable(getFunctions(), 'getPublicGiftRegistry')({ referralCode })` (líneas 83-84). **No lee Firestore directamente** (privacidad). La CF devuelve `{ ok, ownerName, dates, wishlistItems }`.
+4. **La CF resuelve dueño + fechas + wishlist** (`functions/index.js`, `getPublicGiftRegistry`, línea 2471):
+   - Normaliza el `referralCode` a mayúsculas.
+   - **Estrategia 1:** query `wishlists where userCode == referralCode` → de ahí saca `userId` (= `doc.id`) y los `items`.
+   - **Estrategia 2 (respaldo de userId):** si no hubo wishlist, query `portal_clientes_users where referralCode == code` para resolver el `userId`.
+   - **Respaldo CONFIABLE de items (el fix, ver §C):** si no trajo items pero sí hay `userId`, lee `wishlists/{userId}` directo por `doc.id`.
+   - Lee el perfil del dueño (`portal_clientes_users/{userId}`) y aplana `giftRecipients[].events[]` → `dates[]` con `{ type, date, label, recipientName }`. Devuelve SOLO datos mínimos (sin email/teléfono/dni).
+   - De cada item de la wishlist expone `{ productId, productName, productImage, isGifted }` — `isGifted` es disponibilidad (marca "ya regalado"), NO PII. No expone `giftedBy`/`addedAt`.
+5. **El comprador elige fecha + producto.** La página muestra (a) un selector de fechas tipo radio/chips (preselecciona la primera, líneas 107-110) y (b) la wishlist como grilla de `ProductCard`, enriquecida con precio/imagen del catálogo vía `useProducts([])` (evita N lecturas). Cada producto tiene un botón **"Regalar este 🎁"**, deshabilitado si no hay fecha elegida o si el item ya está `isGifted`.
+6. **"Regalar este" arma el carrito en Modo Regalo.** `handleGift` (líneas 151-185) construye un `productMock` con los flags `isWishlistGift: true`, `wishlistUserCode: referralCode` (mecanismo idéntico al de `WishlistPublic`) MÁS el contexto nuevo `deliveryDate` (la fecha del evento elegido), `deliveryEventLabel` y `deliveryRecipient` (el dueño). Llama `addToCart(productMock, {}, null, 1)` y navega a `/carrito`.
+7. **El carrito conserva el contexto de regalo.** `src/contexts/CartContext.jsx` (`addToCart`, líneas 172-180) copia `isWishlistGift`/`wishlistUserCode` y `deliveryDate`/`deliveryEventLabel`/`deliveryRecipient` al `cartItem` SOLO si vienen en el producto. Además, un item de regalo **siempre crea una línea nueva** (no se fusiona con un item normal del mismo producto, líneas 238-246), para no perder esos campos al deduplicar.
+8. **El checkout preselecciona Modo Regalo y consume la fecha.** `src/pages/CheckoutPage.jsx`:
+   - Detecta el primer item con `isWishlistGift && deliveryDate` (líneas 183-185) y de ahí saca `registryDeliveryDate`, `registryRecipient`, `registryEventLabel`.
+   - Preselecciona `isGiftMode = true` y `giftRecipientName = deliveryRecipient`, e inicializa `deliveryDate` en Formik (líneas 254-259).
+   - Avisa (no bloquea) si la fecha está a menos de 7 días hábiles (`businessDaysUntil`, líneas 214-236).
+   - Persiste en el payload del pedido `giftDetails: { isGift, recipientName, message, sticker, deliveryDate?, deliveryEventLabel?, wishlistUserCode? }` (líneas 623-639) y lo incluye en el mensaje de WhatsApp ("📅 Entrega programada", líneas 694-699).
+9. **Se marca el regalo y se notifica al dueño.** Tras crear el pedido, el checkout recorre los items con `isWishlistGift && wishlistUserCode` y llama `markItemAsGifted(wishlistUserCode, productId, customerName)` (líneas 657-660). En `src/services/wishlist.js` (línea 101) esa función marca `isGifted = true` + `giftedBy`, y crea una notificación en `users/{userId}/notifications` para el dueño. Va dentro de un `try/catch` tolerante: si falla, el pedido igual se procesa.
+
+## B. Qué funciona hoy (desplegado)
+
+- ✅ Ruta pública `/regalar/:referralCode` cableada en `src/App.jsx` y renderizando `GiftRegistryPage`.
+- ✅ Botón **"📅 Mis fechas especiales"** en la wishlist: copia el link y lo abre en pestaña nueva.
+- ✅ Botón **"🛒 Agregar todo al carrito"** en la wishlist (Feature A): agrega los productos no regalados al carrito propio; omite borrados, sin stock/inactivos y los que ya están en el carrito; muestra un toast resumen (`handleAddAll`, líneas 52-79).
+- ✅ Cloud Function `getPublicGiftRegistry` **desplegada** y devolviendo fechas + wishlist con datos mínimos (privacidad). Tolerante a errores: ante fallo o código inexistente responde `{ ok: false }` y la página muestra "Registro no encontrado".
+- ✅ La página muestra las **fechas especiales del dueño** (de `giftRecipients[].events[]`) como selector de fecha de entrega, con la primera preseleccionada.
+- ✅ La página muestra la **wishlist** con precio/imagen reales del catálogo y marca **"¡Ya regalado!"** los items con `isGifted`.
+- ✅ Flujo de compra completo: elegir fecha + "Regalar este" → carrito en **Modo Regalo** con `deliveryDate` → checkout preselecciona Modo Regalo y la fecha → pedido con `giftDetails.deliveryDate` → `markItemAsGifted` notifica al dueño.
+- ✅ Privacidad: la página NO lee Firestore directo; la CF nunca expone email/teléfono/dni del dueño ni datos sensibles de terceros.
+
+## C. Qué NO funciona / bugs
+
+- 🐛 **Bug encontrado y arreglado — los productos de la wishlist no cargaban en `/regalar`** (salía "Esta lista está vacía por ahora" aunque el dueño SÍ tenía productos).
+  - **Causa:** la CF leía los items SOLO con la query `wishlists where userCode == referralCode`. Si esa query no matcheaba (el campo `userCode` con casing distinto, ausente, o la lista creada de otra forma) pero el `userId` SÍ se resolvía por el perfil, los items quedaban en `[]`.
+  - **Fix (ya en el código, `functions/index.js` líneas 2543-2558):** si tras la query no hay items pero sí hay `userId`, la CF lee la wishlist directo por `wishlists/{userId}` (lectura confiable por `doc.id`). Las fechas no se veían afectadas porque salen del perfil, no de la wishlist — por eso "cargaban las fechas pero no los productos".
+  - **⚠️ Pendiente del usuario:** REDESPLEGAR la Cloud Function por Cloud Shell para que el fix llegue a producción:
+    ```
+    firebase deploy --only functions:getPublicGiftRegistry --project sistema-gestion-3b225
+    ```
+    Hasta ese redeploy, en producción sigue corriendo la versión vieja y algunas listas pueden verse vacías.
+
+## D. Qué falta agregar
+
+- 🔧 **Drag-and-drop (EN PROGRESO).** Arrastrar los productos como tarjetas flotantes y soltarlos sobre las fechas para asignar el regalo de forma más intuitiva, **además** del flujo actual (elegir fecha + clic "Regalar este"). Aún no hay código de drag/drop en `src/pages/GiftRegistry/` (verificado). El flujo por clic seguirá funcionando como fallback accesible.
+- ⬜ **Decisiones abiertas (de §6 de este plan):**
+  1. **¿Qué fechas mostrar?** Hoy la CF aplana **todas** las fechas de `giftRecipients[]` (las del dueño y las de sus familiares). Falta decidir si mostrar solo las del propio dueño o mantener todas las del registro.
+  2. **Recurrencia / fechas pasadas.** Las fechas son `YYYY-MM-DD` literales. No se normaliza al próximo aniversario ni se filtran las ya pasadas; falta esa lógica.
+  3. **Validación de la ventana de entrega.** Hoy el checkout solo **avisa** (no bloquea) si la fecha está a menos de 7 días hábiles, y no valida que no sea una fecha pasada ni que respete los 7-30 días hábiles. Falta endurecer.
+  4. **UX de la fecha preseleccionada.** Se preselecciona siempre la primera fecha del arreglo; falta decidir si conviene otro criterio (la más próxima, ninguna, etc.).
+  5. **Reconciliación si `markItemAsGifted` falla.** Hoy es tolerante (try/catch que solo loguea). Falta un mecanismo de reintento/reconciliación para no dejar un regalo comprado sin marcar.
+  6. **Persistir el monto/USD estructurado en el pago.** El `giftDetails` guarda metadatos de entrega pero no un monto estructurado; falta definir si el pago debe llevar el monto/USD del regalo de forma estructurada.
+
+## E. Archivos involucrados (rutas absolutas)
+
+- Página pública: `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master\src\pages\GiftRegistry\GiftRegistryPage.jsx` (+ `GiftRegistryPage.module.css`)
+- Cloud Function: `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master\functions\index.js` → `getPublicGiftRegistry` (línea 2471)
+- Botones de la wishlist: `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master\src\pages\cuenta\WishlistPage.jsx`
+- Servicio de wishlist: `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master\src\services\wishlist.js` (`getWishlistByUserCode`, `markItemAsGifted`)
+- Carrito: `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master\src\contexts\CartContext.jsx` (preserva `deliveryDate`/`isWishlistGift`/etc. en el `cartItem`)
+- Checkout: `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master\src\pages\CheckoutPage.jsx` (consume `deliveryDate`, preselecciona Modo Regalo, `giftDetails`, `markItemAsGifted`)
+- Ruta: `C:\Users\heyer\OneDrive\Documents\Desarrollo de Software\wala-master\src\App.jsx` (línea 261)

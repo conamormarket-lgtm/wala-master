@@ -2535,6 +2535,28 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
       return { ok: false };
     }
 
+    // ── Respaldo CONFIABLE de la wishlist: leer por doc.id = userId ──────────
+    // Si la estrategia 1 (query por userCode) no trajo items (userCode con casing
+    // distinto / ausente / lista creada de otra forma) pero SÍ resolvimos el userId,
+    // leemos la wishlist directo por su id (= userId). Así los productos cargan
+    // aunque el userCode no coincida. (Bug: cargaban las fechas pero no los items.)
+    if (wishlistItems.length === 0 && userId) {
+      try {
+        const wlByIdSnap = await db.collection("wishlists").doc(String(userId)).get();
+        if (wlByIdSnap.exists) {
+          const items = Array.isArray(wlByIdSnap.data().items) ? wlByIdSnap.data().items : [];
+          wishlistItems = items.map((it) => ({
+            productId: it.productId || null,
+            productName: it.productName || "",
+            productImage: it.productImage || "",
+            isGifted: !!it.isGifted,
+          }));
+        }
+      } catch (e) {
+        console.warn("getPublicGiftRegistry: fallo al leer wishlist por userId:", e.message);
+      }
+    }
+
     // ── Leer el doc del dueño y extraer SOLO lo público ─────────────────────
     let ownerName = "Alguien";
     let dates = [];

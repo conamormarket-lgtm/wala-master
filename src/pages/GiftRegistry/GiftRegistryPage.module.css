@@ -97,6 +97,31 @@
   box-shadow: var(--elev-2, 0 12px 32px -12px rgba(76, 29, 149, 0.22));
 }
 
+/* Mientras se arrastra un producto, cada fecha se resalta como zona de drop. */
+.dateChipDroppable {
+  border-style: dashed;
+  border-color: var(--violet-500, #8B5CF6);
+  background: var(--violet-50, #F5F3FF);
+  animation: dropPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dropPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(139, 92, 246, 0.18); }
+}
+
+/* Pista de uso del drag & drop, sobre el grid de productos. */
+.dragHint {
+  margin: 0 0 1.1rem;
+  text-align: center;
+  color: var(--violet-800, #5B21B6);
+  font-size: 0.95rem;
+  background: var(--violet-50, #F5F3FF);
+  border: 1px dashed var(--violet-300, #C4B5FD);
+  border-radius: 12px;
+  padding: 0.6rem 0.9rem;
+}
+
 .dateChipLabel {
   font-weight: 700;
   color: var(--violet-800, #5B21B6);
@@ -223,6 +248,7 @@
 @media (prefers-reduced-motion: reduce) {
   .spinner { animation-duration: 1.6s; }
   .dateChip { transition: none; }
+  .dateChipDroppable { animation: none; }
 }
 
 @media (max-width: 640px) {

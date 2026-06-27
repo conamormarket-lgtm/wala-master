@@ -27,6 +27,7 @@
 // =========================================================================
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useCart } from '../../contexts/CartContext';
@@ -71,6 +72,8 @@ const GiftRegistryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedEventId, setSelectedEventId] = useState(null);
+  // Producto que se está arrastrando (para resaltar las fechas como zonas de drop).
+  const [draggingId, setDraggingId] = useState(null);
 
   // ── Carga de datos vía Cloud Function (lectura mínima y segura) ─────────
   useEffect(() => {
@@ -148,9 +151,11 @@ const GiftRegistryPage = () => {
   // ── Acción "Regalar este" ──────────────────────────────────────────────
   // Mismo mecanismo que WishlistPublic.handleGift, AÑADIENDO el contexto de
   // fecha de entrega y el dueño como destinatario. No toca pago ni totales.
-  const handleGift = (fullProduct, wishlistItem) => {
-    if (!selectedEvent) {
-      addToast('Primero elige una fecha de entrega.', 'info');
+  const handleGift = (fullProduct, wishlistItem, eventOverride) => {
+    // eventOverride: cuando se ARRASTRA el producto sobre una fecha concreta.
+    const evento = eventOverride || selectedEvent;
+    if (!evento) {
+      addToast('Primero elige una fecha de entrega (o arrastra el producto sobre una).', 'info');
       return;
     }
     // Si el producto ya no está en el catálogo, no lo agregamos con precio 0.
@@ -171,17 +176,44 @@ const GiftRegistryPage = () => {
       isWishlistGift: true,
       wishlistUserCode: referralCode,
       // NUEVO — contexto de fecha de entrega (aditivo, viaja en el item del carrito).
-      deliveryDate: selectedEvent.date, // 'YYYY-MM-DD' — qué día entregar
-      deliveryEventLabel: selectedEvent._label, // contexto humano del evento
+      deliveryDate: evento.date, // 'YYYY-MM-DD' — qué día entregar
+      deliveryEventLabel: evento._label, // contexto humano del evento
       deliveryRecipient: registry?.ownerName || 'Alguien', // dueño = destinatario
     };
 
     addToCart(productMock, {}, null, 1);
     addToast(
-      `¡Regalo agregado! Se entregará el ${formatearFecha(selectedEvent.date)} para ${productMock.deliveryRecipient}.`,
+      `¡Regalo agregado! Se entregará el ${formatearFecha(evento.date)} para ${productMock.deliveryRecipient}.`,
       'success'
     );
     navigate('/carrito');
+  };
+
+  // ── Drag & drop: soltar un producto sobre una fecha lo regala para ese día ──
+  // Al soltar, miramos si el puntero quedó dentro de alguna "chip" de fecha
+  // (marcadas con data-date-key) y, si es así, regalamos con ESA fecha.
+  const handleCardDrop = (nativeEvent, cardProduct, item) => {
+    setDraggingId(null);
+    const point =
+      typeof nativeEvent?.clientX === 'number'
+        ? { x: nativeEvent.clientX, y: nativeEvent.clientY }
+        : nativeEvent?.changedTouches?.[0]
+          ? { x: nativeEvent.changedTouches[0].clientX, y: nativeEvent.changedTouches[0].clientY }
+          : null;
+    if (!point) return;
+    const chips = document.querySelectorAll('[data-date-key]');
+    for (const chip of chips) {
+      const r = chip.getBoundingClientRect();
+      if (point.x >= r.left && point.x <= r.right && point.y >= r.top && point.y <= r.bottom) {
+        const key = chip.getAttribute('data-date-key');
+        const evt = fechas.find((f) => f._key === key);
+        if (evt) {
+          setSelectedEventId(evt._key); // refleja la fecha que se eligió al soltar
+          handleGift(cardProduct, item, evt);
+        }
+        return;
+      }
+    }
   };
 
   // ── Estados: carga ──────────────────────────────────────────────────────
@@ -260,10 +292,11 @@ const GiftRegistryPage = () => {
                   <button
                     type="button"
                     key={d._key}
+                    data-date-key={d._key}
                     role="radio"
                     aria-checked={seleccionada}
                     onClick={() => setSelectedEventId(d._key)}
-                    className={`${styles.dateChip} ${seleccionada ? styles.dateChipActive : ''}`}
+                    className={`${styles.dateChip} ${seleccionada ? styles.dateChipActive : ''} ${draggingId ? styles.dateChipDroppable : ''}`}
                   >
                     <span className={styles.dateChipLabel}>{d._label}</span>
                     <span className={styles.dateChipDate}>{formatearFecha(d.date)}</span>
@@ -284,6 +317,11 @@ const GiftRegistryPage = () => {
           subtitle={`Lista de deseos de ${ownerName}.`}
           animate
         >
+          {items.length > 0 && (
+            <p className={styles.dragHint}>
+              💡 <strong>Arrastra</strong> un producto sobre una fecha de arriba para regalarlo ese día, o elige una fecha y pulsa “Regalar este”.
+            </p>
+          )}
           {items.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.stateEmoji} aria-hidden="true">📭</div>
@@ -309,7 +347,19 @@ const GiftRegistryPage = () => {
                 const sinFecha = !selectedEvent;
 
                 return (
-                  <div key={item.productId || idx} className={styles.cardWrapper}>
+                  <motion.div
+                    key={item.productId || idx}
+                    className={styles.cardWrapper}
+                    drag={!yaRegalado}
+                    dragSnapToOrigin
+                    whileDrag={{ scale: 1.05, zIndex: 60, boxShadow: '0 18px 40px -12px rgba(109, 40, 217, 0.45)' }}
+                    onDragStart={() => setDraggingId(item.productId)}
+                    onDragEnd={(e) => handleCardDrop(e, cardProduct, item)}
+                    style={{
+                      touchAction: !yaRegalado ? 'none' : undefined,
+                      cursor: !yaRegalado ? 'grab' : 'default',
+                    }}
+                  >
                     {yaRegalado && (
                       <div className={styles.giftedOverlay}>¡Ya regalado! 🎉</div>
                     )}
@@ -333,7 +383,7 @@ const GiftRegistryPage = () => {
                         Regalar este 🎁
                       </GlassButton>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
