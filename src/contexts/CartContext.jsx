@@ -166,6 +166,18 @@ export const CartProvider = ({ children }) => {
       customization,
       quantity,
       addedAt: new Date().toISOString(),
+      // ── Contexto de REGALO (wishlist pública / registro de regalos por fecha) ──
+      // ADITIVO: solo se copia si el producto trae los flags (WishlistPublic / GiftRegistryPage).
+      // SIN esto el checkout NO detectaba el regalo: los flags se perdían al armar el cartItem.
+      ...(product.isWishlistGift && {
+        isWishlistGift: true,
+        wishlistUserCode: product.wishlistUserCode || null,
+      }),
+      ...(product.deliveryDate && {
+        deliveryDate: product.deliveryDate,
+        deliveryEventLabel: product.deliveryEventLabel || null,
+        deliveryRecipient: product.deliveryRecipient || null,
+      }),
       ...(product.isComboProduct && {
         isComboProduct: true,
         comboItems: product.comboItems || [],
@@ -223,7 +235,11 @@ export const CartProvider = ({ children }) => {
       const sameVariant = (a, b) =>
         a.size === b.size &&
         (a.selectedVariant?.name ?? a.color) === (b.selectedVariant?.name ?? b.color);
-      const existingIndex = prev.findIndex(item => {
+      // Un REGALO (wishlist pública / registro de regalos por fecha) SIEMPRE crea una
+      // línea NUEVA: no debe fusionarse con un item normal del mismo producto, porque al
+      // deduplicar se perderían deliveryDate / wishlistUserCode. Solo los items normales deduplican.
+      const esRegalo = !!(product.isWishlistGift || product.deliveryDate);
+      const existingIndex = esRegalo ? -1 : prev.findIndex(item => {
         if (item.productId !== product.id) return false;
         return sameVariant(item.variant, variant) &&
           JSON.stringify(item.customization) === JSON.stringify(customization);

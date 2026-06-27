@@ -2426,3 +2426,160 @@ exports.updateFxRate = onSchedule(
     }
   }
 );
+
+// ════════════════════════════════════════════════════════════════════════════
+// FEATURE B — "MIS FECHAS ESPECIALES" (registro de regalos por fecha)
+// ────────────────────────────────────────────────────────────────────────────
+// La página pública /regalar/:referralCode debe mostrar, SIN login, las fechas
+// especiales del dueño + su wishlist, para que un tercero elija una fecha de
+// entrega y compre un regalo. Enfoque SEGURO (decisión del usuario): el cliente
+// NO lee Firestore directo; llama a esta Cloud Function, que devuelve SOLO datos
+// mínimos y públicos. Así las reglas de portal_clientes_users quedan cerradas y
+// nunca se expone email/teléfono/dni/perfil completo ni datos de terceros
+// (otros recipients/familiares) más allá de su nombre como contexto del evento.
+//
+// onCall accesible SIN autenticación: cualquiera con el referralCode (KS-XXXXXX)
+// puede consultarlo, igual que hoy se comparte la wishlist pública.
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Callable (público, sin login): getPublicGiftRegistry
+ *
+ * Entrada:  { referralCode: "KS-XXXXXX" }
+ * Salida (éxito):
+ *   {
+ *     ok: true,
+ *     ownerName: "Juan",                     // displayName/name del dueño (público)
+ *     dates: [                               // giftRecipients[].events[] aplanado
+ *       {
+ *         type: "Cumpleaños"|"Aniversario"|"Fecha Especial",
+ *         date: "YYYY-MM-DD",                // fecha de entrega seleccionable
+ *         label: "Cumpleaños de mamá",       // customName || type (texto humano)
+ *         recipientName: "Mamá"              // nombre del recipient (contexto)
+ *       }, ...
+ *     ],
+ *     wishlistItems: [                       // items de la wishlist del dueño
+ *       { productId, productName, productImage }, ...
+ *     ]
+ *   }
+ * Salida (no encontrado / error tolerado): { ok: false }
+ *
+ * NO devuelve: email, teléfono, dni, ni el perfil completo del dueño ni de terceros.
+ * Tolerante a errores: ante cualquier fallo o dato faltante responde { ok: false }
+ * (o listas vacías) en vez de lanzar, para no romper la página pública.
+ */
+exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => {
+  try {
+    // ── Validar y normalizar el código ──────────────────────────────────────
+    const referralCodeRaw = data && data.referralCode;
+    const referralCode =
+      typeof referralCodeRaw === "string" && referralCodeRaw.trim()
+        ? referralCodeRaw.trim().toUpperCase()
+        : null;
+    if (!referralCode) {
+      // No se lanza HttpsError: la página pública solo necesita { ok:false }.
+      return { ok: false };
+    }
+
+    // ── Resolver el userId del dueño a partir del referralCode ──────────────
+    // Estrategia 1 (preferida): la wishlist guarda userCode = referralCode y su
+    // doc.id = userId; así obtenemos userId + items en una sola lectura.
+    // Estrategia 2 (respaldo): query portal_clientes_users where referralCode==code,
+    // por si el dueño aún no tiene wishlist creada pero sí fechas en su perfil.
+    let userId = null;
+    let wishlistItems = [];
+
+    try {
+      const wlSnap = await db
+        .collection("wishlists")
+        .where("userCode", "==", referralCode)
+        .limit(1)
+        .get();
+      if (!wlSnap.empty) {
+        const wlDoc = wlSnap.docs[0];
+        const wlData = wlDoc.data() || {};
+        userId = wlData.userId || wlDoc.id; // doc.id = uid del dueño
+        const items = Array.isArray(wlData.items) ? wlData.items : [];
+        // Campos públicos del item + isGifted (solo DISPONIBILIDAD; NO es PII) para que la
+        // página marque "ya regalado" y evite que dos personas regalen lo mismo. NO se expone
+        // giftedBy/addedAt ni ningún dato personal.
+        wishlistItems = items.map((it) => ({
+          productId: it.productId || null,
+          productName: it.productName || "",
+          productImage: it.productImage || "",
+          isGifted: !!it.isGifted,
+        }));
+      }
+    } catch (e) {
+      console.warn("getPublicGiftRegistry: fallo al leer wishlist por código:", e.message);
+    }
+
+    // Respaldo: si la wishlist no resolvió el userId, buscar en el perfil.
+    if (!userId) {
+      try {
+        const userQ = await db
+          .collection(PORTAL_USERS_COLLECTION)
+          .where("referralCode", "==", referralCode)
+          .limit(1)
+          .get();
+        if (!userQ.empty) {
+          userId = userQ.docs[0].id;
+        }
+      } catch (e) {
+        console.warn("getPublicGiftRegistry: fallo al resolver userId por referralCode:", e.message);
+      }
+    }
+
+    // Sin dueño identificable → no existe el registro.
+    if (!userId) {
+      return { ok: false };
+    }
+
+    // ── Leer el doc del dueño y extraer SOLO lo público ─────────────────────
+    let ownerName = "Alguien";
+    let dates = [];
+    try {
+      const ownerSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(userId).get();
+      if (ownerSnap.exists) {
+        const owner = ownerSnap.data() || {};
+        // Nombre público del dueño (mismo criterio que WishlistPublic).
+        ownerName = owner.displayName || owner.name || "Alguien";
+
+        // Aplanar giftRecipients[].events[] → dates[] (mínimo y público).
+        const recipients = Array.isArray(owner.giftRecipients) ? owner.giftRecipients : [];
+        recipients.forEach((recipient) => {
+          if (!recipient || !Array.isArray(recipient.events)) return;
+          const recipientName = recipient.name || "";
+          recipient.events.forEach((event) => {
+            if (!event || !event.date) return; // sin fecha no es seleccionable
+            dates.push({
+              type: event.type || "Fecha Especial",
+              date: event.date, // 'YYYY-MM-DD'
+              // label = texto humano para la card; customName si lo definió.
+              label: event.customName || event.type || "Fecha Especial",
+              recipientName, // contexto ("Cumpleaños de Mamá"); no es PII sensible
+            });
+          });
+        });
+      } else {
+        // El código resolvió a un userId que ya no tiene perfil → no existe.
+        return { ok: false };
+      }
+    } catch (e) {
+      console.warn("getPublicGiftRegistry: fallo al leer el perfil del dueño:", e.message);
+      // El dueño existe (hay wishlist) pero no se pudieron leer las fechas;
+      // se devuelve lo que se tenga (wishlist) con dates vacío, sin romper la página.
+    }
+
+    return {
+      ok: true,
+      ownerName,
+      dates,
+      wishlistItems,
+    };
+  } catch (err) {
+    // Tolerante a errores: nunca lanza hacia la página pública.
+    console.error("getPublicGiftRegistry error:", err);
+    return { ok: false };
+  }
+});

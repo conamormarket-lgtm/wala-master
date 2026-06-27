@@ -76,7 +76,12 @@ const validationSchema = Yup.object({
     is: true,
     then: () => Yup.string().max(200, 'Máximo 200 caracteres').required('Mensaje requerido')
   }),
-  giftSticker: Yup.string()
+  giftSticker: Yup.string(),
+  // ── Fecha de entrega del regalo (Feature B "Mis fechas especiales") ──────────
+  // ADITIVO y OPCIONAL: la página pública /regalar/:referralCode escribe esta fecha
+  // en el ítem del carrito y aquí solo se muestra/persiste. NO bloquea el checkout
+  // ni altera pago/totales/validación del documento.
+  deliveryDate: Yup.string()
 });
 
 const CheckoutPage = () => {
@@ -167,6 +172,69 @@ const CheckoutPage = () => {
 
   const guestSavedInfo = JSON.parse(localStorage.getItem('checkout_customer_info') || '{}');
 
+  // ── Contexto de regalo "Mis fechas especiales" (Feature B) ───────────────────
+  // El checkout YA consume el contexto de regalo de la wishlist pública EXCLUSIVAMENTE
+  // desde los ítems del carrito (items[]): los flags isWishlistGift / wishlistUserCode
+  // que escribe WishlistPublic.jsx (productMock) viajan en el cartItem.
+  // Aquí EXTENDEMOS ese MISMO mecanismo de forma ADITIVA: si la página /regalar/:referralCode
+  // escribió en el ítem una fecha de entrega (deliveryDate) + el destinatario (deliveryRecipient)
+  // + la etiqueta del evento (deliveryEventLabel), los leemos del PRIMER ítem que los traiga.
+  // No se inventan datos: si el carrito no trae estos campos, el flujo normal queda intacto.
+  const giftRegistryItem = items.find(
+    (i) => i.isWishlistGift && i.deliveryDate
+  );
+  // Fecha de entrega elegida en la página de regalo (formato 'YYYY-MM-DD') o cadena vacía.
+  const registryDeliveryDate = giftRegistryItem?.deliveryDate || '';
+  // Destinatario (el dueño de la wishlist) y etiqueta humana del evento, si vinieron del registro.
+  const registryRecipient = giftRegistryItem?.deliveryRecipient || '';
+  const registryEventLabel = giftRegistryItem?.deliveryEventLabel || '';
+  // Hay contexto de regalo programado cuando llegó una fecha de entrega desde /regalar/:code.
+  const hasScheduledGift = !!registryDeliveryDate;
+
+  // ── Formateo legible de la fecha de entrega (solo display, no afecta lógica) ──
+  // Se parsea 'YYYY-MM-DD' como fecha local (evita el corrimiento por zona horaria de new Date(str)).
+  const formatDeliveryDate = (isoDate) => {
+    if (!isoDate) return '';
+    const [y, m, d] = String(isoDate).split('-').map(Number);
+    if (!y || !m || !d) return isoDate;
+    try {
+      return new Date(y, m - 1, d).toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+    } catch {
+      return isoDate;
+    }
+  };
+
+  // ── Días hábiles (lun-vie) entre hoy y la fecha de entrega ───────────────────
+  // Sirve solo para AVISAR (no bloquear) si la fecha está dentro de la ventana 7-30
+  // días hábiles que ya maneja el checkout. Cálculo aproximado y defensivo.
+  const businessDaysUntil = (isoDate) => {
+    if (!isoDate) return null;
+    const [y, m, d] = String(isoDate).split('-').map(Number);
+    if (!y || !m || !d) return null;
+    const target = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    target.setHours(0, 0, 0, 0);
+    if (target <= today) return 0;
+    let count = 0;
+    const cursor = new Date(today);
+    while (cursor < target) {
+      cursor.setDate(cursor.getDate() + 1);
+      const day = cursor.getDay();
+      if (day !== 0 && day !== 6) count += 1; // excluye domingo (0) y sábado (6)
+    }
+    return count;
+  };
+
+  // Aviso si la fecha elegida está demasiado cerca (menos de 7 días hábiles).
+  // Solo informativo: NO impide confirmar el pedido.
+  const deliveryBusinessDays = hasScheduledGift ? businessDaysUntil(registryDeliveryDate) : null;
+  const deliveryTooSoon = deliveryBusinessDays != null && deliveryBusinessDays < 7;
+
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -179,10 +247,16 @@ const CheckoutPage = () => {
       district: guestSavedInfo.district || '',
       city: guestSavedInfo.city || 'Lima',
       email: user?.email || guestSavedInfo.email || '',
-      isGiftMode: false,
-      giftRecipientName: '',
+      // ── Preselección de Modo Regalo para "Mis fechas especiales" (ADITIVO) ──
+      // Si el carrito trae una fecha de entrega del registro (/regalar/:code),
+      // se activa el Modo Regalo y se prefija el destinatario (el dueño de la lista).
+      // En el flujo normal todo queda en false/'' como hasta ahora.
+      isGiftMode: hasScheduledGift ? true : false,
+      giftRecipientName: registryRecipient || '',
       giftMessage: '',
-      giftSticker: 'kapi-love'
+      giftSticker: 'kapi-love',
+      // Fecha de entrega programada (ISO 'YYYY-MM-DD'); vacía en el flujo normal.
+      deliveryDate: registryDeliveryDate
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -551,7 +625,16 @@ const CheckoutPage = () => {
               isGift: true,
               recipientName: values.giftRecipientName,
               message: values.giftMessage,
-              sticker: values.giftSticker
+              sticker: values.giftSticker,
+              // ── Campos NUEVOS de "Mis fechas especiales" (ADITIVOS) ──────────
+              // Solo se añaden si la fecha de entrega llegó desde /regalar/:code.
+              // No alteran montos ni la lógica del pedido: son metadatos para
+              // que operaciones/ERP sepan QUÉ DÍA entregar el regalo.
+              ...(values.deliveryDate && { deliveryDate: values.deliveryDate }),
+              ...(registryEventLabel && { deliveryEventLabel: registryEventLabel }),
+              ...(giftRegistryItem?.wishlistUserCode && {
+                wishlistUserCode: giftRegistryItem.wishlistUserCode
+              })
             }
           }),
         };
@@ -607,7 +690,14 @@ const CheckoutPage = () => {
         if (values.isGiftMode) {
           message += `🎁 *MODO REGALO ACTIVO*\n`;
           message += `   Para: ${values.giftRecipientName}\n`;
-          message += `   Mensaje: "${values.giftMessage}"\n\n`;
+          message += `   Mensaje: "${values.giftMessage}"\n`;
+          // ── Entrega programada (Feature B): se añade solo si vino una fecha ──
+          if (values.deliveryDate) {
+            message += `   📅 Entrega programada: ${formatDeliveryDate(values.deliveryDate)}`;
+            if (registryEventLabel) message += ` (${registryEventLabel})`;
+            message += `\n`;
+          }
+          message += `\n`;
         }
 
         message += `Detalle de Compra:\n`;
@@ -1081,6 +1171,43 @@ const CheckoutPage = () => {
 
               {formik.values.isGiftMode && (
                 <div className={styles.giftModeFields}>
+                  {/* ── Aviso de Entrega Programada (Feature B "Mis fechas especiales") ──
+                      Solo se muestra cuando la fecha llegó desde la página pública
+                      /regalar/:referralCode (hasScheduledGift). Es SOLO display:
+                      la fecha es de lectura; no hay input que altere el flujo de pago. */}
+                  {hasScheduledGift && (
+                    <div
+                      className={styles.field}
+                      style={{
+                        padding: '0.85rem 1rem',
+                        marginBottom: '0.5rem',
+                        background: '#f5f3ff',
+                        border: '1px solid #ddd6fe',
+                        borderRadius: '10px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, color: '#5b21b6' }}>
+                        <span aria-hidden="true">📅</span>
+                        <span>Entrega programada para {formatDeliveryDate(registryDeliveryDate)}</span>
+                      </div>
+                      {registryEventLabel && (
+                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#6d28d9' }}>
+                          Ocasión: {registryEventLabel}
+                        </p>
+                      )}
+                      {/* Aviso (no bloqueante) si la fecha está dentro de la ventana mínima. */}
+                      {deliveryTooSoon && (
+                        <p style={{ margin: '0.4rem 0 0', fontSize: '0.82rem', color: '#b45309' }}>
+                          ⚠️ La fecha elegida está muy cerca (faltan ~{deliveryBusinessDays} días hábiles).
+                          La preparación y el envío toman de 7 a 30 días hábiles, así que la entrega
+                          podría no llegar a tiempo. Puedes continuar igual.
+                        </p>
+                      )}
+                      {/* Campo oculto: mantiene deliveryDate en Formik para que viaje al payload. */}
+                      <input type="hidden" name="deliveryDate" value={formik.values.deliveryDate} readOnly />
+                    </div>
+                  )}
+
                   <div className={styles.field}>
                     <label>Nombre del destinatario *</label>
                     <input

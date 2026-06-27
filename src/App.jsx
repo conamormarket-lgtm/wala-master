@@ -158,6 +158,7 @@ const CatalogReward = lazy(() => import('./pages/cuenta/CatalogReward'));
 const MisionesPage = lazy(() => import('./pages/cuenta/MisionesPage'));
 const WishlistPrivatePage = lazy(() => import('./pages/cuenta/WishlistPage'));
 const WishlistPublicPage = lazy(() => import('./pages/WishlistPublic/WishlistPublic'));
+const GiftRegistryPage = lazy(() => import('./pages/GiftRegistry/GiftRegistryPage'));
 
 // ── QueryClient optimizado ────────────────────────────────────────────────────
 const queryClient = new QueryClient({
@@ -257,6 +258,7 @@ function App() {
                         <Route path="/carrito" element={<CartPage />} />
                         <Route path="/checkout" element={<CheckoutPage />} />
                         <Route path="/wishlist/:userCode" element={<WishlistPublicPage />} />
+                        <Route path="/regalar/:referralCode" element={<GiftRegistryPage />} />
                         <Route path="/app" element={<AppRedirect />} />
                         <Route path="/descargar" element={<AppRedirect />} />
                         <Route path="/pago-rapido/:id" element={<PagoRapidoPage />} />

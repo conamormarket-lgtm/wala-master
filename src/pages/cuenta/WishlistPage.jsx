@@ -29,6 +29,22 @@ const WishlistPage = () => {
     setTimeout(() => setCopying(false), 2000);
   };
 
+  // Enlace al REGISTRO DE REGALOS (Feature B "Mis fechas especiales"):
+  // página pública /regalar/:referralCode donde quien lo abre ve las fechas
+  // especiales del dueño + su wishlist y elige una fecha de entrega para el regalo.
+  const giftRegistryLink = userProfile?.referralCode
+    ? `${window.location.origin}/regalar/${userProfile.referralCode}`
+    : '';
+
+  // Copia el link del registro de regalos al portapapeles, avisa con un toast y
+  // lo abre en una pestaña nueva para que el dueño lo previsualice/comparta.
+  const handleShareGiftRegistry = () => {
+    if (!giftRegistryLink) return;
+    navigator.clipboard.writeText(giftRegistryLink);
+    addToast('Enlace de tu registro de regalos copiado', 'success');
+    window.open(giftRegistryLink, '_blank', 'noopener,noreferrer');
+  };
+
   // Agrega de un golpe TODOS los productos disponibles de la wishlist PERSONAL al carrito propio.
   // No es modo regalo (es un atajo de compra para uno mismo). Reutiliza allProducts (ya cargado,
   // con precio) para no leer Firestore por item; omite borrados, sin stock y los que ya están en
@@ -87,6 +103,15 @@ const WishlistPage = () => {
             >
               {addingAll ? 'Agregando…' : '🛒 Agregar todo al carrito'}
             </button>
+            {giftRegistryLink && (
+              <button
+                className={styles.datesBtn}
+                onClick={handleShareGiftRegistry}
+                title="Comparte tus fechas especiales para que te regalen en la fecha justa"
+              >
+                📅 Mis fechas especiales
+              </button>
+            )}
             {shareLink && (
               <button
                 className={styles.primaryBtn}
