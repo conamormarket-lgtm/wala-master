@@ -185,6 +185,17 @@
 - **Qué hace:** muestra los ítems agregados (incluyendo personalizados y combos), permite continuar comprando y avanzar al checkout. La lógica del listado vive en el componente `Cart`.
 - **Archivos clave:** `src/pages/CartPage.jsx`, `src/pages/Tienda/components/Cart/`, `src/contexts/CartContext.jsx`
 
+### 6.1-bis Carrito — Selección de productos ("No comprar esta vez") (sesión 2026-06-27, ✅ desplegado)
+- **Qué es:** la posibilidad de **elegir qué productos del carrito pagar ahora y cuáles dejar guardados para después**, sin tener que eliminarlos. Es el patrón estándar de Amazon / MercadoLibre / Falabella.
+- **Qué hace (para el cliente):**
+  - Cada ítem del carrito tiene un botón **"No comprar esta vez"**. Al pulsarlo, ese producto queda **atenuado** y **no se cobra** en esta compra, pero **permanece en el carrito** (no se borra). El botón cambia a **"✓ Comprar esta vez"** para volver a incluirlo cuando quiera (es reversible).
+  - Por defecto **todos los productos están seleccionados** (se compran). Solo lo que el cliente marque como "No comprar esta vez" queda fuera.
+  - El **subtotal, el total y el contador del carrito** dejan de contar los productos no seleccionados: solo suman lo que sí se va a comprar.
+  - Cuando hay productos excluidos, el carrito muestra un **aviso** del tipo **"N artículo(s) no se comprarán esta vez (quedarán en tu carrito)"**.
+  - En el checkout **solo se cobra y se registra lo seleccionado** (el resumen del pedido, el monto, el mensaje de WhatsApp y la marca de regalos consideran únicamente esos productos). Si el cliente deseleccionó **todo**, el pago se **bloquea** con un aviso pidiendo elegir al menos un producto.
+  - Tras pagar, **los productos no comprados PERSISTEN** en el carrito (listos para una próxima compra); solo desaparecen los que se pagaron.
+- **Archivos clave:** `src/contexts/CartContext.jsx` (flag `selected`; `getTotalItems`/`getTotalPrice` excluyen los no seleccionados; `toggleItemSelected`, `clearSelectedItems`), `src/pages/Tienda/components/CartItem/CartItem.jsx` (botón y fila atenuada), `src/pages/Tienda/components/Cart/Cart.jsx` (aviso), `src/pages/CheckoutPage.jsx` (cobra/registra solo lo seleccionado; al pagar usa `clearSelectedItems` para conservar el resto).
+
 ### 6.2 Checkout (`/checkout`) — incluye VENTA INTERNACIONAL
 - **Qué es:** el formulario de datos de envío + selección de método de pago.
 - **Qué hace (datos de envío):**
@@ -203,7 +214,8 @@
   - **Aviso de envío internacional:** si el país NO es Perú, muestra el aviso **"la entrega demora de 7 a 30 días hábiles"** (tanto en la pantalla de pago como en el mensaje de WhatsApp).
   - **Confirmación de pago en backend:** el pago con Culqi se confirma server-side (recálculo del monto en `processCulqiPayment`) y la Cloud Function `culqiWebhook` marca el pedido (`pedidos_web`) como pagado de forma idempotente. *(Nota operativa: la URL de `culqiWebhook` debe estar registrada en el panel de Culqi y `REACT_APP_PAYPAL_CLIENT_ID` debe existir en Vercel para que PayPal cobre en producción y no en sandbox.)*
   - **Validación del documento (sesión 2026-06-27):** se relajó la validación para no bloquear silenciosamente el botón de pago — el documento exige **≥3 caracteres** (cualquier tipo); si hay un campo con error, muestra un aviso (toast) y hace scroll al primero. En Perú el DNI sigue marcándose como tal.
-  - Tras el pago/confirmación, vacía el carrito y lleva a "Mis Pedidos". Emite eventos de analítica (inicio de checkout y compra completada).
+  - **Selección de compra (sesión 2026-06-27):** el checkout solo cobra y registra los productos marcados como **"Comprar esta vez"** en el carrito (ver §6.1-bis); el monto, el resumen del pedido, el mensaje de WhatsApp y la marca de regalos consideran únicamente esos ítems. Si no hay ninguno seleccionado, el pago se bloquea.
+  - Tras el pago/confirmación, **quita del carrito solo los productos pagados y conserva los marcados como "No comprar esta vez"** (antes vaciaba todo el carrito), y lleva a "Mis Pedidos". Emite eventos de analítica (inicio de checkout y compra completada).
 - **Ruta:** `/checkout`
 - **Archivos clave:**
   - `src/pages/CheckoutPage.jsx`
@@ -246,7 +258,7 @@
 - **Botones de la cabecera (sesión 2026-06-27, ✅ desplegados):**
   - **"🛒 Agregar todo al carrito":** atajo que agrega de un golpe todos los productos no regalados de la lista al propio carrito (compra para uno mismo, no es modo regalo). Omite productos borrados, sin stock/inactivos y los que ya están en el carrito; muestra un toast resumen.
   - **"📅 Mis fechas especiales":** copia y abre la **URL pública** del **registro de regalos por fecha** (`/regalar/:referralCode`, ver §7.4). Privacidad resuelta: la página pública consume una **Cloud Function** (`getPublicGiftRegistry`) que devuelve solo datos mínimos, no lee Firestore directo.
-- **Estado y detalle completo:** ver [PLAN-FECHAS-ESPECIALES.md → "ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (/regalar)"](./PLAN-FECHAS-ESPECIALES.md). Pendiente: REDESPLEGAR la Cloud Function `getPublicGiftRegistry` (fix del bug de wishlist vacía) + drag-and-drop en progreso.
+- **Estado y detalle completo:** ver [PLAN-FECHAS-ESPECIALES.md → "ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (/regalar)"](./PLAN-FECHAS-ESPECIALES.md). Drag-and-drop ✅ terminado. Pendiente: REDESPLEGAR la Cloud Function `getPublicGiftRegistry` (fix del bug de wishlist vacía).
 - **Archivos clave:** `src/pages/cuenta/WishlistPage.jsx`, `src/contexts/WishlistContext.jsx`
 
 ### 7.4 Lista de Deseos pública (`/wishlist/:userCode`)
@@ -255,9 +267,9 @@
 - **Archivos clave:** `src/pages/WishlistPublic/WishlistPublic.jsx`
 
 ### 7.4-bis Registro de regalos por fecha (`/regalar/:referralCode`) — "Mis fechas especiales"
-- **Qué es:** página pública que funciona como **registro de regalos por fecha**. El dueño la comparte (botón "📅 Mis fechas especiales" de su wishlist); quien la abre ve las **fechas especiales del dueño** (cumpleaños/aniversarios/fechas especiales de su perfil) como **selector de fecha de entrega** + su **wishlist**.
-- **Cómo funciona:** elige una fecha + un producto → "Regalar este 🎁" agrega el item al carrito en **Modo Regalo** con `deliveryDate` + el dueño como destinatario → el checkout preselecciona Modo Regalo y la fecha, guarda `giftDetails.deliveryDate` en el pedido (y lo pone en el WhatsApp) → al confirmar marca el producto como regalado y **notifica al dueño** (`markItemAsGifted`). La página **no lee Firestore directo**: pide los datos mínimos a la Cloud Function `getPublicGiftRegistry` (sin email/teléfono/dni del dueño ni datos sensibles de terceros).
-- **Estado (✅ desplegado y funcionando):** flujo completo operativo. **Pendiente:** REDESPLEGAR la Cloud Function `getPublicGiftRegistry` por Cloud Shell (corrige un bug por el que la wishlist salía vacía aunque el dueño tuviera productos). **En progreso:** drag-and-drop (arrastrar productos sobre las fechas). Detalle completo, bugs y decisiones abiertas en [PLAN-FECHAS-ESPECIALES.md → "ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (/regalar)"](./PLAN-FECHAS-ESPECIALES.md).
+- **Qué es:** página pública que funciona como **registro de regalos por fecha**. El dueño la comparte (botón "📅 Mis fechas especiales" de su wishlist); quien la abre ve las **fechas especiales del dueño** (cumpleaños/aniversarios/fechas especiales de su perfil) como **columnas de entrega** + su **wishlist** en tarjetas.
+- **Cómo funciona (drag-and-drop ✅, rediseñado 2026-06-27):** cada producto es una **tarjeta** cuya **imagen se arrastra** y cuyo **nombre es un enlace** a la ficha del producto. **Arrastrar** una tarjeta sobre una fecha la **ASIGNA** a ese día (aparece una **miniatura** bajo la fecha, con × para quitarla) — todavía NO se agrega al carrito. Un botón **"Proceder a regalar (N) 🎁"** encima de la fecha agrega esos regalos al carrito en **Modo Regalo** con `deliveryDate` + el dueño como destinatario y lleva al carrito. Como alternativa, sigue el botón **"Regalar este 🎁"** de cada tarjeta (regala 1 directo con la fecha elegida). Luego: el checkout preselecciona Modo Regalo y la fecha, guarda `giftDetails.deliveryDate` en el pedido (y lo pone en el WhatsApp) → al confirmar marca el producto como regalado y **notifica al dueño** (`markItemAsGifted`). La página **no lee Firestore directo**: pide los datos mínimos a la Cloud Function `getPublicGiftRegistry` (sin email/teléfono/dni del dueño ni datos sensibles de terceros).
+- **Estado (✅ desplegado y funcionando):** flujo completo operativo, **incluido el drag-and-drop** (terminado y rediseñado). **Pendiente:** REDESPLEGAR la Cloud Function `getPublicGiftRegistry` por Cloud Shell (corrige un bug por el que la wishlist salía vacía aunque el dueño tuviera productos). Detalle completo, bugs y decisiones abiertas en [PLAN-FECHAS-ESPECIALES.md → "ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (/regalar)"](./PLAN-FECHAS-ESPECIALES.md).
 - **Archivos clave:** `src/pages/GiftRegistry/GiftRegistryPage.jsx`, `functions/index.js` (`getPublicGiftRegistry`), `src/contexts/CartContext.jsx`, `src/pages/CheckoutPage.jsx`, `src/services/wishlist.js`, `src/App.jsx`
 
 ### 7.5 Mis Creaciones (`/cuenta/creaciones`)

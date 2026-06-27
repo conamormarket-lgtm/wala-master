@@ -101,6 +101,13 @@ const CheckoutPage = () => {
   // Si no hay ningún item seleccionado, no se puede pagar.
   const hasSelectedItems = selectedItems.length > 0;
 
+  // Plan B: si el cliente cierra/cancela el modal de Culqi sin pagar, ofrecemos
+  // terminar la compra por WhatsApp (el pedido ya quedó guardado en pedidos_web y el
+  // waLink lleva todo el detalle al asesor). culqiKey permite REINTENTAR el pago
+  // (remonta el componente de Culqi y vuelve a auto-abrir el modal).
+  const [culqiClosed, setCulqiClosed] = useState(false);
+  const [culqiKey, setCulqiKey] = useState(0);
+
   const [processing, setProcessing] = useState(false);
   const [useCoinsToggle, setUseCoinsToggle] = useState(false);
   const [paymentStepData, setPaymentStepData] = useState(null);
@@ -951,10 +958,47 @@ const CheckoutPage = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {paymentStepData.esPeru ? (
                   <>
+                    {/* Plan B: el cliente cerró el modal de Culqi sin pagar → ofrecer WhatsApp. */}
+                    {culqiClosed && (
+                      <div className={styles.recoveryCard}>
+                        <div className={styles.recoveryIcon} aria-hidden="true">💬</div>
+                        <div className={styles.recoveryBody}>
+                          <h4 className={styles.recoveryTitle}>¿Cerraste el pago? Termínalo por WhatsApp</h4>
+                          <p className={styles.recoveryText}>
+                            Tu pedido ya quedó guardado. Un asesor recibe tu lista completa
+                            (qué quieres y para cuándo), te dice el costo final y coordinas el
+                            pago por Yape, Plin o transferencia.
+                          </p>
+                          <div className={styles.recoveryActions}>
+                            <GlassButton
+                              variant="primary"
+                              fullWidth
+                              onClick={() => {
+                                emitPurchaseComplete('whatsapp');
+                                window.open(paymentStepData.waLink, '_blank');
+                                clearSelectedItems();
+                                navigate('/cuenta/pedidos');
+                              }}
+                            >
+                              💬 Terminar mi compra por WhatsApp
+                            </GlassButton>
+                            <GlassButton
+                              variant="ghost"
+                              fullWidth
+                              onClick={() => { setCulqiClosed(false); setCulqiKey((k) => k + 1); }}
+                            >
+                              Reintentar con tarjeta 💳
+                            </GlassButton>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* PERÚ: Culqi (idéntico a hoy) + acuerdo por WhatsApp/Yape.
                         autoOpen (Opción A): al entrar al paso de pago tras confirmar,
                         se abre automáticamente el modal de Culqi una sola vez. */}
                     <CulqiCustomCheckout
+                      key={culqiKey}
                       pedido={paymentStepData}
                       autoOpen={true}
                       onSuccess={() => {
@@ -963,6 +1007,7 @@ const CheckoutPage = () => {
                         clearSelectedItems();
                         navigate('/cuenta/pedidos');
                       }}
+                      onClose={() => setCulqiClosed(true)}
                     />
 
                     <div className={styles.payDivider}>O</div>

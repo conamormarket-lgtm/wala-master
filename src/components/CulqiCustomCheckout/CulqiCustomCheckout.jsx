@@ -2,7 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, autoOpen = false }) => {
+// Detecta si el modal de Culqi está visible (busca su iframe con 'culqi' en el src
+// y tamaño real). Sirve para saber si el usuario lo cerró sin pagar (plan B WhatsApp).
+const isCulqiModalVisible = () => {
+  const frames = document.querySelectorAll('iframe');
+  for (const f of frames) {
+    const src = (f.getAttribute('src') || '').toLowerCase();
+    if (src.includes('culqi')) {
+      const r = f.getBoundingClientRect();
+      if (r.width > 60 && r.height > 120) return true;
+    }
+  }
+  return false;
+};
+
+const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = false }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -12,6 +26,9 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, autoOpen = false }) =>
   // Guard SÍNCRONO anti doble-cobro: isProcessing es estado (async) y no frena una
   // segunda invocación inmediata del callback de Culqi; este ref sí (se evalúa al instante).
   const processingRef = useRef(false);
+  // Watcher para detectar que el usuario CERRÓ el modal de Culqi sin pagar.
+  const resolvedRef = useRef(false); // true si hubo token (pago) o error manejado
+  const closePollRef = useRef(null); // id del setInterval que vigila el cierre
 
   useEffect(() => {
     const scriptId = 'culqi-js-v4';
@@ -93,6 +110,8 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, autoOpen = false }) =>
         // Evita un SEGUNDO cargo si el callback se dispara dos veces (glitch/SDK/doble token).
         if (processingRef.current) return;
         processingRef.current = true;
+        resolvedRef.current = true; // hubo pago: cerrar el modal NO es abandono
+        if (closePollRef.current) { clearInterval(closePollRef.current); closePollRef.current = null; }
         const token = culqiInstance.token.id;
         const email = culqiInstance.token.email;
         culqiInstance.close();
@@ -131,6 +150,8 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, autoOpen = false }) =>
         }
         
       } else if (culqiInstance.error) {
+         resolvedRef.current = true; // error manejado: cerrar el modal NO es abandono
+         if (closePollRef.current) { clearInterval(closePollRef.current); closePollRef.current = null; }
          console.error("Error de Culqi:", culqiInstance.error);
          toast.error(culqiInstance.error.user_message || 'El pago no pudo completarse.');
          culqiInstance.close();
@@ -175,6 +196,27 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, autoOpen = false }) =>
     }
 
     culqiRef.current.open();
+    startCloseWatch();
+  };
+
+  // Vigila el cierre del modal: si el usuario lo abre y luego lo cierra SIN pagar
+  // (sin token ni error), dispara onClose para ofrecer terminar por WhatsApp.
+  const startCloseWatch = () => {
+    if (typeof onClose !== 'function') return;
+    resolvedRef.current = false;
+    let sawModal = false;
+    let goneTicks = 0;
+    if (closePollRef.current) clearInterval(closePollRef.current);
+    closePollRef.current = setInterval(() => {
+      if (isCulqiModalVisible()) { sawModal = true; goneTicks = 0; return; }
+      if (!sawModal) return; // el modal aún no aparece
+      goneTicks += 1;
+      if (goneTicks >= 2) { // ~1.4s sin el modal => se cerró
+        clearInterval(closePollRef.current);
+        closePollRef.current = null;
+        if (!resolvedRef.current && !processingRef.current) onClose();
+      }
+    }, 700);
   };
 
   // Auto-abrir el checkout de Culqi cuando el padre lo solicite (UX Opción A).
@@ -188,6 +230,11 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, autoOpen = false }) =>
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoOpen, isReady]);
+
+  // Limpia el watcher de cierre al desmontar el componente.
+  useEffect(() => () => {
+    if (closePollRef.current) clearInterval(closePollRef.current);
+  }, []);
 
   return (
     <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>

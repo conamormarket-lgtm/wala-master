@@ -1,4 +1,4 @@
-<!-- Generado 2026-06-27. Estado: DESPLEGADO Y FUNCIONANDO (con bug corregido pendiente de redeploy de la CF + drag-and-drop en progreso). Plan de los features "Mis fechas especiales" + "Agregar todo al carrito" para la wishlist. El estado REAL del código está documentado al final, en la sección "ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (/regalar)". -->
+<!-- Generado 2026-06-27. Estado: DESPLEGADO Y FUNCIONANDO (con bug corregido pendiente de redeploy de la CF; drag-and-drop ✅ HECHO y rediseñado). Plan de los features "Mis fechas especiales" + "Agregar todo al carrito" para la wishlist. El estado REAL del código está documentado al final, en la sección "ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (/regalar)". -->
 
 # Plan — "Mis fechas especiales" + "Agregar todo al carrito"
 
@@ -238,7 +238,7 @@ Archivos clave referenciados (rutas absolutas):
 
 # ESTADO Y FUNCIONAMIENTO — Registro de regalos por fecha (`/regalar`)
 
-> **Actualizado 2026-06-27.** Esta sección refleja el estado REAL del código (verificado leyendo los archivos), no el plan. La feature pasó de "por implementar" a **desplegada y funcionando**, con un bug de carga ya corregido (pendiente de redeploy de la Cloud Function) y el drag-and-drop en progreso. Las secciones 1-6 de arriba son el plan original; lo que sigue es lo que de verdad está construido.
+> **Actualizado 2026-06-27.** Esta sección refleja el estado REAL del código (verificado leyendo los archivos), no el plan. La feature pasó de "por implementar" a **desplegada y funcionando**, con un bug de carga ya corregido (pendiente de redeploy de la Cloud Function) y el **drag-and-drop ✅ HECHO y rediseñado** (modelo de asignación por fecha con miniaturas + "Proceder a regalar"). Las secciones 1-6 de arriba son el plan original; lo que sigue es lo que de verdad está construido.
 
 ## A. Cómo funciona (flujo paso a paso)
 
@@ -252,8 +252,8 @@ Archivos clave referenciados (rutas absolutas):
    - **Respaldo CONFIABLE de items (el fix, ver §C):** si no trajo items pero sí hay `userId`, lee `wishlists/{userId}` directo por `doc.id`.
    - Lee el perfil del dueño (`portal_clientes_users/{userId}`) y aplana `giftRecipients[].events[]` → `dates[]` con `{ type, date, label, recipientName }`. Devuelve SOLO datos mínimos (sin email/teléfono/dni).
    - De cada item de la wishlist expone `{ productId, productName, productImage, isGifted }` — `isGifted` es disponibilidad (marca "ya regalado"), NO PII. No expone `giftedBy`/`addedAt`.
-5. **El comprador elige fecha + producto.** La página muestra (a) un selector de fechas tipo radio/chips (preselecciona la primera, líneas 107-110) y (b) la wishlist como grilla de `ProductCard`, enriquecida con precio/imagen del catálogo vía `useProducts([])` (evita N lecturas). Cada producto tiene un botón **"Regalar este 🎁"**, deshabilitado si no hay fecha elegida o si el item ya está `isGifted`.
-6. **"Regalar este" arma el carrito en Modo Regalo.** `handleGift` (líneas 151-185) construye un `productMock` con los flags `isWishlistGift: true`, `wishlistUserCode: referralCode` (mecanismo idéntico al de `WishlistPublic`) MÁS el contexto nuevo `deliveryDate` (la fecha del evento elegido), `deliveryEventLabel` y `deliveryRecipient` (el dueño). Llama `addToCart(productMock, {}, null, 1)` y navega a `/carrito`.
+5. **El comprador ve fechas (columnas/zonas de drop) + wishlist (tarjetas arrastrables).** La página muestra (a) las fechas del dueño como **columnas** que son **zonas de drop** (`data-date-key`, preselecciona la primera) y (b) la wishlist como grilla de **tarjetas a medida** (`GiftProductCard`), enriquecidas con precio/imagen del catálogo vía `useProducts([])` (evita N lecturas). En cada tarjeta: la **imagen es la zona de arrastre** y el **nombre es un `<Link>` al detalle** (`/producto/:id`). Cada tarjeta conserva el botón fallback **"Regalar este 🎁"**, deshabilitado si no hay fecha elegida o si el item ya está `isGifted`.
+6. **Drag-and-drop = ASIGNAR a una fecha (no agrega al carrito todavía).** Soltar una tarjeta sobre una columna de fecha crea una **asignación** (estado `assignments[dateKey]`, `assignToDate`/`handleCardDrop`): debajo de esa fecha aparece una **tira de miniaturas** del/los producto(s) asignado(s), cada una con **× para quitar** (`unassign`). **ENCIMA** de la fecha aparece un botón **"Proceder a regalar (N) 🎁"** (`proceedDate`): recién al pulsarlo los regalos de esa fecha se agregan al carrito en silencio (en Modo Regalo, con esa `deliveryDate`) y se navega a `/carrito`. El botón fallback **"Regalar este"** (`handleGift`) sigue agregando 1 regalo directo con la fecha seleccionada. Ambos caminos construyen el mismo `productMock` (helper `addGiftToCart`) con los flags `isWishlistGift: true`, `wishlistUserCode: referralCode` (idéntico a `WishlistPublic`) MÁS el contexto nuevo `deliveryDate`, `deliveryEventLabel` y `deliveryRecipient` (el dueño), y llaman `addToCart`.
 7. **El carrito conserva el contexto de regalo.** `src/contexts/CartContext.jsx` (`addToCart`, líneas 172-180) copia `isWishlistGift`/`wishlistUserCode` y `deliveryDate`/`deliveryEventLabel`/`deliveryRecipient` al `cartItem` SOLO si vienen en el producto. Además, un item de regalo **siempre crea una línea nueva** (no se fusiona con un item normal del mismo producto, líneas 238-246), para no perder esos campos al deduplicar.
 8. **El checkout preselecciona Modo Regalo y consume la fecha.** `src/pages/CheckoutPage.jsx`:
    - Detecta el primer item con `isWishlistGift && deliveryDate` (líneas 183-185) y de ahí saca `registryDeliveryDate`, `registryRecipient`, `registryEventLabel`.
@@ -268,9 +268,11 @@ Archivos clave referenciados (rutas absolutas):
 - ✅ Botón **"📅 Mis fechas especiales"** en la wishlist: copia el link y lo abre en pestaña nueva.
 - ✅ Botón **"🛒 Agregar todo al carrito"** en la wishlist (Feature A): agrega los productos no regalados al carrito propio; omite borrados, sin stock/inactivos y los que ya están en el carrito; muestra un toast resumen (`handleAddAll`, líneas 52-79).
 - ✅ Cloud Function `getPublicGiftRegistry` **desplegada** y devolviendo fechas + wishlist con datos mínimos (privacidad). Tolerante a errores: ante fallo o código inexistente responde `{ ok: false }` y la página muestra "Registro no encontrado".
-- ✅ La página muestra las **fechas especiales del dueño** (de `giftRecipients[].events[]`) como selector de fecha de entrega, con la primera preseleccionada.
-- ✅ La página muestra la **wishlist** con precio/imagen reales del catálogo y marca **"¡Ya regalado!"** los items con `isGifted`.
-- ✅ Flujo de compra completo: elegir fecha + "Regalar este" → carrito en **Modo Regalo** con `deliveryDate` → checkout preselecciona Modo Regalo y la fecha → pedido con `giftDetails.deliveryDate` → `markItemAsGifted` notifica al dueño.
+- ✅ La página muestra las **fechas especiales del dueño** (de `giftRecipients[].events[]`) como **columnas / zonas de drop**, con la primera preseleccionada.
+- ✅ La página muestra la **wishlist** como **tarjetas a medida** (`GiftProductCard`) con precio/imagen reales del catálogo y marca **"¡Ya regalado!"** los items con `isGifted`.
+- ✅ **Drag-and-drop HECHO y rediseñado (modelo de asignación).** Cada tarjeta se arrastra **desde su imagen**; el **nombre** es un `<Link>` al detalle. Soltar sobre una fecha **ASIGNA** el producto a ese día (no lo agrega al carrito directo): aparece una **miniatura** debajo de la fecha (con × para quitar) y un botón **"Proceder a regalar (N)"** ENCIMA de la fecha que recién entonces agrega esos regalos al carrito (Modo Regalo, con esa fecha) y abre `/carrito`. Se conserva el botón fallback **"Regalar este"**.
+- ✅ **Bug del drag nativo corregido.** El arrastre lo gestiona un `motion.div` padre y la `<img>` lleva `draggable={false}` + CSS `-webkit-user-drag:none`, lo que **eliminó la "imagen fantasma con URL" / cursor "denegado"** del drag nativo del navegador. (Por eso NO se reutilizó `ProductCard`, que envuelve todo en un `<Link>` y conserva el drag nativo de su `<img>`.)
+- ✅ Flujo de compra completo: asignar por drag (o "Regalar este") → "Proceder a regalar" → carrito en **Modo Regalo** con `deliveryDate` → checkout preselecciona Modo Regalo y la fecha → pedido con `giftDetails.deliveryDate` → `markItemAsGifted` notifica al dueño.
 - ✅ Privacidad: la página NO lee Firestore directo; la CF nunca expone email/teléfono/dni del dueño ni datos sensibles de terceros.
 
 ## C. Qué NO funciona / bugs
@@ -286,7 +288,8 @@ Archivos clave referenciados (rutas absolutas):
 
 ## D. Qué falta agregar
 
-- 🔧 **Drag-and-drop (EN PROGRESO).** Arrastrar los productos como tarjetas flotantes y soltarlos sobre las fechas para asignar el regalo de forma más intuitiva, **además** del flujo actual (elegir fecha + clic "Regalar este"). Aún no hay código de drag/drop en `src/pages/GiftRegistry/` (verificado). El flujo por clic seguirá funcionando como fallback accesible.
+> El **drag-and-drop** ya NO está pendiente: pasó a ✅ HECHO (ver §B). Lo que sigue son decisiones abiertas.
+
 - ⬜ **Decisiones abiertas (de §6 de este plan):**
   1. **¿Qué fechas mostrar?** Hoy la CF aplana **todas** las fechas de `giftRecipients[]` (las del dueño y las de sus familiares). Falta decidir si mostrar solo las del propio dueño o mantener todas las del registro.
   2. **Recurrencia / fechas pasadas.** Las fechas son `YYYY-MM-DD` literales. No se normaliza al próximo aniversario ni se filtran las ya pasadas; falta esa lógica.
