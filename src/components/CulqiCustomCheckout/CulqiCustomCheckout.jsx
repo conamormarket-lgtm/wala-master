@@ -30,6 +30,21 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
   const resolvedRef = useRef(false); // true si hubo token (pago) o error manejado
   const closePollRef = useRef(null); // id del setInterval que vigila el cierre
 
+  // ── Callbacks estables (anti doble-apertura) ───────────────────────────────
+  // onSuccess/onClose llegan como arrows inline desde CheckoutPage: cambian de
+  // identidad en CADA render del padre. Si los metiéramos en las deps del effect
+  // que construye la instancia de Culqi, esa instancia se RE-CREARÍA en cada
+  // render (provocando que el watcher/auto-open se disparen de nuevo y el modal
+  // "salte dos veces"). Los guardamos en refs y los actualizamos en un effect
+  // aparte, sin tocar la instancia. Así el handler `culqi` siempre invoca la
+  // versión más reciente del callback sin recrear nada.
+  const onSuccessRef = useRef(onSuccess);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+    onCloseRef.current = onClose;
+  }, [onSuccess, onClose]);
+
   useEffect(() => {
     const scriptId = 'culqi-js-v4';
     
@@ -137,7 +152,10 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
 
           if (result.data && result.data.success) {
             toast.success('¡Pago procesado exitosamente!');
-            if (onSuccess) onSuccess(result.data);
+            // Usa la versión más reciente del callback (ref estable): NO depende
+            // de la identidad del arrow inline del padre, así que la instancia
+            // de Culqi no se recrea ni el modal se reabre.
+            if (onSuccessRef.current) onSuccessRef.current(result.data);
           } else {
             toast.error(result.data?.message || 'Error al procesar el pago en el servidor.');
           }
@@ -158,7 +176,17 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
       }
     };
 
-  }, [isReady, pedido, enlace, onSuccess]);
+    // Limpieza: si las deps reales cambian (isReady/pedido/enlace) y este effect
+    // se vuelve a ejecutar, descartamos la instancia anterior y su watcher para
+    // no dejar pollers huérfanos ni instancias duplicadas en memoria.
+    return () => {
+      if (closePollRef.current) { clearInterval(closePollRef.current); closePollRef.current = null; }
+    };
+    // IMPORTANTE: onSuccess/onClose NO van en las deps (se leen vía refs estables).
+    // Si estuvieran aquí, la instancia de Culqi se recrearía en cada render del
+    // padre (arrows inline) y el modal "saltaría dos veces".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady, pedido, enlace]);
 
   const handleOpenCheckout = () => {
     if (!isReady) {
@@ -195,17 +223,29 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
        return;
     }
 
+    // Evita reabrir si ya hay un modal/watcher activo (doble click, re-render que
+    // dispare el auto-open de nuevo, etc.): solo abrimos cuando NO hay poller vivo.
+    if (closePollRef.current) return;
+
+    // Marca que ya se abrió una vez en esta entrada al paso de pago: refuerza el
+    // guard del auto-open para que NO se vuelva a disparar solo.
+    autoOpenedRef.current = true;
     culqiRef.current.open();
     startCloseWatch();
   };
 
   // Vigila el cierre del modal: si el usuario lo abre y luego lo cierra SIN pagar
-  // (sin token ni error), dispara onClose para ofrecer terminar por WhatsApp.
+  // (sin token ni error), dispara onClose UNA sola vez para ofrecer terminar por
+  // WhatsApp. Lee el callback vía ref estable (no por la prop directa) para no
+  // depender de la identidad del arrow inline del padre.
   const startCloseWatch = () => {
-    if (typeof onClose !== 'function') return;
+    if (typeof onCloseRef.current !== 'function') return;
     resolvedRef.current = false;
     let sawModal = false;
     let goneTicks = 0;
+    // Guard local: garantiza que onClose se dispare como MUCHO una vez por
+    // ciclo de apertura, aunque el poller alcance a ejecutarse de más.
+    let firedClose = false;
     if (closePollRef.current) clearInterval(closePollRef.current);
     closePollRef.current = setInterval(() => {
       if (isCulqiModalVisible()) { sawModal = true; goneTicks = 0; return; }
@@ -214,7 +254,10 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
       if (goneTicks >= 2) { // ~1.4s sin el modal => se cerró
         clearInterval(closePollRef.current);
         closePollRef.current = null;
-        if (!resolvedRef.current && !processingRef.current) onClose();
+        if (!firedClose && !resolvedRef.current && !processingRef.current) {
+          firedClose = true;
+          if (typeof onCloseRef.current === 'function') onCloseRef.current();
+        }
       }
     }, 700);
   };

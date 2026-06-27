@@ -236,6 +236,25 @@
   box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
 }
 
+/* Select de tipo de documento (mismo aspecto que los inputs del formulario). */
+.select {
+  padding: 0.9rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: #f9fafb;
+  color: #111827;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #D9232D;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
+}
+
 .toggleRow {
   display: flex;
   background: #f3f4f6;

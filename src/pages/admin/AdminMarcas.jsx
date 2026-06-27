@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBrands, createBrand, updateBrand, deleteBrand } from '../../services/brands';
+import { getMessage, setMessage } from '../../services/messages';
 import { uploadFile } from '../../services/firebase/storage';
-import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus } from 'lucide-react';
+import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircle } from 'lucide-react';
 import Button from '../../components/common/Button';
 import AdminImageCropper from '../../components/admin/AdminImageCropper/AdminImageCropper';
 import styles from './AdminMarcas.module.css';
@@ -63,6 +64,57 @@ const AdminMarcas = () => {
   });
 
   const brands = brandsData ?? [];
+
+  // ── Confirmación de pedidos por WhatsApp ──────────────────────────────
+  // Número de fábrica por defecto para el WhatsApp principal "Todo a WALA".
+  const WHATSAPP_NUMERO_FABRICA = '+51924426791';
+
+  // Estado local del formulario de WhatsApp.
+  const [whatsappConfig, setWhatsappConfig] = useState({
+    numeroPrincipal: '',
+    multimarca: false,
+  });
+
+  // Carga la configuración actual desde la colección 'messages'.
+  const { data: whatsappData, isLoading: whatsappLoading } = useQuery({
+    queryKey: ['admin-whatsapp-marcas-config'],
+    queryFn: async () => {
+      const [principal, multimarca] = await Promise.all([
+        getMessage('whatsapp_number_principal'),
+        getMessage('whatsapp_multimarca'),
+      ]);
+      return {
+        numeroPrincipal: principal.data?.trim() || '',
+        // Se interpreta como activado solo si el valor guardado es exactamente 'true'.
+        multimarca: multimarca.data === 'true',
+      };
+    },
+  });
+
+  // Sincroniza el estado local cuando llegan los datos guardados.
+  useEffect(() => {
+    if (whatsappData) {
+      setWhatsappConfig(whatsappData);
+    }
+  }, [whatsappData]);
+
+  // Guarda la configuración de WhatsApp en la colección 'messages'.
+  const whatsappMutation = useMutation({
+    mutationFn: async (config) => {
+      await Promise.all([
+        setMessage('whatsapp_number_principal', config.numeroPrincipal?.trim() || ''),
+        setMessage('whatsapp_multimarca', config.multimarca ? 'true' : 'false'),
+      ]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-whatsapp-marcas-config'] });
+    },
+  });
+
+  const handleWhatsappSubmit = (e) => {
+    e.preventDefault();
+    whatsappMutation.mutate(whatsappConfig);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -154,6 +206,68 @@ const AdminMarcas = () => {
           </p>
         </div>
       </div>
+
+      {/* ══ Confirmación de pedidos por WhatsApp (arriba del CRUD de marcas) ══ */}
+      <form className={styles.whatsappCard} onSubmit={handleWhatsappSubmit}>
+        <h3 className={styles.sectionTitle}>
+          <MessageCircle size={18} />
+          Confirmación de pedidos por WhatsApp
+        </h3>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Número principal (Todo a WALA)</label>
+          <input
+            type="text"
+            placeholder={WHATSAPP_NUMERO_FABRICA}
+            value={whatsappConfig.numeroPrincipal}
+            onChange={(e) =>
+              setWhatsappConfig((c) => ({
+                ...c,
+                numeroPrincipal: e.target.value.replace(/[^\d\s\-\(\)\+]/g, ''),
+              }))
+            }
+            className={styles.input}
+            disabled={whatsappLoading}
+          />
+          <small style={{ color: '#6b7280', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>
+            De fábrica: {WHATSAPP_NUMERO_FABRICA}
+          </small>
+        </div>
+
+        {/* Toggle de confirmación multimarca. */}
+        <div className={styles.field}>
+          <label className={styles.whatsappToggle}>
+            <input
+              type="checkbox"
+              checked={whatsappConfig.multimarca}
+              onChange={(e) =>
+                setWhatsappConfig((c) => ({ ...c, multimarca: e.target.checked }))
+              }
+              disabled={whatsappLoading}
+            />
+            <span>Activar confirmación multimarca</span>
+          </label>
+          <small style={{ color: '#6b7280', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block', lineHeight: 1.5 }}>
+            Desactivado: todos los pedidos se confirman al número principal (Todo a WALA).
+            Activado: cada marca recibe los productos de su marca a su propio asesor
+            (usa el WhatsApp configurado por marca).
+          </small>
+        </div>
+
+        <div className={styles.whatsappFooter}>
+          {whatsappMutation.isSuccess && (
+            <span className={styles.whatsappSavedMsg}>✓ Configuración guardada</span>
+          )}
+          {whatsappMutation.isError && (
+            <span className={styles.whatsappErrorMsg}>
+              ✗ {whatsappMutation.error?.message || 'Error al guardar'}
+            </span>
+          )}
+          <Button type="submit" disabled={whatsappMutation.isPending || whatsappLoading}>
+            {whatsappMutation.isPending ? 'Guardando...' : 'Guardar configuración de WhatsApp'}
+          </Button>
+        </div>
+      </form>
 
       <form className={styles.formCard} onSubmit={handleSubmit}>
         <div className={styles.formGrid}>

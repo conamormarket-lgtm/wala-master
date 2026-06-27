@@ -188,6 +188,27 @@
   box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
 }
 
+/* Select de tipo de documento (mismo aspecto que los inputs del formulario). */
+.select {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  font-size: 1rem;
+  border: 2px solid var(--gris-borde);
+  border-radius: var(--radio-pequeno);
+  transition: var(--transicion-suave);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  box-sizing: border-box;
+  min-height: var(--touch-target, 44px);
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--rojo-principal);
+  box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
+}
+
 .fieldError {
   display: block;
   margin-top: 0.35rem;

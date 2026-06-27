@@ -242,7 +242,7 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
             disabled={!product.inStock}
           >
             <span className={styles.quickAddIcon}>+</span>
-            <span className={styles.quickAddText}>Quick Add</span>
+            <span className={styles.quickAddText}>Al carrito</span>
           </button>
         </div>
       </div>

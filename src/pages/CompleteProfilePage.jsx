@@ -11,6 +11,7 @@ import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import { dialCodeByCountry } from '../constants/countries';
 import { detectCountry } from '../services/geo';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
+import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 import styles from './CompleteProfilePage.module.css';
 
 const CompleteProfilePage = () => {
@@ -25,7 +26,9 @@ const CompleteProfilePage = () => {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
 
-  const isPE = country === 'PE';
+  const isPE = isPeru(country);
+  // Lista de tipos de documento según país (Perú: DNI/CE/Pasaporte; extranjero: null).
+  const docTypes = getDocTypesForCountry(country);
 
   // Detección de país por IP. Default 'PE' si falla (PRINCIPIO DE SEGURIDAD).
   useEffect(() => {
@@ -82,14 +85,18 @@ const CompleteProfilePage = () => {
     }
     setLoading(true);
     // ERP: el documento SIEMPRE en dni / clienteNumeroDocumento / envioNumeroDocumento.
+    // El tipo elegido (DNI/CE/Pasaporte u 'OTRO' si extranjero) va en tipoDocumento
+    // y, de forma aditiva, en docType.
+    const tipoDocFinal = isPE ? tipoDoc : 'OTRO';
     const updates = {
       displayName: fullName.trim(),
       country,
       dni: documentoNorm,
       clienteNumeroDocumento: documentoNorm,
       envioNumeroDocumento: documentoNorm,
-      tipoDocumento: isPE ? tipoDoc : 'OTRO',
-      clienteTipoDocumento: isPE ? tipoDoc : 'OTRO',
+      tipoDocumento: tipoDocFinal,
+      clienteTipoDocumento: tipoDocFinal,
+      docType: tipoDocFinal,
       email: user.email,
       accessSystem: 'portal_clientes',
       accountOrigin: userProfile?.accountOrigin || 'google_auth',
@@ -151,25 +158,24 @@ const CompleteProfilePage = () => {
             </div>
             {isPE ? (
               <>
-                <div className={styles.toggleRow}>
-                  <button
-                    type="button"
-                    className={tipoDoc === 'DNI' ? styles.toggleActive : styles.toggle}
-                    onClick={() => setTipoDoc('DNI')}
+                {/* Perú: tipo de documento (DNI/CE/Pasaporte) + número. */}
+                <div className={styles.formGroup}>
+                  <label htmlFor="tipoDoc">Tipo de documento</label>
+                  <select
+                    id="tipoDoc"
+                    className={styles.select}
+                    value={tipoDoc}
+                    onChange={(e) => setTipoDoc(e.target.value)}
+                    disabled={loading}
                   >
-                    DNI
-                  </button>
-                  <button
-                    type="button"
-                    className={tipoDoc === 'CE' ? styles.toggleActive : styles.toggle}
-                    onClick={() => setTipoDoc('CE')}
-                  >
-                    CE
-                  </button>
+                    {docTypes.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className={styles.formGroup}>
                   <label htmlFor="documento">
-                    {tipoDoc === 'DNI' ? 'Número de DNI' : 'Número de CE'}
+                    {tipoDoc === 'DNI' ? 'Número de DNI' : `Número de ${tipoDoc}`}
                   </label>
                   <input
                     type="text"
@@ -179,18 +185,18 @@ const CompleteProfilePage = () => {
                     required
                     disabled={loading}
                     placeholder={tipoDoc === 'DNI' ? '8 dígitos' : '9 a 12 caracteres'}
-                    maxLength={tipoDoc === 'CE' ? 12 : 8}
+                    maxLength={tipoDoc === 'DNI' ? 8 : 12}
                   />
                   {documento && !docValid && (
                     <span className={styles.fieldError}>
-                      {tipoDoc === 'DNI' ? 'DNI debe tener 8 dígitos' : 'CE: 9 a 12 caracteres alfanuméricos'}
+                      {tipoDoc === 'DNI' ? 'DNI debe tener 8 dígitos' : 'Debe tener 9 a 12 caracteres alfanuméricos'}
                     </span>
                   )}
                 </div>
               </>
             ) : (
               <div className={styles.formGroup}>
-                <label htmlFor="documento">Documento de identidad</label>
+                <label htmlFor="documento">{FOREIGN_DOC_LABEL}</label>
                 <input
                   type="text"
                   id="documento"

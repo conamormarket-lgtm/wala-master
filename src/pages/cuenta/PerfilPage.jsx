@@ -9,6 +9,7 @@ import AvatarStudio from '../../components/profile/AvatarStudio';
 import CountrySelect from '../../components/intl/CountrySelect';
 import PhoneIntlInput from '../../components/intl/PhoneIntlInput';
 import { dialCodeByCountry } from '../../constants/countries';
+import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../../constants/documentTypes';
 // Sistema de diseño Walá: superficies de vidrio, botón premium y envoltorios de
 // entrada. SOLO presentación/animación; no alteran la lógica del formulario.
 import { GlassCard, GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
@@ -62,7 +63,9 @@ const PerfilPage = () => {
   const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
 
-  const isPE = country === 'PE';
+  const isPE = isPeru(country);
+  // Lista de tipos de documento según país (Perú: DNI/CE/Pasaporte; extranjero: null).
+  const docTypes = getDocTypesForCountry(country);
 
   // Avatar config state
   const [avatarConfig, setAvatarConfig] = useState({
@@ -137,15 +140,18 @@ const PerfilPage = () => {
     setLoading(true);
     const documentoNorm = isPE ? documento.replace(/\s/g, '') : documento.trim();
     // ERP: el documento SIEMPRE va en dni (y clienteNumeroDocumento / envioNumeroDocumento).
-    // tipoDocumento = 'DNI'/'CE' si PE, 'OTRO' si extranjero.
+    // tipoDocumento = 'DNI'/'CE'/'Pasaporte' si PE, 'OTRO' si extranjero.
+    // docType es aditivo y refleja el mismo tipo elegido.
+    const tipoDocFinal = isPE ? tipoDoc : 'OTRO';
     const updates = {
       displayName: fullName.trim(),
       country,
       dni: documentoNorm,
       clienteNumeroDocumento: documentoNorm,
       envioNumeroDocumento: documentoNorm,
-      tipoDocumento: isPE ? tipoDoc : 'OTRO',
-      clienteTipoDocumento: isPE ? tipoDoc : 'OTRO',
+      tipoDocumento: tipoDocFinal,
+      clienteTipoDocumento: tipoDocFinal,
+      docType: tipoDocFinal,
       birthDate: birthDate,
     };
     if (isPE) {
@@ -237,13 +243,18 @@ const PerfilPage = () => {
                 </div>
                 {isPE ? (
                   <>
-                    <div className={styles.toggleRow}>
-                      <button type="button" className={`${styles.toggle} ${tipoDoc === 'DNI' ? styles.active : ''}`} onClick={() => setTipoDoc('DNI')}>DNI</button>
-                      <button type="button" className={`${styles.toggle} ${tipoDoc === 'CE' ? styles.active : ''}`} onClick={() => setTipoDoc('CE')}>CE</button>
+                    {/* Perú: tipo de documento (DNI/CE/Pasaporte) + número. */}
+                    <div className={styles.formGroup}>
+                      <label>Tipo de documento</label>
+                      <select className={styles.select} value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)} disabled={loading}>
+                        {docTypes.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className={styles.formGroup}>
-                      <label>{tipoDoc === 'DNI' ? 'Número de DNI' : 'Número de CE'}</label>
-                      <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\s/g, ''))} disabled={loading} maxLength={tipoDoc === 'CE' ? 12 : 8} />
+                      <label>{tipoDoc === 'DNI' ? 'Número de DNI' : `Número de ${tipoDoc}`}</label>
+                      <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\s/g, ''))} disabled={loading} maxLength={tipoDoc === 'DNI' ? 8 : 12} />
                     </div>
                     <div className={styles.formGroup}>
                       <label>Teléfono</label>
@@ -253,7 +264,7 @@ const PerfilPage = () => {
                 ) : (
                   <>
                     <div className={styles.formGroup}>
-                      <label>Documento de identidad</label>
+                      <label>{FOREIGN_DOC_LABEL}</label>
                       <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value)} disabled={loading} placeholder="Pasaporte, ID o documento" />
                     </div>
                     <div className={styles.formGroup}>

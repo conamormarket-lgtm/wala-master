@@ -15,6 +15,7 @@ import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import { dialCodeByCountry } from '../constants/countries';
 import { detectCountry } from '../services/geo';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
+import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 import styles from './RegisterPage.module.css';
 
 const PASSWORD_SPECIAL = '!#%&@*';
@@ -38,7 +39,9 @@ const RegisterPage = () => {
 
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
-  const isPE = country === 'PE';
+  const isPE = isPeru(country);
+  // Lista de tipos de documento según país (Perú: DNI/CE/Pasaporte; extranjero: null).
+  const docTypes = getDocTypesForCountry(country);
 
   // Detección de país por IP. Default 'PE' si falla (PRINCIPIO DE SEGURIDAD).
   React.useEffect(() => {
@@ -53,7 +56,8 @@ const RegisterPage = () => {
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
   const step1Valid = email && isPasswordValid(password) && passwordsMatch;
 
-  // Validación ESTRICTA peruana solo si country === 'PE'.
+  // Validación ESTRICTA peruana solo si es Perú. DNI usa su regla; CE y Pasaporte
+  // comparten la validación alfanumérica (validateCE). Extranjero: documento libre.
   const docValid = isPE
     ? (tipoDoc === 'DNI' ? validateDNI(documento) : validateCE(documento))
     : validateDocInternacional(documento);
@@ -113,6 +117,9 @@ const RegisterPage = () => {
     }
     setLoading(true);
     // ERP: el documento SIEMPRE en dni / clienteNumeroDocumento / envioNumeroDocumento.
+    // El número se guarda en dni; el tipo elegido (DNI/CE/Pasaporte u 'OTRO' si
+    // extranjero) se guarda en tipoDocumento y, de forma aditiva, en docType.
+    const tipoDocFinal = isPE ? tipoDoc : 'OTRO';
     const docFields = {
       email: user.email,
       displayName: fullName.trim(),
@@ -120,8 +127,9 @@ const RegisterPage = () => {
       dni: documentoNorm,
       clienteNumeroDocumento: documentoNorm,
       envioNumeroDocumento: documentoNorm,
-      tipoDocumento: isPE ? tipoDoc : 'OTRO',
-      clienteTipoDocumento: isPE ? tipoDoc : 'OTRO',
+      tipoDocumento: tipoDocFinal,
+      clienteTipoDocumento: tipoDocFinal,
+      docType: tipoDocFinal,
       accessSystem: 'portal_clientes',
       accountOrigin: 'register_form',
     };
@@ -246,42 +254,62 @@ const RegisterPage = () => {
                 onSubmit={handleStep2}
                 className={styles.form}
               >
-                <div className={styles.toggleRow}>
-                <button
-                  type="button"
-                  className={tipoDoc === 'DNI' ? styles.toggleActive : styles.toggle}
-                  onClick={() => setTipoDoc('DNI')}
-                >
-                  DNI
-                </button>
-                <button
-                  type="button"
-                  className={tipoDoc === 'CE' ? styles.toggleActive : styles.toggle}
-                  onClick={() => setTipoDoc('CE')}
-                >
-                  CE
-                </button>
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="documento">
-                  {tipoDoc === 'DNI' ? 'Número de DNI' : 'Número de CE'}
-                </label>
-                <input
-                  type="text"
-                  id="documento"
-                  value={documento}
-                  onChange={(e) => setDocumento(e.target.value.replace(/\s/g, ''))}
-                  required
-                  disabled={loading}
-                  placeholder={tipoDoc === 'DNI' ? '8 dígitos' : '9 a 12 caracteres'}
-                  maxLength={tipoDoc === 'CE' ? 12 : 8}
-                />
-                {documento && !docValid && (
-                  <span className={styles.fieldError}>
-                    {tipoDoc === 'DNI' ? 'DNI debe tener 8 dígitos' : 'CE: 9 a 12 caracteres alfanuméricos'}
-                  </span>
-                )}
-              </div>
+                {isPE ? (
+                <>
+                  {/* Perú: tipo de documento (DNI/CE/Pasaporte) + número. */}
+                  <div className={styles.formGroup}>
+                    <label htmlFor="tipoDoc">Tipo de documento</label>
+                    <select
+                      id="tipoDoc"
+                      className={styles.select}
+                      value={tipoDoc}
+                      onChange={(e) => setTipoDoc(e.target.value)}
+                      disabled={loading}
+                    >
+                      {docTypes.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="documento">
+                      {tipoDoc === 'DNI' ? 'Número de DNI' : `Número de ${tipoDoc}`}
+                    </label>
+                    <input
+                      type="text"
+                      id="documento"
+                      value={documento}
+                      onChange={(e) => setDocumento(e.target.value.replace(/\s/g, ''))}
+                      required
+                      disabled={loading}
+                      placeholder={tipoDoc === 'DNI' ? '8 dígitos' : '9 a 12 caracteres'}
+                      maxLength={tipoDoc === 'DNI' ? 8 : 12}
+                    />
+                    {documento && !docValid && (
+                      <span className={styles.fieldError}>
+                        {tipoDoc === 'DNI' ? 'DNI debe tener 8 dígitos' : 'Debe tener 9 a 12 caracteres alfanuméricos'}
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* Extranjero: un único campo abierto de documento nacional. */
+                <div className={styles.formGroup}>
+                  <label htmlFor="documento">{FOREIGN_DOC_LABEL}</label>
+                  <input
+                    type="text"
+                    id="documento"
+                    value={documento}
+                    onChange={(e) => setDocumento(e.target.value)}
+                    required
+                    disabled={loading}
+                    placeholder="Pasaporte, ID o documento"
+                  />
+                  {documento && !docValid && (
+                    <span className={styles.fieldError}>Ingresa un documento válido (mín. 3 caracteres)</span>
+                  )}
+                </div>
+              )}
               <div className={styles.formGroup}>
                 <label htmlFor="fullName">Nombre completo</label>
                 <input

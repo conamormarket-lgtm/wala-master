@@ -25,6 +25,10 @@ import PaypalCheckout from '../components/PaypalCheckout/PaypalCheckout';
 // NO alteran los totales/descuentos en PEN; el USD se deriva del total final PEN.
 import { getFx, penToUsd, penToLocal } from '../services/fx';
 import { getCurrency, formatMoney } from '../constants/currencies';
+// ── Tipo de documento por país (aditivo) ──────────────────────────────────────
+// Perú: select cerrado (DNI/CE/Pasaporte). Extranjero: campo abierto único
+// rotulado con FOREIGN_DOC_LABEL. NO endurece la validación del documento.
+import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 // Design System "Aurora Violeta Serena": superficies de vidrio y CTAs premium.
 // Uso SOLO presentacional (aditivo); no altera lógica de compra/pago/totales.
 import { GlassCard, GlassButton, Badge, AuroraBackground } from '../components/ui';
@@ -151,6 +155,7 @@ const CheckoutPage = () => {
     return (
       <GlassButton
         variant={asPrimary ? 'primary' : 'ghost'}
+        size={asPrimary ? 'lg' : 'md'}
         fullWidth
         onClick={() => { emitPurchaseComplete('whatsapp'); window.open(link, '_blank'); finalize(); }}
       >
@@ -224,6 +229,9 @@ const CheckoutPage = () => {
         const tiendaNum = await getMessage('whatsapp_number_tienda');
         const fallbackNum = await getMessage('whatsapp_number');
         const textTienda = await getMessage('whatsapp_text_tienda');
+        // ── NUEVO: número principal "Todo a WALA" + toggle multimarca ─────────
+        const principalNum = await getMessage('whatsapp_number_principal');
+        const multimarcaMsg = await getMessage('whatsapp_multimarca');
 
         let num = tiendaNum.data?.trim() || fallbackNum.data?.trim() || '';
         let cleanText = textTienda.data || 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.';
@@ -234,13 +242,33 @@ const CheckoutPage = () => {
         if (clean && !clean.startsWith('51') && clean.length <= 9) {
           clean = `51${clean}`;
         }
+
+        // Normaliza el NÚMERO PRINCIPAL igual que el resto (mismo criterio que arriba).
+        let principal = (principalNum.data?.trim() || '+51924426791')
+          // eslint-disable-next-line no-useless-escape
+          .replace(/[\s\-\(\)\+]/g, '');
+        if (principal && !principal.startsWith('51') && principal.length <= 9) {
+          principal = `51${principal}`;
+        }
+        if (!principal) principal = '51924426791'; // fallback duro solicitado
+
+        // Multimarca: 'true' divide por marca; cualquier otro valor (DEFAULT) =
+        // "Todo a WALA" → un único botón al número principal.
+        const multimarca = (multimarcaMsg.data?.trim().toLowerCase() === 'true');
+
         return {
           number: clean || '51999999999',
+          // Número principal "Todo a WALA" (siempre presente, con fallback duro).
+          principalNumber: principal,
+          // Flag del modo de enrutamiento del WhatsApp.
+          multimarca,
           customText: cleanText
         };
       } catch (e) {
         return {
           number: '51999999999',
+          principalNumber: '51924426791',
+          multimarca: false,
           customText: 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.'
         };
       }
@@ -319,6 +347,9 @@ const CheckoutPage = () => {
       // País: prefill desde el perfil del usuario o lo guardado como invitado; default Perú ('PE').
       country: userProfile?.country || guestSavedInfo.country || 'PE',
       dni: userProfile?.dni || guestSavedInfo.dni || '',
+      // Tipo de documento (solo Perú usa el select cerrado DNI/CE/Pasaporte).
+      // Default 'DNI'; en extranjero no se usa este valor (campo abierto único).
+      docType: userProfile?.docType || guestSavedInfo.docType || 'DNI',
       phone: userProfile?.phone || guestSavedInfo.phone || '',
       address: guestSavedInfo.address || '',
       district: guestSavedInfo.district || '',
@@ -352,7 +383,12 @@ const CheckoutPage = () => {
         // ── País / tipo de documento ──────────────────────────────────────
         // esPeru = true cuando el país es 'PE' o no está definido (default seguro).
         const esPeru = values.country === 'PE' || !values.country;
-        const tipoDocumento = esPeru ? 'DNI' : 'OTRO';
+        // Tipo de documento para el ERP:
+        //   Perú → el tipo elegido en el select (values.docType: DNI/CE/Pasaporte).
+        //   Extranjero → etiqueta fija "Documento de identidad nacional".
+        const tipoDocumento = esPeru
+          ? (values.docType || 'DNI')
+          : FOREIGN_DOC_LABEL;
         // Teléfono internacional en formato completo (dialCode + número); fallback al phone local.
         const phoneIntl = phoneFull || values.phone;
 
@@ -819,9 +855,13 @@ const CheckoutPage = () => {
         message += whatsappConfig?.customText?.replace('{id}', pseudoOrderId) || `Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código ${pseudoOrderId}.`;
         if (referralTag) message += referralTag;
 
-        const waLink = `https://wa.me/${whatsappConfig?.number}?text=${encodeURIComponent(message)}`;
+        // ── Número de destino del WhatsApp único ("Todo a WALA") ───────────
+        // Por defecto (multimarca !== true) TODO va al NÚMERO PRINCIPAL.
+        const waMultimarca = whatsappConfig?.multimarca === true;
+        const waPrincipal = whatsappConfig?.principalNumber || '51924426791';
+        const waLink = `https://wa.me/${waPrincipal}?text=${encodeURIComponent(message)}`;
 
-        // ── 3.b WhatsApp DIVIDIDO POR MARCA ───────────────────────────────
+        // ── 3.a Helper de mensaje por marca (usado solo en modo multimarca) ──
         // Cada marca con número de asesor configurado recibe su PROPIO mensaje
         // (solo sus productos). Los items sin marca o cuya marca no tiene número
         // caen al número general. NO toca pago/totales; solo enrutamiento de WA.
@@ -869,44 +909,51 @@ const CheckoutPage = () => {
           return m;
         };
 
+        // ── 3.b WhatsApp DIVIDIDO POR MARCA (solo si multimarca === true) ───
+        // DEFAULT "Todo a WALA": waGroups queda [] y todo va al NÚMERO PRINCIPAL
+        // (el waLink único de arriba). Solo dividimos cuando el admin activa
+        // whatsapp_multimarca === 'true'.
         let waGroups = [];
-        try {
-          // brandId -> { name, number } SOLO para marcas con número configurado.
-          const numByBrand = new Map();
-          (brandsList || []).forEach((b) => {
-            const raw = (b.whatsappNumber || '').replace(/[\s\-()]/g, '');
-            const n = raw.startsWith('+') ? raw.replace(/\+/g, '') : raw;
-            if (n) numByBrand.set(b.id, { name: b.name, number: n });
-          });
-          // Agrupa los items seleccionados por asesor (marca con número) o general.
-          const groupsMap = new Map();
-          selectedItems.forEach((item) => {
-            const info = item.brandId ? numByBrand.get(item.brandId) : null;
-            const key = info ? item.brandId : '__general__';
-            if (!groupsMap.has(key)) {
-              groupsMap.set(key, {
-                label: info ? info.name : 'Tienda (general)',
-                number: info ? info.number : (whatsappConfig?.number || ''),
-                isGeneral: !info,
-                items: [],
-              });
+        if (waMultimarca) {
+          try {
+            // brandId -> { name, number } SOLO para marcas con número configurado.
+            const numByBrand = new Map();
+            (brandsList || []).forEach((b) => {
+              const raw = (b.whatsappNumber || '').replace(/[\s\-()]/g, '');
+              const n = raw.startsWith('+') ? raw.replace(/\+/g, '') : raw;
+              if (n) numByBrand.set(b.id, { name: b.name, number: n });
+            });
+            // Agrupa los items seleccionados por asesor (marca con número) o general.
+            const groupsMap = new Map();
+            selectedItems.forEach((item) => {
+              const info = item.brandId ? numByBrand.get(item.brandId) : null;
+              const key = info ? item.brandId : '__general__';
+              if (!groupsMap.has(key)) {
+                groupsMap.set(key, {
+                  label: info ? info.name : 'Tienda (general)',
+                  // El grupo general/fallback usa el NÚMERO PRINCIPAL ("Todo a WALA").
+                  number: info ? info.number : waPrincipal,
+                  isGeneral: !info,
+                  items: [],
+                });
+              }
+              groupsMap.get(key).items.push(item);
+            });
+            // Solo dividimos si hay AL MENOS un grupo de MARCA (asesor propio distinto al general).
+            const hasBrandGroup = [...groupsMap.values()].some((g) => !g.isGeneral);
+            if (hasBrandGroup) {
+              waGroups = [...groupsMap.values()]
+                .filter((g) => g.number)
+                .map((g) => ({
+                  label: g.label,
+                  count: g.items.length,
+                  link: `https://wa.me/${g.number}?text=${encodeURIComponent(buildMessageForItems(g.items, g.isGeneral ? null : g.label))}`,
+                }));
             }
-            groupsMap.get(key).items.push(item);
-          });
-          // Solo dividimos si hay AL MENOS un grupo de MARCA (asesor propio distinto al general).
-          const hasBrandGroup = [...groupsMap.values()].some((g) => !g.isGeneral);
-          if (hasBrandGroup) {
-            waGroups = [...groupsMap.values()]
-              .filter((g) => g.number)
-              .map((g) => ({
-                label: g.label,
-                count: g.items.length,
-                link: `https://wa.me/${g.number}?text=${encodeURIComponent(buildMessageForItems(g.items, g.isGeneral ? null : g.label))}`,
-              }));
+          } catch (e) {
+            console.warn('No se pudo armar WhatsApp por marca:', e);
+            waGroups = [];
           }
-        } catch (e) {
-          console.warn('No se pudo armar WhatsApp por marca:', e);
-          waGroups = [];
         }
 
         // ── 4. Guardar en localStorage (pendiente de confirmación) ─────────
@@ -922,6 +969,8 @@ const CheckoutPage = () => {
         const savedInfo = {
           customerName: values.customerName,
           dni: values.dni,
+          // Tipo de documento elegido (para prefijar el select en la próxima compra).
+          docType: values.docType,
           phone: values.phone,
           address: values.address,
           district: values.district,
@@ -1123,15 +1172,19 @@ const CheckoutPage = () => {
                             (qué quieres y para cuándo), te dice el costo final y coordinas el
                             pago por Yape, Plin o transferencia.
                           </p>
+                          {/* DOS botones grandes (primary, fullWidth, lg):
+                              (a) reabrir Culqi (remonta el componente y auto-abre),
+                              (b) terminar la compra por WhatsApp (número principal). */}
                           <div className={styles.recoveryActions}>
-                            {renderWhatsAppFinish(true)}
                             <GlassButton
-                              variant="ghost"
+                              variant="primary"
+                              size="lg"
                               fullWidth
                               onClick={() => { setCulqiClosed(false); setCulqiKey((k) => k + 1); }}
                             >
-                              Reintentar con tarjeta 💳
+                              💳 Continuar comprando con tarjeta
                             </GlassButton>
+                            {renderWhatsAppFinish(true)}
                           </div>
                         </div>
                       </div>
@@ -1246,15 +1299,47 @@ const CheckoutPage = () => {
 
             <div className={styles.row}>
               <div className={styles.field}>
-                <label>Documento *</label>
-                <input
-                  type="text"
-                  name="dni"
-                  value={formik.values.dni}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder={formIsPeru ? 'DNI, CE, RUC o pasaporte' : 'Documento de identidad'}
-                />
+                <label>{isPeru(formik.values.country) ? 'Documento *' : `${FOREIGN_DOC_LABEL} *`}</label>
+                {isPeru(formik.values.country) ? (
+                  // ── Perú: select de tipo (DNI/CE/Pasaporte) + número ──────────
+                  // El tipo se guarda en values.docType; el número en values.dni.
+                  // La validación del número se mantiene laxa (no se endurece).
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'stretch' }}>
+                    <select
+                      name="docType"
+                      value={formik.values.docType}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      className={styles.selectInput}
+                      style={{ flex: '0 0 38%', padding: '0.8rem 0.6rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem', background: 'white' }}
+                      aria-label="Tipo de documento"
+                    >
+                      {(getDocTypesForCountry(formik.values.country) || []).map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      name="dni"
+                      value={formik.values.dni}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      placeholder="Número de documento"
+                      style={{ flex: 1 }}
+                    />
+                  </div>
+                ) : (
+                  // ── Extranjero: un único campo abierto ────────────────────────
+                  <input
+                    type="text"
+                    name="dni"
+                    value={formik.values.dni}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder={FOREIGN_DOC_LABEL}
+                    aria-label={FOREIGN_DOC_LABEL}
+                  />
+                )}
                 {formik.touched.dni && formik.errors.dni && (
                   <span className={styles.error}>{formik.errors.dni}</span>
                 )}
