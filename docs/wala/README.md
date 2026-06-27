@@ -24,6 +24,7 @@ cambio → desplegar → verificar**.
 | 0 | [ESTADO-DEL-PROYECTO.md](./ESTADO-DEL-PROYECTO.md) | Panorama ejecutivo: qué es Wala, cronología del trabajo, tabla de las 6 fases, inventario de los 8 commits, estado de despliegue, cómo correr en local, riesgos residuales y próximos pasos. | Primero, para situarte en el estado real. |
 | 0.5 | [EMULADOR-LOCAL.md](./EMULADOR-LOCAL.md) | Cómo correr TODO en local con el Emulador de Firebase (Firestore/Auth/Functions/Storage), datos de ejemplo y usuarios de prueba. | Para levantar y ver la app funcionando en tu PC. |
 | 1 | [PLAN-MAESTRO.md](./PLAN-MAESTRO.md) | Visión, arquitectura objetivo, roadmap por fases (0–5), decisiones técnicas y riesgos. | Para entender hacia dónde va el producto. |
+| 1.5 | [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md) | Plan (POR IMPLEMENTAR) de los features de wishlist **"Mis fechas especiales"** (registro de regalos por fecha en ruta pública `/regalar/:referralCode`, con cuidado de privacidad: no publicar hasta cerrar reglas + Cloud Function) y **"Agregar todo al carrito"**. Incluye flujo, archivos a tocar, modelo de datos y decisiones abiertas. | Antes de implementar esos dos botones de la wishlist. |
 | 2 | [fases/README.md](./fases/README.md) | Índice de la carpeta de fases: tabla por fase con estado y documento asociado, leyenda y flujo de lectura. | Para navegar el roadmap fase a fase. |
 | 3 | [MODELO-DATOS.md](./MODELO-DATOS.md) | Colecciones Firestore actuales y objetivo (productos, fidelización, marketplace, ERP). | Antes de tocar datos o reglas. |
 | 4 | [FASE-0-SEGURIDAD.md](./FASE-0-SEGURIDAD.md) | Trabajo bloqueante de seguridad: backdoor admin, reglas, economía en cliente, webhook sin secreto (hallazgos H-01..H-11). | Antes de cualquier release; es prerequisito de todo lo demás. |
@@ -71,9 +72,12 @@ El ciclo de cualquier cambio que toque producción es siempre el mismo:
 6. **Rollback** (`ops/restore/`): si la verificación falla, restaurar desde el respaldo del
    paso 1 y volver a `git` al commit/tag baseline.
 
-> Estado actual: **nada desplegado todavía** (sin acceso a Firebase). Todo el trabajo de
-> las fases 0–1 está verificado en local. Ver detalle en
-> [ESTADO-DEL-PROYECTO.md §5](./ESTADO-DEL-PROYECTO.md).
+> Estado actual: **Wala YA está en producción.** En las tandas del **2026-06-25** y
+> **2026-06-27** se desplegó a `sistema-gestion-3b225`: el **frontend** por **Vercel**
+> (auto-deploy desde `master`) y el **backend** (Cloud Functions / índices) por **Cloud
+> Shell**. Lo único que falta cerrar en seguridad son las **reglas completas** (siguen
+> abiertas → fuga de PII; ver Prioridad 1). Detalle de qué se desplegó y qué falta en
+> [ESTADO-DEL-PROYECTO.md §5](./ESTADO-DEL-PROYECTO.md) (y la sesión 2026-06-27 en §2, Paso 6).
 
 ---
 

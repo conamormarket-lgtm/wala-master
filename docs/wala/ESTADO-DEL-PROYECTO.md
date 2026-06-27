@@ -16,7 +16,15 @@
 > [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md) (lo que ve y hace el cliente) y
 > [FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md) (lo que controla el administrador).
 
-> ## 📌 Banner de estado (actualizado 2026-06-26)
+> ## 📌 Banner de estado (actualizado 2026-06-27)
+>
+> **Sesión 2026-06-27 (desplegada):** se desplegó a producción una tanda grande de
+> **diseño/UX (design system liquid-glass "Aurora Violeta Serena"), tracking de precisión,
+> checkout internacional con moneda local/USD y auto-cobro, y varios fixes** — frontend por
+> **Vercel** y las **Cloud Functions de cobro por Cloud Shell**. Pendiente del usuario:
+> **registrar la URL de `culqiWebhook` en Culqi** y **verificar `REACT_APP_PAYPAL_CLIENT_ID`
+> en Vercel** (si no, PayPal corre en SANDBOX). Detalle en §2 (Paso 6) y §7. Plan nuevo por
+> implementar: [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md).
 >
 > **Wala ya está EN PRODUCCIÓN.** El **frontend (Vite) está en vivo en Vercel** (wala.pe, con
 > **auto-deploy desde `master`** — la rama de trabajo `fase-0-seguridad` es hoy `master`) y el
@@ -192,6 +200,71 @@ Verificado con el super usuario local `admin@wala.test` / `wala1234` (y cliente
 **venta internacional** (commit `8191f5a`) y el **dashboard de analítica v2 liquid-glass**
 (commits `ea25a82` y `84603db`). Lo que aún falta (publicar reglas, cobro real, búsqueda
 externa, push v2, schedulers, integración editor/checkout, reestructurar el dashboard) está en §7.
+
+### Paso 6 — Sesión 2026-06-27 — desplegado *(✅ HECHO — en producción)*
+
+Sesión de **diseño/UX, tracking de precisión, checkout internacional y fixes**, toda
+**desplegada a producción**: el **frontend** por **Vercel** (auto-deploy desde `master`) y las
+**Cloud Functions** del checkout internacional por **Cloud Shell** a `sistema-gestion-3b225`.
+Ocho commits (del CHANGELOG raíz, entrada 2026-06-27):
+
+1. **`a4c884e` — Design system liquid-glass "Aurora Violeta Serena":** nuevo `src/theme/`
+   (`tokens.css` glass/gradiente/violeta/chart + `motion.js` con presets) y librería
+   `src/components/ui/` (11 componentes: GlassCard, GlassButton, GlassPanel, GlassModal,
+   GlassInput, Badge, AuroraBackground, AnimatedNumber, Reveal/Stagger, GlassTooltip) +
+   vitrina viva en **/admin/design**. Overhaul del **Dashboard/Analítica/Zonas calientes**:
+   hub con KPIs animados + tendencia + conversión, **DashProductos** (vistos vs vendidos ERP),
+   **DashCategorias** (líneas vendidas + vistas + conversión), nueva **DashUso**
+   (**/admin/dashboard/uso**) y heatmap con mini-tarjetas + nº de clics + preview + etiquetas
+   con emoji. (Esto **adelanta la Prioridad 2** de reestructurar el dashboard, ver §7.)
+2. **`95c99d1` — Tracking de precisión (Pass 2):** `schema.js` +8 tipos de evento
+   (`category_view`, `collection_view`, `editor_open`/`editor_save`, `minigame_start`/
+   `minigame_complete`, `mission_complete`, `wishlist_add`); `tracker.js` +7 funciones;
+   `eventData` enriquecido (`categoryId`/`collectionId`/`lineaProducto`) en `product_view`/
+   `add_to_cart`/`purchase_complete`; agregaciones nuevas en `adminAnalytics`
+   (`topCategoriesByViews`, `topCollectionsByViews`, `featureUsage`); eventos cableados en
+   NichePage/EditorPage/Ruleta/BallSort/MisionesPage.
+3. **`b7508c1` — Pulido del storefront con el design system:** PremiumProductCard
+   (glass + hover + entrada al viewport + badge de descuento), esqueletos glass,
+   HeroBanner/BrandMarquee/BestSellersRow (AuroraBackground + GlassButton + Reveal/Stagger),
+   transición de página solo-opacidad, Header/BottomNav glass; Checkout/Cart/Perfil/
+   CuentaPedidos en **modo conservador** (sin tocar la lógica de compra).
+4. **`8fa1888` — Fix del checkout:** el botón de pago no avanzaba porque Formik bloqueaba en
+   silencio (validación de DNI de 8 dígitos para Perú). Se **relajó la validación del
+   documento** (≥3 caracteres, cualquier tipo) + aviso (toast) y scroll al primer campo con error.
+5. **`8bb7293` — Auto-cobro por país + moneda local/USD:** `src/constants/currencies.js`
+   (país→moneda con nombre natural), `src/services/fx.js` (lee `config/fx` con fallback +
+   margen); CheckoutPage muestra la **moneda local** + "Pagarás X USD por PayPal" y **auto-abre
+   Culqi** (Perú); PaypalCheckout cobra en `amountUsd` + corrige el update a `pedidos_web`.
+   **Cloud Functions escritas y DESPLEGADAS por Cloud Shell:** `culqiWebhook` (marca
+   `pedidos_web` pagado, idempotente), **recálculo de monto server-side** en
+   `processCulqiPayment` (**cierra H-11**), `updateFxRate` (cron diario que puebla `config/fx`
+   desde una API de FX).
+6. **`c540614` — Fix de moneda local:** `penToLocal` indexaba por país pero `config/fx`
+   guarda por código de moneda; + guard de monto mínimo de PayPal (1 USD).
+7. **`33285b4` — Fix del parpadeo del menú del header:** cacheo de `storeConfig` en
+   `localStorage` + no mostrar el menú por defecto mientras carga; + guarda del permiso de
+   notificaciones (solo lo pide si `Notification.permission === 'default'`).
+8. **`cf47546` — Wishlist en el header:** badge con la cantidad de productos en el corazón +
+   tira de miniaturas en el desplegable de favoritos.
+
+**Estado de despliegue real (2026-06-27):** lo anterior está **EN PRODUCCIÓN** — hay **mucho
+ya desplegado** (frontend por Vercel + las Cloud Functions de cobro por Cloud Shell). Además,
+en esta sesión:
+
+- **Seguridad — reglas publicadas y REVERTIDAS:** se publicaron reglas de seguridad y se
+  **revirtieron** porque rompían el ERP (el ERP **no usa Firebase Auth**; sus peticiones llegan
+  **sin identidad**). Queda un **track de seguridad pendiente** (App Check o migrar el ERP a
+  Firebase Auth) además de la fuga de PII por reglas abiertas (§6). Se **sembró `config/fx`**
+  con tasas en vivo.
+- **Pendiente del usuario (no de código):** **registrar la URL de `culqiWebhook`** en el panel
+  de Culqi (estaba caído) y **verificar que `REACT_APP_PAYPAL_CLIENT_ID` esté en Vercel** (si
+  no, **PayPal corre en SANDBOX**).
+
+**Plan nuevo (POR IMPLEMENTAR):** se redactó [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md)
+con el plan completo de **"Mis fechas especiales"** (registro de regalos por fecha, ruta
+pública `/regalar/:referralCode`, con cuidado de privacidad: **no publicar hasta cerrar reglas
++ Cloud Function**) y **"Agregar todo al carrito"** en la wishlist. Ver §7 (Prioridades).
 
 ---
 
@@ -369,8 +442,26 @@ Wala ya está en producción; lo siguiente es lo que queda, ordenado por urgenci
 | Pendiente | Fase | Por qué importa |
 |-----------|------|-----------------|
 | **🚨 Publicar las reglas de seguridad completas** (`firebase/firestore.rules.produccion`) | 0 / C | Hoy hay **fuga de PII activa**: la lectura anónima de clientes/pedidos sigue abierta. Hay que **respaldar** las reglas vivas, **fusionar/validar** con las del ERP, probar en el **Rules Playground** y publicar. Es lo único catastrófico que queda. Ver [PLAN-SEGURIDAD-REGLAS.md](./PLAN-SEGURIDAD-REGLAS.md). |
+| **🔐 Track de seguridad: App Check o migrar el ERP a Firebase Auth** | 0 / C | En la sesión 2026-06-27 se publicaron reglas y se **revirtieron** porque rompían el ERP: **el ERP no usa Firebase Auth y sus peticiones llegan sin identidad**, así que cualquier regla que exija autenticación lo rompe. Hay que **habilitar App Check** o **migrar el ERP a Firebase Auth** antes de poder cerrar las reglas sin romper el CRM. Es el desbloqueante real de la Prioridad 1. |
+
+### Prioridad 1.bis — Cerrar el cobro real (operativo, del usuario — sesión 2026-06-27)
+
+El checkout internacional con moneda local/USD ya está desplegado; faltan dos pasos **del
+usuario** (no de código) para que el cobro quede 100 % en producción:
+
+| Pendiente | Quién | Por qué importa |
+|-----------|-------|-----------------|
+| **Registrar la URL de `culqiWebhook` en el panel de Culqi** | Usuario | La Cloud Function `culqiWebhook` (marca `pedidos_web` pagado, idempotente) ya está desplegada, pero el panel de Culqi **estaba caído** y aún no tiene registrada su URL → Culqi no notifica el pago al backend. |
+| **Verificar `REACT_APP_PAYPAL_CLIENT_ID` en Vercel** | Usuario | Si esa variable **no** está en Vercel, **PayPal corre en SANDBOX** (no cobra de verdad). Hay que confirmarla y hacer Redeploy (las env se hornean en build). |
 
 ### Prioridad 2 — Reestructurar el dashboard de analítica
+
+> **Nota (sesión 2026-06-27):** el commit `a4c884e` **adelantó gran parte de esta prioridad**:
+> el dashboard ya se partió en hub + **DashProductos** + **DashCategorias** + nueva **DashUso**
+> (`/admin/dashboard/uso`), con KPIs animados y heatmap mejorado (mini-tarjetas, nº de clics,
+> preview, etiquetas con emoji). Revisar qué sigue pendiente del iframe/`willReadFrequently`
+> contra el código actual.
+
 
 | Pendiente | Fase | Por qué importa |
 |-----------|------|-----------------|
@@ -390,6 +481,7 @@ Wala ya está en producción; lo siguiente es lo que queda, ordenado por urgenci
 | **Cobro REAL Mercado Pago** + integrar checkout real | 3 | Configurar `MERCADOPAGO_ACCESS_TOKEN`, `MP_WEBHOOK_URL`, `MP_BACK_URL_BASE` y cablear `CheckoutPage` (hoy el split es **simulado** vía `/checkout-demo`, `/pago-demo/:orderId`). |
 | **Recomendación por IA / countdown de ofertas flash en home** | 5 | Funcionalidad de producto sobre la base ya verificada. |
 | **Backfill multi-vendor/nicho en prod** (`scripts/backfill-vendor-niche.js`) | 1 | Hasta correrlo, los productos sin `vendorId`/`nicheId` usan los defaults de `src/constants/marketplace.js`. Requiere `GOOGLE_APPLICATION_CREDENTIALS` de `sistema-gestion-3b225`. |
+| **"Mis fechas especiales" + "Agregar todo al carrito"** (wishlist) — POR IMPLEMENTAR | Cliente / Reglas | Registro de regalos por fecha en una ruta pública `/regalar/:referralCode` + atajo "Agregar todo al carrito". **"Agregar todo" es bajo riesgo (solo frontend); la ruta pública NO debe publicarse hasta cerrar reglas + Cloud Function** (expone fechas/PII del dueño, ligado a H-07/H-09). Spec completa en [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md). |
 
 Los riesgos de seguridad residuales (más allá de la fuga de reglas) siguen en §6.
 

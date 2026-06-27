@@ -197,9 +197,12 @@
   - **Envío:** gratis si el subtotal (con descuento) supera S/100; si no, S/15.
 - **Qué hace (pago — diferenciado por país):**
   - Al confirmar, genera el pedido y guarda una orden en `pedidos_web` (para validación previa), arma un mensaje de WhatsApp con el detalle, procesa referidos y regalos de wishlist, y actualiza el perfil del usuario con sus datos.
-  - **Perú:** ofrece **Culqi** (tarjeta) **o** acordar pago por **WhatsApp (Yape / Plin / Transferencia)**.
+  - **Perú:** ofrece **Culqi** (tarjeta) **o** acordar pago por **WhatsApp (Yape / Plin / Transferencia)**. Para Culqi, el checkout **abre el formulario de pago automáticamente** (auto-cobro).
   - **Internacional:** ofrece **PayPal** (Culqi queda oculto) **o** acordar pago por WhatsApp.
+  - **Moneda local + USD (sesión 2026-06-27):** el checkout muestra el total en la **moneda local del país del comprador** (con su nombre natural) y, para pagos por PayPal, el aviso **"Pagarás X USD por PayPal"** (PayPal cobra en USD). El tipo de cambio se lee de `config/fx` (poblado a diario por la Cloud Function `updateFxRate`) con un margen y un *fallback* si la config no está disponible; hay un monto mínimo de PayPal de 1 USD.
   - **Aviso de envío internacional:** si el país NO es Perú, muestra el aviso **"la entrega demora de 7 a 30 días hábiles"** (tanto en la pantalla de pago como en el mensaje de WhatsApp).
+  - **Confirmación de pago en backend:** el pago con Culqi se confirma server-side (recálculo del monto en `processCulqiPayment`) y la Cloud Function `culqiWebhook` marca el pedido (`pedidos_web`) como pagado de forma idempotente. *(Nota operativa: la URL de `culqiWebhook` debe estar registrada en el panel de Culqi y `REACT_APP_PAYPAL_CLIENT_ID` debe existir en Vercel para que PayPal cobre en producción y no en sandbox.)*
+  - **Validación del documento (sesión 2026-06-27):** se relajó la validación para no bloquear silenciosamente el botón de pago — el documento exige **≥3 caracteres** (cualquier tipo); si hay un campo con error, muestra un aviso (toast) y hace scroll al primero. En Perú el DNI sigue marcándose como tal.
   - Tras el pago/confirmación, vacía el carrito y lleva a "Mis Pedidos". Emite eventos de analítica (inicio de checkout y compra completada).
 - **Ruta:** `/checkout`
 - **Archivos clave:**
@@ -239,6 +242,10 @@
 ### 7.3 Lista de Deseos privada (`/cuenta/wishlist`)
 - **Qué es:** los productos que el cliente guardó como favoritos.
 - **Qué hace:** muestra la grilla de favoritos; permite **compartir la lista** (genera enlace público `/wishlist/<código>`); marca con un badge los productos que ya le regalaron. Sugiere registrar el cumpleaños para recordatorios.
+- **Acceso desde el header (sesión 2026-06-27):** el corazón de favoritos del header muestra un **badge con la cantidad** de productos guardados y, al abrir el desplegable de favoritos, una **tira de miniaturas** de los productos en la lista.
+- **Por implementar (ver [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md)):** dos botones nuevos en la cabecera de la wishlist —
+  - **"Agregar todo al carrito":** atajo para agregar de un golpe todos los productos no regalados de la lista al propio carrito (compra para uno mismo, bajo riesgo, solo frontend).
+  - **"Mis fechas especiales":** copia/abre una **URL pública** (`/regalar/:referralCode`) que funciona como **registro de regalos por fecha** — quien la abre ve las fechas especiales del dueño + su wishlist, elige una fecha de entrega y un regalo y compra en Modo Regalo. **Tiene consideración de privacidad:** expone fechas/PII del dueño, así que **no se publica hasta cerrar reglas + una Cloud Function** que devuelva solo datos mínimos (ligado a H-07/H-09).
 - **Archivos clave:** `src/pages/cuenta/WishlistPage.jsx`, `src/contexts/WishlistContext.jsx`
 
 ### 7.4 Lista de Deseos pública (`/wishlist/:userCode`)

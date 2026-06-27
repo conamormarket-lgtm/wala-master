@@ -1,12 +1,31 @@
 # Changelog — Wala
 
-Registro de actualizaciones y funciones. Todo lo de abajo está en la rama
-`fase-0-seguridad` y **verificado en local** (build + emulador); aún **no desplegado**
-(pendiente acceso a Firebase). Detalle por fase en [`docs/wala/fases/`](docs/wala/fases/README.md).
+Registro de actualizaciones y funciones, de lo más nuevo a lo más viejo. Las entradas más
+recientes (**2026-06-25** y **2026-06-27**) ya están **desplegadas a producción**
+(`sistema-gestion-3b225`): frontend por **Vercel** (auto-deploy desde `master`) y backend
+(Cloud Functions / índices) por **Cloud Shell**. Las entradas más antiguas marcadas
+`[Sin liberar]` se construyeron en la rama `fase-0-seguridad` (hoy `master`) y se
+**verificaron en local** (build + emulador) antes de desplegarse en esas tandas. Detalle de
+estado en [docs/wala/ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md); detalle por
+fase en [`docs/wala/fases/`](docs/wala/fases/README.md).
 
 Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
+
+## [2026-06-27] — DESPLEGADO A PRODUCCIÓN (Vercel + Cloud Functions vía Cloud Shell)
+Sesión de UX/diseño, tracking, checkout internacional y fixes. **Frontend desplegado por Vercel** (auto-deploy desde `master`); las **Cloud Functions del punto 5 se desplegaron por Cloud Shell** a `sistema-gestion-3b225`. Detalle de estado en [docs/wala/ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md).
+- ✅ `a4c884e` — **Design system liquid-glass "Aurora Violeta Serena"**: nuevo `src/theme/` (`tokens.css` glass/gradiente/violeta/chart + `motion.js` con presets) y librería `src/components/ui/` (11 componentes: GlassCard, GlassButton, GlassPanel, GlassModal, GlassInput, Badge, AuroraBackground, AnimatedNumber, Reveal/Stagger, GlassTooltip) + vitrina viva en **/admin/design**. Overhaul del Dashboard/Analítica/Zonas calientes: hub con KPIs animados + tendencia + conversión, **DashProductos** (vistos vs vendidos ERP), **DashCategorias** (líneas vendidas + vistas + conversión), nueva **DashUso** (**/admin/dashboard/uso**), heatmap con mini-tarjetas + nº de clics + preview + etiquetas con emoji.
+- ✅ `95c99d1` — **Tracking de precisión (Pass 2)**: `schema.js` +8 tipos de evento (`category_view`, `collection_view`, `editor_open`/`editor_save`, `minigame_start`/`minigame_complete`, `mission_complete`, `wishlist_add`); `tracker.js` +7 funciones; `eventData` enriquecido (`categoryId`/`collectionId`/`lineaProducto`) en `product_view`/`add_to_cart`/`purchase_complete`; agregaciones nuevas en `adminAnalytics` (`topCategoriesByViews`, `topCollectionsByViews`, `featureUsage`); eventos cableados en NichePage/EditorPage/Ruleta/BallSort/MisionesPage.
+- ✅ `b7508c1` — **Storefront con el design system**: PremiumProductCard (glass + hover + entrada al viewport + badge de descuento), esqueletos glass, HeroBanner/BrandMarquee/BestSellersRow (AuroraBackground + GlassButton + Reveal/Stagger), transición de página solo-opacidad, Header/BottomNav glass; Checkout/Cart/Perfil/CuentaPedidos en modo conservador (sin tocar la lógica de compra).
+- ✅ `8fa1888` — **Fix del checkout**: el botón de pago no avanzaba porque Formik bloqueaba en silencio (validación de DNI de 8 dígitos para Perú). Se relajó la validación del documento (≥3 caracteres, cualquier tipo) + aviso (toast) y scroll al primer campo con error.
+- ✅ `8bb7293` — **Auto-cobro por país + moneda local/USD**: `src/constants/currencies.js` (país→moneda con nombre natural), `src/services/fx.js` (lee `config/fx` con fallback + margen); CheckoutPage muestra la moneda local + "Pagarás X USD por PayPal" y auto-abre Culqi (Perú); PaypalCheckout cobra en `amountUsd` + corrige el update a `pedidos_web`. **Cloud Functions escritas y desplegadas por Cloud Shell**: `culqiWebhook` (marca `pedidos_web` pagado, idempotente), recálculo de monto server-side en `processCulqiPayment` (cierra H-11), `updateFxRate` (cron diario que puebla `config/fx` desde una API de FX).
+- ✅ `c540614` — **Fix de moneda local**: `penToLocal` indexaba por país pero `config/fx` guarda por código de moneda; + guard de monto mínimo de PayPal (1 USD).
+- ✅ `33285b4` — **Fix del parpadeo del menú del header**: cacheo de `storeConfig` en `localStorage` + no mostrar el menú por defecto mientras carga; + guarda del permiso de notificaciones (solo lo pide si `Notification.permission === 'default'`).
+- ✅ `cf47546` — **Wishlist en el header**: badge con la cantidad de productos en el corazón + tira de miniaturas en el desplegable de favoritos.
+- 🔧 **Seguridad**: se publicaron reglas y se **revirtieron** porque rompían el ERP (el ERP no usa Firebase Auth; sus peticiones llegan sin identidad). Track de seguridad **PENDIENTE**: App Check o migrar el ERP a Firebase Auth. Se sembró `config/fx` con tasas en vivo.
+- ⬜ **Pendiente del usuario**: registrar la URL de `culqiWebhook` en el panel de Culqi (estaba caído) y verificar que `REACT_APP_PAYPAL_CLIENT_ID` esté en Vercel (si no, PayPal corre en SANDBOX).
+- ⬜ **Plan nuevo (por implementar)**: "Mis fechas especiales" (registro de regalos por fecha en `/regalar/:referralCode`) + "Agregar todo al carrito" en la wishlist. Spec completa en [docs/wala/PLAN-FECHAS-ESPECIALES.md](docs/wala/PLAN-FECHAS-ESPECIALES.md).
 
 ## [2026-06-25] — DESPLIEGUE A PRODUCCIÓN (sistema-gestion-3b225)
 Ver detalle y pendientes en [docs/wala/DESPLIEGUE-ESTADO.md](docs/wala/DESPLIEGUE-ESTADO.md).
