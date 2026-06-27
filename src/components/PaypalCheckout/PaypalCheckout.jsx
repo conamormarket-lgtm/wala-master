@@ -169,16 +169,23 @@ const PaypalCheckout = ({
         </div>
       )}
 
-      <div style={{ display: isProcessing ? 'none' : 'block' }}>
-        <PayPalScriptProvider options={initialOptions}>
-          <PayPalButtons
-            createOrder={createOrder}
-            onApprove={onApprove}
-            onError={onError}
-            style={{ layout: "vertical", shape: "rect" }}
-          />
-        </PayPalScriptProvider>
-      </div>
+      {Number(amountInUSD) < 1 ? (
+        // PayPal rechaza órdenes < 1.00 USD: evitamos un error confuso y derivamos a WhatsApp.
+        <div style={{ color: '#92400e', backgroundColor: '#fffbeb', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem', textAlign: 'center' }}>
+          El monto mínimo para pagar por PayPal es <strong>1.00 USD</strong>. Para este pedido, por favor coordina el pago por WhatsApp.
+        </div>
+      ) : (
+        <div style={{ display: isProcessing ? 'none' : 'block' }}>
+          <PayPalScriptProvider options={initialOptions}>
+            <PayPalButtons
+              createOrder={createOrder}
+              onApprove={onApprove}
+              onError={onError}
+              style={{ layout: "vertical", shape: "rect" }}
+            />
+          </PayPalScriptProvider>
+        </div>
+      )}
 
       {isProcessing && (
         <div style={{ textAlign: 'center', color: '#3b82f6', padding: '1.5rem', background: '#eff6ff', borderRadius: '8px' }}>

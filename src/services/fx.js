@@ -8,9 +8,9 @@
 //   {
 //     penPerUsd: number,            // cuántos PEN equivalen a 1 USD (p.ej. 3.8)
 //     margin:    number,            // margen de cobro FX, p.ej. 0.04 = 4%
-//     localPerUsd: { ISO: number }, // tasas locales por país: cuántas unidades
-//                                   //   de la moneda local equivalen a 1 USD
-//                                   //   (p.ej. { CO: 4000, AR: 950 })
+//     localPerUsd: { ISO_MONEDA: number }, // tasas por CÓDIGO DE MONEDA (no país):
+//                                   //   cuántas unidades de esa moneda = 1 USD
+//                                   //   (p.ej. { COP: 4000, ARS: 950, EUR: 0.9 })
 //     updatedAt: Timestamp          // marca de tiempo de la última actualización
 //   }
 //
@@ -24,6 +24,7 @@
 
 import { db } from './firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
+import { getCurrency } from '../constants/currencies';
 
 // Clave y ventana de validez de la caché en localStorage.
 const FX_CACHE_KEY = 'wala_fx_cache';
@@ -207,11 +208,14 @@ export function penToLocal(penAmount, countryCode, fx) {
       ? fx.penPerUsd
       : FX_FALLBACK.penPerUsd;
 
-  const iso = typeof countryCode === 'string' ? countryCode.toUpperCase() : '';
+  // config/fx indexa localPerUsd por CÓDIGO DE MONEDA (COP, ARS, EUR…), NO por país.
+  // Mapeamos país→moneda con getCurrency. Para PEN/USD no aplica un "equivalente local".
+  const moneda = getCurrency(countryCode)?.iso || '';
+  if (moneda === 'PEN' || moneda === 'USD') return null;
   const localPerUsd =
     fx && fx.localPerUsd && typeof fx.localPerUsd === 'object' ? fx.localPerUsd : {};
 
-  const rate = localPerUsd[iso];
+  const rate = localPerUsd[moneda];
 
   // Sin tasa para ese país -> null (el caller decide qué mostrar).
   if (typeof rate !== 'number' || !isFinite(rate) || rate <= 0) return null;
