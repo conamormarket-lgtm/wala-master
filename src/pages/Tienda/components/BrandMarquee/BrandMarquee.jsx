@@ -14,21 +14,51 @@ const BrandMarquee = ({ items = [], speed = 15, title = 'Empresas con las que tr
   // exactamente dos copias de la lista para un desplazamiento sin saltos.
   const loopItems = [...items, ...items];
 
-  // Renderiza el contenido (logo circular + nombre) de un item.
-  const renderContent = (item) => (
-    <>
-      <div className={styles.logoCircle}>
-        <img
-          src={item.imageUrl}
-          alt={item.name}
-          className={styles.brandImage}
-        />
-      </div>
-      {item.name && (
-        <span className={styles.brandName}>{item.name}</span>
-      )}
-    </>
-  );
+  // Mapa de forma del marco → clase CSS (clip-path). Retrocompatible:
+  // si el item no trae shape (items viejos), usamos 'circle' por defecto.
+  const shapeClassMap = {
+    circle: styles.shapeCircle,
+    square: styles.shapeSquare,
+    star: styles.shapeStar,
+    pentagon: styles.shapePentagon,
+  };
+
+  // Renderiza el contenido (logo con forma + nombre) de un item.
+  const renderContent = (item) => {
+    // Forma del marco (default 'circle' para items sin shape).
+    const shape = item.shape || 'circle';
+    const shapeClass = shapeClassMap[shape] || styles.shapeCircle;
+
+    // Zoom y posición manual de la imagen dentro del marco.
+    // Retrocompatible: si no vienen, zoom=1 y posición centrada 50/50.
+    const zoom = item.zoom != null ? item.zoom : 1;
+    const posX = item.posX != null ? item.posX : 50;
+    const posY = item.posY != null ? item.posY : 50;
+
+    // El zoom/posición son dinámicos por item → estilos inline.
+    // object-fit:cover lo aporta la clase .brandImage del module.css.
+    const imageStyle = {
+      transform: `scale(${zoom})`,
+      objectPosition: `${posX}% ${posY}%`,
+    };
+
+    return (
+      <>
+        {/* Marco: la clase de forma aplica el clip-path correspondiente */}
+        <div className={`${styles.logoCircle} ${shapeClass}`}>
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className={styles.brandImage}
+            style={imageStyle}
+          />
+        </div>
+        {item.name && (
+          <span className={styles.brandName}>{item.name}</span>
+        )}
+      </>
+    );
+  };
 
   return (
     // Reveal a nivel del CONTENEDOR (no del track): la cascada de entrada del

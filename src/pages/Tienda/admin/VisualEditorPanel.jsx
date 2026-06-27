@@ -14,6 +14,221 @@ import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft
 
 import TypographyControl from './editor/controls/TypographyControl';
 import BackgroundStylesControl from './editor/controls/BackgroundStylesControl';
+// Subida de imágenes a NUESTRO Firebase Storage (control propio, no se rompe si una URL externa muere)
+import { uploadFile } from '../../../services/firebase/storage';
+
+// --- Carrusel de Marcas: utilidades de forma del marco (clip-path) ---
+// Mapa de formas soportadas para el marco de cada logo del carrusel.
+// 'circle' es el valor por defecto y retrocompatible con items viejos sin shape.
+const BRAND_CLIP_PATHS = {
+  // Círculo perfecto
+  circle: 'circle(50% at 50% 50%)',
+  // Cuadrado completo (sin recorte real, pero deja el borde recto)
+  square: 'inset(0% round 8px)',
+  // Estrella de 5 puntas
+  star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+  // Pentágono regular
+  pentagon: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)'
+};
+
+// Devuelve el clip-path CSS para una forma dada (default círculo). Retrocompatible.
+const getBrandClipPath = (shape) => BRAND_CLIP_PATHS[shape] || BRAND_CLIP_PATHS.circle;
+
+/**
+ * Editor de UNA marca del carrusel ("EMPRESAS CON LAS QUE TRABAJAMOS").
+ * Componente auxiliar a nivel de módulo para poder tener su PROPIO estado de
+ * "Subiendo..." por marca (los hooks no pueden vivir dentro de un .map()).
+ *
+ * Contrato del item: { name, imageUrl, link, shape, zoom, posX, posY }
+ * Retrocompatible: si faltan shape/zoom/posX/posY se asume circle / 1 / 50 / 50.
+ *
+ * @param {object} props.item        Item de marca actual
+ * @param {number} props.itemIndex   Índice (para el título "Marca N")
+ * @param {(updates:object)=>void} props.onUpdate  Aplica cambios parciales al item
+ * @param {()=>void} props.onRemove  Elimina esta marca
+ */
+const MarqueeBrandItem = ({ item, itemIndex, onUpdate, onRemove }) => {
+  // Estado de subida propio de ESTA marca (no afecta a las demás)
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState(null);
+
+  // Valores con defaults (retrocompatibilidad con items antiguos)
+  const shape = item.shape || 'circle';
+  const zoom = typeof item.zoom === 'number' ? item.zoom : 1;
+  const posX = typeof item.posX === 'number' ? item.posX : 50;
+  const posY = typeof item.posY === 'number' ? item.posY : 50;
+
+  // Maneja la subida del archivo a NUESTRO Storage y guarda la url en item.imageUrl
+  const handleFileChange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setIsUploading(true);
+    setUploadError(null);
+    try {
+      // Ruta propia dentro de nuestro Storage para logos de marcas
+      const path = 'storefront/brands/' + Date.now() + '_' + file.name;
+      const { url, error } = await uploadFile(file, path);
+      if (error || !url) {
+        const msg = error || 'No se pudo subir la imagen.';
+        setUploadError(msg);
+        console.error('[Carrusel Marcas] Error subiendo imagen:', msg);
+      } else {
+        // Guardamos la URL devuelta por Storage (controlada por nosotros)
+        onUpdate({ imageUrl: url });
+      }
+    } catch (err) {
+      setUploadError(err.message);
+      console.error('[Carrusel Marcas] Excepción subiendo imagen:', err);
+    } finally {
+      setIsUploading(false);
+      // Permitir volver a elegir el mismo archivo si hiciera falta
+      e.target.value = '';
+    }
+  };
+
+  return (
+    <div style={{background: '#f9f9f9', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #eee'}}>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+        <strong>Marca {itemIndex + 1}</strong>
+        <button
+          onClick={onRemove}
+          style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
+        ><Trash2 size={16} strokeWidth={1.5} /></button>
+      </div>
+
+      <label>Nombre de la Marca (Texto debajo)</label>
+      <input
+        type="text"
+        value={item.name || ''}
+        onChange={e => onUpdate({ name: e.target.value })}
+        style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+      />
+
+      {/* --- Vista previa en vivo del marco con la imagen --- */}
+      <label>Vista Previa del Marco</label>
+      <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px'}}>
+        <div
+          style={{
+            width: '80px',
+            height: '80px',
+            flex: '0 0 80px',
+            background: '#fff',
+            border: '1px solid #ddd',
+            overflow: 'hidden',
+            clipPath: getBrandClipPath(shape),
+            WebkitClipPath: getBrandClipPath(shape),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          {item.imageUrl ? (
+            <img
+              src={item.imageUrl}
+              alt={item.name || 'Marca'}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: `${posX}% ${posY}%`,
+                transform: `scale(${zoom})`,
+                transformOrigin: 'center center'
+              }}
+            />
+          ) : (
+            <span style={{fontSize: '0.7rem', color: '#aaa', textAlign: 'center', padding: '4px'}}>Sin imagen</span>
+          )}
+        </div>
+        <div style={{fontSize: '0.75rem', color: '#666'}}>
+          Así se verá el logo dentro del marco elegido.
+        </div>
+      </div>
+
+      {/* --- Subir foto a NUESTRO Storage (recomendado) --- */}
+      <label>Subir Foto del Logo (recomendado)</label>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        disabled={isUploading}
+        style={{width: '100%', marginBottom: '6px'}}
+      />
+      {isUploading && (
+        <div style={{fontSize: '0.8rem', color: '#e60278', marginBottom: '8px'}}>Subiendo...</div>
+      )}
+      {uploadError && (
+        <div style={{fontSize: '0.8rem', color: '#ff4444', marginBottom: '8px'}}>Error: {uploadError}</div>
+      )}
+
+      {/* --- URL manual (opción avanzada, no se borra) --- */}
+      <label>URL de la Imagen (opción avanzada)</label>
+      <input
+        type="text"
+        placeholder="https://..."
+        value={item.imageUrl || ''}
+        onChange={e => onUpdate({ imageUrl: e.target.value })}
+        style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+      />
+
+      {/* --- Forma del marco --- */}
+      <label>Forma del Marco</label>
+      <select
+        value={shape}
+        onChange={e => onUpdate({ shape: e.target.value })}
+        style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+      >
+        <option value="circle">Círculo</option>
+        <option value="square">Cuadrado</option>
+        <option value="star">Estrella</option>
+        <option value="pentagon">Pentágono</option>
+      </select>
+
+      {/* --- Zoom y posición de la imagen dentro del marco --- */}
+      <label>Zoom ({zoom.toFixed(2)}x)</label>
+      <input
+        type="range"
+        min="1"
+        max="3"
+        step="0.05"
+        value={zoom}
+        onChange={e => onUpdate({ zoom: Number(e.target.value) })}
+        style={{width: '100%', marginBottom: '10px'}}
+      />
+
+      <label>Posición Horizontal ({posX}%)</label>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value={posX}
+        onChange={e => onUpdate({ posX: Number(e.target.value) })}
+        style={{width: '100%', marginBottom: '10px'}}
+      />
+
+      <label>Posición Vertical ({posY}%)</label>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value={posY}
+        onChange={e => onUpdate({ posY: Number(e.target.value) })}
+        style={{width: '100%', marginBottom: '10px'}}
+      />
+
+      {/* --- Enlace de destino --- */}
+      <label>Enlace de Destino (Para imagen y texto)</label>
+      <input
+        type="text"
+        placeholder="Ej: /tienda"
+        value={item.link || ''}
+        onChange={e => onUpdate({ link: e.target.value })}
+        style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+      />
+    </div>
+  );
+};
 
 const LandingPageSettingsBox = ({ slug }) => {
   const [lp, setLp] = React.useState(null);
@@ -1166,66 +1381,35 @@ const VisualEditorPanel = () => {
 
             <h5 style={{marginBottom: '10px', marginTop: '10px'}}>Marcas</h5>
             {(s.items || []).map((item, itemIndex) => (
-              <div key={itemIndex} style={{background: '#f9f9f9', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #eee'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
-                  <strong>Marca {itemIndex + 1}</strong>
-                  <button 
-                    onClick={() => {
-                      const newSections = [...storeConfigDraft.sections];
-                      newSections[dynamicSectionIndex].settings.items.splice(itemIndex, 1);
-                      updateSectionsDraft(newSections);
-                    }}
-                    style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
-                  ><Trash2 size={16} strokeWidth={1.5} /></button>
-                </div>
-
-                <label>Nombre de la Marca (Texto debajo)</label>
-                <input 
-                  type="text" 
-                  value={item.name || ''} 
-                  onChange={e => {
-                    const newSections = [...storeConfigDraft.sections];
-                    newSections[dynamicSectionIndex].settings.items[itemIndex].name = e.target.value;
-                    updateSectionsDraft(newSections);
-                  }}
-                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
-                />
-
-                <label>URL de la Imagen (Logo circular)</label>
-                <input 
-                  type="text" 
-                  placeholder="https://..."
-                  value={item.imageUrl || ''} 
-                  onChange={e => {
-                    const newSections = [...storeConfigDraft.sections];
-                    newSections[dynamicSectionIndex].settings.items[itemIndex].imageUrl = e.target.value;
-                    updateSectionsDraft(newSections);
-                  }}
-                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
-                />
-
-                <label>Enlace de Destino (Para imagen y texto)</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej: /tienda"
-                  value={item.link || ''} 
-                  onChange={e => {
-                    const newSections = [...storeConfigDraft.sections];
-                    newSections[dynamicSectionIndex].settings.items[itemIndex].link = e.target.value;
-                    updateSectionsDraft(newSections);
-                  }}
-                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
-                />
-              </div>
+              <MarqueeBrandItem
+                key={itemIndex}
+                item={item}
+                itemIndex={itemIndex}
+                // Aplica cambios parciales al item siguiendo el MISMO patrón de actualización existente
+                onUpdate={(updates) => {
+                  const newSections = [...storeConfigDraft.sections];
+                  newSections[dynamicSectionIndex].settings.items[itemIndex] = {
+                    ...newSections[dynamicSectionIndex].settings.items[itemIndex],
+                    ...updates
+                  };
+                  updateSectionsDraft(newSections);
+                }}
+                onRemove={() => {
+                  const newSections = [...storeConfigDraft.sections];
+                  newSections[dynamicSectionIndex].settings.items.splice(itemIndex, 1);
+                  updateSectionsDraft(newSections);
+                }}
+              />
             ))}
 
-            <button 
+            <button
               onClick={() => {
                 const newSections = [...storeConfigDraft.sections];
                 if (!newSections[dynamicSectionIndex].settings.items) {
                   newSections[dynamicSectionIndex].settings.items = [];
                 }
-                newSections[dynamicSectionIndex].settings.items.push({ name: 'Nueva Marca', imageUrl: '', link: '' });
+                // Defaults nuevos del contrato de marca (retrocompatible)
+                newSections[dynamicSectionIndex].settings.items.push({ name: 'Nueva Marca', imageUrl: '', link: '', shape: 'circle', zoom: 1, posX: 50, posY: 50 });
                 updateSectionsDraft(newSections);
               }}
               style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '15px'}}

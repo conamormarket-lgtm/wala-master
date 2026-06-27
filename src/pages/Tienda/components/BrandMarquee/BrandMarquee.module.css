@@ -55,13 +55,59 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  /* overflow:hidden imprescindible para que el zoom (scale) no se desborde
+     fuera del marco. */
   overflow: hidden;
 }
 
+/* --- FORMAS DEL MARCO (clip-path por marca) ---
+   Una clase por forma; se combinan con .logoCircle. El tamaño del marco
+   no cambia. Si el item no trae shape, el JSX aplica .shapeCircle por defecto. */
+
+/* Círculo: borde redondeado al 100% (mantiene el look original). */
+.shapeCircle {
+  border-radius: 50%;
+  clip-path: circle(50%);
+}
+
+/* Cuadrado: esquinas suaves, sin recorte poligonal. */
+.shapeSquare {
+  border-radius: 12px;
+  clip-path: none;
+}
+
+/* Estrella de 5 puntas. */
+.shapeStar {
+  border-radius: 0;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+}
+
+/* Pentágono. */
+.shapePentagon {
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+}
+
 .brandImage {
-  width: 70%;
-  height: 70%;
-  object-fit: contain;
+  /* Llena el marco para que zoom (scale) y posición (object-position)
+     se vean bien ajustados. El recorte de forma lo aporta el marco. */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* object-position por defecto centrado; el JSX lo sobreescribe inline por
+     item junto con el transform:scale del zoom. */
+  object-position: 50% 50%;
 }
 
 .brandsTitle {
