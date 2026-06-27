@@ -165,6 +165,10 @@ export const CartProvider = ({ children }) => {
       variant: { ...variant, selectedVariant: selectedVariant ?? null },
       customization,
       quantity,
+      // Selección de compra: por defecto el item se compra (true).
+      // "No comprar esta vez" lo deja en false → excluido del total/contador/pago,
+      // pero permanece en el carrito (reversible con "Comprar esta vez").
+      selected: true,
       addedAt: new Date().toISOString(),
       // ── Contexto de REGALO (wishlist pública / registro de regalos por fecha) ──
       // ADITIVO: solo se copia si el producto trae los flags (WishlistPublic / GiftRegistryPage).
@@ -278,12 +282,34 @@ export const CartProvider = ({ children }) => {
     localStorage.removeItem(CART_STORAGE_KEY);
   }, []);
 
+  // Alterna la selección de compra de un item (true ↔ false).
+  // Los items sin la propiedad 'selected' se consideran seleccionados.
+  const toggleItemSelected = React.useCallback((itemId) => {
+    setItems(prev =>
+      prev.map(i =>
+        i.id === itemId
+          ? { ...i, selected: i.selected === false ? true : false }
+          : i
+      )
+    );
+  }, []);
+
+  // Tras pagar: conserva SOLO los items NO seleccionados ("no comprar esta vez").
+  // Los items seleccionados (los que se pagaron) se quitan del carrito.
+  // El efecto existente sincroniza localStorage/Firestore automáticamente.
+  const clearSelectedItems = React.useCallback(() => {
+    setItems(prev => prev.filter(i => i.selected === false));
+  }, []);
+
   const getTotalItems = React.useCallback(() => {
-    return items.reduce((total, item) => total + item.quantity, 0);
+    // Excluye del contador los items deseleccionados (selected === false).
+    return items.reduce((total, item) => total + (item.selected !== false ? item.quantity : 0), 0);
   }, [items]);
 
   const getTotalPrice = React.useCallback(() => {
     return items.reduce((total, item) => {
+      // Los items deseleccionados no suman al total (no se cobran).
+      if (item.selected === false) return total;
       const itemPrice = item.customization?.finalPrice || item.price;
       return total + (itemPrice * item.quantity);
     }, 0);
@@ -295,10 +321,12 @@ export const CartProvider = ({ children }) => {
     removeFromCart,
     updateQuantity,
     clearCart,
+    toggleItemSelected,
+    clearSelectedItems,
     getTotalItems,
     getTotalPrice,
     isEmpty: items.length === 0
-  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, getTotalItems, getTotalPrice]);
+  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, toggleItemSelected, clearSelectedItems, getTotalItems, getTotalPrice]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

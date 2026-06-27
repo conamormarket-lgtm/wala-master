@@ -88,9 +88,18 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   // eslint-disable-next-line no-unused-vars
   // eslint-disable-next-line no-unused-vars
-  const { items, getTotalPrice, clearCart } = useCart();
+  const { items, getTotalPrice, clearSelectedItems } = useCart();
   const { user, userProfile, updateUserProfile, freezeMonedas, activeMainCoins } = useAuth();
   const toast = useGlobalToast();
+
+  // ── Selección de compra ───────────────────────────────────────────────────
+  // Solo los items seleccionados (selected !== false) se cobran y entran en el
+  // pedido/WhatsApp/analytics. Los "no comprar esta vez" quedan en el carrito.
+  // getTotalPrice() ya viene filtrado por el contexto, por lo que el MONTO no se
+  // toca aquí; selectedItems se usa SOLO para armar el detalle del pedido.
+  const selectedItems = items.filter((i) => i.selected !== false);
+  // Si no hay ningún item seleccionado, no se puede pagar.
+  const hasSelectedItems = selectedItems.length > 0;
 
   const [processing, setProcessing] = useState(false);
   const [useCoinsToggle, setUseCoinsToggle] = useState(false);
@@ -261,6 +270,12 @@ const CheckoutPage = () => {
     validationSchema,
     onSubmit: async (values) => {
 
+      // GUARD (dinero): no se puede generar un pedido sin items seleccionados.
+      if (selectedItems.length === 0) {
+        toast.error('Selecciona al menos un producto para pagar.');
+        return;
+      }
+
       setProcessing(true);
 
       try {
@@ -279,7 +294,8 @@ const CheckoutPage = () => {
         const clienteApellidos = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
         // ── Construir string de prendas (resumen de ítems del carrito) ─────
-        const prendasStr = items
+        // Solo los items seleccionados ("comprar esta vez") entran en el pedido.
+        const prendasStr = selectedItems
           .map((item) => {
             if (item.isComboProduct) {
               // Para combos: listar cada sub-producto con su talla y color
@@ -303,7 +319,7 @@ const CheckoutPage = () => {
         // ── Construir mapa de productos (estructura ERP: productos) ────────
         // Para combos: incluye sub-productos, tallas, colores y diseños por vista (frente/espalda)
         const productosMap = {};
-        items.forEach((item, idx) => {
+        selectedItems.forEach((item, idx) => {
           const precioItem = item.customization?.finalPrice || item.price || 0;
           const subtotalItem = precioItem * (item.quantity || 1);
 
@@ -540,13 +556,13 @@ const CheckoutPage = () => {
 
           // ─ Prendas y productos ─
           prendas: prendasStr,
-          cantidad: items.reduce((acc, i) => acc + (i.quantity || 1), 0),
+          cantidad: selectedItems.reduce((acc, i) => acc + (i.quantity || 1), 0),
           productos: productosMap,
           lineaProducto: '',
           añadidos: [],
 
           // ─ Flags de tipo de pedido ─
-          esPersonalizado: items.some(
+          esPersonalizado: selectedItems.some(
             (i) => !!(i.customization?.text || i.customization?.imageURL)
           ),
           esMostacero: false,
@@ -554,7 +570,7 @@ const CheckoutPage = () => {
           importado: false,
 
           // ─ Imágenes de diseños personalizados (Mapeo completo galería) ─
-          imageURLs: items
+          imageURLs: selectedItems
             .flatMap((i) => {
               const urls = [];
               if (i.customization?.imageURL) urls.push(i.customization.imageURL);
@@ -654,7 +670,7 @@ const CheckoutPage = () => {
 
         // ── 1.5 Procesar Regalos de Wishlist ──────────────────────────────
         try {
-          const wishlistGifts = items.filter(item => item.isWishlistGift && item.wishlistUserCode);
+          const wishlistGifts = selectedItems.filter(item => item.isWishlistGift && item.wishlistUserCode);
           for (const gift of wishlistGifts) {
             await markItemAsGifted(gift.wishlistUserCode, gift.productId, values.customerName);
           }
@@ -701,7 +717,7 @@ const CheckoutPage = () => {
         }
 
         message += `Detalle de Compra:\n`;
-        items.forEach((item, index) => {
+        selectedItems.forEach((item, index) => {
           message += `${index + 1}. ${item.productName}\n`;
           message += `   Cantidad: ${item.quantity}\n`;
           if (item.variant && item.variant.size) {
@@ -827,7 +843,7 @@ const CheckoutPage = () => {
 
   // ── Analytics: emitir purchase_complete al confirmar el pedido ──────────────
   // Se invoca en el onSuccess de Culqi/PayPal y al confirmar por WhatsApp.
-  // Captura los datos ANTES de clearCart() (que vacía el carrito). Idempotente.
+  // Captura los datos ANTES de clearSelectedItems() (que vacía los pagados). Idempotente.
   const purchaseSentRef = useRef(false);
   const emitPurchaseComplete = React.useCallback(
     (method) => {
@@ -837,7 +853,8 @@ const CheckoutPage = () => {
         const orderTotal = paymentStepData?.montoDeuda ?? total;
         // ── Detalle por ítem del carrito (aditivo): solo se añaden los campos
         // que el ítem realmente tenga; los IDs ausentes se omiten (no se inventan). ──
-        const purchaseItems = items.map((i) => ({
+        // Solo los items seleccionados ("comprar esta vez") cuentan en analytics.
+        const purchaseItems = selectedItems.map((i) => ({
           productId: i.productId,
           qty: i.quantity || 1,
           price: i.customization?.finalPrice || i.price || 0,
@@ -850,7 +867,7 @@ const CheckoutPage = () => {
             orderId: paymentStepData?.id || null,
             total: orderTotal,
             totalCents: Math.round((orderTotal || 0) * 100),
-            itemsCount: items.reduce((acc, i) => acc + (i.quantity || 1), 0),
+            itemsCount: selectedItems.reduce((acc, i) => acc + (i.quantity || 1), 0),
             items: purchaseItems,
             method,
             currency: 'PEN',
@@ -861,7 +878,7 @@ const CheckoutPage = () => {
         // Tracking nunca debe afectar la confirmación del pedido.
       }
     },
-    [paymentStepData, total, items, analyticsUserCtx]
+    [paymentStepData, total, selectedItems, analyticsUserCtx]
   );
 
   // ── Autodetección de país (solo si el usuario NO ha tocado el selector y no hay país en perfil) ──
@@ -942,7 +959,8 @@ const CheckoutPage = () => {
                       autoOpen={true}
                       onSuccess={() => {
                         emitPurchaseComplete('culqi');
-                        clearCart();
+                        // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
+                        clearSelectedItems();
                         navigate('/cuenta/pedidos');
                       }}
                     />
@@ -953,7 +971,8 @@ const CheckoutPage = () => {
                       onClick={() => {
                         emitPurchaseComplete('whatsapp');
                         window.open(paymentStepData.waLink, '_blank');
-                        clearCart();
+                        // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
+                        clearSelectedItems();
                         navigate('/cuenta/pedidos');
                       }}
                       variant="ghost"
@@ -981,7 +1000,8 @@ const CheckoutPage = () => {
                       })()}
                       onSuccess={() => {
                         emitPurchaseComplete('paypal');
-                        clearCart();
+                        // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
+                        clearSelectedItems();
                         navigate('/cuenta/pedidos');
                       }}
                     />
@@ -992,7 +1012,8 @@ const CheckoutPage = () => {
                       onClick={() => {
                         emitPurchaseComplete('whatsapp');
                         window.open(paymentStepData.waLink, '_blank');
-                        clearCart();
+                        // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
+                        clearSelectedItems();
                         navigate('/cuenta/pedidos');
                       }}
                       variant="ghost"
@@ -1260,11 +1281,17 @@ const CheckoutPage = () => {
               )}
             </div>
 
+            {/* GUARD (dinero): aviso si no hay ningún producto seleccionado para pagar. */}
+            {!hasSelectedItems && (
+              <p style={{ margin: '0 0 0.75rem', padding: '0.75rem 1rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#b91c1c', fontSize: '0.875rem' }}>
+                Selecciona al menos un producto para pagar. Vuelve al carrito y marca "Comprar esta vez".
+              </p>
+            )}
             <div className={styles.buttonGroup}>
               <Button type="button" variant="outline" onClick={() => navigate('/carrito')} disabled={processing} fullWidth>
                 Volver al carrito
               </Button>
-              <GlassButton type="submit" variant="primary" loading={processing} disabled={processing} fullWidth>
+              <GlassButton type="submit" variant="primary" loading={processing} disabled={processing || !hasSelectedItems} fullWidth>
                 {processing ? 'Generando...' : 'Confirmar y Seleccionar Pago'}
               </GlassButton>
             </div>

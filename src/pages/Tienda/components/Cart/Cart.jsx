@@ -28,6 +28,12 @@ const Cart = () => {
     return null;
   }, [isPendingConfirmation, items]);
 
+  // Cantidad de items marcados como "no comprar esta vez" (quedan en el carrito).
+  const deselectedCount = useMemo(
+    () => items.filter(item => item.selected === false).length,
+    [items]
+  );
+
   const handleClearCart = () => {
     if (window.confirm('¿Estás seguro de que quieres cancelar este pedido y vaciar tu carrito?')) {
       clearCart();
@@ -64,6 +70,17 @@ const Cart = () => {
             <p>Tienes una solicitud de pedido activa (Código: <strong>{pendingOrderId}</strong>). Estamos esperando la confirmación del pago por WhatsApp.</p>
             <p style={{ fontSize: '0.8125rem', marginTop: '0.5rem' }}>Este carrito se limpiará automáticamente una vez confirmado el pago final en nuestras oficinas.</p>
           </div>
+        </div>
+      )}
+
+      {deselectedCount > 0 && (
+        <div className={styles.deselectedNotice}>
+          <span aria-hidden="true">🛇</span>
+          <span>
+            {deselectedCount} artículo{deselectedCount !== 1 ? 's' : ''} no se comprará
+            {deselectedCount !== 1 ? 'n' : ''} esta vez (quedará
+            {deselectedCount !== 1 ? 'n' : ''} en tu carrito).
+          </span>
         </div>
       )}
 

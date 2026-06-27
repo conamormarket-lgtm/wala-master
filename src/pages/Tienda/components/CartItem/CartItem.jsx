@@ -6,7 +6,7 @@ import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import styles from './CartItem.module.css';
 
 const CartItem = ({ item }) => {
-  const { updateQuantity, removeFromCart } = useCart();
+  const { updateQuantity, removeFromCart, toggleItemSelected } = useCart();
 
   const handleQuantityChange = (newQuantity) => {
     updateQuantity(item.id, newQuantity);
@@ -19,9 +19,11 @@ const CartItem = ({ item }) => {
   const itemPrice = item.customization?.finalPrice || item.price;
   const totalPrice = itemPrice * item.quantity;
   const isCombo = item.isComboProduct;
+  // Un item sin la propiedad 'selected' se considera seleccionado (se comprará).
+  const isSelected = item.selected !== false;
 
   return (
-    <div className={styles.item}>
+    <div className={`${styles.item} ${!isSelected ? styles.itemDeselected : ''}`}>
       <Link to={`/producto/${item.productId}`} className={styles.imageLink}>
         {isCombo && item.comboItems ? (
           <ComboProductImage
@@ -73,6 +75,16 @@ const CartItem = ({ item }) => {
         )}
         
         <div className={styles.price}>S/ {itemPrice.toFixed(2)} c/u</div>
+
+        {/* Selección de compra: deja el item en el carrito pero lo excluye/incluye del pago. */}
+        <button
+          type="button"
+          onClick={() => toggleItemSelected(item.id)}
+          className={`${styles.selectToggle} ${!isSelected ? styles.selectToggleOff : ''}`}
+          aria-pressed={!isSelected}
+        >
+          {isSelected ? 'No comprar esta vez' : '✓ Comprar esta vez'}
+        </button>
       </div>
 
       <div className={styles.quantity}>

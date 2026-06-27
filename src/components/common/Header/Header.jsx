@@ -616,7 +616,7 @@ const Header = () => {
                 ) : (
                   <div className={styles.cartPreviewContainer}>
                     <div className={styles.previewItemList}>
-                      {cartItems.slice(0, 3).map((item) => (
+                      {cartItems.filter((i) => i.selected !== false).slice(0, 3).map((item) => (
                         <div key={item.id} className={styles.previewItem}>
                           <img src={item.productImage} alt={item.productName} className={styles.previewItemImg} />
                           <div className={styles.previewItemDetails}>
@@ -625,8 +625,8 @@ const Header = () => {
                           </div>
                         </div>
                       ))}
-                      {cartItems.length > 3 && (
-                        <p className={styles.moreItemsText}>+ {cartItems.length - 3} artículos más...</p>
+                      {cartItems.filter((i) => i.selected !== false).length > 3 && (
+                        <p className={styles.moreItemsText}>+ {cartItems.filter((i) => i.selected !== false).length - 3} artículos más...</p>
                       )}
                     </div>
                     <div className={styles.cartPreviewFooter}>

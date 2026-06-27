@@ -88,6 +88,20 @@
   margin-bottom: 2rem;
 }
 
+/* Aviso discreto: items marcados como "no comprar esta vez". */
+.deselectedNotice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--gris-fondo);
+  border: 1px dashed var(--gris-borde);
+  color: var(--gris-texto-secundario);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
 .emptyCart {
   display: flex;
   flex-direction: column;

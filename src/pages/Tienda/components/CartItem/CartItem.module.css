@@ -172,6 +172,47 @@
   color: var(--rojo-principal);
 }
 
+/* ── Selección de compra ("No comprar esta vez" / "Comprar esta vez") ── */
+/* Fila atenuada cuando el item NO se comprará: se nota que no se cobrará. */
+.itemDeselected {
+  opacity: 0.55;
+  background: var(--gris-fondo);
+}
+
+/* Chip táctil (min 40px) para alternar la selección de compra del item. */
+.selectToggle {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  min-height: 40px;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 999px;
+  background: white;
+  color: var(--gris-texto-secundario);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.selectToggle:hover {
+  background: var(--gris-fondo);
+  color: var(--gris-texto-principal);
+}
+
+/* Estado deseleccionado: el chip invita a volver a comprar (acento verde). */
+.selectToggleOff {
+  border-color: #16a34a;
+  color: #16a34a;
+  /* La fila está atenuada; el chip se mantiene legible para poder revertir. */
+  opacity: 1;
+}
+
+.selectToggleOff:hover {
+  background: rgba(22, 163, 74, 0.08);
+  color: #15803d;
+}
+
 /* ══════════════════════════════
    RESPONSIVE ≤ 768px
    ══════════════════════════════ */
