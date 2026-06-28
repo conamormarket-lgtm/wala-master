@@ -1,0 +1,74 @@
+/* ═══════════════════════════════════════════════════════════════
+   LanguagePopup — banner glass discreto, anclado abajo (mobile-first)
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrapper {
+  position: fixed;
+  /* Anclado abajo, respetando la safe-area de iOS y dejando hueco a la BottomNav. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  padding: 0 0.75rem;
+  pointer-events: none; /* sólo la tarjeta captura clics */
+  animation: lp-rise 0.28s ease-out;
+}
+
+.card {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radio-grande, 16px);
+  /* Acabado glass coherente con el Header. */
+  background-color: var(--glass-bg-strong, rgba(255, 255, 255, 0.82));
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.45));
+  box-shadow: var(--sombra-suave, 0 8px 24px rgba(0, 0, 0, 0.12)),
+              var(--glass-inset-top, inset 0 1px 0 0 rgba(255, 255, 255, 0.6));
+}
+
+.title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #1f2937);
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@keyframes lp-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrapper { animation: none; }
+}
+
+/* En pantallas amplias el banner se mantiene compacto y centrado. */
+@media (min-width: 768px) {
+  .wrapper {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+  .card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 540px;
+  }
+  .title { text-align: left; }
+  .actions { flex-wrap: nowrap; }
+}

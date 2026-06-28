@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { logout } from '../../services/firebase/auth';
 import { validateDNI, validateCE, validatePhone, validateDocInternacional } from '../../utils/helpers';
-import { useProducts } from '../../hooks/useProducts';
 import AvatarStudio from '../../components/profile/AvatarStudio';
 import CountrySelect from '../../components/intl/CountrySelect';
 import PhoneIntlInput from '../../components/intl/PhoneIntlInput';
@@ -49,7 +48,6 @@ const PerfilPage = () => {
   const navigate = useNavigate();
   const { user, userProfile, updateUserProfile } = useAuth();
   const toast = useGlobalToast();
-  const { data: allProducts } = useProducts([]);
 
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -86,18 +84,6 @@ const PerfilPage = () => {
   const referralCode = `KS-${(user?.uid || 'USER').substring(0, 6).toUpperCase()}`;
   const kapiSolBalance = userProfile?.monedas || 0;
   const kapiSolEspera = userProfile?.monedasEnEspera || 0;
-
-  const clothingItems = useMemo(() => {
-    const baseItems = [{ id: 'none', name: 'Sin Ropa' }];
-    if (!allProducts) return baseItems;
-    const clothes = allProducts.filter(p => {
-      const pName = p.name?.toLowerCase() || '';
-      const pCat = p.category?.toLowerCase() || '';
-      return pName.includes('polo') || pName.includes('camiseta') || pName.includes('ropa') ||
-        pCat.includes('polo') || pCat.includes('ropa');
-    });
-    return [...baseItems, ...clothes];
-  }, [allProducts]);
 
   useEffect(() => {
     if (userProfile) {
@@ -312,13 +298,12 @@ const PerfilPage = () => {
         <StaggerItem as="div">
           <GlassCard variant="solid" animate={false} padding="lg" hover>
             <div className={styles.cardHeader}>
-              <div className={styles.headerIcon}><Icons.Shirt /></div>
-              <h3>Avatar Studio</h3>
+              <div className={styles.headerIcon}><Icons.User /></div>
+              <h3>Foto de Perfil</h3>
             </div>
             <AvatarStudio
               config={avatarConfig}
               setConfig={setAvatarConfig}
-              clothingItems={clothingItems}
               onSave={handleSaveAvatar}
               isSaving={isAvatarSaving}
             />

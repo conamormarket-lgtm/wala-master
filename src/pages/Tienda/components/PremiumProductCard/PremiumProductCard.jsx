@@ -8,6 +8,7 @@ import { getBrands } from '../../../../services/brands';
 import { useCart } from '../../../../contexts/CartContext';
 import { useWishlist } from '../../../../contexts/WishlistContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
+import { useLanguage } from '../../../../contexts/LanguageContext';
 import { toThumbnailImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
@@ -40,6 +41,7 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
 
   const { isFavorite, toggleFavorite } = useWishlist();
   const { addToast } = useGlobalToast();
+  const { t } = useLanguage();
 
   // Respeta prefers-reduced-motion: con menos movimiento, entrada de solo opacity.
   const reducido = useReducedMotionSafe();
@@ -242,7 +244,7 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
             disabled={!product.inStock}
           >
             <span className={styles.quickAddIcon}>+</span>
-            <span className={styles.quickAddText}>Al carrito</span>
+            <span className={styles.quickAddText}>{t('cta.addToCart', 'Al carrito')}</span>
           </button>
         </div>
       </div>

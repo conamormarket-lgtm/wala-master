@@ -128,6 +128,11 @@
     box-shadow: 0 12px 25px rgba(217, 35, 45, 0.35);
 }
 
+.btnSecondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .btnPrimary:disabled {
     background: #cbd5e1;
     box-shadow: none;
@@ -135,63 +140,10 @@
     color: #94a3b8;
 }
 
-/* ── iframe Creator UI ── */
-.iframeWrapper {
-    display: flex;
-    flex-direction: column;
-    height: 80vh;
-    min-height: 500px;
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 2px solid #e2e8f0;
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.iframeHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    background: #fff;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.iframeHeader h4 {
+/* Mensaje de error cuando falla la subida de la foto. */
+.uploadError {
     margin: 0;
-    color: #0f172a;
-}
-
-.closeBtn {
-    background: #f1f5f9;
-    color: #475569;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
+    color: var(--rojo-principal, #d9232d);
+    font-size: 0.9rem;
     font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.closeBtn:hover {
-    background: #e2e8f0;
-}
-
-.rpmIframe {
-    flex: 1;
-    width: 100%;
-    border: none;
-    background: #fff;
 }

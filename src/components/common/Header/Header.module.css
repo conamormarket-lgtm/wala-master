@@ -1158,3 +1158,59 @@
     box-shadow: 0 4px 30px rgba(139, 92, 246, 0.7);
   }
 }
+
+/* ═══════════════════════════════════════════
+   TOGGLE DE IDIOMA (ES / EN / PT) — segmentado glass
+   ═══════════════════════════════════════════ */
+.langToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radio-grande, 12px);
+  background-color: var(--gris-hover, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--gris-borde, rgba(0, 0, 0, 0.08));
+  flex-shrink: 0;
+}
+
+.langOption {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--gris-texto-secundario, #6b7280);
+  padding: 0.28rem 0.42rem;
+  border-radius: var(--radio-pequeno, 8px);
+  line-height: 1;
+  transition: var(--transicion-rapida, all 0.15s ease);
+}
+
+.langOption:hover {
+  color: var(--gris-texto-principal, #1f2937);
+}
+
+.langOptionActive {
+  color: var(--rojo-principal, #8b5cf6);
+  background-color: var(--blanco, #fff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 0 0 1px var(--gris-borde, rgba(0, 0, 0, 0.06));
+}
+
+/* En móvil el toggle se vuelve más compacto para no apretar los íconos. */
+@media (max-width: 768px) {
+  .langOption {
+    padding: 0.24rem 0.34rem;
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 380px) {
+  /* En pantallas muy estrechas ocultamos el toggle: el popup y el navegador
+     ya cubren la elección de idioma; evitamos saturar la barra de acciones. */
+  .langToggle {
+    display: none;
+  }
+}

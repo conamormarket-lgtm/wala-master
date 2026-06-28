@@ -8,6 +8,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { VisualEditorProvider } from './pages/Tienda/contexts/VisualEditorContext';
 import { LayoutProvider } from './contexts/LayoutContext';
 import { WishlistProvider } from './contexts/WishlistContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import AdminNotifications from './pages/admin/AdminNotifications/AdminNotifications';
 import AdminRoute from './components/AdminRoute/AdminRoute';
 import RouteTracker from './components/analytics/RouteTracker';
@@ -35,6 +36,7 @@ import PackageBubble from './components/common/PackageBubble/PackageBubble';
 import VisualEditorPanel from './pages/Tienda/admin/VisualEditorPanel';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 import SystemAlert from './components/common/SystemAlert/SystemAlert';
+import LanguagePopup from './components/i18n/LanguagePopup';
 
 // ── Auto-recuperación de bundle obsoleto tras un deploy ───
 // Si una pestaña tenía cacheado un build viejo y al navegar a una página lazy
@@ -215,6 +217,8 @@ const GlobalLayout = ({ children }) => {
       </div>
 
       <FirebaseWarning />
+      {/* Popup discreto de sugerencia de idioma (se muestra una sola vez). */}
+      <LanguagePopup />
     </div>
   );
 };
@@ -226,6 +230,7 @@ function App() {
       {/* Prefetch silencioso en background cuando el navegador está libre */}
       <AppPrefetcher />
       <ToastProvider>
+        <LanguageProvider>
         <AuthProvider>
           <WishlistProvider>
             <VisualEditorProvider>
@@ -374,6 +379,7 @@ function App() {
             </VisualEditorProvider>
           </WishlistProvider>
         </AuthProvider>
+        </LanguageProvider>
       </ToastProvider>
     </QueryClientProvider>
   );

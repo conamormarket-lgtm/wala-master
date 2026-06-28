@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { getCategories } from '../../../services/products';
 import { getCollections } from '../../../services/collections';
 import { getDocument } from '../../../services/firebase/firestore';
@@ -20,11 +21,29 @@ import OptimizedImage from '../OptimizedImage/OptimizedImage';
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
 
+// Mapa de etiquetas estándar del menú (texto en español tal cual lo guarda el
+// admin) -> clave de diccionario i18n. Sólo se usa para traducir los rótulos de
+// navegación bien conocidos; cualquier texto personalizado del admin se respeta
+// y se muestra sin tocar (vía el fallback de la función translateNav).
+const NAV_LABEL_KEYS = {
+  'tienda': 'nav.tienda',
+  'crear': 'nav.crear',
+  'categorias': 'nav.categorias',
+  'categorías': 'nav.categorias',
+  'minijuegos': 'nav.minijuegos',
+  'cuenta': 'nav.cuenta',
+  'mi cuenta': 'nav.cuenta',
+};
+
+// Códigos de idioma -> etiqueta corta para el toggle del header.
+const LANG_LABELS = { es: 'ES', en: 'EN', pt: 'PT' };
+
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
   const { user, userProfile, isAdmin, updateUserProfile, activeMainCoins } = useAuth();
   const navigate = useNavigate();
   const { wishlistItems } = useWishlist();
+  const { lang, setLang, available, t } = useLanguage();
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
   const location = useLocation();
@@ -83,6 +102,13 @@ const Header = () => {
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  // Traduce un rótulo de navegación si es uno de los estándar; si es un texto
+  // personalizado del admin, lo devuelve tal cual (el navegador lo traducirá gratis).
+  const translateNav = (texto) => {
+    const key = NAV_LABEL_KEYS[String(texto || '').trim().toLowerCase()];
+    return key ? t(key, texto) : texto;
+  };
 
   const activeConfig = storeConfigDraft || storeConfig || {};
   let navLinks = activeConfig?.header?.navLinks;
@@ -281,7 +307,7 @@ const Header = () => {
               if (link.type === 'link') {
                 return (
                   <NavLink key={link.id} to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => getActiveStyle(isActive)}>
-                    {link.text}
+                    {translateNav(link.text)}
                   </NavLink>
                 );
               }
@@ -289,10 +315,10 @@ const Header = () => {
               if (link.type === 'dropdown') {
                 return (
                   <div key={link.id} className={styles.navItemWithDropdown}>
-                    <NavLink to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => getActiveStyle(isActive)}>{link.text}</NavLink>
+                    <NavLink to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => getActiveStyle(isActive)}>{translateNav(link.text)}</NavLink>
                     <div className={styles.megaMenu}>
                       <div className={styles.megaMenuContent}>
-                        <h4>{link.text}</h4>
+                        <h4>{translateNav(link.text)}</h4>
                         <ul>
                           {/* Desplegable Automático: Categorías Base */}
                           {link.isCategoryAuto && categoriesData?.slice(0, 10).map(c => (
@@ -337,14 +363,14 @@ const Header = () => {
               return null;
             })}
 
-            <NavLink to="/minijuegos" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`} end>Minijuegos</NavLink>
+            <NavLink to="/minijuegos" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`} end>{t('nav.minijuegos', 'Minijuegos')}</NavLink>
 
             {user && (
-              <NavLink to="/cuenta" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`}>Mi cuenta</NavLink>
+              <NavLink to="/cuenta" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`}>{t('nav.cuenta', 'Mi cuenta')}</NavLink>
             )}
-            
+
             {isAdmin && (
-              <NavLink to="/admin" className={navLinkClass} end>Administración</NavLink>
+              <NavLink to="/admin" className={navLinkClass} end>{t('nav.admin', 'Administración')}</NavLink>
             )}
           </nav>
         </EditableSection>
@@ -416,7 +442,23 @@ const Header = () => {
             )}
           </div>
 
-          <Link to="/buscar" className={styles.iconButton} aria-label="Buscar">
+          {/* Toggle compacto de idioma (ES / EN / PT). Marca el idioma activo. */}
+          <div className={styles.langToggle} role="group" aria-label="Idioma">
+            {available.map((code) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => setLang(code)}
+                className={`${styles.langOption} ${lang === code ? styles.langOptionActive : ''}`}
+                aria-pressed={lang === code}
+                title={LANG_LABELS[code] || code.toUpperCase()}
+              >
+                {LANG_LABELS[code] || code.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <Link to="/buscar" className={styles.iconButton} aria-label={t('common.search', 'Buscar')}>
             <Search strokeWidth={1.5} className={styles.icon} />
           </Link>
 
