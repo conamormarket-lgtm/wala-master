@@ -395,15 +395,49 @@ const VisualEditorPanel = () => {
     }
   };
 
-  const addSection = (type) => {
+  // Inserta una nueva sección. `settingsOverride` (opcional) permite añadir
+  // secciones pre-configuradas (ej. catálogo ya filtrado por marca) sin romper
+  // el resto de tipos, que siguen usando getDefaultSettings(type) tal cual.
+  const addSection = (type, settingsOverride = null) => {
     const sections = [...(storeConfigDraft?.sections || [])];
+    const baseSettings = getDefaultSettings(type);
     sections.push({
       id: `section_${Date.now()}`,
       type,
       order: sections.length,
-      settings: getDefaultSettings(type)
+      settings: settingsOverride ? { ...baseSettings, ...settingsOverride } : baseSettings
     });
     updateSectionsDraft(sections);
+  };
+
+  // --- Menú "Añadir Nuevo Módulo" con opciones por marca ---
+  // Para los tipos que filtran por marca (sidebar_catalog, categories_nav) se
+  // genera UNA opción genérica (catálogo/categorías globales) + UNA opción por
+  // cada marca devuelta por getBrands. El resto de tipos se mantienen igual.
+  // Cada opción de marca se codifica en el value como JSON {type, brandId, title}
+  // para reconstruir el settings override al seleccionarla.
+  const BRAND_AWARE_LABELS = {
+    sidebar_catalog: (brandName) => `Productos ${brandName}`,
+    categories_nav: (brandName) => `Categorías ${brandName}`
+  };
+
+  const handleAddModuleSelect = (rawValue) => {
+    if (!rawValue) return;
+    // Tipos simples: el value es directamente el id del tipo.
+    if (!rawValue.startsWith('{')) {
+      addSection(rawValue);
+      return;
+    }
+    // Tipos con marca: el value es un JSON con type + brandId + title.
+    try {
+      const parsed = JSON.parse(rawValue);
+      const override = {};
+      if (parsed.brandId) override.brandId = parsed.brandId;
+      if (parsed.title) override.title = parsed.title;
+      addSection(parsed.type, Object.keys(override).length ? override : null);
+    } catch (err) {
+      console.error('[Editor] Opción de módulo inválida:', rawValue, err);
+    }
   };
 
   const renderPageBuilderOverview = () => {
@@ -540,19 +574,46 @@ const VisualEditorPanel = () => {
           <label style={{ display: 'flex', alignItems: 'center', color: '#0f172a', fontWeight: '600', fontSize: '0.95rem', marginBottom: '0.5rem', marginTop: 0 }}>
             <Plus size={16} strokeWidth={2} style={{marginRight: 6, color: '#8b5cf6'}} /> Añadir Nuevo Módulo
           </label>
-          <select 
-            className={styles.typeSelect} 
+          <select
+            className={styles.typeSelect}
             onChange={(e) => {
               if (e.target.value) {
-                addSection(e.target.value);
+                handleAddModuleSelect(e.target.value);
                 e.target.value = '';
               }
             }}
           >
             <option value="">-- Selecciona un módulo para añadir --</option>
-            {SECTION_TYPES.map(type => (
-              <option key={type.id} value={type.id}>{type.label}</option>
-            ))}
+            {SECTION_TYPES.map(type => {
+              // Tipos que filtran por marca: opción genérica + una por marca.
+              if (BRAND_AWARE_LABELS[type.id]) {
+                const makeLabel = BRAND_AWARE_LABELS[type.id];
+                return (
+                  <optgroup key={type.id} label={type.label}>
+                    {/* Opción genérica = comportamiento de hoy (brandId vacío = global) */}
+                    <option value={type.id}>{type.label}</option>
+                    {/* Una opción por marca (brandId pre-cargado; title solo en
+                        sidebar_catalog, que sí usa settings.title como encabezado;
+                        categories_nav no lee title, así no guardamos campos basura). */}
+                    {(brands || []).map(brand => {
+                      const label = makeLabel(brand.name);
+                      const payload = { type: type.id, brandId: brand.id };
+                      if (type.id === 'sidebar_catalog') payload.title = label;
+                      const value = JSON.stringify(payload);
+                      return (
+                        <option key={`${type.id}_${brand.id}`} value={value}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                );
+              }
+              // Resto de tipos: opción simple, sin cambios.
+              return (
+                <option key={type.id} value={type.id}>{type.label}</option>
+              );
+            })}
           </select>
         </div>
       </div>

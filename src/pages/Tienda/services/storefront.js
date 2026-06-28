@@ -30,7 +30,7 @@ export const SECTION_TYPES = [
   { id: 'collection_carousel', label: 'Carrusel de colección' },
   { id: 'categories_nav', label: 'Navegación por categorías' },
   { id: 'product_grid', label: 'Grid de productos simple' },
-  { id: 'sidebar_catalog', label: 'Catálogo con Sidebar (Mercado Libre)' },
+  { id: 'sidebar_catalog', label: 'Catálogo (todas las marcas)' },
   { id: 'announcement_bar', label: 'Barra de Anuncios Superior' },
   { id: 'hero_carousel', label: 'Carrusel Principal (Hero Slider)' },
   { id: 'trust_badges', label: 'Íconos de Confianza (Badges)' },
