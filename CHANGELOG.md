@@ -13,6 +13,27 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
+## [2026-06-28] — FIXES DE PEDIDOS: visibilidad en "Mis Compras", no tragar el fallo de guardado, Culqi marca pagado, enlace de Recepción (Vercel + redeploy del dueño)
+Tanda de **fixes del camino de pedidos** (visibilidad y estado de pago) sobre la misma sesión 2026-06-28. **Frontend** desplegado por **Vercel** (auto-deploy desde `master`); el **fix de Culqi (bug C) requiere redeploy del backend** — **ya lo hizo el dueño** por Cloud Shell (`firebase deploy --only functions:processCulqiPayment`). El resto es solo frontend. **No toca montos, Formik ni el camino de cobro** (el camino de ÉXITO queda idéntico). Detalle de estado en [docs/wala/ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md).
+
+### Visibilidad de pedidos en "Mis Compras"
+- ✅ `de1594b` (bug A — visibilidad) — **Los pedidos no aparecían en "Mis Compras"** porque `createWebOrder` (`src/services/erp/firebase.js`; la creación que comparten WhatsApp/Culqi/PayPal) guardaba el documento **SIN normalizar**, mientras el perfil filtra por el **DNI normalizado** con un `where` exacto → nunca casaban. **FIX:** `createWebOrder` ahora **normaliza** `clienteNumeroDocumento` y `dni` (trim + quita espacios, igual que `createOrderInERP`) para que casen con el filtro del perfil, y **conserva el valor tecleado en `dniRaw`**. `searchOrdersByDniInERP` suma un **fallback con el DNI crudo** si la búsqueda normalizada da 0 resultados (**rescata los pedidos históricos** guardados sin normalizar).
+- ✅ `de1594b` (bug B — no tragar el fallo) — `createWebOrder` estaba dentro de un `try/catch` que **solo hacía `console.warn`** → si el guardado fallaba, el flujo **abría WhatsApp fingiendo éxito** y el pedido se perdía (el cliente creía que había comprado). **FIX:** en `CheckoutPage.jsx`, si `createWebOrder` no devuelve `id` se muestra un **toast de error** y se **aborta ANTES del paso de pago** (no se abre WhatsApp ni Culqi/PayPal). El camino de ÉXITO queda idéntico; sin tocar montos/Formik/cobro.
+
+### Estado de pago — Culqi marca el pedido como pagado
+- ✅ `e84b6b1` (bug C — **requiere redeploy, ya hecho por el dueño**) — `processCulqiPayment` (`functions/index.js`) **cobraba la tarjeta pero NUNCA marcaba el pedido como pagado** → un pedido pagado con Culqi quedaba **indistinguible de uno impago** (`montoPendiente = total`) y "Recepción de Pedidos" no podía separar pagados de "por confirmar pago". **FIX:** en la **rama de ÉXITO** del cobro (tras tomar el lock `culqiCharges/{tokenId}`, reusando `erpDb/coll/pedidoId` que la función ya tenía) marca el pedido en `pedidos_web` con los **MISMOS 7 campos que el `culqiWebhook`**: `pagado:true`, `estadoPago:"pagado"`, `culqiChargeId`, `montoPagado`, `montoPendiente:0`, `pagadoAt`, `metodoPago:"culqi"`. Es **best-effort** (`try/catch`, no falla la respuesta del cobro) e **idempotente** (bajo el lock S-4 y con los mismos campos que el webhook → sin conflicto); **no toca `montoTotal` ni el monto del cobro**. Verificado con auditoría adversarial de dinero. El `culqiWebhook` ya hacía esto, pero **su URL no está registrada en el panel de Culqi** (pendiente del dueño como respaldo, ver entrada 2026-06-27); este fix cierra la brecha desde la propia confirmación del cobro.
+
+### Acceso de admin
+- ✅ `09d86a9` — Enlace **📦 Recepción de Pedidos** en el menú lateral del admin (`src/components/AdminLayout/AdminLayout.jsx`), debajo de "Dashboard Analítica", para entrar a **organizar los envíos** sin hacer scroll hasta el final del dashboard. (Ya descrito en la entrada de Escalabilidad de hoy; se reafirma aquí por pertenecer al camino de pedidos.)
+
+### Sin cambios en el resto del estado
+- 🔧 **Flags de pago intactos:** `CULQI_VERIFY_SIGNATURE=false` (apagado hasta el secret real de Culqi; `CULQI_WEBHOOK_SECRET` con placeholder **inerte**), `ENFORCE_PAYMENT_OWNERSHIP=true` (desplegado, pendiente validar con una compra real).
+- 🔧 **PayPal server-side** sigue **completo y desplegado con `VITE_PAYPAL_SERVER_SIDE` en OFF** — **pendiente de credenciales** del dueño (`developer.paypal.com`).
+- 🔧 **Las reglas vivas siguen 100 % abiertas** en `(default)` por el ERP compartido. **No desplegar `firestore.rules.propuesto` sin resolver la auth del ERP (App Check / Firebase Auth) / sin permiso.**
+
+### Documentación
+- 📄 El **ciclo completo del pedido** (creación → pago → estado → visibilidad), incluidos estos tres fixes, quedó documentado con archivo:línea en **[docs/wala/FLUJO-PEDIDOS.md](docs/wala/FLUJO-PEDIDOS.md)** (enlazado desde [MODELO-DATOS.md](docs/wala/MODELO-DATOS.md) y el índice [docs/wala/README.md](docs/wala/README.md)).
+
 ## [2026-06-28] — ESCALABILIDAD Fases 0–4 + texto enriquecido (Vercel + DEPLOY del dueño por Cloud Shell)
 Sesión doble: (1) **editor de texto enriquecido** en el editor visual y (2) **despliegue de las Fases 0–4 del plan de [ESCALABILIDAD](docs/wala/ESCALABILIDAD.md)** (bundle, seguridad de pagos seguro-por-defecto, pre-agregación de analítica, paginación/búsqueda de catálogo, observabilidad). El **frontend** se desplegó por **Vercel** (auto-deploy desde `master`); las **Cloud Functions, los índices y dos backfills los EJECUTÓ EL DUEÑO por Cloud Shell** sobre `sistema-gestion-3b225`. Detalle de estado en [docs/wala/ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md). **Las reglas vivas siguen 100 % abiertas** en `(default)` por el ERP compartido (ver más abajo y §6/§7 de ESTADO).
 

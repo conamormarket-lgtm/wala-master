@@ -18,6 +18,23 @@
 
 > ## 📌 Banner de estado (actualizado 2026-06-28)
 >
+> **Fixes de pedidos 2026-06-28 (desplegados):** tanda de correcciones del **camino de pedidos**.
+> (A — **visibilidad**) los pedidos **no aparecían en "Mis Compras"** porque `createWebOrder`
+> guardaba el documento **sin normalizar** mientras el perfil filtra por el **DNI normalizado**
+> (`where` exacto) → **FIX:** `createWebOrder` normaliza `clienteNumeroDocumento`/`dni`
+> (trim + quita espacios) y guarda `dniRaw`; `searchOrdersByDniInERP` cae al **DNI crudo** si la
+> búsqueda normalizada da 0 (rescata históricos). (B) `createWebOrder` estaba en un `try/catch`
+> que **solo hacía `console.warn`** → si fallaba el guardado, **abría WhatsApp fingiendo éxito** y
+> el pedido se perdía → **FIX:** **toast de error** + **abortar antes del paso de pago**. (C —
+> **requiere redeploy, ya hecho por el dueño**) `processCulqiPayment` **cobraba pero NUNCA marcaba
+> el pedido pagado** → indistinguible de impago → **FIX:** marca pagado en la rama de éxito con los
+> **mismos 7 campos que el `culqiWebhook`** (`pagado`, `estadoPago:"pagado"`, `culqiChargeId`,
+> `montoPagado`, `montoPendiente:0`, `pagadoAt`, `metodoPago:"culqi"`), best-effort e idempotente,
+> sin tocar montos (el `culqiWebhook` ya lo hacía, pero **su URL no está registrada en el panel de
+> Culqi** — pendiente del dueño como respaldo). Además, **enlace 📦 Recepción de Pedidos** en el
+> sidebar admin (debajo de "Dashboard Analítica"). **No toca montos/Formik/cobro**; el camino de
+> ÉXITO queda idéntico. Commits `de1594b`, `e84b6b1`, `09d86a9`. Detalle en §2 (Paso 8).
+>
 > **Sesión 2026-06-28 (desplegada):** dos frentes. (1) **Editor de texto enriquecido** en el
 > editor visual: bloque reutilizable de alineación / subrayado / color de fondo / link en el
 > texto + botón configurable, añadido a TODOS los editores de sección (hero, header, text,
@@ -145,7 +162,7 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | **Venta internacional** | Documento + país + **teléfono internacional**, **PayPal** para compradores del extranjero, aviso de envío **7–30 días**. | Checkout |
 | **Dashboard de analítica v2** | Panel liquid-glass con **heatmap**, tráfico, **productos más vistos / más vendidos**, origen, páginas, categorías, miniaturas; lecturas optimizadas (cuota). | `/admin/dashboard` |
 | **Recepción de Pedidos (organizar envíos)** | Panel **solo-lectura** para preparar envíos: KPIs (por entregar, pendientes de pago, en producción, entregados, monto) + **tarjetas por pedido** con dirección de entrega, cliente, productos y **WhatsApp**. **Enlace en el menú lateral** (📦 Recepción de Pedidos, bajo "Dashboard Analítica") + embebida + ruta directa. | sidebar admin · `/admin/dashboard/recepcion` |
-| **"Mis Compras" estilo MercadoLibre** | Lista + **detalle por pedido** con **estado real** (pago + producción), método de pago, productos, dirección y **WhatsApp al asesor de la marca**. | `/cuenta/pedidos`, `/cuenta/pedidos/:id` |
+| **"Mis Compras" estilo MercadoLibre** | Lista + **detalle por pedido** con **estado real** (pago + producción), método de pago, productos, dirección y **WhatsApp al asesor de la marca**. **Fix 2026-06-28 (`de1594b`):** los pedidos ya **aparecen** (se normaliza el DNI al crearlos + fallback al DNI crudo para rescatar históricos); y si el guardado falla **ya no se abre WhatsApp fingiendo éxito** (toast de error + aborta antes del pago). **Fix 2026-06-28 (`e84b6b1`):** un pedido pagado con **Culqi ya queda marcado como pagado** (antes era indistinguible de un impago). | `/cuenta/pedidos`, `/cuenta/pedidos/:id` |
 | **Regalos por fecha "Mis fechas especiales"** | Registro de regalos público con **drag-and-drop** (asigna productos a fechas), miniaturas y atajo "Agregar todo al carrito". | `/regalar/:referralCode`, wishlist |
 | **Carrito "No comprar esta vez"** | Elegir qué pagar ahora y qué guardar para después sin borrar; el resto persiste tras pagar. | `/carrito`, `/checkout` |
 | **WhatsApp por marca + Plan B** | Número por marca, número principal "Todo a WALA" + toggle multimarca; al cerrar Culqi sin pagar, terminar por WhatsApp. | `/checkout`, `/admin/marcas` |
@@ -491,6 +508,57 @@ nativo de Node y `curl` SÍ funcionan contra los mismos endpoints — **no** es 
 ni la clave, ni los permisos. **Decisión:** seguir desplegando por **Google Cloud Shell** (copiar/pegar);
 para automatizarlo desde la PC en el futuro habría que **instalar Node 20/22 LTS**.
 
+### Paso 8 — Sesión 2026-06-28 — Fixes del camino de pedidos *(✅ HECHO — desplegado)*
+
+Tanda de **correcciones del camino de pedidos** (visibilidad en "Mis Compras" y estado de pago),
+sobre la misma sesión 2026-06-28. El **frontend** salió por **Vercel** (auto-deploy desde
+`master`); el **fix de Culqi (bug C) requiere redeploy del backend**, que **ya hizo el dueño**
+por Cloud Shell (`firebase deploy --only functions:processCulqiPayment`). **No toca montos,
+Formik ni el camino de cobro** — el camino de ÉXITO queda idéntico. Tres commits: `de1594b`,
+`e84b6b1`, `09d86a9`. Detalle por commit en el [CHANGELOG.md](../../CHANGELOG.md) (entrada
+2026-06-28, "FIXES DE PEDIDOS").
+
+**Bug A — visibilidad de pedidos en "Mis Compras" (`de1594b`):** los pedidos **no aparecían**
+porque `createWebOrder` (`src/services/erp/firebase.js`; la creación que comparten
+WhatsApp/Culqi/PayPal) guardaba el documento **SIN normalizar**, mientras el perfil filtra por el
+**DNI normalizado** con un `where` exacto → nunca casaban. **FIX:** `createWebOrder` **normaliza**
+`clienteNumeroDocumento` y `dni` (trim + quita espacios, igual que `createOrderInERP`) para que
+casen con el filtro del perfil, y **conserva el valor tecleado en `dniRaw`**. `searchOrdersByDniInERP`
+cae a un **fallback con el DNI crudo** si la búsqueda normalizada da 0 resultados (**rescata los
+pedidos históricos** guardados sin normalizar).
+
+**Bug B — no tragar el fallo de guardado (`de1594b`):** `createWebOrder` estaba en un `try/catch`
+que **solo hacía `console.warn`** → si el guardado fallaba, el flujo **abría WhatsApp fingiendo
+éxito** y el pedido se perdía (el cliente creía que había comprado y nada quedaba guardado).
+**FIX:** en `CheckoutPage.jsx`, si `createWebOrder` no devuelve `id` se muestra un **toast de
+error** y se **aborta ANTES del paso de pago** (no se abre WhatsApp ni Culqi/PayPal). El camino de
+ÉXITO queda idéntico; sin tocar montos/Formik/cobro.
+
+**Bug C — Culqi marca el pedido como pagado (`e84b6b1`, requiere redeploy ya hecho por el dueño):**
+`processCulqiPayment` (`functions/index.js`) **cobraba la tarjeta pero NUNCA marcaba el pedido como
+pagado** → un pedido pagado con Culqi quedaba **indistinguible de uno impago** (`montoPendiente =
+total`) y "Recepción de Pedidos" no podía separar pagados de "por confirmar pago". **FIX:** en la
+**rama de ÉXITO** del cobro (tras tomar el lock `culqiCharges/{tokenId}`, reusando
+`erpDb/coll/pedidoId` que la función ya tenía) marca el pedido en `pedidos_web` con los **MISMOS 7
+campos que el `culqiWebhook`**: `pagado:true`, `estadoPago:"pagado"`, `culqiChargeId`,
+`montoPagado`, `montoPendiente:0`, `pagadoAt`, `metodoPago:"culqi"`. Es **best-effort** (`try/catch`,
+no falla la respuesta del cobro) e **idempotente** (bajo el lock S-4 y con los mismos campos que el
+webhook → sin conflicto); **no toca `montoTotal` ni el monto del cobro**. Verificado con auditoría
+adversarial de dinero. El `culqiWebhook` ya hacía esto, pero **su URL no está registrada en el panel
+de Culqi** (pendiente del dueño como respaldo, ver §7 Prioridad 1.bis); este fix cierra la brecha
+desde la propia confirmación del cobro.
+
+**Acceso de admin (`09d86a9`):** enlace **📦 Recepción de Pedidos** en el menú lateral del admin
+(`src/components/AdminLayout/AdminLayout.jsx`), debajo de "Dashboard Analítica", para entrar a
+**organizar los envíos** sin hacer scroll hasta el final del dashboard. (Ya descrito en el Paso 7;
+se reafirma aquí por pertenecer al camino de pedidos.)
+
+**Sin cambios en el resto del estado:** flags de pago intactos (`CULQI_VERIFY_SIGNATURE=false`,
+`ENFORCE_PAYMENT_OWNERSHIP=true` pendiente de validar con una compra real); **PayPal server-side**
+sigue completo y desplegado con `VITE_PAYPAL_SERVER_SIDE` en **OFF** (pendiente de credenciales del
+dueño); **las reglas vivas siguen 100 % abiertas** en `(default)` por el ERP compartido (**no
+desplegar `firestore.rules.propuesto` sin resolver la auth del ERP / sin permiso**).
+
 ---
 
 ## 3. Tabla resumen de fases (0–5)
@@ -676,7 +744,7 @@ usuario** (no de código) para que el cobro quede 100 % en producción:
 
 | Pendiente | Quién | Por qué importa |
 |-----------|-------|-----------------|
-| **Registrar la URL de `culqiWebhook` en el panel de Culqi** | Usuario | La Cloud Function `culqiWebhook` (marca `pedidos_web` pagado, idempotente) ya está desplegada, pero el panel de Culqi **estaba caído** y aún no tiene registrada su URL → Culqi no notifica el pago al backend. |
+| **Registrar la URL de `culqiWebhook` en el panel de Culqi** (ahora como **respaldo**) | Usuario | La Cloud Function `culqiWebhook` (marca `pedidos_web` pagado, idempotente) ya está desplegada, pero el panel de Culqi **estaba caído** y aún no tiene registrada su URL → Culqi no notifica el pago al backend. **Mitigado (2026-06-28, `e84b6b1`):** `processCulqiPayment` ahora marca el pedido pagado en la rama de éxito del cobro (mismos 7 campos que el webhook, idempotente), así que el estado de pago **ya no depende** de que el webhook esté registrado. Registrar la URL sigue siendo recomendable como **segundo canal de respaldo**. |
 | **Verificar `REACT_APP_PAYPAL_CLIENT_ID` en Vercel** | Usuario | Si esa variable **no** está en Vercel, **PayPal corre en SANDBOX** (no cobra de verdad). Hay que confirmarla y hacer Redeploy (las env se hornean en build). |
 
 ### Prioridad 2 — Reestructurar el dashboard de analítica

@@ -96,8 +96,14 @@ hay proyecto ERP separado en producción), así que todas deben estar en las mis
 | `inventoryLogs` | PROD | Auditoría de cambios de stock. | `productId`, `productName`, `oldStock`, `newStock`, `userEmail`, `timestamp` (millis) |
 | `enlaces_pago` | PROD | Enlaces de pago. **Reglas inseguras** (`allow update,delete: if true`, ver synthesis). | — |
 | (ruleta) `PRIZES_COLLECTION` | PROD | Premios de ruleta. | `probability` |
-| `pedidos` | ERP (mismo proyecto `sistema-gestion-3b225`) | Pedidos legacy del ERP. **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`, `clienteNumeroDocumento`, `numeroPedido`, `createdAt`, `email` |
-| `pedidos_web` | ERP (mismo proyecto `sistema-gestion-3b225`) | Pedidos web del ERP. **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`, `numeroPedido`, `createdAt` |
+| `pedidos` | ERP (mismo proyecto `sistema-gestion-3b225`) | Pedidos legacy/validados del ERP (incluye pedidos del portal ya aprobados). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`, `clienteNumeroDocumento`, `numeroPedido`, `createdAt`, `email`, `canalVenta`, `estadoGeneral`, `montoTotal`/`montoPendiente`, `pagado`/`estadoPago` |
+| `pedidos_web` | ERP (mismo proyecto `sistema-gestion-3b225`) | Cola web de pedidos del portal (los crea el checkout vía `createWebOrder`, con `estadoValidacion:'pendiente'`, pendientes de validación manual). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`/`clienteNumeroDocumento` (normalizados) + `dniRaw`, `numeroPedido`, `createdAt`, `canalVenta:'Portal Web'`, `web:true`, `estadoGeneral:'Nuevo'`, `estadoValidacion`, `montoTotal`/`montoPendiente`, `productos` (mapa `item_N`) |
+
+> **Ciclo de vida del pedido (creación → pago → estado → visibilidad):** la lógica completa
+> (en qué momento exacto se crea el documento, qué hace cada método de pago, cómo se DERIVA
+> el estado y dónde se ve el pedido en cliente/admin) está en
+> **[FLUJO-PEDIDOS.md](./FLUJO-PEDIDOS.md)**, con archivo:línea. Esta tabla solo describe las
+> colecciones; el flujo va allí.
 | `analytics_events` | PROD (analytics) | Eventos de analytics/heatmap propios. **Mismo proyecto `sistema-gestion-3b225`; deben estar en las reglas.** | evento, sesión, ts, UTM, geo |
 | `analytics_sessions` | PROD (analytics) | Sesiones de analytics. **Mismo proyecto; deben estar en las reglas.** | sessionId, uid, inicio/fin, fuente |
 | `analytics_user_summary` | PROD (analytics) | Resumen agregado por usuario. **Mismo proyecto; deben estar en las reglas.** | uid, métricas agregadas |
