@@ -12,9 +12,11 @@
 Al entrar a `/admin` se ve una **barra lateral izquierda** (el menú) y, a la derecha, el contenido de la sección que elijas. El menú está dividido en **grupos plegables** (puedes abrir/cerrar cada grupo haciendo clic en su título):
 
 1. **Ajustes** — solo para Super Admin.
-2. **Diseño de Tienda** — apariencia de la tienda, analítica y juegos.
+2. **Diseño de Tienda** — apariencia de la tienda, analítica, **Recepción de Pedidos** y juegos.
 3. **Catálogo** — productos, inventario, vendedores, envíos, ofertas, etc.
 4. **Clientes y Pagos** — usuarios, métodos de pago, reclamos, referidos, etc.
+
+> En el grupo *Diseño de Tienda*, justo **debajo de "📊 Dashboard Analítica"**, aparece el enlace **"📦 Recepción de Pedidos"** (`/admin/dashboard/recepcion`) para organizar los envíos del portal.
 
 ### Quién ve qué (permisos)
 
@@ -39,6 +41,7 @@ El menú **se adapta al permiso** de cada administrador. Los permisos se asignan
 |---|---|---|
 | **Panel Principal** | `/admin` | Pantalla de bienvenida con accesos rápidos a las secciones más usadas. |
 | **Dashboard Analítica** | `/admin/dashboard` | Tablero de métricas (estilo liquid-glass): KPIs, tráfico por día, productos más vistos/agregados al carrito, categorías, páginas más visitadas, tags, embudo de conversión, origen/región, sesiones en vivo, búsquedas, más vendidos y **mapa de calor**. |
+| **Recepción de Pedidos** | `/admin/dashboard/recepcion` | Panel **solo-lectura** para **organizar envíos** del portal: KPIs de pedidos + **tarjetas por pedido** con dirección de entrega, cliente, productos y WhatsApp. **Enlace propio en el menú lateral** (📦 Recepción de Pedidos, justo **debajo de "Dashboard Analítica"**); también embebida al final del dashboard de analítica. |
 | **Vista Tienda (WYSIWYG)** | `/tienda` | Abre la tienda real con el **Editor Visual** flotante para construir las páginas arrastrando módulos (Hero, carruseles, catálogo, testimonios, etc.). |
 | **Destacados** | `/admin/destacados` | Ordena qué productos salen como "destacados" en la portada. |
 | **WhatsApp** | `/admin/whatsapp` | Números y mensajes prearmados de WhatsApp (tienda, creador libre, cuenta). |
@@ -113,9 +116,15 @@ Tablero de analítica con diseño "liquid-glass" (fondo violeta con orbes y tarj
 
 > **Pre-agregación de analítica (sesión 2026-06-28):** para no releer miles de eventos crudos en cada carga, el dashboard lee documentos **pre-agregados por día** `analytics_daily/{YYYY-MM-DD}` (uno por día del rango: 7/30/90 lecturas en vez de ~5300). Esos documentos los genera la Cloud Function programada **`aggregateAnalyticsDaily`** (ver "Cloud Functions"). El **día en curso** se completa con una query EN VIVO pequeña, y si todavía no existe ningún doc diario (la CF no se desplegó/ejecutó) cae automáticamente al cálculo legacy (`getGlobalAnalytics`), de modo que el tablero nunca queda vacío. Servicio de lectura: `src/services/analyticsDaily.js` (`getAnalyticsDailyRange`).
 
-#### Recepción de Pedidos (organización de ENVÍOS) — embebida bajo el dashboard
-Archivo: `src/pages/admin/dashboard/RecepcionPedidos.jsx` (hook `src/hooks/useAdminWalaOrders.js`, capa de datos `src/services/adminOrders.js`).
-Es un panel **SOLO LECTURA** que muestra **todos los pedidos del portal WALA** (no los del usuario logueado) leyendo del ERP las colecciones `pedidos_web` + `pedidos` y quedándose solo con los pedidos del portal (regla `esPedidoWala`). Orientado a **preparar envíos**: una fila de KPIs (por entregar, pendientes de pago, en producción, entregados, monto total) y una grilla de **tarjetas por pedido** que resaltan la **dirección de entrega** y los datos de contacto, con **filtros** (estado + buscar por nombre/código), orden por fecha, botón **"WhatsApp al cliente"** y enlace al detalle. Se monta **embebido** debajo del dashboard de analítica (también disponible por URL en `/admin/dashboard/recepcion`). No toca carrito, precios ni cobro: solo muestra el estado ya derivado (`derivarEstadoCompra`).
+### Recepción de Pedidos (organización de ENVÍOS) — `/admin/dashboard/recepcion`
+Archivo: `src/pages/admin/dashboard/RecepcionPedidos.jsx` (hook `src/hooks/useAdminWalaOrders.js`, capa de datos `src/services/adminOrders.js`; KPIs en `DashRecepcion.jsx`).
+Es un panel **SOLO LECTURA del ERP** que muestra **todos los pedidos del portal WALA** (no los del usuario logueado) leyendo las colecciones `pedidos_web` + `pedidos` y quedándose solo con los pedidos del portal (regla `esPedidoWala`). Está orientado a **preparar y organizar los envíos**:
+- una **fila de KPIs** (por entregar, pendientes de pago, en producción, entregados, monto total);
+- una grilla de **tarjetas por pedido** que resaltan la **dirección de entrega**, el **cliente** y sus datos de contacto, y los **productos** del pedido, con **filtros** (estado + buscar por nombre/código), orden por fecha, botón **"WhatsApp al cliente"** y enlace al detalle.
+
+**Tres accesos:** (1) **enlace propio en el menú lateral** — **📦 Recepción de Pedidos**, ubicado **justo debajo de "Dashboard Analítica"** en el grupo *Diseño de Tienda* (`src/components/AdminLayout/AdminLayout.jsx`); (2) **embebida al final** del dashboard de analítica (`/admin/dashboard`); y (3) la **ruta directa** `/admin/dashboard/recepcion`.
+
+No toca carrito, precios ni cobro: solo **muestra el estado ya derivado** (`derivarEstadoCompra`) del ERP. (Desplegado en la sesión 2026-06-28, commits `5903a6a` y `09d86a9`.)
 
 ### Vista Tienda (WYSIWYG) — `/tienda`
 Enlace directo a la tienda. Es la puerta de entrada al **Page Builder / Editor Visual** (ver sección "Page Builder" al final).
@@ -348,6 +357,12 @@ Es **100% retrocompatible**: con los campos vacíos, las secciones se ven exacta
 | `PAYPAL_CLIENT_ID` / `PAYPAL_SECRET` | PayPal server-side (server) | — | Credenciales OAuth de PayPal para `createPaypalOrderSecure` / `capturePaypalOrderSecure` (S-1). |
 | `PAYPAL_ENV` | PayPal server-side (server) | `sandbox` | `'live'` para producción. |
 | `VITE_PAYPAL_SERVER_SIDE` | `PaypalCheckout` (build/cliente) | `'false'` (OFF) | Hace que el checkout delegue el cobro de PayPal a las CFs seguras. |
+
+> **Estado real desplegado (sesión 2026-06-28, `functions/.env.sistema-gestion-3b225`):**
+> - `CULQI_VERIFY_SIGNATURE=false` — **apagado** hasta tener el **secret real de Culqi**; `CULQI_WEBHOOK_SECRET` quedó con un **placeholder** pero es **INERTE** (con `verify=false` no se valida firma).
+> - `ENFORCE_PAYMENT_OWNERSHIP=true` — **desplegado**; **pendiente validar con una compra real**.
+> - **PayPal server-side**: el código está **completo y desplegado** con `VITE_PAYPAL_SERVER_SIDE` en **OFF**. La **activación quedó PENDIENTE**: el dueño debe conseguir las credenciales de su app de PayPal (Client ID + Secret de `developer.paypal.com`) y ponerlas en `functions/.env` → redeploy → `VITE_PAYPAL_SERVER_SIDE=true` en Vercel. Se removieron del `.env` unas credenciales de ejemplo puestas por error (inertes con el flag OFF).
+> - El **deploy de estas CFs** se hace por **Cloud Shell** (copiar/pegar): `firebase-tools` no corre bien con el **Node 24** local (se corta con `Premature close`); automatizarlo desde la PC exigiría **Node 20/22 LTS**.
 
 > Otras CFs relacionadas ya documentadas: **`updateFxRate`** (cron diario que pobla `config/fx` con el tipo de cambio), **`getPublicGiftRegistry`** (registro de regalos por fecha, callable que devuelve datos mínimos sin Firestore directo), **`redeemRewardSecure`** (canje de recompensas). Ver [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md).
 

@@ -35,13 +35,20 @@
 > Cloud Shell:** **7 Cloud Functions** + **índices** + **2 backfills** (`createdAt`, que
 > **recuperó 77 productos que estaban ocultos**, y `searchTokens`) sobre **123 productos**.
 > **Decisiones:** búsqueda = **solo Firestore**, traducción = **Lingva** (no API de pago), CFs de
-> dinero **en gen1**. **Las reglas vivas siguen 100 % abiertas** en `(default)` por el ERP
-> compartido. **EN CURSO** (sin commitear): **Recepción de Pedidos** (admin, organizar envíos),
-> **PayPal server-side wiring** (flag `VITE_PAYPAL_SERVER_SIDE`) y un **botón de backfill de
-> analítica** en el dashboard. **Pendiente del dueño:** activar los flags
-> (`CULQI_VERIFY_SIGNATURE`/`ENFORCE_PAYMENT_OWNERSHIP`) con datos reales, definir
-> `VITE_PAYPAL_SERVER_SIDE` en Vercel cuando esté probado, y desplegar el `.propuesto` solo
-> cuando PayPal server-side esté probado. Detalle en §2 (Paso 7).
+> dinero **en gen1**, y **deploy de backend = solo Cloud Shell** (`firebase-tools` se corta con
+> `Premature close` bajo **Node 24**; automatizarlo desde la PC exigiría **Node 20/22 LTS**). **Las
+> reglas vivas siguen 100 % abiertas** en `(default)` por el ERP compartido. **Cerrado y desplegado
+> al final de la sesión:** **Recepción de Pedidos** (admin, organizar envíos) **con ENLACE en el
+> menú lateral** (📦 Recepción de Pedidos, debajo de "Dashboard Analítica") + embebida + ruta
+> `/admin/dashboard/recepcion`; **PayPal server-side** (código **completo y desplegado con el flag
+> `VITE_PAYPAL_SERVER_SIDE` en OFF**; **activación PENDIENTE** — falta que el dueño consiga las
+> credenciales de su app de PayPal); y un **botón de backfill de analítica** en el dashboard.
+> **Flags de pago (estado real):** `CULQI_VERIFY_SIGNATURE=false` (apagado hasta tener el secret
+> real de Culqi; `CULQI_WEBHOOK_SECRET` con placeholder pero **inerte**), `ENFORCE_PAYMENT_OWNERSHIP=true`
+> **desplegado** (pendiente validar con una compra real). **Pendiente del dueño:** conseguir las
+> credenciales de PayPal y activar el flag, activar `CULQI_VERIFY_SIGNATURE` con el secret real,
+> validar el ownership con una compra real, y desplegar el `.propuesto` solo cuando PayPal
+> server-side esté probado **y resuelta la auth del ERP**. Detalle en §2 (Paso 7).
 >
 > **Sesión 2026-06-27 (desplegada):** se desplegó a producción una tanda grande de
 > **diseño/UX (design system liquid-glass "Aurora Violeta Serena"), tracking de precisión,
@@ -137,6 +144,7 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | **Fase 5 — Impulso** | **Cofre diario**, **segmentación RFM** de clientes (VIP/activo/en riesgo/nuevo) y **ofertas flash**. | `/ofertas`, `/admin/flash-offers` |
 | **Venta internacional** | Documento + país + **teléfono internacional**, **PayPal** para compradores del extranjero, aviso de envío **7–30 días**. | Checkout |
 | **Dashboard de analítica v2** | Panel liquid-glass con **heatmap**, tráfico, **productos más vistos / más vendidos**, origen, páginas, categorías, miniaturas; lecturas optimizadas (cuota). | `/admin/dashboard` |
+| **Recepción de Pedidos (organizar envíos)** | Panel **solo-lectura** para preparar envíos: KPIs (por entregar, pendientes de pago, en producción, entregados, monto) + **tarjetas por pedido** con dirección de entrega, cliente, productos y **WhatsApp**. **Enlace en el menú lateral** (📦 Recepción de Pedidos, bajo "Dashboard Analítica") + embebida + ruta directa. | sidebar admin · `/admin/dashboard/recepcion` |
 | **"Mis Compras" estilo MercadoLibre** | Lista + **detalle por pedido** con **estado real** (pago + producción), método de pago, productos, dirección y **WhatsApp al asesor de la marca**. | `/cuenta/pedidos`, `/cuenta/pedidos/:id` |
 | **Regalos por fecha "Mis fechas especiales"** | Registro de regalos público con **drag-and-drop** (asigna productos a fechas), miniaturas y atajo "Agregar todo al carrito". | `/regalar/:referralCode`, wishlist |
 | **Carrito "No comprar esta vez"** | Elegir qué pagar ahora y qué guardar para después sin borrar; el resto persiste tras pagar. | `/carrito`, `/checkout` |
@@ -438,24 +446,50 @@ queda para mayor tráfico).
 porque el **ERP comparte el proyecto y NO usa Firebase Auth**; el `.propuesto` está guardado pero
 **NO desplegado**. Ver §6/§7.
 
-**🔧 EN CURSO (no terminado; sin commitear):**
+**✅ Cerrado y desplegado al final de la sesión (`5903a6a`, `09d86a9`):**
 
-- **Recepción de Pedidos (admin):** área para **organizar envíos** del portal WALA
-  (`RecepcionPedidos.jsx` + `DashRecepcion.jsx`), solo-lectura, sobre el hook `useAdminWalaOrders`
-  y la capa `adminOrders.js` que lee `pedidos_web`+`pedidos` del ERP.
-- **PayPal server-side wiring:** `PaypalCheckout.jsx` ya lee el flag `VITE_PAYPAL_SERVER_SIDE`
-  (OFF) para cablear `createPaypalOrderSecure`/`capturePaypalOrderSecure`; falta terminarlo y probarlo.
+- **Recepción de Pedidos (admin) — organización de ENVÍOS:** área **solo-lectura** para
+  **organizar envíos** del portal WALA (`RecepcionPedidos.jsx` + `DashRecepcion.jsx` +
+  `RecepcionPedidos.module.css`), sobre el hook `useAdminWalaOrders` y la capa `adminOrders.js`
+  que lee `pedidos_web`+`pedidos` del ERP (solo los pedidos del portal, regla `esPedidoWala`).
+  Tiene **tres accesos**: (1) **ENLACE en el menú lateral** — **📦 Recepción de Pedidos**, ubicado
+  **debajo de "Dashboard Analítica"** en el grupo *Diseño de Tienda*
+  (`src/components/AdminLayout/AdminLayout.jsx`); (2) **embebida al final** del dashboard de
+  analíticas; y (3) **ruta directa** `/admin/dashboard/recepcion`. **Desplegado.**
+- **PayPal server-side:** el **código está COMPLETO y DESPLEGADO con el flag `VITE_PAYPAL_SERVER_SIDE`
+  en OFF** — `PaypalCheckout.jsx` invoca `createPaypalOrderSecure`/`capturePaypalOrderSecure` solo
+  cuando el flag está en `'true'` (OFF por defecto, **sin cambio de comportamiento**). La **ACTIVACIÓN
+  quedó PENDIENTE** (ver abajo): falta que el dueño consiga las **credenciales de su app de PayPal**.
+  Se **removieron del `.env` unas credenciales de ejemplo** que se habían puesto por error (inertes
+  porque el flag está OFF).
 - **Botón de backfill de analítica** en el dashboard (`BackfillAnaliticaButton.jsx`) que dispara
-  `aggregateAnalyticsDailyBackfill`.
+  `aggregateAnalyticsDailyBackfill`. **Desplegado.**
+
+**🔧 Flags de pago — estado real desplegado (`functions/.env.sistema-gestion-3b225`):**
+
+- **`CULQI_VERIFY_SIGNATURE=false`** (S-2): se intentó con un **secret placeholder**, pero quedó
+  **apagado** hasta tener el **secret real de Culqi**. `CULQI_WEBHOOK_SECRET` aún tiene un
+  **placeholder** pero es **INERTE** (con `verify=false` no se valida ninguna firma).
+- **`ENFORCE_PAYMENT_OWNERSHIP=true`** (S-3) **desplegado**. **Pendiente validar con una compra real.**
 
 **⬜ Pendiente del DUEÑO (no de código):**
 
-- **Activar los flags con datos reales:** encender `CULQI_VERIFY_SIGNATURE` y
-  `ENFORCE_PAYMENT_OWNERSHIP` tras verificar contra cobros reales.
-- **Definir `VITE_PAYPAL_SERVER_SIDE=true` en Vercel** (+ redeploy) cuando el cableado PayPal
-  server-side esté terminado y probado.
+- **Conseguir las credenciales de PayPal y activar el flujo server-side:** crear/usar su app en
+  `developer.paypal.com`, obtener **Client ID + Secret**, ponerlos en **`functions/.env`**
+  (`PAYPAL_CLIENT_ID`/`PAYPAL_SECRET` + `PAYPAL_ENV='live'`), **redeploy** de las CFs, probar en
+  sandbox y recién entonces **`VITE_PAYPAL_SERVER_SIDE=true` en Vercel** (+ redeploy del frontend).
+- **Activar la firma del webhook Culqi (`CULQI_VERIFY_SIGNATURE=true`)** con el **secret real de Culqi**.
+- **Validar `ENFORCE_PAYMENT_OWNERSHIP=true`** (ya desplegado) con una **compra real**.
 - **Desplegar `firestore.rules.propuesto`** SOLO cuando PayPal server-side esté probado (cierra
-  `pedidos_web`) y resuelto el track del ERP (App Check / migrar el ERP a Firebase Auth).
+  `pedidos_web`) **y** resuelto el track del ERP (App Check / migrar el ERP a Firebase Auth).
+  **No desplegar el `.propuesto` sin resolver la auth del ERP / sin permiso.**
+
+**🛠️ Nota de despliegue (automatización evaluada y descartada por ahora):** se evaluó que Claude
+desplegara el backend **directo desde la PC del dueño**, pero **`firebase-tools` es INCOMPATIBLE con
+Node 24** (instalado localmente): su cliente HTTP se corta con `Premature close` aunque el `fetch`
+nativo de Node y `curl` SÍ funcionan contra los mismos endpoints — **no** es la red, ni el antivirus,
+ni la clave, ni los permisos. **Decisión:** seguir desplegando por **Google Cloud Shell** (copiar/pegar);
+para automatizarlo desde la PC en el futuro habría que **instalar Node 20/22 LTS**.
 
 ---
 
@@ -657,7 +691,8 @@ usuario** (no de código) para que el cobro quede 100 % en producción:
 > estructura): refetch **15 s→120 s** (−75 % de lecturas) y **pre-agregación diaria**
 > `analytics_daily` con fallback (Fase 2 del plan de [ESCALABILIDAD.md](./ESCALABILIDAD.md)),
 > que baja el dashboard de ~5.300 a ~30-90 lecturas/refresco cuando la CF diaria esté poblada.
-> Está **EN CURSO** un **botón de backfill de analítica** para poblar los días históricos.
+> Para poblar los días históricos hay un **botón de backfill de analítica** en el dashboard
+> (`BackfillAnaliticaButton.jsx` → `aggregateAnalyticsDailyBackfill`), ya **desplegado**.
 
 
 | Pendiente | Fase | Por qué importa |
@@ -686,8 +721,11 @@ Los riesgos de seguridad residuales (más allá de la fuga de reglas) siguen en 
 
 ## 8. Cómo correr en local
 
-Requisitos: **Node.js** (no instalado actualmente en la máquina del usuario — instalar
-primero). Desde la raíz del repo:
+Requisitos: **Node.js**. En la máquina del dueño hoy está instalado **Node 24**, que sirve para
+`npm`/Vite/tests pero es **INCOMPATIBLE con `firebase-tools`** (su cliente HTTP se corta con
+`Premature close`), por lo que **el deploy de backend NO se puede automatizar desde la PC** — se
+hace por **Cloud Shell** (ver más abajo). Para automatizarlo desde la PC en el futuro habría que
+instalar **Node 20/22 LTS**. Desde la raíz del repo:
 
 ```bash
 npm install                 # instala dependencias (Vite + React)
@@ -700,9 +738,10 @@ npm run test:functions      # tests de economía de Cloud Functions (44/44)
 Scripts adicionales relevantes (`package.json`): `dev:3001` (Vite en puerto 3001),
 `deploy:firestore-rules`, `deploy:storage-rules`, `deploy:functions`, `deploy:vercel` /
 `deploy:vercel:prod`. El frontend se despliega solo (Vercel auto-deploy desde `master`); el
-deploy de backend a `sistema-gestion-3b225` se hace desde **Google Cloud Shell** (ver
-[DESPLIEGUE.md](./DESPLIEGUE.md)). Recordatorio: **nunca** desplegar `firestore:rules` sin
-fusionar/validar antes contra las reglas vivas del ERP.
+deploy de backend a `sistema-gestion-3b225` se hace desde **Google Cloud Shell** (copiar/pegar; ver
+[DESPLIEGUE.md](./DESPLIEGUE.md)) porque `firebase-tools` no corre bien con el Node 24 local.
+Recordatorio: **nunca** desplegar `firestore:rules` (ni `firestore.rules.propuesto`) sin
+fusionar/validar antes contra las reglas vivas del ERP **y sin resolver la auth del ERP / sin permiso**.
 
 **Variables de entorno (`.env`):** la app sigue usando el prefijo **`REACT_APP_*`** (no se
 renombró a `VITE_*` en la migración; ver nota en `vite.config.js`). Se necesitan las claves
