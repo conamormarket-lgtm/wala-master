@@ -25,6 +25,13 @@
 > - `5221ad5` — **Fases 3, 4 y 5:** nav de categorías con miniaturas por marca (`categoryNav`
 >   en `tienda_brands` + `VisualCategoryNav` en modo filtro-local + editor en el panel) y
 >   **MUSSA/MUEBLERIA operativas** (ruta `/mussa` hardcodeada **eliminada**).
+> - `041742f` — **Refinamiento del editor:** "Añadir Nuevo Módulo" ofrece **"Productos {Marca}"**
+>   y **"Categorías {Marca}"** (dinámicas, `getBrands`) que insertan `sidebar_catalog`/`categories_nav`
+>   **ya filtrados** — sin tocar el dropdown. Label genérico → "Catálogo (todas las marcas)".
+> - `3f0627c` — **NAV DE CATEGORÍAS AUTOMÁTICO ✅:** si el `categoryNav` manual está vacío,
+>   `categories_nav` **deriva las burbujas de las categorías de los productos** de la marca
+>   (`getProductsByBrand`), con la imagen de `tienda_categories` (sin imagen → inicial). El
+>   `categoryNav` manual queda como **override**. El nav de marca también acota el catálogo a esa marca.
 >
 > **Brand IDs reales (doc id de `tienda_brands`):**
 > | Marca | `brandId` | slug |
@@ -43,8 +50,10 @@
 >
 > **Pendiente del dueño (datos, NO código):** correr `node scripts/setup-marcas.js --apply`
 > (crea `landingPages/MUSSA` y `/MUEBLERIA` + termina el backfill de `brandId`), **configurar
-> las páginas MUSSA/MUEBLERIA en el editor visual** (colocar `categories_nav` + `sidebar_catalog`
-> con su `brandId`) y **asignar productos a MUSSA/MUEBLERIA** desde `AdminMarcaProductos`.
+> las páginas MUSSA/MUEBLERIA en el editor visual** (arrastrar **"Productos {Marca}"** +
+> **"Categorías {Marca}"** desde "Añadir Nuevo Módulo"; el **nav de categorías es automático**,
+> no hay que armarlo a mano) y **asignar productos a MUSSA/MUEBLERIA** desde `AdminMarcaProductos`
+> (al asignarlos, sus categorías aparecen solas en las burbujas).
 >
 > El resto de este documento es el **plan original** (se conserva como referencia de diseño);
 > la sección "## Estado real de implementación" más abajo detalla, fase por fase, lo que de
@@ -151,13 +160,30 @@ a `TiendaPage`, que usa ese **slug guardado** como `pageId` (lee secciones de `p
 ### Fases 3–4 — Nav de categorías con miniaturas + clic filtra el sidebar ✅ (commit `5221ad5`)
 - `categoryNav: [{ categoryId, name, imageUrl, order }]` embebido en `tienda_brands`
   (`brands.js`: `createBrand`/`updateBrand` con `normalizeCategoryNav`; editado en la pestaña
-  "Nav de categorías" de `AdminMarcaProductos`).
+  "Nav de categorías" de `AdminMarcaProductos`). **Tras `3f0627c` este array es OPCIONAL** (override).
 - `VisualCategoryNav.jsx` gana **modo filtro-local**: si recibe `onSelectCategory`, cada burbuja
   (con miniatura) es un `<button>` que filtra el catálogo de la marca **sin navegar** (resalta por
   `activeCategory`, no por la URL). "Todos" = `onSelectCategory(null)`.
 - `TiendaPage.jsx` carga el `categoryNav` de los `brandId` referenciados por las secciones
   `categories_nav` y comparte la categoría activa entre el nav y el sidebar de la misma página
   (la categoría se aplica como faceta de cliente sobre el catálogo ya acotado a la marca).
+
+### Refinamiento — Editor con módulos por marca + NAV DE CATEGORÍAS AUTOMÁTICO ✅ (commits `041742f` + `3f0627c`)
+- **Módulos por marca en "Añadir Nuevo Módulo"** (`VisualEditorPanel.jsx`): para `sidebar_catalog`
+  y `categories_nav`, el `<select>` agrega un `<optgroup>` con la opción genérica + una **por cada
+  marca** (`getBrands`): **"Productos {Marca}"** (inserta `sidebar_catalog` con `brandId` + `title`)
+  y **"Categorías {Marca}"** (inserta `categories_nav` con `brandId`). La opción de marca se codifica
+  en el `value` como JSON `{type, brandId, title}`; `addSection(type, settingsOverride)` la aplica.
+  El label de `sidebar_catalog` en `SECTION_TYPES` pasó a **"Catálogo (todas las marcas)"**.
+- **Nav de categorías AUTOMÁTICO** (`TiendaPage.jsx`): si el `categoryNav` manual de la marca está
+  **vacío**, las burbujas se **derivan de los productos** — `getProductsByBrand(brandId)` → ids de
+  categoría **distintos** (misma extracción `idOf` que el sidebar) mapeados a `tienda_categories`
+  (`getCategories`) para nombre + `imageUrl`, ordenados por `order` y luego nombre. El manual
+  **gana** si tiene items. Categoría **sin imagen** → burbuja con **inicial + color estable**
+  (`VisualCategoryNav.jsx`, ya no usa Unsplash).
+- **`pageBrandId` considera el nav:** si la página tiene un `categories_nav` de marca pero **no** un
+  catálogo de marca, la marca del nav **acota el catálogo** → pulsar una burbuja de la marca A no
+  muestra esa categoría de todas las marcas.
 
 ### Fase 5 — MUSSA + MUEBLERIA + colisión `/mussa` ✅ (commit `5221ad5`)
 - Las 3 marcas comparten exactamente el mismo mecanismo (página `/:slug` + `sidebar_catalog`

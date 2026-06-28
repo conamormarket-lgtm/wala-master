@@ -622,6 +622,21 @@ productos actuales = Con Amor** (backfill); **`/mussa` se convierte en marca**; 
   categoría al sidebar de la misma página (filtra **sin navegar**). **MUSSA + MUEBLERIA operativas**
   (se resolvió la colisión de la `/mussa` hardcodeada convirtiéndola en marca).
 
+- **Refinamiento del editor (`041742f` + `3f0627c`):** dos mejoras para que armar una página de
+  marca sea **arrastrar y soltar**, no configurar dropdowns. (1) El menú **"Añadir Nuevo Módulo"**
+  ahora ofrece, además de las genéricas, opciones **POR MARCA** (dinámicas, `getBrands`):
+  **"Productos {Marca}"** (inserta `sidebar_catalog` con `brandId` + `title` preconfigurados) y
+  **"Categorías {Marca}"** (inserta `categories_nav` con `brandId`) — el dueño arrastra el
+  catálogo/nav de la marca **ya filtrado** sin tocar el dropdown (el label genérico de
+  `sidebar_catalog` pasó a **"Catálogo (todas las marcas)"**). (2) El **nav de categorías es
+  AUTOMÁTICO**: si el `categoryNav` manual de la marca está VACÍO, `categories_nav` deriva las
+  burbujas de las **categorías que tienen los productos de la marca** (`getProductsByBrand` →
+  categorías distintas) con su **imagen de `/admin/categorías`** (`tienda_categories.imageUrl`;
+  sin imagen → burbuja con inicial + color); el clic filtra el catálogo de la página por esa
+  categoría. El `categoryNav` manual queda como **override opcional**. Una página con
+  `categories_nav` de una marca también **acota su catálogo a esa marca** (`pageBrandId` considera
+  el nav). **No toca carrito/precios/cobro.**
+
 **Otros fixes del mismo despliegue:** **hero centrado** de la CAJA del subtítulo según la
 alineación de la sección (`bd4b8df`, `HeroBanner.jsx`).
 
@@ -629,10 +644,14 @@ alineación de la sección (`bd4b8df`, `HeroBanner.jsx`).
 
 - **Correr `scripts/setup-marcas.js --apply`** (Cloud Shell, `--project sistema-gestion-3b225`):
   crea las landingPages **MUSSA/MUEBLERIA** y hace el backfill `brandId` (ConAmor ya quedó como base).
-- **Configurar las páginas en el editor visual** (colocar `categories_nav` + `sidebar_catalog` con
-  el `brandId` de cada marca).
+- **Configurar las páginas en el editor visual**: arrastrar los módulos **"Productos {Marca}"** +
+  **"Categorías {Marca}"** desde "Añadir Nuevo Módulo" (ya vienen filtrados a la marca; el **nav de
+  categorías es automático** desde los productos, no hay que armarlo a mano).
 - **Asignar productos a MUSSA / MUEBLERIA** desde el panel `AdminMarcaProductos` (hoy todos los
-  productos son **Con Amor**).
+  productos son **Con Amor**). *(Como el nav es automático, asignar productos a la marca ya hace
+  aparecer sus categorías en las burbujas.)*
+- **Subir imágenes de categoría en `/admin/categorías`** (opcional) para que las burbujas del nav
+  automático muestren miniatura en vez de la inicial.
 
 ---
 
