@@ -18,6 +18,9 @@ import styles from './LanguagePopup.module.css';
 
 const STORAGE_KEY = 'wala_lang';
 
+// Bandera (emoji, sin assets) por idioma. PT = portugués de Brasil (🇧🇷).
+const LANG_FLAGS = { es: '🇵🇪', en: '🇺🇸', pt: '🇧🇷' };
+
 // Mapea el idioma del navegador a uno soportado distinto del español.
 // Devuelve null si el navegador ya está en español (no hay nada que sugerir).
 const detectSuggestedLang = () => {
@@ -72,14 +75,16 @@ const LanguagePopup = () => {
             size="sm"
             onClick={() => elegir(suggested)}
           >
-            {t('lang.popupYes')}
+            {/* Bandera del idioma sugerido (🇺🇸 inglés / 🇧🇷 portugués de Brasil); decorativa. */}
+            <span aria-hidden="true">{LANG_FLAGS[suggested]}</span> {t('lang.popupYes')}
           </GlassButton>
           <GlassButton
             variant="ghost"
             size="sm"
             onClick={() => elegir('es')}
           >
-            {t('lang.popupOriginal')}
+            {/* Bandera de Perú (español, idioma original); decorativa. */}
+            <span aria-hidden="true">{LANG_FLAGS.es}</span> {t('lang.popupOriginal')}
           </GlassButton>
         </div>
       </div>

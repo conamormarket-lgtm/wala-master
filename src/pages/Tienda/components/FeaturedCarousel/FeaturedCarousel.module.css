@@ -1,0 +1,138 @@
+/*
+ * Estilos del Carrusel de Destacados (Slider horizontal).
+ * Basado en CollectionCarousel pero con soporte de flechas de navegación
+ * y un número configurable de tarjetas visibles (--visible-items).
+ * Mobile-first: en pantallas pequeñas mostramos menos tarjetas.
+ */
+
+.carouselContainer {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+}
+
+.carouselHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.carouselTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color, #333);
+  margin: 0;
+}
+
+/* Envoltorio relativo para posicionar las flechas sobre el área scrolleable */
+.carouselViewport {
+  position: relative;
+}
+
+.carouselScrollArea {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+
+.carouselScrollArea::-webkit-scrollbar {
+  height: 6px;
+}
+
+.carouselScrollArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.carouselScrollArea::-webkit-scrollbar-thumb {
+  background: var(--border-color, #ccc);
+  border-radius: 4px;
+}
+
+/*
+ * Cada tarjeta. En móvil mostramos 2 (mobile-first); el número en desktop lo
+ * controla la variable --visible-items que inyecta el componente vía prop.
+ */
+.carouselItem {
+  flex: 0 0 calc(50% - 0.75rem); /* Dos tarjetas visibles en móvil */
+  scroll-snap-align: start;
+  display: flex;
+}
+
+@media (min-width: 640px) {
+  .carouselItem {
+    flex: 0 0 calc(33.333% - 1rem); /* Tres tarjetas en tablet */
+  }
+}
+
+@media (min-width: 1024px) {
+  .carouselItem {
+    /*
+     * En desktop respetamos el nº de items visibles configurado por el editor.
+     * El gap es 1.5rem entre tarjetas, repartido según cuántas se muestran.
+     */
+    flex: 0 0 calc(
+      (100% / var(--visible-items, 4)) -
+      (1.5rem * (var(--visible-items, 4) - 1) / var(--visible-items, 4))
+    );
+  }
+}
+
+/* --- Flechas de navegación --- */
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color, #e2e2e2);
+  background: var(--surface-color, #fff);
+  color: var(--text-color, #333);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.navButton:hover {
+  background: var(--bg-hover, #f5f5f5);
+}
+
+.navButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.navPrev {
+  left: -8px;
+}
+
+.navNext {
+  right: -8px;
+}
+
+/* Las flechas se ocultan en móvil: ahí se navega con swipe/scroll-snap */
+@media (max-width: 767px) {
+  .navButton {
+    display: none;
+  }
+}
+
+.loadingText,
+.errorText,
+.emptyText {
+  color: var(--text-muted, #666);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2rem 0;
+}

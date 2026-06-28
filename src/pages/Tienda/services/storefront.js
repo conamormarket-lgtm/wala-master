@@ -26,6 +26,7 @@ export const SECTION_TYPES = [
   { id: 'image', label: 'Imagen' },
   { id: 'video', label: 'Video' },
   { id: 'featured_products', label: 'Productos destacados' },
+  { id: 'featured_carousel', label: 'Carrusel de Destacados (Slider)' },
   { id: 'collection_carousel', label: 'Carrusel de colección' },
   { id: 'categories_nav', label: 'Navegación por categorías' },
   { id: 'product_grid', label: 'Grid de productos simple' },
@@ -99,6 +100,8 @@ export function getDefaultSettings(type) {
       return { url: '', poster: '', backgroundColor: 'transparent', paddingTop: '0rem', paddingBottom: '0rem' };
     case 'featured_products':
       return { title: 'Productos destacados', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
+    case 'featured_carousel':
+      return { title: 'Productos Destacados', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'collection_carousel':
       return { title: '', collection: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'categories_nav':

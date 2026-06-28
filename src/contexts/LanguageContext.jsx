@@ -28,8 +28,18 @@ export const useLanguage = () => {
   return context;
 };
 
-// Normaliza un código de idioma del navegador (p.ej. "en-US", "pt-BR") a uno
-// de los soportados. Cualquier idioma desconocido cae a español.
+// Nombre legible de cada idioma. El código interno sigue siendo 'pt', pero el
+// idioma representado es Portugués de Brasil (pt-BR).
+export const LANG_DISPLAY_NAMES = {
+  es: 'Español',
+  en: 'English',
+  pt: 'Português (Brasil)',
+};
+
+// Normaliza un código de idioma del navegador (p.ej. "en-US", "pt-BR", "pt") a
+// uno de los soportados tomando sólo la parte base (antes del guion). Así tanto
+// "pt-BR" como "pt" se mapean a 'pt' (Portugués de Brasil). Cualquier idioma
+// desconocido cae a español.
 const normalizeLang = (code) => {
   const base = String(code || '').toLowerCase().split('-')[0];
   return AVAILABLE.includes(base) ? base : DEFAULT_LANG;
@@ -91,6 +101,9 @@ export const LanguageProvider = ({ children }) => {
     setLang,
     t,
     available: AVAILABLE,
+    // Nombre legible del idioma actual (p.ej. "Português (Brasil)" para 'pt').
+    langName: LANG_DISPLAY_NAMES[lang] || lang,
+    langNames: LANG_DISPLAY_NAMES,
   };
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

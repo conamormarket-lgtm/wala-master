@@ -246,6 +246,14 @@ const GiftRegistryPage = () => {
   // y handleGift (con toast). No toca pago ni totales.
   const addGiftToCart = (cardProduct, item, evento, { silent } = {}) => {
     const price = cardProduct?.salePrice || cardProduct?.price || 0;
+    // GUARD (dinero): un producto fuera del catálogo cacheado (p.ej. visible===false)
+    // cae al fallback con price:0 y se podría regalar/pagar a S/0.00. Si el precio
+    // no es válido (<= 0), NO lo agregamos al carrito: avisamos y devolvemos null
+    // para que el llamador (proceedDate / handleGift) lo saltee.
+    if (!(price > 0)) {
+      addToast('Este producto no está disponible para regalar ahora.', 'warning');
+      return null;
+    }
     const productMock = {
       // Identidad del producto (igual que WishlistPublic).
       id: cardProduct?.id || item?.productId,
@@ -277,7 +285,10 @@ const GiftRegistryPage = () => {
       addToast('Ese producto ya no está disponible en el catálogo.', 'warning');
       return;
     }
-    addGiftToCart(cardProduct, item, evento, { silent: false });
+    // Si el producto no tiene precio válido, addGiftToCart devuelve null y ya avisó:
+    // no agregamos, no mostramos éxito ni navegamos al carrito.
+    const res = addGiftToCart(cardProduct, item, evento, { silent: false });
+    if (!res) return;
     addToast(
       `¡Regalo agregado! Se entregará el ${formatearFecha(evento.date)} para ${registry?.ownerName || 'Alguien'}.`,
       'success'
@@ -320,8 +331,16 @@ const GiftRegistryPage = () => {
   const proceedDate = (fecha) => {
     const lista = assignments[fecha._key] || [];
     if (lista.length === 0) return;
-    lista.forEach((a) => addGiftToCart(a.cardProduct, a.item, fecha, { silent: true }));
-    addToast(`${lista.length} regalo(s) para ${fecha._label} agregados al carrito`, 'success');
+    // addGiftToCart devuelve null si el producto no tiene precio válido (price<=0):
+    // esas asignaciones se SALTAN (con su propio aviso) y no se cuentan como agregadas.
+    let agregados = 0;
+    lista.forEach((a) => {
+      const res = addGiftToCart(a.cardProduct, a.item, fecha, { silent: true });
+      if (res) agregados += 1;
+    });
+    // Si ninguno se pudo agregar (todos sin precio), no navegamos: el guard ya avisó.
+    if (agregados === 0) return;
+    addToast(`${agregados} regalo(s) para ${fecha._label} agregados al carrito`, 'success');
     setAssignments((prev) => {
       const next = { ...prev };
       delete next[fecha._key];

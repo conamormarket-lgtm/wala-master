@@ -1,5 +1,5 @@
 .wrapper {
-  max-width: 720px;
+  max-width: 760px;
 }
 
 .title {
@@ -13,6 +13,179 @@
   font-size: 0.9375rem;
   color: var(--gris-texto-secundario);
   margin: 0 0 1.5rem 0;
+}
+
+/* ---------- Secciones ---------- */
+.section {
+  margin-bottom: 2rem;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gris-texto, #333);
+  margin: 0 0 0.25rem 0;
+}
+
+.sectionTitleSub {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--gris-texto-secundario);
+}
+
+.sectionHint {
+  font-size: 0.875rem;
+  color: var(--gris-texto-secundario);
+  margin: 0 0 0.75rem 0;
+}
+
+.refreshing {
+  font-size: 0.8125rem;
+  color: var(--gris-texto-secundario);
+  margin: 0.5rem 0 0 0;
+}
+
+/* ---------- Buscador ---------- */
+.searchInput {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9375rem;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--rojo-principal, #e63946);
+}
+
+/* ---------- Listas compactas (búsqueda y top) ---------- */
+.compactList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.compactItem,
+.topItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: #fff;
+  border: 1px solid var(--gris-borde, #e0e0e0);
+  border-radius: 8px;
+}
+
+.compactImage {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--gris-fondo);
+}
+
+.compactImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.compactInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.compactName {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--gris-texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compactMeta {
+  font-size: 0.8125rem;
+  color: var(--gris-texto-secundario);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.tagFeatured,
+.tagHidden {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.tagFeatured {
+  background: rgba(230, 57, 70, 0.12);
+  color: var(--rojo-principal, #e63946);
+}
+
+.tagHidden {
+  background: var(--gris-fondo, #f0f0f0);
+  color: var(--gris-texto-secundario);
+}
+
+/* ---------- Tabla top más vendidos ---------- */
+.tableHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.75rem 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--gris-texto-secundario);
+}
+
+.tableHead .colProd {
+  flex: 1;
+}
+
+.colRank {
+  width: 20px;
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 700;
+  color: var(--gris-texto-secundario);
+}
+
+.colNum {
+  width: 64px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.875rem;
+  color: var(--gris-texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.colAction {
+  width: 86px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.noProd {
+  color: var(--gris-texto-secundario);
 }
 
 .loading,
@@ -148,6 +321,35 @@
 
   .btnRemove {
     min-height: 40px;
+  }
+
+  /* Top más vendidos: en móvil ocultamos cabecera y rank, y movemos las
+     métricas a una línea bajo el nombre para evitar desbordes. */
+  .tableHead {
+    display: none;
+  }
+
+  .topItem {
+    flex-wrap: wrap;
+  }
+
+  .topItem .colRank {
+    display: none;
+  }
+
+  .topItem .colNum {
+    width: auto;
+    text-align: left;
+    font-size: 0.8125rem;
+    color: var(--gris-texto-secundario);
+  }
+
+  .topItem .colNum::before {
+    content: attr(data-label);
+  }
+
+  .colAction {
+    width: auto;
   }
 }
 

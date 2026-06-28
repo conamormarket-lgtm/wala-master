@@ -38,6 +38,12 @@ const NAV_LABEL_KEYS = {
 // Códigos de idioma -> etiqueta corta para el toggle del header.
 const LANG_LABELS = { es: 'ES', en: 'EN', pt: 'PT' };
 
+// Bandera (emoji, sin assets) por idioma. PT = portugués de Brasil (🇧🇷).
+const LANG_FLAGS = { es: '🇵🇪', en: '🇺🇸', pt: '🇧🇷' };
+
+// Nombre legible del idioma para accesibilidad (aria-label / title).
+const LANG_NAMES = { es: 'Español', en: 'English', pt: 'Português (Brasil)' };
+
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
   const { user, userProfile, isAdmin, updateUserProfile, activeMainCoins } = useAuth();
@@ -442,20 +448,29 @@ const Header = () => {
             )}
           </div>
 
-          {/* Toggle compacto de idioma (ES / EN / PT). Marca el idioma activo. */}
+          {/* Toggle compacto de idioma con bandera (🇵🇪 ES / 🇺🇸 EN / 🇧🇷 PT). Marca el idioma activo. */}
           <div className={styles.langToggle} role="group" aria-label="Idioma">
-            {available.map((code) => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => setLang(code)}
-                className={`${styles.langOption} ${lang === code ? styles.langOptionActive : ''}`}
-                aria-pressed={lang === code}
-                title={LANG_LABELS[code] || code.toUpperCase()}
-              >
-                {LANG_LABELS[code] || code.toUpperCase()}
-              </button>
-            ))}
+            {available.map((code) => {
+              const flag = LANG_FLAGS[code] || '';
+              const label = LANG_LABELS[code] || code.toUpperCase();
+              const name = LANG_NAMES[code] || label;
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setLang(code)}
+                  className={`${styles.langOption} ${lang === code ? styles.langOptionActive : ''}`}
+                  aria-pressed={lang === code}
+                  // El nombre completo del idioma queda en aria-label/title para accesibilidad,
+                  // aunque visualmente sólo mostremos la bandera + el código corto.
+                  aria-label={name}
+                  title={name}
+                >
+                  {/* La bandera es decorativa: el lector de pantalla ya anuncia el idioma vía aria-label. */}
+                  {flag && <span aria-hidden="true">{flag}</span>} {label}
+                </button>
+              );
+            })}
           </div>
 
           <Link to="/buscar" className={styles.iconButton} aria-label={t('common.search', 'Buscar')}>

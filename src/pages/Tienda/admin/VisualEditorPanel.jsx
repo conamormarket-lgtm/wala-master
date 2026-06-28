@@ -1939,6 +1939,103 @@ const VisualEditorPanel = () => {
         );
       }
 
+      if (section.type === 'featured_carousel') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: Carrusel de Destacados (Slider)
+            </h4>
+
+            <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '1rem'}}>
+              Muestra tus productos destacados en un slider horizontal. Usa la misma lista de "Productos Destacados" de la tienda.
+            </p>
+
+            <label>Título de la Sección</label>
+            <input
+              type="text"
+              value={s.title || ''}
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.title = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            />
+
+            <label>Productos visibles (en escritorio)</label>
+            <input
+              type="number"
+              value={s.visibleItems || 5}
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.visibleItems = Number(e.target.value);
+                updateSectionsDraft(newSections);
+              }}
+              min="1"
+              max="8"
+              step="1"
+              style={{width: '100%', padding: '8px', marginBottom: '15px'}}
+            />
+
+            <label style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px'}}>
+              <input
+                type="checkbox"
+                checked={s.autoPlay || false}
+                onChange={e => {
+                  const newSections = [...storeConfigDraft.sections];
+                  newSections[dynamicSectionIndex].settings.autoPlay = e.target.checked;
+                  updateSectionsDraft(newSections);
+                }}
+                style={{margin: 0}}
+              />
+              Reproducción automática (Autoplay)
+            </label>
+
+            {s.autoPlay && (
+              <>
+                <label>Velocidad de Autoplay (ms)</label>
+                <input
+                  type="number"
+                  value={s.autoPlaySpeed || 5000}
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.autoPlaySpeed = Number(e.target.value);
+                    updateSectionsDraft(newSections);
+                  }}
+                  min="1000"
+                  step="500"
+                  style={{width: '100%', padding: '8px', marginBottom: '15px'}}
+                />
+              </>
+            )}
+
+            <BackgroundStylesControl
+              settings={s}
+              onChange={(key, value) => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings[key] = value;
+                updateSectionsDraft(newSections);
+              }}
+            />
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 2rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       if (section.type === 'hero_carousel') {
         const s = section.settings || {};
         return (

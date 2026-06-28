@@ -46,6 +46,11 @@ export const dictionaries = {
     'lang.popupTitle': '¿Ver Walá en tu idioma?',
     'lang.popupYes': 'Sí, cambiar idioma',
     'lang.popupOriginal': 'Ver en Español',
+
+    // Nombres legibles de cada idioma (para selectores / accesibilidad).
+    'lang.name.es': 'Español',
+    'lang.name.en': 'Inglés',
+    'lang.name.pt': 'Portugués (Brasil)',
   },
 
   // ── Inglés ────────────────────────────────────────────────────────────────
@@ -84,9 +89,16 @@ export const dictionaries = {
     'lang.popupTitle': 'View Walá in your language?',
     'lang.popupYes': 'Yes, switch language',
     'lang.popupOriginal': 'View in Spanish',
+
+    // Nombres legibles de cada idioma (para selectores / accesibilidad).
+    'lang.name.es': 'Spanish',
+    'lang.name.en': 'English',
+    'lang.name.pt': 'Portuguese (Brazil)',
   },
 
-  // ── Portugués ─────────────────────────────────────────────────────────────
+  // ── Portugués de Brasil (pt-BR) ───────────────────────────────────────────
+  // Todas las traducciones de esta sección son pt-BR. El código de idioma sigue
+  // siendo 'pt'; navigator.language 'pt-BR'/'pt' se normaliza a 'pt'.
   pt: {
     'nav.tienda': 'Loja',
     'nav.crear': 'Criar',
@@ -122,6 +134,11 @@ export const dictionaries = {
     'lang.popupTitle': 'Ver Walá no seu idioma?',
     'lang.popupYes': 'Sim, mudar idioma',
     'lang.popupOriginal': 'Ver em Espanhol',
+
+    // Nombres legibles de cada idioma (para selectores / accesibilidad).
+    'lang.name.es': 'Espanhol',
+    'lang.name.en': 'Inglês',
+    'lang.name.pt': 'Português (Brasil)',
   },
 };
 

@@ -77,6 +77,42 @@ const SubscriptionSurveyPage = () => {
     if (userProfile?.birthDate) setOwnBirthDate(userProfile.birthDate);
   }, [userProfile?.birthDate]);
 
+  // ── Precarga de destinatarios existentes al re-tomar la encuesta ─────────────
+  // PROBLEMA: al re-tomar la encuesta, finalRecipients arrancaba vacío y el guardado
+  // SOBREESCRIBÍA el array giftRecipients del perfil (se perdían los previos).
+  // FIX: precargamos finalRecipients desde userProfile.giftRecipients (mismo shape
+  // interno: id/roleKey/roleDisplay/name/gender/events/…), normalizando defaults
+  // para poder EDITAR sobre lo existente. Se siembra una sola vez (cuando aún no
+  // hay nada cargado) para no pisar lo que el usuario edite en esta sesión.
+  const recipientsSeededRef = React.useRef(false);
+  useEffect(() => {
+    if (recipientsSeededRef.current) return;
+    const existentes = userProfile?.giftRecipients;
+    if (!Array.isArray(existentes) || existentes.length === 0) return;
+    recipientsSeededRef.current = true;
+    const mapped = existentes.map((r) => ({
+      // Garantiza un id estable para el matching/edición (genera uno si falta).
+      id: r?.id || Math.random().toString(36).substring(2, 9),
+      roleKey: r?.roleKey || 'otros',
+      roleDisplay: r?.roleDisplay || ROLES_MAP[r?.roleKey]?.singular || 'Otra persona',
+      name: r?.name || '',
+      gender: r?.gender || '',
+      events: Array.isArray(r?.events) && r.events.length > 0
+        ? r.events.map((ev) => ({
+            id: ev?.id || Math.random().toString(36).substring(2, 9),
+            type: ev?.type || 'Cumpleaños',
+            date: ev?.date || '',
+            ...(ev?.customName != null && { customName: ev.customName }),
+          }))
+        : [{ id: Math.random().toString(36).substring(2, 9), type: 'Cumpleaños', date: '' }],
+      selectedCategories: Array.isArray(r?.selectedCategories) ? r.selectedCategories : [],
+      categoryAnswers: r?.categoryAnswers || {},
+      familySet: r?.familySet ?? false,
+      familyAnswers: r?.familyAnswers || { q1: '', q2: '', q3: '' },
+    }));
+    setFinalRecipients(mapped);
+  }, [userProfile?.giftRecipients]);
+
   const handleSkip = async () => {
     try {
       await updateUserProfile({ lastSurveyPromptedAt: Date.now() });
@@ -272,13 +308,28 @@ const SubscriptionSurveyPage = () => {
   };
 
   const handleFinalSave = async () => {
+    // Guard: sin perfil cargado no podemos guardar de forma segura (evita TypeError
+    // al leer userProfile.giftRecipients). El botón vuelve a habilitarse.
+    if (!userProfile) {
+      alert('Tu perfil aún se está cargando. Inténtalo de nuevo en unos segundos.');
+      return;
+    }
     setSaving(true);
     try {
       const validRecipients = finalRecipients.filter(r => isRecipientComplete(r));
-      
+
+      // ── FUSIÓN con los destinatarios previos (no reemplazar el array entero) ──
+      // Aunque ahora precargamos finalRecipients, fusionamos por id contra el perfil
+      // como red de seguridad: conservamos los previos que NO estén ya en validRecipients
+      // (p.ej. uno que quedó incompleto en esta sesión no debería borrarse del perfil).
+      const previos = Array.isArray(userProfile?.giftRecipients) ? userProfile.giftRecipients : [];
+      const idsValidos = new Set(validRecipients.map(r => r?.id).filter(Boolean));
+      const previosNoTocados = previos.filter(r => r?.id && !idsValidos.has(r.id));
+      const recipientsAGuardar = [...validRecipients, ...previosNoTocados];
+
       // Calcular monedas ganadas por fechas nuevas agregadas
       let oldTotalFechas = 0;
-      if (userProfile.giftRecipients) {
+      if (userProfile?.giftRecipients) {
         userProfile.giftRecipients.forEach(r => {
           if (r.events) oldTotalFechas += r.events.length;
         });
@@ -303,7 +354,8 @@ const SubscriptionSurveyPage = () => {
       const profileUpdates = {
         surveyBasicData: basicAnswers,
         giftRoles: selectedRoles,
-        giftRecipients: validRecipients,
+        // Array FUSIONADO: válidos de esta sesión + previos del perfil no tocados.
+        giftRecipients: recipientsAGuardar,
         hasCompletedSurvey: true
       };
       if (ownBirthDate) {

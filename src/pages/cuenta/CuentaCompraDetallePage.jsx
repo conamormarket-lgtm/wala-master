@@ -159,8 +159,10 @@ const CuentaCompraDetallePage = () => {
     const lineasPedido = getProductosPedido(pedido);
 
     // Set de productoId comprados en este pedido (para excluir de relacionados).
+    // Filtramos ANTES de String() para no meter el string 'undefined' al Set
+    // (líneas de pedidos nativos del ERP pueden no traer productoId).
     const comprados = new Set(
-      lineasPedido.map((l) => String(l?.productoId)).filter(Boolean)
+      lineasPedido.map((l) => l?.productoId).filter(Boolean).map(String)
     );
 
     // Índice productoId -> producto del catálogo (tolerante a catálogo vacío).
@@ -293,18 +295,33 @@ const CuentaCompraDetallePage = () => {
   const partesDireccionSecundaria = [distrito, departamento].filter(Boolean);
 
   // Totales (SOLO se leen y se pintan; no se recalcula ningún cobro).
-  const totalProductos = lineas.reduce((acc, l) => {
+  // Los pedidos NATIVOS del ERP (colección 'pedidos') traen líneas SIN precio ni
+  // subtotal → totalProductos=0 y, al deducir el envío, este absorbía todo el
+  // total ("Productos S/0.00, Envío S/<total>"). Detectamos si hay subtotales
+  // reales en alguna línea para decidir cómo desglosar.
+  const tieneSubtotalesReales = lineas.some(
+    (l) => l?.subtotal != null || l?.precio != null
+  );
+  const totalProductosCalc = lineas.reduce((acc, l) => {
     const sub = l?.subtotal != null ? toNum(l.subtotal) : toNum(l?.precio) * toNum(l?.cantidad);
     return acc + sub;
   }, 0);
   const descuentoMonedas = toNum(pedido.descuentoMonedas);
   const total = toNum(pedido.montoTotal ?? pedido.total);
   // Envío: si el pedido lo persistió (costoEnvio), úsalo; si no (pedidos viejos),
-  // dedúcelo para que el desglose cuadre: Total = Productos − Descuento + Envío.
+  // dedúcelo SOLO cuando hay subtotales reales para que el desglose cuadre:
+  // Total = Productos − Descuento + Envío.
   const envioPersistido = pedido.costoEnvio ?? pedido.envioMonto ?? pedido.montoEnvio;
-  const envioMonto = envioPersistido != null
-    ? toNum(envioPersistido)
-    : Math.max(0, total - (totalProductos - descuentoMonedas));
+
+  // Cuando NO hay subtotales reales (pedido nativo del ERP), mostramos el TOTAL
+  // como Productos y NO deducimos envío (envioMonto=0, fila de envío oculta), así
+  // evitamos el desglose confuso "Productos S/0.00 + Envío S/<total>".
+  const totalProductos = tieneSubtotalesReales ? totalProductosCalc : total;
+  const envioMonto = !tieneSubtotalesReales
+    ? 0
+    : envioPersistido != null
+      ? toNum(envioPersistido)
+      : Math.max(0, total - (totalProductosCalc - descuentoMonedas));
 
   // ── WhatsApp por marca ──────────────────────────────────────────────────
   const brandIds = getBrandIdsDePedido(pedido, catalogo);
@@ -473,14 +490,19 @@ const CuentaCompraDetallePage = () => {
               </div>
             )}
 
-            <div className={styles.resumenRow}>
-              <span className={styles.resumenLabel}>Envío</span>
-              {envioMonto > 0 ? (
-                <span>{formatCurrency(envioMonto)}</span>
-              ) : (
-                <span className={styles.resumenGratis}>Gratis</span>
-              )}
-            </div>
+            {/* Fila de Envío: se OCULTA en pedidos nativos del ERP (sin subtotales
+                reales), donde el Total ya se muestra como Productos. Mostrarla como
+                "Gratis"/"S/0.00" ahí confundiría (el envío puede ir incluido en el total). */}
+            {tieneSubtotalesReales && (
+              <div className={styles.resumenRow}>
+                <span className={styles.resumenLabel}>Envío</span>
+                {envioMonto > 0 ? (
+                  <span>{formatCurrency(envioMonto)}</span>
+                ) : (
+                  <span className={styles.resumenGratis}>Gratis</span>
+                )}
+              </div>
+            )}
 
             <hr className={styles.resumenDivider} />
 

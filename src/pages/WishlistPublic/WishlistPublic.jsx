@@ -83,7 +83,9 @@ const WishlistPublic = () => {
       price: price,
       // Flag para saber que es un regalo
       isWishlistGift: true,
-      wishlistUserCode: userCode
+      // Normalizamos el casing igual que GiftRegistryPage para que markItemAsGifted
+      // matchee el código almacenado (la CF compara en MAYÚSCULAS).
+      wishlistUserCode: String(userCode || '').trim().toUpperCase()
     };
 
     addToCart(productMock, {}, null, 1);

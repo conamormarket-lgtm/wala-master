@@ -6,6 +6,7 @@ import ProductGrid from './components/ProductGrid';
 import VisualCategoryNav from './components/VisualCategoryNav/VisualCategoryNav';
 import ProductSearch from './components/ProductSearch';
 import CollectionCarousel from './components/CollectionCarousel';
+import FeaturedCarousel from './components/FeaturedCarousel';
 import AnnouncementBar from './components/AnnouncementBar';
 import HeroCarousel from './components/HeroCarousel';
 import FlashSales from './components/FlashSales';
@@ -443,6 +444,22 @@ const TiendaPage = ({ isLandingPage = false }) => {
               title={s.title}
               collectionName={s.collection}
               categories={categoriesData}
+            />
+          </section>
+        );
+      case 'featured_carousel':
+        // Reutiliza la MISMA data de productos destacados que 'featured_products'
+        // (featuredData/featuredProducts) — no duplicamos la query.
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
+            <FeaturedCarousel
+              title={s.title}
+              products={featuredProducts}
+              categories={categoriesData}
+              visibleItems={s.visibleItems}
+              autoPlay={s.autoPlay}
+              autoPlaySpeed={s.autoPlaySpeed}
             />
           </section>
         );

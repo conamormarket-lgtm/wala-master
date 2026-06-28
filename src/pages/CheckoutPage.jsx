@@ -94,7 +94,7 @@ const CheckoutPage = () => {
   // eslint-disable-next-line no-unused-vars
   // eslint-disable-next-line no-unused-vars
   const { items, getTotalPrice, clearSelectedItems } = useCart();
-  const { user, userProfile, updateUserProfile, freezeMonedas, activeMainCoins } = useAuth();
+  const { user, userProfile, loading: authLoading, updateUserProfile, freezeMonedas, activeMainCoins } = useAuth();
   const toast = useGlobalToast();
 
   // ── Selección de compra ───────────────────────────────────────────────────
@@ -341,7 +341,11 @@ const CheckoutPage = () => {
   const deliveryTooSoon = deliveryBusinessDays != null && deliveryBusinessDays < 7;
 
   const formik = useFormik({
-    enableReinitialize: true,
+    // ── BUG FIX (conexiones lentas): NO usamos enableReinitialize ────────────
+    // userProfile carga ASÍNCRONO. Con enableReinitialize, al llegar el perfil
+    // Formik REINICIALIZABA initialValues y PISABA lo que el usuario ya tecleó
+    // (los datos "se borraban" en redes lentas). En su lugar sembramos el perfil
+    // por campo vía useEffect (seededRef), solo si el campo sigue vacío.
     initialValues: {
       customerName: userProfile?.displayName || user?.displayName || guestSavedInfo.customerName || '',
       // País: prefill desde el perfil del usuario o lo guardado como invitado; default Perú ('PE').
@@ -1021,6 +1025,43 @@ const CheckoutPage = () => {
 
   const { setFieldValue } = formik;
 
+  // ── Siembra POR CAMPO del perfil/invitado sin pisar lo tecleado ──────────────
+  // Reemplaza el viejo enableReinitialize (que borraba lo escrito al cargar el
+  // perfil async). PROBLEMA del latch global anterior (sembradoRef): cuando
+  // llegaba `user` pero `userProfile` aún era null, el latch se cerraba y
+  // dni/phone/country/docType del perfil (que cargan DESPUÉS) NUNCA se sembraban
+  // para el usuario logueado.
+  // FIX: usamos un Set de campos ya sembrados (seededRef) y sembramos CADA campo
+  // la PRIMERA vez que aparece su valor, SOLO si el campo sigue vacío
+  // (!formik.values[campo], NO `touched`). Así el logueado recupera su prefijado
+  // cuando termina de cargar el perfil, sin pisar lo que ya tecleó. El invitado
+  // conserva sus initialValues de guestSavedInfo (esos campos ya traen valor, así
+  // que el guard !formik.values[campo] evita pisarlos).
+  const seededRef = useRef(new Set());
+  useEffect(() => {
+    // Esperamos a tener algo del usuario logueado (perfil o auth) antes de sembrar.
+    if (!userProfile && !user) return;
+
+    const candidatos = [
+      ['customerName', userProfile?.displayName || user?.displayName],
+      ['country', userProfile?.country],
+      ['dni', userProfile?.dni],
+      ['docType', userProfile?.docType],
+      ['phone', userProfile?.phone],
+      ['email', user?.email || userProfile?.email],
+    ];
+
+    candidatos.forEach(([campo, valor]) => {
+      // Siembra cada campo UNA sola vez (su primera aparición con valor) y SOLO
+      // si sigue vacío: no pisa lo tecleado ni los initialValues del invitado.
+      if (valor && !seededRef.current.has(campo) && !formik.values[campo]) {
+        setFieldValue(campo, valor, false);
+        seededRef.current.add(campo);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile, user]);
+
   // ── Analytics: contexto de usuario reutilizable para los eventos del embudo ──
   const analyticsUserCtx = React.useMemo(
     () =>
@@ -1094,12 +1135,26 @@ const CheckoutPage = () => {
 
   // ── Autodetección de país (solo si el usuario NO ha tocado el selector y no hay país en perfil) ──
   // No pisa la elección manual del usuario ni un país ya cargado desde el perfil/invitado.
+  //
+  // OJO con la carrera: userProfile carga ASÍNCRONO. En el mount de un usuario
+  // logueado, AuthContext ya puso `user` pero `userProfile` sigue null (ver
+  // AuthContext.jsx: setUser antes que setUserProfile, tras varios await). Si
+  // decidiéramos aquí con userProfile aún null, autodetectaríamos y pisaríamos el
+  // país real del perfil cuando éste llegue. Por eso esperamos a que la auth se
+  // asiente (authLoading === false) antes de decidir: en ese punto, o es invitado
+  // (user/userProfile null) o es logueado con su perfil ya cargado. Un ref one-shot
+  // garantiza que la decisión se tome una sola vez.
+  const geoDetectRef = useRef(false);
   useEffect(() => {
+    if (geoDetectRef.current) return;            // ya se decidió una vez
+    if (authLoading) return;                      // auth/perfil aún resolviéndose → esperar
+    geoDetectRef.current = true;
+    if (userProfile?.country || guestSavedInfo.country) return; // ya hay país conocido: nunca autodetectar
     let active = true;
-    if (userProfile?.country || guestSavedInfo.country) return; // ya hay país conocido
     (async () => {
       try {
         const detected = await detectCountry();
+        // Re-chequeo defensivo: el usuario pudo elegir país mientras detectábamos.
         if (active && detected?.code && !countryTouchedRef.current) {
           setFieldValue('country', detected.code);
         }
@@ -1110,7 +1165,7 @@ const CheckoutPage = () => {
     })();
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, userProfile]);
 
   // País actual del formulario; esPeru gobierna qué UI/validación mostrar (default seguro: Perú).
   const formIsPeru = formik.values.country === 'PE' || !formik.values.country;

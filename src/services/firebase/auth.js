@@ -117,7 +117,10 @@ export const signInWithGoogle = async () => {
     try {
       await GoogleAuth.initialize({
         clientId: '572322137024-0bl118c7mnuglq3fbnbdlhv5kg36dp9a.apps.googleusercontent.com',
-        scopes: ['profile', 'email'],
+        // Añadimos el scope de cumpleaños (People API) para paridad con el login web
+        // y poder importar el cumpleaños en móvil. Es OPCIONAL y tolerante: si no se
+        // concede, el flujo de login sigue igual (el cumpleaños se pide manualmente).
+        scopes: ['profile', 'email', 'https://www.googleapis.com/auth/user.birthday.read'],
         grantOfflineAccess: true,
       });
       const googleUser = await GoogleAuth.signIn();
