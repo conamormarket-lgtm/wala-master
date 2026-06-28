@@ -52,10 +52,10 @@ Sesión doble: (1) **editor de texto enriquecido** en el editor visual y (2) **d
 ### Seguridad (sin cambios en las reglas vivas)
 - 🔧 **Las reglas vivas siguen 100 % abiertas** en la base `(default)` de `sistema-gestion-3b225` porque el **ERP comparte el proyecto y NO usa Firebase Auth** (sus peticiones llegan sin identidad). El `firestore.rules.propuesto` está **guardado pero NO desplegado**; su despliegue depende de la precondición PayPal server-side (cerrar `pedidos_web`) y del track de App Check / migrar el ERP a Firebase Auth (§6/§7 de ESTADO).
 
-### 🔧 EN CURSO (no terminado en esta sesión)
-- 🔧 **Recepción de Pedidos (admin)**: nueva área para **organizar envíos** del portal WALA (`RecepcionPedidos.jsx` + `DashRecepcion.jsx` + `RecepcionPedidos.module.css`), solo-lectura, consume `useAdminWalaOrders` (hook) sobre la capa `adminOrders.js` que lee `pedidos_web`+`pedidos` del ERP. Aún sin commitear.
-- 🔧 **PayPal server-side wiring**: `PaypalCheckout.jsx` ya lee el flag `VITE_PAYPAL_SERVER_SIDE` (OFF por defecto) para cablear `createPaypalOrderSecure`/`capturePaypalOrderSecure`; falta terminar y probar el cableado real.
-- 🔧 **Botón de backfill de analítica** en el dashboard (`BackfillAnaliticaButton.jsx` + `.module.css`) que dispara `aggregateAnalyticsDailyBackfill`. Aún sin commitear.
+### ✅ Desplegado al final de la sesión (PayPal con flag OFF)
+- ✅ **Recepción de Pedidos (admin)**: nueva área para **organizar envíos** del portal WALA (`RecepcionPedidos.jsx` + `DashRecepcion.jsx` + `RecepcionPedidos.module.css`), solo-lectura, consume `useAdminWalaOrders` (hook) sobre la capa `adminOrders.js` que lee `pedidos_web`+`pedidos` del ERP. Embebido al final del dashboard de analíticas + ruta `/admin/dashboard/recepcion`. **Desplegado.**
+- 🔧 **PayPal server-side wiring**: el cableado de código está **completo y desplegado con el flag OFF** — `PaypalCheckout.jsx` invoca `createPaypalOrderSecure`/`capturePaypalOrderSecure` cuando el flag `VITE_PAYPAL_SERVER_SIDE === 'true'` (OFF por defecto, sin cambio de comportamiento). Solo falta la **activación por el dueño**: configurar `PAYPAL_CLIENT_ID`/`PAYPAL_SECRET` (+ `PAYPAL_ENV='live'` en producción), probar en sandbox y recién entonces poner `VITE_PAYPAL_SERVER_SIDE=true` en Vercel y redeployar.
+- ✅ **Botón de backfill de analítica** en el dashboard (`BackfillAnaliticaButton.jsx` + `.module.css`) que dispara `aggregateAnalyticsDailyBackfill`. **Desplegado.**
 
 ### ⬜ Pendiente del DUEÑO (no de código)
 - ⬜ **Activar los flags con datos reales**: encender `CULQI_VERIFY_SIGNATURE` y `ENFORCE_PAYMENT_OWNERSHIP` una vez verificados contra cobros reales.

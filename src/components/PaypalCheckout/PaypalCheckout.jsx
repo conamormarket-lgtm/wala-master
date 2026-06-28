@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { updateOrderInERP, erpDb } from '../../services/erp/firebase';
+
+// Flag de build (default OFF). Cuando es 'true', el cobro de PayPal se delega a
+// las Cloud Functions seguras (createPaypalOrderSecure / capturePaypalOrderSecure):
+// el monto USD lo recalcula y la captura la valida el SERVIDOR (Admin SDK), y el
+// pedido se marca pagado server-side. Con el flag OFF, el comportamiento es
+// EXACTAMENTE el flujo cliente histórico (sin cambios de riesgo).
+// Nota: se lee con import.meta.env (como config.js), NO con process.env.
+const PAYPAL_SERVER = import.meta.env.VITE_PAYPAL_SERVER_SIDE === 'true';
 
 /**
  * Checkout de PayPal (cobro internacional).
@@ -59,7 +68,47 @@ const PaypalCheckout = ({
     intent: "capture",
   };
 
+  // Referencia del pedido web usada por las Cloud Functions seguras para
+  // recalcular el monto y validar la captura contra el pedido REAL.
+  const targetWebOrderIdRef = webOrderId || pedido.id;
+
   const createOrder = (data, actions) => {
+    // ── Modo SEGURO (flag ON): la orden la crea el SERVIDOR ──
+    // No confiamos el monto al cliente: la CF recalcula el USD del pedido real
+    // (pedidos_web/pedidos) y crea la orden de PayPal. Devolvemos su orderID
+    // para que el SDK de PayPal abra esa orden ya creada server-side.
+    if (PAYPAL_SERVER) {
+      const createSecure = httpsCallable(getFunctions(), 'createPaypalOrderSecure');
+      return createSecure({
+        pedidoId: targetWebOrderIdRef,
+        // Se envían solo como REFERENCIA (display/diagnóstico); el monto
+        // autoritativo lo pone el servidor, no estos valores.
+        webOrderId: targetWebOrderIdRef,
+        amountUsd: amountInUSD,
+      })
+        .then((res) => {
+          const orderID = res && res.data && res.data.orderID;
+          if (!orderID) {
+            throw new Error('La respuesta del servidor no incluyó el orderID de PayPal.');
+          }
+          // PayPalButtons espera que createOrder resuelva con el orderID (string).
+          return orderID;
+        })
+        .catch((err) => {
+          // Estado seguro: si el servidor no pudo crear la orden (p.ej.
+          // failed-precondition por envs sin configurar), mostramos un error
+          // claro y NO se abre ningún cobro. No se marca nada como pagado.
+          console.error('createPaypalOrderSecure falló:', err);
+          setError(
+            err?.message ||
+              'No se pudo iniciar el pago con PayPal de forma segura. Inténtalo más tarde o contacta a soporte.'
+          );
+          // Re-lanzar para que el SDK de PayPal aborte el flujo (no abre aprobador).
+          throw err;
+        });
+    }
+
+    // ── Modo CLIENTE (flag OFF, default): comportamiento histórico intacto ──
     return actions.order.create({
       purchase_units: [
         {
@@ -76,6 +125,33 @@ const PaypalCheckout = ({
   const onApprove = async (data, actions) => {
     try {
       setIsProcessing(true);
+
+      // ── Modo SEGURO (flag ON): la captura y el marcado de pagado los hace el SERVIDOR ──
+      // NO llamamos actions.order.capture() NI escribimos en Firestore desde el
+      // cliente. La CF captura en PayPal, valida COMPLETED + monto + moneda +
+      // reference_id, y marca el pedido pagado en pedidos_web (idempotente por
+      // captureId). El front solo confía en lo que devuelve la CF.
+      if (PAYPAL_SERVER) {
+        const captureSecure = httpsCallable(getFunctions(), 'capturePaypalOrderSecure');
+        const res = await captureSecure({
+          // La CF acepta tanto orderID (de PayPal) como pedidoId.
+          orderID: data.orderID,
+          pedidoId: targetWebOrderIdRef,
+          webOrderId: targetWebOrderIdRef,
+        });
+        const cap = res && res.data;
+        if (!cap || cap.success !== true || cap.status !== 'COMPLETED') {
+          // El servidor no confirmó el pago: estado seguro, no marcamos nada.
+          throw new Error('El servidor no confirmó el pago de PayPal.');
+        }
+        // No reintentamos captura en cliente: la CF deduplica por captureId.
+        if (onSuccess) {
+          onSuccess(cap);
+        }
+        return;
+      }
+
+      // ── Modo CLIENTE (flag OFF, default): comportamiento histórico intacto ──
       const details = await actions.order.capture();
 
       // Actualizar el pedido en la base de datos
@@ -132,7 +208,18 @@ const PaypalCheckout = ({
       }
     } catch (err) {
       console.error("Error al procesar pago de PayPal:", err);
-      setError("Hubo un error al procesar o guardar el pago. Por favor contacta a soporte.");
+      if (PAYPAL_SERVER) {
+        // Modo seguro: estado seguro garantizado. Si la CF falló (p.ej.
+        // failed-precondition por envs sin configurar, o monto que no coincide),
+        // NO se marcó nada como pagado y no hay riesgo de doble cobro. Mostramos
+        // el mensaje del servidor cuando exista para facilitar el diagnóstico.
+        setError(
+          err?.message ||
+            "No se pudo verificar el pago con el servidor. No se realizó ningún cargo confirmado; intenta de nuevo o contacta a soporte."
+        );
+      } else {
+        setError("Hubo un error al procesar o guardar el pago. Por favor contacta a soporte.");
+      }
     } finally {
       setIsProcessing(false);
     }

@@ -2808,13 +2808,22 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// S-1 — PAGOS PAYPAL SERVER-SIDE (NUEVO, AÚN NO CABLEADO AL CLIENTE)
+// S-1 — PAGOS PAYPAL SERVER-SIDE (CABLEADO AL CLIENTE TRAS EL FLAG, OFF POR DEFECTO)
 // ────────────────────────────────────────────────────────────────────────────
 // Estas dos Cloud Functions mueven el cobro de PayPal al servidor para cerrar el
-// agujero S-1 (hoy el cliente captura el pago en el navegador y escribe directo a
-// pedidos_web). NO se llaman aún desde PaypalCheckout.jsx: quedan listas para
-// cablear DESPUÉS de configurar PAYPAL_CLIENT_ID/PAYPAL_SECRET y de probarlas en
-// sandbox. Como nadie las invoca todavía, su existencia NO rompe nada.
+// agujero S-1 (con el flujo viejo el cliente captura el pago en el navegador y
+// escribe directo a pedidos_web). PaypalCheckout.jsx YA las invoca
+// (createPaypalOrderSecure / capturePaypalOrderSecure) cuando el build flag
+// VITE_PAYPAL_SERVER_SIDE === 'true'. Por defecto el flag está APAGADO, así que el
+// cliente sigue usando el flujo viejo y la sola existencia de estas CFs NO rompe
+// nada.
+//
+// Pasos para ACTIVAR el flujo server-side (los hace el DUEÑO):
+//   1) configurar PAYPAL_CLIENT_ID y PAYPAL_SECRET en las Cloud Functions,
+//   2) para producción, poner PAYPAL_ENV='live' (sin esto se usa sandbox),
+//   3) probar primero en sandbox,
+//   4) recién entonces poner VITE_PAYPAL_SERVER_SIDE=true en Vercel y redeployar
+//      el frontend.
 //
 // Flujo previsto (igual de robusto que processCulqiPayment/H-11):
 //   1) createPaypalOrderSecure({ pedidoId }):
@@ -2832,7 +2841,9 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
 //          de forma idempotente por captureId.
 //
 // Si faltan envs (PAYPAL_CLIENT_ID/PAYPAL_SECRET), ambas responden un error CLARO
-// (failed-precondition). No pasa nada porque ningún cliente las llama todavía.
+// (failed-precondition). Con VITE_PAYPAL_SERVER_SIDE apagado (por defecto) ningún
+// cliente las llama, así que esto no afecta a producción hasta que el dueño active
+// el flag.
 
 // Base de la API REST de PayPal según el modo (sandbox por defecto = seguro para probar).
 // Para producción, el dueño debe poner PAYPAL_ENV='live'.
