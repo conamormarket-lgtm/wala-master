@@ -67,6 +67,35 @@ export default function TrendChart({
   // Filas saneadas (array seguro). No mutamos los objetos originales.
   const rows = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
+  // ¿Hay algún valor numérico > 0 en alguna serie? Con datos escasos (1-2 días o
+  // valores pequeños) el área puede verse plana/vacía; estas señales nos sirven
+  // para forzar puntos visibles y un dominio Y razonable.
+  const { maxVal, hasAnyValue } = useMemo(() => {
+    let max = 0;
+    let any = false;
+    rows.forEach((r) => {
+      safeSeries.forEach((s) => {
+        const v = Number(r?.[s.key]) || 0;
+        if (v > 0) any = true;
+        if (v > max) max = v;
+      });
+    });
+    return { maxVal: max, hasAnyValue: any };
+  }, [rows, safeSeries]);
+
+  // Con pocos puntos (o un único día) los segmentos casi no se ven: mostramos el
+  // dot de cada punto para que el dato exista visualmente. Umbral generoso.
+  const showDots = rows.length > 0 && rows.length <= 6;
+
+  // Dominio Y: si hay datos, dejamos un techo con holgura (~15%, mínimo 1) para
+  // que la serie no quede pegada al borde superior ni se vea aplastada. Si no hay
+  // ningún valor, dejamos que recharts autoescale (mostrará la línea base en 0).
+  const yDomain = useMemo(() => {
+    if (!hasAnyValue) return [0, 'auto'];
+    const top = Math.max(1, Math.ceil(maxVal * 1.15));
+    return [0, top];
+  }, [hasAnyValue, maxVal]);
+
   // Sin datos o sin series útiles: estado vacío tolerante, sin saltos de layout.
   const hasData = rows.length > 0 && safeSeries.length > 0;
   if (!hasData) {
@@ -139,11 +168,14 @@ export default function TrendChart({
             }}
           />
 
-          {/* Eje Y fino: ancho acotado, valores formateados. */}
+          {/* Eje Y fino: ancho acotado, valores formateados. Dominio con holgura
+              para que con datos escasos la serie no quede aplastada en el borde. */}
           <YAxis
             axisLine={false}
             tickLine={false}
             width={48}
+            domain={yDomain}
+            allowDecimals={false}
             tick={{
               fontSize: 11,
               fill: '#475569',
@@ -171,8 +203,13 @@ export default function TrendChart({
               strokeWidth={2.5}
               fill={`url(#${s.gradId})`}
               fillOpacity={1}
-              // Puntos ocultos en reposo; aparecen al pasar el cursor.
-              dot={false}
+              // Con muchos puntos: ocultos en reposo (aparecen al pasar el cursor).
+              // Con datos escasos: visibles, para que un día suelto no se vea vacío.
+              dot={
+                showDots
+                  ? { r: 3, strokeWidth: 2, stroke: '#ffffff', fill: s.color }
+                  : false
+              }
               activeDot={{
                 r: 4,
                 strokeWidth: 2,

@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { erpDb, isErpFirestoreAvailable } from './erp/firebase';
 import { db } from './firebase/config';
+import { getProducts, getCategories } from './products';
 
 /**
  * salesAnalytics — MÁS VENDIDOS desde el ERP.
@@ -273,8 +274,73 @@ export async function getTopSelling({ days = 30, topLimit = 10 } = {}) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Cachés en memoria (a nivel de módulo) para resolver nombres/imágenes sin
+// re-leer Firestore en cada llamada del dashboard. Se cachea la PROMESA para
+// deduplicar lecturas concurrentes; si falla, se limpia para reintentar luego.
+// ---------------------------------------------------------------------------
+let _productsCachePromise = null; // Promise<Map<productId, { name, mainImage }>>
+let _categoriesCachePromise = null; // Promise<Map<categoryId, name>>
+
+/**
+ * Mapa cacheado productId -> { name, mainImage } desde `productos_wala`.
+ * Solo contiene productos REALES de WALA (sirve para filtrar el ranking).
+ * Tolerante a fallos: si la lectura falla, devuelve un Map vacío.
+ */
+function loadWalaProductsMap() {
+  if (_productsCachePromise) return _productsCachePromise;
+  _productsCachePromise = (async () => {
+    const map = new Map();
+    try {
+      const { data, error } = await getProducts([]);
+      if (error || !Array.isArray(data)) return map;
+      data.forEach((p) => {
+        if (!p?.id) return;
+        // mainImage del producto; fallback a la primera imagen normalizada.
+        const image = p.mainImage || (Array.isArray(p.images) ? p.images[0] : '') || '';
+        map.set(p.id, { name: cleanName(p.name, 'Producto'), mainImage: image });
+      });
+    } catch (err) {
+      console.warn('[salesAnalytics] No se pudieron cargar productos_wala:', err?.message);
+    }
+    return map;
+  })();
+  // Si la promesa rechaza (no debería: capturamos arriba), permitir reintento.
+  _productsCachePromise.catch(() => { _productsCachePromise = null; });
+  return _productsCachePromise;
+}
+
+/**
+ * Mapa cacheado categoryId -> name desde `categories`.
+ * Sirve para resolver una clave de línea que en realidad sea un categoryId.
+ * Tolerante a fallos: si la lectura falla, devuelve un Map vacío.
+ */
+function loadCategoriesMap() {
+  if (_categoriesCachePromise) return _categoriesCachePromise;
+  _categoriesCachePromise = (async () => {
+    const map = new Map();
+    try {
+      const { data, error } = await getCategories();
+      if (error || !Array.isArray(data)) return map;
+      data.forEach((c) => {
+        if (!c?.id) return;
+        map.set(c.id, cleanName(c.name, c.id));
+      });
+    } catch (err) {
+      console.warn('[salesAnalytics] No se pudieron cargar categories:', err?.message);
+    }
+    return map;
+  })();
+  _categoriesCachePromise.catch(() => { _categoriesCachePromise = null; });
+  return _categoriesCachePromise;
+}
+
 /**
  * getTopSellingWala — MÁS VENDIDOS NATIVOS DE WALA (su PROPIO negocio).
+ *
+ * DROP-IN de getTopSelling: devuelve EXACTAMENTE el mismo shape que consume el
+ * dashboard (MasVendidosSection): topByUnits/topByAmount (con name e image),
+ * topLines, totalOrders, totalRevenue, totalUnits, rangeDays, available, error.
  *
  * A diferencia de getTopSelling (que lee el ERP mezclado), esto lee SOLO las
  * compras registradas por WALA en la colección `analytics_events` de la DB
@@ -293,14 +359,24 @@ export async function getTopSelling({ days = 30, topLimit = 10 } = {}) {
  * solo where('type','==','purchase_complete') + limit. El filtro de rango de
  * fechas se hace en memoria.
  *
+ * Reglas clave:
+ *  - totalRevenue/totalUnits/totalOrders cuentan TODOS los eventos/items del rango.
+ *  - topByUnits/topByAmount muestran SOLO productId que existan en productos_wala
+ *    (resueltos a name e image); los productos inexistentes se OMITEN del ranking
+ *    pero SÍ suman a los totales.
+ *  - topLines agrupa por línea (lineaProducto || lineId || categoryId), resolviendo
+ *    a nombre vía categories cuando la clave es un categoryId.
+ *
  * @param {Object} [options]
  * @param {number} [options.days=30] - Días hacia atrás desde hoy para el rango.
- * @param {number} [options.topLimit=10] - Máximo de productos por ranking.
+ * @param {number} [options.topLimit=10] - Máximo de productos/líneas por ranking.
  * @returns {Promise<{
- *   topByUnits: Array<{ productId: string, units: number, amount: number }>,
- *   topByAmount: Array<{ productId: string, units: number, amount: number }>,
- *   totalUnits: number,
+ *   topByUnits: Array<{ productId: string, name: string, image: string, units: number, amount: number }>,
+ *   topByAmount: Array<{ productId: string, name: string, image: string, units: number, amount: number }>,
+ *   topLines: Array<{ name: string, units: number, amount: number }>,
  *   totalRevenue: number,
+ *   totalOrders: number,
+ *   totalUnits: number,
  *   rangeDays: number,
  *   available: boolean,
  *   error: string|null,
@@ -310,8 +386,10 @@ export async function getTopSellingWala({ days = 30, topLimit = 10 } = {}) {
   const empty = {
     topByUnits: [],
     topByAmount: [],
-    totalUnits: 0,
+    topLines: [],
     totalRevenue: 0,
+    totalOrders: 0,
+    totalUnits: 0,
     rangeDays: days,
     available: false,
     error: null,
@@ -351,13 +429,21 @@ export async function getTopSellingWala({ days = 30, topLimit = 10 } = {}) {
   };
 
   const byProduct = new Map(); // productId -> { productId, units, amount }
+  const byLine = new Map(); // lineKey -> { key, units, amount }
+  const orderIds = new Set(); // orderId distintos (para totalOrders cuando exista)
   let totalUnits = 0;
   let totalRevenue = 0;
+  let eventsInRange = 0; // nº de eventos del rango (fallback de totalOrders)
 
   docs.forEach((ev) => {
     // Filtro de fecha en memoria: solo si el evento trae fecha (>0).
     const ms = eventMillis(ev);
     if (ms > 0 && (ms < startMs || ms > endMs)) return;
+
+    eventsInRange += 1;
+    // totalOrders: contar orderId distintos si está; si no, se cuenta el evento.
+    const orderId = ev?.eventData?.orderId;
+    if (orderId) orderIds.add(orderId);
 
     const items = ev?.eventData?.items;
     if (!Array.isArray(items)) return; // tolerante a items/eventData ausentes
@@ -365,27 +451,60 @@ export async function getTopSellingWala({ days = 30, topLimit = 10 } = {}) {
     items.forEach((it) => {
       if (!it || typeof it !== 'object') return;
       const productId = it.productId;
-      if (!productId) return; // sin productId no se puede agregar
       const units = safeNumber(it.qty ?? it.quantity ?? 1) || 0;
       const price = safeNumber(it.price ?? 0);
       const amount = price * units;
 
-      if (!byProduct.has(productId)) {
-        byProduct.set(productId, { productId, units: 0, amount: 0 });
-      }
-      const entry = byProduct.get(productId);
-      entry.units += units;
-      entry.amount += amount;
-
+      // Los totales cuentan TODOS los items (existan o no en productos_wala).
       totalUnits += units;
       totalRevenue += amount;
+
+      // Acumular por producto (filtrado al final contra productos_wala).
+      if (productId) {
+        if (!byProduct.has(productId)) {
+          byProduct.set(productId, { productId, units: 0, amount: 0 });
+        }
+        const entry = byProduct.get(productId);
+        entry.units += units;
+        entry.amount += amount;
+      }
+
+      // Acumular por LÍNEA. Clave: lineaProducto || lineId || categoryId.
+      const lineKey = cleanName(
+        it.lineaProducto ?? it.lineId ?? it.categoryId ?? '',
+        ''
+      );
+      const key = lineKey || '__sin_linea__';
+      if (!byLine.has(key)) byLine.set(key, { key: lineKey, units: 0, amount: 0 });
+      const lineEntry = byLine.get(key);
+      lineEntry.units += units;
+      lineEntry.amount += amount;
     });
   });
 
-  const products = [...byProduct.values()].map((p) => ({
-    ...p,
-    amount: Math.round(p.amount * 100) / 100,
-  }));
+  // totalOrders: nº de orderId distintos si hubo alguno; si no, nº de eventos.
+  const totalOrders = orderIds.size > 0 ? orderIds.size : eventsInRange;
+
+  // Resolver nombres/imágenes de producto y nombres de línea (cacheado, tolerante).
+  const [productsMap, categoriesMap] = await Promise.all([
+    loadWalaProductsMap(),
+    loadCategoriesMap(),
+  ]);
+
+  // Productos: SOLO los que existen en productos_wala (resueltos a name/image).
+  // Los inexistentes se omiten del ranking (pero ya sumaron a los totales).
+  const products = [...byProduct.values()]
+    .filter((p) => productsMap.has(p.productId))
+    .map((p) => {
+      const info = productsMap.get(p.productId);
+      return {
+        productId: p.productId,
+        name: info.name,
+        image: info.mainImage || '',
+        units: p.units,
+        amount: Math.round(p.amount * 100) / 100,
+      };
+    });
 
   const topByUnits = [...products]
     .sort((a, b) => b.units - a.units || b.amount - a.amount)
@@ -395,11 +514,28 @@ export async function getTopSellingWala({ days = 30, topLimit = 10 } = {}) {
     .sort((a, b) => b.amount - a.amount || b.units - a.units)
     .slice(0, topLimit);
 
+  // Líneas: resolver el nombre. Si la clave es un categoryId conocido, usar su
+  // nombre; si es texto de línea, dejarlo tal cual; vacío -> 'Sin línea'.
+  const topLines = [...byLine.values()]
+    .map((l) => {
+      let name = l.key;
+      if (!name) {
+        name = 'Sin línea';
+      } else if (categoriesMap.has(name)) {
+        name = categoriesMap.get(name);
+      }
+      return { name, units: l.units, amount: Math.round(l.amount * 100) / 100 };
+    })
+    .sort((a, b) => b.amount - a.amount || b.units - a.units)
+    .slice(0, topLimit);
+
   return {
     topByUnits,
     topByAmount,
-    totalUnits,
+    topLines,
     totalRevenue: Math.round(totalRevenue * 100) / 100,
+    totalOrders,
+    totalUnits,
     rangeDays: days,
     available: true,
     error: null,

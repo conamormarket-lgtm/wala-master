@@ -5,7 +5,7 @@ import GlassCard from '../../../components/dashboard/GlassCard';
 import MasVendidosSection from '../../../components/dashboard/MasVendidosSection';
 import { useProductThumbs } from '../../../components/dashboard/useProductThumbs';
 import { AnimatedNumber, Reveal, Stagger, StaggerItem } from '../../../components/ui';
-import { getTopSelling } from '../../../services/salesAnalytics';
+import { getTopSellingWala } from '../../../services/salesAnalytics';
 import {
   ADD_TO_CART,
   DashBackground,
@@ -63,14 +63,14 @@ export default function DashProductos() {
   /* Métrica de la columna "vendidos": unidades o monto. */
   const [salesMetric, setSalesMetric] = useState('units'); // 'units' | 'amount'
 
-  /* ----- ventas del ERP (mismo patrón/clave que MasVendidosSection) ----- */
+  /* ----- ventas de WALA (mismo patrón/clave que MasVendidosSection) ----- */
   const {
     data: salesData,
     isLoading: salesLoading,
     isError: salesError,
   } = useQuery({
-    queryKey: ['salesAnalytics', 'topSelling', rangeDays],
-    queryFn: () => getTopSelling({ days: rangeDays, topLimit: 10 }),
+    queryKey: ['salesAnalytics', 'topSellingWala', rangeDays],
+    queryFn: () => getTopSellingWala({ days: rangeDays, topLimit: 10 }),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
   });
@@ -327,7 +327,7 @@ export default function DashProductos() {
                           title={
                             it.sold > 0
                               ? `${fmtInt(it.sold)} uds. vendidas de ${fmtInt(it.value)} vistas`
-                              : 'Sin ventas cruzadas en el ERP para este rango'
+                              : 'Sin ventas cruzadas en WALA para este rango'
                           }
                         >
                           {it.sold > 0 ? `⇄ ${it.convPct}% convierte` : '⇄ sin ventas'}
@@ -344,7 +344,7 @@ export default function DashProductos() {
             </GlassCard>
           </motion.div>
 
-          {/* ---------- Columna DERECHA: Más vendidos (ERP) ---------- */}
+          {/* ---------- Columna DERECHA: Más vendidos (WALA) ---------- */}
           <motion.div variants={itemVariants}>
             <GlassCard
               title={
@@ -354,7 +354,7 @@ export default function DashProductos() {
                   </span>
                   <span className={extra.colHeadTexts}>
                     <span className={extra.colTitle}>Más vendidos</span>
-                    <span className={extra.colSubtitle}>Top por ventas reales · ERP</span>
+                    <span className={extra.colSubtitle}>Top por ventas reales · WALA</span>
                   </span>
                 </span>
               }
@@ -412,7 +412,7 @@ export default function DashProductos() {
               ) : salesError ? (
                 <div className={extra.colEmpty}>
                   <span className={extra.colEmptyIcon} aria-hidden="true">⚠️</span>
-                  No se pudieron cargar las ventas del ERP.
+                  No se pudieron cargar las ventas de WALA.
                 </div>
               ) : saleItems.length === 0 ? (
                 <div className={extra.colEmpty}>
@@ -489,7 +489,7 @@ export default function DashProductos() {
               style={{ background: 'var(--verde-exito, #10B981)' }}
               aria-hidden="true"
             />
-            Ventas (ERP)
+            Ventas (WALA)
           </span>
           <span className={extra.convLegendItem}>
             ⇄ La conversión cruza las vistas de cada producto con sus unidades vendidas en el mismo

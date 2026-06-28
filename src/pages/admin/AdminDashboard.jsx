@@ -234,17 +234,27 @@ export default function AdminDashboard() {
                 <p className={extra.trendSubtitle}>Page views por día · últimos {rangeDays} días</p>
               </div>
               <div className={extra.segment} role="group" aria-label="Segmentar tráfico">
-                {['total', hasAppData ? 'app' : null, 'web'].filter(Boolean).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    className={`${extra.segmentBtn} ${trafficMode === m ? extra.segmentActive : ''}`}
-                    onClick={() => setTrafficMode(m)}
-                    aria-pressed={trafficMode === m}
-                  >
-                    {m.toUpperCase()}
-                  </button>
-                ))}
+                {/* SIEMPRE los 3 modos visibles (Total / Web / App), en ese orden.
+                    App nunca se oculta: si no hay tráfico de APP, se muestra
+                    deshabilitado (con título explicativo) en lugar de desaparecer,
+                    para que el dueño vea siempre la opción. */}
+                {['total', 'web', 'app'].map((m) => {
+                  const isApp = m === 'app';
+                  const disabled = isApp && !hasAppData;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      className={`${extra.segmentBtn} ${trafficMode === m ? extra.segmentActive : ''}`}
+                      onClick={() => !disabled && setTrafficMode(m)}
+                      aria-pressed={trafficMode === m}
+                      disabled={disabled}
+                      title={disabled ? 'Sin tráfico desde la APP en el rango' : undefined}
+                    >
+                      {m.toUpperCase()}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -258,19 +268,19 @@ export default function AdminDashboard() {
             />
 
             <div className={extra.trendFoot}>
+              {/* Resumen numérico: SIEMPRE los 3 (Total / Web / App), igual que el
+                  toggle. App se muestra en 0 aunque no haya tráfico de APP. */}
               <div className={extra.trendStat}>
                 <span className={extra.trendStatLabel}>Total</span>
                 <span className={extra.trendStatValue}>{fmtInt(trafficTotals.total)}</span>
               </div>
-              {hasAppData && (
-                <div className={extra.trendStat}>
-                  <span className={extra.trendStatLabel}>App</span>
-                  <span className={extra.trendStatValue}>{fmtInt(trafficTotals.app)}</span>
-                </div>
-              )}
               <div className={extra.trendStat}>
                 <span className={extra.trendStatLabel}>Web</span>
                 <span className={extra.trendStatValue}>{fmtInt(trafficTotals.web)}</span>
+              </div>
+              <div className={extra.trendStat}>
+                <span className={extra.trendStatLabel}>App</span>
+                <span className={extra.trendStatValue}>{fmtInt(trafficTotals.app)}</span>
               </div>
             </div>
           </section>

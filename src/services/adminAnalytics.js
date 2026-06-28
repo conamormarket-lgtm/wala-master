@@ -81,6 +81,52 @@ function aggregateRouteMetrics(events = []) {
   return { topRoutesByViews, topRoutesByDwell, mostTimeRoute: best };
 }
 
+// Seguimiento de pedidos (engagement de WALA sobre el estado del pedido).
+// Mide cuánta gente entra a ver el estado de su pedido, cuántos usuarios únicos
+// y cuánto tiempo pasan, sobre las rutas que empiezan con '/cuenta/pedidos'
+// (incluye el listado '/cuenta/pedidos' y el detalle '/cuenta/pedidos/:id').
+// Trabaja sobre los eventos ya cargados (page_view + route_dwell). Tolerante a
+// ausencia de datos: si no hay eventos relevantes devuelve ceros.
+const ORDER_TRACKING_PREFIX = '/cuenta/pedidos';
+
+function isOrderTrackingPath(path) {
+  if (typeof path !== 'string') return false;
+  // Normaliza query/hash antes de comparar el prefijo de la ruta.
+  const clean = path.split('?')[0].split('#')[0];
+  return clean === ORDER_TRACKING_PREFIX || clean.startsWith(`${ORDER_TRACKING_PREFIX}/`);
+}
+
+export function deriveOrderTracking(events = []) {
+  let views = 0;            // total de page_view sobre el estado de pedido
+  let totalDwellMs = 0;     // suma de route_dwell.dwellMs
+  let dwellEvents = 0;      // nº de eventos de permanencia (para el promedio)
+  const uniqueUsers = new Set(); // uid distintos (cae a anonymousId/email si no hay uid)
+
+  events.forEach((ev) => {
+    if (!isOrderTrackingPath(ev?.path)) return;
+
+    if (ev.type === ANALYTICS_EVENT_TYPES.PAGE_VIEW) {
+      views += 1;
+    }
+    if (ev.type === ANALYTICS_EVENT_TYPES.ROUTE_DWELL) {
+      totalDwellMs += safeNumber(ev.dwellMs);
+      dwellEvents += 1;
+    }
+
+    // Usuario único: prioriza uid; si es anónimo usa anonymousId/email como fallback.
+    const identity = ev.uid || ev.anonymousId || ev.email;
+    if (identity) uniqueUsers.add(identity);
+  });
+
+  return {
+    views,
+    uniqueUsers: uniqueUsers.size,
+    totalDwellMs,
+    // Tiempo promedio por evento de permanencia (ms). 0 si no hay permanencias.
+    avgDwellMs: dwellEvents > 0 ? Math.round(totalDwellMs / dwellEvents) : 0,
+  };
+}
+
 function parseUserAgent(ua) {
   if (!ua) return { browser: 'Desconocido', os: 'Desconocido', device: 'Desconocido' };
   const lower = ua.toLowerCase();
@@ -736,6 +782,8 @@ export async function getGlobalAnalytics(dateFilter = {}) {
     topCollectionsByViews: aggregateTopCollections(events),
     featureUsage: aggregateFeatureUsage(events),
     bannerClicks: aggregateBannerClicks(events),
+    // Seguimiento de pedidos (engagement sobre el estado del pedido en WALA).
+    orderTracking: deriveOrderTracking(events),
     scrollDepth: aggregateScrollDepth(events),
     bounceRate: aggregateBounceRate(events, sessions),
     deviceStats: aggregateDevices(sessions),

@@ -24,6 +24,7 @@ import {
   itemVariants,
   fmtInt,
   fmtTime,
+  fmtDuration,
   shortPath,
   prettyRouteName,
   useDateRange,
@@ -174,6 +175,67 @@ export default function DashPaginas() {
     [data?.topSearches]
   );
 
+  /* ----- Seguimiento de pedidos (engagement sobre el estado del pedido) -----
+     Usa el derivado `orderTracking` del servicio si está disponible. Si por
+     cualquier motivo no llegara (compatibilidad), reconstruye las métricas a
+     partir de `eventsForCharts` sobre las rutas que empiezan con
+     '/cuenta/pedidos'. Tolerante a 0/ausencia de datos. */
+  const orderTracking = useMemo(() => {
+    if (data?.orderTracking) return data.orderTracking;
+    const events = data?.eventsForCharts || [];
+    let views = 0;
+    let totalDwellMs = 0;
+    let dwellEvents = 0;
+    const users = new Set();
+    events.forEach((e) => {
+      const path = typeof e.path === 'string' ? e.path.split('?')[0].split('#')[0] : '';
+      if (path !== '/cuenta/pedidos' && !path.startsWith('/cuenta/pedidos/')) return;
+      if (e.type === 'page_view') views += 1;
+      if (e.type === 'route_dwell') {
+        totalDwellMs += Number(e.dwellMs) || 0;
+        dwellEvents += 1;
+      }
+      const identity = e.uid || e.anonymousId || e.email;
+      if (identity) users.add(identity);
+    });
+    return {
+      views,
+      uniqueUsers: users.size,
+      totalDwellMs,
+      avgDwellMs: dwellEvents > 0 ? Math.round(totalDwellMs / dwellEvents) : 0,
+    };
+  }, [data?.orderTracking, data?.eventsForCharts]);
+
+  /* KPIs de la tarjeta "Seguimiento de pedidos": visitas, usuarios únicos y
+     tiempo promedio. El tiempo se anima sobre los ms crudos pero se muestra con
+     fmtDuration. Tolerante a 0/ausencia (los valores caen a 0). */
+  const orderTrackingKpis = useMemo(
+    () => [
+      {
+        label: 'Visitas al estado',
+        value: orderTracking.views || 0,
+        format: fmtInt,
+        accent: CHART_COLORS[0],
+        icon: '📦',
+      },
+      {
+        label: 'Usuarios únicos',
+        value: orderTracking.uniqueUsers || 0,
+        format: fmtInt,
+        accent: CHART_COLORS[4],
+        icon: '👤',
+      },
+      {
+        label: 'Tiempo promedio',
+        value: orderTracking.avgDwellMs || 0,
+        format: fmtDuration,
+        accent: CHART_COLORS[6],
+        icon: '⏱️',
+      },
+    ],
+    [orderTracking]
+  );
+
   const lastUpdated = dataUpdatedAt ? fmtTime(dataUpdatedAt) : null;
 
   return (
@@ -314,6 +376,32 @@ export default function DashPaginas() {
                 <li className={styles.empty}>Sin búsquedas registradas aún.</li>
               )}
             </ul>
+          </GlassCard>
+        </motion.div>
+
+        {/* Seguimiento de pedidos (WALA) — engagement sobre el estado del pedido.
+            Mide cuánta gente entra a ver el estado de su pedido, cuántos usuarios
+            únicos y cuánto tiempo pasan, sobre las rutas '/cuenta/pedidos'.
+            Tolerante a 0/ausencia: muestra ceros y un mensaje cuando no hay datos. */}
+        <motion.div variants={itemVariants}>
+          <GlassCard
+            title="Seguimiento de pedidos (WALA)"
+            subtitle="Engagement de tus clientes con el estado de su pedido"
+            actions={
+              orderTracking.totalDwellMs > 0 ? (
+                <span className={extra.cardBadge}>
+                  {fmtDuration(orderTracking.totalDwellMs)} en total
+                </span>
+              ) : null
+            }
+          >
+            {orderTracking.views > 0 || orderTracking.uniqueUsers > 0 ? (
+              <KpiRow items={orderTrackingKpis} />
+            ) : (
+              <p className={styles.empty}>
+                Aún nadie ha entrado a ver el estado de su pedido.
+              </p>
+            )}
           </GlassCard>
         </motion.div>
       </motion.div>

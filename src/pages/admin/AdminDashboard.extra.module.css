@@ -90,8 +90,14 @@
   transition: var(--transicion-rapida, all 0.2s ease);
 }
 
-.segmentBtn:hover {
+.segmentBtn:hover:not(:disabled) {
   color: var(--primary-color, #6d28d9);
+}
+
+/* Modo sin datos (p. ej. APP sin tráfico): visible pero no seleccionable. */
+.segmentBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .segmentActive {

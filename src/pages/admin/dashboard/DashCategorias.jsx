@@ -9,7 +9,7 @@ import Donut from '../../../components/dashboard/charts/Donut';
 import CompareBars from '../../../components/dashboard/charts/CompareBars';
 import { Reveal } from '../../../components/ui';
 import { deriveLinesViewed } from '../../../services/analytics/derive';
-import { getTopSelling } from '../../../services/salesAnalytics';
+import { getTopSellingWala } from '../../../services/salesAnalytics';
 import {
   CHART_COLORS,
   DashBackground,
@@ -49,8 +49,8 @@ export default function DashCategorias() {
    * Query independiente cacheada por rango. No bloquea la analítica global:
    * si el ERP no está disponible, los bloques de venta caen a estado vacío. */
   const { data: salesData, isLoading: salesLoading } = useQuery({
-    queryKey: ['salesAnalytics', 'topSelling', rangeDays],
-    queryFn: () => getTopSelling({ days: rangeDays, topLimit: 12 }),
+    queryKey: ['salesAnalytics', 'topSellingWala', rangeDays],
+    queryFn: () => getTopSellingWala({ days: rangeDays, topLimit: 12 }),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
     refetchOnWindowFocus: false,
@@ -143,7 +143,7 @@ export default function DashCategorias() {
       .slice(0, 8);
   }, [data?.topCollectionsByViews]);
 
-  /* ----- líneas más VENDIDAS (ERP, getTopSelling().topLines) ----- */
+  /* ----- líneas más VENDIDAS (WALA, getTopSellingWala().topLines) ----- */
   const linesSold = useMemo(() => {
     const lines = Array.isArray(salesData?.topLines) ? salesData.topLines : [];
     return lines
@@ -345,15 +345,15 @@ export default function DashCategorias() {
             </GlassCard>
           </motion.div>
 
-          {/* Líneas más VENDIDAS (ERP) */}
+          {/* Líneas más VENDIDAS (WALA) */}
           <motion.div variants={itemVariants}>
             <GlassCard
               title="Líneas más vendidas"
-              subtitle="Por ingresos reales del ERP (S/)"
+              subtitle="Por ingresos reales de WALA (S/)"
             >
               <Reveal>
                 {salesLoading && linesSold.length === 0 ? (
-                  <p className={styles.empty}>Cargando ventas del ERP…</p>
+                  <p className={styles.empty}>Cargando ventas de WALA…</p>
                 ) : (
                   <CompareBars
                     data={linesSold}
@@ -361,7 +361,7 @@ export default function DashCategorias() {
                     valueKey="amount"
                     formatValue={fmtSoles}
                     max={8}
-                    emptyText="Aún no hay líneas vendidas en este periodo. Cuando se registren pedidos en el ERP aparecerán aquí."
+                    emptyText="Aún no hay líneas vendidas en este periodo. Cuando se registren compras en WALA aparecerán aquí."
                   />
                 )}
               </Reveal>
@@ -404,7 +404,7 @@ export default function DashCategorias() {
         <motion.div variants={itemVariants}>
           <GlassCard
             title="Conversión por línea"
-            subtitle="De vistas (analítica) a ventas (ERP) por línea de producto"
+            subtitle="De vistas (analítica) a ventas (WALA) por línea de producto"
           >
             {conversionByLine.length === 0 ? (
               <p className={styles.empty}>
@@ -464,7 +464,7 @@ export default function DashCategorias() {
                 </div>
                 <p className={extra.convHint}>
                   Conv% = unidades vendidas ÷ vistas de la línea. Las líneas sin vistas registradas se
-                  muestran con “—”. Vistas desde analítica, ventas desde el ERP.
+                  muestran con “—”. Vistas desde analítica, ventas desde WALA.
                 </p>
               </Reveal>
             )}

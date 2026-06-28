@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import GlassCard from './GlassCard';
 import KpiCard from './KpiCard';
-import { getTopSelling } from '../../services/salesAnalytics';
+import { getTopSellingWala } from '../../services/salesAnalytics';
 import styles from './MasVendidosSection.module.css';
 
 const PRIMARY = '#6D28D9';
@@ -104,14 +104,14 @@ function EmptyState({ message }) {
       <p className={styles.emptyTitle}>Sin ventas en este periodo</p>
       <p className={styles.emptyText}>
         {message ||
-          'Cuando se registren pedidos en el ERP aparecerán aquí los productos y líneas más vendidos.'}
+          'Cuando se registren compras en WALA aparecerán aquí los productos y líneas más vendidos.'}
       </p>
     </div>
   );
 }
 
 /**
- * MasVendidosSection — sección "Más vendidos" del dashboard, alimentada por el ERP.
+ * MasVendidosSection — sección "Más vendidos" del dashboard, alimentada por WALA.
  *
  * Props:
  *  - rangeDays?: number — ventana en días para el ranking (default 30).
@@ -121,8 +121,8 @@ export default function MasVendidosSection({ rangeDays = 30 }) {
   const reduced = prefersReducedMotion();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['salesAnalytics', 'topSelling', rangeDays],
-    queryFn: () => getTopSelling({ days: rangeDays }),
+    queryKey: ['salesAnalytics', 'topSellingWala', rangeDays],
+    queryFn: () => getTopSellingWala({ days: rangeDays }),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
   });
@@ -155,7 +155,7 @@ export default function MasVendidosSection({ rangeDays = 30 }) {
 
   if (isError) {
     return (
-      <GlassCard title="Más vendidos" subtitle="Datos del ERP">
+      <GlassCard title="Más vendidos" subtitle="Datos de WALA">
         <EmptyState message={`No se pudieron cargar las ventas: ${error?.message || 'error desconocido'}`} />
       </GlassCard>
     );
@@ -174,7 +174,7 @@ export default function MasVendidosSection({ rangeDays = 30 }) {
           Más vendidos
         </h2>
         <span style={{ fontSize: '0.82rem', color: 'var(--gris-texto-secundario, #475569)' }}>
-          Últimos {data?.rangeDays ?? rangeDays} días · ERP
+          Últimos {data?.rangeDays ?? rangeDays} días · WALA
         </span>
       </div>
 
