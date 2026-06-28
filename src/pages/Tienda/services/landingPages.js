@@ -16,12 +16,22 @@ export const getLandingPages = async () => {
 export const getLandingPageBySlug = async (slug) => {
   try {
     if (!slug) return null;
+    // 1) Match exacto del slug.
     const q = query(collection(db, COLLECTION_NAME), where("slug", "==", slug));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       const docSnap = snapshot.docs[0];
       return { id: docSnap.id, ...docSnap.data() };
     }
+    // 2) Fallback CASE-INSENSITIVE: la URL puede venir con otra capitalización
+    //    (ej. /CONAMOR vs slug "ConAmor"). Firestore no compara sin distinguir
+    //    mayúsculas, así que se busca en memoria (la colección es pequeña).
+    const target = String(slug).toLowerCase();
+    const all = await getDocs(collection(db, COLLECTION_NAME));
+    const hit = all.docs.find(
+      (d) => String((d.data() || {}).slug || d.id).toLowerCase() === target
+    );
+    if (hit) return { id: hit.id, ...hit.data() };
     return null;
   } catch (error) {
     console.error("Error obteniendo landing page por slug:", error);

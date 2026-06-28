@@ -236,7 +236,7 @@ const renderBotonSeccion = (s) => {
   );
 };
 
-const TiendaPage = ({ isLandingPage = false }) => {
+const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -245,9 +245,12 @@ const TiendaPage = ({ isLandingPage = false }) => {
   const categoryId = searchParams.get('categoria');
   const isPreview = searchParams.has('t');
 
-  // Determinar pageId basado en la URL
-  const pageId = location.pathname === '/' || location.pathname === '/home' ? 'home' : 
-                 location.pathname.replace(/^\/+/, '').split('/')[0] || 'home';
+  // Determinar pageId. Si es una landing/marca, se usa el id canónico que pasa
+  // DynamicLandingPage (el slug GUARDADO), NO el segmento crudo de la URL: así
+  // /CONAMOR, /ConAmor y /conamor leen y guardan SIEMPRE las mismas secciones
+  // (la búsqueda de la landing es case-insensitive, ver getLandingPageBySlug).
+  const pageId = pageIdOverride || (location.pathname === '/' || location.pathname === '/home' ? 'home' :
+                 location.pathname.replace(/^\/+/, '').split('/')[0] || 'home');
 
   const { storeConfigDraft, activePageId, setActivePageId } = useVisualEditor();
 
