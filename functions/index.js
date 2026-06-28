@@ -668,14 +668,18 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
   let chargeAmount = amount;
   const payCurrency = currency || "PEN";
   const pedidoId = metadata && (metadata.pedidoId || metadata.orderId);
+  // Se capturan en scope de función para reusarlos al marcar el pedido pagado tras el cobro.
+  let erpDbForOrder = null;
+  let orderColl = null;
   if (payCurrency === "PEN" && pedidoId) {
     try {
       const erpDb = getErpDb();
       if (erpDb) {
+        erpDbForOrder = erpDb;
         let orderData = null;
         for (const coll of ["pedidos_web", "pedidos"]) {
           const snap = await erpDb.collection(coll).doc(String(pedidoId)).get();
-          if (snap.exists) { orderData = snap.data(); break; }
+          if (snap.exists) { orderData = snap.data(); orderColl = coll; break; }
         }
         if (orderData) {
           // Total final en soles (con descuento ya aplicado). Se prioriza el pendiente.
@@ -826,6 +830,30 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
         }, { merge: true });
       } catch (e) {
         console.warn("processCulqiPayment S-4: no se pudo marcar el lock como succeeded:", e.message);
+      }
+    }
+
+    // ── Marcar el PEDIDO como pagado en el ERP (best-effort) ───────────────────
+    // El culqiWebhook ya hace esto, pero hoy no está registrado en Culqi y no se
+    // dispara; por eso, en la rama de ÉXITO del cobro (protegida por el lock de
+    // idempotencia, corre una sola vez por cobro real) se marca aquí el pedido con
+    // EXACTAMENTE los mismos campos que el webhook (set merge → idempotente y sin
+    // conflicto si el webhook también corriera). NUNCA debe hacer fallar la respuesta
+    // al cliente: el cobro ya ocurrió, así que ante cualquier error solo se loguea.
+    if (pedidoId && erpDbForOrder && orderColl) {
+      try {
+        await erpDbForOrder.collection(orderColl).doc(String(pedidoId)).set({
+          pagado: true,
+          estadoPago: "pagado",
+          culqiChargeId: String(result.id), // igual forma que el webhook (idempotencia)
+          montoPagado: chargeAmount, // céntimos realmente cobrados
+          montoPendiente: 0, // saldado
+          pagadoAt: FieldValue.serverTimestamp(),
+          metodoPago: "culqi",
+        }, { merge: true });
+      } catch (e) {
+        // El cobro ya se realizó: no se propaga el error al cliente, solo se registra.
+        console.error(`processCulqiPayment: error al marcar pedido ${pedidoId} pagado (cobro ya realizado, charge ${result.id}):`, e);
       }
     }
 
