@@ -113,3 +113,6 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 *-debug.log
+
+# Respaldos/snapshots de datos generados por scripts de migración (no subir al repo)
+ops/backup/snapshots/

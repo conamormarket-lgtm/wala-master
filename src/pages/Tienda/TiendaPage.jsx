@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import ProductGrid from './components/ProductGrid';
 import VisualCategoryNav from './components/VisualCategoryNav/VisualCategoryNav';
 import ProductSearch from './components/ProductSearch';
@@ -25,6 +25,8 @@ import {
   searchProducts,
   getProductsByCategory,
   getFeaturedProducts,
+  getStoreProductsPage,
+  STORE_PAGE_SIZE,
   getCachedProducts,
   getCachedCategories,
   getCachedFeaturedProducts
@@ -42,6 +44,32 @@ import styles from './TiendaPage.module.css';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
+
+// Ordena un array de productos EN MEMORIA según el criterio de la UI.
+// Se usa en los modos NO paginados (categoría/búsqueda) y como red de seguridad
+// cuando la paginación con cursor cae al catálogo completo. En el modo paginado
+// "normal" el orden lo aplica Firestore (ver getStoreProductsPage), no esto.
+const ordenarEnMemoria = (arr, sortBy) => {
+  const sorted = [...(arr || [])];
+  if (sortBy === 'price') {
+    sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
+  } else if (sortBy === 'price-desc') {
+    sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+  } else if (sortBy === 'newest') {
+    sorted.sort((a, b) => {
+      const getTime = (val) => {
+        if (!val) return 0;
+        if (typeof val.toDate === 'function') return val.toDate().getTime();
+        if (val.seconds) return val.seconds * 1000;
+        return new Date(val).getTime() || 0;
+      };
+      return getTime(b.createdAt) - getTime(a.createdAt);
+    });
+  } else {
+    sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  }
+  return sorted;
+};
 
 const SectionBackground = ({ config }) => {
   const { 
@@ -305,29 +333,95 @@ const TiendaPage = ({ isLandingPage = false }) => {
       }
       if (result.error) throw new Error(result.error);
 
-      let sorted = [...(result.data || [])];
-      if (sortBy === 'price') {
-        sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
-      } else if (sortBy === 'price-desc') {
-        sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
-      } else if (sortBy === 'newest') {
-        sorted.sort((a, b) => {
-          const getTime = (val) => {
-            if (!val) return 0;
-            if (typeof val.toDate === 'function') return val.toDate().getTime();
-            if (val.seconds) return val.seconds * 1000;
-            return new Date(val).getTime() || 0;
-          };
-          return getTime(b.createdAt) - getTime(a.createdAt);
-        });
-      } else {
-        sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      }
-      return sorted;
+      return ordenarEnMemoria(result.data || [], sortBy);
     },
     placeholderData: keepPreviousData,
     initialData: (!searchTerm && !categoryId && sortBy === 'newest') ? getCachedProducts() : undefined,
   });
+
+  // ── CATÁLOGO PAGINADO CON CURSOR (Fase 3 · C-1) ───────────────────
+  // Las secciones product_grid y sidebar_catalog ya NO reciben TODO el catálogo
+  // de una sola query. En el modo "tienda normal" (sin categoría de URL ni
+  // búsqueda) se pagina con cursor de Firestore: primera página + "Cargar más" +
+  // scroll incremental. Cuando hay categoryId/searchTerm en la URL se conserva el
+  // comportamiento previo (productsData), que ya devuelve un conjunto acotado.
+  const usePaginatedCatalog = !categoryId && !searchTerm;
+
+  // Faceta única que se filtra EN SERVIDOR (la elige el sidebar_catalog al pulsar
+  // una categoría). Las demás facetas siguen filtrándose en cliente. Cambiarla
+  // reinicia el cursor (forma parte de la queryKey de la infinite query).
+  const [catalogFacet, setCatalogFacet] = useState(null);
+
+  const {
+    data: catalogPages,
+    isLoading: catalogLoading,
+    isFetchingNextPage: catalogFetchingMore,
+    hasNextPage: catalogHasMore,
+    fetchNextPage: catalogFetchNext,
+    error: catalogError,
+  } = useInfiniteQuery({
+    queryKey: ['products-infinite', sortBy, catalogFacet?.type ?? null, catalogFacet?.value ?? null],
+    queryFn: async ({ pageParam }) => {
+      const res = await getStoreProductsPage({
+        facet: catalogFacet,
+        sort: sortBy,
+        cursor: pageParam,
+        pageSize: STORE_PAGE_SIZE,
+      });
+      // RETROCOMPATIBLE: si la página falla (p.ej. falta un índice compuesto para
+      // faceta+orden), caemos al comportamiento actual (catálogo completo en una
+      // sola "página") en vez de romper la tienda.
+      if (res.error) {
+        const fallback = await getProducts([], null, null);
+        if (fallback.error) throw new Error(res.error);
+        const sorted = ordenarEnMemoria(fallback.data || [], sortBy);
+        return { items: sorted, lastDoc: null, hasMore: false, error: null, _fallback: true };
+      }
+      return res;
+    },
+    initialPageParam: null,
+    // El cursor es un DocumentSnapshot de Firestore (no serializable): se usa tal
+    // cual desde la memoria de React Query.
+    getNextPageParam: (last) => (last?.hasMore ? last.lastDoc : undefined),
+    enabled: usePaginatedCatalog,
+    staleTime: 5 * 60 * 1000,
+    // Primera pintura instantánea desde la caché local (igual que hoy): solo en el
+    // estado neutro (sin faceta, orden por defecto). Mostramos una "primera página"
+    // recortada del catálogo cacheado con hasMore:false (cursor nulo = sin avance
+    // falso). initialDataUpdatedAt:0 marca esa caché como obsoleta para que se
+    // refetchee de inmediato la primera página REAL de Firestore (con cursor), que
+    // sustituye al placeholder y habilita la paginación incremental.
+    initialData: (!catalogFacet && sortBy === 'newest')
+      ? (() => {
+          const cached = getCachedProducts();
+          if (!cached || cached.length === 0) return undefined;
+          const firstPage = ordenarEnMemoria(cached, 'newest').slice(0, STORE_PAGE_SIZE);
+          return {
+            pages: [{ items: firstPage, lastDoc: null, hasMore: false, error: null }],
+            pageParams: [null],
+          };
+        })()
+      : undefined,
+    initialDataUpdatedAt: 0,
+  });
+
+  // Aplana todas las páginas cargadas hasta ahora en un único array para el grid.
+  const paginatedItems = useMemo(
+    () => (catalogPages?.pages || []).flatMap((p) => p.items || []),
+    [catalogPages]
+  );
+
+  // Reinicia la faceta de servidor al salir del modo paginado (categoría/búsqueda)
+  // para que al volver a la tienda normal arranque limpio desde la primera página.
+  React.useEffect(() => {
+    if (!usePaginatedCatalog && catalogFacet) setCatalogFacet(null);
+  }, [usePaginatedCatalog, catalogFacet]);
+
+  // Callback estable que el sidebar usa para empujar UNA faceta al servidor.
+  // null = sin faceta de servidor (vuelve a la primera página del catálogo).
+  const handleServerFacetChange = useCallback((facet) => {
+    setCatalogFacet(facet || null);
+  }, []);
 
   // Fase 1: la búsqueda de la tienda lleva a la página facetada /buscar (searchCatalog).
   // Si el término viene vacío, mantiene el filtrado en página (comportamiento previo).
@@ -376,6 +470,29 @@ const TiendaPage = ({ isLandingPage = false }) => {
   // ── RENDERIZADO PROGRESIVO ────────────────────────────────────────
 
   let emptyMessageShown = false;
+
+  // ── DATOS RESUELTOS PARA EL CATÁLOGO (product_grid / sidebar_catalog) ──
+  // Según el modo:
+  //  · Paginado (tienda normal): se usan las páginas de la infinite query, con
+  //    "Cargar más" + scroll incremental que pide la siguiente página (cursor).
+  //  · No paginado (categoría/búsqueda en la URL): se conserva el comportamiento
+  //    previo con productsData (conjunto ya acotado) y grilla incremental en RAM.
+  const catalogProducts = usePaginatedCatalog ? paginatedItems : (productsData || []);
+  const catalogLoadingResolved = usePaginatedCatalog ? catalogLoading : productsLoading;
+  const catalogErrorResolved = usePaginatedCatalog
+    ? (catalogError?.message || null)
+    : (productsError?.message || null);
+  // Props de paginación servidor: solo se pasan en modo paginado (si no, el grid
+  // usa su modo incremental en RAM, idéntico a hoy).
+  const catalogPaginationProps = usePaginatedCatalog
+    ? {
+        hasMore: !!catalogHasMore,
+        onLoadMore: catalogFetchNext,
+        isFetchingMore: catalogFetchingMore,
+      }
+    : {};
+  // ¿Está vacío el catálogo? (respeta el spinner: durante la carga no se da por vacío)
+  const catalogIsEmpty = !catalogLoadingResolved && catalogProducts.length === 0;
 
   const renderSection = (section) => {
     const s = section.settings || {};
@@ -600,7 +717,7 @@ const TiendaPage = ({ isLandingPage = false }) => {
           </section>
         );
       case 'product_grid': {
-        const isEmpty = !productsLoading && (!productsData || productsData.length === 0);
+        const isEmpty = catalogIsEmpty;
         if (isEmpty) {
           if (emptyMessageShown) return null;
           emptyMessageShown = true;
@@ -621,19 +738,21 @@ const TiendaPage = ({ isLandingPage = false }) => {
                 </div>
               ) : null;
             })()}
+            {/* Grilla con paginación por cursor (modo tienda) o incremental en RAM */}
             <ProductGrid
-              products={productsData || []}
-              loading={productsLoading}
-              error={productsError?.message}
+              products={catalogProducts}
+              loading={catalogLoadingResolved}
+              error={catalogErrorResolved}
               emptyMessage={emptyMessage}
               categories={categoriesData}
               layoutConfig={storeConfig?.layout}
+              {...catalogPaginationProps}
             />
           </section>
         );
       }
       case 'sidebar_catalog': {
-        const isEmpty = !productsLoading && (!productsData || productsData.length === 0);
+        const isEmpty = catalogIsEmpty;
         if (isEmpty) {
           if (emptyMessageShown) return null;
           emptyMessageShown = true;
@@ -641,14 +760,17 @@ const TiendaPage = ({ isLandingPage = false }) => {
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
-            <SidebarCatalogLayout 
-              productsData={productsData || []}
-              productsLoading={productsLoading}
-              productsError={productsError?.message}
+            <SidebarCatalogLayout
+              productsData={catalogProducts}
+              productsLoading={catalogLoadingResolved}
+              productsError={catalogErrorResolved}
               emptyMessage={emptyMessage}
               categories={categoriesData}
               layoutConfig={storeConfig?.layout}
               title={(!isEmpty && s.title) ? s.title : undefined}
+              paginationProps={catalogPaginationProps}
+              onServerFacetChange={usePaginatedCatalog ? handleServerFacetChange : undefined}
+              serverFacet={usePaginatedCatalog ? catalogFacet : null}
             />
           </section>
         );

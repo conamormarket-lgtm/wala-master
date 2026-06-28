@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Filter, X } from 'lucide-react';
 import ProductGrid from './ProductGrid';
 import styles from './SidebarCatalogLayout.module.css';
@@ -14,7 +14,24 @@ import { getProductTypes } from '../../../services/productTypes';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { T } from '../../../i18n/useTranslatedText';
 
-const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, emptyMessage, categories, layoutConfig, title }) => {
+const SidebarCatalogLayout = ({
+  productsData,
+  productsLoading,
+  productsError,
+  emptyMessage,
+  categories,
+  layoutConfig,
+  title,
+  // ── Paginación servidor (Fase 3 · C-1) — opcionales, retrocompatibles ──
+  // paginationProps     : { hasMore, onLoadMore, isFetchingMore } para el grid.
+  // onServerFacetChange : empuja UNA faceta (categoría) al servidor para acotar
+  //                       las páginas que se traen con cursor. Si no se pasa, el
+  //                       filtrado sigue siendo 100% en cliente como antes.
+  // serverFacet         : faceta actualmente filtrada en servidor (o null).
+  paginationProps = {},
+  onServerFacetChange,
+  serverFacet = null,
+}) => {
   const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState(null);
   const [activeCollection, setActiveCollection] = useState(null);
@@ -35,6 +52,30 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
       document.body.style.overflow = 'unset';
     };
   }, [isMobileDrawerOpen]);
+
+  // ── Sincroniza la categoría activa con la faceta de servidor ──────────
+  // Cuando hay paginación por cursor (onServerFacetChange definido), al elegir
+  // una categoría se acota la query del catálogo a esa categoría
+  // (categories array-contains) para no traer páginas de productos que el filtro
+  // de cliente descartaría. El resto de facetas (colección/marca/tag/personaje/
+  // tipo) se siguen aplicando en cliente sobre las páginas cargadas.
+  //
+  // LÍMITE CONOCIDO (documentado): si un producto antiguo guardó la categoría
+  // solo como `category` (string) y NO en `categories[]`, la query server-side
+  // por `array-contains` no lo devolvería. El filtro de cliente conserva esa
+  // ruta legacy (p.categoryId/p.category), por lo que NO se rompe el caso común;
+  // solo afecta a docs legacy sin migrar bajo paginación con cursor. La búsqueda
+  // facetada combinada a escala se delega a un motor externo (fuera de alcance).
+  const serverFacetType = serverFacet?.type ?? null;
+  const serverFacetValue = serverFacet?.value ?? null;
+  useEffect(() => {
+    if (typeof onServerFacetChange !== 'function') return;
+    const nextValue = activeCategory || null;
+    const nextType = activeCategory ? 'category' : null;
+    // Evita re-disparar si la faceta de servidor ya coincide.
+    if (nextValue === serverFacetValue && nextType === serverFacetType) return;
+    onServerFacetChange(activeCategory ? { type: 'category', value: activeCategory } : null);
+  }, [activeCategory, onServerFacetChange, serverFacetValue, serverFacetType]);
 
   const { data: collections } = useQuery({ queryKey: ['collections'], queryFn: async () => (await getCollections()).data });
   const { data: brands } = useQuery({ queryKey: ['brands'], queryFn: async () => (await getBrands()).data });
@@ -284,6 +325,7 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
             emptyMessage={emptyMessage}
             categories={categories}
             layoutConfig={layoutConfig}
+            {...paginationProps}
           />
         </main>
       </div>

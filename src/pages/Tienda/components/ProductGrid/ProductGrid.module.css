@@ -188,6 +188,36 @@
   transform: translateY(-1px);
 }
 
+/* ──────────────────────────────
+   Botón "Cargar más" (paginación incremental)
+   ────────────────────────────── */
+.loadMoreBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.65rem 1.75rem;
+  background: var(--blanco, #fff);
+  color: var(--gris-texto, #1f2937);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border: 1px solid var(--gris-borde, #e5e7eb);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s, opacity 0.2s;
+}
+
+.loadMoreBtn:hover:not(:disabled) {
+  background: var(--gris-fondo, #f3f4f6);
+  border-color: var(--gris-texto-secundario, #9ca3af);
+  transform: translateY(-1px);
+}
+
+.loadMoreBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ══════════════════════════════
    RESPONSIVE ≤ 992px
    ══════════════════════════════ */

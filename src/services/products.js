@@ -288,6 +288,128 @@ export const getProductsPaginated = async (filters = [], orderBy = null, pageSiz
   return { ...result, data: (result.data || []).map((doc) => normalizeProductForRead(doc)) };
 };
 
+// ── PAGINACIÓN DE CATÁLOGO PARA LA TIENDA (Fase 3 · C-1) ──────────────
+// Tamaño de página por defecto. Suficiente para llenar el viewport y disparar
+// el scroll incremental sin montar miles de nodos a la vez.
+export const STORE_PAGE_SIZE = 24;
+
+// Mapea el "sort" de la UI (newest/price/price-desc/name) al orderBy de Firestore.
+// IMPORTANTE: para paginar con cursor (startAfter) el orden DEBE venir de la
+// query — no se puede ordenar en memoria por página. 'newest' usa createdAt DESC.
+const sortToOrderBy = (sort) => {
+  switch (sort) {
+    case 'price':
+      return { field: 'price', direction: 'asc' };
+    case 'price-desc':
+      return { field: 'price', direction: 'desc' };
+    case 'name':
+      return { field: 'name', direction: 'asc' };
+    case 'newest':
+    default:
+      return { field: 'createdAt', direction: 'desc' };
+  }
+};
+
+// Traduce un único filtro de faceta (categoría/colección/marca/etc.) a un
+// where() de Firestore. Devuelve [] si no hay faceta soportada, de modo que la
+// query trae el catálogo ordenado sin filtrar en servidor (y el filtrado fino
+// multi-faceta se sigue haciendo en cliente, igual que hoy).
+//
+// LÍMITE CONOCIDO: Firestore solo permite UNA faceta combinada con orderBy por
+// query (y requiere índice compuesto faceta+orden). Por eso esta función acepta
+// como mucho una faceta "server-side"; el resto de facetas activas se aplican en
+// cliente sobre la página recibida (ver SidebarCatalogLayout). Para multi-faceta
+// real a escala se usaría un motor de búsqueda (Algolia/Typesense), fuera de
+// alcance de esta tarea.
+const facetToWhere = (facet) => {
+  if (!facet || !facet.value) return [];
+  switch (facet.type) {
+    case 'category':
+      return [{ field: 'categories', operator: 'array-contains', value: facet.value }];
+    case 'collection':
+      return [{ field: 'collections', operator: 'array-contains', value: facet.value }];
+    case 'tag':
+      return [{ field: 'tags', operator: 'array-contains', value: facet.value }];
+    case 'character':
+      return [{ field: 'characters', operator: 'array-contains', value: facet.value }];
+    case 'brand':
+      return [{ field: 'brandId', operator: '==', value: facet.value }];
+    case 'type':
+      return [{ field: 'productType', operator: '==', value: facet.value }];
+    default:
+      return [];
+  }
+};
+
+/**
+ * Obtener una PÁGINA del catálogo de la tienda con cursor (Fase 3 · C-1).
+ *
+ * Devuelve { items, lastDoc, hasMore, error } usando Firestore
+ * startAfter(cursor) + limit(pageSize). El orden viene de la query (sortToOrderBy)
+ * para que el cursor sea consistente entre páginas.
+ *
+ * RETROCOMPATIBILIDAD:
+ *  - El filtro de visibilidad (visible !== false) se aplica EN CLIENTE sobre la
+ *    página, igual que hoy en getProducts. Así no exigimos que todos los docs
+ *    tengan el campo `visible` (no haría falta backfill) ni un índice extra.
+ *    `hasMore` se calcula con el tamaño CRUDO de la página (docs devueltos por
+ *    Firestore), de modo que el cursor sigue avanzando aunque algún producto
+ *    oculto se descarte: nunca se "pierde" el resto del catálogo.
+ *  - `facet` (opcional) permite filtrar UNA faceta en servidor; las demás se
+ *    filtran en cliente (ver nota de límite en facetToWhere).
+ *
+ * @param {Object}   params
+ * @param {Object}   [params.facet]    { type, value } faceta única server-side (opcional)
+ * @param {string}   [params.sort]     'newest' | 'price' | 'price-desc' | 'name'
+ * @param {*}        [params.cursor]    DocumentSnapshot de la página anterior (lastDoc) o null
+ * @param {number}   [params.pageSize]  tamaño de página (def. STORE_PAGE_SIZE)
+ */
+export const getStoreProductsPage = async ({ facet = null, sort = 'newest', cursor = null, pageSize = STORE_PAGE_SIZE } = {}) => {
+  const filters = facetToWhere(facet);
+  const orderBy = sortToOrderBy(sort);
+
+  const result = await getCollectionPaginated(COLLECTION, filters, orderBy, pageSize, cursor);
+  if (result.error) {
+    return { items: [], lastDoc: null, hasMore: false, error: result.error };
+  }
+
+  // hasMore se basa en el tamaño CRUDO de la página (antes de filtrar visibles).
+  const rawCount = Array.isArray(result.data) ? result.data.length : 0;
+  const items = (result.data || [])
+    .filter((p) => p.visible !== false)
+    .map((doc) => normalizeProductForRead(doc));
+
+  // ── RED DE SEGURIDAD (anti catálogo-vacío) ──────────────────────────
+  // En la PRIMERA página de la ruta por defecto (cursor null y SIN faceta
+  // server-side, es decir el orden por createdAt del modo "newest"), si la
+  // query devuelve 0 docs CRUDOS no asumimos catálogo vacío: lo más probable
+  // es que ningún doc tenga `createdAt` (Firestore EXCLUYE de un orderBy los
+  // docs que no tienen el campo) o que el índice falle silenciosamente. En ese
+  // caso caemos al catálogo COMPLETO sin orden de servidor —getProducts([], null,
+  // null)— como una sola página (hasMore:false), igual que el fallback de error
+  // del queryFn en TiendaPage. Así el storefront SIEMPRE muestra productos.
+  //
+  // Importante: solo se dispara con rawCount===0 (no hay NADA que paginar), así
+  // que no interfiere con el caso normal (sí hay docs) ni con una página que
+  // trae solo productos ocultos —ahí rawCount>0 y el cursor sigue avanzando—.
+  // Se restringe a !facet para no enmascarar una categoría/colección legítima
+  // sin resultados (esa SÍ debe poder verse vacía).
+  if (cursor == null && !facet && rawCount === 0) {
+    const full = await getProducts([], null, null);
+    if (!full.error) {
+      return { items: full.data || [], lastDoc: null, hasMore: false, error: null };
+    }
+    // Si el fallback también falla, devolvemos vacío (no rompemos la tienda).
+  }
+
+  return {
+    items,
+    lastDoc: result.lastDoc || null,
+    hasMore: rawCount === pageSize,
+    error: null
+  };
+};
+
 /**
  * Buscar productos por tÃ©rmino
  */
