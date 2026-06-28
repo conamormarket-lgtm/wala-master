@@ -358,6 +358,12 @@ service cloud.firestore {
     }
     match /analytics_user_summary/{id}   { allow read, write: if isAdmin(); }
     match /analytics_global_summary/{id} { allow read, write: if isAdmin(); }
+    // Fase 2 (pre-agregación): docs diarios pre-sumados que escribe SOLO la Cloud Function
+    // aggregateAnalyticsDaily (Admin SDK, se salta reglas). El dashboard admin los LEE.
+    // SEGURO E INDEPENDIENTE DE PAGOS: esta regla concreta se puede desplegar sola, sin
+    // esperar a la migración de PayPal server-side. Sin ella, el dashboard cae al cálculo
+    // en vivo (funciona, pero no ahorra lecturas).
+    match /analytics_daily/{id} { allow read: if isAdmin(); allow write: if false; }
 
     // ── Ingestión pública controlada ─────────────────────────────────────────────
     match /heatmap_events/{eventId} {
