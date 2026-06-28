@@ -20,6 +20,8 @@ import {
   useDateRange,
   useGlobalAnalytics,
 } from './dashboard/dashShared';
+import BackfillAnaliticaButton from './dashboard/BackfillAnaliticaButton';
+import RecepcionPedidos from './dashboard/RecepcionPedidos';
 import styles from './AdminDashboard.module.css';
 import extra from './AdminDashboard.extra.module.css';
 
@@ -74,6 +76,14 @@ const NAV_CARDS = [
     icon: '📱',
     title: 'Uso de la app',
     desc: 'Áreas más usadas, sesiones por dispositivo y permanencia.',
+    accent: true,
+  },
+  {
+    // Recepción de Pedidos: organización de ENVÍOS del portal (también embebida abajo).
+    to: 'recepcion',
+    icon: '📦',
+    title: 'Recepción de pedidos',
+    desc: 'Organiza los envíos del portal: dirección, cliente y estado.',
     accent: true,
   },
 ];
@@ -347,6 +357,23 @@ export default function AdminDashboard() {
               )}
             </ul>
           </GlassCard>
+        </motion.div>
+
+        {/* (4) Administración: reconstruir el histórico de analítica diaria.
+             Acción de admin (claim admin) que re-agrega analytics_events →
+             analytics_daily vía la Cloud Function 'aggregateAnalyticsDailyBackfill'.
+             No bloquea la página: su estado de carga/resultado vive en el componente. */}
+        <motion.div variants={itemVariants}>
+          <BackfillAnaliticaButton />
+        </motion.div>
+
+        {/* (5) Recepción de Pedidos — organización de ENVÍOS del portal WALA.
+             SOLO-LECTURA (capa adminOrders.js → ERP pedidos_web/pedidos). Va al
+             final, debajo de toda la analítica. También existe como ruta dedicada
+             /admin/dashboard/recepcion, pero aquí queda embebida para que el admin
+             la vea de inmediato. No toca carrito/precios/cobro. */}
+        <motion.div variants={itemVariants}>
+          <RecepcionPedidos embebido />
         </motion.div>
       </motion.div>
     </div>

@@ -115,6 +115,7 @@ const DashOrigen = lazy(() => import('./pages/admin/dashboard/DashOrigen'));
 const DashPaginas = lazy(() => import('./pages/admin/dashboard/DashPaginas'));
 const DashCategorias = lazy(() => import('./pages/admin/dashboard/DashCategorias'));
 const DashUso = lazy(() => import('./pages/admin/dashboard/DashUso'));
+const DashRecepcion = lazy(() => import('./pages/admin/dashboard/DashRecepcion'));
 const DesignSystemPage = lazy(() => import('./pages/admin/DesignSystemPage'));
 
 // ── Admin pages ───────────────────────────────────────────────────────────────
@@ -303,6 +304,7 @@ function App() {
                             <Route path="dashboard/paginas" element={<DashPaginas />} />
                             <Route path="dashboard/categorias" element={<DashCategorias />} />
                             <Route path="dashboard/uso" element={<DashUso />} />
+                            <Route path="dashboard/recepcion" element={<DashRecepcion />} />
                             <Route path="design" element={<DesignSystemPage />} />
                             <Route path="productos" element={<AdminProductos />} />
                             <Route path="inventario" element={<AdminInventario />} />
