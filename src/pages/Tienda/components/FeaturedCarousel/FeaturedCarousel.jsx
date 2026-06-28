@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './FeaturedCarousel.module.css';
 
 /**
@@ -14,6 +15,7 @@ import styles from './FeaturedCarousel.module.css';
  *
  * @param {object}   props
  * @param {string}   props.title           Título de la sección
+ * @param {object}   props.config          Settings completos de la sección (estilo de texto + botón)
  * @param {Array}    props.products        Productos a mostrar (ya cargados)
  * @param {Array}    props.categories      Categorías (se pasan a PremiumProductCard)
  * @param {number}   props.visibleItems    Nº de tarjetas visibles en desktop (default 5)
@@ -22,6 +24,7 @@ import styles from './FeaturedCarousel.module.css';
  */
 const FeaturedCarousel = ({
   title,
+  config,
   products,
   categories = [],
   visibleItems = 5,
@@ -91,7 +94,15 @@ const FeaturedCarousel = ({
   if (products == null) {
     return (
       <div className={styles.carouselContainer}>
-        {title && <h2 className={styles.carouselTitle}>{title}</h2>}
+        {/* Título con estilo editable; si no hay título, TextoSeccion devuelve null */}
+        <TextoSeccion
+          settings={config}
+          prefix="title"
+          as="h2"
+          className={styles.carouselTitle}
+        >
+          {title}
+        </TextoSeccion>
         <div className={styles.loadingText}>Cargando productos...</div>
       </div>
     );
@@ -108,7 +119,19 @@ const FeaturedCarousel = ({
       style={{ '--visible-items': Math.max(1, Number(visibleItems) || 5) }}
     >
       <div className={styles.carouselHeader}>
-        {title && <h2 className={styles.carouselTitle}>{title}</h2>}
+        {/* Título con estilo editable (align/underline/bg/link del campo `title`).
+            Se conserva la clase CSS actual para no alterar el look base. */}
+        <TextoSeccion
+          settings={config}
+          prefix="title"
+          as="h2"
+          className={styles.carouselTitle}
+        >
+          {title}
+        </TextoSeccion>
+        {/* Botón opcional debajo del título (buttonText/buttonLink).
+            Si no están definidos, BotonSeccion devuelve null (retrocompatible). */}
+        <BotonSeccion settings={config} style={{ marginTop: '0.75rem' }} />
       </div>
 
       <div className={styles.carouselViewport}>

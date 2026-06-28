@@ -1,4 +1,5 @@
 import React from 'react';
+import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 
 const TextBlock = ({ config }) => {
   const {
@@ -44,33 +45,44 @@ const TextBlock = ({ config }) => {
           boxSizing: 'border-box'
         }}
       >
-        {heading && (
-          <h2 style={{ 
-            color: headingColor, 
-            marginBottom: content ? '1rem' : '0', 
-            fontSize: headingFontSize || '2rem', 
+        {/* Encabezado: TextoSeccion aplica align/underline/bg/link del campo `heading`.
+            Se conservan todos los estilos base inline. */}
+        <TextoSeccion
+          settings={config}
+          prefix="heading"
+          as="h2"
+          style={{
+            color: headingColor,
+            marginBottom: content ? '1rem' : '0',
+            fontSize: headingFontSize || '2rem',
             fontWeight: headingFontWeight || 'bold',
             fontFamily: headingFontFamily || 'inherit',
             textTransform: headingTextTransform || 'none'
-          }}>
-            {heading}
-          </h2>
-        )}
-        {content && (
-          <div 
-            style={{ 
-              color: textColor, 
-              fontSize: contentFontSize || '1.1rem', 
-              fontWeight: contentFontWeight || 'normal',
-              fontFamily: contentFontFamily || 'inherit',
-              textTransform: contentTextTransform || 'none',
-              lineHeight: '1.6', 
-              whiteSpace: 'pre-wrap' 
-            }}
-          >
-            {content}
-          </div>
-        )}
+          }}
+        >
+          {heading}
+        </TextoSeccion>
+        {/* Contenido: TextoSeccion aplica el estilo editable del campo `content`.
+            Se mantiene whiteSpace pre-wrap para respetar saltos de linea. */}
+        <TextoSeccion
+          settings={config}
+          prefix="content"
+          as="div"
+          style={{
+            color: textColor,
+            fontSize: contentFontSize || '1.1rem',
+            fontWeight: contentFontWeight || 'normal',
+            fontFamily: contentFontFamily || 'inherit',
+            textTransform: contentTextTransform || 'none',
+            lineHeight: '1.6',
+            whiteSpace: 'pre-wrap'
+          }}
+        >
+          {content}
+        </TextoSeccion>
+        {/* Boton opcional agregado desde el editor (buttonText/buttonLink).
+            Sin esos campos, BotonSeccion devuelve null (retrocompatible). */}
+        <BotonSeccion settings={config} style={{ marginTop: '1.5rem' }} />
       </div>
     </div>
   );

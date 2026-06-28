@@ -1,4 +1,5 @@
 import React from 'react';
+import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 
 const HeaderBlock = ({ config }) => {
   const {
@@ -43,34 +44,46 @@ const HeaderBlock = ({ config }) => {
           boxSizing: 'border-box'
         }}
       >
-        {title && (
-          <h1 style={{ 
-            color: titleColor, 
-            marginBottom: subtitle ? '0.5rem' : '0', 
-            fontSize: titleFontSize || 'clamp(2rem, 5vw, 3rem)', 
+        {/* Titulo: TextoSeccion aplica align/underline/bg/link del campo `title`.
+            Se conservan TODOS los estilos base inline (color, fuente, etc.). */}
+        <TextoSeccion
+          settings={config}
+          prefix="title"
+          as="h1"
+          style={{
+            color: titleColor,
+            marginBottom: subtitle ? '0.5rem' : '0',
+            fontSize: titleFontSize || 'clamp(2rem, 5vw, 3rem)',
             fontWeight: titleFontWeight || '800',
             fontFamily: titleFontFamily || 'inherit',
             textTransform: titleTextTransform || 'none',
             letterSpacing: '-0.02em',
             lineHeight: '1.2'
-          }}>
-            {title}
-          </h1>
-        )}
-        {subtitle && (
-          <p style={{ 
-            color: subtitleColor, 
-            fontSize: subtitleFontSize || 'clamp(1rem, 2vw, 1.25rem)', 
+          }}
+        >
+          {title}
+        </TextoSeccion>
+        {/* Subtitulo: TextoSeccion aplica el estilo editable del campo `subtitle`. */}
+        <TextoSeccion
+          settings={config}
+          prefix="subtitle"
+          as="p"
+          style={{
+            color: subtitleColor,
+            fontSize: subtitleFontSize || 'clamp(1rem, 2vw, 1.25rem)',
             fontWeight: subtitleFontWeight || 'normal',
             fontFamily: subtitleFontFamily || 'inherit',
             textTransform: subtitleTextTransform || 'none',
             lineHeight: '1.5',
             maxWidth: '800px',
             margin: textAlign === 'center' ? '0 auto' : '0'
-          }}>
-            {subtitle}
-          </p>
-        )}
+          }}
+        >
+          {subtitle}
+        </TextoSeccion>
+        {/* Boton opcional que el editor puede agregar (buttonText/buttonLink).
+            Si no estan definidos, BotonSeccion devuelve null (retrocompatible). */}
+        <BotonSeccion settings={config} style={{ marginTop: '1.5rem' }} />
       </div>
     </div>
   );

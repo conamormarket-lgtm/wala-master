@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './MapLocation.module.css';
+import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 
 const MapLocation = ({ config }) => {
   const {
@@ -26,8 +27,15 @@ const MapLocation = ({ config }) => {
   return (
     <div className={`${styles.container} ${layoutClass}`}>
       <div className={styles.textContent}>
-        {title && <h2 className={styles.title}>{title}</h2>}
-        {description && <p className={styles.description}>{description}</p>}
+        {/* Título y descripción con estilo editable (alineación/subrayado/fondo/enlace). */}
+        <TextoSeccion settings={config} prefix="title" as="h2" className={styles.title}>
+          {title}
+        </TextoSeccion>
+        <TextoSeccion settings={config} prefix="description" as="p" className={styles.description}>
+          {description}
+        </TextoSeccion>
+        {/* Botón opcional: solo se renderiza si hay buttonText && buttonLink. */}
+        <BotonSeccion settings={config} />
       </div>
       
       <div 

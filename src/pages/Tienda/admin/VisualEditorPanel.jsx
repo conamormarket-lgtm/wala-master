@@ -14,6 +14,9 @@ import { Eye, EyeOff, Settings2, Trash2, ChevronUp, ChevronDown, Plus, ArrowLeft
 
 import TypographyControl from './editor/controls/TypographyControl';
 import BackgroundStylesControl from './editor/controls/BackgroundStylesControl';
+// Bloques reutilizables nuevos: estilo de texto por campo (alineación/subrayado/fondo/enlace) y botón de acción
+import TextStyleControl from './editor/controls/TextStyleControl';
+import ButtonFieldsControl from './editor/controls/ButtonFieldsControl';
 // Subida de imágenes a NUESTRO Firebase Storage (control propio, no se rompe si una URL externa muere)
 import { uploadFile } from '../../../services/firebase/storage';
 
@@ -894,9 +897,9 @@ const VisualEditorPanel = () => {
                     <b>Negrita</b>
                   </label>
                   <label style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
-                    <input 
-                      type="checkbox" 
-                      checked={msg.italic || false} 
+                    <input
+                      type="checkbox"
+                      checked={msg.italic || false}
                       onChange={e => {
                         const newSections = [...storeConfigDraft.sections];
                         newSections[dynamicSectionIndex].settings.messages[msgIndex].italic = e.target.checked;
@@ -906,6 +909,69 @@ const VisualEditorPanel = () => {
                     />
                     <i>Cursiva</i>
                   </label>
+                </div>
+
+                {/* Estilo de texto por mensaje: alineación/subrayado/fondo (aditivo, retrocompatible) */}
+                <div style={{display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap', alignItems: 'flex-end'}}>
+                  <div style={{flex: '1 1 45%'}}>
+                    <label>Alineación</label>
+                    <select
+                      value={msg.textAlign || ''}
+                      onChange={e => {
+                        const newSections = [...storeConfigDraft.sections];
+                        newSections[dynamicSectionIndex].settings.messages[msgIndex].textAlign = e.target.value;
+                        updateSectionsDraft(newSections);
+                      }}
+                      style={{width: '100%', padding: '6px'}}
+                    >
+                      <option value="">Por defecto</option>
+                      <option value="left">Izquierda</option>
+                      <option value="center">Centro</option>
+                      <option value="right">Derecha</option>
+                    </select>
+                  </div>
+                  <label style={{flex: '1 1 45%', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 6px 0', fontSize: '0.85rem', cursor: 'pointer'}}>
+                    <input
+                      type="checkbox"
+                      checked={msg.underline || false}
+                      onChange={e => {
+                        const newSections = [...storeConfigDraft.sections];
+                        newSections[dynamicSectionIndex].settings.messages[msgIndex].underline = e.target.checked;
+                        updateSectionsDraft(newSections);
+                      }}
+                      style={{margin: 0}}
+                    />
+                    <span style={{textDecoration: 'underline'}}>Subrayado</span>
+                  </label>
+                </div>
+                <div style={{marginTop: '10px'}}>
+                  <label>Color de Fondo del Texto</label>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px'}}>
+                    <input
+                      type="color"
+                      value={msg.textBg && msg.textBg !== 'transparent' ? msg.textBg : '#ffffff'}
+                      onChange={e => {
+                        const newSections = [...storeConfigDraft.sections];
+                        newSections[dynamicSectionIndex].settings.messages[msgIndex].textBg = e.target.value;
+                        updateSectionsDraft(newSections);
+                      }}
+                      disabled={!msg.textBg || msg.textBg === 'transparent'}
+                      style={{height: '32px', padding: 0, width: '40px', cursor: (!msg.textBg || msg.textBg === 'transparent') ? 'not-allowed' : 'pointer'}}
+                    />
+                    <label style={{display: 'flex', alignItems: 'center', gap: '4px', margin: 0, fontSize: '0.85rem', cursor: 'pointer'}}>
+                      <input
+                        type="checkbox"
+                        checked={!msg.textBg || msg.textBg === 'transparent'}
+                        onChange={e => {
+                          const newSections = [...storeConfigDraft.sections];
+                          newSections[dynamicSectionIndex].settings.messages[msgIndex].textBg = e.target.checked ? '' : '#ffff00';
+                          updateSectionsDraft(newSections);
+                        }}
+                        style={{margin: 0}}
+                      />
+                      Sin fondo
+                    </label>
+                  </div>
                 </div>
               </div>
             ))}
@@ -937,9 +1003,9 @@ const VisualEditorPanel = () => {
             </h4>
 
             <label>Título de la Sección</label>
-            <input 
-              type="text" 
-              value={s.title || ''} 
+            <input
+              type="text"
+              value={s.title || ''}
               onChange={e => {
                 const newSections = [...storeConfigDraft.sections];
                 newSections[dynamicSectionIndex].settings.title = e.target.value;
@@ -947,6 +1013,10 @@ const VisualEditorPanel = () => {
               }}
               style={{width: '100%', padding: '6px', marginBottom: '15px'}}
             />
+
+            {/* Estilo de texto reutilizable del título + botón opcional */}
+            <TextStyleControl label="Estilo del Título" prefix="title" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            <ButtonFieldsControl settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
 
             <h5 style={{marginBottom: '10px'}}>Testimonios</h5>
             {(s.testimonials || []).map((testim, index) => (
@@ -1113,6 +1183,12 @@ const VisualEditorPanel = () => {
 
               <label style={{fontSize: '0.85rem', color: '#64748b'}}>Párrafo</label>
               <textarea placeholder="Escribe aquí tu texto detallado..." value={s.content || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.content = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '8px', minHeight: '120px', fontFamily: 'inherit', border: '1px solid #cbd5e1', borderRadius: '4px'}} />
+
+              {/* Estilo de texto reutilizable: alineación/subrayado/fondo/enlace por campo */}
+              <TextStyleControl label="Estilo del Título" prefix="heading" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+              <TextStyleControl label="Estilo del Párrafo" prefix="content" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+              {/* Botón opcional (no existía en esta sección) */}
+              <ButtonFieldsControl settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
             </fieldset>
 
             <fieldset style={{border: '1px solid #e2e8f0', borderRadius: '6px', padding: '15px', marginBottom: '15px'}}>
@@ -1299,8 +1375,8 @@ const VisualEditorPanel = () => {
               style={{width: '100%', padding: '6px', marginBottom: '10px'}}
             />
             <label>Descripción / Dirección</label>
-            <textarea 
-              value={s.description || ''} 
+            <textarea
+              value={s.description || ''}
               onChange={e => {
                 const newSections = [...storeConfigDraft.sections];
                 newSections[dynamicSectionIndex].settings.description = e.target.value;
@@ -1308,6 +1384,11 @@ const VisualEditorPanel = () => {
               }}
               style={{width: '100%', padding: '6px', marginBottom: '15px', minHeight: '60px', fontFamily: 'inherit'}}
             />
+
+            {/* Estilo de texto reutilizable: alineación/subrayado/fondo/enlace por campo + botón opcional */}
+            <TextStyleControl label="Estilo del Título" prefix="title" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            <TextStyleControl label="Estilo de la Descripción" prefix="description" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            <ButtonFieldsControl settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
 
             <h5 style={{marginBottom: '10px', marginTop: '10px'}}>3. Diseño y Tamaño (Flexbox)</h5>
             
@@ -1364,6 +1445,18 @@ const VisualEditorPanel = () => {
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
               Editando: Carrusel de Logos / Marcas
             </h4>
+
+            <label>Título de la Sección (Opcional)</label>
+            <input
+              type="text"
+              value={s.title || ''}
+              onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.title = e.target.value; updateSectionsDraft(newSections); }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            />
+
+            {/* Estilo de texto reutilizable del título + botón opcional */}
+            <TextStyleControl label="Estilo del Título" prefix="title" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            <ButtonFieldsControl settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
 
             <label>Velocidad del Carrusel (segundos por ciclo)</label>
             <input 
@@ -1506,10 +1599,10 @@ const VisualEditorPanel = () => {
                 />
 
                 <label>Enlace de Destino</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Ej: /tienda"
-                  value={card.link || ''} 
+                  value={card.link || ''}
                   onChange={e => {
                     const newSections = [...storeConfigDraft.sections];
                     newSections[dynamicSectionIndex].settings.cards[cardIndex].link = e.target.value;
@@ -1517,6 +1610,10 @@ const VisualEditorPanel = () => {
                   }}
                   style={{width: '100%', padding: '6px', marginBottom: '10px'}}
                 />
+
+                {/* Estilo de texto reutilizable POR TARJETA (lee/escribe sobre el objeto card). Aditivo y retrocompatible. */}
+                <TextStyleControl label="Estilo del Título" prefix="title" settings={card} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.cards[cardIndex][key] = val; updateSectionsDraft(newSections); }} />
+                <TextStyleControl label="Estilo del Subtítulo" prefix="subtitle" settings={card} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.cards[cardIndex][key] = val; updateSectionsDraft(newSections); }} />
               </div>
             ))}
 
@@ -1600,12 +1697,18 @@ const VisualEditorPanel = () => {
               onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
             />
             
-            <TypographyControl 
-              label="Tipografía del Subtítulo" 
-              prefix="subtitle" 
-              settings={s} 
-              onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
+            <TypographyControl
+              label="Tipografía del Subtítulo"
+              prefix="subtitle"
+              settings={s}
+              onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }}
             />
+
+            {/* Estilo de texto reutilizable: alineación/subrayado/fondo/enlace por campo */}
+            <TextStyleControl label="Estilo del Título" prefix="title" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            <TextStyleControl label="Estilo del Subtítulo" prefix="subtitle" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            {/* Botón opcional (no existía en esta sección) */}
+            <ButtonFieldsControl settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
 
             <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
               <div style={{flex: 1}}>
@@ -1738,13 +1841,17 @@ const VisualEditorPanel = () => {
               onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
             />
             
-            <TypographyControl 
-              label="Tipografía del Subtítulo" 
-              prefix="subtitle" 
-              settings={draft} 
-              onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} 
+            <TypographyControl
+              label="Tipografía del Subtítulo"
+              prefix="subtitle"
+              settings={draft}
+              onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }}
             />
-            
+
+            {/* Estilo de texto reutilizable: alineación/subrayado/fondo/enlace por campo. El botón ya existe abajo. */}
+            <TextStyleControl label="Estilo del Título" prefix="title" settings={draft} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            <TextStyleControl label="Estilo del Subtítulo" prefix="subtitle" settings={draft} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+
             <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
               <div style={{flex: 1}}>
                 <label>Texto Botón</label>
@@ -1844,9 +1951,9 @@ const VisualEditorPanel = () => {
             </h4>
 
             <label>{titleLabel}</label>
-            <input 
-              type="text" 
-              value={s.title || ''} 
+            <input
+              type="text"
+              value={s.title || ''}
               onChange={e => {
                 const newSections = [...storeConfigDraft.sections];
                 newSections[dynamicSectionIndex].settings.title = e.target.value;
@@ -1855,13 +1962,17 @@ const VisualEditorPanel = () => {
               style={{width: '100%', padding: '6px', marginBottom: '15px'}}
             />
 
-            <BackgroundStylesControl 
-              settings={s} 
+            {/* Estilo de texto reutilizable del título + botón opcional */}
+            <TextStyleControl label="Estilo del Título" prefix="title" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            <ButtonFieldsControl settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+
+            <BackgroundStylesControl
+              settings={s}
               onChange={(key, value) => {
                 const newSections = [...storeConfigDraft.sections];
                 newSections[dynamicSectionIndex].settings[key] = value;
                 updateSectionsDraft(newSections);
-              }} 
+              }}
             />
 
             <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
@@ -1891,6 +2002,10 @@ const VisualEditorPanel = () => {
 
             <label>Título de la Sección</label>
             <input type="text" value={s.title || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.title = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px'}} />
+
+            {/* Estilo de texto reutilizable del título + botón opcional */}
+            <TextStyleControl label="Estilo del Título" prefix="title" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            <ButtonFieldsControl settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
 
             <label>Colección a Mostrar</label>
             <select value={s.collection || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.collection = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '15px'}}>
@@ -1965,6 +2080,10 @@ const VisualEditorPanel = () => {
               }}
               style={{width: '100%', padding: '6px', marginBottom: '15px'}}
             />
+
+            {/* Estilo de texto reutilizable del título + botón opcional */}
+            <TextStyleControl label="Estilo del Título" prefix="title" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
+            <ButtonFieldsControl settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
 
             <label>Productos visibles (en escritorio)</label>
             <input

@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { TextoSeccion } from './textStyleUtils.jsx';
 import { AuroraBackground, GlassButton, Reveal } from '../../../components/ui';
 import { trackBannerClick } from '../../../services/analytics/tracker';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -31,7 +32,7 @@ const HeroBanner = ({ config }) => {
     subtitleFontSize,
     subtitleFontWeight,
     subtitleTextTransform
-  } = config;
+  } = config || {};
   
   const videoRef = useRef(null);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
@@ -97,34 +98,39 @@ const HeroBanner = ({ config }) => {
         }}
       >
         <Reveal className={styles.content}>
-          {title && (
-            <h1 
-              className={styles.title} 
-              style={{ 
-                color: titleColor,
-                fontFamily: titleFontFamily || 'inherit',
-                fontSize: titleFontSize || undefined,
-                fontWeight: titleFontWeight || undefined,
-                textTransform: titleTextTransform || 'none'
-              }}
-            >
-              {title}
-            </h1>
-          )}
-          {subtitle && (
-            <p 
-              className={styles.subtitle} 
-              style={{ 
-                color: subtitleColor,
-                fontFamily: subtitleFontFamily || 'inherit',
-                fontSize: subtitleFontSize || undefined,
-                fontWeight: subtitleFontWeight || undefined,
-                textTransform: subtitleTextTransform || 'none'
-              }}
-            >
-              {subtitle}
-            </p>
-          )}
+          {/* Titulo: TextoSeccion aplica align/underline/bg/link del campo `title`.
+              Se conserva la clase CSS del modulo y todos los estilos inline base. */}
+          <TextoSeccion
+            settings={config}
+            prefix="title"
+            as="h1"
+            className={styles.title}
+            style={{
+              color: titleColor,
+              fontFamily: titleFontFamily || 'inherit',
+              fontSize: titleFontSize || undefined,
+              fontWeight: titleFontWeight || undefined,
+              textTransform: titleTextTransform || 'none'
+            }}
+          >
+            {title}
+          </TextoSeccion>
+          {/* Subtitulo: TextoSeccion aplica el estilo editable del campo `subtitle`. */}
+          <TextoSeccion
+            settings={config}
+            prefix="subtitle"
+            as="p"
+            className={styles.subtitle}
+            style={{
+              color: subtitleColor,
+              fontFamily: subtitleFontFamily || 'inherit',
+              fontSize: subtitleFontSize || undefined,
+              fontWeight: subtitleFontWeight || undefined,
+              textTransform: subtitleTextTransform || 'none'
+            }}
+          >
+            {subtitle}
+          </TextoSeccion>
           {buttonText && buttonLink && (
             <Link to={buttonLink} onClick={handleBannerClick}>
               <GlassButton

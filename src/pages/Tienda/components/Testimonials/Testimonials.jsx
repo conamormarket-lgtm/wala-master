@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './Testimonials.module.css';
+import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 
 const StarIcon = () => (
   <svg className={styles.star} viewBox="0 0 20 20" fill="currentColor">
@@ -7,12 +8,22 @@ const StarIcon = () => (
   </svg>
 );
 
-const Testimonials = ({ title, testimonials = [] }) => {
+// `config` = settings completo de la sección (incluye estilos de texto + botón).
+// `title` se mantiene como prop suelta para retrocompatibilidad: si no llega
+// `config`, el título sigue funcionando exactamente como hoy.
+const Testimonials = ({ config, title, testimonials = [] }) => {
   if (!testimonials || testimonials.length === 0) return null;
+
+  // El título efectivo: el de config tiene prioridad, con fallback a la prop suelta.
+  const s = config || {};
+  const tituloEfectivo = s.title != null && s.title !== '' ? s.title : title;
 
   return (
     <div className={styles.container}>
-      {title && <h2 className={styles.title}>{title}</h2>}
+      {/* Título con estilo editable (alineación/subrayado/fondo/enlace). */}
+      <TextoSeccion settings={s} prefix="title" as="h2" className={styles.title}>
+        {tituloEfectivo}
+      </TextoSeccion>
       <div className={styles.grid}>
         {testimonials.map((item, idx) => (
           <div key={idx} className={styles.card}>
@@ -28,6 +39,8 @@ const Testimonials = ({ title, testimonials = [] }) => {
           </div>
         ))}
       </div>
+      {/* Botón opcional: solo se renderiza si hay buttonText && buttonLink. */}
+      <BotonSeccion settings={s} />
     </div>
   );
 };

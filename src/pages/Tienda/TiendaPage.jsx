@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus } from 'lucide-react';
-import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import ProductGrid from './components/ProductGrid';
 import VisualCategoryNav from './components/VisualCategoryNav/VisualCategoryNav';
@@ -89,6 +89,122 @@ const SectionBackground = ({ config }) => {
         }} />
       )}
     </>
+  );
+};
+
+// ── HELPERS REUTILIZABLES DE ESTILO DE TEXTO (aditivos y retrocompatibles) ──
+// Para cada campo de texto editable (title, subtitle, heading, content...) el
+// editor puede guardar en settings las claves: <campo>Align, <campo>Underline,
+// <campo>Bg y <campo>Link. Si NO existen, los helpers devuelven valores neutros
+// y el render queda EXACTAMENTE como hoy.
+
+/**
+ * Estilo de bloque (contenedor del texto): solo alineación horizontal.
+ * Va en el elemento de bloque (p.ej. el <h2>) para no romper su ancho.
+ * @param {object} s     settings de la sección
+ * @param {string} campo prefijo del campo (p.ej. 'title', 'heading', 'content')
+ */
+const estiloBloque = (s, campo) => {
+  if (!s || !campo) return {};
+  const align = s[`${campo}Align`];
+  return align ? { textAlign: align } : {};
+};
+
+/**
+ * Estilo inline del texto en sí: subrayado y fondo (con padding para que el
+ * fondo abrace el texto en vez de ocupar todo el ancho del bloque).
+ * @param {object} s     settings de la sección
+ * @param {string} campo prefijo del campo
+ */
+const estiloTexto = (s, campo) => {
+  if (!s || !campo) return {};
+  const style = {};
+  if (s[`${campo}Underline`]) style.textDecoration = 'underline';
+  const bg = s[`${campo}Bg`];
+  if (bg) {
+    style.backgroundColor = bg;
+    // inline-block + padding para que el color de fondo abrace el texto.
+    style.display = 'inline-block';
+    style.padding = '0.15em 0.4em';
+    style.borderRadius = '4px';
+  }
+  return style;
+};
+
+/**
+ * Envuelve un nodo en un enlace si la URL existe.
+ * - URL interna (empieza con '/') -> <Link> de react-router.
+ * - URL externa (http...) -> <a target="_blank" rel="noopener noreferrer">.
+ * Si no hay URL, devuelve el nodo tal cual (retrocompatible).
+ */
+const envolverLink = (nodo, url) => {
+  const link = (url || '').trim();
+  if (!link) return nodo;
+  if (link.startsWith('/')) {
+    return (
+      <Link to={link} style={{ color: 'inherit', textDecoration: 'inherit' }}>
+        {nodo}
+      </Link>
+    );
+  }
+  return (
+    <a
+      href={link}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: 'inherit', textDecoration: 'inherit' }}
+    >
+      {nodo}
+    </a>
+  );
+};
+
+/**
+ * Construye el contenido interno estilizado de un texto: aplica subrayado/fondo
+ * y, si hay <campo>Link, lo envuelve en un enlace. Pensado para colocarse dentro
+ * del elemento de bloque (que solo lleva la alineación vía estiloBloque).
+ * Si no hay ningún campo nuevo, devuelve el texto crudo (idéntico a hoy).
+ * @param {object} s     settings de la sección
+ * @param {string} campo prefijo del campo
+ * @param {string} texto el texto a renderizar
+ */
+const renderTextoEstilizado = (s, campo, texto) => {
+  const styleTexto = estiloTexto(s, campo);
+  const tieneEstilo = Object.keys(styleTexto).length > 0;
+  const nodo = tieneEstilo ? <span style={styleTexto}>{texto}</span> : texto;
+  return envolverLink(nodo, s?.[`${campo}Link`]);
+};
+
+/**
+ * Renderiza el botón opcional de una sección (buttonText/buttonLink).
+ * Devuelve null si no hay texto o enlace, manteniendo el render actual intacto.
+ */
+const renderBotonSeccion = (s) => {
+  const texto = (s?.buttonText || '').trim();
+  const enlace = (s?.buttonLink || '').trim();
+  if (!texto || !enlace) return null;
+
+  const estilo = {
+    display: 'inline-block',
+    marginTop: '1rem',
+    padding: '0.65rem 1.4rem',
+    borderRadius: '8px',
+    fontWeight: 600,
+    textDecoration: 'none',
+    cursor: 'pointer',
+    backgroundColor: s.buttonBgColor || '#000000',
+    color: s.buttonTextColor || '#ffffff'
+  };
+
+  const contenido = <span style={estilo}>{texto}</span>;
+
+  if (enlace.startsWith('/')) {
+    return <Link to={enlace}>{contenido}</Link>;
+  }
+  return (
+    <a href={enlace} target="_blank" rel="noopener noreferrer">
+      {contenido}
+    </a>
   );
 };
 
@@ -365,7 +481,8 @@ const TiendaPage = ({ isLandingPage = false }) => {
         return (
           <section key={section.id} style={{ position: 'relative', overflow: 'hidden' }}>
              <SectionBackground config={s} />
-             <AnnouncementBar messages={s.messages} speed={s.speed} bgColor={s.bgColor} textColor={s.textColor} />
+             {/* config={s}: aditivo, para que el componente reciba los campos de estilo/botón guardados por el editor */}
+             <AnnouncementBar config={s} messages={s.messages} speed={s.speed} bgColor={s.bgColor} textColor={s.textColor} animationType={s.animationType} />
           </section>
         );
       case 'hero_carousel':
@@ -379,7 +496,9 @@ const TiendaPage = ({ isLandingPage = false }) => {
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
+            {/* config={s}: aditivo, para que el componente reciba los campos de estilo/botón guardados por el editor */}
             <FlashSales
+               config={s}
                title={s.title}
                collectionName={s.collection}
                endTime={s.endTime}
@@ -391,7 +510,8 @@ const TiendaPage = ({ isLandingPage = false }) => {
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ overflow: 'hidden' }}>
             <SectionBackground config={s} />
-            <Testimonials title={s.title} testimonials={s.testimonials} />
+            {/* config={s}: aditivo, para que el componente reciba los campos de estilo/botón guardados por el editor */}
+            <Testimonials config={s} title={s.title} testimonials={s.testimonials} />
           </section>
         );
       case 'map_location':
@@ -431,7 +551,19 @@ const TiendaPage = ({ isLandingPage = false }) => {
         return (
           <section key={section.id} className={styles.featuredSection} style={{ position: 'relative', paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
-            {(!isEmpty && s.title) && <h2 className={styles.featuredTitle}>{s.title}</h2>}
+            {(!isEmpty && s.title) && (
+              <h2 className={styles.featuredTitle} style={estiloBloque(s, 'title')}>
+                {renderTextoEstilizado(s, 'title', s.title)}
+              </h2>
+            )}
+            {(() => {
+              const boton = !isEmpty ? renderBotonSeccion(s) : null;
+              return boton ? (
+                <div style={{ textAlign: s.titleAlign || 'center', marginBottom: '1rem' }}>
+                  {boton}
+                </div>
+              ) : null;
+            })()}
             <ProductGrid products={featuredProducts} loading={false} error={null} categories={categoriesData} emptyMessage={emptyMessage} />
           </section>
         );
@@ -440,7 +572,9 @@ const TiendaPage = ({ isLandingPage = false }) => {
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
+            {/* config={s}: aditivo, para que el componente reciba los campos de estilo/botón guardados por el editor */}
             <CollectionCarousel
+              config={s}
               title={s.title}
               collectionName={s.collection}
               categories={categoriesData}
@@ -453,7 +587,9 @@ const TiendaPage = ({ isLandingPage = false }) => {
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
+            {/* config={s}: aditivo, para que el componente reciba los campos de estilo/botón guardados por el editor */}
             <FeaturedCarousel
+              config={s}
               title={s.title}
               products={featuredProducts}
               categories={categoriesData}
@@ -472,7 +608,19 @@ const TiendaPage = ({ isLandingPage = false }) => {
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
-            {(!isEmpty && s.title) && <h2 className={styles.featuredTitle}>{s.title}</h2>}
+            {(!isEmpty && s.title) && (
+              <h2 className={styles.featuredTitle} style={estiloBloque(s, 'title')}>
+                {renderTextoEstilizado(s, 'title', s.title)}
+              </h2>
+            )}
+            {(() => {
+              const boton = !isEmpty ? renderBotonSeccion(s) : null;
+              return boton ? (
+                <div style={{ textAlign: s.titleAlign || 'center', marginBottom: '1rem' }}>
+                  {boton}
+                </div>
+              ) : null;
+            })()}
             <ProductGrid
               products={productsData || []}
               loading={productsLoading}

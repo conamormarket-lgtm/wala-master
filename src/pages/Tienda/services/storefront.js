@@ -59,30 +59,43 @@ export function getDefaultSettings(type) {
         subtitleColor: '#ffffff',
         buttonBgColor: '#ffffff',
         buttonTextColor: '#000000',
-        minHeight: '600px'
+        minHeight: '600px',
+        // Estilo de texto por campo (aditivo, retrocompatible: '' / false = comportamiento actual)
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '',
+        subtitleAlign: '', subtitleUnderline: false, subtitleBg: '', subtitleLink: ''
       };
     case 'header':
-      return { 
-        title: 'Nuestra Tienda', 
+      return {
+        title: 'Nuestra Tienda',
         subtitle: 'Explora nuestros productos.',
         backgroundColor: 'transparent',
         titleColor: '#000000',
         subtitleColor: '#666666',
         textAlign: 'center',
         paddingTop: '3rem',
-        paddingBottom: '2rem'
+        paddingBottom: '2rem',
+        // Estilo de texto por campo (aditivo, retrocompatible)
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '',
+        subtitleAlign: '', subtitleUnderline: false, subtitleBg: '', subtitleLink: '',
+        // Botón opcional (vacío = no se muestra)
+        buttonText: '', buttonLink: ''
       };
     case 'text':
-      return { 
-        heading: '', 
-        content: '', 
-        backgroundColor: 'transparent', 
-        textColor: '#333333', 
-        headingColor: '#000000', 
-        textAlign: 'left', 
+      return {
+        heading: '',
+        content: '',
+        backgroundColor: 'transparent',
+        textColor: '#333333',
+        headingColor: '#000000',
+        textAlign: 'left',
         paddingTop: '2rem',
         paddingBottom: '2rem',
-        maxWidth: '800px'
+        maxWidth: '800px',
+        // Estilo de texto por campo (aditivo, retrocompatible)
+        headingAlign: '', headingUnderline: false, headingBg: '', headingLink: '',
+        contentAlign: '', contentUnderline: false, contentBg: '', contentLink: '',
+        // Botón opcional (vacío = no se muestra)
+        buttonText: '', buttonLink: ''
       };
     case 'image':
       return { 
@@ -99,30 +112,42 @@ export function getDefaultSettings(type) {
     case 'video':
       return { url: '', poster: '', backgroundColor: 'transparent', paddingTop: '0rem', paddingBottom: '0rem' };
     case 'featured_products':
-      return { title: 'Productos destacados', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
+      return { title: 'Productos destacados', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        // Estilo del título (aditivo, retrocompatible) + botón opcional
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'featured_carousel':
-      return { title: 'Productos Destacados', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
+      return { title: 'Productos Destacados', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'collection_carousel':
-      return { title: '', collection: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
+      return { title: '', collection: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'categories_nav':
       return {};
     case 'product_grid':
-      return { title: '', show_search: true, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
+      return { title: '', show_search: true, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'sidebar_catalog':
-      return { title: 'Catálogo Completo', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
+      return { title: 'Catálogo Completo', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'announcement_bar':
-      return { messages: [{ text: 'Envío gratis a Lima', link: '' }], speed: 3000, bgColor: '#000000', textColor: '#ffffff' };
+      // Por mensaje: text/link ya existían; se añaden estilo por mensaje (aditivo, retrocompatible)
+      return { messages: [{ text: 'Envío gratis a Lima', link: '', textAlign: '', underline: false, textBg: '' }], speed: 3000, bgColor: '#000000', textColor: '#ffffff' };
     case 'hero_carousel':
       return { slides: [{ imageUrl: '', link: '', alt: '' }], autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '0rem', paddingBottom: '0rem' };
     case 'trust_badges':
       return { badges: [{ icon: 'truck', text: 'Envío Rápido' }, { icon: 'shield', text: 'Pago Seguro' }], backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'flash_sales':
-      return { title: 'Ofertas Relámpago', collection: '', endTime: new Date(Date.now() + 86400000).toISOString(), backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
+      return { title: 'Ofertas Relámpago', collection: '', endTime: new Date(Date.now() + 86400000).toISOString(), backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'testimonials':
-      return { title: 'Lo que dicen nuestros clientes', testimonials: [{ text: 'Me encantó mi polera, el diseño súper nítido!', author: 'María P.', rating: 5 }] };
+      return { title: 'Lo que dicen nuestros clientes', testimonials: [{ text: 'Me encantó mi polera, el diseño súper nítido!', author: 'María P.', rating: 5 }],
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'marquee':
-      return { items: [{ imageUrl: '', alt: 'Marca 1' }], speed: 20000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
+      return { items: [{ imageUrl: '', alt: 'Marca 1' }], speed: 20000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'bestsellers_row':
+      // Cada tarjeta tiene title/subtitle/link; los campos de estilo de texto son aditivos
+      // y se aplican por tarjeta (titleAlign/Underline/Bg... y subtitle...) — vacíos = actual.
       return {
         backgroundColor: 'transparent',
         paddingTop: '2rem',
@@ -162,7 +187,11 @@ export function getDefaultSettings(type) {
         embedUrl: '',
         layout: 'mapRight',
         mapWidth: '50%',
-        mapHeight: '400px'
+        mapHeight: '400px',
+        // Estilo de texto por campo (aditivo, retrocompatible) + botón opcional
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '',
+        descriptionAlign: '', descriptionUnderline: false, descriptionBg: '', descriptionLink: '',
+        buttonText: '', buttonLink: ''
       };
     default:
       return {};

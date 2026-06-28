@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getProductsByCollection } from '../../../../services/products';
 import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './FlashSales.module.css';
 
 const Countdown = ({ targetDate }) => {
@@ -46,7 +47,8 @@ const Countdown = ({ targetDate }) => {
   );
 };
 
-const FlashSales = ({ title = "Ofertas Relámpago", collectionName, endTime, categories }) => {
+// `config` = settings completos de la sección (estilo de texto del título + botón).
+const FlashSales = ({ title = "Ofertas Relámpago", config, collectionName, endTime, categories }) => {
   const { data: products, isLoading, error } = useQuery({
     queryKey: ['flash-sales', collectionName],
     queryFn: async () => {
@@ -66,7 +68,16 @@ const FlashSales = ({ title = "Ofertas Relámpago", collectionName, endTime, cat
     return (
       <div className={styles.flashSalesContainer}>
         <div className={styles.flashSalesHeader}>
-           <h2 className={styles.flashSalesTitle}>⚡ {title}</h2>
+           {/* Se conserva el emoji ⚡ fuera del texto estilizado para no aplicarle
+               subrayado/fondo; el título recibe el estilo editable del campo `title`. */}
+           <TextoSeccion
+             settings={config}
+             prefix="title"
+             as="h2"
+             className={styles.flashSalesTitle}
+           >
+             {`⚡ ${title}`}
+           </TextoSeccion>
         </div>
         <div className={styles.loadingText}>Cargando ofertas...</div>
       </div>
@@ -78,9 +89,21 @@ const FlashSales = ({ title = "Ofertas Relámpago", collectionName, endTime, cat
   return (
     <div className={styles.flashSalesContainer}>
       <div className={styles.flashSalesHeader}>
-        <h2 className={styles.flashSalesTitle}>⚡ {title}</h2>
+        {/* Título con estilo editable (align/underline/bg/link). Se mantiene la
+            clase CSS y el emoji ⚡ tal como hoy para no alterar el look base. */}
+        <TextoSeccion
+          settings={config}
+          prefix="title"
+          as="h2"
+          className={styles.flashSalesTitle}
+        >
+          {`⚡ ${title}`}
+        </TextoSeccion>
         {endTime && <Countdown targetDate={endTime} />}
       </div>
+      {/* Botón opcional debajo del título/encabezado (buttonText/buttonLink).
+          Si no están definidos, BotonSeccion devuelve null (retrocompatible). */}
+      <BotonSeccion settings={config} style={{ marginTop: '0.75rem' }} />
       <div className={styles.flashSalesProducts}>
          {validProducts.slice(0, 4).map((product) => ( // Máximo 4 productos por fila para urgencia
           <PremiumProductCard key={product.id} product={product} categories={categories} />

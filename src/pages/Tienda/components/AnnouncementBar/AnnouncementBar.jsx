@@ -29,6 +29,20 @@ const AnnouncementBar = ({
       fontSize: msg.fontSize || 'inherit',
       fontWeight: msg.bold ? 'bold' : 'normal',
       fontStyle: msg.italic ? 'italic' : 'normal',
+      // Alineación editable: solo se aplica si el mensaje la define (retrocompatible).
+      ...(msg.textAlign ? { textAlign: msg.textAlign, justifyContent: msg.textAlign } : {}),
+    };
+
+    // Estilo del span del texto: subrayado y fondo, solo si el mensaje los define.
+    const spanStyle = {
+      ...(msg.underline ? { textDecoration: 'underline' } : {}),
+      ...(msg.textBg && msg.textBg !== 'transparent'
+        ? {
+            backgroundColor: msg.textBg,
+            padding: '0.1em 0.35em',
+            borderRadius: 4,
+          }
+        : {}),
     };
 
     const content = (
@@ -36,7 +50,7 @@ const AnnouncementBar = ({
         {msg.imageUrl && (
           <img src={msg.imageUrl} alt="" className={styles.messageIcon} />
         )}
-        <span>{msg.text}</span>
+        <span style={Object.keys(spanStyle).length ? spanStyle : undefined}>{msg.text}</span>
       </div>
     );
 
