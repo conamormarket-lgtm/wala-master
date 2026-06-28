@@ -163,16 +163,6 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "nameLower",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "productos_wala",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
           "fieldPath": "searchTokens",
           "arrayConfig": "CONTAINS"
         },
@@ -234,34 +224,6 @@
         },
         {
           "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "analytics_sessions",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "lastSeenAtClientMs",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "lastSeenAtClientMs",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "analytics_sessions",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "startedAtClientMs",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "startedAtClientMs",
           "order": "DESCENDING"
         }
       ]
