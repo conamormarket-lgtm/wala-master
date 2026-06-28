@@ -20,6 +20,48 @@ const isNativePlatform = () =>
   window.Capacitor.isNativePlatform?.();
 
 const googleProvider = new GoogleAuthProvider();
+// Pedimos (durante el login) permiso para LEER la fecha de nacimiento vía Google
+// People API (gratis). Es un scope "sensible": para producción Google exige
+// verificar la app; si no, sale aviso de "app no verificada". El cumpleaños es
+// OPCIONAL: si no se concede o no existe, el flujo sigue y se pide manualmente.
+googleProvider.addScope('https://www.googleapis.com/auth/user.birthday.read');
+
+// Lee el cumpleaños desde la People API (gratis) con el accessToken de Google.
+// Devuelve 'YYYY-MM-DD' o null. Tolerante a fallos: nunca lanza (el cumpleaños es
+// un extra; jamás debe romper el inicio de sesión).
+const fetchGoogleBirthday = async (accessToken) => {
+  if (!accessToken) return null;
+  try {
+    const res = await fetch(
+      'https://people.googleapis.com/v1/people/me?personFields=birthdays',
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const bdays = Array.isArray(data.birthdays) ? data.birthdays : [];
+    const conFecha = (b) => b?.date?.year && b?.date?.month && b?.date?.day;
+    // Preferir la del tipo ACCOUNT (la real de la cuenta) con año/mes/día completos.
+    const pick =
+      bdays.find((b) => conFecha(b) && b?.metadata?.source?.type === 'ACCOUNT') ||
+      bdays.find(conFecha);
+    if (!pick) return null;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pick.date.year}-${pad(pick.date.month)}-${pad(pick.date.day)}`;
+  } catch (_) {
+    return null;
+  }
+};
+
+// Guarda (best-effort) el cumpleaños de Google en localStorage para precargarlo
+// luego en "completar perfil". Silencioso ante cualquier error.
+const guardarCumpleGoogle = async (accessToken) => {
+  try {
+    const bday = await fetchGoogleBirthday(accessToken);
+    if (bday && typeof localStorage !== 'undefined') {
+      localStorage.setItem('wala_google_birthday', bday);
+    }
+  } catch (_) { /* el cumpleaños es opcional */ }
+};
 
 // Verificar si Firebase Auth está disponible
 const isAuthAvailable = () => {
@@ -82,6 +124,8 @@ export const signInWithGoogle = async () => {
       const idToken = googleUser.authentication.idToken;
       const credential = GoogleAuthProvider.credential(idToken);
       const result = await signInWithCredential(auth, credential);
+      // Best-effort: cumpleaños desde People API con el accessToken nativo.
+      try { await guardarCumpleGoogle(googleUser.authentication?.accessToken); } catch (_) {}
       return { user: result.user, error: null, errorCode: null, credential: null };
     } catch (error) {
       // El usuario canceló el selector de cuentas — no es un error real
@@ -100,6 +144,12 @@ export const signInWithGoogle = async () => {
   // ── Navegador web ─────────────────────────────────────────────────────────
   try {
     const result = await signInWithPopup(auth, googleProvider);
+    // Best-effort: leer el cumpleaños desde la People API (gratis) y guardarlo
+    // para precargarlo en "completar perfil". Nunca rompe el login.
+    try {
+      const accessToken = GoogleAuthProvider.credentialFromResult(result)?.accessToken;
+      await guardarCumpleGoogle(accessToken);
+    } catch (_) { /* el cumpleaños es opcional */ }
     return { user: result.user, error: null, errorCode: null, credential: null };
   } catch (error) {
     const credential = error.credential || null;

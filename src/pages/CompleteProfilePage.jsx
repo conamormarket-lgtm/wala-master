@@ -27,6 +27,8 @@ const CompleteProfilePage = () => {
   const [phone, setPhone] = useState('');
   // Cumpleaños PROPIO del usuario (opcional). Se precarga si el perfil ya lo tiene.
   const [birthDate, setBirthDate] = useState('');
+  // true si el cumpleaños se precargó desde la cuenta de Google (para confirmar).
+  const [birthFromGoogle, setBirthFromGoogle] = useState(false);
 
   const isPE = isPeru(country);
   // Lista de tipos de documento según país (Perú: DNI/CE/Pasaporte; extranjero: null).
@@ -58,8 +60,21 @@ const CompleteProfilePage = () => {
       setFullName(userProfile.displayName || user.displayName || '');
       // Si el perfil ya trae país (p. ej. registro previo), respétalo.
       if (userProfile.country) setCountry(userProfile.country);
-      // Precarga el cumpleaños propio si ya existe en el perfil.
-      if (userProfile.birthDate) setBirthDate(userProfile.birthDate);
+      // Precarga el cumpleaños: prioridad al del perfil; si no, al importado de
+      // Google (lo guardó el login en localStorage) para confirmarlo aquí.
+      if (userProfile.birthDate) {
+        setBirthDate(userProfile.birthDate);
+      } else {
+        try {
+          const g = typeof localStorage !== 'undefined'
+            ? localStorage.getItem('wala_google_birthday') : null;
+          if (g) {
+            setBirthDate(g);
+            setBirthFromGoogle(true);
+            localStorage.removeItem('wala_google_birthday');
+          }
+        } catch (_) { /* el cumpleaños es opcional */ }
+      }
     }
   }, [user, userProfile, authLoading, navigate]);
 
@@ -271,9 +286,13 @@ const CompleteProfilePage = () => {
                 onChange={(e) => setBirthDate(e.target.value)}
                 disabled={loading}
               />
-              {/* Si venía precargado del perfil, invitamos a confirmar la fecha. */}
-              {userProfile?.birthDate && (
-                <span className={styles.fieldHint}>¿Es correcta esta fecha?</span>
+              {/* Si venía precargado (del perfil o de Google), invitamos a confirmar. */}
+              {(userProfile?.birthDate || birthFromGoogle) && (
+                <span className={styles.fieldHint}>
+                  {birthFromGoogle
+                    ? 'La tomamos de tu cuenta de Google — ¿es correcta?'
+                    : '¿Es correcta esta fecha?'}
+                </span>
               )}
             </div>
             {error && (
