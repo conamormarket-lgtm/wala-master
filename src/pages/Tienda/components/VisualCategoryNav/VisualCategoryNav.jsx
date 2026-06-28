@@ -46,17 +46,23 @@ const VisualCategoryNav = ({ categories, loading, onSelectCategory, activeCatego
     );
   }
 
-  // Placeholder images for visual layout if no category image exists
-  const getCategoryImage = (category, index) => {
-    if (category.imageUrl) return category.imageUrl;
-    const placeholders = [
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=400&q=80', // tee
-      'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=400&q=80', // hoodie
-      'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=400&q=80', // basic
-      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=400&q=80', // bag
-      'https://images.unsplash.com/photo-1520975954732-57dd22299614?auto=format&fit=crop&w=400&q=80' // access
-    ];
-    return placeholders[index % placeholders.length];
+  // Inicial (letra) para el placeholder cuando la categoría no tiene imageUrl.
+  // Con el nav AUTO-derivado muchas categorías pueden no tener imagen: en vez de
+  // una foto de stock no relacionada, mostramos una burbuja con la inicial del
+  // nombre. Nunca rompe (sin nombre -> '·').
+  const getInitial = (name) => {
+    const trimmed = String(name || '').trim();
+    return trimmed ? trimmed.charAt(0).toUpperCase() : '·';
+  };
+
+  // Color de fondo estable derivado del texto (mismo nombre -> mismo color), para
+  // que las burbujas sin imagen no se vean todas iguales pero sí consistentes.
+  const placeholderColor = (seed) => {
+    const str = String(seed || '');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) | 0;
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 55%, 72%)`;
   };
 
   // Id de la categoría según el modo: en filtro usamos categoryId; en enlace, id.
@@ -104,16 +110,28 @@ const VisualCategoryNav = ({ categories, loading, onSelectCategory, activeCatego
           {/* Categorías */}
           {categories?.map((category, idx) => {
             const catId = getCatId(category);
+            // Con imagen: miniatura real. Sin imagen (común en nav AUTO-derivado):
+            // burbuja con la inicial del nombre y color estable (no rompe el layout).
             const bubble = (
               <>
                 <div className={styles.imageBubble}>
-                  <OptimizedImage
-                    src={getCategoryImage(category, idx)}
-                    alt={category.name}
-                    containerClassName={styles.imageContainer}
-                    className={styles.image}
-                    objectFit="cover"
-                  />
+                  {category.imageUrl ? (
+                    <OptimizedImage
+                      src={category.imageUrl}
+                      alt={category.name}
+                      containerClassName={styles.imageContainer}
+                      className={styles.image}
+                      objectFit="cover"
+                    />
+                  ) : (
+                    <div
+                      className={styles.initialBubble}
+                      style={{ backgroundColor: placeholderColor(category.name || catId) }}
+                      aria-hidden="true"
+                    >
+                      {getInitial(category.name)}
+                    </div>
+                  )}
                 </div>
                 <span className={styles.label}>{category.name}</span>
               </>

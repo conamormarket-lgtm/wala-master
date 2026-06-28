@@ -2039,7 +2039,7 @@ const VisualEditorPanel = () => {
               ))}
             </select>
             <p style={{fontSize: '0.8rem', color: '#666', marginTop: 0}}>
-              Las miniaturas de categoría se configuran en el panel de la marca. Al hacer clic en una burbuja se filtra el catálogo de esta página por esa categoría.
+              Las burbujas son <strong>automáticas</strong>: se generan a partir de las categorías que tienen los productos de esta marca, usando la imagen de cada categoría. Al hacer clic en una burbuja se filtra el catálogo de esta página por esa categoría. Si quieres personalizar el orden o las imágenes, define un menú de categorías manual en el <strong>panel de la marca</strong> (ese override reemplaza a las burbujas automáticas).
             </p>
           </div>
         );

@@ -24,6 +24,7 @@ import {
   getCategories,
   searchProducts,
   getProductsByCategory,
+  getProductsByBrand,
   getFeaturedProducts,
   getStoreProductsPage,
   STORE_PAGE_SIZE,
@@ -367,13 +368,18 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
   // (no de displaySections, que se define más abajo) para poder inicializar el estado.
   const pageBrandId = useMemo(() => {
     const secs = storeConfigDraft?.sections || storefrontConfig?.sections || [];
-    const match = secs.find(
-      (sec) =>
-        (sec?.type === 'sidebar_catalog' || sec?.type === 'product_grid') &&
-        typeof sec?.settings?.brandId === 'string' &&
-        sec.settings.brandId.trim() !== ''
+    const conMarca = (sec) =>
+      typeof sec?.settings?.brandId === 'string' && sec.settings.brandId.trim() !== '';
+    // Prioridad: la marca la define el CATÁLOGO (sidebar_catalog/product_grid). Si la
+    // página NO tiene un catálogo de marca pero SÍ un nav de marca (categories_nav),
+    // se usa la marca del nav para acotar también el catálogo — así pulsar una burbuja
+    // del nav de la marca A no muestra esa categoría de TODAS las marcas.
+    const catalogo = secs.find(
+      (sec) => (sec?.type === 'sidebar_catalog' || sec?.type === 'product_grid') && conMarca(sec)
     );
-    return match ? match.settings.brandId.trim() : null;
+    if (catalogo) return catalogo.settings.brandId.trim();
+    const nav = secs.find((sec) => sec?.type === 'categories_nav' && conMarca(sec));
+    return nav ? nav.settings.brandId.trim() : null;
   }, [storeConfigDraft, storefrontConfig]);
 
   // ── NAV DE CATEGORÍAS POR MARCA (Fase 3 multimarca) ───────────────
@@ -391,19 +397,99 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
     return Array.from(new Set(ids));
   }, [storeConfigDraft, storefrontConfig]);
 
+  // Mapa { categoryId -> { id, name, imageUrl, order } } a partir de las categorías
+  // globales (tienda_categories vía getCategories). Es la fuente de la imagen y el
+  // nombre de cada burbuja AUTO-derivada. Se memoiza para tener una referencia
+  // estable y poder derivar una "firma" de ids para la queryKey del nav.
+  const categoriesById = useMemo(() => {
+    const map = new Map();
+    (categoriesData || []).forEach((cat) => {
+      if (cat && cat.id) map.set(cat.id, cat);
+    });
+    return map;
+  }, [categoriesData]);
+
+  // Firma de las categorías cargadas (ids ordenados) para la queryKey: así, cuando
+  // categoriesData llega/cambia, el nav AUTO-derivado se recalcula y mapea ids a
+  // nombre/imagen. Sin esto el queryFn capturaría un mapa vacío en el primer render.
+  const categoriesSignature = useMemo(
+    () => Array.from(categoriesById.keys()).sort().join(','),
+    [categoriesById]
+  );
+
+  // Misma extracción de id que usa el SIDEBAR al filtrar (idOf sobre objeto/string).
+  // CLAVE de consistencia: las burbujas DEBEN exponer EXACTAMENTE estos ids para
+  // que onSelectCategory(categoryId) coincida con activeCategory en el filtro de
+  // cliente del sidebar (p.categories.map(idOf) / p.categoryId / p.category).
+  const idOf = (c) => (c && typeof c === 'object') ? (c.id || c.slug || c.name || '') : c;
+
   // Mapa { brandId: categoryNav[] } para las marcas referenciadas por el nav.
-  // Se fetch del doc de cada marca con getBrand. Retrocompatible: si la marca no
-  // tiene `categoryNav`, devuelve [] (nav vacío, no rompe).
+  //
+  // DOS FUENTES (override manual > AUTO-derivado):
+  //  1) MANUAL: si la marca (tienda_brands/{brandId}) tiene un `categoryNav` con
+  //     items, se usa tal cual (respeta orden e imágenes elegidas en el panel de
+  //     la marca). Retrocompatibilidad total con lo que existía.
+  //  2) AUTO: si el `categoryNav` está VACÍO, se derivan las burbujas de las
+  //     CATEGORÍAS presentes en los PRODUCTOS de la marca (getProductsByBrand):
+  //     se recolectan los ids de categoría con la MISMA extracción que el sidebar
+  //     (idOf sobre p.categories, con fallback legacy p.categoryId/p.category) y
+  //     se mapea cada id a su categoría global (categoriesById) para sacar
+  //     { categoryId, name, imageUrl }. Se ordena por el `order` de la categoría
+  //     (y, a igualdad, por nombre). Marca sin productos -> [] (solo "Todos").
+  //
+  // El resultado mantiene el MISMO formato que consume VisualCategoryNav en modo
+  // filtro: { categoryId, name, imageUrl }.
   const { data: navCategoriesByBrand } = useQuery({
-    queryKey: ['categories-nav-brands', navBrandIds],
+    queryKey: ['categories-nav-brands', navBrandIds, categoriesSignature],
     queryFn: async () => {
       const entries = await Promise.all(
         navBrandIds.map(async (bid) => {
           const { data } = await getBrand(bid);
-          const list = Array.isArray(data?.categoryNav) ? data.categoryNav : [];
-          // Orden estable por `order` si existe (las burbujas respetan el orden del admin).
-          const sorted = [...list].sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
-          return [bid, sorted];
+          const manual = Array.isArray(data?.categoryNav) ? data.categoryNav : [];
+
+          // (1) Override manual: si hay items, se usa con su orden del admin.
+          if (manual.length > 0) {
+            const sorted = [...manual].sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
+            return [bid, sorted];
+          }
+
+          // (2) AUTO-derivar desde los productos de la marca.
+          const { data: products, error } = await getProductsByBrand(bid);
+          if (error || !Array.isArray(products)) return [bid, []];
+
+          // Recolecta los ids de categoría DISTINTOS de los productos, con la misma
+          // extracción que el filtro del sidebar (categories[] + legacy single).
+          const seen = new Set();
+          products.forEach((p) => {
+            const ids = [
+              ...(Array.isArray(p.categories) ? p.categories.map(idOf) : []),
+              p.categoryId,
+              p.category,
+            ];
+            ids.forEach((cid) => {
+              const clean = idOf(cid);
+              if (clean) seen.add(clean);
+            });
+          });
+
+          // Mapea cada id a su categoría global (nombre + imagen). Descarta ids que
+          // no existan en tienda_categories (categoría borrada o id huérfano).
+          const burbujas = Array.from(seen)
+            .map((cid) => {
+              const cat = categoriesById.get(cid);
+              if (!cat) return null;
+              return {
+                categoryId: cid,
+                name: cat.name || '',
+                imageUrl: cat.imageUrl || '',
+                order: typeof cat.order === 'number' ? cat.order : 0,
+              };
+            })
+            .filter(Boolean)
+            // Orden por el `order` de la categoría; a igualdad, alfabético por nombre.
+            .sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+
+          return [bid, burbujas];
         })
       );
       return Object.fromEntries(entries);
