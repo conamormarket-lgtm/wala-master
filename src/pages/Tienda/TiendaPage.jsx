@@ -347,10 +347,48 @@ const TiendaPage = ({ isLandingPage = false }) => {
   // comportamiento previo (productsData), que ya devuelve un conjunto acotado.
   const usePaginatedCatalog = !categoryId && !searchTerm;
 
-  // Faceta única que se filtra EN SERVIDOR (la elige el sidebar_catalog al pulsar
-  // una categoría). Las demás facetas siguen filtrándose en cliente. Cambiarla
-  // reinicia el cursor (forma parte de la queryKey de la infinite query).
-  const [catalogFacet, setCatalogFacet] = useState(null);
+  // ── MARCA DE LA PÁGINA (Fase 1 multimarca) ────────────────────────
+  // Una sección sidebar_catalog (o product_grid) puede fijarse a UNA marca via
+  // settings.brandId (doc id de tienda_brands). Si existe, el catálogo paginado
+  // se ACOTA en servidor a esa marca (faceta { type:'brand' } -> where('brandId','==',...)
+  // ver facetToWhere en products.js). brandId vacío/ausente = catálogo GLOBAL
+  // (retrocompatible: home y /tienda no cambian). Se busca la PRIMERA sección de
+  // ese tipo con brandId no vacío. Calculado desde el borrador/Firestore directamente
+  // (no de displaySections, que se define más abajo) para poder inicializar el estado.
+  const pageBrandId = useMemo(() => {
+    const secs = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+    const match = secs.find(
+      (sec) =>
+        (sec?.type === 'sidebar_catalog' || sec?.type === 'product_grid') &&
+        typeof sec?.settings?.brandId === 'string' &&
+        sec.settings.brandId.trim() !== ''
+    );
+    return match ? match.settings.brandId.trim() : null;
+  }, [storeConfigDraft, storefrontConfig]);
+
+  // Faceta única que se filtra EN SERVIDOR. Su valor inicial:
+  //  · CON marca de página: faceta de MARCA FIJA ({ type:'brand', value: pageBrandId }),
+  //    así getStoreProductsPage trae SOLO esa marca, paginada. La categoría del sidebar
+  //    NO se empuja como faceta server-side (sobrescribiría la marca): se aplica como
+  //    filtro de CLIENTE en SidebarCatalogLayout.
+  //  · SIN marca de página: null (la elige el sidebar al pulsar una categoría, como hoy).
+  // Las demás facetas siguen filtrándose en cliente. Cambiarla reinicia el cursor
+  // (forma parte de la queryKey de la infinite query).
+  const [catalogFacet, setCatalogFacet] = useState(
+    pageBrandId ? { type: 'brand', value: pageBrandId } : null
+  );
+
+  // Si pageBrandId aparece/cambia tras el primer render (config asíncrona o cambio
+  // de página), re-fija la faceta de marca server-side. Sin pageBrandId no toca nada
+  // aquí (retrocompat: la faceta la maneja el sidebar como hoy).
+  React.useEffect(() => {
+    if (!pageBrandId) return;
+    setCatalogFacet((prev) =>
+      prev && prev.type === 'brand' && prev.value === pageBrandId
+        ? prev
+        : { type: 'brand', value: pageBrandId }
+    );
+  }, [pageBrandId]);
 
   const {
     data: catalogPages,
@@ -413,15 +451,44 @@ const TiendaPage = ({ isLandingPage = false }) => {
 
   // Reinicia la faceta de servidor al salir del modo paginado (categoría/búsqueda)
   // para que al volver a la tienda normal arranque limpio desde la primera página.
+  // CON marca de página: el "estado limpio" es la faceta de MARCA (no null), para
+  // que el catálogo siga acotado a esa marca al volver. SIN marca: null como hoy.
   React.useEffect(() => {
-    if (!usePaginatedCatalog && catalogFacet) setCatalogFacet(null);
-  }, [usePaginatedCatalog, catalogFacet]);
+    if (usePaginatedCatalog) return;
+    if (pageBrandId) {
+      // Vuelve a la faceta de marca si la query estaba apuntando a otra cosa.
+      setCatalogFacet((prev) =>
+        prev && prev.type === 'brand' && prev.value === pageBrandId
+          ? prev
+          : { type: 'brand', value: pageBrandId }
+      );
+    } else if (catalogFacet) {
+      setCatalogFacet(null);
+    }
+  }, [usePaginatedCatalog, catalogFacet, pageBrandId]);
 
   // Callback estable que el sidebar usa para empujar UNA faceta al servidor.
   // null = sin faceta de servidor (vuelve a la primera página del catálogo).
+  //
+  // CLAVE (marca server-side + categoría cliente): Firestore solo permite UNA
+  // faceta+orden por query. Cuando hay pageBrandId, la faceta de MARCA es la
+  // server-side FIJA, así que IGNORAMOS lo que empuje el sidebar (que sería la
+  // categoría): la categoría se aplica como filtro de CLIENTE en
+  // SidebarCatalogLayout sobre las páginas de esa marca. Sin pageBrandId, todo
+  // queda EXACTAMENTE como hoy (la categoría puede ir server-side).
   const handleServerFacetChange = useCallback((facet) => {
+    if (pageBrandId) {
+      // Mantén SIEMPRE la marca server-side; no la sobrescribas con la categoría.
+      // Reusa el objeto previo si ya es la marca (evita re-render/refetch inútil).
+      setCatalogFacet((prev) =>
+        prev && prev.type === 'brand' && prev.value === pageBrandId
+          ? prev
+          : { type: 'brand', value: pageBrandId }
+      );
+      return;
+    }
     setCatalogFacet(facet || null);
-  }, []);
+  }, [pageBrandId]);
 
   // Fase 1: la búsqueda de la tienda lleva a la página facetada /buscar (searchCatalog).
   // Si el término viene vacío, mantiene el filtrado en página (comportamiento previo).

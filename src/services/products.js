@@ -491,6 +491,18 @@ export const getProductsByCategory = async (categoryId) => {
 };
 
 /**
+ * Obtener productos por marca (brandId = doc id de tienda_brands, solo visibles)
+ */
+export const getProductsByBrand = async (brandId) => {
+  const result = await getCollection(COLLECTION, [
+    { field: 'brandId', operator: '==', value: brandId }
+  ]);
+  if (result.error) return result;
+  let data = result.data.filter((p) => p.visible !== false);
+  return { data: data.map((doc) => normalizeProductForRead(doc)), error: null };
+};
+
+/**
  * Obtener productos por colecciÃ³n (solo visibles)
  */
 export const getProductsByCollection = async (collectionName) => {

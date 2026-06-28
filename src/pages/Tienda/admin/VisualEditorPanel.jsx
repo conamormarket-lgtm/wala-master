@@ -3,6 +3,7 @@ import { useVisualEditor } from '../contexts/VisualEditorContext';
 import Button from '../../../components/common/Button';
 import { useQuery } from '@tanstack/react-query';
 import { getCollections } from '../../../services/collections';
+import { getBrands } from '../../../services/brands';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import { useLayoutContext } from '../../../contexts/LayoutContext';
@@ -306,6 +307,14 @@ const VisualEditorPanel = () => {
     queryKey: ['admin-collections'],
     queryFn: async () => {
       const { data } = await getCollections();
+      return data || [];
+    }
+  });
+
+  const { data: brands } = useQuery({
+    queryKey: ['admin-brands'],
+    queryFn: async () => {
+      const { data } = await getBrands();
       return data || [];
     }
   });
@@ -1961,6 +1970,26 @@ const VisualEditorPanel = () => {
               }}
               style={{width: '100%', padding: '6px', marginBottom: '15px'}}
             />
+
+            {['sidebar_catalog', 'product_grid'].includes(section.type) && (
+              <>
+                <label>Marca de esta sección</label>
+                <select
+                  value={s.brandId || ''}
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.brandId = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+                >
+                  <option value="">(Todas las marcas)</option>
+                  {brands?.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </>
+            )}
 
             {/* Estilo de texto reutilizable del título + botón opcional */}
             <TextStyleControl label="Estilo del Título" prefix="title" settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />

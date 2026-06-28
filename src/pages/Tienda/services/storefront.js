@@ -124,10 +124,10 @@ export function getDefaultSettings(type) {
     case 'categories_nav':
       return {};
     case 'product_grid':
-      return { title: '', show_search: true, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+      return { title: '', show_search: true, brandId: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'sidebar_catalog':
-      return { title: 'Catálogo Completo', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+      return { title: 'Catálogo Completo', brandId: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'announcement_bar':
       // Por mensaje: text/link ya existían; se añaden estilo por mensaje (aditivo, retrocompatible)
