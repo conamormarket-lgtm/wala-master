@@ -10,6 +10,7 @@ import { useCart } from '../../../../contexts/CartContext';
 import { toThumbnailImageUrl } from '../../../../utils/imageUrl'; // Force recompile
 import { useWishlist } from '../../../../contexts/WishlistContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
+import { useLanguage } from '../../../../contexts/LanguageContext';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 // eslint-disable-next-line no-unused-vars
@@ -47,6 +48,7 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
 
   const { isFavorite, toggleFavorite } = useWishlist();
   const { addToast } = useGlobalToast();
+  const { t } = useLanguage();
   
   const { data: brandsData } = useQuery({
     queryKey: ['brands'],
@@ -282,8 +284,8 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
             className={`${styles.cartQuickBtn} ${product.salePrice ? styles.cartQuickBtnPulse : ''}`}
             onClick={handleAddToCart}
             disabled={!product.inStock}
-            aria-label="Agregar al carrito"
-            title="Agregar al carrito"
+            aria-label={t('cta.addToCart', 'Al carrito')}
+            title={t('cta.addToCart', 'Al carrito')}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
               <circle cx="9" cy="21" r="1" />

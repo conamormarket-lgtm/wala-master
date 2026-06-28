@@ -254,7 +254,7 @@ const GiftRegistryPage = () => {
       price,
       // Flags de regalo de wishlist (mecanismo YA existente en el checkout).
       isWishlistGift: true,
-      wishlistUserCode: referralCode,
+      wishlistUserCode: String(referralCode || '').trim().toUpperCase(), // alinear casing con la CF (markItemAsGifted)
       // NUEVO — contexto de fecha de entrega (aditivo, viaja en el item del carrito).
       deliveryDate: evento.date, // 'YYYY-MM-DD' — qué día entregar
       deliveryEventLabel: evento._label, // contexto humano del evento

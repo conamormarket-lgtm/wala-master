@@ -19,7 +19,7 @@ import { toThumbnailImageUrl } from '../../utils/imageUrl';
 
 import { getBrands } from '../../services/brands';
 import { getMessage } from '../../services/messages';
-import { getFeaturedProducts } from '../../services/products';
+import { getFeaturedProducts, getProductsByCategory } from '../../services/products';
 import { getOrderByIdAnyCollection } from '../../services/erp/firebase';
 
 import ProductGrid from '../Tienda/components/ProductGrid/ProductGrid';
@@ -144,12 +144,66 @@ const CuentaCompraDetallePage = () => {
     staleTime: 1000 * 60 * 10,
   });
 
-  // 4) "También te puede interesar": destacados, excluyendo lo ya comprado.
-  const { data: featured = [] } = useQuery({
-    queryKey: ['featured-products'],
+  // 4) "También te puede interesar": recomendación POR CATEGORÍA del producto
+  //    comprado, con fallback a destacados.
+  //
+  //    Primero derivamos, del pedido, el primer productoId con categoría conocida
+  //    cruzándolo contra el catálogo (useProducts ya cargado). De ese producto
+  //    tomamos su category/categories[0]. También calculamos el set de productoId
+  //    ya comprados en ESTE pedido para excluirlos de los relacionados.
+  //
+  //    OJO: este useMemo se calcula ANTES de los early returns de carga para no
+  //    romper el orden de hooks; es tolerante a que `pedido` o `catalogo` aún no
+  //    estén disponibles (devuelve categoryId null e idsComprados vacío).
+  const { categoryId, idsComprados } = useMemo(() => {
+    const lineasPedido = getProductosPedido(pedido);
+
+    // Set de productoId comprados en este pedido (para excluir de relacionados).
+    const comprados = new Set(
+      lineasPedido.map((l) => String(l?.productoId)).filter(Boolean)
+    );
+
+    // Índice productoId -> producto del catálogo (tolerante a catálogo vacío).
+    const porId = new Map();
+    (catalogo || []).forEach((p) => {
+      if (p && p.id != null) porId.set(String(p.id), p);
+    });
+
+    // Primer productoId del pedido con categoría conocida (vía catálogo o la
+    // propia línea), priorizando categories[0] y cayendo a category.
+    let cat = null;
+    for (const linea of lineasPedido) {
+      const prod = porId.get(String(linea?.productoId));
+      const candidata =
+        prod?.categories?.[0] ||
+        prod?.category ||
+        linea?.categories?.[0] ||
+        linea?.category ||
+        null;
+      if (candidata) {
+        cat = String(candidata);
+        break;
+      }
+    }
+
+    return { categoryId: cat, idsComprados: comprados };
+  }, [pedido, catalogo]);
+
+  // Recomendación: si hay categoría, productos de esa categoría; si no hay o
+  // devuelve poco (<2), caemos a destacados. La key incluye categoryId para que
+  // cambie por pedido/categoría sin colisionar con la caché de otras vistas.
+  const { data: reco = [] } = useQuery({
+    queryKey: ['reco-detalle', categoryId],
     queryFn: async () => {
-      const { data: f, error } = await getFeaturedProducts();
-      if (error) throw new Error(error);
+      if (categoryId) {
+        const { data: porCat, error } = await getProductsByCategory(categoryId);
+        if (!error && Array.isArray(porCat) && porCat.length >= 2) {
+          return porCat;
+        }
+      }
+      // Fallback a destacados (sin categoría, error, o muy pocos resultados).
+      const { data: f, error: errF } = await getFeaturedProducts();
+      if (errF) throw new Error(errF);
       return f || [];
     },
     staleTime: 1000 * 60 * 5,
@@ -244,8 +298,13 @@ const CuentaCompraDetallePage = () => {
     return acc + sub;
   }, 0);
   const descuentoMonedas = toNum(pedido.descuentoMonedas);
-  const envioMonto = toNum(pedido.costoEnvio ?? pedido.envioMonto ?? pedido.montoEnvio);
   const total = toNum(pedido.montoTotal ?? pedido.total);
+  // Envío: si el pedido lo persistió (costoEnvio), úsalo; si no (pedidos viejos),
+  // dedúcelo para que el desglose cuadre: Total = Productos − Descuento + Envío.
+  const envioPersistido = pedido.costoEnvio ?? pedido.envioMonto ?? pedido.montoEnvio;
+  const envioMonto = envioPersistido != null
+    ? toNum(envioPersistido)
+    : Math.max(0, total - (totalProductos - descuentoMonedas));
 
   // ── WhatsApp por marca ──────────────────────────────────────────────────
   const brandIds = getBrandIdsDePedido(pedido, catalogo);
@@ -260,10 +319,11 @@ const CuentaCompraDetallePage = () => {
   // Si ninguna marca tiene número, caemos al número general de la cuenta.
   const waGeneralLink = construirWaLink(numeroGeneral, codigo);
 
-  // ── Relacionados (excluye productos ya comprados, máx ~8) ────────────────
-  const idsComprados = new Set(lineas.map((l) => String(l?.productoId)).filter(Boolean));
-  const relacionados = (featured || [])
-    .filter((p) => p && !idsComprados.has(String(p.id)))
+  // ── Relacionados (por categoría con fallback a destacados) ───────────────
+  // Excluye los productoId ya comprados en ESTE pedido, filtra visible!==false
+  // y corta a ~8. `idsComprados` viene del useMemo de recomendación.
+  const relacionados = (reco || [])
+    .filter((p) => p && p.visible !== false && !idsComprados.has(String(p.id)))
     .slice(0, 8);
 
   /* ── Render ───────────────────────────────────────────────────────────── */

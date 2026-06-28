@@ -1,11 +1,13 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import CuentaLoginPrompt from '../components/CuentaLoginPrompt';
 import styles from './CuentaPage.module.css';
 
 const CuentaLayout = () => {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
 
   if (loading) {
@@ -41,43 +43,43 @@ const CuentaLayout = () => {
               to="/cuenta/pedidos"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
             >
-              Mis Compras
+              {t('account.misCompras', 'Mis Compras')}
             </NavLink>
             <NavLink
               to="/cuenta/wishlist"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
             >
-              Lista de Deseos
+              {t('account.wishlist', 'Lista de Deseos')}
             </NavLink>
             <NavLink
               to="/cuenta/creaciones"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
             >
-              Mis Creaciones
+              {t('account.creaciones', 'Mis Creaciones')}
             </NavLink>
             <NavLink
               to="/cuenta/referidos"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
             >
-              Mis Referidos
+              {t('account.referidos', 'Mis Referidos')}
             </NavLink>
             <NavLink
               to="/cuenta/fechas-importantes"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
             >
-              Fechas Importantes
+              {t('account.fechas', 'Fechas Importantes')}
             </NavLink>
             <NavLink
               to="/cuenta/misiones"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
             >
-              Misiones
+              {t('account.misiones', 'Misiones')}
             </NavLink>
             <NavLink
               to="/cuenta/catalogo"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
             >
-              Catálogo Recompensas
+              {t('account.catalogo', 'Catálogo Recompensas')}
             </NavLink>
           </nav>
           <NavLink
@@ -88,7 +90,7 @@ const CuentaLayout = () => {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            Mi Perfil
+            {t('account.perfil', 'Mi Perfil')}
           </NavLink>
         </header>
         <div className={styles.outlet} key={location.pathname}>

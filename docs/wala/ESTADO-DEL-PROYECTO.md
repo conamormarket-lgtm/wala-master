@@ -21,10 +21,20 @@
 > **Sesión 2026-06-27 (desplegada):** se desplegó a producción una tanda grande de
 > **diseño/UX (design system liquid-glass "Aurora Violeta Serena"), tracking de precisión,
 > checkout internacional con moneda local/USD y auto-cobro, y varios fixes** — frontend por
-> **Vercel** y las **Cloud Functions de cobro por Cloud Shell**. Pendiente del usuario:
-> **registrar la URL de `culqiWebhook` en Culqi** y **verificar `REACT_APP_PAYPAL_CLIENT_ID`
-> en Vercel** (si no, PayPal corre en SANDBOX). Detalle en §2 (Paso 6) y §7. Plan nuevo por
-> implementar: [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md).
+> **Vercel** y las **Cloud Functions de cobro por Cloud Shell**. En la misma tanda se sumaron
+> y desplegaron, **del lado del cliente**: **"Mis Compras" estilo MercadoLibre** (estado real
+> pago + producción, lista + detalle por pedido), **registro de regalos por fecha `/regalar`**
+> (drag-and-drop terminado), **carrito "No comprar esta vez"** (selección de items),
+> **WhatsApp por marca + Plan B al cerrar Culqi** (número principal "Todo a WALA" + toggle
+> multimarca), **tipos de documento DNI/CE/Pasaporte**, **i18n gratis ES/EN/PT**, **foto de
+> perfil (Avatar Studio, sin Ready Player Me)**, **captura de cumpleaños** (con import opcional
+> desde Google People API) y **carrusel de marcas** (forma/zoom/subir foto). Pendiente del
+> usuario: **registrar la URL de `culqiWebhook` en Culqi** y **verificar
+> `REACT_APP_PAYPAL_CLIENT_ID` en Vercel** (si no, PayPal corre en SANDBOX); y **REDESPLEGAR
+> `getPublicGiftRegistry`** por Cloud Shell (fix de wishlist vacía en `/regalar`). Detalle en
+> §2 (Paso 6), §7 y en [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md). El registro de regalos
+> por fecha ("Mis fechas especiales") **ya está implementado y desplegado** (deja de ser solo
+> plan): ver [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md).
 >
 > **Wala ya está EN PRODUCCIÓN.** El **frontend (Vite) está en vivo en Vercel** (wala.pe, con
 > **auto-deploy desde `master`** — la rama de trabajo `fase-0-seguridad` es hoy `master`) y el
@@ -97,6 +107,11 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | **Fase 5 — Impulso** | **Cofre diario**, **segmentación RFM** de clientes (VIP/activo/en riesgo/nuevo) y **ofertas flash**. | `/ofertas`, `/admin/flash-offers` |
 | **Venta internacional** | Documento + país + **teléfono internacional**, **PayPal** para compradores del extranjero, aviso de envío **7–30 días**. | Checkout |
 | **Dashboard de analítica v2** | Panel liquid-glass con **heatmap**, tráfico, **productos más vistos / más vendidos**, origen, páginas, categorías, miniaturas; lecturas optimizadas (cuota). | `/admin/dashboard` |
+| **"Mis Compras" estilo MercadoLibre** | Lista + **detalle por pedido** con **estado real** (pago + producción), método de pago, productos, dirección y **WhatsApp al asesor de la marca**. | `/cuenta/pedidos`, `/cuenta/pedidos/:id` |
+| **Regalos por fecha "Mis fechas especiales"** | Registro de regalos público con **drag-and-drop** (asigna productos a fechas), miniaturas y atajo "Agregar todo al carrito". | `/regalar/:referralCode`, wishlist |
+| **Carrito "No comprar esta vez"** | Elegir qué pagar ahora y qué guardar para después sin borrar; el resto persiste tras pagar. | `/carrito`, `/checkout` |
+| **WhatsApp por marca + Plan B** | Número por marca, número principal "Todo a WALA" + toggle multimarca; al cerrar Culqi sin pagar, terminar por WhatsApp. | `/checkout`, `/admin/marcas` |
+| **i18n gratis (ES/EN/PT) + perfil/cumpleaños** | Toggle de idioma (traductor nativo del navegador), tipos de documento DNI/CE/Pasaporte, **Avatar Studio** (sin Ready Player Me) y **captura de cumpleaños** (import opcional desde Google). | Header, `/cuenta/perfil`, checkout |
 | **Despliegue real** | **Frontend en Vercel** (wala.pe, auto-deploy desde `master`); **Cloud Functions** e **índices** desplegados en `sistema-gestion-3b225`. | wala.pe |
 | **Seguridad (mitigación viva)** | **Bloqueo de borrado (delete-block)** aplicado a las reglas vivas para frenar el destrozo anónimo. | Consola Firebase |
 
@@ -247,6 +262,41 @@ Ocho commits (del CHANGELOG raíz, entrada 2026-06-27):
    notificaciones (solo lo pide si `Notification.permission === 'default'`).
 8. **`cf47546` — Wishlist en el header:** badge con la cantidad de productos en el corazón +
    tira de miniaturas en el desplegable de favoritos.
+
+**Además, del lado del cliente (mismo despliegue, frontend por Vercel):**
+
+- **"Mis Compras" estilo MercadoLibre:** lista (`CuentaPedidosPage`, `/cuenta/pedidos`) +
+  **detalle por pedido** nuevo (`CuentaCompraDetallePage`, `/cuenta/pedidos/:id`) con un
+  **estado de compra real** que combina **etapa de producción + pago** en
+  `src/utils/estadoCompra.js` (`derivarEstadoCompra`, badge de color + etiqueta de método de
+  pago). El detalle lee el pedido **CRUDO por id en ambas colecciones** (`getOrderByIdAnyCollection`
+  sobre `pedidos` y `pedidos_web`) con fallback al `_raw` que `usePedidos` ahora adjunta a cada
+  pedido normalizado. Incluye productos con miniatura, dirección, resumen (solo lectura) y
+  **WhatsApp al asesor de la marca**.
+- **Registro de regalos por fecha `/regalar/:referralCode` ("Mis fechas especiales"):**
+  drag-and-drop **terminado y rediseñado** (`GiftRegistryPage`), miniaturas asignadas por
+  fecha, fechas rotuladas con **nombre del tercero + relación** (incluido el cumpleaños del
+  propio dueño), datos mínimos vía CF `getPublicGiftRegistry`. **Deja de ser solo plan.**
+- **Carrito "No comprar esta vez":** flag `selected` en `CartContext`; el checkout solo cobra
+  y registra lo seleccionado y conserva el resto tras pagar.
+- **WhatsApp por marca + Plan B al cerrar Culqi:** `whatsappNumber` por marca en
+  `tienda_brands`; al cerrar el modal de Culqi sin pagar aparece una tarjeta con **2 botones**
+  (reabrir Culqi vía remontaje / terminar por WhatsApp); número principal **"Todo a WALA"**
+  (`whatsapp_number_main`, fábrica `+51924426791`) y **toggle multimarca** (`whatsapp_multimarca`),
+  ambos en `/admin/marcas`. Fix del **doble-popup** del auto-open de Culqi.
+- **Tipos de documento DNI/CE/Pasaporte:** `src/constants/documentTypes.js` (Perú = lista
+  cerrada; extranjero = campo abierto).
+- **i18n gratis ES/EN/PT:** `src/i18n/dictionaries.js` + `src/contexts/LanguageContext.jsx`
+  (fija `<html lang>` para el traductor nativo del navegador) + `LanguagePopup` y toggle en
+  el Header. CTA **"Al carrito"** entre los strings traducidos.
+- **Foto de perfil — Avatar Studio (sin Ready Player Me):** `src/components/profile/AvatarStudio.jsx`
+  reemplaza el viejo avatar 3D.
+- **Captura de cumpleaños (`birthDate`):** en `CompleteProfilePage` y `SubscriptionSurveyPage`,
+  con **import opcional desde Google People API** (best-effort, no rompe el login;
+  `src/services/firebase/auth.js`).
+- **Carrusel de marcas (forma/zoom/subir foto):** `BrandMarquee` con forma de marco
+  (círculo/cuadrado/estrella/pentágono), zoom y posición por item; subida de logo en
+  `/admin/marcas`.
 
 **Estado de despliegue real (2026-06-27):** lo anterior está **EN PRODUCCIÓN** — hay **mucho
 ya desplegado** (frontend por Vercel + las Cloud Functions de cobro por Cloud Shell). Además,
@@ -481,7 +531,7 @@ usuario** (no de código) para que el cobro quede 100 % en producción:
 | **Cobro REAL Mercado Pago** + integrar checkout real | 3 | Configurar `MERCADOPAGO_ACCESS_TOKEN`, `MP_WEBHOOK_URL`, `MP_BACK_URL_BASE` y cablear `CheckoutPage` (hoy el split es **simulado** vía `/checkout-demo`, `/pago-demo/:orderId`). |
 | **Recomendación por IA / countdown de ofertas flash en home** | 5 | Funcionalidad de producto sobre la base ya verificada. |
 | **Backfill multi-vendor/nicho en prod** (`scripts/backfill-vendor-niche.js`) | 1 | Hasta correrlo, los productos sin `vendorId`/`nicheId` usan los defaults de `src/constants/marketplace.js`. Requiere `GOOGLE_APPLICATION_CREDENTIALS` de `sistema-gestion-3b225`. |
-| **"Mis fechas especiales" + "Agregar todo al carrito"** (wishlist) — POR IMPLEMENTAR | Cliente / Reglas | Registro de regalos por fecha en una ruta pública `/regalar/:referralCode` + atajo "Agregar todo al carrito". **"Agregar todo" es bajo riesgo (solo frontend); la ruta pública NO debe publicarse hasta cerrar reglas + Cloud Function** (expone fechas/PII del dueño, ligado a H-07/H-09). Spec completa en [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md). |
+| **"Mis fechas especiales" + "Agregar todo al carrito"** (wishlist) — ✅ **HECHO / desplegado** (solo falta REDESPLEGAR una CF) | Cliente / Reglas | Registro de regalos por fecha en `/regalar/:referralCode` (drag-and-drop terminado) + atajo "🛒 Agregar todo al carrito": **ambos implementados y en producción**. La página pública lee datos mínimos por la Cloud Function `getPublicGiftRegistry` (sin PII directa). **Pendiente del usuario:** REDESPLEGAR `getPublicGiftRegistry` por Cloud Shell (corrige un bug por el que la wishlist salía vacía). Detalle en [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md) y [FUNCIONES-CLIENTE.md §7.4-bis](./FUNCIONES-CLIENTE.md). |
 
 Los riesgos de seguridad residuales (más allá de la fuga de reglas) siguen en §6.
 

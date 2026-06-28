@@ -655,6 +655,7 @@ const CheckoutPage = () => {
           montoTotal: total,
           montoAdelanto: 0,
           montoPendiente: total,
+          costoEnvio: shipping, // se persiste el envío para que el desglose del detalle cuadre
           ...(discount > 0 && { descuentoMonedas: discount }),
           ...(discount > 0 && { monedasEnEspera: discount }),
 

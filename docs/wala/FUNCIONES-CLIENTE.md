@@ -26,9 +26,11 @@
 | Checkout (incl. venta internacional) | `/checkout` | Activo |
 | Pago rápido (link directo) | `/pago-rapido/:id` | Activo |
 | Mi Cuenta (layout con pestañas) | `/cuenta` | Activo (requiere login) |
-| Mis Pedidos | `/cuenta/pedidos` | Activo |
+| Mis Compras (lista de pedidos) | `/cuenta/pedidos` | Activo |
+| Detalle de compra (estado real pago + producción) | `/cuenta/pedidos/:id` | Activo |
 | Lista de Deseos (privada) | `/cuenta/wishlist` | Activo |
 | Lista de Deseos pública (compartible) | `/wishlist/:userCode` | Activo |
+| Registro de regalos por fecha ("Mis fechas especiales") | `/regalar/:referralCode` | Activo |
 | Mis Creaciones (diseños guardados) | `/cuenta/creaciones` | Activo |
 | Mis Referidos | `/cuenta/referidos` | Activo |
 | Fechas Importantes | `/cuenta/fechas-importantes` | Activo |
@@ -59,7 +61,7 @@
 ### 1.1 Inicio y Tienda
 - **Qué es:** la página principal (`/`) y la tienda (`/tienda`) usan el **mismo** sistema de catálogo escalable. Antes `/tienda` usaba una versión vieja (solo categoría); se unificó el 2026-06-25 para que ambas monten el catálogo completo con todos los filtros.
 - **Qué hace:** la página se arma con **secciones configurables** que el admin define desde el editor visual. Cada sección es un "módulo" que se renderiza en orden. Los tipos de sección disponibles son:
-  - **Encabezado** (título), **Banner Principal** (hero con imagen/video y botón), **Carrusel de imágenes**, **Carrusel de colección**, **Barra de anuncios** (texto en movimiento), **Video** (YouTube/Vimeo/archivo), **Ventas Flash** (con cuenta regresiva), **Testimonios**, **Ubicación (mapa)**, **Sellos de confianza** (trust badges), **Marquesina de marcas**, **Fila "Lo más vendido"**, **Productos destacados**, **Grilla de productos** y **Catálogo con barra lateral de filtros** (`sidebar_catalog`).
+  - **Encabezado** (título), **Banner Principal** (hero con imagen/video y botón), **Carrusel de imágenes**, **Carrusel de colección**, **Barra de anuncios** (texto en movimiento), **Video** (YouTube/Vimeo/archivo), **Ventas Flash** (con cuenta regresiva), **Testimonios**, **Ubicación (mapa)**, **Sellos de confianza** (trust badges), **Marquesina/carrusel de marcas** (cada logo con **forma de marco** configurable — círculo / cuadrado / estrella / pentágono — **zoom** y **posición**; la foto del logo se sube desde `/admin/marcas`), **Fila "Lo más vendido"**, **Productos destacados**, **Grilla de productos** y **Catálogo con barra lateral de filtros** (`sidebar_catalog`).
   - El orden de productos puede ser: más nuevos, precio ascendente/descendente o nombre.
   - Incluye un **banner de descarga de la app** cuando no hay filtro de categoría/búsqueda activo.
 - **Ruta:** `/` y `/tienda` (y cualquier landing dinámica `/:slug`).
@@ -201,7 +203,7 @@
 - **Qué hace (datos de envío):**
   - **País** (selector con autodetección por geolocalización; no pisa la elección manual ni el país del perfil). Default seguro: Perú (`PE`).
   - **Nombre completo**, **Documento**, **Teléfono internacional**, **Email**, **Ciudad/Región** (Lima / Callao / Provincias), **Distrito** y **Dirección exacta**.
-  - **Documento condicional:** si el país es **Perú**, valida DNI estricto (8 dígitos); para **otros países** el documento es texto libre (solo requerido). El tipo de documento se marca `DNI` (Perú) u `OTRO` (extranjero).
+  - **Documento condicional (tipos DNI/CE/Pasaporte):** si el país es **Perú**, se elige el **tipo de documento de una lista cerrada — DNI / Carnet de Extranjería (CE) / Pasaporte** (`src/constants/documentTypes.js`); para **otros países** el documento es un **campo abierto único** ("Documento de identidad nacional", solo requerido).
   - **Teléfono internacional:** componente con código de país (`PhoneIntlInput`); guarda el número completo (código + número local).
   - **Modo Regalo (gratis):** activa una experiencia digital para el destinatario (nombre del destinatario, mensaje de máx. 200 caracteres y sticker de Kapi: Amor/Fiesta/Feliz).
   - **Monedas (KapiSol):** si el usuario tiene monedas, puede aplicarlas como descuento (hasta el 50% del subtotal). Las monedas usadas se "congelan" en estado de espera hasta confirmar.
@@ -213,6 +215,8 @@
   - **Moneda local + USD (sesión 2026-06-27):** el checkout muestra el total en la **moneda local del país del comprador** (con su nombre natural) y, para pagos por PayPal, el aviso **"Pagarás X USD por PayPal"** (PayPal cobra en USD). El tipo de cambio se lee de `config/fx` (poblado a diario por la Cloud Function `updateFxRate`) con un margen y un *fallback* si la config no está disponible; hay un monto mínimo de PayPal de 1 USD.
   - **Aviso de envío internacional:** si el país NO es Perú, muestra el aviso **"la entrega demora de 7 a 30 días hábiles"** (tanto en la pantalla de pago como en el mensaje de WhatsApp).
   - **Confirmación de pago en backend:** el pago con Culqi se confirma server-side (recálculo del monto en `processCulqiPayment`) y la Cloud Function `culqiWebhook` marca el pedido (`pedidos_web`) como pagado de forma idempotente. *(Nota operativa: la URL de `culqiWebhook` debe estar registrada en el panel de Culqi y `REACT_APP_PAYPAL_CLIENT_ID` debe existir en Vercel para que PayPal cobre en producción y no en sandbox.)*
+  - **"Plan B" si el cliente cierra Culqi sin pagar (sesión 2026-06-27):** el modal de Culqi se **auto-abre una sola vez** (fix del doble-popup). Si el cliente lo **cierra/cancela sin pagar**, aparece una **tarjeta de recuperación** con **dos botones grandes**: (a) **"Continuar comprando con tarjeta"**, que **vuelve a abrir** el formulario de Culqi (reintento), y (b) **terminar la compra por WhatsApp** (el pedido ya quedó guardado y el asesor recibe la lista completa para coordinar Yape/Plin/transferencia).
+  - **WhatsApp por marca + número principal "Todo a WALA" (sesión 2026-06-27):** el botón de "terminar por WhatsApp" usa por defecto el **número principal "Todo a WALA"** (configurable en `/admin/marcas`; fábrica `+51924426791`). Si el administrador activa el **toggle de confirmación multimarca**, y el pedido tiene productos de varias marcas con su propio `whatsappNumber`, se muestra **un botón por marca** y **cada asesor recibe SOLO sus productos**; con el toggle desactivado, todo va al número principal.
   - **Validación del documento (sesión 2026-06-27):** se relajó la validación para no bloquear silenciosamente el botón de pago — el documento exige **≥3 caracteres** (cualquier tipo); si hay un campo con error, muestra un aviso (toast) y hace scroll al primero. En Perú el DNI sigue marcándose como tal.
   - **Selección de compra (sesión 2026-06-27):** el checkout solo cobra y registra los productos marcados como **"Comprar esta vez"** en el carrito (ver §6.1-bis); el monto, el resumen del pedido, el mensaje de WhatsApp y la marca de regalos consideran únicamente esos ítems. Si no hay ninguno seleccionado, el pago se bloquea.
   - Tras el pago/confirmación, **quita del carrito solo los productos pagados y conserva los marcados como "No comprar esta vez"** (antes vaciaba todo el carrito), y lleva a "Mis Pedidos". Emite eventos de analítica (inicio de checkout y compra completada).
@@ -220,8 +224,10 @@
 - **Archivos clave:**
   - `src/pages/CheckoutPage.jsx`
   - `src/components/intl/CountrySelect.jsx`, `src/components/intl/PhoneIntlInput.jsx`
+  - `src/constants/documentTypes.js` (tipos DNI/CE/Pasaporte)
   - `src/services/geo.js` (autodetección de país)
-  - `src/components/CulqiCustomCheckout/`, `src/components/PaypalCheckout/`
+  - `src/components/CulqiCustomCheckout/` (auto-open único + `onClose` para el Plan B), `src/components/PaypalCheckout/`
+  - `src/services/messages.js` (`whatsapp_number_main`, `whatsapp_multimarca`), `src/services/brands.js` (`whatsappNumber` por marca)
   - `src/services/erp/firebase.js` (`createWebOrder`), `src/services/referrals.js`, `src/services/wishlist.js`
 
 ### 6.3 Pago rápido (`/pago-rapido/:id`)
@@ -240,16 +246,22 @@
 ### 7.1 Mi Perfil (`/cuenta/perfil`)
 - **Qué es:** datos personales + saldo de recompensas + avatar.
 - **Qué hace:**
-  - **Datos personales:** nombre, país, documento y teléfono. En Perú usa toggle **DNI/CE** con validación estricta; fuera de Perú el documento es texto libre y el teléfono es internacional. También fecha de nacimiento.
+  - **Datos personales:** nombre, país, documento y teléfono. En Perú se ofrece una **lista cerrada de tipo de documento — DNI / Carnet de Extranjería (CE) / Pasaporte** (`src/constants/documentTypes.js`) con su validación; fuera de Perú el documento es un **campo abierto único** ("Documento de identidad nacional") y el teléfono es internacional. También **fecha de nacimiento** (cumpleaños).
   - **Cartera de recompensas (KapiSol):** muestra el saldo de monedas y las monedas "en espera"; código de referido copiable.
-  - **Avatar Studio:** configurador de avatar (tono de piel, peinado, ojos, boca, accesorio, peso/altura y "vestir" con productos de ropa del catálogo).
+  - **Avatar Studio (foto de perfil):** configurador de avatar propio (tono de piel, peinado, ojos, boca, accesorio, peso/altura y "vestir" con productos de ropa del catálogo). **Reemplaza** el antiguo flujo de avatar 3D (Ready Player Me, descontinuado): ya **no** depende de ese servicio externo.
   - Cerrar sesión.
-- **Archivos clave:** `src/pages/cuenta/PerfilPage.jsx`, `src/components/profile/AvatarStudio.jsx`
+- **Archivos clave:** `src/pages/cuenta/PerfilPage.jsx`, `src/components/profile/AvatarStudio.jsx`, `src/constants/documentTypes.js`
 
-### 7.2 Mis Pedidos (`/cuenta/pedidos`)
-- **Qué es:** historial de pedidos del cliente.
-- **Qué hace:** busca los pedidos por el **DNI/documento** del perfil (en el ERP). Si falta el documento, pide completar el perfil; si no hay pedidos, lo indica e invita a la tienda.
-- **Archivos clave:** `src/pages/cuenta/CuentaPedidosPage.jsx`, `src/components/Results.jsx`, `src/hooks/usePedidos.js`
+### 7.2 Mis Compras / Mis Pedidos (`/cuenta/pedidos` + detalle `/cuenta/pedidos/:id`) — estilo MercadoLibre (sesión 2026-06-27)
+- **Qué es:** el historial de pedidos del cliente con un **estado de compra real** y una **página de detalle por pedido**, al estilo "Mis Compras" de MercadoLibre.
+- **Qué hace (lista, `/cuenta/pedidos`):** busca los pedidos por el **DNI/documento** del perfil (en el ERP). Si falta el documento, pide completar el perfil; si no hay pedidos, lo indica e invita a la tienda. Cada pedido muestra un **badge de estado** y enlaza a su detalle.
+- **Qué hace (detalle, `/cuenta/pedidos/:id`):**
+  - Muestra un **estado de compra unificado** que combina **dos ejes**: la **etapa de producción** del pedido (nuevo / en preparación / en camino / entregado / anulado) **y** si está **pagado**, con su color y una **etiqueta de método de pago** ("Pagado con tarjeta (Culqi)", "Pagado con PayPal", "Por validar (Yape/Plin/transf.)", "Pendiente de pago"). Esa derivación es pura y defensiva (`src/utils/estadoCompra.js`, `derivarEstadoCompra`): NO recalcula cobros, solo **deriva** un estado legible de los campos del pedido.
+  - Lista los **productos** (miniatura, talla/color, "Personalizado", cantidad y subtotal), la **dirección de entrega**, y un **resumen de la compra** (productos, descuento por monedas, envío, total) — todo **solo lectura**.
+  - **"También te puede interesar":** recomendación por la categoría del producto comprado, con fallback a destacados.
+  - **WhatsApp al asesor:** botón para consultar el estado por WhatsApp **al asesor de la marca** del pedido (usa `whatsappNumber` de la marca); si la marca no tiene número, cae a un número general de la cuenta. Si el pedido tiene **varias marcas con asesor**, muestra un botón por marca.
+- **Cómo obtiene el detalle:** el pedido normalizado de la lista descarta campos (productos, método de pago, dirección, `numeroPedido`), así que el detalle trae el **pedido CRUDO por id** buscándolo en **ambas colecciones** del ERP (`getOrderByIdAnyCollection` → `pedidos` y `pedidos_web`); como respaldo usa el `_raw` que `usePedidos` adjunta a cada pedido normalizado.
+- **Archivos clave:** `src/pages/cuenta/CuentaPedidosPage.jsx` (lista), `src/pages/cuenta/CuentaCompraDetallePage.jsx` (detalle), `src/utils/estadoCompra.js` (`derivarEstadoCompra`, `getProductosPedido`, `getCodigoPedido`, `getBrandIdsDePedido`), `src/hooks/usePedidos.js` (adjunta `_raw`), `src/services/erp/firebase.js` (`getOrderByIdAnyCollection`), `src/components/Results.jsx`
 
 ### 7.3 Lista de Deseos privada (`/cuenta/wishlist`)
 - **Qué es:** los productos que el cliente guardó como favoritos.
@@ -366,7 +378,8 @@
 - **Archivos clave:** `src/pages/SubscriptionLandingPage.jsx`
 
 ### 10.2 Encuesta de suscripción / perfil de regalos (`/encuesta-suscripcion`)
-- **Qué es:** la encuesta para construir el perfil de regalos del cliente (alimenta "Fechas Importantes" y los paquetes sugeridos).
+- **Qué es:** la encuesta para construir el perfil de regalos del cliente (alimenta "Fechas Importantes", los paquetes sugeridos y el **registro de regalos por fecha** `/regalar`, §7.4-bis).
+- **Qué hace:** registra a los seres queridos como **destinatarios** (`giftRecipients`) con **nombre y relación/parentesco** y sus **eventos** (cumpleaños obligatorio, aniversario, fecha especial con nombre libre); esos nombre+relación son los que rotulan las columnas de fecha en `/regalar`. También captura el **cumpleaños del propio dueño** (`birthDate`), que aparece como una fecha más en su registro de regalos.
 - **Archivos clave:** `src/pages/SubscriptionSurveyPage.jsx`
 
 ---
@@ -375,8 +388,9 @@
 
 ### 11.1 Acceso: Login / Registro / Completar perfil / Recuperar contraseña
 - **Rutas:** `/login`, `/registro`, `/completar-perfil`, `/recuperar-contrasena`
-- **Qué hacen:** autenticación del cliente. `completar-perfil` se usa cuando falta el DNI/teléfono (necesario para ver pedidos). El login/registro aceptan `?redirect=` para volver a donde estaba el usuario (p. ej. desde el editor).
-- **Archivos clave:** `src/pages/LoginPage.jsx`, `RegisterPage.jsx`, `CompleteProfilePage.jsx`, `ResetPasswordPage.jsx`, `src/contexts/AuthContext.jsx`
+- **Qué hacen:** autenticación del cliente. `completar-perfil` se usa cuando falta el DNI/teléfono (necesario para ver pedidos); ahí se elige el **tipo de documento** (DNI/CE/Pasaporte en Perú) y se captura el **cumpleaños** (`birthDate`). El login/registro aceptan `?redirect=` para volver a donde estaba el usuario (p. ej. desde el editor).
+- **Captura de cumpleaños con import opcional desde Google (sesión 2026-06-27):** al **iniciar sesión con Google** se pide (opcionalmente) permiso de lectura del cumpleaños vía **Google People API** (scope `user.birthday.read`, gratis y best-effort: si no se concede o no existe, el login sigue normal). Si se obtiene, se guarda temporalmente (`localStorage` → `wala_google_birthday`) y se **precarga** en "Completar perfil" para que el cliente solo confirme. El cumpleaños también se puede capturar en la encuesta de suscripción (§10.2).
+- **Archivos clave:** `src/pages/LoginPage.jsx`, `RegisterPage.jsx`, `CompleteProfilePage.jsx` (`birthDate`), `ResetPasswordPage.jsx`, `src/services/firebase/auth.js` (People API), `src/contexts/AuthContext.jsx`
 
 ### 11.2 Landing "Regalos con Amor" / Nuevos usuarios (`/regalos-con-amor`)
 - **Qué es:** una landing independiente (sin header/footer normales) orientada a captar nuevos usuarios, con testimonios, comparativas y reseñas.
@@ -409,7 +423,8 @@
 
 Estos componentes acompañan al cliente en casi todas las páginas (definidos en `GlobalLayout` dentro de `src/App.jsx`):
 
-- **Header** (cabecera con navegación, categorías y buscador) — `src/components/common/Header`
+- **Header** (cabecera con navegación, categorías y buscador) — `src/components/common/Header`. Incluye el **toggle de idioma ES / EN / PT** (ver i18n abajo) y el corazón de favoritos (badge + tira de miniaturas, sesión 2026-06-27).
+- **Idioma / i18n GRATIS (ES/EN/PT) (sesión 2026-06-27):** un **toggle de idioma** en el Header y un **popup "¿Ver Walá en tu idioma?"** (`src/components/i18n/LanguagePopup.jsx`) permiten cambiar entre Español, Inglés y Portugués sin costo. Los textos fijos principales (navegación, CTAs como **"Al carrito"**, secciones de cuenta) salen de diccionarios propios (`src/i18n/dictionaries.js`); el resto del contenido (catálogo) lo traduce **gratis el traductor nativo del navegador**, que se activa al fijar `document.documentElement.lang` (lo hace `src/contexts/LanguageContext.jsx`, que además persiste el idioma elegido en `localStorage`).
 - **Footer** — `src/components/common/Footer`
 - **BottomNav** (barra inferior en móvil) — `src/components/common/BottomNav`
 - **Botón de WhatsApp** flotante — `src/components/common/WhatsAppButton`
