@@ -1,0 +1,377 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================================
+    // ███  PROPUESTA — NO DESPLEGAR TODAVÍA  ███
+    // ============================================================================
+    // Este archivo es una PROPUESTA de endurecimiento sobre el firestore.rules
+    // ACTUAL. NO se despliega solo: firebase.json apunta a 'firebase/firestore.rules'
+    // (no a este .propuesto), así que publicarlo requiere copiarlo a mano sobre el
+    // activo y volver a desplegar a conciencia.
+    //
+    // REVISAR Y PROBAR ANTES DE DESPLEGAR:
+    //   1) Probar en el Rules Playground / emulador / staging ANTES de tocar prod.
+    //   2) El ERP (proyecto compartido sistema-gestion-3b225) LEE colecciones de
+    //      pedidos (pedidos / pedidos_web) SIN Firebase Auth en algunos flujos.
+    //      VERIFICAR que estos cambios NO rompan el ERP ni su cola de validación.
+    //   3) El cambio en 'pedidos_web' (cerrar el update) ROMPE el pago PayPal
+    //      cliente-side actual (S-1) a propósito: SOLO desplegar este archivo
+    //      DESPUÉS de tener la Cloud Function capturePaypalOrderSecure que escriba
+    //      el pago vía Admin SDK. Si se despliega antes, los pagos PayPal dejarán
+    //      de marcar el pedido como pagado. (Ver docs/wala/ESCALABILIDAD.md S-1.)
+    //   4) El cambio en 'analytics_events' (validar forma) es aditivo de seguridad,
+    //      pero CONFIRMAR que el tracker real (src/services/analytics/tracker.js)
+    //      sigue pudiendo crear eventos: campos mínimos type(string)+clientTsMs(number),
+    //      más createdAt/updatedAt que añade createDocument(). Si se añaden tipos de
+    //      evento nuevos con campos extra, este filtro solo limita TAMAÑO, no el
+    //      conjunto exacto de claves, así que no debería romperlos.
+    //
+    // El resto de reglas se conserva TAL CUAL respecto al firestore.rules activo.
+    // Cualquier colección NO listada queda DENEGADA por defecto.
+    // ============================================================================
+
+    // ⚠️ FASE 0: Estas reglas se reescribieron para cubrir las colecciones REALES de la
+    // app y cerrar agujeros (ver docs/wala/FASE-0-SEGURIDAD.md, H-06/H-07/H-08/H-09).
+    // ANTES DE DESPLEGAR A PRODUCCIÓN: comparar con las reglas actualmente desplegadas en
+    // la consola (pueden ser más permisivas que el repo) y probar en el Rules Playground /
+    // staging. Cualquier colección NO listada aquí queda DENEGADA por defecto.
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function isAuthenticated() { return request.auth != null; }
+    function isOwner(userId) { return isAuthenticated() && request.auth.uid == userId; }
+
+    // Admin = custom claim `admin: true` (fuente de verdad, H-09) o, como puente de
+    // bootstrap, doc adminUsers/{uid} con role 'admin'. Meta: depender solo del claim.
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        (exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // Campos sensibles que el propio usuario NUNCA puede auto-modificar (H-06).
+    // Todo earn/spend de estos campos se hace SOLO desde Cloud Functions
+    // (feedKapiSecure, spendCoinsSecure, spinRuletaSecure, etc.). NOTA: requiere
+    // que esas Functions estén desplegadas ANTES de publicar estas reglas, o se
+    // romperán juegos/recompensas. 'referralCode'/'referralCodeEdited'/'lastAppOpen'
+    // NO se bloquean porque el cliente los escribe legítimamente.
+    function camposSaldo() {
+      return [
+        'monedas', 'monedasReclamadas', 'monedasEnEspera', 'historialMonedasEspera', 'role',
+        'monedasActivas', 'kapiCoins', 'kapiHappiness', 'lastKapiClaimDate', 'weeklyClaimsData',
+        'activeMultiplier', 'multiplierExpiresAt', 'weeklyChallengeProgress',
+        'lastBallSortReward', 'lastRuletaSpinWeek', 'streakBonusReceived', 'surveyRewardClaimed',
+        'referralOrdersClaimed',
+        // Fase 2 (fidelización): los escribe SOLO el servidor (dailyCheckInSecure,
+        // completeMissionSecure). El cliente nunca puede auto-modificar XP/racha/check-in.
+        'xp', 'dailyStreak', 'lastCheckInDate',
+        // Fase 5 (fidelización): los escribe SOLO el servidor (openDailyChestSecure,
+        // computeSegmentsSecure). El cliente nunca puede auto-modificar cofre/segmento.
+        'segment', 'lastChestDate'
+      ];
+    }
+    function noTocaCamposSensibles() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(camposSaldo());
+    }
+    // H-06 #4: en la CREACIÓN del perfil tampoco se pueden incluir campos de saldo
+    // (setDoc(merge:true) dispara create cuando el doc aún no existe).
+    function sinSaldoEnCreate() {
+      return !request.resource.data.keys().hasAny(camposSaldo());
+    }
+    // H-06 #3: el DNI solo puede fijarse cuando está vacío; una vez puesto es inmutable
+    // para el propio usuario (evita "cosechar" pedidos ajenos cambiando el DNI).
+    function dniInmutable() {
+      return resource.data.dni == null || request.resource.data.dni == resource.data.dni;
+    }
+
+    // ── Catálogo y taxonomías (lectura pública, escritura admin) ─────────────────
+    match /productos_wala/{id}        { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_categories/{id}     { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_collections/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_brands/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_mockups/{id}        { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_themes/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_landing_pages/{id}  { allow read: if true; allow write: if isAdmin(); }
+    match /pages/{id}                 { allow read: if true; allow write: if isAdmin(); }
+    match /landingPages/{id}          { allow read: if true; allow write: if isAdmin(); }
+    match /productTypes/{id}          { allow read: if true; allow write: if isAdmin(); }
+    match /tags/{id}                  { allow read: if true; allow write: if isAdmin(); }
+    match /characters/{id}            { allow read: if true; allow write: if isAdmin(); }
+    match /cliparts/{id}              { allow read: if true; allow write: if isAdmin(); }
+    match /customShapes/{id}          { allow read: if true; allow write: if isAdmin(); }
+    match /fonts/{id}                 { allow read: if true; allow write: if isAdmin(); }
+    match /templates/{id}             { allow read: if true; allow write: if isAdmin(); }
+    match /vendors/{id}               { allow read: if true; allow write: if isAdmin(); }
+    match /niches/{id}                { allow read: if true; allow write: if isAdmin(); }
+    match /blueprints/{id}            { allow read: if true; allow write: if isAdmin(); }
+    match /storefront/{id}            { allow read: if true; allow write: if isAdmin(); }
+    match /storeConfig/{id}           { allow read: if true; allow write: if isAdmin(); }
+    match /configuracion/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{id}              { allow read: if true; allow write: if isAdmin(); }
+    match /messages/{id}              { allow read: if true; allow write: if isAdmin(); }
+    match /suggested_packages/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /universal_dates/{id}       { allow read: if true; allow write: if isAdmin(); }
+    match /tienda_encuesta_config/{id}{ allow read: if true; allow write: if isAdmin(); }
+    match /cuestionarios_templates/{id}{ allow read: if true; allow write: if isAdmin(); }
+
+    // Compat: colecciones legacy (mantener hasta confirmar que no se usan en producción).
+    match /products/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /categories/{id}  { allow read: if true; allow write: if isAdmin(); }
+
+    // Fase 5: ofertas flash (lectura pública para la vitrina; escritura solo admin).
+    match /flashOffers/{id} { allow read: if true; allow write: if isAdmin(); }
+
+    // ── Gamificación / fidelización ──────────────────────────────────────────────
+    match /globals/{id}            { allow read: if true;  allow write: if isAdmin(); } // activeChallenge
+    match /weeklyChallenges/{id}   { allow read: if true;  allow write: if isAdmin(); }
+    match /ruletaPrizes/{id}       { allow read: if true;  allow write: if isAdmin(); }
+    match /wordle_daily_words/{id} { allow read: if true;  allow write: if isAdmin(); }
+
+    // ── Fase 2: misiones diarias y libro mayor de fidelización ───────────────────
+    // Config de misiones: lectura pública, escritura solo admin.
+    match /missions/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // Progreso diario por usuario (id '<uid>_<YYYY-MM-DD>'). Lo escribe el servidor
+    // (getDailyMissionsSecure / completeMissionSecure vía admin SDK). El dueño solo lee.
+    match /userMissions/{id} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow write: if isAdmin();
+    }
+    // Libro mayor de puntos (earn/spend). Solo el servidor escribe; el dueño lo lee.
+    match /loyaltyLedger/{id} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if isAdmin();
+    }
+
+    // ── Fase 2b: catálogo de recompensas y cupones canjeados ─────────────────────
+    // Catálogo de recompensas: lectura pública (vitrina), escritura solo admin.
+    match /rewardsCatalog/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // Cupones del usuario: los crea SOLO el servidor (redeemRewardSecure vía admin
+    // SDK); el dueño solo los lee. 'write' restringido a admin (Cloud Functions).
+    match /userCoupons/{id} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if isAdmin();
+    }
+
+    // Fase 3 — Marketplace multi-vendor.
+    // subOrders: las crea el servidor (createOrderWithSubordersSecure); lee el comprador o admin.
+    match /subOrders/{id} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+    match /shippingZones/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /payouts/{id} { allow read, write: if isAdmin(); }
+
+    // Partidas de Wordle: lectura pública (ranking); el usuario solo escribe su registro.
+    match /wordle/{id} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // Evidencias de retos: se crean vía Cloud Function (admin SDK, evade reglas); el
+    // cliente solo necesita leerlas como admin.
+    match /challengeEvidences/{id} { allow read: if isAdmin(); allow write: if isAdmin(); }
+
+    // Referidos: tracking que puede ocurrir SIN sesión (clic en el enlace). La
+    // acreditación de monedas está protegida en el doc de usuario (no aquí).
+    // TODO (H-05): mover claimReferralCoins a una Cloud Function y endurecer esto.
+    match /referrals/{id} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    // Eventos/fechas importantes del usuario (cumpleaños, aniversarios).
+    // TODO: acotar por owner si los documentos llevan userId.
+    match /organizable_events/{id} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated() || isAdmin();
+    }
+
+    // ── Datos de usuario ─────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && sinSaldoEnCreate();
+      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles() && dniInmutable());
+      allow delete: if isAdmin();
+      match /notifications/{notifId} {
+        allow read, update: if isOwner(userId) || isAdmin();
+        allow create, delete: if isAdmin();
+      }
+    }
+    match /portal_clientes_users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && sinSaldoEnCreate();
+      allow update: if isAdmin() || (isOwner(userId) && noTocaCamposSensibles() && dniInmutable());
+      allow delete: if isAdmin();
+      match /notifications/{notifId} {
+        allow read, update: if isOwner(userId) || isAdmin();
+        allow create, delete: if isAdmin();
+      }
+    }
+
+    match /orders/{orderId} {
+      allow read: if isOwner(resource.data.userId)
+                     || (isAuthenticated() && resource.data.buyerUid == request.auth.uid)
+                     || isAdmin();
+      allow create: if isAuthenticated() || request.resource.data.dni != null;
+      allow update: if isAdmin() || isOwner(resource.data.userId);
+      allow delete: if isAdmin();
+    }
+
+    // ── ERP (proyecto compartido sistema-gestion-3b225) ──────────────────────────
+    // Pedidos del ERP. El checkout web los crea SIN sesión, identificando con DNI.
+    // Lectura: admin o el comprador autenticado dueño del pedido.
+    match /pedidos/{id} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
+      allow create: if isAuthenticated() || request.resource.data.dni != null;
+      allow update, delete: if isAdmin();
+    }
+    match /pedidos_web/{id} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
+
+      // CREATE: SE CONSERVA IGUAL que el activo. El checkout web crea el pedido SIN
+      // sesión (src/services/erp/firebase.js -> createWebOrder, addDoc con 'dni' en
+      // el payload). Cerrar esto rompería el checkout, así que NO se toca.
+      allow create: if isAuthenticated() || request.resource.data.dni != null;
+
+      // ─────────────────────────────────────────────────────────────────────────
+      // CAMBIO PROPUESTO (S-1) — CERRAR EL UPDATE ABIERTO.
+      //
+      // ANTES (activo, INSEGURO):
+      //     allow update: if isAdmin() || request.resource.data.dni != null;
+      //   Cualquiera con DevTools podía marcar un pedido como pagado
+      //   ({ montoDeuda: 0, conDeuda: false }) con solo incluir un 'dni' en el
+      //   update -> pérdida directa de dinero (PayPal capturado en cliente).
+      //
+      // AHORA (propuesto, SEGURO):
+      //   Update SOLO por admin. Las Cloud Functions usan Admin SDK y SE SALTAN las
+      //   reglas, así que la captura PayPal server-side (capturePaypalOrderSecure)
+      //   podrá escribir montoDeuda:0 sin necesitar permiso aquí.
+      //
+      // ⚠️ PRECONDICIÓN DE DESPLIEGUE: NO publicar este archivo hasta que el pago
+      //   PayPal esté movido a server-side (CF capturePaypalOrderSecure). Mientras el
+      //   pago PayPal siga capturándose en el cliente
+      //   (src/components/PaypalCheckout/PaypalCheckout.jsx), este cambio HARÁ que el
+      //   updateDoc cliente-side falle y el pedido NO se marque como pagado.
+      // ─────────────────────────────────────────────────────────────────────────
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    match /designs/{designId} {
+      allow read: if isOwner(resource.data.userId) || resource.data.isPublic == true || isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    // Productos personalizados creados por el cliente (pre-compra).
+    match /producto_cliente_personalizado/{id} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() || isAdmin();
+    }
+
+    // Wishlists (doc id = uid). Lectura pública para compartir por enlace.
+    match /wishlists/{userId} {
+      allow read: if true;
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // Reseñas de productos. Lectura pública; crear autenticado; update permitido para
+    // votos útiles. TODO: restringir update a solo 'helpfulVotes' con diff().
+    match /product_reviews/{id} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // ── Admin / configuración restringida ────────────────────────────────────────
+    match /adminUsers/{userId} { allow read, write: if isAdmin(); }
+    // adminRoles: el cliente autenticado lee su propio rol para computar permisos de UI.
+    match /adminRoles/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    match /notification_settings/{id} { allow read, write: if isAdmin(); }
+    match /storeConfigLogs/{id}       { allow read, write: if isAdmin(); }
+    match /inventoryLogs/{id}         { allow read, write: if isAdmin(); }
+    // (regla fantasma 'analytics_kapi' eliminada: ninguna parte del código la usa;
+    //  la analítica real vive en las colecciones analytics_* de abajo)
+    // Lock de dedup de referidos (H-05): solo lo escribe Cloud Functions (admin SDK).
+    match /referralOrderClaims/{id}   { allow read, write: if isAdmin(); }
+
+    // ── Analítica (proyecto compartido) ──────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────────
+    // CAMBIO PROPUESTO (S-5) — VALIDAR FORMA Y TAMAÑO EN LA INGESTA DE EVENTOS.
+    //
+    // ANTES (activo, INSEGURO):
+    //     match /analytics_events/{id} {
+    //       allow create: if true;                 // escritura anónima ILIMITADA
+    //       allow read, update, delete: if isAdmin();
+    //     }
+    //   'create: if true' permite a cualquiera escribir documentos arbitrarios y
+    //   gigantes -> inflado de costos de Firestore / spam / DoS de cuota.
+    //
+    // AHORA (propuesto):
+    //   - read/update/delete: solo admin (igual que antes).
+    //   - create: sigue siendo ANÓNIMO (la analítica se mide sin sesión), pero ahora
+    //     se valida que el documento tenga la FORMA esperada y un TAMAÑO acotado.
+    //
+    // Forma real verificada en src/services/analytics/tracker.js (vía createDocument,
+    // que además añade createdAt/updatedAt serverTimestamp y elimina campos vacíos):
+    //   OBLIGATORIOS: type (string), clientTsMs (number).
+    //   OPCIONALES habituales: path, uid, email, displayName, anonymousId, sessionId,
+    //     sessionKey, clientType, dwellMs, eventData (objeto: { totalCents, items, ... }).
+    //   Nota: el encargo hablaba de 'payload'; en el código real el contenedor de datos
+    //   se llama 'eventData'. Por eso NO exigimos un conjunto exacto de claves (eso
+    //   rompería tipos de evento nuevos): solo exigimos los 2 campos mínimos y LIMITAMOS
+    //   el tamaño (nº de claves de nivel superior) para frenar el inflado/spam.
+    // ─────────────────────────────────────────────────────────────────────────────
+    function analyticsEventValido() {
+      let d = request.resource.data;
+      return d.type is string
+        && d.type.size() > 0 && d.type.size() <= 64
+        && d.clientTsMs is number
+        // Tope de claves de nivel superior: un evento legítimo ronda 8-12 campos.
+        // 30 deja margen de sobra para tipos nuevos sin permitir documentos enormes.
+        && d.keys().size() <= 30;
+    }
+    match /analytics_events/{id} {
+      allow create: if analyticsEventValido();
+      allow read, update, delete: if isAdmin();
+    }
+    match /analytics_sessions/{id} {
+      allow create: if true;
+      allow update: if true;
+      allow read, delete: if isAdmin();
+    }
+    match /analytics_user_summary/{id}   { allow read, write: if isAdmin(); }
+    match /analytics_global_summary/{id} { allow read, write: if isAdmin(); }
+
+    // ── Ingestión pública controlada ─────────────────────────────────────────────
+    match /heatmap_events/{eventId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+    match /libro_reclamaciones/{reclamoId} {
+      allow create: if true;             // Formulario público de reclamaciones (INDECOPI)
+      allow read, update, delete: if isAdmin();
+    }
+    match /enlaces_pago/{enlaceId} {
+      allow read: if true;               // Público para quien tiene el link (id no adivinable)
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin(); // H-08: antes era 'if true' (fraude/DoS)
+    }
+  }
+}

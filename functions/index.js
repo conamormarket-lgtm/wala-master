@@ -712,6 +712,71 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("failed-precondition", "Pago no disponible temporalmente.");
   }
 
+  // ── S-4: IDEMPOTENCIA (aditivo y seguro) ───────────────────────────────────
+  // ANTES de cobrar se intenta crear un doc de bloqueo `culqiCharges/{tokenId}`
+  // con runTransaction + t.create(): si el doc ya existe (mismo tokenId por doble
+  // click / retry de red), NO se vuelve a cobrar y se devuelve el resultado previo
+  // (o un estado "en proceso" si el primer intento aún no terminó). El tokenId de
+  // Culqi es de un solo uso, por lo que es una clave de idempotencia natural.
+  //
+  // Comportamiento conservador (no rompe pagos): si por cualquier motivo falla la
+  // adquisición del lock de forma inesperada, NO se bloquea el cobro (se procede
+  // como hoy); la transacción solo aborta el camino normal cuando detecta de forma
+  // fiable que ya hubo (o hay) un cobro para este tokenId.
+  const lockRef = db.collection("culqiCharges").doc(String(tokenId));
+  let lockAcquired = false;
+  try {
+    const prev = await db.runTransaction(async (t) => {
+      const snap = await t.get(lockRef);
+      if (snap.exists) {
+        // Ya existe un intento para este tokenId.
+        return snap.data() || {};
+      }
+      // Se reserva el tokenId ANTES de llamar a la API de Culqi.
+      t.create(lockRef, {
+        tokenId: String(tokenId),
+        status: "processing",
+        amount: chargeAmount,
+        currency: payCurrency,
+        uid: context.auth.uid,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      return null; // null = lock recién adquirido por esta llamada
+    });
+
+    if (prev) {
+      // Reintento detectado: NO se recobra.
+      if (prev.status === "succeeded") {
+        // Devuelve el resultado previo guardado (mismo shape que el éxito normal).
+        return {
+          success: true,
+          charge_id: prev.charge_id || null,
+          outcome: prev.outcome || null,
+          amount: prev.amount ?? chargeAmount,
+          idempotent: true, // marca informativa: respuesta servida desde el lock
+        };
+      }
+      if (prev.status === "failed") {
+        // El intento previo con este token falló en Culqi. El token es de un solo
+        // uso, así que reintentarlo daría error igualmente: se informa con claridad.
+        throw new functions.https.HttpsError(
+          "failed-precondition",
+          "Este pago ya fue intentado y no se completó. Vuelve a iniciar el pago para generar un nuevo token."
+        );
+      }
+      // status "processing": otra ejecución concurrente está cobrando este token.
+      throw new functions.https.HttpsError(
+        "already-exists",
+        "El pago con esta tarjeta ya se está procesando. Espera unos segundos antes de reintentar."
+      );
+    }
+    lockAcquired = true;
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    // Fallo inesperado del lock: no se bloquea el cobro (comportamiento de hoy).
+    console.warn("processCulqiPayment S-4: no se pudo adquirir el lock de idempotencia, se procede sin él:", e.message);
+  }
+
   try {
     const response = await fetch("https://api.culqi.com/v2/charges", {
       method: "POST",
@@ -733,7 +798,35 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
 
     if (!response.ok) {
       console.error("Error de Culqi:", result);
+      // S-4: marca el lock como fallido para que un reintento del mismo token no
+      // vuelva a llamar a Culqi (best-effort, nunca bloquea la respuesta de error).
+      if (lockAcquired) {
+        try {
+          await lockRef.set({
+            status: "failed",
+            error: result.user_message || "rechazo de Culqi",
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true });
+        } catch (e) {
+          console.warn("processCulqiPayment S-4: no se pudo marcar el lock como failed:", e.message);
+        }
+      }
       throw new functions.https.HttpsError("internal", result.user_message || "Error al procesar la tarjeta con Culqi.");
+    }
+
+    // S-4: guarda el resultado exitoso en el lock para servir reintentos sin recobrar.
+    if (lockAcquired) {
+      try {
+        await lockRef.set({
+          status: "succeeded",
+          charge_id: result.id || null,
+          outcome: result.outcome || null,
+          amount: chargeAmount,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (e) {
+        console.warn("processCulqiPayment S-4: no se pudo marcar el lock como succeeded:", e.message);
+      }
     }
 
     return {
@@ -744,7 +837,22 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
     };
 
   } catch (err) {
+    if (err instanceof functions.https.HttpsError) throw err;
     console.error("Excepción en processCulqiPayment:", err);
+    // S-4: ante una excepción de red NO se puede saber si Culqi cobró o no. Se marca
+    // el lock como "failed" para evitar un recobro automático con el mismo token;
+    // el cliente debe iniciar un pago nuevo (token nuevo). best-effort.
+    if (lockAcquired) {
+      try {
+        await lockRef.set({
+          status: "failed",
+          error: err.message || "excepción de red",
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (e) {
+        console.warn("processCulqiPayment S-4: no se pudo marcar el lock como failed (excepción):", e.message);
+      }
+    }
     throw new functions.https.HttpsError("internal", err.message || "Excepción interna al procesar el pago.");
   }
 });
@@ -1935,8 +2043,38 @@ exports.createCheckoutPreferenceSecure = functions.https.onCall(async (data, con
 // Marca la orden como 'paid' y genera los payouts pendientes. Idempotente.
 // En PRODUCCIÓN lo dispararía el webhook de Mercado Pago; en local simula el pago OK.
 exports.confirmPaymentSecure = functions.https.onCall(async (data, context) => {
-  requireAuth(context);
+  const uid = requireAuth(context);
   const orderId = data && data.orderId != null ? String(data.orderId) : null;
+
+  // ── S-3: Verificación de propiedad detrás de flag (SEGURO POR DEFECTO) ──────
+  // Con process.env.ENFORCE_PAYMENT_OWNERSHIP !== 'true' (default) el comportamiento
+  // es EXACTAMENTE el de hoy: cualquier usuario autenticado puede confirmar. Cuando
+  // el dueño active el flag, se exige que el uid autenticado sea el `buyerUid` de la
+  // orden (o un admin). Así un usuario no puede confirmar el pago de una orden ajena
+  // y disparar payouts indebidos.
+  if (process.env.ENFORCE_PAYMENT_OWNERSHIP === "true") {
+    try {
+      const orderSnap = await db.collection("orders").doc(String(orderId)).get();
+      if (!orderSnap.exists) {
+        throw new functions.https.HttpsError("not-found", "Orden no encontrada.");
+      }
+      const order = orderSnap.data() || {};
+      const isOwner = order.buyerUid && order.buyerUid === uid;
+      const isAdmin = await callerIsAdmin(context);
+      if (!isOwner && !isAdmin) {
+        throw new functions.https.HttpsError(
+          "permission-denied",
+          "Solo el dueño de la orden (o un administrador) puede confirmar este pago."
+        );
+      }
+    } catch (e) {
+      if (e instanceof functions.https.HttpsError) throw e;
+      // Fallo al leer la orden con el flag activo: se FALLA CERRADO (no se confirma).
+      console.error("confirmPaymentSecure S-3: fallo al verificar propiedad:", e);
+      throw new functions.https.HttpsError("internal", "No se pudo verificar la propiedad de la orden.");
+    }
+  }
+
   try {
     return await confirmPaymentForOrder(orderId);
   } catch (e) {
@@ -2218,29 +2356,66 @@ exports.culqiWebhook = functions.https.onRequest(async (req, res) => {
       return res.status(405).send("Method Not Allowed");
     }
 
-    // ── Validación de firma (Culqi) ──────────────────────────────────────────
-    // Culqi firma el evento; el secret se obtiene del panel (Desarrollo > Webhooks).
-    // La cabecera suele venir como "X-Culqi-Signature" (verificar el nombre exacto en
-    // el panel/documentación de la cuenta). Mientras CULQI_WEBHOOK_SECRET no esté
-    // configurado, se ACEPTA el evento pero se ADVIERTE (transición). Para cerrar el
-    // agujero: configurar el secret y firmar/validar como abajo.
+    // ── S-2: Validación de firma (Culqi) detrás de flag ──────────────────────
+    // SEGURO POR DEFECTO: la verificación SOLO se ejecuta si
+    // process.env.CULQI_VERIFY_SIGNATURE === 'true'. Con el flag APAGADO (default)
+    // el comportamiento es EXACTAMENTE el de hoy (se acepta el evento), así que el
+    // despliegue NO cambia nada hasta que el dueño active el flag a conciencia.
+    //
+    // SIEMPRE se loguea la(s) cabecera(s) de firma recibida(s) para que el dueño
+    // confirme el NOMBRE EXACTO de la cabecera con su cuenta de Culqi ANTES de
+    // activar el flag (el nombre puede variar entre cuentas/versiones de la API).
+    const verifySignature = process.env.CULQI_VERIFY_SIGNATURE === "true";
     const webhookSecret = process.env.CULQI_WEBHOOK_SECRET;
-    if (webhookSecret) {
-      // const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
-      // const signature = req.get("X-Culqi-Signature"); // confirmar nombre exacto en el panel
-      // const valid = verifyWebhookSignature(rawBody, signature, webhookSecret); // HMAC-SHA256 hex
-      // if (!valid) {
-      //   console.warn("culqiWebhook: firma inválida o ausente.");
-      //   return res.status(401).send("invalid signature");
-      // }
-      console.warn(
-        "culqiWebhook: CULQI_WEBHOOK_SECRET configurado pero la verificación de firma " +
-        "está comentada; descomentar el bloque HMAC para activarla."
-      );
+
+    // Posibles nombres de cabecera de firma (se loguean todos los presentes).
+    const sigHeaderCandidates = [
+      "x-culqi-signature",
+      "culqi-signature",
+      "x-signature",
+      "signature",
+    ];
+    const receivedSigHeaders = {};
+    for (const h of sigHeaderCandidates) {
+      const v = req.get(h);
+      if (v) receivedSigHeaders[h] = v;
+    }
+    console.log(
+      "culqiWebhook: cabeceras de firma recibidas (para confirmar el nombre exacto antes de activar CULQI_VERIFY_SIGNATURE):",
+      JSON.stringify(receivedSigHeaders)
+    );
+
+    if (verifySignature) {
+      // Flag ACTIVADO: se exige firma válida.
+      if (!webhookSecret) {
+        console.error(
+          "culqiWebhook: CULQI_VERIFY_SIGNATURE='true' pero falta CULQI_WEBHOOK_SECRET. " +
+          "No se puede verificar la firma; se rechaza el evento (401)."
+        );
+        return res.status(401).send("signature verification not configured");
+      }
+      // rawBody es necesario: el HMAC se calcula sobre el cuerpo EXACTO recibido,
+      // no sobre el JSON re-serializado (que puede diferir en orden/espacios).
+      const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
+      // Se toma la primera cabecera candidata presente como firma provista.
+      const providedSig =
+        receivedSigHeaders["x-culqi-signature"] ||
+        receivedSigHeaders["culqi-signature"] ||
+        receivedSigHeaders["x-signature"] ||
+        receivedSigHeaders["signature"] ||
+        "";
+      const valid = verifyWebhookSignature(rawBody, providedSig, webhookSecret);
+      if (!valid) {
+        console.warn("culqiWebhook: firma inválida o ausente; se rechaza (401).");
+        return res.status(401).send("invalid signature");
+      }
+      // Firma válida: continúa el procesamiento normal.
     } else {
+      // Flag APAGADO (default): mismo comportamiento de hoy. Solo se advierte.
       console.warn(
-        "culqiWebhook: CULQI_WEBHOOK_SECRET no configurado; webhook SIN verificar firma. " +
-        "Configúrelo en el panel de Culqi y active la validación."
+        "culqiWebhook: CULQI_VERIFY_SIGNATURE no está en 'true'; webhook SIN verificar firma " +
+        "(comportamiento actual). Configure CULQI_WEBHOOK_SECRET, confirme el nombre de la " +
+        "cabecera con los logs y active CULQI_VERIFY_SIGNATURE='true' para cerrar el agujero."
       );
     }
 
@@ -2623,4 +2798,277 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
     console.error("getPublicGiftRegistry error:", err);
     return { ok: false };
   }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// S-1 — PAGOS PAYPAL SERVER-SIDE (NUEVO, AÚN NO CABLEADO AL CLIENTE)
+// ────────────────────────────────────────────────────────────────────────────
+// Estas dos Cloud Functions mueven el cobro de PayPal al servidor para cerrar el
+// agujero S-1 (hoy el cliente captura el pago en el navegador y escribe directo a
+// pedidos_web). NO se llaman aún desde PaypalCheckout.jsx: quedan listas para
+// cablear DESPUÉS de configurar PAYPAL_CLIENT_ID/PAYPAL_SECRET y de probarlas en
+// sandbox. Como nadie las invoca todavía, su existencia NO rompe nada.
+//
+// Flujo previsto (igual de robusto que processCulqiPayment/H-11):
+//   1) createPaypalOrderSecure({ pedidoId }):
+//        - autentica al usuario,
+//        - RECALCULA el monto USD server-side desde el pedido real (PEN -> USD con
+//          config/fx), NUNCA confía en un monto del cliente,
+//        - crea la orden en PayPal (intent CAPTURE) con OAuth,
+//        - devuelve { orderID } para que el cliente abra el aprobador de PayPal.
+//   2) capturePaypalOrderSecure({ orderID, pedidoId }):
+//        - autentica,
+//        - captura la orden en PayPal,
+//        - verifica status === 'COMPLETED' y que el monto capturado coincide con el
+//          recalculado server-side,
+//        - SOLO entonces marca el pedido como pagado en pedidos_web vía Admin SDK,
+//          de forma idempotente por captureId.
+//
+// Si faltan envs (PAYPAL_CLIENT_ID/PAYPAL_SECRET), ambas responden un error CLARO
+// (failed-precondition). No pasa nada porque ningún cliente las llama todavía.
+
+// Base de la API REST de PayPal según el modo (sandbox por defecto = seguro para probar).
+// Para producción, el dueño debe poner PAYPAL_ENV='live'.
+function paypalApiBase() {
+  return process.env.PAYPAL_ENV === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
+}
+
+// Obtiene un access token OAuth2 (client_credentials) de PayPal. Lanza HttpsError
+// con mensaje claro si faltan credenciales o si PayPal rechaza.
+async function getPaypalAccessToken() {
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const secret = process.env.PAYPAL_SECRET;
+  if (!clientId || !secret) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "PayPal no está configurado en el servidor (faltan PAYPAL_CLIENT_ID y/o PAYPAL_SECRET)."
+    );
+  }
+  const basic = Buffer.from(`${clientId}:${secret}`).toString("base64");
+  const resp = await fetch(`${paypalApiBase()}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+  const json = await resp.json().catch(() => ({}));
+  if (!resp.ok || !json.access_token) {
+    console.error("getPaypalAccessToken: PayPal OAuth falló:", resp.status, json);
+    throw new functions.https.HttpsError("internal", "No se pudo autenticar con PayPal.");
+  }
+  return json.access_token;
+}
+
+// Recalcula el monto USD AUTORITATIVO del pedido server-side: lee el total en PEN
+// del pedido real (pedidos_web/pedidos en el ERP) y lo convierte a USD con config/fx
+// usando la misma fórmula del frontend: (penTotal / penPerUsd) * (1 + margin).
+// Devuelve { usd: "12.34", penTotal, penPerUsd, margin } o lanza HttpsError claro.
+async function computePaypalUsdForOrder(pedidoId) {
+  const oid = pedidoId != null ? String(pedidoId) : null;
+  if (!oid) {
+    throw new functions.https.HttpsError("invalid-argument", "Se requiere pedidoId.");
+  }
+
+  // 1) Total en PEN desde el pedido real (no se confía en el cliente).
+  const erpDb = getErpDb();
+  if (!erpDb) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "No se puede validar el pedido (ERP no disponible)."
+    );
+  }
+  let orderData = null;
+  for (const coll of ["pedidos_web", "pedidos"]) {
+    const snap = await erpDb.collection(coll).doc(oid).get();
+    if (snap.exists) { orderData = snap.data(); break; }
+  }
+  if (!orderData) {
+    throw new functions.https.HttpsError("not-found", "Pedido no encontrado.");
+  }
+  // Se prioriza el saldo pendiente / deuda (con descuento por monedas ya aplicado).
+  const penTotal = Number(
+    orderData.montoPendiente ?? orderData.montoDeuda ?? orderData.montoTotal
+  );
+  if (!Number.isFinite(penTotal) || penTotal <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "El pedido no tiene un monto válido por cobrar.");
+  }
+
+  // 2) Tasa FX desde config/fx (la misma que usa el frontend).
+  const fxSnap = await db.collection("config").doc("fx").get();
+  if (!fxSnap.exists) {
+    throw new functions.https.HttpsError("failed-precondition", "Tipo de cambio no disponible (config/fx).");
+  }
+  const fx = fxSnap.data() || {};
+  const penPerUsd = Number(fx.penPerUsd);
+  const margin = Number.isFinite(Number(fx.margin)) ? Number(fx.margin) : 0;
+  if (!Number.isFinite(penPerUsd) || penPerUsd <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "Tipo de cambio inválido (penPerUsd).");
+  }
+
+  // 3) USD final con margen, redondeado a 2 decimales (formato PayPal).
+  const usdNum = (penTotal / penPerUsd) * (1 + margin);
+  const usd = usdNum.toFixed(2);
+  if (!(Number(usd) > 0)) {
+    throw new functions.https.HttpsError("failed-precondition", "Monto USD calculado inválido.");
+  }
+  return { usd, penTotal, penPerUsd, margin };
+}
+
+// ── createPaypalOrderSecure({ pedidoId }) ──────────────────────────────────────
+// Crea la orden PayPal (intent CAPTURE) con el monto USD recalculado server-side.
+// Devuelve { orderID, amountUsd, pedidoId } para que el cliente abra el aprobador.
+exports.createPaypalOrderSecure = functions.https.onCall(async (data, context) => {
+  requireAuth(context);
+  const pedidoId = data && (data.pedidoId || data.orderId);
+
+  // Monto USD autoritativo (recalculado del pedido real; nunca del cliente).
+  const { usd } = await computePaypalUsdForOrder(pedidoId);
+
+  const accessToken = await getPaypalAccessToken();
+  const resp = await fetch(`${paypalApiBase()}/v2/checkout/orders`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          // reference_id liga la orden de PayPal con el pedido para validar al capturar.
+          reference_id: String(pedidoId),
+          description: `Pago del pedido #${pedidoId}`,
+          custom_id: String(pedidoId),
+          amount: {
+            currency_code: "USD",
+            value: usd,
+          },
+        },
+      ],
+    }),
+  });
+  const json = await resp.json().catch(() => ({}));
+  if (!resp.ok || !json.id) {
+    console.error("createPaypalOrderSecure: PayPal rechazó la creación:", resp.status, json);
+    throw new functions.https.HttpsError("internal", "PayPal no pudo crear la orden.");
+  }
+
+  return { orderID: json.id, amountUsd: usd, pedidoId: String(pedidoId) };
+});
+
+// ── capturePaypalOrderSecure({ orderID, pedidoId }) ────────────────────────────
+// Captura la orden en PayPal, verifica COMPLETED + monto recalculado, y SOLO
+// entonces marca el pedido como pagado en pedidos_web vía Admin SDK (idempotente
+// por captureId). Espejo de la lógica de processCulqiPayment/culqiWebhook.
+exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) => {
+  requireAuth(context);
+  const orderID = data && data.orderID;
+  const pedidoId = data && (data.pedidoId || data.orderId);
+  if (!orderID) {
+    throw new functions.https.HttpsError("invalid-argument", "Se requiere orderID de PayPal.");
+  }
+
+  // Monto USD esperado (recalculado server-side) para comparar contra lo capturado.
+  const { usd: expectedUsd } = await computePaypalUsdForOrder(pedidoId);
+
+  const accessToken = await getPaypalAccessToken();
+  const resp = await fetch(`${paypalApiBase()}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    // Cuerpo vacío: la orden ya trae el purchase_unit creado en createPaypalOrderSecure.
+    body: JSON.stringify({}),
+  });
+  const json = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    console.error("capturePaypalOrderSecure: PayPal rechazó la captura:", resp.status, json);
+    throw new functions.https.HttpsError("internal", "PayPal no pudo capturar la orden.");
+  }
+
+  // 1) status COMPLETED a nivel de orden.
+  if (json.status !== "COMPLETED") {
+    console.warn("capturePaypalOrderSecure: status no COMPLETED:", json.status);
+    throw new functions.https.HttpsError("failed-precondition", `El pago no se completó (status: ${json.status}).`);
+  }
+
+  // 2) Extraer la captura y validar monto + moneda + reference_id contra lo esperado.
+  const pu = (json.purchase_units && json.purchase_units[0]) || {};
+  const capture = (pu.payments && pu.payments.captures && pu.payments.captures[0]) || {};
+  const captureStatus = capture.status;
+  const capturedValue = capture.amount && capture.amount.value;
+  const capturedCurrency = capture.amount && capture.amount.currency_code;
+  const captureId = capture.id || null;
+  const refId = pu.reference_id || pu.custom_id || null;
+
+  if (captureStatus !== "COMPLETED") {
+    throw new functions.https.HttpsError("failed-precondition", `La captura no se completó (status: ${captureStatus}).`);
+  }
+  if (capturedCurrency !== "USD") {
+    throw new functions.https.HttpsError("failed-precondition", `Moneda inesperada en la captura: ${capturedCurrency}.`);
+  }
+  // El monto capturado debe coincidir con el recalculado server-side (tolerancia 1 céntimo
+  // por redondeos de PayPal). Si difiere, NO se marca el pedido pagado.
+  if (Math.abs(Number(capturedValue) - Number(expectedUsd)) > 0.01) {
+    console.error(
+      `capturePaypalOrderSecure: monto capturado (${capturedValue}) != esperado (${expectedUsd}) ` +
+      `para pedido ${pedidoId}.`
+    );
+    throw new functions.https.HttpsError("failed-precondition", "El monto capturado no coincide con el del pedido.");
+  }
+  if (refId && String(refId) !== String(pedidoId)) {
+    console.error(`capturePaypalOrderSecure: reference_id (${refId}) != pedidoId (${pedidoId}).`);
+    throw new functions.https.HttpsError("failed-precondition", "La orden de PayPal no corresponde a este pedido.");
+  }
+
+  // 3) Marcar el pedido como pagado en pedidos_web (ERP), idempotente por captureId.
+  try {
+    const erpDb = getErpDb();
+    if (erpDb && pedidoId) {
+      const pedidoRef = erpDb.collection("pedidos_web").doc(String(pedidoId));
+      await erpDb.runTransaction(async (t) => {
+        const snap = await t.get(pedidoRef);
+        if (!snap.exists) {
+          console.warn(`capturePaypalOrderSecure: pedido ${pedidoId} no existe en pedidos_web.`);
+          return;
+        }
+        const d = snap.data() || {};
+        // Idempotente: si ya está pagado por esta captura, no se reescribe.
+        if (d.pagado === true && d.paypalCaptureId === String(captureId)) {
+          return;
+        }
+        t.set(pedidoRef, {
+          pagado: true,
+          estadoPago: "pagado",
+          conDeuda: false,
+          montoDeuda: 0,
+          montoPendiente: 0,
+          paypalOrderId: String(orderID),
+          paypalCaptureId: captureId ? String(captureId) : null,
+          montoPagadoUsd: capturedValue,
+          pagadoAt: FieldValue.serverTimestamp(),
+          metodoPago: "paypal",
+        }, { merge: true });
+      });
+    } else {
+      console.warn("capturePaypalOrderSecure: ERP no disponible; no se pudo marcar el pedido (el cobro YA se capturó).");
+    }
+  } catch (e) {
+    // El cobro ya está capturado en PayPal: no se hace fallar al cliente por un
+    // fallo al escribir el pedido. Se registra para reconciliación manual.
+    console.error("capturePaypalOrderSecure: el cobro se capturó pero falló la actualización del pedido:", e);
+  }
+
+  return {
+    success: true,
+    status: "COMPLETED",
+    captureId,
+    amountUsd: capturedValue,
+    pedidoId: String(pedidoId),
+  };
 });

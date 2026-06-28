@@ -74,8 +74,12 @@ const AdminUsuariosAnalyticsPage = () => {
       if (error) throw new Error(error);
       return data;
     },
-    refetchInterval: 15000,
-    refetchIntervalInBackground: true,
+    // Fase 1 — bajar la frecuencia de polling para cortar ~75% de las lecturas del dashboard.
+    // Antes: refetch cada 15s incluso en segundo plano. Ahora: cada 2 min y solo con la pestaña activa.
+    refetchInterval: 120000,
+    refetchIntervalInBackground: false,
+    // Evita refetch redundante al re-montar/enfocar dentro de la ventana de frescura.
+    staleTime: 60000,
   });
 
   const userInfoQuery = useQuery({

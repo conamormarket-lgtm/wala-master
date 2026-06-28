@@ -37,6 +37,57 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define,
     server: { port: 3000, open: false },
-    build: { outDir: 'build' }, // misma carpeta que CRA (Vercel/Firebase ya la detectan)
+    build: {
+      outDir: 'build', // misma carpeta que CRA (Vercel/Firebase ya la detectan)
+      // Fase 1 — partir el bundle monolítico (~2.25MB) en chunks vendor por librería grande.
+      // Es puramente aditivo: no cambia el código de la app, solo cómo Rollup agrupa node_modules.
+      // Cada lib pesada va a su propio chunk para que el navegador cargue en paralelo y cachee mejor.
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            // Solo nos interesan las dependencias de terceros.
+            if (!id.includes('node_modules')) return undefined;
+
+            // React core + router juntos (se usan en todas las rutas).
+            if (
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/react-router') || // react-router y react-router-dom
+              id.includes('node_modules/scheduler/')      // dependencia interna de react-dom
+            ) {
+              return 'react-vendor';
+            }
+
+            // Firebase (auth, firestore, storage, messaging, etc.) — muy pesado.
+            if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
+              return 'firebase-vendor';
+            }
+
+            // Recharts y su dependencia de gráficos d3.
+            if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) {
+              return 'charts';
+            }
+
+            // Animaciones.
+            if (id.includes('node_modules/framer-motion')) {
+              return 'motion';
+            }
+
+            // PayPal SDK (solo se necesita en checkout).
+            if (id.includes('node_modules/@paypal')) {
+              return 'paypal';
+            }
+
+            // Fabric (editor de imágenes/canvas), si está presente.
+            if (id.includes('node_modules/fabric')) {
+              return 'fabric';
+            }
+
+            // El resto de node_modules cae en el chunk vendor por defecto de Vite.
+            return undefined;
+          },
+        },
+      },
+    },
   };
 });
