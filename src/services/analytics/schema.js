@@ -31,6 +31,10 @@ export const ANALYTICS_EVENT_TYPES = {
   MINIGAME_COMPLETE: 'minigame_complete',
   MISSION_COMPLETE: 'mission_complete',
   WISHLIST_ADD: 'wishlist_add',
+  // Observabilidad (Fase 4): errores de cliente y Web Vitals.
+  // Se registran fire-and-forget; no contienen PII (solo message/stack/url/ua).
+  CLIENT_ERROR: 'client_error',
+  WEB_VITAL: 'web_vital',
 };
 
 export const ANALYTICS_KEYS = {

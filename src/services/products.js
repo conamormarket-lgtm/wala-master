@@ -17,6 +17,43 @@ export const generateProductId = () => {
   return doc(collection(db, COLLECTION)).id;
 };
 
+// ── BÚSQUEDA POR FIRESTORE (campos derivados, ADITIVOS) ──────────────────────
+// Normaliza texto para búsqueda: minúsculas + sin tildes/diacríticos. Es la
+// MISMA transformación que aplica el servicio de búsqueda al término del usuario,
+// para que el prefijo (where >= q & < q+'') y el array-contains coincidan.
+// IMPORTANTE: debe quedar idéntica a la de scripts/backfill-search-tokens.js.
+export const normalizeSearchText = (s) =>
+  String(s ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // quita diacríticos (tildes, ñ→n se mantiene aparte)
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// Construye los tokens/prefijos para array-contains a partir del nombre + marca
+// (+ cualquier texto extra). Para cada palabra genera sus prefijos desde 2 chars
+// (ej. "polo" → po, pol, polo) y también la palabra completa. Así array-contains
+// de un prefijo del usuario encuentra el producto sin escanear todo el catálogo.
+// Límite defensivo de tamaño para no inflar el doc (Firestore: 1MiB/doc).
+const MAX_SEARCH_TOKENS = 60;
+const MIN_TOKEN_LEN = 2;
+const MAX_PREFIX_LEN = 12;
+export const buildSearchTokens = (...parts) => {
+  const text = parts.map((p) => normalizeSearchText(p)).filter(Boolean).join(' ');
+  if (!text) return [];
+  const words = Array.from(new Set(text.split(' ').filter((w) => w.length >= MIN_TOKEN_LEN)));
+  const tokens = new Set();
+  for (const w of words) {
+    const upper = Math.min(w.length, MAX_PREFIX_LEN);
+    for (let len = MIN_TOKEN_LEN; len <= upper; len++) {
+      tokens.add(w.slice(0, len));
+    }
+    if (w.length > MAX_PREFIX_LEN) tokens.add(w); // conserva palabras largas completas
+    if (tokens.size >= MAX_SEARCH_TOKENS) break;
+  }
+  return Array.from(tokens).slice(0, MAX_SEARCH_TOKENS);
+};
+
 // Tolerante a objetos/strings: extrae un ID string limpio de categorías/colecciones.
 // Soporta docs viejos corruptos ([{id}], ['[object Object]']) y guardados nuevos (string).
 const toId = (c) => {
@@ -95,7 +132,7 @@ function normalizeVariantItem(item, index) {
  * - Migra formato viejo: variants.colors + imagesByColor -> variants[].
  * - Deriva images e imagesByColor para compatibilidad con tienda/editor.
  */
-function normalizeProductForRead(doc) {
+export function normalizeProductForRead(doc) {
   if (!doc || typeof doc !== 'object') return doc;
   const customizationViews = Array.isArray(doc.customizationViews)
     ? doc.customizationViews.map(normalizeCustomizationView).filter(Boolean)
@@ -923,8 +960,18 @@ function normalizeProductPayload(data) {
 
   const visible = data.visible !== false;
 
+  // Campos de búsqueda derivados (ADITIVOS): nombre normalizado para query por
+  // prefijo y tokens para array-contains. El nombre final (con fallback) es el
+  // que se indexa, para que coincida con lo que se muestra. Se usan brandId y
+  // productType como texto extra de tokens (búsqueda por marca/tipo).
+  const finalName = (data.name ?? '').toString().trim() || (isComboProduct ? 'Combo' : 'Sin nombre');
+  const nameLower = normalizeSearchText(finalName);
+  const searchTokens = buildSearchTokens(finalName, brandId, productType);
+
   const payload = {
-    name: (data.name ?? '').toString().trim() || (isComboProduct ? 'Combo' : 'Sin nombre'),
+    name: finalName,
+    nameLower,
+    searchTokens,
     categories: categories.length ? categories : [],
     collections: collections.length ? collections : [],
     tags: tags.length ? tags : [],

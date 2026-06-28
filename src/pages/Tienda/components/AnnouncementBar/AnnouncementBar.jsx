@@ -48,7 +48,7 @@ const AnnouncementBar = ({
     const content = (
       <div className={styles.messageContent} style={textStyle}>
         {msg.imageUrl && (
-          <img src={msg.imageUrl} alt="" className={styles.messageIcon} />
+          <img src={msg.imageUrl} alt="" className={styles.messageIcon} decoding="async" />
         )}
         <span style={Object.keys(spanStyle).length ? spanStyle : undefined}>{msg.text}</span>
       </div>

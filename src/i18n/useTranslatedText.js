@@ -8,11 +8,22 @@
 // Clave del diseño: la traducción entra por ESTADO de React. Mientras se resuelve
 // la petición se muestra el texto ORIGINAL, por lo que el DOM nunca se rompe ni
 // queda vacío (a diferencia del widget de Google Translate, que sí lo rompería).
+//
+// Endurecimiento (aditivo, retrocompatible):
+//   - No se llama a la red si target === 'es' o el texto está vacío.
+//   - Se evita re-traducir/parpadear: el estado sólo cambia cuando el valor
+//     resultante realmente cambia (no se hace setState con el mismo string).
+//   - El efecto depende sólo de (text, lang); no provoca renders en bucle.
 // ──────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translateText } from '../services/translate';
+
+// ¿Hace falta traducir? Sólo si hay texto y el idioma destino no es el origen.
+function needsTranslation(text, lang) {
+  return !!text && lang !== 'es';
+}
 
 // Hook: devuelve `text` traducido al idioma actual (string).
 //   - Si lang === 'es' o no hay texto: devuelve el original sin tocar la red.
@@ -20,25 +31,33 @@ import { translateText } from '../services/translate';
 //   - Usa un guard de desmontaje para no hacer setState sobre un componente muerto.
 export function useTranslatedText(text) {
   const { lang } = useLanguage();
-  // Estado inicial = texto original: el render nunca queda vacío.
+
+  // Estado inicial = texto original: el render nunca queda vacío (se sembra una vez).
   const [out, setOut] = useState(text);
 
   useEffect(() => {
-    // Sin traducción necesaria: reflejamos el original y salimos.
-    if (lang === 'es' || !text) {
-      setOut(text);
-      return;
+    // Sin traducción necesaria: reflejamos el original y salimos (cero red).
+    // Sólo hacemos setState si el valor mostrado difiere, para no forzar un render
+    // extra innecesario.
+    if (!needsTranslation(text, lang)) {
+      setOut((prev) => (prev === text ? prev : text));
+      return undefined;
     }
 
     // Guard: si el componente se desmonta (o cambian text/lang) antes de resolver,
     // evitamos actualizar estado obsoleto.
     let activo = true;
 
-    // Mientras resuelve mostramos el original para no parpadear a vacío.
-    setOut(text);
+    // Mientras resuelve mostramos el original para no parpadear a vacío. Si ya es
+    // el original, evitamos un setState redundante.
+    setOut((prev) => (prev === text ? prev : text));
 
+    // translateText nunca lanza: ante fallo total devuelve el texto original.
     translateText(text, lang).then((traducido) => {
-      if (activo) setOut(traducido);
+      if (!activo) return;
+      // Sólo actualizamos si el resultado cambia algo: evita renders inútiles y
+      // posibles bucles si el valor traducido coincide con el original.
+      setOut((prev) => (prev === traducido ? prev : traducido));
     });
 
     return () => {

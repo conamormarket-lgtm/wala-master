@@ -51,6 +51,8 @@ const BrandMarquee = ({ items = [], speed = 15, title = 'Empresas con las que tr
             alt={item.name}
             className={styles.brandImage}
             style={imageStyle}
+            loading="lazy"
+            decoding="async"
           />
         </div>
         {item.name && (

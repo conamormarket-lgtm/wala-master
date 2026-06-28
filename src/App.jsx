@@ -14,6 +14,8 @@ import AdminRoute from './components/AdminRoute/AdminRoute';
 import RouteTracker from './components/analytics/RouteTracker';
 import ReferralTracker from './components/analytics/ReferralTracker';
 import ErrorBoundary from './components/common/ErrorBoundary/ErrorBoundary';
+import AppErrorBoundary from './components/system/AppErrorBoundary';
+import { initObservability } from './services/observability';
 import PageLoading from './components/common/PageLoading/PageLoading';
 import AppPrefetcher from './components/common/AppPrefetcher/AppPrefetcher';
 import NavProgressBar from './components/common/NavProgressBar/NavProgressBar';
@@ -62,6 +64,12 @@ if (typeof window !== 'undefined') {
       reloadOnceForStaleChunk();
     }
   });
+
+  // ── Observabilidad (Fase 4) ──────────────────────────────────────────────
+  // Registra handlers globales de error (window.onerror / unhandledrejection)
+  // y Web Vitals. Es idempotente, fire-and-forget y a prueba de fallos: si algo
+  // sale mal, la app se comporta exactamente como hoy.
+  try { initObservability(); } catch { /* no-op */ }
 }
 
 // ── Páginas secundarias — lazy para no bloquear ──────────
@@ -225,6 +233,7 @@ const GlobalLayout = ({ children }) => {
 
 function App() {
   return (
+    <AppErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <CustomFontsInjector />
       {/* Prefetch silencioso en background cuando el navegador está libre */}
@@ -382,6 +391,7 @@ function App() {
         </LanguageProvider>
       </ToastProvider>
     </QueryClientProvider>
+    </AppErrorBoundary>
   );
 }
 

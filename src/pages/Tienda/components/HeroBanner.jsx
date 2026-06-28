@@ -70,7 +70,7 @@ const HeroBanner = ({ config }) => {
           <>
             {/* Mostrar miniatura mientras carga el video */}
             {!isVideoLoaded && thumbnailUrl && (
-              <img src={thumbnailUrl} alt="Hero thumbnail" className={styles.mediaThumbnail} />
+              <img src={thumbnailUrl} alt="Hero thumbnail" className={styles.mediaThumbnail} decoding="async" />
             )}
             <video
               ref={videoRef}
@@ -84,7 +84,7 @@ const HeroBanner = ({ config }) => {
             />
           </>
         ) : (
-          <img src={mediaUrl} alt={title || 'Hero Banner'} className={styles.mediaElement} />
+          <img src={mediaUrl} alt={title || 'Hero Banner'} className={styles.mediaElement} loading="eager" fetchpriority="high" decoding="async" />
         )}
       </div>
       
