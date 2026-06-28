@@ -355,9 +355,11 @@ function loadCategoriesMap() {
  *      items: [{ productId, qty, price, categoryId?, lineaProducto?, lineId? }]
  *    }
  *
- * Para evitar índices compuestos NO ordenamos ni filtramos por fecha en la query:
- * solo where('type','==','purchase_complete') + limit. El filtro de rango de
- * fechas se hace en memoria.
+ * Con el índice compuesto (type ASC, clientTsMs DESC) ya disponible, la query
+ * filtra y ordena SERVER-SIDE por el rango de fechas (where clientTsMs >= startMs
+ * + orderBy clientTsMs desc), así solo trae los eventos del rango. Si ese índice
+ * fallara (p.ej. aún construyéndose), cae al comportamiento anterior: query simple
+ * where('type','==','purchase_complete') + limit y filtro de fechas en memoria.
  *
  * Reglas clave:
  *  - totalRevenue/totalUnits/totalOrders cuentan TODOS los eventos/items del rango.
@@ -400,23 +402,50 @@ export async function getTopSellingWala({ days = 30, topLimit = 10 } = {}) {
     return { ...empty, error: 'Firestore no disponible' };
   }
 
-  // Query simple (sin orderBy ni rango): evita exigir un índice compuesto.
+  // Rango de fechas. Si un evento no trae fecha reconocible, NO se filtra (se incluye).
+  const endMs = Date.now();
+  const startMs = endMs - days * 24 * 60 * 60 * 1000;
+
+  // Lectura de eventos. Preferimos la query INDEXADA que filtra y ordena por
+  // clientTsMs SERVER-SIDE (índice compuesto type ASC + clientTsMs DESC): así solo
+  // trae los eventos del rango y no se rompe al crecer la colección. Si ese índice
+  // fallara (aún construyéndose, campo ausente, etc.), capturamos y caemos al
+  // comportamiento anterior (query simple + filtro de fechas en memoria) para no
+  // romper el dashboard/Destacados.
+  const coll = collection(db, 'analytics_events');
   let docs = [];
   try {
     const q = query(
-      collection(db, 'analytics_events'),
+      coll,
       where('type', '==', 'purchase_complete'),
-      limit(3000)
+      where('clientTsMs', '>=', startMs),
+      orderBy('clientTsMs', 'desc'),
+      limit(5000)
     );
     const snap = await getDocs(q);
     docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   } catch (err) {
-    return { ...empty, available: false, error: err?.message || 'Error al leer analytics_events' };
+    // Fallback: query simple (sin orderBy ni rango) + filtro de fechas en memoria.
+    console.warn(
+      '[salesAnalytics] Query indexada (clientTsMs) falló, usando fallback:',
+      err?.message
+    );
+    try {
+      const qFallback = query(
+        coll,
+        where('type', '==', 'purchase_complete'),
+        limit(3000)
+      );
+      const snap = await getDocs(qFallback);
+      docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    } catch (err2) {
+      return {
+        ...empty,
+        available: false,
+        error: err2?.message || 'Error al leer analytics_events',
+      };
+    }
   }
-
-  // Rango de fechas. Si un evento no trae fecha reconocible, NO se filtra (se incluye).
-  const endMs = Date.now();
-  const startMs = endMs - days * 24 * 60 * 60 * 1000;
 
   const eventMillis = (ev) => {
     // El campo real es clientTsMs en la raíz; toleramos variantes y eventData.

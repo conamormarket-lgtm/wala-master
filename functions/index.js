@@ -2326,6 +2326,13 @@ exports.computeSegmentsSecure = functions.https.onCall(async (data, context) => 
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;
 
+// ── Pre-agregación analítica diaria (Fase 2, PARTE 1) ─────────────────────────
+// Cron gen2 (00:20 hora Lima) que agrega el día anterior de analytics_events +
+// analytics_sessions en analytics_daily/{YYYY-MM-DD}, más un callable de backfill
+// solo-admin. La lógica vive en ./analyticsDaily (+ ./analyticsAggregations puras).
+exports.aggregateAnalyticsDaily = require('./analyticsDaily').aggregateAnalyticsDaily;
+exports.aggregateAnalyticsDailyBackfill = require('./analyticsDaily').aggregateAnalyticsDailyBackfill;
+
 // ════════════════════════════════════════════════════════════════════════════
 // PAGOS USD / TIPO DE CAMBIO Y WEBHOOK DE CULQI (Fase 0 — economía)
 // Aditivo: no altera el flujo de éxito existente de Culqi/PayPal. Solo añade

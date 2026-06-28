@@ -665,6 +665,43 @@ export async function getUserAnalytics(uid, email) {
   };
 }
 
+// Lectura LIGERA del bloque "en vivo" (realtime), sin las queries PESADAS de
+// getGlobalAnalytics (eventos/sesiones del rango). Pensada para el dashboard
+// cuando la lectura pre-agregada (analytics_daily) ya cubre el resto: así solo
+// hacemos lo mínimo para alimentar el panel "En vivo":
+//   - la query barata de sesiones realtime (ventana de 5 min, tope 150 docs)
+//   - la base de usuarios (para marcar en el detalle qué sesiones son de
+//     usuarios registrados, igual que hace computeRealtimeBlock)
+// Devuelve EXACTAMENTE los mismos campos realtime y la misma forma { data, error }
+// que getGlobalAnalytics, para que el consumidor no distinga la fuente.
+export async function getRealtimeBlock() {
+  const realtimeThreshold = Date.now() - REALTIME_WINDOW_MS;
+
+  const [usersResult, realtimeSessionsResult] = await Promise.all([
+    getUsersBaseList(GLOBAL_USERS_LIMIT),
+    getCollection(
+      ANALYTICS_COLLECTIONS.SESSIONS,
+      [{ field: 'lastSeenAtClientMs', operator: '>=', value: realtimeThreshold }],
+      { field: 'lastSeenAtClientMs', direction: 'desc' },
+      GLOBAL_REALTIME_SESSIONS_LIMIT
+    ),
+  ]);
+
+  const existingUserUids = new Set(
+    (usersResult.data || []).map((u) => u.uid).filter(Boolean)
+  );
+  const realtimeBlock = computeRealtimeBlock(
+    realtimeSessionsResult.data || [],
+    realtimeThreshold,
+    existingUserUids
+  );
+
+  return {
+    data: realtimeBlock,
+    error: usersResult.error || realtimeSessionsResult.error || null,
+  };
+}
+
 export async function getGlobalAnalytics(dateFilter = {}) {
   const { startDateMs, endDateMs } = dateFilter;
   const realtimeThreshold = Date.now() - REALTIME_WINDOW_MS;

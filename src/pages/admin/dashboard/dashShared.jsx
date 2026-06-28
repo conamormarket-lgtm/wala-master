@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { getGlobalAnalytics } from '../../../services/adminAnalytics';
+import { getGlobalAnalytics, getRealtimeBlock } from '../../../services/adminAnalytics';
+import { getAnalyticsDailyRange } from '../../../services/analyticsDaily';
 import { AuroraBackground, GlassButton } from '../../../components/ui';
 import styles from '../AdminDashboard.module.css';
 import extra from './dashShared.extra.module.css';
@@ -136,19 +137,153 @@ export function useDateRange(initialDays = 30) {
   return { rangeDays, setRangeDays, dateRange };
 }
 
+// Campos del bloque "en vivo" que produce computeRealtimeBlock y que la lectura
+// pre-agregada (analytics_daily) NO calcula: cuando la lectura diaria tiene
+// éxito, los tomamos prestados de getRealtimeBlock (lectura LIGERA: solo la query
+// realtime barata + la base de usuarios, sin las queries pesadas del legacy) para
+// que el panel "En vivo" siga funcionando.
+const REALTIME_FIELDS = [
+  'realtimeWindowMs',
+  'realtimeActiveSessions',
+  'realtimeActiveIdentities',
+  'realtimeActiveLoggedUsers',
+  'realtimeActiveRegisteredUsers',
+  'realtimeActiveVisitors',
+  'realtimeSessionsDetails',
+  'realtimeRefreshedAtMs',
+];
+
+function pickRealtime(globalData = {}) {
+  const out = {};
+  REALTIME_FIELDS.forEach((k) => {
+    if (globalData[k] !== undefined) out[k] = globalData[k];
+  });
+  return out;
+}
+
+// FIX 3: métricas que la lectura PRE-AGREGADA (analytics_daily) NO puede derivar
+// porque requieren cruzar sesiones+eventos crudos que el doc diario no desglosa.
+// combineDailyDocs las deja en su valor neutro (bounceRate=0, abandonedCarts=[],
+// totalRegisteredUsers=0). En el legacy SÍ tienen valor, así que dejarlas en 0
+// tras desplegar la CF sería una REGRESIÓN visible. Las rellenamos, SIN queries
+// extra caras, desde el ÚLTIMO resultado legacy (getGlobalAnalytics) que el flujo
+// ya obtuvo y dejó cacheado en react-query para este mismo rango, copiando SOLO
+// estos campos si el snapshot existe.
+const LEGACY_BACKFILL_FIELDS = ['bounceRate', 'abandonedCarts', 'totalRegisteredUsers'];
+
+function pickLegacyBackfill(globalData = {}) {
+  const out = {};
+  LEGACY_BACKFILL_FIELDS.forEach((k) => {
+    if (globalData[k] !== undefined) out[k] = globalData[k];
+  });
+  return out;
+}
+
+// Nº de días del rango a partir de {startDateMs,endDateMs} (para la lectura
+// pre-agregada, que lee 1 doc por día). useDateRange genera el rango como
+// [hoy-rangeDays 00:00, hoy 23:59], por lo que cubre rangeDays+1 claves de día;
+// usamos ceil del span en días para no quedarnos cortos.
+function rangeToDays(dateRange) {
+  const span = (dateRange?.endDateMs || 0) - (dateRange?.startDateMs || 0);
+  const dayMs = 24 * 60 * 60 * 1000;
+  const days = Math.ceil(span / dayMs);
+  return Math.max(1, Number.isFinite(days) ? days : 30);
+}
+
+/**
+ * fetchDashboardGlobal — orquesta la lectura del dashboard con FALLBACK SEGURO:
+ *
+ *   1. Intenta la lectura PRE-AGREGADA (analytics_daily): N lecturas (1/día) +
+ *      el día en curso en vivo, combinadas en el MISMO shape que getGlobalAnalytics.
+ *   2. Si esa lectura devuelve null (no hay docs diarios: la CF aún no se
+ *      desplegó/ejecutó) o LANZA, cae a getGlobalAnalytics legacy (el de hoy),
+ *      SIN romper el dashboard.
+ *   3. Cuando la pre-agregada funciona, fusiona el bloque "en vivo" desde una
+ *      lectura LIGERA (getRealtimeBlock: solo la query realtime barata + la base
+ *      de usuarios) para no perder el panel "En vivo" SIN disparar las queries
+ *      pesadas del legacy (eventos/sesiones del rango).
+ *
+ * Así, desplegar este frontend ANTES de que exista la CF muestra el dashboard
+ * EXACTAMENTE como hoy.
+ *
+ * @param dateRange  {startDateMs,endDateMs}
+ * @param backfill   getter/setter opcional de un snapshot legacy cacheado por
+ *                   react-query (sin coste de red) para el FIX 3. Ver pickLegacyBackfill.
+ */
+async function fetchDashboardGlobal(dateRange, backfill = {}) {
+  const { getLegacySnapshot, setLegacySnapshot } = backfill;
+  try {
+    const daily = await getAnalyticsDailyRange({ days: rangeToDays(dateRange) });
+    if (daily) {
+      // Bloque realtime con lectura LIGERA (solo sesiones en vivo + base de
+      // usuarios), NO el getGlobalAnalytics completo: así no disparamos las
+      // queries pesadas de eventos/sesiones del rango, que ya cubre la lectura
+      // pre-agregada. No rompe si falla: dejamos lo que haya.
+      let realtime = {};
+      try {
+        const live = await getRealtimeBlock();
+        if (!live.error && live.data) realtime = pickRealtime(live.data);
+      } catch {
+        realtime = {};
+      }
+
+      // FIX 3: bounceRate/abandonedCarts/totalRegisteredUsers NO se pueden derivar
+      // de los docs diarios (requieren cruzar sesiones+eventos crudos), y la lectura
+      // LIGERA realtime tampoco los trae; combineDailyDocs los deja neutros (0/[]).
+      // Para no introducir una REGRESIÓN visible (en el legacy SÍ tienen valor), los
+      // rellenamos SIN queries extra caras desde el ÚLTIMO resultado legacy que ya
+      // se obtuvo y quedó cacheado por react-query para este mismo rango (p. ej. tras
+      // un fallback previo). Si no hay snapshot legacy disponible, se conservan los
+      // valores neutros de la pre-agregada (no rompe nada).
+      let legacyBackfill = {};
+      if (typeof getLegacySnapshot === 'function') {
+        const snap = getLegacySnapshot();
+        if (snap) legacyBackfill = pickLegacyBackfill(snap);
+      }
+
+      // Orden de fusión: pre-agregada → backfill legacy → realtime. El backfill
+      // SOLO sobreescribe los 3 campos neutros; si no había snapshot legacy, no
+      // rompe nada y se conservan los valores neutros de la pre-agregada.
+      return { ...daily, ...legacyBackfill, ...realtime };
+    }
+    // daily === null → fallback explícito al legacy.
+  } catch (e) {
+    // Error capturable en la lectura pre-agregada → fallback al legacy.
+    if (typeof console !== 'undefined') {
+      console.warn('[analytics] lectura pre-agregada falló, usando legacy:', e?.message || e);
+    }
+  }
+
+  // FALLBACK: lectura legacy actual (la que el dashboard usa hoy).
+  const res = await getGlobalAnalytics(dateRange);
+  if (res.error) throw new Error(res.error);
+  // Cacheamos el resultado legacy (sin coste extra) para que futuras cargas
+  // pre-agregadas de este rango puedan rellenar los 3 campos del FIX 3.
+  if (typeof setLegacySnapshot === 'function') setLegacySnapshot(res.data);
+  return res.data;
+}
+
 /**
  * useGlobalAnalytics — query global compartida (mismo queryKey por rango que el
  * hub). Sin refetch automático: refresco SOLO manual. staleTime alto para que
  * navegar entre sub-páginas reutilice la caché y no dispare lecturas.
+ *
+ * Lee desde analytics_daily (pre-agregado) con fallback al legacy. El shape de
+ * salida es idéntico al de getGlobalAnalytics, así que ninguna sub-página cambia.
  */
 export function useGlobalAnalytics(dateRange) {
+  const queryClient = useQueryClient();
+  // Snapshot legacy cacheado (sin red) para el FIX 3: clave aparte por rango, que
+  // NO colisiona con la query principal. getLegacySnapshot lo lee; setLegacySnapshot
+  // lo guarda cuando el flujo cae al legacy completo.
+  const legacyKey = ['admin-dashboard-legacy-backfill', dateRange.startDateMs, dateRange.endDateMs];
+  const backfill = {
+    getLegacySnapshot: () => queryClient.getQueryData(legacyKey),
+    setLegacySnapshot: (data) => queryClient.setQueryData(legacyKey, data),
+  };
   return useQuery({
     queryKey: ['admin-dashboard-global', dateRange.startDateMs, dateRange.endDateMs],
-    queryFn: async () => {
-      const res = await getGlobalAnalytics(dateRange);
-      if (res.error) throw new Error(res.error);
-      return res.data;
-    },
+    queryFn: () => fetchDashboardGlobal(dateRange, backfill),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
     refetchInterval: false,

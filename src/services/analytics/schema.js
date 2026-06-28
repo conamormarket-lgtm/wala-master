@@ -3,6 +3,9 @@ export const ANALYTICS_COLLECTIONS = {
   SESSIONS: 'analytics_sessions',
   USER_SUMMARY: 'analytics_user_summary',
   GLOBAL_SUMMARY: 'analytics_global_summary',
+  // Doc por día YA pre-agregado por la CF aggregateAnalyticsDaily (Fase 2).
+  // Clave del doc = día Lima del clientTsMs (YYYY-MM-DD).
+  DAILY: 'analytics_daily',
 };
 
 export const ANALYTICS_EVENT_TYPES = {
