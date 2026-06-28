@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBrands, createBrand, updateBrand, deleteBrand } from '../../services/brands';
 import { getMessage, setMessage } from '../../services/messages';
 import { uploadFile } from '../../services/firebase/storage';
-import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircle } from 'lucide-react';
+import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircle, Boxes } from 'lucide-react';
 import Button from '../../components/common/Button';
 import AdminImageCropper from '../../components/admin/AdminImageCropper/AdminImageCropper';
+import AdminMarcaProductos from './AdminMarcaProductos';
 import styles from './AdminMarcas.module.css';
 
 const hexToRgba = (hex, alpha) => {
@@ -25,6 +26,8 @@ const AdminMarcas = () => {
   const [bgUploading, setBgUploading] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState(null);
+  // Marca cuya gestión de productos está abierta (null = vista normal de identidad).
+  const [managingBrand, setManagingBrand] = useState(null);
 
   const { data: brandsData, isLoading, error } = useQuery({
     queryKey: ['admin-brands'],
@@ -195,6 +198,19 @@ const AdminMarcas = () => {
       setBgUploading(false);
     }
   };
+
+  // Vista de GESTIÓN DE PRODUCTOS de una marca concreta. Sustituye temporalmente
+  // el CRUD de identidad sin desmontarlo; al volver, todo sigue igual.
+  if (managingBrand) {
+    return (
+      <div className={styles.wrapper}>
+        <AdminMarcaProductos
+          brand={managingBrand}
+          onBack={() => setManagingBrand(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrapper}>
@@ -494,6 +510,15 @@ const AdminMarcas = () => {
                     <span className={styles.metaPill}>Orden: {brand.order ?? 0}</span>
                     {brand.whatsappNumber && <span className={styles.metaPill}>📱 {brand.whatsappNumber}</span>}
                   </div>
+                  {/* Entrada a la gestión de productos de esta marca. */}
+                  <button
+                    type="button"
+                    className={styles.manageProductsBtn}
+                    onClick={() => setManagingBrand({ id: brand.id, name: brand.name })}
+                  >
+                    <Boxes size={16} />
+                    Gestionar productos
+                  </button>
                 </div>
               </div>
             </div>

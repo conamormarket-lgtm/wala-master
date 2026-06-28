@@ -1,6 +1,6 @@
 import { getCollection, getDocument, getCollectionPaginated, createDocument, updateDocument, deleteDocument, setDocument } from './firebase/firestore';
 import { deleteFile } from './firebase/storage';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '../constants/marketplace';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';
@@ -592,6 +592,42 @@ export const updateProductField = async (id, partialData) => {
   if (result.error) throw new Error(result.error);
   clearProductCaches();
   return result;
+};
+
+/**
+ * Asignar o quitar la MARCA de un producto (Fase 2 multimarca).
+ *
+ * ESCRITURA PARCIAL DIRECTA del campo `brandId` del doc productos_wala/{id},
+ * SIN pasar por normalizeProductPayload ni por updateDocument. Esto es necesario
+ * porque esa ruta "limpia" los vacíos (emptyStringsToNull: '' -> null y luego
+ * removeEmptyForFirestore: null -> se ELIMINA la clave), de modo que un
+ * brandId:'' NUNCA llegaba como escritura y el campo no se borraba: el producto
+ * seguía asignado a la marca tras recargar (no-op de "Quitar de la marca").
+ *
+ * Con updateDoc la escritura es PARCIAL: solo toca brandId, sin alterar
+ * precio, stock, imágenes, variantes ni ningún otro campo del documento.
+ *
+ * @param {string} id       id del documento productos_wala
+ * @param {string} brandId  id de marca para ASIGNAR; vacío/null para QUITAR
+ * @returns {Promise<{success:true}|{error:string}>}
+ */
+export const setProductBrand = async (id, brandId) => {
+  try {
+    const ref = doc(db, COLLECTION, id);
+    const cleanBrandId = brandId ? String(brandId).trim() : '';
+    if (cleanBrandId) {
+      // Asignar: escribe solo el campo brandId (parcial, no toca el resto).
+      await updateDoc(ref, { brandId: cleanBrandId });
+    } else {
+      // Quitar: REMUEVE el campo brandId del documento. Así getProductsByBrand
+      // (where brandId == marca) deja de traerlo y el producto queda sin marca.
+      await updateDoc(ref, { brandId: deleteField() });
+    }
+    clearProductCaches();
+    return { success: true };
+  } catch (error) {
+    return { error: error?.message || 'No se pudo actualizar la marca del producto.' };
+  }
 };
 
 /**

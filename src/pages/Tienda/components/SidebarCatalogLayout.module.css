@@ -177,6 +177,40 @@
   letter-spacing: 0.5px;
 }
 
+/* ── Encabezado clicable de grupo plegable (acordeón) ──
+   Mantiene el look del h3 (mayúsculas, peso, color) y añade el chevron a la
+   derecha. Solo presentación: el filtrado no cambia. */
+.grupoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.grupoHeader:hover {
+  color: var(--primario, #8b5cf6);
+}
+
+.grupoHeader:focus-visible {
+  outline: 2px solid var(--primario, #8b5cf6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.grupoChevron {
+  font-size: 0.85rem;
+  line-height: 1;
+  color: var(--gris-texto-secundario, #555);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.grupoHeader:hover .grupoChevron {
+  color: var(--primario, #8b5cf6);
+}
+
 .categoryList, .brandList {
   list-style: none;
   padding: 0;

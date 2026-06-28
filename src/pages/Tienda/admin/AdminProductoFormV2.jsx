@@ -87,6 +87,10 @@ const AdminProductoFormV2 = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const urlDraftId = searchParams.get('draftId');
+  // Marca preseleccionada al abrir el formulario desde "Crear producto en {marca}"
+  // (AdminMarcas → /admin/productos/nuevo?brandId=<id>). Solo aplica a productos NUEVOS:
+  // siembra form.brandId sin tocar nada de precios/stock ni la lógica de guardado.
+  const urlBrandId = searchParams.get('brandId') || '';
   const isNew = !id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -100,9 +104,11 @@ const AdminProductoFormV2 = () => {
   // De esta manera, si el usuario recarga la página (F5), se leerá de la URL y reutilizará el mismo borrador.
   useEffect(() => {
     if (isNew && !urlDraftId) {
-      navigate(`?draftId=${draftId}`, { replace: true });
+      // Conservamos brandId en la URL para no perder la marca preseleccionada al inyectar el draftId.
+      const brandParam = urlBrandId ? `&brandId=${urlBrandId}` : '';
+      navigate(`?draftId=${draftId}${brandParam}`, { replace: true });
     }
-  }, [isNew, urlDraftId, draftId, navigate]);
+  }, [isNew, urlDraftId, urlBrandId, draftId, navigate]);
 
   const [form, setForm] = useState({
     name: '',
@@ -282,6 +288,8 @@ const AdminProductoFormV2 = () => {
     setForm(f => {
       const newForm = {
         ...f,
+        // Marca preseleccionada (si se abrió con ?brandId=...); si no, conserva lo que hubiera.
+        brandId: urlBrandId || f.brandId || '',
         defaultVariantId: initialVariantId,
         variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '', sizes: [], sizeLabel: 'Talla', showSizeConfig: false }],
         customizable: false,

@@ -41,6 +41,16 @@ const SidebarCatalogLayout = ({
   const [activeType, setActiveType] = useState(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
+  // ── Grupos desplegables (acordeón) del sidebar ─────────────────────────
+  // Guarda qué grupos están colapsados por id. Solo afecta la PRESENTACIÓN:
+  // el filtrado de productos no cambia. Los grupos largos ('etiquetas',
+  // 'personajes') arrancan colapsados para limpiar el sidebar; el resto abierto.
+  const [gruposColapsados, setGruposColapsados] = useState({
+    etiquetas: true,
+    personajes: true,
+  });
+  const toggleGrupo = (id) => setGruposColapsados(g => ({ ...g, [id]: !g[id] }));
+
   // Prevenir scroll en el body cuando el drawer esté abierto
   useEffect(() => {
     if (isMobileDrawerOpen) {
@@ -165,6 +175,36 @@ const SidebarCatalogLayout = ({
     return true;
   });
 
+  // ── Componente interno: grupo plegable del sidebar (DRY) ───────────────
+  // Renderiza el `.sidebarSection` con un encabezado clicable (h3 + chevron)
+  // que alterna el colapso del grupo, y muestra `children` (la <ul>) solo si
+  // el grupo NO está colapsado. `forzarAbierto` se usa cuando hay un filtro
+  // activo dentro del grupo, para que la selección siempre quede visible.
+  const GrupoSidebar = ({ id, titulo, forzarAbierto = false, children }) => {
+    const abierto = forzarAbierto || !gruposColapsados[id];
+    return (
+      <div className={styles.sidebarSection}>
+        <h3
+          className={styles.grupoHeader}
+          role="button"
+          tabIndex={0}
+          aria-expanded={abierto}
+          onClick={() => toggleGrupo(id)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggleGrupo(id);
+            }
+          }}
+        >
+          <span>{titulo}</span>
+          <span className={styles.grupoChevron} aria-hidden="true">{abierto ? '▾' : '▸'}</span>
+        </h3>
+        {abierto && children}
+      </div>
+    );
+  };
+
   return (
     <div className={styles.catalogWrapper}>
       {title && <h2 className={styles.catalogTitle}>{title}</h2>}
@@ -208,8 +248,7 @@ const SidebarCatalogLayout = ({
             </div>
           )}
 
-          <div className={styles.sidebarSection}>
-            <h3>{t('cat.categorias', 'Categorías')}</h3>
+          <GrupoSidebar id="categorias" titulo={t('cat.categorias', 'Categorías')}>
             <ul className={styles.categoryList}>
               <li
                 className={activeCategory === null ? styles.activeItem : ''}
@@ -227,12 +266,15 @@ const SidebarCatalogLayout = ({
                 </li>
               ))}
             </ul>
-          </div>
+          </GrupoSidebar>
 
           {/* Temporadas: derivadas de las colecciones estacionales (mismo estado activeCollection). */}
           {seasonCollections.length > 0 && (
-            <div className={styles.sidebarSection}>
-              <h3>{t('cat.temporadas', 'Temporadas')}</h3>
+            <GrupoSidebar
+              id="temporadas"
+              titulo={t('cat.temporadas', 'Temporadas')}
+              forzarAbierto={seasonCollections.some(c => c.id === activeCollection)}
+            >
               <ul className={styles.categoryList}>
                 <li className={activeCollection === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, null)}>{t('cat.todas', 'Todas')}</li>
                 {seasonCollections.map(c => (
@@ -241,12 +283,15 @@ const SidebarCatalogLayout = ({
                   </li>
                 ))}
               </ul>
-            </div>
+            </GrupoSidebar>
           )}
 
           {nonSeasonCollections.length > 0 && (
-            <div className={styles.sidebarSection}>
-              <h3>{t('cat.colecciones', 'Colecciones')}</h3>
+            <GrupoSidebar
+              id="colecciones"
+              titulo={t('cat.colecciones', 'Colecciones')}
+              forzarAbierto={nonSeasonCollections.some(c => c.id === activeCollection)}
+            >
               <ul className={styles.categoryList}>
                 <li className={activeCollection === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, null)}>{t('cat.todas', 'Todas')}</li>
                 {nonSeasonCollections.map(c => (
@@ -255,12 +300,15 @@ const SidebarCatalogLayout = ({
                   </li>
                 ))}
               </ul>
-            </div>
+            </GrupoSidebar>
           )}
           
           {(brands || []).length > 0 && (
-            <div className={styles.sidebarSection}>
-              <h3>{t('cat.marcas', 'Marcas')}</h3>
+            <GrupoSidebar
+              id="marcas"
+              titulo={t('cat.marcas', 'Marcas')}
+              forzarAbierto={!!activeBrand}
+            >
               <ul className={styles.brandList}>
                 <li className={activeBrand === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveBrand, null)}>{t('cat.todas', 'Todas')}</li>
                 {(brands || []).map(b => (
@@ -269,13 +317,16 @@ const SidebarCatalogLayout = ({
                   </li>
                 ))}
               </ul>
-            </div>
+            </GrupoSidebar>
           )}
           
 
           {(productTypes || []).length > 0 && (
-            <div className={styles.sidebarSection}>
-              <h3>{t('cat.tipoProducto', 'Tipo de Producto')}</h3>
+            <GrupoSidebar
+              id="tipoProducto"
+              titulo={t('cat.tipoProducto', 'Tipo de Producto')}
+              forzarAbierto={!!activeType}
+            >
               <ul className={styles.categoryList}>
                 <li className={activeType === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveType, null)}>{t('cat.todos', 'Todos')}</li>
                 {(productTypes || []).map(pt => (
@@ -284,12 +335,15 @@ const SidebarCatalogLayout = ({
                   </li>
                 ))}
               </ul>
-            </div>
+            </GrupoSidebar>
           )}
 
           {(tags || []).length > 0 && (
-            <div className={styles.sidebarSection}>
-              <h3>{t('cat.etiquetas', 'Etiquetas')}</h3>
+            <GrupoSidebar
+              id="etiquetas"
+              titulo={t('cat.etiquetas', 'Etiquetas')}
+              forzarAbierto={!!activeTag}
+            >
               <ul className={styles.categoryList}>
                 <li className={activeTag === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveTag, null)}>{t('cat.todas', 'Todas')}</li>
                 {(tags || []).map(tag => (
@@ -298,12 +352,15 @@ const SidebarCatalogLayout = ({
                   </li>
                 ))}
               </ul>
-            </div>
+            </GrupoSidebar>
           )}
 
           {(characters || []).length > 0 && (
-            <div className={styles.sidebarSection}>
-              <h3>{t('cat.personajes', 'Personajes')}</h3>
+            <GrupoSidebar
+              id="personajes"
+              titulo={t('cat.personajes', 'Personajes')}
+              forzarAbierto={!!activeCharacter}
+            >
               <ul className={styles.categoryList}>
                 <li className={activeCharacter === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCharacter, null)}>{t('cat.todos', 'Todos')}</li>
                 {(characters || []).map(c => (
@@ -312,7 +369,7 @@ const SidebarCatalogLayout = ({
                   </li>
                 ))}
               </ul>
-            </div>
+            </GrupoSidebar>
           )}
         </aside>
 
