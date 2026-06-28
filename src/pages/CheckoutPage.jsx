@@ -769,16 +769,35 @@ const CheckoutPage = () => {
         };
 
         // ── 1. Guardar en pedidos_web (colección separada, para validación previa) ──
+        // Esta escritura es OBLIGATORIA: si falla, el pedido NO queda registrado en
+        // pedidos_web y el cliente creería que compró sin que exista nada. Por eso
+        // marcamos webOrderOk y, si es false, abortamos ANTES de avanzar al paso de
+        // pago (no abrimos WhatsApp ni mostramos Culqi/PayPal fingiendo éxito).
         let webOrderId = null;
+        let webOrderOk = false;
         try {
           const { id, error: webErr } = await createWebOrder(webOrderPayload);
           if (webErr) {
             console.warn('No se pudo guardar en pedidos_web:', webErr);
-          } else {
+          } else if (id) {
             webOrderId = id;
+            webOrderOk = true;
+          } else {
+            // createWebOrder volvió sin error pero tampoco con id: lo tratamos como fallo.
+            console.warn('createWebOrder no devolvió id; se trata como fallo.');
           }
         } catch (erpErr) {
           console.warn('Error al conectar con ERP Firebase:', erpErr);
+        }
+
+        // Si la escritura del pedido NO tuvo éxito, avisamos al usuario con el MISMO
+        // mecanismo de errores del checkout (toast.error) y NO avanzamos al paso de
+        // pago. Así no abrimos WhatsApp ni mostramos Culqi/PayPal como si todo OK.
+        if (!webOrderOk || !webOrderId) {
+          toast.error('No pudimos registrar tu pedido, intenta de nuevo o contáctanos.');
+          // El `finally` del try externo se encarga de setProcessing(false); aquí solo
+          // abortamos para NO avanzar al paso de pago cuando el pedido no se guardó.
+          return;
         }
 
         // ── 1.5 Procesar Regalos de Wishlist ──────────────────────────────

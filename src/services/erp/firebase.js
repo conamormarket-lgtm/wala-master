@@ -128,7 +128,10 @@ export async function searchOrdersByDniInERP(dni) {
     return { data: null, error: 'Firestore del ERP no está disponible' };
   }
 
-  const dniNorm = dni != null ? String(dni).trim().replace(/\s/g, '') : '';
+  // Valor crudo del perfil (sin normalizar) para usarlo como fallback con
+  // pedidos históricos que se guardaron antes de normalizar el documento.
+  const dniRaw = dni != null ? String(dni) : '';
+  const dniNorm = dniRaw.trim().replace(/\s/g, '');
   if (!dniNorm) {
     return { data: [], error: null };
   }
@@ -150,6 +153,25 @@ export async function searchOrdersByDniInERP(dni) {
       pedidos = snapDni.docs.map(d => ({ id: d.id, ...d.data() }));
     }
 
+    // Fallback: si nada casó con el documento normalizado, reintenta con el
+    // dni CRUDO del perfil (pedidos antiguos guardados sin normalizar).
+    if (pedidos.length === 0 && dniRaw && dniRaw !== dniNorm) {
+      const qRaw = query(
+        collection(erpDb, 'pedidos'),
+        where('clienteNumeroDocumento', '==', dniRaw)
+      );
+      const snapRaw = await getDocs(qRaw);
+      pedidos = snapRaw.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (pedidos.length === 0) {
+        const qRawDni = query(
+          collection(erpDb, 'pedidos'),
+          where('dni', '==', dniRaw)
+        );
+        const snapRawDni = await getDocs(qRawDni);
+        pedidos = snapRawDni.docs.map(d => ({ id: d.id, ...d.data() }));
+      }
+    }
+
     // Buscar también en pedidos_web (pedidos recientes aún no validados por admin)
     const qWeb = query(
       collection(erpDb, 'pedidos_web'),
@@ -165,6 +187,24 @@ export async function searchOrdersByDniInERP(dni) {
       );
       const snapWebDni = await getDocs(qWebDni);
       pedidosWeb = snapWebDni.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    // Fallback en pedidos_web con el dni CRUDO (solicitudes web antiguas).
+    if (pedidosWeb.length === 0 && dniRaw && dniRaw !== dniNorm) {
+      const qWebRaw = query(
+        collection(erpDb, 'pedidos_web'),
+        where('clienteNumeroDocumento', '==', dniRaw)
+      );
+      const snapWebRaw = await getDocs(qWebRaw);
+      pedidosWeb = snapWebRaw.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (pedidosWeb.length === 0) {
+        const qWebRawDni = query(
+          collection(erpDb, 'pedidos_web'),
+          where('dni', '==', dniRaw)
+        );
+        const snapWebRawDni = await getDocs(qWebRawDni);
+        pedidosWeb = snapWebRawDni.docs.map(d => ({ id: d.id, ...d.data() }));
+      }
     }
 
     pedidos = [...pedidos, ...pedidosWeb];
@@ -357,6 +397,18 @@ export async function createWebOrder(orderData) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
+
+    // Normaliza el documento igual que createOrderInERP para que el filtro
+    // exacto de "Mis Compras" (searchOrdersByDniInERP) case con lo guardado.
+    // Se conserva el valor tecleado original en dniRaw (CE/pasaporte tal cual).
+    const docRaw = orderData.clienteNumeroDocumento || orderData.dni || '';
+    const docNorm = String(docRaw).trim().replace(/\s/g, '');
+    if (docNorm) {
+      orderPayload.dniRaw = docRaw; // valor original sin normalizar (no se pierde)
+      orderPayload.clienteNumeroDocumento = docNorm;
+      orderPayload.dni = docNorm;
+    }
+    // Si el documento viene vacío no se fuerza: se deja como está.
 
     const docRef = await addDoc(collection(erpDb, 'pedidos_web'), orderPayload);
     return { id: docRef.id, error: null };
