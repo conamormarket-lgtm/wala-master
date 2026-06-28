@@ -25,6 +25,8 @@ const CompleteProfilePage = () => {
   const [documento, setDocumento] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  // Cumpleaños PROPIO del usuario (opcional). Se precarga si el perfil ya lo tiene.
+  const [birthDate, setBirthDate] = useState('');
 
   const isPE = isPeru(country);
   // Lista de tipos de documento según país (Perú: DNI/CE/Pasaporte; extranjero: null).
@@ -56,6 +58,8 @@ const CompleteProfilePage = () => {
       setFullName(userProfile.displayName || user.displayName || '');
       // Si el perfil ya trae país (p. ej. registro previo), respétalo.
       if (userProfile.country) setCountry(userProfile.country);
+      // Precarga el cumpleaños propio si ya existe en el perfil.
+      if (userProfile.birthDate) setBirthDate(userProfile.birthDate);
     }
   }, [user, userProfile, authLoading, navigate]);
 
@@ -101,6 +105,11 @@ const CompleteProfilePage = () => {
       accessSystem: 'portal_clientes',
       accountOrigin: userProfile?.accountOrigin || 'google_auth',
     };
+    // Cumpleaños propio: campo OPCIONAL. Solo se escribe si hay valor,
+    // para no sobrescribir uno existente con vacío. NO bloquea el registro.
+    if (birthDate) {
+      updates.birthDate = birthDate;
+    }
     if (isPE) {
       updates.phone = phone.replace(/\D/g, '');
     } else {
@@ -252,6 +261,21 @@ const CompleteProfilePage = () => {
                 )}
               </div>
             )}
+            {/* Cumpleaños propio: OPCIONAL, no bloquea el registro. */}
+            <div className={styles.formGroup}>
+              <label htmlFor="birthDate">Tu cumpleaños 🎂 (para sorprenderte con regalos)</label>
+              <input
+                type="date"
+                id="birthDate"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                disabled={loading}
+              />
+              {/* Si venía precargado del perfil, invitamos a confirmar la fecha. */}
+              {userProfile?.birthDate && (
+                <span className={styles.fieldHint}>¿Es correcta esta fecha?</span>
+              )}
+            </div>
             {error && (
               <div className={styles.errorMessage}>
                 <span className={styles.errorIcon}>⚠</span>

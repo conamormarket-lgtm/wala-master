@@ -2455,7 +2455,8 @@ exports.updateFxRate = onSchedule(
  *         type: "Cumpleaños"|"Aniversario"|"Fecha Especial",
  *         date: "YYYY-MM-DD",                // fecha de entrega seleccionable
  *         label: "Cumpleaños de mamá",       // customName || type (texto humano)
- *         recipientName: "Mamá"              // nombre del recipient (contexto)
+ *         recipientName: "Mamá",             // nombre del recipient (contexto)
+ *         relation: "Padre/Madre"            // roleDisplay del recipient (contexto)
  *       }, ...
  *     ],
  *     wishlistItems: [                       // items de la wishlist del dueño
@@ -2572,6 +2573,9 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
         recipients.forEach((recipient) => {
           if (!recipient || !Array.isArray(recipient.events)) return;
           const recipientName = recipient.name || "";
+          // Relación con el dueño ("Padre/Madre", "Hijo/a"...); dato público,
+          // mismo criterio que recipientName, para mostrar "(<relación>)".
+          const recipientRelation = recipient.roleDisplay || "";
           recipient.events.forEach((event) => {
             if (!event || !event.date) return; // sin fecha no es seleccionable
             dates.push({
@@ -2580,9 +2584,24 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
               // label = texto humano para la card; customName si lo definió.
               label: event.customName || event.type || "Fecha Especial",
               recipientName, // contexto ("Cumpleaños de Mamá"); no es PII sensible
+              relation: recipientRelation, // contexto ("(Padre/Madre)"); no es PII sensible
             });
           });
         });
+
+        // ── Cumpleaños PROPIO del dueño (owner.birthDate) ──────────────────
+        // /regalar es para que REGALEN al dueño, así que su propio cumpleaños
+        // debe aparecer como fecha regalable (de PRIMERO), junto a los de
+        // terceros, para que también le puedan auto-regalar en su día.
+        if (typeof owner.birthDate === "string" && /^\d{4}-\d{2}-\d{2}/.test(owner.birthDate)) {
+          dates.unshift({
+            type: "Cumpleaños",
+            date: owner.birthDate,
+            label: "Cumpleaños",
+            recipientName: ownerName, // el propio dueño (el festejado)
+            relation: "", // sin relación: queda "Cumpleaños de <dueño>"
+          });
+        }
       } else {
         // El código resolvió a un userId que ya no tiene perfil → no existe.
         return { ok: false };

@@ -53,13 +53,14 @@ const formatearFecha = (iso) => {
   return `${d}/${mes}/${y}`;
 };
 
-// Construye el label humano de una fecha si la CF no lo trae ya armado.
-// Ej: "Cumpleaños de Mamá" o, si no hay nombre, solo el tipo de evento.
+// Compone el label humano de una fecha a partir de lo que envía la CF:
+// base (label/type) + nombre del tercero + relación con el dueño.
+// Ej: "Cumpleaños" → "Cumpleaños de Mamá (Padre/Madre)".
 const construirLabel = (date) => {
-  if (date?.label) return date.label;
-  const tipo = date?.type || 'Fecha especial';
-  const nombre = date?.customName ? ` de ${date.customName}` : '';
-  return `${tipo}${nombre}`;
+  const base = date?.label || date?.type || 'Fecha especial';
+  const nombre = date?.recipientName ? ` de ${date.recipientName}` : '';
+  const rel = date?.relation ? ` (${date.relation})` : '';
+  return `${base}${nombre}${rel}`;
 };
 
 // =========================================================================

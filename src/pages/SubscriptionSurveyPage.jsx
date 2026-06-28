@@ -37,6 +37,10 @@ const SubscriptionSurveyPage = () => {
   const [animationDir, setAnimationDir] = useState('Right');
   
   const [basicAnswers, setBasicAnswers] = useState({});
+
+  // Cumpleaños PROPIO del usuario (no de terceros). Opcional.
+  // Se precarga si el perfil ya lo tiene para que pueda confirmarlo/editarlo.
+  const [ownBirthDate, setOwnBirthDate] = useState('');
   
   // Selección de Roles
   const [selectedRoles, setSelectedRoles] = useState({
@@ -67,6 +71,11 @@ const SubscriptionSurveyPage = () => {
     };
     fetchConfig();
   }, []);
+
+  // Precarga el cumpleaños propio si ya existe en el perfil.
+  useEffect(() => {
+    if (userProfile?.birthDate) setOwnBirthDate(userProfile.birthDate);
+  }, [userProfile?.birthDate]);
 
   const handleSkip = async () => {
     try {
@@ -142,7 +151,8 @@ const SubscriptionSurveyPage = () => {
     if (!rec.gender || rec.gender.trim() === '') return false;
     
     for (const ev of rec.events) {
-      const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.label === 'Otro Evento');
+      // Fallback al tipo 'otro' (id) si el label no coincide; evita undefined.
+      const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.id === 'otro');
       if (evTypeConfig.needsDate && (!ev.date || ev.date.trim() === '')) {
         return false;
       }
@@ -203,14 +213,16 @@ const SubscriptionSurveyPage = () => {
   const updateEvent = (index, field, value) => {
     setTempRecipient(prev => {
       const newEvents = [...prev.events];
-      newEvents[index][field] = value;
-      
+      // Copia el objeto evento antes de modificarlo (inmutabilidad: no mutar prev).
+      const updatedEvent = { ...newEvents[index], [field]: value };
+
       if (field === 'type') {
         const evTypeConfig = EVENT_TYPES.find(e => e.label === value) || EVENT_TYPES.find(e => e.id === 'otro');
         if (evTypeConfig && !evTypeConfig.needsDate) {
-          newEvents[index].date = '';
+          updatedEvent.date = '';
         }
       }
+      newEvents[index] = updatedEvent;
       return { ...prev, events: newEvents };
     });
   };
@@ -286,12 +298,19 @@ const SubscriptionSurveyPage = () => {
         coinsEarned = eventosPagados * 5;
       }
       
-      await updateUserProfile({ 
-        surveyBasicData: basicAnswers, 
+      // Cumpleaños propio: solo se incluye si hay valor, para NO sobrescribir
+      // con vacío un birthDate ya existente en el perfil.
+      const profileUpdates = {
+        surveyBasicData: basicAnswers,
         giftRoles: selectedRoles,
-        giftRecipients: validRecipients, 
+        giftRecipients: validRecipients,
         hasCompletedSurvey: true
-      });
+      };
+      if (ownBirthDate) {
+        profileUpdates.birthDate = ownBirthDate;
+      }
+
+      await updateUserProfile(profileUpdates);
 
       if (coinsEarned > 0) {
         // H-06: el bono se acredita server-side (idempotente, con tope anti-abuso).
@@ -382,6 +401,16 @@ const SubscriptionSurveyPage = () => {
                     )}
                   </div>
                 ))}
+                {/* Cumpleaños PROPIO del usuario (opcional). No bloquea el avance. */}
+                <div className={styles.fieldGroup}>
+                  <label>Tu cumpleaños 🎂</label>
+                  <input
+                    type="date"
+                    className={styles.input}
+                    value={ownBirthDate}
+                    onChange={e => setOwnBirthDate(e.target.value)}
+                  />
+                </div>
               </div>
               <div className={styles.actions}>
                 <button type="button" onClick={goBack} className={styles.skipBtn}>Atrás</button>
