@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../../../contexts/CartContext';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
+import { T } from '../../../../i18n/useTranslatedText';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import styles from './CartItem.module.css';
 
@@ -44,7 +45,8 @@ const CartItem = ({ item }) => {
       
       <div className={styles.details}>
         <Link to={`/producto/${item.productId}`} className={styles.name}>
-          {item.productName}
+          {/* Nombre dinámico del producto (viene de la BD): se traduce con <T>. */}
+          <T>{item.productName}</T>
           {isCombo && <span className={styles.comboBadge}>Combo</span>}
         </Link>
         

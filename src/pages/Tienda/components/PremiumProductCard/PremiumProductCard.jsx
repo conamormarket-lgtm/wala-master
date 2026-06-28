@@ -9,6 +9,7 @@ import { useCart } from '../../../../contexts/CartContext';
 import { useWishlist } from '../../../../contexts/WishlistContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useLanguage } from '../../../../contexts/LanguageContext';
+import { T } from '../../../../i18n/useTranslatedText';
 import { toThumbnailImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
@@ -216,20 +217,20 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
         {/* Badges - Nude Project / Gymshark style */}
         <div className={styles.badges}>
           {(typeof product.inStock === 'number' && product.inStock > 0) && (
-            <span className={styles.badgeSold}>{product.inStock} disponibles</span>
+            <span className={styles.badgeSold}>{product.inStock} {t('card.disponibles', 'disponibles')}</span>
           )}
-          {isNew && <span className={styles.badgeNew}>NEW IN</span>}
+          {isNew && <span className={styles.badgeNew}>{t('card.nuevo', 'NEW IN')}</span>}
           {product.salePrice && (
-            <Badge tone="danger" variant="solid" size="sm">SALE</Badge>
+            <Badge tone="danger" variant="solid" size="sm">{t('card.oferta', 'SALE')}</Badge>
           )}
-          {!product.inStock && <span className={styles.badgeOut}>SOLD OUT</span>}
+          {!product.inStock && <span className={styles.badgeOut}>{t('card.agotado', 'Agotado')}</span>}
         </div>
 
         {/* Favorite Icon */}
-        <button 
+        <button
           className={`${styles.favoriteBtn} ${isFav ? styles.favoriteBtnActive : ''}`}
           onClick={handleToggleFavorite}
-          aria-label="Agregar a favoritos"
+          aria-label={t('card.favorito', 'Agregar a favoritos')}
         >
           <svg viewBox="0 0 24 24" fill={isFav ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -251,7 +252,8 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
 
       <div className={styles.info}>
         <div className={styles.titleRow}>
-          <h3 className={styles.title}>{product.name}</h3>
+          {/* Nombre dinámico (BD): se traduce con <T> manteniendo español como fallback. */}
+          <h3 className={styles.title}><T>{product.name}</T></h3>
           <div className={styles.priceContainer}>
             {product.salePrice ? (
               <>
@@ -265,8 +267,11 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
         </div>
         
         {/* Optional: color swatches or subtle description could go here */}
+        {/* Categoría dinámica (BD) -> <T>; fallbacks estáticos -> t(). */}
         <div className={styles.subtitle}>
-          {categories.length > 0 ? categories[0].name : (product.customizable ? 'Customizable' : 'Essential')}
+          {categories.length > 0
+            ? <T>{categories[0].name}</T>
+            : (product.customizable ? t('card.personalizable', 'Personalizable') : t('card.essential', 'Essential'))}
         </div>
       </div>
     </MotionLink>

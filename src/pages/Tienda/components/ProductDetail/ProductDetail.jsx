@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useCart } from '../../../../contexts/CartContext';
+import { useLanguage } from '../../../../contexts/LanguageContext';
+import { T } from '../../../../i18n/useTranslatedText';
 import { createReferralShare } from '../../../../services/referrals';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
@@ -157,6 +159,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const { addToCart } = useCart();
   const { user, userProfile } = useAuth();
   const toast = useGlobalToast();
+  const { t } = useLanguage();
 
   const [variantIdx, setVariantIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
@@ -341,7 +344,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
     const sizeUI = cSizes.length > 0 && (
       <div className={styles.selectorGroup}>
-        <span className={styles.selectorLabel}>{hasColors ? (selVar?.sizeLabel || "Talla") : "Talla"}</span>
+        <span className={styles.selectorLabel}>{hasColors && selVar?.sizeLabel ? <T>{selVar.sizeLabel}</T> : t('card.talla', 'Talla')}</span>
         <DraggableContainer className={styles.pillRow}>
           {cSizes.map(s => (
             <button key={s} className={`${styles.sizePill} ${sel.size === s ? styles.sizePillActive : ''}`}
@@ -355,7 +358,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
     const colorUI = hasColors && (
       <div className={styles.selectorGroup}>
-        <span className={styles.selectorLabel}>Color: <em>{sel.color || vars[0]?.name}</em></span>
+        <span className={styles.selectorLabel}>{t('card.color', 'Color')}: <em><T>{sel.color || vars[0]?.name}</T></em></span>
         <DraggableContainer className={styles.swatchRow}>
           {vars.map(v => {
             const hex = v.colorHex || getFallbackHex(v.name);
@@ -381,7 +384,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
   // ── Render
   if (loading) return <Skeleton />;
-  if (!product) return <div className={styles.notFound}>Producto no encontrado.</div>;
+  if (!product) return <div className={styles.notFound}>{t('card.noEncontrado', 'Producto no encontrado.')}</div>;
 
   const activeImage = images[imgIdx] || images[0];
   const showCombo = isCombo && Boolean(activeImage?.isComboView);
@@ -413,28 +416,28 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
         {/* ── Info ── */}
         <div className={styles.infoCol}>
 
-          {/* Breadcrumb */}
+          {/* Breadcrumb: "Inicio" estático -> t(); categoría y nombre dinámicos -> <T>. */}
           <nav className={styles.breadcrumb}>
-            <a href="/">Inicio</a>
+            <a href="/">{t('card.inicio', 'Inicio')}</a>
             <span>/</span>
-            {category && <><a href="/">{category}</a><span>/</span></>}
-            <span>{product.name}</span>
+            {category && <><a href="/"><T>{category}</T></a><span>/</span></>}
+            <span><T>{product.name}</T></span>
           </nav>
 
-          {/* Title + share */}
+          {/* Title + share — nombre dinámico (BD) con <T>. */}
           <div className={styles.titleRow}>
-            <h1 className={styles.pdpTitle}>{product.name}</h1>
+            <h1 className={styles.pdpTitle}><T>{product.name}</T></h1>
             {user && (
-              <button className={styles.shareIconBtn} onClick={handleShare} disabled={sharing} title="Compartir y ganar monedas">
+              <button className={styles.shareIconBtn} onClick={handleShare} disabled={sharing} title={t('card.compartirGanar', 'Compartir y ganar monedas')}>
                 <Share2 size={16} strokeWidth={1.8} />
               </button>
             )}
           </div>
 
-          {/* Brand */}
+          {/* Brand — nombre de marca dinámico (BD) con <T>. */}
           {brand?.name && (
             <span className={styles.brandBadge} style={brand.bgColor ? { background: brand.bgColor } : {}}>
-              {brand.name}
+              <T>{brand.name}</T>
             </span>
           )}
 
@@ -451,10 +454,10 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
           <hr className={styles.divider} />
 
-          {/* Color selector */}
+          {/* Color selector — etiqueta estática t(); nombre de color dinámico <T>. */}
           {hasVariants && variants.length > 0 && (
             <div className={styles.selectorGroup}>
-              <span className={styles.selectorLabel}>Color: <em>{selectedVariant?.name}</em></span>
+              <span className={styles.selectorLabel}>{t('card.color', 'Color')}: <em><T>{selectedVariant?.name}</T></em></span>
               <DraggableContainer className={styles.swatchRow}>
                 {variants.map((v, i) => {
                   const hex = v.colorHex || getFallbackHex(v.name);
@@ -472,10 +475,10 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             </div>
           )}
 
-          {/* Size selector */}
+          {/* Size selector — etiqueta personalizada (BD) o "Talla" estática traducida. */}
           {sizes.length > 0 && (
             <div className={styles.selectorGroup}>
-              <span className={styles.selectorLabel}>{selectedVariant?.sizeLabel || "Talla"}: <em>{selectedSize}</em></span>
+              <span className={styles.selectorLabel}>{selectedVariant?.sizeLabel ? <T>{selectedVariant.sizeLabel}</T> : t('card.talla', 'Talla')}: <em>{selectedSize}</em></span>
               <DraggableContainer className={styles.pillRow}>
                 {sizes.map(s => (
                   <button key={s}
@@ -490,7 +493,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
           {/* Quantity */}
           <div className={styles.qtyRow}>
-            <span className={styles.selectorLabel}>Cantidad</span>
+            <span className={styles.selectorLabel}>{t('card.cantidad', 'Cantidad')}</span>
             <div className={styles.qtyControl}>
               <button className={styles.qtyBtn} onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
               <span className={styles.qtyValue}>{qty}</span>
@@ -502,33 +505,33 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
           <div className={styles.ctaStack}>
             {product.inStock ? (
               <button className={styles.btnPrimary} onClick={handleAddToCart}>
-                Agregar al carrito
+                {t('card.agregarCarrito', 'Agregar al carrito')}
               </button>
             ) : (
-              <button className={styles.btnPrimary} disabled>Agotado</button>
+              <button className={styles.btnPrimary} disabled>{t('card.agotado', 'Agotado')}</button>
             )}
             {product.YoryoPersonalizado ? (
               <button className={styles.btnOutline} onClick={handleYoryoPersonalizableClick}>
-                Personalizable
+                {t('card.personalizable', 'Personalizable')}
               </button>
             ) : product.customizable && (
               <button className={styles.btnOutline} onClick={handlePersonalize}>
-                Personalizar
+                {t('card.personalizar', 'Personalizar')}
               </button>
             )}
           </div>
 
           {/* Trust badges */}
           <div className={styles.trustRow}>
-            <div className={styles.trustItem}><Truck size={14} /><span>Envío a todo el país</span></div>
-            <div className={styles.trustItem}><RefreshCw size={14} /><span>Cambios y devoluciones</span></div>
-            <div className={styles.trustItem}><ShieldCheck size={14} /><span>Pago seguro</span></div>
+            <div className={styles.trustItem}><Truck size={14} /><span>{t('card.envioPais', 'Envío a todo el país')}</span></div>
+            <div className={styles.trustItem}><RefreshCw size={14} /><span>{t('card.cambiosDevoluciones', 'Cambios y devoluciones')}</span></div>
+            <div className={styles.trustItem}><ShieldCheck size={14} /><span>{t('card.pagoSeguro', 'Pago seguro')}</span></div>
           </div>
 
           {/* Description */}
           {product.description && (
             <details className={styles.accordion} open>
-              <summary className={styles.accordionSummary}>Descripción</summary>
+              <summary className={styles.accordionSummary}>{t('card.descripcion', 'Descripción')}</summary>
               <div
                 className={styles.richText}
                 dangerouslySetInnerHTML={{ __html: product.description }}

@@ -10,8 +10,12 @@ import { getBrands } from '../../../services/brands';
 import { getTags } from '../../../services/tags';
 import { getCharacters } from '../../../services/characters';
 import { getProductTypes } from '../../../services/productTypes';
+// i18n: t() para textos estáticos; <T> para nombres dinámicos de la BD.
+import { useLanguage } from '../../../contexts/LanguageContext';
+import { T } from '../../../i18n/useTranslatedText';
 
 const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, emptyMessage, categories, layoutConfig, title }) => {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState(null);
   const [activeCollection, setActiveCollection] = useState(null);
   const [activeBrand, setActiveBrand] = useState(null);
@@ -145,7 +149,7 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
         <aside className={`${styles.sidebar} ${isMobileDrawerOpen ? styles.sidebarOpen : ''}`}>
           
           <div className={styles.drawerHeader}>
-            <h3 style={{ margin: 0 }}>Filtros</h3>
+            <h3 style={{ margin: 0 }}>{t('cat.filtros', 'Filtros')}</h3>
             <button className={styles.closeDrawerBtn} onClick={() => setIsMobileDrawerOpen(false)}>
               <X size={24} color="#666" />
             </button>
@@ -158,27 +162,27 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
                 className={styles.mobileFilterBtn}
                 onClick={clearAllFilters}
               >
-                <X size={18} /> Limpiar filtros
+                <X size={18} /> {t('cat.limpiarFiltros', 'Limpiar filtros')}
               </button>
             </div>
           )}
 
           <div className={styles.sidebarSection}>
-            <h3>Categorías</h3>
+            <h3>{t('cat.categorias', 'Categorías')}</h3>
             <ul className={styles.categoryList}>
-              <li 
+              <li
                 className={activeCategory === null ? styles.activeItem : ''}
                 onClick={() => handleCategoryClick(null)}
               >
-                Todas las categorías
+                {t('cat.todasCategorias', 'Todas las categorías')}
               </li>
               {(categories || []).map(cat => (
-                <li 
-                  key={cat.id} 
+                <li
+                  key={cat.id}
                   className={activeCategory === cat.id ? styles.activeItem : ''}
                   onClick={() => handleCategoryClick(cat.id)}
                 >
-                  {cat.name}
+                  <T>{cat.name}</T>
                 </li>
               ))}
             </ul>
@@ -187,12 +191,12 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
           {/* Temporadas: derivadas de las colecciones estacionales (mismo estado activeCollection). */}
           {seasonCollections.length > 0 && (
             <div className={styles.sidebarSection}>
-              <h3>Temporadas</h3>
+              <h3>{t('cat.temporadas', 'Temporadas')}</h3>
               <ul className={styles.categoryList}>
-                <li className={activeCollection === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, null)}>Todas</li>
+                <li className={activeCollection === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, null)}>{t('cat.todas', 'Todas')}</li>
                 {seasonCollections.map(c => (
                   <li key={c.id} className={activeCollection === c.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, c.id)}>
-                    {c.name}
+                    <T>{c.name}</T>
                   </li>
                 ))}
               </ul>
@@ -201,12 +205,12 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
 
           {nonSeasonCollections.length > 0 && (
             <div className={styles.sidebarSection}>
-              <h3>Colecciones</h3>
+              <h3>{t('cat.colecciones', 'Colecciones')}</h3>
               <ul className={styles.categoryList}>
-                <li className={activeCollection === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, null)}>Todas</li>
+                <li className={activeCollection === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, null)}>{t('cat.todas', 'Todas')}</li>
                 {nonSeasonCollections.map(c => (
                   <li key={c.id} className={activeCollection === c.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCollection, c.id)}>
-                    {c.name}
+                    <T>{c.name}</T>
                   </li>
                 ))}
               </ul>
@@ -215,12 +219,12 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
           
           {(brands || []).length > 0 && (
             <div className={styles.sidebarSection}>
-              <h3>Marcas</h3>
+              <h3>{t('cat.marcas', 'Marcas')}</h3>
               <ul className={styles.brandList}>
-                <li className={activeBrand === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveBrand, null)}>Todas</li>
+                <li className={activeBrand === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveBrand, null)}>{t('cat.todas', 'Todas')}</li>
                 {(brands || []).map(b => (
                   <li key={b.id} className={activeBrand === b.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveBrand, b.id)}>
-                    {b.name}
+                    <T>{b.name}</T>
                   </li>
                 ))}
               </ul>
@@ -230,12 +234,12 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
 
           {(productTypes || []).length > 0 && (
             <div className={styles.sidebarSection}>
-              <h3>Tipo de Producto</h3>
+              <h3>{t('cat.tipoProducto', 'Tipo de Producto')}</h3>
               <ul className={styles.categoryList}>
-                <li className={activeType === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveType, null)}>Todos</li>
-                {(productTypes || []).map(t => (
-                  <li key={t.id} className={activeType === t.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveType, t.id)}>
-                    {t.name}
+                <li className={activeType === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveType, null)}>{t('cat.todos', 'Todos')}</li>
+                {(productTypes || []).map(pt => (
+                  <li key={pt.id} className={activeType === pt.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveType, pt.id)}>
+                    <T>{pt.name}</T>
                   </li>
                 ))}
               </ul>
@@ -244,12 +248,12 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
 
           {(tags || []).length > 0 && (
             <div className={styles.sidebarSection}>
-              <h3>Etiquetas</h3>
+              <h3>{t('cat.etiquetas', 'Etiquetas')}</h3>
               <ul className={styles.categoryList}>
-                <li className={activeTag === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveTag, null)}>Todas</li>
-                {(tags || []).map(t => (
-                  <li key={t.id} className={activeTag === t.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveTag, t.id)}>
-                    {t.name}
+                <li className={activeTag === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveTag, null)}>{t('cat.todas', 'Todas')}</li>
+                {(tags || []).map(tag => (
+                  <li key={tag.id} className={activeTag === tag.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveTag, tag.id)}>
+                    <T>{tag.name}</T>
                   </li>
                 ))}
               </ul>
@@ -258,12 +262,12 @@ const SidebarCatalogLayout = ({ productsData, productsLoading, productsError, em
 
           {(characters || []).length > 0 && (
             <div className={styles.sidebarSection}>
-              <h3>Personajes</h3>
+              <h3>{t('cat.personajes', 'Personajes')}</h3>
               <ul className={styles.categoryList}>
-                <li className={activeCharacter === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCharacter, null)}>Todos</li>
+                <li className={activeCharacter === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCharacter, null)}>{t('cat.todos', 'Todos')}</li>
                 {(characters || []).map(c => (
                   <li key={c.id} className={activeCharacter === c.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCharacter, c.id)}>
-                    {c.name}
+                    <T>{c.name}</T>
                   </li>
                 ))}
               </ul>

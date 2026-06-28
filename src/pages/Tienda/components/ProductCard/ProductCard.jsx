@@ -11,6 +11,7 @@ import { toThumbnailImageUrl } from '../../../../utils/imageUrl'; // Force recom
 import { useWishlist } from '../../../../contexts/WishlistContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useLanguage } from '../../../../contexts/LanguageContext';
+import { T } from '../../../../i18n/useTranslatedText';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 // eslint-disable-next-line no-unused-vars
@@ -232,20 +233,20 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
         {/* Urgent/Discount Badges like Temu/Shein */}
         <div className={styles.badgesTopLeft}>
           {(typeof product.inStock === 'number' && product.inStock > 0) && (
-            <div className={styles.soldBadge}>{product.inStock} disponibles</div>
+            <div className={styles.soldBadge}>{product.inStock} {t('card.disponibles', 'disponibles')}</div>
           )}
-          {product.customizable && !isCombo && <div className={styles.customBadge}>Personalizable</div>}
+          {product.customizable && !isCombo && <div className={styles.customBadge}>{t('card.personalizable', 'Personalizable')}</div>}
           {discount > 0 && <div className={styles.discountBadge}>-{discount}%</div>}
         </div>
         <div className={styles.badgesTopRight}>
-          {isCombo && <div className={styles.comboBadge}>Combo</div>}
+          {isCombo && <div className={styles.comboBadge}>{t('card.combo', 'Combo')}</div>}
         </div>
 
-        <button 
+        <button
           className={`${styles.favoriteBtn} ${isFav ? styles.favoriteBtnActive : ''}`}
           onClick={handleToggleFavorite}
-          aria-label="Agregar a favoritos"
-          title="Agregar a favoritos"
+          aria-label={t('card.favorito', 'Agregar a favoritos')}
+          title={t('card.favorito', 'Agregar a favoritos')}
         >
           <svg viewBox="0 0 24 24" fill={isFav ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -253,12 +254,13 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
         </button>
 
         {!product.inStock && (
-          <div className={styles.outOfStock}>Agotado</div>
+          <div className={styles.outOfStock}>{t('card.agotado', 'Agotado')}</div>
         )}
       </div>
 
       <div className={styles.content}>
-        <h3 className={styles.name}>{product.name}</h3>
+        {/* Nombre dinámico (BD): se traduce con <T> manteniendo español como fallback. */}
+        <h3 className={styles.name}><T>{product.name}</T></h3>
 
         <div className={styles.socialProof}>
           <div className={styles.rating}>
@@ -300,7 +302,7 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
           <svg viewBox="0 0 24 24" width="14" height="14" fill="var(--verde-exito)" style={{ marginRight: '4px' }}>
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
           </svg>
-          Envío Rápido y Seguro
+          {t('card.envioRapido', 'Envío Rápido y Seguro')}
         </div>
       </div>
     </Link>

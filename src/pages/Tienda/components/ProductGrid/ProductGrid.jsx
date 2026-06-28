@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+import { useLanguage } from '../../../../contexts/LanguageContext';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import styles from './ProductGrid.module.css';
@@ -28,6 +29,8 @@ const SkeletonCard = () => (
 
 const ProductGrid = React.memo(({ products, loading, error, emptyMessage, categories, layoutConfig }) => {
 
+  // Función de traducción para textos estáticos del grid.
+  const { t } = useLanguage();
   const [visibleCount, setVisibleCount] = useState(12);
   const loadMoreRef = useRef(null);
 
@@ -82,7 +85,7 @@ const ProductGrid = React.memo(({ products, loading, error, emptyMessage, catego
   if (error) {
     return (
       <div className={styles.errorContainer}>
-        <p className={styles.errorTitle}>No pudimos cargar los productos</p>
+        <p className={styles.errorTitle}>{t('grid.errorCargar', 'No pudimos cargar los productos')}</p>
         <p className={styles.errorText}>{error}</p>
       </div>
     );
@@ -92,7 +95,7 @@ const ProductGrid = React.memo(({ products, loading, error, emptyMessage, catego
     return (
       <div className={styles.emptyContainer}>
         <div className={styles.emptyIcon}>◇</div>
-        <h3 className={styles.emptyTitle}>Próximamente más productos</h3>
+        <h3 className={styles.emptyTitle}>{t('grid.proximamente', 'Próximamente más productos')}</h3>
         <p className={styles.emptyText}>
           {emptyMessage || 'Estamos preparando novedades. Revisa de nuevo en unos días.'}
         </p>
