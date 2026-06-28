@@ -13,9 +13,11 @@
  *      nombre o slug, la REUTILIZA (y le añade el slug si le falta). No duplica.
  *   2. Backfill: a cada doc de `productos_wala` con brandId vacío/ausente le pone
  *      brandId = <doc id de Con Amor>. No toca los que ya tienen marca.
- *   3. Crea la landing page `landingPages/ConAmor` (id === slug) para que la ruta
- *      WALA.PE/ConAmor resuelva; las secciones (sidebar_catalog con la marca) las
- *      coloca el dueño desde el editor visual. (MUSSA/MUEBLERIA: páginas después.)
+ *   3. Crea las landing pages `landingPages/ConAmor`, `landingPages/MUSSA` y
+ *      `landingPages/MUEBLERIA` (id === slug) para que las rutas WALA.PE/ConAmor,
+ *      WALA.PE/MUSSA y WALA.PE/MUEBLERIA resuelvan vía DynamicLandingPage (/:slug);
+ *      las secciones (sidebar_catalog con la marca) las coloca el dueño desde el
+ *      editor visual.
  *
  * SEGURIDAD: DRY-RUN por defecto (no escribe). Pasa --apply para aplicar.
  * SOLO toca brandId/slug; NO toca precios, stock ni nada más de los productos.
@@ -98,13 +100,15 @@ async function backfillProductos(conAmorId) {
   return { total, sinMarca };
 }
 
-async function garantizarLandingConAmor() {
-  const ref = db.collection('landingPages').doc('ConAmor'); // id === slug (seguro)
+// Crea (idempotente) la landingPage de una marca con id === slug, para que la ruta
+// WALA.PE/<slug> resuelva vía DynamicLandingPage (/:slug). NO toca la página si ya existe.
+async function garantizarLandingMarca({ slug, name }) {
+  const ref = db.collection('landingPages').doc(slug); // id === slug (seguro)
   const snap = await ref.get();
-  if (snap.exists) { console.log('  landingPages/ConAmor: ya existe'); return; }
-  console.log(`  landingPages/ConAmor: ${apply ? 'creando' : 'se crearía'} (para que WALA.PE/ConAmor resuelva)`);
+  if (snap.exists) { console.log(`  landingPages/${slug}: ya existe`); return; }
+  console.log(`  landingPages/${slug}: ${apply ? 'creando' : 'se crearía'} (para que WALA.PE/${slug} resuelva)`);
   if (apply) {
-    await ref.set({ slug: 'ConAmor', name: 'Con Amor', createdAt: FieldValue.serverTimestamp() }, { merge: true });
+    await ref.set({ slug, name, createdAt: FieldValue.serverTimestamp() }, { merge: true });
     console.log('     ↳ creada (las secciones las colocas en el editor visual)');
   }
 }
@@ -117,8 +121,8 @@ async function garantizarLandingConAmor() {
   const conAmorId = ids['ConAmor'];
   console.log(`\n2) Backfill de productos → Con Amor (id=${conAmorId}):`);
   await backfillProductos(conAmorId);
-  console.log('\n3) Página de la marca:');
-  await garantizarLandingConAmor();
+  console.log('\n3) Páginas de marca (landingPages, id === slug):');
+  for (const m of MARCAS) await garantizarLandingMarca(m);
   console.log(`\n${apply ? '✅ Listo.' : 'DRY-RUN: nada escrito. Repite con --apply para aplicar.'}`);
   console.log(`Con Amor brandId = ${conAmorId}  (úsalo si lo necesitas en el editor)\n`);
   process.exit(0);

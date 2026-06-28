@@ -122,7 +122,9 @@ export function getDefaultSettings(type) {
       return { title: '', collection: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'categories_nav':
-      return {};
+      // brandId: marca cuyo `categoryNav` (burbujas con miniatura) se mostrará.
+      // Vacío = retrocompat (sin marca, el nav queda vacío o cae al modo global).
+      return { brandId: '' };
     case 'product_grid':
       return { title: '', show_search: true, brandId: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };

@@ -1947,6 +1947,43 @@ const VisualEditorPanel = () => {
         );
       }
 
+      // ── Navegación por categorías (burbujas con miniatura por marca) ──
+      // Solo necesita elegir la MARCA: las burbujas salen del `categoryNav`
+      // guardado en tienda_brands/{brandId}. Mismo patrón de <select> de marca
+      // que sidebar_catalog/product_grid (value=b.id -> settings.brandId).
+      if (section.type === 'categories_nav') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: {SECTION_TYPES.find(t => t.id === section.type)?.label || section.type}
+            </h4>
+
+            <label>Marca de esta navegación</label>
+            <select
+              value={s.brandId || ''}
+              onChange={e => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings.brandId = e.target.value;
+                updateSectionsDraft(newSections);
+              }}
+              style={{width: '100%', padding: '6px', marginBottom: '15px'}}
+            >
+              <option value="">(Sin marca)</option>
+              {brands?.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            <p style={{fontSize: '0.8rem', color: '#666', marginTop: 0}}>
+              Las miniaturas de categoría se configuran en el panel de la marca. Al hacer clic en una burbuja se filtra el catálogo de esta página por esa categoría.
+            </p>
+          </div>
+        );
+      }
+
       if (['featured_products', 'product_grid', 'sidebar_catalog'].includes(section.type)) {
         const s = section.settings || {};
         const titleLabel = section.type === 'sidebar_catalog' ? 'Título (Opcional)' : 'Título de la Sección';

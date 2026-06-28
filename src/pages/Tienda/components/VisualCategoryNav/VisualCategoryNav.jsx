@@ -3,10 +3,35 @@ import { Link, useLocation } from 'react-router-dom';
 import styles from './VisualCategoryNav.module.css';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
 
-const VisualCategoryNav = ({ categories, loading }) => {
+/**
+ * Navegación visual de categorías (burbujas con miniatura).
+ *
+ * DOS MODOS (retrocompatibles):
+ *  1) MODO ENLACE (por defecto, cabecera global): NO se pasa `onSelectCategory`.
+ *     Cada burbuja es un <Link to=/tienda?categoria=ID> y el activo se deriva de
+ *     la URL. Es el comportamiento histórico — no cambia.
+ *  2) MODO FILTRO LOCAL (storefront por marca): se pasa `onSelectCategory`.
+ *     Cada burbuja es un <button> que llama onSelectCategory(cat.categoryId);
+ *     la burbuja "Todos" llama onSelectCategory(null). El activo se resalta
+ *     comparando con `activeCategory` (no con la URL). No navega: solo filtra
+ *     el catálogo de la MISMA página en cliente.
+ *
+ * @param {Array}  categories       Items del nav. En modo enlace: {id,name,imageUrl}.
+ *                                   En modo filtro: {categoryId,name,imageUrl}.
+ * @param {boolean} loading         Muestra el skeleton.
+ * @param {Function} onSelectCategory  (categoryId|null)=>void. Si está presente,
+ *                                   activa el MODO FILTRO LOCAL.
+ * @param {string|null} activeCategory  Categoría activa en modo filtro (para resaltar).
+ */
+const VisualCategoryNav = ({ categories, loading, onSelectCategory, activeCategory = null }) => {
   const location = useLocation();
-  
+
+  // ¿Estamos en modo filtro local? (hay handler de selección)
+  const isFilterMode = typeof onSelectCategory === 'function';
+
+  // Activo según el modo: en filtro se compara con activeCategory; en enlace, con la URL.
   const isActive = (categoryId) => {
+    if (isFilterMode) return activeCategory === categoryId;
     const params = new URLSearchParams(location.search);
     return params.get('categoria') === categoryId;
   };
@@ -34,47 +59,92 @@ const VisualCategoryNav = ({ categories, loading }) => {
     return placeholders[index % placeholders.length];
   };
 
+  // Id de la categoría según el modo: en filtro usamos categoryId; en enlace, id.
+  const getCatId = (cat) => (isFilterMode ? cat.categoryId : cat.id);
+
+  // Icono "cuadrícula" reutilizado por la burbuja "Todos".
+  const allIcon = (
+    <div className={styles.allIcon}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+    </div>
+  );
+
   return (
     <div className={styles.container}>
       <nav className={styles.navWrapper}>
         <div className={styles.scrollArea}>
           {/* Item "Todos" */}
-          <Link 
-            to="/tienda" 
-            className={`${styles.navItem} ${location.pathname === '/tienda' && !location.search ? styles.active : ''}`}
-          >
-            <div className={styles.imageBubble}>
-              <div className={styles.allIcon}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-              </div>
-            </div>
-            <span className={styles.label}>Todos</span>
-          </Link>
+          {isFilterMode ? (
+            // Modo filtro: botón que limpia la categoría (null = sin filtro).
+            <button
+              type="button"
+              className={`${styles.navItem} ${activeCategory === null ? styles.active : ''}`}
+              style={{ background: 'none', border: 'none', padding: 0 }}
+              onClick={() => onSelectCategory(null)}
+            >
+              <div className={styles.imageBubble}>{allIcon}</div>
+              <span className={styles.label}>Todos</span>
+            </button>
+          ) : (
+            // Modo enlace: link a la tienda global sin categoría.
+            <Link
+              to="/tienda"
+              className={`${styles.navItem} ${location.pathname === '/tienda' && !location.search ? styles.active : ''}`}
+            >
+              <div className={styles.imageBubble}>{allIcon}</div>
+              <span className={styles.label}>Todos</span>
+            </Link>
+          )}
 
           {/* Categorías */}
-          {categories?.map((category, idx) => (
-            <Link
-              key={category.id}
-              to={`/tienda?categoria=${category.id}`}
-              className={`${styles.navItem} ${isActive(category.id) ? styles.active : ''}`}
-            >
-              <div className={styles.imageBubble}>
-                <OptimizedImage 
-                  src={getCategoryImage(category, idx)} 
-                  alt={category.name}
-                  containerClassName={styles.imageContainer}
-                  className={styles.image}
-                  objectFit="cover"
-                />
-              </div>
-              <span className={styles.label}>{category.name}</span>
-            </Link>
-          ))}
+          {categories?.map((category, idx) => {
+            const catId = getCatId(category);
+            const bubble = (
+              <>
+                <div className={styles.imageBubble}>
+                  <OptimizedImage
+                    src={getCategoryImage(category, idx)}
+                    alt={category.name}
+                    containerClassName={styles.imageContainer}
+                    className={styles.image}
+                    objectFit="cover"
+                  />
+                </div>
+                <span className={styles.label}>{category.name}</span>
+              </>
+            );
+
+            // Modo filtro: botón que fija la categoría de esta página (cliente).
+            if (isFilterMode) {
+              return (
+                <button
+                  type="button"
+                  key={catId || idx}
+                  className={`${styles.navItem} ${isActive(catId) ? styles.active : ''}`}
+                  style={{ background: 'none', border: 'none', padding: 0 }}
+                  onClick={() => onSelectCategory(catId)}
+                >
+                  {bubble}
+                </button>
+              );
+            }
+
+            // Modo enlace (retrocompat con la cabecera global).
+            return (
+              <Link
+                key={catId || idx}
+                to={`/tienda?categoria=${catId}`}
+                className={`${styles.navItem} ${isActive(catId) ? styles.active : ''}`}
+              >
+                {bubble}
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </div>

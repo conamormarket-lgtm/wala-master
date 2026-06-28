@@ -34,6 +34,7 @@ import {
 import { getMessage } from '../../services/messages';
 import { getStorefrontConfig, SECTION_TYPES, getDefaultSettings } from './services/storefront';
 import { getDocument } from '../../services/firebase/firestore';
+import { getBrand } from '../../services/brands';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import OptimizedImage from '../../components/common/OptimizedImage/OptimizedImage';
 import HeroBanner from './components/HeroBanner';
@@ -242,6 +243,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  // ── Categoría activa del NAV de categorías por marca (Fase 3 multimarca) ──
+  // Estado ELEVADO aquí para compartirlo entre la sección 'categories_nav'
+  // (las burbujas con miniatura) y la sección 'sidebar_catalog' de la MISMA
+  // página: al pulsar una burbuja se fija aquí y el sidebar filtra su catálogo
+  // en CLIENTE por esa categoría (la marca sigue server-side). null = sin filtro.
+  const [navCategoryId, setNavCategoryId] = useState(null);
   const categoryId = searchParams.get('categoria');
   const isPreview = searchParams.has('t');
 
@@ -368,6 +375,42 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
     );
     return match ? match.settings.brandId.trim() : null;
   }, [storeConfigDraft, storefrontConfig]);
+
+  // ── NAV DE CATEGORÍAS POR MARCA (Fase 3 multimarca) ───────────────
+  // Cada sección 'categories_nav' apunta a UNA marca (settings.brandId). Las
+  // burbujas con miniatura se leen del array `categoryNav` guardado en el doc
+  // tienda_brands/{brandId}. Recolectamos los brandIds presentes en la config y
+  // cargamos sus docs para mapear brandId -> categoryNav. Sin brandId no se pide
+  // nada (retrocompat: el nav queda vacío).
+  const navBrandIds = useMemo(() => {
+    const secs = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+    const ids = secs
+      .filter((sec) => sec?.type === 'categories_nav')
+      .map((sec) => (typeof sec?.settings?.brandId === 'string' ? sec.settings.brandId.trim() : ''))
+      .filter(Boolean);
+    return Array.from(new Set(ids));
+  }, [storeConfigDraft, storefrontConfig]);
+
+  // Mapa { brandId: categoryNav[] } para las marcas referenciadas por el nav.
+  // Se fetch del doc de cada marca con getBrand. Retrocompatible: si la marca no
+  // tiene `categoryNav`, devuelve [] (nav vacío, no rompe).
+  const { data: navCategoriesByBrand } = useQuery({
+    queryKey: ['categories-nav-brands', navBrandIds],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        navBrandIds.map(async (bid) => {
+          const { data } = await getBrand(bid);
+          const list = Array.isArray(data?.categoryNav) ? data.categoryNav : [];
+          // Orden estable por `order` si existe (las burbujas respetan el orden del admin).
+          const sorted = [...list].sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
+          return [bid, sorted];
+        })
+      );
+      return Object.fromEntries(entries);
+    },
+    enabled: navBrandIds.length > 0,
+    staleTime: 10 * 60 * 1000,
+  });
 
   // Faceta única que se filtra EN SERVIDOR. Su valor inicial:
   //  · CON marca de página: faceta de MARCA FIJA ({ type:'brand', value: pageBrandId }),
@@ -537,6 +580,13 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
   // y storefront.js se encarga de inyectar defaults si la BD está vacía.
   let displaySections = storeConfigDraft?.sections || storefrontConfig?.sections || [];
 
+  // ¿Hay una sección 'categories_nav' (con marca) en la página? Solo entonces el
+  // sidebar_catalog deja que TiendaPage controle su categoría (estado compartido
+  // con el nav). Sin nav, el sidebar conserva su estado interno (retrocompatible).
+  const hasCategoriesNav = displaySections.some(
+    (sec) => sec?.type === 'categories_nav' && (sec?.settings?.brandId || '').trim() !== ''
+  );
+
   // ── RENDERIZADO PROGRESIVO ────────────────────────────────────────
 
   let emptyMessageShown = false;
@@ -574,9 +624,28 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
             <HeaderBlock config={s} />
           </section>
         );
-      case 'categories_nav':
-        // Esta sección estructural ahora se renderiza unificada en la cabecera principal.
-        return null;
+      case 'categories_nav': {
+        // Nav de categorías con MINIATURAS por marca. La marca se elige en el
+        // editor (s.brandId); sus burbujas vienen del `categoryNav` de esa marca.
+        const navBrandId = (s.brandId || '').trim();
+        const navCategorias = navBrandId ? (navCategoriesByBrand?.[navBrandId] || []) : [];
+        // RETROCOMPAT: sin marca configurada, no renderizamos el nav (queda vacío),
+        // igual que antes esta sección no pintaba nada en el storefront.
+        if (!navBrandId) return null;
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ overflow: 'hidden' }}>
+            <SectionBackground config={s} />
+            {/* Modo FILTRO LOCAL: cada burbuja fija navCategoryId (cliente), que el
+                sidebar_catalog de esta misma página usa como filtro de categoría.
+                La burbuja "Todos" limpia el filtro (null). */}
+            <VisualCategoryNav
+              categories={navCategorias}
+              activeCategory={navCategoryId}
+              onSelectCategory={setNavCategoryId}
+            />
+          </section>
+        );
+      }
       case 'hero_banner':
         // Usa la configuración local de la sección o el fallback al config global
         const heroConfig = { ...activeConfig.heroBanner, ...s };
@@ -841,6 +910,9 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
               paginationProps={catalogPaginationProps}
               onServerFacetChange={usePaginatedCatalog ? handleServerFacetChange : undefined}
               serverFacet={usePaginatedCatalog ? catalogFacet : null}
+              {...(hasCategoriesNav
+                ? { controlledCategory: navCategoryId, onCategoryChange: setNavCategoryId }
+                : {})}
             />
           </section>
         );

@@ -91,7 +91,7 @@ const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
 const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
-const MussaPage = lazy(() => import('./pages/MussaPage'));
+// MussaPage retirado: /MUSSA ahora es la página de la marca vía DynamicLandingPage (/:slug).
 const RegalosCatasPage = lazy(() => import('./pages/RegalosCatasPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const NichePage = lazy(() => import('./pages/NichePage'));
@@ -362,8 +362,9 @@ function App() {
                         <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
                         <Route path="/regalo/:orderId" element={<GiftExperiencePage />} />
                         
-                        {/* Mussa */}
-                        <Route path="/mussa" element={<MussaPage />} />
+                        {/* Mussa: la ruta hardcodeada se eliminó. Ahora /MUSSA (y /mussa,
+                            slug case-insensitive) cae en el catch-all /:slug -> DynamicLandingPage
+                            y resuelve la landingPage 'MUSSA' como página de marca editable. */}
                         <Route path="/regalos-catas" element={<RegalosCatasPage />} />
 
                         {/* Fase 1: búsqueda con facetas y páginas de nicho (multi-vendor) */}

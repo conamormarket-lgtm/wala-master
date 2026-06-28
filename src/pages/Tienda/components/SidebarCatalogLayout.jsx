@@ -31,9 +31,26 @@ const SidebarCatalogLayout = ({
   paginationProps = {},
   onServerFacetChange,
   serverFacet = null,
+  // ── Categoría controlada desde fuera (nav de categorías por marca) ─────
+  // Si se pasa `controlledCategory` (string id o null) Y `onCategoryChange`,
+  // la categoría activa del sidebar pasa a estar CONTROLADA por el padre
+  // (TiendaPage): el estado vive arriba y se comparte con VisualCategoryNav,
+  // de modo que pulsar una burbuja del nav y pulsar una categoría del sidebar
+  // operan sobre el MISMO filtro de cliente. Si NO se pasan (caso de hoy), el
+  // sidebar usa su estado interno EXACTAMENTE como antes (retrocompatible).
+  controlledCategory,
+  onCategoryChange,
 }) => {
   const { t } = useLanguage();
-  const [activeCategory, setActiveCategory] = useState(null);
+  const isCategoryControlled = controlledCategory !== undefined && typeof onCategoryChange === 'function';
+  const [internalCategory, setInternalCategory] = useState(null);
+  // Categoría efectiva: la controlada por el padre o, si no, el estado interno.
+  const activeCategory = isCategoryControlled ? (controlledCategory ?? null) : internalCategory;
+  // Setter unificado: escribe arriba (controlado) o en el estado interno (no controlado).
+  const setActiveCategory = (value) => {
+    if (isCategoryControlled) onCategoryChange(value ?? null);
+    else setInternalCategory(value);
+  };
   const [activeCollection, setActiveCollection] = useState(null);
   const [activeBrand, setActiveBrand] = useState(null);
   const [activeTag, setActiveTag] = useState(null);

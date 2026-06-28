@@ -17,8 +17,26 @@ export const getBrand = async (id) => {
 };
 
 /**
+ * Normaliza el array `categoryNav` de una marca.
+ * Cada item es una "burbuja" con foto + label: { categoryId, name, imageUrl, order }.
+ * - categoryId puede referenciar una categoría de tienda_categories o ser libre.
+ * - Se descartan items no válidos y se garantiza el tipo de cada campo.
+ */
+const normalizeCategoryNav = (categoryNav) => {
+  if (!Array.isArray(categoryNav)) return [];
+  return categoryNav
+    .filter((item) => item && typeof item === 'object')
+    .map((item, idx) => ({
+      categoryId: item.categoryId || '',
+      name: item.name || '',
+      imageUrl: item.imageUrl || '',
+      order: typeof item.order === 'number' ? item.order : idx
+    }));
+};
+
+/**
  * Crear marca (Firestore genera ID)
- * @param {{ name: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number }} data
+ * @param {{ name: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array }} data
  */
 export const createBrand = async (data) => {
   return await createDocument(COLLECTION, {
@@ -28,14 +46,16 @@ export const createBrand = async (data) => {
     bgColor: data.bgColor || '#ffffff',
     bgImage: data.bgImage || '',
     bgOpacity: typeof data.bgOpacity === 'number' ? data.bgOpacity : 100,
-    whatsappNumber: data.whatsappNumber || ''
+    whatsappNumber: data.whatsappNumber || '',
+    // Nav de categorías por marca (burbujas con miniatura). Vacío por defecto.
+    categoryNav: normalizeCategoryNav(data.categoryNav)
   });
 };
 
 /**
  * Actualizar marca
  * @param {string} id
- * @param {{ name?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number }} data
+ * @param {{ name?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array }} data
  */
 export const updateBrand = async (id, data) => {
   const payload = {};
@@ -46,6 +66,8 @@ export const updateBrand = async (id, data) => {
   if (data.bgImage !== undefined) payload.bgImage = data.bgImage;
   if (data.bgOpacity !== undefined) payload.bgOpacity = data.bgOpacity;
   if (data.whatsappNumber !== undefined) payload.whatsappNumber = data.whatsappNumber;
+  // Persistir el nav de categorías de la marca (aditivo: solo si viene en data).
+  if (data.categoryNav !== undefined) payload.categoryNav = normalizeCategoryNav(data.categoryNav);
   return await updateDocument(COLLECTION, id, payload);
 };
 
