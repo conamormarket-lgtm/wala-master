@@ -85,6 +85,12 @@ const AdminLayout = () => {
               >
                 📊 Dashboard Analítica
               </NavLink>
+              <NavLink
+                to="/admin/dashboard/recepcion"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                📦 Recepción de Pedidos
+              </NavLink>
               <a
                 href="/tienda"
                 className={getLinkClass(false, 'diseno')}
