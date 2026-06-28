@@ -28,7 +28,12 @@
 > **WhatsApp por marca + Plan B al cerrar Culqi** (número principal "Todo a WALA" + toggle
 > multimarca), **tipos de documento DNI/CE/Pasaporte**, **i18n gratis ES/EN/PT**, **foto de
 > perfil (Avatar Studio, sin Ready Player Me)**, **captura de cumpleaños** (con import opcional
-> desde Google People API) y **carrusel de marcas** (forma/zoom/subir foto). Pendiente del
+> desde Google People API) y **carrusel de marcas** (forma/zoom/subir foto). Del lado **admin**
+> se sumaron el **módulo Destacados** y un **dashboard de analítica enfocado SOLO en WALA**
+> (más vendidos nativos vía `getTopSellingWala` desde `analytics_events`, gráfico Total/App/Web
+> y tarjeta "Seguimiento de pedidos"); además la **traducción dinámica del catálogo** (gratis,
+> vía Lingva) con banderas SVG, y el visor "Mis Compras" **filtrado a solo pedidos de WALA**.
+> Pendiente del
 > usuario: **registrar la URL de `culqiWebhook` en Culqi** y **verificar
 > `REACT_APP_PAYPAL_CLIENT_ID` en Vercel** (si no, PayPal corre en SANDBOX); y **REDESPLEGAR
 > `getPublicGiftRegistry`** por Cloud Shell (fix de wishlist vacía en `/regalar`). Detalle en
@@ -297,6 +302,31 @@ Ocho commits (del CHANGELOG raíz, entrada 2026-06-27):
 - **Carrusel de marcas (forma/zoom/subir foto):** `BrandMarquee` con forma de marco
   (círculo/cuadrado/estrella/pentágono), zoom y posición por item; subida de logo en
   `/admin/marcas`.
+- **i18n — traducción DINÁMICA del catálogo (gratis):** `src/services/translate.js` traduce
+  nombres/descripciones en runtime vía instancias públicas de **Lingva** (Google Translate
+  gratis, con caché en `localStorage`, tolerante a fallos) usando el hook/componente
+  `src/i18n/useTranslatedText.js` (`useTranslatedText` + `<T>`). El toggle del Header usa
+  **banderas SVG** propias (`src/components/i18n/FlagIcon.jsx`, España/EEUU/Brasil; los emoji
+  de bandera no renderizan en Windows). Esto **amplía** la base i18n gratis ES/EN/PT ya
+  desplegada (diccionarios + traductor nativo del navegador).
+- **"Mis Compras" filtrado a SOLO pedidos de WALA:** `usePedidos.js` filtra el ERP con
+  `esPedidoWala` (`canalVenta:'Portal Web'`, o `web:true`/`activador:'portal_web'`/
+  `vendedor:'Portal Web'`) para que el cliente vea únicamente sus compras hechas por el portal.
+
+**Del lado del ADMIN (mismo despliegue):**
+
+- **Módulo Destacados + más vendidos NATIVOS de WALA:** nueva fuente `getTopSellingWala`
+  (`src/services/salesAnalytics.js`) que lee las compras propias de WALA desde
+  `analytics_events` (`type:'purchase_complete'`) y rankea productos (cruzados SOLO contra
+  `productos_wala`) y líneas. Admin **`/admin/destacados`** (`AdminDestacados.jsx`) para
+  destacar/quitar/reordenar + sugerencias del top de ventas; sección reutilizable
+  **`featured_carousel`** en el editor de páginas (render en `TiendaPage`).
+- **Dashboard de analítica a SOLO-WALA:** `DashProductos`/`DashCategorias`/`MasVendidosSection`
+  leen ventas/ingresos/pedidos/unidades/productos/líneas desde `getTopSellingWala`; el hub
+  (`DashPaginas`) trae el gráfico de tráfico con **toggle Total/App/Web** y la tarjeta
+  **"Seguimiento de pedidos (WALA)"**. (Sigue adelantando la **Prioridad 2**, ver §7.)
+- **Fixes menores:** cursor del input en `/admin/marcas` y gráfica de tendencia con datos
+  multi-día.
 
 **Estado de despliegue real (2026-06-27):** lo anterior está **EN PRODUCCIÓN** — hay **mucho
 ya desplegado** (frontend por Vercel + las Cloud Functions de cobro por Cloud Shell). Además,
