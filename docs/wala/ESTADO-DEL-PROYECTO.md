@@ -18,6 +18,24 @@
 
 > ## 📌 Banner de estado (actualizado 2026-06-28)
 >
+> **Sistema MULTI-MARCA 2026-06-28 (frontend desplegado; falta correr `setup-marcas.js`):**
+> cada producto pertenece a **una** marca (`brandId` = doc id de `tienda_brands`) y cada marca
+> (**Con Amor / MUSSA / MUEBLERIA**) tiene su **página** (`WALA.PE/ConAmor`, `/MUSSA`,
+> `/MUEBLERIA`, vía `/:slug` → `DynamicLandingPage`, **slug case-insensitive**), su **catálogo
+> sidebar** filtrado solo a sus productos (faceta `brand` server-side + categoría en cliente), su
+> **panel admin** (`AdminMarcaProductos`: asignar/quitar productos en lote + crear-con-marca) y su
+> **nav de categorías con miniaturas** (`categoryNav` embebido en la marca) que al hacer clic
+> **filtra el catálogo de esa marca sin navegar**. Se implementó en **6 fases (0–5)** cableando
+> las 5 piezas que faltaban (el `brandId` ya estaba soportado end-to-end); ver
+> [PLAN-MULTIMARCA.md](./PLAN-MULTIMARCA.md). **Frontend DESPLEGADO** por Vercel; **el backend NO
+> requiere redeploy** (solo Firestore). **Pendiente del dueño (no de código):** correr
+> `scripts/setup-marcas.js --apply` (crea las landingPages MUSSA/MUEBLERIA + backfill `brandId`),
+> **configurar las páginas en el editor visual** y **asignar productos a MUSSA/MUEBLERIA**. Brand
+> IDs: Con Amor `m3P26agqw7BjeYTDjs6j`, MUSSA `pMujqcyIIDUF2EdSSX5V`, MUEBLERIA
+> `RMLsCQGvLo7c3NHgfkLO`. También en esta tanda: **ruteo de slug case-insensitive** (`212bf0f`),
+> **sidebar con filtros colapsables** (`ac7e53d`) y **hero centrado** de la caja del subtítulo
+> (`bd4b8df`). Commits `281823a`, `a687fd5`, `212bf0f`, `ac7e53d`, `5221ad5`. Detalle en §2 (Paso 9).
+>
 > **Fixes de pedidos 2026-06-28 (desplegados):** tanda de correcciones del **camino de pedidos**.
 > (A — **visibilidad**) los pedidos **no aparecían en "Mis Compras"** porque `createWebOrder`
 > guardaba el documento **sin normalizar** mientras el perfil filtra por el **DNI normalizado**
@@ -166,6 +184,7 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | **Regalos por fecha "Mis fechas especiales"** | Registro de regalos público con **drag-and-drop** (asigna productos a fechas), miniaturas y atajo "Agregar todo al carrito". | `/regalar/:referralCode`, wishlist |
 | **Carrito "No comprar esta vez"** | Elegir qué pagar ahora y qué guardar para después sin borrar; el resto persiste tras pagar. | `/carrito`, `/checkout` |
 | **WhatsApp por marca + Plan B** | Número por marca, número principal "Todo a WALA" + toggle multimarca; al cerrar Culqi sin pagar, terminar por WhatsApp. | `/checkout`, `/admin/marcas` |
+| **Sistema MULTI-MARCA (Con Amor / MUSSA / MUEBLERIA)** | **1 producto = 1 marca** (`brandId`); cada marca con **página propia** (`WALA.PE/ConAmor`, `/MUSSA`, `/MUEBLERIA`, slug case-insensitive), **catálogo sidebar filtrado**, **panel admin** (asignar/quitar en lote + crear-con-marca) y **nav de categorías con miniaturas** que filtra el catálogo de la marca sin navegar. **Frontend desplegado**; falta que el dueño corra `setup-marcas.js`, configure las páginas y asigne productos a MUSSA/MUEBLERIA. | `/:slug`, `/admin/marcas`, panel por marca |
 | **i18n gratis (ES/EN/PT) + perfil/cumpleaños** | Toggle de idioma (traductor nativo del navegador), tipos de documento DNI/CE/Pasaporte, **Avatar Studio** (sin Ready Player Me) y **captura de cumpleaños** (import opcional desde Google). | Header, `/cuenta/perfil`, checkout |
 | **Despliegue real** | **Frontend en Vercel** (wala.pe, auto-deploy desde `master`); **Cloud Functions** e **índices** desplegados en `sistema-gestion-3b225`. | wala.pe |
 | **Seguridad (mitigación viva)** | **Bloqueo de borrado (delete-block)** aplicado a las reglas vivas para frenar el destrozo anónimo. | Consola Firebase |
@@ -558,6 +577,62 @@ se reafirma aquí por pertenecer al camino de pedidos.)
 sigue completo y desplegado con `VITE_PAYPAL_SERVER_SIDE` en **OFF** (pendiente de credenciales del
 dueño); **las reglas vivas siguen 100 % abiertas** en `(default)` por el ERP compartido (**no
 desplegar `firestore.rules.propuesto` sin resolver la auth del ERP / sin permiso**).
+
+### Paso 9 — Sesión 2026-06-28 — Sistema MULTI-MARCA (Fases 0–5) *(✅ HECHO — frontend desplegado; `setup-marcas.js` pendiente del dueño)*
+
+**Sistema multi-marca completo** sobre la misma sesión 2026-06-28: cada producto pertenece a
+**una** marca (`brandId` = doc id de `tienda_brands`) y cada marca tiene su **página**, su
+**catálogo sidebar filtrado**, su **panel admin** y su **nav de categorías con miniaturas**.
+**No se inventó un modelo nuevo:** el ~80 % ya existía (el `brandId` estaba soportado end-to-end
+con faceta server-side `{type:'brand'}`); se cablearon las **5 piezas** que faltaban (ver
+[PLAN-MULTIMARCA.md](./PLAN-MULTIMARCA.md)). El **frontend** salió por **Vercel** (auto-deploy
+desde `master`); **el backend NO requiere redeploy** (solo Firestore). **Las reglas vivas siguen
+100 % abiertas** en `(default)` por el ERP compartido (§6). Detalle por commit en el
+[CHANGELOG.md](../../CHANGELOG.md) (entrada 2026-06-28, "SISTEMA MULTI-MARCA").
+
+**Decisiones del usuario** (fijadas antes de arrancar): **1 producto = 1 marca**; **todos los
+productos actuales = Con Amor** (backfill); **`/mussa` se convierte en marca**; slug
+`ConAmor`/`MUSSA`/`MUEBLERIA`; categorías por marca como **array embebido** (`categoryNav`).
+**Brand IDs reales:** Con Amor `m3P26agqw7BjeYTDjs6j`, MUSSA `pMujqcyIIDUF2EdSSX5V`, MUEBLERIA
+`RMLsCQGvLo7c3NHgfkLO`.
+
+**Qué se desplegó por fase:**
+
+- **Fase 0 — Datos (`281823a`, script, lo corre el dueño):** `scripts/setup-marcas.js`
+  (idempotente, **DRY-RUN por defecto**, `--apply` para escribir): crea/reutiliza las 3 marcas con
+  `slug` sin duplicar; **backfill** `brandId = <id de Con Amor>` a los `productos_wala` sin marca
+  (solo `brandId`/`slug`, no precios/stock); crea las `landingPages/{slug}` (id === slug) para que
+  `WALA.PE/ConAmor`/`/MUSSA`/`/MUEBLERIA` resuelvan vía `DynamicLandingPage`.
+- **Fase 1 — `WALA.PE/ConAmor` (`a687fd5`):** setting `brandId` en `sidebar_catalog` (selector de
+  marca en `VisualEditorPanel`, guarda `b.id`); `getProductsByBrand` en `products.js`; `TiendaPage`
+  inicializa `catalogFacet = {type:'brand', value: brandId}` (marca server-side + categoría en
+  cliente). **Red de seguridad:** `brandId` vacío = catálogo global (no rompe la home). Requiere
+  índice `brandId + createdAt`.
+- **Ruteo case-insensitive (`212bf0f`):** `getLandingPageBySlug` cae a comparación en minúsculas si
+  el match exacto falla (`/CONAMOR` ≡ `ConAmor`); `TiendaPage` usa `pageIdOverride`.
+- **Fase 2 — Panel admin por marca + sidebar colapsable (`ac7e53d`):** `AdminMarcaProductos.jsx`
+  (lista por `getProductsByBrand`, **asignar/quitar marca en lote**, crear-con-marca vía
+  `/admin/productos/nuevo?brandId=`); `setProductBrand` escribe parcial y al **quitar** hace
+  `deleteField()` del `brandId`. Además, **sidebar con grupos de filtros COLAPSABLES**
+  (`SidebarCatalogLayout.jsx`).
+- **Fases 3–4–5 (`5221ad5`):** **nav de categorías por marca** — array `categoryNav:
+  [{categoryId,name,imageUrl,order}]` embebido en `tienda_brands` (normalizado en `brands.js`),
+  editado en `AdminMarcaProductos`; `categories_nav` (antes `null`) renderiza `VisualCategoryNav`
+  (burbujas con miniatura). **Clic-filtra:** modo **filtro-local** — el clic empuja la faceta de
+  categoría al sidebar de la misma página (filtra **sin navegar**). **MUSSA + MUEBLERIA operativas**
+  (se resolvió la colisión de la `/mussa` hardcodeada convirtiéndola en marca).
+
+**Otros fixes del mismo despliegue:** **hero centrado** de la CAJA del subtítulo según la
+alineación de la sección (`bd4b8df`, `HeroBanner.jsx`).
+
+**⬜ Pendiente del DUEÑO (no de código):**
+
+- **Correr `scripts/setup-marcas.js --apply`** (Cloud Shell, `--project sistema-gestion-3b225`):
+  crea las landingPages **MUSSA/MUEBLERIA** y hace el backfill `brandId` (ConAmor ya quedó como base).
+- **Configurar las páginas en el editor visual** (colocar `categories_nav` + `sidebar_catalog` con
+  el `brandId` de cada marca).
+- **Asignar productos a MUSSA / MUEBLERIA** desde el panel `AdminMarcaProductos` (hoy todos los
+  productos son **Con Amor**).
 
 ---
 

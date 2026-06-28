@@ -37,6 +37,10 @@
 > - **⬜ Aún objetivo (sin código):** `loyaltyConfig/global`, `tiers`, `ledger` contable,
 >   `searchIndex` (Algolia/Typesense), `dailySpins`/`chests`/`segments` como colecciones
 >   propias; y los campos objetivo que faltan en colecciones ya creadas (ver §3.4 / §3.5).
+>
+> **Aparte (NO es el marketplace objetivo):** el **sistema multi-marca** (`brandId` en
+> `productos_wala`, `slug`+`categoryNav` en `tienda_brands`, `landingPages/{slug}`+`pages/{slug}`,
+> faceta `brand`) **SÍ está en producción** (frontend, Vercel). Ver **§3.6**.
 
 ---
 
@@ -77,12 +81,14 @@ hay proyecto ERP separado en producción), así que todas deben estar en las mis
 
 | Colección (real) | Proyecto | Propósito | Campos clave |
 |---|---|---|---|
-| `productos_wala` | PROD | Catálogo real de productos de la tienda/editor. | `name`, `price`, `salePrice`, `visible`, `featured`, `featuredOrder`, `categories[]`, `collections[]`, `tags[]`, `characters[]`, `vendors[]` (tag string, NO entidad), `brandId`, `hasVariants`, `variants[]`, `mainImage`, `mainSizes[]`, `customizationViews[]`, `printAreas`, `isComboProduct`, `comboItems[]`, `inStock` (escalar global) |
+| `productos_wala` | PROD | Catálogo real de productos de la tienda/editor. | `name`, `price`, `salePrice`, `visible`, `featured`, `featuredOrder`, `categories[]`, `collections[]`, `tags[]`, `characters[]`, `vendors[]` (tag string, NO entidad), **`brandId`** (doc id de `tienda_brands`; **sistema multi-marca activo**, 1 producto = 1 marca; ausente/`''` = catálogo global — ver §3.6), `hasVariants`, `variants[]`, `mainImage`, `mainSizes[]`, `customizationViews[]`, `printAreas`, `isComboProduct`, `comboItems[]`, `inStock` (escalar global) |
 | `tienda_categories` | PROD | Categorías visuales V2 (Hoodies, Polos…). | `name`, `imageUrl`, `order`, `createdAt`, `updatedAt` |
 | `categories` | PROD | Categorías legacy. **Duplicado** de `tienda_categories`; `getCategories()` lee de aquí. | `name`, `order` |
 | `tienda_collections` | PROD | Colecciones/campañas temporales (drops). | `name`, `imageUrl`, `order` |
-| `tienda_brands` | PROD | Marcas premium. | `name`, `description`, `imageUrl`, `config{colorHex,bgOpacity,backgroundImageUrl}` |
-| `tienda_landing_pages` | PROD | Landings dinámicas por slug. | `title`, `slug`, `heroImage`, `theme{}`, `targetBrandId`, `targetCollectionId`, `isActive` |
+| `tienda_brands` | PROD | **Marcas (sistema multi-marca, ver §3.6).** Cada producto pertenece a 1 marca (`productos_wala.brandId` = doc id de aquí). | `name`, `slug` (CamelCase/MAYÚS, match **case-insensitive** en ruteo), `logoUrl`, `order`, `bgColor`, `bgImage`, `bgOpacity`, `whatsappNumber`, `categoryNav[{categoryId,name,imageUrl,order}]` (nav de categorías con miniatura por marca, embebido) |
+| `landingPages/{slug}` | PROD | **Páginas dinámicas por slug (id === slug).** `getLandingPageBySlug` busca por `slug` y, si falla, hace **fallback case-insensitive** en memoria. `/:slug` → `DynamicLandingPage` → `TiendaPage pageIdOverride=slug`. Las marcas tienen una aquí (`ConAmor`/`MUSSA`/`MUEBLERIA`). | `slug`, `name`, `title?`, `themeId?`, `hideHeader?`, `hideFooter?`, `createdAt`, `updatedAt` |
+| `pages/{slug}` | PROD | **Secciones (layout) de cada landing/página**, editadas en el editor visual. `TiendaPage` lee de aquí por `pageId` (= slug). Para una marca: contiene `categories_nav` + `sidebar_catalog` con su `settings.brandId`. | array `sections[{ type, settings }]` (tipos: `sidebar_catalog`, `categories_nav`, `product_grid`, `featured_products`, `hero`…) |
+| `tienda_landing_pages` | PROD | **Modelo legacy** de landings (NO el que usa el ruteo `/:slug`; ese es `landingPages` arriba). | `title`, `slug`, `heroImage`, `theme{}`, `targetBrandId`, `targetCollectionId`, `isActive` |
 | `tienda_mockups` | PROD | Prendas en blanco base para crear productos. | `name`, `category`, `baseImageUrl`, `variants[{colorName,colorHex,imageUrl}]` |
 | `product_reviews` | PROD | Reseñas de producto + votos "útil". | `productId`, `userId`, `userName`, `rating`, `comment`, `imageUrls[]`, `helpfulVotes[]`, `createdAt` |
 | `portal_clientes_users` | PROD | Perfil del cliente del portal + stats Wordle + economía de puntos + gamificación/segmentación. | `displayName`, `email`, `nombres`, `monedas`, `kapiCoins`, `wordlePlayed`, `wordleWins`, `wordleCurrentStreak`, `wordleMaxStreak`, `wordleTotalAttempts`, `lastWordleDate`, `wordleTodayAttempts`, `wordleTodayWon`, `referralCode` · **(Fase 5 ✅) campos nuevos:** `xp`, `dailyStreak`, `lastCheckInDate`, `segment` 🔒, `lastChestDate` 🔒 (🔒 = server-only, ver §3.4.8) |
@@ -137,6 +143,7 @@ mismo campo del rango.
 | 3 | `referrals` | `createReferralShare` (`referrals.js`): `where referrerCode ==` + `where createdAt >=` (rango) | `referrerCode ASC`, `createdAt ASC` | ✅ Sí (PROD) |
 | 4 | `referrals` | `updateReferralToCompletedByOrder` (`referrals.js`): `where referrerCode ==` + `where status in [...]` + `where completedAt >=` | `referrerCode ASC`, `status ASC`, `completedAt ASC` | ✅ Sí (PROD) |
 | 5 | `productos_wala` | `getFeaturedProducts` (`products.js`): `where featured == true` + `orderBy featuredOrder asc` | `featured ASC`, `featuredOrder ASC` | ✅ Sí (PROD) |
+| 5b | `productos_wala` | **Multi-marca:** `getStoreProductsPage` con faceta `{type:'brand'}` (`facetToWhere` en `products.js`): `where brandId ==` + `orderBy createdAt desc` (catálogo paginado de una marca) | `brandId ASC`, `createdAt DESC` | ✅ Sí (PROD) |
 | 6 | `pedidos` (ERP) | `searchOrdersInERP` (`erp/firebase.js`): `where phone ==` + `where dni ==` + `orderBy createdAt desc` | `phone ASC`, `dni ASC`, `createdAt DESC` | Mismo proyecto `sistema-gestion-3b225` (abajo) |
 | 7 | `pedidos_web` (ERP) | `searchOrdersInERP` (`erp/firebase.js`): igual que #6 sobre `pedidos_web` | `phone ASC`, `dni ASC`, `createdAt DESC` | Mismo proyecto `sistema-gestion-3b225` (abajo) |
 
@@ -465,6 +472,49 @@ Lo que sigue ⬜ (requiere servicios externos, navegador/editor o despliegue):
   `currency`/`expiryDate`/`idempotencyKey` en el ledger.
 - **Datos:** `niches`/`vendors` con campos objetivo completos, `ledger` contable,
   consolidar `categories` ↔ `tienda_categories`, fix del bug `portal_users` (referrals.js).
+
+---
+
+## 3.6 Sistema multi-marca (Con Amor / MUSSA / MUEBLERIA) ✅ DESPLEGADO (frontend)
+
+> Plan completo y commits en **[PLAN-MULTIMARCA.md](./PLAN-MULTIMARCA.md)**. Aquí solo el
+> **modelo de datos**. Frontend DESPLEGADO (Vercel, 2026-06-28). Es **aditivo**: no rompe la
+> tienda global; `brandId` ausente/`''` = catálogo global.
+
+**Idea:** cada producto pertenece a **una** marca (`productos_wala.brandId` = doc id de
+`tienda_brands`). Cada marca tiene su página `WALA.PE/<slug>`, su catálogo sidebar acotado a
+sus productos y su nav de categorías con miniaturas.
+
+### Campos que añade / usa
+
+| Doc | Campo | Tipo | Notas |
+|---|---|---|---|
+| `productos_wala/{id}` | `brandId` | string | Doc id de `tienda_brands`. **1 producto = 1 marca.** Ausente/`''` = catálogo global. Lo escribe `setProductBrand` con **escritura parcial** (`updateDoc {brandId}` para asignar, `updateDoc {brandId: deleteField()}` para quitar). |
+| `tienda_brands/{id}` | `slug` | string | `ConAmor`/`MUSSA`/`MUEBLERIA`. El ruteo hace match **case-insensitive**. |
+| `tienda_brands/{id}` | `categoryNav` | array | `[{ categoryId, name, imageUrl, order }]` — burbujas del nav de categorías de la marca (normalizado en `brands.js`). |
+| `landingPages/{slug}` | doc | — | **id === slug**. Hace que `WALA.PE/<slug>` resuelva vía `/:slug` → `DynamicLandingPage`. |
+| `pages/{slug}` | `sections[]` | array | Secciones de la página de la marca: `categories_nav` + `sidebar_catalog`, cada una con `settings.brandId`. |
+
+### Faceta `brand` (server-side)
+
+`getStoreProductsPage({ facet })` acepta **una** faceta server-side. `facetToWhere` (en
+`src/services/products.js`) mapea `{ type:'brand', value }` → `where('brandId','==',value)`,
+combinada con `orderBy('createdAt','desc')` (índice 5b de §2). Las demás facetas activas —en
+particular la **categoría** elegida en el nav o el sidebar— se aplican como **filtro de cliente**
+sobre la página recibida (límite de Firestore: 1 faceta + orderBy por query). `TiendaPage` deriva
+`pageBrandId` de la sección `sidebar_catalog` y arranca `catalogFacet = { type:'brand', value }`.
+
+### Brand IDs reales (producción `sistema-gestion-3b225`)
+
+| Marca | `brandId` | slug |
+|---|---|---|
+| Con Amor (base, catálogo actual) | `m3P26agqw7BjeYTDjs6j` | `ConAmor` |
+| MUSSA | `pMujqcyIIDUF2EdSSX5V` | `MUSSA` |
+| MUEBLERIA | `RMLsCQGvLo7c3NHgfkLO` | `MUEBLERIA` |
+
+> **Pendiente del dueño (datos, no código):** `node scripts/setup-marcas.js --apply` (crea
+> `landingPages/MUSSA` y `/MUEBLERIA` + termina el backfill `brandId`), configurar las páginas
+> MUSSA/MUEBLERIA en el editor visual y asignar productos a esas dos marcas (hoy todos = Con Amor).
 
 ---
 

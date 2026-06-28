@@ -14,7 +14,9 @@
 | Área | Ruta(s) | Estado |
 |---|---|---|
 | Inicio / Tienda (catálogo escalable con secciones) | `/`, `/tienda` | Activo |
+| Páginas de marca (catálogo propio de cada marca) | `/ConAmor`, `/MUSSA`, `/MUEBLERIA` (vía `/:slug`) | Activo (multi-marca) |
 | Catálogo con filtros (sidebar: categorías, temporadas, colecciones, marcas, tipo, etiquetas, personajes) | módulo dentro de `/`, `/tienda` | Activo |
+| Nav de categorías con miniaturas por marca (burbujas que filtran el catálogo de la marca) | módulo dentro de las páginas de marca | Activo (multi-marca) |
 | Ficha de producto (galería, variantes, talla, cantidad, reseñas, compartir) | `/producto/:id` | Activo |
 | Editor de personalización (POD) | `/editor/:id` | Activo |
 | Página "Personalizar" (listado de productos personalizables) | `/personalizar` | Activo |
@@ -86,6 +88,20 @@
 - **Archivos clave:**
   - `src/pages/Tienda/components/SidebarCatalogLayout.jsx`
   - servicios: `src/services/collections.js`, `brands.js`, `tags.js`, `characters.js`, `productTypes.js`, `products.js`
+
+### 1.3 Páginas de MARCA (`/ConAmor`, `/MUSSA`, `/MUEBLERIA`) — sistema multi-marca (sesión 2026-06-28, ✅ desplegado)
+- **Qué es:** Walá ahora es **multi-marca**: cada producto pertenece a **una sola marca** (campo `brandId` = doc id de `tienda_brands`) y cada marca tiene su **propia página con su propio catálogo**. Las marcas actuales son **Con Amor** (`/ConAmor`, todos los productos existentes), **MUSSA** (`/MUSSA`) y **MUEBLERIA** (`/MUEBLERIA`).
+- **Cómo se montan (ruteo):** no son páginas nuevas en código; reutilizan el **motor de landings dinámicas** `/:slug` → `DynamicLandingPage` → `TiendaPage`, cargando las secciones que el admin configuró para esa marca en el Editor Visual. La ruta vieja hardcodeada `/mussa` ("Próximamente") se **eliminó**; ahora `/MUSSA` cae en el catch-all `/:slug` y resuelve la landing de la marca.
+- **Slug insensible a mayúsculas/minúsculas (fix `212bf0f`):** `/ConAmor`, `/CONAMOR` y `/conamor` abren la **misma** página. `getLandingPageBySlug` hace un *fallback* en memoria si el match exacto falla, y `DynamicLandingPage` pasa el **slug guardado (canónico)** como `pageIdOverride` a `TiendaPage`, para que todas las variantes de mayúsculas lean y guarden las **mismas** secciones (no se parten por *case*).
+- **Catálogo acotado a la marca:** la página de marca lleva un módulo **"Catálogo con Sidebar"** (`sidebar_catalog`) con el **`brandId` de la marca** configurado. `TiendaPage` arranca el catálogo paginado con la faceta `{ type:'brand', value: brandId }`, de modo que `getStoreProductsPage` trae **solo los productos de esa marca** (filtrado **server-side**: `where('brandId','==',...)`, ver `facetToWhere` en `products.js`). La categoría elegida en el sidebar se aplica como **filtro de cliente** (Firestore permite una sola faceta + orden por query, así que la marca va en servidor y la categoría en cliente). Es **retrocompatible**: sin `brandId`, el catálogo es **global** (la home y `/tienda` siguen mostrando todo).
+- **Nav de categorías con miniaturas (estilo M\*\*\*SHAKES):** la página de marca puede llevar también un módulo **"Navegación por categorías"** (`categories_nav`) con el `brandId` de la marca. Muestra **burbujas redondas con miniatura** (las categorías que el admin armó para esa marca, ver FUNCIONES-ADMIN.md → panel por marca). Al pulsar una burbuja, **filtra el catálogo de la misma página** por esa categoría (modo "filtro local": no navega a `/tienda?categoria=`, solo fija la categoría en memoria), conservando la marca; la burbuja **"Todos"** la quita. La categoría activa se **comparte** entre el nav y el sidebar (estado elevado en `TiendaPage`), así ambos quedan sincronizados.
+- **Ruta:** `/ConAmor`, `/MUSSA`, `/MUEBLERIA` (y cualquier slug de marca futura, vía `/:slug`).
+- **Archivos clave:**
+  - `src/pages/Tienda/DynamicLandingPage.jsx` (pasa `pageIdOverride` = slug canónico), `src/pages/Tienda/TiendaPage.jsx` (faceta inicial por marca + estado `navCategoryId` compartido)
+  - `src/pages/Tienda/components/VisualCategoryNav/VisualCategoryNav.jsx` (burbujas con miniatura; modo "filtro local" `onSelectCategory` vs. modo enlace global)
+  - `src/pages/Tienda/components/SidebarCatalogLayout.jsx` (acepta categoría controlada por el nav)
+  - `src/services/products.js` (`getProductsByBrand`, faceta `brand` en `getStoreProductsPage`), `src/services/brands.js` (`slug`, `categoryNav`)
+  - `src/App.jsx` (ruta `/mussa` hardcodeada retirada; `/:slug` → `DynamicLandingPage`)
 
 ---
 
@@ -414,8 +430,8 @@
 - **Archivos clave:** `src/pages/GiftExperiencePage.jsx`
 
 ### 11.4 Landing pages dinámicas (`/:slug`)
-- **Qué es:** páginas de aterrizaje creadas por el admin con su propio contenido y tema (CSS), reutilizando el motor de secciones de la Tienda.
-- **Qué hace:** carga la landing por slug; si no existe, redirige a inicio (logueado) o a login. Puede ocultar header/footer.
+- **Qué es:** páginas de aterrizaje creadas por el admin con su propio contenido y tema (CSS), reutilizando el motor de secciones de la Tienda. **Las páginas de marca** (`/ConAmor`, `/MUSSA`, `/MUEBLERIA`, ver §1.3) son landings dinámicas con los módulos `categories_nav` + `sidebar_catalog` apuntando a su `brandId`.
+- **Qué hace:** carga la landing por slug (**insensible a mayúsculas/minúsculas**: `getLandingPageBySlug` cae a un match en memoria si el exacto falla, y `DynamicLandingPage` pasa el slug canónico como `pageIdOverride` para que todas las variantes lean las mismas secciones); si no existe, redirige a inicio (logueado) o a login. Puede ocultar header/footer.
 - **Archivos clave:** `src/pages/Tienda/DynamicLandingPage.jsx`
 
 ### 11.5 Páginas legales
@@ -427,7 +443,8 @@
 - **Archivos clave:** `src/pages/AppRedirect.jsx`
 
 ### 11.7 Otras landings de campaña
-- `/mussa` (`MussaPage`), `/regalos-catas` (`RegalosCatasPage`): landings/experiencias puntuales accesibles públicamente.
+- `/regalos-catas` (`RegalosCatasPage`): landing/experiencia puntual accesible públicamente.
+- **Nota (multi-marca):** la antigua ruta hardcodeada `/mussa` (`MussaPage`, "Próximamente") **se retiró**. Hoy `/MUSSA` es la **página de la marca MUSSA**, resuelta vía `/:slug` → `DynamicLandingPage` como landing editable (ver §1.3).
 
 ---
 

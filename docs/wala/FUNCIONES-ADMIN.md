@@ -61,7 +61,7 @@ El menú **se adapta al permiso** de cada administrador. Los permisos se asignan
 | **Recompensas** | `/admin/recompensas` | Catálogo de recompensas canjeables con monedas. |
 | **Zonas de Envío** | `/admin/envios` | Zonas/departamentos con su costo y días estimados de entrega. |
 | **Pagos a Vendedores (Payouts)** | `/admin/payouts` | Pagos a vendedores: saldos a pagar, registrar pagos, estado. |
-| **Marcas** | `/admin/marcas` | Marcas de producto (logo, color y fondo). |
+| **Marcas** | `/admin/marcas` | Marcas de producto (logo, color, fondo, **slug**, **WhatsApp del asesor**) **+ panel por marca**: "Gestionar productos" abre `AdminMarcaProductos` (asignar/quitar productos en lote + armar el nav de categorías con miniaturas de esa marca). |
 | **Landing Pages** | `/admin/landing-pages` | Páginas de aterrizaje/embudos (slug, tema, productos enlazados con su stock). |
 | **Gestor de Temas** | `/admin/temas` | Temas visuales (CSS) que se aplican a landing pages o a toda la tienda. |
 | **Cliparts** | `/admin/cliparts` | Galería de cliparts para el editor de personalización. |
@@ -163,7 +163,7 @@ Gestiona los **premios de la ruleta** (nombre, tipo —ej. Monedas—, monto y *
 Archivo: `src/pages/Tienda/admin/AdminProductos.jsx`.
 Gestión completa del catálogo: ver en **tarjetas o tabla**, **buscar**, crear, **editar**, **duplicar**, ocultar/mostrar (visibilidad), eliminar, **acciones masivas** (selección múltiple) y **exportar** productos. Conserva borradores locales. El alta/edición abre el formulario en `/admin/productos/nuevo` o `/admin/productos/:id`.
 
-> **Editor de producto** — `/admin/productos/nuevo` y `/admin/productos/:id` (`AdminProductoFormV2.jsx`). Formulario avanzado del producto: imágenes, mockups, marca/nicho/vendedor, categorías, colecciones, tags, personajes, descripción con editor de texto enriquecido (ReactQuill), vistas de personalización (canvas con Fabric.js) y editor de combos.
+> **Editor de producto** — `/admin/productos/nuevo` y `/admin/productos/:id` (`AdminProductoFormV2.jsx`). Formulario avanzado del producto: imágenes, mockups, **marca**/nicho/vendedor, categorías, colecciones, tags, personajes, descripción con editor de texto enriquecido (ReactQuill), vistas de personalización (canvas con Fabric.js) y editor de combos. La **marca** se elige en un carrusel de miniaturas (clic para asignar/quitar) y se persiste en `brandId`. **Preselección de marca (multi-marca):** si el formulario se abre con `?brandId=<id>` (lo hace el botón "Crear producto en {marca}" del panel por marca), la marca queda **preseleccionada** en un producto nuevo, sin tocar nada de precios/stock.
 
 ### Inventario — `/admin/inventario`
 Archivo: `src/pages/Tienda/admin/AdminInventario.jsx`.
@@ -211,7 +211,15 @@ Archivo: `src/pages/admin/AdminPayouts.jsx`.
 
 ### Marcas — `/admin/marcas`
 Archivo: `src/pages/admin/AdminMarcas.jsx`.
-CRUD de **marcas**: nombre, logo (subida con recorte), orden, color de fondo, imagen de fondo y opacidad. Estas marcas alimentan el módulo "Carrusel de Logos / Marcas" del Page Builder.
+CRUD de **marcas**: nombre, logo (subida con recorte), orden, color de fondo, imagen de fondo, opacidad, **slug** (la URL de su página, p. ej. `ConAmor`) y **WhatsApp del asesor** de la marca (para enrutar consultas/pedidos al asesor correcto). Estas marcas alimentan el módulo "Carrusel de Logos / Marcas" del Page Builder **y son la base del sistema multi-marca** (cada producto pertenece a una marca por su `brandId` = doc id de `tienda_brands`). Las marcas actuales: **Con Amor** (todos los productos existentes), **MUSSA** y **MUEBLERIA**.
+
+> **Toggle de confirmación multimarca:** desde aquí se configura el **número principal "Todo a WALA"** y un *toggle* que, al activarse, hace que un pedido con productos de varias marcas se reparta a **cada asesor por su `whatsappNumber`** (con el toggle apagado, todo va al número principal). Ver FUNCIONES-CLIENTE.md → Checkout / "Mis Compras".
+
+#### Panel por marca — `AdminMarcaProductos` (botón "Gestionar productos")
+Archivo: `src/pages/admin/AdminMarcaProductos.jsx` (servicios: `getProductsByBrand` / `setProductBrand` en `products.js`; `getBrand` / `updateBrand` con `categoryNav` en `brands.js`). **No es una ruta propia**: se abre **dentro de `/admin/marcas`** al pulsar **"Gestionar productos"** en la tarjeta de una marca. Tiene **dos pestañas**:
+
+- **Productos:** muestra los productos **ya asignados** a la marca (`getProductsByBrand`) con opción de **quitarlos en lote**, y la lista de productos **sin esa marca** para **asignarlos en lote**. La única escritura sobre el producto es el campo **`brandId`** vía `setProductBrand(id, brandId)` — una **escritura PARCIAL directa** (`updateDoc`): asignar pone `brandId:<marca>`, **quitar REMUEVE el campo** con `deleteField()`. **No toca** precio, stock, imágenes, variantes ni cobro. *(Detalle: esa escritura parcial arregla el bug por el que "Quitar de la marca" era un no-op, porque la ruta normal de guardado "limpiaba" los vacíos y nunca borraba el campo.)* También hay un botón **"Crear producto en {marca}"** que abre el formulario en `/admin/productos/nuevo?brandId=<id>` con la **marca preseleccionada**.
+- **Nav de categorías** (`BrandCategoryNavEditor`): arma el array **`categoryNav`** de la marca — una lista de **categorías con miniatura** (`[{ categoryId, name, imageUrl, order }]`) que se podrá **agregar, reordenar y quitar**. Se eligen categorías existentes (con su `imageUrl`) y se guarda con `updateBrand(brand.id, { categoryNav })` (escritura aditiva del array, embebida en `tienda_brands`). Ese array es el que alimenta las **burbujas con miniatura** del módulo "Navegación por categorías" en la página de la marca (ver FUNCIONES-CLIENTE.md → §1.3).
 
 ### Landing Pages — `/admin/landing-pages` *(requiere permiso de Landing Pages)*
 Archivo: `src/pages/Tienda/admin/AdminLandingPages.jsx`.
@@ -293,6 +301,18 @@ Es **100% retrocompatible**: con los campos vacíos, las secciones se ven exacta
 
 - **Archivos clave:** `src/pages/Tienda/admin/editor/controls/TextStyleControl.jsx`, `src/pages/Tienda/admin/editor/controls/ButtonFieldsControl.jsx`, `src/pages/Tienda/components/textStyleUtils.jsx` (`estiloTexto`, `<TextoSeccion>`, `<BotonSeccion>`), `src/pages/Tienda/admin/VisualEditorPanel.jsx`, `src/pages/Tienda/services/storefront.js` (`getDefaultSettings`), `src/pages/Tienda/TiendaPage.jsx`.
 
+### Selector de MARCA por sección (multi-marca, sesión 2026-06-28, ✅ desplegado)
+
+Para construir una **página de marca** (`/ConAmor`, `/MUSSA`, `/MUEBLERIA`, ver FUNCIONES-CLIENTE.md → §1.3), el Editor Visual añade un **selector "Marca de esta sección"** en los ajustes de las secciones **Catálogo con Sidebar** (`sidebar_catalog`), **Grid de productos** (`product_grid`) y **Navegación por categorías** (`categories_nav`). El selector lista las marcas (`getBrands`) y guarda el **doc id** de la marca en `settings.brandId` ("(Todas las marcas)" = vacío = global).
+
+- En `sidebar_catalog` / `product_grid`, `TiendaPage` detecta ese `brandId` y arranca el catálogo paginado con la faceta `{ type:'brand', value: brandId }` → `getStoreProductsPage` trae **solo esa marca**, **server-side** (`where('brandId','==',...)`). La categoría del sidebar se aplica como filtro de cliente.
+- En `categories_nav`, `TiendaPage` carga el `categoryNav` de esa marca (`getBrand`) y renderiza las **burbujas con miniatura**; al pulsarlas fija la categoría (estado `navCategoryId` **compartido** con el sidebar de la misma página).
+- **Retrocompatible:** sin `brandId`, el comportamiento es el de siempre (catálogo global, nav por enlaces). Índice Firestore `brandId + createdAt` necesario para la paginación por marca (ya existía).
+
+**Cómo dejar lista una marca (flujo del dueño):** correr `scripts/setup-marcas.js --apply` (crea las marcas con su slug, backfill `brandId = Con Amor` en productos sin marca y crea las `landingPages` de ConAmor/MUSSA/MUEBLERIA) → entrar al Editor Visual de cada página de marca y colocar los módulos `categories_nav` + `sidebar_catalog` con su `brandId` → asignar productos a MUSSA/MUEBLERIA desde el panel por marca. *(Brand IDs reales: Con Amor `m3P26agqw7BjeYTDjs6j`, MUSSA `pMujqcyIIDUF2EdSSX5V`, MUEBLERIA `RMLsCQGvLo7c3NHgfkLO`.)*
+
+- **Archivos clave:** `src/pages/Tienda/admin/VisualEditorPanel.jsx` (selector de marca), `src/pages/Tienda/services/storefront.js` (defaults `brandId:''`), `src/pages/Tienda/TiendaPage.jsx`, `src/services/products.js` (`getProductsByBrand`, faceta `brand`), `src/services/brands.js` (`slug`, `categoryNav`), `scripts/setup-marcas.js`.
+
 ### Módulos disponibles (de `SECTION_TYPES`)
 
 | Módulo | Para qué sirve |
@@ -304,9 +324,9 @@ Es **100% retrocompatible**: con los campos vacíos, las secciones se ven exacta
 | **Video** | Un video (con poster opcional). |
 | **Productos destacados** | Muestra los productos marcados como destacados. |
 | **Carrusel de colección** | Carrusel con los productos de una colección elegida. |
-| **Navegación por categorías** | Fila de accesos a las categorías. |
-| **Grid de productos simple** | Rejilla de productos (con búsqueda/orden opcional). |
-| **Catálogo con Sidebar (estilo Mercado Libre)** | Catálogo completo con barra lateral de filtros. |
+| **Navegación por categorías** | Fila/burbujas de accesos a categorías. **Con setting `brandId`** (multi-marca): en una página de marca muestra las **burbujas con miniatura** del `categoryNav` de esa marca y, al pulsarlas, **filtra el catálogo de la misma página** (no navega a `/tienda?categoria=`). Sin `brandId`, es navegación global por enlaces. |
+| **Grid de productos simple** | Rejilla de productos (con búsqueda/orden opcional). Acepta setting **`brandId`** para acotarlo a una marca. |
+| **Catálogo con Sidebar (estilo Mercado Libre)** | Catálogo completo con barra lateral de filtros. **Con setting `brandId`** (multi-marca): acota el catálogo paginado a **una sola marca** (server-side); la categoría del sidebar filtra en cliente. Vacío = catálogo global. |
 | **Barra de Anuncios Superior** | Banda de avisos rotativos (colores y velocidad configurables). |
 | **Carrusel Principal (Hero Slider)** | Carrusel de varias imágenes en la cabecera. |
 | **Íconos de Confianza (Badges)** | Fila de íconos (envío, pago seguro, etc.). |
