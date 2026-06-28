@@ -93,21 +93,30 @@ export default function AdminDashboard() {
   const trafficByDay = useMemo(() => {
     const events = data?.eventsForCharts || [];
     const byDay = new Map();
+    // Pre-sembramos TODOS los días del rango con 0 para que el eje X muestre el
+    // rango completo (y no un solo punto) aunque algún día no tenga eventos.
+    const dias = Math.max(1, Number(rangeDays) || 30);
+    for (let i = dias - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      const key = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      byDay.set(key, { name: key, total: 0, app: 0, web: 0, ts: d.getTime() });
+    }
     events.forEach((e) => {
       if (e.type !== 'page_view') return;
       const ts = e.clientTsMs || e.createdAt || 0;
       const d = new Date(typeof ts === 'object' && ts?.toMillis ? ts.toMillis() : ts);
       if (Number.isNaN(d.getTime())) return;
       const key = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const dayStart = new Date(d).setHours(0, 0, 0, 0);
-      if (!byDay.has(key)) byDay.set(key, { name: key, total: 0, app: 0, web: 0, ts: dayStart });
+      if (!byDay.has(key)) return; // evento fuera del rango pre-sembrado
       const row = byDay.get(key);
       row.total += 1;
       if (e.clientType === 'APP') row.app += 1;
       else row.web += 1;
     });
     return [...byDay.values()].sort((a, b) => a.ts - b.ts);
-  }, [data?.eventsForCharts]);
+  }, [data?.eventsForCharts, rangeDays]);
 
   // ¿Hay tráfico desde la APP? Si no, ocultamos el segmento APP del toggle.
   const hasAppData = useMemo(

@@ -183,7 +183,7 @@
   margin: 0;
 }
 
-.categoryList li, .brandItem {
+.categoryList li, .brandList li, .brandItem {
   padding: 0.5rem 0;
   cursor: pointer;
   color: var(--gris-texto-secundario, #555);
@@ -191,7 +191,7 @@
   font-size: 0.95rem;
 }
 
-.categoryList li:hover, .brandItem:hover {
+.categoryList li:hover, .brandList li:hover, .brandItem:hover {
   color: var(--primario, #8b5cf6);
   padding-left: 5px;
 }

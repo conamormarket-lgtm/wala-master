@@ -10,7 +10,7 @@ const REALTIME_WINDOW_MS = 5 * 60 * 1000;
 // El dashboard refetchea cada 20s y SIEMPRE envía un rango de fechas, por lo que
 // estos límites se aplican casi siempre. Mantenerlos bajos es clave para no
 // agotar la cuota de lecturas de Firestore.
-const GLOBAL_EVENTS_LIMIT = 1500;   // antes: 10000 con filtro de fecha
+const GLOBAL_EVENTS_LIMIT = 5000;   // sube el tope: con 1500 (orden DESC) solo llegaban eventos del día más reciente → la serie de tráfico salía en un solo punto. 5000 cubre varios días del rango.
 const GLOBAL_SESSIONS_LIMIT = 300;  // antes: 10000 con filtro de fecha
 const GLOBAL_REALTIME_SESSIONS_LIMIT = 150; // antes: 1000
 const GLOBAL_USERS_LIMIT = 400;     // base de usuarios para enriquecer realtime
