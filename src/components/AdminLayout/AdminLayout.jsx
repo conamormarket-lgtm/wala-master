@@ -91,6 +91,12 @@ const AdminLayout = () => {
               >
                 📦 Recepción de Pedidos
               </NavLink>
+              <NavLink
+                to="/admin/elementos-diseno"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                🎨 Elementos con diseño
+              </NavLink>
               <a
                 href="/tienda"
                 className={getLinkClass(false, 'diseno')}

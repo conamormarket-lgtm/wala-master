@@ -1,0 +1,186 @@
+/* ═══════════════════════════════════════════
+   ADMIN · ELEMENTOS CON DISEÑO
+   Hub por marca para editar piezas visuales.
+   ═══════════════════════════════════════════ */
+
+.wrapper {
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem 0;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Cabecera ── */
+.header {
+  margin-bottom: 1.75rem;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #111;
+  margin: 0 0 0.5rem 0;
+}
+
+.titleIcon {
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 640px;
+}
+
+/* ── Selector de marca ── */
+.brandPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: #ffffff;
+  border: 1px solid #ececf1;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.brandLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+}
+
+.brandSelect {
+  width: 100%;
+  max-width: 420px;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.95rem;
+  border: 1px solid #d9d9e3;
+  border-radius: 10px;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.brandSelect:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+/* ── Pestañas (preparado para más elementos) ── */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #ececf1;
+  padding-bottom: 0.6rem;
+}
+
+.tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: #f4f4f7;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tab:hover {
+  background: #ececf1;
+  color: #222;
+}
+
+.tabActive {
+  background: #7c3aed;
+  color: #fff;
+  border-color: #7c3aed;
+}
+
+.tabActive:hover {
+  background: #6d28d9;
+  color: #fff;
+}
+
+/* ── Panel de contenido de la sub-sección ── */
+.panel {
+  background: #ffffff;
+  border: 1px solid #ececf1;
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  min-height: 160px;
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  padding: 1.5rem;
+  text-align: center;
+  color: #888;
+  font-size: 0.95rem;
+  background: #fafafc;
+  border: 1px dashed #d9d9e3;
+  border-radius: 12px;
+}
+
+/* ── Estados comunes ── */
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.errorBox {
+  padding: 0.75rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .title {
+    font-size: 1.6rem;
+  }
+
+  .panel {
+    padding: 0.85rem;
+  }
+}

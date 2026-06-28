@@ -18,6 +18,9 @@ import BackgroundStylesControl from './editor/controls/BackgroundStylesControl';
 // Bloques reutilizables nuevos: estilo de texto por campo (alineación/subrayado/fondo/enlace) y botón de acción
 import TextStyleControl from './editor/controls/TextStyleControl';
 import ButtonFieldsControl from './editor/controls/ButtonFieldsControl';
+// Editor reutilizable del nav de categorías por marca (burbujas: miniatura / qué filtra / nombre / orden).
+// Se embebe inline en la sección 'categories_nav' para editar el categoryNav de la MARCA sin salir del editor visual.
+import CategoryNavEditor from '../../../components/admin/CategoryNavEditor/CategoryNavEditor';
 // Subida de imágenes a NUESTRO Firebase Storage (control propio, no se rompe si una URL externa muere)
 import { uploadFile } from '../../../services/firebase/storage';
 
@@ -2038,9 +2041,26 @@ const VisualEditorPanel = () => {
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
-            <p style={{fontSize: '0.8rem', color: '#666', marginTop: 0}}>
-              Las burbujas son <strong>automáticas</strong>: se generan a partir de las categorías que tienen los productos de esta marca, usando la imagen de cada categoría. Al hacer clic en una burbuja se filtra el catálogo de esta página por esa categoría. Si quieres personalizar el orden o las imágenes, define un menú de categorías manual en el <strong>panel de la marca</strong> (ese override reemplaza a las burbujas automáticas).
-            </p>
+            {s.brandId ? (
+              <>
+                {/* Editor inline del nav de categorías de la MARCA seleccionada.
+                    Edita las MISMAS cosas que el panel de la marca (miniatura,
+                    qué filtra, nombre, orden). OJO: el categoryNav vive en la
+                    marca, así que estos cambios afectan a todas las páginas que
+                    usen el nav de esta marca (es el modelo de datos esperado). */}
+                <p style={{fontSize: '0.8rem', color: '#666', marginTop: 0, marginBottom: '12px'}}>
+                  Edita aquí las burbujas de esta marca: la <strong>miniatura</strong>, <strong>qué categoría filtra</strong>, el <strong>nombre</strong> y el <strong>orden</strong>. Si lo dejas vacío, el nav se genera <strong>automáticamente</strong> desde las categorías de los productos de la marca. Estos cambios viven en la marca, así que se reflejan en todas las páginas que usen su nav.
+                </p>
+                <CategoryNavEditor
+                  brandId={s.brandId}
+                  brandName={brands?.find(b => b.id === s.brandId)?.name}
+                />
+              </>
+            ) : (
+              <p style={{fontSize: '0.8rem', color: '#666', marginTop: 0}}>
+                Elige una marca arriba para editar sus burbujas de categorías (miniatura, qué filtra, nombre y orden). Mientras no haya marca, las burbujas son <strong>automáticas</strong>: se generan a partir de las categorías de los productos de esa marca, usando la imagen de cada categoría. Al hacer clic en una burbuja se filtra el catálogo de esta página por esa categoría.
+              </p>
+            )}
           </div>
         );
       }
