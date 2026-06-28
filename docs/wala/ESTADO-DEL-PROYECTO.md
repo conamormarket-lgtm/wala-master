@@ -16,7 +16,32 @@
 > [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md) (lo que ve y hace el cliente) y
 > [FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md) (lo que controla el administrador).
 
-> ## 📌 Banner de estado (actualizado 2026-06-27)
+> ## 📌 Banner de estado (actualizado 2026-06-28)
+>
+> **Sesión 2026-06-28 (desplegada):** dos frentes. (1) **Editor de texto enriquecido** en el
+> editor visual: bloque reutilizable de alineación / subrayado / color de fondo / link en el
+> texto + botón configurable, añadido a TODOS los editores de sección (hero, header, text,
+> testimonials, map, marquee, carruseles), 100 % retrocompatible. (2) **Escalabilidad Fases
+> 0–4 del plan [ESCALABILIDAD.md](./ESCALABILIDAD.md) desplegadas**: **Fase 1** — `manualChunks`
+> parte el bundle de ~2.25 MB (app a ~619 KB) y el dashboard baja **−75 % de lecturas** (refetch
+> 15 s→120 s); **Fase 0** — seguridad de pagos **seguro-por-defecto** (idempotencia Culqi por
+> lock, firma de webhook y ownership **tras flags apagados**, PayPal **server-side** escrito) +
+> **8 índices** + **`firebase/firestore.rules.propuesto`** (guardado, **NO desplegado**;
+> precondición: PayPal server-side); **Fase 2** — **pre-agregación** de analítica
+> (`analytics_daily` por CF diaria + dashboard que la lee con **fallback** al cálculo en vivo);
+> **Fase 3** — **paginación con cursor** del catálogo + **búsqueda Firestore** (`searchTokens`) +
+> imágenes lazy; **Fase 4** — **Lingva endurecido** (caché TTL, circuit-breaker) + **observabilidad**
+> (error boundary global + Web Vitals → `analytics_events`). **DEPLOY EJECUTADO por el dueño en
+> Cloud Shell:** **7 Cloud Functions** + **índices** + **2 backfills** (`createdAt`, que
+> **recuperó 77 productos que estaban ocultos**, y `searchTokens`) sobre **123 productos**.
+> **Decisiones:** búsqueda = **solo Firestore**, traducción = **Lingva** (no API de pago), CFs de
+> dinero **en gen1**. **Las reglas vivas siguen 100 % abiertas** en `(default)` por el ERP
+> compartido. **EN CURSO** (sin commitear): **Recepción de Pedidos** (admin, organizar envíos),
+> **PayPal server-side wiring** (flag `VITE_PAYPAL_SERVER_SIDE`) y un **botón de backfill de
+> analítica** en el dashboard. **Pendiente del dueño:** activar los flags
+> (`CULQI_VERIFY_SIGNATURE`/`ENFORCE_PAYMENT_OWNERSHIP`) con datos reales, definir
+> `VITE_PAYPAL_SERVER_SIDE` en Vercel cuando esté probado, y desplegar el `.propuesto` solo
+> cuando PayPal server-side esté probado. Detalle en §2 (Paso 7).
 >
 > **Sesión 2026-06-27 (desplegada):** se desplegó a producción una tanda grande de
 > **diseño/UX (design system liquid-glass "Aurora Violeta Serena"), tracking de precisión,
@@ -346,6 +371,92 @@ con el plan completo de **"Mis fechas especiales"** (registro de regalos por fec
 pública `/regalar/:referralCode`, con cuidado de privacidad: **no publicar hasta cerrar reglas
 + Cloud Function**) y **"Agregar todo al carrito"** en la wishlist. Ver §7 (Prioridades).
 
+### Paso 7 — Sesión 2026-06-28 — Escalabilidad Fases 0–4 + texto enriquecido *(✅ HECHO — desplegado)*
+
+Sesión de dos frentes: el **editor de texto enriquecido** y el **despliegue de las Fases 0–4
+del plan de [ESCALABILIDAD.md](./ESCALABILIDAD.md)** (que ya existía como análisis; aquí se
+implementó y desplegó). El **frontend** salió por **Vercel** (auto-deploy desde `master`); las
+**Cloud Functions, los índices y dos backfills los EJECUTÓ EL DUEÑO por Cloud Shell** sobre
+`sistema-gestion-3b225`. **Las reglas vivas siguen 100 % abiertas** en `(default)` por el ERP
+compartido (ver §6). Detalle por commit en el [CHANGELOG.md](../../CHANGELOG.md) (entrada
+2026-06-28).
+
+**(1) Editor de texto enriquecido (`ae30cfa`):** bloque reutilizable **`TextStyleControl`**
+(alineación izquierda/centro/derecha, **subrayado**, **color de fondo**, **link en el texto**) +
+**`ButtonFieldsControl`** (texto/enlace del **botón**), añadidos a **todos** los editores de
+sección con texto (hero, header, text, testimonials, map, marquee, carruseles) en
+`VisualEditorPanel.jsx`. El render (`textStyleUtils.jsx`, `<TextoSeccion>`/`<BotonSeccion>`)
+aplica los estilos y pinta el botón; `TiendaPage.jsx` pasa la config a cada sección.
+**100 % retrocompatible:** con campos vacíos, las secciones se ven igual que hoy.
+
+**(2) Escalabilidad — qué se desplegó por fase del plan:**
+
+- **Fase 1 — quick wins (`1a82a0a`, frontend por Vercel):** `vite.config.js` con `manualChunks`
+  parte el `index` de **~2.25 MB** en `react-vendor`/`firebase-vendor`/`charts`/`motion`/`paypal`/
+  `fabric` (chunk de app a **~619 KB**, cacheable entre deploys); **dashboard −75 % de lecturas**
+  (`AdminUsuariosAnalyticsPage` con refetch **15 s → 120 s**, sin background, `staleTime` 60 s).
+- **Fase 0 — seguridad de pagos SEGURO POR DEFECTO (`1a82a0a`):** **S-4** idempotencia de
+  `processCulqiPayment` (lock `culqiCharges/{tokenId}`); **S-2** firma del webhook Culqi tras el
+  flag `CULQI_VERIFY_SIGNATURE` (OFF); **S-3** ownership de la confirmación tras
+  `ENFORCE_PAYMENT_OWNERSHIP` (OFF); **S-1** PayPal **server-side** (`createPaypalOrderSecure`/
+  `capturePaypalOrderSecure`) **escrito pero aún NO cableado al cliente**; **+8 índices**; **NUEVO
+  `firebase/firestore.rules.propuesto`** (guardado, **NO desplegado** — cierra el `update`
+  cliente-side de `pedidos_web`, **precondición** de tener PayPal server-side, y valida el
+  `create` de `analytics_events`). Pagos verificados **sin cambio de comportamiento** con flags
+  apagados.
+- **Fase 2 — pre-agregación de analítica (`0011b70`, `8de5b50`):** CF **`aggregateAnalyticsDaily`**
+  (`onSchedule` gen2, 00:20 Lima, query paginada por cursor, idempotente) escribe
+  **`analytics_daily/{YYYY-MM-DD}`** ya sumado; + **`aggregateAnalyticsDailyBackfill`** (callable
+  solo-admin). El dashboard (`analyticsDaily.js` + `dashShared.jsx`) lee N docs/día con
+  **FALLBACK** a `getGlobalAnalytics` legacy si no hay docs. `getTopSellingWala` usa el índice
+  `(type, clientTsMs)` server-side en vez de `limit(3000)`+memoria.
+- **Fase 3 — catálogo y búsqueda (`37fc015`, `21ecbc6`):** **paginación con cursor** del catálogo
+  (`getStoreProductsPage` + `useInfiniteQuery` en `TiendaPage` + `ProductGrid` con IntersectionObserver;
+  **red de seguridad**: si la 1ª página sale vacía cae al catálogo completo, nunca queda vacío);
+  **búsqueda SOLO Firestore** (`nameLower`+`searchTokens`, con fallback a memoria); **imágenes
+  lazy** (`OptimizedImage`, `HeroBanner` `fetchpriority=high`). Scripts `backfill-product-createdat.js`
+  y `backfill-search-tokens.js`.
+- **Fase 4 — i18n + observabilidad (`21ecbc6`):** **Lingva endurecido** (caché v2 TTL 30 d,
+  circuit-breaker por instancia, timeout 6 s, siempre cae al original); **`AppErrorBoundary`** global
+  + **Web Vitals** (LCP/CLS) → `analytics_events` (`client_error`/`web_vital`, sin PII, throttle).
+- **Fixes para Cloud Shell (`ceed174`, `66606dc`):** se quitaron índices inválidos (compuesto de
+  un solo campo / `fieldPath` repetido) y los backfills pasaron a la **API modular** de
+  `firebase-admin` (`applicationDefault()`+`getFirestore()`).
+
+**(3) DEPLOY EJECUTADO por el dueño (Cloud Shell, `sistema-gestion-3b225`):** **7 Cloud Functions**
+(incluye las de pagos con flags OFF, la CF gen2 de analítica y el callable de backfill) +
+**índices** + **2 backfills** sobre **123 productos**: `createdAt` (**recuperó 77 productos que
+estaban ocultos** del storefront por no tener fecha) y `searchTokens` (habilita la búsqueda
+Firestore).
+
+**(4) Decisiones de arquitectura:** **búsqueda = solo Firestore** (sin Algolia/Typesense por
+ahora), **traducción = Lingva** (no Google Cloud Translation v3 de pago, solo se endurece la vía
+gratis), **CFs de dinero en gen1** (Culqi/PayPal se mantienen en gen1 por estabilidad; gen2
+queda para mayor tráfico).
+
+**(5) Seguridad — reglas sin cambios:** **las reglas vivas siguen 100 % abiertas** en `(default)`
+porque el **ERP comparte el proyecto y NO usa Firebase Auth**; el `.propuesto` está guardado pero
+**NO desplegado**. Ver §6/§7.
+
+**🔧 EN CURSO (no terminado; sin commitear):**
+
+- **Recepción de Pedidos (admin):** área para **organizar envíos** del portal WALA
+  (`RecepcionPedidos.jsx` + `DashRecepcion.jsx`), solo-lectura, sobre el hook `useAdminWalaOrders`
+  y la capa `adminOrders.js` que lee `pedidos_web`+`pedidos` del ERP.
+- **PayPal server-side wiring:** `PaypalCheckout.jsx` ya lee el flag `VITE_PAYPAL_SERVER_SIDE`
+  (OFF) para cablear `createPaypalOrderSecure`/`capturePaypalOrderSecure`; falta terminarlo y probarlo.
+- **Botón de backfill de analítica** en el dashboard (`BackfillAnaliticaButton.jsx`) que dispara
+  `aggregateAnalyticsDailyBackfill`.
+
+**⬜ Pendiente del DUEÑO (no de código):**
+
+- **Activar los flags con datos reales:** encender `CULQI_VERIFY_SIGNATURE` y
+  `ENFORCE_PAYMENT_OWNERSHIP` tras verificar contra cobros reales.
+- **Definir `VITE_PAYPAL_SERVER_SIDE=true` en Vercel** (+ redeploy) cuando el cableado PayPal
+  server-side esté terminado y probado.
+- **Desplegar `firestore.rules.propuesto`** SOLO cuando PayPal server-side esté probado (cierra
+  `pedidos_web`) y resuelto el track del ERP (App Check / migrar el ERP a Firebase Auth).
+
 ---
 
 ## 3. Tabla resumen de fases (0–5)
@@ -541,6 +652,12 @@ usuario** (no de código) para que el cobro quede 100 % en producción:
 > (`/admin/dashboard/uso`), con KPIs animados y heatmap mejorado (mini-tarjetas, nº de clics,
 > preview, etiquetas con emoji). Revisar qué sigue pendiente del iframe/`willReadFrequently`
 > contra el código actual.
+>
+> **Nota (sesión 2026-06-28):** además se atacó el **costo** del dashboard (no solo su
+> estructura): refetch **15 s→120 s** (−75 % de lecturas) y **pre-agregación diaria**
+> `analytics_daily` con fallback (Fase 2 del plan de [ESCALABILIDAD.md](./ESCALABILIDAD.md)),
+> que baja el dashboard de ~5.300 a ~30-90 lecturas/refresco cuando la CF diaria esté poblada.
+> Está **EN CURSO** un **botón de backfill de analítica** para poblar los días históricos.
 
 
 | Pendiente | Fase | Por qué importa |

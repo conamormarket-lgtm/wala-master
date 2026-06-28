@@ -1,9 +1,9 @@
 # Changelog — Wala
 
 Registro de actualizaciones y funciones, de lo más nuevo a lo más viejo. Las entradas más
-recientes (**2026-06-25** y **2026-06-27**) ya están **desplegadas a producción**
-(`sistema-gestion-3b225`): frontend por **Vercel** (auto-deploy desde `master`) y backend
-(Cloud Functions / índices) por **Cloud Shell**. Las entradas más antiguas marcadas
+recientes (**2026-06-25**, **2026-06-27** y **2026-06-28**) ya están **desplegadas a
+producción** (`sistema-gestion-3b225`): frontend por **Vercel** (auto-deploy desde `master`)
+y backend (Cloud Functions / índices / backfills) por **Cloud Shell**. Las entradas más antiguas marcadas
 `[Sin liberar]` se construyeron en la rama `fase-0-seguridad` (hoy `master`) y se
 **verificaron en local** (build + emulador) antes de desplegarse en esas tandas. Detalle de
 estado en [docs/wala/ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md); detalle por
@@ -12,6 +12,55 @@ fase en [`docs/wala/fases/`](docs/wala/fases/README.md).
 Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
+
+## [2026-06-28] — ESCALABILIDAD Fases 0–4 + texto enriquecido (Vercel + DEPLOY del dueño por Cloud Shell)
+Sesión doble: (1) **editor de texto enriquecido** en el editor visual y (2) **despliegue de las Fases 0–4 del plan de [ESCALABILIDAD](docs/wala/ESCALABILIDAD.md)** (bundle, seguridad de pagos seguro-por-defecto, pre-agregación de analítica, paginación/búsqueda de catálogo, observabilidad). El **frontend** se desplegó por **Vercel** (auto-deploy desde `master`); las **Cloud Functions, los índices y dos backfills los EJECUTÓ EL DUEÑO por Cloud Shell** sobre `sistema-gestion-3b225`. Detalle de estado en [docs/wala/ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md). **Las reglas vivas siguen 100 % abiertas** en `(default)` por el ERP compartido (ver más abajo y §6/§7 de ESTADO).
+
+### Editor de texto enriquecido (editor visual)
+- ✅ `ae30cfa` — **Texto enriquecido en TODOS los editores de sección** (`VisualEditorPanel.jsx`): bloque reutilizable **`TextStyleControl`** (alineación izq/centro/der, **subrayado**, **color de fondo**, **link en el texto**) + **`ButtonFieldsControl`** (texto/enlace del **botón**), añadidos a hero, header, text, testimonials, map, marquee y carruseles. `storefront.getDefaultSettings` suma los campos `<campo>Align/Underline/Bg/Link` + `buttonText/buttonLink`. El render (`textStyleUtils.jsx` con `<TextoSeccion>`/`<BotonSeccion>`) aplica alineación/subrayado/fondo, envuelve el texto en `Link`/`<a>` y pinta el botón; `TiendaPage.jsx` pasa la config a cada sección. **100 % retrocompatible**: con campos vacíos, las secciones se ven igual que hoy. Build verde.
+
+### Escalabilidad — Fase 1 (quick wins, frontend por Vercel)
+- ✅ `1a82a0a` (parte Fase 1) — **Split del bundle**: `vite.config.js` con `manualChunks` parte el `index` de **~2.25 MB** en `react-vendor`/`firebase-vendor`/`charts`/`motion`/`paypal`/`fabric` (el chunk de app baja a **~619 KB**), cacheable entre deploys. **Dashboard −75 % de lecturas**: `AdminUsuariosAnalyticsPage` pasa el refetch de **15 s → 120 s**, sin refetch en background y `staleTime` 60 s.
+
+### Escalabilidad — Fase 0 (seguridad de pagos, SEGURO POR DEFECTO)
+- ✅ `1a82a0a` (parte Fase 0) — **Seguridad de pagos seguro-por-defecto** (sin cambiar comportamiento hasta activar flags): **S-4 idempotencia** de `processCulqiPayment` (lock `culqiCharges/{tokenId}`); **S-2 firma del webhook Culqi** tras el flag `CULQI_VERIFY_SIGNATURE` (OFF por defecto); **S-3 ownership** de la confirmación de pago tras `ENFORCE_PAYMENT_OWNERSHIP` (OFF); **S-1 PayPal server-side** (`createPaypalOrderSecure`/`capturePaypalOrderSecure`) **escritas pero NO cableadas al cliente todavía**. **+8 índices** compuestos en `firestore.indexes.json` (`analytics_events`, `pedidos`/`pedidos_web`). **NUEVO `firebase/firestore.rules.propuesto`** — guardado, **NO desplegado**: cierra el `update` cliente-side de `pedidos_web` (precondición: tener `capturePaypalOrderSecure` cableada) y valida el `create` de `analytics_events`. Pagos verificados sin cambio de comportamiento con los flags apagados. `node --check` OK.
+
+### Escalabilidad — Fase 2 (pre-agregación de analítica)
+- ✅ `0011b70` / `8de5b50` — **Pre-agregación diaria de analítica**: CF **`aggregateAnalyticsDaily`** (`functions/analyticsDaily.js`, `onSchedule` gen2 a las 00:20 hora Lima) recorre el día anterior con **query paginada por cursor** (idempotente, `set` sin merge) y escribe **`analytics_daily/{YYYY-MM-DD}`** con los contadores ya sumados; + **`aggregateAnalyticsDailyBackfill`** (callable solo-admin, `{day}` o `{fromDay,toDay}`, tope 120 días). Funciones puras portadas a `functions/analyticsAggregations.js`. **Frontend (seguro antes de la CF)**: `src/services/analyticsDaily.js` (`getAnalyticsDailyRange` lee N docs diarios + el día en vivo, claves en hora Lima UTC-5 para casar los IDs) y `dashShared.jsx` con **FALLBACK** — si no hay docs diarios o falla, cae a `getGlobalAnalytics` legacy (dashboard intacto). `getTopSellingWala` usa el índice `(type, clientTsMs)` y filtra/ordena server-side en vez de `limit(3000)`+filtro en memoria (con fallback al comportamiento previo). Regla `analytics_daily` (read admin, write CF) añadida al `.propuesto` (aditiva y segura).
+
+### Escalabilidad — Fase 3 (catálogo y búsqueda)
+- ✅ `37fc015` — **Paginación con cursor + render incremental del catálogo** (no traer todo de una): `getStoreProductsPage({facet,sort,cursor,pageSize=24})` sobre `getCollectionPaginated` (`startAfter`+`limit`), orden y faceta server-side. **Red de seguridad**: si la 1ª página por defecto sale con 0 items (p. ej. docs sin `createdAt`), cae al catálogo completo → el storefront **nunca queda vacío**. `TiendaPage` usa `useInfiniteQuery`; `ProductGrid` con modo servidor (IntersectionObserver + "Cargar más", ~24 nodos/página). **+6 índices `productos_wala`**. Script `backfill-product-createdat.js` (lo corre el dueño): normaliza `createdAt` a Timestamp + `createdAtMs` + `visible:true`, idempotente, dry-run por defecto.
+- ✅ `21ecbc6` (parte Fase 3) — **Búsqueda SOLO Firestore** (decisión del usuario): `products.js` escribe `nameLower`+`searchTokens` en create/update; `search.js` `searchProductsFirestore` (prefijo `nameLower` / `token array-contains`, paginado) con **FALLBACK a memoria** si faltan tokens/índice/0 resultados; `SearchPage` con "Cargar más" (fix: el cursor numérico de memoria no se cruza con el `startAfter` de Firestore). Script `backfill-search-tokens.js`. **Imágenes lazy**: la ruta principal ya usa `OptimizedImage` (lazy+async); `HeroBanner` con `fetchpriority=high`, `BrandMarquee`/`AnnouncementBar` con lazy/decoding (sin cambios de layout).
+
+### Escalabilidad — Fase 4 (i18n endurecido + observabilidad)
+- ✅ `21ecbc6` (parte Fase 4) — **Lingva endurecido** (sin tocar API): caché v2 con TTL 30 d, dedupe en vuelo, **circuit-breaker** por instancia (cooldown 60 s), timeout 6 s y SIEMPRE cae al texto original; `useTranslatedText` sin renders en bucle. **Observabilidad**: `AppErrorBoundary` global (envuelve Router/Suspense) que captura `window.onerror`/`unhandledrejection` → `analytics_events` tipo `client_error` (throttle 20/sesión, dedup 10 s, sin PII), y **Web Vitals** (LCP/CLS) vía `PerformanceObserver` nativo → `web_vital`. Todo fire-and-forget.
+
+### Fixes de índices y backfills (correcciones para Cloud Shell)
+- ✅ `ceed174` — **Fix de índices**: Firestore rechaza con HTTP 400 los compuestos de un solo campo (`productos_wala nameLower`) y los que repiten el mismo `fieldPath` (`analytics_sessions` ASC+DESC); se quitan (usan el índice de campo único automático) y se conserva el compuesto `searchTokens`+`nameLower`.
+- ✅ `66606dc` — **Fix de scripts de backfill**: usan la API **modular** de `firebase-admin` (`require('firebase-admin/app').applicationDefault()` + `getFirestore()`) porque `admin.credential`/`admin.firestore` quedan `undefined` con el `firebase-admin` modular del entorno de Cloud Shell.
+
+### DEPLOY EJECUTADO POR EL DUEÑO (Cloud Shell, `sistema-gestion-3b225`)
+- ✅ **7 Cloud Functions** desplegadas (incluye las de pagos con flags OFF, la CF gen2 `aggregateAnalyticsDaily` y el callable de backfill).
+- ✅ **Índices** desplegados (`analytics_events`, `pedidos`/`pedidos_web`, `productos_wala` array-contains+createdAt, `searchTokens`).
+- ✅ **2 backfills corridos** sobre **123 productos**: `createdAt` (**recuperó 77 productos que estaban ocultos** del storefront por no tener fecha) y `searchTokens` (habilita la búsqueda Firestore).
+
+### Decisiones de arquitectura (sesión 2026-06-28)
+- **Búsqueda = SOLO Firestore** (no Algolia/Typesense por ahora): se descartó el índice externo para no añadir servicio/costo; la búsqueda usa `nameLower`+`searchTokens` con fallback a memoria.
+- **Traducción = Lingva** (no Google Cloud Translation v3 de pago): se endurece la vía gratuita en vez de migrar a la API de pago.
+- **CFs de dinero en gen1** (Culqi/PayPal): se mantienen en gen1 por estabilidad del camino del dinero; la migración a gen2 (concurrencia) queda para la base de mayor tráfico (Fase 4 del plan).
+
+### Seguridad (sin cambios en las reglas vivas)
+- 🔧 **Las reglas vivas siguen 100 % abiertas** en la base `(default)` de `sistema-gestion-3b225` porque el **ERP comparte el proyecto y NO usa Firebase Auth** (sus peticiones llegan sin identidad). El `firestore.rules.propuesto` está **guardado pero NO desplegado**; su despliegue depende de la precondición PayPal server-side (cerrar `pedidos_web`) y del track de App Check / migrar el ERP a Firebase Auth (§6/§7 de ESTADO).
+
+### 🔧 EN CURSO (no terminado en esta sesión)
+- 🔧 **Recepción de Pedidos (admin)**: nueva área para **organizar envíos** del portal WALA (`RecepcionPedidos.jsx` + `DashRecepcion.jsx` + `RecepcionPedidos.module.css`), solo-lectura, consume `useAdminWalaOrders` (hook) sobre la capa `adminOrders.js` que lee `pedidos_web`+`pedidos` del ERP. Aún sin commitear.
+- 🔧 **PayPal server-side wiring**: `PaypalCheckout.jsx` ya lee el flag `VITE_PAYPAL_SERVER_SIDE` (OFF por defecto) para cablear `createPaypalOrderSecure`/`capturePaypalOrderSecure`; falta terminar y probar el cableado real.
+- 🔧 **Botón de backfill de analítica** en el dashboard (`BackfillAnaliticaButton.jsx` + `.module.css`) que dispara `aggregateAnalyticsDailyBackfill`. Aún sin commitear.
+
+### ⬜ Pendiente del DUEÑO (no de código)
+- ⬜ **Activar los flags con datos reales**: encender `CULQI_VERIFY_SIGNATURE` y `ENFORCE_PAYMENT_OWNERSHIP` una vez verificados contra cobros reales.
+- ⬜ **Definir `VITE_PAYPAL_SERVER_SIDE=true` en Vercel** cuando el cableado PayPal server-side esté terminado y probado (y redeploy).
+- ⬜ **Desplegar `firestore.rules.propuesto`** SOLO cuando PayPal server-side esté probado (cierra el `update` de `pedidos_web`) y resuelto el track del ERP (App Check / Firebase Auth).
 
 ## [2026-06-27] — DESPLEGADO A PRODUCCIÓN (Vercel + Cloud Functions vía Cloud Shell)
 Sesión grande de UX/diseño, tracking, checkout internacional, **fidelización/regalos, internacionalización, perfil** y fixes. **Frontend desplegado por Vercel** (auto-deploy desde `master`); las **Cloud Functions del checkout internacional se desplegaron por Cloud Shell** a `sistema-gestion-3b225`. Detalle de estado en [docs/wala/ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md) y de cara al cliente en [docs/wala/FUNCIONES-CLIENTE.md](docs/wala/FUNCIONES-CLIENTE.md).

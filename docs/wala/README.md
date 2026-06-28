@@ -75,12 +75,19 @@ El ciclo de cualquier cambio que toque producción es siempre el mismo:
 6. **Rollback** (`ops/restore/`): si la verificación falla, restaurar desde el respaldo del
    paso 1 y volver a `git` al commit/tag baseline.
 
-> Estado actual: **Wala YA está en producción.** En las tandas del **2026-06-25** y
-> **2026-06-27** se desplegó a `sistema-gestion-3b225`: el **frontend** por **Vercel**
-> (auto-deploy desde `master`) y el **backend** (Cloud Functions / índices) por **Cloud
-> Shell**. Lo único que falta cerrar en seguridad son las **reglas completas** (siguen
-> abiertas → fuga de PII; ver Prioridad 1). Detalle de qué se desplegó y qué falta en
-> [ESTADO-DEL-PROYECTO.md §5](./ESTADO-DEL-PROYECTO.md) (y la sesión 2026-06-27 en §2, Paso 6).
+> Estado actual: **Wala YA está en producción.** En las tandas del **2026-06-25**,
+> **2026-06-27** y **2026-06-28** se desplegó a `sistema-gestion-3b225`: el **frontend** por
+> **Vercel** (auto-deploy desde `master`) y el **backend** (Cloud Functions / índices /
+> backfills) por **Cloud Shell**. La del **2026-06-28** desplegó las **Fases 0–4 del plan de
+> [ESCALABILIDAD.md](./ESCALABILIDAD.md)** (bundle, seguridad de pagos seguro-por-defecto,
+> pre-agregación de analítica, paginación/búsqueda de catálogo, observabilidad) + un **editor
+> de texto enriquecido**; el dueño corrió **7 Cloud Functions + índices + 2 backfills**
+> (`createdAt` recuperó 77 productos ocultos; `searchTokens`) sobre 123 productos. Lo único que
+> falta cerrar en seguridad son las **reglas completas** (siguen **100 % abiertas** en
+> `(default)` por el ERP compartido → fuga de PII; ver Prioridad 1; el
+> `firestore.rules.propuesto` está guardado pero NO desplegado). Detalle de qué se desplegó y
+> qué falta en [ESTADO-DEL-PROYECTO.md §5](./ESTADO-DEL-PROYECTO.md) (sesión 2026-06-27 en §2
+> Paso 6, sesión 2026-06-28 en §2 Paso 7).
 
 ---
 

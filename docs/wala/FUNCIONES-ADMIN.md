@@ -111,6 +111,12 @@ Tablero de analítica con diseño "liquid-glass" (fondo violeta con orbes y tarj
 - **Búsquedas**: términos más buscados.
 - **Más vendidos** (sección dedicada) y **Mapa de calor** (`HeatmapViewer`): dónde hacen clic los usuarios.
 
+> **Pre-agregación de analítica (sesión 2026-06-28):** para no releer miles de eventos crudos en cada carga, el dashboard lee documentos **pre-agregados por día** `analytics_daily/{YYYY-MM-DD}` (uno por día del rango: 7/30/90 lecturas en vez de ~5300). Esos documentos los genera la Cloud Function programada **`aggregateAnalyticsDaily`** (ver "Cloud Functions"). El **día en curso** se completa con una query EN VIVO pequeña, y si todavía no existe ningún doc diario (la CF no se desplegó/ejecutó) cae automáticamente al cálculo legacy (`getGlobalAnalytics`), de modo que el tablero nunca queda vacío. Servicio de lectura: `src/services/analyticsDaily.js` (`getAnalyticsDailyRange`).
+
+#### Recepción de Pedidos (organización de ENVÍOS) — embebida bajo el dashboard
+Archivo: `src/pages/admin/dashboard/RecepcionPedidos.jsx` (hook `src/hooks/useAdminWalaOrders.js`, capa de datos `src/services/adminOrders.js`).
+Es un panel **SOLO LECTURA** que muestra **todos los pedidos del portal WALA** (no los del usuario logueado) leyendo del ERP las colecciones `pedidos_web` + `pedidos` y quedándose solo con los pedidos del portal (regla `esPedidoWala`). Orientado a **preparar envíos**: una fila de KPIs (por entregar, pendientes de pago, en producción, entregados, monto total) y una grilla de **tarjetas por pedido** que resaltan la **dirección de entrega** y los datos de contacto, con **filtros** (estado + buscar por nombre/código), orden por fecha, botón **"WhatsApp al cliente"** y enlace al detalle. Se monta **embebido** debajo del dashboard de analítica (también disponible por URL en `/admin/dashboard/recepcion`). No toca carrito, precios ni cobro: solo muestra el estado ya derivado (`derivarEstadoCompra`).
+
 ### Vista Tienda (WYSIWYG) — `/tienda`
 Enlace directo a la tienda. Es la puerta de entrada al **Page Builder / Editor Visual** (ver sección "Page Builder" al final).
 
@@ -267,6 +273,17 @@ El panel flotante (se puede arrastrar, anclar a izquierda/derecha y **previsuali
 
 > Existe además un editor más simple en `/admin/store-editor` (`AdminStoreEditor.jsx`) para el Hero principal y el layout de la grilla (columnas en PC/móvil, imagen secundaria al pasar el mouse). No está enlazado en el menú actual; el flujo recomendado es el Editor Visual descrito arriba.
 
+### Texto enriquecido en TODAS las secciones (sesión 2026-06-28, ✅ desplegado)
+
+Cada editor de sección con texto (Hero, Encabezado, Texto, Testimonios, Mapa, Marquesina, carruseles, Ventas Flash, etc.) incorpora dos bloques reutilizables de control:
+
+- **Estilo de texto** (`TextStyleControl`) — por cada campo de texto editable de la sección (título, subtítulo, encabezado, contenido, descripción…) permite ajustar: **alineación** (izquierda / centro / derecha / por defecto), **subrayado**, **color de fondo del texto** y un **enlace de destino** (la palabra/título se vuelve clicable). Persiste con el contrato de claves `<campo>Align`, `<campo>Underline`, `<campo>Bg`, `<campo>Link`.
+- **Botón de Acción (opcional)** (`ButtonFieldsControl`) — añade un botón con **texto** y **enlace** (`buttonText` / `buttonLink`) a las secciones de texto que no tenían botón propio. (Las que ya traen su propio editor de botón, como el Hero, no lo usan.)
+
+Es **100% retrocompatible**: con los campos vacíos, las secciones se ven exactamente como antes (sin alineación forzada, sin subrayado, sin fondo, sin enlace, sin botón). El render aplica estos estilos con utilidades compartidas (`<TextoSeccion>` / `<BotonSeccion>`), y los enlaces internos (que empiezan con `/`) usan navegación SPA (`<Link>`) mientras que los externos abren en pestaña nueva.
+
+- **Archivos clave:** `src/pages/Tienda/admin/editor/controls/TextStyleControl.jsx`, `src/pages/Tienda/admin/editor/controls/ButtonFieldsControl.jsx`, `src/pages/Tienda/components/textStyleUtils.jsx` (`estiloTexto`, `<TextoSeccion>`, `<BotonSeccion>`), `src/pages/Tienda/admin/VisualEditorPanel.jsx`, `src/pages/Tienda/services/storefront.js` (`getDefaultSettings`), `src/pages/Tienda/TiendaPage.jsx`.
+
 ### Módulos disponibles (de `SECTION_TYPES`)
 
 | Módulo | Para qué sirve |
@@ -290,6 +307,49 @@ El panel flotante (se puede arrastrar, anclar a izquierda/derecha y **previsuali
 | **Lo Más Vendido (Fila de 5)** | Fila de 5 tarjetas destacadas. |
 | **Pie de Página (Columnas/Enlaces)** | Footer configurable por columnas y enlaces. |
 | **Ubicación / Mapa** | Bloque con mapa embebido y datos de la tienda física. |
+
+---
+
+## Cloud Functions (backend) — catálogo y endurecimiento (sesión 2026-06-28)
+
+> Esta sección documenta las Cloud Functions **nuevas o endurecidas** y sus **flags/variables de entorno**. No son enlaces del menú: son código de servidor (`functions/`) que el dueño despliega por Cloud Shell / `firebase deploy --only functions`. Para el contexto de seguridad ver [FASE-0-SEGURIDAD.md](./FASE-0-SEGURIDAD.md) y [ESCALABILIDAD.md](./ESCALABILIDAD.md).
+>
+> **Principio rector: SEGURO POR DEFECTO.** Todo el endurecimiento de pagos viene **detrás de flags apagados** (`process.env.* !== 'true'`), por lo que **desplegar este código NO cambia el comportamiento actual** de los cobros. El dueño activa cada protección cuando esté listo (configura el secreto, prueba y enciende el flag). Con los flags apagados, los pagos se comportan exactamente como hoy.
+
+### Pre-agregación de analítica
+
+| Función | Tipo | Qué hace |
+|---|---|---|
+| **`aggregateAnalyticsDaily`** | `onSchedule` (gen2) | Cron diario (**00:20 hora de Lima**, `America/Lima`, `retryCount: 2`, `512MiB`, `timeoutSeconds: 540`) que agrega el **día anterior completo** de `analytics_events` + `analytics_sessions` en un único doc `analytics_daily/{YYYY-MM-DD}`. **Idempotente** (reescribe el doc con `.set()` sin merge) y paginado con cursor (páginas de 2000) para escalar. Reduce las lecturas del dashboard 60–170×. Archivo: `functions/analyticsDaily.js` (lógica pura en `functions/analyticsAggregations.js`). |
+| **`aggregateAnalyticsDailyBackfill`** | `onCall` (callable) | **Solo admin** (exige `context.auth.token.admin === true`; si no, `permission-denied`). Reconstruye días concretos con la MISMA lógica (`procesarDia`): acepta `{ day }` o `{ fromDay, toDay }` (máximo 120 días por llamada). Pensado para **llenar el histórico una vez** tras desplegar, o re-agregar un día que cambió. |
+
+> El dashboard ya lee estos docs (ver "Dashboard Analítica" arriba) con fallback automático al cálculo legacy si aún no existen.
+
+### Pagos — endurecimiento (S-1 … S-4), todo SEGURO POR DEFECTO
+
+| Función | Tipo | Qué hace / endurecimiento |
+|---|---|---|
+| **`processCulqiPayment`** | `onCall` | Cobro con Culqi (tarjeta, Perú). **S-4 idempotencia (SIEMPRE activa, no detrás de flag):** antes de cobrar reserva un **lock** `culqiCharges/{tokenId}` con `runTransaction` + `create()`; un doble clic / retry de red con el mismo `tokenId` (de un solo uso en Culqi) **NO vuelve a cobrar** y devuelve el resultado previo. **H-11:** recalcula el monto en PEN **server-side** desde el pedido real (`pedidos_web`/`pedidos`), no confía en el monto del cliente. La llave privada viene de `CULQI_SECRET_KEY` (secret de Functions, sin fallback dummy). Conservador: si el lock falla de forma inesperada, NO bloquea el cobro. |
+| **`culqiWebhook`** | `onRequest` | Confirma el pago **server-side** y marca el pedido (`pedidos_web`) como pagado de forma **idempotente** (colección de marcas `culqiWebhookEvents/{chargeId}`). **S-2 verificación de firma** detrás del flag **`CULQI_VERIFY_SIGNATURE`** (default `'false'`): con el flag en `'true'` exige y valida la firma HMAC del webhook usando **`CULQI_WEBHOOK_SECRET`** (rechaza con 401 si la firma es inválida/ausente; si falta el secreto, error claro). Con el flag apagado, registra las cabeceras de firma en los logs para que el dueño confirme el nombre exacto antes de activarlo. La URL del webhook debe registrarse en el panel de Culqi. |
+| **`confirmPaymentSecure`** | `onCall` | Marca una orden del marketplace como `paid` y genera los payouts (idempotente). **S-3 verificación de propiedad (ownership)** detrás del flag **`ENFORCE_PAYMENT_OWNERSHIP`** (default `'false'`): con el flag en `'true'`, exige que el `uid` autenticado sea el **`buyerUid`** de la orden (o un admin); así un usuario no puede confirmar el pago de una orden ajena y disparar payouts indebidos. Con el flag activo, ante un fallo de lectura **falla cerrado** (no confirma). Con el flag apagado, comportamiento idéntico al de hoy (cualquier autenticado puede confirmar). |
+| **`createPaypalOrderSecure`** | `onCall` | **S-1 PayPal server-side** (flujo robusto, igual que `processCulqiPayment`/H-11): autentica, **recalcula el monto USD server-side** desde el pedido real (PEN→USD con `config/fx`, sin confiar en montos del cliente) y crea la orden en PayPal (intent CAPTURE) vía OAuth. Devuelve `{ orderID }`. Requiere las envs **`PAYPAL_CLIENT_ID`** / **`PAYPAL_SECRET`** (y opcional `PAYPAL_ENV='live'`, default sandbox = seguro para probar); si faltan, responde un error claro (`failed-precondition`). |
+| **`capturePaypalOrderSecure`** | `onCall` | Captura la orden en PayPal, verifica `status === 'COMPLETED'` y que el monto capturado coincide con el recalculado server-side, y **solo entonces** marca el pedido como pagado en `pedidos_web` (Admin SDK), de forma **idempotente** por `captureId`. |
+
+> **PayPal seguro — activación desde el cliente:** el componente `PaypalCheckout` delega el cobro a estas dos funciones **solo** cuando el flag de build **`VITE_PAYPAL_SERVER_SIDE`** está en `'true'` (default OFF). Con el flag apagado, el checkout usa el flujo PayPal cliente histórico, sin cambios de riesgo. Así, ambas funciones pueden estar desplegadas sin afectar a nadie hasta que se configuren las credenciales y se encienda el flag.
+
+### Resumen de flags / variables de entorno
+
+| Variable | Dónde | Default | Qué activa |
+|---|---|---|---|
+| `CULQI_VERIFY_SIGNATURE` | `culqiWebhook` (server) | `'false'` (OFF) | Verificación de firma HMAC del webhook de Culqi (S-2). |
+| `CULQI_WEBHOOK_SECRET` | `culqiWebhook` (server) | — | Secreto para validar la firma (requerido cuando `CULQI_VERIFY_SIGNATURE='true'`). |
+| `CULQI_SECRET_KEY` | `processCulqiPayment` (server) | — | Llave privada de Culqi para cobrar (secret de Functions). |
+| `ENFORCE_PAYMENT_OWNERSHIP` | `confirmPaymentSecure` (server) | `'false'` (OFF) | Exige que quien confirma el pago sea el dueño de la orden (o admin) (S-3). |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_SECRET` | PayPal server-side (server) | — | Credenciales OAuth de PayPal para `createPaypalOrderSecure` / `capturePaypalOrderSecure` (S-1). |
+| `PAYPAL_ENV` | PayPal server-side (server) | `sandbox` | `'live'` para producción. |
+| `VITE_PAYPAL_SERVER_SIDE` | `PaypalCheckout` (build/cliente) | `'false'` (OFF) | Hace que el checkout delegue el cobro de PayPal a las CFs seguras. |
+
+> Otras CFs relacionadas ya documentadas: **`updateFxRate`** (cron diario que pobla `config/fx` con el tipo de cambio), **`getPublicGiftRegistry`** (registro de regalos por fecha, callable que devuelve datos mínimos sin Firestore directo), **`redeemRewardSecure`** (canje de recompensas). Ver [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md).
 
 ---
 
