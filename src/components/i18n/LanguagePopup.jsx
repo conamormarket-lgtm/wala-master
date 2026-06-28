@@ -14,12 +14,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { GlassButton } from '../ui';
+import FlagIcon from './FlagIcon';
 import styles from './LanguagePopup.module.css';
 
 const STORAGE_KEY = 'wala_lang';
-
-// Bandera (emoji, sin assets) por idioma. PT = portugués de Brasil (🇧🇷).
-const LANG_FLAGS = { es: '🇵🇪', en: '🇺🇸', pt: '🇧🇷' };
 
 // Mapea el idioma del navegador a uno soportado distinto del español.
 // Devuelve null si el navegador ya está en español (no hay nada que sugerir).
@@ -75,16 +73,16 @@ const LanguagePopup = () => {
             size="sm"
             onClick={() => elegir(suggested)}
           >
-            {/* Bandera del idioma sugerido (🇺🇸 inglés / 🇧🇷 portugués de Brasil); decorativa. */}
-            <span aria-hidden="true">{LANG_FLAGS[suggested]}</span> {t('lang.popupYes')}
+            {/* Bandera del idioma sugerido (EEUU / Brasil); decorativa. */}
+            <FlagIcon code={suggested} size={18} /> {t('lang.popupYes')}
           </GlassButton>
           <GlassButton
             variant="ghost"
             size="sm"
             onClick={() => elegir('es')}
           >
-            {/* Bandera de Perú (español, idioma original); decorativa. */}
-            <span aria-hidden="true">{LANG_FLAGS.es}</span> {t('lang.popupOriginal')}
+            {/* Bandera de España (español, idioma original); decorativa. */}
+            <FlagIcon code="es" size={18} /> {t('lang.popupOriginal')}
           </GlassButton>
         </div>
       </div>

@@ -17,6 +17,7 @@ import { logout } from '../../../services/firebase/auth';
 import styles from './Header.module.css';
 import NotificationTray from './NotificationTray';
 import OptimizedImage from '../OptimizedImage/OptimizedImage';
+import FlagIcon from '../../i18n/FlagIcon';
 
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
@@ -35,13 +36,8 @@ const NAV_LABEL_KEYS = {
   'mi cuenta': 'nav.cuenta',
 };
 
-// Códigos de idioma -> etiqueta corta para el toggle del header.
-const LANG_LABELS = { es: 'ES', en: 'EN', pt: 'PT' };
-
-// Bandera (emoji, sin assets) por idioma. PT = portugués de Brasil (🇧🇷).
-const LANG_FLAGS = { es: '🇵🇪', en: '🇺🇸', pt: '🇧🇷' };
-
 // Nombre legible del idioma para accesibilidad (aria-label / title).
+// Las banderas las dibuja <FlagIcon> (SVG real; los emoji no se ven en Windows).
 const LANG_NAMES = { es: 'Español', en: 'English', pt: 'Português (Brasil)' };
 
 const Header = () => {
@@ -448,12 +444,10 @@ const Header = () => {
             )}
           </div>
 
-          {/* Toggle compacto de idioma con bandera (🇵🇪 ES / 🇺🇸 EN / 🇧🇷 PT). Marca el idioma activo. */}
+          {/* Toggle de idioma: SOLO banderas SVG (España / EEUU / Brasil). Marca el activo. */}
           <div className={styles.langToggle} role="group" aria-label="Idioma">
             {available.map((code) => {
-              const flag = LANG_FLAGS[code] || '';
-              const label = LANG_LABELS[code] || code.toUpperCase();
-              const name = LANG_NAMES[code] || label;
+              const name = LANG_NAMES[code] || code.toUpperCase();
               return (
                 <button
                   key={code}
@@ -461,13 +455,11 @@ const Header = () => {
                   onClick={() => setLang(code)}
                   className={`${styles.langOption} ${lang === code ? styles.langOptionActive : ''}`}
                   aria-pressed={lang === code}
-                  // El nombre completo del idioma queda en aria-label/title para accesibilidad,
-                  // aunque visualmente sólo mostremos la bandera + el código corto.
+                  // El idioma se anuncia vía aria-label/title (la bandera es decorativa).
                   aria-label={name}
                   title={name}
                 >
-                  {/* La bandera es decorativa: el lector de pantalla ya anuncia el idioma vía aria-label. */}
-                  {flag && <span aria-hidden="true">{flag}</span>} {label}
+                  <FlagIcon code={code} size={22} />
                 </button>
               );
             })}
