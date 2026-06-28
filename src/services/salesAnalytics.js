@@ -8,6 +8,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { erpDb, isErpFirestoreAvailable } from './erp/firebase';
+import { db } from './firebase/config';
 
 /**
  * salesAnalytics — MÁS VENDIDOS desde el ERP.
@@ -266,6 +267,139 @@ export async function getTopSelling({ days = 30, topLimit = 10 } = {}) {
     totalRevenue: Math.round(totalRevenue * 100) / 100,
     totalOrders: pedidos.length,
     totalUnits,
+    rangeDays: days,
+    available: true,
+    error: null,
+  };
+}
+
+/**
+ * getTopSellingWala — MÁS VENDIDOS NATIVOS DE WALA (su PROPIO negocio).
+ *
+ * A diferencia de getTopSelling (que lee el ERP mezclado), esto lee SOLO las
+ * compras registradas por WALA en la colección `analytics_events` de la DB
+ * PRINCIPAL, con eventos type == 'purchase_complete'.
+ *
+ * Forma del evento (ver src/services/analytics/tracker.js -> trackPurchaseComplete
+ * y src/pages/CheckoutPage.jsx):
+ *  - type: 'purchase_complete'
+ *  - clientTsMs: number (ms epoch del cliente, en la RAÍZ del doc)
+ *  - eventData: {
+ *      orderId, total, totalCents, currency, method, itemsCount,
+ *      items: [{ productId, qty, price, categoryId?, lineaProducto?, lineId? }]
+ *    }
+ *
+ * Para evitar índices compuestos NO ordenamos ni filtramos por fecha en la query:
+ * solo where('type','==','purchase_complete') + limit. El filtro de rango de
+ * fechas se hace en memoria.
+ *
+ * @param {Object} [options]
+ * @param {number} [options.days=30] - Días hacia atrás desde hoy para el rango.
+ * @param {number} [options.topLimit=10] - Máximo de productos por ranking.
+ * @returns {Promise<{
+ *   topByUnits: Array<{ productId: string, units: number, amount: number }>,
+ *   topByAmount: Array<{ productId: string, units: number, amount: number }>,
+ *   totalUnits: number,
+ *   totalRevenue: number,
+ *   rangeDays: number,
+ *   available: boolean,
+ *   error: string|null,
+ * }>}
+ */
+export async function getTopSellingWala({ days = 30, topLimit = 10 } = {}) {
+  const empty = {
+    topByUnits: [],
+    topByAmount: [],
+    totalUnits: 0,
+    totalRevenue: 0,
+    rangeDays: days,
+    available: false,
+    error: null,
+  };
+
+  // Sin DB principal no hay nada que leer.
+  if (!db) {
+    return { ...empty, error: 'Firestore no disponible' };
+  }
+
+  // Query simple (sin orderBy ni rango): evita exigir un índice compuesto.
+  let docs = [];
+  try {
+    const q = query(
+      collection(db, 'analytics_events'),
+      where('type', '==', 'purchase_complete'),
+      limit(3000)
+    );
+    const snap = await getDocs(q);
+    docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    return { ...empty, available: false, error: err?.message || 'Error al leer analytics_events' };
+  }
+
+  // Rango de fechas. Si un evento no trae fecha reconocible, NO se filtra (se incluye).
+  const endMs = Date.now();
+  const startMs = endMs - days * 24 * 60 * 60 * 1000;
+
+  const eventMillis = (ev) => {
+    // El campo real es clientTsMs en la raíz; toleramos variantes y eventData.
+    const raw = ev?.clientTsMs
+      ?? ev?.eventData?.clientTsMs
+      ?? ev?.createdAt
+      ?? ev?.timestamp
+      ?? null;
+    return toMillis(raw);
+  };
+
+  const byProduct = new Map(); // productId -> { productId, units, amount }
+  let totalUnits = 0;
+  let totalRevenue = 0;
+
+  docs.forEach((ev) => {
+    // Filtro de fecha en memoria: solo si el evento trae fecha (>0).
+    const ms = eventMillis(ev);
+    if (ms > 0 && (ms < startMs || ms > endMs)) return;
+
+    const items = ev?.eventData?.items;
+    if (!Array.isArray(items)) return; // tolerante a items/eventData ausentes
+
+    items.forEach((it) => {
+      if (!it || typeof it !== 'object') return;
+      const productId = it.productId;
+      if (!productId) return; // sin productId no se puede agregar
+      const units = safeNumber(it.qty ?? it.quantity ?? 1) || 0;
+      const price = safeNumber(it.price ?? 0);
+      const amount = price * units;
+
+      if (!byProduct.has(productId)) {
+        byProduct.set(productId, { productId, units: 0, amount: 0 });
+      }
+      const entry = byProduct.get(productId);
+      entry.units += units;
+      entry.amount += amount;
+
+      totalUnits += units;
+      totalRevenue += amount;
+    });
+  });
+
+  const products = [...byProduct.values()].map((p) => ({
+    ...p,
+    amount: Math.round(p.amount * 100) / 100,
+  }));
+
+  const topByUnits = [...products]
+    .sort((a, b) => b.units - a.units || b.amount - a.amount)
+    .slice(0, topLimit);
+
+  const topByAmount = [...products]
+    .sort((a, b) => b.amount - a.amount || b.units - a.units)
+    .slice(0, topLimit);
+
+  return {
+    topByUnits,
+    topByAmount,
+    totalUnits,
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
     rangeDays: days,
     available: true,
     error: null,

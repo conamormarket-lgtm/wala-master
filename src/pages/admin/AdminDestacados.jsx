@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFeaturedProducts, getProducts, updateProductField } from '../../services/products';
-import { getTopSelling } from '../../services/salesAnalytics';
+import { getTopSellingWala } from '../../services/salesAnalytics';
 import Button from '../../components/common/Button';
 import styles from './AdminDestacados.module.css';
 
@@ -34,16 +34,17 @@ const AdminDestacados = () => {
     }
   });
 
-  // 3) Top más vendidos REAL (últimos 30 días). Es caro (~800 lecturas del ERP),
-  //    por eso staleTime alto (15 min) y NO se recalcula en cada render.
+  // 3) Top más vendidos NATIVOS DE WALA (últimos 30 días). Lee SUS PROPIAS compras
+  //    desde 'analytics_events' (type purchase_complete), NO el ERP mezclado.
+  //    Por eso staleTime alto (15 min) y NO se recalcula en cada render.
   const {
     data: topData,
     isLoading: topLoading,
     isFetching: topFetching,
     error: topError,
   } = useQuery({
-    queryKey: ['admin-top-selling', 30],
-    queryFn: () => getTopSelling({ days: 30, topLimit: 10 }),
+    queryKey: ['top-selling-wala', 30],
+    queryFn: () => getTopSellingWala({ days: 30, topLimit: 10 }),
     staleTime: 1000 * 60 * 15, // 15 min — evita recargas costosas
     gcTime: 1000 * 60 * 60,    // 1 h en caché
     refetchOnWindowFocus: false,
@@ -81,9 +82,16 @@ const AdminDestacados = () => {
   // Set de ids destacados (para mostrar el estado correcto en cada botón).
   const featuredIds = useMemo(() => new Set(featured.map((p) => p.id)), [featured]);
 
-  // Top por unidades cruzado con el catálogo (imagen/precio).
-  const topByUnits = topData?.topByUnits ?? [];
+  // Top por unidades de WALA cruzado con el catálogo 'productos_wala'.
+  // Si un productId NO está en el catálogo, NO es producto de WALA -> se OMITE
+  // (en vez de mostrar "No está en catálogo"). Así solo salen productos reales.
   const topAvailable = topData?.available;
+  const topByUnits = useMemo(() => {
+    const rows = topData?.topByUnits ?? [];
+    return rows
+      .map((row) => ({ row, prod: catalogById.get(row.productId) }))
+      .filter(({ prod }) => !!prod); // omite los que no están en productos_wala
+  }, [topData, catalogById]);
 
   // Resultados de búsqueda en catálogo (por nombre). Limitado para no saturar.
   const searchResults = useMemo(() => {
@@ -191,20 +199,18 @@ const AdminDestacados = () => {
         )}
       </section>
 
-      {/* ---------- Referencia: Top más vendidos (ERP, 30 días) ---------- */}
+      {/* ---------- Top más vendidos de WALA (su propio negocio, 30 días) ---------- */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>
-          Top más vendidos <span className={styles.sectionTitleSub}>(últimos 30 días)</span>
+          Top más vendidos de WALA <span className={styles.sectionTitleSub}>(últimos 30 días)</span>
         </h2>
 
         {topLoading ? (
           <p className={styles.loading}>Cargando ventas...</p>
         ) : topError ? (
           <p className={styles.empty}>No se pudieron cargar las ventas: {topError.message}</p>
-        ) : !topAvailable ? (
-          <p className={styles.empty}>Sin datos de ventas aún.</p>
-        ) : topByUnits.length === 0 ? (
-          <p className={styles.empty}>No hay ventas registradas en los últimos 30 días.</p>
+        ) : (!topAvailable || topByUnits.length === 0) ? (
+          <p className={styles.empty}>Aún no hay ventas registradas en WALA.</p>
         ) : (
           <>
             <div className={styles.tableHead} aria-hidden="true">
@@ -215,39 +221,35 @@ const AdminDestacados = () => {
               <span className={styles.colAction}></span>
             </div>
             <ul className={styles.compactList}>
-              {topByUnits.map((row, idx) => {
-                const prod = row.productId ? catalogById.get(row.productId) : null;
-                const isFeat = prod ? featuredIds.has(prod.id) : false;
-                const img = prod?.images?.[0] || PLACEHOLDER;
-                const price = prod ? Number(prod.price || 0).toFixed(2) : null;
+              {topByUnits.map(({ row, prod }, idx) => {
+                // prod siempre existe aquí: topByUnits ya omitió los que no están en productos_wala.
+                const isFeat = featuredIds.has(prod.id);
+                const img = prod.images?.[0] || PLACEHOLDER;
+                const price = Number(prod.price || 0).toFixed(2);
                 return (
-                  <li key={row.productId || `name-${idx}`} className={styles.topItem}>
+                  <li key={row.productId} className={styles.topItem}>
                     <span className={styles.colRank}>{idx + 1}</span>
                     <div className={styles.compactImage}>
-                      <img src={img} alt={row.name} loading="lazy" />
+                      <img src={img} alt={prod.name} loading="lazy" />
                     </div>
                     <div className={styles.compactInfo}>
-                      <span className={styles.compactName}>{prod?.name || row.name}</span>
+                      <span className={styles.compactName}>{prod.name}</span>
                       <span className={styles.compactMeta}>
-                        {price !== null ? `S/ ${price}` : 'No está en catálogo'}
+                        S/ {price}
                         {isFeat && <span className={styles.tagFeatured}>destacado</span>}
                       </span>
                     </div>
                     <span className={styles.colNum} data-label="Unid.: ">{row.units}</span>
                     <span className={styles.colNum} data-label="Monto: ">S/ {Number(row.amount || 0).toFixed(2)}</span>
                     <span className={styles.colAction}>
-                      {prod ? (
-                        <Button
-                          size="small"
-                          variant={isFeat ? 'secondary' : 'primary'}
-                          onClick={() => handleToggleFeatured(prod.id, !isFeat)}
-                          disabled={isBusy}
-                        >
-                          {isFeat ? 'Quitar' : 'Destacar'}
-                        </Button>
-                      ) : (
-                        <span className={styles.noProd}>—</span>
-                      )}
+                      <Button
+                        size="small"
+                        variant={isFeat ? 'secondary' : 'primary'}
+                        onClick={() => handleToggleFeatured(prod.id, !isFeat)}
+                        disabled={isBusy}
+                      >
+                        {isFeat ? 'Quitar' : 'Destacar'}
+                      </Button>
                     </span>
                   </li>
                 );

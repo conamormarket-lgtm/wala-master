@@ -22,6 +22,22 @@ const cachePedidos = { dni: null, data: null };
 const MAX_ACCOUNT_SYNC_PER_LOAD = 25;
 
 /**
+ * El ERP es un NEGOCIO APARTE: sus colecciones ('pedidos'/'pedidos_web') guardan data MIXTA
+ * (pedidos nativos del ERP + pedidos hechos desde WALA). El visor "Mis Compras" de WALA debe
+ * mostrar SOLO los pedidos hechos desde el portal WALA.
+ * Un pedido es de WALA porque el checkout del portal escribe canalVenta:'Portal Web'
+ * (y además web:true, activador:'portal_web', vendedor:'Portal Web').
+ * @param {Object} p - Pedido CRUDO tal como viene del ERP.
+ * @returns {boolean} true si el pedido fue hecho desde WALA.
+ */
+const esPedidoWala = (p) =>
+  !!p &&
+  (p.canalVenta === 'Portal Web' ||
+    p.web === true ||
+    p.activador === 'portal_web' ||
+    p.vendedor === 'Portal Web');
+
+/**
  * Hook para búsqueda de pedidos por DNI. Usa caché por DNI: si ya se cargó ese DNI, muestra datos al instante.
  * @param {string} [initialDni] - Si se pasa y hay caché para ese DNI, data se inicializa con la caché (evita parpadeo al volver).
  * @returns {Object} { loading, error, data: { pedidos, dataSource, clientData? }, buscar }
@@ -63,7 +79,10 @@ export const usePedidos = (initialDni) => {
           setLoading(false);
           return;
         }
-        const list = Array.isArray(erpPedidos) ? erpPedidos : [];
+        // Filtramos sobre la lista CRUDA a solo pedidos del portal WALA ANTES de normalizar,
+        // así tanto la lista como el _raw adjunto, clientData y la sincronización de cuentas
+        // quedan exclusivamente con pedidos de WALA (el ERP es un negocio aparte, ver esPedidoWala).
+        const list = (Array.isArray(erpPedidos) ? erpPedidos : []).filter(esPedidoWala);
         const pedidos = list
                             .map((raw) => {
                               const norm = normalizarPedidoParaVista(raw);
@@ -96,7 +115,10 @@ export const usePedidos = (initialDni) => {
 
       if (dniStr) {
         const resultado = await buscarPedidoCliente('', dniStr);
+        // Igual que en la rama ERP: filtramos la lista CRUDA a solo pedidos del portal WALA
+        // antes de normalizar, para que la lista y el _raw queden solo de WALA.
         const pedidosList = (resultado.pedidos || [])
+                              .filter(esPedidoWala)
                               .map((raw) => {
                                 const norm = normalizarPedidoParaVista(raw);
                                 return norm ? { ...norm, _raw: raw } : null;
