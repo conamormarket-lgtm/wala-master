@@ -124,13 +124,11 @@ function resolveProjectId() {
 
 const projectId = resolveProjectId();
 
-// ── Inicializar Admin SDK ────────────────────────────────────────────────────
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  projectId,
-});
-const db = admin.firestore();
-const { Timestamp } = admin.firestore;
+// ── Inicializar Admin SDK (API modular: en este entorno admin.credential no existe) ──
+const { initializeApp, applicationDefault } = require('firebase-admin/app');
+const { getFirestore, Timestamp } = require('firebase-admin/firestore');
+initializeApp({ credential: applicationDefault(), projectId });
+const db = getFirestore();
 
 // ── Helpers de tipos ─────────────────────────────────────────────────────────
 const isTimestamp = (v) =>
