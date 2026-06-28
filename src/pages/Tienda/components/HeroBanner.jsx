@@ -58,6 +58,18 @@ const HeroBanner = ({ config }) => {
     'right': 'flex-end'
   };
 
+  // Alinear la CAJA de los textos (no solo el texto). El subtítulo tiene max-width
+  // (600px) menor que el contenido, así que su bloque queda pegado al inicio aunque
+  // el texto esté centrado. Con margen automático la caja se alinea de verdad según
+  // la alineación horizontal de la sección (text-align solo centra el contenido inline,
+  // no la posición del bloque).
+  const boxAlignStyle =
+    textAlign === 'center'
+      ? { marginLeft: 'auto', marginRight: 'auto' }
+      : textAlign === 'right'
+      ? { marginLeft: 'auto', marginRight: 0 }
+      : { marginLeft: 0, marginRight: 'auto' };
+
   return (
     <div className={styles.heroContainer} style={{ minHeight }}>
       {/* Capa de atmósfera de marca: vive DETRÁS del media y del overlay, así que
@@ -110,7 +122,8 @@ const HeroBanner = ({ config }) => {
               fontFamily: titleFontFamily || 'inherit',
               fontSize: titleFontSize || undefined,
               fontWeight: titleFontWeight || undefined,
-              textTransform: titleTextTransform || 'none'
+              textTransform: titleTextTransform || 'none',
+              ...boxAlignStyle
             }}
           >
             {title}
@@ -126,7 +139,8 @@ const HeroBanner = ({ config }) => {
               fontFamily: subtitleFontFamily || 'inherit',
               fontSize: subtitleFontSize || undefined,
               fontWeight: subtitleFontWeight || undefined,
-              textTransform: subtitleTextTransform || 'none'
+              textTransform: subtitleTextTransform || 'none',
+              ...boxAlignStyle
             }}
           >
             {subtitle}
