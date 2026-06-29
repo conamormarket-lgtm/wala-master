@@ -147,3 +147,42 @@
     font-size: 0.9rem;
     font-weight: 600;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — AvatarStudio (estudio de avatar del perfil)
+   ---------------------------------------------------------------------------
+   La caja informativa y el botón secundario usan superficie blanca con texto
+   oscuro hardcodeado (#0f172a/#475569), ilegibles en oscuro. Los pasamos a los
+   tokens de tema. El "escenario" del avatar (gradiente claro) se conserva
+   porque es el lienzo donde se muestra la foto; solo bajamos su borde blanco.
+   Solo color/contraste.
+   ═════════════════════════════════════════════════════════════════════════ */
+:global([data-theme='dark']) .infoBox {
+    background: var(--color-surface-2);
+    border-color: var(--color-border);
+}
+:global([data-theme='dark']) .infoBox h3 {
+    color: var(--color-text);
+}
+:global([data-theme='dark']) .infoBox p {
+    color: var(--color-text-muted);
+}
+/* Borde blanco del escenario del avatar -> borde del tema */
+:global([data-theme='dark']) .avatarStage {
+    border-color: var(--color-border);
+}
+/* Botón secundario: superficie blanca + texto oscuro -> superficie/texto tema */
+:global([data-theme='dark']) .btnSecondary {
+    background: var(--color-surface-2);
+    color: var(--color-text);
+    border-color: var(--color-border);
+}
+:global([data-theme='dark']) .btnSecondary:hover {
+    border-color: var(--color-text-muted);
+    background: var(--color-hover);
+}
+/* Botón primario deshabilitado: gris claro + texto gris -> tonos del tema */
+:global([data-theme='dark']) .btnPrimary:disabled {
+    background: var(--color-border);
+    color: var(--color-text-muted);
+}

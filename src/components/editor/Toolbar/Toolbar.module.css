@@ -512,4 +512,32 @@
     overflow: visible;
     gap: 0.625rem;
   }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     MODO NOCHE — Toolbar móvil (bottom sheet del editor)
+     -----------------------------------------------------------------------
+     La hoja inferior móvil tiene superficies blancas (#fff/#f9fafb) y textos
+     grises oscuros (#374151/#9ca3af) hardcodeados, ilegibles en oscuro. Aquí
+     los pasamos a los tokens del tema. El acento rojo de pestaña activa se
+     conserva. Solo color/contraste, NADA de layout.
+     ═══════════════════════════════════════════════════════════════════════ */
+  :global([data-theme='dark']) .mobilePanel,
+  :global([data-theme='dark']) .mobileTabBar {
+    background: var(--color-surface);
+    border-top-color: var(--color-border);
+  }
+  :global([data-theme='dark']) .mobilePanel::before {
+    background: var(--color-border);
+  }
+  :global([data-theme='dark']) .mobileTab {
+    color: var(--color-text-muted);
+  }
+  :global([data-theme='dark']) .mobilePanelBtn {
+    background: var(--color-surface-2);
+    border-color: var(--color-border);
+    color: var(--color-text);
+  }
+  :global([data-theme='dark']) .mobilePanelBtn svg {
+    color: var(--color-text);
+  }
 }

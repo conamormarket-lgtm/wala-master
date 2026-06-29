@@ -127,6 +127,39 @@
 }
 
 
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — Timeline (seguimiento del pedido)
+   ---------------------------------------------------------------------------
+   Los textos de etapa/fecha están hardcodeados en grises oscuros (#0f172a /
+   #64748b / #94a3b8) que sobre fondo oscuro quedan ilegibles. Aquí los pasamos
+   a los tokens de tema. Los colores de estado (verde/azul/rojo de los nodos y
+   líneas) se mantienen porque comunican significado y se ven bien en oscuro.
+   El "corte" blanco del nodo (box-shadow ring) se vuelve el fondo de página
+   para que siga separando el nodo de la línea.
+   ═════════════════════════════════════════════════════════════════════════ */
+:global([data-theme='dark']) .etapa {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .item.actual .etapa {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .fecha {
+  color: var(--color-text-muted);
+}
+/* Línea/nodo "futuro" gris claro -> borde del tema para que no quede claro
+   sobre oscuro. */
+:global([data-theme='dark']) .item::before,
+:global([data-theme='dark']) .dot {
+  background-color: var(--color-border);
+}
+/* El anillo de corte blanco del nodo pasa a fondo de página en oscuro. */
+:global([data-theme='dark']) .dot {
+  box-shadow: 0 0 0 4px var(--color-bg);
+}
+:global([data-theme='dark']) .item.actual .dot {
+  box-shadow: 0 0 0 4px var(--color-bg), 0 0 0 8px rgba(59, 130, 246, 0.2);
+}
+
 /* ---- RESPONSIVE MOBILE ---- */
 @media (max-width: 768px) {
   .timeline {

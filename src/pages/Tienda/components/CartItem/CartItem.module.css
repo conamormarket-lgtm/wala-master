@@ -213,6 +213,24 @@
   color: #15803d;
 }
 
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — CartItem
+   ---------------------------------------------------------------------------
+   Casi todo usa los tokens --gris-* (que se voltean solos en oscuro). El único
+   punto que rompe es el chip .selectToggle, con background:white hardcodeado:
+   en oscuro su texto (atenuado, ya claro) quedaría claro-sobre-blanco. Lo
+   pasamos a superficie elevada del tema. No se toca ningún precio/total.
+   ═════════════════════════════════════════════════════════════════════════ */
+:global([data-theme='dark']) .selectToggle {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .selectToggle:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
 /* ══════════════════════════════
    RESPONSIVE ≤ 768px
    ══════════════════════════════ */

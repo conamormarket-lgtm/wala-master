@@ -88,11 +88,23 @@
   background: rgba(139, 92, 246, 0.05);
 }
 
-/* Mientras se arrastra un producto, cada columna se resalta como zona de drop. */
+/* Mientras se arrastra un producto, TODAS las columnas se marcan como zonas de
+   drop disponibles (borde punteado tenue + leve latido). */
 .dateColumnDroppable {
-  border-color: var(--violet-500, #8B5CF6);
+  border-color: var(--violet-300, #C4B5FD);
   background: var(--violet-50, #F5F3FF);
   animation: dropPulse 1.4s ease-in-out infinite;
+}
+
+/* La columna que está JUSTO bajo el puntero recibe el resalte fuerte: feedback
+   inequívoco de "suelta aquí". Anula el latido para que se sienta "fijada". */
+.dateColumnOver {
+  border-color: var(--violet-600, #7C3AED);
+  border-style: solid;
+  background: var(--violet-100, #EDE9FE);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.22);
+  animation: none;
+  transform: translateY(-2px);
 }
 
 @keyframes dropPulse {
@@ -261,6 +273,69 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  /* Suaviza el atenuado del origen al empezar/terminar el arrastre. */
+  transition: opacity var(--dur-rapida, 180ms) ease, transform var(--dur-rapida, 180ms) ease;
+}
+
+/* ── Estado del ORIGEN mientras se arrastra ───────────────────────────────
+   No se desmonta ni cambia de key: solo se atenúa y "hunde" un poco para que
+   se entienda que esa tarjeta es la que está viajando en el ghost. */
+.dragging {
+  opacity: 0.35;
+  transform: scale(0.97);
+}
+
+/* ── GHOST de arrastre (clon que sigue al puntero) ────────────────────────
+   position:fixed en <body> (portal). pointer-events:none para no robar los
+   eventos a window. will-change:transform => seguimiento fluido sin repaints
+   costosos ni parpadeo. */
+.dragGhost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  pointer-events: none;
+  will-change: transform;
+  filter: drop-shadow(0 18px 40px rgba(76, 29, 149, 0.45));
+}
+
+.dragGhostInner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--glass-bg-solid, #fff);
+  border: 2px solid var(--violet-400, #A78BFA);
+}
+
+.dragGhostImg {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* mismo recorte cuadrado que la zona de imagen original */
+  object-fit: cover;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.dragGhostName {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.6rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  color: var(--violet-900, #4C1D95);
+  background: var(--glass-bg-solid, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mientras hay un arrastre activo, el <body> bloquea selección/cursor texto. */
+.dragActiveBody {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: grabbing !important;
 }
 
 /* ── GiftProductCard (tarjeta a medida, arrastrable desde la imagen) ──── */
@@ -483,12 +558,150 @@
   .proceedBtn,
   .giftCard,
   .giftName,
+  .cardWrapper,
   .assignedRemove { transition: none; }
   .dateColumnDroppable { animation: none; }
+  /* El ghost sigue al puntero por transform directo: el resalte queda estático. */
+  .dateColumnOver { transform: none; }
+  .dragging { transform: none; }
 }
 
 @media (max-width: 640px) {
   .container { padding: 1.5rem 0.75rem 3rem; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
   .dateGrid { grid-template-columns: 1fr; }
+}
+
+/* =========================================================================
+   MODO OSCURO (data-theme="dark") — CONTRASTE
+   -------------------------------------------------------------------------
+   En claro la página usa violetas muy oscuros (violet-700/800/900) sobre
+   superficies claras. En oscuro esos textos quedan ilegibles. Aquí
+   re-mapeamos textos, fechas, instrucciones y superficies a los tokens del
+   tema oscuro para mantener el contraste:
+     --color-text       #F1EEF9  -> texto principal
+     --color-text-muted #B7B0C9  -> texto secundario
+     --color-surface    #1E1B2E  -> superficie de tarjeta
+     --color-surface-2  #272338  -> superficie elevada
+     --primary-color    #A78BFA  -> violeta de acento legible en oscuro
+   Las superficies de cristal (hero, secciones) ya las oscurece GlassCard;
+   los títulos/subtítulos de GlassCard ya usan --color-text/-muted. Aquí solo
+   tocamos lo que ESTA página hardcodea.
+   ========================================================================= */
+
+/* Subtítulo del hero (el título mantiene su degradado de marca, legible). */
+:global([data-theme='dark']) .heroSubtitle {
+  color: var(--color-text-muted);
+}
+
+/* ── Columnas / chips de fecha ─────────────────────────────────────────── */
+:global([data-theme='dark']) .dateColumnActive {
+  background: rgba(167, 139, 250, 0.10);
+}
+
+:global([data-theme='dark']) .dateChip {
+  background: var(--color-surface);
+  border-color: rgba(167, 139, 250, 0.30);
+}
+
+:global([data-theme='dark']) .dateChip:hover {
+  border-color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .dateChipActive {
+  background: var(--color-surface-2);
+  border-color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .dateChipLabel {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .dateChipDate {
+  color: var(--color-text-muted);
+}
+
+/* Resalte de la columna bajo el puntero: más visible sobre fondo oscuro. */
+:global([data-theme='dark']) .dateColumnDroppable {
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(167, 139, 250, 0.06);
+}
+
+:global([data-theme='dark']) .dateColumnOver {
+  border-color: var(--primary-color);
+  background: rgba(167, 139, 250, 0.16);
+  box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.30);
+}
+
+/* ── Miniaturas asignadas ──────────────────────────────────────────────── */
+:global([data-theme='dark']) .assignedThumb {
+  border-color: rgba(167, 139, 250, 0.30);
+  background: var(--color-surface-2);
+}
+
+/* ── Pista de uso del drag & drop ──────────────────────────────────────── */
+:global([data-theme='dark']) .dragHint {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+/* ── Tarjeta de producto (GiftProductCard) ─────────────────────────────── */
+:global([data-theme='dark']) .giftCard {
+  background: var(--color-surface);
+  border-color: rgba(167, 139, 250, 0.18);
+}
+
+:global([data-theme='dark']) .giftImageZone {
+  background: var(--color-surface-2);
+}
+
+:global([data-theme='dark']) .giftName {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .giftName:hover {
+  color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .giftSalePrice {
+  color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .giftRegularPrice {
+  color: var(--color-text-muted);
+}
+
+/* ── Recordatorio de la fecha elegida ──────────────────────────────────── */
+:global([data-theme='dark']) .deliveryHint {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+/* ── Estados (carga / vacío / error) ───────────────────────────────────── */
+:global([data-theme='dark']) .stateTitle {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .stateText,
+:global([data-theme='dark']) .emptyState,
+:global([data-theme='dark']) .emptyInline {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .spinner {
+  border-color: rgba(167, 139, 250, 0.25);
+  border-top-color: var(--primary-color);
+}
+
+/* ── GHOST de arrastre ─────────────────────────────────────────────────── */
+:global([data-theme='dark']) .dragGhostInner {
+  background: var(--color-surface-2);
+  border-color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .dragGhostName {
+  color: var(--color-text);
+  background: var(--color-surface-2);
 }

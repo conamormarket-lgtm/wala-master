@@ -1223,3 +1223,103 @@
     min-height: 20px !important;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — ComboUserEditor (personalizador de combos del cliente)
+   ---------------------------------------------------------------------------
+   Muchas superficies (#fff/#f3f4f6/#fbfbfb) y textos (#111827/#374151/#4b5563/
+   #6b7280) están hardcodeados, por lo que no heredan la red global de --gris-*.
+   Aquí pasamos superficies claras a --color-surface/--surface-2 y los textos
+   oscuros a --color-text/--color-text-muted, para que en oscuro nada quede
+   claro-sobre-claro ni oscuro-sobre-oscuro. Acentos (rojo de marca, morado de
+   paso activo) se conservan: comunican estado y resaltan bien en oscuro.
+   Solo color/contraste; NADA de layout.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Superficies blancas/grises claras -> superficie del tema */
+:global([data-theme='dark']) .activeCustomizationCard,
+:global([data-theme='dark']) .mobileProductCard,
+:global([data-theme='dark']) .mobileOverlayHeader,
+:global([data-theme='dark']) .mobileSettingsBtn,
+:global([data-theme='dark']) .globalCanvasItemWrapper,
+:global([data-theme='dark']) .globalCanvasItemTitle,
+:global([data-theme='dark']) .globalColorStrip,
+:global([data-theme='dark']) .sizeBtn,
+:global([data-theme='dark']) .fixedSizeSelect,
+:global([data-theme='dark']) .topControls,
+:global([data-theme='dark']) .bottomControls,
+:global([data-theme='dark']) .toolbarSectionGlobal,
+:global([data-theme='dark']) .comboSelect {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* Fondos de relleno suaves (grises muy claros) -> superficie elevada */
+:global([data-theme='dark']) .composedImageSection,
+:global([data-theme='dark']) .mobileProductSelector,
+:global([data-theme='dark']) .fixedSizesStrip,
+:global([data-theme='dark']) .globalCanvasesGrid,
+:global([data-theme='dark']) .globalControlsStripTop,
+:global([data-theme='dark']) .sideToggleBtn,
+:global([data-theme='dark']) .stepNumber {
+  background-color: var(--color-surface-2);
+}
+
+/* Bordes claros -> borde del tema */
+:global([data-theme='dark']) .composedImageSection,
+:global([data-theme='dark']) .editorHeader,
+:global([data-theme='dark']) .mobileProductCard,
+:global([data-theme='dark']) .mobileOverlayHeader,
+:global([data-theme='dark']) .mobileSettingsBtn,
+:global([data-theme='dark']) .globalCanvasItemTitle,
+:global([data-theme='dark']) .globalColorStrip,
+:global([data-theme='dark']) .globalControlsStripTop,
+:global([data-theme='dark']) .sizeBtn,
+:global([data-theme='dark']) .fixedSizeSelect,
+:global([data-theme='dark']) .fixedSizesStrip,
+:global([data-theme='dark']) .comboSelect {
+  border-color: var(--color-border);
+}
+
+/* Títulos y textos principales oscuros -> texto claro del tema */
+:global([data-theme='dark']) .editorTitle,
+:global([data-theme='dark']) .comboStepsTitle,
+:global([data-theme='dark']) .mobileSelectorTitle,
+:global([data-theme='dark']) .globalCanvasItemTitle,
+:global([data-theme='dark']) .fieldLabel,
+:global([data-theme='dark']) .sideTogglesLabel,
+:global([data-theme='dark']) .fixedSizeLabel,
+:global([data-theme='dark']) .mobileCardName,
+:global([data-theme='dark']) .sizeBtn,
+:global([data-theme='dark']) .comboSelect {
+  color: var(--color-text);
+}
+
+/* Textos secundarios/atenuados (grises medios) -> atenuado del tema */
+:global([data-theme='dark']) .loading,
+:global([data-theme='dark']) .placeholder,
+:global([data-theme='dark']) .scrollHint,
+:global([data-theme='dark']) .stepTab,
+:global([data-theme='dark']) .stepNumber,
+:global([data-theme='dark']) .selectChevron,
+:global([data-theme='dark']) .globalTabBtn {
+  color: var(--color-text-muted);
+}
+
+/* Hover de pestañas: el "negro" pasa a texto claro */
+:global([data-theme='dark']) .stepTab:hover {
+  color: var(--color-text);
+}
+
+/* Hover de tabs/botones con fondos grises claros -> hover del tema */
+:global([data-theme='dark']) .sideToggleBtn:hover,
+:global([data-theme='dark']) .stepTab:hover,
+:global([data-theme='dark']) .mobileProductCard:active {
+  background-color: var(--color-hover);
+}
+
+/* Botón de talla en hover */
+:global([data-theme='dark']) .sizeBtn:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}

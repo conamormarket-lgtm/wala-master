@@ -203,3 +203,28 @@
 [data-theme="dark"] .section a:hover {
   color: #F1EEF9; /* mismo claro que --color-text en oscuro */
 }
+
+/* Línea de dirección/contacto y créditos del footer.
+   Reportado: "Av. Universitaria… Comas, Lima", email y tel salían demasiado
+   oscuros/tenues. El bloque .copyright usaba rgba(255,255,255,0.45) y el <p>
+   de dirección además lleva opacity:0.8 inline → quedaba casi ilegible.
+   Subimos el contraste a un claro atenuado (≈0.78) que se lee bien sobre el
+   gradiente oscuro permanente del footer, sin tocar fondo ni layout. */
+[data-theme="dark"] .copyright {
+  color: rgba(241, 238, 249, 0.78);
+}
+
+[data-theme="dark"] .copyright p,
+[data-theme="dark"] .copyright a {
+  /* Más claro para compensar el opacity:0.8 inline de la línea de dirección. */
+  color: rgba(241, 238, 249, 0.92);
+}
+
+/* Texto de párrafo de columnas (p.ej. descripción/contacto) algo más claro. */
+[data-theme="dark"] .section p {
+  color: rgba(241, 238, 249, 0.8);
+}
+
+[data-theme="dark"] .section a {
+  color: rgba(241, 238, 249, 0.78);
+}

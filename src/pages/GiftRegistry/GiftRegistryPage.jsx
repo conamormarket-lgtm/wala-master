@@ -19,6 +19,22 @@
 //     arrastrar la imagen mueve la tarjeta. Así evitamos el "drag nativo" del
 //     navegador (imagen fantasma / cursor denegado).
 //
+// ARRASTRE (reescrito para eliminar el PARPADEO):
+//   - Antes usábamos framer-motion (drag + dragSnapToOrigin + whileDrag). El
+//     setDraggingId en onDragStart re-renderizaba TODA la lista a mitad del
+//     gesto e interrumpía el transform de framer-motion => flicker y la tarjeta
+//     "saltaba"/desaparecía.
+//   - Ahora el arrastre se basa en Pointer Events (desktop + touch en una sola
+//     ruta) gestionados por el hook useGiftDrag:
+//       1) La tarjeta ORIGEN nunca se desmonta ni cambia de key: solo recibe la
+//          clase .dragging (opacidad reducida). Sigue montada en su sitio.
+//       2) Un GHOST en position:fixed (renderizado por portal en <body>) sigue
+//          al puntero con transform — clon visual estable de la tarjeta, sin
+//          re-montar el origen, sin imagen fantasma del navegador.
+//       3) La fecha bajo el puntero se resalta en vivo (dropTargetKey) como
+//          zona de soltado; al soltar, se asigna producto -> fecha (lógica
+//          intacta: assignToDate / handleCardDrop).
+//
 // SEGURIDAD (decisión del usuario — enfoque SEGURO):
 //   La página NO lee Firestore directamente. Pide los datos mínimos a la
 //   Cloud Function `getPublicGiftRegistry({ referralCode })`, que devuelve
@@ -31,8 +47,8 @@
 //   No toca CartContext ni el checkout.
 // =========================================================================
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useCart } from '../../contexts/CartContext';
@@ -64,6 +80,174 @@ const construirLabel = (date) => {
 };
 
 // =========================================================================
+// useGiftDrag — hook de arrastre por Pointer Events (sin parpadeo).
+// -------------------------------------------------------------------------
+// Centraliza TODO el gesto en un único pointermove/up a nivel window:
+//   - drag: estado del arrastre activo { productId, cardProduct, item, x, y,
+//     w, h, offsetX, offsetY, image, name } o null. Mientras es != null se
+//     renderiza el GHOST (position:fixed) que sigue al puntero.
+//   - dropTargetKey: la fecha [data-date-key] bajo el puntero (para resaltarla).
+//   - start(e, payload): se llama desde el pointerdown de la zona de imagen.
+//
+// Claves anti-flicker:
+//   - El estado del puntero (x/y) se guarda en un REF y se aplica al ghost por
+//     manipulación directa del DOM (transform), NO por setState en cada move:
+//     así NO re-renderizamos la lista en cada píxel. Solo hacemos setState al
+//     iniciar, al cambiar de fecha resaltada y al terminar.
+//   - El origen no se desmonta: el componente padre solo le pone .dragging.
+// =========================================================================
+const DRAG_THRESHOLD = 6; // px que hay que mover antes de considerar "arrastre"
+
+const useGiftDrag = ({ onDrop }) => {
+  const [drag, setDrag] = useState(null);       // payload del arrastre activo (o null)
+  const [dropTargetKey, setDropTargetKey] = useState(null); // fecha resaltada
+  const ghostRef = useRef(null);                // nodo del ghost (para mover por transform)
+  const stateRef = useRef(null);                // datos vivos del gesto (sin re-render)
+
+  // onDrop se guarda en un ref y se mantiene fresco SIN cambiar la identidad de
+  // los handlers: así los listeners de window se agregan/quitan con la MISMA
+  // referencia aunque el componente re-renderice a mitad del gesto (clave para
+  // que removeEventListener funcione y no queden listeners colgados).
+  const onDropRef = useRef(onDrop);
+  useEffect(() => { onDropRef.current = onDrop; }, [onDrop]);
+
+  // Resuelve qué columna de fecha hay bajo un punto de pantalla.
+  const hitDateKey = useCallback((x, y) => {
+    const zonas = document.querySelectorAll('[data-date-key]');
+    for (const zona of zonas) {
+      const r = zona.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+        return zona.getAttribute('data-date-key');
+      }
+    }
+    return null;
+  }, []);
+
+  // pointermove global: mueve el ghost por transform (sin setState) y actualiza
+  // la fecha resaltada solo cuando cambia (setState mínimo).
+  const handleMove = useCallback((e) => {
+    const st = stateRef.current;
+    if (!st) return;
+    const x = e.clientX;
+    const y = e.clientY;
+    st.x = x;
+    st.y = y;
+
+    // Aún no superamos el umbral: no "arrastramos" todavía (deja pasar taps).
+    if (!st.active) {
+      if (Math.hypot(x - st.startX, y - st.startY) < DRAG_THRESHOLD) return;
+      st.active = true;
+      // Evita selección de texto y el cursor de texto durante el arrastre real.
+      document.body.classList.add(styles.dragActiveBody);
+      // Activa el ghost (1 render). Incluimos la posición inicial para que el
+      // DragGhost MONTE ya colocado bajo el puntero (sin un frame en 0,0).
+      setDrag({
+        ...st.payload,
+        w: st.w,
+        h: st.h,
+        initX: x - st.offsetX,
+        initY: y - st.offsetY,
+      });
+    }
+
+    // Mueve el ghost directamente (centrado en el puntero, conservando offset).
+    if (ghostRef.current) {
+      ghostRef.current.style.transform =
+        `translate3d(${x - st.offsetX}px, ${y - st.offsetY}px, 0) rotate(-3deg)`;
+    }
+
+    // Resalta la fecha bajo el puntero solo si cambió.
+    const key = hitDateKey(x, y);
+    if (key !== st.lastKey) {
+      st.lastKey = key;
+      setDropTargetKey(key);
+    }
+  }, [hitDateKey]);
+
+  // pointerup global: si hubo arrastre real, intenta el drop; siempre limpia.
+  const handleUp = useCallback((e) => {
+    const st = stateRef.current;
+    window.removeEventListener('pointermove', handleMove);
+    window.removeEventListener('pointerup', handleUp);
+    window.removeEventListener('pointercancel', handleUp);
+    if (st && st.active) {
+      const key = hitDateKey(e.clientX, e.clientY);
+      if (key) onDropRef.current(key, st.payload.cardProduct, st.payload.item);
+    }
+    document.body.classList.remove(styles.dragActiveBody);
+    stateRef.current = null;
+    setDrag(null);
+    setDropTargetKey(null);
+  }, [handleMove, hitDateKey]);
+
+  // start: se invoca desde el pointerdown de la zona de imagen del producto.
+  const start = useCallback((e, payload) => {
+    // Solo botón principal / touch / pen (ignora click derecho).
+    if (e.button != null && e.button !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    stateRef.current = {
+      payload,
+      active: false,
+      startX: e.clientX,
+      startY: e.clientY,
+      x: e.clientX,
+      y: e.clientY,
+      // El ghost replica el tamaño de la tarjeta y se ancla donde se agarró.
+      w: rect.width,
+      h: rect.height,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      lastKey: null,
+    };
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    window.addEventListener('pointercancel', handleUp);
+  }, [handleMove, handleUp]);
+
+  // Limpieza defensiva si el componente se desmonta a mitad de gesto.
+  useEffect(() => () => {
+    window.removeEventListener('pointermove', handleMove);
+    window.removeEventListener('pointerup', handleUp);
+    window.removeEventListener('pointercancel', handleUp);
+    document.body.classList.remove(styles.dragActiveBody);
+  }, [handleMove, handleUp]);
+
+  return { drag, dropTargetKey, start, ghostRef };
+};
+
+// =========================================================================
+// DragGhost — clon visual estable que sigue al puntero (position:fixed).
+// -------------------------------------------------------------------------
+// Se renderiza por portal en <body> para que ningún overflow/transform de un
+// ancestro lo recorte. NO captura el puntero (pointer-events:none) para que
+// pointermove/up sigan llegando a window. Su transform lo mueve useGiftDrag
+// directamente vía ghostRef => seguimiento fluido sin re-render.
+// =========================================================================
+const DragGhost = ({ drag, ghostRef }) => {
+  if (!drag) return null;
+  return createPortal(
+    <div
+      ref={ghostRef}
+      className={styles.dragGhost}
+      style={{
+        // Ancho = ancho de la zona de imagen agarrada; alto auto (imagen
+        // cuadrada + caption con el nombre). Replica visualmente la tarjeta.
+        width: drag.w,
+        // Posición inicial ya bajo el puntero; luego useGiftDrag mueve por ref.
+        transform: `translate3d(${drag.initX}px, ${drag.initY}px, 0) rotate(-3deg)`,
+      }}
+      aria-hidden="true"
+    >
+      <div className={styles.dragGhostInner}>
+        <img src={drag.image} alt="" className={styles.dragGhostImg} draggable={false} />
+        <div className={styles.dragGhostName}>{drag.name}</div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// =========================================================================
 // GiftProductCard — tarjeta A MEDIDA para el registro de regalos.
 // -------------------------------------------------------------------------
 // Por qué NO reutilizamos ProductCard: ProductCard envuelve TODO en un <Link>
@@ -72,10 +256,10 @@ const construirLabel = (date) => {
 // Aquí separamos responsabilidades:
 //   - La ZONA DE IMAGEN es el "agarre" para arrastrar (cursor:grab). La <img>
 //     lleva draggable={false} + reglas CSS -webkit-user-drag:none para anular
-//     el drag nativo. El arrastre real lo gestiona el <motion.div drag> padre.
+//     el drag nativo. El arrastre real lo gestiona useGiftDrag vía onPointerDown.
 //   - El NOMBRE es un <Link> al detalle del producto: tocarlo navega.
 // =========================================================================
-const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, onGift }) => {
+const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, onGift, onDragStart }) => {
   const imagen = cardProduct.mainImage || item.productImage || '';
   const precio = cardProduct.salePrice || cardProduct.price || 0;
   // Descuento simple (solo si hay precio de oferta y es menor al regular).
@@ -96,9 +280,14 @@ const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, onGift }) =>
       </div>
 
       {/* ── ZONA DE IMAGEN = agarre de arrastre ───────────────────────────
-          La <img> tiene draggable={false} y reglas CSS que matan el drag
-          nativo; el contenedor lleva cursor:grab. */}
-      <div className={`${styles.giftImageZone} ${yaRegalado ? styles.giftImageZoneStatic : ''}`}>
+          onPointerDown inicia el arrastre por Pointer Events (useGiftDrag):
+          funciona en desktop y touch sin el drag nativo del navegador. La
+          <img> lleva draggable={false} + CSS -webkit-user-drag:none para
+          matar la imagen fantasma; el contenedor lleva cursor:grab. */}
+      <div
+        className={`${styles.giftImageZone} ${yaRegalado ? styles.giftImageZoneStatic : ''}`}
+        onPointerDown={yaRegalado ? undefined : onDragStart}
+      >
         <img
           src={imagen}
           alt={cardProduct.name || item.productName || 'Producto'}
@@ -162,8 +351,6 @@ const GiftRegistryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedEventId, setSelectedEventId] = useState(null);
-  // Producto que se está arrastrando (para resaltar las fechas como zonas de drop).
-  const [draggingId, setDraggingId] = useState(null);
   // ── Asignaciones por fecha (modelo nuevo): NO va directo al carrito. ──
   // { [dateKey]: [ { productId, name, image, cardProduct, item } ] }
   const [assignments, setAssignments] = useState({});
@@ -350,32 +537,20 @@ const GiftRegistryPage = () => {
   };
 
   // ── Drag & drop: soltar un producto sobre una fecha lo ASIGNA a ese día ──
-  // Detectamos sobre qué columna [data-date-key] quedó el puntero al soltar.
-  // En el modelo nuevo NO agregamos al carrito: solo creamos la asignación.
-  const handleCardDrop = (nativeEvent, cardProduct, item) => {
-    setDraggingId(null);
-    const point =
-      typeof nativeEvent?.clientX === 'number'
-        ? { x: nativeEvent.clientX, y: nativeEvent.clientY }
-        : nativeEvent?.changedTouches?.[0]
-          ? { x: nativeEvent.changedTouches[0].clientX, y: nativeEvent.changedTouches[0].clientY }
-          : null;
-    if (!point) return;
-    const zonas = document.querySelectorAll('[data-date-key]');
-    for (const zona of zonas) {
-      const r = zona.getBoundingClientRect();
-      if (point.x >= r.left && point.x <= r.right && point.y >= r.top && point.y <= r.bottom) {
-        const key = zona.getAttribute('data-date-key');
-        const evt = fechas.find((f) => f._key === key);
-        if (evt) {
-          setSelectedEventId(evt._key); // refleja la fecha sobre la que se soltó
-          assignToDate(evt._key, cardProduct, item);
-          addToast(`Asignado a ${evt._label}`, 'success');
-        }
-        return;
-      }
-    }
-  };
+  // useGiftDrag ya resolvió la columna [data-date-key] bajo el puntero y nos
+  // pasa su key. En el modelo nuevo NO agregamos al carrito: solo creamos la
+  // asignación. (Lógica producto->fecha intacta: assignToDate.)
+  const handleCardDrop = useCallback((dateKey, cardProduct, item) => {
+    const evt = fechas.find((f) => f._key === dateKey);
+    if (!evt) return;
+    setSelectedEventId(evt._key); // refleja la fecha sobre la que se soltó
+    assignToDate(evt._key, cardProduct, item);
+    addToast(`Asignado a ${evt._label}`, 'success');
+  }, [fechas, addToast]);
+
+  // Hook de arrastre por Pointer Events (drag = ghost activo; dropTargetKey =
+  // fecha resaltada; start = pointerdown de la zona de imagen).
+  const { drag, dropTargetKey, start: startDrag, ghostRef } = useGiftDrag({ onDrop: handleCardDrop });
 
   // ── Estados: carga ──────────────────────────────────────────────────────
   if (loading || productsLoading) {
@@ -450,12 +625,22 @@ const GiftRegistryPage = () => {
               {fechas.map((d) => {
                 const seleccionada = d._key === selectedEventId;
                 const asignados = assignments[d._key] || [];
+                // drag != null -> hay un arrastre activo: todas las columnas se
+                // marcan como zona de drop. dropTargetKey -> la columna que está
+                // justo bajo el puntero recibe el resalte fuerte (.dateColumnOver).
+                const arrastrando = drag != null;
+                const encima = dropTargetKey === d._key;
                 return (
                   // ── COLUMNA de fecha = zona de drop (data-date-key) ──────
                   <div
                     key={d._key}
                     data-date-key={d._key}
-                    className={`${styles.dateColumn} ${draggingId ? styles.dateColumnDroppable : ''} ${seleccionada ? styles.dateColumnActive : ''}`}
+                    className={[
+                      styles.dateColumn,
+                      arrastrando ? styles.dateColumnDroppable : '',
+                      encima ? styles.dateColumnOver : '',
+                      seleccionada ? styles.dateColumnActive : '',
+                    ].filter(Boolean).join(' ')}
                   >
                     {/* a) ARRIBA: botón "Proceder a regalar (N)" si hay asignaciones */}
                     {asignados.length > 0 && (
@@ -550,21 +735,18 @@ const GiftRegistryPage = () => {
 
                 const yaRegalado = item.isGifted === true;
                 const sinFecha = !selectedEvent;
+                // ¿Es ESTA la tarjeta que se está arrastrando ahora mismo? Si lo
+                // es, atenuamos el origen con .dragging (NO lo desmontamos ni le
+                // cambiamos la key): el ghost en <body> es quien sigue al puntero.
+                const enArrastre = drag?.productId === (item.productId || idx);
 
                 return (
-                  // El ARRASTRE lo gestiona este motion.div (no la imagen): así
-                  // arrastrar la tarjeta no dispara el drag nativo del navegador.
-                  <motion.div
+                  // El wrapper NO se mueve ni cambia de key durante el arrastre.
+                  // El gesto lo dispara onPointerDown de la zona de imagen
+                  // (GiftProductCard -> onDragStart) y lo conduce useGiftDrag.
+                  <div
                     key={item.productId || idx}
-                    className={styles.cardWrapper}
-                    drag={!yaRegalado}
-                    dragSnapToOrigin
-                    whileDrag={{ scale: 1.05, zIndex: 60, boxShadow: '0 18px 40px -12px rgba(109, 40, 217, 0.45)' }}
-                    onDragStart={() => setDraggingId(item.productId)}
-                    onDragEnd={(e) => handleCardDrop(e, cardProduct, item)}
-                    style={{
-                      touchAction: !yaRegalado ? 'none' : undefined,
-                    }}
+                    className={`${styles.cardWrapper} ${enArrastre ? styles.dragging : ''}`}
                   >
                     {yaRegalado && (
                       <div className={styles.giftedOverlay}>¡Ya regalado! 🎉</div>
@@ -576,8 +758,17 @@ const GiftRegistryPage = () => {
                       yaRegalado={yaRegalado}
                       sinFecha={sinFecha}
                       onGift={() => handleGift(cardProduct, item)}
+                      onDragStart={(e) =>
+                        startDrag(e, {
+                          productId: item.productId || idx,
+                          cardProduct,
+                          item,
+                          image: cardProduct.mainImage || item.productImage || '',
+                          name: cardProduct.name || item.productName || 'Producto',
+                        })
+                      }
                     />
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
@@ -592,6 +783,11 @@ const GiftRegistryPage = () => {
           )}
         </GlassCard>
       </div>
+
+      {/* GHOST de arrastre: clon que sigue al puntero (portal en <body>). Solo
+          existe mientras hay un arrastre activo; no parpadea porque su posición
+          se actualiza por transform directo, no por re-render. */}
+      <DragGhost drag={drag} ghostRef={ghostRef} />
     </div>
   );
 };

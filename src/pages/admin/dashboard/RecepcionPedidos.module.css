@@ -520,13 +520,116 @@
    el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
    ═════════════════════════════════════════════════════════════════════════ */
 
+/* ---- Encabezado de la sección: título + subtítulo ---- */
+/* El título usaba #0f172a hardcodeado de fallback; bajo oscuro lo llevamos al
+   texto principal claro para que el "Recepción de Pedidos" resalte. */
+[data-theme="dark"] .titulo {
+  color: var(--color-text);
+}
+[data-theme="dark"] .subtitulo {
+  color: var(--color-text-muted);
+}
+
+/* ---- Botón "Actualizar" (glass pill) ---- */
+/* La superficie blanca translúcida hardcodeada quedaba luminosa en oscuro y el
+   texto violeta-marca casi no contrastaba; la pasamos a superficie elevada y
+   borde de tema. El color del texto (--primary-color) ya aclara solo. */
+[data-theme="dark"] .refresh {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+/* ---- Chips de filtro (Todos / Por entregar / …) ---- */
+/* Chip inactivo: fondo blanco translúcido -> superficie elevada; texto
+   secundario claro. El chip activo conserva su fondo de marca (--primary-color)
+   y su texto blanco, que ya contrastan bien. */
+[data-theme="dark"] .chip {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* ---- Tarjeta de pedido: superficie + TODOS sus textos ---- */
+/* La tarjeta usaba rgba(255,255,255,0.62) (glass claro): sobre el fondo oscuro
+   se veía luminosa y el texto, ya aclarado por el re-mapeo de --gris-*, quedaba
+   claro-sobre-claro o el hardcodeado oscuro quedaba oscuro-sobre-oscuro. La
+   llevamos a la superficie de tema y su borde, y fijamos cada texto de forma
+   explícita a principal/secundario para garantizar el contraste. */
+[data-theme="dark"] .card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* Cabecera de la tarjeta: código (principal) + fecha (secundario). */
+[data-theme="dark"] .codigo {
+  color: var(--color-text);
+}
+[data-theme="dark"] .fecha {
+  color: var(--color-text-muted);
+}
+
+/* Bloque DIRECCIÓN DE ENTREGA: la dirección y los extras como texto principal,
+   la zona y el mensaje como secundario. El recuadro mantiene su tinte violeta
+   translúcido, que ya funciona sobre oscuro. */
+[data-theme="dark"] .entregaDireccion {
+  color: var(--color-text);
+}
+[data-theme="dark"] .entregaZona {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .entregaExtra {
+  color: var(--color-text);
+}
+[data-theme="dark"] .entregaMensaje {
+  color: var(--color-text-muted);
+}
+
+/* Cliente: nombre (principal) + teléfono/DNI (secundario). */
+[data-theme="dark"] .clienteNombre {
+  color: var(--color-text);
+}
+[data-theme="dark"] .clienteMeta {
+  color: var(--color-text-muted);
+}
+
+/* Productos: nombre del producto (principal), variante / vacío (secundario). */
+[data-theme="dark"] .producto {
+  color: var(--color-text);
+}
+[data-theme="dark"] .prodVariante,
+[data-theme="dark"] .productoVacio {
+  color: var(--color-text-muted);
+}
+
+/* Montos: separador superior, etiquetas y unidades (secundario) + el valor de
+   "Envío" (principal). El valor "Total" usa --primary-color, que ya aclara. */
+[data-theme="dark"] .montos {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .montoLabel,
+[data-theme="dark"] .montoUnidades {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .montoValorSec {
+  color: var(--color-text);
+}
+
+/* Avisos (error / vacío): texto del aviso a secundario claro. */
+[data-theme="dark"] .avisoTexto {
+  color: var(--color-text-muted);
+}
+
 [data-theme="dark"] .avisoDetalle {
   color: #FCA5A5;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* Sin blur: las pastillas elevadas (botón / chips) usan superficie elevada y
+     la tarjeta la superficie base; ambas oscuras y legibles. */
   [data-theme="dark"] .refresh,
-[data-theme="dark"] .chip,
-[data-theme="dark"] .card {
+[data-theme="dark"] .chip {
+    background: var(--color-surface-2);
+  }
+  [data-theme="dark"] .card {
     background: var(--color-surface);
   }
 }

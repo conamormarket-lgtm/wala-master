@@ -114,7 +114,7 @@
   --color-surface:    #1E1B2E; /* cards/paneles */
   --color-surface-2:  #272338; /* superficie elevada: dropdowns, modales, popovers */
   --color-text:       #F1EEF9; /* texto principal claro (alto contraste) */
-  --color-text-muted: #B7B0C9; /* texto atenuado legible */
+  --color-text-muted: #C7C1D8; /* texto atenuado legible (subido un punto para mayor contraste) */
   --color-border:     #332E45; /* bordes suaves sobre fondo oscuro */
   --color-hover:      #2A2640; /* hover sutil */
   --color-shadow:     rgba(0, 0, 0, 0.5);

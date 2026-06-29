@@ -421,19 +421,20 @@ const Header = () => {
 
                   <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
                     <div className={styles.accountPopupContent} style={{ padding: '12px' }}>
-                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#333' }}>Mis Billeteras</h4>
+                      {/* Texto y fondos del tema: se oscurecen/aclaran en modo noche. */}
+                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--color-text)' }}>Mis Billeteras</h4>
                       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
+                        <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-2)', padding: '10px', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '18px' }}>🪙</span>
-                            <span style={{ fontSize: '14px', fontWeight: '500', color: '#334155' }}>Wala Coins</span>
+                            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>Wala Coins</span>
                           </div>
                           <strong style={{ color: 'var(--rojo-principal)', fontSize: '15px' }}>{Math.floor(displayCoins)}</strong>
                         </li>
-                        <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
+                        <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-2)', padding: '10px', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '18px' }}>🍖</span>
-                            <span style={{ fontSize: '14px', fontWeight: '500', color: '#334155' }}>Kapi Coins</span>
+                            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>Kapi Coins</span>
                           </div>
                           <strong style={{ color: '#b45309', fontSize: '15px' }}>{displayKapiCoins}</strong>
                         </li>
@@ -496,7 +497,8 @@ const Header = () => {
                     buttonLink: '/tienda',
                     fontFamily: '',
                     fontSize: '14px',
-                    color: '#666666',
+                    // Texto secundario del tema: se aclara en modo noche (antes #666666 fijo).
+                    color: 'var(--color-text-muted)',
                     bold: false,
                     italic: false
                   };
@@ -504,7 +506,8 @@ const Header = () => {
                   const textStyle = {
                     fontFamily: favConfig.fontFamily || 'inherit',
                     fontSize: favConfig.fontSize || '14px',
-                    color: favConfig.color || '#666666',
+                    // Fallback al texto atenuado del tema para legibilidad en oscuro.
+                    color: favConfig.color || 'var(--color-text-muted)',
                     fontWeight: favConfig.bold ? 'bold' : 'normal',
                     fontStyle: favConfig.italic ? 'italic' : 'normal',
                     marginBottom: '1.25rem'
@@ -659,7 +662,7 @@ const Header = () => {
 
             <div className={`${styles.accountPopup} ${styles.cartPopupWidth} ${styles.mobileCenteredPopup}`}>
               <div className={styles.accountPopupContent}>
-                <h3 style={{textAlign: 'left', borderBottom: '1px solid #eee', paddingBottom: '0.75rem', marginBottom: '0.75rem'}}>Mi Carrito</h3>
+                <h3 style={{textAlign: 'left', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem', marginBottom: '0.75rem'}}>Mi Carrito</h3>
                 {cartItems.length === 0 ? (
                   <>
                     <p>Tu carrito está vacío en este momento.</p>

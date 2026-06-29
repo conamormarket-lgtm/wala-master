@@ -1248,3 +1248,127 @@
     background-color: var(--color-surface-2, #272338);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — Nav, dropdowns y popups del Header
+   ---------------------------------------------------------------------------
+   El nav y los desplegables ya heredan en su mayoría de --gris-* / --blanco
+   (remapeadas en oscuro). Aquí reforzamos los puntos donde el contraste se
+   quedaba corto o donde la superficie del popup debe ser la ELEVADA
+   (--color-surface-2) en lugar de la base, y aseguramos que el texto del nav
+   ("Categorías", "Tienda", "Crear", "Minijuegos", "Cuenta", "Admin") tenga
+   contraste suficiente. Solo color/superficie: NO se toca layout. Los fondos
+   van con la variable del tema, sin !important, para no pisar inline del admin.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Enlaces del nav superior: el secundario sobre el header oscuro resultaba
+   demasiado tenue; lo subimos a texto principal claro. Activo/hover ya van
+   bien (usan --gris-texto-principal remapeado), pero los reforzamos. */
+:global([data-theme='dark']) .navLink {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .navLink:hover {
+  color: var(--color-text);
+  background-color: var(--color-hover);
+}
+
+:global([data-theme='dark']) .navLinkActive {
+  color: var(--color-text);
+  /* La pastilla activa usaba var(--blanco) -> superficie oscura; la elevamos. */
+  background-color: var(--color-surface-2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 0 0 1px var(--color-border);
+}
+
+/* Mega menú "Categorías" y sus hermanos: superficie elevada + enlaces claros. */
+:global([data-theme='dark']) .megaMenu {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .megaMenuContent h4 {
+  color: var(--color-text-muted);
+  border-bottom-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .megaMenuContent li a {
+  color: var(--color-text);
+}
+
+/* Popups de cuenta / favoritos / carrito / notificaciones: superficie elevada. */
+:global([data-theme='dark']) .accountPopup,
+:global([data-theme='dark']) .premiumMobileDropdown {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .accountPopupContent h3,
+:global([data-theme='dark']) .accountPopupContent h4 {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .accountPopupContent p {
+  color: var(--color-text-muted);
+}
+
+/* Texto del desplegable "Tu Lista de Deseos" ("Tienes N productos guardados…").
+   El <p> lleva un color inline por defecto (#666666); lo forzamos a texto
+   atenuado claro del tema para que se lea en oscuro. */
+:global([data-theme='dark']) .accountPopupContent p[style] {
+  /* !important para vencer el color inline (textStyle) que el admin pudo guardar
+     en oscuro; así el texto siempre queda legible sobre el popup oscuro. */
+  color: var(--color-text-muted) !important;
+}
+
+/* Botón secundario (Explorar tienda / Cerrar sesión / Crear cuenta). */
+:global([data-theme='dark']) .secondaryButton {
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .secondaryButton:hover {
+  background-color: var(--color-hover);
+  border-color: var(--color-text-muted);
+}
+
+/* Miniaturas de la lista de deseos: chip "+N" y placeholder. */
+:global([data-theme='dark']) .wishlistThumbMore {
+  background-color: var(--color-hover);
+  color: var(--color-text-muted);
+}
+
+/* Cabecera/pie del dropdown de billeteras (móvil) a superficie elevada. */
+:global([data-theme='dark']) .premiumMobileHeader,
+:global([data-theme='dark']) .premiumWalletFooter {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .premiumMobileHeader h4,
+:global([data-theme='dark']) .premiumWalletTitle {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .premiumWalletSubtitle {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .premiumWalletItem {
+  border-bottom-color: var(--color-border);
+}
+
+/* Preview del carrito: nombre, total y separadores legibles en oscuro. */
+:global([data-theme='dark']) .previewItemName,
+:global([data-theme='dark']) .cartPreviewTotal {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .moreItemsText,
+:global([data-theme='dark']) .brandsSection h4 {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .cartPreviewFooter,
+:global([data-theme='dark']) .brandsSection {
+  border-top-color: var(--color-border);
+}
