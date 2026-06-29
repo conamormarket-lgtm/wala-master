@@ -39,8 +39,9 @@
 >   propias; y los campos objetivo que faltan en colecciones ya creadas (ver §3.4 / §3.5).
 >
 > **Aparte (NO es el marketplace objetivo):** el **sistema multi-marca** (`brandId` en
-> `productos_wala`, `slug`+`categoryNav` en `tienda_brands`, `landingPages/{slug}`+`pages/{slug}`,
-> faceta `brand`) **SÍ está en producción** (frontend, Vercel). Ver **§3.6**.
+> `productos_wala`, `slug`+`categoryNav`+`categoryNavStyle` en `tienda_brands`,
+> `landingPages/{slug}`+`pages/{slug}`, faceta `brand`) **SÍ está en producción** (frontend,
+> Vercel). Ver **§3.6**.
 
 ---
 
@@ -85,7 +86,7 @@ hay proyecto ERP separado en producción), así que todas deben estar en las mis
 | `tienda_categories` | PROD | Categorías visuales V2 (Hoodies, Polos…). | `name`, `imageUrl`, `order`, `createdAt`, `updatedAt` |
 | `categories` | PROD | Categorías legacy. **Duplicado** de `tienda_categories`; `getCategories()` lee de aquí. | `name`, `order` |
 | `tienda_collections` | PROD | Colecciones/campañas temporales (drops). | `name`, `imageUrl`, `order` |
-| `tienda_brands` | PROD | **Marcas (sistema multi-marca, ver §3.6).** Cada producto pertenece a 1 marca (`productos_wala.brandId` = doc id de aquí). | `name`, `slug` (CamelCase/MAYÚS, match **case-insensitive** en ruteo), `logoUrl`, `order`, `bgColor`, `bgImage`, `bgOpacity`, `whatsappNumber`, `categoryNav[{categoryId,name,imageUrl,order}]` (nav de categorías con miniatura por marca, embebido — **OVERRIDE OPCIONAL**: si está vacío, el nav se **deriva automáticamente** de las categorías de los productos de la marca) |
+| `tienda_brands` | PROD | **Marcas (sistema multi-marca, ver §3.6).** Cada producto pertenece a 1 marca (`productos_wala.brandId` = doc id de aquí). | `name`, `slug` (CamelCase/MAYÚS, match **case-insensitive** en ruteo), `logoUrl`, `order`, `bgColor`, `bgImage`, `bgOpacity`, `whatsappNumber`, `categoryNav[{categoryId,name,imageUrl,order}]` (nav de categorías con miniatura por marca, embebido — **OVERRIDE OPCIONAL**: si está vacío, el nav se **deriva automáticamente** de las categorías de los productos de la marca), `categoryNavStyle{align,animation}` (estilo del nav: `align ∈ left\|center\|right\|justify`, `animation ∈ static\|slider`; default `{center,static}` retrocompatible) |
 | `landingPages/{slug}` | PROD | **Páginas dinámicas por slug (id === slug).** `getLandingPageBySlug` busca por `slug` y, si falla, hace **fallback case-insensitive** en memoria. `/:slug` → `DynamicLandingPage` → `TiendaPage pageIdOverride=slug`. Las marcas tienen una aquí (`ConAmor`/`MUSSA`/`MUEBLERIA`). | `slug`, `name`, `title?`, `themeId?`, `hideHeader?`, `hideFooter?`, `createdAt`, `updatedAt` |
 | `pages/{slug}` | PROD | **Secciones (layout) de cada landing/página**, editadas en el editor visual. `TiendaPage` lee de aquí por `pageId` (= slug). Para una marca: contiene `categories_nav` + `sidebar_catalog` con su `settings.brandId`. | array `sections[{ type, settings }]` (tipos: `sidebar_catalog`, `categories_nav`, `product_grid`, `featured_products`, `hero`…) |
 | `tienda_landing_pages` | PROD | **Modelo legacy** de landings (NO el que usa el ruteo `/:slug`; ese es `landingPages` arriba). | `title`, `slug`, `heroImage`, `theme{}`, `targetBrandId`, `targetCollectionId`, `isActive` |
@@ -492,6 +493,7 @@ sus productos y su nav de categorías con miniaturas.
 | `productos_wala/{id}` | `brandId` | string | Doc id de `tienda_brands`. **1 producto = 1 marca.** Ausente/`''` = catálogo global. Lo escribe `setProductBrand` con **escritura parcial** (`updateDoc {brandId}` para asignar, `updateDoc {brandId: deleteField()}` para quitar). |
 | `tienda_brands/{id}` | `slug` | string | `ConAmor`/`MUSSA`/`MUEBLERIA`. El ruteo hace match **case-insensitive**. |
 | `tienda_brands/{id}` | `categoryNav` | array | `[{ categoryId, name, imageUrl, order }]` — burbujas del nav de categorías de la marca (normalizado en `brands.js`). **OVERRIDE opcional**: el nav por defecto es **automático** (se deriva de las categorías de los productos de la marca vía `getProductsByBrand` + `tienda_categories`); este array solo se usa si tiene items (para fijar orden/imágenes a mano). |
+| `tienda_brands/{id}` | `categoryNavStyle` | object | `{ align, animation }` — **estilo del nav** de categorías de la marca (normalizado en `brands.js`, `normalizeCategoryNavStyle`). `align ∈ {left, center, right, justify}` (alineación de las burbujas; **solo aplica en modo estático**), `animation ∈ {static, slider}` (`slider` = auto-scroll tipo marquee, pausa al hover, respeta `prefers-reduced-motion`, no rompe el clic-para-filtrar). **Aditivo y retrocompatible**: ausente o inválido → default `{ align: 'center', animation: 'static' }` (= comportamiento actual). `TiendaPage` lee este campo y pasa `align`/`animation` a `VisualCategoryNav`. Editable (sincronizado) en *Elementos con diseño*, panel por marca e inline del editor visual. |
 | `landingPages/{slug}` | doc | — | **id === slug**. Hace que `WALA.PE/<slug>` resuelva vía `/:slug` → `DynamicLandingPage`. |
 | `pages/{slug}` | `sections[]` | array | Secciones de la página de la marca: `categories_nav` + `sidebar_catalog`, cada una con `settings.brandId`. |
 
