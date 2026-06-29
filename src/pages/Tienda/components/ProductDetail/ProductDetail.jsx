@@ -156,7 +156,7 @@ const Skeleton = () => (
 // ─── ProductDetail ────────────────────────────────────────────────────────────
 const ProductDetail = ({ product, loading, categories = [] }) => {
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, items: cartItems, selectAllItems } = useCart();
   const { user, userProfile } = useAuth();
   const toast = useGlobalToast();
   const { t } = useLanguage();
@@ -300,6 +300,32 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
       isCombo ? { variantSelections: comboSels, customizations: {}, subProductsData: comboProd } : null
     );
     toast.success('¡Agregado al carrito!');
+  };
+
+  // "Comprar": agrega ESTE producto al carrito dejándolo como ÚNICO seleccionado
+  // (selectOnly) y va directo a la pasarela de pago, así se paga solo este producto.
+  const handleComprarAhora = () => {
+    if (!product.inStock) return;
+    addToCart(
+      product,
+      { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
+      null,
+      qty,
+      isCombo ? { variantSelections: comboSels, customizations: {}, subProductsData: comboProd } : null,
+      { selectOnly: true, silent: true }
+    );
+    navigate('/checkout');
+  };
+
+  // "Comprar todo el carrito": selecciona TODOS los items del carrito y va directo
+  // a la pasarela de pago con todo cargado.
+  const handleComprarCarrito = () => {
+    if (!cartItems || cartItems.length === 0) {
+      toast.error('Tu carrito está vacío. Agrega productos primero.');
+      return;
+    }
+    selectAllItems();
+    navigate('/checkout');
   };
 
   const handlePersonalize = () => {
@@ -517,6 +543,20 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             ) : product.customizable && (
               <button className={styles.btnOutline} onClick={handlePersonalize}>
                 {t('card.personalizar', 'Personalizar')}
+              </button>
+            )}
+          </div>
+
+          {/* Comprar directo: este producto o todo el carrito → pasarela de pago */}
+          <div className={styles.buyStack}>
+            {product.inStock && (
+              <button className={styles.btnComprar} onClick={handleComprarAhora}>
+                {t('card.comprar', 'Comprar')}
+              </button>
+            )}
+            {cartItems.length > 0 && (
+              <button className={styles.btnComprarCarrito} onClick={handleComprarCarrito}>
+                {t('card.comprarCarrito', 'Comprar todo el carrito')}
               </button>
             )}
           </div>

@@ -451,6 +451,48 @@
 .btnOutline:hover { background: #0a0a0a; color: #fff; transform: translateY(-1px); }
 .btnOutline:active { transform: translateY(0); }
 
+/* ── Comprar directo: este producto / todo el carrito → pasarela de pago ── */
+.buyStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.btnComprar {
+  width: 100%;
+  height: 56px;
+  background: var(--primary-color, #7c3aed);
+  color: #fff;
+  border: 2px solid var(--primary-color, #7c3aed);
+  border-radius: 4px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+.btnComprar:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btnComprar:active { transform: translateY(0); }
+
+.btnComprarCarrito {
+  width: 100%;
+  height: 52px;
+  background: transparent;
+  color: var(--primary-color, #7c3aed);
+  border: 2px solid var(--primary-color, #7c3aed);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.btnComprarCarrito:hover { background: var(--primary-color, #7c3aed); color: #fff; transform: translateY(-1px); }
+.btnComprarCarrito:active { transform: translateY(0); }
+
 /* ── Trust badges ────────────────────────────────── */
 .trustRow {
   display: flex;

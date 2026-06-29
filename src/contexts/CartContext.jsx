@@ -252,14 +252,23 @@ export const CartProvider = ({ children }) => {
           JSON.stringify(item.customization) === JSON.stringify(customization);
       });
 
+      // "Comprar ahora": deja seleccionado SOLO este item (los demás permanecen en
+      // el carrito pero deseleccionados), para que el checkout pague únicamente este.
+      const selectOnly = options.selectOnly === true;
+
       if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += quantity;
+        const updated = prev.map((it, idx) => {
+          if (idx === existingIndex) {
+            return { ...it, quantity: it.quantity + quantity, ...(selectOnly && { selected: true }) };
+          }
+          return selectOnly ? { ...it, selected: false } : it;
+        });
         if (!options.silent) toast.success(`Se agregaron ${quantity} unidades de ${product.name} a tu carrito`);
         return updated;
       } else {
         if (!options.silent) toast.success(`Se agregó ${product.name} a tu carrito`);
-        return [...prev, cartItem];
+        const base = selectOnly ? prev.map(it => ({ ...it, selected: false })) : prev;
+        return [...base, cartItem];
       }
     });
   }, [toast]);
@@ -297,6 +306,11 @@ export const CartProvider = ({ children }) => {
     );
   }, []);
 
+  // Selecciona TODOS los items del carrito (para "Comprar todo el carrito").
+  const selectAllItems = React.useCallback(() => {
+    setItems(prev => prev.map(i => (i.selected === false ? { ...i, selected: true } : i)));
+  }, []);
+
   // Tras pagar: conserva SOLO los items NO seleccionados ("no comprar esta vez").
   // Los items seleccionados (los que se pagaron) se quitan del carrito.
   // El efecto existente sincroniza localStorage/Firestore automáticamente.
@@ -325,11 +339,12 @@ export const CartProvider = ({ children }) => {
     updateQuantity,
     clearCart,
     toggleItemSelected,
+    selectAllItems,
     clearSelectedItems,
     getTotalItems,
     getTotalPrice,
     isEmpty: items.length === 0
-  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, toggleItemSelected, clearSelectedItems, getTotalItems, getTotalPrice]);
+  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, toggleItemSelected, selectAllItems, clearSelectedItems, getTotalItems, getTotalPrice]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
