@@ -340,3 +340,89 @@
   justify-content: flex-end;
   gap: 1rem;
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .subtitle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .cardTitle {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .input {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .input:focus {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .imagePreviewContainer {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .uploadImageLabel {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .uploadImageLabel:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .categoryCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .categoryCard:hover {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .categoryBubbleEmpty {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .categoryName {
+  color: var(--color-text);
+}
+[data-theme="dark"] .categoryBadge {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .actionBtn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .actionBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+[data-theme="dark"] .actionBtnDelete:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+[data-theme="dark"] .modal {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .modalText {
+  color: var(--color-text-muted);
+}

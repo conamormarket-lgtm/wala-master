@@ -428,3 +428,54 @@
   color: var(--gris-texto-secundario, #6b7280);
   max-width: 32ch;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — CuentaCompraDetallePage
+   ---------------------------------------------------------------------------
+   Casi todo consume tokens --glass-* --gris-* --violet-* y se oscurece solo.
+   Aquí afinamos: (1) el fallback @supports (#ffffff) -> superficie oscura;
+   (2) el skeleton de carga, demasiado luminoso sobre oscuro; (3) los chips e
+   imágenes que usan --violet-50 (claro fijo): los pasamos a un tinte violeta
+   translúcido con texto claro para que no queden como manchas claras. El badge
+   de estado (.estadoBadge) recibe su color inline desde JS con texto blanco:
+   legible en ambos modos, se conserva. Solo color/contraste.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* (1) Fallback sólido sin backdrop-filter -> superficie oscura */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  :global([data-theme='dark']) .glass {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+  }
+}
+
+/* (2) Skeleton: grises claros -> grises oscuros translúcidos */
+:global([data-theme='dark']) .skeletonBlock {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(255, 255, 255, 0.10) 50%,
+    rgba(255, 255, 255, 0.04) 70%
+  );
+  background-size: 200% 100%;
+}
+
+/* (3) Chips de atributos e imagen placeholder con --violet-50 (claro fijo) */
+:global([data-theme='dark']) .chip {
+  color: var(--primary-hover);
+  background: var(--primary-light);
+  border-color: rgba(167, 139, 250, 0.28);
+}
+:global([data-theme='dark']) .lineaImgWrap {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .lineaImgPlaceholder {
+  color: var(--primary-color);
+}
+
+/* Resúmenes "gratis"/descuento: verde un punto más claro y legible */
+:global([data-theme='dark']) .resumenGratis,
+:global([data-theme='dark']) .resumenDescuento {
+  color: #6EE7B7; /* emerald-300 */
+}

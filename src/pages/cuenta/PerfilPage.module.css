@@ -379,3 +379,130 @@
   font-size: 0.9rem;
   margin-top: 1rem;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — PerfilPage
+   ---------------------------------------------------------------------------
+   Este módulo tiene casi TODOS los colores HARDCODEADOS (hex blancos/grises/
+   negros), así que no hereda la red global de --gris-* y --blanco. Aquí pasamos
+   cada superficie clara a la variable de tema (--color-surface / --color-text /
+   --color-border …) para que en oscuro el texto quede legible y nada quede
+   claro-sobre-claro. NO se tocan tamaños ni layout, solo color/contraste.
+   El .walletBanner ya es oscuro por diseño (gradiente carbón con texto claro):
+   se conserva tal cual porque es legible en ambos modos.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Encabezado de página */
+:global([data-theme='dark']) .pageHeader h1 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .pageHeader p {
+  color: var(--color-text-muted);
+}
+
+/* Tarjeta de cristal -> superficie oscura, borde y sombra de tema */
+:global([data-theme='dark']) .glassCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.55);
+}
+:global([data-theme='dark']) .glassCard:hover {
+  box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.65);
+}
+
+/* Cabecera de tarjeta y títulos */
+:global([data-theme='dark']) .cardHeader {
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .cardHeader h3 {
+  color: var(--color-text);
+}
+
+/* Icono de cabecera: usa el acento de marca (violeta-claro en oscuro) */
+:global([data-theme='dark']) .headerIcon {
+  color: var(--primary-color);
+  background: var(--primary-light);
+}
+
+/* Botón "copiar código" (acento de marca para coherencia en oscuro) */
+:global([data-theme='dark']) .copyBtn {
+  background: var(--primary-color);
+}
+:global([data-theme='dark']) .copyBtn:hover {
+  background: var(--primary-hover);
+}
+
+/* Inputs y select del formulario: fondo elevado, texto claro, borde de tema */
+:global([data-theme='dark']) .formGroup label {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .formGroup input,
+:global([data-theme='dark']) .select {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .formGroup input::placeholder {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .formGroup input:focus,
+:global([data-theme='dark']) .select:focus {
+  border-color: var(--primary-color);
+  background: var(--color-surface);
+  box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+/* Toggle de tipo de persona (Natural/Jurídica) */
+:global([data-theme='dark']) .toggleRow {
+  background: var(--color-surface-2);
+}
+:global([data-theme='dark']) .toggle {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .toggle.active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* Filas de información (perfil completo) */
+:global([data-theme='dark']) .infoRow {
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .infoLabel {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .infoValue {
+  color: var(--color-text);
+}
+
+/* Botones de acción: el primario negro -> superficie elevada con texto claro */
+:global([data-theme='dark']) .btnSave {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .btnSave:hover {
+  background: var(--color-hover);
+}
+:global([data-theme='dark']) .btnCancel {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .btnCancel:hover {
+  background: var(--color-hover);
+}
+/* Botón secundario "peligro suave" (rojo claro -> rojo translúcido legible) */
+:global([data-theme='dark']) .btnSecondary {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+:global([data-theme='dark']) .btnSecondary:hover {
+  background: rgba(239, 68, 68, 0.18);
+}
+
+/* Mensaje de error */
+:global([data-theme='dark']) .errorMessage {
+  background: var(--danger-soft);
+  color: #FCA5A5; /* rojo-200: legible sobre fondo oscuro */
+  border-left-color: var(--danger);
+}

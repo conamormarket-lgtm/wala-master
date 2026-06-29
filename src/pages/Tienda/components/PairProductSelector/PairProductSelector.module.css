@@ -101,3 +101,41 @@
     font-size: 1rem;
   }
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Selector de productos del combo
+   Secciones gris claro con botones de variante/color blancos: pasa a superficie
+   oscura con botones oscuros. El estado activo (#b4171e) se mantiene como acento
+   de marca, legible sobre fondo oscuro.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .itemSection {
+  background-color: var(--color-surface-2); /* #f9f9f9 -> superficie oscura */
+  border-color: var(--color-border);        /* #e0e0e0 -> borde oscuro */
+}
+
+[data-theme="dark"] .itemLabel {
+  color: var(--color-text);   /* #333 -> texto claro */
+}
+
+[data-theme="dark"] .variantLabel {
+  color: var(--color-text-muted); /* #666 -> atenuado */
+}
+
+[data-theme="dark"] .variantButton,
+[data-theme="dark"] .colorButton {
+  background-color: var(--color-surface); /* #fff -> superficie oscura */
+  border-color: var(--color-border);       /* #ddd -> borde oscuro */
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .variantButton:hover,
+[data-theme="dark"] .colorButton:hover {
+  border-color: var(--color-text-muted); /* #999 -> atenuado */
+  background-color: var(--color-hover);  /* #f5f5f5 -> hover oscuro */
+}
+
+/* El estado activo conserva el rojo de marca; solo lo dejamos explicito por si
+   el remapeo de --blanco afectara al texto. */
+[data-theme="dark"] .variantButton.active {
+  color: #fff;
+}

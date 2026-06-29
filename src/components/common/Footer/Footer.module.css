@@ -185,3 +185,21 @@
     font-size: 0.9375rem;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — Footer
+   ---------------------------------------------------------------------------
+   El footer SIEMPRE tiene fondo oscuro (gradiente #1a1a1a→#2d2d2d hardcodeado,
+   no es tema ni fondo configurable por el admin). Sus títulos/enlaces usaban
+   var(--blanco) para el texto claro; pero en modo noche --blanco se remapea a
+   una SUPERFICIE oscura (#1E1B2E), por lo que ese texto quedaría OSCURO SOBRE
+   OSCURO (ilegible). Aquí re-fijamos esos textos a un claro literal para que el
+   footer siga legible. Los textos atenuados ya usan rgba(255,255,255,…) y no
+   se ven afectados. No se toca el fondo ni el layout.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .footer,
+[data-theme="dark"] .section h3,
+[data-theme="dark"] .section h4,
+[data-theme="dark"] .section a:hover {
+  color: #F1EEF9; /* mismo claro que --color-text en oscuro */
+}

@@ -285,3 +285,120 @@
   color: #9ca3af;
   text-align: right;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — MisionesPage
+   ---------------------------------------------------------------------------
+   Colores HARDCODEADOS. Pasamos el contenedor y las tarjetas a superficie
+   oscura con texto claro. Las tarjetas-acento pastel (tier indigo, racha
+   ámbar, badges) llevarían texto oscuro sobre fondo claro; en oscuro las
+   convertimos a su tinte translúcido con texto claro para que NO queden
+   ilegibles. Solo color/contraste; sin tocar tamaños ni layout.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Contenedor general */
+:global([data-theme='dark']) .container {
+  background: var(--color-surface);
+  box-shadow: var(--sombra-media);
+}
+:global([data-theme='dark']) .title {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .subtitle,
+:global([data-theme='dark']) .loading,
+:global([data-theme='dark']) .empty,
+:global([data-theme='dark']) .dateNote {
+  color: var(--color-text-muted);
+}
+
+/* Tarjetas de saldo */
+:global([data-theme='dark']) .statCard {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .statLabel {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .statValue {
+  color: var(--color-text);
+}
+
+/* Tarjeta de nivel/tier: indigo claro -> tinte violeta translúcido legible */
+:global([data-theme='dark']) .tierCard {
+  background: rgba(99, 102, 241, 0.14);
+  border-color: rgba(129, 140, 248, 0.30);
+}
+:global([data-theme='dark']) .tierBadge {
+  color: #C7D2FE; /* indigo-200 */
+}
+:global([data-theme='dark']) .tierXp,
+:global([data-theme='dark']) .tierNext {
+  color: #A5B4FC; /* indigo-300 */
+}
+:global([data-theme='dark']) .progressTrack {
+  background: rgba(129, 140, 248, 0.22);
+}
+
+/* Tarjeta de racha: ámbar claro -> tinte ámbar translúcido legible */
+:global([data-theme='dark']) .streakCard {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(251, 191, 36, 0.30);
+}
+:global([data-theme='dark']) .streakCount {
+  color: #FCD34D; /* amber-300 */
+}
+:global([data-theme='dark']) .streakLabel {
+  color: #FBBF24; /* amber-400 */
+}
+:global([data-theme='dark']) .checkedIn {
+  color: #6EE7B7; /* emerald-300 */
+}
+:global([data-theme='dark']) .checkPending {
+  color: #FCD34D;
+}
+
+/* Mensajes de éxito/error: fondos translúcidos con texto claro */
+:global([data-theme='dark']) .messageBox {
+  background: rgba(16, 185, 129, 0.14);
+  color: #6EE7B7;
+  border-color: rgba(16, 185, 129, 0.30);
+}
+:global([data-theme='dark']) .errorBox {
+  background: var(--danger-soft);
+  color: #FCA5A5;
+  border-color: rgba(239, 68, 68, 0.30);
+}
+
+/* Lista de misiones */
+:global([data-theme='dark']) .missionItem {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .missionItem:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+:global([data-theme='dark']) .missionDone {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+:global([data-theme='dark']) .missionTitle {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .missionDesc {
+  color: var(--color-text-muted);
+}
+
+/* Badge de recompensa (ámbar) y "hecho" (verde) legibles en oscuro */
+:global([data-theme='dark']) .rewardBadge {
+  background: rgba(245, 158, 11, 0.18);
+  color: #FCD34D;
+}
+:global([data-theme='dark']) .doneBadge {
+  color: #6EE7B7;
+}
+
+/* Botón completar deshabilitado: gris oscuro coherente */
+:global([data-theme='dark']) .completeBtn:disabled {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}

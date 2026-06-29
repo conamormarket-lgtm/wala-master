@@ -223,3 +223,67 @@
     padding: 0.85rem;
   }
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .titleIcon {
+  color: #C4B5FD;
+}
+[data-theme="dark"] .subtitle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .cardIcon {
+  background: rgba(139, 92, 246, 0.16);
+  color: #C4B5FD;
+}
+[data-theme="dark"] .cardName {
+  color: var(--color-text);
+}
+[data-theme="dark"] .cardDesc {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .card:hover .cardChevron {
+  color: #C4B5FD;
+}
+[data-theme="dark"] .brandPicker {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .brandSelect {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .panel {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .placeholder {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .loading {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .errorBox {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: var(--color-border);
+  color: #FCA5A5;
+}

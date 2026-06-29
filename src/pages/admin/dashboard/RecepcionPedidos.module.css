@@ -507,3 +507,26 @@
     transform: none;
   }
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .avisoDetalle {
+  color: #FCA5A5;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-theme="dark"] .refresh,
+[data-theme="dark"] .chip,
+[data-theme="dark"] .card {
+    background: var(--color-surface);
+  }
+}

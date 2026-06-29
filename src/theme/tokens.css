@@ -168,3 +168,47 @@
   /* Duracion del drift de la aurora (respiracion lenta) */
   --dur-aurora: 22s;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — Superficies GLASS en oscuro
+   ---------------------------------------------------------------------------
+   En claro, el glass es blanco translúcido (rgba(255,255,255,...)). En oscuro
+   eso volvería las cards/Header LUMINOSOS y romperia el contraste. Aquí
+   redefinimos los tokens glass a su variante violeta-profunda (ya insinuada en
+   --glass-bg-dark / --surface-dark de :root) para que TODA superficie de
+   cristal (Header, GlassCard, dropdowns, modales) sea oscura y legible.
+   ═════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  /* Fondos translúcidos -> violeta profundo translúcido */
+  --glass-bg:        rgba(30, 27, 46, 0.62);
+  --glass-bg-solid:  rgba(30, 27, 46, 0.74);
+  --glass-bg-strong: rgba(20, 18, 28, 0.82);
+  --glass-bg-tint:   rgba(45, 40, 64, 0.55);
+
+  /* Bordes: el canto de luz se atenúa a un violeta tenue. */
+  --glass-border:        1px solid rgba(167, 139, 250, 0.18);
+  --glass-border-strong: 1px solid rgba(167, 139, 250, 0.26);
+  --glass-border-tint:   1px solid rgba(167, 139, 250, 0.22);
+
+  /* Sombras dobles -> negras (las teñidas en Slate no contrastan en oscuro). */
+  --glass-shadow:
+    0 10px 30px -12px rgba(0, 0, 0, 0.55),
+    0 2px 8px -4px rgba(139, 92, 246, 0.18);
+  --glass-shadow-lg:
+    0 24px 60px -20px rgba(0, 0, 0, 0.65),
+    0 8px 20px -10px rgba(139, 92, 246, 0.20);
+  --glass-shadow-intense:
+    0 28px 70px -22px rgba(0, 0, 0, 0.72),
+    0 8px 24px -12px rgba(139, 92, 246, 0.18);
+
+  /* Highlight superior y hairline: mucho más tenues (el vidrio oscuro no brilla). */
+  --glass-highlight: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  --glass-inset-top: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+
+  /* Lavado de fondo de página claro -> degradado violeta profundo. */
+  --gradient-aurora-soft: linear-gradient(160deg, #14121C 0%, #1A1726 45%, #14121C 100%);
+}

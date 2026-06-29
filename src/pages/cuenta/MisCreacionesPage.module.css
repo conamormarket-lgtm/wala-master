@@ -329,3 +329,24 @@
     font-size: 0.8125rem;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — MisCreacionesPage
+   ---------------------------------------------------------------------------
+   El módulo ya consume --gris-* --blanco/--rojo-principal, así que textos,
+   cards y enlaces se oscurecen solos. Aquí solo afinamos los SKELETONS, cuyo
+   gris claro (#e5e7eb) y brillo blanco quedarían demasiado luminosos sobre
+   fondo oscuro. Solo color; sin tocar tamaños ni animación.
+   ═════════════════════════════════════════════════════════════════════════ */
+:global([data-theme='dark']) .skeletonThumb,
+:global([data-theme='dark']) .skeletonTitle,
+:global([data-theme='dark']) .skeletonDate,
+:global([data-theme='dark']) .skeletonLink {
+  background: var(--color-surface-2);
+}
+:global([data-theme='dark']) .skeletonThumb::after,
+:global([data-theme='dark']) .skeletonTitle::after,
+:global([data-theme='dark']) .skeletonDate::after,
+:global([data-theme='dark']) .skeletonLink::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+}

@@ -64,3 +64,27 @@
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   overflow: hidden;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (editor personalizado cliente)
+   Vira el contenedor, la barra superior blanca y el texto #111827 a tokens
+   de tema. Solo color/fondo/borde.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .container {
+  background-color: var(--color-bg);
+}
+:global([data-theme='dark']) .header {
+  background-color: var(--color-surface);
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .header h2 {
+  color: var(--color-text);
+}
+/* Lienzo del editor: superficie elevada en lugar del gris claro */
+:global([data-theme='dark']) .editorWrapper {
+  background-color: var(--color-surface-2);
+}
+:global([data-theme='dark']) .editorInner {
+  background: var(--color-surface);
+}

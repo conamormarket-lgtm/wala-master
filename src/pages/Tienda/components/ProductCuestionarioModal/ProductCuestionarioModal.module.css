@@ -132,3 +132,62 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Modal de cuestionario de producto
+   Modal blanco con texto slate y campos de formulario claros. Pasa a superficie
+   oscura con texto claro; los campos a superficie oscura con borde del tema. El
+   azul de foco (#2563eb) se mantiene como acento. El overlay ya es negro.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .modal,
+[data-theme="dark"] .header {
+  background: var(--color-surface); /* white -> superficie oscura */
+}
+
+[data-theme="dark"] .header {
+  border-bottom-color: var(--color-border);
+}
+
+[data-theme="dark"] .title {
+  color: var(--color-text); /* var(--negro) no definido -> texto claro */
+}
+
+[data-theme="dark"] .closeBtn {
+  color: var(--color-text-muted); /* #9ca3af -> atenuado */
+}
+
+[data-theme="dark"] .loading {
+  color: var(--color-text-muted); /* #6b7280 -> atenuado */
+}
+
+/* Secciones del formulario: caja gris muy clara -> superficie elevada oscura. */
+[data-theme="dark"] .section {
+  background: var(--color-surface-2); /* #f9fafb -> superficie oscura */
+  border-color: var(--color-border);  /* #f3f4f6 -> borde oscuro */
+}
+
+[data-theme="dark"] .sectionTitle {
+  color: var(--color-text);           /* #374151 -> claro */
+  border-bottom-color: var(--color-border);
+}
+
+[data-theme="dark"] .field label {
+  color: var(--color-text-muted);     /* #4b5563 -> atenuado */
+}
+
+[data-theme="dark"] .field input,
+[data-theme="dark"] .field select,
+[data-theme="dark"] .field textarea {
+  background-color: var(--color-surface); /* implicito blanco -> superficie oscura */
+  border-color: var(--color-border);       /* #d1d5db -> borde oscuro */
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .field input::placeholder,
+[data-theme="dark"] .field textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .footer {
+  border-top-color: var(--color-border);
+}

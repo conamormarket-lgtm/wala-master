@@ -72,7 +72,8 @@
 /* Sin backdrop-filter: fondo blanco sólido y borde Slate coherente. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .panel {
-    background: #ffffff;
+    /* Superficie del tema (blanca en claro, oscura en modo noche). */
+    background: var(--color-surface);
     border-color: var(--gris-borde);
   }
 }

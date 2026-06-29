@@ -457,3 +457,142 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Product Reviews
+   Seccion grande y totalmente hardcodeada en claro (titulos slate #0f172a,
+   textos #334155/#475569/#64748b, superficies blancas, fondos #f8fafc/#f1f5f9
+   y bordes #e2e8f0/#cbd5e1). Lo trasladamos a los tokens del tema para que todo
+   el bloque quede legible. Se MANTIENEN como acentos: estrellas doradas
+   (#eab308) y enlaces "Amazon blue" (#3b82f6), que se leen bien en oscuro;
+   solo oscurecemos sus fondos/estados muy claros.
+   ═══════════════════════════════════════════ */
+
+/* Separadores y bordes */
+[data-theme="dark"] .container,
+[data-theme="dark"] .divider,
+[data-theme="dark"] .reviewItem {
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .reviewItem {
+  border-bottom-color: var(--color-border);
+}
+
+/* Titulos y cabeceras -> texto principal claro */
+[data-theme="dark"] .title,
+[data-theme="dark"] .averageHeader,
+[data-theme="dark"] .rightTitle,
+[data-theme="dark"] .reviewerName {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .writeReviewSection h3 {
+  color: var(--color-text);
+}
+
+/* Textos atenuados */
+[data-theme="dark"] .totalReviews,
+[data-theme="dark"] .percentText,
+[data-theme="dark"] .reviewDate,
+[data-theme="dark"] .helpfulText,
+[data-theme="dark"] .emptyState,
+[data-theme="dark"] .closeFormBtn {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .ratingRow,
+[data-theme="dark"] .reviewComment,
+[data-theme="dark"] .writeReviewSection p {
+  color: var(--color-text-muted);
+}
+
+/* Barras de distribucion de rating: pista clara -> superficie oscura. */
+[data-theme="dark"] .barContainer {
+  background-color: var(--color-surface-2); /* #f1f5f9 -> superficie oscura */
+  border-color: var(--color-border);        /* #cbd5e1 -> borde oscuro */
+}
+
+/* Boton "escribir reseña" y botones blancos con borde claro. */
+[data-theme="dark"] .writeReviewBtn,
+[data-theme="dark"] .helpfulBtn {
+  background-color: var(--color-surface);   /* white -> superficie oscura */
+  border-color: var(--color-border);        /* #cbd5e1 -> borde oscuro */
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .writeReviewBtn:hover,
+[data-theme="dark"] .helpfulBtn:hover {
+  background-color: var(--color-hover);     /* #f8fafc/#f1f5f9 -> hover oscuro */
+  border-color: var(--color-text-muted);
+}
+
+/* Estado activo del boton "util" (azul muy claro -> tinte azul oscuro). */
+[data-theme="dark"] .helpfulBtnActive {
+  background-color: rgba(59, 130, 246, 0.18); /* #eff6ff -> tinte azul translucido */
+  border-color: #3b82f6;
+  color: #93c5fd; /* azul claro legible en oscuro */
+}
+
+/* Caja del formulario y prompt de login: fondos claros -> superficie oscura. */
+[data-theme="dark"] .formContainer {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .loginPrompt {
+  background-color: var(--color-surface-2); /* #f1f5f9 -> superficie oscura */
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .formTitle {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .closeFormBtn:hover {
+  color: var(--color-text);
+}
+
+/* Textarea: borde claro y, al foco, halo azul -> tokens/azul del tema. */
+[data-theme="dark"] .textarea {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Boton de subir imagen: chip gris claro -> superficie oscura. */
+[data-theme="dark"] .uploadLabel {
+  background-color: var(--color-surface-2); /* #e2e8f0 -> superficie oscura */
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .uploadLabel:hover {
+  background-color: var(--color-hover);
+}
+
+/* Miniaturas/avatar con borde o fondo gris claro. */
+[data-theme="dark"] .previewItem,
+[data-theme="dark"] .reviewImg {
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .reviewerAvatar {
+  background-color: var(--color-surface-2); /* #e2e8f0 -> superficie oscura */
+  color: var(--color-text-muted);
+}
+
+/* Estrellas vacias del selector (#cbd5e1) -> borde oscuro; las activas siguen
+   doradas por su propia regla :hover/.starBtnActive. */
+[data-theme="dark"] .starBtn {
+  color: var(--color-border);
+}
+
+/* Tarjeta de reseña destacada: fondo claro -> superficie oscura; conserva el
+   borde dorado (#eab308) como acento. */
+[data-theme="dark"] .featuredReviewCard {
+  background-color: var(--color-surface);
+}
+

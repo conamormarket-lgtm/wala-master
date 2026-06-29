@@ -32,3 +32,13 @@
   color: #999;
   font-size: 14px;
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Pair Product Image Composer
+   Solo el placeholder tiene grises hardcodeados: fondo gris claro -> superficie
+   oscura; texto -> atenuado legible.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .placeholder {
+  background-color: var(--color-surface-2); /* #f5f5f5 -> superficie oscura */
+  color: var(--color-text-muted);           /* #999 -> atenuado legible */
+}

@@ -1,9 +1,38 @@
-.container { 
-  width: 100%; 
+.container {
+  width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
   background-color: #fafafa;
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — Shell de la tienda y "module inserter"
+   Solo color/contraste: el fondo casi-blanco de la pagina (#fafafa) pasa al
+   fondo oscuro del tema; el menu flotante del insertador (blanco) pasa a la
+   superficie elevada oscura para que su texto siga siendo legible.
+   ═════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .container {
+  background-color: var(--color-bg); /* #fafafa -> fondo oscuro del tema */
+}
+
+[data-theme="dark"] .featuredTitle {
+  color: var(--color-text); /* #111 -> texto claro */
+}
+
+[data-theme="dark"] .inserterMenuVisible {
+  background-color: var(--color-surface-2); /* blanco -> superficie elevada oscura */
+  border-color: var(--color-border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .inserterOptions button {
+  color: var(--color-text-muted); /* #334155 -> texto atenuado claro */
+}
+
+[data-theme="dark"] .inserterOptions button:hover {
+  background-color: var(--color-hover); /* #f8fafc -> hover oscuro sutil */
+  color: var(--primary-color); /* el acento ya es violet-400 en oscuro */
 }
 
 .sectionBlock { 

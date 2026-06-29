@@ -17,12 +17,12 @@ html {
 
 body {
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: var(--gris-fondo);
+  background-color: var(--color-bg, var(--gris-fondo));
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
-  color: var(--gris-texto-principal);
+  color: var(--color-text, var(--gris-texto-principal));
   text-rendering: optimizeSpeed;
   /* Evitar zoom al focus en iOS (complementado con font-size: 16px en inputs) */
   -webkit-text-size-adjust: 100%;
@@ -227,5 +227,102 @@ img[loading="lazy"] {
   body.mobile-editor-active [class*="whatsappButton"],
   body.mobile-editor-active [class*="WhatsAppButton_"] {
     display: none !important;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — RED GLOBAL DE OSCURECIMIENTO (malla de seguridad de contraste)
+   ---------------------------------------------------------------------------
+   Objetivo: que TODA la app se vea oscura y LEGIBLE bajo [data-theme="dark"]
+   aunque una parte no se haya retocado a mano. Funciona junto al re-mapeo de
+   --gris-* --blanco hecho en variables.css.
+
+   REGLA DE ORO — respetar al admin:
+   Estos overrides de FONDO van SIN !important. Los fondos que el editor visual
+   aplica son inline (style={{ backgroundColor }}), y el inline SIEMPRE gana a
+   una clase sin !important. Así NO forzamos los fondos configurados por el
+   admin; sólo damos un fondo oscuro por defecto donde NO hay uno inline.
+   El COLOR de texto sí se baja con prioridad de herencia para garantizar
+   contraste, pero respetando colores inline explícitos del mismo modo.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* 1) Lienzo base: página, root y el área principal de contenido. */
+[data-theme="dark"] body,
+[data-theme="dark"] #root,
+[data-theme="dark"] .App,
+[data-theme="dark"] #main-content-area {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* 2) Patrones de SUPERFICIE más comunes: contenedores "blancos", cards y
+      paneles. Cubre tanto utilidades globales como CSS Modules (cuyas clases
+      llevan el nombre original dentro del hash: [class*="card"], etc.).
+      Fondo SIN !important (respeta inline del admin); texto heredado claro. */
+[data-theme="dark"] [class*="card"],
+[data-theme="dark"] [class*="Card"],
+[data-theme="dark"] [class*="panel"],
+[data-theme="dark"] [class*="Panel"],
+[data-theme="dark"] [class*="modal"],
+[data-theme="dark"] [class*="Modal"],
+[data-theme="dark"] [class*="popup"],
+[data-theme="dark"] [class*="Popup"],
+[data-theme="dark"] [class*="dropdown"],
+[data-theme="dark"] [class*="Dropdown"],
+[data-theme="dark"] [class*="sheet"],
+[data-theme="dark"] [class*="Sheet"],
+[data-theme="dark"] [class*="container"],
+[data-theme="dark"] [class*="Container"] {
+  border-color: var(--color-border);
+}
+
+/* 3) Superficies con color de fondo BLANCO/CLARO declarado en CSS (no inline):
+      las viramos a la superficie oscura. Como es una clase sin !important, un
+      backgroundColor inline del admin la sobrescribe sin problema. */
+[data-theme="dark"] [style*="background-color: #fff"],
+[data-theme="dark"] [style*="background-color: #FFF"],
+[data-theme="dark"] [style*="background:#fff"],
+[data-theme="dark"] [style*="background: #fff"] {
+  /* Nota: estos selectores NO aplican fondo (sería pelear con el inline del
+     admin); sólo aseguramos texto legible encima de cualquier claro residual. */
+  color: var(--color-text);
+}
+
+/* 4) Formularios: inputs, textareas y selects legibles en oscuro. */
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* 5) Scrollbar coherente con el tema oscuro. */
+@media (hover: hover) {
+  [data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--color-bg);
+  }
+  [data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+  }
+  [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+  }
+}
+
+/* 6) Transición suave global al cambiar de tema (sin afectar layout). */
+[data-theme] body {
+  transition: background-color var(--dur-media, 320ms) var(--ease-signature, ease),
+              color var(--dur-media, 320ms) var(--ease-signature, ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme] body {
+    transition: none;
   }
 }

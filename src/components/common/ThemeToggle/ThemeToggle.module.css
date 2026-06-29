@@ -1,0 +1,58 @@
+/* =========================================================================
+   ThemeToggle — estilos del interruptor luna/sol
+   -------------------------------------------------------------------------
+   Mismo lenguaje visual que los .iconButton del Header (touch target 44px,
+   radio pequeño, transición rápida). Usa variables de tema para integrarse
+   tanto en claro como en oscuro sin reglas extra.
+   ========================================================================= */
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;   /* touch target WCAG */
+  min-height: 44px;
+  padding: 0.5rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--radio-pequeno, 10px);
+  color: var(--color-text, var(--gris-texto-principal));
+  cursor: pointer;
+  transition: var(--transicion-rapida, all 0.2s ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.toggle:hover {
+  background-color: var(--color-hover, var(--rojo-light));
+  color: var(--rojo-principal);
+  transform: translateY(-2px);
+}
+
+.toggle:active {
+  transform: translateY(0);
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  color: currentColor;
+  /* Pequeño giro al entrar para que el cambio luna<->sol se sienta vivo. */
+  transition: transform var(--dur-media, 320ms) var(--ease-signature, ease);
+}
+
+.toggle:hover .icon {
+  transform: rotate(12deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle,
+  .icon {
+    transition: none;
+  }
+  .toggle:hover {
+    transform: none;
+  }
+  .toggle:hover .icon {
+    transform: none;
+  }
+}

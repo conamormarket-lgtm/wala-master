@@ -7,7 +7,9 @@
 .label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--gris-texto, #333);
+  /* --gris-texto-principal se aclara en modo noche (antes usaba --gris-texto,
+     que no existe, por lo que el texto quedaba fijo en #333 e ilegible en oscuro). */
+  color: var(--gris-texto-principal, #333);
   cursor: pointer;
   user-select: none;
 }
@@ -127,4 +129,18 @@
 /* Estados active */
 .toggle:not(.disabled):active .thumb {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — el riel apagado (#cbd5e0) y el deshabilitado (#e2e8f0) son grises
+   claros pensados para fondo blanco; en oscuro se ven lavados. Los bajamos a
+   tonos del tema. El thumb queda blanco a propósito (perilla luminosa) y el riel
+   "encendido" usa --rojo-principal, que ya se aclara en oscuro.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .track {
+  background-color: var(--color-border, #3a3550);
+}
+
+[data-theme="dark"] .toggle.disabled .track {
+  background-color: var(--color-hover, #2a2640);
 }

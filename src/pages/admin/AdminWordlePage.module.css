@@ -151,3 +151,71 @@
   background: #f9f9f9;
   border-radius: 4px;
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .header h1 {
+  color: var(--color-text);
+}
+[data-theme="dark"] .header p {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .card {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .card h2 {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .formGroup label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .formGroup input {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .submitBtn {
+  background: var(--primary-color);
+}
+[data-theme="dark"] .submitBtn:hover {
+  background: var(--primary-color);
+}
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .table th {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .wordBadge {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .deleteBtn {
+  background: rgba(239, 68, 68, 0.16);
+  color: #FCA5A5;
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .deleteBtn:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+[data-theme="dark"] .error {
+  color: #FCA5A5;
+  background: rgba(239, 68, 68, 0.16);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .empty {
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}

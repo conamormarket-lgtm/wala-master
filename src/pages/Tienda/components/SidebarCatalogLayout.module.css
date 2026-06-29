@@ -341,3 +341,64 @@
     gap: 1rem;
   }
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Sidebar de catalogo
+   Los textos/bordes ya usan tokens (--gris-*) y se oscurecen solos. Aqui solo
+   cambiamos los grises HARDCODEADOS: el panel del drawer movil, sus separadores
+   y hovers, los thumbs de scroll y las miniaturas de marca.
+   ═══════════════════════════════════════════ */
+
+/* El drawer movil es blanco con texto oscuro -> superficie oscura. */
+[data-theme="dark"] .sidebar {
+  background-color: var(--color-surface);
+}
+
+@media (min-width: 1024px) {
+  /* En desktop el sidebar es transparente; solo afinamos el thumb del scroll. */
+  [data-theme="dark"] .sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--color-border); /* #e5e5e5 -> borde oscuro */
+  }
+  [data-theme="dark"] .sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-text-muted); /* #d4d4d4 -> atenuado */
+  }
+  [data-theme="dark"] .sidebar {
+    background-color: transparent; /* se mantiene transparente como en claro */
+  }
+}
+
+[data-theme="dark"] .mobileFilterBtn:active {
+  background-color: var(--color-hover); /* #f9fafb -> hover oscuro */
+}
+
+[data-theme="dark"] .drawerHeader {
+  border-bottom-color: var(--color-border); /* #eee -> borde oscuro */
+}
+
+[data-theme="dark"] .closeDrawerBtn:hover {
+  background-color: var(--color-hover); /* #f3f4f6 -> hover oscuro */
+}
+
+/* Miniaturas de marca: fondos gris claro -> superficie oscura. */
+[data-theme="dark"] .brandMiniviewItem {
+  background: var(--color-surface-2); /* #f8fafc -> superficie oscura */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .brandMiniviewWrapper:hover .brandMiniviewItem {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .activeBrandWrapper .brandMiniviewItem {
+  background: var(--primary-light); /* #f3f0ff -> tinte violeta del tema */
+}
+
+[data-theme="dark"] .brandMiniviewFallback,
+[data-theme="dark"] .brandMiniviewName {
+  color: var(--color-text-muted); /* #64748b -> atenuado legible */
+}
+
+[data-theme="dark"] .brandMiniviewAll {
+  color: var(--color-text-muted); /* #475569 -> atenuado legible */
+}

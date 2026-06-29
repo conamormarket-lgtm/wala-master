@@ -702,3 +702,101 @@ textarea.input {
   outline: none;
   border-color: var(--survey-primary, #8b5cf6);
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (encuesta de suscripción)
+   Vira el layout #f8fafc, las tarjetas blancas y los textos slate a tokens
+   de tema. Solo color/fondo/borde; estilo "chunky" (bordes/sombras) intacto.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .surveyLayout {
+  background-color: var(--color-bg);
+}
+:global([data-theme='dark']) .card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .title {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .subtitle {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .description {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .fieldGroup label,
+:global([data-theme='dark']) .field label {
+  color: var(--color-text);
+}
+
+/* Campos de formulario */
+:global([data-theme='dark']) .input {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .input:focus {
+  background: var(--color-surface);
+}
+
+/* Fichas de agasajados / tarjetas internas */
+:global([data-theme='dark']) .recipientCard {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .recipientInfo h3 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .recipientInfo p {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .addRecipientBtn {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* Pills, grupos y toggles */
+:global([data-theme='dark']) .pillBtn {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .subFlowHeader {
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .subFlowHeader h3 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .conjuntoBtn {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .groupCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* Sección de desglose */
+:global([data-theme='dark']) .breakdownSection {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .breakdownTitle {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .breakdownItem {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .breakdownItemCounter label {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .counterInput {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}

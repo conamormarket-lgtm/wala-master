@@ -116,3 +116,18 @@
   background: white;
   transform: scale(1.2);
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Hero Carousel
+   El contenedor usa --surface-alt (#f5f5f5): mientras carga o si no hay slides
+   se veria un bloque casi blanco; lo mapeamos a una superficie oscura. Los
+   controles (flechas/dots) viven SOBRE la imagen del slide (circulo blanco
+   translucido con icono oscuro), que se lee bien en ambos modos: no se tocan.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .heroContainer {
+  --surface-alt: var(--color-surface-2); /* #f5f5f5 -> superficie oscura */
+}
+
+[data-theme="dark"] .slideEmpty {
+  --text-muted: var(--color-text-muted); /* texto de "sin slides" legible */
+}

@@ -961,3 +961,122 @@ input:checked + .slider:before {
   color: #666;
 }
 
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (formulario producto · admin)
+   Títulos negros ilegibles + tarjetas/inputs blancos viran a tokens de tema.
+   Solo color/fondo/borde. Sin !important en background: un backgroundColor
+   inline del editor visual del admin siempre gana.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .title {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .subtitle,
+:global([data-theme='dark']) .cardSubtitle {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .backBtn {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .backBtn:hover {
+  color: var(--color-text);
+}
+
+/* Tarjetas y títulos de sección */
+:global([data-theme='dark']) .card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .cardTitle,
+:global([data-theme='dark']) .sectionHeading {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .cardHeaderFlex {
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .label {
+  color: var(--color-text);
+}
+
+/* Campos de formulario */
+:global([data-theme='dark']) .input,
+:global([data-theme='dark']) .textarea {
+  background-color: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .input:focus,
+:global([data-theme='dark']) .textarea:focus {
+  background-color: var(--color-surface);
+  border-color: var(--primary-color);
+}
+
+/* Selector de modo */
+:global([data-theme='dark']) .modeToggle {
+  background: var(--color-surface-2);
+}
+:global([data-theme='dark']) .modeBtn {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .modeActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* Variantes y barras */
+:global([data-theme='dark']) .variantTopBar {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .addVariantBtn {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .defaultVariantBtn {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .redoBtn {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* Pestañas de galería */
+:global([data-theme='dark']) .galleryTab {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* Carrusel de marcas (admin) */
+:global([data-theme='dark']) .adminBrandItem {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .adminBrandName {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .adminBrandFallback {
+  color: var(--color-text-muted);
+}
+
+/* Modal de marca y toast */
+:global([data-theme='dark']) .brandModal {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .loadingToast {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .toastText h3 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .toastText p {
+  color: var(--color-text-muted);
+}
+

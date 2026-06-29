@@ -156,3 +156,56 @@
   background: #f3f4f6;
   border-color: #9ca3af;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (modal historial personalizaciones)
+   Modal blanco + textos #111827 viran a tokens de tema. Solo color/fondo/borde.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .modal {
+  background: var(--color-surface);
+}
+:global([data-theme='dark']) .header {
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .header h2 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .closeBtn {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .closeBtn:hover {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .subtitle {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .divider {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .divider::before,
+:global([data-theme='dark']) .divider::after {
+  border-bottom-color: var(--color-border);
+}
+
+/* Tarjetas de diseños guardados */
+:global([data-theme='dark']) .card {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .imageContainer {
+  background: var(--color-surface);
+}
+:global([data-theme='dark']) .cardFooter {
+  background: var(--color-surface);
+  border-top-color: var(--color-border);
+}
+:global([data-theme='dark']) .useBtn {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .useBtn:hover {
+  background: var(--color-hover);
+  border-color: var(--color-text-muted);
+}

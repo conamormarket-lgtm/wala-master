@@ -218,6 +218,18 @@
   cursor: default;
 }
 
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Product Grid
+   La mayoria ya usa tokens de tema (--gris-* --glass-*) que se oscurecen solos.
+   Solo afinamos el FALLBACK del skeleton (cuando no hay backdrop-filter), que
+   pinta una superficie casi blanca y quedaria luminosa en oscuro.
+   ═══════════════════════════════════════════ */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-theme="dark"] .skeletonCard {
+    background: rgba(30, 27, 46, 0.92); /* superficie oscura casi solida */
+  }
+}
+
 /* ══════════════════════════════
    RESPONSIVE ≤ 992px
    ══════════════════════════════ */

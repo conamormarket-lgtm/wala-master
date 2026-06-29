@@ -136,3 +136,22 @@
   text-align: center;
   padding: 2rem 0;
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Featured Carousel
+   Mismo patron que CollectionCarousel: variables propias con fallback claro.
+   Ademas las flechas de navegacion usan --surface-color (#fff) y --bg-hover
+   (#f5f5f5): las mapeamos a superficies oscuras para que el icono claro
+   (--text-color) contraste bien.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .carouselContainer {
+  --text-color: var(--color-text);        /* titulo / icono de flecha #333 -> claro */
+  --text-muted: var(--color-text-muted);  /* textos #666 -> atenuado claro */
+  --border-color: var(--color-border);    /* bordes #ccc/#e2e2e2 -> borde oscuro */
+  --surface-color: var(--color-surface-2);/* fondo de flecha #fff -> superficie oscura */
+  --bg-hover: var(--color-hover);         /* hover de flecha #f5f5f5 -> hover oscuro */
+}
+
+[data-theme="dark"] .navButton {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}

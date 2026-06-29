@@ -402,3 +402,87 @@
   gap: 1rem;
   margin-top: 1.5rem;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (mockups · admin)
+   Títulos negros + tarjetas/inputs blancos viran a tokens de tema.
+   Solo color/fondo/borde. Sin !important en fondo.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .title {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .subtitle,
+:global([data-theme='dark']) .helpText {
+  color: var(--color-text-muted);
+}
+
+/* Tarjetas del formulario */
+:global([data-theme='dark']) .card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .cardTitle {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .label {
+  color: var(--color-text);
+}
+
+/* Campos */
+:global([data-theme='dark']) .input,
+:global([data-theme='dark']) .colorInput {
+  background-color: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .input:focus {
+  background-color: var(--color-surface);
+  border-color: var(--primary-color);
+}
+:global([data-theme='dark']) .addVariantBtn,
+:global([data-theme='dark']) .smallUploadBtn {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .variantsSection {
+  border-top-color: var(--color-border);
+}
+:global([data-theme='dark']) .variantCard {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .variantHeader {
+  color: var(--color-text-muted);
+}
+
+/* Tarjetas del listado de mockups */
+:global([data-theme='dark']) .mockupCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .mockupName {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .mockupCategory {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .mockupActions {
+  border-top-color: var(--color-border);
+}
+:global([data-theme='dark']) .actionBtn {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border-right-color: var(--color-border);
+}
+:global([data-theme='dark']) .actionBtn:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+/* Modal */
+:global([data-theme='dark']) .modal {
+  background: var(--color-surface);
+  color: var(--color-text);
+}

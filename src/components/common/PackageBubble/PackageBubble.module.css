@@ -262,6 +262,49 @@
   color: #fff;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — PackageBubble
+   ---------------------------------------------------------------------------
+   El FAB, el badge y los botones de acción son gradientes rosados con texto
+   blanco: legibles en ambos modos, no se tocan. Aquí solo oscurecemos el modal
+   y sus tarjetas (estaban en blanco con texto oscuro -> sería ilegible en noche)
+   y aclaramos su texto. Acentos rosados (eventType/price/viewBtn) se conservan:
+   contrastan bien sobre la superficie oscura. No se tocan tamaños ni layout.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .modal {
+  background: var(--color-surface, #1e1b2e);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .closeBtn {
+  background: var(--color-surface-2, #272338);
+  color: var(--color-text-muted, #b7b0c9);
+}
+
+[data-theme="dark"] .closeBtn:hover {
+  background: var(--color-hover, #2a2640);
+  color: var(--color-text, #f1eef9);
+}
+
+[data-theme="dark"] .title {
+  color: var(--color-text, #f1eef9);
+}
+
+[data-theme="dark"] .packageCard {
+  background: var(--color-surface-2, #272338);
+  border-color: var(--color-border, #332e45);
+}
+
+[data-theme="dark"] .productImg {
+  /* Placeholder detrás de la foto del producto. */
+  background: var(--color-surface, #1e1b2e);
+  border-color: var(--color-border, #332e45);
+}
+
+[data-theme="dark"] .productName {
+  color: var(--color-text-muted, #b7b0c9);
+}
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .modal {

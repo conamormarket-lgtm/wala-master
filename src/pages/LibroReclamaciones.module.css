@@ -182,3 +182,63 @@
   .grid { grid-template-columns: 1fr; }
   .title { font-size: 1.5rem; }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (página legal obligatoria)
+   Los var(--surface-color/--text-color/--border-color/--bg-secondary) NO
+   existen y caían a su fallback claro: el contenedor no viraba. Aquí se fuerza
+   con los tokens reales de tema. Solo color/fondo/borde.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .container {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .header {
+  border-bottom-color: var(--color-border);
+}
+/* El título usa --primary-color (violet-400 en oscuro): buen contraste */
+:global([data-theme='dark']) .subtitle {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .empresaBox {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .empresaBox strong {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .legend {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .label {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .radioHint,
+:global([data-theme='dark']) .note {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .checkRow {
+  color: var(--color-text-muted);
+}
+
+/* Campos de formulario */
+:global([data-theme='dark']) .input,
+:global([data-theme='dark']) .select,
+:global([data-theme='dark']) .textarea {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .radioOption {
+  border-color: var(--color-border);
+}
+
+/* Pantalla de éxito */
+:global([data-theme='dark']) .successText {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .secondaryBtn {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}

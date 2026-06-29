@@ -81,7 +81,9 @@
   (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
 ) {
   .tooltip {
-    background: #ffffff;
+    /* Superficie del tema: blanca en claro, oscura en modo noche (el texto
+       usa --gris-texto-* que se aclara automáticamente). */
+    background: var(--color-surface);
     border-color: var(--gris-borde);
   }
 }

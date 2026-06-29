@@ -6,8 +6,11 @@ const TextBlock = ({ config }) => {
     heading = '',
     content = '',
     backgroundColor = 'transparent',
-    textColor = '#333333',
-    headingColor = '#000000',
+    // Colores POR DEFECTO referidos a tokens del tema para que en modo noche el
+    // texto quede legible automaticamente. Si el admin define textColor/
+    // headingColor en el editor, esos valores (truthy) siguen mandando.
+    textColor = 'var(--color-text-muted)',
+    headingColor = 'var(--color-text)',
     textAlign = 'left',
     paddingTop = '2rem',
     paddingBottom = '2rem',

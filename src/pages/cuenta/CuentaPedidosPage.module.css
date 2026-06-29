@@ -246,3 +246,18 @@
   margin-top: auto;
   padding-top: 0.25rem;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — CuentaPedidosPage
+   ---------------------------------------------------------------------------
+   Casi todo consume tokens --glass-* --gris-* --primary-color, que ya se
+   oscurecen solos. Lo ÚNICO que queda claro es el fallback @supports (cuando
+   el WebView no soporta backdrop-filter): ahí el #ffffff debe pasar a
+   superficie oscura para no quedar blanco-sobre-oscuro. Solo color.
+   ═════════════════════════════════════════════════════════════════════════ */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  :global([data-theme='dark']) .card {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+  }
+}

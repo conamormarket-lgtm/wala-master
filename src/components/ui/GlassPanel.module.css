@@ -105,7 +105,8 @@
   .soft,
   .solid,
   .intense {
-    background: #ffffff;
+    /* Superficie del tema (blanca en claro, oscura en modo noche). */
+    background: var(--color-surface);
     border-color: var(--gris-borde);
   }
 

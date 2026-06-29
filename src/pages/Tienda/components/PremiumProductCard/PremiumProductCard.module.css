@@ -374,3 +374,59 @@
     filter: none;
   }
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Premium Product Card
+   El contenedor de imagen usa tokens glass (se oscurecen solos). Aqui afinamos
+   los textos hardcodeados (#111/#666/#888), el boton de añadir rapido (negro al
+   hover -> inversion clara), el icono de favorito y los estados deshabilitados.
+   El badge "Sale" (#ff3366) se mantiene como acento.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .title,
+[data-theme="dark"] .price {
+  color: var(--color-text); /* #111 -> texto claro */
+}
+
+[data-theme="dark"] .subtitle,
+[data-theme="dark"] .originalPrice {
+  color: var(--color-text-muted); /* #666/#888 -> atenuado legible */
+}
+
+[data-theme="dark"] .favoriteBtn {
+  color: var(--color-text); /* icono #111 -> claro sobre el glass oscuro */
+}
+
+/* Badge "nuevo": negro sobre fondo claro -> superficie clara con texto oscuro. */
+[data-theme="dark"] .badgeNew {
+  background-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+/* Boton "añadir rapido": el glass se oscurece solo; su texto pasa a claro y el
+   hover invierte el monocromo (claro -> oscuro coherente con el tema). */
+[data-theme="dark"] .quickAddBtn {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .quickAddBtn:hover:not(:disabled) {
+  background-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+[data-theme="dark"] .quickAddBtn:disabled {
+  background-color: var(--color-surface-2); /* #f5f5f5 -> superficie oscura */
+  color: var(--color-text-muted);           /* #999 -> atenuado */
+}
+
+@media (max-width: 768px) {
+  /* En movil la tarjeta tiene fondo blanco propio -> superficie oscura. */
+  [data-theme="dark"] .card {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  [data-theme="dark"] .quickAddBtn {
+    background-color: rgba(30, 27, 46, 0.85); /* blanco translucido -> oscuro translucido */
+  }
+}

@@ -73,3 +73,15 @@
   text-align: center;
   padding: 2rem 0;
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Flash Sales
+   El contenedor usa --surface-alt (#fafafa), que en oscuro seria una caja casi
+   blanca: lo mapeamos a una superficie oscura. Los colores de URGENCIA (rojo
+   #d32f2f del titulo/contador y borde amarillo) se MANTIENEN a proposito: son
+   acentos de marca legibles sobre fondo oscuro.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .flashSalesContainer {
+  --surface-alt: var(--color-surface); /* #fafafa -> superficie oscura */
+  --text-muted: var(--color-text-muted);
+}

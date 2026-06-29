@@ -464,3 +464,60 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (lista de pedidos · alto tráfico)
+   Vira las superficies blancas y el texto slate-900 a tokens de tema.
+   Solo color/fondo/borde; layout intacto.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .card {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .cardHeader {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .cardHeader:hover {
+  background-color: var(--color-hover);
+}
+:global([data-theme='dark']) .headerTitle {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .marcaBadge {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .iconoChevron {
+  color: var(--color-text-muted);
+}
+
+/* Cuerpo del acordeón */
+:global([data-theme='dark']) .cardBody {
+  background-color: var(--color-surface);
+}
+:global([data-theme='dark']) .sectionDivider {
+  border-top-color: var(--color-border);
+}
+:global([data-theme='dark']) .dataKey {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .dataValue {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .envioBox {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+/* Botón ver pagos sobre fondo oscuro */
+:global([data-theme='dark']) .verPagosBtn {
+  background: var(--color-surface-2);
+}
+
+/* Método de pago en modal */
+:global([data-theme='dark']) .metodoPago {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}

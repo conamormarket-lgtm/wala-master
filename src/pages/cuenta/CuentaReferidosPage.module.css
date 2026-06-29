@@ -390,3 +390,40 @@
   color: #94a3b8;
   font-weight: 600;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — CuentaReferidosPage
+   ---------------------------------------------------------------------------
+   El .headerCard ya es oscuro por diseño (#1E293B con texto claro) y sus
+   elementos internos (.statBox, .codeBox, balance, etc.) son legibles en
+   ambos modos: se conservan. Aquí solo ajustamos la zona CLARA inferior
+   (lista de referidos, tarjetas, statusBox) que en oscuro quedaría
+   blanca-sobre-oscuro o con texto oscuro ilegible. Solo color/contraste.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Tarjetas de referido (blanco -> superficie oscura) */
+:global([data-theme='dark']) .referralCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+:global([data-theme='dark']) .referralCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+}
+:global([data-theme='dark']) .cardClaimed {
+  background: var(--color-surface-2);
+}
+
+/* Caja de estado pendiente (amarillo claro -> tinte ámbar translúcido) */
+:global([data-theme='dark']) .statusBox {
+  background: rgba(245, 158, 11, 0.14);
+  border-left-color: #F59E0B;
+}
+:global([data-theme='dark']) .errorText {
+  color: #FCD34D; /* amber-300, legible sobre fondo oscuro */
+}
+
+/* Monedas destacadas: naranja oscuro -> ámbar claro legible */
+:global([data-theme='dark']) .highlightCoins {
+  color: #FBBF24;
+}

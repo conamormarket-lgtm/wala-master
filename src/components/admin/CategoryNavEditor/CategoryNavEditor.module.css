@@ -460,3 +460,97 @@
     order: 3;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (editor nav de categorías · admin)
+   Secciones blancas + títulos negros + inputs claros viran a tokens de tema.
+   Solo color/fondo/borde. Sin !important en fondo.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .toolbarTitle {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .toolbarHint,
+:global([data-theme='dark']) .styleHint {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .ghostBtn {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .ghostBtn:hover:not(:disabled) {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+/* Secciones */
+:global([data-theme='dark']) .section {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .sectionTitle {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .styleGroupLabel,
+:global([data-theme='dark']) .fieldLabel {
+  color: var(--color-text-muted);
+}
+
+/* Segmented control */
+:global([data-theme='dark']) .segBtn {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .segBtn:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+/* Filas de la lista de burbujas */
+:global([data-theme='dark']) .navRow {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .orderBtn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .navThumb,
+:global([data-theme='dark']) .navThumbEmpty {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* Campos editables */
+:global([data-theme='dark']) .select,
+:global([data-theme='dark']) .navNameInput {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .select:focus,
+:global([data-theme='dark']) .navNameInput:focus {
+  background: var(--color-surface-2);
+  border-color: var(--primary-color);
+}
+:global([data-theme='dark']) .inheritBtn {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .inheritBtn:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+/* Estados */
+:global([data-theme='dark']) .loading {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .empty {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}

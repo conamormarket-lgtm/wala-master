@@ -248,7 +248,9 @@
    --------------------------------------------------------------------------- */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass {
-    background: #ffffff;
+    /* Superficie del tema (blanca en claro, oscura en modo noche); el texto
+       de .glass usa --gris-texto-principal que se aclara solo. */
+    background: var(--color-surface);
     border-color: var(--gris-borde, #e2e8f0);
   }
 }

@@ -188,3 +188,46 @@
 .offerLink:hover {
   text-decoration: underline;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste
+   Solo color/fondo/borde con tokens de tema. Sin tamaños/espaciados/layout.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Títulos sobre el body oscuro: el negro #111 era ilegible */
+:global([data-theme='dark']) .title {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .subtitle {
+  color: var(--color-text-muted);
+}
+
+/* Estados de carga/vacío */
+:global([data-theme='dark']) .loading,
+:global([data-theme='dark']) .empty {
+  color: var(--color-text-muted);
+}
+
+/* Cofre diario: vira el gradiente claro a superficie de tema */
+:global([data-theme='dark']) .chestCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .chestTitle {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .chestText {
+  color: var(--color-text-muted);
+}
+
+/* Tarjetas de oferta */
+:global([data-theme='dark']) .offerCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .offerName {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .offerDates {
+  color: var(--color-text-muted);
+}

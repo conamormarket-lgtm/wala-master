@@ -218,3 +218,55 @@
 .addBtn:hover {
   background-color: rgba(139, 92, 246, 0.05);
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .header h1 {
+  color: var(--color-text);
+}
+[data-theme="dark"] .tabs {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .tabBtn {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tabBtn:hover {
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .tabBtn.active {
+  color: #C4B5FD;
+  background: rgba(59, 130, 246, 0.16);
+}
+[data-theme="dark"] .panel h2 {
+  color: var(--color-text);
+}
+[data-theme="dark"] .fieldGroup label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .input {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .textarea {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .fieldItem {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .removeBtn {
+  color: #FCA5A5;
+}
+[data-theme="dark"] .addBtn {
+  color: #C4B5FD;
+}

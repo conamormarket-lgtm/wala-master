@@ -102,6 +102,19 @@
   }
 }
 
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Best Sellers Row
+   Los textos ya usan tokens (--gris-*) y se oscurecen solos. Solo cambiamos los
+   placeholders de imagen gris claro (#f5f5f5/#eee) por una superficie oscura.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .imageWrapper {
+  background-color: var(--color-surface-2); /* #f5f5f5 -> superficie oscura */
+}
+
+[data-theme="dark"] .placeholder {
+  background-color: var(--color-surface-2); /* #eee -> superficie oscura */
+}
+
 @media (max-width: 768px) {
   .grid {
     flex-wrap: nowrap;

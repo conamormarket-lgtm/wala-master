@@ -293,3 +293,109 @@
   font-weight: 600;
   margin-left: 10px;
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .header h2 {
+  color: var(--color-text);
+}
+[data-theme="dark"] .header p {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .formCard h3 {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .inputGroup label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .inputGroup input {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .permissionsGroup h4 {
+  color: var(--color-text);
+}
+[data-theme="dark"] .permissionCard {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .permissionCard:hover {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .permInfo strong {
+  color: var(--color-text);
+}
+[data-theme="dark"] .permInfo span {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .formActions {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .table th {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tag {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93C5FD;
+}
+[data-theme="dark"] .actionBtn {
+  color: #93C5FD;
+}
+[data-theme="dark"] .actionBtn:hover {
+  background: rgba(59, 130, 246, 0.16);
+}
+[data-theme="dark"] .actionBtn.danger {
+  color: #FCA5A5;
+}
+[data-theme="dark"] .actionBtn.danger:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+[data-theme="dark"] .tabs {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .tabBtn {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tabBtn:hover {
+  color: var(--color-text);
+}
+[data-theme="dark"] .activeTab {
+  color: #93C5FD;
+}
+[data-theme="dark"] .locksWarning {
+  background: rgba(245, 158, 11, 0.16);
+  color: #FCD34D;
+}
+[data-theme="dark"] .locked {
+  background: rgba(239, 68, 68, 0.16);
+  color: #FCA5A5;
+}
+[data-theme="dark"] .locked:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+[data-theme="dark"] .unlocked {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .unlocked:hover {
+  background: var(--color-surface-2);
+}
+[data-theme="dark"] .badge {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93C5FD;
+}

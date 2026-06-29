@@ -162,7 +162,10 @@
   .soft,
   .solid,
   .intense {
-    background: #ffffff;
+    /* Superficie sólida del tema: blanca en claro, violeta-profunda en oscuro
+       (var ya remapeada en [data-theme="dark"]). Evita tarjeta blanca con
+       texto claro ilegible en modo noche sin backdrop-filter. */
+    background: var(--color-surface);
     border-color: var(--gris-borde);
   }
 }

@@ -437,3 +437,170 @@
   transform: none;
   box-shadow: none;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — CuentaFechasImportantesPage
+   ---------------------------------------------------------------------------
+   Colores HARDCODEADOS (cards, modal, inputs, badges). Pasamos superficies
+   claras a las variables de tema; el modal usa --color-surface-2 (superficie
+   ELEVADA). Inputs con fondo oscuro, texto y placeholder claros. Los botones
+   violeta (.primaryButton/.addToCartBtn) ya llevan texto blanco y se conservan.
+   Solo color/contraste; sin tocar tamaños ni layout.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Estado vacío y tarjetas -> superficie oscura */
+:global([data-theme='dark']) .emptyState {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .emptyState h2 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .emptyState p {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .header h1 {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+:global([data-theme='dark']) .cardTitle {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .cardRole {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+/* Botones de icono (editar/eliminar) */
+:global([data-theme='dark']) .iconBtn {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .iconBtn:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+:global([data-theme='dark']) .deleteBtn:hover {
+  color: #FCA5A5;
+  background: rgba(239, 68, 68, 0.16);
+}
+
+/* Lista de eventos */
+:global([data-theme='dark']) .eventsList {
+  border-top-color: var(--color-border);
+}
+:global([data-theme='dark']) .eventItem {
+  color: var(--color-text);
+}
+
+/* ── Modal (superficie ELEVADA) ── */
+:global([data-theme='dark']) .modalContent {
+  background: var(--color-surface-2);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+:global([data-theme='dark']) .modalHeader {
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .modalHeader h2 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .closeBtn {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .modalFooter {
+  border-top-color: var(--color-border);
+}
+
+/* Inputs del formulario del modal */
+:global([data-theme='dark']) .fieldGroup label {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .input {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .input::placeholder {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+/* Sección de desglose dentro del modal */
+:global([data-theme='dark']) .breakdownSection {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* Botón eliminar fila (peligro) */
+:global([data-theme='dark']) .removeBtn {
+  color: #FCA5A5;
+}
+:global([data-theme='dark']) .removeBtn:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+/* Botón cancelar del modal (blanco -> superficie de tema) */
+:global([data-theme='dark']) .cancelBtn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .cancelBtn:hover {
+  background: var(--color-hover);
+}
+
+/* Botón "añadir" punteado (acento de marca) */
+:global([data-theme='dark']) .addBtn {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+:global([data-theme='dark']) .addBtn:hover {
+  background: var(--primary-light);
+}
+
+/* Badge de fecha global: fucsia claro -> tinte translúcido legible */
+:global([data-theme='dark']) .globalDateBadge {
+  background: rgba(217, 70, 239, 0.16);
+  color: #F0ABFC; /* fuchsia-300 */
+  border-color: rgba(217, 70, 239, 0.34);
+}
+
+/* Sección de paquetes sugeridos */
+:global([data-theme='dark']) .suggestedSection {
+  border-top-color: var(--color-border);
+}
+:global([data-theme='dark']) .suggestedHeader {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .suggestedPackage {
+  background: var(--primary-light);
+  border-color: rgba(167, 139, 250, 0.30);
+}
+:global([data-theme='dark']) .suggestedProductItem img {
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .suggestedProductName {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .suggestedProductPrice {
+  color: var(--primary-hover);
+}
+:global([data-theme='dark']) .suggestedProductItem img {
+  border-color: var(--color-border);
+}
+
+/* Botón "agregado" (verde claro -> tinte verde translúcido legible) */
+:global([data-theme='dark']) .addToCartBtnDone,
+:global([data-theme='dark']) .addToCartBtnDone:hover {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+}

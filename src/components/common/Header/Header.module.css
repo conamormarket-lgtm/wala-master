@@ -24,6 +24,10 @@
   .header {
     background-color: rgba(255, 255, 255, 0.97);
   }
+  /* En modo noche el fallback opaco debe ser oscuro, no blanco */
+  :global([data-theme='dark']) .header {
+    background-color: rgba(20, 18, 28, 0.97);
+  }
 }
 
 .container {
@@ -358,10 +362,11 @@
   height: 52px;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid #eee;
+  border: 1px solid var(--gris-borde, #eee);
   flex-shrink: 0;
   display: block;
-  background: #f8fafc;
+  /* Placeholder detrás de la miniatura: superficie del tema (se oscurece). */
+  background: var(--gris-fondo, #f8fafc);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -384,8 +389,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f1f5f9;
-  color: #475569;
+  /* Chip "+N": fondo y texto del tema (se invierten en modo noche). */
+  background: var(--gris-hover, #f1f5f9);
+  color: var(--gris-texto-secundario, #475569);
   font-weight: 700;
   font-size: 0.85rem;
   flex-shrink: 0;
@@ -424,7 +430,7 @@
 }
 
 .cartPreviewFooter {
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--gris-borde, #eee);
   padding-top: 1rem;
 }
 
@@ -439,29 +445,32 @@
 
 .secondaryButton {
   background-color: transparent;
-  color: #333;
+  /* Texto y borde del tema: se aclaran/oscurecen en modo noche para no
+     quedar como texto oscuro sobre el popup oscuro. */
+  color: var(--gris-texto-principal, #333);
   padding: 0.6rem 1rem;
   border-radius: 8px;
   text-decoration: none;
   font-weight: 600;
   font-size: 0.9rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--gris-borde, #ddd);
   transition: all 0.2s;
 }
 
 .secondaryButton:hover {
-  background-color: #f5f5f5;
-  border-color: #ccc;
+  background-color: var(--gris-hover, #f5f5f5);
+  border-color: var(--gris-texto-secundario, #ccc);
 }
 
 .brandsSection {
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--gris-borde, #eee);
   padding-top: 1.25rem;
 }
 
 .brandsSection h4 {
   font-size: 0.75rem;
-  color: #999;
+  /* Texto atenuado del tema (se aclara en modo noche). */
+  color: var(--gris-texto-secundario, #999);
   letter-spacing: 0.05em;
   margin: 0 0 1rem 0;
 }
@@ -898,7 +907,8 @@
   .premiumMobileHeader {
     padding: 12px 16px;
     border-bottom: 1px solid var(--gris-borde);
-    background: #f8fafc;
+    /* Cabecera del dropdown: fondo del tema (se oscurece en modo noche). */
+    background: var(--gris-fondo, #f8fafc);
   }
 
   .premiumMobileHeader h4 {
@@ -963,7 +973,8 @@
 
   .premiumWalletFooter {
     padding: 12px 16px;
-    background: #fff;
+    /* Superficie del tema (se oscurece en modo noche). */
+    background: var(--blanco);
     border-top: 1px solid var(--gris-borde);
     display: flex;
     justify-content: center;
@@ -1088,7 +1099,14 @@
   stroke: #f8fafc;
 }
 .arcadeHeader .accountPopupContent, .arcadeHeader .accountPopupContent p, .arcadeHeader .accountPopupContent h3 {
-  color: #1e293b; /* keep popup text dark */
+  color: #1e293b; /* keep popup text dark (la tarjeta del popup es clara en modo claro/arcade) */
+}
+/* En modo noche el popup (var(--blanco)) pasa a superficie OSCURA: el texto
+   forzado a #1e293b quedaría oscuro sobre oscuro. Lo devolvemos a texto claro. */
+[data-theme="dark"] .arcadeHeader .accountPopupContent,
+[data-theme="dark"] .arcadeHeader .accountPopupContent p,
+[data-theme="dark"] .arcadeHeader .accountPopupContent h3 {
+  color: var(--gris-texto-principal);
 }
 /* CSS to forcefully hide dropdowns after click */
 .forceHideHover .megaMenu,
@@ -1212,5 +1230,21 @@
      ya cubren la elección de idioma; evitamos saturar la barra de acciones. */
   .langToggle {
     display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — Header
+   ---------------------------------------------------------------------------
+   La mayoría del header ya se oscurece solo: usa --glass-bg-strong (remapeada
+   a violeta profundo en [data-theme="dark"]) y las variables --gris-* --blanco
+   (también remapeadas). Aquí solo cubrimos el ÚNICO punto que quedaba en blanco
+   hardcodeado: el fallback de contraste cuando el navegador/Capacitor no
+   soporta backdrop-filter. Sin esto, en modo noche el header saldría blanco con
+   el logo y los íconos claros encima (ilegible). NO se tocan tamaños ni layout.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-theme="dark"] .header {
+    background-color: var(--color-surface-2, #272338);
   }
 }

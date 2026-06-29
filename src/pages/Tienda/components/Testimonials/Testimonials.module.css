@@ -65,3 +65,28 @@
     padding: 20px;
   }
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Testimonials
+   Bloque totalmente hardcodeado en claro: contenedor #f8fafc, tarjetas blancas
+   y textos slate oscuros. Los pasamos a superficies/textos del tema. Las
+   estrellas doradas (#fbbf24) se mantienen como acento legible.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .container {
+  background-color: var(--color-bg); /* #f8fafc -> fondo oscuro */
+}
+
+[data-theme="dark"] .title,
+[data-theme="dark"] .author {
+  color: var(--color-text); /* #0f172a -> texto claro */
+}
+
+[data-theme="dark"] .card {
+  background: var(--color-surface); /* white -> superficie oscura */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -1px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-border);
+}
+
+[data-theme="dark"] .text {
+  color: var(--color-text-muted); /* #334155 -> atenuado legible */
+}

@@ -288,7 +288,7 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .title {
     font-size: 1.5rem;
   }
@@ -304,4 +304,75 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — WishlistPage
+   ---------------------------------------------------------------------------
+   Colores HARDCODEADOS: aquí pasamos las superficies blancas/grises a las
+   variables de tema y aclaramos los textos. Los botones de gradiente con
+   texto blanco (.primaryBtn rojo, .datesBtn ámbar, .giftedBadge verde) ya son
+   legibles en ambos modos y se conservan. Solo color/contraste; sin layout.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Cabecera y estados (cards blancas -> superficie oscura) */
+:global([data-theme='dark']) .headerRow,
+:global([data-theme='dark']) .emptyState,
+:global([data-theme='dark']) .card {
+  background: var(--color-surface);
+  box-shadow: var(--sombra-media);
+}
+:global([data-theme='dark']) .card {
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .card:hover {
+  border-color: var(--color-border);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* Títulos y textos */
+:global([data-theme='dark']) .title,
+:global([data-theme='dark']) .emptyState h3,
+:global([data-theme='dark']) .name {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .emptyState p,
+:global([data-theme='dark']) .loading {
+  color: var(--color-text-muted);
+}
+
+/* Botón violeta "agregar todo": tinte de marca translúcido + texto acento */
+:global([data-theme='dark']) .addAllBtn {
+  background: var(--primary-light);
+  color: var(--primary-hover);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .addAllBtn:hover {
+  background: rgba(167, 139, 250, 0.22);
+}
+
+/* Botón secundario (icono compartir): borde y texto de tema */
+:global([data-theme='dark']) .secondaryBtn {
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .secondaryBtn:hover {
+  background: rgba(239, 68, 68, 0.16);
+  color: #FCA5A5;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+/* Caja de imagen del producto: fondo neutro oscuro (no blanco brillante) */
+:global([data-theme='dark']) .imageWrapper {
+  background: var(--color-surface-2);
+}
+
+/* Botón "ver" gris -> superficie elevada con texto claro */
+:global([data-theme='dark']) .btnView {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .btnView:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
 }

@@ -18,6 +18,7 @@ import styles from './Header.module.css';
 import NotificationTray from './NotificationTray';
 import OptimizedImage from '../OptimizedImage/OptimizedImage';
 import FlagIcon from '../../i18n/FlagIcon';
+import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
@@ -443,6 +444,10 @@ const Header = () => {
               </>
             )}
           </div>
+
+          {/* Interruptor Modo Noche (luna/sol). Visible en desktop y móvil:
+              comparte el contenedor .actions, que el CSS ya hace responsive. */}
+          <ThemeToggle />
 
           {/* Toggle de idioma: SOLO banderas SVG (España / EEUU / Brasil). Marca el activo. */}
           <div className={styles.langToggle} role="group" aria-label="Idioma">

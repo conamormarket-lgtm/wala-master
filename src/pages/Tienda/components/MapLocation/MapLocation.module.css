@@ -75,3 +75,22 @@
     width: 100% !important;
   }
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Map Location
+   La tarjeta es blanca con titulo/descripcion slate oscuros: pasa a superficie
+   oscura con texto claro. El iframe del mapa (Google) lo pinta Google y no se
+   toca.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .container {
+  background-color: var(--color-surface); /* #ffffff -> superficie oscura */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -1px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .title {
+  color: var(--color-text); /* #0f172a -> texto claro */
+}
+
+[data-theme="dark"] .description {
+  color: var(--color-text-muted); /* #475569 -> atenuado legible */
+}

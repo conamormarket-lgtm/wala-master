@@ -40,3 +40,13 @@
     flex-basis: 40%;
   }
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Trust Badges
+   El texto usa var(--gris-texto, #333): esa variable NO existe en el tema, asi
+   que siempre cae al #333 hardcodeado e ilegible en oscuro. Lo fijamos al token
+   correcto. El icono usa --primary-color (acento), que ya se aclara en oscuro.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .text {
+  color: var(--color-text); /* #333 -> texto claro legible */
+}

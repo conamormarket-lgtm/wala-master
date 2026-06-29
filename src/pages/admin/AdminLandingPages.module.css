@@ -309,3 +309,106 @@
 .actionBtn.danger:hover {
   background: #fef2f2;
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .header h2 {
+  color: var(--color-text);
+}
+[data-theme="dark"] .header p {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .formCard h3 {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .inputGroup label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .inputGroup input {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .slugInput {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .slugInput span {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-right-color: var(--color-border);
+}
+[data-theme="dark"] .toggleLabel {
+  color: var(--color-text);
+}
+[data-theme="dark"] .divider {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .helpText {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .productSearch input {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .searchResults {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .searchResults li {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .searchResults li:hover {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .linkedTable th,
+[data-theme="dark"] .linkedTable td {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .linkedTable th {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .linkedTable select,
+[data-theme="dark"] .numberInput {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .formActions {
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .table th {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .urlLink {
+  color: #93C5FD;
+}
+[data-theme="dark"] .badge {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .actionBtn {
+  color: #93C5FD;
+}
+[data-theme="dark"] .actionBtn:hover {
+  background: rgba(59, 130, 246, 0.16);
+}
+[data-theme="dark"] .dangerBtn {
+  color: #FCA5A5;
+}
+[data-theme="dark"] .actionBtn.danger {
+  color: #FCA5A5;
+}
+[data-theme="dark"] .actionBtn.danger:hover {
+  background: rgba(239, 68, 68, 0.16);
+}

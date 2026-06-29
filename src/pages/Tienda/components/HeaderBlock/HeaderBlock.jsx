@@ -6,8 +6,10 @@ const HeaderBlock = ({ config }) => {
     title = 'Nuestra Tienda',
     subtitle = '',
     backgroundColor = 'transparent',
-    titleColor = '#000000',
-    subtitleColor = '#666666',
+    // Colores POR DEFECTO referidos a tokens del tema: legibles en claro y en
+    // oscuro. Si el admin fija titleColor/subtitleColor, su valor sigue mandando.
+    titleColor = 'var(--color-text)',
+    subtitleColor = 'var(--color-text-muted)',
     textAlign = 'center',
     paddingTop = '3rem',
     paddingBottom = '2rem',

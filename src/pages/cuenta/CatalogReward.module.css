@@ -136,3 +136,69 @@
   color: #9ca3af;
   cursor: not-allowed;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — CatalogReward (Catálogo de Recompensas)
+   ---------------------------------------------------------------------------
+   Colores HARDCODEADOS. Contenedor y tarjetas a superficie oscura con texto
+   claro; mensajes y badge de costo a tintes translúcidos legibles. El botón
+   "canjear" usa --rojo-principal (acento de marca) que ya se aclara en oscuro.
+   Solo color/contraste; sin tocar tamaños ni layout.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .container {
+  background: var(--color-surface);
+  box-shadow: var(--sombra-media);
+}
+:global([data-theme='dark']) .title {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .subtitle,
+:global([data-theme='dark']) .stateBox {
+  color: var(--color-text-muted);
+}
+
+/* Mensajes éxito/error translúcidos con texto claro */
+:global([data-theme='dark']) .messageBox {
+  background: rgba(16, 185, 129, 0.14);
+  color: #6EE7B7;
+  border-color: rgba(16, 185, 129, 0.30);
+}
+:global([data-theme='dark']) .errorBox {
+  background: var(--danger-soft);
+  color: #FCA5A5;
+  border-color: rgba(239, 68, 68, 0.30);
+}
+
+/* Tarjetas de recompensa */
+:global([data-theme='dark']) .card {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .card:hover {
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.45);
+}
+:global([data-theme='dark']) .rewardTitle {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .rewardValue {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .rewardDesc {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .cardFooter {
+  border-top-color: var(--color-border);
+}
+
+/* Badge de costo (ámbar) legible en oscuro */
+:global([data-theme='dark']) .costBadge {
+  background: rgba(245, 158, 11, 0.18);
+  color: #FCD34D;
+}
+
+/* Botón canjear deshabilitado coherente con el tema */
+:global([data-theme='dark']) .claimBtn:disabled {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}

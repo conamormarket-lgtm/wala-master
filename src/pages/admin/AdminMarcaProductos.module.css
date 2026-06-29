@@ -332,3 +332,108 @@
   border-radius: 12px;
   font-size: 0.9rem;
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .backBtn {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .backBtn:hover {
+  color: var(--color-text);
+}
+[data-theme="dark"] .brandHeading {
+  color: var(--color-text);
+}
+[data-theme="dark"] .brandSub {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tabs {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .tab:hover {
+  color: var(--color-text);
+}
+[data-theme="dark"] .tabActive {
+  color: var(--color-text);
+}
+[data-theme="dark"] .feedbackOk {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .feedbackError {
+  background: rgba(239, 68, 68, 0.16);
+  color: #FCA5A5;
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .section {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .sectionTitle {
+  color: var(--color-text);
+}
+[data-theme="dark"] .searchInput {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .searchInput:focus {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .clearSearch:hover {
+  color: var(--color-text);
+}
+[data-theme="dark"] .selectAllBtn {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .selectAllBtn:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .productRow {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .productRow:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .rowSelected {
+  background: rgba(59, 130, 246, 0.16);
+}
+[data-theme="dark"] .thumb {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .prodName {
+  color: var(--color-text);
+}
+[data-theme="dark"] .prodPrice {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .otherBrandTag {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .loading {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .empty {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .errorBox {
+  background: rgba(239, 68, 68, 0.16);
+  color: #FCA5A5;
+  border-color: var(--color-border);
+}

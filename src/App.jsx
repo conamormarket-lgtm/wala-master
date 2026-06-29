@@ -9,6 +9,7 @@ import { VisualEditorProvider } from './pages/Tienda/contexts/VisualEditorContex
 import { LayoutProvider } from './contexts/LayoutContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import AdminNotifications from './pages/admin/AdminNotifications/AdminNotifications';
 import AdminRoute from './components/AdminRoute/AdminRoute';
 import RouteTracker from './components/analytics/RouteTracker';
@@ -242,6 +243,7 @@ function App() {
       {/* Prefetch silencioso en background cuando el navegador está libre */}
       <AppPrefetcher />
       <ToastProvider>
+        <ThemeProvider>
         <LanguageProvider>
         <AuthProvider>
           <WishlistProvider>
@@ -396,6 +398,7 @@ function App() {
           </WishlistProvider>
         </AuthProvider>
         </LanguageProvider>
+        </ThemeProvider>
       </ToastProvider>
     </QueryClientProvider>
     </AppErrorBoundary>

@@ -42,7 +42,9 @@
 .icon {
   width: 24px;
   height: 24px;
-  color: var(--blanco);
+  /* Icono sobre contenedor naranja sólido: blanco literal. En modo noche
+     --blanco se oscurece y el icono quedaría oscuro sobre naranja; lo fijamos. */
+  color: #ffffff;
 }
 
 .content {

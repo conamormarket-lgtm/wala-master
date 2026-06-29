@@ -108,3 +108,23 @@
     font-size: 1.8rem;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (wishlist pública)
+   Header/empty white + título #111827 viran a tokens de tema.
+   Solo color/fondo/borde.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .header {
+  background: var(--color-surface);
+}
+:global([data-theme='dark']) .header h1 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .header p {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .emptyState {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}

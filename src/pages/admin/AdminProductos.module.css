@@ -493,3 +493,60 @@
     font-size: 1.125rem;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (listado productos · admin)
+   Las clases usan --gris-* --blanco con fallback claro; aquí se reasignan a
+   tokens semánticos de tema. Solo color/fondo/borde. Sin !important en fondo.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .title {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .empty {
+  color: var(--color-text-muted);
+}
+
+/* Toolbar de búsqueda/filtros */
+:global([data-theme='dark']) .searchInput {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .viewToggle {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .viewToggleBtn.active {
+  background: var(--color-surface);
+}
+
+/* Tarjetas de producto */
+:global([data-theme='dark']) .card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .cardName {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .cardMeta {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .cardActions {
+  background: var(--color-surface-2);
+  border-top-color: var(--color-border);
+}
+:global([data-theme='dark']) .btnDuplicate,
+:global([data-theme='dark']) .btnDelete {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+/* Modal de confirmación */
+:global([data-theme='dark']) .modal {
+  background: var(--color-surface);
+}
+:global([data-theme='dark']) .modal p {
+  color: var(--color-text);
+}

@@ -47,6 +47,13 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* En modo noche --blanco pasa a superficie oscura: el texto del botón primario
+   (CTA con gradiente violeta de marca) quedaría oscuro sobre violeta. Lo
+   re-fijamos a blanco para conservar el contraste blanco-sobre-marca. */
+[data-theme="dark"] .primary {
+  color: #ffffff;
+}
+
 .primary:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--rojo-hover) 0%, #7C3AED 100%);
   transform: translateY(-2px);
@@ -66,8 +73,11 @@
 }
 
 .secondary:hover:not(:disabled) {
-  border-color: #CBD5E1; /* Slate 300 */
-  background-color: #F8FAFC; /* Slate 50 */
+  /* Borde y fondo del tema: en modo noche el hover NO debe volverse claro
+     (quedaría texto claro sobre fondo claro). --gris-borde/--gris-hover ya
+     están remapeados a tonos oscuros en [data-theme="dark"]. */
+  border-color: var(--gris-borde, #CBD5E1); /* Slate 300 en claro */
+  background-color: var(--gris-hover, #F8FAFC); /* Slate 50 en claro */
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
 }

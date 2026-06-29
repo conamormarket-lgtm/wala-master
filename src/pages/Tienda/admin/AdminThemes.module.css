@@ -201,3 +201,54 @@
   font-weight: 600;
   margin: 0;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (temas · admin)
+   Títulos slate-900 + tarjetas/modal blancos viran a tokens de tema.
+   Solo color/fondo/borde. Sin !important en fondo.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .header h1 {
+  color: var(--color-text);
+}
+
+/* Tarjetas de tema */
+:global([data-theme='dark']) .themeCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .themeCard h3 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .themeMeta {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .themeTypeBadge {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .themeActions {
+  border-top-color: var(--color-border);
+}
+:global([data-theme='dark']) .editBtn {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+/* Modal */
+:global([data-theme='dark']) .modalContent {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .closeModalBtn {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .formGroup label {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .input,
+:global([data-theme='dark']) .textarea {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}

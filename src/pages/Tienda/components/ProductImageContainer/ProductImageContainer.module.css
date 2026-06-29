@@ -100,3 +100,33 @@
   visibility: visible;
   opacity: 1;
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Lienzo de previsualizacion (ProductImageContainer)
+   Es un "canvas de transparencia" (cuadricula ajedrezada sobre blanco) donde se
+   muestra el mockup del producto. En oscuro un recuadro blanco deslumbraria;
+   pasamos la base y la cuadricula a tonos oscuros (sigue leyendose como canvas
+   de transparencia) y aseguramos textos/bordes legibles. La insignia de
+   resolucion (blanca) -> superficie oscura; el tooltip ya es oscuro y se queda.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .container {
+  background: repeating-conic-gradient(var(--color-surface-2) 0% 25%, transparent 0% 50%) 50% / 20px 20px;
+  background-color: var(--color-surface);
+  border-color: var(--color-border); /* #e0e0e0 -> borde oscuro */
+}
+
+[data-theme="dark"] .galleryContainer {
+  background: repeating-conic-gradient(var(--color-surface-2) 0% 25%, transparent 0% 50%) 50% / 20px 20px;
+  background-color: var(--color-surface);
+  border-color: var(--color-border); /* #eee -> borde oscuro */
+}
+
+[data-theme="dark"] .emptyState {
+  color: var(--color-text-muted); /* #999 -> atenuado legible */
+}
+
+[data-theme="dark"] .resolutionBadge {
+  background: rgba(30, 27, 46, 0.92); /* blanco translucido -> oscuro translucido */
+  border-color: var(--color-border);
+  color: var(--color-text-muted);     /* #666 -> atenuado legible */
+}

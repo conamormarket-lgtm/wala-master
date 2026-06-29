@@ -135,3 +135,14 @@
     padding: 0.1rem;
   }
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Combo Product Image
+   Los textos ya usan tokens (--gris-texto-secundario) y el error/loading son
+   acentos rojos legibles. Solo el placeholder estatico tiene grises
+   hardcodeados (#f5f5f5/#ddd): los pasamos a superficie/borde oscuros.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .comboRowPlaceholder {
+  background-color: var(--color-surface-2); /* #f5f5f5 -> superficie oscura */
+  border-color: var(--color-border);        /* #ddd -> borde oscuro */
+}

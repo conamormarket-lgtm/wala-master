@@ -4,6 +4,26 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#8A2BE2" />
+
+    <!-- Modo Noche · Anti-FOUC ──────────────────────────────────────────────
+         Fija data-theme en <html> ANTES de cargar React/CSS para que la página
+         pinte directamente en el tema correcto (sin parpadeo claro->oscuro).
+         Lee la elección guardada (localStorage "wala-theme"); si es "system" o
+         no existe, usa prefers-color-scheme. DEBE coincidir con ThemeContext. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('wala-theme'); // "light" | "dark" | "system" | null
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = (saved === 'light' || saved === 'dark')
+            ? saved
+            : (prefersDark ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
     <meta name="description" content="Walá - Tienda de prendas personalizadas. Personaliza y compra tus prendas favoritas." />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" href="/logo-wala.png" />

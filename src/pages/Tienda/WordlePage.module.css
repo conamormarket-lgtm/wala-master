@@ -437,3 +437,140 @@
     font-size: 1.5rem;
   }
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Wordle (juego de fidelizacion)
+   Pagina y UI hardcodeadas en claro (fondo #f8fafc, texto slate, teclado y
+   tabla de ranking grises, modal blanco). Lo trasladamos a los tokens del tema.
+   Se MANTIENEN los colores SEMANTICOS del juego: verde (acierto), amarillo
+   (presente) y gris-azulado (ausente) de las fichas y el teclado, que siguen
+   teniendo buen contraste con su texto blanco sobre fondo oscuro.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .pageContainer {
+  background-color: var(--color-bg); /* #f8fafc -> fondo oscuro */
+  color: var(--color-text);          /* #0f172a -> texto claro */
+}
+
+[data-theme="dark"] .backLink {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .backLink:hover {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .iconBtn {
+  background: var(--color-surface-2); /* #f1f5f9 -> superficie oscura */
+  color: var(--color-text);
+}
+[data-theme="dark"] .iconBtn:hover {
+  background: var(--color-hover);
+}
+
+/* Celdas vacias/llenas del tablero (las reveladas conservan su color de juego). */
+[data-theme="dark"] .emptyCell {
+  border-color: var(--color-border); /* #cbd5e1 -> borde oscuro */
+}
+[data-theme="dark"] .filledCell {
+  border-color: var(--color-text-muted); /* #64748b -> atenuado */
+  color: var(--color-text);              /* #0f172a -> claro */
+}
+[data-theme="dark"] .focusedCell {
+  border-bottom-color: var(--color-text) !important; /* #0f172a -> claro */
+}
+
+/* Teclado: teclas neutras gris claro -> superficie oscura (las coloreadas por
+   estado se mantienen por sus propias reglas key_correct/present/absent). */
+[data-theme="dark"] .key,
+[data-theme="dark"] .actionKey {
+  background: var(--color-surface-2); /* #e2e8f0 -> superficie oscura */
+  color: var(--color-text);           /* #0f172a -> claro */
+}
+
+/* Modal de resultado (el overlay ya es negro translucido). */
+[data-theme="dark"] .resultCard {
+  background: var(--color-surface); /* white -> superficie oscura */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+[data-theme="dark"] .closeModalBtn {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .closeModalBtn:hover {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .showResultBtn {
+  background-color: var(--color-surface-2); /* #f1f5f9 -> superficie oscura */
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .showResultBtn:hover {
+  background-color: var(--color-hover);
+}
+
+[data-theme="dark"] .statLabel,
+[data-theme="dark"] .rankingDesc,
+[data-theme="dark"] .rankingEmpty,
+[data-theme="dark"] .loading {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .rankingEmpty {
+  background: var(--color-surface); /* #f8fafc -> superficie oscura */
+  border-color: var(--color-border);
+}
+
+/* Aviso de login: amarillo sobre fondo crema muy claro -> tinte calido oscuro. */
+[data-theme="dark"] .loginPrompt {
+  background: rgba(234, 179, 8, 0.14); /* #fefce8 -> tinte amarillo translucido */
+  color: var(--warning, #eab308);
+}
+
+/* Tabla de ranking */
+[data-theme="dark"] .rankingTable {
+  background: var(--color-surface); /* white -> superficie oscura */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.45);
+}
+[data-theme="dark"] .rankingTable th,
+[data-theme="dark"] .rankingTable td {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .rankingTable th {
+  background: var(--color-surface-2); /* #f1f5f9 -> superficie oscura */
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .currentUserRow {
+  background-color: rgba(34, 197, 94, 0.12); /* #f0fdf4 -> tinte verde oscuro */
+}
+
+/* Pestañas del ranking */
+[data-theme="dark"] .rankingTabs {
+  background: var(--color-surface-2); /* #f1f5f9 -> superficie oscura */
+}
+[data-theme="dark"] .rankingTab {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .rankingTabActive {
+  background: var(--color-surface); /* white -> superficie elevada oscura */
+  color: var(--color-text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Badges con fondos pastel muy claros -> tintes translucidos legibles. */
+[data-theme="dark"] .streakBadge {
+  background: rgba(217, 119, 6, 0.16); /* #fffbeb -> tinte ambar */
+  color: #fbbf24;
+}
+[data-theme="dark"] .wonBadge {
+  background: rgba(22, 163, 74, 0.16); /* #dcfce7 -> tinte verde */
+  color: #4ade80;
+}
+[data-theme="dark"] .lostBadge {
+  background: rgba(220, 38, 38, 0.16); /* #fee2e2 -> tinte rojo */
+  color: #f87171;
+}
+
+/* Boton primario: oscuro sobre claro -> claro sobre oscuro (inversion). */
+[data-theme="dark"] .primaryBtn {
+  background: var(--color-text); /* #0f172a -> superficie clara */
+  color: var(--color-bg);
+}

@@ -67,3 +67,18 @@
 .tabItem.active::after {
   background-color: var(--rojo-principal, #ef4444);
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Subheader de categorias (movil)
+   La barra es blanca con texto gris; en oscuro pasa a superficie oscura con
+   texto atenuado claro. El estado activo ya usa --rojo-principal (acento del
+   tema), que en oscuro es violet-400 y se lee bien.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .container {
+  background-color: var(--color-surface); /* #ffffff -> superficie oscura */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .tabText {
+  color: var(--color-text-muted); /* #64748b -> atenuado legible */
+}

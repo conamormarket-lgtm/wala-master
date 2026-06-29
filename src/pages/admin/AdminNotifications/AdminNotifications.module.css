@@ -220,3 +220,71 @@
   font-size: 0.8rem;
   color: #4b5563;
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .container {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .tabs {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .tabs button {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tabs button.active {
+  color: #93C5FD;
+}
+[data-theme="dark"] .helpText {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .copyInput {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .manualForm input,
+[data-theme="dark"] .manualForm textarea,
+[data-theme="dark"] .manualForm select {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .categoryRow {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .scheduleInputs {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .scheduleInputs input {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .copyBlock {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .copyHeader h4 {
+  color: var(--color-text);
+}
+[data-theme="dark"] .textBtn {
+  color: #93C5FD;
+}
+[data-theme="dark"] .textBtnDanger {
+  color: #FCA5A5;
+}
+[data-theme="dark"] .variantContainer {
+  border-left-color: var(--color-border);
+}
+[data-theme="dark"] .variantLabel {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .fieldGroup label,
+[data-theme="dark"] .fieldGroupSmall label {
+  color: var(--color-text-muted);
+}

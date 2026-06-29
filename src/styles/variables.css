@@ -65,6 +65,84 @@
   /* Header height para calcular offsets */
   --header-height: 72px;
   --bottom-nav-height: 56px;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     TOKENS SEMÁNTICOS DE TEMA (Modo Noche)
+     -------------------------------------------------------------------------
+     Estas son las variables que las fases de COBERTURA deben usar al escribir
+     overrides [data-theme="dark"]. En :root valen lo MISMO que el aspecto
+     claro actual (no cambia nada visualmente hoy). En [data-theme="dark"]
+     (más abajo) se redefinen a sus equivalentes oscuros.
+
+       --color-bg          Fondo de la PÁGINA (body).
+       --color-surface     Superficie de cards/paneles/contenedores blancos.
+       --color-surface-2   Superficie ELEVADA (popovers, dropdowns, modales).
+       --color-text        Texto principal (alto contraste).
+       --color-text-muted  Texto atenuado/secundario.
+       --color-border      Bordes y separadores.
+       --color-hover       Fondo de hover sutil (filas, items).
+       --color-shadow      Sombra base (se inyecta en sombras existentes).
+
+     Convención de uso en overrides de cobertura:
+       background: var(--color-surface);  color: var(--color-text);
+       border-color: var(--color-border);  /* nunca con !important sobre fondos
+       que el admin pueda fijar inline */
+     --------------------------------------------------------------------- */
+  --color-bg:         var(--gris-fondo);             /* #F8FAFC */
+  --color-surface:    var(--blanco);                 /* #FFFFFF */
+  --color-surface-2:  var(--blanco);                 /* elevada (igual en claro) */
+  --color-text:       var(--gris-texto-principal);   /* #0F172A */
+  --color-text-muted: var(--gris-texto-secundario);  /* #475569 */
+  --color-border:     var(--gris-borde);             /* #E2E8F0 */
+  --color-hover:      var(--gris-hover);             /* #F1F5F9 */
+  --color-shadow:     rgba(15, 23, 42, 0.08);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — Redefinición de la paleta bajo [data-theme="dark"]
+   ---------------------------------------------------------------------------
+   El oscuro de Walá es violeta profundo (coherente con el footer y los tokens
+   --surface-dark de theme/tokens.css), NO gris carbón. Aquí REDEFINIMOS tanto
+   los tokens semánticos NUEVOS como los --gris-* HEREDADOS, para que toda la
+   app que ya consume --gris-texto-principal / --gris-fondo / --gris-borde /
+   --blanco se oscurezca AUTOMÁTICAMENTE y quede legible, sin tocar componente
+   por componente. Las fases de cobertura sólo afinan casos puntuales.
+   ═════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  /* Tokens semánticos de tema (oscuros) */
+  --color-bg:         #14121C; /* fondo página: slate-violeta profundo */
+  --color-surface:    #1E1B2E; /* cards/paneles */
+  --color-surface-2:  #272338; /* superficie elevada: dropdowns, modales, popovers */
+  --color-text:       #F1EEF9; /* texto principal claro (alto contraste) */
+  --color-text-muted: #B7B0C9; /* texto atenuado legible */
+  --color-border:     #332E45; /* bordes suaves sobre fondo oscuro */
+  --color-hover:      #2A2640; /* hover sutil */
+  --color-shadow:     rgba(0, 0, 0, 0.5);
+
+  /* ── Re-mapeo de la paleta HEREDADA (malla de seguridad de contraste) ──
+     Casi toda la app usa estas variables directamente; al voltearlas aquí,
+     los textos oscuros pasan a claros y los fondos claros a oscuros SIN
+     editar cada componente. Esta es la red global de oscurecimiento. */
+  --gris-fondo:             var(--color-bg);
+  --gris-texto-principal:   var(--color-text);
+  --gris-texto-secundario:  var(--color-text-muted);
+  --gris-borde:             var(--color-border);
+  --gris-hover:             var(--color-hover);
+  --blanco:                 var(--color-surface); /* "blanco" -> superficie oscura */
+
+  /* Acento de marca: un punto más claro para que resalte sobre fondo oscuro. */
+  --primary-color: #A78BFA; /* violet-400 */
+  --primary-hover: #C4B5FD; /* violet-300 */
+  --primary-light: rgba(167, 139, 250, 0.14);
+  --rojo-principal: var(--primary-color);
+  --rojo-hover:     var(--primary-hover);
+  --rojo-light:     var(--primary-light);
+
+  /* Sombras re-teñidas a negro (las teñidas en Slate desaparecen en oscuro). */
+  --sombra-suave:   0 1px 3px var(--color-shadow), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-media:   0 4px 6px -1px var(--color-shadow), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --sombra-profunda:0 10px 15px -3px var(--color-shadow), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+  --sombra-hover:   0 20px 25px -5px var(--color-shadow), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
 }
 
 /* En móviles, reducir header */

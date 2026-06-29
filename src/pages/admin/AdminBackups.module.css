@@ -40,3 +40,33 @@
 .table tr:hover {
   background-color: #fdfdfd;
 }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .container h2 {
+  color: var(--color-text);
+}
+[data-theme="dark"] .container p {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td {
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .table th {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+[data-theme="dark"] .table tr:hover {
+  background: var(--color-surface);
+}

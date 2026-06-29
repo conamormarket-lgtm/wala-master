@@ -310,3 +310,62 @@
   background-color: #f1f5f9 !important;
   color: #475569 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — KapiPet
+   ---------------------------------------------------------------------------
+   El modal y sus tarjetas internas estaban hardcodeados en blanco/grises claros
+   con texto oscuro. En modo noche oscurecemos las superficies y aclaramos el
+   texto para que NADA quede oscuro-sobre-oscuro. Los acentos de color (verde de
+   progreso/éxito, dorado de recompensa, azul de evidencia) ya contrastan sobre
+   fondo oscuro y se conservan. No se tocan tamaños ni layout.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .modal {
+  background: var(--color-surface, #1e1b2e);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .title {
+  color: var(--color-text, #f1eef9);
+}
+
+[data-theme="dark"] .subtitle,
+[data-theme="dark"] .closeBtn,
+[data-theme="dark"] .stats,
+[data-theme="dark"] .challengeProgress {
+  color: var(--color-text-muted, #b7b0c9);
+}
+
+[data-theme="dark"] .petImageWrapper {
+  background: var(--color-surface-2, #272338);
+  border-color: var(--color-border, #332e45);
+}
+
+[data-theme="dark"] .challengeCard {
+  background: var(--color-surface-2, #272338);
+  border-color: var(--color-border, #332e45);
+}
+
+[data-theme="dark"] .challengeTitle {
+  color: var(--color-text, #f1eef9);
+}
+
+[data-theme="dark"] .challengeDesc {
+  color: var(--color-text-muted, #b7b0c9);
+}
+
+[data-theme="dark"] .progressBar {
+  background: var(--color-border, #332e45);
+}
+
+[data-theme="dark"] .challengeCompletedBox {
+  /* Verde de éxito tenue sobre superficie oscura en lugar de pastel claro. */
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+}
+
+[data-theme="dark"] .evidenceInput {
+  background: var(--color-surface-2, #272338);
+  border-color: var(--color-border, #332e45);
+  color: var(--color-text, #f1eef9);
+}

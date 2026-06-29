@@ -5,7 +5,8 @@
   padding: 0.875rem 1rem;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  background: #fff;
+  /* Superficie del tema: blanca en claro, oscura en modo noche. */
+  background: var(--color-surface, #fff);
   border-left: 4px solid;
   min-width: 300px;
   max-width: 500px;
@@ -55,7 +56,8 @@
 .message {
   flex: 1;
   font-size: 0.9375rem;
-  color: var(--gris-texto, #333);
+  /* --gris-texto-principal se remapea a texto claro en modo noche. */
+  color: var(--gris-texto-principal, #333);
   line-height: 1.4;
 }
 
@@ -78,8 +80,8 @@
 }
 
 .closeBtn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--gris-texto, #333);
+  background: var(--color-hover, rgba(0, 0, 0, 0.05));
+  color: var(--gris-texto-principal, #333);
 }
 
 /* Tipos de toast */
@@ -121,4 +123,31 @@
 .info .icon {
   background: #3b82f6;
   color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — los fondos pastel claros de cada tipo (success/error/warning/
+   info) volverían el toast casi blanco y, con el texto ya aclarado, quedaría
+   ilegible. Aquí los sustituimos por un tinte translúcido del MISMO acento
+   sobre la superficie oscura del tema. El borde izquierdo de color y los
+   iconos (texto blanco sobre color sólido) se conservan: contraste intacto.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .toast {
+  background: var(--color-surface-2, #272338);
+}
+
+[data-theme="dark"] .success {
+  background: rgba(16, 185, 129, 0.16);
+}
+
+[data-theme="dark"] .error {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+[data-theme="dark"] .warning {
+  background: rgba(245, 158, 11, 0.16);
+}
+
+[data-theme="dark"] .info {
+  background: rgba(59, 130, 246, 0.16);
 }

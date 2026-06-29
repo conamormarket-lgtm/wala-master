@@ -637,3 +637,154 @@
 .modalHeader h3 { margin: 0; font-size: 1.25rem; }
 .modalBody { color: #555; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem; }
 .modalFooter { display: flex; gap: 1rem; justify-content: flex-end; }
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   Generado para la cobertura del modo oscuro. SOLO color/fondo/borde; NO toca
+   tamaños, espaciados ni layout. Usa los tokens semánticos de tema
+   (--color-bg/-surface/-surface-2/-text/-text-muted/-border) definidos en
+   src/styles/variables.css, más el acento de marca (--primary-color) y tintes
+   de estado translúcidos. Sin !important: un backgroundColor inline puesto por
+   el editor visual del admin SIEMPRE gana, por lo que sus fondos se respetan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .subtitle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .formCard {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .whatsappCard {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .whatsappToggle {
+  color: var(--color-text);
+}
+[data-theme="dark"] .whatsappSavedMsg {
+  color: #6EE7B7;
+}
+[data-theme="dark"] .whatsappErrorMsg {
+  color: #FCA5A5;
+}
+[data-theme="dark"] .sectionTitle {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .label {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .input {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .input:focus {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .uploadLabel {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .uploadLabel:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .logoPreviewWrapper {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .removeBtn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .removeBtn:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+[data-theme="dark"] .uploadBgLabel {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .uploadBgLabel:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .visualPositioner {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .positionDot {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .rangeValue {
+  color: var(--color-text);
+}
+[data-theme="dark"] .previewTitle {
+  color: var(--color-text);
+}
+[data-theme="dark"] .previewCardWrapper {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .previewCardContent {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .previewCardContent p {
+  color: var(--color-text);
+}
+[data-theme="dark"] .formFooter {
+  background: var(--color-surface);
+  border-top-color: var(--color-border);
+}
+[data-theme="dark"] .brandCardLogoWrap {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .brandInitials {
+  color: var(--color-text);
+}
+[data-theme="dark"] .iconBtn {
+  color: var(--color-text);
+}
+[data-theme="dark"] .iconBtn:hover {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .dangerBtn {
+  color: #FCA5A5;
+}
+[data-theme="dark"] .dangerBtn:hover {
+  background: rgba(239, 68, 68, 0.16);
+  color: #FCA5A5;
+}
+[data-theme="dark"] .brandCardName {
+  color: var(--color-text);
+}
+[data-theme="dark"] .metaPill {
+  color: var(--color-text);
+}
+[data-theme="dark"] .manageProductsBtn {
+  color: var(--color-text);
+}
+[data-theme="dark"] .manageProductsBtn:hover {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .emptyState {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .emptyState p {
+  color: var(--color-text);
+}
+[data-theme="dark"] .modal {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .modalHeader {
+  color: #FCA5A5;
+}
+[data-theme="dark"] .modalBody {
+  color: var(--color-text-muted);
+}

@@ -711,3 +711,198 @@
   .sizePill { min-width: 50px; height: 42px; font-size: 0.8rem; }
   .pdpTitle { font-size: 1.4rem; }
 }
+
+/* ═══════════════════════════════════════════════════
+   MODO NOCHE — Product Detail (PDP)
+   La pagina de producto es casi 100% monocroma hardcodeada: textos y botones
+   casi-negros (#0a0a0a), marcos de imagen beige/gris claro (#f0ede8/#f5f5f5),
+   bordes claros (#ddd/#ebebeb/#e0e0e0) y grises de apoyo. En oscuro todo eso
+   quedaria ilegible (negro sobre negro). Aqui SOLO cambiamos color/contraste:
+   - texto casi-negro -> texto claro del tema
+   - marcos/placeholder de imagen -> superficie oscura
+   - el CTA "negro sobre blanco" se INVIERTE a "claro sobre oscuro" para
+     conservar el alto contraste monocromo del diseño.
+   Los acentos de estado (verde de descuento #16a34a) se mantienen.
+   ═══════════════════════════════════════════════════ */
+
+/* ── Texto principal casi-negro -> claro ── */
+[data-theme="dark"] .pdpTitle,
+[data-theme="dark"] .price,
+[data-theme="dark"] .selectorLabel,
+[data-theme="dark"] .accordionSummary,
+[data-theme="dark"] .qtyBtn,
+[data-theme="dark"] .qtyValue {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .breadcrumb span:not([aria-hidden]),
+[data-theme="dark"] .breadcrumb a:hover {
+  color: var(--color-text);
+}
+
+/* ── Grises de apoyo -> atenuado del tema ── */
+[data-theme="dark"] .breadcrumb,
+[data-theme="dark"] .breadcrumb a,
+[data-theme="dark"] .priceOriginal,
+[data-theme="dark"] .selectorLabel em,
+[data-theme="dark"] .trustItem,
+[data-theme="dark"] .richText,
+[data-theme="dark"] .notFound,
+[data-theme="dark"] .accordionSummary::after {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .breadcrumb span[aria-hidden],
+[data-theme="dark"] .breadcrumb > span {
+  color: var(--color-border); /* separadores #bbb -> tono borde */
+}
+
+/* ── Marcos e imagenes (beige/gris claro) -> superficie oscura ── */
+[data-theme="dark"] .thumb,
+[data-theme="dark"] .mainFrame,
+[data-theme="dark"] .swatch {
+  background: var(--color-surface-2);
+}
+
+/* En combo el marco principal es transparente: se respeta. */
+[data-theme="dark"] .mainFrameCombo {
+  background: transparent;
+}
+
+/* ── Bordes/divisores claros -> borde del tema ── */
+[data-theme="dark"] .divider,
+[data-theme="dark"] .trustRow,
+[data-theme="dark"] .accordion,
+[data-theme="dark"] .swatch,
+[data-theme="dark"] .sizePill,
+[data-theme="dark"] .qtyControl {
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .qtyValue {
+  border-left-color: var(--color-border);
+  border-right-color: var(--color-border);
+}
+
+[data-theme="dark"] .shareIconBtn {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .shareIconBtn:hover {
+  border-color: var(--color-text);
+  color: var(--color-text);
+}
+
+/* Thumb activa / swatch activa: el negro deja de verse -> acento del tema. */
+[data-theme="dark"] .thumb:hover { border-color: var(--color-text-muted); }
+[data-theme="dark"] .thumbActive { border-color: var(--primary-color) !important; }
+[data-theme="dark"] .swatch:hover { border-color: var(--color-text-muted); }
+[data-theme="dark"] .swatchActive { border-color: var(--primary-color) !important; }
+
+/* ── Brand badge: pildora negra con texto blanco -> superficie clara/acento ──
+   La invertimos a superficie elevada con texto claro para que siga resaltando. */
+[data-theme="dark"] .brandBadge {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+/* ── Size pill ── */
+[data-theme="dark"] .sizePill {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .sizePill:hover {
+  border-color: var(--color-text);
+}
+
+/* Pill seleccionada: "negro sobre blanco" -> "claro sobre oscuro" (inversion). */
+[data-theme="dark"] .sizePillActive {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+[data-theme="dark"] .qtyBtn:hover {
+  background: var(--color-hover);
+}
+
+/* ── CTA: el monocromo negro/blanco se invierte conservando el alto contraste ──
+   Primario: relleno claro + texto oscuro. Outline: borde/texto claros y, al
+   hover, relleno claro con texto oscuro. */
+[data-theme="dark"] .btnPrimary {
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-color: var(--color-text);
+}
+
+[data-theme="dark"] .btnPrimary:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+
+[data-theme="dark"] .btnPrimary:disabled {
+  background: var(--color-border);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .btnOutline {
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+
+[data-theme="dark"] .btnOutline:hover {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+/* ── Trust icons / titulos del rich text ── */
+[data-theme="dark"] .trustItem svg {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .richText h1,
+[data-theme="dark"] .richText h2,
+[data-theme="dark"] .richText h3,
+[data-theme="dark"] .richText h4 {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .richText a:not(:global(.custom-quill-button)) {
+  color: var(--primary-color); /* enlaces -> acento claro del tema */
+}
+
+/* Boton incrustado de Quill: negro -> superficie clara con texto oscuro. */
+[data-theme="dark"] .richText :global(.custom-quill-button) {
+  background: var(--color-text) !important;
+  color: var(--color-bg) !important;
+}
+
+/* ── Zoom hint: ya es oscuro translucido con texto blanco; se mantiene ── */
+
+/* ── CTA fija en movil: fondo claro translucido -> oscuro translucido ── */
+@media (max-width: 768px) {
+  [data-theme="dark"] .ctaStack {
+    background: rgba(20, 18, 28, 0.92); /* blanco translucido -> oscuro translucido */
+    border-top-color: var(--color-border);
+  }
+}
+
+/* ── Skeletons: degradados gris claro -> tonos oscuros ── */
+[data-theme="dark"] .skeletonGallery {
+  background: linear-gradient(90deg,
+    var(--color-surface) 25%,
+    var(--color-surface-2) 50%,
+    var(--color-surface) 75%);
+  background-size: 200% 100%;
+}
+
+[data-theme="dark"] .skeletonLine {
+  background: linear-gradient(90deg,
+    var(--color-surface-2) 25%,
+    var(--color-border) 50%,
+    var(--color-surface-2) 75%);
+  background-size: 200% 100%;
+}

@@ -237,6 +237,57 @@
   100% { background-position: 200% 0; }
 }
 
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Visual Category Nav (burbujas)
+   Bloque hardcodeado en claro: separador #eaeaea, burbujas con fondo gris claro,
+   icono "Todos" negro, etiquetas #333 y estado activo en negro (#000) que sobre
+   fondo oscuro desapareceria. Lo trasladamos a tokens del tema: el "activo"
+   pasa a usar el acento de marca (violet-400 en oscuro), legible y coherente.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .container {
+  border-bottom-color: var(--color-border); /* #eaeaea -> borde oscuro */
+}
+
+[data-theme="dark"] .imageBubble {
+  background-color: var(--color-surface-2); /* #f5f5f5 -> superficie oscura */
+}
+
+[data-theme="dark"] .imageContainer {
+  background-color: var(--color-surface-2); /* #eee -> superficie oscura */
+}
+
+/* Icono "Todos": circulo negro con icono blanco -> usa el acento de marca. */
+[data-theme="dark"] .allIcon {
+  background-color: var(--primary-color);
+  color: var(--color-surface);
+}
+
+[data-theme="dark"] .label {
+  color: var(--color-text-muted); /* #333 -> atenuado legible */
+}
+
+[data-theme="dark"] .navItem:hover .label {
+  color: var(--color-text); /* #000 -> texto claro al hover */
+}
+
+/* Estado activo: borde/etiqueta negros -> acento de marca claro. */
+[data-theme="dark"] .active .imageBubble {
+  border-color: var(--primary-color); /* #000 -> acento */
+}
+
+[data-theme="dark"] .active .label {
+  color: var(--primary-color); /* #000 -> acento legible */
+}
+
+/* Skeleton shimmer: degradado gris claro -> tonos oscuros. */
+[data-theme="dark"] .skeletonItem {
+  background: linear-gradient(90deg,
+    var(--color-surface) 25%,
+    var(--color-surface-2) 50%,
+    var(--color-surface) 75%);
+  background-size: 200% 100%;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .imageBubble {

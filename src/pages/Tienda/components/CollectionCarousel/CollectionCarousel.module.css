@@ -67,3 +67,15 @@
   text-align: center;
   padding: 2rem 0;
 }
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — Collection Carousel
+   Este componente usa variables propias (--text-color, --border-color,
+   --text-muted) con FALLBACK claro hardcodeado, que en oscuro quedarian
+   ilegibles. Aqui les damos su valor oscuro mapeandolas a los tokens del tema.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .carouselContainer {
+  --text-color: var(--color-text);    /* titulo #333 -> claro */
+  --text-muted: var(--color-text-muted); /* textos #666 -> atenuado claro */
+  --border-color: var(--color-border);   /* thumb del scroll #ccc -> borde oscuro */
+}

@@ -289,3 +289,56 @@
   font-size: 0.8rem;
   font-weight: bold;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (landing de suscripción)
+   Vira fondos claros (container, hero, secciones, cards) y los hex índigo
+   oscuros del texto a tokens de tema. Solo color/fondo/borde.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:global([data-theme='dark']) .container {
+  background-color: var(--color-bg);
+}
+:global([data-theme='dark']) .hero {
+  background: var(--color-surface);
+}
+:global([data-theme='dark']) .heroTitle {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .heroSubtitle {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .disclaimer {
+  color: var(--color-text-muted);
+}
+
+/* Mockup flotante */
+:global([data-theme='dark']) .mockupBox {
+  background: var(--color-surface-2);
+}
+:global([data-theme='dark']) .mockupBox h3 {
+  color: var(--color-text);
+}
+
+/* Sección Cómo Funciona */
+:global([data-theme='dark']) .howItWorks {
+  background: var(--color-bg);
+}
+:global([data-theme='dark']) .sectionHeader h2 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .sectionHeader p {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .stepCard {
+  background: var(--color-surface);
+}
+:global([data-theme='dark']) .stepCard:hover {
+  background: var(--color-surface-2);
+}
+:global([data-theme='dark']) .stepCard h3 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .stepCard p {
+  color: var(--color-text-muted);
+}

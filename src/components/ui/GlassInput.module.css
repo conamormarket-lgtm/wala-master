@@ -147,7 +147,9 @@ textarea.control {
 /* Fallback sólido cuando NO hay soporte de blur (Capacitor/Android viejos). */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .field {
-    background: #ffffff;
+    /* Superficie del tema (blanca en claro, oscura en modo noche); el control
+       y el placeholder usan --gris-texto-* que se aclaran automáticamente. */
+    background: var(--color-surface);
     border-color: var(--gris-borde);
   }
 }
