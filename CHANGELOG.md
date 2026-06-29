@@ -13,6 +13,31 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
+## [2026-06-29] — DIAGNÓSTICO: por qué un pedido del portal "DESAPARECE" de Mis Compras y Recepción (el ERP externo lo borra/desmarca al procesarlo) + opción `--buscar` del script de diagnóstico (SOLO docs/script, NO toca el portal)
+**Diagnóstico concluyente** (no es un cambio de comportamiento del portal) del síntoma: un pedido **aparece** en "Mis Compras"/"Recepción" al crearse pero **días después YA NO se ve**. Tras leer todo `src/` + `functions/`: **el portal NUNCA borra pedidos y NO es caché**; el doc desaparece (o pierde sus marcadores WALA) **cuando el ERP externo `aimunayerp.com` procesa el pedido**. **No toca código del portal, ni carrito/precios/cobro**; solo se documenta y se añade una opción de lectura al script de diagnóstico. Detalle del ciclo en [FLUJO-PEDIDOS.md](docs/wala/FLUJO-PEDIDOS.md) (§4-bis) y nota en [ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md).
+
+### Qué NO es (descartado leyendo el código)
+- ✅ **NO lo borra el portal** — no existe **ni un solo** `deleteDoc`/`.delete()` contra `pedidos_web` ni `pedidos` en todo `src/` + `functions/`. Las Cloud Functions (`processCulqiPayment`/`culqiWebhook`) solo hacen **`set … {merge:true}` idempotente** para marcar el pago (`pagado`/`estadoPago`/`montoPendiente`) — nunca borran ni quitan campos.
+- ✅ **NO es caché** — `createWebOrder` (`src/services/erp/firebase.js:413`) hace un **`addDoc` REAL** a la nube y el checkout **aborta antes de pagar** si la escritura falla (fix `de1594b`) → el pedido **sí queda guardado**. El `cachePedidos` (`src/hooks/usePedidos.js:20`) es un **objeto en memoria del módulo, sin TTL**, que **muere al recargar**: no puede "borrar" nada días después.
+
+### Causa raíz: el ERP externo, al "aprobar", borra/desmarca el doc
+- ✅ El ERP `aimunayerp.com` (Sistema de Gestión) es un **negocio aparte** que comparte el **MISMO** proyecto Firebase y la **MISMA** base Firestore que el portal (`sistema-gestion-3b225`); entra por **Admin SDK** (sin Firebase Auth → **ignora las reglas**). Al **procesar/"aprobar"** el pedido hace UNA de: **(a)** BORRA el doc de `pedidos_web`, **(b)** le **quita los marcadores WALA** (`web→false`, etc.) o **(c)** le **cambia el formato del `clienteNumeroDocumento`**.
+- ✅ Por eso desaparece de **ambas** vistas, que **solo** leen `pedidos_web`: **Mis Compras** filtra por **DNI exacto** (`searchOrdersByDniInERP`, `where('clienteNumeroDocumento','==', …)`) y **Recepción** por **`esPedidoWala`** (`adminOrders.js`: `canalVenta`/`web`/`activador`/`vendedor === 'Portal Web'`). Los **"días después"** = cuando el **operador del ERP** procesa el pedido. El portal está **diseñado contando con (a)/(b)**: `CartContext.jsx:82-85` interpreta "doc eliminado de `pedidos_web` **O** `web===false`" como **pedido APROBADO**.
+
+### ¿Se pierde el pedido pagado? Probablemente NO (y cómo confirmarlo)
+- ✅ Lo más probable: al procesarlo el ERP lo **mueve a la colección `pedidos`** (la oficial/validada). **Confirmar caso por caso** con la **nueva opción `--buscar`** del script (busca por `numeroPedido`/código/DNI en **ambas** colecciones, `pedidos_web` Y `pedidos`):
+  ```bash
+  node scripts/diagnostico-pedidos.js --project sistema-gestion-3b225 --buscar PD-XXXX
+  ```
+  (`scripts/diagnostico-pedidos.js:147-192`.) **Interpretación:** aparece en `pedidos` → **solo OCULTO** (perdió marcadores/DNI, **arreglable desde WALA**); **no aparece en ninguna** → **el ERP lo BORRÓ** (ya **no** es nuestro código: **coordinar con el ERP**).
+
+### Direcciones de arreglo (NO implementadas — son parte del diagnóstico)
+- ⬜ **FIX lado WALA (lectura):** robustecer **`esPedidoWala`** para que **no dependa de `web===true`**; **buscar también por `userId`/`buyerUid` y/o email** (el checkout **ya guarda `userId`** en `CheckoutPage.jsx:750`, pero la **lectura no lo usa**); **guardar una copia propia** del pedido (p. ej. colección `wala_orders` que el ERP no toque) para **conservar el historial** aunque el ERP borre; y **distinguir "Aprobado" de "no existe"** (hoy `CartContext` asume aprobación por simple ausencia).
+- ⬜ **FIX raíz (ERP — no es nuestro código):** que al **aprobar NO BORRE** el doc, sino que lo **marque conservando** `canalVenta:'Portal Web'` + `clienteNumeroDocumento` **normalizado** + `createdAt`.
+
+### ⚠️ Aviso de seguridad (reglas de borrado)
+- ⬜ `firebase/firestore.rules.produccion:85` tiene **`delete: if isAuth()`** sobre `pedidos_web` (**cualquier logueado podría borrar**). `firebase.json` apunta a la **restrictiva** `firestore.rules:209-213` (**`delete: if isAdmin()`**). **Confirmar que en producción esté la restrictiva**, no la `.produccion` (más laxa). (El ERP entra por Admin SDK e **ignora** las reglas en cualquier caso — riesgo aparte.)
+
 ## [2026-06-29] — "ELEMENTOS CON DISEÑO" v2: CATÁLOGO DE TARJETAS (registro extensible + slug por elemento) + ESTILO DEL NAV por marca (alineación + slider) (Vercel)
 Segunda iteración de la sección **"Elementos con diseño"** (`/admin/elementos-diseno`) sobre la base del 2026-06-28: la pantalla deja de ser un "hub de pestañas" y pasa a ser un **CATÁLOGO DE ELEMENTOS con TARJETAS**, donde **cada elemento tiene su propio slug y su propia página** `/admin/elementos-diseno/{slug}`; y el nav de categorías gana un **"Estilo del nav" por marca** (alineación + modo estático/slider) que se aplica en la tienda. **Frontend DESPLEGADO** por **Vercel** (auto-deploy desde `master`); **el backend NO requiere redeploy** (el nuevo `categoryNavStyle` vive en `tienda_brands`, solo Firestore — **aditivo y retrocompatible**: sin el campo, el nav se ve exactamente como hoy). **No toca carrito, precios ni cobro.** Build verde. Commit `425e9ce`. Guía del dueño en [FUNCIONES-ADMIN.md](docs/wala/FUNCIONES-ADMIN.md) y modelo en [MODELO-DATOS.md](docs/wala/MODELO-DATOS.md) (§3.6).
 

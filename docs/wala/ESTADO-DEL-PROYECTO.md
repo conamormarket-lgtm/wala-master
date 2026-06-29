@@ -16,7 +16,29 @@
 > [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md) (lo que ve y hace el cliente) y
 > [FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md) (lo que controla el administrador).
 
-> ## 📌 Banner de estado (actualizado 2026-06-28)
+> ## 📌 Banner de estado (actualizado 2026-06-29)
+>
+> **DIAGNÓSTICO pedidos que "desaparecen" 2026-06-29 (solo docs/script, NO toca el portal):**
+> síntoma = un pedido del portal **aparece** en "Mis Compras"/"Recepción" al crearse pero **días
+> después YA NO se ve**. Tras leer todo `src/` + `functions/`, **concluyente**: **el portal NUNCA
+> borra pedidos y NO es caché** (no hay **ningún** `deleteDoc`/`.delete()` contra `pedidos_web`/`pedidos`;
+> `createWebOrder` hace un `addDoc` REAL y aborta antes de pagar si falla; `cachePedidos` es memoria
+> sin TTL que muere al recargar). **Causa raíz:** el **ERP externo `aimunayerp.com`** —que comparte
+> el MISMO proyecto/base `sistema-gestion-3b225` y entra por **Admin SDK ignorando las reglas**— al
+> **"aprobar"/procesar** el pedido **BORRA** el doc de `pedidos_web` o le **quita los marcadores
+> WALA** (`web→false`) o le **cambia el formato del DNI**; como ambas vistas **solo** leen
+> `pedidos_web` (Mis Compras por **DNI exacto**, Recepción por **`esPedidoWala`**), deja de verse. Los
+> "días después" = cuando el operador del ERP lo procesa. El pagado **probablemente no se pierde** (se
+> mueve a la colección `pedidos`): **confirmar** con la nueva opción **`--buscar`** del script
+> (`node scripts/diagnostico-pedidos.js --project sistema-gestion-3b225 --buscar PD-XXXX`, busca en
+> **ambas** colecciones). **FIX lado WALA** (lectura, **no implementado**): robustecer `esPedidoWala`
+> (no depender de `web===true`), buscar también por `userId`/email, guardar copia propia
+> (`wala_orders`), distinguir "Aprobado" de "no existe". **FIX raíz (ERP, no es nuestro código):** que
+> al aprobar **no borre** sino marque conservando `canalVenta:'Portal Web'` + DNI normalizado +
+> `createdAt`. **⚠️ Aviso:** `firestore.rules.produccion:85` tiene `delete: if isAuth()` sobre
+> `pedidos_web`; `firebase.json` apunta a la **restrictiva** `firestore.rules:209-213`
+> (`delete: if isAdmin()`) — **confirmar que en prod esté la restrictiva**. Detalle completo en
+> [FLUJO-PEDIDOS.md](./FLUJO-PEDIDOS.md) (§4-bis).
 >
 > **"Elementos con diseño" 2026-06-28 (desplegado, `fc8a0d2`):** cierre de la sesión multi-marca.
 > Se le da al dueño un **lugar propio** para editar el **nav de categorías de cada marca** (las

@@ -273,6 +273,120 @@ Además `derivarMetodoPago` (`estadoCompra.js:95`) deriva una etiqueta de métod
 
 ---
 
+## 4-bis. Por qué un pedido puede DESAPARECER de la vista (diagnóstico 2026-06-29)
+
+> **Síntoma reportado:** un pedido del portal aparece bien en **"Mis Compras"** y/o en
+> **"Recepción"** cuando se crea, pero **días después YA NO se ve** en ninguna de las dos.
+> Diagnóstico **concluyente** tras leer todo `src/` + `functions/`. Resumen: **el portal NO
+> borra nada y NO es caché** — el documento desaparece (o pierde sus marcadores WALA) **cuando
+> el ERP externo procesa el pedido**.
+
+### 4-bis.1 El ciclo: crear → aparece → el ERP lo procesa → desaparece
+
+```
+  1) CLIENTE genera el pedido en el portal
+       createWebOrder → addDoc REAL en pedidos_web/{autoId}   (§1.2)
+       └─ con canalVenta:'Portal Web', web:true, activador:'portal_web', vendedor:'Portal Web'
+       └─ si el addDoc falla, el checkout ABORTA antes de pagar (§1.4) → o se guarda, o no hay pedido
+
+  2) APARECE en ambas vistas (leen pedidos_web, filtran esPedidoWala)
+       • Mis Compras  → searchOrdersByDniInERP(dni)   (§4.1, where clienteNumeroDocumento exacto)
+       • Recepción    → getWalaOrdersForAdmin()        (§4.2, esPedidoWala)
+
+  3) EL OPERADOR DEL ERP externo (aimunayerp.com) "aprueba"/procesa el pedido     ◄── días después
+       el ERP comparte el MISMO proyecto sistema-gestion-3b225 (misma base Firestore),
+       entra por Admin SDK (ignora las reglas) y, al procesarlo, hace UNA de estas:
+         (a) BORRA el doc de pedidos_web, o
+         (b) le QUITA los marcadores WALA (web→false, etc.), o
+         (c) le CAMBIA el formato del clienteNumeroDocumento (rompe el where exacto del DNI)
+
+  4) DESAPARECE de ambas vistas
+       • el doc ya no está en pedidos_web, o ya no cumple esPedidoWala, o ya no casa por DNI
+       • el portal está DISEÑADO contando con (a)/(b): CartContext interpreta
+         "doc eliminado de pedidos_web  O  web===false  =  pedido APROBADO" (CartContext.jsx:82-85)
+```
+
+### 4-bis.2 Lo que NO es (descartado en el código)
+
+- **NO lo borra el portal.** No existe **ni un solo** `deleteDoc`/`.delete()` contra
+  `pedidos_web` ni `pedidos` en todo `src/` + `functions/`. Las Cloud Functions
+  (`processCulqiPayment`/`culqiWebhook`) solo hacen **`set … {merge:true}` idempotente** para
+  marcar el pago (`pagado`/`estadoPago`/`montoPendiente`) — **nunca** borran ni quitan campos.
+- **NO es caché.** `createWebOrder` (`erp/firebase.js:413`) hace un **`addDoc` REAL** a la nube,
+  y el checkout **aborta antes de pagar** si la escritura falla (§1.4) → el pedido **sí queda
+  guardado**. El `cachePedidos` de `usePedidos.js:20` es un **objeto en memoria del módulo, sin
+  TTL**, que **muere al recargar la página**: no puede "borrar" nada días después.
+- **NO es un fallo de guardado.** Ese caso ya está cubierto (fix `de1594b`, §1.4): si no se
+  guarda, no hay pedido **desde el inicio** — no es un pedido que "aparece y luego se va".
+
+### 4-bis.3 Causa raíz: el ERP externo, al procesar, BORRA o desmarca el doc
+
+El **ERP `aimunayerp.com`** (Sistema de Gestión) es un **negocio aparte** que comparte el
+**MISMO** proyecto Firebase y la **MISMA** base Firestore que el portal (`sistema-gestion-3b225`,
+ver topología en la cabecera de este doc). Entra por **Admin SDK** (sin Firebase Auth →
+**ignora las reglas**). Cuando su operador **"aprueba"/procesa** el pedido, el doc de
+`pedidos_web` **deja de ser visible para el portal**, y por eso desaparece de **ambas** lecturas,
+que **solo** leen `pedidos_web`:
+
+- **Mis Compras** filtra por **DNI exacto** (`searchOrdersByDniInERP`, §4.1): si el ERP cambia
+  el formato del `clienteNumeroDocumento`, el `where('==', dniNorm)` deja de casar.
+- **Recepción** filtra por **`esPedidoWala`** (`adminOrders.js`, §4.2): es `true` si
+  `canalVenta`/`web`/`activador`/`vendedor` valen `'Portal Web'`; si el ERP **borra el doc** o le
+  **quita esos marcadores** (p. ej. `web → false`), el pedido **deja de cumplir el filtro**.
+
+Los **"días después"** del síntoma = el momento en que **el operador del ERP procesa** el
+pedido. No es un evento del portal: es un evento del **otro** sistema sobre la base compartida.
+
+### 4-bis.4 ¿Se PIERDE el pedido pagado? (probablemente NO)
+
+Lo más probable es que el pedido **no se pierda**: al procesarlo, el ERP normalmente lo **mueve
+a la colección `pedidos`** (la "oficial"/validada del ERP). Para **confirmarlo** caso por caso:
+
+- **Script de diagnóstico** (nueva opción `--buscar`, busca en **ambas** colecciones por
+  `numeroPedido`/código/DNI):
+
+  ```bash
+  node scripts/diagnostico-pedidos.js --project sistema-gestion-3b225 --buscar PD-XXXX
+  ```
+
+  (`scripts/diagnostico-pedidos.js:147-192`.) O mirar directamente en la **consola Firestore**.
+- **Interpretación del resultado:**
+  - aparece en **`pedidos`** → **solo está OCULTO** para las vistas WALA (perdió los marcadores o
+    el DNI): es **arreglable desde el lado WALA** (ver §4-bis.5, FIX de lectura).
+  - **no aparece en NINGUNA** colección → **el ERP lo BORRÓ**: ya **no** es nuestro código,
+    hay que **coordinar con el ERP** (ver §4-bis.5, FIX raíz).
+
+### 4-bis.5 Mitigaciones posibles (no implementadas aún — diagnóstico)
+
+> Esta sección es **diagnóstico**, no un cambio liberado. Lista las direcciones de arreglo.
+
+- **FIX lado WALA (lectura — robustecer la visibilidad):**
+  - **Robustecer `esPedidoWala`** para que **no dependa de `web===true`** (que el ERP puede
+    apagar): bastaría con cualquiera de `canalVenta`/`activador`/`vendedor` = `'Portal Web'`.
+  - **Buscar también por `userId`/`buyerUid` y/o email**, no solo por DNI exacto: el checkout
+    **ya guarda `userId`** en el pedido (`CheckoutPage.jsx:750`) pero la **lectura no lo usa** —
+    sería un segundo camino de rescate inmune al cambio de formato del DNI.
+  - **Guardar una copia propia de WALA** del pedido (p. ej. una colección `wala_orders` que el
+    ERP no toque) para **conservar el historial** del cliente **aunque el ERP borre/desmarque** el
+    doc de `pedidos_web`.
+  - **Distinguir "Aprobado" de "no existe"**: hoy `CartContext` trata "doc ausente" como
+    "aprobado" (`CartContext.jsx:82-85`); convendría no asumir aprobación por simple ausencia.
+- **FIX raíz (ERP — NO es nuestro código):** que el ERP, **al aprobar, NO borre** el doc de
+  `pedidos_web` sino que lo **marque conservando** `canalVenta:'Portal Web'` + el
+  `clienteNumeroDocumento` **normalizado** + `createdAt`. Esto **elimina** la desaparición de
+  raíz; lo demás (lado WALA) son **redes de seguridad**.
+
+### 4-bis.6 ⚠️ Aviso de seguridad (reglas de borrado)
+
+Existe `firebase/firestore.rules.produccion:85` con **`delete: if isAuth()`** sobre
+`pedidos_web` → **cualquier usuario logueado podría borrar** pedidos. El `firebase.json` apunta a
+la versión **restrictiva** `firestore.rules:209-213` (**`delete: if isAdmin()`**). **Confirmar
+que en producción esté la restrictiva**, no la de `.produccion` (más laxa). Nota: el ERP entra por
+**Admin SDK**, que **ignora** las reglas en cualquier caso — esto es un riesgo aparte, del lado
+del **portal**.
+
+---
+
 ## 5. Gotchas (trampas conocidas)
 
 ### 5.1 `normalizarPedidoParaVista` DESCARTA campos → usar `_raw`
