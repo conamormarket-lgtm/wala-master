@@ -1009,6 +1009,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
               productsError={catalogErrorResolved}
               emptyMessage={emptyMessage}
               categories={categoriesData}
+              // ── Aislamiento del sidebar por marca (multimarca) ──────────────
+              // Con pageBrandId, el sidebar deriva sus facetas SOLO de los
+              // productos de la marca (patrón categories_nav: :474-501). Sin
+              // pageBrandId (Con Amor / páginas globales) llega null y el
+              // sidebar mantiene EXACTAMENTE las listas globales de hoy.
+              brandId={pageBrandId}
               layoutConfig={storeConfig?.layout}
               title={(!isEmpty && s.title) ? s.title : undefined}
               paginationProps={catalogPaginationProps}

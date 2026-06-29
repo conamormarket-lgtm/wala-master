@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Filter, X } from 'lucide-react';
 import ProductGrid from './ProductGrid';
 import styles from './SidebarCatalogLayout.module.css';
@@ -10,6 +10,7 @@ import { getBrands } from '../../../services/brands';
 import { getTags } from '../../../services/tags';
 import { getCharacters } from '../../../services/characters';
 import { getProductTypes } from '../../../services/productTypes';
+import { getProductsByBrand } from '../../../services/products';
 // i18n: t() para textos estáticos; <T> para nombres dinámicos de la BD.
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { T } from '../../../i18n/useTranslatedText';
@@ -20,6 +21,16 @@ const SidebarCatalogLayout = ({
   productsError,
   emptyMessage,
   categories,
+  // ── Marca de la página (multimarca) ────────────────────────────────────
+  // Si `brandId` está presente (página de marca tipo /MUSSA, /MUEBLERIA), el
+  // sidebar AÍSLA sus facetas a esa marca: en vez de mostrar las listas
+  // GLOBALES de categorías/colecciones/etiquetas/personajes/tipos (las de Con
+  // Amor), DERIVA cada faceta SOLO de las taxonomías presentes en los productos
+  // de la marca y las cruza con las listas globales para nombre/imagen (mismo
+  // patrón que el categories_nav en TiendaPage.jsx:474-501). Si `brandId` es
+  // null/ausente (Con Amor / páginas globales) el comportamiento es EXACTAMENTE
+  // el de hoy: listas globales completas (retrocompatible).
+  brandId = null,
   layoutConfig,
   title,
   // ── Paginación servidor (Fase 3 · C-1) — opcionales, retrocompatibles ──
@@ -110,6 +121,23 @@ const SidebarCatalogLayout = ({
   const { data: characters } = useQuery({ queryKey: ['characters'], queryFn: async () => (await getCharacters()).data });
   const { data: productTypes } = useQuery({ queryKey: ['productTypes'], queryFn: async () => (await getProductTypes()).data });
 
+  // ── Productos de la marca para derivar las facetas (multimarca) ─────────
+  // Solo cuando hay `brandId`. Igual que el categories_nav (TiendaPage.jsx:468),
+  // se piden TODOS los productos de la marca (no las páginas paginadas que llegan
+  // en productsData, que pueden estar incompletas) para conocer el conjunto REAL
+  // de taxonomías presentes en la marca. Sin brandId no se pide nada (enabled:false)
+  // y las facetas se quedan con las listas globales de hoy.
+  const { data: brandProducts } = useQuery({
+    queryKey: ['sidebar-brand-products', brandId],
+    queryFn: async () => {
+      const { data, error } = await getProductsByBrand(brandId);
+      if (error || !Array.isArray(data)) return [];
+      return data;
+    },
+    enabled: !!brandId,
+    staleTime: 10 * 60 * 1000,
+  });
+
   const handleCategoryClick = (catId) => {
     setActiveCategory(catId === activeCategory ? null : catId);
     setIsMobileDrawerOpen(false);
@@ -138,6 +166,62 @@ const SidebarCatalogLayout = ({
   };
 
   const idOf = (c) => (c && typeof c === 'object') ? (c.id || c.slug || c.name || '') : c;
+
+  // ── AISLAMIENTO DE FACETAS POR MARCA (multimarca) ──────────────────────
+  // Réplica del patrón del categories_nav (TiendaPage.jsx:474-501) para CADA
+  // taxonomía. Cuando hay `brandId`:
+  //   (1) se recolectan los ids DISTINTOS presentes en los PRODUCTOS de la marca
+  //       (brandProducts), con la MISMA extracción idOf que usa el filtro de abajo;
+  //   (2) se cruza cada id contra su lista GLOBAL (la fuente canónica del paso 1:
+  //       categories=prop, collections/tags/characters/productTypes de los servicios)
+  //       para obtener name/imageUrl, descartando huérfanos (id sin doc global);
+  //   (3) se preserva el ORDEN de la lista global (filter sobre la global), de modo
+  //       que el render no cambia salvo por las entradas ocultas.
+  // Cuando NO hay `brandId`: se devuelve la lista global TAL CUAL (idéntico a hoy).
+  //
+  // Helper genérico: filtra `globalList` dejando solo los docs cuyo id esté en
+  // `presentIds`. Si `brandId` es null/ausente, devuelve la global sin tocar.
+  const filtrarPorMarca = (globalList, presentIds) => {
+    const lista = globalList || [];
+    if (!brandId) return lista; // Retrocompatible: sin marca, lista global completa.
+    return lista.filter((doc) => presentIds.has(idOf(doc)));
+  };
+
+  // Conjuntos de ids presentes en los productos de la marca, por taxonomía.
+  // Solo se calculan cuando hay brandId (si no, quedan vacíos pero no se usan).
+  const idsPresentesMarca = useMemo(() => {
+    const cats = new Set();
+    const cols = new Set();
+    const tgs = new Set();
+    const chars = new Set();
+    const types = new Set();
+    if (brandId) {
+      (brandProducts || []).forEach((p) => {
+        // Categorías: array categories[] + fallback legacy (categoryId/category),
+        // exactamente como el filtro de cliente de abajo y el nav.
+        [
+          ...(Array.isArray(p.categories) ? p.categories.map(idOf) : []),
+          p.categoryId,
+          p.category,
+        ].forEach((c) => { const v = idOf(c); if (v) cats.add(v); });
+        (Array.isArray(p.collections) ? p.collections : []).forEach((c) => { const v = idOf(c); if (v) cols.add(v); });
+        (Array.isArray(p.tags) ? p.tags : []).forEach((c) => { const v = idOf(c); if (v) tgs.add(v); });
+        (Array.isArray(p.characters) ? p.characters : []).forEach((c) => { const v = idOf(c); if (v) chars.add(v); });
+        // productType es ESCALAR (products.js:269), no array.
+        const pt = idOf(p.productType); if (pt) types.add(pt);
+      });
+    }
+    return { cats, cols, tgs, chars, types };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brandId, brandProducts]);
+
+  // Listas EFECTIVAS que consume el render. Con brandId: acotadas a la marca.
+  // Sin brandId: las globales de hoy (categories=prop; resto de los servicios).
+  const categoriesEffective = filtrarPorMarca(categories, idsPresentesMarca.cats);
+  const collectionsEffective = filtrarPorMarca(collections, idsPresentesMarca.cols);
+  const tagsEffective = filtrarPorMarca(tags, idsPresentesMarca.tgs);
+  const charactersEffective = filtrarPorMarca(characters, idsPresentesMarca.chars);
+  const productTypesEffective = filtrarPorMarca(productTypes, idsPresentesMarca.types);
 
   // No existe un campo/colección propio de "temporadas" en el modelo de datos.
   // Las temporadas se modelan como colecciones (drops estacionales: Verano, Navidad, etc.),
@@ -174,7 +258,10 @@ const SidebarCatalogLayout = ({
     return SEASON_KEYWORD_PREFIXES.some(p => tokens.some(t => t.startsWith(p)));
   };
 
-  const allCollections = collections || [];
+  // Con brandId, parte de las colecciones acotadas a la marca; sin brandId, de las
+  // globales (collectionsEffective ya resuelve ambos casos). Temporadas/colecciones
+  // se siguen derivando de aquí, por lo que también quedan aisladas por marca.
+  const allCollections = collectionsEffective;
   // Temporadas = colecciones cuyo nombre coincide con una palabra clave estacional.
   const seasonCollections = allCollections.filter(isSeasonCollection);
   // Colecciones (no estacionales). Si ninguna coincide como temporada, aquí salen todas.
@@ -273,7 +360,7 @@ const SidebarCatalogLayout = ({
               >
                 {t('cat.todasCategorias', 'Todas las categorías')}
               </li>
-              {(categories || []).map(cat => (
+              {(categoriesEffective || []).map(cat => (
                 <li
                   key={cat.id}
                   className={activeCategory === cat.id ? styles.activeItem : ''}
@@ -320,7 +407,10 @@ const SidebarCatalogLayout = ({
             </GrupoSidebar>
           )}
           
-          {(brands || []).length > 0 && (
+          {/* El filtro "Marcas" NO se muestra dentro de la tienda de UNA marca
+              (brandId): ahí la página ya está fijada a esa marca. Solo aparece en
+              páginas globales (sin brandId), como hoy. */}
+          {!brandId && (brands || []).length > 0 && (
             <GrupoSidebar
               id="marcas"
               titulo={t('cat.marcas', 'Marcas')}
@@ -338,7 +428,7 @@ const SidebarCatalogLayout = ({
           )}
           
 
-          {(productTypes || []).length > 0 && (
+          {(productTypesEffective || []).length > 0 && (
             <GrupoSidebar
               id="tipoProducto"
               titulo={t('cat.tipoProducto', 'Tipo de Producto')}
@@ -346,7 +436,7 @@ const SidebarCatalogLayout = ({
             >
               <ul className={styles.categoryList}>
                 <li className={activeType === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveType, null)}>{t('cat.todos', 'Todos')}</li>
-                {(productTypes || []).map(pt => (
+                {(productTypesEffective || []).map(pt => (
                   <li key={pt.id} className={activeType === pt.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveType, pt.id)}>
                     <T>{pt.name}</T>
                   </li>
@@ -355,7 +445,7 @@ const SidebarCatalogLayout = ({
             </GrupoSidebar>
           )}
 
-          {(tags || []).length > 0 && (
+          {(tagsEffective || []).length > 0 && (
             <GrupoSidebar
               id="etiquetas"
               titulo={t('cat.etiquetas', 'Etiquetas')}
@@ -363,7 +453,7 @@ const SidebarCatalogLayout = ({
             >
               <ul className={styles.categoryList}>
                 <li className={activeTag === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveTag, null)}>{t('cat.todas', 'Todas')}</li>
-                {(tags || []).map(tag => (
+                {(tagsEffective || []).map(tag => (
                   <li key={tag.id} className={activeTag === tag.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveTag, tag.id)}>
                     <T>{tag.name}</T>
                   </li>
@@ -372,7 +462,7 @@ const SidebarCatalogLayout = ({
             </GrupoSidebar>
           )}
 
-          {(characters || []).length > 0 && (
+          {(charactersEffective || []).length > 0 && (
             <GrupoSidebar
               id="personajes"
               titulo={t('cat.personajes', 'Personajes')}
@@ -380,7 +470,7 @@ const SidebarCatalogLayout = ({
             >
               <ul className={styles.categoryList}>
                 <li className={activeCharacter === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCharacter, null)}>{t('cat.todos', 'Todos')}</li>
-                {(characters || []).map(c => (
+                {(charactersEffective || []).map(c => (
                   <li key={c.id} className={activeCharacter === c.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveCharacter, c.id)}>
                     <T>{c.name}</T>
                   </li>
