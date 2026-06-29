@@ -42,6 +42,8 @@ const projectId =
   process.env.GCLOUD_PROJECT ||
   'sistema-gestion-3b225';
 const PER_COLLECTION = getOpt('--limit') ? parseInt(getOpt('--limit'), 10) : 500;
+// --buscar <texto>: busca un pedido por código/numeroPedido/dni en pedidos_web y pedidos.
+const BUSCAR = getOpt('--buscar');
 
 initializeApp({ credential: applicationDefault(), projectId });
 const db = getFirestore();
@@ -140,8 +142,56 @@ async function analizar(coll) {
   muestras.forEach((m, i) => console.log(`   [${i}] ${JSON.stringify(m)}`));
 }
 
+// Busca un pedido concreto por código/numeroPedido/dni en AMBAS colecciones y
+// muestra sus campos clave para saber si SIGUE EN LA NUBE o fue BORRADO.
+async function buscarPedido(term) {
+  const t = String(term).trim().toLowerCase();
+  console.log(`\n══════════════════════════════════════════════════════════`);
+  console.log(`BÚSQUEDA de pedido que contenga: "${term}"`);
+  console.log(`══════════════════════════════════════════════════════════`);
+  let encontrados = 0;
+  for (const coll of ['pedidos_web', 'pedidos']) {
+    let snap;
+    try {
+      snap = await db.collection(coll).limit(5000).get();
+    } catch (e) {
+      console.log(`  ❌ ${coll}: ${e.message}`);
+      continue;
+    }
+    snap.forEach((doc) => {
+      const d = doc.data() || {};
+      const campos = [
+        doc.id, d.numeroPedido, d.portalPseudoOrderId, d.codigo,
+        d.dni, d.dniRaw, d.clienteNumeroDocumento,
+      ].map((x) => String(x == null ? '' : x).toLowerCase());
+      if (!campos.some((c) => c.includes(t))) return;
+      encontrados += 1;
+      console.log(`\n  ✅ ENCONTRADO en "${coll}" (docId=${doc.id})`);
+      console.log(`     numeroPedido=${d.numeroPedido}  codigo=${d.codigo || d.portalPseudoOrderId}`);
+      console.log(`     canalVenta=${d.canalVenta}  web=${d.web}  activador=${d.activador}  vendedor=${d.vendedor}`);
+      console.log(`     → esPedidoWala=${esPedidoWala(d)} (si es false, por eso NO sale en Recepción)`);
+      console.log(`     estadoValidacion=${d.estadoValidacion}  estadoGeneral=${d.estadoGeneral || d.status}`);
+      console.log(`     pagado=${d.pagado}  estadoPago=${d.estadoPago}  total=${d.montoTotal ?? d.total}  montoPendiente=${d.montoPendiente}`);
+      console.log(`     dni=${d.dni}  dniRaw=${d.dniRaw}  clienteNumeroDocumento=${d.clienteNumeroDocumento}`);
+      console.log(`     cliente=${d.clienteNombreCompleto || d.clienteNombre}  createdAt(tipo)=${tipoCreatedAt(d.createdAt)}`);
+    });
+  }
+  if (encontrados === 0) {
+    console.log(`\n  ❌ NO existe ningún pedido con "${term}" en pedidos_web NI en pedidos.`);
+    console.log(`     → No está en la nube: o nunca se guardó, o fue BORRADO de la base.`);
+  } else {
+    console.log(`\n  Total coincidencias: ${encontrados}.`);
+    console.log(`  Si aparece pero con esPedidoWala=false o sin dni que case con tu perfil,`);
+    console.log(`  por eso no se ve en el panel/Mis Compras aunque SÍ siga en la nube.`);
+  }
+}
+
 (async () => {
   console.log(`Proyecto: ${projectId}  ·  base: (default)`);
+  if (BUSCAR) {
+    await buscarPedido(BUSCAR);
+    process.exit(0);
+  }
   await analizar('pedidos_web');
   await analizar('pedidos');
   console.log(`\n── LECTURA ──`);
