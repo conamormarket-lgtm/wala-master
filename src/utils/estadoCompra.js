@@ -18,6 +18,10 @@
 // externo, y no rompen si faltan campos.
 
 import { estadoToKey } from './constants';
+// WALA = FUENTE DE VERDAD: estadoWalaADisplay traduce wala_pedidos.estadoWala
+// (pendiente_pago/pagado/en_preparacion/enviado/entregado/cancelado) a label/color/paso.
+// Se usa para que "Mis Compras" y "Recepción" muestren el estado PROPIO de WALA.
+import { estadoWalaADisplay } from '../services/walaOrders';
 
 /**
  * Devuelve las líneas de producto de un pedido como array, soportando tanto el
@@ -131,45 +135,38 @@ function derivarMetodoPago(pedido, paid) {
  * ──────────────────────────────────────────────────────────────────────────── */
 
 /**
- * Deriva un estado de compra unificado y legible combinando DOS ejes:
- *   1) la etapa de producción (estadoGeneral / status / estado), y
- *   2) si el pedido está pagado o no.
- *
- * @param {object} pedido
- * @returns {{
- *   key: string, label: string, color: string,
- *   paid: boolean, paymentMethod: (string|null), paymentLabel: string
- * }}
+ * RANGO de avance de cada `key` de estado de compra. Sirve para elegir el estado
+ * MÁS AVANZADO cuando coexisten dos fuentes para el mismo pedido (el doc VIVO del
+ * ERP y el estado propio de WALA en wala_pedidos). Mayor número = más avanzado.
+ * `anulado` queda fuera de la línea (se trata aparte, es terminal alterno).
  */
-export function derivarEstadoCompra(pedido) {
-  const safe = pedido && typeof pedido === 'object' ? pedido : {};
+const RANGO_ESTADO = {
+  anulado: -1,
+  por_confirmar_pago: 0,
+  pago_confirmado: 1,
+  en_preparacion: 2,
+  entregado: 3,
+};
 
+/** Rango seguro de una key (desconocida = 0, el más bajo no-anulado). */
+function rangoDe(key) {
+  return RANGO_ESTADO[key] != null ? RANGO_ESTADO[key] : 0;
+}
+
+/**
+ * Deriva el estado de compra SOLO a partir de la etapa de producción del ERP
+ * (estadoGeneral/status/estado) + si está pagado. Es la derivación HISTÓRICA del
+ * portal para pedidos VIVOS del ERP; no conoce wala_pedidos. Devuelve null cuando
+ * NO hay señal de etapa NI de pago en el doc (para que el llamador pueda preferir
+ * el estado propio de WALA en pedidos solo-espejo).
+ *
+ * @param {object} safe
+ * @param {boolean} [permitirNull=false] - Si true, devuelve null cuando no hay etapa ni pago.
+ * @returns {{ key:string, label:string, color:string, paid:boolean }|null}
+ */
+function derivarEstadoErp(safe, permitirNull = false) {
   // Eje 1: etapa de producción normalizada a key (p.ej. "impresion", "reparto").
   const etapa = estadoToKey(safe.estadoGeneral || safe.status || safe.estado) || '';
-
-  // ── CASO ESPEJO (red de seguridad) ─────────────────────────────────────────
-  // Un pedido que viene SOLO de la copia espejo (_fromMirror) y NO trae etapa de
-  // producción significa que su doc VIVO ya no existe: el ERP lo absorbió/aprobó
-  // al validarlo (por eso desapareció de pedidos/pedidos_web). En "Mis Compras"
-  // debe verse CONFIRMADO/PROCESADO (verde), NUNCA "Por confirmar pago" ni error.
-  // El espejo no guarda estadoGeneral avanzado, así que sin esta rama caería por
-  // defecto a 'por_confirmar_pago'. Solo aplica a copias de respaldo: los pedidos
-  // VIVOS (sin _fromMirror) conservan su derivación normal intacta.
-  const esSoloEspejo = safe._fromMirror === true || safe.fuente === 'wala-mirror';
-  if (esSoloEspejo && ETAPAS_INICIALES.includes(etapa)) {
-    const { paymentMethod, paymentLabel } = derivarMetodoPago(safe, true);
-    return {
-      key: 'pago_confirmado',
-      label: 'Confirmado',
-      color: '#16a34a', // verde (procesado/en el sistema de gestión)
-      paid: true,
-      paymentMethod,
-      // Mensaje claro de que el pedido ya está en el ERP/sistema de gestión.
-      paymentLabel: paymentLabel === 'Pendiente de pago'
-        ? 'En tu sistema de gestión'
-        : paymentLabel,
-    };
-  }
 
   // estadoToKey recorta el prefijo "en " y corrompe literales como "Entregado"
   // (-> "tregado"); por eso comprobamos también el texto crudo para terminal/anulado.
@@ -180,58 +177,129 @@ export function derivarEstadoCompra(pedido) {
   // Eje 2: ¿pagado?
   const paid = esPagado(safe);
 
-  // El método/etiqueta de pago se calcula siempre; el `paid` que se le pasa se
-  // ajusta por caso más abajo cuando la etapa fuerza un estado "pagado".
-  let estado;
-
   if (etapa === 'anulado' || esAnuladoRaw) {
-    estado = {
-      key: 'anulado',
-      label: 'Anulado',
-      color: '#6b7280', // gris
-      paid,
-    };
-  } else if (ETAPAS_FINALIZADAS.includes(etapa) || esFinalizadoRaw) {
+    return { key: 'anulado', label: 'Anulado', color: '#6b7280', paid }; // gris
+  }
+  if (ETAPAS_FINALIZADAS.includes(etapa) || esFinalizadoRaw) {
     // Si llegó a entregado/finalizado, asumimos pago completado.
-    estado = {
-      key: 'entregado',
-      label: 'Entregado',
-      color: '#16a34a', // verde
-      paid: true,
-    };
-  } else if (etapa && !ETAPAS_INICIALES.includes(etapa)) {
+    return { key: 'entregado', label: 'Entregado', color: '#16a34a', paid: true }; // verde
+  }
+  if (etapa && !ETAPAS_INICIALES.includes(etapa)) {
     // Está en alguna etapa intermedia de producción/reparto.
-    estado = {
+    return {
       key: 'en_preparacion',
       label: etapa === 'reparto' ? 'En camino' : 'En preparación',
       color: '#7C3AED', // violeta (Aurora Violeta Serena)
       paid,
     };
-  } else if (paid) {
+  }
+  if (paid) {
     // Sin etapa avanzada pero el pago ya está confirmado.
-    estado = {
-      key: 'pago_confirmado',
-      label: 'Pago confirmado',
-      color: '#2563eb', // azul
-      paid: true,
-    };
+    return { key: 'pago_confirmado', label: 'Pago confirmado', color: '#2563eb', paid: true }; // azul
+  }
+  // Sin etapa avanzada y sin señal de pago.
+  if (permitirNull) return null;
+  return { key: 'por_confirmar_pago', label: 'Por confirmar pago', color: '#d97706', paid: false }; // ámbar
+}
+
+/**
+ * Traduce un wala_pedidos.estadoWala al MISMO vocabulario de `key` que usa la UI
+ * de "Mis Compras"/"Recepción" (por_confirmar_pago/pago_confirmado/en_preparacion/
+ * entregado/anulado). Reusa estadoWalaADisplay (label/color de marca de WALA) y
+ * añade la `key` y el flag `paid` que el resto del módulo espera.
+ *
+ * Mapeo (decisión del dueño):
+ *   pendiente_pago → por_confirmar_pago (ámbar "Por confirmar pago", no pagado)
+ *   pagado         → pago_confirmado    (azul "Pagado", pagado)
+ *   en_preparacion → en_preparacion     ("En preparación")
+ *   enviado        → en_preparacion     ("Enviado"/"En camino")
+ *   entregado      → entregado          (verde "Entregado")
+ *   cancelado      → anulado            (gris "Cancelado")
+ *
+ * @param {string} estadoWala
+ * @returns {{ key:string, label:string, color:string, paid:boolean }|null}
+ */
+function estadoWalaAEstadoCompra(estadoWala) {
+  if (!estadoWala) return null;
+  const disp = estadoWalaADisplay(estadoWala); // { label, color(semáforo), paso }
+  const mapa = {
+    pendiente_pago: { key: 'por_confirmar_pago', color: '#d97706', paid: false }, // ámbar
+    pagado: { key: 'pago_confirmado', color: '#2563eb', paid: true }, // azul
+    en_preparacion: { key: 'en_preparacion', color: '#7C3AED', paid: true }, // violeta
+    enviado: { key: 'en_preparacion', color: '#7C3AED', paid: true }, // violeta (en camino)
+    entregado: { key: 'entregado', color: '#16a34a', paid: true }, // verde
+    cancelado: { key: 'anulado', color: '#6b7280', paid: false }, // gris
+  };
+  const base = mapa[estadoWala];
+  if (!base) return null;
+  // El label legible sale de estadoWalaADisplay (textos propios de WALA).
+  return { key: base.key, label: disp.label, color: base.color, paid: base.paid };
+}
+
+/**
+ * Deriva un estado de compra unificado y legible.
+ *
+ * WALA = FUENTE DE VERDAD: si el pedido trae estado propio de WALA
+ * (wala_pedidos.estadoWala en pedidos solo-espejo, o `_walaEstado` adjuntado al
+ * doc VIVO del ERP en searchOrdersByDniInERP/adminOrders), se combina con la
+ * derivación histórica del ERP (etapa de producción + pago) y se muestra el
+ * estado MÁS AVANZADO entre ambos (no se degrada un "Entregado/Finalizado" del
+ * ERP a "pagado", ni viceversa). Para pedidos VIVOS que NO son de WALA (sin
+ * estadoWala) el comportamiento es EXACTAMENTE el histórico.
+ *
+ * @param {object} pedido
+ * @returns {{
+ *   key: string, label: string, color: string,
+ *   paid: boolean, paymentMethod: (string|null), paymentLabel: string
+ * }}
+ */
+export function derivarEstadoCompra(pedido) {
+  const safe = pedido && typeof pedido === 'object' ? pedido : {};
+
+  // ── Estado propio de WALA (si el pedido lo trae) ───────────────────────────
+  // Dos orígenes posibles:
+  //   - Pedido SOLO-ESPEJO: el doc crudo de wala_pedidos trae `estadoWala`.
+  //   - Doc VIVO enriquecido: searchOrdersByDniInERP/adminOrders adjuntaron
+  //     `_walaEstado` (y `_walaPagado`) al doc vivo del ERP.
+  const walaEstadoRaw = safe.estadoWala || safe._walaEstado || null;
+  const estadoWala = walaEstadoRaw ? estadoWalaAEstadoCompra(walaEstadoRaw) : null;
+
+  // ── Estado del ERP (etapa de producción + pago) ────────────────────────────
+  // Si hay estado de WALA, permitimos null cuando el ERP no aporta señal (así un
+  // pedido solo-espejo pendiente_pago NO se fuerza a "por_confirmar_pago" del ERP
+  // sino que toma el estado de WALA). Si NO hay estado de WALA, mantenemos el
+  // comportamiento histórico (nunca null → default "por_confirmar_pago").
+  const estadoErp = derivarEstadoErp(safe, /* permitirNull */ !!estadoWala);
+
+  // ── Elegir el estado a mostrar ─────────────────────────────────────────────
+  // Regla de fusión: el ESTADO mostrado = el MÁS AVANZADO entre el del ERP y el de
+  // WALA. `anulado/cancelado` es terminal: si CUALQUIER fuente lo marca, gana
+  // (un pedido cancelado no debe verse "en preparación").
+  let estado;
+  if (estadoErp && estadoWala) {
+    if (estadoErp.key === 'anulado' || estadoWala.key === 'anulado') {
+      // Cancelación terminal: preferimos el que esté anulado (gris).
+      estado = estadoErp.key === 'anulado' ? estadoErp : estadoWala;
+    } else {
+      // Ambos en la línea normal: gana el de mayor rango (no degradar).
+      estado = rangoDe(estadoWala.key) >= rangoDe(estadoErp.key) ? estadoWala : estadoErp;
+    }
   } else {
-    // Recién creado y sin confirmación de pago.
-    estado = {
-      key: 'por_confirmar_pago',
-      label: 'Por confirmar pago',
-      color: '#d97706', // ámbar
-      paid: false,
-    };
+    // Solo una fuente disponible (o ninguna → default del ERP).
+    estado = estadoWala || estadoErp;
   }
 
-  const { paymentMethod, paymentLabel } = derivarMetodoPago(safe, estado.paid);
+  // `paid`: pagado si la fuente elegida lo indica, o si WALA dice pagado (el pago
+  // se sincroniza en wala_pedidos), o si el doc vivo trae _walaPagado.
+  const paid = !!(estado.paid || (estadoWala && estadoWala.paid) || safe._walaPagado === true);
+
+  const { paymentMethod, paymentLabel } = derivarMetodoPago(safe, paid);
 
   return {
     key: estado.key,
     label: estado.label,
     color: estado.color,
-    paid: estado.paid,
+    paid,
     paymentMethod,
     paymentLabel,
   };

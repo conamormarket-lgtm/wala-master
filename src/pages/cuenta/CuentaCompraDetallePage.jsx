@@ -118,7 +118,27 @@ const CuentaCompraDetallePage = () => {
 
   // Pedido efectivo: preferimos el crudo del ERP (detalle completo); si no, el
   // crudo adjunto (_raw) del normalizado de usePedidos; y por último el normalizado.
-  const pedido = pedidoRaw || pedidoNormalizado?._raw || pedidoNormalizado;
+  //
+  // WALA = FUENTE DE VERDAD: el crudo del ERP (pedidoRaw) se carga fresco por id y
+  // NO trae el estadoWala que searchOrdersByDniInERP adjuntó al doc de la LISTA
+  // (_walaEstado/_walaPagado). Para que el detalle muestre el MISMO estado que la
+  // lista (regla del más avanzado, vía derivarEstadoCompra), propagamos el estado
+  // propio de WALA desde el crudo de la lista al pedido efectivo. Es ADITIVO: no
+  // toca montos ni la lógica de pago; solo el estado mostrado.
+  const crudoLista = pedidoNormalizado?._raw || null;
+  const pedidoBase = pedidoRaw || crudoLista || pedidoNormalizado;
+  const pedido = useMemo(() => {
+    if (!pedidoBase) return pedidoBase;
+    const walaEstado =
+      pedidoBase.estadoWala ?? pedidoBase._walaEstado ?? crudoLista?.estadoWala ?? crudoLista?._walaEstado ?? null;
+    const walaPagado = pedidoBase._walaPagado === true || crudoLista?._walaPagado === true || crudoLista?.pagado === true;
+    if (walaEstado == null && !walaPagado) return pedidoBase;
+    return {
+      ...pedidoBase,
+      ...(walaEstado != null && { _walaEstado: walaEstado }),
+      ...(walaPagado && { _walaPagado: true }),
+    };
+  }, [pedidoBase, crudoLista]);
 
   // 3) Catálogo (imágenes + inferencia de marca) y marcas (números de asesor).
   const { data: catalogo = [] } = useProducts([]);

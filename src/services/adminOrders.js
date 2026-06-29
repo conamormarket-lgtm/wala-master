@@ -443,17 +443,35 @@ export async function getWalaOrdersForAdmin({
     return true;
   });
 
-  // MERGE con la COPIA-ESPEJO: el doc VIVO siempre gana. Solo incorporamos las
-  // copias cuyo doc vivo YA NO EXISTE en el ERP (el ERP las absorbió/borró al
-  // aprobarlas). Esas copias solo-espejo se MARCAN como _procesadoErp para que la
-  // UI muestre un badge "Procesado en ERP": el admin no las confunde con pendientes
-  // pero tampoco las pierde de vista. Dedup interno del espejo por la misma clave.
+  // MERGE con wala_pedidos (FUENTE DE VERDAD de PRESENCIA y de estadoWala):
+  //   - Si existe un doc VIVO con la misma clave, el vivo conserva su etapa de
+  //     producción del ERP y le ADJUNTAMOS el estadoWala/pagado del espejo
+  //     (_walaEstado/_walaPagado) para que derivarEstadoCompra muestre el estado
+  //     MÁS AVANZADO entre ambos (no degradar). No se duplica.
+  //   - Si NO existe doc vivo (el ERP lo absorbió/borró al aprobarlo), incorporamos
+  //     la copia solo-espejo y la MARCAMOS como _procesadoErp para el badge
+  //     "Procesado en ERP": presencia garantizada sin confundirla con un pendiente.
+  // Dedup interno del espejo por la misma clave.
+  // Índice de los docs vivos por clave (para adjuntarles el estadoWala).
+  const vivosPorClave = new Map();
+  for (const v of vivos) {
+    const c = claveDeNegocio(v);
+    if (c && !vivosPorClave.has(c)) vivosPorClave.set(c, v);
+  }
   const soloEspejo = [];
   const clavesEspejoVistas = new Set();
   for (const copia of espejo) {
     const clave = claveDeNegocio(copia);
-    // Si existe un doc vivo con esta clave, el vivo gana: descartamos la copia.
-    if (clave && clavesVivas.has(clave)) continue;
+    // Si existe un doc vivo con esta clave, el vivo gana en presencia: le pasamos
+    // el estado propio de WALA y NO duplicamos la copia.
+    if (clave && clavesVivas.has(clave)) {
+      const vivo = vivosPorClave.get(clave);
+      if (vivo) {
+        vivo._walaEstado = copia.estadoWala ?? vivo._walaEstado ?? null;
+        vivo._walaPagado = copia.pagado === true || vivo._walaPagado === true;
+      }
+      continue;
+    }
     // Dedup interno de las copias entre sí.
     if (clave && clavesEspejoVistas.has(clave)) continue;
     if (clave) clavesEspejoVistas.add(clave);

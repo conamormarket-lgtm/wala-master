@@ -28,6 +28,8 @@ import {
   collection,
   doc,
   setDoc,
+  updateDoc,
+  getDoc,
   getDocs,
   query,
   where,
@@ -178,19 +180,240 @@ export async function mirrorWebOrder({ pedidoWebId, payload }) {
     canalVenta: 'Portal Web',
     web: true,
 
+    // ── ESTADO PROPIO DE WALA (fuente de verdad independiente del ERP) ──────────
+    // Al CREAR el pedido siempre nace como "pendiente_pago" (todavía no pagado).
+    // El pago (Culqi/PayPal) lo moverá a "pagado" vía markWalaOrderPagado, y el
+    // ERP (fase aparte, vía API con API key) podrá avanzarlo a en_preparacion/
+    // enviado/entregado/cancelado vía updateWalaOrderEstado. Estos campos son
+    // ADITIVOS: no tocan la lógica de pagos/totales del checkout.
+    // NOTA: con setDoc({ merge:true }) y doc id estable, si el espejo ya existía
+    // (reintento idempotente) NO se pisa un estado más avanzado de forma
+    // destructiva intencional; igualmente el flujo normal crea el espejo una vez.
+    estadoWala: 'pendiente_pago',
+    pagado: false,
+
     // Metadatos del espejo
     createdAt: serverTimestamp(),
     fuente: 'wala-mirror',
   };
 
   try {
-    await setDoc(doc(erpDb, WALA_ORDERS_COLLECTION, id), espejo, { merge: true });
+    const ref = doc(erpDb, WALA_ORDERS_COLLECTION, id);
+    // NO-DESTRUCTIVO respecto al estado/pago: si el espejo YA existe (reintento,
+    // backfill o re-mirror del mismo numeroPedido), NO pisamos su estadoWala/
+    // pagado —podría estar ya 'pagado' o más avanzado— ni su createdAt original.
+    // Solo refrescamos los campos display/clave. Si es nuevo, nace 'pendiente_pago'.
+    let payload = espejo;
+    try {
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const { estadoWala: _e, pagado: _p, createdAt: _c, ...soloDisplay } = espejo;
+        payload = soloDisplay;
+      }
+    } catch {
+      // Si la lectura previa falla, seguimos con el merge normal (best-effort).
+    }
+    await setDoc(ref, payload, { merge: true });
     return { id, error: null };
   } catch (error) {
     // No re-lanzamos: el espejo es best-effort. Devolvemos el error para que el
     // llamador pueda hacer console.warn si quiere.
     return { id: null, error: error?.message || 'Error al escribir el espejo' };
   }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * ESTADO de WALA (fuente de verdad) — actualización del espejo
+ *
+ * wala_pedidos lleva SU PROPIO estado (estadoWala) independiente del ERP. Estas
+ * funciones lo actualizan de forma IDEMPOTENTE y BEST-EFFORT (try/catch interno,
+ * NUNCA lanzan). Son ADITIVAS: NO tocan la lógica de pagos/totales del checkout;
+ * el llamador (Culqi/PayPal) las invoca ADEMÁS de marcar pedidos_web como hoy.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Conjunto de estados válidos de wala_pedidos.estadoWala.
+ * El flujo esperado es:
+ *   pendiente_pago → pagado → en_preparacion → enviado → entregado
+ * con `cancelado` como estado terminal alterno. (La validación NO es estricta:
+ * se acepta cualquier estado pasado; este set es de referencia/documentación.)
+ */
+export const ESTADOS_WALA = Object.freeze([
+  'pendiente_pago',
+  'pagado',
+  'en_preparacion',
+  'enviado',
+  'entregado',
+  'cancelado',
+]);
+
+/**
+ * Localiza el doc de wala_pedidos para un pedido dado.
+ *
+ * Estrategia:
+ *   1) Por id directo = sanearDocId(numeroPedido) (la clave estable del espejo).
+ *   2) Si no existe y hay pedidoWebId → query where("pedidoWebId","==",pedidoWebId).
+ *
+ * BEST-EFFORT: nunca lanza. Devuelve la referencia del doc encontrado (o, si no
+ * existe pero hay numeroPedido, la referencia por id saneado para poder crearlo
+ * vía setDoc{merge}), junto con un flag de si existía.
+ *
+ * @param {object} params
+ * @param {string} [params.numeroPedido]
+ * @param {string} [params.pedidoWebId]
+ * @returns {Promise<{ ref: import('firebase/firestore').DocumentReference|null, existe: boolean }>}
+ */
+async function localizarDocWala({ numeroPedido, pedidoWebId } = {}) {
+  const coll = collection(erpDb, WALA_ORDERS_COLLECTION);
+
+  // 1) Por id estable saneado a partir del numeroPedido.
+  const idSaneado = numeroPedido != null ? sanearDocId(numeroPedido) : '';
+  if (idSaneado) {
+    try {
+      const ref = doc(erpDb, WALA_ORDERS_COLLECTION, idSaneado);
+      const snap = await getDoc(ref);
+      if (snap.exists()) return { ref, existe: true };
+      // El doc por id no existe; recordamos la ref por si hay que crearlo (merge),
+      // pero antes intentamos casar por pedidoWebId (puede existir con otra clave).
+    } catch (error) {
+      console.warn('[walaOrders] localizarDocWala getDoc por id falló:', error?.message);
+    }
+  }
+
+  // 2) Por pedidoWebId (query de una sola condición → sin índice compuesto).
+  if (pedidoWebId) {
+    try {
+      const snap = await getDocs(query(coll, where('pedidoWebId', '==', pedidoWebId), limit(1)));
+      if (!snap.empty) {
+        return { ref: snap.docs[0].ref, existe: true };
+      }
+    } catch (error) {
+      console.warn('[walaOrders] localizarDocWala query por pedidoWebId falló:', error?.message);
+    }
+  }
+
+  // No se encontró un doc existente. Si tenemos un id saneado, devolvemos esa ref
+  // para que el llamador pueda crear el espejo con setDoc{merge} (idempotente).
+  if (idSaneado) {
+    return { ref: doc(erpDb, WALA_ORDERS_COLLECTION, idSaneado), existe: false };
+  }
+  return { ref: null, existe: false };
+}
+
+/**
+ * Actualiza el estado propio (estadoWala) de un pedido en wala_pedidos.
+ *
+ * IDEMPOTENTE y BEST-EFFORT: nunca lanza. Si el doc ya existe hace updateDoc; si
+ * no existe (pero hay numeroPedido para derivar la clave) hace setDoc{merge} para
+ * dejarlo creado con el estado. Siempre sella estadoWalaUpdatedAt.
+ *
+ * @param {object} params
+ * @param {string} [params.numeroPedido] - Código de negocio del portal (clave del espejo).
+ * @param {string} [params.pedidoWebId]  - docId de pedidos_web (fallback de localización).
+ * @param {string} params.estado         - Nuevo estadoWala (ver ESTADOS_WALA).
+ * @param {object} [params.extra]        - Campos adicionales a fusionar (p.ej. tracking).
+ * @returns {Promise<{ ok: boolean, id: string|null, error: string|null }>}
+ */
+export async function updateWalaOrderEstado({ numeroPedido, pedidoWebId, estado, extra } = {}) {
+  if (!isErpFirestoreAvailable()) {
+    return { ok: false, id: null, error: 'Firestore del ERP no está disponible' };
+  }
+  if (!estado || typeof estado !== 'string') {
+    return { ok: false, id: null, error: 'estado requerido' };
+  }
+
+  try {
+    const { ref, existe } = await localizarDocWala({ numeroPedido, pedidoWebId });
+    if (!ref) {
+      return { ok: false, id: null, error: 'No se pudo localizar el doc de wala_pedidos' };
+    }
+
+    const extraObj = extra && typeof extra === 'object' ? extra : {};
+    const cambios = {
+      estadoWala: estado,
+      ...extraObj,
+      estadoWalaUpdatedAt: serverTimestamp(),
+    };
+
+    if (existe) {
+      // El doc ya existe: actualización parcial.
+      await updateDoc(ref, cambios);
+    } else {
+      // No existía: lo creamos/fusionamos de forma idempotente. Añadimos un par
+      // de marcadores mínimos para que la lectura lo reconozca como WALA.
+      await setDoc(
+        ref,
+        {
+          ...cambios,
+          numeroPedido: numeroPedido ?? null,
+          pedidoWebId: pedidoWebId ?? null,
+          canalVenta: 'Portal Web',
+          web: true,
+          fuente: 'wala-mirror',
+        },
+        { merge: true },
+      );
+    }
+    return { ok: true, id: ref.id, error: null };
+  } catch (error) {
+    // BEST-EFFORT: no re-lanzamos para no romper el flujo de pago/ERP.
+    console.warn('[walaOrders] updateWalaOrderEstado falló:', error?.message);
+    return { ok: false, id: null, error: error?.message || 'Error al actualizar estadoWala' };
+  }
+}
+
+/**
+ * Marca un pedido de wala_pedidos como PAGADO (estadoWala:"pagado", pagado:true).
+ *
+ * Pensada para llamarse DESPUÉS de que el pago (Culqi/PayPal) se confirma, ADEMÁS
+ * de la marca actual en pedidos_web. ADITIVA, IDEMPOTENTE y BEST-EFFORT (nunca
+ * lanza). NO recalcula montos: montoPagado es solo informativo para el espejo.
+ *
+ * @param {object} params
+ * @param {string} [params.numeroPedido]
+ * @param {string} [params.pedidoWebId]
+ * @param {string} [params.metodoPago]   - 'culqi' | 'paypal' | etc. (informativo).
+ * @param {number} [params.montoPagado]  - Monto cobrado (informativo, ya calculado).
+ * @returns {Promise<{ ok: boolean, id: string|null, error: string|null }>}
+ */
+export async function markWalaOrderPagado({ numeroPedido, pedidoWebId, metodoPago, montoPagado } = {}) {
+  // Reutiliza updateWalaOrderEstado para mantener una sola ruta de escritura.
+  const extra = {
+    pagado: true,
+    pagadoAt: serverTimestamp(),
+  };
+  if (metodoPago != null) extra.metodoPago = metodoPago;
+  if (montoPagado != null) extra.montoPagado = montoPagado;
+
+  return updateWalaOrderEstado({
+    numeroPedido,
+    pedidoWebId,
+    estado: 'pagado',
+    extra,
+  });
+}
+
+/**
+ * Mapea un estadoWala a su representación de UI (etiqueta, color y paso del flujo).
+ * Reutilizable por cualquier vista (Mis Compras, Recepción, detalle de pedido).
+ *
+ * `paso` ubica el estado en la línea de tiempo principal
+ * (pendiente_pago=0 … entregado=4); `cancelado` usa paso -1 (fuera de línea).
+ * `color` es un nombre/semáforo neutro que la UI puede mapear a su paleta.
+ *
+ * @param {string} estadoWala
+ * @returns {{ label: string, color: string, paso: number }}
+ */
+export function estadoWalaADisplay(estadoWala) {
+  const mapa = {
+    pendiente_pago: { label: 'Pendiente de pago', color: 'warning', paso: 0 },
+    pagado: { label: 'Pagado', color: 'info', paso: 1 },
+    en_preparacion: { label: 'En preparación', color: 'info', paso: 2 },
+    enviado: { label: 'Enviado', color: 'primary', paso: 3 },
+    entregado: { label: 'Entregado', color: 'success', paso: 4 },
+    cancelado: { label: 'Cancelado', color: 'danger', paso: -1 },
+  };
+  return mapa[estadoWala] || { label: 'Pendiente de pago', color: 'warning', paso: 0 };
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -226,6 +449,15 @@ function normalizarEspejoParaVista(docId, data) {
     web: d.web === true,
     fuente: d.fuente ?? 'wala-mirror',
     createdAt: d.createdAt ?? null,
+    // ── ESTADO PROPIO DE WALA (fuente de verdad) ───────────────────────────────
+    // Se expone a la vista para que muestre el estado que vive en wala_pedidos,
+    // independientemente del doc del ERP. Default seguro "pendiente_pago" para
+    // espejos antiguos que aún no tienen el campo.
+    estadoWala: d.estadoWala ?? 'pendiente_pago',
+    pagado: d.pagado === true,
+    pagadoAt: d.pagadoAt ?? null,
+    metodoPago: d.metodoPago ?? null,
+    estadoWalaUpdatedAt: d.estadoWalaUpdatedAt ?? null,
     // Marca de procedencia: la UI puede distinguir copias de seguridad.
     _fromMirror: true,
   };

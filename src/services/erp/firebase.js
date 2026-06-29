@@ -217,25 +217,34 @@ export async function searchOrdersByDniInERP(dni, { userId } = {}) {
 
     pedidos = [...pedidos, ...pedidosWeb];
 
-    // ── RED DE SEGURIDAD: fusiona la copia espejo (wala_pedidos) ───────────────
+    // ── WALA = FUENTE DE VERDAD: presencia garantizada desde wala_pedidos ──────
     // Los pedidos VIVOS (pedidos + pedidos_web) ya están en `pedidos`. Ahora
-    // traemos el espejo del lado WALA y AGREGAMOS solo los que el ERP ya borró
-    // (es decir, los que no existen ya en vivo según su CLAVE DE NEGOCIO). Si un
-    // pedido del espejo ya está vivo, el doc VIVO gana y NO se duplica.
+    // traemos SIEMPRE el espejo propio de WALA (wala_pedidos) y lo fusionamos por
+    // CLAVE DE NEGOCIO con los vivos. Reglas (decisión del dueño):
+    //   1) PRESENCIA: el listado INCLUYE SIEMPRE todos los wala_pedidos del usuario
+    //      (no solo cuando faltan en vivo): un pedido NUNCA desaparece de "Mis
+    //      Compras" porque su existencia la garantiza wala_pedidos.
+    //   2) ESTADO mostrado = el MÁS AVANZADO entre el doc VIVO del ERP (si existe)
+    //      y wala_pedidos.estadoWala. Para que la UI pueda decidir, ADJUNTAMOS el
+    //      estadoWala del espejo sobre el doc vivo correspondiente (campos aditivos
+    //      _walaEstado/_walaPagado); la precedencia "no degradar" la resuelve
+    //      derivarEstadoCompra (src/utils/estadoCompra.js). NO se recalcula ningún
+    //      monto ni se borra nada.
     // Best-effort: getWalaMirrorOrders nunca lanza (devuelve [] ante error).
     try {
       const { getWalaMirrorOrders } = await import('../walaOrders');
       const espejo = await getWalaMirrorOrders({ userId, dni: dniRaw || dniNorm });
 
       if (Array.isArray(espejo) && espejo.length > 0) {
-        // Clave de negocio idéntica a adminOrders.js:417 (dedup de "Recepción").
+        // Clave de negocio idéntica a adminOrders.js (dedup de "Recepción").
         const claveDeNegocio = (p) =>
           (p && (p.numeroPedido || p.portalPseudoOrderId || p.pedidoWebId || p.id)) || null;
 
         // ¿el pedido vivo SIGUE siendo de WALA? (mismo criterio que esPedidoWala
-        // de adminOrders.js / usePedidos.js). CLAVE: si el ERP "aprueba" un pedido
-        // DESMARCÁNDOLO (p.ej. web:false) en vez de borrarlo, deja de ser WALA y
-        // luego usePedidos lo filtra; por eso NO debe suprimir a su copia espejo.
+        // de usePedidos.js). IMPORTA porque usePedidos FILTRA la lista cruda por
+        // esPedidoWala ANTES de normalizar: un vivo ya desmarcado por el ERP
+        // (p.ej. web:false) NO sobrevive ese filtro, así que su espejo debe
+        // permanecer para garantizar la presencia del pedido.
         const esWala = (p) =>
           !!p &&
           (p.canalVenta === 'Portal Web' ||
@@ -243,21 +252,39 @@ export async function searchOrdersByDniInERP(dni, { userId } = {}) {
             p.activador === 'portal_web' ||
             p.vendedor === 'Portal Web');
 
-        // Conjunto de claves de los pedidos VIVOS que TODAVÍA son WALA, para
-        // descartar empates. Solo un vivo-WALA puede tapar a su espejo; un vivo
-        // ya desmarcado por el ERP NO suprime el espejo (así el espejo lo rescata).
-        const clavesVivas = new Set();
+        // Índice de los docs VIVOS por clave de negocio. Si existe un vivo con la
+        // misma clave que un espejo, el vivo es el portador del ESTADO de
+        // producción del ERP y le adjuntamos el estadoWala del espejo.
+        const vivosPorClave = new Map();
         pedidos.forEach((p) => {
-          if (!esWala(p)) return;
           const c = claveDeNegocio(p);
-          if (c) clavesVivas.add(c);
+          if (c && !vivosPorClave.has(c)) vivosPorClave.set(c, p);
         });
 
-        // Agrega cada pedido del espejo cuya clave NO esté ya viva.
+        // Para cada pedido del espejo:
+        //   - si hay un vivo-WALA con su clave → ADJUNTAMOS estadoWala/pagado al
+        //     vivo (no duplicamos; el vivo conserva su etapa de producción del ERP
+        //     y la UI elegirá el estado más avanzado entre ambos).
+        //   - si el vivo existe pero YA NO es WALA (desmarcado por el ERP) → además
+        //     de enriquecerlo, CONSERVAMOS el espejo (sobrevive al filtro esPedidoWala
+        //     de usePedidos) para no perder la presencia del pedido.
+        //   - si NO hay vivo → AGREGAMOS la copia espejo (presencia garantizada).
+        const clavesEspejoVistas = new Set();
         espejo.forEach((m) => {
           const c = claveDeNegocio(m);
-          if (c && clavesVivas.has(c)) return; // el doc VIVO gana, no duplicar
-          if (c) clavesVivas.add(c); // evita duplicar dos espejos con misma clave
+          const vivo = c ? vivosPorClave.get(c) : null;
+          if (vivo) {
+            // Enriquecemos el doc vivo con el estado propio de WALA (aditivo).
+            vivo._walaEstado = m.estadoWala ?? vivo._walaEstado ?? null;
+            vivo._walaPagado = m.pagado === true || vivo._walaPagado === true;
+            // Si el vivo SIGUE siendo WALA, él representa el pedido: no duplicamos.
+            if (esWala(vivo)) return;
+            // Si el vivo fue desmarcado por el ERP, caerá del filtro esPedidoWala;
+            // dejamos pasar el espejo (más abajo) para que el pedido no desaparezca.
+          }
+          // Evita duplicar dos espejos con la misma clave y agrega la copia.
+          if (c && clavesEspejoVistas.has(c)) return;
+          if (c) clavesEspejoVistas.add(c);
           pedidos.push(m);
         });
       }
@@ -469,23 +496,34 @@ export async function createWebOrder(orderData) {
 
     const docRef = await addDoc(collection(erpDb, 'pedidos_web'), orderPayload);
 
-    // ── RED DE SEGURIDAD: copia del pedido del lado WALA (best-effort) ─────────
-    // Tras guardar OK en pedidos_web, escribimos un ESPEJO en wala_pedidos. El
-    // ERP externo, al aprobar, puede borrar el doc de pedidos_web; el espejo es
-    // nuestra copia para que el pedido nunca desaparezca de "Mis Compras".
-    // Es BEST-EFFORT: cualquier error solo se loguea y JAMÁS bloquea ni demora la
-    // creación del pedido, ni cambia el valor de retorno de createWebOrder.
+    // ── WALA = FUENTE DE VERDAD: copia/espejo del pedido del lado WALA ─────────
+    // Tras guardar OK en pedidos_web, escribimos el pedido en wala_pedidos, que es
+    // la base PROPIA e INDEPENDIENTE de WALA (con su propio estadoWala). El ERP
+    // externo, al aprobar, puede borrar el doc de pedidos_web; wala_pedidos es
+    // nuestra copia para que el pedido nunca desaparezca de "Mis Compras" y para
+    // que WALA muestre su propio estado/pago.
+    //
     // Import dinámico para evitar el ciclo de dependencias (walaOrders.js importa
     // erpDb de este archivo). Al ser lazy, el ciclo se resuelve en runtime.
-    // FIRE-AND-FORGET (sin await): el espejo se escribe en segundo plano para NO
-    // demorar la respuesta del checkout. El pedido YA quedó persistido en el addDoc.
+    //
+    // CONFIABLE pero NO BLOQUEANTE: ahora hacemos AWAIT del espejo dentro de un
+    // try/catch que SOLO loguea y NUNCA aborta el pedido. El pedido YA quedó
+    // persistido en pedidos_web (addDoc anterior); si el espejo fallara, se loguea
+    // pero la venta CONTINÚA y el valor de retorno de createWebOrder no cambia.
     // Le pasamos el payload YA enriquecido (clienteNumeroDocumento/dni normalizados
     // + dniRaw); buyerUid/userId viene del checkout dentro de él.
-    import('../walaOrders')
-      .then(({ mirrorWebOrder }) => mirrorWebOrder({ pedidoWebId: docRef.id, payload: orderPayload }))
-      .catch((mirrorErr) =>
-        console.warn('No se pudo escribir el espejo wala_pedidos (best-effort):', mirrorErr?.message)
-      );
+    try {
+      const { mirrorWebOrder } = await import('../walaOrders');
+      const espejoRes = await mirrorWebOrder({ pedidoWebId: docRef.id, payload: orderPayload });
+      if (espejoRes?.error) {
+        // mirrorWebOrder es best-effort y NO lanza: devuelve {error}. Solo logueamos.
+        console.warn('Espejo wala_pedidos no se escribió (best-effort):', espejoRes.error);
+      }
+    } catch (mirrorErr) {
+      // Cinturón extra: cualquier excepción inesperada del import/espejo se loguea
+      // y NO rompe la creación del pedido (que ya está persistida).
+      console.warn('No se pudo escribir el espejo wala_pedidos (best-effort):', mirrorErr?.message);
+    }
 
     return { id: docRef.id, error: null };
   } catch (error) {

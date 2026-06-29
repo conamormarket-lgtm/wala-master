@@ -62,6 +62,111 @@ function getErpDb() {
   return erpApp.firestore();
 }
 
+// ── wala_pedidos: marca de pago en la FUENTE DE VERDAD de WALA (best-effort) ───
+// wala_pedidos es la colección propia de WALA (espejo independiente del ERP) cuyo
+// `estadoWala` es la fuente de verdad mostrada en el Portal. Cuando un pago se
+// confirma (Culqi/PayPal), ADEMÁS de marcar pedidos_web como hoy, actualizamos el
+// doc de wala_pedidos a estadoWala:"pagado". Es 100% ADITIVO e IDEMPOTENTE y va
+// envuelto en try/catch: NUNCA debe hacer fallar el flujo de pago (el cobro ya
+// ocurrió). Usa la MISMA instancia admin del ERP (getErpDb) que pedidos_web.
+//
+// Contrato del doc (ver src/services/walaOrders.js): doc id = sanearDocId(numeroPedido)
+// || sanearDocId(pedidoWebId). Para localizarlo, como aquí solo tenemos el id del
+// pedido (pedidoId / pseudoOrderId / numeroPedido, todos el mismo valor de negocio),
+// consultamos por where("pedidoWebId","==",id) Y por where("numeroPedido","==",id),
+// y actualizamos TODOS los match. Si no hay ninguno, no se falla (best-effort).
+const WALA_ORDERS_COLLECTION = "wala_pedidos";
+
+// Replica de sanearDocId de src/services/walaOrders.js (para construir el id estable).
+function sanearWalaDocId(valor) {
+  if (valor == null) return "";
+  return String(valor)
+    .trim()
+    .replace(/[/\\#?[\].]/g, "-")
+    .replace(/\s+/g, "-");
+}
+
+/**
+ * Marca como pagado el/los doc(s) de wala_pedidos asociados a un pedido.
+ * ADITIVO, IDEMPOTENTE y BEST-EFFORT: nunca lanza; ante cualquier error solo loguea.
+ * NO recalcula montos: montoPagado es informativo (solo se escribe si se pasa).
+ *
+ * @param {object} params
+ * @param {string|number} params.pedidoId   - id del pedido (pedidoWebId / numeroPedido / pseudoOrderId).
+ * @param {string} [params.metodoPago]       - 'culqi' | 'paypal' (informativo).
+ * @param {number} [params.montoPagado]       - monto cobrado ya calculado (informativo).
+ */
+async function marcarWalaPedidoPagado({ pedidoId, metodoPago, montoPagado } = {}) {
+  try {
+    if (pedidoId == null || pedidoId === "") return;
+    const erpDb = getErpDb();
+    if (!erpDb) {
+      console.warn("marcarWalaPedidoPagado: ERP no disponible (getErpDb null); se omite wala_pedidos.");
+      return;
+    }
+    const id = String(pedidoId);
+    const coll = erpDb.collection(WALA_ORDERS_COLLECTION);
+
+    // Campos de la marca de pago (mismo contrato que markWalaOrderPagado del cliente).
+    const marca = {
+      estadoWala: "pagado",
+      pagado: true,
+      pagadoAt: FieldValue.serverTimestamp(),
+      estadoWalaUpdatedAt: FieldValue.serverTimestamp(),
+    };
+    if (metodoPago != null) marca.metodoPago = metodoPago;
+    if (montoPagado != null) marca.montoPagado = montoPagado;
+
+    // Localiza por pedidoWebId Y por numeroPedido (queries de una sola condición →
+    // sin índice compuesto). Se deduplican los match por path para no escribir dos veces.
+    const refs = new Map();
+    for (const campo of ["pedidoWebId", "numeroPedido"]) {
+      try {
+        const snap = await coll.where(campo, "==", id).get();
+        snap.forEach((d) => refs.set(d.ref.path, d.ref));
+      } catch (e) {
+        console.warn(`marcarWalaPedidoPagado: query por ${campo} falló:`, e.message);
+      }
+    }
+
+    if (refs.size > 0) {
+      // Actualiza todos los espejos encontrados (idempotente: set merge).
+      for (const ref of refs.values()) {
+        try {
+          await ref.set(marca, { merge: true });
+        } catch (e) {
+          console.warn(`marcarWalaPedidoPagado: no se pudo marcar ${ref.path}:`, e.message);
+        }
+      }
+      return;
+    }
+
+    // Fallback: no se halló por query. Intentamos por id estable saneado (= como lo
+    // crea el espejo). Solo escribimos si el doc YA existe, para no fabricar espejos
+    // huérfanos sin el resto de campos del pedido. setDoc{merge} mantiene idempotencia.
+    const idSaneado = sanearWalaDocId(id);
+    if (idSaneado) {
+      try {
+        const ref = coll.doc(idSaneado);
+        const snap = await ref.get();
+        if (snap.exists) {
+          await ref.set(marca, { merge: true });
+          return;
+        }
+      } catch (e) {
+        console.warn("marcarWalaPedidoPagado: fallback por id saneado falló:", e.message);
+      }
+    }
+
+    // Sin match: no se falla. El espejo puede no existir aún (best-effort); pedidos_web
+    // ya quedó marcado y es la vía que el ERP recibe.
+    console.warn(`marcarWalaPedidoPagado: no se encontró doc en wala_pedidos para pedido ${id}; se omite (best-effort).`);
+  } catch (e) {
+    // BEST-EFFORT total: jamás propagar (el cobro ya ocurrió).
+    console.error("marcarWalaPedidoPagado: error inesperado (ignorado, pago ya confirmado):", e);
+  }
+}
+
 const ERP_NOMBRE = [
   "clienteNombre",
   "clienteApellidos",
@@ -856,6 +961,11 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
         console.error(`processCulqiPayment: error al marcar pedido ${pedidoId} pagado (cobro ya realizado, charge ${result.id}):`, e);
       }
     }
+
+    // ── ADITIVO: marca el espejo wala_pedidos como pagado (fuente de verdad WALA) ─
+    // Best-effort e idempotente; no afecta el cálculo del monto ni la respuesta al
+    // cliente. Se ejecuta ADEMÁS de la marca en pedidos_web de arriba.
+    await marcarWalaPedidoPagado({ pedidoId, metodoPago: "culqi", montoPagado: chargeAmount });
 
     return {
       success: true,
@@ -2533,6 +2643,15 @@ exports.culqiWebhook = functions.https.onRequest(async (req, res) => {
         } else {
           console.warn("culqiWebhook: ERP no disponible (getErpDb null); no se pudo marcar el pedido.");
         }
+
+        // ── ADITIVO: marca el espejo wala_pedidos como pagado (fuente de verdad WALA) ─
+        // Best-effort e idempotente; no afecta la marca de pedidos_web de arriba ni la
+        // idempotencia por chargeId del webhook.
+        await marcarWalaPedidoPagado({
+          pedidoId,
+          metodoPago: "culqi",
+          montoPagado: charge.amount ?? null, // céntimos según Culqi (informativo)
+        });
       } catch (e) {
         // No se hace fallar el webhook: el evento ya quedó registrado (idempotente) y
         // Culqi no debe reintentar indefinidamente. Se registra para revisión manual.
@@ -3109,6 +3228,11 @@ exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) 
     // fallo al escribir el pedido. Se registra para reconciliación manual.
     console.error("capturePaypalOrderSecure: el cobro se capturó pero falló la actualización del pedido:", e);
   }
+
+  // ── ADITIVO: marca el espejo wala_pedidos como pagado (fuente de verdad WALA) ───
+  // Best-effort e idempotente; no afecta el cálculo del monto USD ni la marca de
+  // pedidos_web de arriba. montoPagado se deja como el monto USD capturado (informativo).
+  await marcarWalaPedidoPagado({ pedidoId, metodoPago: "paypal", montoPagado: capturedValue });
 
   return {
     success: true,

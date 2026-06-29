@@ -10,6 +10,11 @@ import { getMessage } from '../services/messages';
 import { getBrands } from '../services/brands';
 import { linkPurchaseToReferral } from '../services/referrals';
 import { createWebOrder } from '../services/erp/firebase';
+// WALA = FUENTE DE VERDAD: al confirmarse el pago (Culqi/PayPal) marcamos el
+// pedido como pagado en SU propia base wala_pedidos. Es ADITIVO e IDEMPOTENTE:
+// no toca la lógica de pagos/totales (Culqi montoDeuda / PayPal amountUsd) ni el
+// marcado de pedidos_web; markWalaOrderPagado nunca lanza (best-effort).
+import { markWalaOrderPagado } from '../services/walaOrders';
 import { markItemAsGifted } from '../services/wishlist';
 import { validateDNI } from '../utils/helpers';
 import { detectCountry } from '../services/geo';
@@ -1026,6 +1031,12 @@ const CheckoutPage = () => {
         toast.success('¡Pedido generado! Por favor, selecciona tu método de pago.');
         setPaymentStepData({
           id: webOrderId || pseudoOrderId,
+          // Claves de negocio para localizar el doc en wala_pedidos al confirmar el
+          // pago (markWalaOrderPagado): numeroPedido = pseudoOrderId (clave estable
+          // del espejo, doc id), pedidoWebId = id real en pedidos_web (query de
+          // fallback). Aditivos: NO alteran montoDeuda ni el flujo de pago/totales.
+          numeroPedido: pseudoOrderId,
+          pedidoWebId: webOrderId || null,
           montoDeuda: total,
           waLink: waLink,
           waGroups: waGroups, // [] si no aplica; si no, un grupo (asesor) por marca
@@ -1274,6 +1285,16 @@ const CheckoutPage = () => {
                       autoOpen={true}
                       onSuccess={() => {
                         emitPurchaseComplete('culqi');
+                        // WALA = FUENTE DE VERDAD: marca el pedido como pagado en
+                        // wala_pedidos (estadoWala:'pagado'). ADITIVO/IDEMPOTENTE y
+                        // best-effort (nunca lanza): NO bloquea la navegación ni toca
+                        // el monto cobrado. Localiza por numeroPedido o pedidoWebId.
+                        markWalaOrderPagado({
+                          numeroPedido: paymentStepData.numeroPedido,
+                          pedidoWebId: paymentStepData.pedidoWebId,
+                          metodoPago: 'culqi',
+                          montoPagado: paymentStepData.montoDeuda,
+                        }).catch(() => {});
                         // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
                         clearSelectedItems();
                         navigate('/cuenta/pedidos');
@@ -1304,6 +1325,16 @@ const CheckoutPage = () => {
                       })()}
                       onSuccess={() => {
                         emitPurchaseComplete('paypal');
+                        // WALA = FUENTE DE VERDAD: marca el pedido como pagado en
+                        // wala_pedidos (estadoWala:'pagado'). ADITIVO/IDEMPOTENTE y
+                        // best-effort (nunca lanza): NO bloquea la navegación ni toca
+                        // el USD cobrado (amountUsd). Localiza por numeroPedido/pedidoWebId.
+                        markWalaOrderPagado({
+                          numeroPedido: paymentStepData.numeroPedido,
+                          pedidoWebId: paymentStepData.pedidoWebId,
+                          metodoPago: 'paypal',
+                          montoPagado: paymentStepData.montoDeuda,
+                        }).catch(() => {});
                         // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
                         clearSelectedItems();
                         navigate('/cuenta/pedidos');
