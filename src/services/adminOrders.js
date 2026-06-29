@@ -31,6 +31,7 @@ import {
   getProductosPedido,
   getCodigoPedido,
 } from '../utils/estadoCompra';
+import { getAllWalaMirrorOrders } from './walaOrders';
 
 /**
  * Colecciones del ERP donde viven los pedidos. `pedidos_web` es la fuente principal
@@ -244,6 +245,14 @@ export function normalizarPedidoRecepcion(rawPedido) {
     canalVenta: pedido.canalVenta || '',
     esWala: esPedidoWala(pedido),
 
+    // Procedencia de la COPIA-ESPEJO (red de seguridad wala_pedidos):
+    //  - _fromMirror: el dato viene de la colección espejo (no del doc vivo).
+    //  - _procesadoErp: además, su doc VIVO ya no existe en el ERP (lo absorbió/borró
+    //    al aprobarlo). La UI lo marca como "Procesado en ERP" para que el admin no
+    //    lo confunda con un pendiente, pero TAMPOCO lo pierda de vista.
+    _fromMirror: pedido._fromMirror === true,
+    _procesadoErp: pedido._procesadoErp === true,
+
     // Fecha de compra (createdAt es el campo real, Firestore Timestamp).
     fechaCompraMs,
     fechaCompraLabel: fechaLabelDe(fechaCompraMs),
@@ -393,33 +402,74 @@ export async function getWalaOrdersForAdmin({
       ? Date.now() - sinceDays * 24 * 60 * 60 * 1000
       : null;
 
-  let crudos = [];
+  // Lee en paralelo: las 2 colecciones VIVAS del ERP + la COPIA-ESPEJO de WALA.
+  // El espejo (getAllWalaMirrorOrders) NUNCA lanza (devuelve [] ante error), así
+  // que su lectura no puede romper Recepción; solo las del ERP pueden fallar.
+  let web = [];
+  let erp = [];
+  let espejo = [];
   try {
-    const [web, erp] = await Promise.all([
+    [web, erp, espejo] = await Promise.all([
       fetchOrdersFromCollection(COLECCION_WEB, limitN, sinceMs),
       fetchOrdersFromCollection(COLECCION_ERP, limitN, sinceMs),
+      // El espejo no soporta filtro de rango por fecha server-side; traemos las
+      // copias más recientes y el filtro `sinceMs` se aplica en memoria más abajo
+      // junto al resto (no afecta KPIs porque solo recorta lo antiguo).
+      getAllWalaMirrorOrders({ limitN }).catch(() => []),
     ]);
-    crudos = [...web, ...erp];
   } catch (err) {
     return { ...empty, available: true, error: err?.message || 'Error al leer pedidos del ERP' };
   }
 
-  // Solo pedidos del portal WALA (el ERP mezcla pedidos nativos + del portal).
-  crudos = crudos.filter(esPedidoWala);
+  // Pedidos VIVOS del ERP (pedidos_web + pedidos). Solo los del portal WALA
+  // (el ERP mezcla pedidos nativos + del portal).
+  let vivos = [...web, ...erp].filter(esPedidoWala);
 
-  // De-dup por CLAVE DE NEGOCIO (numeroPedido/portalPseudoOrderId), con fallback al id.
-  // Un pedido del portal puede existir a la vez en `pedidos_web` y en `pedidos`: al
-  // validarse en el ERP se crea un doc NUEVO con id distinto pero MISMO numeroPedido.
-  // Deduplicar solo por doc id los mostraría DUPLICADOS e inflaría los KPIs. Como
-  // `pedidos_web` se lee primero, su versión gana en empate.
-  const seen = new Set();
-  crudos = crudos.filter((p) => {
-    const clave = p?.numeroPedido || p?.portalPseudoOrderId || p?.id;
+  // De-dup de los VIVOS por CLAVE DE NEGOCIO (numeroPedido/portalPseudoOrderId),
+  // con fallback al id. Un pedido del portal puede existir a la vez en `pedidos_web`
+  // y en `pedidos`: al validarse en el ERP se crea un doc NUEVO con id distinto pero
+  // MISMO numeroPedido. Deduplicar solo por doc id los mostraría DUPLICADOS e inflaría
+  // los KPIs. Como `pedidos_web` se lee primero, su versión gana en empate.
+  // Misma clave que walaOrders/adminOrders usan en toda la red de seguridad.
+  const claveDeNegocio = (p) =>
+    p?.numeroPedido || p?.portalPseudoOrderId || p?.pedidoWebId || p?.id || null;
+
+  const clavesVivas = new Set();
+  vivos = vivos.filter((p) => {
+    const clave = claveDeNegocio(p);
     if (!clave) return true;
-    if (seen.has(clave)) return false;
-    seen.add(clave);
+    if (clavesVivas.has(clave)) return false;
+    clavesVivas.add(clave);
     return true;
   });
+
+  // MERGE con la COPIA-ESPEJO: el doc VIVO siempre gana. Solo incorporamos las
+  // copias cuyo doc vivo YA NO EXISTE en el ERP (el ERP las absorbió/borró al
+  // aprobarlas). Esas copias solo-espejo se MARCAN como _procesadoErp para que la
+  // UI muestre un badge "Procesado en ERP": el admin no las confunde con pendientes
+  // pero tampoco las pierde de vista. Dedup interno del espejo por la misma clave.
+  const soloEspejo = [];
+  const clavesEspejoVistas = new Set();
+  for (const copia of espejo) {
+    const clave = claveDeNegocio(copia);
+    // Si existe un doc vivo con esta clave, el vivo gana: descartamos la copia.
+    if (clave && clavesVivas.has(clave)) continue;
+    // Dedup interno de las copias entre sí.
+    if (clave && clavesEspejoVistas.has(clave)) continue;
+    if (clave) clavesEspejoVistas.add(clave);
+    // El doc vivo ya no existe → es una copia de respaldo de un pedido ya procesado.
+    soloEspejo.push({ ...copia, _procesadoErp: true });
+  }
+
+  let crudos = [...vivos, ...soloEspejo];
+
+  // Las copias-espejo no pasan por el filtro de rango server-side (no se les aplica
+  // `where createdAt >=`), así que si hay ventana temporal la aplicamos en memoria
+  // para que `sinceDays` también recorte las copias antiguas. Los docs vivos ya
+  // venían filtrados; re-filtrarlos es idempotente.
+  if (sinceMs != null) {
+    crudos = crudos.filter((p) => toMillis(p.createdAt) >= sinceMs);
+  }
 
   // Normalizar al contrato de tarjeta y ordenar por fecha desc (mezcla de colecciones).
   let pedidos = crudos

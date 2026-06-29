@@ -120,10 +120,18 @@ function sortPedidosByCreatedAt(pedidos) {
  * Buscar pedidos por número de documento (DNI/CE) en el Firestore del ERP.
  * Usa el campo clienteNumeroDocumento. No requiere índice compuesto: se hace
  * una sola condición where y el ordenamiento es en memoria.
+ *
+ * RED DE SEGURIDAD (lectura del espejo): además de los pedidos VIVOS del ERP
+ * (pedidos + pedidos_web), se consulta la copia propia de WALA en `wala_pedidos`
+ * (getWalaMirrorOrders). Si el ERP externo ya borró/absorbió el pedido al
+ * aprobarlo, su espejo lo recupera para que NUNCA desaparezca de "Mis Compras".
+ *
  * @param {string} dni - DNI o CE del cliente (se normaliza a string sin espacios)
+ * @param {object} [opciones] - Opciones adicionales (no rompe llamadas existentes).
+ * @param {string} [opciones.userId] - UID del comprador autenticado (= buyerUid del espejo).
  * @returns {Promise<{ data: Array | null, error: string | null }>}
  */
-export async function searchOrdersByDniInERP(dni) {
+export async function searchOrdersByDniInERP(dni, { userId } = {}) {
   if (!isErpFirestoreAvailable()) {
     return { data: null, error: 'Firestore del ERP no está disponible' };
   }
@@ -208,6 +216,55 @@ export async function searchOrdersByDniInERP(dni) {
     }
 
     pedidos = [...pedidos, ...pedidosWeb];
+
+    // ── RED DE SEGURIDAD: fusiona la copia espejo (wala_pedidos) ───────────────
+    // Los pedidos VIVOS (pedidos + pedidos_web) ya están en `pedidos`. Ahora
+    // traemos el espejo del lado WALA y AGREGAMOS solo los que el ERP ya borró
+    // (es decir, los que no existen ya en vivo según su CLAVE DE NEGOCIO). Si un
+    // pedido del espejo ya está vivo, el doc VIVO gana y NO se duplica.
+    // Best-effort: getWalaMirrorOrders nunca lanza (devuelve [] ante error).
+    try {
+      const { getWalaMirrorOrders } = await import('../walaOrders');
+      const espejo = await getWalaMirrorOrders({ userId, dni: dniRaw || dniNorm });
+
+      if (Array.isArray(espejo) && espejo.length > 0) {
+        // Clave de negocio idéntica a adminOrders.js:417 (dedup de "Recepción").
+        const claveDeNegocio = (p) =>
+          (p && (p.numeroPedido || p.portalPseudoOrderId || p.pedidoWebId || p.id)) || null;
+
+        // ¿el pedido vivo SIGUE siendo de WALA? (mismo criterio que esPedidoWala
+        // de adminOrders.js / usePedidos.js). CLAVE: si el ERP "aprueba" un pedido
+        // DESMARCÁNDOLO (p.ej. web:false) en vez de borrarlo, deja de ser WALA y
+        // luego usePedidos lo filtra; por eso NO debe suprimir a su copia espejo.
+        const esWala = (p) =>
+          !!p &&
+          (p.canalVenta === 'Portal Web' ||
+            p.web === true ||
+            p.activador === 'portal_web' ||
+            p.vendedor === 'Portal Web');
+
+        // Conjunto de claves de los pedidos VIVOS que TODAVÍA son WALA, para
+        // descartar empates. Solo un vivo-WALA puede tapar a su espejo; un vivo
+        // ya desmarcado por el ERP NO suprime el espejo (así el espejo lo rescata).
+        const clavesVivas = new Set();
+        pedidos.forEach((p) => {
+          if (!esWala(p)) return;
+          const c = claveDeNegocio(p);
+          if (c) clavesVivas.add(c);
+        });
+
+        // Agrega cada pedido del espejo cuya clave NO esté ya viva.
+        espejo.forEach((m) => {
+          const c = claveDeNegocio(m);
+          if (c && clavesVivas.has(c)) return; // el doc VIVO gana, no duplicar
+          if (c) clavesVivas.add(c); // evita duplicar dos espejos con misma clave
+          pedidos.push(m);
+        });
+      }
+    } catch (mirrorErr) {
+      // El espejo es best-effort: si falla la lectura, seguimos con los vivos.
+      console.warn('No se pudo leer el espejo wala_pedidos (best-effort):', mirrorErr?.message);
+    }
 
     pedidos = sortPedidosByCreatedAt(pedidos);
     return { data: pedidos, error: null };
@@ -411,6 +468,25 @@ export async function createWebOrder(orderData) {
     // Si el documento viene vacío no se fuerza: se deja como está.
 
     const docRef = await addDoc(collection(erpDb, 'pedidos_web'), orderPayload);
+
+    // ── RED DE SEGURIDAD: copia del pedido del lado WALA (best-effort) ─────────
+    // Tras guardar OK en pedidos_web, escribimos un ESPEJO en wala_pedidos. El
+    // ERP externo, al aprobar, puede borrar el doc de pedidos_web; el espejo es
+    // nuestra copia para que el pedido nunca desaparezca de "Mis Compras".
+    // Es BEST-EFFORT: cualquier error solo se loguea y JAMÁS bloquea ni demora la
+    // creación del pedido, ni cambia el valor de retorno de createWebOrder.
+    // Import dinámico para evitar el ciclo de dependencias (walaOrders.js importa
+    // erpDb de este archivo). Al ser lazy, el ciclo se resuelve en runtime.
+    // FIRE-AND-FORGET (sin await): el espejo se escribe en segundo plano para NO
+    // demorar la respuesta del checkout. El pedido YA quedó persistido en el addDoc.
+    // Le pasamos el payload YA enriquecido (clienteNumeroDocumento/dni normalizados
+    // + dniRaw); buyerUid/userId viene del checkout dentro de él.
+    import('../walaOrders')
+      .then(({ mirrorWebOrder }) => mirrorWebOrder({ pedidoWebId: docRef.id, payload: orderPayload }))
+      .catch((mirrorErr) =>
+        console.warn('No se pudo escribir el espejo wala_pedidos (best-effort):', mirrorErr?.message)
+      );
+
     return { id: docRef.id, error: null };
   } catch (error) {
     console.error('Error al crear solicitud web en pedidos_web:', error);

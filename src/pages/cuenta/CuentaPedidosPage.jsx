@@ -114,7 +114,10 @@ const CuentaPedidosPage = () => {
   const navigate = useNavigate();
   const hasDni = !!(userProfile?.dni && String(userProfile.dni).trim());
   const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
-  const { loading, error, data, buscar } = usePedidos(dni);
+  // UID del usuario autenticado: se hila al hook para recuperar también los
+  // pedidos del espejo (wala_pedidos) por buyerUid, no solo por DNI.
+  const uid = user?.uid || undefined;
+  const { loading, error, data, buscar } = usePedidos(dni, uid);
   const [hasFetched, setHasFetched] = useState(false);
 
   // Catálogo para enriquecer cada pedido con imagen/nombre del 1er producto.
@@ -124,9 +127,10 @@ const CuentaPedidosPage = () => {
   useEffect(() => {
     if (!user || (!hasDni && !authLoading) || hasFetched) return;
     setHasFetched(true);
-    // Disparar búsqueda sin await (lo maneja el hook, que a su vez usa su propia caché)
-    buscar(dni);
-  }, [user, hasDni, dni, hasFetched, buscar, authLoading]);
+    // Disparar búsqueda sin await (lo maneja el hook, que a su vez usa su propia caché).
+    // Pasamos el uid para que la lectura incluya la copia espejo por buyerUid.
+    buscar(dni, uid);
+  }, [user, hasDni, dni, uid, hasFetched, buscar, authLoading]);
 
   // Índice productoId -> producto del catálogo (memoizado para no recorrerlo por pedido).
   const indiceCatalogo = useMemo(() => {

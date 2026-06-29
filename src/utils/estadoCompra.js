@@ -146,6 +146,31 @@ export function derivarEstadoCompra(pedido) {
 
   // Eje 1: etapa de producción normalizada a key (p.ej. "impresion", "reparto").
   const etapa = estadoToKey(safe.estadoGeneral || safe.status || safe.estado) || '';
+
+  // ── CASO ESPEJO (red de seguridad) ─────────────────────────────────────────
+  // Un pedido que viene SOLO de la copia espejo (_fromMirror) y NO trae etapa de
+  // producción significa que su doc VIVO ya no existe: el ERP lo absorbió/aprobó
+  // al validarlo (por eso desapareció de pedidos/pedidos_web). En "Mis Compras"
+  // debe verse CONFIRMADO/PROCESADO (verde), NUNCA "Por confirmar pago" ni error.
+  // El espejo no guarda estadoGeneral avanzado, así que sin esta rama caería por
+  // defecto a 'por_confirmar_pago'. Solo aplica a copias de respaldo: los pedidos
+  // VIVOS (sin _fromMirror) conservan su derivación normal intacta.
+  const esSoloEspejo = safe._fromMirror === true || safe.fuente === 'wala-mirror';
+  if (esSoloEspejo && ETAPAS_INICIALES.includes(etapa)) {
+    const { paymentMethod, paymentLabel } = derivarMetodoPago(safe, true);
+    return {
+      key: 'pago_confirmado',
+      label: 'Confirmado',
+      color: '#16a34a', // verde (procesado/en el sistema de gestión)
+      paid: true,
+      paymentMethod,
+      // Mensaje claro de que el pedido ya está en el ERP/sistema de gestión.
+      paymentLabel: paymentLabel === 'Pendiente de pago'
+        ? 'En tu sistema de gestión'
+        : paymentLabel,
+    };
+  }
+
   // estadoToKey recorta el prefijo "en " y corrompe literales como "Entregado"
   // (-> "tregado"); por eso comprobamos también el texto crudo para terminal/anulado.
   const rawEstado = String(safe.estadoGeneral || safe.status || safe.estado || '').toLowerCase();

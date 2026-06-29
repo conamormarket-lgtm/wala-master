@@ -17,7 +17,15 @@ const getMillis = (v) => {
   return isNaN(d) ? 0 : d.getTime();
 };
 
-const cachePedidos = { dni: null, data: null };
+// Caché en memoria por (dni + userId): la clave debe considerar AMBOS, porque
+// añadir el userId puede traer pedidos del espejo (wala_pedidos) que no aparecen
+// buscando solo por DNI. Si la clave ignorara el userId, un usuario logueado
+// vería la caché vieja (sin sus pedidos-espejo). Ver searchOrdersByDniInERP.
+const cachePedidos = { clave: null, data: null };
+
+/** Clave de caché estable que combina DNI y userId (ambos pueden faltar). */
+const claveCache = (dni, userId) =>
+  `${dni != null ? String(dni).trim() : ''}::${userId != null ? String(userId) : ''}`;
 
 const MAX_ACCOUNT_SYNC_PER_LOAD = 25;
 
@@ -38,12 +46,16 @@ const esPedidoWala = (p) =>
     p.vendedor === 'Portal Web');
 
 /**
- * Hook para búsqueda de pedidos por DNI. Usa caché por DNI: si ya se cargó ese DNI, muestra datos al instante.
- * @param {string} [initialDni] - Si se pasa y hay caché para ese DNI, data se inicializa con la caché (evita parpadeo al volver).
+ * Hook para búsqueda de pedidos por DNI. Usa caché por (DNI + userId): si ya se
+ * cargó esa combinación, muestra datos al instante.
+ * @param {string} [initialDni] - Si se pasa y hay caché para esa clave, data se inicializa con la caché (evita parpadeo al volver).
+ * @param {string} [initialUserId] - UID del comprador autenticado; se hila a searchOrdersByDniInERP para recuperar también los pedidos del espejo (wala_pedidos).
  * @returns {Object} { loading, error, data: { pedidos, dataSource, clientData? }, buscar }
  */
-export const usePedidos = (initialDni) => {
-  const dniCache = initialDni != null && String(initialDni).trim() && cachePedidos.dni === String(initialDni).trim();
+export const usePedidos = (initialDni, initialUserId) => {
+  const claveInicial = claveCache(initialDni, initialUserId);
+  const dniCache = initialDni != null && String(initialDni).trim() &&
+    cachePedidos.clave === claveInicial && !!cachePedidos.data;
   const [loading, setLoading] = useState(!dniCache);
   const [error, setError] = useState(null);
   const [data, setData] = useState(() => (dniCache ? cachePedidos.data : null));
@@ -56,10 +68,11 @@ export const usePedidos = (initialDni) => {
     }
   }, [dniCache]);
 
-  const buscar = async (dni) => {
+  const buscar = async (dni, userId) => {
     const dniStr = dni != null ? String(dni).trim() : '';
+    const clave = claveCache(dniStr, userId);
 
-    if (dniStr && cachePedidos.dni === dniStr && cachePedidos.data) {
+    if (dniStr && cachePedidos.clave === clave && cachePedidos.data) {
       if (data !== cachePedidos.data) setData(cachePedidos.data);
       if (error !== null) setError(null);
       if (loading) setLoading(false);
@@ -73,7 +86,9 @@ export const usePedidos = (initialDni) => {
 
     try {
       if (isErpFirestoreAvailable() && dniStr) {
-        const { data: erpPedidos, error: erpError } = await searchOrdersByDniInERP(dniStr);
+        // Hilamos el userId para que searchOrdersByDniInERP también traiga la
+        // copia espejo (wala_pedidos) por buyerUid, no solo por DNI.
+        const { data: erpPedidos, error: erpError } = await searchOrdersByDniInERP(dniStr, { userId });
         if (erpError && erpPedidos === null) {
           setError(erpError);
           setLoading(false);
@@ -94,7 +109,7 @@ export const usePedidos = (initialDni) => {
                             .sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
         const clientData = extraerDatosClienteDesdePedidos(list);
         const result = { pedidos, dataSource: 'erp', clientData };
-        cachePedidos.dni = dniStr;
+        cachePedidos.clave = clave;
         cachePedidos.data = result;
         setData(result);
         setLoading(false);
@@ -126,7 +141,7 @@ export const usePedidos = (initialDni) => {
                               .filter(Boolean)
                               .sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
         const result = { pedidos: pedidosList, dataSource: 'api' };
-        cachePedidos.dni = dniStr;
+        cachePedidos.clave = clave;
         cachePedidos.data = result;
         setData(result);
       } else {

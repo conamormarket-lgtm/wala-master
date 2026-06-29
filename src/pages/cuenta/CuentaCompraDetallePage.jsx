@@ -74,19 +74,20 @@ function imagenDeLinea(linea, productoCatalogo) {
  * ────────────────────────────────────────────────────────────────────────── */
 const CuentaCompraDetallePage = () => {
   const { id } = useParams();
-  const { userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
+  const uid = user?.uid || undefined; // misma clave de caché que la lista; rescata espejos por usuario
 
-  // 1) Reutilizamos el MISMO hook de la lista (usePedidos por DNI). Sirve para
-  //    encontrar el pedido normalizado y disparar la búsqueda si hace falta.
-  const { loading: pedidosLoading, data, buscar } = usePedidos(dni);
+  // 1) Reutilizamos el MISMO hook de la lista (usePedidos por DNI + userId). Sirve
+  //    para encontrar el pedido normalizado y disparar la búsqueda si hace falta.
+  const { loading: pedidosLoading, data, buscar } = usePedidos(dni, uid);
   const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     if (authLoading || !dni || hasFetched) return;
     setHasFetched(true);
-    buscar(dni);
-  }, [authLoading, dni, hasFetched, buscar]);
+    buscar(dni, uid);
+  }, [authLoading, dni, uid, hasFetched, buscar]);
 
   const pedidoNormalizado = useMemo(
     () => (data?.pedidos || []).find((p) => p.id === id) || null,

@@ -97,6 +97,7 @@ function TarjetaPedido({ pedido }) {
     esRegalo,
     regalo,
     deliveryDate,
+    _procesadoErp,
   } = pedido;
 
   const tono = TONO_POR_ESTADO[estado?.key] || 'neutral';
@@ -132,9 +133,24 @@ function TarjetaPedido({ pedido }) {
           <span className={styles.codigo}>{codigo || 's/código'}</span>
           {fechaCompraLabel && <span className={styles.fecha}>{fechaCompraLabel}</span>}
         </div>
-        <Badge tone={tono} variant="soft" size="sm" dot>
-          {estado?.label || 'Sin estado'}
-        </Badge>
+        <div className={styles.cardHeadBadges}>
+          {/* Copia de respaldo cuyo doc vivo ya absorbió/borró el ERP: se muestra
+              marcada para que el admin no la confunda con un pedido pendiente,
+              pero tampoco la pierda de vista (red de seguridad wala_pedidos). */}
+          {_procesadoErp && (
+            <Badge
+              tone="neutral"
+              variant="soft"
+              size="sm"
+              title="Este pedido ya fue procesado por el ERP; se muestra desde la copia de respaldo de WALA."
+            >
+              🗄️ Procesado en ERP
+            </Badge>
+          )}
+          <Badge tone={tono} variant="soft" size="sm" dot>
+            {estado?.label || 'Sin estado'}
+          </Badge>
+        </div>
       </header>
 
       {/* DIRECCIÓN DE ENTREGA — lo más importante para el envío (resaltado). */}
