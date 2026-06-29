@@ -105,6 +105,7 @@ hay proyecto ERP separado en producción), así que todas deben estar en las mis
 | (ruleta) `PRIZES_COLLECTION` | PROD | Premios de ruleta. | `probability` |
 | `pedidos` | ERP (mismo proyecto `sistema-gestion-3b225`) | Pedidos legacy/validados del ERP (incluye pedidos del portal ya aprobados). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`, `clienteNumeroDocumento`, `numeroPedido`, `createdAt`, `email`, `canalVenta`, `estadoGeneral`, `montoTotal`/`montoPendiente`, `pagado`/`estadoPago` |
 | `pedidos_web` | ERP (mismo proyecto `sistema-gestion-3b225`) | Cola web de pedidos del portal (los crea el checkout vía `createWebOrder`, con `estadoValidacion:'pendiente'`, pendientes de validación manual). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`/`clienteNumeroDocumento` (normalizados) + `dniRaw`, `numeroPedido`, `createdAt`, `canalVenta:'Portal Web'`, `web:true`, `estadoGeneral:'Nuevo'`, `estadoValidacion`, `montoTotal`/`montoPendiente`, `productos` (mapa `item_N`) |
+| `wala_pedidos` | **PROD (WALA-only)** — el ERP NO la toca | **Espejo anti-pérdida de cada pedido del portal** (red de seguridad: el ERP borra/desmarca `pedidos_web` al aprobar). Lo escribe `createWebOrder` (`src/services/erp/firebase.js`) en **fire-and-forget best-effort** tras guardar en `pedidos_web` (no demora ni rompe el checkout). **NO copia secretos de pago**, solo campos de display. Servicio: `src/services/walaOrders.js`. **Límite:** solo cubre pedidos creados DESDE el deploy (29-06-2026). Detalle en §3.7. | `numeroPedido`, `portalPseudoOrderId`, `pedidoWebId`, `buyerUid`, `dni`/`dniRaw`/`clienteNumeroDocumento`, `clienteNombreCompleto`, `productos` (resumen), `montoTotal`, `moneda`, `canalVenta:'Portal Web'`, `web:true`, `createdAt`, `fuente:'wala-mirror'` |
 
 > **Ciclo de vida del pedido (creación → pago → estado → visibilidad):** la lógica completa
 > (en qué momento exacto se crea el documento, qué hace cada método de pago, cómo se DERIVA
@@ -517,6 +518,91 @@ sobre la página recibida (límite de Firestore: 1 faceta + orderBy por query). 
 > **Pendiente del dueño (datos, no código):** `node scripts/setup-marcas.js --apply` (crea
 > `landingPages/MUSSA` y `/MUEBLERIA` + termina el backfill `brandId`), configurar las páginas
 > MUSSA/MUEBLERIA en el editor visual y asignar productos a esas dos marcas (hoy todos = Con Amor).
+
+---
+
+## 3.7 `wala_pedidos` — espejo anti-pérdida de pedidos ✅ DESPLEGADO
+
+> **Red de seguridad** contra la desaparición de pedidos descrita en
+> [FLUJO-PEDIDOS.md §4-bis](./FLUJO-PEDIDOS.md). Desplegado el **2026-06-29** (commit
+> `68447dc`). Es **aditivo**: no cambia ninguna colección del ERP ni la lógica de
+> pago/totales.
+
+**Idea:** `wala_pedidos` es una colección **propiedad del lado WALA** que el ERP externo
+(`aimunayerp.com`) **no lee ni borra**. Guarda un **ESPEJO** (copia ligera) de cada pedido
+del portal, de modo que si el ERP borra/desmarca el doc de `pedidos_web` al aprobarlo, la
+copia **sigue viva** y "Mis Compras"/"Recepción" la **rescatan**.
+
+### Cómo y cuándo se escribe
+
+- Lo escribe **`createWebOrder`** (`src/services/erp/firebase.js`) **después** de guardar en
+  `pedidos_web`, en modo **fire-and-forget best-effort**: va en `try/catch` y **nunca** demora
+  ni hace fallar el checkout (si la copia falla, el pedido real ya quedó guardado igual).
+- Servicio: **`src/services/walaOrders.js`** —
+  - `mirrorWebOrder({ pedidoWebId, payload })` escribe la copia.
+  - `getWalaMirrorOrders({ userId, dni })` la lee para "Mis Compras".
+  - `getAllWalaMirrorOrders()` la lee (sin filtro de usuario) para "Recepción".
+- **Idempotente:** doc id estable (`sanearDocId(numeroPedido || pedidoWebId)`) +
+  `setDoc(..., { merge: true })`. Usa la misma instancia Firestore del ERP (`erpDb`).
+- **NO copia secretos de pago.** Solo campos display ya calculados.
+
+### Forma del documento
+
+```jsonc
+{
+  // Claves de identidad / búsqueda
+  "numeroPedido": "PD-xxxx",             // código de negocio del portal (pseudoOrderId)
+  "portalPseudoOrderId": "PD-xxxx",
+  "pedidoWebId": "<docId de pedidos_web>",
+  "buyerUid": "cliente-uid",             // = userId del checkout (CheckoutPage.jsx:750), o null
+
+  // Documento del cliente (normalizado + crudo) para casar en la lectura
+  "dni": "12345678",                     // normalizado (trim + sin espacios)
+  "dniRaw": "12345678",                  // valor tecleado original
+  "clienteNumeroDocumento": "12345678",  // = dni normalizado
+  "clienteNombreCompleto": "Nombre Cliente",
+
+  // Productos RESUMIDOS (ligeros, sin imágenes pesadas)
+  "productos": [
+    { "productoId": null, "nombre": "Producto", "brandId": null, "cantidad": 1,
+      "talla": null, "color": null, "precio": null, "subtotal": null, "personalizado": false }
+  ],
+
+  // Montos display (NO se recalcula nada; se copia el total ya calculado)
+  "montoTotal": 179.7,
+  "moneda": "PEN",
+
+  // Marcadores de origen WALA (para esPedidoWala y la derivación de estado)
+  "canalVenta": "Portal Web",
+  "web": true,
+
+  // Metadatos del espejo
+  "createdAt": "<serverTimestamp>",
+  "fuente": "wala-mirror"               // distingue la copia de un pedido vivo
+}
+```
+
+### Cómo lo usan las vistas
+
+- **Mis Compras** (`searchOrdersByDniInERP`, ahora acepta `{ userId }`): fusiona el espejo con
+  los pedidos vivos y **deduplica por clave de negocio** (`numeroPedido || portalPseudoOrderId ||
+  pedidoWebId || id`). Una clave "viva" solo cuenta si el doc **SIGUE siendo WALA** (`esPedidoWala`);
+  así un pedido **desmarcado por el ERP** (`web:false`) **no suprime** su espejo, y este lo rescata.
+  `usePedidos(dni, userId)` indexa su caché en memoria por `dni+userId`; `CuentaPedidosPage` y
+  `CuentaCompraDetallePage` pasan el `uid`.
+- **Estado del pedido solo-espejo:** `derivarEstadoCompra` (`src/utils/estadoCompra.js`, rama
+  `_fromMirror`/`fuente:'wala-mirror'`) lo muestra como **Confirmado / Procesado** (verde),
+  **NO** como "Pendiente de pago".
+- **Recepción** (`src/services/adminOrders.js` + `RecepcionPedidos.jsx`): incluye el espejo,
+  marcado **"Procesado en ERP"**.
+
+### Límite conocido (importante)
+
+El espejo se crea **AL MOMENTO de la compra** → **solo protege pedidos creados DESDE el deploy**
+(2026-06-29). Los pedidos **previos NO tienen espejo**: si el ERP ya los borró de `pedidos_web`
+**y** de `pedidos`, **no se pueden recuperar**. La **causa raíz sigue siendo del ERP** (que borra
+al aprobar); lo ideal es que el ERP **MARQUE en vez de borrar** (ver
+[FLUJO-PEDIDOS.md §4-bis.5](./FLUJO-PEDIDOS.md)).
 
 ---
 

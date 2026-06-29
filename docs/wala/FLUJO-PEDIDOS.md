@@ -2,8 +2,8 @@
 
 > Documento de lógica/flujo del PEDIDO del portal WALA. Fuente: lectura directa del
 > código (`src/pages/CheckoutPage.jsx`, `src/services/erp/firebase.js`,
-> `src/utils/estadoCompra.js`, `src/utils/pedidos.js`, `src/hooks/usePedidos.js`,
-> `src/services/adminOrders.js`, `src/components/CulqiCustomCheckout/`,
+> `src/services/walaOrders.js`, `src/utils/estadoCompra.js`, `src/utils/pedidos.js`,
+> `src/hooks/usePedidos.js`, `src/services/adminOrders.js`, `src/components/CulqiCustomCheckout/`,
 > `src/components/PaypalCheckout/`, `functions/index.js`).
 >
 > **Complementa a [MODELO-DATOS.md](./MODELO-DATOS.md)** (que describe las COLECCIONES
@@ -235,9 +235,10 @@ Además `derivarMetodoPago` (`estadoCompra.js:95`) deriva una etiqueta de métod
 ### 4.1 "Mis Compras" (cliente) — filtra por DNI normalizado
 
 - Página: `src/pages/cuenta/CuentaPedidosPage.jsx`. Toma el DNI **del perfil**
-  (`userProfile.dni`, `CuentaPedidosPage.jsx:113`) y llama `usePedidos(dni)` (`:114`).
-- Hook: `src/hooks/usePedidos.js` → `searchOrdersByDniInERP(dni)`
-  (`usePedidos.js:76`).
+  (`userProfile.dni`, `CuentaPedidosPage.jsx:113`) y llama `usePedidos(dni, uid)` (pasa también el
+  `uid` del usuario logueado para el rescate por `buyerUid` del espejo).
+- Hook: `src/hooks/usePedidos.js` → `searchOrdersByDniInERP({ dni, userId })`; la caché en memoria
+  se indexa por `dni+userId`.
 - Búsqueda (`erp/firebase.js:126`): query exacta
   `where('clienteNumeroDocumento','==', dniNorm)` (y fallback a `where('dni','==',…)`)
   sobre `pedidos` Y `pedidos_web`. `dniNorm = dni.trim().replace(/\s/g,'')`.
@@ -250,6 +251,10 @@ Además `derivarMetodoPago` (`estadoCompra.js:95`) deriva una etiqueta de métod
   perfil (rescata pedidos históricos guardados antes de normalizar) — `erp/firebase.js:158-208`.
 - Tras traer, `usePedidos` FILTRA con `esPedidoWala` (`usePedidos.js:33`, `:85`) ANTES de
   normalizar (el ERP mezcla pedidos nativos + del portal).
+- **Red de seguridad (desde 2026-06-29):** `searchOrdersByDniInERP` además **fusiona el espejo**
+  `wala_pedidos` (`getWalaMirrorOrders({ userId, dni })`) y **deduplica por clave de negocio**; un
+  pedido que el ERP ya **borró/desmarcó** de `pedidos_web` se **rescata** desde su copia. Ver
+  §4-bis.5–§4-bis.7 y [MODELO-DATOS.md §3.7](./MODELO-DATOS.md).
 
 ### 4.2 "Recepción de Pedidos" (admin) — todos los del portal
 
@@ -268,6 +273,10 @@ Además `derivarMetodoPago` (`estadoCompra.js:95`) deriva una etiqueta de métod
 - Normaliza con `normalizarPedidoRecepcion` (que usa `derivarEstadoCompra`,
   `adminOrders.js:227`) y arma un `resumen` (porEntregar / pendientesPago / enProduccion /
   entregados / montoTotal).
+- **Red de seguridad (desde 2026-06-29):** además **fusiona el espejo** `wala_pedidos`
+  (`getAllWalaMirrorOrders()`, sin filtro de usuario) en la misma dedup, marcado
+  **"Procesado en ERP"**, para que un pedido borrado/desmarcado por el ERP **no desaparezca** de
+  Recepción (`RecepcionPedidos.jsx`). Ver §4-bis.5–§4-bis.7.
 - Acceso: enlace **"📦 Recepción de Pedidos"** en el sidebar admin, debajo de Dashboard
   Analítica (`AdminLayout.jsx`, fix `09d86a9`). Ruta `/admin/dashboard/recepcion`.
 
@@ -352,31 +361,84 @@ a la colección `pedidos`** (la "oficial"/validada del ERP). Para **confirmarlo*
   (`scripts/diagnostico-pedidos.js:147-192`.) O mirar directamente en la **consola Firestore**.
 - **Interpretación del resultado:**
   - aparece en **`pedidos`** → **solo está OCULTO** para las vistas WALA (perdió los marcadores o
-    el DNI): es **arreglable desde el lado WALA** (ver §4-bis.5, FIX de lectura).
+    el DNI): es **arreglable desde el lado WALA** (red de seguridad ya desplegada para pedidos
+    nuevos, §4-bis.5).
   - **no aparece en NINGUNA** colección → **el ERP lo BORRÓ**: ya **no** es nuestro código,
-    hay que **coordinar con el ERP** (ver §4-bis.5, FIX raíz).
+    hay que **coordinar con el ERP** (FIX raíz, §4-bis.6). El espejo `wala_pedidos` (§4-bis.5) lo
+    habría rescatado **si** se creó desde el deploy del 2026-06-29.
 
-### 4-bis.5 Mitigaciones posibles (no implementadas aún — diagnóstico)
+### 4-bis.5 Mitigación DESPLEGADA: el espejo `wala_pedidos` (red de seguridad anti-pérdida)
 
-> Esta sección es **diagnóstico**, no un cambio liberado. Lista las direcciones de arreglo.
+> **Estado:** ✅ **desplegado el 2026-06-29** (commit `68447dc`). Implementa la red de
+> seguridad del lado WALA: una **copia propia** de cada pedido + lectura que la fusiona. Ver
+> el detalle del flujo en §4-bis.7 y el modelo de datos en
+> [MODELO-DATOS.md §3.7](./MODELO-DATOS.md).
 
-- **FIX lado WALA (lectura — robustecer la visibilidad):**
-  - **Robustecer `esPedidoWala`** para que **no dependa de `web===true`** (que el ERP puede
-    apagar): bastaría con cualquiera de `canalVenta`/`activador`/`vendedor` = `'Portal Web'`.
-  - **Buscar también por `userId`/`buyerUid` y/o email**, no solo por DNI exacto: el checkout
-    **ya guarda `userId`** en el pedido (`CheckoutPage.jsx:750`) pero la **lectura no lo usa** —
-    sería un segundo camino de rescate inmune al cambio de formato del DNI.
-  - **Guardar una copia propia de WALA** del pedido (p. ej. una colección `wala_orders` que el
-    ERP no toque) para **conservar el historial** del cliente **aunque el ERP borre/desmarque** el
-    doc de `pedidos_web`.
-  - **Distinguir "Aprobado" de "no existe"**: hoy `CartContext` trata "doc ausente" como
-    "aprobado" (`CartContext.jsx:82-85`); convendría no asumir aprobación por simple ausencia.
-- **FIX raíz (ERP — NO es nuestro código):** que el ERP, **al aprobar, NO borre** el doc de
-  `pedidos_web` sino que lo **marque conservando** `canalVenta:'Portal Web'` + el
-  `clienteNumeroDocumento` **normalizado** + `createdAt`. Esto **elimina** la desaparición de
-  raíz; lo demás (lado WALA) son **redes de seguridad**.
+Se implementó la dirección "lado WALA" del diagnóstico como una **red de seguridad**: una
+colección **WALA-only `wala_pedidos`** (el ERP **no la toca**) que guarda un **ESPEJO** ligero
+de cada pedido del portal. Si el ERP borra/desmarca el doc de `pedidos_web` al aprobar, la copia
+**sigue viva** y las vistas la **rescatan**. Lo entregado:
 
-### 4-bis.6 ⚠️ Aviso de seguridad (reglas de borrado)
+- ✅ **Copia propia de WALA** (`wala_pedidos`): la escribe `createWebOrder`
+  (`src/services/erp/firebase.js`) en **fire-and-forget best-effort** tras guardar en
+  `pedidos_web` (no demora ni rompe el checkout; **no copia secretos de pago**). Servicio nuevo
+  `src/services/walaOrders.js` (`mirrorWebOrder` / `getWalaMirrorOrders` / `getAllWalaMirrorOrders`).
+- ✅ **Lectura por `userId`/`buyerUid` además del DNI:** `getWalaMirrorOrders({ userId, dni })`
+  busca por `buyerUid` (camino preferente, inmune al cambio de formato del DNI) y por DNI
+  (normalizado + crudo). `searchOrdersByDniInERP` ahora acepta `{ userId }`, fusiona el espejo y
+  **deduplica por clave de negocio**; una clave "viva" solo cuenta si el doc **sigue siendo WALA**
+  (`esPedidoWala`), así un pedido **desmarcado** (`web:false`) **no suprime** su espejo.
+- ✅ **Estado correcto del pedido solo-espejo:** `derivarEstadoCompra` lo muestra
+  **Confirmado/Procesado** (verde, rama `_fromMirror`/`fuente:'wala-mirror'`), **no** "Pendiente
+  de pago". Recepción (`adminOrders.js` + `RecepcionPedidos.jsx`) lo incluye marcado
+  **"Procesado en ERP"**.
+
+**⚠️ LÍMITE (importante):** el espejo se crea **AL MOMENTO de la compra** → **solo protege
+pedidos creados DESDE el deploy** (2026-06-29). Los pedidos **previos NO tienen espejo**: si el
+ERP ya los borró de `pedidos_web` **y** de `pedidos`, **no se pueden recuperar**.
+
+**Sigue ⬜ (no implementado):**
+- **Robustecer `esPedidoWala`** para que **no dependa de `web===true`** (que el ERP puede
+  apagar): bastaría con cualquiera de `canalVenta`/`activador`/`vendedor` = `'Portal Web'`.
+- **Distinguir "Aprobado" de "no existe"**: hoy `CartContext` trata "doc ausente" como
+  "aprobado" (`CartContext.jsx:82-85`); convendría no asumir aprobación por simple ausencia.
+
+### 4-bis.6 FIX raíz (ERP — NO es nuestro código)
+
+El espejo es una **red de seguridad**, no la cura: la causa raíz sigue siendo del ERP. Lo ideal
+es que el ERP, **al aprobar, NO borre** el doc de `pedidos_web` sino que lo **marque conservando**
+`canalVenta:'Portal Web'` + el `clienteNumeroDocumento` **normalizado** + `createdAt`. Esto
+**elimina** la desaparición de raíz; el espejo solo **mitiga** sus efectos (y solo para pedidos
+nuevos, ver el límite de §4-bis.5).
+
+### 4-bis.7 Flujo del espejo: crear → copiar → (el ERP borra) → rescatar
+
+```
+  1) CLIENTE genera el pedido en el portal
+       createWebOrder → addDoc REAL en pedidos_web/{autoId}            (§1.2, doc "vivo")
+       └─ y, fire-and-forget best-effort, mirrorWebOrder(...) → wala_pedidos/{numeroPedido}
+          (copia ligera WALA-only; si falla, NO afecta al checkout)
+
+  2) APARECE en ambas vistas (leen pedidos_web + AHORA también wala_pedidos)
+       • Mis Compras → searchOrdersByDniInERP({ dni, userId })   (fusiona vivo + espejo, dedup)
+       • Recepción   → getWalaOrdersForAdmin() + getAllWalaMirrorOrders()
+
+  3) EL OPERADOR DEL ERP "aprueba" → BORRA o desmarca el doc de pedidos_web   ◄── días después
+
+  4) EL PEDIDO NO DESAPARECE:
+       • el doc vivo ya no cumple esPedidoWala (o ya no está), PERO
+       • la copia en wala_pedidos SIGUE viva (el ERP no la toca) → la vista la rescata
+       • derivarEstadoCompra ve fuente:'wala-mirror' → lo muestra CONFIRMADO/Procesado (verde),
+         NO "Pendiente de pago"   (estadoCompra.js, rama _fromMirror)
+```
+
+**Dedup vivo vs espejo:** la fusión deduplica por **clave de negocio**
+(`numeroPedido || portalPseudoOrderId || pedidoWebId || id`). La clave "viva" solo gana si su doc
+**sigue siendo WALA** (`esPedidoWala`); en cuanto el ERP lo desmarca (`web:false`), deja de
+suprimir el espejo y **este pasa a representar el pedido**. Así no se ven duplicados mientras el
+pedido vive, y no se pierde cuando muere.
+
+### 4-bis.8 ⚠️ Aviso de seguridad (reglas de borrado)
 
 Existe `firebase/firestore.rules.produccion:85` con **`delete: if isAuth()`** sobre
 `pedidos_web` → **cualquier usuario logueado podría borrar** pedidos. El `firebase.json` apunta a
@@ -432,7 +494,8 @@ pero al leer/filtrar pagos hay que recordar que **no comparten el mismo conjunto
 | Archivo | Rol en el flujo |
 |---|---|
 | `src/pages/CheckoutPage.jsx` | Único punto de creación (`onSubmit`), payload, abort, paso de pago. |
-| `src/services/erp/firebase.js` | `createWebOrder` (escritura), `searchOrdersByDniInERP` (Mis Compras), `getOrderByIdAnyCollection` (detalle). |
+| `src/services/erp/firebase.js` | `createWebOrder` (escritura + escribe el espejo fire-and-forget), `searchOrdersByDniInERP` (Mis Compras, fusiona el espejo), `getOrderByIdAnyCollection` (detalle). |
+| `src/services/walaOrders.js` | **Espejo anti-pérdida `wala_pedidos`**: `mirrorWebOrder` (escribe la copia), `getWalaMirrorOrders` (lee para Mis Compras), `getAllWalaMirrorOrders` (lee para Recepción). |
 | `src/components/CulqiCustomCheckout/CulqiCustomCheckout.jsx` | Tokeniza y llama `processCulqiPayment`. |
 | `functions/index.js` | `processCulqiPayment` (cobra + marca pagado), `culqiWebhook` (respaldo). |
 | `src/components/PaypalCheckout/PaypalCheckout.jsx` | Captura PayPal (USD); marca pagado en cliente o server-side (flag). |
@@ -447,6 +510,9 @@ pero al leer/filtrar pagos hay que recordar que **no comparten el mismo conjunto
 
 ## 7. Commits relevantes (recientes)
 
+- `68447dc` — feat(pedidos): red de seguridad anti-pérdida — espejo `wala_pedidos` (escrito en
+  `createWebOrder` fire-and-forget), lectura por `userId`/DNI fusionada en Mis Compras y Recepción,
+  estado Confirmado para el pedido solo-espejo. Ver §4-bis.5–§4-bis.7.
 - `de1594b` — fix(pedidos): visibilidad — normaliza DNI al crear + no traga el fallo de
   guardado (abort con toast).
 - `e84b6b1` — fix(pagos): Culqi marca el pedido como pagado tras el cobro exitoso.
