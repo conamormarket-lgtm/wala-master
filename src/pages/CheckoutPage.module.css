@@ -570,3 +570,270 @@
   color: var(--violet-800, #5B21B6);
   text-align: center;
 }
+
+/* ═══════════════════════════════════════════
+   ESTILOS BASE (modo claro) de clases extraídas de
+   estilos INLINE de CheckoutPage.jsx. Antes el color/fondo
+   vivía inline; lo movemos aquí para poder tematizarlo en
+   oscuro sin tocar el layout (que sigue inline en el JSX).
+   En modo CLARO deben verse IGUAL que antes.
+   ═══════════════════════════════════════════ */
+
+/* Paso de pago: título y subtítulo (antes #1e293b / #64748b inline). */
+.payTitle {
+  color: #1e293b;
+}
+
+.paySubtitle {
+  color: #64748b;
+}
+
+/* Selects de documento/ciudad (antes background:white inline). */
+.selectInput {
+  background: white;
+  color: var(--gris-texto-principal);
+}
+
+/* Caja "Entrega programada" (antes #f5f3ff / #ddd6fe inline). */
+.scheduledGiftBox {
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+}
+
+.scheduledGiftHead {
+  color: #5b21b6;
+}
+
+.scheduledGiftOccasion {
+  color: #6d28d9;
+}
+
+.scheduledGiftWarn {
+  color: #b45309;
+}
+
+/* Aviso "sin productos seleccionados" (antes #fef2f2 / #fecaca / #b91c1c inline). */
+.noItemsWarning {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+/* Fila de ahorro por monedas en el resumen (antes #fffbeb / #d97706 inline). */
+.discountRow {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+/* Bloque informativo internacional (antes borde dashed #cbd5e1 y textos #0f172a/#64748b inline). */
+.intlPriceInfo {
+  border-top: 1px dashed #cbd5e1;
+}
+
+.intlPayRow {
+  color: #0f172a;
+}
+
+.intlPriceNote {
+  color: #64748b;
+}
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE (data-theme="dark")
+   Tematiza TODAS las superficies/textos claros hardcodeados
+   del checkout: ningún fondo queda claro, el texto se vuelve
+   legible, y los acentos rosa (modo regalo) y ámbar (monedas)
+   se conservan como versiones OSCURAS TRANSLÚCIDAS.
+   Tokens: --color-bg #14121C, --color-surface #1E1B2E,
+   --color-surface-2 #272338, --color-text #F1EEF9,
+   --color-text-muted #C7C1D8, --color-border #332E45,
+   --primary-color #A78BFA.
+   ═══════════════════════════════════════════ */
+
+/* ── Encabezados/labels/textos generales del formulario ── */
+:global([data-theme='dark']) .container h1,
+:global([data-theme='dark']) .form h2,
+:global([data-theme='dark']) .field label,
+:global([data-theme='dark']) .summary h2 {
+  color: var(--color-text);
+}
+
+/* Resumen del pedido: superficie oscura (por si el wrapper no fuese transparente). */
+:global([data-theme='dark']) .summary {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .summaryItem span:first-child {
+  color: var(--color-text-muted);
+}
+
+/* Bordes/divisores del resumen al color de borde oscuro. */
+:global([data-theme='dark']) .items,
+:global([data-theme='dark']) .finalTotal {
+  border-color: var(--color-border);
+}
+
+/* Inputs/textarea del formulario: superficie elevada y texto claro. */
+:global([data-theme='dark']) .field input {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+/* Selects (documento/ciudad): vencen el background:white de la clase base. */
+:global([data-theme='dark']) .selectInput {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+/* Paso de pago: título y subtítulo legibles en oscuro. */
+:global([data-theme='dark']) .payTitle {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .paySubtitle {
+  color: var(--color-text-muted);
+}
+
+/* ── MODO REGALO: tinte rosa oscuro translúcido (conserva borde dashed) ── */
+:global([data-theme='dark']) .giftModeContainer {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.12), rgba(225, 29, 72, 0.08));
+  border-color: #fb7185; /* rosa dashed legible sobre fondo oscuro */
+}
+
+:global([data-theme='dark']) .giftModeToggle label {
+  color: #fb7185; /* rosa más claro, legible en oscuro */
+}
+
+:global([data-theme='dark']) .giftModeToggle p {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .giftModeFields .field label {
+  color: #fda4af; /* rosa pálido legible */
+}
+
+/* Textarea del mensaje de regalo: superficie elevada + borde rosa tenue. */
+:global([data-theme='dark']) .giftModeFields textarea {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: rgba(251, 113, 133, 0.45);
+}
+
+/* Chips de sticker de Kapi: superficie elevada con acento rosa. */
+:global([data-theme='dark']) .stickerSelection label {
+  background: var(--color-surface-2);
+  color: #fb7185;
+  border-color: rgba(251, 113, 133, 0.45);
+}
+
+/* El sticker seleccionado conserva el relleno rosa sólido (acento). */
+:global([data-theme='dark']) .stickerSelected {
+  background: #e11d48 !important;
+  color: white !important;
+  border-color: #e11d48 !important;
+}
+
+/* Caja "Entrega programada": tinte violeta oscuro translúcido. */
+:global([data-theme='dark']) .scheduledGiftBox {
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.4);
+}
+
+:global([data-theme='dark']) .scheduledGiftHead {
+  color: #c4b5fd; /* violeta claro legible */
+}
+
+:global([data-theme='dark']) .scheduledGiftOccasion {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .scheduledGiftWarn {
+  color: #fcd34d; /* ámbar claro legible (aviso) */
+}
+
+/* Aviso "sin productos seleccionados": rojo oscuro translúcido. */
+:global([data-theme='dark']) .noItemsWarning {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5; /* rojo claro legible */
+}
+
+/* ── AVISO DE MONEDAS: tinte ámbar oscuro translúcido ── */
+:global([data-theme='dark']) .coinsNotice {
+  border-color: rgba(252, 211, 77, 0.45);
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.14), rgba(245, 158, 11, 0.08));
+}
+
+/* Fallback sólido en oscuro cuando no hay soporte de backdrop-filter. */
+@supports not ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
+  :global([data-theme='dark']) .coinsNotice {
+    background: linear-gradient(145deg, rgba(245, 158, 11, 0.14), rgba(245, 158, 11, 0.08));
+  }
+}
+
+:global([data-theme='dark']) .coinsNoticeLabel {
+  color: #fcd34d; /* ámbar claro legible */
+}
+
+:global([data-theme='dark']) .coinsNoticeHint {
+  color: #fde68a; /* ámbar pálido legible */
+}
+
+/* Fila de ahorro por monedas: tinte ámbar oscuro translúcido. */
+:global([data-theme='dark']) .discountRow {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+}
+
+/* ── AVISO ENVÍO INTERNACIONAL: tinte azul oscuro translúcido ── */
+:global([data-theme='dark']) .intlNotice {
+  border-color: rgba(96, 165, 250, 0.4);
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.16), rgba(59, 130, 246, 0.08));
+  color: #93c5fd; /* azul claro legible */
+}
+
+@supports not ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
+  :global([data-theme='dark']) .intlNotice {
+    background: rgba(59, 130, 246, 0.14);
+  }
+}
+
+/* Bloque informativo internacional del resumen. */
+:global([data-theme='dark']) .intlPriceInfo {
+  border-top-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .intlPayRow {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .intlPriceNote {
+  color: var(--color-text-muted);
+}
+
+/* ── PANEL DE RECUPERACIÓN (Plan B): tinte verde oscuro translúcido ── */
+:global([data-theme='dark']) .recoveryCard {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: linear-gradient(145deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.08));
+}
+
+:global([data-theme='dark']) .recoveryTitle {
+  color: #86efac; /* verde claro legible */
+}
+
+:global([data-theme='dark']) .recoveryText {
+  color: var(--color-text-muted);
+}
+
+/* ── PANEL WHATSAPP POR MARCA: superficie elevada con acento violeta ── */
+:global([data-theme='dark']) .brandWaPanel {
+  background: var(--color-surface-2);
+  border-color: rgba(167, 139, 250, 0.4);
+}
+
+:global([data-theme='dark']) .brandWaTitle {
+  color: #c4b5fd; /* violeta claro legible */
+}

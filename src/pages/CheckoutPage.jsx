@@ -1231,8 +1231,8 @@ const CheckoutPage = () => {
         <div className={styles.formContainer}>
           {paymentStepData ? (
             <GlassCard variant="solid" padding="lg" className={styles.payCard}>
-              <h2 style={{ marginBottom: '1rem', textAlign: 'center', color: '#1e293b' }}>Selecciona tu método de pago</h2>
-              <p style={{ textAlign: 'center', marginBottom: '2rem', color: '#64748b' }}>
+              <h2 className={styles.payTitle} style={{ marginBottom: '1rem', textAlign: 'center' }}>Selecciona tu método de pago</h2>
+              <p className={styles.paySubtitle} style={{ textAlign: 'center', marginBottom: '2rem' }}>
                 Tu pedido se ha generado correctamente. Para confirmarlo, realiza el pago.
               </p>
 
@@ -1417,7 +1417,7 @@ const CheckoutPage = () => {
                       onChange={formik.handleChange}
                       onBlur={formik.handleBlur}
                       className={styles.selectInput}
-                      style={{ flex: '0 0 38%', padding: '0.8rem 0.6rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem', background: 'white' }}
+                      style={{ flex: '0 0 38%', padding: '0.8rem 0.6rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem' }}
                       aria-label="Tipo de documento"
                     >
                       {(getDocTypesForCountry(formik.values.country) || []).map((t) => (
@@ -1490,7 +1490,7 @@ const CheckoutPage = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   className={styles.selectInput}
-                  style={{ padding: '0.8rem 1rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem', background: 'white' }}
+                  style={{ padding: '0.8rem 1rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem' }}
                 >
                   <option value="Lima">Lima Metropolitana</option>
                   <option value="Callao">Callao</option>
@@ -1553,27 +1553,25 @@ const CheckoutPage = () => {
                       la fecha es de lectura; no hay input que altere el flujo de pago. */}
                   {hasScheduledGift && (
                     <div
-                      className={styles.field}
+                      className={`${styles.field} ${styles.scheduledGiftBox}`}
                       style={{
                         padding: '0.85rem 1rem',
                         marginBottom: '0.5rem',
-                        background: '#f5f3ff',
-                        border: '1px solid #ddd6fe',
                         borderRadius: '10px'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, color: '#5b21b6' }}>
+                      <div className={styles.scheduledGiftHead} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
                         <span aria-hidden="true">📅</span>
                         <span>Entrega programada para {formatDeliveryDate(registryDeliveryDate)}</span>
                       </div>
                       {registryEventLabel && (
-                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#6d28d9' }}>
+                        <p className={styles.scheduledGiftOccasion} style={{ margin: '0.25rem 0 0', fontSize: '0.85rem' }}>
                           Ocasión: {registryEventLabel}
                         </p>
                       )}
                       {/* Aviso (no bloqueante) si la fecha está dentro de la ventana mínima. */}
                       {deliveryTooSoon && (
-                        <p style={{ margin: '0.4rem 0 0', fontSize: '0.82rem', color: '#b45309' }}>
+                        <p className={styles.scheduledGiftWarn} style={{ margin: '0.4rem 0 0', fontSize: '0.82rem' }}>
                           ⚠️ La fecha elegida está muy cerca (faltan ~{deliveryBusinessDays} días hábiles).
                           La preparación y el envío toman de 7 a 30 días hábiles, así que la entrega
                           podría no llegar a tiempo. Puedes continuar igual.
@@ -1638,7 +1636,7 @@ const CheckoutPage = () => {
 
             {/* GUARD (dinero): aviso si no hay ningún producto seleccionado para pagar. */}
             {!hasSelectedItems && (
-              <p style={{ margin: '0 0 0.75rem', padding: '0.75rem 1rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#b91c1c', fontSize: '0.875rem' }}>
+              <p className={styles.noItemsWarning} style={{ margin: '0 0 0.75rem', padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.875rem' }}>
                 Selecciona al menos un producto para pagar. Vuelve al carrito y marca "Comprar esta vez".
               </p>
             )}
@@ -1697,7 +1695,7 @@ const CheckoutPage = () => {
                 </div>
               )}
               {discount > 0 && (
-                <div className={styles.totalRow} style={{ color: '#d97706', fontWeight: 600, fontSize: '1.05rem', margin: '0.5rem 0', padding: '0.5rem', background: '#fffbeb', borderRadius: '8px' }}>
+                <div className={`${styles.totalRow} ${styles.discountRow}`} style={{ fontWeight: 600, fontSize: '1.05rem', margin: '0.5rem 0', padding: '0.5rem', borderRadius: '8px' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <KapiSolCoinMini /> Ahorro Monedas:
                   </span>
@@ -1718,18 +1716,18 @@ const CheckoutPage = () => {
                 Muestra el equivalente local (display) y deja claro el cobro en USD.
                 No reemplaza el total PEN: es información adicional para el comprador. */}
             {!formIsPeru && (
-              <div className={styles.intlPriceInfo} style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px dashed #cbd5e1', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <div className={styles.intlPriceInfo} style={{ marginTop: '0.75rem', paddingTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                 {summaryLocalAmount != null && (
                   <div className={styles.totalRow}>
                     <span>Equivalente aprox.:</span>
                     <span>{formatMoney(summaryLocalAmount, summaryCurrency)}</span>
                   </div>
                 )}
-                <div className={styles.totalRow} style={{ fontWeight: 600, color: '#0f172a' }}>
+                <div className={`${styles.totalRow} ${styles.intlPayRow}`} style={{ fontWeight: 600 }}>
                   <span>Pagarás por PayPal:</span>
                   <span>{summaryAmountUsd.toFixed(2)} USD</span>
                 </div>
-                <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                <p className={styles.intlPriceNote} style={{ margin: '0.15rem 0 0', fontSize: '0.8rem' }}>
                   El cobro internacional se realiza en dólares (USD). La moneda local
                   es solo una referencia informativa.
                 </p>
