@@ -680,10 +680,27 @@ export const deleteProduct = async (id) => {
 };
 
 export const getCategories = async () => {
-  const result = await getCollection('categories', [], { field: 'order', direction: 'asc' });
-  if (!result.error && result.data) {
+  // Unifica las DOS colecciones de categorías que coexisten en el proyecto:
+  //  - 'tienda_categories': la que EDITA el admin (AdminCategorias) y de donde
+  //    salen los ids que se asignan a los productos. Fuente curada/canónica.
+  //  - 'categories': la que históricamente leía el storefront.
+  // Se UNEN por id para NO perder ninguna categoría real (el cruce id→nombre del
+  // nav y del sidebar resuelve aunque el id viva solo en una de las dos). Para
+  // nombre/imagen gana 'tienda_categories'. Retrocompatible: si una colección está
+  // vacía o no existe, se usa la otra; el storefront de Con Amor sigue resolviendo.
+  const [store, admin] = await Promise.all([
+    getCollection('categories', [], { field: 'order', direction: 'asc' }),
+    getCollection('tienda_categories', [], { field: 'order', direction: 'asc' }),
+  ]);
+  const porId = new Map();
+  (store.data || []).forEach((c) => { if (c && c.id) porId.set(c.id, c); });
+  (admin.data || []).forEach((c) => { if (c && c.id) porId.set(c.id, { ...porId.get(c.id), ...c }); });
+  const data = [...porId.values()].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+  const error = data.length ? null : (store.error || admin.error || null);
+  const result = { data, error };
+  if (!error && data.length) {
     try {
-      localStorage.setItem(CACHE_KEYS.categories, JSON.stringify(result.data));
+      localStorage.setItem(CACHE_KEYS.categories, JSON.stringify(data));
     } catch(e) {}
   }
   return result;
