@@ -42,11 +42,15 @@
   NO marca     COBRA + marca pagado         marca pagado
   pagado       (montoPendiente:0)           (montoDeuda:0/conDeuda:false
   (asesor      [+ webhook respaldo]          ó server-side con flag)
-   confirma)
+   confirma)         │                            │
+                  el pago también pone  wala_pedidos.estadoWala = "pagado"
+                  (marcarWalaPedidoPagado — ADITIVO/best-effort, commit 1d8f639, §4-bis.9)
                   │
                   ▼
        ESTADO en "Mis Compras" / "Recepción":
-       derivarEstadoCompra(pedido)  =  eje PRODUCCIÓN (estadoGeneral)  ×  eje PAGO (esPagado)
+       derivarEstadoCompra(pedido)  =  MÁS AVANZADO entre:
+         · ERP  : eje PRODUCCIÓN (estadoGeneral) × eje PAGO (esPagado)   [histórico]
+         · WALA : wala_pedidos.estadoWala (FUENTE DE VERDAD propia)      [§4-bis.5]
 ```
 
 Dos ejes ortogonales gobiernan TODO lo visible:
@@ -228,6 +232,24 @@ Además `derivarMetodoPago` (`estadoCompra.js:95`) deriva una etiqueta de métod
 (tarjeta/Culqi, PayPal, "Por validar (Yape/Plin/transf.)", "Pendiente de pago") leyendo
 `metodoPago` o el último `historialPagos[].metodo`.
 
+### 3.4 Tercer insumo — `estadoWala` (FUENTE DE VERDAD de WALA)
+
+Desde el 2026-06-29 (commit `1d8f639`), `derivarEstadoCompra` reconoce además el **estado propio
+de WALA** que vive en `wala_pedidos.estadoWala` (§4-bis.5). Lo recibe de dos formas:
+
+- en un pedido **solo-espejo** (sin doc vivo del ERP), el propio doc trae `estadoWala`;
+- en un pedido **vivo del ERP**, la lectura le **adjunta** `_walaEstado`/`_walaPagado` desde el
+  espejo (lo hacen `searchOrdersByDniInERP` y `getWalaOrdersForAdmin`).
+
+`estadoWalaAEstadoCompra` traduce `estadoWala` al mismo vocabulario de `key`
+(`pendiente_pago → por_confirmar_pago`, `pagado → pago_confirmado`, `en_preparacion`/`enviado →
+en_preparacion`, `entregado → entregado`, `cancelado → anulado`). Cuando hay **dos fuentes**
+(ERP vivo + WALA), se muestra el estado **MÁS AVANZADO** por rango
+(`por_confirmar_pago < pago_confirmado < en_preparacion < entregado`), con `anulado/cancelado`
+como terminal que gana si **cualquiera** lo marca. Así un "Entregado/Finalizado" del ERP **no se
+degrada** a "pagado", ni al revés. Para pedidos vivos que **no** son de WALA (sin `estadoWala`)
+el comportamiento es **exactamente** el histórico de §3.1–§3.3.
+
 ---
 
 ## 4. VISIBILIDAD del pedido
@@ -367,35 +389,56 @@ a la colección `pedidos`** (la "oficial"/validada del ERP). Para **confirmarlo*
     hay que **coordinar con el ERP** (FIX raíz, §4-bis.6). El espejo `wala_pedidos` (§4-bis.5) lo
     habría rescatado **si** se creó desde el deploy del 2026-06-29.
 
-### 4-bis.5 Mitigación DESPLEGADA: el espejo `wala_pedidos` (red de seguridad anti-pérdida)
+### 4-bis.5 DESPLEGADO: `wala_pedidos` como FUENTE DE VERDAD de WALA (espejo + `estadoWala` propio)
 
-> **Estado:** ✅ **desplegado el 2026-06-29** (commit `68447dc`). Implementa la red de
-> seguridad del lado WALA: una **copia propia** de cada pedido + lectura que la fusiona. Ver
-> el detalle del flujo en §4-bis.7 y el modelo de datos en
-> [MODELO-DATOS.md §3.7](./MODELO-DATOS.md).
+> **Estado:** ✅ **desplegado el 2026-06-29**. Dos commits encadenados:
+> - `68447dc` — nace el **espejo** `wala_pedidos` (red de seguridad anti-pérdida).
+> - `1d8f639` — el espejo **se gradúa a FUENTE DE VERDAD**: gana un **estado propio
+>   `estadoWala`** que el portal **no degrada** cuando el ERP toca su doc, y el **pago lo
+>   sincroniza el backend** (§4-bis.9).
+>
+> Ver el flujo del espejo en §4-bis.7, el del estado propio en §4-bis.9 y el modelo de datos
+> en [MODELO-DATOS.md §3.7](./MODELO-DATOS.md).
 
-Se implementó la dirección "lado WALA" del diagnóstico como una **red de seguridad**: una
-colección **WALA-only `wala_pedidos`** (el ERP **no la toca**) que guarda un **ESPEJO** ligero
-de cada pedido del portal. Si el ERP borra/desmarca el doc de `pedidos_web` al aprobar, la copia
-**sigue viva** y las vistas la **rescatan**. Lo entregado:
+**Decisión del dueño:** la base interna de WALA es la **fuente de verdad** del estado del
+pedido; *"ya no importan los pedidos viejos"*. La colección **WALA-only `wala_pedidos`** (el ERP
+**no la toca**) deja de ser un mero respaldo y pasa a **gobernar el estado** que ve el cliente,
+independiente de lo que el ERP haga con `pedidos_web`. Lo entregado:
 
 - ✅ **Copia propia de WALA** (`wala_pedidos`): la escribe `createWebOrder`
   (`src/services/erp/firebase.js`) en **fire-and-forget best-effort** tras guardar en
-  `pedidos_web` (no demora ni rompe el checkout; **no copia secretos de pago**). Servicio nuevo
+  `pedidos_web` (no demora ni rompe el checkout; **no copia secretos de pago**). Servicio
   `src/services/walaOrders.js` (`mirrorWebOrder` / `getWalaMirrorOrders` / `getAllWalaMirrorOrders`).
+- ✅ **Estado propio `estadoWala`** (commit `1d8f639`): ciclo
+  **`pendiente_pago` → `pagado` → `en_preparacion` → `enviado` → `entregado`**, con
+  **`cancelado`** terminal alterno. Al crear nace **`pendiente_pago`**. Helpers en
+  `walaOrders.js`: `ESTADOS_WALA`, `updateWalaOrderEstado` (idempotente/best-effort, crea con
+  `setDoc{merge}` si no existía), `markWalaOrderPagado`, `estadoWalaADisplay`.
+- ✅ **`mirrorWebOrder` NO degrada un pedido ya pagado:** antes de escribir hace `getDoc`; si el
+  espejo **ya existe**, **conserva** su `estadoWala`/`pagado`/`createdAt` y **solo refresca los
+  campos display** (un reintento/re-mirror **no** revierte a `pendiente_pago`). Si es nuevo, nace
+  `pendiente_pago`.
 - ✅ **Lectura por `userId`/`buyerUid` además del DNI:** `getWalaMirrorOrders({ userId, dni })`
   busca por `buyerUid` (camino preferente, inmune al cambio de formato del DNI) y por DNI
-  (normalizado + crudo). `searchOrdersByDniInERP` ahora acepta `{ userId }`, fusiona el espejo y
+  (normalizado + crudo). `searchOrdersByDniInERP` acepta `{ userId }`, fusiona el espejo y
   **deduplica por clave de negocio**; una clave "viva" solo cuenta si el doc **sigue siendo WALA**
   (`esPedidoWala`), así un pedido **desmarcado** (`web:false`) **no suprime** su espejo.
-- ✅ **Estado correcto del pedido solo-espejo:** `derivarEstadoCompra` lo muestra
-  **Confirmado/Procesado** (verde, rama `_fromMirror`/`fuente:'wala-mirror'`), **no** "Pendiente
-  de pago". Recepción (`adminOrders.js` + `RecepcionPedidos.jsx`) lo incluye marcado
-  **"Procesado en ERP"**.
+- ✅ **Estado MÁS AVANZADO entre las dos fuentes:** `derivarEstadoCompra` (`estadoCompra.js`)
+  mapea `estadoWala` (`estadoWalaAEstadoCompra`) y, cuando coexisten el doc vivo del ERP y el
+  espejo, muestra el **más avanzado** de ambos (rango
+  `por_confirmar_pago < pago_confirmado < en_preparacion < entregado`; `anulado/cancelado` gana
+  si cualquiera lo marca). **No degrada** un "Entregado" del ERP a "pagado" ni viceversa. El
+  pedido **solo-espejo** se ve **Confirmado/Procesado** (verde), **no** "Pendiente de pago".
+  Recepción (`adminOrders.js` + `RecepcionPedidos.jsx`) lo incluye marcado **"Procesado en ERP"**.
 
 **⚠️ LÍMITE (importante):** el espejo se crea **AL MOMENTO de la compra** → **solo protege
 pedidos creados DESDE el deploy** (2026-06-29). Los pedidos **previos NO tienen espejo**: si el
 ERP ya los borró de `pedidos_web` **y** de `pedidos`, **no se pueden recuperar**.
+
+**FASE SIGUIENTE ⬜ (no implementada — el campo ya está listo):**
+- **Endpoint con API KEY para el ERP**: que el ERP **LEA** y **SOLO ACTUALICE** `estadoWala`
+  (jamás borre). `estadoWala` + `updateWalaOrderEstado` ya quedan listos; falta el endpoint y la
+  credencial.
 
 **Sigue ⬜ (no implementado):**
 - **Robustecer `esPedidoWala`** para que **no dependa de `web===true`** (que el ERP puede
@@ -447,6 +490,39 @@ que en producción esté la restrictiva**, no la de `.produccion` (más laxa). N
 **Admin SDK**, que **ignora** las reglas en cualquier caso — esto es un riesgo aparte, del lado
 del **portal**.
 
+### 4-bis.9 El PAGO marca pagado en la FUENTE DE VERDAD (backend — commit `1d8f639`)
+
+> **Requiere redeploy de functions:**
+> `firebase deploy --only functions:processCulqiPayment,functions:culqiWebhook,functions:capturePaypalOrderSecure`.
+
+Como `estadoWala` (§4-bis.5) gobierna el estado que ve el cliente, el **pago** también debe
+moverlo a `pagado` en `wala_pedidos`, no solo en `pedidos_web`. Para eso, en los **3 puntos de
+confirmación de pago** de `functions/index.js` se añadió el helper **`marcarWalaPedidoPagado(...)`**:
+
+- **`processCulqiPayment`** (rama de éxito del cobro Culqi), **`culqiWebhook`** (respaldo del
+  evento de Culqi) y **`capturePaypalOrderSecure`** (captura PayPal server-side) llaman a
+  `marcarWalaPedidoPagado({ pedidoId, metodoPago, montoPagado })`, que pone en `wala_pedidos`
+  **`estadoWala:"pagado"`** (+ `pagado:true`, `pagadoAt`).
+- Es **ADITIVO**: corre **además** de marcar `pedidos_web` como hoy (§2.2 / §2.3). **NO toca
+  montos, ni la firma del pedido, ni el marcado de `pedidos_web`.**
+- Es **IDEMPOTENTE** (`set … {merge:true}`) y **BEST-EFFORT** (try/catch: el cobro ya ocurrió, un
+  fallo aquí **no** rompe la respuesta del pago).
+- **Localiza** el doc del espejo por `pedidoWebId` **y** por `numeroPedido` (queries de una sola
+  condición → sin índice compuesto) y actualiza todos los match; si no halla ninguno, intenta por
+  el **id estable saneado** (solo si ya existe); si tampoco, se omite (best-effort).
+- Espejo del contrato del cliente: hace **lo mismo** que `markWalaOrderPagado` de
+  `src/services/walaOrders.js` (mismos campos), para que el estado quede consistente venga el
+  marcado del cliente o del backend.
+
+```
+  PAGO confirmado (Culqi éxito / webhook Culqi / PayPal capture server-side)
+      │
+      ├─► marca pedidos_web   (pagado:true / estadoPago:"pagado" / montoPendiente:0 …)  ← como hoy
+      │
+      └─► marcarWalaPedidoPagado(pedidoId)  →  wala_pedidos.estadoWala = "pagado"        ← NUEVO (1d8f639)
+           (ADITIVO · IDEMPOTENTE · BEST-EFFORT · localiza por pedidoWebId/numeroPedido)
+```
+
 ---
 
 ## 5. Gotchas (trampas conocidas)
@@ -495,9 +571,9 @@ pero al leer/filtrar pagos hay que recordar que **no comparten el mismo conjunto
 |---|---|
 | `src/pages/CheckoutPage.jsx` | Único punto de creación (`onSubmit`), payload, abort, paso de pago. |
 | `src/services/erp/firebase.js` | `createWebOrder` (escritura + escribe el espejo fire-and-forget), `searchOrdersByDniInERP` (Mis Compras, fusiona el espejo), `getOrderByIdAnyCollection` (detalle). |
-| `src/services/walaOrders.js` | **Espejo anti-pérdida `wala_pedidos`**: `mirrorWebOrder` (escribe la copia), `getWalaMirrorOrders` (lee para Mis Compras), `getAllWalaMirrorOrders` (lee para Recepción). |
+| `src/services/walaOrders.js` | **FUENTE DE VERDAD `wala_pedidos`**: `mirrorWebOrder` (escribe la copia, no degrada si ya existe), `getWalaMirrorOrders`/`getAllWalaMirrorOrders` (lectura), `estadoWala`/`ESTADOS_WALA`, `updateWalaOrderEstado`, `markWalaOrderPagado`, `estadoWalaADisplay`. |
 | `src/components/CulqiCustomCheckout/CulqiCustomCheckout.jsx` | Tokeniza y llama `processCulqiPayment`. |
-| `functions/index.js` | `processCulqiPayment` (cobra + marca pagado), `culqiWebhook` (respaldo). |
+| `functions/index.js` | `processCulqiPayment` (cobra + marca pagado), `culqiWebhook` (respaldo), `capturePaypalOrderSecure`; los 3 llaman `marcarWalaPedidoPagado` → `wala_pedidos.estadoWala:"pagado"` (§4-bis.9). |
 | `src/components/PaypalCheckout/PaypalCheckout.jsx` | Captura PayPal (USD); marca pagado en cliente o server-side (flag). |
 | `src/utils/estadoCompra.js` | `derivarEstadoCompra`/`esPagado`/`getProductosPedido` (estado y líneas). |
 | `src/utils/pedidos.js` | `normalizarPedidoParaVista` (descarta campos → `_raw`). |
@@ -510,6 +586,11 @@ pero al leer/filtrar pagos hay que recordar que **no comparten el mismo conjunto
 
 ## 7. Commits relevantes (recientes)
 
+- `1d8f639` — feat(pedidos): `wala_pedidos` pasa de respaldo a **FUENTE DE VERDAD** — nuevo
+  `estadoWala` + helpers (`updateWalaOrderEstado`/`markWalaOrderPagado`/`estadoWalaADisplay`),
+  `mirrorWebOrder` no degrada un pedido ya pagado, el pago marca `estadoWala:"pagado"` desde
+  `functions/index.js` (requiere redeploy), y las vistas muestran el estado **más avanzado** entre
+  ERP y WALA. Ver §4-bis.5, §4-bis.9 y §3.4.
 - `68447dc` — feat(pedidos): red de seguridad anti-pérdida — espejo `wala_pedidos` (escrito en
   `createWebOrder` fire-and-forget), lectura por `userId`/DNI fusionada en Mis Compras y Recepción,
   estado Confirmado para el pedido solo-espejo. Ver §4-bis.5–§4-bis.7.

@@ -521,17 +521,45 @@ sobre la página recibida (límite de Firestore: 1 faceta + orderBy por query). 
 
 ---
 
-## 3.7 `wala_pedidos` — espejo anti-pérdida de pedidos ✅ DESPLEGADO
+## 3.7 `wala_pedidos` — FUENTE DE VERDAD de pedidos (base interna independiente del ERP) ✅ DESPLEGADO
 
-> **Red de seguridad** contra la desaparición de pedidos descrita en
-> [FLUJO-PEDIDOS.md §4-bis](./FLUJO-PEDIDOS.md). Desplegado el **2026-06-29** (commit
-> `68447dc`). Es **aditivo**: no cambia ninguna colección del ERP ni la lógica de
-> pago/totales.
+> Base interna de WALA contra la desaparición de pedidos descrita en
+> [FLUJO-PEDIDOS.md §4-bis](./FLUJO-PEDIDOS.md). Desplegada el **2026-06-29** en dos commits:
+> - `68447dc` — nace el **ESPEJO** (red de seguridad anti-pérdida).
+> - `1d8f639` — se gradúa a **FUENTE DE VERDAD**: gana un **estado propio `estadoWala`** que el
+>   portal no degrada, y el **pago lo sincroniza el backend** (`functions/index.js`, requiere
+>   redeploy).
+>
+> Sigue siendo **aditivo**: no cambia ninguna colección del ERP ni la lógica de pago/totales.
 
 **Idea:** `wala_pedidos` es una colección **propiedad del lado WALA** que el ERP externo
-(`aimunayerp.com`) **no lee ni borra**. Guarda un **ESPEJO** (copia ligera) de cada pedido
-del portal, de modo que si el ERP borra/desmarca el doc de `pedidos_web` al aprobarlo, la
-copia **sigue viva** y "Mis Compras"/"Recepción" la **rescatan**.
+(`aimunayerp.com`) **no lee ni borra**. Guarda una **copia** de cada pedido del portal **y su
+estado propio `estadoWala`**, que pasa a ser la **fuente de verdad** del estado mostrado al
+cliente, independiente del ERP. (*Decisión del dueño: "la base interna es la fuente de verdad; ya
+no importan los pedidos viejos".*) Si el ERP borra/desmarca el doc de `pedidos_web` al aprobarlo,
+la copia **sigue viva** y "Mis Compras"/"Recepción" la **rescatan**.
+
+### `estadoWala` — ciclo de vida propio
+
+Cada doc lleva `estadoWala` con su propio flujo, **independiente** del `estadoGeneral` del ERP:
+
+```
+  pendiente_pago  →  pagado  →  en_preparacion  →  enviado  →  entregado
+                                                                  (cancelado = terminal alterno)
+```
+
+- Al **crear** el pedido nace **`pendiente_pago`** (`mirrorWebOrder`).
+- El **pago** (Culqi/PayPal) lo mueve a **`pagado`** — desde el cliente (`markWalaOrderPagado`) y
+  desde el **backend** (`functions/index.js` → `marcarWalaPedidoPagado`, ADITIVO/idempotente/best-effort).
+- `en_preparacion` / `enviado` / `entregado` / `cancelado` quedan listos para que (FASE SIGUIENTE)
+  el **ERP los actualice vía un endpoint con API KEY** que SOLO lea y actualice estado (jamás borre).
+- Helpers en `src/services/walaOrders.js`: `ESTADOS_WALA`, `updateWalaOrderEstado`,
+  `markWalaOrderPagado`, `estadoWalaADisplay({ label, color, paso })`.
+
+> **No degrada lo ya avanzado:** `mirrorWebOrder` lee el doc antes de escribir; si el espejo ya
+> existe, **conserva** `estadoWala`/`pagado`/`createdAt` y solo refresca los campos display. Y
+> `derivarEstadoCompra` muestra el estado **más avanzado** entre el doc vivo del ERP y `estadoWala`
+> (ver [FLUJO-PEDIDOS.md §3.4 y §4-bis.5](./FLUJO-PEDIDOS.md)).
 
 ### Cómo y cuándo se escribe
 
@@ -539,9 +567,15 @@ copia **sigue viva** y "Mis Compras"/"Recepción" la **rescatan**.
   `pedidos_web`, en modo **fire-and-forget best-effort**: va en `try/catch` y **nunca** demora
   ni hace fallar el checkout (si la copia falla, el pedido real ya quedó guardado igual).
 - Servicio: **`src/services/walaOrders.js`** —
-  - `mirrorWebOrder({ pedidoWebId, payload })` escribe la copia.
+  - `mirrorWebOrder({ pedidoWebId, payload })` escribe la copia (y **no degrada** `estadoWala`/
+    `pagado`/`createdAt` si ya existía — lee con `getDoc` antes de mergear).
   - `getWalaMirrorOrders({ userId, dni })` la lee para "Mis Compras".
   - `getAllWalaMirrorOrders()` la lee (sin filtro de usuario) para "Recepción".
+  - `updateWalaOrderEstado` / `markWalaOrderPagado` actualizan `estadoWala` (idempotentes,
+    best-effort, nunca lanzan); `estadoWalaADisplay` lo mapea a `{ label, color, paso }`.
+- **El pago lo sincroniza el backend:** `functions/index.js` (`processCulqiPayment`,
+  `culqiWebhook`, `capturePaypalOrderSecure`) llama `marcarWalaPedidoPagado` → `estadoWala:"pagado"`
+  (ADITIVO/idempotente/best-effort; **requiere redeploy de esas functions**).
 - **Idempotente:** doc id estable (`sanearDocId(numeroPedido || pedidoWebId)`) +
   `setDoc(..., { merge: true })`. Usa la misma instancia Firestore del ERP (`erpDb`).
 - **NO copia secretos de pago.** Solo campos display ya calculados.
@@ -576,33 +610,55 @@ copia **sigue viva** y "Mis Compras"/"Recepción" la **rescatan**.
   "canalVenta": "Portal Web",
   "web": true,
 
+  // ESTADO PROPIO DE WALA (FUENTE DE VERDAD, commit 1d8f639)
+  "estadoWala": "pendiente_pago",        // pendiente_pago→pagado→en_preparacion→enviado→entregado | cancelado
+  "pagado": false,                       // lo pone el pago (cliente o backend)
+  "pagadoAt": null,                      // serverTimestamp al pagar
+  "metodoPago": null,                    // 'culqi' | 'paypal' (informativo)
+  "montoPagado": null,                   // informativo (NO recalcula montos)
+  "estadoWalaUpdatedAt": null,           // serverTimestamp del último cambio de estado
+
   // Metadatos del espejo
   "createdAt": "<serverTimestamp>",
   "fuente": "wala-mirror"               // distingue la copia de un pedido vivo
 }
 ```
 
-### Cómo lo usan las vistas
+> `estadoWala` nace `pendiente_pago` al crear; `pagado`/`pagadoAt`/`metodoPago` los pone el pago
+> (cliente vía `markWalaOrderPagado` o backend vía `marcarWalaPedidoPagado` en `functions/index.js`).
+> Los estados `en_preparacion`/`enviado`/`entregado`/`cancelado` los actualizará el ERP en la FASE
+> SIGUIENTE (endpoint con API KEY de solo lectura/actualización, aún no implementado).
 
-- **Mis Compras** (`searchOrdersByDniInERP`, ahora acepta `{ userId }`): fusiona el espejo con
-  los pedidos vivos y **deduplica por clave de negocio** (`numeroPedido || portalPseudoOrderId ||
-  pedidoWebId || id`). Una clave "viva" solo cuenta si el doc **SIGUE siendo WALA** (`esPedidoWala`);
-  así un pedido **desmarcado por el ERP** (`web:false`) **no suprime** su espejo, y este lo rescata.
-  `usePedidos(dni, userId)` indexa su caché en memoria por `dni+userId`; `CuentaPedidosPage` y
-  `CuentaCompraDetallePage` pasan el `uid`.
-- **Estado del pedido solo-espejo:** `derivarEstadoCompra` (`src/utils/estadoCompra.js`, rama
-  `_fromMirror`/`fuente:'wala-mirror'`) lo muestra como **Confirmado / Procesado** (verde),
-  **NO** como "Pendiente de pago".
-- **Recepción** (`src/services/adminOrders.js` + `RecepcionPedidos.jsx`): incluye el espejo,
-  marcado **"Procesado en ERP"**.
+### Cómo lo usan las vistas (lectura PRIMARIA + estado más avanzado)
+
+- **Mis Compras** (`searchOrdersByDniInERP`, acepta `{ userId }`) y **Recepción**
+  (`getWalaOrdersForAdmin`) leen `wala_pedidos` como fuente **PRIMARIA** (presencia garantizada) y
+  fusionan con los pedidos vivos, **deduplicando por clave de negocio** (`numeroPedido ||
+  portalPseudoOrderId || pedidoWebId || id`). Una clave "viva" solo cuenta si el doc **SIGUE siendo
+  WALA** (`esPedidoWala`); así un pedido **desmarcado por el ERP** (`web:false`) **no suprime** su
+  copia, y esta lo rescata. `usePedidos(dni, userId)` indexa su caché en memoria por `dni+userId`;
+  `CuentaPedidosPage` y `CuentaCompraDetallePage` pasan el `uid`.
+- **Estado MÁS AVANZADO entre ERP y WALA:** cuando coexisten el doc vivo del ERP y la copia, la
+  lectura **adjunta** `estadoWala`/`pagado` al vivo (`_walaEstado`/`_walaPagado`) y
+  `derivarEstadoCompra` (`src/utils/estadoCompra.js`) muestra el **más avanzado** de los dos sin
+  degradar (ver [FLUJO-PEDIDOS.md §3.4](./FLUJO-PEDIDOS.md)). El pedido **solo-espejo** (rama
+  `_fromMirror`/`fuente:'wala-mirror'`) se ve **Confirmado / Procesado** (verde), **no** "Pendiente
+  de pago".
+- **Recepción** (`src/services/adminOrders.js` + `RecepcionPedidos.jsx`): incluye la copia,
+  marcada **"Procesado en ERP"**.
 
 ### Límite conocido (importante)
 
-El espejo se crea **AL MOMENTO de la compra** → **solo protege pedidos creados DESDE el deploy**
-(2026-06-29). Los pedidos **previos NO tienen espejo**: si el ERP ya los borró de `pedidos_web`
-**y** de `pedidos`, **no se pueden recuperar**. La **causa raíz sigue siendo del ERP** (que borra
-al aprobar); lo ideal es que el ERP **MARQUE en vez de borrar** (ver
-[FLUJO-PEDIDOS.md §4-bis.5](./FLUJO-PEDIDOS.md)).
+La copia se crea **AL MOMENTO de la compra** → **solo protege pedidos creados DESDE el deploy**
+(2026-06-29). Los pedidos **previos NO tienen copia**: si el ERP ya los borró de `pedidos_web`
+**y** de `pedidos`, **no se pueden recuperar**. Decisión del dueño: la base interna es la fuente de
+verdad y *"ya no importan los pedidos viejos"*.
+
+### FASE SIGUIENTE (no implementada — el campo ya está listo)
+
+- ⬜ **Endpoint con API KEY para el ERP**: que el ERP **LEA** y **SOLO ACTUALICE** `estadoWala`
+  (avanzarlo a `en_preparacion`/`enviado`/`entregado`/`cancelado`) y **jamás borre**. `estadoWala`
+  + `updateWalaOrderEstado` ya quedan listos; falta el endpoint y la credencial.
 
 ---
 
