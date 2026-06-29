@@ -97,6 +97,48 @@
   align-items: flex-start;
 }
 
+/* Zona izquierda del header: avatar + textos (nombre/rol/fechas globales). */
+.cardHeaderMain {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.cardHeaderText {
+  min-width: 0;
+}
+
+/* ── FOTO de la persona en la tarjeta (avatar circular) ── */
+.cardAvatar {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #8b5cf6; /* --primary-color (placeholder) */
+  border: 2px solid #ede9fe;
+}
+
+.cardAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Placeholder: inicial del nombre sobre círculo violeta. */
+.cardAvatarInitial {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .cardTitle {
   font-size: 1.25rem;
   font-weight: 700;
@@ -243,6 +285,109 @@
   outline: none;
   border-color: #8b5cf6;
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* ── Subida de FOTO de la persona en el modal (avatar + acciones) ── */
+.photoUploadRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.photoAvatar {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #8b5cf6; /* --primary-color (placeholder) */
+  border: 2px solid #ede9fe;
+}
+
+.photoAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photoAvatarInitial {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.75rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* Overlay "Subiendo…" mientras se sube la imagen. */
+.photoAvatarOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photoActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+/* Botón principal: subir/cambiar foto (acento de marca, contorno). */
+.photoBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+  border: 1px solid #c4b5fd;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.photoBtn:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.16);
+}
+
+.photoBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Botón secundario: quitar foto (texto discreto). */
+.photoRemoveBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.photoRemoveBtn:hover {
+  color: #ef4444;
+}
+
+.photoError {
+  color: #ef4444;
+  font-size: 0.78rem;
+  margin: 0;
 }
 
 .breakdownSection {
@@ -603,4 +748,33 @@
 :global([data-theme='dark']) .addToCartBtnDone:hover {
   background: rgba(16, 185, 129, 0.16);
   color: #6EE7B7;
+}
+
+/* ── FOTO de la persona (tarjeta + modal) en modo noche ──
+   El círculo placeholder mantiene --primary-color (contraste alto con la
+   inicial blanca). Suavizamos el borde y los textos/acciones del modal. */
+:global([data-theme='dark']) .cardAvatar,
+:global([data-theme='dark']) .photoAvatar {
+  background: var(--primary-color);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .photoBtn {
+  background: var(--primary-light);
+  color: var(--primary-hover);
+  border-color: rgba(167, 139, 250, 0.40);
+}
+:global([data-theme='dark']) .photoBtn:hover:not(:disabled) {
+  background: rgba(167, 139, 250, 0.24);
+}
+
+:global([data-theme='dark']) .photoRemoveBtn {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .photoRemoveBtn:hover {
+  color: #FCA5A5;
+}
+
+:global([data-theme='dark']) .photoError {
+  color: #FCA5A5;
 }

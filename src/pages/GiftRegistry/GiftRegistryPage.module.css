@@ -66,10 +66,11 @@
 }
 
 /* ── Fechas como COLUMNAS (zonas de drop) ─────────────────────────────── */
+/* Columnas más anchas para alojar la TARJETA grande de persona (avatar + chips). */
 .dateGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
 }
 
 /* Cada fecha es una columna: [proceder] / [chip] / [miniaturas asignadas]. */
@@ -191,6 +192,138 @@
   color: #fff;
   font-size: 0.75rem;
   font-weight: 800;
+  z-index: 2;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   TARJETA GRANDE DE PERSONA (estilo Fechas Importantes) en /regalar.
+   ---------------------------------------------------------------------------
+   .personCard se aplica JUNTO a .dateChip (que aporta el comportamiento de
+   selección: hover/active/borde). Aquí solo ampliamos el layout interno:
+   header (avatar + nombre/relación/ocasiones) y fila de fecha del evento.
+   Replica las clases .cardAvatar / .cardAvatarImg / .cardAvatarInitial de
+   CuentaFechasImportantesPage para que el avatar se vea idéntico.
+   ═════════════════════════════════════════════════════════════════════════ */
+.personCard {
+  gap: 0.85rem;
+  padding: 1.1rem 1.15rem;
+}
+
+/* Header: avatar + textos (nombre / relación / ocasiones). */
+.personHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.personHeaderText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+/* ── Avatar circular (MISMAS medidas/estilo que la tarjeta de Fechas
+      Importantes: 48px, círculo --primary-color, borde claro). ── */
+.cardAvatar {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color, #8b5cf6);
+  border: 2px solid #ede9fe;
+}
+
+.cardAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Placeholder: inicial del nombre sobre círculo violeta (alto contraste). */
+.cardAvatarInitial {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* Nombre grande de la persona. */
+.personName {
+  font-weight: 800;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  color: var(--violet-900, #4C1D95);
+  text-align: left;
+  word-break: break-word;
+}
+
+/* Chip de relación/parentesco (Pareja / Hijo-a / Padre-Madre...). */
+.personRole {
+  display: inline-block;
+  background: var(--violet-100, #EDE9FE);
+  color: var(--violet-700, #6D28D9);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* Contenedor de chips de ocasiones globales (San Valentín, Día de la Madre...). */
+.personOccasions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.1rem;
+}
+
+/* Chip de ocasión global (mismo espíritu que .globalDateBadge de Fechas Imp.). */
+.occasionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #fdf4ff;
+  color: #c026d3;
+  font-size: 0.7rem;
+  padding: 0.22rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid #f5d0fe;
+}
+
+/* Fila de la FECHA del evento concreto (cumpleaños/aniversario) con su día. */
+.personDateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--violet-100, #EDE9FE);
+}
+
+.personDateLabel {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--violet-800, #5B21B6);
+}
+
+.personDateValue {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gris-texto, #6b7280);
+  font-variant-numeric: tabular-nums;
 }
 
 /* c) Tira de MINIATURAS asignadas a la fecha + botón × por miniatura. */
@@ -618,6 +751,43 @@
 }
 
 :global([data-theme='dark']) .dateChipDate {
+  color: var(--color-text-muted);
+}
+
+/* ── Tarjeta grande de persona (modo noche) ──────────────────────────────
+   El avatar conserva el círculo --primary-color con inicial blanca (alto
+   contraste en ambos temas); solo suavizamos el borde. Textos/cips se remapean
+   a tokens de tema para mantener legibilidad. */
+:global([data-theme='dark']) .cardAvatar {
+  background: var(--primary-color);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .personName {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .personRole {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+/* Chip de ocasión global: fucsia claro -> tinte translúcido legible. */
+:global([data-theme='dark']) .occasionChip {
+  background: rgba(217, 70, 239, 0.16);
+  color: #F0ABFC; /* fuchsia-300 */
+  border-color: rgba(217, 70, 239, 0.34);
+}
+
+:global([data-theme='dark']) .personDateRow {
+  border-top-color: rgba(167, 139, 250, 0.22);
+}
+
+:global([data-theme='dark']) .personDateLabel {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .personDateValue {
   color: var(--color-text-muted);
 }
 

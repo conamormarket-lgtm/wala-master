@@ -79,6 +79,28 @@ const construirLabel = (date) => {
   return `${base}${nombre}${rel}`;
 };
 
+// Ocasiones globales derivadas (San Valentín, Día de la Madre, etc.). REPLICA
+// exacta de getGlobalDates de CuentaFechasImportantesPage para que las MISMAS
+// fechas globales aparezcan como chips en /regalar. No se almacenan: se derivan
+// en runtime a partir de roleKey + gender que ahora expone la Cloud Function.
+const getGlobalDates = (roleKey, gender) => {
+  const dates = [];
+  if (gender === 'Femenino') dates.push('Día de la Mujer');
+  if (gender === 'Masculino') dates.push('Día del Hombre');
+
+  if (roleKey === 'pareja') dates.push('San Valentín');
+  if (roleKey === 'padres' && gender === 'Femenino') dates.push('Día de la Madre');
+  if (roleKey === 'padres' && gender === 'Masculino') dates.push('Día del Padre');
+  if (roleKey === 'hijos') dates.push('Día del Niño');
+  if (roleKey === 'amigos') dates.push('Día de la Amistad');
+
+  return dates;
+};
+
+// Inicial del nombre para el placeholder del avatar (mismo criterio que la
+// tarjeta de Fechas Importantes: primera letra en mayúscula, '?' si no hay).
+const getInicial = (nombre) => (nombre || '?').trim().charAt(0).toUpperCase() || '?';
+
 // =========================================================================
 // useGiftDrag — hook de arrastre por Pointer Events (sin parpadeo).
 // -------------------------------------------------------------------------
@@ -630,6 +652,14 @@ const GiftRegistryPage = () => {
                 // justo bajo el puntero recibe el resalte fuerte (.dateColumnOver).
                 const arrastrando = drag != null;
                 const encima = dropTargetKey === d._key;
+                // Ocasiones globales derivadas (chips): MISMA lógica que la tarjeta
+                // de Fechas Importantes (getGlobalDates con roleKey + gender que
+                // ahora expone la CF). El propio evento (cumpleaños/aniversario)
+                // se muestra aparte como chip de la fecha con su día concreto.
+                const ocasiones = getGlobalDates(d.roleKey, d.gender);
+                // Etiqueta del evento concreto de esta fecha (Cumpleaños /
+                // Aniversario / Fecha Especial) y su día formateado.
+                const eventoLabel = d.label || d.type || 'Fecha especial';
                 return (
                   // ── COLUMNA de fecha = zona de drop (data-date-key) ──────
                   <div
@@ -653,17 +683,67 @@ const GiftRegistryPage = () => {
                       </button>
                     )}
 
-                    {/* b) EN MEDIO: chip de fecha seleccionable (flujo fallback) */}
+                    {/* b) EN MEDIO: TARJETA grande de persona seleccionable.
+                        Replica el look de la tarjeta de Fechas Importantes
+                        (avatar con foto/placeholder + nombre + chip de relación
+                        + chips de ocasiones globales + fecha del evento).
+                        Sigue siendo el control de selección (role="radio") que
+                        fija la fecha activa para el flujo "Regalar este". Conserva
+                        la clase funcional .dateChip + .dateChipActive para no
+                        romper estilos/lógica existentes. */}
                     <button
                       type="button"
                       role="radio"
                       aria-checked={seleccionada}
                       onClick={() => setSelectedEventId(d._key)}
-                      className={`${styles.dateChip} ${seleccionada ? styles.dateChipActive : ''}`}
+                      className={`${styles.dateChip} ${styles.personCard} ${seleccionada ? styles.dateChipActive : ''}`}
                     >
-                      <span className={styles.dateChipLabel}>{d._label}</span>
-                      <span className={styles.dateChipDate}>{formatearFecha(d.date)}</span>
+                      {/* Check de seleccionada (esquina). */}
                       {seleccionada && <span className={styles.dateChipCheck} aria-hidden="true">✓</span>}
+
+                      {/* Header: avatar + nombre/relación/ocasiones. */}
+                      <div className={styles.personHeader}>
+                        {/* FOTO de la persona (avatar circular). Sin foto -> inicial. */}
+                        <div className={styles.cardAvatar}>
+                          {d.recipientPhoto ? (
+                            <img
+                              src={d.recipientPhoto}
+                              alt={d.recipientName || 'Foto'}
+                              className={styles.cardAvatarImg}
+                              draggable={false}
+                              loading="lazy"
+                            />
+                          ) : (
+                            <span className={styles.cardAvatarInitial}>
+                              {getInicial(d.recipientName)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className={styles.personHeaderText}>
+                          <span className={styles.personName}>
+                            {d.recipientName || 'Alguien'}
+                          </span>
+                          {d.relation && (
+                            <span className={styles.personRole}>{d.relation}</span>
+                          )}
+                          {ocasiones.length > 0 && (
+                            <div className={styles.personOccasions}>
+                              {ocasiones.map((oc, i) => (
+                                <span key={i} className={styles.occasionChip}>
+                                  🌐 {oc}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Footer: el evento de ESTA fecha + su día (cumpleaños). */}
+                      <div className={styles.personDateRow}>
+                        <span className={styles.personDateLabel}>📅 {eventoLabel}</span>
+                        <span className={styles.personDateValue}>{formatearFecha(d.date)}</span>
+                      </div>
                     </button>
 
                     {/* c) ABAJO: tira de miniaturas asignadas, cada una con "×" */}

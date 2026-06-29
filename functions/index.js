@@ -2905,6 +2905,13 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
           // Relación con el dueño ("Padre/Madre", "Hijo/a"...); dato público,
           // mismo criterio que recipientName, para mostrar "(<relación>)".
           const recipientRelation = recipient.roleDisplay || "";
+          // NUEVO — datos para replicar la tarjeta "bonita" de Fechas Importantes
+          // en /regalar: foto de la persona + claves para derivar las ocasiones
+          // globales (Día de la Mujer, San Valentín, ...) con getGlobalDates en el
+          // cliente. No es PII sensible (mismo criterio que recipientName/relation).
+          const recipientPhoto = recipient.photoUrl || null; // foto circular (o null)
+          const recipientRoleKey = recipient.roleKey || ""; // pareja/hijos/padres/...
+          const recipientGender = recipient.gender || ""; // Masculino/Femenino/Otro
           recipient.events.forEach((event) => {
             if (!event || !event.date) return; // sin fecha no es seleccionable
             dates.push({
@@ -2914,6 +2921,9 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
               label: event.customName || event.type || "Fecha Especial",
               recipientName, // contexto ("Cumpleaños de Mamá"); no es PII sensible
               relation: recipientRelation, // contexto ("(Padre/Madre)"); no es PII sensible
+              recipientPhoto, // NUEVO — foto de la persona para la tarjeta de /regalar
+              roleKey: recipientRoleKey, // NUEVO — para derivar ocasiones globales en cliente
+              gender: recipientGender, // NUEVO — para derivar ocasiones globales en cliente
             });
           });
         });
@@ -2929,6 +2939,16 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
             label: "Cumpleaños",
             recipientName: ownerName, // el propio dueño (el festejado)
             relation: "", // sin relación: queda "Cumpleaños de <dueño>"
+            // Foto de perfil del dueño: el avatar real vive en
+            // avatarConfig.avatarUrl (lo guarda PerfilPage/AvatarStudio); se dejan
+            // photoURL/avatarUrl como respaldo por si algún perfil los usa. null si no hay.
+            recipientPhoto:
+              (owner.avatarConfig && owner.avatarConfig.avatarUrl) ||
+              owner.photoURL ||
+              owner.avatarUrl ||
+              null,
+            roleKey: "", // el dueño no tiene rol de tercero
+            gender: owner.gender || "", // por si deriva "Día de la Mujer/Hombre"
           });
         }
       } else {

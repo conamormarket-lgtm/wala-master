@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { getUserSuggestedPackages } from '../../services/fechasImportantes';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
-import { Gift, Calendar, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package } from 'lucide-react';
+import { Gift, Calendar, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package, Camera } from 'lucide-react';
+// Helper de subida YA existente en el repo (mismo que usan AvatarStudio / CategoryNavEditor).
+import { uploadFile } from '../../services/firebase/storage';
 import styles from './CuentaFechasImportantesPage.module.css';
 
 const EVENT_TYPES = [
@@ -51,6 +53,12 @@ const CuentaFechasImportantesPage = () => {
   const [saving, setSaving] = useState(false);
   const [suggestedPackages, setSuggestedPackages] = useState([]);
   const [addedPackageIds, setAddedPackageIds] = useState(new Set());
+
+  // ── Subida de FOTO de la persona (avatar del recipient) ──────────────────
+  // Reúsa el helper uploadFile (Firebase Storage) igual que AvatarStudio.
+  const photoInputRef = useRef(null);          // input file oculto del modal
+  const [uploadingPhoto, setUploadingPhoto] = useState(false); // spinner mientras sube
+  const [photoError, setPhotoError] = useState(null);          // mensaje de error de subida
 
   const recipients = userProfile?.giftRecipients || [];
   const hasCompletedSurvey = userProfile?.hasCompletedSurvey;
@@ -109,13 +117,16 @@ const CuentaFechasImportantesPage = () => {
       roleDisplay: 'Otra persona',
       name: '',
       gender: '',
+      photoUrl: null, // foto de la persona (avatar circular); null = sin foto
       events: [{ id: Math.random().toString(36).substring(2, 9), type: 'Cumpleaños', date: '' }],
     });
+    setPhotoError(null);
     setIsModalOpen(true);
   };
 
   const handleEdit = (rec) => {
     setTempRecipient(JSON.parse(JSON.stringify(rec)));
+    setPhotoError(null);
     setIsModalOpen(true);
   };
 
@@ -138,6 +149,50 @@ const CuentaFechasImportantesPage = () => {
       }
       return updated;
     });
+  };
+
+  // Abre el selector de archivo nativo para la foto de la persona.
+  const handlePickPhoto = () => {
+    if (uploadingPhoto) return;
+    photoInputRef.current?.click();
+  };
+
+  // Sube la imagen elegida a Firebase Storage y guarda la URL en tempRecipient.photoUrl.
+  // Mismo patrón que AvatarStudio: FileReader no es necesario aquí porque uploadFile
+  // recibe el File directamente; la preview usa la URL ya subida.
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    // Permite volver a elegir el mismo archivo en una nueva selección.
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('El archivo debe ser una imagen.');
+      return;
+    }
+
+    setPhotoError(null);
+    setUploadingPhoto(true);
+    try {
+      // Ruta sugerida: gift_recipients/{uid}/{Date.now()}.jpg
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `gift_recipients/${user?.uid || 'anon'}/${Date.now()}.${ext}`;
+      const { url, error } = await uploadFile(file, path);
+      if (error || !url) {
+        setPhotoError(error || 'No se pudo subir la foto. Inténtalo de nuevo.');
+        return;
+      }
+      setTempRecipient(prev => ({ ...prev, photoUrl: url }));
+    } catch (err) {
+      setPhotoError('No se pudo subir la foto. Inténtalo de nuevo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  // Quita la foto del recipient en edición (vuelve al placeholder con inicial).
+  const handleRemovePhoto = () => {
+    setPhotoError(null);
+    setTempRecipient(prev => ({ ...prev, photoUrl: null }));
   };
 
   const addEvent = () => {
@@ -217,18 +272,34 @@ const CuentaFechasImportantesPage = () => {
             return (
               <div key={rec.id} className={styles.card}>
                 <div className={styles.cardHeader}>
-                  <div>
-                    <h3 className={styles.cardTitle}>{rec.name}</h3>
-                    <span className={styles.cardRole}>{rec.roleDisplay}</span>
-                    {getGlobalDates(rec.roleKey, rec.gender).length > 0 && (
-                      <div className={styles.globalDatesContainer}>
-                        {getGlobalDates(rec.roleKey, rec.gender).map((gDate, i) => (
-                          <span key={i} className={styles.globalDateBadge}>
-                            <Globe size={12} /> {gDate}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                  <div className={styles.cardHeaderMain}>
+                    {/* FOTO de la persona (avatar circular). Sin foto -> inicial. */}
+                    <div className={styles.cardAvatar}>
+                      {rec.photoUrl ? (
+                        <img
+                          src={rec.photoUrl}
+                          alt={rec.name || 'Foto'}
+                          className={styles.cardAvatarImg}
+                        />
+                      ) : (
+                        <span className={styles.cardAvatarInitial}>
+                          {(rec.name || '?').trim().charAt(0).toUpperCase() || '?'}
+                        </span>
+                      )}
+                    </div>
+                    <div className={styles.cardHeaderText}>
+                      <h3 className={styles.cardTitle}>{rec.name}</h3>
+                      <span className={styles.cardRole}>{rec.roleDisplay}</span>
+                      {getGlobalDates(rec.roleKey, rec.gender).length > 0 && (
+                        <div className={styles.globalDatesContainer}>
+                          {getGlobalDates(rec.roleKey, rec.gender).map((gDate, i) => (
+                            <span key={i} className={styles.globalDateBadge}>
+                              <Globe size={12} /> {gDate}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className={styles.cardActions}>
                     <button onClick={() => handleEdit(rec)} className={styles.iconBtn} title="Editar">
@@ -307,6 +378,61 @@ const CuentaFechasImportantesPage = () => {
             </div>
             
             <div className={styles.formBody}>
+              {/* ── FOTO de la persona (avatar circular) ──────────────────────
+                  Sube/cambia/quita la foto. La URL se guarda en tempRecipient.photoUrl
+                  y se persiste con el resto del recipient al pulsar "Guardar Cambios". */}
+              <div className={styles.photoUploadRow}>
+                <div className={styles.photoAvatar}>
+                  {tempRecipient.photoUrl ? (
+                    <img
+                      src={tempRecipient.photoUrl}
+                      alt={tempRecipient.name || 'Foto de la persona'}
+                      className={styles.photoAvatarImg}
+                    />
+                  ) : (
+                    // Placeholder con la inicial del nombre (círculo --primary-color).
+                    <span className={styles.photoAvatarInitial}>
+                      {(tempRecipient.name || '?').trim().charAt(0).toUpperCase() || '?'}
+                    </span>
+                  )}
+                  {uploadingPhoto && (
+                    <div className={styles.photoAvatarOverlay}>Subiendo…</div>
+                  )}
+                </div>
+
+                <div className={styles.photoActions}>
+                  {/* Input de archivo oculto, disparado por el botón de abajo. */}
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePickPhoto}
+                    disabled={uploadingPhoto}
+                    className={styles.photoBtn}
+                  >
+                    <Camera size={16} />
+                    {uploadingPhoto
+                      ? 'Subiendo...'
+                      : (tempRecipient.photoUrl ? 'Cambiar foto' : 'Subir foto')}
+                  </button>
+                  {tempRecipient.photoUrl && !uploadingPhoto && (
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      className={styles.photoRemoveBtn}
+                    >
+                      Quitar foto
+                    </button>
+                  )}
+                  {photoError && <p className={styles.photoError}>{photoError}</p>}
+                </div>
+              </div>
+
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div className={styles.fieldGroup} style={{ flex: 2 }}>
                   <label>Nombre de la persona *</label>
@@ -353,11 +479,11 @@ const CuentaFechasImportantesPage = () => {
                   const evTypeConfig = EVENT_TYPES.find(e => e.label === event.type) || EVENT_TYPES.find(e => e.id === 'otro');
                   
                   return (
-                    <div key={event.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-start', background: eventIdx === 0 ? '#ffffff' : 'transparent', padding: eventIdx === 0 ? '1rem' : '0', borderRadius: '8px', border: eventIdx === 0 ? '1px solid #e2e8f0' : 'none' }}>
+                    <div key={event.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-start', background: eventIdx === 0 ? 'var(--color-surface)' : 'transparent', padding: eventIdx === 0 ? '1rem' : '0', borderRadius: '8px', border: eventIdx === 0 ? '1px solid var(--color-border)' : 'none' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         
                         {eventIdx === 0 ? (
-                          <div style={{ fontWeight: 'bold', color: '#0f172a', padding: '0.5rem 0' }}>
+                          <div style={{ fontWeight: 'bold', color: 'var(--color-text)', padding: '0.5rem 0' }}>
                             Cumpleaños *
                           </div>
                         ) : (
