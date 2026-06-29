@@ -1,12 +1,13 @@
 # Modo Noche — tema claro / oscuro / sistema
 
 > Tema visual claro/oscuro para **toda la web pública y el admin** de WALA, con un
-> **interruptor luna/sol** en el Header. Desplegado el **2026-06-29** (commit `a442251`),
-> **frontend por Vercel**; **NO requiere backend** (es solo CSS + estado de cliente).
+> **interruptor luna/sol** en el Header. Desplegado el **2026-06-29** (commit base `a442251`
+> + 2º pase de contraste y arrastre sin parpadeo `649a42e`), **frontend por Vercel**;
+> **NO requiere backend** (es solo CSS + estado de cliente).
 >
 > Fuente: lectura directa del código (`src/contexts/ThemeContext.jsx`,
-> `src/components/common/ThemeToggle/`, `src/components/common/Header/Header.jsx`,
-> `index.html`, `src/styles/globals.css` + los `.module.css` con overrides).
+> `src/components/common/ThemeToggle/ThemeToggle.jsx`, `src/components/common/Header/Header.jsx`,
+> `index.html`, `src/styles/variables.css` + `src/styles/globals.css` + los `.module.css` con overrides).
 >
 > **No toca** carrito, precios, cobro ni datos: es puramente presentación.
 
@@ -66,16 +67,52 @@ página **no parpadea** del claro al oscuro al cargar. **Debe coincidir** con `T
 
 ### 2.4 Paleta y overrides por componente
 
-- **Variables de tema:** `:root` (claro) y `[data-theme="dark"]` (oscuro) en
-  `src/styles/globals.css`, con una **red global** que **remapea** los tokens existentes
-  (`--gris-*`, `--blanco`, `--color-*`) bajo `dark` — así gran parte de la UI cambia sin tocar
-  cada archivo.
-- **Overrides finos por componente:** reglas `:global([data-theme='dark'])` en ~40 `.module.css`
-  (storefront, cuenta, header/footer/nav, componentes UI Glass* y admin) para los casos que la
-  red global no cubre.
-- **Sin `!important`:** los `backgroundColor` que el admin configura inline en sus secciones
-  **ganan** sobre el tema (se respeta el diseño del dueño).
+La paleta vive en **dos archivos** que trabajan juntos (orden lógico: tokens → red de legibilidad):
+
+- **Tokens de tema + red de re-mapeo — `src/styles/variables.css`:**
+  - En `:root` se definen **tokens semánticos de tema** (`--color-bg`, `--color-surface`,
+    `--color-surface-2`, `--color-text`, `--color-text-muted`, `--color-border`, `--color-hover`,
+    `--color-shadow`) que en claro valen **lo mismo** que el aspecto actual (no cambia nada hoy).
+  - En `[data-theme="dark"]` esos tokens se **redefinen** a la paleta oscura de Walá (un
+    **slate-violeta profundo**, coherente con `--surface-dark` de `src/theme/tokens.css` y el footer:
+    `--color-bg:#14121C`, `--color-surface:#1E1B2E`, texto `#F1EEF9`…), **no** gris carbón.
+  - Bajo `dark` se **remapea la paleta HEREDADA** (`--gris-fondo`, `--gris-texto-principal`,
+    `--gris-borde`, `--blanco`, acento `--primary-*`/`--rojo-*`, sombras) a esos tokens oscuros. Como
+    **casi toda la app** ya consume esas variables, al voltearlas aquí la UI se oscurece **automáticamente**
+    sin tocar componente por componente. Esta es la **red de oscurecimiento por variables**.
+- **Red global de legibilidad — `src/styles/globals.css`:** bajo `[data-theme="dark"]`, da un **fondo
+  oscuro por defecto** al lienzo (`body`, `#root`, `.App`, `#main-content-area`) y a los patrones de
+  superficie más comunes (`[class*="card"]`, `panel`, `modal`, `popup`, `dropdown`, `container`…, que
+  matchean también los hashes de CSS Modules) y baja el color de texto para garantizar contraste.
+  Funciona **junto** al re-mapeo de variables.
+- **Overrides finos por componente:** reglas `:global([data-theme='dark'])` en **~95 `.module.css`**
+  (storefront, cuenta, header/footer/nav, componentes UI Glass* y todo el admin) para los casos que las
+  redes globales no cubren.
+- **Sin `!important`:** los `backgroundColor` que el admin configura **inline** (`style={{ backgroundColor }}`)
+  en sus secciones **ganan** sobre el tema (el inline siempre vence a una clase sin `!important`), así se
+  respeta el diseño del dueño; solo se da fondo oscuro **donde NO hay uno inline**.
 - **Contraste:** fondo oscuro → texto claro en toda la página.
+
+### 2.5 Dos pases de contraste
+
+El modo noche se afinó en **dos rondas**:
+
+1. **1er pase (`a442251`):** redes globales (variables + legibilidad) + los overrides iniciales por
+   componente.
+2. **2º pase (`649a42e`):** ronda **extra** de overrides `[data-theme="dark"]` sobre los componentes que
+   aún quedaban con **bajo contraste** tras el primero, para garantizar **fondo oscuro → texto claro**
+   legible en toda la página.
+
+### 2.6 Arrastre del registro de regalos reescrito (compatible con el tema)
+
+En el mismo commit del 2º pase (`649a42e`) se **reescribió el arrastre** de las tarjetas del registro de
+regalos (`/regalar`) sobre **Pointer Events** (hook `useGiftDrag` **dentro** de
+`src/pages/GiftRegistry/GiftRegistryPage.jsx`) con un **clon visual (ghost)** anclado al puntero; la `<img>`
+lleva `draggable={false}` + `-webkit-user-drag:none` para **matar el drag nativo** del navegador (la imagen
+fantasma con URL / cursor "denegado"). La tarjeta origen **nunca se desmonta ni cambia de key**, así no hay
+parpadeo del `transform`. No es estrictamente "modo noche", pero entró en la misma tanda de pulido visual;
+detalle funcional en [FUNCIONES-CLIENTE.md §7.4-bis](./FUNCIONES-CLIENTE.md) y
+[PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md).
 
 ---
 
@@ -84,17 +121,22 @@ página **no parpadea** del claro al oscuro al cargar. **Debe coincidir** con `T
 | Archivo | Rol |
 |---|---|
 | `src/contexts/ThemeContext.jsx` | `ThemeProvider` + `useTheme()`: modos `light/dark/system`, persistencia `wala-theme`, aplica `data-theme`. |
-| `src/components/common/ThemeToggle/` | Interruptor luna/sol (botón accesible) que llama `toggle()`. |
-| `src/components/common/Header/Header.jsx` | Monta el `ThemeToggle` en la cabecera. |
+| `src/components/common/ThemeToggle/ThemeToggle.jsx` | Interruptor luna/sol (botón accesible, iconos `lucide-react` Moon/Sun) que llama `toggle()`. |
+| `src/components/common/Header/Header.jsx` | Monta el `ThemeToggle` en la cabecera (un solo nodo sirve desktop y móvil). |
 | `index.html` | Script anti-FOUC: fija `data-theme` antes de React/CSS. |
-| `src/styles/globals.css` | Variables `:root` / `[data-theme="dark"]` + red global que remapea tokens. |
-| `*.module.css` (~40) | Overrides `:global([data-theme='dark'])` por componente. |
+| `src/styles/variables.css` | Tokens semánticos de tema (`:root`) + redefinición `[data-theme="dark"]` + red de re-mapeo de la paleta heredada (`--gris-*`/`--blanco`/`--primary-*`/sombras). |
+| `src/styles/globals.css` | Red global de legibilidad bajo `[data-theme="dark"]` (lienzo + patrones de superficie), sin `!important`. |
+| `src/theme/tokens.css` | Tokens `--surface-dark` (violeta) de referencia para la paleta oscura. |
+| `*.module.css` (~95) | Overrides `:global([data-theme='dark'])` por componente (storefront, cuenta, header/footer/nav, UI Glass*, admin). |
 
 ---
 
-## 4. Commit
+## 4. Commits
 
 - `a442251` — feat(ui): Modo Noche global (light/dark/system) — `ThemeProvider` + `ThemeToggle`
-  luna/sol en el Header + script anti-FOUC + paleta de variables y overrides por componente.
-  Respeta los `backgroundColor` inline del admin; garantiza contraste. Frontend por Vercel, sin
-  backend.
+  luna/sol en el Header + script anti-FOUC + paleta de variables y overrides por componente
+  (1er pase). Respeta los `backgroundColor` inline del admin; garantiza contraste. Frontend por
+  Vercel, sin backend.
+- `649a42e` — fix(modo-noche): **2º pase de contraste** (ronda extra de overrides
+  `[data-theme="dark"]`) + **arrastre del registro de regalos sin parpadeo** (`useGiftDrag` por
+  Pointer Events en `/regalar`). Frontend por Vercel, sin backend.

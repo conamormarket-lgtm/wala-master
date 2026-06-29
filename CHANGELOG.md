@@ -1,9 +1,11 @@
 # Changelog — Wala
 
 Registro de actualizaciones y funciones, de lo más nuevo a lo más viejo. Las entradas más
-recientes (**2026-06-25**, **2026-06-27** y **2026-06-28**) ya están **desplegadas a
+recientes (**2026-06-25**, **2026-06-27**, **2026-06-28** y **2026-06-29**) ya están **desplegadas a
 producción** (`sistema-gestion-3b225`): frontend por **Vercel** (auto-deploy desde `master`)
-y backend (Cloud Functions / índices / backfills) por **Cloud Shell**. Las entradas más antiguas marcadas
+y backend (Cloud Functions / índices / backfills) por **Cloud Shell**. *(Algunas funciones del
+**2026-06-29** —pago marca `estadoWala`, foto en `/regalar`— requieren **redeploy de functions**;
+se indica en cada entrada.)* Las entradas más antiguas marcadas
 `[Sin liberar]` se construyeron en la rama `fase-0-seguridad` (hoy `master`) y se
 **verificaron en local** (build + emulador) antes de desplegarse en esas tandas. Detalle de
 estado en [docs/wala/ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md); detalle por
@@ -12,6 +14,34 @@ fase en [`docs/wala/fases/`](docs/wala/fases/README.md).
 Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
+
+## [2026-06-29] — REGALOS v3: FOTO de la persona + TARJETAS GRANDES estilo "Fechas Importantes" en `/regalar` (frontend por Vercel; **requiere redeploy de functions** para la foto)
+La página pública de registro de regalos (`/regalar`) deja de mostrar las fechas como simples chips y pasa a **TARJETAS GRANDES de persona** que replican el look de "Mis Fechas Importantes": **foto circular** de la persona (o inicial si no hay), **nombre + chip de relación + chips de ocasiones globales + fecha del evento**. La foto se **sube en la cuenta** del dueño y la expone la Cloud Function que sirve el registro. **Frontend DESPLEGADO** por **Vercel** (auto-deploy desde `master`); **el backend REQUIERE redeploy** (`firebase deploy --only functions:getPublicGiftRegistry`) para que la foto/roleKey/gender lleguen a la página pública. **Conserva** el arrastre (drag por Pointer Events) y la selección de fecha. **No toca carrito, precios ni cobro.** Build verde. Commit `4f775a4`. Nota de cliente en [FUNCIONES-CLIENTE.md](docs/wala/FUNCIONES-CLIENTE.md) y plan en [PLAN-FECHAS-ESPECIALES.md](docs/wala/PLAN-FECHAS-ESPECIALES.md).
+
+### Foto de la persona (se sube en la cuenta)
+- ✅ `4f775a4` — **`recipient.photoUrl` en la cuenta** (`src/pages/cuenta/CuentaFechasImportantesPage.jsx`): cada persona de "Mis Fechas Importantes" puede llevar una **foto circular**. La sube `uploadFile` (Firebase **Storage**, mismo helper que AvatarStudio); sin foto, la tarjeta cae al **placeholder con la inicial**. Se guarda como `photoUrl` en el `recipient`.
+- ✅ `4f775a4` (**requiere redeploy de functions**) — **`getPublicGiftRegistry` expone `recipientPhoto`, `roleKey` y `gender`** (`functions/index.js`): por cada evento de cada `recipient` adjunta la **foto** (para la tarjeta), el **roleKey** y el **gender** (para derivar las ocasiones globales en el cliente). Sigue siendo **dato mínimo, sin PII sensible** (mismo criterio que el `recipientName`/`relation` que ya enviaba). Incluye también la foto del **propio dueño** (el festejado).
+
+### Tarjetas grandes en `/regalar`
+- ✅ `4f775a4` — **`GiftRegistryPage.jsx`**: cada fecha se rotula con una **tarjeta grande de persona** (`personCard`) — avatar con foto/placeholder + nombre + chip de relación + **chips de ocasiones globales** (derivadas en cliente de `roleKey`/`gender`) + fecha del evento. La tarjeta **sigue siendo el control de selección** (`role="radio"`, fija la fecha activa para "Regalar este"); conserva las clases funcionales `.dateChip`/`.dateChipActive` para no romper estilos ni la lógica existente.
+
+## [2026-06-29] — MODO NOCHE 2º pase de contraste + arrastre del registro de regalos sin parpadeo (frontend por Vercel; NO requiere backend)
+Pulido sobre el modo noche y el arrastre de `/regalar`. **Frontend DESPLEGADO** por **Vercel** (auto-deploy desde `master`); **NO requiere backend** (CSS + estado de cliente). **No toca carrito, precios, cobro ni datos.** Build verde. Commit `649a42e`. Detalle del tema en [MODO-NOCHE.md](docs/wala/MODO-NOCHE.md).
+
+- ✅ `649a42e` — **2º pase de contraste del modo noche**: ronda extra de overrides `[data-theme="dark"]` sobre componentes que aún quedaban con texto/fondo de bajo contraste tras el 1er pase (`a442251`), para garantizar **fondo oscuro → texto claro** legible en toda la página.
+- ✅ `649a42e` — **Arrastre del registro de regalos SIN parpadeo**: el drag de las tarjetas de `/regalar` se reescribe sobre **Pointer Events** (`useGiftDrag` dentro de `GiftRegistryPage.jsx`) con un **clon visual (ghost)** anclado al puntero; la `<img>` lleva `draggable={false}` + `-webkit-user-drag:none` para **matar el drag nativo** del navegador (la "imagen fantasma con URL" / cursor "denegado"). La tarjeta origen **nunca se desmonta ni cambia de key** → no hay flicker del `transform` de framer-motion.
+
+## [2026-06-29] — COMPRA DIRECTA: botones "Comprar" y "Comprar todo el carrito" en la ficha de producto → pasarela directa (frontend por Vercel; NO requiere backend)
+La ficha de producto gana **dos botones de compra directa** que llevan **directo a la pasarela de pago** (`/checkout`) sin pasar por el carrito. **Frontend DESPLEGADO** por **Vercel** (auto-deploy desde `master`); **NO requiere backend**. **Reusa** el carrito y su selección de items (patrón "No comprar esta vez"); **no toca montos, Formik ni el camino de cobro**. Build verde. Commit `fbb53ab`. Nota de cliente en [FUNCIONES-CLIENTE.md](docs/wala/FUNCIONES-CLIENTE.md).
+
+- ✅ `fbb53ab` — **`addToCart` admite `options.selectOnly`** (`src/contexts/CartContext.jsx`): al agregar con `selectOnly:true` el item queda como **ÚNICO seleccionado** (los demás del carrito pasan a `selected:false`, **NO se borran**), para que el checkout cobre **solo este producto**. Nuevo helper **`selectAllItems()`** (marca TODOS los items como seleccionados) expuesto en el contexto.
+- ✅ `fbb53ab` — **Botones en `ProductDetail.jsx`**: **"Comprar"** (`handleComprarAhora`) agrega ESTE producto con `{selectOnly:true, silent:true}` y navega a `/checkout`; **"Comprar todo el carrito"** (`handleComprarCarrito`) llama `selectAllItems()` y navega a `/checkout` (si el carrito está vacío, avisa por toast). Apoyado en la selección de items ya existente; **el camino de "Agregar al carrito" queda igual**.
+
+## [2026-06-29] — CUENTA: tabs en 2 líneas (desktop) + scroll con "asomo" (móvil) + tarjeta de compra clickeable (frontend por Vercel; NO requiere backend)
+Mejoras de navegación de la **Cuenta** del cliente. **Frontend DESPLEGADO** por **Vercel** (auto-deploy desde `master`); **NO requiere backend**. **No toca carrito, precios ni cobro.** Build verde. Commit `e9ec48d`.
+
+- ✅ `e9ec48d` — **Tabs de la cuenta en 2 líneas (desktop) + scroll con "asomo" (móvil)** (`src/pages/CuentaLayout.jsx`): en pantallas grandes los tabs se reparten en **dos líneas** (ya no se cortan ni saturan); en móvil, si no caben, el `<nav>` hace un **auto-scroll suave de "asomo"** al montar (dos asomos lentos de ~56px y vuelta a 0) como **pista de que hay más tabs deslizables**. Respeta `scrollWidth > clientWidth` (no asoma si todo cabe).
+- ✅ `e9ec48d` — **Tarjeta de compra clickeable completa** (`src/pages/cuenta/CuentaPedidosPage.jsx`): **toda** la tarjeta de un pedido es clickeable (no solo un enlace) — navegación programática (`role="link"` + `tabIndex={0}` + `onClick`/`onKeyDown`) al detalle `/cuenta/pedidos/:id`. Accesible por teclado.
 
 ## [2026-06-29] — `wala_pedidos` pasa de RESPALDO a FUENTE DE VERDAD: nuevo `estadoWala` + el pago lo sincroniza el backend (frontend por Vercel; **REQUIERE redeploy de functions**)
 **Decisión del dueño:** la base interna de WALA (`wala_pedidos`) deja de ser una simple red de seguridad y pasa a ser la **FUENTE DE VERDAD independiente del ERP**: cada pedido lleva ahora **su propio estado `estadoWala`** que el portal **NO degrada** cuando el ERP toca su doc. (*"La base interna es la fuente de verdad; ya no importan los pedidos viejos."*) Es **100 % ADITIVO**: no cambia montos, ni la firma del pedido, ni el marcado de `pedidos_web`; solo añade un campo y unos helpers. **Frontend DESPLEGADO** por **Vercel** (auto-deploy desde `master`). **El backend REQUIERE redeploy** (`firebase deploy --only functions:processCulqiPayment,functions:culqiWebhook,functions:capturePaypalOrderSecure`) para que el pago marque `estadoWala:"pagado"`. **No toca carrito, precios ni cobro.** Build verde / `node --check` OK. Commit `1d8f639`. Detalle del flujo en [FLUJO-PEDIDOS.md](docs/wala/FLUJO-PEDIDOS.md) (§4-bis.5, §4-bis.9) y modelo en [MODELO-DATOS.md](docs/wala/MODELO-DATOS.md) (§3.7).
@@ -51,7 +81,7 @@ Implementación del lado WALA del **diagnóstico de abajo** (la entrada `[2026-0
 
 ### Las vistas fusionan y rescatan el espejo
 - ✅ `68447dc` — **"Mis Compras"** (`searchOrdersByDniInERP`) ahora acepta `{ userId }`, **fusiona** el espejo y **deduplica por clave de negocio** (`numeroPedido || portalPseudoOrderId || pedidoWebId || id`). Las claves "vivas" **solo cuentan si el doc SIGUE siendo WALA** (`esPedidoWala`): así un pedido **DESMARCADO** por el ERP (`web:false`) **no suprime** su espejo y este lo **rescata**. `usePedidos(dni, userId)` indexa su caché en memoria por `dni+userId`; `CuentaPedidosPage` y `CuentaCompraDetallePage` pasan el `uid`.
-- ✅ `68447dc` — **Estado correcto del pedido solo-espejo:** `derivarEstadoCompra` (`src/utils/estadoCompra.js`, rama `_fromMirror`/`fuente:'wala-mirror'`) lo muestra **CONFIRMADO/Procesado** (verde), **NO** "Pendiente de pago". **"Recepción"** (`src/services/adminOrders.js` + `RecepcionPedidos.jsx`) incluye el espejo marcado **"Procesado en ERP"**.
+- ✅ `68447dc` — **Estado del pedido solo-espejo:** `derivarEstadoCompra` (`src/utils/estadoCompra.js`, rama `_fromMirror`/`fuente:'wala-mirror'`) lo muestra **CONFIRMADO/Procesado** (verde), **NO** "Pendiente de pago". **"Recepción"** (`src/services/adminOrders.js` + `RecepcionPedidos.jsx`) incluye el espejo marcado **"Procesado en ERP"**. _(⚠️ **Superado por `1d8f639`** (entrada de arriba): desde que el espejo tiene `estadoWala` propio, el color del solo-espejo ya **no** es siempre verde — sale de `estadoWala` (`pendiente_pago`→ámbar, `pagado`→azul, `entregado`→verde…); el pago lo mueve a `pagado`.)_
 
 ### ⚠️ Límite conocido (no es la cura, es una red de seguridad)
 - ⬜ El espejo se crea **AL MOMENTO de la compra** → **solo protege pedidos creados DESDE este deploy (2026-06-29)**. Los pedidos **previos NO tienen espejo**: si el ERP ya los borró de `pedidos_web` **y** de `pedidos`, **no se pueden recuperar**. La **causa raíz sigue siendo del ERP** (que borra al aprobar); lo ideal es que el ERP **MARQUE en vez de borrar** (ver FIX raíz en [FLUJO-PEDIDOS.md §4-bis.6](docs/wala/FLUJO-PEDIDOS.md)).

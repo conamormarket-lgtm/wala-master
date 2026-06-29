@@ -5,7 +5,7 @@
 > para asignarle productos, y su nav de categorías con miniaturas (estilo M\*\*\*SHAKES) que
 > al hacer clic filtra el catálogo de esa marca.
 
-> ## ✅ ESTADO: FASES 0–5 HECHAS Y DESPLEGADAS (frontend, 2026-06-28)
+> ## ✅ ESTADO: FASES 0–5 HECHAS Y DESPLEGADAS + REFINAMIENTOS (frontend, 2026-06-28/29)
 >
 > Todo el plan está **implementado**. El **frontend** se desplegó por **Vercel** (auto-deploy
 > desde `master`). Lo único que falta es **trabajo de datos del dueño** (ver "Pendiente del
@@ -32,6 +32,19 @@
 >   `categories_nav` **deriva las burbujas de las categorías de los productos** de la marca
 >   (`getProductsByBrand`), con la imagen de `tienda_categories` (sin imagen → inicial). El
 >   `categoryNav` manual queda como **override**. El nav de marca también acota el catálogo a esa marca.
+> - `fc8a0d2` — **Editor compartido del nav (`CategoryNavEditor`):** se extrae el editor del
+>   nav a `src/components/admin/CategoryNavEditor/CategoryNavEditor.jsx` (reutilizable y
+>   autosuficiente) y se **embebe inline en el Editor Visual** cuando la sección
+>   "Navegación por categorías" tiene una marca seleccionada → el mismo editor en 3 lugares
+>   (panel por marca, Elementos con diseño y editor visual), todos editan el mismo
+>   `categoryNav` de la marca (sincronizado).
+> - `425e9ce` — **"Elementos con diseño" v2 + "Estilo del nav":** la página `/admin/elementos-diseno`
+>   pasa de hub de pestañas a **grid de tarjetas con slug por elemento** (registro extensible
+>   `src/pages/admin/elementosDiseno/registry.jsx` + página por slug `AdminElementoDisenoPage` +
+>   ruta `/:elementSlug`; hoy 1 elemento: `navegacion-categorias`). Además, el editor del nav
+>   gana el **"Estilo del nav"** `categoryNavStyle = { align, animation }` (alineación
+>   izq/centro/der/justificado + modo estático/slider), persistido junto al `categoryNav`
+>   en `tienda_brands` y sincronizado en los 3 lugares.
 >
 > **Brand IDs reales (doc id de `tienda_brands`):**
 > | Marca | `brandId` | slug |
@@ -83,6 +96,12 @@ Marca con **detalle** y 3 pestañas:
 - **Identidad:** lo de hoy (logo, fondo, WhatsApp) + `slug`.
 - **Productos:** lista por `getProductsByBrand(brandId)`; asignar/quitar marca **en lote**; botón "Crear producto en esta marca" que abre `AdminProductoFormV2` con la marca **preseleccionada** (ya soporta brandId). Conecta con el inventario y la creación existentes, sin reescribir nada.
 - **Nav de categorías:** editor del array `categoryNav` (elegir categorías de `tienda_categories` con su `imageUrl`, o crear entradas con foto propia).
+
+> **Cómo quedó (final):** la **Identidad** (logo, fondo, WhatsApp, `slug`) se mantuvo en
+> `/admin/marcas` (`AdminMarcas.jsx`); el panel por marca `AdminMarcaProductos` quedó con **2
+> pestañas** (**Productos** + **Nav de categorías**). El editor del nav es el componente
+> **compartido `CategoryNavEditor`** (mismo en 3 lugares) y suma el **"Estilo del nav"**
+> (`categoryNavStyle = { align, animation }`). Ver "## Estado real de implementación".
 
 ## Storefront + ruteo
 Reutiliza el mecanismo de páginas dinámicas: `/:slug` → `DynamicLandingPage` → `TiendaPage` carga las secciones de `pages/{slug}` (editor visual). Por marca: crear un `landingPage` con su slug y colocar `categories_nav` + `sidebar_catalog` (con su `brandId`). `TiendaPage` inicializa `catalogFacet = {type:'brand', value: brandId}` → el catálogo trae **solo esa marca** (server-side), con paginación; la categoría del nav se aplica como filtro de cliente (el sidebar ya filtra categoría en cliente). Requiere índice `brandId + createdAt`.
@@ -148,7 +167,8 @@ a `TiendaPage`, que usa ese **slug guardado** como `pageId` (lee secciones de `p
 ### Fase 2 — Panel admin por marca ✅ (commit `ac7e53d`)
 - `AdminMarcaProductos.jsx` (se abre desde `/admin/marcas`, botón "gestionar productos" de cada
   marca). **2 pestañas:** **Productos** (lista asignados vía `getProductsByBrand` con quitar en
-  lote + buscador de NO asignados vía `getProducts` con asignar en lote) y **Nav de categorías**.
+  lote + buscador de NO asignados vía `getProducts({ includeHidden: true })` con asignar en lote) y
+  **Nav de categorías** (monta el editor compartido `CategoryNavEditor`, ver el refinamiento más abajo).
   Botón "crear producto en esta marca" → `/admin/productos/nuevo?brandId=<id>` (preselecciona la marca).
 - `setProductBrand(id, brandId)` (`products.js`): **escritura PARCIAL directa** del campo —
   `updateDoc(ref, { brandId })` para asignar, `updateDoc(ref, { brandId: deleteField() })` para
@@ -159,8 +179,9 @@ a `TiendaPage`, que usa ese **slug guardado** como `pageId` (lee secciones de `p
 
 ### Fases 3–4 — Nav de categorías con miniaturas + clic filtra el sidebar ✅ (commit `5221ad5`)
 - `categoryNav: [{ categoryId, name, imageUrl, order }]` embebido en `tienda_brands`
-  (`brands.js`: `createBrand`/`updateBrand` con `normalizeCategoryNav`; editado en la pestaña
-  "Nav de categorías" de `AdminMarcaProductos`). **Tras `3f0627c` este array es OPCIONAL** (override).
+  (`brands.js`: `createBrand`/`updateBrand` con `normalizeCategoryNav`; **tras `fc8a0d2` se edita
+  con el componente compartido `CategoryNavEditor`**, ver abajo). **Tras `3f0627c` este array es
+  OPCIONAL** (override).
 - `VisualCategoryNav.jsx` gana **modo filtro-local**: si recibe `onSelectCategory`, cada burbuja
   (con miniatura) es un `<button>` que filtra el catálogo de la marca **sin navegar** (resalta por
   `activeCategory`, no por la URL). "Todos" = `onSelectCategory(null)`.
@@ -185,6 +206,37 @@ a `TiendaPage`, que usa ese **slug guardado** como `pageId` (lee secciones de `p
   catálogo de marca, la marca del nav **acota el catálogo** → pulsar una burbuja de la marca A no
   muestra esa categoría de todas las marcas.
 
+### Refinamiento — Editor compartido del nav + "Elementos con diseño" v2 + "Estilo del nav" ✅ (commits `fc8a0d2` + `425e9ce`)
+- **Editor reutilizable `CategoryNavEditor`** (`src/components/admin/CategoryNavEditor/CategoryNavEditor.jsx`):
+  autosuficiente (carga sus datos con react-query: `getBrand`, `getCategories`, `getProductsByBrand`).
+  Por **cada burbuja** edita los 3 campos — **(a) qué categoría filtra** (`<select>` de
+  `tienda_categories` → `categoryId`, con opción "Sin categoría / burbuja libre"), **(b) nombre**
+  visible y **(c) miniatura** (subir+recortar 1:1 → `uploadFile` a `brand_nav/{brandId}/...`, o
+  **heredar** la imagen de la categoría). Además **agregar / quitar / reordenar** (flechas),
+  **"Generar automático"** (pre-llena con las categorías de los productos de la marca; **no guarda**
+  hasta pulsar "Guardar nav") y **"Vaciar (volver a automático)"** (deja `categoryNav = []`). Guarda
+  con `updateBrand(brandId, { categoryNav, categoryNavStyle })` e invalida `['brands']`,
+  `['admin-brand-doc']` y `['categories-nav-brands']` (el storefront refresca al instante).
+- **Se usa en 3 lugares, todos editando el MISMO `categoryNav`/`categoryNavStyle` de la marca**
+  (sincronizados): (1) pestaña **"Nav de categorías"** de `AdminMarcaProductos`; (2) elemento
+  **"Navegación por categorías"** de *Elementos con diseño*; (3) **inline en el Editor Visual** al
+  seleccionar una sección "Navegación por categorías" con marca.
+- **"Elementos con diseño" v2** (`src/pages/admin/AdminElementosDiseno.jsx`): la landing
+  `/admin/elementos-diseno` deja de ser un hub de pestañas y pasa a una **grid de tarjetas**, una por
+  cada entrada del **registro extensible** `src/pages/admin/elementosDiseno/registry.jsx`
+  (`ELEMENTOS_DISENO = [{ slug, nombre, descripcion, icon, Editor }]`). Cada elemento tiene su **slug**
+  y su propia página `/admin/elementos-diseno/{slug}` (`AdminElementoDisenoPage`, ruta
+  `elementos-diseno/:elementSlug` en `App.jsx`) con encabezado + enlace "Volver a Elementos con diseño".
+  **Hoy hay 1 elemento:** `navegacion-categorias`, cuyo `Editor` (`NavegacionCategoriasEditor`) tiene un
+  selector de marca (`getBrands`) y, al elegir una, monta `CategoryNavEditor`. **Para sumar un elemento
+  nuevo** basta con añadir otra entrada al registro: aparece sola como tarjeta y como ruta.
+- **"Estilo del nav" (`categoryNavStyle`)** (`brands.js`: `normalizeCategoryNavStyle`,
+  default `{ align: 'center', animation: 'static' }`): `CategoryNavEditor` añade una sub-sección que
+  guarda **alineación** (`align`: `left`/`center`/`right`/`justify`, **solo aplica en modo estático**)
+  y **modo** (`animation`: `static` = fila fija | `slider` = burbujas que se desplazan solas en bucle,
+  pausan al pasar el cursor, respetan `prefers-reduced-motion` y siguen filtrando al clic). Se persiste
+  **junto** al `categoryNav` y `TiendaPage` lo pasa como `align`/`animation` a `VisualCategoryNav`.
+
 ### Fase 5 — MUSSA + MUEBLERIA + colisión `/mussa` ✅ (commit `5221ad5`)
 - Las 3 marcas comparten exactamente el mismo mecanismo (página `/:slug` + `sidebar_catalog`
   con su `brandId` + `categoryNav` propio).
@@ -194,6 +246,10 @@ a `TiendaPage`, que usa ese **slug guardado** como `pageId` (lee secciones de `p
 ### Lo que el dueño debe hacer en datos (no código)
 - `node scripts/setup-marcas.js --project sistema-gestion-3b225 --apply` (crea
   `landingPages/MUSSA` y `/MUEBLERIA`, termina el backfill de `brandId`).
-- En el **editor visual**: configurar las páginas MUSSA/MUEBLERIA (añadir `categories_nav` +
-  `sidebar_catalog` con su `brandId`).
+- En el **editor visual**: configurar las páginas MUSSA/MUEBLERIA arrastrando, desde
+  **"Añadir Nuevo Módulo"**, **"Productos {Marca}"** (inserta `sidebar_catalog` con `brandId` ya
+  configurado) + **"Categorías {Marca}"** (inserta `categories_nav` con `brandId`). El **nav de
+  categorías es AUTOMÁTICO** (se deriva de los productos de la marca); solo se arma a mano si se
+  quiere personalizar orden/imágenes/estilo, desde `CategoryNavEditor` (panel por marca, Elementos
+  con diseño o inline en el editor visual).
 - En **`AdminMarcaProductos`**: asignar productos a MUSSA y MUEBLERIA (hoy todos son Con Amor).

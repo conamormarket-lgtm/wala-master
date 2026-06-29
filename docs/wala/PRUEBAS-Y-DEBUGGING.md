@@ -262,6 +262,106 @@ Componente `Header.jsx`.
 
 ---
 
+## 4-bis. Checklist POR PROBAR — sesión 2026-06-29 (multimarca, modo noche, pedidos, regalos, compra directa)
+
+> Lista de pruebas manuales para **todo lo construido en la tanda del 2026-06-29**. Marca cada
+> punto en wala.pe (o en local). Donde algo dependa de un **redeploy de funciones** del dueño, se
+> avisa con **[requiere deploy]** y se enlaza a [PENDIENTES.md](./PENDIENTES.md).
+
+### A. Compra directa desde la ficha de producto
+- [ ] **Botón "Comprar"** (este producto): en una ficha (`ProductDetail`), pulsa **"Comprar"**.
+      Debe llevarte **directo a `/checkout`** con **solo ese producto** seleccionado para cobrar
+      (si tenías otras cosas en el carrito, **no se borran**, solo quedan deseleccionadas).
+- [ ] **Botón "Comprar todo el carrito"**: con 2+ items en el carrito, pulsa **"Comprar todo el
+      carrito"**. Debe ir a `/checkout` con **todos** los items seleccionados.
+- [ ] **Carrito vacío**: "Comprar todo el carrito" con el carrito vacío debe **avisar** (toast),
+      no romper.
+- [ ] **"Agregar al carrito" sigue igual**: el botón clásico no cambió de comportamiento.
+
+### B. Los pedidos NO desaparecen + estado propio `estadoWala`
+- [ ] **Persistencia tras pagar [requiere deploy]**: haz un pedido, **págalo** (Culqi/PayPal) y
+      ve a **"Mis Compras"**. Debe aparecer como **"Pagado"** y **seguir "Pagado"** al recargar
+      (no debe volver a "Por confirmar pago"). *Si sigue en "por confirmar" tras pagar, casi
+      seguro falta el **redeploy de las 3 funciones de pago** — ver
+      [PENDIENTES.md §1](./PENDIENTES.md).*
+- [ ] **No se pierde si el ERP lo toca**: un pedido aprobado en el ERP debe **seguir visible** en
+      "Mis Compras" y en **"Recepción"** (lo rescata el espejo `wala_pedidos`). Si un pedido
+      "desaparece", revisa el diagnóstico de [FLUJO-PEDIDOS.md](./FLUJO-PEDIDOS.md) (el ERP borra
+      `pedidos_web` al aprobar; **no es caché**).
+- [ ] **Recepción (admin)** lista los pedidos del portal incluso los que el ERP ya movió.
+- [ ] **Estado más avanzado**: si el ERP marca "Entregado", la compra **no** debe degradarse a
+      "pagado" (se muestra el estado más avanzado entre ERP y `estadoWala`).
+
+### C. "Recepción" (admin) legible
+- [ ] La tabla/lista de **Recepción** se lee bien (columnas, estado, monto) y **no** queda con
+      texto cortado o ilegible.
+
+### D. Modo noche (claro / oscuro / sistema)
+- [ ] **Interruptor luna/sol** en el **Header**: al primer clic **invierte lo que ves** y la
+      elección **persiste** al recargar (clave `wala-theme`).
+- [ ] **Sin parpadeo al cargar** (anti-FOUC): al recargar en modo oscuro, la página **no destella**
+      de claro a oscuro.
+- [ ] **Sigue al sistema**: con el tema en "sistema", cambia el modo claro/oscuro del SO y la web
+      debe **reaccionar en vivo**.
+- [ ] **Contraste en storefront**: tienda, ficha de producto, banners y carruseles → **fondo
+      oscuro = texto claro**, sin texto que desaparezca.
+- [ ] **Contraste en Cuenta**: tabs, pedidos, fechas importantes → legibles en oscuro.
+- [ ] **Contraste en Admin**: paneles del admin legibles en oscuro; **respeta los colores de
+      fondo que el admin haya configurado a mano** (no los pisa).
+
+### E. Arrastre en `/regalar` (registro de regalos)
+- [ ] El **arrastre** de las tarjetas es **fluido** (sin parpadeo): aparece un **clon que sigue al
+      puntero** y la tarjeta original no "salta".
+- [ ] **No** aparece la "imagen fantasma con URL" ni el cursor de **denegado** del navegador al
+      arrastrar.
+- [ ] La **selección** de fecha (elegir "Regalar este") sigue funcionando y es accesible por
+      teclado.
+
+### F. Foto de la persona (Fechas Importantes + `/regalar`)
+- [ ] **Subir foto en la cuenta**: en **"Mis Fechas Importantes"**, sube una **foto** a una persona;
+      debe **verse en su tarjeta** (círculo). Sin foto → **inicial** (placeholder).
+- [ ] **Foto visible en `/regalar` [requiere deploy]**: la misma foto debe verse en la **tarjeta
+      grande de persona** de `/regalar`. *Si no aparece, falta el **redeploy de
+      `getPublicGiftRegistry`** — ver [PENDIENTES.md §1](./PENDIENTES.md).*
+- [ ] Las **tarjetas grandes** de `/regalar` muestran nombre + chip de relación + chips de
+      ocasiones + fecha del evento.
+
+### G. Nav de categorías por marca (slider + alineación)
+- [ ] El **nav de categorías** de una marca muestra las categorías **automáticamente** (derivadas
+      de sus productos) con sus miniaturas.
+- [ ] **Alineación**: desde `/admin/elementos-diseno → "navegacion-categorias"`, cambia la
+      alineación (izq / centro / der / justificado) y confirma que el nav lo refleja.
+- [ ] **Modo slider vs. estático**: alterna entre **slider** (se desliza) y **estático** y verifica
+      el comportamiento en la tienda. (Estilo guardado en `tienda_brands.categoryNavStyle`.)
+- [ ] Lo elegido en el editor de elementos coincide con lo que muestra el **editor visual**.
+
+### H. Páginas de marca `/ConAmor`, `/MUSSA`, `/MUEBLERIA`
+- [ ] Abre **`wala.pe/ConAmor`**, **`wala.pe/MUSSA`** y **`wala.pe/MUEBLERIA`**: cada una carga su
+      **landing de marca** (vía `DynamicLandingPage`).
+- [ ] **Slug case-insensitive**: `/conamor`, `/mussa`, `/muebleria` (minúsculas) deben llegar a la
+      **misma** página.
+- [ ] El **catálogo/sidebar** de cada página muestra **solo productos de esa marca**.
+- [ ] *(Admin)* Comprueba que productos asignados a una marca (`brandId`) salen en su página y no
+      en las otras. Si una marca sale vacía, casi seguro **faltan productos asignados** (ver
+      [PLAN-MULTIMARCA.md](./PLAN-MULTIMARCA.md)).
+
+### I. Cuenta: tabs en 2 líneas + tarjeta de compra clickeable
+- [ ] **Desktop**: los **tabs de la Cuenta** se reparten en **dos líneas** (no se cortan ni
+      saturan).
+- [ ] **Móvil**: si los tabs no caben, al entrar hacen un **"asomo"** (auto-scroll suave) que
+      sugiere que hay más; se pueden **deslizar**.
+- [ ] **Tarjeta de compra clickeable**: en "Mis Compras", **toda** la tarjeta de un pedido es
+      clickeable (no solo un enlace) y lleva al **detalle**. Funciona también con **teclado**
+      (Tab + Enter).
+
+### Cómo distinguir "falta deploy" de "bug de verdad"
+- Si **B (pagar→Pagado)** o **F (foto en /regalar)** fallan pero **todo lo demás** funciona, el
+  problema casi seguro es que **falta el redeploy de funciones** (no es un bug del front). Ver
+  [PENDIENTES.md §1](./PENDIENTES.md).
+- Para cualquier otro síntoma, abre la consola (F12) y revisa el **primer error rojo** (ver §4).
+
+---
+
 ## 5. Checklist antes de publicar (Vercel promote / auto-deploy)
 
 Marca cada punto **antes** de promover en Vercel o dejar que el auto-deploy salga a producción.

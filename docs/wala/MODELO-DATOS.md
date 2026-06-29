@@ -105,7 +105,7 @@ hay proyecto ERP separado en producción), así que todas deben estar en las mis
 | (ruleta) `PRIZES_COLLECTION` | PROD | Premios de ruleta. | `probability` |
 | `pedidos` | ERP (mismo proyecto `sistema-gestion-3b225`) | Pedidos legacy/validados del ERP (incluye pedidos del portal ya aprobados). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`, `clienteNumeroDocumento`, `numeroPedido`, `createdAt`, `email`, `canalVenta`, `estadoGeneral`, `montoTotal`/`montoPendiente`, `pagado`/`estadoPago` |
 | `pedidos_web` | ERP (mismo proyecto `sistema-gestion-3b225`) | Cola web de pedidos del portal (los crea el checkout vía `createWebOrder`, con `estadoValidacion:'pendiente'`, pendientes de validación manual). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`/`clienteNumeroDocumento` (normalizados) + `dniRaw`, `numeroPedido`, `createdAt`, `canalVenta:'Portal Web'`, `web:true`, `estadoGeneral:'Nuevo'`, `estadoValidacion`, `montoTotal`/`montoPendiente`, `productos` (mapa `item_N`) |
-| `wala_pedidos` | **PROD (WALA-only)** — el ERP NO la toca | **Espejo anti-pérdida de cada pedido del portal** (red de seguridad: el ERP borra/desmarca `pedidos_web` al aprobar). Lo escribe `createWebOrder` (`src/services/erp/firebase.js`) en **fire-and-forget best-effort** tras guardar en `pedidos_web` (no demora ni rompe el checkout). **NO copia secretos de pago**, solo campos de display. Servicio: `src/services/walaOrders.js`. **Límite:** solo cubre pedidos creados DESDE el deploy (29-06-2026). Detalle en §3.7. | `numeroPedido`, `portalPseudoOrderId`, `pedidoWebId`, `buyerUid`, `dni`/`dniRaw`/`clienteNumeroDocumento`, `clienteNombreCompleto`, `productos` (resumen), `montoTotal`, `moneda`, `canalVenta:'Portal Web'`, `web:true`, `createdAt`, `fuente:'wala-mirror'` |
+| `wala_pedidos` | **PROD (WALA-only)** — el ERP NO la toca | **FUENTE DE VERDAD del pedido del portal** (base interna independiente del ERP; nació como espejo anti-pérdida y se graduó a fuente de verdad con su propio `estadoWala`). Lo escribe `createWebOrder` (`src/services/erp/firebase.js`) en **fire-and-forget best-effort** tras guardar en `pedidos_web` (no demora ni rompe el checkout). **NO copia secretos de pago**, solo campos de display + estado. Servicio: `src/services/walaOrders.js`; el pago lo sincroniza también `functions/index.js` (`marcarWalaPedidoPagado`, **requiere redeploy**). **Límite:** solo cubre pedidos creados DESDE el deploy (29-06-2026). Detalle en §3.7. | `numeroPedido`, `portalPseudoOrderId`, `pedidoWebId`, `buyerUid`, `dni`/`dniRaw`/`clienteNumeroDocumento`, `clienteNombreCompleto`, `productos` (resumen), `montoTotal`, `moneda`, `canalVenta:'Portal Web'`, `web:true`, **`estadoWala`** (`pendiente_pago`→`pagado`→…), **`pagado`**, `createdAt`, `fuente:'wala-mirror'` · _al pagar se añaden_ `pagadoAt`/`metodoPago`/`montoPagado`/`estadoWalaUpdatedAt` |
 
 > **Ciclo de vida del pedido (creación → pago → estado → visibilidad):** la lógica completa
 > (en qué momento exacto se crea el documento, qué hace cada método de pago, cómo se DERIVA
@@ -611,23 +611,30 @@ Cada doc lleva `estadoWala` con su propio flujo, **independiente** del `estadoGe
   "web": true,
 
   // ESTADO PROPIO DE WALA (FUENTE DE VERDAD, commit 1d8f639)
+  // Al CREAR solo se escriben estos dos (mirrorWebOrder, walaOrders.js:192-193):
   "estadoWala": "pendiente_pago",        // pendiente_pago→pagado→en_preparacion→enviado→entregado | cancelado
-  "pagado": false,                       // lo pone el pago (cliente o backend)
-  "pagadoAt": null,                      // serverTimestamp al pagar
-  "metodoPago": null,                    // 'culqi' | 'paypal' (informativo)
-  "montoPagado": null,                   // informativo (NO recalcula montos)
-  "estadoWalaUpdatedAt": null,           // serverTimestamp del último cambio de estado
+  "pagado": false,
 
   // Metadatos del espejo
   "createdAt": "<serverTimestamp>",
-  "fuente": "wala-mirror"               // distingue la copia de un pedido vivo
+  "fuente": "wala-mirror",              // distingue la copia de un pedido vivo
+
+  // ── Campos que se AÑADEN SOLO AL PAGAR (no existen al crear) ────────────────
+  // markWalaOrderPagado (cliente) o marcarWalaPedidoPagado (backend, functions/index.js):
+  "pagadoAt": "<serverTimestamp>",      // al pagar
+  "metodoPago": "culqi",                // 'culqi' | 'paypal' (informativo)
+  "montoPagado": 179.7,                 // informativo (NO recalcula montos)
+  "estadoWalaUpdatedAt": "<serverTimestamp>" // sello del último cambio de estadoWala
 }
 ```
 
-> `estadoWala` nace `pendiente_pago` al crear; `pagado`/`pagadoAt`/`metodoPago` los pone el pago
-> (cliente vía `markWalaOrderPagado` o backend vía `marcarWalaPedidoPagado` en `functions/index.js`).
-> Los estados `en_preparacion`/`enviado`/`entregado`/`cancelado` los actualizará el ERP en la FASE
-> SIGUIENTE (endpoint con API KEY de solo lectura/actualización, aún no implementado).
+> **Qué se escribe y cuándo.** Al CREAR, `mirrorWebOrder` solo siembra `estadoWala:"pendiente_pago"`
+> + `pagado:false` (más las claves/display); `pagadoAt`/`metodoPago`/`montoPagado`/`estadoWalaUpdatedAt`
+> **NO existen** hasta que se paga. El **pago** los añade y pasa `estadoWala→"pagado"` —desde el
+> cliente (`markWalaOrderPagado`) o desde el backend (`marcarWalaPedidoPagado` en `functions/index.js`,
+> **requiere redeploy**)—. Cualquier cambio posterior de estado (`updateWalaOrderEstado`) sella
+> `estadoWalaUpdatedAt`. Los estados `en_preparacion`/`enviado`/`entregado`/`cancelado` los actualizará
+> el ERP en la FASE SIGUIENTE (endpoint con API KEY de solo lectura/actualización, aún no implementado).
 
 ### Cómo lo usan las vistas (lectura PRIMARIA + estado más avanzado)
 
@@ -642,8 +649,12 @@ Cada doc lleva `estadoWala` con su propio flujo, **independiente** del `estadoGe
   lectura **adjunta** `estadoWala`/`pagado` al vivo (`_walaEstado`/`_walaPagado`) y
   `derivarEstadoCompra` (`src/utils/estadoCompra.js`) muestra el **más avanzado** de los dos sin
   degradar (ver [FLUJO-PEDIDOS.md §3.4](./FLUJO-PEDIDOS.md)). El pedido **solo-espejo** (rama
-  `_fromMirror`/`fuente:'wala-mirror'`) se ve **Confirmado / Procesado** (verde), **no** "Pendiente
-  de pago".
+  `_fromMirror`/`fuente:'wala-mirror'`) toma su etiqueta de **su propio `estadoWala`**:
+  `pendiente_pago` → "Por confirmar pago" (ámbar), `pagado` → "Pagado" (azul), `entregado` →
+  "Entregado" (verde), etc. Como el pago marca `estadoWala:"pagado"` también en el espejo (§3.7
+  abajo / [FLUJO-PEDIDOS.md §4-bis.9](./FLUJO-PEDIDOS.md)), un pedido pagado se ve azul aunque el
+  ERP ya lo haya borrado de `pedidos_web`. _(Antes de `1d8f639` el solo-espejo se mostraba siempre
+  verde "Confirmado"; ahora el color lo decide `estadoWala`.)_
 - **Recepción** (`src/services/adminOrders.js` + `RecepcionPedidos.jsx`): incluye la copia,
   marcada **"Procesado en ERP"**.
 

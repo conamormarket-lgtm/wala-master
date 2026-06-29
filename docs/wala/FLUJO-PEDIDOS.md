@@ -273,10 +273,14 @@ el comportamiento es **exactamente** el histórico de §3.1–§3.3.
   perfil (rescata pedidos históricos guardados antes de normalizar) — `erp/firebase.js:158-208`.
 - Tras traer, `usePedidos` FILTRA con `esPedidoWala` (`usePedidos.js:33`, `:85`) ANTES de
   normalizar (el ERP mezcla pedidos nativos + del portal).
-- **Red de seguridad (desde 2026-06-29):** `searchOrdersByDniInERP` además **fusiona el espejo**
-  `wala_pedidos` (`getWalaMirrorOrders({ userId, dni })`) y **deduplica por clave de negocio**; un
-  pedido que el ERP ya **borró/desmarcó** de `pedidos_web` se **rescata** desde su copia. Ver
-  §4-bis.5–§4-bis.7 y [MODELO-DATOS.md §3.7](./MODELO-DATOS.md).
+- **Lectura PRIMARIA `wala_pedidos` (desde 2026-06-29):** `searchOrdersByDniInERP`
+  (`erp/firebase.js:234-294`) trae **SIEMPRE** el espejo `wala_pedidos`
+  (`getWalaMirrorOrders({ userId, dni })`, busca por `buyerUid` y por DNI normalizado+crudo) y lo
+  **fusiona por clave de negocio** con los vivos. La **presencia** del pedido la garantiza el
+  espejo (no solo "cuando falta el vivo"): un pedido que el ERP ya **borró/desmarcó** de
+  `pedidos_web` se **rescata** desde su copia. Cuando hay vivo + espejo con la misma clave, se
+  **adjunta** `estadoWala`/`pagado` del espejo al vivo (`_walaEstado`/`_walaPagado`) y la UI muestra
+  el estado más avanzado (§3.4). Ver §4-bis.5–§4-bis.7 y [MODELO-DATOS.md §3.7](./MODELO-DATOS.md).
 
 ### 4.2 "Recepción de Pedidos" (admin) — todos los del portal
 
@@ -295,10 +299,14 @@ el comportamiento es **exactamente** el histórico de §3.1–§3.3.
 - Normaliza con `normalizarPedidoRecepcion` (que usa `derivarEstadoCompra`,
   `adminOrders.js:227`) y arma un `resumen` (porEntregar / pendientesPago / enProduccion /
   entregados / montoTotal).
-- **Red de seguridad (desde 2026-06-29):** además **fusiona el espejo** `wala_pedidos`
-  (`getAllWalaMirrorOrders()`, sin filtro de usuario) en la misma dedup, marcado
-  **"Procesado en ERP"**, para que un pedido borrado/desmarcado por el ERP **no desaparezca** de
-  Recepción (`RecepcionPedidos.jsx`). Ver §4-bis.5–§4-bis.7.
+- **Lectura PRIMARIA `wala_pedidos` (desde 2026-06-29):** `getWalaOrdersForAdmin`
+  (`adminOrders.js:381-519`) lee en paralelo `pedidos_web` + `pedidos` + el espejo
+  `getAllWalaMirrorOrders({ limitN })` (sin filtro de usuario, `orderBy createdAt desc` + límite 200)
+  y los fusiona en la misma dedup por clave de negocio (`adminOrders.js:434-480`). Si hay vivo +
+  espejo con la misma clave, **adjunta** `estadoWala`/`pagado` al vivo (`_walaEstado`/`_walaPagado`,
+  `:470-471`); si **no** hay vivo (el ERP lo absorbió/borró), incorpora la copia solo-espejo marcada
+  **`_procesadoErp`** → badge **"Procesado en ERP"** (`:479`), para que un pedido borrado/desmarcado
+  por el ERP **no desaparezca** de Recepción (`RecepcionPedidos.jsx`). Ver §4-bis.5–§4-bis.7.
 - Acceso: enlace **"📦 Recepción de Pedidos"** en el sidebar admin, debajo de Dashboard
   Analítica (`AdminLayout.jsx`, fix `09d86a9`). Ruta `/admin/dashboard/recepcion`.
 
@@ -423,13 +431,23 @@ independiente de lo que el ERP haga con `pedidos_web`. Lo entregado:
   (normalizado + crudo). `searchOrdersByDniInERP` acepta `{ userId }`, fusiona el espejo y
   **deduplica por clave de negocio**; una clave "viva" solo cuenta si el doc **sigue siendo WALA**
   (`esPedidoWala`), así un pedido **desmarcado** (`web:false`) **no suprime** su espejo.
-- ✅ **Estado MÁS AVANZADO entre las dos fuentes:** `derivarEstadoCompra` (`estadoCompra.js`)
-  mapea `estadoWala` (`estadoWalaAEstadoCompra`) y, cuando coexisten el doc vivo del ERP y el
-  espejo, muestra el **más avanzado** de ambos (rango
+- ✅ **Estado MÁS AVANZADO entre las dos fuentes:** `derivarEstadoCompra` (`estadoCompra.js:256`)
+  mapea `estadoWala` (`estadoWalaAEstadoCompra`, `estadoCompra.js:222`) y, cuando coexisten el doc
+  vivo del ERP y el espejo, muestra el **más avanzado** de ambos (rango
   `por_confirmar_pago < pago_confirmado < en_preparacion < entregado`; `anulado/cancelado` gana
-  si cualquiera lo marca). **No degrada** un "Entregado" del ERP a "pagado" ni viceversa. El
-  pedido **solo-espejo** se ve **Confirmado/Procesado** (verde), **no** "Pendiente de pago".
-  Recepción (`adminOrders.js` + `RecepcionPedidos.jsx`) lo incluye marcado **"Procesado en ERP"**.
+  si cualquiera lo marca, `estadoCompra.js:279-290`). **No degrada** un "Entregado" del ERP a
+  "pagado" ni viceversa. El pedido **solo-espejo** ya NO se fuerza a verde: su etiqueta sale de
+  **su propio `estadoWala`** — `pendiente_pago` → **"Por confirmar pago" (ámbar)**, `pagado` →
+  **"Pagado" (azul)**, `entregado` → **"Entregado" (verde)**, etc. (mapeo en
+  `estadoCompra.js:225-232`). Como el **pago marca `estadoWala:"pagado"`** también en el espejo
+  (§4-bis.9), un pedido pagado se ve **azul/Pagado** aunque el ERP ya lo haya borrado de
+  `pedidos_web`. Recepción (`adminOrders.js` + `RecepcionPedidos.jsx`) lo incluye marcado
+  **"Procesado en ERP"** (`_procesadoErp`, `adminOrders.js:479`).
+
+  > **Cambio respecto a `68447dc`:** en la primera versión (solo espejo, sin `estadoWala`) el
+  > pedido solo-espejo se mostraba SIEMPRE "Confirmado/Procesado (verde)". Desde `1d8f639` el
+  > color lo decide `estadoWala`, así que un espejo recién creado y aún sin pagar se ve
+  > **"Por confirmar pago"** hasta que el pago lo mueve a `pagado`.
 
 **⚠️ LÍMITE (importante):** el espejo se crea **AL MOMENTO de la compra** → **solo protege
 pedidos creados DESDE el deploy** (2026-06-29). Los pedidos **previos NO tienen espejo**: si el
@@ -471,8 +489,10 @@ nuevos, ver el límite de §4-bis.5).
   4) EL PEDIDO NO DESAPARECE:
        • el doc vivo ya no cumple esPedidoWala (o ya no está), PERO
        • la copia en wala_pedidos SIGUE viva (el ERP no la toca) → la vista la rescata
-       • derivarEstadoCompra ve fuente:'wala-mirror' → lo muestra CONFIRMADO/Procesado (verde),
-         NO "Pendiente de pago"   (estadoCompra.js, rama _fromMirror)
+       • derivarEstadoCompra usa el estadoWala del espejo (fuente:'wala-mirror'):
+         pendiente_pago→"Por confirmar pago", pagado→"Pagado", entregado→"Entregado"…
+         (NO se fuerza verde; el pago ya movió estadoWala a "pagado" — §4-bis.9)
+       • Recepción lo marca además "Procesado en ERP" (_procesadoErp)
 ```
 
 **Dedup vivo vs espejo:** la fusión deduplica por **clave de negocio**
@@ -593,7 +613,8 @@ pero al leer/filtrar pagos hay que recordar que **no comparten el mismo conjunto
   ERP y WALA. Ver §4-bis.5, §4-bis.9 y §3.4.
 - `68447dc` — feat(pedidos): red de seguridad anti-pérdida — espejo `wala_pedidos` (escrito en
   `createWebOrder` fire-and-forget), lectura por `userId`/DNI fusionada en Mis Compras y Recepción,
-  estado Confirmado para el pedido solo-espejo. Ver §4-bis.5–§4-bis.7.
+  estado Confirmado (verde) para el pedido solo-espejo. _(El color fijo verde quedó **superado por
+  `1d8f639`**: ahora el solo-espejo toma su color de `estadoWala`.)_ Ver §4-bis.5–§4-bis.7.
 - `de1594b` — fix(pedidos): visibilidad — normaliza DNI al crear + no traga el fallo de
   guardado (abort con toast).
 - `e84b6b1` — fix(pagos): Culqi marca el pedido como pagado tras el cobro exitoso.

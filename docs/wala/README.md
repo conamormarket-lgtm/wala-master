@@ -34,7 +34,9 @@ cambio → desplegar → verificar**.
 | 3.5 | [FLUJO-PEDIDOS.md](./FLUJO-PEDIDOS.md) | Ciclo completo del PEDIDO del portal: **creación** (único punto en CheckoutPage `onSubmit` → `createWebOrder` → `pedidos_web`), **pago** por método (WhatsApp por-confirmar / Culqi cobra y marca pagado / PayPal), **estado** derivado por dos ejes (producción × pago) y **visibilidad** (Mis Compras por DNI / Recepción admin). Incluye `wala_pedidos` como **FUENTE DE VERDAD** (`estadoWala` + sync de pago en functions, §4-bis.5/§4-bis.9/§3.4). Con archivo:línea y gotchas (`_raw`, `'tregado'`). | Antes de tocar checkout, pagos, "Mis Compras" o "Recepción". |
 | 4 | [FASE-0-SEGURIDAD.md](./FASE-0-SEGURIDAD.md) | Trabajo bloqueante de seguridad: backdoor admin, reglas, economía en cliente, webhook sin secreto (hallazgos H-01..H-11). | Antes de cualquier release; es prerequisito de todo lo demás. |
 | 5 | [BASELINE-PRODUCCION.md](./BASELINE-PRODUCCION.md) | Snapshot del estado actual de producción (entornos, funciones, hosting, dominios, stack, variables). Es el respaldo documental del punto de partida. | Antes del primer cambio, para fijar el "estado conocido bueno". |
+| 5.5 | [PENDIENTES.md](./PENDIENTES.md) | **Lista del DUEÑO** de qué falta **desplegar/confirmar** en producción (Cloud Shell + consola): **redeploy de las 4 Cloud Functions** del 2026-06-29 (sync de pago `estadoWala` en `processCulqiPayment`/`culqiWebhook`/`capturePaypalOrderSecure` + foto en `getPublicGiftRegistry`, comando combinado); **confirmar reglas** (`firebase/firestore.rules` con `delete:if isAdmin()`, **NO** `firestore.rules.produccion` con `delete:if isAuth()`; `firestore.rules.propuesto` guardado pero **NO** desplegado, precondición PayPal server-side); y la **FASE SIGUIENTE** (endpoint con API KEY para que el ERP lea y SOLO actualice `estadoWala`, jamás borre). | Cuando vas a desplegar lo de la última sesión. |
 | 6 | [DESPLIEGUE.md](./DESPLIEGUE.md) | Procedimiento de despliegue (reglas, functions, hosting Firebase/Vercel, app móvil). | Cada vez que se va a desplegar. |
+| 6.5 | [PRUEBAS-Y-DEBUGGING.md](./PRUEBAS-Y-DEBUGGING.md) | Guía de **QA manual** de wala.pe: cómo probar cada filtro de la tienda, el guardado de producto, editor/carrusel/banners/header, **errores comunes** (CORS = deploy al proyecto equivocado, índice faltante, `[object Object]`, permisos) y un **checklist POR PROBAR de la sesión 2026-06-29** (compra directa, pedidos que no desaparecen + `estadoWala`, modo noche, arrastre y foto en `/regalar`, nav de categorías, páginas de marca, tabs de cuenta). | Para probar a mano y diagnosticar sin ser experto. |
 | 7 | [ops/backup/README.md](../../ops/backup/README.md) | Cómo respaldar Firestore, Storage, reglas y configuración antes de cambiar. | **Siempre antes** de un cambio en producción. |
 | 8 | [ops/restore/README.md](../../ops/restore/README.md) | Cómo restaurar desde un respaldo si algo sale mal. | Solo en incidente / rollback. |
 | 9 | [ESCALABILIDAD.md](./ESCALABILIDAD.md) | Plan de **escalabilidad** accionable y priorizado (Crítica/Alta/Media): seguridad y pagos (Fase 0), lecturas/escrituras e índices de Firestore, **pre-agregación diaria** de analítica/ventas, catálogo y **búsqueda server-side** (Algolia/Typesense), bundle de Vite (2.25 MB → `manualChunks`) e imágenes vía CDN, Cloud Functions (cold starts, gen1→gen2), i18n, acoplamiento ERP y observabilidad. Incluye **plan por fases** y tabla maestra de prioridades. | Antes de escalar tráfico/catálogo o de optimizar costos. |
@@ -48,6 +50,8 @@ cambio → desplegar → verificar**.
 5. **MODELO-DATOS.md** — el "cómo están organizados los datos".
 6. **FASE-0-SEGURIDAD.md** — el "qué hay que arreglar antes de crecer".
 7. **DESPLIEGUE.md** + **ops/backup** + **ops/restore** — el "cómo lo opero sin romperlo".
+8. **PENDIENTES.md** — el "qué me toca a mí (dueño) desplegar/confirmar ya" y
+   **PRUEBAS-Y-DEBUGGING.md** — el "cómo lo pruebo a mano y diagnostico errores".
 
 ---
 
@@ -88,9 +92,13 @@ El ciclo de cualquier cambio que toque producción es siempre el mismo:
 > (`createdAt` recuperó 77 productos ocultos; `searchTokens`) sobre 123 productos. Lo único que
 > falta cerrar en seguridad son las **reglas completas** (siguen **100 % abiertas** en
 > `(default)` por el ERP compartido → fuga de PII; ver Prioridad 1; el
-> `firestore.rules.propuesto` está guardado pero NO desplegado). Detalle de qué se desplegó y
+> `firestore.rules.propuesto` está guardado pero NO desplegado). La tanda del **2026-06-29**
+> (multimarca, modo noche, **`wala_pedidos` como FUENTE DE VERDAD** con `estadoWala`, compra
+> directa, regalos v3) desplegó el **frontend** por Vercel; quedan **pendientes del dueño** unos
+> **redeploys de Cloud Functions** (sync de pago a `estadoWala` + foto de `/regalar`): ver
+> **[PENDIENTES.md](./PENDIENTES.md)**. Detalle de qué se desplegó y
 > qué falta en [ESTADO-DEL-PROYECTO.md §5](./ESTADO-DEL-PROYECTO.md) (sesión 2026-06-27 en §2
-> Paso 6, sesión 2026-06-28 en §2 Paso 7).
+> Paso 6, sesión 2026-06-28 en §2 Paso 7, sesión 2026-06-29 en §2 Pasos 11–14).
 
 ---
 

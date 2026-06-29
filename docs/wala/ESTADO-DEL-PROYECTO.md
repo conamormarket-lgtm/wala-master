@@ -18,6 +18,39 @@
 
 > ## 📌 Banner de estado (actualizado 2026-06-29)
 >
+> **CICLO 2026-06-29 — qué se desplegó (frontend por Vercel; partes que requieren redeploy de
+> functions, marcadas):** seis frentes, todos **sin tocar carrito/precios/cobro**.
+> **(1) `wala_pedidos` pasa de RESPALDO a FUENTE DE VERDAD** (`1d8f639`): nuevo campo
+> **`estadoWala`** propio de WALA (`pendiente_pago → pagado → en_preparacion → enviado →
+> entregado`, `cancelado` terminal) que el portal **NO degrada** cuando el ERP toca el doc;
+> helpers en `src/services/walaOrders.js` (`updateWalaOrderEstado`/`markWalaOrderPagado`/
+> `estadoWalaADisplay`/`ESTADOS_WALA`), `mirrorWebOrder` ya **no degrada** un espejo existente,
+> "Mis Compras"/"Recepción" leen el espejo como **PRIMARIA** y muestran el **estado más avanzado**
+> (`estadoCompra.js`), y los **3 puntos de pago** de `functions/index.js` (Culqi charge, webhook,
+> PayPal capture) marcan `estadoWala:"pagado"` (**requiere redeploy de functions**). Encima de la
+> **red de seguridad `wala_pedidos`** (`68447dc`, espejo WALA-only que el ERP no toca, escrito por
+> `createWebOrder`, fusionado/rescatado en las lecturas por `userId`). **(2) MODO NOCHE** (`a442251`
+> + 2º pase `649a42e`): tema **claro/oscuro/sistema** en toda la web + admin, interruptor luna/sol
+> en el Header, `ThemeContext` (clave `localStorage` `wala-theme`, `system` por default),
+> anti-FOUC en `index.html`, paleta `[data-theme="dark"]` en ~40 `.module.css` + 2 pases de
+> contraste; respeta los `backgroundColor` inline del admin (sin `!important`). **(3) COMPRA
+> DIRECTA** (`fbb53ab`): botones **"Comprar"** y **"Comprar todo el carrito"** en la ficha →
+> `/checkout` directo (CartContext `options.selectOnly` + `selectAllItems`, reusa la selección
+> "No comprar esta vez"). **(4) REGALOS v3** (`4f775a4`): `/regalar` con **tarjetas grandes de
+> persona** (foto circular + nombre + relación + ocasiones + fecha), foto subida en la cuenta
+> (`recipient.photoUrl` → Storage), expuesta por `getPublicGiftRegistry` (`recipientPhoto`/`roleKey`/
+> `gender`, **requiere redeploy de functions**); conserva el **arrastre por Pointer Events**
+> (`useGiftDrag`) sin parpadeo. **(5) CUENTA** (`e9ec48d`): tabs en **2 líneas** (desktop) + scroll
+> con **"asomo"** (móvil) en `CuentaLayout`; **tarjeta de compra clickeable completa** en
+> `CuentaPedidosPage`. **(6) ELEMENTOS CON DISEÑO v2** (`425e9ce`): `/admin/elementos-diseno` pasa
+> a **catálogo de tarjetas con slug propio por elemento** (`registry.jsx` + `AdminElementoDisenoPage`
+> + ruta `/:elementSlug`); el elemento "navegacion-categorias" gana **estilo del nav por marca**
+> (`tienda_brands.categoryNavStyle = {align, animation}`: alineación izq/centro/der/justificado +
+> modo estático/slider). **Las reglas vivas siguen 100 % abiertas** en `(default)` por el ERP
+> compartido. Detalle en §2 (Pasos 11–14) y en las entradas 2026-06-29 del
+> [CHANGELOG.md](../../CHANGELOG.md); modo noche en [MODO-NOCHE.md](./MODO-NOCHE.md), pedidos en
+> [FLUJO-PEDIDOS.md](./FLUJO-PEDIDOS.md)/[MODELO-DATOS.md](./MODELO-DATOS.md).
+>
 > **DIAGNÓSTICO pedidos que "desaparecen" 2026-06-29 (solo docs/script, NO toca el portal):**
 > síntoma = un pedido del portal **aparece** en "Mis Compras"/"Recepción" al crearse pero **días
 > después YA NO se ve**. Tras leer todo `src/` + `functions/`, **concluyente**: **el portal NUNCA
@@ -218,11 +251,16 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | **Venta internacional** | Documento + país + **teléfono internacional**, **PayPal** para compradores del extranjero, aviso de envío **7–30 días**. | Checkout |
 | **Dashboard de analítica v2** | Panel liquid-glass con **heatmap**, tráfico, **productos más vistos / más vendidos**, origen, páginas, categorías, miniaturas; lecturas optimizadas (cuota). | `/admin/dashboard` |
 | **Recepción de Pedidos (organizar envíos)** | Panel **solo-lectura** para preparar envíos: KPIs (por entregar, pendientes de pago, en producción, entregados, monto) + **tarjetas por pedido** con dirección de entrega, cliente, productos y **WhatsApp**. **Enlace en el menú lateral** (📦 Recepción de Pedidos, bajo "Dashboard Analítica") + embebida + ruta directa. | sidebar admin · `/admin/dashboard/recepcion` |
-| **"Mis Compras" estilo MercadoLibre** | Lista + **detalle por pedido** con **estado real** (pago + producción), método de pago, productos, dirección y **WhatsApp al asesor de la marca**. **Fix 2026-06-28 (`de1594b`):** los pedidos ya **aparecen** (se normaliza el DNI al crearlos + fallback al DNI crudo para rescatar históricos); y si el guardado falla **ya no se abre WhatsApp fingiendo éxito** (toast de error + aborta antes del pago). **Fix 2026-06-28 (`e84b6b1`):** un pedido pagado con **Culqi ya queda marcado como pagado** (antes era indistinguible de un impago). | `/cuenta/pedidos`, `/cuenta/pedidos/:id` |
-| **Regalos por fecha "Mis fechas especiales"** | Registro de regalos público con **drag-and-drop** (asigna productos a fechas), miniaturas y atajo "Agregar todo al carrito". | `/regalar/:referralCode`, wishlist |
+| **"Mis Compras" estilo MercadoLibre** | Lista + **detalle por pedido** con **estado real** (pago + producción), método de pago, productos, dirección y **WhatsApp al asesor de la marca**. **Fix 2026-06-28 (`de1594b`):** los pedidos ya **aparecen** (se normaliza el DNI al crearlos + fallback al DNI crudo para rescatar históricos); y si el guardado falla **ya no se abre WhatsApp fingiendo éxito**. **Fix 2026-06-28 (`e84b6b1`):** un pedido pagado con **Culqi ya queda marcado como pagado**. **2026-06-29 (`e9ec48d`):** la **tarjeta del pedido es clickeable completa** (al detalle). | `/cuenta/pedidos`, `/cuenta/pedidos/:id` |
+| **Base interna FUENTE DE VERDAD de pedidos (`wala_pedidos` + `estadoWala`)** | **2026-06-29 (`68447dc`, `1d8f639`):** colección WALA-only **`wala_pedidos`** (espejo que el ERP NO toca) con su **propio `estadoWala`** (`pendiente_pago→pagado→en_preparacion→enviado→entregado`) que el portal **NO degrada**; "Mis Compras"/"Recepción" la leen como **PRIMARIA** y muestran el **estado más avanzado**. **Frontend desplegado**; **el pago la marca pagada solo tras redeploy de las 3 functions de pago** (pendiente del dueño). | `/cuenta/pedidos`, `/admin/dashboard/recepcion` |
+| **Regalos por fecha "Mis fechas especiales"** | Registro de regalos público con **drag-and-drop** (arrastre por Pointer Events, sin parpadeo). **2026-06-29 (`4f775a4`):** cada fecha es una **tarjeta grande de persona** con **foto circular** (subida en la cuenta), nombre, relación, ocasiones y fecha. **Frontend desplegado**; la foto llega tras **redeploy de `getPublicGiftRegistry`** (pendiente del dueño). | `/regalar/:referralCode`, wishlist |
+| **Compra directa (ficha de producto)** | **2026-06-29 (`fbb53ab`):** botones **"Comprar"** y **"Comprar todo el carrito"** que van **directo a la pasarela** (`/checkout`), reusando la selección de items "No comprar esta vez" (sin tocar el flujo de "Agregar al carrito"). | ficha de producto · `/checkout` |
 | **Carrito "No comprar esta vez"** | Elegir qué pagar ahora y qué guardar para después sin borrar; el resto persiste tras pagar. | `/carrito`, `/checkout` |
+| **Modo noche (claro/oscuro/sistema)** | **2026-06-29 (`a442251` + `649a42e`):** tema **claro/oscuro/sistema** en toda la web + admin, **interruptor luna/sol** en el Header, persistencia (`localStorage` `wala-theme`) y sin parpadeo al cargar; respeta los fondos inline del admin y garantiza contraste (2 pases). **Frontend desplegado**; NO requiere backend. | toda la web · Header |
+| **Cuenta — navegación de tabs** | **2026-06-29 (`e9ec48d`):** tabs en **2 líneas** (desktop) + scroll con **"asomo"** (móvil, pista de deslizar). | `/cuenta/*` |
 | **WhatsApp por marca + Plan B** | Número por marca, número principal "Todo a WALA" + toggle multimarca; al cerrar Culqi sin pagar, terminar por WhatsApp. | `/checkout`, `/admin/marcas` |
 | **Sistema MULTI-MARCA (Con Amor / MUSSA / MUEBLERIA)** | **1 producto = 1 marca** (`brandId`); cada marca con **página propia** (`WALA.PE/ConAmor`, `/MUSSA`, `/MUEBLERIA`, slug case-insensitive), **catálogo sidebar filtrado**, **panel admin** (asignar/quitar en lote + crear-con-marca) y **nav de categorías con miniaturas** que filtra el catálogo de la marca sin navegar. **Frontend desplegado**; falta que el dueño corra `setup-marcas.js`, configure las páginas y asigne productos a MUSSA/MUEBLERIA. | `/:slug`, `/admin/marcas`, panel por marca |
+| **"Elementos con diseño" (admin)** | Lugar propio para personalizar **elementos de diseño por marca**. **2026-06-29 (`425e9ce`):** **catálogo de tarjetas con slug propio por elemento** (`/admin/elementos-diseno/{slug}`); el nav de categorías se edita por marca (qué filtra / nombre / miniatura) y gana **"Estilo del nav"** (alineación + estático/slider, `categoryNavStyle` en `tienda_brands`). | `/admin/elementos-diseno` |
 | **i18n gratis (ES/EN/PT) + perfil/cumpleaños** | Toggle de idioma (traductor nativo del navegador), tipos de documento DNI/CE/Pasaporte, **Avatar Studio** (sin Ready Player Me) y **captura de cumpleaños** (import opcional desde Google). | Header, `/cuenta/perfil`, checkout |
 | **Despliegue real** | **Frontend en Vercel** (wala.pe, auto-deploy desde `master`); **Cloud Functions** e **índices** desplegados en `sistema-gestion-3b225`. | wala.pe |
 | **Seguridad (mitigación viva)** | **Bloqueo de borrado (delete-block)** aplicado a las reglas vivas para frenar el destrozo anónimo. | Consola Firebase |
@@ -232,6 +270,7 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | Prioridad | Pendiente | Por qué importa |
 |-----------|-----------|-----------------|
 | **1 — CRÍTICA** | **Publicar las reglas de seguridad completas** (`firebase/firestore.rules.produccion`). | Hoy la **lectura anónima de datos personales (PII) sigue abierta**: cualquiera en internet puede leer clientes/pedidos. Es la única fuga grave que queda. |
+| **1.bis — Alta (redeploy del ciclo 2026-06-29)** | **Redeploy de functions**: (a) las **3 de pago** (`processCulqiPayment`, `culqiWebhook`, `capturePaypalOrderSecure`) para que el pago marque `estadoWala:"pagado"` en `wala_pedidos`; (b) **`getPublicGiftRegistry`** para que la **foto/roleKey/gender** lleguen a `/regalar`. Por Cloud Shell. | El **frontend ya está desplegado**, pero hasta el redeploy el pago no marca el estado en la fuente de verdad y las tarjetas de `/regalar` no muestran foto. |
 | **2 — Alta** | **Reestructurar el dashboard en páginas por área** (resumen, heatmap, productos, origen, páginas, categorías) con rutas propias; **arreglar el iframe de preview** (doble init de Firebase) y el **warning `willReadFrequently`** del canvas del heatmap. | El dashboard es hoy una sola página muy pesada; dividirlo lo hace usable y corrige errores de consola. |
 | **3 — Media** | **Push v2 (FCM)**, **Cloud Scheduler / cron** de segmentación y campañas, **Algolia / Typesense** (búsqueda externa), **integración del editor POD** (arte / PDF de producción), **rol `vendor` por claims** y **scoping por dueño/rol en las reglas (Fase C)**. | Son mejoras de alcance y automatización sobre lo ya construido; no bloquean la operación diaria. |
 
@@ -734,6 +773,139 @@ cobro.** Build verde. Commit `fc8a0d2`. Detalle por commit en el
 **Sin pendientes propios:** la feature está **completa y desplegada**; solo aplican los pendientes
 del dueño ya listados en el Paso 9 (asignar productos a las marcas, subir imágenes de categoría
 opcionales).
+
+---
+
+### Paso 11 — Sesión 2026-06-29 — "Elementos con diseño" v2 (catálogo de tarjetas) + estilo del nav por marca *(✅ HECHO — desplegado)*
+
+Segunda iteración de **"Elementos con diseño"** sobre la base del Paso 10: la pantalla
+`/admin/elementos-diseno` deja de ser un "hub de pestañas" y pasa a un **CATÁLOGO DE ELEMENTOS con
+TARJETAS**, cada uno con **su propio slug y su propia página** `/admin/elementos-diseno/{slug}`; y el
+nav de categorías gana un **"Estilo del nav" por marca** (alineación + estático/slider) que se aplica
+en la tienda. **Frontend DESPLEGADO** por **Vercel**; **el backend NO requiere redeploy** (el nuevo
+`categoryNavStyle` vive en `tienda_brands`, solo Firestore — **aditivo y retrocompatible**: sin el
+campo, el nav se ve igual que hoy). **No toca carrito, precios ni cobro.** Commit `425e9ce`. Detalle
+por commit en el [CHANGELOG.md](../../CHANGELOG.md) (entrada 2026-06-29, "ELEMENTOS CON DISEÑO v2");
+guía del dueño en [FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md) y modelo en
+[MODELO-DATOS.md](./MODELO-DATOS.md) (§3.6).
+
+**Qué se desplegó:**
+
+- **Registro de elementos (`425e9ce`):** `src/pages/admin/elementosDiseno/registry.jsx` — array
+  `ELEMENTOS_DISENO` de `{ slug, nombre, descripcion, icon, Editor }`. **Hoy 1 elemento**,
+  **"Navegación por categorías"** (`slug: 'navegacion-categorias'`, editor
+  `NavegacionCategoriasEditor`). Sumar otro elemento = añadir una entrada (aparece sola como tarjeta
+  + ruta).
+- **Landing como GRID DE TARJETAS (`425e9ce`):** `AdminElementosDiseno.jsx` se reescribe como grid,
+  una tarjeta por elemento; al pulsar navega a **`/admin/elementos-diseno/{slug}`**. La **página por
+  elemento** `AdminElementoDisenoPage.jsx` (ruta `/:elementSlug`) busca el elemento por slug y
+  renderiza su `Editor` con encabezado + "Volver a Elementos con diseño" (slug desconocido → aviso).
+- **"Estilo del nav" por marca (`425e9ce`):** **`categoryNavStyle` en `tienda_brands`**
+  (`src/services/brands.js`): `{ align ∈ {left,center,right,justify}, animation ∈ {static,slider} }`,
+  normalizado en `createBrand`/`updateBrand` (inválido → default), **default retrocompatible
+  `{ center, static }`**. Sub-sección "Estilo del nav" en `CategoryNavEditor` (Alineación + Modo),
+  guardada junto al `categoryNav` (`updateBrand(brandId, { categoryNav, categoryNavStyle })`) →
+  **sincronizada** en los 3 sitios donde se embebe el editor. `VisualCategoryNav` lo aplica en la
+  tienda: **estático** alinea las burbujas (colapsa a `flex-start` en overflow); **slider** = marquee
+  en bucle que **pausa al hover** y respeta `prefers-reduced-motion`, sin romper el clic-para-filtrar.
+  `TiendaPage.jsx` lee `categoryNavStyle` y pasa `align`/`animation`. *(La alineación solo aplica en
+  modo estático.)*
+
+**Sin pendientes propios** (aplican los del Paso 9).
+
+---
+
+### Paso 12 — Sesión 2026-06-29 — Red de seguridad y FUENTE DE VERDAD de pedidos (`wala_pedidos` + `estadoWala`) *(✅ HECHO — frontend desplegado; el pago requiere redeploy de functions)*
+
+Dos movimientos encadenados sobre el camino de pedidos, ambos **100 % aditivos** (no tocan montos,
+firma del pedido ni el marcado de `pedidos_web`):
+
+**(a) Red de seguridad anti-pérdida (`68447dc`):** nueva colección WALA-only **`wala_pedidos`** (el
+ERP **NO la toca**) con un **ESPEJO** de cada pedido del portal, escrito por `createWebOrder`
+(`src/services/erp/firebase.js`) en **fire-and-forget best-effort** tras guardar en `pedidos_web`
+(no demora ni puede romper el checkout; **no copia secretos de pago**). Servicio nuevo
+`src/services/walaOrders.js` (`mirrorWebOrder`/`getWalaMirrorOrders`/`getAllWalaMirrorOrders`). Las
+vistas **fusionan y rescatan** el espejo: "Mis Compras" (`searchOrdersByDniInERP` acepta `{userId}`,
+deduplica por clave de negocio, **rescata** pedidos desmarcados por el ERP), `usePedidos(dni, userId)`,
+"Recepción" (`adminOrders.js`). **Límite conocido:** el espejo solo protege pedidos creados **desde
+este deploy**; la causa raíz sigue siendo del ERP (que borra al aprobar).
+
+**(b) `wala_pedidos` pasa a FUENTE DE VERDAD (`1d8f639`) — decisión del dueño:** el espejo deja de ser
+solo respaldo y cada pedido lleva **su propio `estadoWala`** (`pendiente_pago → pagado →
+en_preparacion → enviado → entregado`, `cancelado` terminal) que el portal **NO degrada** cuando el
+ERP toca el doc. Helpers nuevos en `walaOrders.js` (`ESTADOS_WALA`, `updateWalaOrderEstado`
+idempotente/best-effort, `markWalaOrderPagado`, `estadoWalaADisplay`); `mirrorWebOrder` ya **no
+degrada** un espejo existente (lee antes con `getDoc` y conserva `estadoWala`/`pagado`/`createdAt`);
+"Mis Compras" y "Recepción" leen el espejo como **PRIMARIA** y `estadoCompra.js` muestra el **estado
+más avanzado** entre la derivación histórica del ERP y `estadoWala`. **El pago marca pagado en la
+fuente de verdad (requiere redeploy):** los **3 puntos de confirmación de pago** de
+`functions/index.js` (`processCulqiPayment`, `culqiWebhook`, `capturePaypalOrderSecure`) llaman
+`marcarWalaPedidoPagado(...)` (`estadoWala:"pagado"`), **aditivo / idempotente / best-effort**.
+**Frontend DESPLEGADO** por **Vercel**; **el backend REQUIERE redeploy** (`firebase deploy --only
+functions:processCulqiPayment,functions:culqiWebhook,functions:capturePaypalOrderSecure`). Commits
+`68447dc`, `1d8f639`. Detalle del flujo en [FLUJO-PEDIDOS.md](./FLUJO-PEDIDOS.md) (§4-bis.5–§4-bis.9)
+y modelo en [MODELO-DATOS.md](./MODELO-DATOS.md) (§3.7).
+
+**⬜ Pendiente del DUEÑO:** **redeploy de las 3 functions de pago** (para que el pago marque
+`estadoWala:"pagado"`). **FASE SIGUIENTE (no hecha, el campo ya está listo):** endpoint con API KEY
+para que el ERP **LEA** y **SOLO ACTUALICE** el estado de `wala_pedidos` (jamás borre).
+
+---
+
+### Paso 13 — Sesión 2026-06-29 — MODO NOCHE (claro/oscuro/sistema en toda la web) *(✅ HECHO — desplegado)*
+
+**Modo noche global** para la web pública y el admin: el visitante elige **claro / oscuro / seguir al
+sistema**, con persistencia y sin parpadeo al cargar. **Frontend DESPLEGADO** por **Vercel**; **NO
+requiere backend** (solo CSS + estado de cliente). **Respeta los `backgroundColor` inline** del admin
+(sin `!important`) y garantiza **contraste** (fondo oscuro → texto claro). **No toca carrito, precios,
+cobro ni datos.** Commits `a442251` (base) + `649a42e` (2º pase de contraste). Detalle en
+[MODO-NOCHE.md](./MODO-NOCHE.md) y nota de cliente en [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md).
+
+- **Motor del tema (`a442251`):** `ThemeProvider` (`src/contexts/ThemeContext.jsx`) con tres modos de
+  intención **`light`/`dark`/`system`** (`system` = default, sigue `prefers-color-scheme` en vivo) y
+  un tema efectivo que fija `data-theme` en `<html>`; **persistencia** en `localStorage` clave
+  **`wala-theme`**. **Script anti-FOUC en `index.html`** fija el tema **antes** de React/CSS.
+  **Interruptor luna/sol** (`src/components/common/ThemeToggle/`) en el Header (el primer clic invierte
+  lo que el visitante ve, aunque venga de `system`).
+- **Paleta y overrides (`a442251` + 2º pase `649a42e`):** red global en `src/styles/globals.css` que
+  remapea `--gris-*`/`--blanco`/`--color-*` bajo `dark`, + **overrides `[data-theme="dark"]` por
+  componente** en **~40 `.module.css`** (storefront, cuenta, header/footer/nav, UI Glass*, admin), con
+  **2 pases de contraste** para asegurar legibilidad.
+
+**Sin pendientes propios.**
+
+---
+
+### Paso 14 — Sesión 2026-06-29 — Compra directa + Regalos v3 + navegación de la Cuenta *(✅ HECHO — frontend desplegado; la foto de regalos requiere redeploy de functions)*
+
+Tres mejoras de cara al cliente del mismo ciclo, **frontend por Vercel**, **sin tocar
+carrito/precios/cobro**:
+
+- **Compra directa (`fbb53ab`):** la ficha de producto gana **"Comprar"** y **"Comprar todo el
+  carrito"** que van **directo a `/checkout`**. `CartContext` (`src/contexts/CartContext.jsx`) suma
+  `addToCart(..., { selectOnly })` —deja ese item como ÚNICO seleccionado, **sin borrar** los demás—
+  y `selectAllItems()`. En `ProductDetail.jsx`, `handleComprarAhora` agrega con
+  `{selectOnly:true, silent:true}` + navega; `handleComprarCarrito` selecciona todo + navega (avisa si
+  el carrito está vacío). Reusa la selección "No comprar esta vez"; **el camino de "Agregar al
+  carrito" queda igual**.
+- **Regalos v3 — foto + tarjetas grandes (`4f775a4`):** `/regalar` muestra cada fecha como **tarjeta
+  grande de persona** (avatar con **foto circular** o inicial + nombre + chip de relación + **chips de
+  ocasiones globales** + fecha). La foto se sube en la cuenta
+  (`src/pages/cuenta/CuentaFechasImportantesPage.jsx`, `recipient.photoUrl` → `uploadFile` a Firebase
+  Storage) y la expone `getPublicGiftRegistry` (`recipientPhoto`/`roleKey`/`gender`, dato mínimo sin
+  PII sensible — **requiere redeploy de functions**). Conserva el **arrastre por Pointer Events**
+  (`useGiftDrag` en `GiftRegistryPage.jsx`, ghost anclado al puntero, `draggable={false}` +
+  `-webkit-user-drag:none` para matar el drag nativo) **sin parpadeo** (la tarjeta origen nunca se
+  desmonta) — endurecido en `649a42e`. La tarjeta sigue siendo el control de selección (`role="radio"`).
+- **Cuenta (`e9ec48d`):** tabs en **2 líneas** (desktop) + scroll con **"asomo"** (móvil: dos
+  auto-scrolls suaves de ~56px al montar si no caben, como pista de deslizar) en
+  `src/pages/CuentaLayout.jsx`; **tarjeta de compra clickeable completa** en
+  `src/pages/cuenta/CuentaPedidosPage.jsx` (`role="link"` + `tabIndex` + `onClick`/`onKeyDown` →
+  `/cuenta/pedidos/:id`, accesible por teclado).
+
+Detalle por commit en el [CHANGELOG.md](../../CHANGELOG.md) (entradas 2026-06-29). **⬜ Pendiente del
+DUEÑO:** **redeploy de `getPublicGiftRegistry`** para que la foto/roleKey/gender lleguen a la página
+pública de `/regalar`.
 
 ---
 
