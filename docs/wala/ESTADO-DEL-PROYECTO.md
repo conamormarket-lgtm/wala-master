@@ -18,6 +18,22 @@
 
 > ## 📌 Banner de estado (actualizado 2026-06-28)
 >
+> **"Elementos con diseño" 2026-06-28 (desplegado, `fc8a0d2`):** cierre de la sesión multi-marca.
+> Se le da al dueño un **lugar propio** para editar el **nav de categorías de cada marca** (las
+> burbujas): **nueva sección admin `/admin/elementos-diseno`** (`AdminElementosDiseno`) con **enlace
+> 🎨 "Elementos con diseño"** en el sidebar **debajo de "Recepción de Pedidos"** (gateada por
+> `AdminRoute` + `canDesign`), selector de marca y **estructura de pestañas lista para crecer** (hoy:
+> "Navegación por categorías"). El corazón es un **componente reutilizable `CategoryNavEditor`**: por
+> burbuja edita **qué categoría filtra** (`categoryId`), **nombre** y **miniatura** (subir+recortar
+> 1:1 a `brand_nav/{marca}/` o heredar de la categoría); agregar/quitar/reordenar; **"Generar
+> automático"** (prellena desde las categorías de los productos de la marca vía `getProductsByBrand`)
+> y **"Vaciar"** (`categoryNav=[]` → vuelve al nav automático). Guarda con
+> `updateBrand(brandId,{categoryNav})` e invalida las cachés del nav. El **MISMO** editor se embebe
+> **inline en el editor visual** (`VisualEditorPanel`) al elegir una sección "Navegación por
+> categorías" con marca → cambios **sincronizados** (el `categoryNav` vive en la marca). **Frontend
+> DESPLEGADO** por Vercel; **el backend NO requiere redeploy** (solo Firestore). **No toca
+> carrito/precios/cobro.** Detalle en §2 (Paso 10).
+>
 > **Sistema MULTI-MARCA 2026-06-28 (frontend desplegado; falta correr `setup-marcas.js`):**
 > cada producto pertenece a **una** marca (`brandId` = doc id de `tienda_brands`) y cada marca
 > (**Con Amor / MUSSA / MUEBLERIA**) tiene su **página** (`WALA.PE/ConAmor`, `/MUSSA`,
@@ -652,6 +668,50 @@ alineación de la sección (`bd4b8df`, `HeroBanner.jsx`).
   aparecer sus categorías en las burbujas.)*
 - **Subir imágenes de categoría en `/admin/categorías`** (opcional) para que las burbujas del nav
   automático muestren miniatura en vez de la inicial.
+
+---
+
+### Paso 10 — Sesión 2026-06-28 — "Elementos con diseño" + editor reutilizable del nav de categorías *(✅ HECHO — desplegado)*
+
+**Cierre de la sesión multi-marca:** se le da al dueño **un lugar propio** para personalizar el
+**nav de categorías de cada marca** (las burbujas), con un **editor reutilizable** que se embebe en
+**tres sitios** y un **espacio nuevo** preparado para sumar más "elementos con diseño" por marca.
+**Frontend DESPLEGADO** por **Vercel** (auto-deploy desde `master`); **el backend NO requiere
+redeploy** (el `categoryNav` vive en `tienda_brands`, solo Firestore). **No toca carrito, precios ni
+cobro.** Build verde. Commit `fc8a0d2`. Detalle por commit en el
+[CHANGELOG.md](../../CHANGELOG.md) (entrada 2026-06-28, "ELEMENTOS CON DISEÑO") y guía del dueño en
+[FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md).
+
+**Qué se desplegó:**
+
+- **Nueva sección admin "Elementos con diseño" (`fc8a0d2`):** página `/admin/elementos-diseno`
+  (`src/pages/admin/AdminElementosDiseno.jsx`, ruta lazy en `App.jsx`) con **enlace 🎨 "Elementos
+  con diseño"** en el sidebar (`AdminLayout.jsx`), **debajo de "📦 Recepción de Pedidos"** en el
+  grupo *Diseño de Tienda*, gateada por `AdminRoute` + `canDesign` (Super Admin o `manage_design`).
+  Tiene un **selector de marca** (`getBrands`) común y una **estructura de pestañas** (array
+  `SECCIONES`) **lista para crecer**: hoy una pestaña, **"Navegación por categorías"** (monta el
+  `CategoryNavEditor`); sumar futuros elementos por marca es añadir una entrada al array.
+- **Editor reutilizable `CategoryNavEditor` (`fc8a0d2`):**
+  `src/components/admin/CategoryNavEditor/CategoryNavEditor.jsx`, **autosuficiente** (carga sus datos
+  con react-query). Edita el `categoryNav` de una marca **burbuja por burbuja**: (a) **qué categoría
+  filtra** (`categoryId`, `<select>` de `tienda_categories`), (b) **nombre** y (c) **miniatura**
+  (subir+**recortar 1:1** con `AdminImageCropper` a `brand_nav/{brandId}/...` vía `uploadFile`, **o
+  heredar** la de la categoría). Además **agregar/quitar/reordenar**, **"Generar automático"**
+  (prellena con las categorías de los productos de la marca, `getProductsByBrand`, como punto de
+  partida editable) y **"Vaciar (volver a automático)"** (`categoryNav = []`). Guarda con
+  `updateBrand(brandId, { categoryNav })` (asigna `order` por posición) e **invalida las cachés del
+  nav** (`['brands']`, `['admin-brand-doc']`, `['categories-nav-brands']`). **Regla:** `categoryNav`
+  con items = override manual; vacío = nav AUTOMÁTICO (derivado de los productos).
+- **Mismo editor embebido inline en el editor visual (`fc8a0d2`):** en `VisualEditorPanel.jsx`, al
+  seleccionar una sección **"Navegación por categorías"** (`categories_nav`) **con marca**, se
+  embebe **inline el MISMO `CategoryNavEditor`**. Como el `categoryNav` **vive en la marca**, los
+  cambios se **sincronizan** entre "Elementos con diseño", el panel por marca
+  (`AdminMarcaProductos` → pestaña "Nav de categorías") y el editor visual, y se reflejan en **todas
+  las páginas** que usen ese nav.
+
+**Sin pendientes propios:** la feature está **completa y desplegada**; solo aplican los pendientes
+del dueño ya listados en el Paso 9 (asignar productos a las marcas, subir imágenes de categoría
+opcionales).
 
 ---
 
