@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
@@ -109,6 +109,9 @@ function resumirPedido(pedido, indiceCatalogo) {
  */
 const CuentaPedidosPage = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
+  // Navegación programática para que TODA la tarjeta sea clickeable (no solo el
+  // botón "Ver compra"). No tocamos carrito/precios/cobro.
+  const navigate = useNavigate();
   const hasDni = !!(userProfile?.dni && String(userProfile.dni).trim());
   const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
   const { loading, error, data, buscar } = usePedidos(dni);
@@ -192,6 +195,18 @@ const CuentaPedidosPage = () => {
         <Stagger as="ul" className={glass.grid}>
           {pedidos.map((pedido) => {
             const r = resumirPedido(pedido, indiceCatalogo);
+            // Destino del detalle de la compra (mismo que el botón "Ver compra").
+            const destino = `/cuenta/pedidos/${r.id}`;
+            // Toda la tarjeta navega al detalle. El <Link> interno sigue funcionando
+            // (no anidamos <a>: el card usa onClick, no as={Link}).
+            const irADetalle = () => navigate(destino);
+            const onCardKeyDown = (e) => {
+              // Enter o Espacio activan la "tarjeta-enlace" (accesibilidad).
+              if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                irADetalle();
+              }
+            };
             return (
               <StaggerItem as="li" key={r.id} className={glass.gridItem}>
                 <GlassCard
@@ -202,6 +217,11 @@ const CuentaPedidosPage = () => {
                   animate={false}
                   className={glass.compraCard}
                   bodyClassName={glass.compraBody}
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`Ver compra: ${r.textoProductos}`}
+                  onClick={irADetalle}
+                  onKeyDown={onCardKeyDown}
                 >
                   {/* Cabecera de la tarjeta: badge de estado bien visible. */}
                   <div className={glass.estadoRow}>

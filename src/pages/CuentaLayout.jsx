@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -9,6 +9,40 @@ const CuentaLayout = () => {
   const { user, loading } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
+  // Ref al <nav> de tabs para el "asomo" animado en móvil (pista de deslizar).
+  const tabsRef = useRef(null);
+
+  // Animación "asomo" SOLO en móvil: al montar, si los tabs no caben (scrollWidth
+  // > clientWidth) hacemos un auto-scroll suave de ~56px a la derecha y de vuelta
+  // a 0, un par de veces, lento, para sugerir que hay más tabs deslizables.
+  // Respeta prefers-reduced-motion (si reduce, no anima). Sin dependencias nuevas.
+  useEffect(() => {
+    if (loading || !user) return; // el nav solo existe ya logueado
+    const nav = tabsRef.current;
+    if (!nav) return;
+    if (typeof window === 'undefined') return;
+    if (window.innerWidth > 768) return; // solo móvil
+    const prefersReduced = window.matchMedia
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+    if (nav.scrollWidth <= nav.clientWidth) return; // no hay nada que asomar
+
+    const HINT = 56; // px que asoma
+    const timers = [];
+    const peek = (delay) => {
+      timers.push(setTimeout(() => {
+        nav.scrollTo({ left: HINT, behavior: 'smooth' });
+      }, delay));
+      timers.push(setTimeout(() => {
+        nav.scrollTo({ left: 0, behavior: 'smooth' });
+      }, delay + 550));
+    };
+    // Dos asomos lentos, "poco a poco".
+    peek(450);
+    peek(1500);
+
+    return () => { timers.forEach(clearTimeout); };
+  }, [loading, user]);
 
   if (loading) {
     return (
@@ -38,7 +72,7 @@ const CuentaLayout = () => {
     <div className={styles.container}>
       <div className={styles.contentLoggedIn}>
         <header className={styles.header}>
-          <nav className={styles.tabs} aria-label="Mi cuenta">
+          <nav ref={tabsRef} className={styles.tabs} aria-label="Mi cuenta">
             <NavLink
               to="/cuenta/pedidos"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
