@@ -13,7 +13,6 @@
 
 .scrollArea {
   display: flex;
-  gap: 20px;
   overflow-x: auto;
   scroll-behavior: smooth;
   padding: 0 5%;
@@ -26,6 +25,41 @@
   display: none;
 }
 
+/* Track interno: contiene la fila de burbujas. Aquí vive el gap y la alineación.
+   Min-width 100% para que las auto-margins de centrado/derecha tengan referencia;
+   cuando el contenido excede el ancho, las margins colapsan y se scrollea desde el
+   inicio (no clipea). */
+.scrollTrack {
+  display: flex;
+  gap: 20px;
+  min-width: 100%;
+}
+
+/* Alineación izquierda: paquete a la izquierda (= comportamiento base del flex). */
+.alignLeft {
+  justify-content: flex-start;
+}
+
+/* Justificado: reparte el espacio entre burbujas; con overflow = flex-start. */
+.alignJustify {
+  justify-content: space-between;
+}
+
+/* Centro (DEFAULT) y Derecha usan AUTO-MARGINS en los extremos en vez de
+   justify-content: a diferencia de `center`/`flex-end`, las auto-margins NO clipean
+   los primeros items cuando el contenido excede el ancho (bug clásico de flex+scroll);
+   simplemente colapsan a 0 y el contenido se scrollea desde el inicio. */
+.alignCenter > :first-child {
+  margin-left: auto;
+}
+.alignCenter > :last-child {
+  margin-right: auto;
+}
+
+.alignRight > :first-child {
+  margin-left: auto;
+}
+
 .navItem {
   display: flex;
   flex-direction: column;
@@ -35,6 +69,65 @@
   min-width: max-content;
   cursor: pointer;
   group: hover;
+}
+
+/* ═══════════════════════════════════════════
+   MODO SLIDER (animation === 'slider')
+   Las burbujas se desplazan solas en bucle (marquee). Se duplica el set y se
+   anima la traslación del track de 0 a -50% (= ancho de una copia) en bucle
+   infinito. Pausa al pasar el cursor para poder pulsar con comodidad. El clic
+   para filtrar sigue funcionando (los clones también son clicables).
+   ═══════════════════════════════════════════ */
+.sliderMode .navWrapper {
+  overflow: hidden;
+}
+
+.sliderViewport {
+  width: 100%;
+  overflow: hidden;
+  padding: 0 5%;
+  box-sizing: border-box;
+}
+
+.sliderTrack {
+  display: flex;
+  width: max-content;
+  animation: navMarquee 30s linear infinite;
+  will-change: transform;
+}
+
+/* Pausa el desplazamiento al pasar el cursor (UX para clicar sin perseguir). */
+.sliderViewport:hover .sliderTrack {
+  animation-play-state: paused;
+}
+
+/* Cada copia del set conserva el gap entre burbujas y un gap de separación al
+   final para que la unión entre copias respire igual que el resto. */
+.sliderGroup {
+  display: flex;
+  gap: 20px;
+  padding-right: 20px;
+  flex-shrink: 0;
+}
+
+@keyframes navMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Respeta la preferencia de menos movimiento: sin auto-scroll. */
+@media (prefers-reduced-motion: reduce) {
+  .sliderTrack {
+    animation: none;
+  }
+  .sliderViewport {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .sliderViewport::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .imageBubble {
@@ -156,7 +249,19 @@
   }
   
   .scrollArea {
-    gap: 15px;
     padding: 0 16px;
+  }
+
+  .scrollTrack {
+    gap: 15px;
+  }
+
+  .sliderViewport {
+    padding: 0 16px;
+  }
+
+  .sliderGroup {
+    gap: 15px;
+    padding-right: 15px;
   }
 }

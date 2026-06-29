@@ -1,0 +1,59 @@
+/* ═══════════════════════════════════════════
+   ADMIN · PÁGINA POR ELEMENTO (Elementos con diseño)
+   Encabezado + enlace de vuelta al catálogo.
+   ═══════════════════════════════════════════ */
+
+/* ── Enlace "volver" ── */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #7c3aed;
+  text-decoration: none;
+  margin-bottom: 1rem;
+  transition: color 0.15s ease;
+}
+
+.backLink:hover {
+  color: #6d28d9;
+}
+
+/* ── Encabezado ── */
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #111;
+  margin: 0 0 0.5rem 0;
+}
+
+.titleIcon {
+  display: inline-flex;
+  align-items: center;
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 640px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .title {
+    font-size: 1.6rem;
+  }
+}

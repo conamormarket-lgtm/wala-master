@@ -22,12 +22,48 @@ import OptimizedImage from '../../../../components/common/OptimizedImage/Optimiz
  * @param {Function} onSelectCategory  (categoryId|null)=>void. Si está presente,
  *                                   activa el MODO FILTRO LOCAL.
  * @param {string|null} activeCategory  Categoría activa en modo filtro (para resaltar).
+ * @param {'left'|'center'|'right'|'justify'} [align='center']  Alineación de las
+ *                                   burbujas dentro del contenedor (justify-content).
+ * @param {'static'|'slider'} [animation='static']  Modo de presentación:
+ *                                   'static' = fila scrolleable (como hoy);
+ *                                   'slider' = auto-scroll suave en bucle (marquee),
+ *                                   sin romper el clic-para-filtrar.
  */
-const VisualCategoryNav = ({ categories, loading, onSelectCategory, activeCategory = null }) => {
+
+// Mapea la alineación al valor de justify-content del contenedor.
+const ALIGN_TO_JUSTIFY = {
+  left: 'flex-start',
+  center: 'center',
+  right: 'flex-end',
+  justify: 'space-between',
+};
+
+const VisualCategoryNav = ({
+  categories,
+  loading,
+  onSelectCategory,
+  activeCategory = null,
+  align = 'center',
+  animation = 'static',
+}) => {
   const location = useLocation();
 
   // ¿Estamos en modo filtro local? (hay handler de selección)
   const isFilterMode = typeof onSelectCategory === 'function';
+
+  // Normaliza props de estilo (retrocompat: valores inválidos → default actual).
+  const safeAlign = ALIGN_TO_JUSTIFY[align] ? align : 'center';
+  const isSlider = animation === 'slider';
+  // Clase de alineación para el track interno (no rompe el scroll en overflow:
+  // usa auto-margins/justify que colapsan a flex-start cuando el contenido excede).
+  const alignClass =
+    safeAlign === 'left'
+      ? styles.alignLeft
+      : safeAlign === 'right'
+      ? styles.alignRight
+      : safeAlign === 'justify'
+      ? styles.alignJustify
+      : styles.alignCenter;
 
   // Activo según el modo: en filtro se compara con activeCategory; en enlace, con la URL.
   const isActive = (categoryId) => {
@@ -80,89 +116,128 @@ const VisualCategoryNav = ({ categories, loading, onSelectCategory, activeCatego
     </div>
   );
 
+  // Renderiza el conjunto de burbujas (Todos + categorías). `keyPrefix` permite
+  // duplicar el set en modo slider (clones para el marquee) con keys únicas. Los
+  // clones NO se ocultan a clics: pulsarlos llama al mismo handler (no rompe el
+  // clic-para-filtrar). En modo enlace se omite el "Todos" del clon para no repetir
+  // un Link duplicado innecesario, pero las categorías sí se clonan.
+  const renderItems = (keyPrefix = '') => (
+    <>
+      {/* Item "Todos" */}
+      {isFilterMode ? (
+        // Modo filtro: botón que limpia la categoría (null = sin filtro).
+        <button
+          type="button"
+          key={`${keyPrefix}all`}
+          className={`${styles.navItem} ${activeCategory === null ? styles.active : ''}`}
+          style={{ background: 'none', border: 'none', padding: 0 }}
+          onClick={() => onSelectCategory(null)}
+        >
+          <div className={styles.imageBubble}>{allIcon}</div>
+          <span className={styles.label}>Todos</span>
+        </button>
+      ) : (
+        // Modo enlace: link a la tienda global sin categoría.
+        <Link
+          key={`${keyPrefix}all`}
+          to="/tienda"
+          className={`${styles.navItem} ${location.pathname === '/tienda' && !location.search ? styles.active : ''}`}
+        >
+          <div className={styles.imageBubble}>{allIcon}</div>
+          <span className={styles.label}>Todos</span>
+        </Link>
+      )}
+
+      {/* Categorías */}
+      {categories?.map((category, idx) => {
+        const catId = getCatId(category);
+        // Con imagen: miniatura real. Sin imagen (común en nav AUTO-derivado):
+        // burbuja con la inicial del nombre y color estable (no rompe el layout).
+        const bubble = (
+          <>
+            <div className={styles.imageBubble}>
+              {category.imageUrl ? (
+                <OptimizedImage
+                  src={category.imageUrl}
+                  alt={category.name}
+                  containerClassName={styles.imageContainer}
+                  className={styles.image}
+                  objectFit="cover"
+                />
+              ) : (
+                <div
+                  className={styles.initialBubble}
+                  style={{ backgroundColor: placeholderColor(category.name || catId) }}
+                  aria-hidden="true"
+                >
+                  {getInitial(category.name)}
+                </div>
+              )}
+            </div>
+            <span className={styles.label}>{category.name}</span>
+          </>
+        );
+
+        // Modo filtro: botón que fija la categoría de esta página (cliente).
+        if (isFilterMode) {
+          return (
+            <button
+              type="button"
+              key={`${keyPrefix}${catId || idx}`}
+              className={`${styles.navItem} ${isActive(catId) ? styles.active : ''}`}
+              style={{ background: 'none', border: 'none', padding: 0 }}
+              onClick={() => onSelectCategory(catId)}
+            >
+              {bubble}
+            </button>
+          );
+        }
+
+        // Modo enlace (retrocompat con la cabecera global).
+        return (
+          <Link
+            key={`${keyPrefix}${catId || idx}`}
+            to={`/tienda?categoria=${catId}`}
+            className={`${styles.navItem} ${isActive(catId) ? styles.active : ''}`}
+          >
+            {bubble}
+          </Link>
+        );
+      })}
+    </>
+  );
+
+  // MODO SLIDER: las burbujas se desplazan solas en bucle (marquee). Se duplica el
+  // set (copia 'a-' y 'b-') para que el bucle sea continuo: el track se traslada
+  // -50% (= ancho de una copia) y al reiniciar el salto es invisible. Ambas copias
+  // son clicables (mismo handler) → no rompe el clic-para-filtrar. La animación se
+  // pausa al pasar el cursor. La alineación no aplica en este modo.
+  if (isSlider) {
+    return (
+      <div className={`${styles.container} ${styles.sliderMode}`}>
+        <nav className={styles.navWrapper}>
+          <div className={styles.sliderViewport}>
+            <div className={styles.sliderTrack}>
+              <div className={styles.sliderGroup}>{renderItems('a-')}</div>
+              <div className={styles.sliderGroup}>{renderItems('b-')}</div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    );
+  }
+
+  // MODO ESTÁTICO (por defecto): fila scrolleable. El track interno aplica la
+  // alineación elegida (left/center/right/justify) con auto-margins/justify que
+  // colapsan a flex-start cuando hay overflow → nunca clipea ni rompe el scroll.
+  // Sin props (cabecera global) → alignCenter, idéntico al comportamiento histórico.
   return (
     <div className={styles.container}>
       <nav className={styles.navWrapper}>
         <div className={styles.scrollArea}>
-          {/* Item "Todos" */}
-          {isFilterMode ? (
-            // Modo filtro: botón que limpia la categoría (null = sin filtro).
-            <button
-              type="button"
-              className={`${styles.navItem} ${activeCategory === null ? styles.active : ''}`}
-              style={{ background: 'none', border: 'none', padding: 0 }}
-              onClick={() => onSelectCategory(null)}
-            >
-              <div className={styles.imageBubble}>{allIcon}</div>
-              <span className={styles.label}>Todos</span>
-            </button>
-          ) : (
-            // Modo enlace: link a la tienda global sin categoría.
-            <Link
-              to="/tienda"
-              className={`${styles.navItem} ${location.pathname === '/tienda' && !location.search ? styles.active : ''}`}
-            >
-              <div className={styles.imageBubble}>{allIcon}</div>
-              <span className={styles.label}>Todos</span>
-            </Link>
-          )}
-
-          {/* Categorías */}
-          {categories?.map((category, idx) => {
-            const catId = getCatId(category);
-            // Con imagen: miniatura real. Sin imagen (común en nav AUTO-derivado):
-            // burbuja con la inicial del nombre y color estable (no rompe el layout).
-            const bubble = (
-              <>
-                <div className={styles.imageBubble}>
-                  {category.imageUrl ? (
-                    <OptimizedImage
-                      src={category.imageUrl}
-                      alt={category.name}
-                      containerClassName={styles.imageContainer}
-                      className={styles.image}
-                      objectFit="cover"
-                    />
-                  ) : (
-                    <div
-                      className={styles.initialBubble}
-                      style={{ backgroundColor: placeholderColor(category.name || catId) }}
-                      aria-hidden="true"
-                    >
-                      {getInitial(category.name)}
-                    </div>
-                  )}
-                </div>
-                <span className={styles.label}>{category.name}</span>
-              </>
-            );
-
-            // Modo filtro: botón que fija la categoría de esta página (cliente).
-            if (isFilterMode) {
-              return (
-                <button
-                  type="button"
-                  key={catId || idx}
-                  className={`${styles.navItem} ${isActive(catId) ? styles.active : ''}`}
-                  style={{ background: 'none', border: 'none', padding: 0 }}
-                  onClick={() => onSelectCategory(catId)}
-                >
-                  {bubble}
-                </button>
-              );
-            }
-
-            // Modo enlace (retrocompat con la cabecera global).
-            return (
-              <Link
-                key={catId || idx}
-                to={`/tienda?categoria=${catId}`}
-                className={`${styles.navItem} ${isActive(catId) ? styles.active : ''}`}
-              >
-                {bubble}
-              </Link>
-            );
-          })}
+          <div className={`${styles.scrollTrack} ${alignClass}`}>
+            {renderItems()}
+          </div>
         </div>
       </nav>
     </div>

@@ -45,6 +45,84 @@
   max-width: 640px;
 }
 
+/* ── Grid de tarjetas del catálogo de elementos ── */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #ececf1;
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.card:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.12);
+  transform: translateY(-2px);
+}
+
+.card:focus-visible {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+}
+
+.cardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #f3effe;
+  color: #7c3aed;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.cardName {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.cardDesc {
+  font-size: 0.88rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.cardChevron {
+  flex-shrink: 0;
+  color: #bbb;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.card:hover .cardChevron {
+  color: #7c3aed;
+  transform: translateX(2px);
+}
+
 /* ── Selector de marca ── */
 .brandPicker {
   display: flex;
@@ -85,46 +163,7 @@
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
 }
 
-/* ── Pestañas (preparado para más elementos) ── */
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid #ececf1;
-  padding-bottom: 0.6rem;
-}
-
-.tab {
-  appearance: none;
-  border: 1px solid transparent;
-  background: #f4f4f7;
-  color: #555;
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.55rem 1rem;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.tab:hover {
-  background: #ececf1;
-  color: #222;
-}
-
-.tabActive {
-  background: #7c3aed;
-  color: #fff;
-  border-color: #7c3aed;
-}
-
-.tabActive:hover {
-  background: #6d28d9;
-  color: #fff;
-}
-
-/* ── Panel de contenido de la sub-sección ── */
+/* ── Panel de contenido del editor ── */
 .panel {
   background: #ffffff;
   border: 1px solid #ececf1;

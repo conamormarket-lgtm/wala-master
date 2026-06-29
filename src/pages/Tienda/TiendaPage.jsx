@@ -442,20 +442,31 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
   const { data: navCategoriesByBrand } = useQuery({
     queryKey: ['categories-nav-brands', navBrandIds, categoriesSignature],
     queryFn: async () => {
+      // Estilo del nav por marca, retrocompat: sin categoryNavStyle → default
+      // { align:'center', animation:'static' } (= comportamiento histórico).
+      const styleOf = (data) => {
+        const s = data?.categoryNavStyle || {};
+        return {
+          align: ['left', 'center', 'right', 'justify'].includes(s.align) ? s.align : 'center',
+          animation: ['static', 'slider'].includes(s.animation) ? s.animation : 'static',
+        };
+      };
+
       const entries = await Promise.all(
         navBrandIds.map(async (bid) => {
           const { data } = await getBrand(bid);
+          const style = styleOf(data);
           const manual = Array.isArray(data?.categoryNav) ? data.categoryNav : [];
 
           // (1) Override manual: si hay items, se usa con su orden del admin.
           if (manual.length > 0) {
             const sorted = [...manual].sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
-            return [bid, sorted];
+            return [bid, { items: sorted, style }];
           }
 
           // (2) AUTO-derivar desde los productos de la marca.
           const { data: products, error } = await getProductsByBrand(bid);
-          if (error || !Array.isArray(products)) return [bid, []];
+          if (error || !Array.isArray(products)) return [bid, { items: [], style }];
 
           // Recolecta los ids de categoría DISTINTOS de los productos, con la misma
           // extracción que el filtro del sidebar (categories[] + legacy single).
@@ -489,7 +500,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
             // Orden por el `order` de la categoría; a igualdad, alfabético por nombre.
             .sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
 
-          return [bid, burbujas];
+          return [bid, { items: burbujas, style }];
         })
       );
       return Object.fromEntries(entries);
@@ -714,7 +725,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
         // Nav de categorías con MINIATURAS por marca. La marca se elige en el
         // editor (s.brandId); sus burbujas vienen del `categoryNav` de esa marca.
         const navBrandId = (s.brandId || '').trim();
-        const navCategorias = navBrandId ? (navCategoriesByBrand?.[navBrandId] || []) : [];
+        // El query devuelve { items, style } por marca. Retrocompat: sin entrada o
+        // sin style → burbujas vacías y estilo default { align:'center', animation:'static' }.
+        const navEntry = navBrandId ? navCategoriesByBrand?.[navBrandId] : null;
+        const navCategorias = navEntry?.items || [];
+        const navStyle = navEntry?.style || { align: 'center', animation: 'static' };
         // RETROCOMPAT: sin marca configurada, no renderizamos el nav (queda vacío),
         // igual que antes esta sección no pintaba nada en el storefront.
         if (!navBrandId) return null;
@@ -723,11 +738,14 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
             <SectionBackground config={s} />
             {/* Modo FILTRO LOCAL: cada burbuja fija navCategoryId (cliente), que el
                 sidebar_catalog de esta misma página usa como filtro de categoría.
-                La burbuja "Todos" limpia el filtro (null). */}
+                La burbuja "Todos" limpia el filtro (null).
+                align/animation vienen del categoryNavStyle de la marca (sincronizado). */}
             <VisualCategoryNav
               categories={navCategorias}
               activeCategory={navCategoryId}
               onSelectCategory={setNavCategoryId}
+              align={navStyle.align}
+              animation={navStyle.animation}
             />
           </section>
         );

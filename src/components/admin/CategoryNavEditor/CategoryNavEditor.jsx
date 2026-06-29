@@ -12,6 +12,12 @@ import {
   Eraser,
   RefreshCw,
   CheckCircle2,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  GalleryHorizontalEnd,
+  LayoutGrid,
 } from 'lucide-react';
 import { getBrand, updateBrand } from '../../../services/brands';
 import { getCategories } from '../../../services/categories';
@@ -58,12 +64,23 @@ import styles from './CategoryNavEditor.module.css';
  * @param {string} [props.brandName] nombre de la marca (solo para textos).
  * @param {Function} [props.onSaved] callback opcional tras guardar (recibe el categoryNav guardado).
  */
+// Estilo por defecto del nav (retrocompatible = comportamiento actual).
+const DEFAULT_NAV_STYLE = { align: 'center', animation: 'static' };
+const ALIGN_OPTIONS = [
+  { value: 'left', label: 'Izquierda', Icon: AlignLeft },
+  { value: 'center', label: 'Centro', Icon: AlignCenter },
+  { value: 'right', label: 'Derecha', Icon: AlignRight },
+  { value: 'justify', label: 'Justificado', Icon: AlignJustify },
+];
+
 const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
   const queryClient = useQueryClient();
 
   // Estado local editable del nav (se hidrata desde Firestore al cargar la marca).
   // Cada item: { categoryId, name, imageUrl }. El `order` se asigna al guardar.
   const [items, setItems] = useState([]);
+  // Estilo editable del nav { align, animation } (se hidrata desde el brand).
+  const [navStyle, setNavStyle] = useState(DEFAULT_NAV_STYLE);
   // Categoría elegida en el selector de "Agregar burbuja".
   const [pickToAdd, setPickToAdd] = useState('');
   // Feedback efímero { type: 'ok'|'error', text }.
@@ -123,6 +140,18 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
     } else if (brandDoc) {
       setItems([]);
     }
+    // Hidrata el estilo del nav. Retrocompat: sin categoryNavStyle → default.
+    if (brandDoc) {
+      const s = brandDoc.categoryNavStyle || {};
+      setNavStyle({
+        align: ['left', 'center', 'right', 'justify'].includes(s.align)
+          ? s.align
+          : DEFAULT_NAV_STYLE.align,
+        animation: ['static', 'slider'].includes(s.animation)
+          ? s.animation
+          : DEFAULT_NAV_STYLE.animation,
+      });
+    }
   }, [brandDoc]);
 
   // Feedback efímero con auto-limpieza.
@@ -133,7 +162,7 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
 
   // ── Mutación de guardado ─────────────────────────────────────────────────
   const saveMutation = useMutation({
-    mutationFn: async (nav) => {
+    mutationFn: async ({ nav, style }) => {
       // Asigna order según la posición actual de cada burbuja.
       const categoryNav = nav.map((it, idx) => ({
         categoryId: it.categoryId || '',
@@ -141,7 +170,16 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
         imageUrl: it.imageUrl || '',
         order: idx,
       }));
-      const { error } = await updateBrand(brandId, { categoryNav });
+      // Estilo del nav (alineación + modo). Se persiste junto al categoryNav.
+      const categoryNavStyle = {
+        align: ['left', 'center', 'right', 'justify'].includes(style?.align)
+          ? style.align
+          : DEFAULT_NAV_STYLE.align,
+        animation: ['static', 'slider'].includes(style?.animation)
+          ? style.animation
+          : DEFAULT_NAV_STYLE.animation,
+      };
+      const { error } = await updateBrand(brandId, { categoryNav, categoryNavStyle });
       if (error) throw new Error(error);
       return categoryNav;
     },
@@ -277,7 +315,8 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
   // "Vaciar (volver a automático)": deja el nav vacío → modo automático.
   const clearToAuto = () => {
     setItems([]);
-    saveMutation.mutate([]);
+    // Conserva el estilo elegido aunque el nav vuelva a modo automático.
+    saveMutation.mutate({ nav: [], style: navStyle });
   };
 
   // ── Subida de miniatura propia para una burbuja (patrón AdminCategorias) ──
@@ -376,7 +415,7 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
           >
             <Eraser size={15} /> Vaciar (volver a automático)
           </button>
-          <Button onClick={() => saveMutation.mutate(items)} disabled={saving || generating}>
+          <Button onClick={() => saveMutation.mutate({ nav: items, style: navStyle })} disabled={saving || generating}>
             <span className={styles.btnInline}>
               {saving ? <Loader2 size={16} className={styles.spin} /> : <Save size={16} />}
               {saving ? 'Guardando…' : 'Guardar nav'}
@@ -384,6 +423,68 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
           </Button>
         </div>
       </div>
+
+      {/* ── Estilo del nav (alineación + modo estático/slider) ── */}
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <h3 className={styles.sectionTitle}>Estilo del nav</h3>
+          <span className={styles.styleHint}>
+            Se aplica en la tienda (sincronizado en todos lados).
+          </span>
+        </div>
+
+        {/* ALINEACIÓN de las burbujas dentro del contenedor */}
+        <div className={styles.styleGroup}>
+          <span className={styles.styleGroupLabel}>Alineación</span>
+          <div className={styles.segmented}>
+            {ALIGN_OPTIONS.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                type="button"
+                className={`${styles.segBtn} ${navStyle.align === value ? styles.segActive : ''}`}
+                onClick={() => setNavStyle((s) => ({ ...s, align: value }))}
+                title={label}
+                aria-pressed={navStyle.align === value}
+              >
+                <Icon size={16} />
+                <span className={styles.segText}>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* MODO: estático (fila/wrap) vs slider (auto-scroll animado) */}
+        <div className={styles.styleGroup}>
+          <span className={styles.styleGroupLabel}>Modo</span>
+          <div className={styles.segmented}>
+            <button
+              type="button"
+              className={`${styles.segBtn} ${navStyle.animation === 'static' ? styles.segActive : ''}`}
+              onClick={() => setNavStyle((s) => ({ ...s, animation: 'static' }))}
+              title="Estático (fila fija, como hoy)"
+              aria-pressed={navStyle.animation === 'static'}
+            >
+              <LayoutGrid size={16} />
+              <span className={styles.segText}>Estático</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.segBtn} ${navStyle.animation === 'slider' ? styles.segActive : ''}`}
+              onClick={() => setNavStyle((s) => ({ ...s, animation: 'slider' }))}
+              title="Slider con animación (auto-scroll suave)"
+              aria-pressed={navStyle.animation === 'slider'}
+            >
+              <GalleryHorizontalEnd size={16} />
+              <span className={styles.segText}>Slider (animación)</span>
+            </button>
+          </div>
+          {navStyle.animation === 'slider' && (
+            <span className={styles.styleHint}>
+              Las burbujas se desplazan solas en bucle; el clic para filtrar sigue funcionando.
+            </span>
+          )}
+        </div>
+      </section>
 
       {/* ── Burbujas actuales del nav ── */}
       <section className={styles.section}>
