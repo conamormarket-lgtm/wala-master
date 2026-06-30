@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getLandingPages, saveLandingPage, deleteLandingPage } from '../services/landingPages';
 import { getThemes } from '../services/themes';
 import { getProducts } from '../../../services/products';
+import { getBrands } from '../../../services/brands';
 import Button from '../../../components/common/Button';
 import styles from '../../admin/AdminLandingPages.module.css';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +11,7 @@ const AdminLandingPages = () => {
   const [pages, setPages] = useState([]);
   const [themes, setThemes] = useState([]);
   const [products, setProducts] = useState([]);
+  const [brands, setBrands] = useState([]); // marcas (tienda_brands) para asignar a la landing
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ const AdminLandingPages = () => {
     id: null,
     title: '',
     slug: '',
+    brandId: '', // marca de la página (multimarca); '' = página global
     hideHeader: false,
     hideFooter: false,
     themeId: '',
@@ -32,14 +35,16 @@ const AdminLandingPages = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [pagesData, productsData, themesData] = await Promise.all([
+    const [pagesData, productsData, themesData, brandsData] = await Promise.all([
       getLandingPages(),
       getProducts(),
-      getThemes()
+      getThemes(),
+      getBrands()
     ]);
     setPages(pagesData);
     setProducts(productsData.data || []);
     setThemes(themesData);
+    setBrands(brandsData.data || []);
     setLoading(false);
   };
 
@@ -48,6 +53,7 @@ const AdminLandingPages = () => {
       id: null,
       title: '',
       slug: '',
+      brandId: '',
       hideHeader: true,
       hideFooter: true,
       themeId: '',
@@ -61,6 +67,7 @@ const AdminLandingPages = () => {
       id: page.id,
       title: page.title || '',
       slug: page.slug || '',
+      brandId: page.brandId || '',
       hideHeader: !!page.hideHeader,
       hideFooter: !!page.hideFooter,
       themeId: page.themeId || '',
@@ -191,6 +198,22 @@ const AdminLandingPages = () => {
                   <option value="">-- Tema Global de la Tienda --</option>
                   {themes.map(t => (
                     <option key={t.id} value={t.id}>{t.name} ({t.type === 'custom_css' ? 'CSS' : 'WP'})</option>
+                  ))}
+                </select>
+              </div>
+              {/* Marca de la página (multimarca). Si se asigna, carruseles/destacados/
+                  flash y el catálogo se acotan a esa marca. '' = página global (actual). */}
+              <div className={styles.inputGroup}>
+                <label>Marca de la Página (Opcional)</label>
+                <select
+                  value={formData.brandId}
+                  onChange={e => setFormData({...formData, brandId: e.target.value})}
+                  className={styles.input}
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                >
+                  <option value="">-- Sin marca (Global / Con Amor) --</option>
+                  {brands.map(b => (
+                    <option key={b.id} value={b.id}>{b.name || b.slug || b.id}</option>
                   ))}
                 </select>
               </div>

@@ -238,7 +238,7 @@ const renderBotonSeccion = (s) => {
   );
 };
 
-const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
+const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdOverride = null }) => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -320,14 +320,49 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
     initialData: getCachedCategories()
   });
 
+  // ── MARCA DE LA PÁGINA (Fase 1 multimarca) ────────────────────────
+  // Una sección sidebar_catalog (o product_grid) puede fijarse a UNA marca via
+  // settings.brandId (doc id de tienda_brands). Si existe, el catálogo paginado
+  // se ACOTA en servidor a esa marca (faceta { type:'brand' } -> where('brandId','==',...)
+  // ver facetToWhere en products.js). brandId vacío/ausente = catálogo GLOBAL
+  // (retrocompatible: home y /tienda no cambian). Se busca la PRIMERA sección de
+  // ese tipo con brandId no vacío. Calculado desde el borrador/Firestore directamente
+  // (no de displaySections, que se define más abajo) para poder inicializar el estado.
+  // Definido ANTES de las queries de destacados/colección para que puedan acotarse.
+  const pageBrandId = useMemo(() => {
+    // OVERRIDE explícito de la landing (doc landingPages.brandId vía DynamicLandingPage).
+    // Si la página tiene marca GUARDADA, manda y NO se infiere de las secciones. Solo si
+    // no hay override se cae a la inferencia actual (retrocompatible: landings antiguas
+    // sin brandId guardado siguen derivando la marca de sus secciones como hasta hoy).
+    if (typeof pageBrandIdOverride === 'string' && pageBrandIdOverride.trim() !== '') {
+      return pageBrandIdOverride.trim();
+    }
+    const secs = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+    const conMarca = (sec) =>
+      typeof sec?.settings?.brandId === 'string' && sec.settings.brandId.trim() !== '';
+    // Prioridad: la marca la define el CATÁLOGO (sidebar_catalog/product_grid). Si la
+    // página NO tiene un catálogo de marca pero SÍ un nav de marca (categories_nav),
+    // se usa la marca del nav para acotar también el catálogo — así pulsar una burbuja
+    // del nav de la marca A no muestra esa categoría de TODAS las marcas.
+    const catalogo = secs.find(
+      (sec) => (sec?.type === 'sidebar_catalog' || sec?.type === 'product_grid') && conMarca(sec)
+    );
+    if (catalogo) return catalogo.settings.brandId.trim();
+    const nav = secs.find((sec) => sec?.type === 'categories_nav' && conMarca(sec));
+    return nav ? nav.settings.brandId.trim() : null;
+  }, [storeConfigDraft, storefrontConfig, pageBrandIdOverride]);
+
+  // Destacados ACOTADOS a la marca de la página (pageBrandId). Sin marca = global como hoy.
+  // El caché de localStorage SOLO se usa como initialData en el caso global, para no
+  // pintar destacados globales en una página de marca antes de que llegue la query.
   const { data: featuredData } = useQuery({
-    queryKey: ['featured-products'],
+    queryKey: ['featured-products', pageBrandId || null],
     queryFn: async () => {
-      const { data, error } = await getFeaturedProducts();
+      const { data, error } = await getFeaturedProducts(pageBrandId || null);
       if (error) throw new Error(error);
       return data;
     },
-    initialData: getCachedFeaturedProducts()
+    initialData: pageBrandId ? undefined : getCachedFeaturedProducts()
   });
 
   // ── QUERY PRINCIPAL DE PRODUCTOS ──────────────────────────────────
@@ -357,30 +392,6 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
   // scroll incremental. Cuando hay categoryId/searchTerm en la URL se conserva el
   // comportamiento previo (productsData), que ya devuelve un conjunto acotado.
   const usePaginatedCatalog = !categoryId && !searchTerm;
-
-  // ── MARCA DE LA PÁGINA (Fase 1 multimarca) ────────────────────────
-  // Una sección sidebar_catalog (o product_grid) puede fijarse a UNA marca via
-  // settings.brandId (doc id de tienda_brands). Si existe, el catálogo paginado
-  // se ACOTA en servidor a esa marca (faceta { type:'brand' } -> where('brandId','==',...)
-  // ver facetToWhere en products.js). brandId vacío/ausente = catálogo GLOBAL
-  // (retrocompatible: home y /tienda no cambian). Se busca la PRIMERA sección de
-  // ese tipo con brandId no vacío. Calculado desde el borrador/Firestore directamente
-  // (no de displaySections, que se define más abajo) para poder inicializar el estado.
-  const pageBrandId = useMemo(() => {
-    const secs = storeConfigDraft?.sections || storefrontConfig?.sections || [];
-    const conMarca = (sec) =>
-      typeof sec?.settings?.brandId === 'string' && sec.settings.brandId.trim() !== '';
-    // Prioridad: la marca la define el CATÁLOGO (sidebar_catalog/product_grid). Si la
-    // página NO tiene un catálogo de marca pero SÍ un nav de marca (categories_nav),
-    // se usa la marca del nav para acotar también el catálogo — así pulsar una burbuja
-    // del nav de la marca A no muestra esa categoría de TODAS las marcas.
-    const catalogo = secs.find(
-      (sec) => (sec?.type === 'sidebar_catalog' || sec?.type === 'product_grid') && conMarca(sec)
-    );
-    if (catalogo) return catalogo.settings.brandId.trim();
-    const nav = secs.find((sec) => sec?.type === 'categories_nav' && conMarca(sec));
-    return nav ? nav.settings.brandId.trim() : null;
-  }, [storeConfigDraft, storefrontConfig]);
 
   // ── NAV DE CATEGORÍAS POR MARCA (Fase 3 multimarca) ───────────────
   // Cada sección 'categories_nav' apunta a UNA marca (settings.brandId). Las
@@ -863,6 +874,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
                collectionName={s.collection}
                endTime={s.endTime}
                categories={categoriesData}
+               brandId={pageBrandId}
             />
           </section>
         );
@@ -938,6 +950,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null }) => {
               title={s.title}
               collectionName={s.collection}
               categories={categoriesData}
+              brandId={pageBrandId}
             />
           </section>
         );

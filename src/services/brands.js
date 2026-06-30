@@ -3,6 +3,20 @@ import { getCollection, getDocument, createDocument, updateDocument, deleteDocum
 const COLLECTION = 'tienda_brands';
 
 /**
+ * Genera el "slug canónico" de la marca a partir de un texto (normalmente el name):
+ * minúsculas, sin acentos, sin espacios ni símbolos (solo a-z0-9).
+ * Ej: 'Con Amor' → 'conamor', 'MUEBLERÍA' → 'muebleria'.
+ * Debe quedar consistente con el slugify() del Header para que la detección de
+ * página de marca coincida con lo que aquí se persiste.
+ */
+const slugify = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // quita diacríticos (acentos, tildes, diéresis)
+    .replace(/[^a-z0-9]+/g, '');     // quita espacios, guiones y cualquier símbolo
+
+/**
  * Obtener todas las marcas ordenadas por order
  */
 export const getBrands = async () => {
@@ -55,11 +69,16 @@ const normalizeCategoryNavStyle = (style) => {
 
 /**
  * Crear marca (Firestore genera ID)
- * @param {{ name: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string } }} data
+ * @param {{ name: string, slug?: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string } }} data
  */
 export const createBrand = async (data) => {
+  // Slug de primera clase: si viene explícito se respeta (normalizado); si no, se
+  // deriva del name. createBrand SIEMPRE deja un slug para que la marca sea
+  // detectable como página /<slug> desde el Header.
+  const slug = slugify(data.slug) || slugify(data.name);
   return await createDocument(COLLECTION, {
     name: data.name || '',
+    slug,
     logoUrl: data.logoUrl || '',
     order: typeof data.order === 'number' ? data.order : 0,
     bgColor: data.bgColor || '#ffffff',
@@ -76,11 +95,19 @@ export const createBrand = async (data) => {
 /**
  * Actualizar marca
  * @param {string} id
- * @param {{ name?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string } }} data
+ * @param {{ name?: string, slug?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string } }} data
  */
 export const updateBrand = async (id, data) => {
   const payload = {};
   if (data.name !== undefined) payload.name = data.name;
+  // Slug: se persiste si se pasa explícito (normalizado, derivado del name si queda
+  // vacío) o si NO se pasa pero sí viene el name (para rellenar marcas que aún no
+  // tienen slug). Si no llega ni slug ni name, no se toca (aditivo/retrocompatible).
+  if (data.slug !== undefined) {
+    payload.slug = slugify(data.slug) || slugify(data.name);
+  } else if (data.name !== undefined) {
+    payload.slug = slugify(data.name);
+  }
   if (data.logoUrl !== undefined) payload.logoUrl = data.logoUrl;
   if (data.order !== undefined) payload.order = data.order;
   if (data.bgColor !== undefined) payload.bgColor = data.bgColor;

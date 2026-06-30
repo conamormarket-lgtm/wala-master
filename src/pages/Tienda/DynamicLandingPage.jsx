@@ -67,7 +67,14 @@ const DynamicLandingPage = () => {
         TiendaPage internamente usa la ruta para definir el pageId,
         así que ya renderizará las secciones correctas para esta landing.
       */}
-      <TiendaPage isLandingPage={true} pageIdOverride={landingPage.slug || landingPage.id} />
+      {/* pageBrandIdOverride: marca guardada en el doc landingPages. Si viene, TiendaPage
+          la usa para acotar secciones a esa marca SIN inferirla de las secciones. Si la
+          landing no tiene brandId (páginas antiguas), va vacío y TiendaPage infiere como hoy. */}
+      <TiendaPage
+        isLandingPage={true}
+        pageIdOverride={landingPage.slug || landingPage.id}
+        pageBrandIdOverride={landingPage.brandId || null}
+      />
     </div>
   );
 };

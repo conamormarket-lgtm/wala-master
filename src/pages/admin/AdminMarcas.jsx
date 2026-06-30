@@ -20,7 +20,7 @@ const hexToRgba = (hex, alpha) => {
 const AdminMarcas = () => {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
+  const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [bgUploading, setBgUploading] = useState(false);
@@ -43,7 +43,7 @@ const AdminMarcas = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      setForm({ name: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
+      setForm({ name: '', slug: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
     }
   });
 
@@ -53,7 +53,7 @@ const AdminMarcas = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setEditingId(null);
-      setForm({ name: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
+      setForm({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
     }
   });
 
@@ -119,12 +119,26 @@ const AdminMarcas = () => {
     whatsappMutation.mutate(whatsappConfig);
   };
 
+  // Slug canónico (mismo criterio que brands.js / Header): minúsculas, sin acentos,
+  // solo a-z0-9. Sirve para mostrar la URL efectiva en el preview del formulario.
+  const slugify = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '') // quita diacríticos
+      .replace(/[^a-z0-9]+/g, '');     // quita espacios y símbolos
+
+  // Slug que realmente se guardará: el escrito a mano (si hay) o el derivado del nombre.
+  const slugEfectivo = slugify(form.slug) || slugify(form.name);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    const payload = { 
-      name: form.name.trim(), 
-      logoUrl: form.logoUrl.trim(), 
+    const payload = {
+      name: form.name.trim(),
+      // Slug (URL): opcional. Si va vacío, brands.js lo deriva del name.
+      slug: (form.slug || '').trim(),
+      logoUrl: form.logoUrl.trim(),
       order: Number(form.order),
       bgColor: form.bgColor,
       bgImage: form.bgImage.trim(),
@@ -140,9 +154,10 @@ const AdminMarcas = () => {
 
   const handleEdit = (brand) => {
     setEditingId(brand.id);
-    setForm({ 
-      name: brand.name, 
-      logoUrl: brand.logoUrl || '', 
+    setForm({
+      name: brand.name,
+      slug: brand.slug || '',
+      logoUrl: brand.logoUrl || '',
       order: brand.order ?? 0,
       bgColor: brand.bgColor || '#ffffff',
       bgImage: brand.bgImage || '',
@@ -154,7 +169,7 @@ const AdminMarcas = () => {
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm({ name: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
+    setForm({ name: '', slug: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
   };
 
   const handleLogoUpload = async (e) => {
@@ -304,6 +319,23 @@ const AdminMarcas = () => {
                 className={styles.input}
                 required
               />
+            </div>
+
+            {/* Slug (URL): opcional. Define la ruta WALA.PE/<slug> de la marca.
+                Si se deja vacío, el servicio brands.js lo deriva del nombre. */}
+            <div className={styles.field}>
+              <label className={styles.label}>Slug (URL)</label>
+              <input
+                type="text"
+                placeholder="se genera del nombre si lo dejas vacío"
+                value={form.slug}
+                onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                className={styles.input}
+              />
+              <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>
+                {/* Muestra la URL final con el slug efectivo (el que se va a guardar). */}
+                URL: WALA.PE/{slugEfectivo || 'mi-marca'}
+              </small>
             </div>
 
             <div className={styles.fieldRow}>

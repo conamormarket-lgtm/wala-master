@@ -57,8 +57,14 @@ export const getLandingPageById = async (id) => {
 export const saveLandingPage = async (id, data) => {
   try {
     const docId = id || `lp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    // brandId (multimarca): se persiste tal cual venga en `data`. Se normaliza a
+    // string recortado; vacío => '' (página global, retrocompatible). Las landings
+    // ya guardadas sin este campo simplemente no lo tendrán y seguirán infiriendo
+    // la marca desde sus secciones (ver TiendaPage / pageBrandId).
+    const brandId = typeof data.brandId === 'string' ? data.brandId.trim() : '';
     await setDoc(doc(db, COLLECTION_NAME, docId), {
       ...data,
+      brandId,
       updatedAt: new Date().toISOString()
     }, { merge: true });
     return { success: true, id: docId };

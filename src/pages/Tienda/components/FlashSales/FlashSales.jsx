@@ -48,12 +48,15 @@ const Countdown = ({ targetDate }) => {
 };
 
 // `config` = settings completos de la sección (estilo de texto del título + botón).
-const FlashSales = ({ title = "Ofertas Relámpago", config, collectionName, endTime, categories }) => {
+// `brandId` (multimarca, OPCIONAL): si viene, las ofertas se acotan a esa marca.
+// Sin brandId = comportamiento global actual (retrocompatible).
+const FlashSales = ({ title = "Ofertas Relámpago", config, collectionName, endTime, categories, brandId = null }) => {
   const { data: products, isLoading, error } = useQuery({
-    queryKey: ['flash-sales', collectionName],
+    // brandId entra en la queryKey para no mezclar la caché global con la de marca.
+    queryKey: ['flash-sales', collectionName, brandId || null],
     queryFn: async () => {
       if (!collectionName) return [];
-      const { data, error: err } = await getProductsByCollection(collectionName);
+      const { data, error: err } = await getProductsByCollection(collectionName, brandId || null);
       if (err) throw new Error(err);
       return data;
     },

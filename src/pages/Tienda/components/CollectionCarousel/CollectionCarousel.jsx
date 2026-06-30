@@ -7,12 +7,15 @@ import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './CollectionCarousel.module.css';
 
 // `config` = settings completos de la sección (estilo de texto del título + botón).
-const CollectionCarousel = ({ title, config, collectionName, categories }) => {
+// `brandId` (multimarca, OPCIONAL): si viene, la colección se acota a esa marca.
+// Sin brandId = comportamiento global actual (retrocompatible).
+const CollectionCarousel = ({ title, config, collectionName, categories, brandId = null }) => {
   const { data: products, isLoading, error } = useQuery({
-    queryKey: ['collection-products', collectionName],
+    // brandId entra en la queryKey para no mezclar la caché global con la de marca.
+    queryKey: ['collection-products', collectionName, brandId || null],
     queryFn: async () => {
       if (!collectionName) return [];
-      const { data, error: err } = await getProductsByCollection(collectionName);
+      const { data, error: err } = await getProductsByCollection(collectionName, brandId || null);
       if (err) throw new Error(err);
       return data;
     },

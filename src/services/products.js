@@ -504,20 +504,43 @@ export const getProductsByBrand = async (brandId) => {
 
 /**
  * Obtener productos por colecciÃ³n (solo visibles)
+ *
+ * brandId OPCIONAL (multimarca): si se pasa, se ACOTAN los resultados a esa marca
+ * filtrando client-side por p.brandId === brandId (sin índices Firestore nuevos).
+ * Sin brandId = comportamiento global actual (retrocompatible).
  */
-export const getProductsByCollection = async (collectionName) => {
+export const getProductsByCollection = async (collectionName, brandId = null) => {
   const result = await getCollection(COLLECTION, [
     { field: 'collections', operator: 'array-contains', value: collectionName }
   ]);
   if (result.error) return result;
   let data = result.data.filter((p) => p.visible !== false);
+  // Acotar a la marca de la página si viene brandId (filtro en cliente).
+  if (brandId) data = data.filter((p) => p.brandId === brandId);
   return { data: data.map((doc) => normalizeProductForRead(doc)), error: null };
 };
 
 /**
  * Obtener productos destacados (featured === true, solo visibles) ordenados por featuredOrder
+ *
+ * brandId OPCIONAL (multimarca): si se pasa, los destacados se derivan de los
+ * productos de la marca (getProductsByBrand) filtrando por featured y ordenando
+ * por featuredOrder — sin índices Firestore nuevos. Además, el caché de destacados
+ * en localStorage SOLO se usa/escribe para el caso GLOBAL (sin brandId) para no
+ * mezclar destacados de distintas marcas. Sin brandId = comportamiento global actual.
  */
-export const getFeaturedProducts = async () => {
+export const getFeaturedProducts = async (brandId = null) => {
+  // ── Caso por MARCA: derivar de los productos de la marca ──────────────
+  if (brandId) {
+    const porMarca = await getProductsByBrand(brandId);
+    if (porMarca.error) return porMarca;
+    const data = (porMarca.data || [])
+      .filter((p) => p.featured === true)
+      .sort((a, b) => (a.featuredOrder ?? 0) - (b.featuredOrder ?? 0));
+    return { data, error: null };
+  }
+
+  // ── Caso GLOBAL (comportamiento actual, con caché) ────────────────────
   const result = await getCollection(
     COLLECTION,
     [{ field: 'featured', operator: '==', value: true }],
@@ -526,7 +549,7 @@ export const getFeaturedProducts = async () => {
   );
   if (result.error) return result;
   const data = result.data.filter((p) => p.visible !== false).map((doc) => normalizeProductForRead(doc));
-  
+
   try {
     localStorage.setItem(CACHE_KEYS.featured, JSON.stringify(data));
   } catch(e) {}

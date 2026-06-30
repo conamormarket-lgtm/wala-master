@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '../../../contexts/CartContext';
@@ -7,6 +7,7 @@ import { useWishlist } from '../../../contexts/WishlistContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { getCategories } from '../../../services/products';
 import { getCollections } from '../../../services/collections';
+import { getBrands } from '../../../services/brands';
 import { getDocument } from '../../../services/firebase/firestore';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
@@ -85,6 +86,65 @@ const Header = () => {
     },
     staleTime: 15 * 60 * 1000,
   });
+
+  // ── HEADER CONSCIENTE DE MARCA (multimarca) ───────────────────────
+  // El Header se monta UNA sola vez (global). Para NO cruzar mercados, detecta si
+  // la ruta actual es una PÁGINA DE MARCA: el primer segmento del path (p. ej.
+  // "MUSSA" en /MUSSA) se compara case-insensitive con el slug de cada marca de
+  // tienda_brands. Si coincide, `brandActual` es esa marca; si no, null = global
+  // (Con Amor / páginas globales) y TODO queda EXACTO como hoy.
+  const { data: brandsData } = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => {
+      const { data } = await getBrands();
+      return data || [];
+    },
+    staleTime: 15 * 60 * 1000,
+  });
+
+  // Primer segmento del pathname (sin la barra inicial). Ej: "/MUSSA?x=1" → "mussa".
+  const firstSegment = (location.pathname.split('/')[1] || '').trim().toLowerCase();
+
+  // Normaliza un texto a un "slug canónico": minúsculas, sin acentos, sin espacios
+  // ni símbolos (solo a-z0-9). Así 'Con Amor' → 'conamor', 'MUEBLERÍA' → 'muebleria'.
+  // Se usa para deducir el slug desde el NOMBRE cuando la marca no tiene `slug` guardado.
+  const slugify = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '') // quita diacríticos (acentos, tildes, diéresis)
+      .replace(/[^a-z0-9]+/g, '');     // quita espacios, guiones y cualquier símbolo
+
+  // Marca de la ruta actual (o null fuera de páginas de marca). El match NO depende
+  // solo de `slug`: una ruta /<seg> corresponde a la marca b si el segmento coincide
+  // con (b.slug en minúsculas) O con slugify(b.name). Así marcas nuevas SIN slug
+  // (que el admin aún no persistía) también se detectan por su nombre. La marca base
+  // "Con Amor" (slug ConAmor) se considera GLOBAL a propósito: su página es el catálogo
+  // completo, así que NO se trata como marca aislada y el dropdown sigue siendo el
+  // global de siempre (retrocompat).
+  const brandActual = useMemo(() => {
+    if (!firstSegment || !Array.isArray(brandsData) || brandsData.length === 0) return null;
+    const m = brandsData.find((b) => {
+      const slugGuardado = String(b?.slug || '').trim().toLowerCase();
+      const slugDeNombre = slugify(b?.name);
+      return firstSegment === slugGuardado || firstSegment === slugDeNombre;
+    });
+    if (!m) return null;
+    // Con Amor se mantiene como GLOBAL: se reconoce tanto por su slug 'conamor' como
+    // por su nombre ('Con Amor' → slugify → 'conamor'), aunque le falte el slug.
+    if (String(m.slug || '').trim().toLowerCase() === 'conamor' || slugify(m.name) === 'conamor') return null;
+    return m;
+  }, [firstSegment, brandsData]);
+
+  // Slug real de la marca (tal cual guardado) para construir los enlaces /<slug>.
+  const brandSlug = brandActual ? (brandActual.slug || '').trim() : '';
+
+  // NOTA: el storefront de marca (TiendaPage) filtra las categorías EN PÁGINA via
+  // estado local (navCategoryId), NO por query param `?categoria=` (ese param dispara
+  // la query GLOBAL por categoría, sin acotar por marca → cruzaría mercados). Por eso
+  // en página de marca NO derivamos ni enlazamos categorías desde el Header: aplicamos
+  // la opción segura del plan — ocultar el dropdown auto de categorías globales y
+  // mandar "Ver Todo" a /<slug>. Así no se saca al usuario hacia /tienda (Con Amor).
 
   const { data: storeConfig, isFetching: storeConfigFetching } = useQuery({
     queryKey: ['store-config-custom'],
@@ -323,8 +383,17 @@ const Header = () => {
                       <div className={styles.megaMenuContent}>
                         <h4>{translateNav(link.text)}</h4>
                         <ul>
-                          {/* Desplegable Automático: Categorías Base */}
-                          {link.isCategoryAuto && categoriesData?.slice(0, 10).map(c => (
+                          {/* Desplegable Automático: Categorías Base.
+                              · EN PÁGINA DE MARCA: NO se listan las categorías globales
+                                (enlazaban a /tienda?categoria=, que es Con Amor y cruza
+                                mercados). Tampoco se enlaza a /<slug>?categoria=ID porque
+                                el storefront de marca filtra las categorías EN PÁGINA
+                                (estado local navCategoryId), no por query param; el param
+                                `categoria` dispara la query GLOBAL por categoría (sin
+                                acotar por marca). Para no cruzar mercados, en marca solo
+                                queda "Ver Todo el Catálogo" → /<slug> (abajo).
+                              · FUERA DE MARCA: comportamiento EXACTO actual (global). */}
+                          {link.isCategoryAuto && !brandActual && categoriesData?.slice(0, 10).map(c => (
                             <li key={`cat-${c.id}`}>
                               <Link to={`/tienda?categoria=${c.id}`} onClick={() => setMobileMenuOpen(false)}>
                                 {c.name}
@@ -352,7 +421,9 @@ const Header = () => {
 
                           {link.isCategoryAuto && (
                             <li>
-                              <Link to="/tienda" onClick={() => setMobileMenuOpen(false)} style={{fontWeight: 'bold', color: 'var(--rojo-principal)'}}>
+                              {/* "Ver Todo": en página de marca va a /<slugMarca> (la propia
+                                  marca); fuera de marca, a /tienda (Con Amor) como hoy. */}
+                              <Link to={brandActual ? `/${brandSlug}` : '/tienda'} onClick={() => setMobileMenuOpen(false)} style={{fontWeight: 'bold', color: 'var(--rojo-principal)'}}>
                                 Ver Todo el Catálogo →
                               </Link>
                             </li>

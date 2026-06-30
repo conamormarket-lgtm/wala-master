@@ -102,14 +102,21 @@ async function backfillProductos(conAmorId) {
 
 // Crea (idempotente) la landingPage de una marca con id === slug, para que la ruta
 // WALA.PE/<slug> resuelva vía DynamicLandingPage (/:slug). NO toca la página si ya existe.
-async function garantizarLandingMarca({ slug, name }) {
+// Escribe TAMBIÉN brandId = <doc id de la marca> para que la página tenga su marca
+// explícita (pageBrandId) sin configurar secciones a mano. Aditivo (merge:true).
+async function garantizarLandingMarca({ slug, name }, brandId) {
   const ref = db.collection('landingPages').doc(slug); // id === slug (seguro)
+  // brandId real solo si tenemos el id de la marca (no el placeholder de dry-run).
+  const tieneBrandId = brandId && !String(brandId).startsWith('(nuevo');
   const snap = await ref.get();
   if (snap.exists) { console.log(`  landingPages/${slug}: ya existe`); return; }
-  console.log(`  landingPages/${slug}: ${apply ? 'creando' : 'se crearía'} (para que WALA.PE/${slug} resuelva)`);
+  console.log(`  landingPages/${slug}: ${apply ? 'creando' : 'se crearía'} (para que WALA.PE/${slug} resuelva)${tieneBrandId ? ` · brandId=${brandId}` : ''}`);
   if (apply) {
-    await ref.set({ slug, name, createdAt: FieldValue.serverTimestamp() }, { merge: true });
-    console.log('     ↳ creada (las secciones las colocas en el editor visual)');
+    const payload = { slug, name, createdAt: FieldValue.serverTimestamp() };
+    // brandId explícito (pageBrandId) cuando se conoce el id real de la marca.
+    if (tieneBrandId) payload.brandId = brandId;
+    await ref.set(payload, { merge: true });
+    console.log(`     ↳ creada${tieneBrandId ? ` con brandId=${brandId}` : ''} (las secciones las colocas en el editor visual)`);
   }
 }
 
@@ -122,7 +129,8 @@ async function garantizarLandingMarca({ slug, name }) {
   console.log(`\n2) Backfill de productos → Con Amor (id=${conAmorId}):`);
   await backfillProductos(conAmorId);
   console.log('\n3) Páginas de marca (landingPages, id === slug):');
-  for (const m of MARCAS) await garantizarLandingMarca(m);
+  // Pasa el id real de cada marca (ids[m.slug]) para guardar brandId en su landingPage.
+  for (const m of MARCAS) await garantizarLandingMarca(m, ids[m.slug]);
   console.log(`\n${apply ? '✅ Listo.' : 'DRY-RUN: nada escrito. Repite con --apply para aplicar.'}`);
   console.log(`Con Amor brandId = ${conAmorId}  (úsalo si lo necesitas en el editor)\n`);
   process.exit(0);

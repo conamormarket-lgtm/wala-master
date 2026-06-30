@@ -8,6 +8,11 @@
       "required": true,
       "description": "Nombre público de la marca (ej. Gymshark)."
     },
+    "slug": {
+      "type": "string",
+      "required": false,
+      "description": "Slug canónico para la URL de la página de marca (WALA.PE/<slug>): minúsculas, sin acentos ni símbolos (solo a-z0-9). Si no se define al crear, se deriva del name. Lo usa el Header para detectar la página de marca."
+    },
     "description": {
       "type": "string",
       "required": false,
