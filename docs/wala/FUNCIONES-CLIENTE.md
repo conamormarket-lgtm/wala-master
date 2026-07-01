@@ -20,7 +20,7 @@
 | Ficha de producto (galería, variantes, talla, cantidad, reseñas, compartir) | `/producto/:id` | Activo |
 | Editor de personalización (POD) | `/editor/:id` | Activo |
 | Página "Personalizar" (listado de productos personalizables) | `/personalizar` | Activo |
-| Buscador con facetas y paginación | `/buscar` | Activo |
+| Buscador con facetas y paginación (respeta la marca activa con `?brand=`) | `/buscar` | Activo (multi-marca) |
 | Directorio de nichos | `/nichos` | Activo |
 | Página de un nicho | `/nicho/:slug` | Activo |
 | Tienda pública de un vendedor | `/tienda-vendedor/:slug` | Activo |
@@ -103,6 +103,19 @@
   - `src/services/products.js` (`getProductsByBrand`, faceta `brand` en `getStoreProductsPage`), `src/services/brands.js` (`slug`, `categoryNav`)
   - `src/App.jsx` (ruta `/mussa` hardcodeada retirada; `/:slug` → `DynamicLandingPage`)
 
+### 1.3-bis AISLAMIENTO ENTRE MARCAS — el sidebar, el Header y la búsqueda ya NO mezclan Con Amor con MUSSA/MUEBLERIA (sesión 2026-06-29/30, ✅ desplegado)
+- **Qué era el problema:** aunque el catálogo de la página de marca ya venía acotado por `brandId` (ver §1.3), el **sidebar de filtros** y el **Header** seguían mostrando las **categorías/etiquetas/colecciones globales** (= las de Con Amor, que es un mercado totalmente distinto) porque esas taxonomías eran colecciones Firestore sin `brandId` y ni el sidebar ni el Header sabían en qué página de marca estaban.
+- **Sidebar de filtros aislado por marca:** en `/MUSSA` y `/MUEBLERIA`, el sidebar ("Filtrar y Categorías") deriva sus opciones de **categorías, colecciones/temporadas, etiquetas, personajes y tipo de producto** SOLO de los productos que de hecho pertenecen a esa marca — ya no aparecen etiquetas ni colecciones que solo existen en Con Amor. El filtro **"Marcas"** directamente **no aparece** dentro de una página de una sola marca (no tendría sentido). Fuera de una página de marca (Con Amor, `/tienda`, home), el sidebar se ve **exactamente igual que siempre**.
+- **Menú del Header consciente de la marca:** al navegar dentro de `/MUSSA` o `/MUEBLERIA`, el **mega-menú de categorías** del Header deja de mostrar categorías que en realidad pertenecen a Con Amor, y el enlace **"Ver Todo el Catálogo"** lleva a la página de **esa misma marca** (no salta a `/tienda`, que mezclaría todo).
+- **Carruseles, ofertas flash y destacados por marca:** los carruseles de colección y las ofertas flash que se colocan en una página de marca muestran **solo productos de esa marca**; lo mismo la sección de productos destacados cuando está configurada con marca.
+- **Indicador "Estás en: `<Marca>`":** en las páginas de marca aparece una franja sutil arriba del contenido con el **logo y el nombre** de la marca activa (MUSSA, MUEBLERIA, etc.), para que quede claro en qué catálogo está navegando el cliente. No aparece en páginas globales.
+- **WhatsApp flotante por marca:** el botón flotante de WhatsApp, dentro de una página de marca, escribe al **asesor de esa marca** (si la marca tiene su propio número configurado); si un producto puntual tiene su propio número de WhatsApp, ese sigue ganando. Fuera de una página de marca, usa el número general de la tienda de siempre.
+- **Mensajes propios de la tienda:** si el dueño configuró un título, subtítulo o mensaje de "catálogo vacío" propios para la marca, la página los muestra en vez del texto genérico; si no los configuró, se ve el mensaje de siempre.
+- **Búsqueda respeta la marca activa (ver también §4):** el botón de buscar, estando en una página de marca, abre el buscador **ya filtrado a esa marca** (con opción de volver a buscar en todo el catálogo).
+- **Vista por categoría respeta la marca:** al entrar a una categoría desde el nav o el sidebar de una página de marca, los resultados **no se mezclan** con productos de otras marcas.
+- **Retrocompatible:** en Con Amor y en cualquier página sin marca, todo se comporta **exactamente igual que antes** de este ciclo — nada de esto se activa sin una marca de por medio.
+- **Archivos clave:** `src/pages/Tienda/components/SidebarCatalogLayout.jsx`, `src/pages/Tienda/TiendaPage.jsx`, `src/components/common/Header/Header.jsx`, `src/components/common/WhatsAppButton/WhatsAppButton.jsx`, `src/pages/Tienda/components/CollectionCarousel/CollectionCarousel.jsx`, `src/pages/Tienda/components/FlashSales/FlashSales.jsx`, `src/services/products.js` (`getCategories` unificado, `getProductsByCollection`, `getFeaturedProducts`, `getProductsByCategory`). Detalle técnico completo en [PLAN-MULTIMARCA.md](./PLAN-MULTIMARCA.md) → "Estado real de implementación — Ciclo de AISLAMIENTO (P0–P2)".
+
 ---
 
 ## 2. Ficha de producto (`/producto/:id`)
@@ -173,12 +186,14 @@
   - La búsqueda de la tienda (la barra del catálogo) redirige aquí con `?q=...`.
   - `searchCatalog` filtra/ordena/pagina **en memoria** sobre el catálogo cacheado; está preparado para conectarse a Algolia/Typesense/Meilisearch en el futuro sin cambiar la interfaz.
   - **Búsqueda por Firestore que escala (sesión 2026-06-28):** `search.js` añade `searchProductsFirestore`, que resuelve la búsqueda **directamente en Firestore** (sin servicio externo) usando los campos derivados en write-time del producto (`nameLower` + `searchTokens`, ver `products.js`), con paginación **por cursor**. Dos estrategias: **prefijo** (por defecto: rango `nameLower >= q` … `< q+SENTINEL`, todo lo que empieza por `q`) y **token** (`searchTokens array-contains q`, coincide en cualquier palabra del nombre). **Fallback automático a la búsqueda en memoria** si los productos aún no tienen `nameLower`/`searchTokens` (antes del backfill) o si la query falla, así nunca deja de buscar.
-- **Ruta:** `/buscar?q=...`
+  - **Filtro de marca activa (sesión 2026-06-30, aislamiento entre marcas P2b, ✅ desplegado):** cuando el cliente busca **estando dentro de una página de marca** (`/MUSSA`, `/MUEBLERIA`), el ícono de buscar del Header lo manda a `/buscar?...&brand=<id>` en vez de al buscador global. `SearchPage.jsx` lee ese parámetro `brand` y **filtra los resultados en cliente** por `p.brandId`; el filtro se **conserva** aunque el cliente cambie el término de búsqueda, y aparece un indicador **"Buscando en: `<Marca>`"** con un botón para **quitar el filtro y buscar en todo el catálogo**. Sin el parámetro `brand` (búsqueda desde la home/`/tienda`), el buscador funciona **exactamente igual que siempre** (todas las marcas).
+- **Ruta:** `/buscar?q=...` (y `?brand=<id>` opcional dentro de una página de marca)
 - **Archivos clave:**
   - `src/pages/SearchPage.jsx`
   - `src/services/search.js` (`searchCatalog`, `searchProductsFirestore`)
-  - `src/services/products.js` (campos derivados `nameLower` / `searchTokens`)
+  - `src/services/products.js` (campos derivados `nameLower` / `searchTokens`, `getProductsByCategory` con `brandId` opcional)
   - `src/constants/marketplace.js` (`FULFILLMENT_TYPES`)
+  - `src/components/common/Header/Header.jsx` (agrega `?brand=` al enlace de búsqueda en página de marca)
 
 ---
 

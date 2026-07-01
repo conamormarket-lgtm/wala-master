@@ -251,6 +251,15 @@ CRUD de **marcas**: nombre, logo (subida con recorte), orden, color de fondo, im
 
 > **Toggle de confirmación multimarca:** desde aquí se configura el **número principal "Todo a WALA"** y un *toggle* que, al activarse, hace que un pedido con productos de varias marcas se reparta a **cada asesor por su `whatsappNumber`** (con el toggle apagado, todo va al número principal). Ver FUNCIONES-CLIENTE.md → Checkout / "Mis Compras".
 
+> **Slug robusto (commit `88bc5db`, sesión 2026-06-29):** `createBrand`/`updateBrand` (`src/services/brands.js`) **persisten** el campo `slug` — si el admin lo deja vacío, se **deriva automáticamente** del `name` con el helper compartido `slugify` (normaliza tildes, mayúsculas y espacios). El formulario tiene un campo **"Slug (URL)"** opcional con **vista previa** de la URL resultante (`wala.pe/<slug>`). Este `slug` es lo que usan el ruteo de páginas de marca y la detección de marca del Header/WhatsApp (ver PLAN-MULTIMARCA.md → "Patrón común de detección de marca"); si una marca no tiene `slug` guardado, esos componentes igual la reconocen comparando contra `slugify(name)`.
+
+> **Identidad de tienda por marca — `storeTitle`/`storeSubtitle`/`storeEmpty` (commit `dc1fdab`, sesión 2026-06-30, aislamiento entre marcas P2a):** tres campos **opcionales** nuevos en el formulario de marca:
+> - **`storeTitle`** — título propio que reemplaza el título genérico de la tienda cuando el visitante está en la página de esa marca.
+> - **`storeSubtitle`** — subtítulo propio (acompaña al título).
+> - **`storeEmpty`** — mensaje propio para cuando el catálogo de esa marca no tiene productos que mostrar (p. ej. tras aplicar un filtro sin resultados).
+>
+> `TiendaPage.jsx` los usa **solo** cuando la página tiene marca (`pageBrandId`) y la marca configuró el campo; si el campo está vacío, cae al **mensaje global** de siempre (retrocompatible). Sirven para que MUSSA y MUEBLERIA tengan su propia voz de marca sin depender del texto genérico de Con Amor.
+
 #### Panel por marca — `AdminMarcaProductos` (botón "Gestionar productos")
 Archivo: `src/pages/admin/AdminMarcaProductos.jsx` (servicios: `getProductsByBrand` / `setProductBrand` en `products.js`; `getBrand` / `updateBrand` con `categoryNav` en `brands.js`). **No es una ruta propia**: se abre **dentro de `/admin/marcas`** al pulsar **"Gestionar productos"** en la tarjeta de una marca. Tiene **dos pestañas**:
 
@@ -260,6 +269,8 @@ Archivo: `src/pages/admin/AdminMarcaProductos.jsx` (servicios: `getProductsByBra
 ### Landing Pages — `/admin/landing-pages` *(requiere permiso de Landing Pages)*
 Archivo: `src/pages/Tienda/admin/AdminLandingPages.jsx`.
 Crea y edita **páginas de aterrizaje / embudos**: título, **slug** (su URL), ocultar header/footer, **tema** aplicado y **productos enlazados** con su tipo de stock (global, infinito o exclusivo) y stock asignado. El contenido de cada landing se diseña con el Page Builder.
+
+> **Campo de marca (`brandId`) — de primera clase (commit `88bc5db`, sesión 2026-06-29, aislamiento entre marcas P1):** el formulario gana un **selector de marca** opcional (lista `tienda_brands` vía `getBrands`) que persiste el **doc id** de la marca en el propio doc `landingPages/{slug}` (servicio `src/pages/Tienda/services/landingPages.js`). Cuando la landing tiene marca asignada, `DynamicLandingPage.jsx` la propaga a `TiendaPage.jsx` como **`pageBrandIdOverride`**, que **gana** sobre la inferencia automática de marca por las secciones de la página (el mecanismo que ya usaban `/MUSSA`/`/MUEBLERIA` desde la Fase 1). Es la forma más directa y explícita de decirle a una landing "esta página es de la marca X", sin depender de que sus secciones (`sidebar_catalog`/`categories_nav`) tengan el `brandId` configurado. `scripts/setup-marcas.js` ya escribe este campo al crear las landing pages de MUSSA/MUEBLERIA. Opcional y retrocompatible: sin marca, la landing se comporta como página global.
 
 ### Gestor de Temas — `/admin/temas` *(requiere permiso de Landing Pages)*
 Archivo: `src/pages/Tienda/admin/AdminThemes.jsx`.

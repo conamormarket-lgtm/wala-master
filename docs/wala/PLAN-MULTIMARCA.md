@@ -5,6 +5,59 @@
 > para asignarle productos, y su nav de categorías con miniaturas (estilo M\*\*\*SHAKES) que
 > al hacer clic filtra el catálogo de esa marca.
 
+> ## ✅ ESTADO FINAL (2026-06-29/30): AISLAMIENTO COMPLETO ENTRE MARCAS (P0–P2)
+>
+> Sobre las Fases 0–5 (catálogo/nav por marca, más abajo), se hizo un **segundo ciclo** para
+> resolver un **bug reportado por el dueño**: en las páginas de marca (`/MUSSA`, `/MUEBLERIA`)
+> aparecían **categorías/etiquetas/colecciones de Con Amor** (un mercado totalmente distinto).
+> **Causa raíz:** esas taxonomías eran colecciones Firestore **globales sin `brandId`**, y ni
+> el **sidebar** ni el **Header** recibían la marca de la página. Se cerró en **3 fases (P0,
+> P1, P2)**, las 5 commits siguientes, **todas retrocompatibles** (sin marca / Con Amor /
+> páginas globales = exactamente igual que antes) y **sin tocar pagos ni totales**. **No se
+> requirieron índices Firestore nuevos** (todo el filtrado por marca es client-side).
+>
+> **Commits (orden cronológico):**
+> - `e9290c1` — **P0:** `SidebarCatalogLayout` recibe `brandId` y deriva categorías/
+>   colecciones/etiquetas/personajes/tipos **solo de los productos de esa marca**
+>   (`getProductsByBrand` + cruce id→nombre), en vez de las listas globales. Oculta el filtro
+>   "Marcas" si hay `brandId`.
+> - `d87878d` — **Fix de fondo:** `getCategories()` une por id `'categories'` +
+>   `'tienda_categories'` (antes eran dos colecciones distintas; categorías nuevas del admin
+>   podían quedar sin nombre/ocultas).
+> - `88bc5db` — **P1:** `Header.jsx` consciente de marca (detecta `brandActual` por
+>   `slug`/`slugify(name)`); mega-menú y "Ver Todo" ya no llevan a Con Amor.
+>   `getProductsByCollection`/`getFeaturedProducts` aceptan `brandId` (carruseles/flash/
+>   destacados acotados). `brandId` de primera clase en `landingPages`
+>   (`pageBrandIdOverride`). `slug` de primera clase en `tienda_brands` (`createBrand`/
+>   `updateBrand`, campo en `AdminMarcas`).
+> - `dc1fdab` — **P2a — Identidad por marca:** `storeTitle`/`storeSubtitle`/`storeEmpty` en
+>   `tienda_brands` (editables en `AdminMarcas`, con fallback global). `WhatsAppButton`
+>   flotante usa el `whatsappNumber` de la marca. Indicador **"Estás en: `<Marca>`"** en
+>   `TiendaPage`.
+> - `8eee5b2` — **P2b — Búsqueda y categoría por marca:** Header agrega `?brand=<id>` al
+>   enlace de búsqueda; `SearchPage` filtra client-side por `p.brandId` y muestra "Buscando
+>   en: `<Marca>`". `getProductsByCategory(categoryId, brandId)` acota la vista por categoría
+>   dentro de una página de marca.
+>
+> **Qué quedó aislado por marca (checklist de lo que YA NO se mezcla):**
+> - [x] Sidebar de filtros (categorías, colecciones, etiquetas, personajes, tipos de producto)
+> - [x] Mega-menú de categorías del Header + enlace "Ver Todo el Catálogo"
+> - [x] Carruseles de colección (`collection_carousel`)
+> - [x] Ofertas flash (`flash_sales`)
+> - [x] Productos destacados
+> - [x] Título / subtítulo / mensaje de catálogo vacío de la tienda
+> - [x] WhatsApp flotante (usa el asesor de la marca)
+> - [x] Indicador visual de marca activa ("Estás en: `<Marca>`")
+> - [x] Búsqueda (`/buscar?brand=<id>`, con indicador y opción de volver al catálogo global)
+> - [x] Vista por categoría (`?categoria=ID`) dentro de una página de marca
+> - [x] Nav de categorías con miniaturas (ya aislado desde la Fase 3, ver abajo)
+> - [x] Catálogo paginado del sidebar (ya aislado desde la Fase 1, ver abajo)
+>
+> Detalle técnico completo, archivos tocados y patrón de detección de marca: ver
+> ["## Estado real de implementación — Ciclo de AISLAMIENTO (P0–P2)"](#estado-real-de-implementación--ciclo-de-aislamiento-p0p2-2026-0629302026-06-30)
+> más abajo. Checklist de prueba manual en
+> [PRUEBAS-Y-DEBUGGING.md](./PRUEBAS-Y-DEBUGGING.md).
+
 > ## ✅ ESTADO: FASES 0–5 HECHAS Y DESPLEGADAS + REFINAMIENTOS (frontend, 2026-06-28/29)
 >
 > Todo el plan está **implementado**. El **frontend** se desplegó por **Vercel** (auto-deploy
@@ -253,3 +306,107 @@ a `TiendaPage`, que usa ese **slug guardado** como `pageId` (lee secciones de `p
   quiere personalizar orden/imágenes/estilo, desde `CategoryNavEditor` (panel por marca, Elementos
   con diseño o inline en el editor visual).
 - En **`AdminMarcaProductos`**: asignar productos a MUSSA y MUEBLERIA (hoy todos son Con Amor).
+
+---
+
+## Estado real de implementación — Ciclo de AISLAMIENTO (P0–P2) (2026-06-29/30–2026-06-30)
+
+> Segundo ciclo, posterior a las Fases 0–5 de arriba. Resuelve el bug de taxonomías globales
+> (Con Amor) filtrándose en las páginas de marca. Verificado leyendo el código de cada commit.
+
+### P0 — Sidebar aislado por marca ✅ (commit `e9290c1`)
+- `TiendaPage.jsx` pasa **`brandId={pageBrandId}`** a `SidebarCatalogLayout`.
+- `SidebarCatalogLayout.jsx`: cuando recibe `brandId`, en vez de leer las listas **globales** de
+  `tienda_categories` / `tienda_collections` / `tags` / `characters` / `productTypes`, llama
+  **`getProductsByBrand(brandId)`** y deriva de esos productos los ids **distintos** de cada
+  taxonomía, cruzándolos contra las listas globales solo para sacar **nombre/imagen** (mismo
+  patrón `idOf` + mapeo que ya usaba `categories_nav` desde la Fase 3). Así el sidebar de
+  `/MUSSA` solo puede mostrar categorías/colecciones/etiquetas/personajes/tipos que **de hecho
+  tienen** productos MUSSA.
+- El filtro **"Marcas"** del sidebar se **oculta por completo** cuando hay `brandId` (no tiene
+  sentido filtrar por marca dentro de la página de una sola marca).
+- **Sin `brandId`** (Con Amor, `/tienda`, home): el sidebar sigue leyendo las listas globales
+  exactamente como antes de este commit — cero cambio de comportamiento.
+
+### Fix de fondo — categorías del admin no se perdían (commit `d87878d`)
+- **Causa:** el storefront (`getCategories()` en `src/services/products.js`) leía la colección
+  `'categories'`, pero el admin (`AdminCategorias.jsx`) escribe en **`'tienda_categories'`**.
+  Eran colecciones distintas: una categoría creada/editada desde el admin podía no tener nombre
+  ni imagen en el storefront y quedar **invisible** en el nav o el sidebar — bug preexistente,
+  no introducido por P0, pero que el aislamiento por marca hizo **visible** de inmediato (menos
+  productos por marca = más probable toparse con una categoría "huérfana").
+- **Fix:** `getCategories()` ahora hace la **unión por id** de `'categories'` +
+  `'tienda_categories'`, con `tienda_categories` **ganando** el nombre/imagen si el id existe en
+  ambas. Aditivo, no borra ni migra datos; Con Amor sigue resolviendo todas sus categorías igual
+  que antes.
+
+### P1 — Header por marca + carruseles/destacados/flash por marca + brandId/slug de primera clase ✅ (commit `88bc5db`)
+- **`Header.jsx` detecta `brandActual`:** compara el primer segmento de la URL (`/MUSSA/...`)
+  contra `tienda_brands.slug` **o**, si la marca no tiene `slug` explícito, contra
+  **`slugify(name)`** (nuevo helper compartido y robusto — normaliza tildes/mayúsculas/espacios).
+  En página de marca: el **mega-menú de categorías deja de listar las categorías globales**
+  (que antes enlazaban a `/tienda?categoria=...`, es decir, al catálogo de Con Amor), y el
+  enlace **"Ver Todo el Catálogo" apunta a la página de la marca actual**, no a `/tienda`.
+- **`getProductsByCollection(collectionName, brandId=null)`** y **`getFeaturedProducts(brandId=null)`**
+  (`src/services/products.js`): nuevo parámetro opcional que filtra **en cliente** (sin nuevas
+  queries/índices Firestore) los resultados a la marca dada. `CollectionCarousel.jsx` y
+  `FlashSales.jsx` reciben y usan `brandId`; sus `queryKeys` de react-query incluyen el
+  `brandId` para no mezclar caché entre marcas.
+- **`brandId` de primera clase en landing pages:** campo editable en `AdminLandingPages.jsx`,
+  persistido en el doc `landingPages/{slug}`, leído por `landingPages.js` y propagado por
+  `DynamicLandingPage.jsx` → `TiendaPage.jsx` como **`pageBrandIdOverride`** — si está presente,
+  **gana** sobre la inferencia automática de marca por las secciones de la página.
+- **`slug` de primera clase en marcas:** `createBrand`/`updateBrand` (`src/services/brands.js`)
+  ahora **persisten** `slug` (si no se especifica, se deriva del `name` con `slugify`).
+  `AdminMarcas.jsx` gana el campo **"Slug (URL)"** opcional con vista previa de la URL resultante;
+  `tienda_marca_schema.json` documenta el campo. `scripts/setup-marcas.js` escribe también
+  `brandId` en las `landingPages` que crea (antes solo creaba el doc).
+
+### P2a — Identidad por marca ✅ (commit `dc1fdab`)
+- **Mensajes propios de la tienda:** `tienda_brands` admite **`storeTitle`**, **`storeSubtitle`**
+  y **`storeEmpty`** (los tres opcionales), editables en `AdminMarcas.jsx`. `TiendaPage.jsx` los
+  usa cuando la página tiene `pageBrandId` **y** la marca los tiene configurados; si no,
+  **fallback al mensaje global** de siempre. Sin marca = comportamiento idéntico al de antes.
+- **WhatsApp propio de la marca:** `WhatsAppButton.jsx` (el botón flotante) replica el mismo
+  patrón de detección `brandActual` (slug o `slugify(name)`) que el Header, y en página de marca
+  usa el **`whatsappNumber`** de esa marca en vez del número general de la tienda. El número
+  específico configurado a nivel de **producto** sigue ganando sobre el de la marca.
+- **Indicador visual "Estás en: `<Marca>`":** franja sutil con **logo + nombre** de la marca,
+  arriba del contenido en `TiendaPage.jsx` (`TiendaPage.module.css`), visible **solo** en
+  páginas de marca.
+
+### P2b — Búsqueda y vista de categoría respetan la marca ✅ (commit `8eee5b2`)
+- **`Header.jsx`:** en página de marca, el ícono de búsqueda navega a **`/buscar?brand=<id>`**
+  en vez de mandar al buscador global sin contexto.
+- **`SearchPage.jsx`:** lee el parámetro `?brand=`, **filtra client-side por `p.brandId`**, lo
+  **conserva** al re-buscar (no se pierde al escribir un nuevo término) y muestra un indicador
+  **"Buscando en: `<Marca>`"** con opción explícita de **volver al catálogo global** (quita el
+  filtro de marca sin perder el término buscado).
+- **`getProductsByCategory(categoryId, brandId=null)`** (`src/services/products.js`): acota los
+  resultados a la marca cuando se pasa `brandId` (client-side, sin índices nuevos). `TiendaPage.jsx`
+  lo usa en la **vista por categoría** (`?categoria=ID`) cuando la página tiene `pageBrandId`, para
+  que pulsar una categoría dentro de `/MUSSA` no mezcle productos de otras marcas.
+
+### Patrón común de detección de marca (P1/P2)
+Tanto `Header.jsx` como `WhatsAppButton.jsx` resuelven la marca activa de la misma forma:
+toman el primer segmento de la URL actual y lo comparan contra `tienda_brands.slug`; si una
+marca no tiene `slug` guardado, cae a compararlo contra `slugify(brand.name)`. Esto hace que el
+aislamiento **no dependa de que todas las marcas tengan `slug` explícito** en Firestore — el
+`slugify` compartido cubre el caso de datos antiguos/incompletos.
+
+### Archivos clave del ciclo P0–P2
+`src/pages/Tienda/components/SidebarCatalogLayout.jsx`, `src/pages/Tienda/TiendaPage.jsx`,
+`src/pages/Tienda/TiendaPage.module.css`, `src/services/products.js` (`getCategories`,
+`getProductsByCollection`, `getFeaturedProducts`, `getProductsByCategory`),
+`src/components/common/Header/Header.jsx`, `src/components/common/WhatsAppButton/WhatsAppButton.jsx`,
+`src/pages/Tienda/components/CollectionCarousel/CollectionCarousel.jsx`,
+`src/pages/Tienda/components/FlashSales/FlashSales.jsx`, `src/pages/Tienda/DynamicLandingPage.jsx`,
+`src/pages/Tienda/admin/AdminLandingPages.jsx`, `src/pages/Tienda/services/landingPages.js`,
+`src/services/brands.js` (`slug`), `src/pages/admin/AdminMarcas.jsx` (slug + storeTitle/
+storeSubtitle/storeEmpty), `src/models/tienda_marca_schema.json`, `scripts/setup-marcas.js`,
+`src/pages/SearchPage.jsx`.
+
+### Pendiente (no bloqueante)
+- Ninguna tarea de datos/deploy pendiente para este ciclo: es 100% frontend, sin índices nuevos
+  y sin cambios de reglas de Firestore. Queda como buena práctica ir asignando `slug` explícito
+  a cada marca nueva desde `AdminMarcas` (aunque `slugify(name)` cubre el caso sin slug).

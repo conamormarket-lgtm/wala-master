@@ -1,9 +1,9 @@
 # Changelog — Wala
 
 Registro de actualizaciones y funciones, de lo más nuevo a lo más viejo. Las entradas más
-recientes (**2026-06-25**, **2026-06-27**, **2026-06-28** y **2026-06-29**) ya están **desplegadas a
-producción** (`sistema-gestion-3b225`): frontend por **Vercel** (auto-deploy desde `master`)
-y backend (Cloud Functions / índices / backfills) por **Cloud Shell**. *(Algunas funciones del
+recientes (**2026-06-25**, **2026-06-27**, **2026-06-28**, **2026-06-29** y **2026-06-30**) ya están
+**desplegadas a producción** (`sistema-gestion-3b225`): frontend por **Vercel** (auto-deploy desde
+`master`) y backend (Cloud Functions / índices / backfills) por **Cloud Shell**. *(Algunas funciones del
 **2026-06-29** —pago marca `estadoWala`, foto en `/regalar`— requieren **redeploy de functions**;
 se indica en cada entrada.)* Las entradas más antiguas marcadas
 `[Sin liberar]` se construyeron en la rama `fase-0-seguridad` (hoy `master`) y se
@@ -14,6 +14,38 @@ fase en [`docs/wala/fases/`](docs/wala/fases/README.md).
 Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
+
+## [2026-06-29/30] — AISLAMIENTO ENTRE MARCAS: el sidebar, el header, los carruseles, la identidad y la búsqueda ya NO mezclan Con Amor con MUSSA/MUEBLERIA (frontend por Vercel; NO requiere backend)
+
+**Bug reportado por el dueño:** en las páginas de marca (`/MUSSA`, `/MUEBLERIA`) aparecían categorías,
+etiquetas y colecciones de **Con Amor** (un mercado totalmente distinto). **Causa raíz:** esas
+taxonomías eran colecciones Firestore **globales** sin `brandId`, y ni el sidebar ni el Header
+recibían la marca de la página actual. Se resolvió en **3 fases** (P0, P1, P2), todas
+**retrocompatibles**: sin marca (Con Amor / páginas globales / `/tienda`), el comportamiento queda
+**exactamente igual que antes** en todos los puntos. **No toca pagos ni totales.** **No requirió
+índices Firestore nuevos** (todo el filtrado por marca es client-side). Build verde en las 5
+tandas. Detalle completo y estado final en
+[PLAN-MULTIMARCA.md](docs/wala/PLAN-MULTIMARCA.md); notas de cliente y admin en
+[FUNCIONES-CLIENTE.md](docs/wala/FUNCIONES-CLIENTE.md) y
+[FUNCIONES-ADMIN.md](docs/wala/FUNCIONES-ADMIN.md); checklist de prueba en
+[PRUEBAS-Y-DEBUGGING.md](docs/wala/PRUEBAS-Y-DEBUGGING.md).
+
+### P0 — Sidebar aislado por marca + fix de categorías perdidas (commits `e9290c1`, `d87878d`)
+- ✅ `e9290c1` — **`SidebarCatalogLayout.jsx` recibe `brandId={pageBrandId}`** desde `TiendaPage`: cuando hay marca, deriva **categorías, colecciones, etiquetas, personajes y tipos** SOLO de los productos de esa marca (`getProductsByBrand` + cruce id→nombre contra las listas globales, el mismo patrón que ya usaba `categories_nav`), en vez de mostrar las listas globales (= Con Amor). El filtro **"Marcas" se oculta** si hay `brandId` (una tienda de una sola marca no necesita filtrar por marca). Sin `brandId`, el sidebar queda **exactamente como antes**.
+- ✅ `d87878d` (**fix de fondo**) — **`getCategories()` (`src/services/products.js`) une por id** las colecciones `'categories'` (la que leía el storefront) y `'tienda_categories'` (la que edita el admin) — antes eran **dos colecciones distintas** y una categoría nueva creada desde el admin podía no resolver nombre/imagen y quedar **oculta** en el nav/sidebar. Aditivo: `tienda_categories` gana para nombre/imagen si el id coincide en ambas.
+
+### P1 — Header consciente de marca + carruseles/destacados por marca + brandId/slug de primera clase (commit `88bc5db`)
+- ✅ `88bc5db` — **`Header.jsx` detecta la marca activa** (`brandActual`) comparando el primer segmento de la URL contra `tienda_brands.slug` **o** `slugify(name)` (nuevo helper compartido, robusto aunque la marca no tenga slug explícito). En página de marca, el **mega-menú de categorías ya NO muestra categorías globales** (que enlazaban a `/tienda?...`, es decir, Con Amor) y **"Ver Todo el Catálogo" apunta a la página de la marca**.
+- ✅ `88bc5db` — **`getProductsByCollection(collectionName, brandId=null)`** y **`getFeaturedProducts(brandId=null)`** (`src/services/products.js`) aceptan `brandId` opcional (filtro **client-side**, sin índices nuevos); `TiendaPage` pasa `pageBrandId` a los carruseles de colección, ofertas flash y destacados.
+- ✅ `88bc5db` — **`brandId` de primera clase en landing pages:** campo persistido y editable en `AdminLandingPages`, propagado por `DynamicLandingPage` → `TiendaPage` como `pageBrandIdOverride` (**gana** sobre la inferencia automática por secciones cuando está presente).
+- ✅ `88bc5db` — **`slug` de primera clase en marcas:** `createBrand`/`updateBrand` (`src/services/brands.js`) persisten `slug` (derivado del `name` con `slugify` si falta); `AdminMarcas.jsx` gana el campo **"Slug (URL)"** opcional con preview; `tienda_marca_schema.json` actualizado; `scripts/setup-marcas.js` ahora también escribe `brandId` en las landing pages que crea.
+
+### P2 — Identidad por marca + búsqueda/categoría que respetan la marca (commits `dc1fdab`, `8eee5b2`)
+- ✅ `dc1fdab` (**P2a — identidad**) — `tienda_brands` admite **`storeTitle`/`storeSubtitle`/`storeEmpty`** opcionales (editables en `AdminMarcas`); `TiendaPage` los usa con **fallback al mensaje global** cuando no están configurados. **`WhatsAppButton` flotante** usa el **`whatsappNumber` de la marca** en páginas de marca (mismo patrón `brandActual` del Header, replicado en el propio componente); el número específico de producto sigue ganando. **Indicador visual sutil "Estás en: `<Marca>`"** (logo + nombre) arriba del contenido en `TiendaPage`, solo en páginas de marca.
+- ✅ `8eee5b2` (**P2b — búsqueda y categoría**) — El Header agrega **`?brand=<id>`** al enlace de búsqueda cuando está en una página de marca; `SearchPage.jsx` lee ese parámetro, **filtra client-side por `p.brandId`**, lo **conserva** al re-buscar, y muestra un indicador **"Buscando en: `<Marca>`"** con opción de volver al catálogo global. **`getProductsByCategory(categoryId, brandId=null)`** (`products.js`) acota por marca cuando se pasa; `TiendaPage` lo usa en la **vista por categoría** (`?categoria=ID`) dentro de una página de marca.
+
+### Qué quedó aislado (resumen)
+Sidebar de filtros, mega-menú de categorías del Header, "Ver Todo el Catálogo", carruseles de colección, ofertas flash, productos destacados, título/subtítulo/mensaje vacío de la tienda, WhatsApp flotante, indicador de marca activa, búsqueda (`/buscar`) y vista por categoría — todos acotados a la marca de la página cuando corresponde, con fallback global si no hay marca.
 
 ## [2026-06-29] — REGALOS v3: FOTO de la persona + TARJETAS GRANDES estilo "Fechas Importantes" en `/regalar` (frontend por Vercel; **requiere redeploy de functions** para la foto)
 La página pública de registro de regalos (`/regalar`) deja de mostrar las fechas como simples chips y pasa a **TARJETAS GRANDES de persona** que replican el look de "Mis Fechas Importantes": **foto circular** de la persona (o inicial si no hay), **nombre + chip de relación + chips de ocasiones globales + fecha del evento**. La foto se **sube en la cuenta** del dueño y la expone la Cloud Function que sirve el registro. **Frontend DESPLEGADO** por **Vercel** (auto-deploy desde `master`); **el backend REQUIERE redeploy** (`firebase deploy --only functions:getPublicGiftRegistry`) para que la foto/roleKey/gender lleguen a la página pública. **Conserva** el arrastre (drag por Pointer Events) y la selección de fecha. **No toca carrito, precios ni cobro.** Build verde. Commit `4f775a4`. Nota de cliente en [FUNCIONES-CLIENTE.md](docs/wala/FUNCIONES-CLIENTE.md) y plan en [PLAN-FECHAS-ESPECIALES.md](docs/wala/PLAN-FECHAS-ESPECIALES.md).

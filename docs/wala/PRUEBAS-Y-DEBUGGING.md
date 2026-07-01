@@ -362,6 +362,88 @@ Componente `Header.jsx`.
 
 ---
 
+## 4-ter. Checklist POR PROBAR — AISLAMIENTO ENTRE MARCAS (sesión 2026-06-29/30)
+
+> El bug original reportado por el dueño: en `/MUSSA` y `/MUEBLERIA` aparecían categorías,
+> etiquetas y colecciones de **Con Amor** (mercado totalmente distinto). Esta tabla compara
+> **cada punto aislado** en las páginas de marca **contra** Con Amor/global, que debe verse
+> **exactamente igual que siempre**. Todo es **100% frontend** (sin redeploy de functions).
+
+**Antes de empezar:** abre en pestañas separadas `wala.pe/MUSSA`, `wala.pe/MUEBLERIA` y
+`wala.pe/ConAmor` (o `wala.pe/tienda`) para comparar lado a lado.
+
+### A. Sidebar de filtros ("Filtrar y Categorías")
+- [ ] En `/MUSSA`: las **categorías, colecciones/temporadas, etiquetas y personajes** que
+      aparecen en el sidebar corresponden **solo** a productos que de hecho están asignados a
+      MUSSA. No debe aparecer nada que solo exista en Con Amor.
+- [ ] Repite en `/MUEBLERIA`.
+- [ ] El filtro **"Marcas"** **NO aparece** en el sidebar dentro de `/MUSSA` ni `/MUEBLERIA`.
+- [ ] En `/ConAmor` (o `/tienda`), el sidebar se ve **exactamente igual que antes**: todas las
+      categorías/colecciones/etiquetas/personajes globales, **incluido** el filtro "Marcas".
+
+### B. Header (mega-menú + "Ver Todo el Catálogo")
+- [ ] Dentro de `/MUSSA`, abre el mega-menú de categorías del Header: **no** deben listarse
+      categorías que solo tienen productos de Con Amor.
+- [ ] El enlace **"Ver Todo el Catálogo"** del Header, estando en `/MUSSA`, lleva **de vuelta a
+      `/MUSSA`** (no a `/tienda` ni a Con Amor). Repite en `/MUEBLERIA`.
+- [ ] En Con Amor / `/tienda`, el mega-menú y "Ver Todo el Catálogo" se comportan **igual que
+      siempre**.
+
+### C. Carruseles, ofertas flash y destacados
+- [ ] Si `/MUSSA` tiene un carrusel de colección configurado, **solo** muestra productos MUSSA.
+- [ ] Si `/MUSSA` tiene una sección de ofertas flash, **solo** incluye productos MUSSA.
+- [ ] Si `/MUSSA` tiene destacados con marca, **solo** salen productos MUSSA (no los destacados
+      globales de Con Amor).
+
+### D. Mensajes propios de la tienda (identidad de marca)
+- [ ] Si el dueño configuró `storeTitle`/`storeSubtitle`/`storeEmpty` para MUSSA en
+      `/admin/marcas`, esos textos se ven en `/MUSSA` en vez del texto genérico.
+- [ ] Si esos campos están **vacíos** para una marca, `/esa-marca` muestra el **mensaje global**
+      de siempre (no un hueco en blanco ni "undefined").
+
+### E. WhatsApp flotante por marca
+- [ ] En `/MUSSA`, el botón flotante de WhatsApp abre un chat al **número configurado para
+      MUSSA** en `/admin/marcas` (si tiene uno propio).
+- [ ] Si un **producto puntual** tiene su propio WhatsApp configurado, ese **gana** sobre el de
+      la marca.
+- [ ] Sin número propio de marca, cae al **número general** de la tienda (como siempre).
+- [ ] En Con Amor / páginas globales, el WhatsApp flotante usa el número general de siempre.
+
+### F. Indicador "Estás en: `<Marca>`"
+- [ ] En `/MUSSA` y `/MUEBLERIA` aparece una franja sutil con el **logo + nombre** de la marca,
+      arriba del contenido.
+- [ ] En Con Amor / `/tienda` / home, **NO** aparece ese indicador.
+
+### G. Búsqueda respeta la marca activa
+- [ ] Estando en `/MUSSA`, pulsa el ícono de buscar del Header: debe llevar a
+      `/buscar?...&brand=<id de MUSSA>`.
+- [ ] En esa búsqueda, los resultados son **solo** de MUSSA y aparece el indicador **"Buscando
+      en: MUSSA"**.
+- [ ] Cambia el término de búsqueda (sin tocar el filtro): el filtro de marca **se mantiene**.
+- [ ] Pulsa la opción de **volver al catálogo global**: los resultados pasan a incluir **todas**
+      las marcas y el indicador desaparece.
+- [ ] Buscando desde la home / `/tienda` (sin marca activa), el buscador funciona **igual que
+      siempre** (sin indicador, todas las marcas).
+
+### H. Vista por categoría dentro de una página de marca
+- [ ] Dentro de `/MUSSA`, pulsa una categoría (desde el nav o el sidebar): la URL lleva
+      `?categoria=ID` y los resultados son **solo** productos MUSSA de esa categoría (no se
+      mezclan con Con Amor ni MUEBLERIA).
+- [ ] La misma categoría, vista desde `/tienda` (sin marca), muestra productos de **todas** las
+      marcas que la tengan asignada.
+
+### Cómo diferenciar "falta asignar productos" de "bug de aislamiento"
+- Si una marca (p. ej. MUSSA) muestra el sidebar/carruseles **vacíos**, primero confirma en
+  `AdminMarcaProductos` que **hay productos asignados** a esa marca (`brandId`). Sin productos
+  asignados, es esperable que el sidebar no tenga casi nada que mostrar — no es un bug.
+- Si el sidebar/Header de una marca muestra algo que **debería ser exclusivo de Con Amor**
+  (o viceversa), sí es un bug de aislamiento: repórtalo con la marca, la sección afectada y una
+  captura de pantalla. Ver detalle técnico en
+  [PLAN-MULTIMARCA.md](./PLAN-MULTIMARCA.md) → "Estado real de implementación — Ciclo de
+  AISLAMIENTO (P0–P2)".
+
+---
+
 ## 5. Checklist antes de publicar (Vercel promote / auto-deploy)
 
 Marca cada punto **antes** de promover en Vercel o dejar que el auto-deploy salga a producción.
