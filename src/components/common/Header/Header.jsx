@@ -542,7 +542,15 @@ const Header = () => {
             })}
           </div>
 
-          <Link to="/buscar" className={styles.iconButton} aria-label={t('common.search', 'Buscar')}>
+          {/* Búsqueda consciente de marca (multimarca): en página de marca (brandActual)
+              se agrega ?brand=<id de tienda_brands> para que SearchPage acote los
+              resultados y el usuario no sea expulsado al catálogo global. Sin marca
+              (Con Amor / páginas globales) el enlace queda EXACTO como hoy. */}
+          <Link
+            to={brandActual?.id ? `/buscar?brand=${encodeURIComponent(brandActual.id)}` : '/buscar'}
+            className={styles.iconButton}
+            aria-label={t('common.search', 'Buscar')}
+          >
             <Search strokeWidth={1.5} className={styles.icon} />
           </Link>
 

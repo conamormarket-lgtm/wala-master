@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom';
 import { searchCatalog, searchProductsFirestore } from '../services/search';
 import { getCategories } from '../services/products';
+import { getBrand } from '../services/brands';
 import { FULFILLMENT_TYPES } from '../constants/marketplace';
 import ProductCard from './Tienda/components/ProductCard/ProductCard';
 
@@ -46,6 +47,11 @@ const facetCounts = (items, key) => {
 const SearchPage = () => {
   const [params, setParams] = useSearchParams();
   const term = params.get('q') || '';
+  // Filtro OPCIONAL de marca (multimarca): ?brand=<id de tienda_brands>. Lo agrega
+  // el Header cuando la búsqueda se dispara DESDE una página de marca (brandActual),
+  // para que el usuario no sea expulsado al catálogo global. Sin este parámetro
+  // (búsqueda global / Con Amor) el comportamiento queda EXACTO como hoy.
+  const brandFilter = params.get('brand') || '';
   const [input, setInput] = useState(term);
   const [sort, setSort] = useState('newest');
   const [facets, setFacets] = useState({});
@@ -56,6 +62,9 @@ const SearchPage = () => {
   const [hasMore, setHasMore] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Doc de la marca del filtro (solo para mostrar su nombre en el indicador). Sin
+  // brandFilter no se pide nada (retrocompatible: sin marca = búsqueda global).
+  const [brandInfo, setBrandInfo] = useState(null);
 
   // Token de petición: evita que respuestas viejas (de un término anterior)
   // sobrescriban las nuevas si llegan fuera de orden.
@@ -63,6 +72,13 @@ const SearchPage = () => {
 
   useEffect(() => { getCategories().then((r) => setCategories(r.data || [])); }, []);
   useEffect(() => { setInput(term); }, [term]);
+
+  useEffect(() => {
+    if (!brandFilter) { setBrandInfo(null); return; }
+    let mounted = true;
+    getBrand(brandFilter).then((r) => { if (mounted) setBrandInfo(r?.data || null); });
+    return () => { mounted = false; };
+  }, [brandFilter]);
 
   // Al cambiar el término: reinicia acumulado y trae la primera página por cursor.
   useEffect(() => {
@@ -96,18 +112,29 @@ const SearchPage = () => {
 
   const submit = useCallback((e) => {
     e.preventDefault();
-    setParams(input ? { q: input } : {});
-  }, [input, setParams]);
+    // Conserva el filtro de marca (si vino en la URL) al re-buscar, para que el
+    // usuario no "salga" de su tienda al escribir un nuevo término.
+    const next = {};
+    if (input) next.q = input;
+    if (brandFilter) next.brand = brandFilter;
+    setParams(next);
+  }, [input, brandFilter, setParams]);
 
   const toggleFacet = (key, value) => {
     setFacets((f) => ({ ...f, [key]: f[key] === value ? undefined : value }));
   };
 
   // Facetado + orden EN CLIENTE sobre el acumulado (conserva el comportamiento de antes).
+  // Si hay brandFilter (?brand=), se acota además a esa marca (client-side, sin
+  // índices nuevos). Sin brandFilter, queda exactamente igual que hoy (global).
   const visible = useMemo(() => {
-    const filtered = items.filter((p) => p.visible !== false && matchesFacets(p, facets));
+    const filtered = items.filter((p) =>
+      p.visible !== false &&
+      matchesFacets(p, facets) &&
+      (!brandFilter || p.brandId === brandFilter)
+    );
     return SORTERS[sort] ? filtered.slice().sort(SORTERS[sort]) : filtered;
-  }, [items, facets, sort]);
+  }, [items, facets, sort, brandFilter]);
 
   const facetData = useMemo(() => ({
     nicheId: facetCounts(items, 'nicheId'),
@@ -122,6 +149,19 @@ const SearchPage = () => {
   return (
     <div style={wrap}>
       <h1 style={{ fontSize: 22, marginBottom: 12 }}>Buscar productos</h1>
+
+      {/* Indicador de búsqueda acotada a marca (?brand=). Sin brandFilter no se
+          renderiza nada, quedando la página EXACTA a como estaba (búsqueda global). */}
+      {brandFilter && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13, color: '#666' }}>
+          <span>
+            Buscando en: <strong style={{ color: '#7C3AED' }}>{brandInfo?.name || 'tu tienda'}</strong>
+          </span>
+          <Link to={term ? `/buscar?q=${encodeURIComponent(term)}` : '/buscar'} style={{ color: '#7C3AED' }}>
+            Buscar en todo el catálogo
+          </Link>
+        </div>
+      )}
 
       <form onSubmit={submit} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         <input

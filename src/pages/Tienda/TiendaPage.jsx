@@ -382,14 +382,18 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   });
 
   // ── QUERY PRINCIPAL DE PRODUCTOS ──────────────────────────────────
+  // CON marca de página (pageBrandId): la vista por categoría (?categoria=ID) se
+  // ACOTA a esa marca (filtro client-side en getProductsByCategory, sin índices
+  // nuevos) para no expulsar al usuario al catálogo global. SIN marca, la query
+  // key y el resultado quedan EXACTOS a hoy (pageBrandId es null fuera de marca).
   const { data: productsData, isLoading: productsLoading, error: productsError } = useQuery({
-    queryKey: ['products', categoryId, searchTerm, sortBy],
+    queryKey: ['products', categoryId, searchTerm, sortBy, pageBrandId || null],
     queryFn: async () => {
       let result;
       if (searchTerm) {
         result = await searchProducts(searchTerm);
       } else if (categoryId) {
-        result = await getProductsByCategory(categoryId);
+        result = await getProductsByCategory(categoryId, pageBrandId || null);
       } else {
         result = await getProducts([], null, null);
       }

@@ -474,8 +474,12 @@ export const searchProducts = async (searchTerm) => {
 
 /**
  * Obtener productos por categorÃ­a (solo visibles)
+ *
+ * brandId OPCIONAL (multimarca): si se pasa, se ACOTAN los resultados a esa marca
+ * filtrando client-side por p.brandId === brandId (sin índices Firestore nuevos).
+ * Sin brandId = comportamiento global actual (retrocompatible).
  */
-export const getProductsByCategory = async (categoryId) => {
+export const getProductsByCategory = async (categoryId, brandId = null) => {
   const result = await getCollection(COLLECTION, [
     { field: 'categories', operator: 'array-contains', value: categoryId }
   ]);
@@ -487,6 +491,8 @@ export const getProductsByCategory = async (categoryId) => {
     ]);
     if (!legacy.error) data = legacy.data.filter((p) => p.visible !== false);
   }
+  // Acotar a la marca de la página si viene brandId (filtro en cliente).
+  if (brandId) data = data.filter((p) => p.brandId === brandId);
   return { data: data.map((doc) => normalizeProductForRead(doc)), error: null };
 };
 
