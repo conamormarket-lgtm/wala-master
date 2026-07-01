@@ -352,6 +352,22 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     return nav ? nav.settings.brandId.trim() : null;
   }, [storeConfigDraft, storefrontConfig, pageBrandIdOverride]);
 
+  // ── IDENTIDAD DE MARCA (mensajes de tienda + indicador) ────────────
+  // Doc completo de la marca de esta página (mismo pageBrandId de arriba). Se usa
+  // para: (1) mensajes de tienda propios (storeTitle/storeSubtitle/storeEmpty) con
+  // fallback al global, y (2) el indicador "Estás en: <Marca>". Sin pageBrandId
+  // (Con Amor / páginas globales) NO se lanza la query y todo queda EXACTO como hoy.
+  const { data: pageBrandData } = useQuery({
+    queryKey: ['tienda-page-brand', pageBrandId || null],
+    queryFn: async () => {
+      const { data, error } = await getBrand(pageBrandId);
+      if (error) return null;
+      return data;
+    },
+    enabled: !!pageBrandId,
+    staleTime: 15 * 60 * 1000,
+  });
+
   // Destacados ACOTADOS a la marca de la página (pageBrandId). Sin marca = global como hoy.
   // El caché de localStorage SOLO se usa como initialData en el caso global, para no
   // pintar destacados globales en una página de marca antes de que llegue la query.
@@ -653,9 +669,19 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   };
 
   // ── Valores con fallback inmediato — NUNCA esperar a que carguen ──
-  const title = storeMessages?.title ?? DEFAULT_STORE_TITLE;
-  const subtitle = storeMessages?.subtitle ?? DEFAULT_STORE_SUBTITLE;
-  const emptyMessage = storeMessages?.emptyMessage ?? '';
+  // MENSAJES DE TIENDA POR MARCA: en página de marca (pageBrandId), si la marca
+  // tiene storeTitle/storeSubtitle/storeEmpty propios (no vacíos), se usan esos;
+  // si no, cae al mensaje global (mismo de siempre). Sin marca, comportamiento
+  // EXACTO como hoy (global).
+  const title = (pageBrandId && pageBrandData?.storeTitle?.trim())
+    ? pageBrandData.storeTitle.trim()
+    : (storeMessages?.title ?? DEFAULT_STORE_TITLE);
+  const subtitle = (pageBrandId && pageBrandData?.storeSubtitle?.trim())
+    ? pageBrandData.storeSubtitle.trim()
+    : (storeMessages?.subtitle ?? DEFAULT_STORE_SUBTITLE);
+  const emptyMessage = (pageBrandId && pageBrandData?.storeEmpty?.trim())
+    ? pageBrandData.storeEmpty.trim()
+    : (storeMessages?.emptyMessage ?? '');
   const featuredProducts = featuredData ?? [];
   const sections = storefrontConfig?.sections ?? [];
 
@@ -1114,6 +1140,25 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
 
   return (
     <div className={styles.container}>
+      {/* INDICADOR DE MARCA ACTIVA: solo en páginas de marca (pageBrandId). No
+          intrusivo, arriba del contenido, para que el cliente sepa en qué tienda
+          está. Sin marca (Con Amor / páginas globales) no se renderiza nada,
+          quedando EXACTO como hoy. */}
+      {pageBrandId && pageBrandData?.name && (
+        <div className={styles.brandActiveBar}>
+          {pageBrandData.logoUrl && (
+            <img
+              src={pageBrandData.logoUrl}
+              alt=""
+              aria-hidden="true"
+              className={styles.brandActiveBarLogo}
+            />
+          )}
+          <span className={styles.brandActiveBarLabel}>
+            Estás en: <span className={styles.brandActiveBarName}>{pageBrandData.name}</span>
+          </span>
+        </div>
+      )}
       {!categoryId && !searchTerm && <AppDownloadBanner />}
       {sorted.map((section, index) => {
         const rendered = renderSection(section);

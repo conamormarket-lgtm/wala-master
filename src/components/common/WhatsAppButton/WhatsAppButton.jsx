@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../../../services/messages';
 import { getProduct } from '../../../services/products';
+import { getBrands } from '../../../services/brands';
 import styles from './WhatsAppButton.module.css';
 
 /**
@@ -10,10 +11,47 @@ import styles from './WhatsAppButton.module.css';
  * Aparece solo en: Tienda, Crear y Mi Cuenta.
  * No aparece en: Administración.
  * Usa números distintos según la sección.
+ *
+ * WHATSAPP POR MARCA: en páginas de marca (/<slug>), si la marca tiene
+ * whatsappNumber propio (tienda_brands.whatsappNumber), el botón usa ESE
+ * número en vez del número global de contexto. Sin marca (Con Amor / páginas
+ * globales) o sin número configurado, el comportamiento queda EXACTO como hoy.
  */
 const WhatsAppButton = () => {
   const location = useLocation();
   const pathname = location.pathname;
+
+  // ── MARCA DE LA RUTA ACTUAL (mismo patrón que Header.jsx) ──────────
+  const { data: brandsData } = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => {
+      const { data } = await getBrands();
+      return data || [];
+    },
+    staleTime: 15 * 60 * 1000,
+  });
+
+  const firstSegment = (pathname.split('/')[1] || '').trim().toLowerCase();
+
+  const slugify = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '');
+
+  const brandActual = useMemo(() => {
+    if (!firstSegment || !Array.isArray(brandsData) || brandsData.length === 0) return null;
+    const m = brandsData.find((b) => {
+      const slugGuardado = String(b?.slug || '').trim().toLowerCase();
+      const slugDeNombre = slugify(b?.name);
+      return firstSegment === slugGuardado || firstSegment === slugDeNombre;
+    });
+    if (!m) return null;
+    // Con Amor se mantiene GLOBAL (retrocompat), igual que en el Header.
+    if (String(m.slug || '').trim().toLowerCase() === 'conamor' || slugify(m.name) === 'conamor') return null;
+    return m;
+  }, [firstSegment, brandsData]);
 
   // 1. Determinar el contexto (Tienda, Crear, Cuenta o Admin)
   let context = null;
@@ -37,6 +75,12 @@ const WhatsAppButton = () => {
     pathname.startsWith('/checkout')
   ) {
     context = 'cuenta';
+  } else if (brandActual) {
+    // Página de marca (/<slug>, ruta catch-all vía DynamicLandingPage): se trata
+    // como contexto "tienda" para que el botón aparezca igual que en /tienda,
+    // usando el número de contexto tienda como base (luego pisado por el
+    // whatsappNumber propio de la marca si existe, ver más abajo).
+    context = 'tienda';
   }
 
   // 2. Si es admin o no se reconoce el contexto, no mostrar nada
@@ -84,7 +128,14 @@ const WhatsAppButton = () => {
 
   // Obtener el número según el contexto
   let rawWhatsappNumber = whatsappNumbers[context];
-  
+
+  // WHATSAPP POR MARCA: en página de marca, si la marca tiene whatsappNumber
+  // propio, pisa el número global de contexto (pero un número específico del
+  // producto, más abajo, sigue teniendo prioridad sobre el de la marca).
+  if (brandActual?.whatsappNumber?.trim()) {
+    rawWhatsappNumber = brandActual.whatsappNumber.trim();
+  }
+
   if (isProductDetail && product && product.whatsappNumber) {
     rawWhatsappNumber = product.whatsappNumber;
   }

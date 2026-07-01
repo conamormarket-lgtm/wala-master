@@ -20,7 +20,7 @@ const hexToRgba = (hex, alpha) => {
 const AdminMarcas = () => {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
+  const [form, setForm] = useState({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [bgUploading, setBgUploading] = useState(false);
@@ -43,7 +43,7 @@ const AdminMarcas = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
-      setForm({ name: '', slug: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
+      setForm({ name: '', slug: '', logoUrl: '', order: (brandsData?.length ?? 0), bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
     }
   });
 
@@ -53,7 +53,7 @@ const AdminMarcas = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       queryClient.invalidateQueries({ queryKey: ['brands'] });
       setEditingId(null);
-      setForm({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
+      setForm({ name: '', slug: '', logoUrl: '', order: 0, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
     }
   });
 
@@ -143,7 +143,11 @@ const AdminMarcas = () => {
       bgColor: form.bgColor,
       bgImage: form.bgImage.trim(),
       bgOpacity: Number(form.bgOpacity),
-      whatsappNumber: (form.whatsappNumber || '').trim()
+      whatsappNumber: (form.whatsappNumber || '').trim(),
+      // Mensajes de tienda propios de la marca (opcionales, vacío = usa el global).
+      storeTitle: (form.storeTitle || '').trim(),
+      storeSubtitle: (form.storeSubtitle || '').trim(),
+      storeEmpty: (form.storeEmpty || '').trim()
     };
     if (editingId) {
       updateMutation.mutate({ id: editingId, data: payload });
@@ -162,14 +166,17 @@ const AdminMarcas = () => {
       bgColor: brand.bgColor || '#ffffff',
       bgImage: brand.bgImage || '',
       bgOpacity: brand.bgOpacity ?? 100,
-      whatsappNumber: brand.whatsappNumber || ''
+      whatsappNumber: brand.whatsappNumber || '',
+      storeTitle: brand.storeTitle || '',
+      storeSubtitle: brand.storeSubtitle || '',
+      storeEmpty: brand.storeEmpty || ''
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm({ name: '', slug: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '' });
+    setForm({ name: '', slug: '', logoUrl: '', order: brands.length, bgColor: '#ffffff', bgImage: '', bgOpacity: 100, whatsappNumber: '', storeTitle: '', storeSubtitle: '', storeEmpty: '' });
   };
 
   const handleLogoUpload = async (e) => {
@@ -383,6 +390,46 @@ const AdminMarcas = () => {
               <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>
                 Las consultas y pedidos de productos de esta marca se enviarán a este número.
                 Si lo dejas vacío, se usa el número general de la tienda.
+              </small>
+            </div>
+
+            {/* Mensajes de tienda propios de esta marca (opcionales). Si se dejan
+                vacíos, la página de la marca usa los mensajes globales de la tienda
+                (los mismos de siempre en Con Amor / páginas sin marca). */}
+            <div className={styles.field}>
+              <label className={styles.label}>Título de la tienda (opcional)</label>
+              <input
+                type="text"
+                placeholder="Se usa el título global si lo dejas vacío"
+                value={form.storeTitle}
+                onChange={(e) => setForm((f) => ({ ...f, storeTitle: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Subtítulo de la tienda (opcional)</label>
+              <input
+                type="text"
+                placeholder="Se usa el subtítulo global si lo dejas vacío"
+                value={form.storeSubtitle}
+                onChange={(e) => setForm((f) => ({ ...f, storeSubtitle: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Mensaje sin productos (opcional)</label>
+              <input
+                type="text"
+                placeholder="Se usa el mensaje global si lo dejas vacío"
+                value={form.storeEmpty}
+                onChange={(e) => setForm((f) => ({ ...f, storeEmpty: e.target.value }))}
+                className={styles.input}
+              />
+              <small style={{ color: 'var(--gris-texto, #6b7280)', fontSize: '0.78rem', marginTop: '0.3rem', display: 'block' }}>
+                Título, subtítulo y mensaje son por marca: si no los completas, la
+                página de esta marca muestra los mismos mensajes globales de la tienda.
               </small>
             </div>
           </div>

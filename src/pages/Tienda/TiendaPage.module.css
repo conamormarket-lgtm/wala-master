@@ -158,3 +158,46 @@
   color: #8b5cf6;
   padding-left: 16px;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   INDICADOR DE MARCA ACTIVA — "Estás en: <Marca>"
+   Solo aparece en páginas de marca (pageBrandId). Sutil, no intrusivo: una
+   franja angosta arriba del contenido, con el logo/nombre de la marca.
+   Usa variables del tema para quedar legible también en modo noche.
+   ═════════════════════════════════════════════════════════════════════════ */
+.brandActiveBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 4vw;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #6b7280);
+  background-color: var(--color-surface-2, #f3f4f6);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.brandActiveBarLogo {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.brandActiveBarLabel {
+  opacity: 0.85;
+}
+
+.brandActiveBarName {
+  font-weight: 600;
+  color: var(--color-text, #111827);
+}
+
+@media (max-width: 768px) {
+  .brandActiveBar {
+    font-size: 0.75rem;
+    padding: 0.4rem 4vw;
+  }
+}

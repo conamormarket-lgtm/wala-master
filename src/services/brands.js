@@ -69,7 +69,7 @@ const normalizeCategoryNavStyle = (style) => {
 
 /**
  * Crear marca (Firestore genera ID)
- * @param {{ name: string, slug?: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string } }} data
+ * @param {{ name: string, slug?: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string }, storeTitle?: string, storeSubtitle?: string, storeEmpty?: string }} data
  */
 export const createBrand = async (data) => {
   // Slug de primera clase: si viene explícito se respeta (normalizado); si no, se
@@ -88,14 +88,20 @@ export const createBrand = async (data) => {
     // Nav de categorías por marca (burbujas con miniatura). Vacío por defecto.
     categoryNav: normalizeCategoryNav(data.categoryNav),
     // Estilo del nav de categorías (alineación + modo estático/slider). Default centrado/estático.
-    categoryNavStyle: normalizeCategoryNavStyle(data.categoryNavStyle)
+    categoryNavStyle: normalizeCategoryNavStyle(data.categoryNavStyle),
+    // Mensajes de tienda propios de la marca (opcionales). Vacío = usa el global
+    // (ver TiendaPage: storeTitle/storeSubtitle/storeEmpty con fallback al mensaje
+    // global de la colección 'messages').
+    storeTitle: data.storeTitle || '',
+    storeSubtitle: data.storeSubtitle || '',
+    storeEmpty: data.storeEmpty || ''
   });
 };
 
 /**
  * Actualizar marca
  * @param {string} id
- * @param {{ name?: string, slug?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string } }} data
+ * @param {{ name?: string, slug?: string, logoUrl?: string, order?: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string }, storeTitle?: string, storeSubtitle?: string, storeEmpty?: string }} data
  */
 export const updateBrand = async (id, data) => {
   const payload = {};
@@ -118,6 +124,10 @@ export const updateBrand = async (id, data) => {
   if (data.categoryNav !== undefined) payload.categoryNav = normalizeCategoryNav(data.categoryNav);
   // Persistir el estilo del nav (aditivo: solo se escribe si viene en data).
   if (data.categoryNavStyle !== undefined) payload.categoryNavStyle = normalizeCategoryNavStyle(data.categoryNavStyle);
+  // Mensajes de tienda por marca (aditivo: solo se escriben si vienen en data).
+  if (data.storeTitle !== undefined) payload.storeTitle = data.storeTitle;
+  if (data.storeSubtitle !== undefined) payload.storeSubtitle = data.storeSubtitle;
+  if (data.storeEmpty !== undefined) payload.storeEmpty = data.storeEmpty;
   return await updateDocument(COLLECTION, id, payload);
 };
 
