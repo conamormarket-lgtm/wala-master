@@ -583,6 +583,23 @@
   text-decoration: underline;
 }
 
+/* Nombre de producto NO disponible: texto plano (sin link ni hover). */
+.giftNameStatic {
+  color: var(--gris-texto, #6b7280);
+  cursor: default;
+}
+
+.giftNameStatic:hover {
+  color: var(--gris-texto, #6b7280);
+  text-decoration: none;
+}
+
+/* Imagen de producto NO disponible: en gris, como pieza de museo. */
+.giftImageUnavailable {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
 .giftPriceRow {
   display: flex;
   align-items: baseline;
@@ -593,6 +610,13 @@
   font-weight: 800;
   font-size: 1.1rem;
   color: var(--violet-700, #6D28D9);
+}
+
+/* "No disponible" en lugar del precio (nada de "S/ 0.00"). */
+.giftUnavailable {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--gris-texto, #6b7280);
 }
 
 .giftRegularPrice {
@@ -839,6 +863,13 @@
 }
 
 :global([data-theme='dark']) .giftRegularPrice {
+  color: var(--color-text-muted);
+}
+
+/* Producto NO disponible: nombre plano y "No disponible" en texto atenuado. */
+:global([data-theme='dark']) .giftNameStatic,
+:global([data-theme='dark']) .giftNameStatic:hover,
+:global([data-theme='dark']) .giftUnavailable {
   color: var(--color-text-muted);
 }
 

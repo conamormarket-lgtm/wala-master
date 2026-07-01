@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createProduct, updateProduct, getProduct, generateProductId } from '../../../services/products';
@@ -428,10 +428,35 @@ const AdminProductoFormV2 = () => {
     }, { crossOrigin: 'anonymous' });
   };
 
+  // ── Protección de historial (P0): imágenes ya PERSISTIDAS en Firestore ──
+  // Conjunto de URLs de Storage que ya estaban guardadas en el producto ANTES
+  // de esta sesión de edición (variantes, galería, vistas, combo, etc.). Esas
+  // URLs pueden estar congeladas en pedidos/wishlists/listas de regalos, así
+  // que NUNCA se borran de Storage; solo se pueden borrar archivos subidos
+  // durante la sesión de edición actual.
+  const persistedImageUrls = useMemo(() => {
+    const urls = new Set();
+    if (isNew || !productData) return urls;
+    const recolectar = (val) => {
+      if (typeof val === 'string') {
+        if (val.includes('firebasestorage.googleapis.com')) urls.add(val);
+      } else if (Array.isArray(val)) {
+        val.forEach(recolectar);
+      } else if (val && typeof val === 'object') {
+        Object.values(val).forEach(recolectar);
+      }
+    };
+    recolectar(productData);
+    return urls;
+  }, [isNew, productData]);
+
   const safelyDeleteOldImage = async (url) => {
-    if (url && url.includes('firebasestorage.googleapis.com')) {
-      try { await deleteFile(url); } catch(e) { console.warn('Could not delete old image', e); }
-    }
+    if (!url || !url.includes('firebasestorage.googleapis.com')) return;
+    // No tocar archivos que ya estaban persistidos en el producto publicado:
+    // sus URLs pueden estar congeladas en el historial (pedidos, wishlists).
+    // Al quitarlas del form desaparecen del producto, pero el archivo queda.
+    if (persistedImageUrls.has(url)) return;
+    try { await deleteFile(url); } catch(e) { console.warn('Could not delete old image', e); }
   };
 
   const handleCaptureMockup = async () => {

@@ -9,15 +9,26 @@ import { db } from '../../services/firebase/config';
 import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { useProducts } from '../../hooks/useProducts';
 import ProductCard from '../Tienda/components/ProductCard/ProductCard';
+import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './WishlistPublic.module.css';
+
+/**
+ * ¿El producto del catálogo sigue disponible para regalarse?
+ * Con includeHidden también llegan ocultos y borrados lógicos (tombstones
+ * visible:false/deleted:true): sirven para pintar nombre/imagen, pero NO
+ * deben poder agregarse al carrito como regalo.
+ */
+const estaDisponible = (p) => !!p && p.visible !== false && p.deleted !== true;
 
 const WishlistPublic = () => {
   const { userCode } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { addToast } = useGlobalToast();
-  
-  const { data: allProducts, isLoading: productsLoading } = useProducts([]);
+
+  // includeHidden: la lista compartida es HISTORIAL — un producto borrado
+  // lógicamente debe seguir mostrándose (degradado), no desaparecer en silencio.
+  const { data: allProducts, isLoading: productsLoading } = useProducts([], { includeHidden: true });
   const [wishlist, setWishlist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -72,14 +83,19 @@ const WishlistPublic = () => {
     }
   }, [userCode]);
 
-  const handleGift = (item) => {
+  // `item` es el producto del catálogo; `wishlistItem` (opcional) es el item
+  // crudo de la wishlist, cuyo snapshot productImage sirve de último fallback.
+  const handleGift = (item, wishlistItem = null) => {
     const fullProduct = typeof item === 'object' && item.id ? item : undefined;
     const price = fullProduct?.salePrice || fullProduct?.price || 0;
-    
+
     const productMock = {
       id: item.productId || fullProduct?.id,
       name: item.productName || fullProduct?.name,
-      mainImage: item.productImage || fullProduct?.mainImage,
+      // Imagen con fallbacks: en productos CON variantes mainImage es '' (la
+      // miniatura vive en images[0], derivada de la variante principal); sin
+      // esto el pedido de regalo se creaba SIN imagen.
+      mainImage: fullProduct?.mainImage || fullProduct?.images?.[0] || wishlistItem?.productImage || item.productImage || '',
       price: price,
       // Flag para saber que es un regalo
       isWishlistGift: true,
@@ -122,8 +138,45 @@ const WishlistPublic = () => {
         <div className={styles.grid}>
           {wishlist.items.map((item) => {
             const fullProduct = allProducts?.find(p => p.id === item.productId);
-            
-            if (!fullProduct) return null; // No renderizar si no se encuentra en el sistema
+
+            // Producto borrado (físico legado o tombstone) u oculto: en vez de
+            // desaparecer en silencio, TARJETA DEGRADADA con el snapshot del
+            // item (nombre + imagen). Sin botón de regalar (no se puede comprar).
+            if (!estaDisponible(fullProduct)) {
+              const nombre = fullProduct?.name || item.productName || 'Producto';
+              const imagen = fullProduct?.mainImage || item.productImage || PLACEHOLDER_IMG;
+              return (
+                <div key={item.productId} className={`${styles.cardWrapper} ${styles.unavailableCard}`}>
+                  {item.isGifted && (
+                    <div className={styles.giftedOverlay}>
+                      ¡Ya regalado! 🎉
+                    </div>
+                  )}
+                  <div className={styles.unavailableImgWrap}>
+                    <img
+                      className={styles.unavailableImg}
+                      src={imagen}
+                      alt={nombre}
+                      loading="lazy"
+                      onError={(e) => {
+                        // Si la imagen del snapshot/tombstone ya no existe, placeholder.
+                        // endsWith: img.src devuelve la URL ABSOLUTA (evita bucle de error).
+                        if (!e.currentTarget.src.endsWith(PLACEHOLDER_IMG)) {
+                          e.currentTarget.src = PLACEHOLDER_IMG;
+                        }
+                      }}
+                    />
+                    <span className={styles.unavailableBadge}>Ya no disponible</span>
+                  </div>
+                  <div className={styles.unavailableInfo}>
+                    <h3 className={styles.unavailableName}>{nombre}</h3>
+                    <p className={styles.unavailableText}>
+                      Este producto ya no está en la tienda.
+                    </p>
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div key={item.productId} className={styles.cardWrapper}>
@@ -133,14 +186,14 @@ const WishlistPublic = () => {
                   </div>
                 )}
                 
-                <ProductCard 
-                  product={fullProduct} 
-                  onAddToCartOverride={() => handleGift(fullProduct)}
+                <ProductCard
+                  product={fullProduct}
+                  onAddToCartOverride={() => handleGift(fullProduct, item)}
                 />
-                
+
                 {!item.isGifted && (
-                  <button 
-                    onClick={() => handleGift(fullProduct)}
+                  <button
+                    onClick={() => handleGift(fullProduct, item)}
                     className={styles.giftBtnOverlay}
                   >
                     Regalar esto 🎁

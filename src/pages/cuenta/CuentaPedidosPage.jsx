@@ -55,6 +55,12 @@ function resumirPedido(pedido, indiceCatalogo) {
     const primera = lineas[0];
     const prodCat = primera?.productoId != null ? indiceCatalogo.get(String(primera.productoId)) : null;
     miniatura = thumbDeProductoCatalogo(prodCat);
+    // Fallback NUEVO: las líneas de pedidos nuevos guardan la imagen del
+    // producto al momento de comprar (urlImagen). Si el catálogo no resolvió
+    // (p.ej. borrado físico legado), usamos esa foto congelada.
+    if (!miniatura && primera?.urlImagen) {
+      miniatura = toThumbnailImageUrl(primera.urlImagen);
+    }
     nombrePrincipal = primera?.producto || prodCat?.name || '';
   }
 
@@ -121,8 +127,10 @@ const CuentaPedidosPage = () => {
   const [hasFetched, setHasFetched] = useState(false);
 
   // Catálogo para enriquecer cada pedido con imagen/nombre del 1er producto.
+  // includeHidden: el HISTORIAL debe seguir resolviendo nombre/imagen aunque el
+  // producto haya sido borrado lógicamente (tombstone visible:false/deleted:true).
   // No bloquea la vista: si aún no carga, caemos a la imagen de diseño/placeholder.
-  const { data: productos } = useProducts([]);
+  const { data: productos } = useProducts([], { includeHidden: true });
 
   useEffect(() => {
     if (!user || (!hasDni && !authLoading) || hasFetched) return;

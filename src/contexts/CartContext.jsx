@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useGlobalToast } from './ToastContext';
+import { useAuth } from './AuthContext';
 import { onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { erpDb } from '../services/erp/firebase';
 import { db, auth } from '../services/firebase/config';
@@ -21,6 +22,12 @@ const CART_STORAGE_KEY = 'shopping_cart';
 export const CartProvider = ({ children }) => {
   const toast = useGlobalToast();
 
+  // Usuario autenticado desde AuthContext (AuthProvider envuelve a CartProvider
+  // en App.jsx). Se usa SOLO para detectar logout / cambio de cuenta; el sync a
+  // Firestore sigue usando auth.currentUser como hasta ahora (sin tocar pagos).
+  const { user } = useAuth();
+  const uid = user?.uid ?? null;
+
   const [items, setItems] = useState(() => {
     try {
       const savedCart = localStorage.getItem(CART_STORAGE_KEY);
@@ -35,14 +42,22 @@ export const CartProvider = ({ children }) => {
   // { [webOrderId]: unsubscribeFn }
   const listenersRef = useRef({});
 
+  // Último JSON del carrito escrito por ESTA pestaña. Guard anti-ciclo del
+  // listener 'storage' multi-pestaña: si el valor que llega es el que nosotros
+  // mismos escribimos, se ignora (no re-hidratar ni re-escribir en bucle).
+  const lastCartJsonRef = useRef(null);
+
   // Guardar carrito en localStorage cuando cambie y en Firestore si el usuario está logueado
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-    
+    const serializado = JSON.stringify(items);
+    lastCartJsonRef.current = serializado;
+    localStorage.setItem(CART_STORAGE_KEY, serializado);
+
     // Sync con Firestore para notificaciones de Carrito Abandonado
     if (auth?.currentUser && db) {
-      const uid = auth.currentUser.uid;
-      const docRef = doc(db, PORTAL_USERS_COLLECTION, uid);
+      // uidSync: renombrado para no hacer shadowing del uid del provider (arriba).
+      const uidSync = auth.currentUser.uid;
+      const docRef = doc(db, PORTAL_USERS_COLLECTION, uidSync);
       
       const cartData = items.length > 0 ? {
         items,
@@ -55,6 +70,51 @@ export const CartProvider = ({ children }) => {
       });
     }
   }, [items]);
+
+  // ── Carrito por usuario: limpiar al CERRAR SESIÓN o CAMBIAR de cuenta ──────
+  // prevUidRef arranca en `undefined` para distinguir el PRIMER render y no
+  // limpiar en el arranque anónimo normal. Casos:
+  //   - Arranque anónimo (uid null desde el inicio)  → NO limpiar.
+  //   - LOGIN normal (null → uid)                    → NO limpiar (el invitado
+  //     conserva su carrito al iniciar sesión).
+  //   - LOGOUT (uid → null)                          → LIMPIAR: el carrito era
+  //     de ese usuario; evita herencia en una PC compartida.
+  //   - CAMBIO de cuenta (uid A → uid B)             → LIMPIAR ANTES de que el
+  //     efecto de sync (que solo corre cuando `items` cambia) pueda escribir el
+  //     carrito de A en portal_clientes_users/B.cart.
+  const prevUidRef = useRef(undefined);
+  useEffect(() => {
+    const prevUid = prevUidRef.current;
+    prevUidRef.current = uid;
+    if (prevUid === undefined) return; // primer render: solo registrar el uid
+    const huboLogout = !!prevUid && !uid;
+    const cambioDeCuenta = !!prevUid && !!uid && prevUid !== uid;
+    if (huboLogout || cambioDeCuenta) {
+      // setItems([]) dispara el efecto de persistencia: localStorage queda '[]'
+      // y (solo si hay un usuario NUEVO logueado) su cart en Firestore se limpia.
+      setItems([]);
+    }
+  }, [uid]);
+
+  // ── Multi-pestaña: re-hidratar el carrito cuando OTRA pestaña lo cambie ────
+  // El evento 'storage' solo se dispara en las demás pestañas (no en la que
+  // escribió). Aun así comparamos contra lastCartJsonRef (lo último que escribió
+  // ESTA pestaña) como guard extra para no ciclar re-escrituras.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== CART_STORAGE_KEY) return;
+      if (e.newValue === lastCartJsonRef.current) return; // eco propio / sin cambio real
+      try {
+        // newValue null = otra pestaña hizo removeItem (p.ej. clearCart) → carrito vacío.
+        const parsed = e.newValue ? JSON.parse(e.newValue) : [];
+        setItems(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        console.warn('Carrito multi-pestaña: JSON inválido en storage:', error);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   // ── Escuchar en tiempo real los pedidos_web pendientes ─────────────────────
   // Cada vez que cambian los ítems del carrito, recalculamos qué webOrderIds
@@ -165,7 +225,16 @@ export const CartProvider = ({ children }) => {
       price: itemPrice,
       basePrice: product.basePrice || itemPrice,
       regularPrice,
-      variant: { ...variant, selectedVariant: selectedVariant ?? null },
+      // FIX COLOR: normalizamos el color EN ORIGEN. ProductDetail pasa el color
+      // dentro de selectedVariant.name (sin campo color) y el checkout lee
+      // item.variant?.color → sin esto el pedido salía con color vacío.
+      // EditorPage sí manda color plano: selectedVariant es undefined y se
+      // conserva variant.color tal cual (sin duplicar ni romper la forma actual).
+      variant: {
+        ...variant,
+        color: selectedVariant?.name ?? variant.color ?? null,
+        selectedVariant: selectedVariant ?? null,
+      },
       customization,
       quantity,
       // Selección de compra: por defecto el item se compra (true).

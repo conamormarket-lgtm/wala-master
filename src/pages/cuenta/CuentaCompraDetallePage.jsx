@@ -65,7 +65,10 @@ function imagenDeLinea(linea, productoCatalogo) {
     productoCatalogo?.images?.[0] ||
     productoCatalogo?.imageUrl ||
     null;
-  const url = linea?.urlImagenPersonalizada || fromCatalogo;
+  // Fallback NUEVO tras el catálogo: las líneas de pedidos nuevos congelan la
+  // imagen del producto al comprar (urlImagen). Así el detalle no se queda sin
+  // foto si el producto fue borrado físicamente (legado) del catálogo.
+  const url = linea?.urlImagenPersonalizada || fromCatalogo || linea?.urlImagen;
   return url ? toThumbnailImageUrl(url) : null;
 }
 
@@ -141,7 +144,10 @@ const CuentaCompraDetallePage = () => {
   }, [pedidoBase, crudoLista]);
 
   // 3) Catálogo (imágenes + inferencia de marca) y marcas (números de asesor).
-  const { data: catalogo = [] } = useProducts([]);
+  // includeHidden: el detalle de una compra debe seguir resolviendo imagen/nombre
+  // aunque el producto haya sido borrado lógicamente (tombstone). Los
+  // "relacionados" siguen filtrando visible !== false más abajo.
+  const { data: catalogo = [] } = useProducts([], { includeHidden: true });
 
   const { data: brands = [] } = useQuery({
     queryKey: ['brands'],

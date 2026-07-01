@@ -87,7 +87,9 @@ function productosComoArray(productos) {
 
 /**
  * Resume las líneas de producto a un array plano y LIGERO para el espejo.
- * Solo campos display: nada de imágenes pesadas ni datos de pago.
+ * Solo campos display (URLs/strings cortos): nada de datos de pago.
+ * ADITIVO: los snapshots visuales (urlImagen, personalización) solo se copian
+ * si la línea los trae, para no engordar pedidos antiguos ni líneas sin diseño.
  */
 function resumirProductos(productos) {
   const lineas = productosComoArray(productos);
@@ -101,6 +103,14 @@ function resumirProductos(productos) {
     precio: l?.precio ?? null,
     subtotal: l?.subtotal ?? null,
     personalizado: !!l?.personalizado,
+    // ── Snapshot visual/diseño (ADITIVO; solo si la línea lo trae) ────────────
+    // urlImagen: imagen del producto al comprar (contrato del checkout); permite
+    // mostrar la miniatura aunque el producto se oculte/borre del catálogo.
+    ...(l?.urlImagen && { urlImagen: l.urlImagen }),
+    // Personalización del cliente (imagen renderizada, texto y diseño guardado).
+    ...(l?.urlImagenPersonalizada && { urlImagenPersonalizada: l.urlImagenPersonalizada }),
+    ...(l?.textoPersonalizado && { textoPersonalizado: l.textoPersonalizado }),
+    ...(l?.designId && { designId: l.designId }),
   }));
 }
 
@@ -171,6 +181,13 @@ export async function mirrorWebOrder({ pedidoWebId, payload }) {
 
     // Productos resumidos (ligeros, sin imágenes pesadas)
     productos: resumirProductos(datos.productos),
+
+    // ── Contexto de REGALO (ADITIVO: solo si el payload lo trae) ────────────────
+    // giftDetails viene del checkout en modo regalo e incluye deliveryDate/
+    // deliveryEventLabel/wishlistUserCode cuando el pedido nació de /regalar.
+    // deliveryDate raíz se copia por compatibilidad si algún flujo la mandara suelta.
+    ...(datos.giftDetails != null && { giftDetails: datos.giftDetails }),
+    ...(datos.deliveryDate != null && { deliveryDate: datos.deliveryDate }),
 
     // Montos display (NO se recalcula nada; se copia el total ya calculado)
     montoTotal: datos.montoTotal ?? datos.total ?? null,
@@ -439,8 +456,13 @@ function normalizarEspejoParaVista(docId, data) {
     dni: d.dni ?? null,
     dniRaw: d.dniRaw ?? null,
     buyerUid: d.buyerUid ?? null,
-    // Productos (formato array, compatible con getProductosPedido)
+    // Productos (formato array, compatible con getProductosPedido).
+    // Las líneas nuevas ya traen urlImagen/urlImagenPersonalizada/textoPersonalizado/
+    // designId (ver resumirProductos) y pasan tal cual a la vista.
     productos: Array.isArray(d.productos) ? d.productos : [],
+    // Contexto de regalo (ADITIVO; solo los espejos nuevos lo traen)
+    ...(d.giftDetails != null && { giftDetails: d.giftDetails }),
+    ...(d.deliveryDate != null && { deliveryDate: d.deliveryDate }),
     // Montos display
     montoTotal: d.montoTotal ?? null,
     moneda: d.moneda ?? 'PEN',

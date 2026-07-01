@@ -1,11 +1,39 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProducts, getProduct, searchProducts, getProductsByCategory } from '../services/products';
 
-export const useProducts = (filters = [], orderBy = null) => {
+/**
+ * Hook de productos del catálogo.
+ *
+ * RETROCOMPATIBLE:
+ *  - useProducts()                          → catálogo público (visible !== false), igual que siempre.
+ *  - useProducts(filters, orderBy)          → igual que siempre.
+ *  - useProducts(filters, { includeHidden:true })          → incluye ocultos/borrados (tombstones).
+ *  - useProducts(filters, orderBy, { includeHidden:true }) → ídem, con orderBy explícito.
+ *
+ * Con includeHidden:true llama getProducts(filters, orderBy, null, { includeHidden:true })
+ * y usa una queryKey DISTINTA (['products-all', ...]) para NO contaminar la caché
+ * del catálogo público (['products', ...]). Pensado para páginas de HISTORIAL
+ * (Mis Compras, wishlist, lista de regalos) que necesitan ver productos borrados
+ * lógicamente y así seguir pintando miniatura/nombre/precio.
+ */
+export const useProducts = (filters = [], orderBy = null, options = {}) => {
+  // Retrocompatibilidad de firma: permite useProducts(filters, { includeHidden:true })
+  // pasando las opciones como 2º argumento. Un orderBy real siempre tiene la forma
+  // { field, direction }, así que no hay ambigüedad.
+  if (orderBy && typeof orderBy === 'object' && !orderBy.field && 'includeHidden' in orderBy) {
+    options = orderBy;
+    orderBy = null;
+  }
+  const includeHidden = options?.includeHidden === true;
+
+  // Nota: SIEMPRE hay exactamente una llamada a useQuery por render (reglas de hooks);
+  // solo cambian queryKey y queryFn según includeHidden.
   return useQuery({
-    queryKey: ['products', filters, orderBy],
+    queryKey: includeHidden ? ['products-all', filters, orderBy] : ['products', filters, orderBy],
     queryFn: async () => {
-      const { data, error } = await getProducts(filters, orderBy);
+      const { data, error } = includeHidden
+        ? await getProducts(filters, orderBy, null, { includeHidden: true })
+        : await getProducts(filters, orderBy);
       if (error) throw new Error(error);
       return data;
     },
@@ -28,6 +56,12 @@ export const useProduct = (productId) => {
       try {
         const updater = (old) => {
           if (!Array.isArray(old)) return old;
+          // Soft-delete: si el producto fresco viene borrado lógicamente u
+          // oculto (tombstone), se FILTRA de las cachés de lista del catálogo
+          // en vez de inyectarlo (no debe reaparecer en la tienda).
+          if (data && (data.deleted === true || data.visible === false)) {
+            return old.filter(p => p.id !== productId);
+          }
           return old.map(p => p.id === productId ? data : p);
         };
         queryClient.setQueriesData({ queryKey: ['products'] }, updater);

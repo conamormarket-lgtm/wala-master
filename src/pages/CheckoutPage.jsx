@@ -584,6 +584,9 @@ const CheckoutPage = () => {
               producto: item.productName || '',
               // Marca del producto (para enrutar el WhatsApp de "Mis Compras" al asesor correcto)
               brandId: item.brandId || null,
+              // Snapshot de la imagen del producto AL COMPRAR (ya vive en el cartItem):
+              // la miniatura de "Mis Compras" deja de depender del catálogo vivo.
+              urlImagen: item.productImage || '',
               cantidad: item.quantity || 1,
               precio: precioItem,
               subtotal: subtotalItem,
@@ -602,6 +605,9 @@ const CheckoutPage = () => {
               producto: item.productName || '',
               // Marca del producto (para enrutar el WhatsApp de "Mis Compras" al asesor correcto)
               brandId: item.brandId || null,
+              // Snapshot de la imagen del producto AL COMPRAR (ya vive en el cartItem):
+              // la miniatura de "Mis Compras" deja de depender del catálogo vivo.
+              urlImagen: item.productImage || '',
               cantidad: item.quantity || 1,
               talla: item.variant?.size || '',
               color: item.variant?.color || '',

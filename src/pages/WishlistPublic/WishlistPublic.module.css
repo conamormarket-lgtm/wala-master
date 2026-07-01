@@ -103,6 +103,71 @@
   margin-top: 1rem;
 }
 
+/* ── Tarjeta DEGRADADA "Ya no disponible" ──────────────────────────────────
+   Producto de la lista compartida que fue borrado (físico legado o tombstone)
+   u ocultado: snapshot en gris, sin precio ni botón de regalar. */
+.unavailableCard {
+  background: white;
+  border: 1px solid #f3f4f6;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+.unavailableImgWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.unavailableImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.unavailableBadge {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: rgba(55, 65, 81, 0.9);
+  color: #f9fafb;
+  padding: 0.35rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.unavailableInfo {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.unavailableName {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.35rem 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.unavailableText {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
 @media (max-width: 640px) {
   .header h1 {
     font-size: 1.8rem;
@@ -126,5 +191,20 @@
 }
 :global([data-theme='dark']) .emptyState {
   background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+/* Tarjeta degradada "Ya no disponible": superficie/bordes/textos con tokens. */
+:global([data-theme='dark']) .unavailableCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .unavailableImgWrap {
+  background: var(--color-surface-2);
+}
+:global([data-theme='dark']) .unavailableName {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .unavailableText {
   color: var(--color-text-muted);
 }

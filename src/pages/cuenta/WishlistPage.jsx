@@ -6,11 +6,22 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../contexts/CartContext';
 import ProductCard from '../Tienda/components/ProductCard/ProductCard';
+import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './WishlistPage.module.css';
+
+/**
+ * ¿El producto del catálogo sigue disponible para comprarse?
+ * Con includeHidden el catálogo también trae ocultos y borrados lógicos
+ * (tombstones visible:false/deleted:true): sirven para pintar nombre/imagen,
+ * pero NO deben poder agregarse al carrito.
+ */
+const estaDisponible = (p) => !!p && p.visible !== false && p.deleted !== true;
 
 const WishlistPage = () => {
   const { wishlistItems, loading: wishlistLoading, toggleFavorite } = useWishlist();
-  const { data: allProducts, isLoading: productsLoading } = useProducts([]);
+  // includeHidden: la wishlist es HISTORIAL — los productos borrados lógicamente
+  // deben seguir resolviendo nombre/imagen (tarjeta degradada, no desaparecer).
+  const { data: allProducts, isLoading: productsLoading } = useProducts([], { includeHidden: true });
   const { userProfile } = useAuth();
   const { addToast } = useGlobalToast();
   const { addToCart, items: cartItems } = useCart();
@@ -56,8 +67,10 @@ const WishlistPage = () => {
     let skipped = 0;
     for (const item of pendientes) {
       const p = allProducts?.find((fp) => fp.id === item.productId);
-      if (!p) { skipped++; continue; }                                    // producto borrado
-      if (p.stock === 0 || p.isActive === false) { skipped++; continue; } // sin stock / inactivo
+      if (!estaDisponible(p)) { skipped++; continue; }                    // borrado (físico o lógico) / oculto
+      // Campo REAL del modelo: inStock (numérico); la tienda trata !inStock como
+      // agotado (ProductCard/ProductDetail). `stock` e `isActive` no existen.
+      if (!(Number(p.inStock) > 0)) { skipped++; continue; }              // sin stock
       if (cartItems.some((ci) => ci.productId === p.id)) { skipped++; continue; } // ya en carrito
       addToCart(p, {}, null, 1, null, { silent: true });
       added++;
@@ -78,8 +91,8 @@ const WishlistPage = () => {
     }
   };
 
-  // eslint-disable-next-line no-unused-vars
-  // eslint-disable-next-line no-unused-vars
+  // Quita un item de la wishlist (recibe cualquier objeto con productId:
+  // producto del catálogo o el propio snapshot del item degradado).
   const handleRemove = async (product) => {
     const res = await toggleFavorite({ id: product.productId });
     if (res?.error) {
@@ -149,9 +162,50 @@ const WishlistPage = () => {
         <div className={styles.grid}>
           {wishlistItems.map((item) => {
             const fullProduct = allProducts?.find(p => p.id === item.productId);
-            
-            if (!fullProduct) {
-              return null; // Omitimos si el producto fue borrado del sistema
+
+            // Producto borrado (físico legado o tombstone) u oculto: en vez de
+            // desaparecer en silencio, mostramos una TARJETA DEGRADADA con el
+            // snapshot guardado en la wishlist (nombre + imagen) y la opción de
+            // quitarlo de la lista. El tombstone conserva name/mainImage, así
+            // que lo preferimos por ser más fresco; el snapshot es el fallback.
+            if (!estaDisponible(fullProduct)) {
+              const nombre = fullProduct?.name || item.productName || 'Producto';
+              const imagen = fullProduct?.mainImage || item.productImage || PLACEHOLDER_IMG;
+              return (
+                <div key={item.productId} className={`${styles.card} ${styles.unavailableCard}`}>
+                  <div className={styles.imageWrapper}>
+                    <img
+                      className={`${styles.image} ${styles.unavailableImg}`}
+                      src={imagen}
+                      alt={nombre}
+                      loading="lazy"
+                      onError={(e) => {
+                        // Si la imagen del snapshot/tombstone ya no existe, placeholder.
+                        // endsWith: img.src devuelve la URL ABSOLUTA (evita bucle de error).
+                        if (!e.currentTarget.src.endsWith(PLACEHOLDER_IMG)) {
+                          e.currentTarget.src = PLACEHOLDER_IMG;
+                        }
+                      }}
+                    />
+                    <span className={styles.unavailableBadge}>Ya no disponible</span>
+                  </div>
+                  <div className={styles.info}>
+                    <h3 className={styles.name}>{nombre}</h3>
+                    <p className={styles.unavailableText}>
+                      Este producto ya no está en la tienda.
+                    </p>
+                    <div className={styles.actionRow}>
+                      <button
+                        type="button"
+                        className={styles.removeBtn}
+                        onClick={() => handleRemove(item)}
+                      >
+                        Quitar de mi lista
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
             }
 
             return (

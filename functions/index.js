@@ -2789,7 +2789,7 @@ exports.updateFxRate = onSchedule(
  *       }, ...
  *     ],
  *     wishlistItems: [                       // items de la wishlist del dueño
- *       { productId, productName, productImage }, ...
+ *       { productId, productName, productImage, price, isGifted }, ...
  *     ]
  *   }
  * Salida (no encontrado / error tolerado): { ok: false }
@@ -2837,6 +2837,9 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
           productId: it.productId || null,
           productName: it.productName || "",
           productImage: it.productImage || "",
+          // Precio snapshot guardado al agregar a la wishlist (items antiguos sin
+          // el campo → null; el cliente ya lee item.price || 0). NO es PII.
+          price: it.price ?? null,
           isGifted: !!it.isGifted,
         }));
       }
@@ -2879,6 +2882,8 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
             productId: it.productId || null,
             productName: it.productName || "",
             productImage: it.productImage || "",
+            // Precio snapshot (mismo criterio que la estrategia 1; antiguos → null).
+            price: it.price ?? null,
             isGifted: !!it.isGifted,
           }));
         }

@@ -68,6 +68,9 @@ export const WishlistProvider = ({ children }) => {
         productId: product.id,
         productName: product.name,
         productImage: product.mainImage || product.images?.[0] || '',
+        // Precio snapshot (mismo criterio que addWishlistItem en services/wishlist.js):
+        // el espejo optimista debe calzar con lo que se persiste en Firestore.
+        price: product.salePrice || product.price || 0,
         addedAt: new Date().toISOString(),
         isGifted: false,
         giftedBy: null

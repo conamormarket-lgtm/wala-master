@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProducts, getCategories, deleteProduct, updateProduct, createProduct } from '../../../services/products';
+import { getProducts, getProduct, getCategories, deleteProduct, updateProduct, updateProductField, createProduct } from '../../../services/products';
 import { getBrands } from '../../../services/brands';
 import { deleteFile } from '../../../services/firebase/storage';
 import { createReferenceProducts } from '../../../scripts/createReferenceProducts';
@@ -44,32 +44,55 @@ const AdminProductos = () => {
   }, []);
 
   const handleDiscardDraft = async (draftId) => {
-    if (!window.confirm('¿Seguro que deseas descartar este borrador? Se eliminarán todas las fotos asociadas de la nube.')) return;
-    
+    if (!window.confirm('¿Seguro que deseas descartar este borrador? Si es de un producto nuevo, sus fotos temporales también se eliminarán de la nube.')) return;
+
     const draft = drafts.find(d => d.draftId === draftId);
     if (!draft) return;
 
-    const urlsToDelete = [];
-    if (draft.form?.variants) {
-      draft.form.variants.forEach(v => {
-        if (v.imageUrl) urlsToDelete.push(v.imageUrl);
-        if (v.images && v.images.length > 0) urlsToDelete.push(...v.images);
-      });
-    }
-
-    if (urlsToDelete.length > 0) {
-      success('Borrando archivos temporales...', { duration: 3000 });
+    // ── Protección de historial (P0) ─────────────────────────────────────
+    // Al EDITAR un producto existente, el formulario usa draftId = id del
+    // producto, así que las URLs del borrador apuntan a las imágenes VIVAS
+    // del producto publicado (posiblemente congeladas en pedidos/wishlists/
+    // listas de regalos). Solo se borran archivos de Storage cuando el
+    // borrador es de un producto NUEVO nunca publicado.
+    let esProductoPublicado = (productsData || []).some(p => p.id === draftId);
+    if (!esProductoPublicado) {
+      // Doble verificación contra Firestore (por si la lista aún no cargó).
+      // Ante un error de red se asume publicado: mejor dejar un archivo
+      // huérfano que romper las miniaturas del historial.
       try {
-        await Promise.all(urlsToDelete.map(url => deleteFile(url)));
+        const { data } = await getProduct(draftId);
+        esProductoPublicado = Boolean(data);
       } catch (e) {
-        console.error("Error al borrar archivos de Firebase", e);
+        esProductoPublicado = true;
       }
     }
 
+    if (!esProductoPublicado) {
+      const urlsToDelete = [];
+      if (draft.form?.variants) {
+        draft.form.variants.forEach(v => {
+          if (v.imageUrl) urlsToDelete.push(v.imageUrl);
+          if (v.images && v.images.length > 0) urlsToDelete.push(...v.images);
+        });
+      }
+
+      if (urlsToDelete.length > 0) {
+        success('Borrando archivos temporales...', { duration: 3000 });
+        try {
+          await Promise.all(urlsToDelete.map(url => deleteFile(url)));
+        } catch (e) {
+          console.error("Error al borrar archivos de Firebase", e);
+        }
+      }
+    }
+
+    // El doc del borrador (localStorage) se elimina siempre; el Storage solo
+    // se toca en el caso de producto nuevo (bloque de arriba).
     const newDrafts = drafts.filter(d => d.draftId !== draftId);
     setDrafts(newDrafts);
     localStorage.setItem('wala_drafts', JSON.stringify(newDrafts));
-    
+
     success('Borrador descartado exitosamente');
   };
 
@@ -108,7 +131,8 @@ const AdminProductos = () => {
       queryClient.invalidateQueries({ queryKey: ['featured-products'] });
       queryClient.invalidateQueries({ queryKey: ['collection-products'] });
       setDeleteConfirm(null);
-      success('Producto eliminado exitosamente');
+      // Soft-delete: el producto queda archivado/oculto, no se borra físicamente.
+      success('Producto archivado: ya no se muestra en la tienda');
     },
     onError: () => {
       showError('Error al eliminar el producto');
@@ -116,7 +140,17 @@ const AdminProductos = () => {
   });
 
   const toggleVisibleMutation = useMutation({
-    mutationFn: ({ id, product, visible }) => updateProduct(id, { ...product, visible }),
+    mutationFn: async ({ id, product, visible }) => {
+      const result = await updateProduct(id, { ...product, visible });
+      // Anti-"zombi": normalizeProductPayload NO incluye `deleted`, así que al
+      // reactivar un producto archivado quedaría visible:true + deleted:true
+      // (aparece en catálogo pero ProductPage lo bloquea). Escritura PARCIAL
+      // (updateDoc) para limpiar el tombstone al volver a mostrarlo.
+      if (visible === true && product?.deleted === true) {
+        await updateProductField(id, { visible: true, deleted: false });
+      }
+      return result;
+    },
     onMutate: async ({ id, visible }) => {
       // Cancelar queries en curso
       await queryClient.cancelQueries({ queryKey: ['admin-products'] });
@@ -228,9 +262,14 @@ const AdminProductos = () => {
           visible: true
         }));
 
-      await Promise.all(updates.map(update =>
-        updateProduct(update.id, { ...update.product, visible: true })
-      ));
+      await Promise.all(updates.map(async (update) => {
+        await updateProduct(update.id, { ...update.product, visible: true });
+        // Anti-"zombi": limpiar el tombstone (deleted:true) al reactivar en masa
+        // (normalizeProductPayload no incluye `deleted`, ver toggleVisibleMutation).
+        if (update.product?.deleted === true) {
+          await updateProductField(update.id, { visible: true, deleted: false });
+        }
+      }));
 
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -280,7 +319,8 @@ const AdminProductos = () => {
 
   const handleBulkDelete = async () => {
     if (selectedProductIds.length === 0) return;
-    if (!window.confirm(`¿Eliminar ${selectedProductIds.length} producto(s) seleccionado(s)? Esta acción no se puede deshacer.`)) return;
+    // Soft-delete: se archivan/ocultan, no se borran físicamente (historial a salvo).
+    if (!window.confirm(`¿Eliminar ${selectedProductIds.length} producto(s) seleccionado(s)? Quedarán archivados y ocultos de la tienda; sus datos se conservan para el historial de compras.`)) return;
 
     setBulkProcessing(true);
     try {
@@ -292,7 +332,7 @@ const AdminProductos = () => {
       queryClient.invalidateQueries({ queryKey: ['collection-products'] });
       const count = selectedProductIds.length;
       setSelectedProductIds([]);
-      success(`${count} producto(s) eliminado(s) exitosamente`);
+      success(`${count} producto(s) archivado(s): ya no se muestran en la tienda`);
     } catch (error) {
       console.error('Error al eliminar productos:', error);
       showError('Error al eliminar algunos productos');
@@ -604,7 +644,10 @@ const AdminProductos = () => {
                   </p>
                   <div className={styles.badges}>
                     {p.featured && <span className={styles.badge}>Destacado</span>}
-                    {!isVisible && <span className={styles.badgeOculto}>Oculto</span>}
+                    {/* Soft-delete: los archivados se distinguen de los simplemente ocultos */}
+                    {!isVisible && (
+                      <span className={styles.badgeOculto}>{p.deleted === true ? 'Archivado' : 'Oculto'}</span>
+                    )}
                   </div>
                 </div>
                 <div className={styles.cardActions}>
@@ -649,6 +692,11 @@ const AdminProductos = () => {
         <div className={styles.modalBackdrop} onClick={() => setDeleteConfirm(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <p>¿Eliminar el producto &quot;{deleteConfirm.name}&quot;?</p>
+            {/* Soft-delete: se informa al admin que es un archivado, no un borrado físico */}
+            <p style={{ fontSize: '13px', color: '#666', marginTop: '8px' }}>
+              El producto quedará archivado y oculto de la tienda. Sus fotos y datos se
+              conservan para el historial de compras y las listas de regalos.
+            </p>
             <div className={styles.modalActions}>
               <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
                 Cancelar

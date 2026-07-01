@@ -59,6 +59,10 @@ export const addWishlistItem = async (userId, userCode, product) => {
       productId: product.id,
       productName: product.name,
       productImage: product.mainImage || product.images?.[0] || '',
+      // Precio snapshot al momento de agregar (salePrice manda): así /regalar y
+      // la wishlist pública muestran precio aunque el producto salga del catálogo.
+      // Items antiguos no lo tienen → los lectores usan item.price || 0.
+      price: product.salePrice || product.price || 0,
       addedAt: new Date().toISOString(),
       isGifted: false,
       giftedBy: null

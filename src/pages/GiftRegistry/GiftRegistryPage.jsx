@@ -57,6 +57,7 @@ import { useProducts } from '../../hooks/useProducts';
 import AuroraBackground from '../../components/ui/AuroraBackground';
 import GlassCard from '../../components/ui/GlassCard';
 import GlassButton from '../../components/ui/GlassButton';
+import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './GiftRegistryPage.module.css';
 
 // Formatea 'YYYY-MM-DD' a 'DD/MM/YYYY' de forma segura (sin Date para evitar
@@ -281,7 +282,7 @@ const DragGhost = ({ drag, ghostRef }) => {
 //     el drag nativo. El arrastre real lo gestiona useGiftDrag vía onPointerDown.
 //   - El NOMBRE es un <Link> al detalle del producto: tocarlo navega.
 // =========================================================================
-const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, onGift, onDragStart }) => {
+const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, noDisponible, onGift, onDragStart }) => {
   const imagen = cardProduct.mainImage || item.productImage || '';
   const precio = cardProduct.salePrice || cardProduct.price || 0;
   // Descuento simple (solo si hay precio de oferta y es menor al regular).
@@ -292,46 +293,74 @@ const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, onGift, onDr
   // Stock simple: el catálogo trae inStock; el fallback de la CF asume 1.
   const stock =
     typeof cardProduct.inStock === 'number' ? cardProduct.inStock : (cardProduct.inStock ? 1 : 0);
+  // Producto NO disponible (borrado/oculto o sin precio válido): la tarjeta se
+  // degrada — sin arrastre, sin link al detalle, "No disponible" en vez del
+  // precio y botón "Regalar este" deshabilitado (visual del guard price<=0).
+  const estatica = yaRegalado || noDisponible;
 
   return (
     <div className={styles.giftCard}>
-      {/* Badges sobre la imagen (descuento / stock). */}
-      <div className={styles.giftBadges}>
-        {descuento > 0 && <span className={styles.giftDiscountBadge}>-{descuento}%</span>}
-        {stock > 0 && <span className={styles.giftStockBadge}>{stock} disp.</span>}
-      </div>
+      {/* Badges sobre la imagen (descuento / stock). Ocultos si no disponible. */}
+      {!noDisponible && (
+        <div className={styles.giftBadges}>
+          {descuento > 0 && <span className={styles.giftDiscountBadge}>-{descuento}%</span>}
+          {stock > 0 && <span className={styles.giftStockBadge}>{stock} disp.</span>}
+        </div>
+      )}
 
       {/* ── ZONA DE IMAGEN = agarre de arrastre ───────────────────────────
           onPointerDown inicia el arrastre por Pointer Events (useGiftDrag):
           funciona en desktop y touch sin el drag nativo del navegador. La
           <img> lleva draggable={false} + CSS -webkit-user-drag:none para
-          matar la imagen fantasma; el contenedor lleva cursor:grab. */}
+          matar la imagen fantasma; el contenedor lleva cursor:grab.
+          Si el producto no está disponible NO se puede arrastrar a una fecha. */}
       <div
-        className={`${styles.giftImageZone} ${yaRegalado ? styles.giftImageZoneStatic : ''}`}
-        onPointerDown={yaRegalado ? undefined : onDragStart}
+        className={`${styles.giftImageZone} ${estatica ? styles.giftImageZoneStatic : ''}`}
+        onPointerDown={estatica ? undefined : onDragStart}
       >
         <img
-          src={imagen}
+          src={imagen || PLACEHOLDER_IMG}
           alt={cardProduct.name || item.productName || 'Producto'}
-          className={styles.giftImage}
+          className={`${styles.giftImage} ${noDisponible ? styles.giftImageUnavailable : ''}`}
           draggable={false}
           loading="lazy"
+          onError={(e) => {
+            // Si la imagen (snapshot/tombstone) ya no existe, placeholder.
+            // endsWith: img.src devuelve la URL ABSOLUTA (evita bucle de error).
+            if (!e.currentTarget.src.endsWith(PLACEHOLDER_IMG)) {
+              e.currentTarget.src = PLACEHOLDER_IMG;
+            }
+          }}
         />
       </div>
 
       <div className={styles.giftContent}>
-        {/* ── NOMBRE = enlace al detalle del producto ──────────────────── */}
-        <Link
-          to={`/producto/${cardProduct.id}`}
-          className={styles.giftName}
-          draggable={false}
-          title={cardProduct.name || item.productName}
-        >
-          {cardProduct.name || item.productName || 'Producto'}
-        </Link>
+        {/* ── NOMBRE ──────────────────────────────────────────────────────
+            Disponible: enlace al detalle del producto. NO disponible: texto
+            plano (el detalle ya no existe; evitamos un link roto). */}
+        {noDisponible ? (
+          <span
+            className={`${styles.giftName} ${styles.giftNameStatic}`}
+            title={cardProduct.name || item.productName}
+          >
+            {cardProduct.name || item.productName || 'Producto'}
+          </span>
+        ) : (
+          <Link
+            to={`/producto/${cardProduct.id}`}
+            className={styles.giftName}
+            draggable={false}
+            title={cardProduct.name || item.productName}
+          >
+            {cardProduct.name || item.productName || 'Producto'}
+          </Link>
+        )}
 
         <div className={styles.giftPriceRow}>
-          {descuento > 0 ? (
+          {noDisponible ? (
+            // Sin precio confiable (o producto retirado): nada de "S/ 0.00".
+            <span className={styles.giftUnavailable}>No disponible</span>
+          ) : descuento > 0 ? (
             <>
               <span className={styles.giftSalePrice}>S/ {Number(precio).toFixed(2)}</span>
               <span className={styles.giftRegularPrice}>S/ {Number(cardProduct.price).toFixed(2)}</span>
@@ -341,15 +370,22 @@ const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, onGift, onDr
           )}
         </div>
 
-        {/* Botón fallback: regala directo usando la fecha seleccionada. */}
+        {/* Botón fallback: regala directo usando la fecha seleccionada.
+            NO disponible: deshabilitado (visual del guard de addGiftToCart). */}
         {!yaRegalado && (
           <GlassButton
             variant="primary"
             fullWidth
-            disabled={sinFecha}
+            disabled={sinFecha || noDisponible}
             onClick={onGift}
             className={styles.giftBtn}
-            title={sinFecha ? 'Elige primero una fecha de entrega' : undefined}
+            title={
+              noDisponible
+                ? 'Este producto ya no está disponible para regalar'
+                : sinFecha
+                  ? 'Elige primero una fecha de entrega'
+                  : undefined
+            }
           >
             Regalar este 🎁
           </GlassButton>
@@ -367,7 +403,9 @@ const GiftRegistryPage = () => {
 
   // Catálogo completo para enriquecer precio/imagen de cada item de la
   // wishlist (mismo enfoque que WishlistPublic: evita N lecturas por item).
-  const { data: allProducts, isLoading: productsLoading } = useProducts([]);
+  // includeHidden: los borrados lógicos (tombstones) siguen resolviendo
+  // nombre/imagen; abajo se marcan como "No disponible" (no se pueden regalar).
+  const { data: allProducts, isLoading: productsLoading } = useProducts([], { includeHidden: true });
 
   const [registry, setRegistry] = useState(null); // { ownerName, dates, wishlistItems }
   const [loading, setLoading] = useState(true);
@@ -804,7 +842,8 @@ const GiftRegistryPage = () => {
                 const fullProduct = allProducts?.find((p) => p.id === item.productId);
 
                 // Fallback defensivo: si el producto no está en el catálogo
-                // cacheado, construimos una tarjeta mínima con lo que trae la CF.
+                // cacheado, construimos una tarjeta mínima con lo que trae la CF
+                // (los items nuevos de wishlist ya traen price en el snapshot).
                 const cardProduct = fullProduct || {
                   id: item.productId,
                   name: item.productName,
@@ -812,6 +851,21 @@ const GiftRegistryPage = () => {
                   price: item.price || 0,
                   inStock: 1,
                 };
+
+                // ¿Se puede regalar? NO cuando:
+                //  a) el producto NO existe en el catálogo (borrado FÍSICO
+                //     legado): el fallback cardProduct solo pinta nombre/imagen,
+                //     nunca habilita la compra (el link al detalle estaría roto), o
+                //  b) el catálogo lo trae pero está borrado lógicamente u oculto
+                //     (tombstone visible:false / deleted:true), o
+                //  c) el precio resuelto es <= 0 (snapshot legado sin price):
+                //     addGiftToCart lo bloquearía igual — aquí lo hacemos VISUAL.
+                const precioCard = Number(cardProduct.salePrice || cardProduct.price || 0);
+                const noDisponible =
+                  !fullProduct ||
+                  fullProduct.visible === false ||
+                  fullProduct.deleted === true ||
+                  !(precioCard > 0);
 
                 const yaRegalado = item.isGifted === true;
                 const sinFecha = !selectedEvent;
@@ -837,6 +891,7 @@ const GiftRegistryPage = () => {
                       item={item}
                       yaRegalado={yaRegalado}
                       sinFecha={sinFecha}
+                      noDisponible={noDisponible}
                       onGift={() => handleGift(cardProduct, item)}
                       onDragStart={(e) =>
                         startDrag(e, {

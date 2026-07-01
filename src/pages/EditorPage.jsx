@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useProduct } from '../hooks/useProducts';
 import { useEditor, EditorProvider } from '../contexts/EditorContext';
 import { useCart } from '../contexts/CartContext';
@@ -154,6 +154,8 @@ const EditorPage = () => {
   const editorOpenTrackedRef = useRef(false);
   useEffect(() => {
     if (!product || editorOpenTrackedRef.current) return;
+    // No se rastrean productos borrados lógicamente/ocultos (mismo criterio que ProductPage).
+    if (product.deleted === true || product.visible === false) return;
     editorOpenTrackedRef.current = true;
     try {
       trackEditorOpen(
@@ -640,6 +642,46 @@ const EditorPage = () => {
 
   if (!product) {
     return <div className={styles.container}>Producto no encontrado</div>;
+  }
+
+  // ── Guard de tombstone (soft-delete), réplica del de ProductPage ─────────
+  // getProduct NO filtra por visible/deleted (el historial necesita leer el
+  // tombstone), así que por link directo /editor/:id podía personalizarse y
+  // agregarse al carrito un producto borrado/oculto. Aquí se bloquea el editor
+  // y se muestra el mismo estado "ya no está disponible".
+  if (product.deleted === true || product.visible === false) {
+    return (
+      <div className={styles.container}>
+        <div style={{
+          maxWidth: '480px',
+          margin: '80px auto',
+          padding: '32px 24px',
+          textAlign: 'center'
+        }}>
+          <h1 style={{ fontSize: '1.4rem', marginBottom: '12px' }}>
+            Este producto ya no está disponible
+          </h1>
+          <p style={{ color: '#666', marginBottom: '24px' }}>
+            El producto que buscas fue retirado del catálogo, pero tenemos muchas
+            otras opciones esperándote.
+          </p>
+          <Link
+            to="/tienda"
+            style={{
+              display: 'inline-block',
+              padding: '12px 28px',
+              borderRadius: '8px',
+              background: '#111',
+              color: '#fff',
+              textDecoration: 'none',
+              fontWeight: 600
+            }}
+          >
+            Ir a la tienda
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   // eslint-disable-next-line no-unused-vars

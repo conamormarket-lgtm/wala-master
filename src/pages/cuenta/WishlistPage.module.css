@@ -283,6 +283,63 @@
   color: #111827;
 }
 
+/* ── Tarjeta DEGRADADA "Ya no disponible" ──────────────────────────────────
+   Se muestra cuando el producto de la wishlist fue borrado (físico legado o
+   tombstone) u ocultado: conserva el snapshot (nombre + imagen) en gris y solo
+   permite quitarlo de la lista. Sin precio ni botón de compra. */
+.unavailableCard {
+  opacity: 0.92;
+}
+
+.unavailableCard:hover {
+  transform: none; /* sin "lift": no es interactiva como las demás */
+}
+
+.unavailableImg {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.unavailableBadge {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: rgba(55, 65, 81, 0.9);
+  color: #f9fafb;
+  padding: 0.35rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.unavailableText {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0 0 1rem 0;
+}
+
+.removeBtn {
+  flex: 1;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 0.6rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.removeBtn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
 @media (max-width: 640px) {
   .headerRow {
     flex-direction: column;
@@ -375,4 +432,18 @@
 :global([data-theme='dark']) .btnView:hover {
   background: var(--color-hover);
   color: var(--color-text);
+}
+
+/* Tarjeta degradada "Ya no disponible": texto atenuado y botón de quitar con
+   tinte rojo translúcido sobre superficie oscura (tokens del tema). */
+:global([data-theme='dark']) .unavailableText {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .removeBtn {
+  background: rgba(239, 68, 68, 0.12);
+  color: #FCA5A5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+:global([data-theme='dark']) .removeBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
 }

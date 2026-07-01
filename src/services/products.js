@@ -309,6 +309,13 @@ export function normalizeProductForRead(doc) {
 
 /**
  * Obtener un producto por ID (normalizado para uso en tienda y editor)
+ *
+ * IMPORTANTE (soft-delete): esta función NO filtra por visible/deleted, así que
+ * puede devolver un producto borrado lógicamente (deleted===true, visible===false).
+ * Es intencional: el historial de compras/wishlist necesita leer el tombstone
+ * (name, imágenes, precio). Cada CONSUMIDOR decide qué hacer con un doc borrado
+ * (p.ej. ProductPage muestra "ya no está disponible" en vez de la ficha comprable).
+ * La firma no cambia: (productId) => { data, error }.
  */
 export const getProduct = async (productId) => {
   const result = await getDocument(COLLECTION, productId);
@@ -660,9 +667,39 @@ export const setProductBrand = async (id, brandId) => {
 };
 
 /**
- * Eliminar producto
+ * Eliminar producto (SOFT-DELETE / borrado lógico).
+ *
+ * NO borra el documento ni las imágenes de Storage: marca el producto con un
+ * "tombstone" { visible:false, deleted:true, deletedAt:ISO } y limpia
+ * searchTokens para que deje de aparecer en la búsqueda por Firestore
+ * (array-contains). Se CONSERVAN name/mainImage/images/price/salePrice/
+ * brandId/variants porque el historial de compras, la wishlist y la lista de
+ * regalos siguen necesitando esos datos para pintar miniaturas y precios.
+ *
+ * La firma NO cambia (id) => {error}: los llamadores del admin siguen igual.
+ * Para el borrado FÍSICO antiguo (doc + Storage) existe deleteProductPermanently,
+ * que NINGÚN llamador de UI usa por defecto.
  */
 export const deleteProduct = async (id) => {
+  const tombstone = {
+    visible: false,
+    deleted: true,
+    deletedAt: new Date().toISOString(),
+    // Tombstone ligero: sin tokens el producto no vuelve a salir en la búsqueda.
+    searchTokens: []
+  };
+  const result = await updateDocument(COLLECTION, id, tombstone);
+  clearProductCaches();
+  return result;
+};
+
+/**
+ * Eliminar producto PERMANENTEMENTE (borrado físico: doc de Firestore + imágenes
+ * de Firebase Storage). Es la lógica antigua de deleteProduct y se conserva solo
+ * para mantenimiento/limpieza manual. OJO: rompe historial de compras, wishlist
+ * y lista de regalos que referencien este producto — usar solo a sabiendas.
+ */
+export const deleteProductPermanently = async (id) => {
   try {
     const productResult = await getProduct(id);
     const product = productResult?.data;
