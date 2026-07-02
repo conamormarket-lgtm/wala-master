@@ -30,6 +30,7 @@ import {
 } from '../services/analytics/tracker';
 import { getCachedCountry } from '../services/geo';
 import { parseUserAgent } from '../services/analytics/ua';
+import { construirFondoStyle, sombraBotonCss, hexToRgba } from '../services/linkThemes';
 import { useAuth } from '../contexts/AuthContext';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import styles from './LinkInBioPage.module.css';
@@ -48,39 +49,9 @@ const ICONO_RED = {
 // react-router; si es externa, se abre en pestaña nueva con rel de seguridad.
 const esInterna = (url) => typeof url === 'string' && url.startsWith('/');
 
-// Construye el valor CSS del fondo según el tipo configurado por el dueño.
-// color   -> el color plano. gradient -> el degradado tal cual (CSS válido).
-// image   -> url() de la imagen (con fallbacks a color si algo falla).
-const construirFondo = (background) => {
-  const bg = background || {};
-  const value = bg.value || '';
-  if (bg.type === 'image' && value) {
-    return `url("${value}")`;
-  }
-  if (bg.type === 'gradient' && value) {
-    return value;
-  }
-  // color (o cualquier otro caso): color plano o el gris por defecto.
-  return value || '#f3f4f6';
-};
-
-// Sombra CSS según la intensidad configurada (none | soft | strong).
-const construirSombra = (buttonShadow) => {
-  if (buttonShadow === 'strong') return '0 10px 24px rgba(0, 0, 0, 0.28)';
-  if (buttonShadow === 'soft') return '0 4px 12px rgba(0, 0, 0, 0.14)';
-  return 'none';
-};
-
-// Convierte un hex (#rrggbb) a rgba con alpha, para el fondo "glass".
-// Tolerante: si el hex no es válido, cae a un blanco translúcido.
-const hexToRgba = (hex, alpha) => {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || ''));
-  if (!m) return `rgba(255, 255, 255, ${alpha})`;
-  const r = parseInt(m[1], 16);
-  const g = parseInt(m[2], 16);
-  const b = parseInt(m[3], 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
+// El fondo (color/degradado/patrón/imagen) y la sombra se calculan en el módulo
+// COMPARTIDO src/services/linkThemes.js (construirFondoStyle / sombraBotonCss),
+// así la vista previa del editor y esta página pública se ven IDÉNTICAS.
 
 // Mapa de estilo de botón -> clase CSS.
 const CLASE_ESTILO = {
@@ -219,30 +190,33 @@ const LinkInBioPage = () => {
   // ── Diseño configurado -> variables CSS inline ───────────────────────────
   const diseno = page.diseno || {};
   const estilo = diseno.buttonStyle || 'solid';
-  const fondoValue = construirFondo(diseno.background);
+  // Fondo (color/degradado/patrón/imagen) como objeto de estilo (módulo compartido).
+  const fondoStyle = construirFondoStyle(diseno.background);
   // Para "glass" derivamos un fondo translúcido a partir del color del botón.
   const glassBg = hexToRgba(diseno.buttonColor || '#111827', 0.22);
+  // Colores de texto: título y texto normal son INDEPENDIENTES (con fallback al
+  // color del texto del botón para páginas antiguas, ya resuelto en el servicio).
+  const tituloColor = diseno.titleColor || diseno.buttonTextColor || '#111827';
+  const textoColor = diseno.textColor || diseno.buttonTextColor || '#374151';
 
-  // El texto de cabecera (título/descr./redes) hereda el color del texto del
-  // botón para que contraste con el fondo elegido por el dueño.
   const styleVars = {
-    '--lb-bg': fondoValue,
-    '--lb-bg-solid': diseno.background?.type === 'color' ? (diseno.background?.value || '#f3f4f6') : '#ffffff',
     '--lb-font': diseno.fontFamily || 'inherit',
     '--lb-radius': `${typeof diseno.cornerRoundness === 'number' ? diseno.cornerRoundness : 12}px`,
-    '--lb-shadow': construirSombra(diseno.buttonShadow),
+    '--lb-shadow': sombraBotonCss(diseno.buttonShadow),
     '--lb-btn-bg': diseno.buttonColor || '#111827',
     '--lb-btn-text': diseno.buttonTextColor || '#ffffff',
     '--lb-btn-color': diseno.buttonColor || '#111827',
     '--lb-btn-glass': glassBg,
-    '--lb-header-text': diseno.buttonTextColor || '#111827',
+    // Colores de texto de cabecera/redes/footer.
+    '--lb-title': tituloColor,
+    '--lb-text': textoColor,
   };
 
   const botones = Array.isArray(page.botones) ? page.botones : [];
   const redes = Array.isArray(page.redes) ? page.redes : [];
 
   return (
-    <div className={styles.page} style={styleVars}>
+    <div className={styles.page} style={{ ...styleVars, ...fondoStyle }}>
       <div className={styles.column}>
         {/* Cabecera: avatar + título + descripción */}
         <header className={styles.header}>

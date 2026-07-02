@@ -11,12 +11,11 @@
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
-  /* El fondo real (color/degradado/imagen) llega en --lb-bg. */
-  background: var(--lb-bg, #f3f4f6);
-  background-size: cover;
+  /* El fondo real (color/degradado/patrón/imagen) lo aplica el componente
+     por estilo inline (construirFondoStyle). Este color es solo el fallback. */
+  background: #f3f4f6;
   background-position: center;
   background-repeat: no-repeat;
-  background-attachment: scroll;
   /* La fuente configurada (o la del sistema si viene vacía). */
   font-family: var(--lb-font, inherit);
   display: flex;
@@ -65,9 +64,8 @@
   font-size: 1.5rem;
   font-weight: 800;
   margin: 0.25rem 0 0;
-  /* Color de texto de la cabecera: derivado del texto del botón para contraste
-     con el fondo (lo setea el componente en --lb-header-text). */
-  color: var(--lb-header-text, #111827);
+  /* Color del TÍTULO: control independiente (--lb-title). */
+  color: var(--lb-title, #111827);
   word-break: break-word;
   line-height: 1.2;
 }
@@ -75,8 +73,9 @@
 .description {
   font-size: 0.95rem;
   margin: 0;
-  color: var(--lb-header-text, #374151);
-  opacity: 0.85;
+  /* Color del TEXTO normal: control independiente (--lb-text). */
+  color: var(--lb-text, #374151);
+  opacity: 0.9;
   max-width: 40ch;
   line-height: 1.4;
   word-break: break-word;
@@ -98,11 +97,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
   cursor: pointer;
   padding: 0;
-  background: var(--lb-header-text, #111827);
-  color: var(--lb-bg-solid, #ffffff);
+  /* Ícono social: círculo con contorno en el color del texto (siempre visible
+     sobre cualquier fondo). */
+  background: transparent;
+  border: 1.5px solid var(--lb-text, #111827);
+  color: var(--lb-text, #111827);
   font-size: 1.05rem;
   line-height: 1;
   transition: transform 0.15s ease, opacity 0.15s ease;
@@ -220,7 +221,7 @@
 
 .footerLink {
   font-size: 0.75rem;
-  color: var(--lb-header-text, #6b7280);
+  color: var(--lb-text, #6b7280);
   opacity: 0.6;
   text-decoration: none;
 }

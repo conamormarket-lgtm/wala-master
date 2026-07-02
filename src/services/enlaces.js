@@ -75,10 +75,14 @@ export const getLinkPageBySlug = async (slug) => {
 const disenoPorDefecto = () => ({
   buttonStyle: 'solid',        // "solid" | "glass" | "outline"
   cornerRoundness: 12,         // px (redondez de esquinas del botón)
-  buttonShadow: 'soft',        // "none" | "soft" | "strong"
+  buttonShadow: 'soft',        // "none" | "soft" | "strong" | "hard"
   buttonColor: '#111827',
   buttonTextColor: '#ffffff',
-  background: { type: 'color', value: '#f3f4f6' }, // "color" | "gradient" | "image"
+  titleColor: '#111827',       // color del TÍTULO (independiente del botón)
+  textColor: '#374151',        // color del TEXTO normal (descripción/redes/footer)
+  // background.type: "color" | "gradient" | "pattern" | "image".
+  // Para "pattern", `color` es el color base sobre el que se dibuja la textura.
+  background: { type: 'color', value: '#f3f4f6', color: '#4B0055' },
   fontFamily: '',
 });
 
@@ -118,8 +122,16 @@ const normalizarDiseno = (diseno) => {
     buttonShadow: d.buttonShadow || base.buttonShadow,
     buttonColor: d.buttonColor || base.buttonColor,
     buttonTextColor: d.buttonTextColor || base.buttonTextColor,
+    // Título y texto: si la página es VIEJA (sin estos campos) caen al color del
+    // texto del botón (comportamiento previo), así no cambia su apariencia.
+    titleColor: d.titleColor || d.buttonTextColor || base.titleColor,
+    textColor: d.textColor || d.buttonTextColor || base.textColor,
     background: d.background && d.background.type
-      ? { type: d.background.type, value: d.background.value ?? '' }
+      ? {
+          type: d.background.type,
+          value: d.background.value ?? '',
+          color: d.background.color || base.background.color,
+        }
       : base.background,
     fontFamily: d.fontFamily || base.fontFamily,
   };

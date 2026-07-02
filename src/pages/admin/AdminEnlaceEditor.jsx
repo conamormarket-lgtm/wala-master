@@ -39,6 +39,13 @@ import {
   Image as ImageIcon, Link2, BarChart3, Eye, ExternalLink, Palette,
   Camera, MessageCircle, Music2, Globe,
 } from 'lucide-react';
+import {
+  TEMAS,
+  GRADIENTES,
+  PATRONES,
+  construirFondoStyle,
+  estiloBotonStyle,
+} from '../../services/linkThemes';
 import styles from './AdminEnlaceEditor.module.css';
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
@@ -68,66 +75,30 @@ const iconoDeTipo = (tipo) =>
 // id único para botones/redes nuevos (mismo prefijo que usa el servicio).
 const nuevoId = (prefijo) => `${prefijo}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
-// Sombra CSS según la opción de diseño.
-const sombraCss = (shadow) => {
-  if (shadow === 'soft') return '0 4px 14px rgba(0,0,0,0.12)';
-  if (shadow === 'strong') return '0 10px 28px rgba(0,0,0,0.28)';
-  return 'none';
-};
+// El estilo del botón y del fondo de la vista previa se calculan con el MISMO
+// módulo compartido que usa la página pública (estiloBotonStyle / construirFondoStyle)
+// para que la preview y el resultado real coincidan EXACTO.
 
-// Convierte un hex (#rrggbb) a rgba con alpha. Mismo cálculo que la página
-// pública (LinkInBioPage) para que la vista previa "glass" coincida EXACTO con
-// el resultado real (deriva el translúcido del color del botón elegido).
-const hexToRgba = (hex, alpha) => {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || ''));
-  if (!m) return `rgba(255, 255, 255, ${alpha})`;
-  return `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${alpha})`;
-};
-
-// Devuelve los estilos inline de un botón de la vista previa según 'diseno'.
-const estiloBotonPreview = (diseno) => {
-  const base = {
-    borderRadius: `${diseno.cornerRoundness ?? 12}px`,
-    boxShadow: sombraCss(diseno.buttonShadow),
-    color: diseno.buttonTextColor || '#ffffff',
-  };
-  if (diseno.buttonStyle === 'glass') {
-    return {
-      ...base,
-      // Mismo translúcido que la página pública: hexToRgba(buttonColor, 0.22).
-      background: hexToRgba(diseno.buttonColor || '#111827', 0.22),
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      border: '1px solid rgba(255,255,255,0.35)',
-    };
-  }
-  if (diseno.buttonStyle === 'outline') {
-    return {
-      ...base,
-      background: 'transparent',
-      border: `2px solid ${diseno.buttonColor || '#111827'}`,
-      color: diseno.buttonColor || '#111827',
-    };
-  }
-  // solid (por defecto)
-  return { ...base, background: diseno.buttonColor || '#111827', border: 'none' };
-};
-
-// Estilo del fondo de la vista previo según diseno.background.
-const estiloFondoPreview = (bg) => {
-  if (!bg) return { background: '#f3f4f6' };
-  if (bg.type === 'image' && bg.value) {
-    return {
-      backgroundImage: `url(${bg.value})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    };
-  }
-  if (bg.type === 'gradient' && bg.value) {
-    return { background: bg.value };
-  }
-  return { background: bg.value || '#f3f4f6' };
-};
+// Selector de color reutilizable (rueda de color + campo hex).
+const ColorPicker = ({ label, value, onChange }) => (
+  <div className={styles.field} style={{ flex: 1, minWidth: 130 }}>
+    <label className={styles.label}>{label}</label>
+    <div className={styles.colorRow}>
+      <input
+        type="color"
+        className={styles.colorInput}
+        value={/^#([a-f\d]{6})$/i.test(value || '') ? value : '#000000'}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <input
+        type="text"
+        className={styles.inputSm}
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  </div>
+);
 
 // Lista compacta de un desglose (país / dispositivo / día) con visitas y clics.
 // items: [{ key, visitas, clics }] ya ordenados por el servicio.
@@ -217,7 +188,14 @@ const AdminEnlaceEditor = () => {
           buttonShadow: pageData.diseno?.buttonShadow || 'soft',
           buttonColor: pageData.diseno?.buttonColor || '#111827',
           buttonTextColor: pageData.diseno?.buttonTextColor || '#ffffff',
-          background: pageData.diseno?.background || { type: 'color', value: '#f3f4f6' },
+          // Título y texto: si faltan (página vieja), caen al color del texto del botón.
+          titleColor: pageData.diseno?.titleColor || pageData.diseno?.buttonTextColor || '#111827',
+          textColor: pageData.diseno?.textColor || pageData.diseno?.buttonTextColor || '#374151',
+          background: {
+            type: pageData.diseno?.background?.type || 'color',
+            value: pageData.diseno?.background?.value ?? '#f3f4f6',
+            color: pageData.diseno?.background?.color || '#4B0055',
+          },
           fontFamily: pageData.diseno?.fontFamily || '',
         },
         botones: Array.isArray(pageData.botones)
@@ -284,6 +262,24 @@ const AdminEnlaceEditor = () => {
       ...f,
       diseno: { ...f.diseno, background: { ...f.diseno.background, ...parcial } },
     }));
+
+  // Aplica un TEMA predefinido: reemplaza TODO el diseño (colores/fondo/botón).
+  // El dueño puede luego ajustar cualquier color a mano.
+  const aplicarTema = (tema) =>
+    setForm((f) => ({ ...f, diseno: { ...tema.diseno } }));
+
+  // Cambia el TIPO de fondo (color/degradado/patrón/imagen) dejando un `value`
+  // coherente con el tipo nuevo (evita mostrar un value incompatible).
+  const cambiarTipoFondo = (type) =>
+    setForm((f) => {
+      const bg = f.diseno.background || {};
+      let value = bg.value;
+      if (type === 'color') value = /^#/.test(value || '') ? value : '#f3f4f6';
+      else if (type === 'gradient') value = /gradient/.test(value || '') ? value : GRADIENTES[0].value;
+      else if (type === 'pattern') value = PATRONES.some((p) => p.id === value) ? value : PATRONES[0].id;
+      else if (type === 'image') value = /^(https?:|\/)/.test(value || '') ? value : '';
+      return { ...f, diseno: { ...f.diseno, background: { ...bg, type, value } } };
+    });
 
   // Botones
   const agregarBoton = () =>
@@ -717,6 +713,29 @@ const AdminEnlaceEditor = () => {
           <section className={styles.card}>
             <h2 className={styles.sectionTitle}><Palette size={18} /> Diseño</h2>
 
+            {/* TEMAS predefinidos (buen contraste, listos para aplicar) */}
+            <div className={styles.field}>
+              <label className={styles.label}>Temas predefinidos</label>
+              <div className={styles.themeGrid}>
+                {TEMAS.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={styles.themeCard}
+                    onClick={() => aplicarTema(t)}
+                    title={`Aplicar tema ${t.nombre}`}
+                  >
+                    <span className={styles.themeSwatch} style={construirFondoStyle(t.diseno.background)}>
+                      <span className={styles.themeDot} style={{ background: t.diseno.titleColor }} />
+                      <span className={styles.themeBar} style={estiloBotonStyle(t.diseno)} />
+                    </span>
+                    <span className={styles.themeName}>{t.nombre}</span>
+                  </button>
+                ))}
+              </div>
+              <p className={styles.slugHintLike}>Elige un tema y luego ajusta los colores a tu gusto.</p>
+            </div>
+
             {/* Estilo de botón */}
             <div className={styles.field}>
               <label className={styles.label}>Estilo de botón</label>
@@ -762,6 +781,7 @@ const AdminEnlaceEditor = () => {
                   { v: 'none', t: 'Ninguna' },
                   { v: 'soft', t: 'Suave' },
                   { v: 'strong', t: 'Fuerte' },
+                  { v: 'hard', t: 'Dura' },
                 ].map((op) => (
                   <button
                     key={op.v}
@@ -775,42 +795,31 @@ const AdminEnlaceEditor = () => {
               </div>
             </div>
 
-            {/* Colores de botón y texto */}
+            {/* COLORES (los 5 controles, como Linktree) */}
+            <label className={styles.label} style={{ marginTop: '0.5rem' }}>Colores</label>
             <div className={styles.fieldRow}>
-              <div className={styles.field} style={{ flex: 1 }}>
-                <label className={styles.label}>Color del botón</label>
-                <div className={styles.colorRow}>
-                  <input
-                    type="color"
-                    className={styles.colorInput}
-                    value={form.diseno.buttonColor}
-                    onChange={(e) => setDiseno({ buttonColor: e.target.value })}
-                  />
-                  <input
-                    type="text"
-                    className={styles.inputSm}
-                    value={form.diseno.buttonColor}
-                    onChange={(e) => setDiseno({ buttonColor: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className={styles.field} style={{ flex: 1 }}>
-                <label className={styles.label}>Color del texto</label>
-                <div className={styles.colorRow}>
-                  <input
-                    type="color"
-                    className={styles.colorInput}
-                    value={form.diseno.buttonTextColor}
-                    onChange={(e) => setDiseno({ buttonTextColor: e.target.value })}
-                  />
-                  <input
-                    type="text"
-                    className={styles.inputSm}
-                    value={form.diseno.buttonTextColor}
-                    onChange={(e) => setDiseno({ buttonTextColor: e.target.value })}
-                  />
-                </div>
-              </div>
+              <ColorPicker
+                label="Título"
+                value={form.diseno.titleColor}
+                onChange={(v) => setDiseno({ titleColor: v })}
+              />
+              <ColorPicker
+                label="Texto normal"
+                value={form.diseno.textColor}
+                onChange={(v) => setDiseno({ textColor: v })}
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <ColorPicker
+                label="Botón"
+                value={form.diseno.buttonColor}
+                onChange={(v) => setDiseno({ buttonColor: v })}
+              />
+              <ColorPicker
+                label="Texto del botón"
+                value={form.diseno.buttonTextColor}
+                onChange={(v) => setDiseno({ buttonTextColor: v })}
+              />
             </div>
 
             {/* Fondo */}
@@ -820,13 +829,14 @@ const AdminEnlaceEditor = () => {
                 {[
                   { v: 'color', t: 'Color' },
                   { v: 'gradient', t: 'Degradado' },
+                  { v: 'pattern', t: 'Patrón' },
                   { v: 'image', t: 'Imagen' },
                 ].map((op) => (
                   <button
                     key={op.v}
                     type="button"
                     className={`${styles.segBtn} ${form.diseno.background.type === op.v ? styles.segBtnActive : ''}`}
-                    onClick={() => setBackground({ type: op.v })}
+                    onClick={() => cambiarTipoFondo(op.v)}
                   >
                     {op.t}
                   </button>
@@ -851,14 +861,59 @@ const AdminEnlaceEditor = () => {
               )}
 
               {form.diseno.background.type === 'gradient' && (
-                <input
-                  type="text"
-                  className={styles.input}
-                  style={{ marginTop: '0.6rem' }}
-                  placeholder="linear-gradient(135deg, #f6d365, #fda085)"
-                  value={form.diseno.background.value}
-                  onChange={(e) => setBackground({ value: e.target.value })}
-                />
+                <>
+                  <div className={styles.swatchRow} style={{ marginTop: '0.6rem' }}>
+                    {GRADIENTES.map((g) => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        title={g.nombre}
+                        className={`${styles.swatch} ${form.diseno.background.value === g.value ? styles.swatchActive : ''}`}
+                        style={{ background: g.value }}
+                        onClick={() => setBackground({ value: g.value })}
+                      />
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    style={{ marginTop: '0.5rem' }}
+                    placeholder="linear-gradient(135deg, #f6d365, #fda085)"
+                    value={form.diseno.background.value}
+                    onChange={(e) => setBackground({ value: e.target.value })}
+                  />
+                </>
+              )}
+
+              {form.diseno.background.type === 'pattern' && (
+                <>
+                  <div className={styles.colorRow} style={{ marginTop: '0.6rem' }}>
+                    <input
+                      type="color"
+                      className={styles.colorInput}
+                      value={/^#([a-f\d]{6})$/i.test(form.diseno.background.color || '') ? form.diseno.background.color : '#4B0055'}
+                      onChange={(e) => setBackground({ color: e.target.value })}
+                    />
+                    <input
+                      type="text"
+                      className={styles.inputSm}
+                      value={form.diseno.background.color || ''}
+                      onChange={(e) => setBackground({ color: e.target.value })}
+                    />
+                  </div>
+                  <div className={styles.swatchRow} style={{ marginTop: '0.5rem' }}>
+                    {PATRONES.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        title={p.nombre}
+                        className={`${styles.swatch} ${form.diseno.background.value === p.id ? styles.swatchActive : ''}`}
+                        style={p.build(form.diseno.background.color || '#4B0055')}
+                        onClick={() => setBackground({ value: p.id })}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
 
               {form.diseno.background.type === 'image' && (
@@ -971,7 +1026,7 @@ const AdminEnlaceEditor = () => {
           <div className={styles.phoneFrame}>
             <div
               className={styles.phoneScreen}
-              style={{ ...estiloFondoPreview(form.diseno.background), fontFamily: fuentePreview }}
+              style={{ ...construirFondoStyle(form.diseno.background), fontFamily: fuentePreview }}
             >
               {/* Cabecera de la preview */}
               <div className={styles.pvHeader}>
@@ -982,8 +1037,12 @@ const AdminEnlaceEditor = () => {
                     {(form.titulo || '?').trim().charAt(0).toUpperCase()}
                   </div>
                 )}
-                <h3 className={styles.pvTitle}>{form.titulo || 'Tu título'}</h3>
-                {form.descripcion && <p className={styles.pvDesc}>{form.descripcion}</p>}
+                <h3 className={styles.pvTitle} style={{ color: form.diseno.titleColor }}>
+                  {form.titulo || 'Tu título'}
+                </h3>
+                {form.descripcion && (
+                  <p className={styles.pvDesc} style={{ color: form.diseno.textColor }}>{form.descripcion}</p>
+                )}
               </div>
 
               {/* Fila de redes */}
@@ -992,7 +1051,12 @@ const AdminEnlaceEditor = () => {
                   {form.redes.map((r) => {
                     const IconoTipo = iconoDeTipo(r.tipo);
                     return (
-                      <span key={r.id} className={styles.pvRedIcon} title={r.nombre}>
+                      <span
+                        key={r.id}
+                        className={styles.pvRedIcon}
+                        title={r.nombre}
+                        style={{ color: form.diseno.textColor, borderColor: form.diseno.textColor }}
+                      >
                         {r.iconUrl ? (
                           <img src={r.iconUrl} alt="" className={styles.pvRedImg} />
                         ) : (
@@ -1007,7 +1071,7 @@ const AdminEnlaceEditor = () => {
               {/* Botones */}
               <div className={styles.pvBotones}>
                 {form.botones.map((b) => (
-                  <div key={b.id} className={styles.pvBoton} style={estiloBotonPreview(form.diseno)}>
+                  <div key={b.id} className={styles.pvBoton} style={estiloBotonStyle(form.diseno)}>
                     {b.thumbnailUrl && (
                       <img src={b.thumbnailUrl} alt="" className={styles.pvBotonThumb} />
                     )}
@@ -1015,7 +1079,7 @@ const AdminEnlaceEditor = () => {
                   </div>
                 ))}
                 {form.botones.length === 0 && (
-                  <div className={styles.pvBoton} style={estiloBotonPreview(form.diseno)}>
+                  <div className={styles.pvBoton} style={estiloBotonStyle(form.diseno)}>
                     <span className={styles.pvBotonTxt}>Botón de ejemplo</span>
                   </div>
                 )}

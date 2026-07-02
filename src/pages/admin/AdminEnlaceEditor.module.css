@@ -390,6 +390,71 @@
 }
 .colorRow .inputSm { flex: 1; text-transform: uppercase; }
 
+/* ── Temas predefinidos (tarjetas) ── */
+.themeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 0.6rem;
+}
+.themeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.themeSwatch {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.themeCard:hover .themeSwatch {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+.themeDot { width: 22px; height: 6px; border-radius: 4px; }
+.themeBar { width: 68%; height: 16px; border-radius: 6px; }
+.themeName { font-size: 0.72rem; font-weight: 600; color: #4b5563; }
+
+/* ── Swatches (degradados y patrones) ── */
+.swatchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s ease;
+}
+.swatch:hover { transform: scale(1.06); }
+.swatchActive {
+  border-color: #6d28d9;
+  box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.35);
+}
+
+.slugHintLike { margin: 0.4rem 0 0; font-size: 0.78rem; color: #6b7280; }
+
+[data-theme="dark"] .themeName { color: var(--color-text-muted, #9ca3af); }
+[data-theme="dark"] .slugHintLike { color: var(--color-text-muted, #9ca3af); }
+
 /* Fondo imagen */
 .bgUploadWrap { position: relative; margin-top: 0.6rem; }
 .bgUploadLabel {
@@ -556,7 +621,9 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.85);
+  /* Círculo con contorno en el color del texto (color/borderColor inline). */
+  background: transparent;
+  border: 1.5px solid currentColor;
   color: #111;
   display: flex;
   align-items: center;
