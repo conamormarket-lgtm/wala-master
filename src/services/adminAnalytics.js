@@ -1,5 +1,8 @@
 import { getCollection, getDocument } from './firebase/firestore';
 import { ANALYTICS_COLLECTIONS, ANALYTICS_EVENT_TYPES, formatDayKey, safeNumber, toMillis } from './analytics/schema';
+// Parser de UA compartido con la captura (tracker.js escribe device/browser/os
+// con este MISMO parseo): ver src/services/analytics/ua.js.
+import { parseUserAgent } from './analytics/ua';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 
 const DEFAULT_EVENTS_LIMIT = 1200;
@@ -125,30 +128,6 @@ export function deriveOrderTracking(events = []) {
     // Tiempo promedio por evento de permanencia (ms). 0 si no hay permanencias.
     avgDwellMs: dwellEvents > 0 ? Math.round(totalDwellMs / dwellEvents) : 0,
   };
-}
-
-function parseUserAgent(ua) {
-  if (!ua) return { browser: 'Desconocido', os: 'Desconocido', device: 'Desconocido' };
-  const lower = ua.toLowerCase();
-  
-  let browser = 'Desconocido';
-  if (lower.includes('firefox')) browser = 'Firefox';
-  else if (lower.includes('edg')) browser = 'Edge';
-  else if (lower.includes('opr') || lower.includes('opera')) browser = 'Opera';
-  else if (lower.includes('chrome')) browser = 'Chrome';
-  else if (lower.includes('safari')) browser = 'Safari';
-  
-  let os = 'Desconocido';
-  if (lower.includes('win')) os = 'Windows';
-  else if (lower.includes('mac')) os = 'MacOS';
-  else if (lower.includes('linux')) os = 'Linux';
-  if (lower.includes('android')) os = 'Android';
-  if (lower.includes('iphone') || lower.includes('ipad')) os = 'iOS';
-  
-  let device = 'Desktop';
-  if (lower.includes('mobi') || lower.includes('android') || lower.includes('iphone') || lower.includes('ipad')) device = 'Mobile';
-  
-  return { browser, os, device };
 }
 
 function aggregateDevices(sessions = []) {

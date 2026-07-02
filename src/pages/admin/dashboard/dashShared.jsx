@@ -179,6 +179,65 @@ function pickLegacyBackfill(globalData = {}) {
   return out;
 }
 
+/* ------------------ campos EXTENDIDOS del doc diario (P1) ------------------ */
+
+// Deriva filas [{name,count}] APP/WEB desde un contador {total,app,web} de
+// sesiones (fallback del legacy y de docs diarios viejos sin byClientType).
+function deriveClientTypeRows(totalSessions) {
+  const app = Number(totalSessions?.app) || 0;
+  const web = Number(totalSessions?.web) || 0;
+  if (app + web <= 0) return [];
+  const rows = [];
+  if (web > 0) rows.push({ name: 'WEB', count: web });
+  if (app > 0) rows.push({ name: 'APP', count: app });
+  return rows.sort((a, b) => b.count - a.count);
+}
+
+/**
+ * ensureExtendedAnalytics — garantiza que el objeto que consumen las páginas
+ * SIEMPRE tenga los campos NUEVOS del doc diario con forma predecible, venga
+ * de la lectura pre-agregada (combineDailyDocs ya los combina), del legacy
+ * (que solo conoce parte) o de docs viejos sin los campos nuevos.
+ *
+ * Contrato de salida (P1; la UI de filtros llega en P2):
+ *   byCountry     [{ code, name, count }]  país real (IP) — [] = "sin datos"
+ *   byDevice      [{ name, count }]        Mobile/Tablet/Desktop
+ *   byBrowser     [{ name, count }]
+ *   byOS          [{ name, count }]
+ *   byClientType  [{ name, count }]        APP/WEB
+ *   funnel        { events, users } | null misma forma que funnelStats
+ *   identities    { logged?, anonymous?, … } TAWs — {} = "sin datos"
+ *
+ * Todo con ||/?? y valores neutros: NADA rompe si faltan los campos; las
+ * páginas muestran "sin datos" cuando el array/objeto llega vacío.
+ */
+export function ensureExtendedAnalytics(data = {}) {
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  const first = (...cands) => cands.map(arr).find((a) => a.length > 0) || [];
+  return {
+    ...data,
+    // País por IP de sesión: solo existe con la CF nueva; el legacy NO lo sabe
+    // (su geografía es por timeZone) → [] honesto en vez de inventar países.
+    byCountry: arr(data.byCountry),
+    // Dispositivo/navegador/SO: usa los nuevos; cae al desglose del UA que el
+    // legacy ya calcula (deviceStats.top*) para no dejar el panel vacío.
+    byDevice: first(data.byDevice, data.deviceStats?.topDevices),
+    byBrowser: first(data.byBrowser, data.deviceStats?.topBrowsers),
+    byOS: first(data.byOS, data.deviceStats?.topOS),
+    // Segmento APP/WEB: usa el nuevo; cae a derivarlo de totalSessions.
+    byClientType: arr(data.byClientType).length > 0
+      ? arr(data.byClientType)
+      : deriveClientTypeRows(data.totalSessions),
+    // Embudo: alias estable (el legacy solo trae funnelStats).
+    funnel: data.funnel || data.funnelStats || null,
+    // Identidades desglosadas: objeto plano de TAWs; {} = "sin datos".
+    identities:
+      data.identities && typeof data.identities === 'object' && !Array.isArray(data.identities)
+        ? data.identities
+        : {},
+  };
+}
+
 // Nº de días del rango a partir de {startDateMs,endDateMs} (para la lectura
 // pre-agregada, que lee 1 doc por día). useDateRange genera el rango como
 // [hoy-rangeDays 00:00, hoy 23:59], por lo que cubre rangeDays+1 claves de día;
@@ -244,7 +303,9 @@ async function fetchDashboardGlobal(dateRange, backfill = {}) {
       // Orden de fusión: pre-agregada → backfill legacy → realtime. El backfill
       // SOLO sobreescribe los 3 campos neutros; si no había snapshot legacy, no
       // rompe nada y se conservan los valores neutros de la pre-agregada.
-      return { ...daily, ...legacyBackfill, ...realtime };
+      // ensureExtendedAnalytics garantiza los campos NUEVOS (byCountry/byDevice/
+      // byBrowser/byOS/byClientType/funnel/identities) con forma predecible.
+      return ensureExtendedAnalytics({ ...daily, ...legacyBackfill, ...realtime });
     }
     // daily === null → fallback explícito al legacy.
   } catch (e) {
@@ -260,7 +321,10 @@ async function fetchDashboardGlobal(dateRange, backfill = {}) {
   // Cacheamos el resultado legacy (sin coste extra) para que futuras cargas
   // pre-agregadas de este rango puedan rellenar los 3 campos del FIX 3.
   if (typeof setLegacySnapshot === 'function') setLegacySnapshot(res.data);
-  return res.data;
+  // También el camino legacy expone los campos NUEVOS (con sus fallbacks:
+  // deviceStats→byDevice/..., totalSessions→byClientType, funnelStats→funnel;
+  // byCountry/identities quedan vacíos = "sin datos", honesto).
+  return ensureExtendedAnalytics(res.data);
 }
 
 /**

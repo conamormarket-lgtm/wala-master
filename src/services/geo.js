@@ -61,11 +61,23 @@ function writeCache(country) {
   }
 }
 
+// Lectura SÍNCRONA de la caché de país (para la analítica: enriquecer la
+// sesión sin bloquear el render ni esperar red). Devuelve { code, name,
+// dialCode } si hay caché vigente o null si no hay/expiró. Importante: la
+// caché SOLO se escribe tras una detección IP exitosa (el fallback PE nunca
+// se cachea), así que un hit de caché siempre equivale a fuente "ip".
+export function getCachedCountry() {
+  return readCache();
+}
+
 // Detecta el país del visitante. Cachea 24h en localStorage. Fallback = PE.
+// El resultado incluye `source` EXPLÍCITO ('ip' | 'fallback') para que la
+// analítica no tenga que inferir la fuente de la presencia de caché (que puede
+// fallar en modo privado/WebView aunque la detección IP haya sido exitosa).
 export async function detectCountry() {
-  // 1) Caché válida
+  // 1) Caché válida (solo se escribe tras detección IP exitosa → fuente 'ip')
   const cached = readCache();
-  if (cached) return cached;
+  if (cached) return { ...cached, source: 'ip' };
 
   // 2) Detección por IP
   try {
@@ -77,12 +89,12 @@ export async function detectCountry() {
       const dial = data.calling_code ? `+${String(data.calling_code).replace(/^\+/, '')}` : null;
       const country = normalize(data.country_code, data.country, dial);
       writeCache(country);
-      return country;
+      return { ...country, source: 'ip' };
     }
     throw new Error('geo sin country_code');
   } catch {
     // 3) Fallback seguro a Perú (no se cachea: reintentar en la próxima carga)
-    return { ...FALLBACK };
+    return { ...FALLBACK, source: 'fallback' };
   }
 }
 

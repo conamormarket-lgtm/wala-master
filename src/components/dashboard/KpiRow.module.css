@@ -33,6 +33,7 @@
 
 /* --- Item (envoltorio del StaggerItem) ----------------------------------- */
 .item {
+  position: relative; /* ancla de la leyenda ⓘ (overlay .infoTip) */
   display: flex;
   min-width: 0; /* permite que el contenido encoja sin desbordar la grilla */
 }
@@ -130,4 +131,83 @@
   height: 42px;
   max-width: 130px;
   margin-left: auto;
+}
+
+/* --- Leyenda ⓘ del KPI (nota honesta accesible) --------------------------- */
+/* Trigger: botón real (teclado + lector de pantalla), discreto junto al label. */
+.infoBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 0.35rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gris-texto-secundario, #64748b);
+  font-size: 0.75rem;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: help;
+}
+
+.infoBtn:hover,
+.infoBtn:focus-visible {
+  color: var(--primary-color, #6d28d9);
+}
+
+.infoBtn:focus-visible {
+  outline: 2px solid var(--primary-color, #6d28d9);
+  outline-offset: 2px;
+}
+
+/* Nota: overlay de vidrio sobre la tarjeta (fuera del panel, que recorta con
+   overflow:hidden). SIEMPRE en el DOM para aria-describedby; visible solo
+   abierta. Tokens del tema → dark mode automático. */
+.infoTip {
+  position: absolute;
+  top: 2.35rem;
+  left: 0.6rem;
+  right: 0.6rem;
+  z-index: 30;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--gris-texto-principal, #0f172a);
+  background: var(--glass-bg-solid, rgba(255, 255, 255, 0.92));
+  -webkit-backdrop-filter: var(--glass-blur-solid, blur(14px));
+  backdrop-filter: var(--glass-blur-solid, blur(14px));
+  border: var(--glass-border, 1px solid rgba(148, 163, 184, 0.35));
+  border-radius: var(--radio-pequeno, 10px);
+  box-shadow: var(--glass-shadow-lg, 0 18px 40px -18px rgba(15, 23, 42, 0.28));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--dur-rapida, 180ms) var(--ease-signature, ease),
+    visibility var(--dur-rapida, 180ms) var(--ease-signature, ease);
+}
+
+.infoTipVisible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Fallback sólido (Capacitor/Android o navegadores sin backdrop-filter). */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .infoTip {
+    background: var(--color-surface, #ffffff);
+    border-color: var(--gris-borde, #e2e8f0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .infoTip {
+    transition: none;
+  }
 }

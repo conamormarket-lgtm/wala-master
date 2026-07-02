@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { useId, useState } from 'react';
 import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts';
 import {
   GlassPanel,
@@ -37,7 +37,16 @@ import styles from './KpiRow.module.css';
        deltaPositive: boolean,   // tono del delta (verde si true, rojo si false)
        sparkData: number[] | {value:number}[], // serie para la mini-sparkline
        icon: ReactNode,          // icono opcional (esquina superior derecha)
+       info: string,             // leyenda opcional: qué significa el KPI (ⓘ)
      }
+
+   Leyenda (`info`): si llega texto, se pinta un botón ⓘ junto a la etiqueta
+   que muestra una nota en lenguaje claro al pasar el cursor, enfocar con
+   teclado o tocar (móvil). Accesible: el trigger es un <button> real con
+   aria-label y aria-describedby hacia el texto (role="tooltip"), que SIEMPRE
+   existe en el DOM (los lectores de pantalla leen la descripción aunque esté
+   visualmente oculta). Escape la cierra. Sin `info` no se renderiza nada
+   (retrocompatible con todos los usos actuales).
    ========================================================================= */
 
 // Acento por defecto: violeta de marca (token CSS con fallback al hex canónico).
@@ -69,10 +78,17 @@ function KpiTarjeta({
   deltaPositive = true,
   sparkData,
   icon,
+  info,
 }) {
   // Id único y estable por tarjeta para no colisionar los gradientes de recharts.
   const reactId = useId();
   const gradId = `kpirow-grad-${reactId.replace(/[:]/g, '')}`;
+  const infoId = `kpirow-info-${reactId.replace(/[:]/g, '')}`;
+
+  // Leyenda ⓘ: abierta por hover/focus/click (click cubre pantallas táctiles).
+  // Nota: la nota vive FUERA del GlassPanel (que recorta con overflow:hidden),
+  // como overlay absoluto del .item, para no quedar cortada por la tarjeta.
+  const [infoAbierta, setInfoAbierta] = useState(false);
 
   const sinMovimiento = useReducedMotionSafe();
 
@@ -88,9 +104,27 @@ function KpiTarjeta({
       {/* La superficie de vidrio aporta el cristal de marca; el contenido va dentro. */}
       <GlassPanel variant="soft" padding="none" className={styles.panel}>
         <div className={styles.contenido}>
-          {/* Cabecera: etiqueta + icono opcional con halo del accent. */}
+          {/* Cabecera: etiqueta + leyenda ⓘ opcional + icono con halo del accent. */}
           <div className={styles.top}>
-            <span className={styles.label}>{label}</span>
+            <span className={styles.label}>
+              {label}
+              {info && (
+                <button
+                  type="button"
+                  className={styles.infoBtn}
+                  aria-label={`Qué significa "${label}"`}
+                  aria-describedby={infoId}
+                  onMouseEnter={() => setInfoAbierta(true)}
+                  onMouseLeave={() => setInfoAbierta(false)}
+                  onFocus={() => setInfoAbierta(true)}
+                  onBlur={() => setInfoAbierta(false)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setInfoAbierta(false); }}
+                  onClick={() => setInfoAbierta((v) => !v)}
+                >
+                  ⓘ
+                </button>
+              )}
+            </span>
             {icon && (
               <span className={styles.icon} style={{ color: accent }} aria-hidden="true">
                 {icon}
@@ -145,6 +179,19 @@ function KpiTarjeta({
           </div>
         </div>
       </GlassPanel>
+
+      {/* Leyenda del KPI: SIEMPRE en el DOM (aria-describedby la lee aunque esté
+          oculta); visible solo con hover/focus/tap. Va fuera del panel para que
+          el overflow:hidden de la tarjeta no la recorte. */}
+      {info && (
+        <span
+          role="tooltip"
+          id={infoId}
+          className={`${styles.infoTip} ${infoAbierta ? styles.infoTipVisible : ''}`}
+        >
+          {info}
+        </span>
+      )}
     </StaggerItem>
   );
 }
@@ -176,6 +223,7 @@ export default function KpiRow({ items = [], className, ...rest }) {
           deltaPositive={item?.deltaPositive}
           sparkData={item?.sparkData}
           icon={item?.icon}
+          info={item?.info}
         />
       ))}
     </Stagger>

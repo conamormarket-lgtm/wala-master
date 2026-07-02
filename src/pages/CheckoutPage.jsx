@@ -146,7 +146,10 @@ const CheckoutPage = () => {
               💬 Enviar a {g.label} ({g.count})
             </GlassButton>
           ))}
-          <GlassButton variant="primary" fullWidth onClick={finalize}>
+          {/* FIX analítica: este botón confirmaba el pedido SIN emitir purchase_complete
+              si el cliente no tocaba ningún botón de marca. emitPurchaseComplete es
+              idempotente (purchaseSentRef) y fire-and-forget: no toca pagos/montos. */}
+          <GlassButton variant="primary" fullWidth onClick={() => { emitPurchaseComplete('whatsapp'); finalize(); }}>
             Listo, ya envié mis pedidos ✓
           </GlassButton>
         </div>

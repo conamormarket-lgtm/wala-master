@@ -508,6 +508,16 @@ function combineDailyDocs(docs, dayList) {
   const bySource = new Map(), byCampaign = new Map();
   const byRegion = new Map();
 
+  // --- campos NUEVOS del doc diario (P1): país real (IP), dispositivo guardado,
+  //     segmento APP/WEB e identidades desglosadas. Docs viejos sin estos campos
+  //     NO aportan nada y el resultado queda vacío ("sin datos" en la UI). ---
+  const byCountryNew = new Map();     // code -> { code, name, count }
+  const byDeviceNew = new Map();      // name -> count (campo nuevo del doc)
+  const byBrowserNew = new Map();
+  const byOSNew = new Map();
+  const byClientTypeNew = new Map();  // 'APP'|'WEB' -> count
+  const identitiesNew = {};           // subclave (logged/anonymous/…) -> TAW
+
   // --- uso de funciones ---
   const feature = { editor: 0, minijuegos: 0, misiones: 0, wishlist: 0, busqueda: 0 };
 
@@ -577,6 +587,30 @@ function combineDailyDocs(docs, dayList) {
     accCountMap(bySource, doc.utm?.bySource ? mapToRows(doc.utm.bySource, 'value') : doc.utm?.topSources, 'name', 'value');
     accCountMap(byCampaign, doc.utm?.byCampaign ? mapToRows(doc.utm.byCampaign) : doc.utm?.topCampaigns);
     accCountMap(byRegion, doc.geography?.byTimezone ? mapToRows(doc.geography.byTimezone) : doc.geography?.topRegions);
+
+    // ── Campos NUEVOS (lectura tolerante; docs viejos = no-op) ──────────────
+    // País real por IP de las sesiones del día (nuevo en la CF; puede vivir en
+    // la raíz del doc o bajo geography según la versión que lo escribió).
+    accCountryTolerant(byCountryNew, doc.byCountry ?? doc.geography?.byCountry);
+    // Dispositivo/navegador/SO: preferimos el campo NUEVO (derivado de los
+    // campos guardados en la sesión); si el doc es viejo, caemos al desglose
+    // existente devices.* (parseo de UA), para no dejar el rango "sin datos".
+    accCountsTolerant(byDeviceNew, doc.byDevice ?? doc.devices?.byDevice);
+    accCountsTolerant(byBrowserNew, doc.byBrowser ?? doc.devices?.byBrowser);
+    accCountsTolerant(byOSNew, doc.byOS ?? doc.devices?.byOS);
+    // Segmento APP/WEB: campo nuevo; si falta, lo derivamos de las sesiones
+    // segmentadas del día (misma semántica: sessions.app/web YA es clientType).
+    if (doc.byClientType != null) {
+      accCountsTolerant(byClientTypeNew, doc.byClientType);
+    } else if (doc.sessions) {
+      const appN = safeNumber(doc.sessions.app);
+      const webN = safeNumber(doc.sessions.web);
+      if (appN > 0) byClientTypeNew.set('APP', (byClientTypeNew.get('APP') || 0) + appN);
+      if (webN > 0) byClientTypeNew.set('WEB', (byClientTypeNew.get('WEB') || 0) + webN);
+    }
+    // Identidades desglosadas (identities / identitiesLogged / …): suma diaria
+    // (aproximación etiquetada, igual que activeIdentities).
+    accIdentitiesTolerant(identitiesNew, doc);
 
     // Uso de funciones.
     const fu2 = doc.featureUsage || {};
@@ -733,6 +767,17 @@ function combineDailyDocs(docs, dayList) {
     deviceStats,
     utmStats,
     geographyStats,
+    // ── Campos NUEVOS expuestos (P1; la UI de filtros llega en P2) ──────────
+    // Forma estable para las páginas: arrays ordenados desc; [] = "sin datos".
+    byCountry: [...byCountryNew.values()].sort((a, b) => b.count - a.count),
+    byDevice: mapToSorted(byDeviceNew),
+    byBrowser: mapToSorted(byBrowserNew),
+    byOS: mapToSorted(byOSNew),
+    byClientType: mapToSorted(byClientTypeNew),
+    // Alias estable del embudo combinado (misma forma y contenido que funnelStats).
+    funnel: { events: funnelEvents, users: funnelUsers },
+    // Identidades desglosadas: {} = "sin datos" (docs viejos no las traen).
+    identities: identitiesNew,
     estimatedSummary: null,
     eventsForCharts,
     // Bloque realtime: lo añade el consumidor desde getGlobalAnalytics (lectura
@@ -772,6 +817,93 @@ function normalizeFlatTAWRows(rows) {
 function mapToRows(obj, valueKey = 'count') {
   if (!obj || typeof obj !== 'object') return [];
   return Object.entries(obj).map(([name, count]) => ({ name, [valueKey]: safeNumber(count) }));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Lectura TOLERANTE de los campos NUEVOS del doc diario (P1 geo/dispositivo)  */
+/* -------------------------------------------------------------------------- */
+/* Los docs diarios NUEVOS pueden traer byCountry / byDevice / byBrowser / byOS /
+ * byClientType / identities* (derivados de los campos nuevos de analytics_sessions:
+ * countryCode/countryName/device/browser/os/clientType). Los docs VIEJOS no los
+ * tienen: cada acumulador tolera la ausencia total (no-op) y acepta las DOS formas
+ * razonables de serialización: mapa { clave: n } / { clave: {count|total} } o
+ * filas [{ name|code, count|value|total }]. Si nada aporta datos, el resultado
+ * queda vacío y las páginas muestran "sin datos". */
+
+// Acumula un contador por nombre desde mapa o filas (formas mixtas toleradas).
+function accCountsTolerant(map, value) {
+  if (!value || typeof value !== 'object') return;
+  if (Array.isArray(value)) {
+    value.forEach((row) => {
+      if (!row || typeof row !== 'object') return;
+      const name = row.name ?? row.key ?? row.code;
+      if (name == null) return;
+      const count = safeNumber(row.count ?? row.value ?? row.total);
+      map.set(name, (map.get(name) || 0) + count);
+    });
+    return;
+  }
+  Object.entries(value).forEach(([name, v]) => {
+    const count = typeof v === 'object' && v !== null
+      ? safeNumber(v.count ?? v.total ?? v.value)
+      : safeNumber(v);
+    map.set(name, (map.get(name) || 0) + count);
+  });
+}
+
+// Acumula byCountry conservando código ISO-2 y nombre legible.
+// Tolera: mapa { PE: 12 } | { PE: {name:'Perú', count:12} } | filas
+// [{ code|countryCode, name|countryName, count|total|value }].
+function accCountryTolerant(map, value) {
+  if (!value || typeof value !== 'object') return;
+  const bump = (code, name, count) => {
+    if (code == null) return;
+    if (!map.has(code)) map.set(code, { code, name: name || code, count: 0 });
+    const entry = map.get(code);
+    entry.count += safeNumber(count);
+    // Conserva el primer nombre legible distinto del código que aparezca.
+    if (name && entry.name === entry.code) entry.name = name;
+  };
+  if (Array.isArray(value)) {
+    value.forEach((row) => {
+      if (!row || typeof row !== 'object') return;
+      bump(
+        row.code ?? row.countryCode ?? row.name,
+        row.name ?? row.countryName ?? null,
+        row.count ?? row.value ?? row.total
+      );
+    });
+    return;
+  }
+  Object.entries(value).forEach(([code, v]) => {
+    if (typeof v === 'object' && v !== null) {
+      bump(code, v.name ?? v.countryName ?? null, v.count ?? v.total ?? v.value);
+    } else {
+      bump(code, null, v);
+    }
+  });
+}
+
+// Acumula identidades desglosadas del doc: forma anidada doc.identities =
+// { logged: {t,a,w}, anonymous: {...}, ... } y/o claves planas
+// doc.identitiesLogged / doc.identitiesAnonymous / etc. Suma diaria = misma
+// APROXIMACIÓN etiquetada que activeIdentities (no distinct del rango).
+function accIdentitiesTolerant(acc, doc) {
+  if (!doc || typeof doc !== 'object') return;
+  const nested = doc.identities;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    Object.entries(nested).forEach(([key, v]) => {
+      if (!acc[key]) acc[key] = emptyTAW();
+      addTAW(acc[key], v);
+    });
+  }
+  Object.keys(doc).forEach((k) => {
+    const m = /^identities([A-Z].*)$/.exec(k);
+    if (!m) return;
+    const sub = m[1].charAt(0).toLowerCase() + m[1].slice(1);
+    if (!acc[sub]) acc[sub] = emptyTAW();
+    addTAW(acc[sub], doc[k]);
+  });
 }
 
 /* -------------------------------------------------------------------------- */

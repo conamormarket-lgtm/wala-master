@@ -170,12 +170,21 @@ export default function AdminDashboard() {
         value: data?.totalSessions?.total || 0,
         accent: '#6D28D9',
         sparkData: trafficByDay.map((d) => d.total),
+        // Leyenda honesta: qué cuenta (y qué NO) este número.
+        info:
+          'Visitas a la tienda: se cuenta una por pestaña del navegador. ' +
+          'Si la persona cierra y vuelve más tarde, cuenta como otra sesión.',
       },
       {
         label: 'Identidades activas',
         value: data?.activeIdentities?.total || 0,
         accent: '#8B5CF6',
         sparkData: trafficByDay.map((d) => d.web),
+        // Leyenda honesta: es un TECHO de personas, no personas exactas.
+        info:
+          'Navegadores/dispositivos únicos: un ID guardado en el navegador, más tu cuenta ' +
+          'si inicias sesión. Es un techo de personas, no personas exactas: la misma persona ' +
+          'en 2 dispositivos cuenta 2 veces. "Logueados" = con email/cuenta.',
       },
       {
         label: 'Page views',
@@ -196,6 +205,11 @@ export default function AdminDashboard() {
         value: conversion?.global || 0,
         format: (v) => `${(Number(v) || 0).toLocaleString('es-PE', { maximumFractionDigits: 1 })}%`,
         accent: '#EC4899',
+        // Leyenda honesta: el denominador son TODAS las vistas del rango, por lo
+        // que con pocas compras el % real puede quedar bajo 0.05 y verse "0%".
+        info:
+          'Compras ÷ vistas (páginas vistas + permanencias) del rango. Con pocas compras ' +
+          'frente a miles de vistas puede mostrarse 0% por redondeo a 1 decimal.',
       },
     ],
     [data, trafficByDay, trafficTotals, conversion]

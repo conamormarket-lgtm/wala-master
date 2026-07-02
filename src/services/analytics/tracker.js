@@ -5,6 +5,8 @@ import {
   ANALYTICS_KEYS,
   normalizeRoute,
 } from './schema';
+import { parseUserAgent } from './ua';
+import { detectCountry, getCachedCountry } from '../geo';
 
 let runtimeSessionDocId = null;
 
@@ -26,7 +28,9 @@ export function getAnonymousId() {
   return generated;
 }
 
-function getStoredSessionId() {
+// Exportado: useHeatmapTracker lo usa para vincular cada lote de clics
+// con la sesión de analítica activa (misma clave de sessionStorage).
+export function getStoredSessionId() {
   if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') return null;
   return window.sessionStorage.getItem(ANALYTICS_KEYS.SESSION_ID);
 }
@@ -40,7 +44,9 @@ function setStoredSessionId(id) {
   window.sessionStorage.setItem(ANALYTICS_KEYS.SESSION_ID, id);
 }
 
-function getClientType() {
+// Exportado: es el ÚNICO detector APP/WEB de la analítica (lo reutiliza
+// useHeatmapTracker para etiquetar los lotes del mapa de calor).
+export function getClientType() {
   return typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.() ? 'APP' : 'WEB';
 }
 
@@ -71,6 +77,12 @@ function parseUTM() {
   return res;
 }
 
+// Promesa de creación en curso: serializa llamadas CONCURRENTES (p.ej.
+// trackPageView + trackProductView en el primer render pasaban ambas los
+// checks antes del primer await y creaban DOS sesiones). Con la promesa
+// memoizada, la segunda llamada espera a la primera en vez de duplicar.
+let sessionCreationPromise = null;
+
 export async function ensureAnalyticsSession(userCtx = {}, entryPath = '/') {
   const stored = getStoredSessionId();
   if (runtimeSessionDocId) return runtimeSessionDocId;
@@ -78,10 +90,58 @@ export async function ensureAnalyticsSession(userCtx = {}, entryPath = '/') {
     runtimeSessionDocId = stored;
     return runtimeSessionDocId;
   }
+  if (sessionCreationPromise) return sessionCreationPromise;
+  sessionCreationPromise = crearSesion(userCtx, entryPath).finally(() => {
+    // Se limpia siempre: si la creación tuvo éxito, runtimeSessionDocId ya está
+    // seteado y las siguientes llamadas retornan temprano; si falló (null),
+    // permite reintentar en el próximo evento.
+    sessionCreationPromise = null;
+  });
+  return sessionCreationPromise;
+}
+
+// Cuerpo real de la creación de sesión (solo lo invoca ensureAnalyticsSession).
+async function crearSesion(userCtx = {}, entryPath = '/') {
   const anonymousId = getAnonymousId();
   const sessionKey = randomId('sess');
   const now = Date.now();
   const meta = getClientMeta();
+
+  // ── Enriquecimiento de dispositivo (síncrono, costo cero) ───────────────
+  // Deriva device/browser/os con el MISMO parser que usa el dashboard en
+  // lectura (./ua.js): así lo guardado y lo derivado nunca discrepan.
+  // Si no hay UA (entorno raro) simplemente no se escriben los campos:
+  // los lectores toleran su ausencia (retrocompatible).
+  let uaFields = {};
+  try {
+    if (meta.userAgent) {
+      const { device, browser, os } = parseUserAgent(meta.userAgent);
+      uaFields = { device, browser, os };
+    }
+  } catch {
+    uaFields = {}; // el parseo jamás debe romper la creación de la sesión
+  }
+
+  // ── País SIN bloquear ────────────────────────────────────────────────────
+  // Si geo.js ya tiene caché vigente (detección IP previa, TTL 24h) el país
+  // viaja en el MISMO create. La caché solo existe tras una detección IP
+  // exitosa (el fallback PE nunca se cachea) → fuente "ip" garantizada.
+  // Si no hay caché, la sesión se crea sin país y se completa en background
+  // (ver detectCountry() más abajo, fire-and-forget).
+  let geoFields = {};
+  try {
+    const cachedCountry = getCachedCountry();
+    if (cachedCountry?.code) {
+      geoFields = {
+        countryCode: cachedCountry.code,
+        countryName: cachedCountry.name || cachedCountry.code,
+        geoSource: 'ip',
+      };
+    }
+  } catch {
+    geoFields = {}; // sin caché legible: se resuelve en background
+  }
+
   const payload = {
     sessionKey,
     anonymousId,
@@ -93,6 +153,8 @@ export async function ensureAnalyticsSession(userCtx = {}, entryPath = '/') {
     startedAtClientMs: now,
     lastSeenAtClientMs: now,
     ...meta,
+    ...uaFields,
+    ...geoFields,
     ...parseUTM(),
   };
   const { id, error } = await createDocument(ANALYTICS_COLLECTIONS.SESSIONS, payload);
@@ -101,6 +163,31 @@ export async function ensureAnalyticsSession(userCtx = {}, entryPath = '/') {
   }
   runtimeSessionDocId = id;
   setStoredSessionId(id);
+
+  // País en background si no hubo caché: fire-and-forget, JAMÁS bloquea la
+  // UX ni el flujo de tracking. Al resolver, se completa la sesión con un
+  // update. geoSource viene EXPLÍCITO de detectCountry() (country.source:
+  // "ip" = ipwho.is respondió; "fallback" = default PE) — así una detección
+  // IP exitosa no se etiqueta mal aunque localStorage esté bloqueado
+  // (modo privado/WebView) y la caché no se haya podido escribir.
+  if (!geoFields.countryCode) {
+    try {
+      detectCountry()
+        .then((country) => {
+          if (!country?.code) return null;
+          return updateDocument(ANALYTICS_COLLECTIONS.SESSIONS, id, {
+            countryCode: country.code,
+            countryName: country.name || country.code,
+            geoSource: country.source === 'ip' ? 'ip' : 'fallback',
+          });
+        })
+        .catch(() => {
+          /* la geolocalización nunca debe romper el tracking */
+        });
+    } catch {
+      /* fire-and-forget: cualquier fallo aquí se ignora */
+    }
+  }
   await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
     type: ANALYTICS_EVENT_TYPES.SESSION_START,
     sessionId: id,

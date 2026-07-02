@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../services/firebase/config';
+import { auth, db } from '../services/firebase/config';
 import { useLocation } from 'react-router-dom';
+// Reutiliza la MISMA sesión y el MISMO detector APP/WEB de la analítica
+// (tracker.js) y el MISMO parser de UA (ua.js) para no divergir de captura.
+import { getStoredSessionId, getClientType } from '../services/analytics/tracker';
+import { parseUserAgent } from '../services/analytics/ua';
 
 /**
  * Hook para recolectar clics de mapa de calor y enviarlos a Firestore
@@ -29,10 +33,27 @@ export const useHeatmapTracker = (enabled = true, batchSize = 5) => {
       const eventsToSend = [...clickBuffer.current];
       clickBuffer.current = [];
 
+      // Metadatos del LOTE (una sola vez por batch, nunca por clic): sesión
+      // de analítica, usuario logueado (o null), APP/WEB y tipo de
+      // dispositivo. Si algo falla al derivarlos, el lote se envía igual sin
+      // los campos nuevos — los lectores toleran su ausencia (retrocompatible).
+      let batchMeta = {};
+      try {
+        batchMeta = {
+          sessionId: getStoredSessionId() || null,
+          uid: auth?.currentUser?.uid || null,
+          clientType: getClientType(),
+          device: parseUserAgent(window.navigator?.userAgent || null).device,
+        };
+      } catch {
+        batchMeta = {};
+      }
+
       try {
         await addDoc(collection(db, 'heatmap_events'), {
           events: eventsToSend,
           timestamp: serverTimestamp(),
+          ...batchMeta,
         });
       } catch (error) {
         console.error('Error enviando datos de heatmap:', error);
