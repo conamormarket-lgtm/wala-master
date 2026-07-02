@@ -16,7 +16,46 @@
 > [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md) (lo que ve y hace el cliente) y
 > [FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md) (lo que controla el administrador).
 
-> ## 📌 Banner de estado (actualizado 2026-06-29)
+> ## 📌 Banner de estado (actualizado 2026-07-02)
+>
+> **CICLO 2026-07-02 — dos módulos nuevos IMPLEMENTADOS (frontend desplegado por Vercel; sus
+> Cloud Functions PENDIENTES de desplegar por el dueño desde Cloud Shell):** se sumaron dos
+> módulos completos, **sin tocar carrito/precios/cobro** del flujo de compra normal.
+> **(1) SORTEOS Y RIFAS ("Raffles"):** página pública **`/sorteos`** (`src/pages/SorteosPage.jsx`:
+> gate de login con retorno, participar gratis, comprar ticket por Culqi/PayPal, contador en vivo,
+> compartir, enlace de referido y revelación de ganadores con confeti) + admin **`/admin/sorteos`**
+> (`AdminSorteos.jsx`, título "🎁 Raffles — Sorteos y Rifas", lista + CRUD) y
+> **`/admin/sorteos/:id`** (`AdminSorteoDetalle.jsx`: participantes, asignar tickets por identidad,
+> **"Decidir ganadores"** + evidencia + re-sorteo, "Otorgar chances"). Sidebar: NavLink **"🎁 Raffles"**
+> en el grupo "Diseño de Tienda", debajo de "🎨 Elementos con diseño". Servicio `src/services/sorteos.js`
+> (contador por **shards**, `SORTEO_CONTADOR_SHARDS=10`; lecturas sin índice compuesto). Modelo
+> `sorteos/{id}` + subcolecciones `participantes`/`tickets`/shards. **9 Cloud Functions** (v1 `onCall`
+> en `functions/index.js`): `participarSorteoGratis`, `comprarTicketSorteoSecure` (precio verificado
+> server-side = `precioTicket*cantidad`), `asignarTicketsManual`, `createPaypalTicketSorteoSecure`,
+> `capturePaypalTicketSorteoSecure`, `decidirGanadoresSorteo` (**sorteo justo server-side**:
+> `crypto.randomBytes(32)` + DRBG SHA-256 con rechazo de módulo = sin sesgo, ponderado-sin-reemplazo
+> por chances, **solo elegibles** = pago-confirmado / datos-completos, N ganadores + re-sortear,
+> evidencia auditable seed+poolHash+winners), `sumarChanceCompartir`, `claimRaffleReferralSecure`,
+> `grantRaffleChancesSecure`; además la rama **"sorteo"** de `processCulqiPayment` (con guardia
+> anti-doble-cargo) y de `culqiWebhook` (idempotencia por `chargeId`). **Regla dura:** solo tickets
+> con **pago confirmado** pueden ganar en sorteos de pago. **(2) ENLACES ÚTILES (Linktree /
+> link-in-bio):** página pública **`/l/:slug`** (`src/pages/LinkInBioPage.jsx`: render móvil-first
+> tipo Linktree; al montar asegura la sesión de analítica y llama `registrarVisita`, al clic llama
+> `registrarClic` y abre el enlace sin bloquear) + admin **`/admin/enlaces`** (`AdminEnlaces.jsx`,
+> lista/CRUD) y **`/admin/enlaces/:id`** (`AdminEnlaceEditor.jsx`: **constructor** con vista previa
+> móvil en vivo, subida por `uploadFile`, arrastrar-para-reordenar HTML5, panel de diseño y sección
+> de **Analítica** con visitas+clics por botón + desglose país/dispositivo/día). Sidebar: NavLink
+> **"🔗 Enlaces útiles"** debajo de "🎁 Raffles". Servicio `src/services/enlaces.js`. Modelo
+> `link_pages/{pageId}` (`slug` único, `diseno`, `botones[]`, `redes[]`, `visitas`) + subcolección
+> `clics/{botonId}`. **2 Cloud Functions públicas** (`onCall` sin auth obligatorio): `registrarClicEnlace`
+> y `registrarVisitaEnlace` — son el **único emisor** de los eventos `link_click`/`link_page_view`
+> (contadores en la NUBE con `FieldValue.increment`, **nunca** `localStorage`; evita doble conteo).
+> **Estado:** **frontend DESPLEGADO** por Vercel; las **13 Cloud Functions** de ambos módulos quedan
+> **PENDIENTES de desplegar por el dueño desde Cloud Shell** (comando único en
+> [DESPLIEGUE-ESTADO.md](./DESPLIEGUE-ESTADO.md) y lista en [PENDIENTES.md](./PENDIENTES.md)). Las
+> **reglas Firestore** de `sorteos` y `link_pages` están **escritas pero NO desplegadas** (regla de
+> la casa: **nunca** desplegar `firestore:rules` sin permiso). Detalle en
+> [SORTEOS-Y-RIFAS.md](./SORTEOS-Y-RIFAS.md) y [ENLACES-UTILES.md](./ENLACES-UTILES.md).
 >
 > **CICLO 2026-06-29 — qué se desplegó (frontend por Vercel; partes que requieren redeploy de
 > functions, marcadas):** seis frentes, todos **sin tocar carrito/precios/cobro**.
@@ -261,6 +300,8 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | **WhatsApp por marca + Plan B** | Número por marca, número principal "Todo a WALA" + toggle multimarca; al cerrar Culqi sin pagar, terminar por WhatsApp. | `/checkout`, `/admin/marcas` |
 | **Sistema MULTI-MARCA (Con Amor / MUSSA / MUEBLERIA)** | **1 producto = 1 marca** (`brandId`); cada marca con **página propia** (`WALA.PE/ConAmor`, `/MUSSA`, `/MUEBLERIA`, slug case-insensitive), **catálogo sidebar filtrado**, **panel admin** (asignar/quitar en lote + crear-con-marca) y **nav de categorías con miniaturas** que filtra el catálogo de la marca sin navegar. **Frontend desplegado**; falta que el dueño corra `setup-marcas.js`, configure las páginas y asigne productos a MUSSA/MUEBLERIA. | `/:slug`, `/admin/marcas`, panel por marca |
 | **"Elementos con diseño" (admin)** | Lugar propio para personalizar **elementos de diseño por marca**. **2026-06-29 (`425e9ce`):** **catálogo de tarjetas con slug propio por elemento** (`/admin/elementos-diseno/{slug}`); el nav de categorías se edita por marca (qué filtra / nombre / miniatura) y gana **"Estilo del nav"** (alineación + estático/slider, `categoryNavStyle` en `tienda_brands`). | `/admin/elementos-diseno` |
+| **Sorteos y Rifas ("Raffles")** | **2026-07-02:** módulo completo de sorteos gratis/pago. Público **`/sorteos`** (participar gratis o comprar ticket Culqi/PayPal, contador en vivo, compartir, referido, ganadores con confeti); admin **`/admin/sorteos`** + **`/admin/sorteos/:id`** ("Decidir ganadores" con **sorteo justo server-side** `crypto` + DRBG sin sesgo, evidencia auditable y re-sorteo). NavLink **"🎁 Raffles"**. **Frontend desplegado**; sus **9 Cloud Functions** quedan **PENDIENTES de desplegar** por el dueño (Cloud Shell). Detalle: [SORTEOS-Y-RIFAS.md](./SORTEOS-Y-RIFAS.md). | `/sorteos`, `/admin/sorteos` |
+| **Enlaces útiles (Linktree / link-in-bio)** | **2026-07-02:** constructor tipo Linktree. Público **`/l/:slug`** (página móvil-first con botones/redes) y admin **`/admin/enlaces`** + **`/admin/enlaces/:id`** (constructor con vista previa móvil en vivo, arrastrar-para-reordenar, panel de diseño y **Analítica**: visitas + clics por botón + país/dispositivo/día). Contadores en la **NUBE** (`FieldValue.increment`), nunca `localStorage`. NavLink **"🔗 Enlaces útiles"**. **Frontend desplegado**; sus **2 Cloud Functions** (`registrarClicEnlace`/`registrarVisitaEnlace`) quedan **PENDIENTES de desplegar**. Detalle: [ENLACES-UTILES.md](./ENLACES-UTILES.md). | `/l/:slug`, `/admin/enlaces` |
 | **i18n gratis (ES/EN/PT) + perfil/cumpleaños** | Toggle de idioma (traductor nativo del navegador), tipos de documento DNI/CE/Pasaporte, **Avatar Studio** (sin Ready Player Me) y **captura de cumpleaños** (import opcional desde Google). | Header, `/cuenta/perfil`, checkout |
 | **Despliegue real** | **Frontend en Vercel** (wala.pe, auto-deploy desde `master`); **Cloud Functions** e **índices** desplegados en `sistema-gestion-3b225`. | wala.pe |
 | **Seguridad (mitigación viva)** | **Bloqueo de borrado (delete-block)** aplicado a las reglas vivas para frenar el destrozo anónimo. | Consola Firebase |
@@ -271,6 +312,7 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 |-----------|-----------|-----------------|
 | **1 — CRÍTICA** | **Publicar las reglas de seguridad completas** (`firebase/firestore.rules.produccion`). | Hoy la **lectura anónima de datos personales (PII) sigue abierta**: cualquiera en internet puede leer clientes/pedidos. Es la única fuga grave que queda. |
 | **1.bis — Alta (redeploy del ciclo 2026-06-29)** | **Redeploy de functions**: (a) las **3 de pago** (`processCulqiPayment`, `culqiWebhook`, `capturePaypalOrderSecure`) para que el pago marque `estadoWala:"pagado"` en `wala_pedidos`; (b) **`getPublicGiftRegistry`** para que la **foto/roleKey/gender** lleguen a `/regalar`. Por Cloud Shell. | El **frontend ya está desplegado**, pero hasta el redeploy el pago no marca el estado en la fuente de verdad y las tarjetas de `/regalar` no muestran foto. |
+| **1.ter — Alta (Cloud Functions de Sorteos + Enlaces, 2026-07-02)** | **Desplegar las 13 Cloud Functions** de los módulos nuevos (9 de Sorteos + 2 de Enlaces + las ramas "sorteo" de `processCulqiPayment`/`culqiWebhook`) con el **comando único** de [DESPLIEGUE-ESTADO.md](./DESPLIEGUE-ESTADO.md), respondiendo **`N`** a los prompts de borrado. Por Cloud Shell. | El **frontend de `/sorteos` y `/l/:slug` ya está desplegado**, pero sin estas CFs no se puede participar/comprar tickets, decidir ganadores ni contar visitas/clics de los enlaces. |
 | **2 — Alta** | **Reestructurar el dashboard en páginas por área** (resumen, heatmap, productos, origen, páginas, categorías) con rutas propias; **arreglar el iframe de preview** (doble init de Firebase) y el **warning `willReadFrequently`** del canvas del heatmap. | El dashboard es hoy una sola página muy pesada; dividirlo lo hace usable y corrige errores de consola. |
 | **3 — Media** | **Push v2 (FCM)**, **Cloud Scheduler / cron** de segmentación y campañas, **Algolia / Typesense** (búsqueda externa), **integración del editor POD** (arte / PDF de producción), **rol `vendor` por claims** y **scoping por dueño/rol en las reglas (Fase C)**. | Son mejoras de alcance y automatización sobre lo ya construido; no bloquean la operación diaria. |
 

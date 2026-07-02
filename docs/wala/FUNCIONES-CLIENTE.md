@@ -45,6 +45,8 @@
 | Ball Sort (Las Bolitas de Kapi) | `/ball-sort` | Activo |
 | Mascota Kapi (botón flotante global) | en todas las páginas | Activo |
 | Ofertas Flash + Cofre diario | `/ofertas` | Activo |
+| Sorteos y Rifas (participar gratis / comprar ticket / ganadores) | `/sorteos` | Activo (requiere login para participar) |
+| Página de enlaces (link-in-bio tipo Linktree) | `/l/:slug` | Activo (pública) |
 | Suscripciones (landing) | `/suscripciones` | Activo (pagos "muy pronto") |
 | Encuesta de suscripción / perfil de regalos | `/encuesta-suscripcion` | Activo |
 | Login / Registro / Completar perfil / Recuperar contraseña | `/login`, `/registro`, `/completar-perfil`, `/recuperar-contrasena` | Activo |
@@ -432,6 +434,43 @@ Cuatro arreglos del carrito (`src/contexts/CartContext.jsx`, commit `88a3368`), 
 - **Archivos clave:** `src/pages/OfertasFlashPage.jsx`, `src/services/flashOffers.js`, `src/services/chest.js`
 
 > Las "Ventas Flash" también pueden aparecer como un **módulo dentro del Inicio/Tienda** (sección `flash_sales` con cuenta regresiva), ver sección 1.1.
+
+---
+
+## 9-bis. Sorteos y Rifas (`/sorteos`)
+
+- **Qué es:** la página pública del módulo de **sorteos** (gratuitos) y **rifas** (pagadas), **móvil-first** (el tráfico llega de los lives en el teléfono). Muestra el **sorteo activo** con el hero del premio, cuenta regresiva, reglas de cómo ganar chances, y la acción de participar. Lo administra el dueño desde `/admin/sorteos` (ver FUNCIONES-ADMIN.md → "🎁 Raffles").
+- **Qué hace:**
+  - **Hero del premio + countdown en vivo** hacia la fecha de fin, con un **contador de participantes en vivo** (suma de shards, refresco suave; sin `onSnapshot` ni escaneo, para pocas lecturas) y badges (GRATIS o precio por ticket, número de ganadores).
+  - **Gate de login (con retorno):** si el visitante **no ha iniciado sesión**, se le invita a **"Iniciar sesión"** (vuelve a `/sorteos` tras loguearse). Para participar/comprar también exige el **perfil completo** (DNI + teléfono): si falta, lleva a `/completar-perfil` y **el servidor lo revalida**.
+  - **Participar gratis** (sorteos tipo *gratis*): botón **"¡Participar gratis!"** que llama a la Cloud Function `participarSorteoGratis` (idempotente, 1 doc por uid). Si ya participa, muestra **"Ya estás participando ✓"** con sus tickets/chances.
+  - **Comprar ticket** (rifas tipo *pagado*): selector de **cantidad** de tickets con su total (solo display; **el servidor recalcula el precio real** `precioTicket * cantidad`), y luego elige método de pago **Culqi (tarjeta)** o **PayPal** — ambos por sus Cloud Functions seguras (el ticket se marca **pagado solo cuando el servidor confirma el cargo/captura**, idempotente). Muestra **"Tus tickets pagados: N"**.
+  - **Chances por compartir:** si el sorteo lo habilita, un botón **"📢 Compartir y ganar +1 chance"** (usa el compartir nativo del móvil o copia el enlace) que acredita **+1 chance una sola vez** vía `sumarChanceCompartir` (el servidor es la única fuente de verdad).
+  - **Chances por referir:** si está habilitado, muestra el **enlace de referido** del usuario (`/sorteos?ref=SU-CODIGO`) con botón **"Copiar"**; quien participe con ese enlace le suma **+1 chance** al dueño del código (`claimRaffleReferralSecure`, idempotente; no se autoacredita con su propio enlace).
+  - **Requisito de app:** si el sorteo es *obligatorio desde el app* y el visitante entró por la web, se bloquea la participación y se ofrece **"Descargar app"**.
+  - **Revelación de ganadores:** cuando el sorteo está **cerrado** y hay ganadores oficiales (los escribe **solo el servidor** en `decidirGanadoresSorteo`), se listan los ganadores; si el usuario actual ganó, ve un banner **"¡FELICIDADES, GANASTE!"** con **confeti** (CSS, sin dependencias).
+- **Ruta:** `/sorteos` (acepta `?ref=CODIGO` para acreditar el referido).
+- **Archivos clave:**
+  - `src/pages/SorteosPage.jsx` (+ `SorteosPage.module.css`)
+  - `src/services/sorteos.js` (`getSorteoActivo`, `getMiParticipacion`, `getContadorSorteo`, `participarGratis`, `sumarChanceCompartir`, `claimRaffleReferral`, wrappers de las callables)
+  - `functions/index.js` (`participarSorteoGratis`, `comprarTicketSorteoSecure`, `processCulqiPayment` rama sorteo, `culqiWebhook`, `createPaypalTicketSorteoSecure` / `capturePaypalTicketSorteoSecure`, `decidirGanadoresSorteo`)
+  - `src/components/CulqiCustomCheckout/` y `@paypal/react-paypal-js` (reusa los mismos SDKs de pago del checkout)
+
+---
+
+## 9-ter. Página de enlaces / link-in-bio (`/l/:slug`)
+
+- **Qué es:** una **página pública tipo Linktree** (link-in-bio), **móvil-first**, que el dueño arma desde el admin (ver FUNCIONES-ADMIN.md → "🔗 Enlaces útiles"). Cada página tiene su propia URL `/l/tu-enlace`.
+- **Qué hace:**
+  - Renderiza **todo el diseño** que configuró el dueño: **fondo** (color / degradado / imagen), **avatar**, **título**, **descripción**, la **fila de redes sociales** y los **botones** (con su miniatura), aplicando estilo/redondez/sombra/colores/tipografía. Los botones y redes salen **ya ordenados** por su `order`.
+  - **Analítica sin bloquear el enlace:** al abrir la página se **asegura la sesión de analítica** (para capturar país/dispositivo) y se registra la **visita** (`registrarVisita` → la Cloud Function incrementa `visitas` y escribe el único evento `link_page_view`). Al pulsar un botón se registra el **clic** (`registrarClic` → la CF incrementa el contador del botón y escribe el único evento `link_click`). El clic **abre el enlace igual** aunque el tracking falle o tarde (fire-and-forget): los enlaces internos navegan por SPA y los externos abren en pestaña nueva con `rel="noopener noreferrer"`.
+  - **Estados:** mientras carga muestra un spinner; si el slug no existe o la página está en **borrador**, muestra **"Página no disponible"** con enlace al inicio.
+- **Lecturas:** **una sola** query por slug (`getLinkPageBySlug`). Los contadores viven **en la nube** (los mueven las CFs), nunca en localStorage.
+- **Ruta:** `/l/:slug` (declarada **antes** del catch-all `/:slug` en `src/App.jsx`).
+- **Archivos clave:**
+  - `src/pages/LinkInBioPage.jsx` (+ `LinkInBioPage.module.css`)
+  - `src/services/enlaces.js` (`getLinkPageBySlug`, `registrarClic`, `registrarVisita`)
+  - `src/services/analytics/tracker.js` (`ensureAnalyticsSession`, contexto de sesión), `functions/index.js` (`registrarVisitaEnlace` / `registrarClicEnlace`)
 
 ---
 

@@ -751,6 +751,273 @@ sus fotos de Storage**: escribe un **tombstone** y conserva todo lo que el histo
 
 ---
 
+## 3.9 `sorteos/{id}` — Sorteos y Rifas ("Raffles") ✅ (código listo; CFs las despliega el dueño)
+
+> Módulo público `/sorteos` (`src/pages/SorteosPage.jsx`) + admin `/admin/sorteos`
+> (`AdminSorteos.jsx`, título "🎁 Raffles — Sorteos y Rifas") y `/admin/sorteos/:id`
+> (`AdminSorteoDetalle.jsx`). Servicio: `src/services/sorteos.js`. Backend: `functions/index.js`
+> (todas onCall API v1). **Aditivo**: colección nueva, no toca nada del ERP.
+>
+> **Regla dura de negocio:** en sorteos **pagados**, SOLO los tickets con **pago confirmado
+> server-side** cuentan para ganar. El precio del ticket es SIEMPRE `precioTicket * cantidad`
+> recalculado en el servidor (nunca se confía en el cliente). El sorteo real (RNG + elegibilidad
+> + evidencia) vive 100% server-side; el admin solo dispara la callable y muestra el resultado.
+>
+> **Reglas Firestore** (escritas en `firebase/firestore.rules`, **NO desplegadas**):
+> `sorteos` read público / write admin; las subcolecciones `participantes`/`tickets`/`contador`/
+> `sorteos_realizados` con `write: if false` (solo la CF vía admin SDK).
+
+### 3.9.1 `sorteos/{id}` (doc raíz de config + contadores denormalizados)
+
+Config escrita por el CRUD admin (`construirDocSorteo`, `src/services/sorteos.js:158`).
+Los contadores/ganadores los mantiene **solo el servidor** (CFs); el cliente NUNCA escribe
+`contadorParticipantes` ni `ganadores`.
+
+```jsonc
+{
+  // ── Config (la escribe el admin) ──────────────────────────────────────────
+  "titulo": "iPhone 15 en vivo",
+  "descripcion": "Sortea con nosotros…",
+  "tipo": "pagado",                     // "gratis" | "pagado"
+  "precioTicket": 5,                    // soles; SOLO si tipo=="pagado" (en gratis = 0)
+  "moneda": "PEN",
+  "requisitoApp": "obligatorio",        // "ninguno" | "obligatorio" | "chanceExtra"
+                                        //   obligatorio → debe entrar desde el app
+                                        //   chanceExtra → +1 chance si entra desde el app
+                                        //   (nota: AdminSorteos usa las etiquetas de negocio
+                                        //    "obligatorio/opcional/da-chance-extra")
+  "numGanadores": 1,                    // N ganadores por defecto del sorteo
+  "premio": { "nombre": "iPhone 15", "imagenUrl": "", "valor": 4500 },
+  "heroImagenUrl": "",
+  "fechaInicio": "2026-07-01",          // strings (informativas)
+  "fechaFin": "2026-07-15",
+  "estado": "activo",                   // "borrador" | "activo" | "cerrado"
+  "chanceExtraCompartir": true,         // habilita +1 chance por compartir (honor)
+  "chanceExtraReferido": true,          // habilita +1 chance por referido
+
+  // ── Contadores/ganadores denormalizados (SOLO servidor) ───────────────────
+  "contadorParticipantes": 128,         // aproximado rápido (la fuente exacta = shards, §3.9.5)
+  "ganadores": [ { "uid": "…", "nombre": "…" } ], // se fija al cerrar / arrayUnion al re-sortear
+  "cerradoAt": "<serverTimestamp>",     // se añade al cerrar (modo CIERRE)
+
+  "createdAt": "<serverTimestamp>",
+  "updatedAt": "<serverTimestamp>"
+}
+```
+
+> **`getSorteoActivo`** (`sorteos.js:38`) filtra `where estado=='activo'` (UN solo campo → sin
+> índice compuesto) y ordena por `createdAt desc` **en cliente** para tomar el más reciente.
+
+### 3.9.2 `sorteos/{id}/participantes/{uid}` — 1 doc por participante (id = uid)
+
+Creado por `participarSorteoGratis` (gratis) o `confirmarTicketSorteoDesdePago` (al confirmar
+el pago de un ticket). **Idempotente** (id = uid). Las chances se ajustan solo server-side.
+
+```jsonc
+{
+  "uid": "cliente-uid",
+  "nombre": "Nombre Cliente",           // displayName || correo || "Participante"
+  "telefono": "999888777",
+  "correo": "cliente@correo.com",
+  "dni": "12345678",
+  "tickets": 0,                         // gratis: siempre 0 (los pagados van en ticketsPagados)
+  "ticketsPagados": 3,                  // Σ cantidad de tickets con pago confirmado
+  "chancesBase": 1,                     // 1 por participar
+  "chancesExtra": 1,                    // +app / +compartir / +referido
+  "chancesTotal": 5,                    // base + extra + ticketsPagados (peso del sorteo)
+  "origenApp": true,                    // entró desde el app
+  "estado": "elegible",                 // "elegible" → "ganador" (al ser elegido)
+  "compartioClaim": true,               // flag idempotente de la chance por compartir
+  "compartioAt": "<serverTimestamp>",   // sello de la chance por compartir
+  "createdAt": "<serverTimestamp>"
+}
+```
+
+> **Elegibilidad para ganar** (`decidirGanadoresSorteo`, `functions/index.js:4189`):
+> en `tipo=="pagado"` solo entran al pool los que tienen `ticketsPagados >= 1`; en `tipo=="gratis"`
+> los que tienen `estado === "elegible"` (perfil completo: teléfono + DNI). El **peso** en el
+> sorteo ponderado es `max(1, chancesTotal)`.
+
+### 3.9.3 `sorteos/{id}/tickets/{ticketId}` — intención de compra + confirmación
+
+Creado por `comprarTicketSorteoSecure` (`functions/index.js:3537`) como **intención**
+(`pagoConfirmado=false`, id autogenerado). El pago lo confirma server-side
+`confirmarTicketSorteoDesdePago` (llamado desde `processCulqiPayment` rama "sorteo",
+`culqiWebhook` rama sorteo, y la captura PayPal). El cliente **jamás** escribe `pagoConfirmado`.
+
+```jsonc
+{
+  "sorteoId": "<sorteoId>",
+  "participanteUid": "cliente-uid",
+  "correo": "cliente@correo.com",       // snapshot del perfil (puede ser null)
+  "telefono": "999888777",
+  "dni": "12345678",
+  "cantidad": 3,                        // nº de tickets de este intent
+  "montoCentimos": 1500,                // monto autoritativo esperado (precioTicket*100*cantidad)
+  "moneda": "PEN",
+  "pagoId": null,                       // → chargeId (Culqi) / captureId (PayPal) al confirmar
+  "metodoPago": null,                   // "culqi" | "paypal" (se fija al confirmar)
+  "pagoConfirmado": false,              // SOLO el servidor lo pone en true (webhook/captura)
+  "asignadoPor": "pago",                // "pago" (compra) — los manuales usan otra vía
+  "confirmadoAt": "<serverTimestamp>",  // se añade al confirmar el pago
+  "createdAt": "<serverTimestamp>"
+}
+```
+
+> **Guardias anti-doble-cargo:** cada punto de pago ya tiene su lock
+> (`culqiCharges/{tokenId}`, `culqiWebhookEvents/{chargeId}`, `pedidos_web.paypalCaptureId`), y
+> además la transacción de confirmación no re-incrementa si `pagoConfirmado===true`
+> (`functions/index.js:3629`). **Asignación manual:** `asignarTicketsManual` (admin) resuelve el
+> uid por correo/teléfono/DNI y otorga tickets sin cobro.
+
+### 3.9.4 `sorteos/{id}/sorteos_realizados/{drawId}` — evidencia auditable del sorteo
+
+Escrito por `decidirGanadoresSorteo` (`functions/index.js:4238`) con `t.create` (lock de
+idempotencia por `drawId`). Guarda la **evidencia verificable** del sorteo justo (RNG seguro
+`crypto.randomBytes(32)` + DRBG SHA-256 con rechazo de módulo, ponderado sin reemplazo). Un
+sorteo puede tener varios `drawId` (cierre + re-sorteos). El re-sorteo excluye a los ganadores
+previos (`excluirUids`) y **agrega** con `arrayUnion` sin re-cerrar.
+
+```jsonc
+{
+  "seed": "<hex de 64 chars>",          // semilla aleatoria del DRBG (evidencia)
+  "poolHash": "<sha256 hex>",           // hash del pool ORDENADO por uid de {uid,peso}
+  "totalElegibles": 120,
+  "numGanadores": 1,                    // nEfectivo = min(numGanadores, pool.length)
+  "ganadores": [                        // evidencia con el peso usado
+    { "uid": "…", "nombre": "…", "correo": "…", "telefono": "…", "pesoUsado": 3 }
+  ],
+  "excluirUids": [],                    // no vacío ⇒ fue un RE-SORTEO
+  "decididoPor": "<admin-uid>",
+  "algoritmo": "HMAC/SHA256-DRBG",
+  "at": "<serverTimestamp>"
+}
+```
+
+### 3.9.5 `sorteos/{id}/contador/{0..9}` — contador distribuido por shards
+
+Contador en vivo de participantes con **shards** (`SORTEO_CONTADOR_SHARDS = 10`, ids `"0".."9"`)
+para evitar el hot-doc en lives. Cada participante nuevo hace `+1` en un shard **aleatorio**
+(`FieldValue.increment(1)`, `merge:true` crea el shard si no existe). La página pública lee la
+subcolección completa (≤10 docs) y **suma** los `count` (`getContadorSorteo`, `sorteos.js:88`);
+NO escanea la subcolección de participantes.
+
+```jsonc
+// sorteos/{id}/contador/3
+{ "count": 42 }
+```
+
+> La constante `SORTEO_CONTADOR_SHARDS = 10` está en **backend** (`functions/index.js:3338`) y
+> **frontend** (`src/services/sorteos.js:29`) y **debe coincidir**.
+
+---
+
+## 3.10 `link_pages/{pageId}` — Enlaces útiles (link-in-bio / Linktree) ✅ (código listo; CFs las despliega el dueño)
+
+> Constructor tipo Linktree. Página pública `/l/:slug` (`src/pages/LinkInBioPage.jsx`) + admin
+> `/admin/enlaces` (`AdminEnlaces.jsx`, lista) y `/admin/enlaces/:id` (`AdminEnlaceEditor.jsx`,
+> el constructor con vista previa móvil + Analítica). Servicio: `src/services/enlaces.js`.
+> Backend: `registrarClicEnlace` / `registrarVisitaEnlace` (`functions/index.js`, onCall
+> **PÚBLICO** sin auth obligatorio). **Aditivo**: colección nueva.
+>
+> **Regla dura:** los contadores viven en la **NUBE** (`FieldValue.increment`), **NUNCA**
+> localStorage. La escritura de contadores y de los eventos de analítica la hace **SOLO la CF**
+> (admin SDK); es el **único emisor** de `link_page_view`/`link_click` (evita doble conteo — el
+> cliente ya no escribe esos eventos). **Pocas lecturas:** la página pública lee 1 doc por slug
+> (`getLinkPageBySlug`, query de UN solo campo); el admin lee la subcolección `clics` 1 vez.
+>
+> **Reglas Firestore** (escritas, **NO desplegadas**): `link_pages` read público / write admin;
+> subcolección `clics` read público / `write: if false` (solo la CF via admin SDK).
+
+### 3.10.1 `link_pages/{pageId}` (doc raíz)
+
+Normalizado por `createLinkPage`/`updateLinkPage` (`src/services/enlaces.js:128`). El campo
+`visitas` y la subcolección `clics` **NO se tocan** desde el CRUD admin (los mantiene la CF).
+
+```jsonc
+{
+  "slug": "mi-tienda",                  // ÚNICO; la página pública se sirve en /l/{slug}
+  "titulo": "Mi tienda",
+  "descripcion": "Todos mis enlaces",
+  "avatarUrl": "https://…",             // sube por uploadFile
+  "estado": "activo",                   // "activo" | "borrador"
+
+  // ── Diseño (objeto completo; disenoPorDefecto en enlaces.js:75) ───────────
+  "diseno": {
+    "buttonStyle": "solid",             // "solid" | "glass" | "outline"
+    "cornerRoundness": 12,              // px (redondez de esquinas del botón)
+    "buttonShadow": "soft",             // "none" | "soft" | "strong"
+    "buttonColor": "#111827",
+    "buttonTextColor": "#ffffff",
+    "background": { "type": "color", "value": "#f3f4f6" }, // type: "color"|"gradient"|"image"
+    "fontFamily": ""
+  },
+
+  // ── Botones (arrastrar-para-reordenar; normalizarBotones) ─────────────────
+  "botones": [
+    { "id": "btn_…", "titulo": "Ver catálogo", "url": "https://…", "thumbnailUrl": "", "order": 0 }
+  ],
+
+  // ── Redes (normalizarRedes) ───────────────────────────────────────────────
+  "redes": [
+    { "id": "red_…", "tipo": "instagram", "nombre": "@mitienda", "url": "https://…", "iconUrl": "", "order": 0 }
+    // tipo ∈ "instagram" | "facebook" | "tiktok" | "whatsapp" | "custom"
+  ],
+
+  "visitas": 0,                         // contador denormalizado (lo incrementa la CF de visita)
+  "createdAt": "<serverTimestamp>",
+  "updatedAt": "<serverTimestamp>"
+}
+```
+
+> `getLinkPageBySlug` (`enlaces.js:52`) hace `where slug=='…'` (limit 1, UN solo campo → sin
+> índice compuesto) y ordena `botones`/`redes` por `order` en cliente.
+
+### 3.10.2 `link_pages/{pageId}/clics/{botonId}` — contador de clics por botón
+
+1 doc por botón, id = `botonId`. Lo incrementa **solo** `registrarClicEnlace`
+(`functions/index.js:4679`) con `FieldValue.increment(1)` (`merge:true`). El admin lo lee de una
+vez con `getClicsDeLinkPage` (`enlaces.js:161`), devolviendo `{ [botonId]: count }`.
+
+```jsonc
+// link_pages/{pageId}/clics/btn_abc
+{ "count": 57 }
+```
+
+### 3.10.3 Eventos de analítica NUEVOS en `analytics_events` (link-in-bio)
+
+Dos tipos de evento nuevos en `analytics_events` (constantes en
+`src/services/analytics/schema.js:41-42`: `ANALYTICS_EVENT_TYPES.LINK_PAGE_VIEW = "link_page_view"`,
+`LINK_CLICK = "link_click"`). Los escribe **únicamente** la CF correspondiente
+(`registrarVisitaEnlace` / `registrarClicEnlace`); el cliente ya no los emite (evita doble
+conteo). A diferencia del resto de eventos, llevan **`pageId` top-level** (permite el query
+`where pageId=='…'` de UN solo campo, sin índice compuesto).
+
+| Campo | `link_page_view` | `link_click` | Notas |
+|---|---|---|---|
+| `type` | `"link_page_view"` | `"link_click"` | Discrimina vista vs clic. |
+| `pageId` | ✅ (top-level) | ✅ (top-level) | Doc id de `link_pages`; clave del query de analítica. |
+| `botonId` | — | ✅ | Solo en el clic; id del botón clickeado. |
+| `url` | — | ✅ | URL de confianza = la del modelo server-side (no la del cliente). |
+| `path` | `/l/{slug}` | `/l/{slug}` | Ruta pública de la página. |
+| `uid` | ✅/null | ✅/null | uid del token si hay login; si no, el del payload o null. |
+| `anonymousId` | ✅/null | ✅/null | Id anónimo del visitante. |
+| `sessionId` | ✅/null | ✅/null | Une con `analytics_sessions` para país/dispositivo. |
+| `clientType` | `"APP"`\|`"WEB"` | `"APP"`\|`"WEB"` | Default `"WEB"`. |
+| `countryCode` | ✅/null | ✅/null | Si falta, se completa por unión con la sesión. |
+| `device` | ✅/null | ✅/null | Si falta, se completa por unión con la sesión. |
+| `clientTsMs` | `Date.now()` | `Date.now()` | Timestamp de cliente (ms) para agrupar por día. |
+| `serverTs` | serverTimestamp | serverTimestamp | Sello del servidor. |
+| `eventData` | `{ pageId, slug }` | `{ pageId, botonId, url }` | Datos embebidos del evento. |
+
+> **Analítica del editor** (`getAnaliticaEnlace`, `enlaces.js:218`): consulta
+> `analytics_events where pageId=='…'` (índice automático, sin compuesto), agrega en cliente
+> `totalVisitas`/`totalClics` + desglose por país/dispositivo/día, y para los eventos sin
+> `countryCode`/`device` propios **une con `analytics_sessions` por `sessionId`** (en lotes de 10
+> con `documentId() in […]`), el mismo mecanismo que el dashboard. Tope `EVENT_CAP = 2000` eventos.
+
+---
+
 ## 4. Nota de migración (aditiva, no destructiva)
 
 1. **Defaults + backfill (no romper PROD):** cada `productos_wala` recibe

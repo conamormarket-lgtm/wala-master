@@ -1,8 +1,9 @@
 # Pendientes del DUEÑO — qué desplegar / actualizar (Cloud Shell + consola)
 
 > **Para el dueño (no requiere programar).** Esta es la lista corta y clara de lo que **falta
-> hacer del lado de producción** para que lo construido en las sesiones del **2026-06-29** y del
-> **2026-07-01/02** (integridad de datos + analítica) quede 100 % activo. El **frontend ya está
+> hacer del lado de producción** para que lo construido en las sesiones del **2026-06-29**, del
+> **2026-07-01/02** (integridad de datos + analítica) y del **2026-07-02** (módulos **Sorteos/Rifas**
+> y **Enlaces útiles**, §3.bis) quede 100 % activo. El **frontend ya está
 > desplegado** (Vercel auto-deploy desde `master`); lo que queda es **backend** (Cloud Functions),
 > un **script de rescate opcional** y un par de **confirmaciones de configuración**.
 >
@@ -103,6 +104,38 @@ node scripts/rescate-historial.js --project sistema-gestion-3b225 --apply
 
 ---
 
+## 3.bis Cloud Functions de los módulos SORTEOS y ENLACES ÚTILES (sesión 2026-07-02) ⬜
+
+> **Frontend YA en vivo** (Vercel): `/sorteos`, `/admin/sorteos`, `/admin/sorteos/:id`, `/l/:slug`,
+> `/admin/enlaces`, `/admin/enlaces/:id`. Falta **solo** desplegar sus **Cloud Functions** desde Cloud Shell.
+
+⬜ **Desplegar las 13 Cloud Functions de ambos módulos** (9 de Sorteos + 2 de Enlaces + las ramas
+"sorteo" que ganaron `processCulqiPayment` y `culqiWebhook`). En **Cloud Shell**, desde la carpeta del
+proyecto, **comando único**:
+
+```bash
+firebase deploy --only functions:participarSorteoGratis,functions:comprarTicketSorteoSecure,functions:asignarTicketsManual,functions:createPaypalTicketSorteoSecure,functions:capturePaypalTicketSorteoSecure,functions:decidirGanadoresSorteo,functions:sumarChanceCompartir,functions:claimRaffleReferralSecure,functions:grantRaffleChancesSecure,functions:processCulqiPayment,functions:culqiWebhook,functions:registrarClicEnlace,functions:registrarVisitaEnlace
+```
+
+- **Si te pregunta si borrar funciones/índices del ERP → responde `N` (No).** Borrar cualquier función
+  fuera de la lista **tumbaría el ERP** (ver [DESPLIEGUE-ESTADO.md §4](./DESPLIEGUE-ESTADO.md)).
+- Es **aditivo**: las 9 de Sorteos y las 2 de Enlaces son nuevas; `processCulqiPayment`/`culqiWebhook`
+  solo ganan una **rama "sorteo"** y no cambian el camino de pago de pedidos.
+- **Cómo saber si falta:** entra a `/sorteos` e intenta participar/comprar un ticket, o abre un `/l/:slug`
+  y mira si suben las visitas/clics en la Analítica del editor. Si no responde, falta este despliegue.
+- Detalle funcional en [SORTEOS-Y-RIFAS.md](./SORTEOS-Y-RIFAS.md) y [ENLACES-UTILES.md](./ENLACES-UTILES.md);
+  comando y tabla en [DESPLIEGUE-ESTADO.md §3.bis](./DESPLIEGUE-ESTADO.md).
+
+⬜ **Reglas Firestore de `sorteos` y `link_pages` — escritas pero NO desplegadas (solo con permiso).**
+El repo (`firebase/firestore.rules`) ya contempla **`sorteos`** (read público / write admin; subcolecciones
+`participantes`/`tickets`/shards `write: if false`) y **`link_pages`** (read público / write admin;
+subcolección `clics` read público / `write: if false` — solo la CF vía Admin SDK escribe los contadores).
+**NO desplegarlas a ciegas**: hay que **fusionarlas** con las reglas vivas del ERP y validarlas en Rules
+Playground (misma precaución que el resto de §4). Regla dura: **nunca** `deploy --only firestore:rules` sin
+permiso explícito del dueño.
+
+---
+
 ## 4. Confirmar las REGLAS de Firestore en producción 🔧
 
 > **NUNCA `deploy --only firestore:rules` sin consultar.** Tumbó el ERP una vez (base compartida
@@ -173,6 +206,9 @@ siguiente paso es conectar el **ERP externo** para que la mantenga al día **sin
 - [x] `node scripts/rescate-historial.js` dry-run + `--apply` — **hecho por el dueño el 2026-07-02**: 6 tombstones creados (Termo Stanley con price 90 recuperado, SITCH PURO BICOLOR, POLOS CON FOTO, COMBO CHIBIS, Taza Barcelona, Polera básica), 6 imágenes muertas limpiadas y 6 prices backfilleados en 4 wishlists. Hallazgo: de 10 032 docs en `pedidos`, **0 conservan marcadores WALA** (confirma que el ERP los quita al absorber).
 - [x] Redeploy de `getPublicGiftRegistry` (foto + `price` en `/regalar`) — **hecho por el dueño**.
 - [ ] Confirmado el estado del sync de pago (`estadoWala`): pagar un pedido y ver que en "Mis Compras" queda **"Pagado"** y **persiste**; si no, redeploy de las 3 funciones de pago (§3.2).
+- [ ] Desplegadas las **13 Cloud Functions de Sorteos + Enlaces** con el comando único (§3.bis), respondiendo `N` a los prompts de borrado.
+- [ ] Probado: en `/sorteos` se puede participar/comprar ticket y "Decidir ganadores"; en un `/l/:slug` suben visitas/clics en la Analítica del editor.
+- [ ] Reglas de `sorteos` y `link_pages` **NO** desplegadas a ciegas (§3.bis / §4): solo con permiso, fusionadas con las del ERP y validadas en Rules Playground.
 - [ ] Confirmado que producción tiene `firebase/firestore.rules` (`delete: if isAdmin()`) y **NO** `firestore.rules.produccion`.
 - [ ] `firestore.rules.propuesto` **NO** desplegado (esperando PayPal server-side); la regla `analytics_daily` del repo queda para el próximo despliegue fusionado de reglas.
 - [ ] (Futuro) Endpoint con API KEY para que el ERP actualice `estadoWala` sin borrar.

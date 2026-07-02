@@ -57,6 +57,36 @@ Rama: `origin/fase-0-seguridad`. Último commit relevante: `35ba2a2` (fix de pro
 6. **Pendientes que requieren servicios externos** (no urgentes): cobro real Mercado Pago, búsqueda
    Algolia/Typesense, push FCM segmentado, schedulers, integración del editor POD (Fase 4 arte/PDF).
 
+## 3.bis Cloud Functions de los módulos SORTEOS y ENLACES ÚTILES (2026-07-02) ⬜
+
+> **Frontend YA desplegado** (Vercel, auto-deploy desde `master`): `/sorteos`, `/admin/sorteos`,
+> `/admin/sorteos/:id`, `/l/:slug`, `/admin/enlaces`, `/admin/enlaces/:id`. Falta **solo** desplegar
+> las **Cloud Functions** de ambos módulos, que **el dueño ejecuta desde Cloud Shell**.
+
+Son **13 funciones** (9 de Sorteos + 2 de Enlaces + las 2 de pago que ganaron una rama "sorteo"):
+
+| Módulo | Cloud Functions |
+|---|---|
+| **Sorteos / Rifas** | `participarSorteoGratis`, `comprarTicketSorteoSecure`, `asignarTicketsManual`, `createPaypalTicketSorteoSecure`, `capturePaypalTicketSorteoSecure`, `decidirGanadoresSorteo`, `sumarChanceCompartir`, `claimRaffleReferralSecure`, `grantRaffleChancesSecure` |
+| **Sorteos — pago (ramas nuevas)** | `processCulqiPayment` (rama `metadata.tipo==="sorteo"`, guardia anti-doble-cargo), `culqiWebhook` (rama sorteo, idempotencia por `chargeId`) |
+| **Enlaces útiles** | `registrarClicEnlace`, `registrarVisitaEnlace` (únicos emisores de `link_click`/`link_page_view`) |
+
+**Comando único de despliegue (desde la carpeta del proyecto en Cloud Shell):**
+
+```bash
+firebase deploy --only functions:participarSorteoGratis,functions:comprarTicketSorteoSecure,functions:asignarTicketsManual,functions:createPaypalTicketSorteoSecure,functions:capturePaypalTicketSorteoSecure,functions:decidirGanadoresSorteo,functions:sumarChanceCompartir,functions:claimRaffleReferralSecure,functions:grantRaffleChancesSecure,functions:processCulqiPayment,functions:culqiWebhook,functions:registrarClicEnlace,functions:registrarVisitaEnlace
+```
+
+- **Si te pregunta si borrar funciones/índices → responde `N` (No).** Son del ERP/CRM compartido; borrar
+  cualquier función que no esté en la lista **tumbaría el ERP** (ver §4).
+- Es **aditivo**: las 9 funciones de Sorteos y las 2 de Enlaces son nuevas; `processCulqiPayment` y
+  `culqiWebhook` solo **ganan una rama "sorteo"** y no cambian el camino de pago de pedidos.
+- **NUNCA** desplegar `firestore:rules` en el mismo golpe: las reglas de `sorteos` y `link_pages` están
+  **escritas pero NO desplegadas** (la base es compartida con el ERP que corre **sin Firebase Auth**;
+  desplegar reglas tumbó el ERP una vez). Regla dura: **no desplegar reglas sin permiso explícito del dueño.**
+- Detalle funcional en [SORTEOS-Y-RIFAS.md](./SORTEOS-Y-RIFAS.md) y [ENLACES-UTILES.md](./ENLACES-UTILES.md);
+  checklist del dueño en [PENDIENTES.md](./PENDIENTES.md).
+
 ## 4. Reglas de oro aprendidas (para no repetir errores)
 
 - **Siempre desplegar con `--project sistema-gestion-3b225`** (ya corregido en `.firebaserc` y `package.json`).
