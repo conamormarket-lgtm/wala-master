@@ -20,7 +20,7 @@
 //   - NO se duplica la lógica de montos de Culqi/PayPal: se reusan sus SDKs
 //     (checkout-js / @paypal/react-paypal-js) y las callables del contrato.
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
@@ -30,9 +30,11 @@ import { getClientType } from '../services/analytics/tracker';
 import { GlassCard, GlassButton, GlassPanel, Badge } from '../components/ui';
 import {
   getSorteoActivo,
+  getSorteoBySlug,
   getMiParticipacion,
   getContadorSorteo,
   participarGratis,
+  comprarTicketSorteo,
   sumarChanceCompartir,
   claimRaffleReferral,
 } from '../services/sorteos';
@@ -387,17 +389,162 @@ function PaypalTicketButtons({ sorteoId, ticketId, onPaid, onError }) {
   );
 }
 
+// ── Formulario de datos del participante (modal) ─────────────────────────────
+// Se muestra al pulsar "Participar" (gratis o pagado). Capta los datos de
+// contacto que el sorteo necesita para contactar al ganador (nombre, apellidos,
+// documento, teléfono, correo) + país/fecha. En sorteos PAGADOS incluye el
+// selector de cantidad y el total (solo display; el monto real lo recalcula el
+// servidor). Prefill desde el perfil si existe. onSubmit(datos, cantidad).
+const TIPOS_DOC = ['DNI', 'CE', 'Pasaporte', 'RUC', 'Otro'];
+
+function FormularioDatosSorteo({ esPagado, precioTicket, moneda, initial, enviando, onSubmit, onCancel }) {
+  const [f, setF] = useState(initial);
+  const [cantidad, setCantidad] = useState(1);
+  const [err, setErr] = useState('');
+
+  const set = (campo) => (e) => setF((prev) => ({ ...prev, [campo]: e.target.value }));
+
+  const submit = (e) => {
+    e.preventDefault();
+    setErr('');
+    // Mínimos para contactar al ganador (el servidor los revalida).
+    if (!f.nombres.trim() || !f.telefono.trim() || !f.numeroDocumento.trim()) {
+      setErr('Completa tu nombre, teléfono y número de documento.');
+      return;
+    }
+    onSubmit(
+      {
+        nombres: f.nombres.trim(),
+        apellidos: f.apellidos.trim(),
+        tipoDocumento: f.tipoDocumento,
+        numeroDocumento: f.numeroDocumento.trim(),
+        fechaNacimiento: f.fechaNacimiento,
+        pais: (f.pais || '').trim(),
+        telefono: f.telefono.trim(),
+        correo: (f.correo || '').trim(),
+      },
+      cantidad,
+    );
+  };
+
+  const total = (Number(precioTicket || 0) * cantidad).toFixed(2);
+
+  return (
+    <div className={styles.modalBackdrop} onClick={enviando ? undefined : onCancel}>
+      <div className={styles.modalForm} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <h2 className={styles.modalFormTitle}>Completa tus datos para participar</h2>
+        <p className={styles.modalFormSub}>
+          {esPagado
+            ? 'Con estos datos generamos tu ticket y te contactamos si ganas.'
+            : 'Con estos datos validamos tu participación y te contactamos si ganas.'}
+        </p>
+        <form onSubmit={submit} className={styles.formGrid}>
+          <div className={styles.formRow2}>
+            <label className={styles.formField}>
+              <span>Nombres *</span>
+              <input className={styles.formInput} value={f.nombres} onChange={set('nombres')} required />
+            </label>
+            <label className={styles.formField}>
+              <span>Apellidos</span>
+              <input className={styles.formInput} value={f.apellidos} onChange={set('apellidos')} />
+            </label>
+          </div>
+          <div className={styles.formRow2}>
+            <label className={styles.formField}>
+              <span>Tipo de documento</span>
+              <select className={styles.formInput} value={f.tipoDocumento} onChange={set('tipoDocumento')}>
+                {TIPOS_DOC.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </label>
+            <label className={styles.formField}>
+              <span>N.º de documento *</span>
+              <input className={styles.formInput} value={f.numeroDocumento} onChange={set('numeroDocumento')} required />
+            </label>
+          </div>
+          <div className={styles.formRow2}>
+            <label className={styles.formField}>
+              <span>Teléfono / celular *</span>
+              <input className={styles.formInput} value={f.telefono} onChange={set('telefono')} inputMode="tel" required />
+            </label>
+            <label className={styles.formField}>
+              <span>Correo</span>
+              <input className={styles.formInput} type="email" value={f.correo} onChange={set('correo')} />
+            </label>
+          </div>
+          <div className={styles.formRow2}>
+            <label className={styles.formField}>
+              <span>País</span>
+              <input className={styles.formInput} value={f.pais} onChange={set('pais')} />
+            </label>
+            <label className={styles.formField}>
+              <span>Fecha de nacimiento</span>
+              <input className={styles.formInput} type="date" value={f.fechaNacimiento} onChange={set('fechaNacimiento')} />
+            </label>
+          </div>
+
+          {esPagado && (
+            <div className={styles.formPago}>
+              <div className={styles.cantidadRow}>
+                <span className={styles.cantidadLabel}>Cantidad de tickets</span>
+                <div className={styles.stepper}>
+                  <button
+                    type="button"
+                    className={styles.stepperBtn}
+                    onClick={() => setCantidad((c) => Math.max(1, c - 1))}
+                    disabled={cantidad <= 1 || enviando}
+                    aria-label="Quitar un ticket"
+                  >
+                    −
+                  </button>
+                  <span className={styles.stepperValue} aria-live="polite">{cantidad}</span>
+                  <button
+                    type="button"
+                    className={styles.stepperBtn}
+                    onClick={() => setCantidad((c) => Math.min(99, c + 1))}
+                    disabled={enviando}
+                    aria-label="Agregar un ticket"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div className={styles.totalRow}>
+                <span>Total</span>
+                <strong className={styles.totalValue}>{moneda} {total}</strong>
+              </div>
+            </div>
+          )}
+
+          {err && <p className={styles.errorBox}>{err}</p>}
+
+          <div className={styles.modalActions}>
+            <GlassButton type="button" variant="ghost" size="md" onClick={onCancel} disabled={enviando}>
+              Cancelar
+            </GlassButton>
+            <GlassButton type="submit" variant="primary" size="md" loading={enviando} disabled={enviando}>
+              {enviando ? 'Enviando…' : (esPagado ? 'Continuar al pago' : 'Participar')}
+            </GlassButton>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 const SorteosPage = () => {
-  const { user, userProfile, profileIncomplete } = useAuth();
-  const navigate = useNavigate();
+  const { user, userProfile } = useAuth();
   const queryClient = useQueryClient();
   const toast = useGlobalToast();
+  // Slug opcional de la ruta /sorteos/:slug (si no hay, se carga el activo).
+  const { slug } = useParams();
 
   // origenApp: detecta si venimos del app (Capacitor) o de la web. tracker.js:50.
   const origenApp = useMemo(() => getClientType() === 'APP', []);
 
   const [accionError, setAccionError] = useState('');
   const [participando, setParticipando] = useState(false);
+  // Formulario de datos abierto (se pide SIEMPRE al participar/comprar).
+  const [formAbierto, setFormAbierto] = useState(false);
 
   // ── Chances virales (Build 3): compartir + referido ────────────────────────
   const [searchParams] = useSearchParams();
@@ -410,22 +557,21 @@ const SorteosPage = () => {
   const referidoIntentadoRef = useRef(false);
 
   // ── Estado del flujo de compra de tickets (sorteos pagados) ────────────────
-  const [cantidad, setCantidad] = useState(1);        // selector [− N +], mín 1
-  const [preparando, setPreparando] = useState(false); // creando la intención (CF)
   const [intento, setIntento] = useState(null);        // respuesta de comprarTicketSorteoSecure
   const [metodo, setMetodo] = useState(null);          // 'culqi' | 'paypal' (elegido tras preparar)
 
-  // 1) Sorteo activo (1 query barata). staleTime 30s: no re-consulta al enfocar.
+  // 1) Sorteo: por SLUG si la ruta lo trae (/sorteos/:slug), o el activo más
+  //    reciente (/sorteos). 1 query barata; staleTime 30s.
   const {
     data: sorteo,
     isLoading: cargandoSorteo,
     error: errorSorteo,
   } = useQuery({
-    queryKey: ['sorteo-activo'],
+    queryKey: ['sorteo', slug || '__activo__'],
     queryFn: async () => {
-      const { data, error } = await getSorteoActivo();
+      const { data, error } = slug ? await getSorteoBySlug(slug) : await getSorteoActivo();
       if (error) throw new Error(error);
-      return data; // puede ser null si no hay sorteo activo
+      return data; // puede ser null si no hay sorteo
     },
     staleTime: 30000,
   });
@@ -461,7 +607,8 @@ const SorteosPage = () => {
     typeof contador === 'number' ? contador : sorteo?.contadorParticipantes || 0;
 
   const fechaFinMs = useMemo(() => toMillis(sorteo?.fechaFin), [sorteo?.fechaFin]);
-  const { texto: countdown, terminado } = useCountdown(fechaFinMs);
+  // La fecha es SOLO informativa (cuenta regresiva): no bloquea la participación.
+  const { texto: countdown } = useCountdown(fechaFinMs);
 
   const yaParticipa = !!miParticipacion;
   const esGratis = sorteo?.tipo === 'gratis';
@@ -472,10 +619,28 @@ const SorteosPage = () => {
   // Precio del ticket SOLO para display (el server recalcula el autoritativo).
   const precioTicket = Number(sorteo?.precioTicket || 0);
   const monedaSorteo = sorteo?.moneda || 'PEN';
-  const totalDisplay = (precioTicket * cantidad).toFixed(2);
 
   // Correo del comprador (Culqi lo exige): perfil → auth → vacío.
   const emailComprador = userProfile?.email || user?.email || '';
+
+  // Prefill del formulario de datos desde el perfil (si existe). El displayName
+  // se parte en nombres/apellidos (primera palabra = nombres, resto = apellidos).
+  const initialForm = useMemo(() => {
+    const dn = String(userProfile?.displayName || user?.displayName || '').trim();
+    const partes = dn ? dn.split(/\s+/) : [];
+    const nombres = partes.length ? partes[0] : '';
+    const apellidos = partes.length > 1 ? partes.slice(1).join(' ') : '';
+    return {
+      nombres,
+      apellidos,
+      tipoDocumento: userProfile?.documentType || 'DNI',
+      numeroDocumento: userProfile?.dni || '',
+      fechaNacimiento: '',
+      pais: userProfile?.country || 'PE',
+      telefono: userProfile?.phone || '',
+      correo: userProfile?.email || user?.email || '',
+    };
+  }, [userProfile, user]);
 
   // ── Chances virales: enlaces y estado derivado (Build 3) ───────────────────
   // Código de referido del usuario (KS-XXXXXX). El backend acredita +1 chance al
@@ -501,29 +666,55 @@ const SorteosPage = () => {
     queryClient.invalidateQueries({ queryKey: ['contador-sorteo', sorteoId] });
   }, [queryClient, sorteoId, user?.uid]);
 
-  // Handler PARTICIPAR (sorteos gratis).
-  const handleParticipar = useCallback(async () => {
+  // Abre el formulario de datos (se piden SIEMPRE al participar/comprar).
+  const abrirFormulario = useCallback(() => {
+    setAccionError('');
+    setIntento(null);
+    setMetodo(null);
+    setFormAbierto(true);
+  }, []);
+
+  // Envío del formulario. GRATIS → participa directo con los datos. PAGADO →
+  // crea la intención de compra con los datos y muestra el método de pago.
+  const handleSubmitFormulario = useCallback(async (datos, cantidadForm) => {
     setAccionError('');
     if (!sorteoId) return;
+    setParticipando(true);
 
-    // El perfil debe estar completo (dni + phone). El servidor lo revalida.
-    if (profileIncomplete) {
-      navigate('/completar-perfil', { state: { from: '/sorteos' } });
+    // ── Sorteo PAGADO: crear la intención con los datos → mostrar el pago ──
+    if (sorteo?.tipo === 'pagado') {
+      const { data, error } = await comprarTicketSorteo({
+        sorteoId,
+        cantidad: Number(cantidadForm) || 1,
+        datos,
+      });
+      setParticipando(false);
+      if (error) {
+        setAccionError(error);
+        return;
+      }
+      if (!data?.ok || !data?.ticketId || !data?.metadata) {
+        setAccionError('No se pudo preparar la compra. Inténtalo de nuevo.');
+        return;
+      }
+      setIntento(data); // dispara la vista de métodos de pago
+      setFormAbierto(false);
       return;
     }
 
-    setParticipando(true);
-    const { data, error } = await participarGratis(sorteoId, origenApp);
+    // ── Sorteo GRATIS: participar directo con los datos ──
+    const { data, error } = await participarGratis(sorteoId, origenApp, datos);
     setParticipando(false);
-
     if (error) {
       setAccionError(error);
       return;
     }
     if (data?.ok) {
+      setFormAbierto(false);
       refrescarTrasParticipar();
+      toast.success('¡Ya estás participando! 🎉');
     }
-  }, [sorteoId, profileIncomplete, origenApp, navigate, refrescarTrasParticipar]);
+  }, [sorteoId, sorteo, origenApp, refrescarTrasParticipar, toast]);
 
   // Handler COMPARTIR: usa navigator.share (móvil) o copia el enlace; luego
   // llama a la CF para acreditar +1 chance (una sola vez por sorteo). El servidor
@@ -607,48 +798,12 @@ const SorteosPage = () => {
     }
   }, [enlaceReferido, toast]);
 
-  // ── Selector de cantidad (mín 1, sin máximo duro; el server valida) ────────
-  const decCantidad = useCallback(() => setCantidad((c) => Math.max(1, c - 1)), []);
-  const incCantidad = useCallback(() => setCantidad((c) => Math.min(99, c + 1)), []);
-
-  // Handler COMPRAR: crea la intención (ticket pagoConfirmado=false) vía la CF.
-  // NO cobra: solo prepara el intento y muestra los métodos de pago (Culqi/PayPal).
-  const handleComprar = useCallback(async () => {
-    setAccionError('');
-    if (!sorteoId) return;
-
-    // Mismos gates que el gratis: login + perfil completo (el server revalida).
-    if (profileIncomplete) {
-      navigate('/completar-perfil', { state: { from: '/sorteos' } });
-      return;
-    }
-
-    setPreparando(true);
-    setIntento(null);
-    setMetodo(null);
-    try {
-      const comprar = httpsCallable(getFunctions(), 'comprarTicketSorteoSecure');
-      const res = await comprar({ sorteoId, cantidad: Number(cantidad) });
-      const data = res?.data;
-      if (!data?.ok || !data?.ticketId || !data?.metadata) {
-        throw new Error('No se pudo preparar la compra. Inténtalo de nuevo.');
-      }
-      setIntento(data); // { sorteoId, ticketId, cantidad, montoCentimos, monto, moneda, metadata }
-    } catch (e) {
-      console.error('comprarTicketSorteoSecure falló:', e);
-      setAccionError(e?.message || 'No se pudo preparar la compra de tickets.');
-    } finally {
-      setPreparando(false);
-    }
-  }, [sorteoId, cantidad, profileIncomplete, navigate]);
-
   // Éxito de pago (Culqi o PayPal): refresca mi participación/contador para ver
   // los tickets, cierra el flujo y avisa. La CACHÉ vive en react-query (nube),
   // NUNCA en localStorage.
   const handlePagoConfirmado = useCallback(() => {
     setIntento(null);
     setMetodo(null);
-    setCantidad(1);
     refrescarTrasParticipar();
     toast.success('¡Tus tickets ya están registrados! 🎉');
   }, [refrescarTrasParticipar, toast]);
@@ -727,8 +882,10 @@ const SorteosPage = () => {
   const premioNombre = sorteo.premio?.nombre || sorteo.titulo || 'un gran premio';
   const heroSrc = sorteo.heroImagenUrl || sorteo.premio?.imagenUrl;
 
-  // Sorteo cerrado: mostrar ganadores si existen.
-  const cerrado = sorteo.estado === 'cerrado' || terminado;
+  // Sorteo cerrado = SOLO cuando el admin lo cierra (estado "cerrado"), NUNCA por
+  // la fecha: la cuenta regresiva es informativa. Así una fecha ya pasada no
+  // bloquea la participación (el admin decide cuándo cerrar y decidir ganadores).
+  const cerrado = sorteo.estado === 'cerrado';
 
   // Ganadores oficiales (los escribe SOLO el servidor en decidirGanadoresSorteo).
   const ganadores = Array.isArray(sorteo.ganadores) ? sorteo.ganadores : [];
@@ -950,160 +1107,103 @@ const SorteosPage = () => {
           <GlassButton variant="glass" size="lg" fullWidth disabled>
             Sorteo cerrado
           </GlassButton>
-        ) : esPagado ? (
-          // ── FLUJO REAL de compra de tickets (Build 2) ───────────────────────
-          bloqueadoPorApp ? (
-            // requisitoApp == 'obligatorio' y no venimos del app.
-            <>
-              <p className={styles.appHint}>Este sorteo solo está disponible desde el app.</p>
-              <GlassButton as={Link} to="/descargar" variant="primary" size="lg" fullWidth>
-                Descargar app
-              </GlassButton>
-            </>
-          ) : intento ? (
-            // Paso 2: intención creada → elegir/mostrar método de pago.
-            <GlassCard variant="soft" padding="md" className={styles.pagoCard}>
-              <div className={styles.pagoResumen}>
-                <span>
-                  {intento.cantidad} ticket{intento.cantidad > 1 ? 's' : ''}
-                </span>
-                <strong>
-                  {intento.moneda || monedaSorteo} {Number(intento.monto).toFixed(2)}
-                </strong>
-              </div>
-              <p className={styles.pagoNota}>
-                El monto lo confirma el servidor. Elige cómo pagar:
-              </p>
-
-              {!metodo && (
-                <div className={styles.pagoMetodos}>
-                  <GlassButton
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    onClick={() => setMetodo('culqi')}
-                  >
-                    💳 Pagar con tarjeta
-                  </GlassButton>
-                  <GlassButton
-                    variant="ghost"
-                    size="lg"
-                    fullWidth
-                    onClick={() => setMetodo('paypal')}
-                  >
-                    🅿️ Pagar con PayPal
-                  </GlassButton>
-                </div>
-              )}
-
-              {metodo === 'culqi' && (
-                <CulqiTicketButton
-                  intento={intento}
-                  email={emailComprador}
-                  onPaid={handlePagoConfirmado}
-                  onError={handlePagoError}
-                />
-              )}
-
-              {metodo === 'paypal' && (
-                <PaypalTicketButtons
-                  sorteoId={intento.sorteoId}
-                  ticketId={intento.ticketId}
-                  onPaid={handlePagoConfirmado}
-                  onError={handlePagoError}
-                />
-              )}
-
-              <button type="button" className={styles.linkCancelar} onClick={cancelarCompra}>
-                Cancelar
-              </button>
-            </GlassCard>
-          ) : (
-            // Paso 1: selector de cantidad + total (display) + botón comprar.
-            <GlassCard variant="soft" padding="md" className={styles.compraCard}>
-              <div className={styles.cantidadRow}>
-                <span className={styles.cantidadLabel}>Cantidad de tickets</span>
-                <div className={styles.stepper}>
-                  <button
-                    type="button"
-                    className={styles.stepperBtn}
-                    onClick={decCantidad}
-                    disabled={cantidad <= 1 || preparando}
-                    aria-label="Quitar un ticket"
-                  >
-                    −
-                  </button>
-                  <span className={styles.stepperValue} aria-live="polite">{cantidad}</span>
-                  <button
-                    type="button"
-                    className={styles.stepperBtn}
-                    onClick={incCantidad}
-                    disabled={preparando}
-                    aria-label="Agregar un ticket"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.totalRow}>
-                <span>Total</span>
-                <strong className={styles.totalValue}>
-                  {monedaSorteo} {totalDisplay}
-                </strong>
-              </div>
-
-              <GlassButton
-                variant="primary"
-                size="lg"
-                fullWidth
-                loading={preparando}
-                disabled={preparando}
-                onClick={handleComprar}
-              >
-                {preparando
-                  ? 'Preparando…'
-                  : `Comprar ${cantidad} ticket${cantidad > 1 ? 's' : ''}`}
-              </GlassButton>
-
-              {profileIncomplete && (
-                <p className={styles.perfilHint}>
-                  Necesitas <Link to="/completar-perfil" state={{ from: '/sorteos' }}>completar tu perfil</Link> para comprar tickets.
-                </p>
-              )}
-            </GlassCard>
-          )
         ) : bloqueadoPorApp ? (
-          // requisitoApp == 'obligatorio' y no venimos del app (sorteo gratis).
+          // requisitoApp == 'obligatorio' y no venimos del app.
           <>
             <p className={styles.appHint}>Este sorteo solo está disponible desde el app.</p>
             <GlassButton as={Link} to="/descargar" variant="primary" size="lg" fullWidth>
               Descargar app
             </GlassButton>
           </>
-        ) : yaParticipa ? (
+        ) : esPagado && intento ? (
+          // ── Intención creada → métodos de pago (aparece tras llenar los datos) ──
+          <GlassCard variant="soft" padding="md" className={styles.pagoCard}>
+            <div className={styles.pagoResumen}>
+              <span>
+                {intento.cantidad} ticket{intento.cantidad > 1 ? 's' : ''}
+              </span>
+              <strong>
+                {intento.moneda || monedaSorteo}{' '}
+                {Number(intento.monto ?? (intento.montoCentimos || 0) / 100).toFixed(2)}
+              </strong>
+            </div>
+            <p className={styles.pagoNota}>
+              El monto lo confirma el servidor. Elige cómo pagar:
+            </p>
+
+            {!metodo && (
+              <div className={styles.pagoMetodos}>
+                <GlassButton variant="primary" size="lg" fullWidth onClick={() => setMetodo('culqi')}>
+                  💳 Pagar con tarjeta
+                </GlassButton>
+                <GlassButton variant="ghost" size="lg" fullWidth onClick={() => setMetodo('paypal')}>
+                  🅿️ Pagar con PayPal
+                </GlassButton>
+              </div>
+            )}
+
+            {metodo === 'culqi' && (
+              <CulqiTicketButton
+                intento={intento}
+                email={emailComprador}
+                onPaid={handlePagoConfirmado}
+                onError={handlePagoError}
+              />
+            )}
+
+            {metodo === 'paypal' && (
+              <PaypalTicketButtons
+                sorteoId={intento.sorteoId}
+                ticketId={intento.ticketId}
+                onPaid={handlePagoConfirmado}
+                onError={handlePagoError}
+              />
+            )}
+
+            <button type="button" className={styles.linkCancelar} onClick={cancelarCompra}>
+              Cancelar
+            </button>
+          </GlassCard>
+        ) : esGratis && yaParticipa ? (
           <GlassButton variant="glass" size="lg" fullWidth disabled>
             Ya estás participando ✓
           </GlassButton>
         ) : (
-          <GlassButton
-            variant="primary"
-            size="lg"
-            fullWidth
-            loading={participando}
-            onClick={handleParticipar}
-          >
-            {participando ? 'Registrando…' : '¡Participar gratis!'}
-          </GlassButton>
-        )}
-
-        {/* Aviso de perfil incompleto para el flujo GRATIS (el pagado tiene el suyo). */}
-        {user && esGratis && !cerrado && !yaParticipa && profileIncomplete && (
-          <p className={styles.perfilHint}>
-            Necesitas <Link to="/completar-perfil" state={{ from: '/sorteos' }}>completar tu perfil</Link> para participar.
-          </p>
+          // Botón que ABRE el formulario de datos (SIEMPRE se piden al participar).
+          <>
+            {esPagado && (
+              <p className={styles.precioHint}>
+                {monedaSorteo} {precioTicket.toFixed(2)} por ticket
+              </p>
+            )}
+            <GlassButton
+              variant="primary"
+              size="lg"
+              fullWidth
+              loading={participando}
+              disabled={participando}
+              onClick={abrirFormulario}
+            >
+              {esGratis
+                ? '¡Participar gratis!'
+                : (yaParticipa ? 'Comprar más tickets' : '¡Quiero participar!')}
+            </GlassButton>
+          </>
         )}
       </section>
+
+      {/* MODAL: formulario de datos (se piden SIEMPRE al participar/comprar) --- */}
+      {formAbierto && (
+        <FormularioDatosSorteo
+          esPagado={esPagado}
+          precioTicket={precioTicket}
+          moneda={monedaSorteo}
+          initial={initialForm}
+          enviando={participando}
+          onSubmit={handleSubmitFormulario}
+          onCancel={() => { if (!participando) setFormAbierto(false); }}
+        />
+      )}
     </div>
   );
 };

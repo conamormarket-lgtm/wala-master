@@ -376,6 +376,20 @@
 
 .cardActionsRow {
   margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Preview del slug/enlace público bajo el campo de título. */
+.slugHint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #6b7280;
+  word-break: break-all;
+}
+.slugHint strong {
+  color: #4338ca;
 }
 
 .detalleLink {

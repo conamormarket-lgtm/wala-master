@@ -529,6 +529,115 @@
   .confeti { display: none; }
 }
 
+/* --- Precio por ticket (hint sobre el botón de participar pagado) -------- */
+.precioHint {
+  margin: 0 0 0.5rem;
+  text-align: center;
+  font-weight: 800;
+  color: var(--primary-color);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Modal del formulario de datos (participar / comprar) ---------------- */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(10, 8, 20, 0.6);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+
+.modalForm {
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  padding: 1.25rem 1.15rem 1.35rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.modalFormTitle {
+  margin: 0 0 0.25rem;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--color-text);
+}
+
+.modalFormSub {
+  margin: 0 0 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.formGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* Dos campos por fila en desktop; se apilan en móvil. */
+.formRow2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.formField > span {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.formInput {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-hover);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* Bloque de cantidad + total dentro del formulario para sorteos pagados. */
+.formPago {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 0.35rem;
+}
+
 /* --- Tablet / desktop ---------------------------------------------------- */
 @media (min-width: 640px) {
   .page {
@@ -542,5 +651,10 @@
 
   .accion {
     position: static;
+  }
+
+  /* Dos columnas para los pares de campos del formulario. */
+  .formRow2 {
+    grid-template-columns: 1fr 1fr;
   }
 }

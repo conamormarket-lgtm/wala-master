@@ -6,6 +6,7 @@ import {
   createSorteo,
   updateSorteo,
   deleteSorteo,
+  slugifySorteo,
 } from '../../services/sorteos';
 import { uploadFile } from '../../services/firebase/storage';
 import { Edit2, Trash2, Users, UploadCloud, Loader2 } from 'lucide-react';
@@ -15,6 +16,7 @@ import styles from './AdminSorteos.module.css';
 // Formulario vacío. Los campos de imagen guardan la URL ya subida a Storage.
 const emptyForm = {
   titulo: '',
+  slug: '',
   descripcion: '',
   tipo: 'gratis',
   precioTicket: 0,
@@ -141,6 +143,7 @@ const AdminSorteos = () => {
     setEditingId(s.id);
     setForm({
       titulo: s.titulo || '',
+      slug: s.slug || '',
       descripcion: s.descripcion || '',
       tipo: s.tipo === 'pagado' ? 'pagado' : 'gratis',
       precioTicket: s.precioTicket ?? 0,
@@ -194,6 +197,22 @@ const AdminSorteos = () => {
                   className={styles.input}
                   required
                 />
+              </div>
+
+              {/* SLUG: se genera automático del título; el admin puede ajustarlo. */}
+              <div className={styles.field}>
+                <label className={styles.label}>Enlace público (slug)</label>
+                <input
+                  type="text"
+                  placeholder="se-genera-del-titulo"
+                  value={form.slug}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  className={styles.input}
+                />
+                <p className={styles.slugHint}>
+                  wala.pe/sorteos/<strong>{slugifySorteo(form.slug || form.titulo) || 'tu-sorteo'}</strong>
+                  {' '}· se crea solo del título; puedes editarlo.
+                </p>
               </div>
 
               <div className={styles.field}>
@@ -510,6 +529,16 @@ const AdminSorteos = () => {
                       <Link to={`/admin/sorteos/${s.id}`} className={styles.detalleLink}>
                         <Users size={15} /> Ver participantes / Decidir ganadores
                       </Link>
+                      {s.slug && (
+                        <a
+                          href={`/sorteos/${s.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.detalleLink}
+                        >
+                          🔗 Ver pública
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div className={styles.sorteoActions}>

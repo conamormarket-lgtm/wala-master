@@ -23,6 +23,33 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 // Colección raíz de sorteos.
 const COLLECTION = 'sorteos';
 
+// Convierte un texto en slug URL-safe (minúsculas, sin acentos, guiones).
+// Se usa para derivar el slug del sorteo a partir del TÍTULO automáticamente.
+export const slugifySorteo = (texto) =>
+  String(texto || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // quita acentos
+    .replace(/[^a-z0-9]+/g, '-')      // no alfanumérico → guion
+    .replace(/(^-|-$)/g, '')          // sin guiones sobrantes en los extremos
+    .slice(0, 60);
+
+// Devuelve un slug ÚNICO en la colección: si `base` ya existe en otro sorteo,
+// prueba base-2, base-3… hasta encontrar uno libre (pocos docs, barato).
+const slugUnicoSorteo = async (base, excluirId = null) => {
+  const limpio = slugifySorteo(base) || 'sorteo';
+  const { data } = await getCollection(COLLECTION);
+  const usados = new Set(
+    (data || [])
+      .filter((s) => s.id !== excluirId && s.slug)
+      .map((s) => String(s.slug).toLowerCase()),
+  );
+  if (!usados.has(limpio)) return limpio;
+  let i = 2;
+  while (usados.has(`${limpio}-${i}`)) i += 1;
+  return `${limpio}-${i}`;
+};
+
 // Número de shards del contador distribuido. DEBE coincidir con la constante
 // del backend SORTEO_CONTADOR_SHARDS (functions/index.js:3281). Los shards son
 // docs con id "0".."9"; alguno puede no existir todavía (cuenta 0).
@@ -58,6 +85,32 @@ export const getSorteoActivo = async () => {
 export const getSorteoById = async (id) => {
   if (!id) return { data: null, error: 'Falta el id del sorteo' };
   return await getDocument(COLLECTION, id);
+};
+
+/**
+ * Lee un sorteo por su SLUG (para la ruta pública /sorteos/{slug}). Filtro de un
+ * solo campo (slug=='...') → NO requiere índice compuesto. Devuelve el primero.
+ *
+ * @param {string} slug
+ * @returns {Promise<{ data: object|null, error: string|null }>}
+ */
+export const getSorteoBySlug = async (slug) => {
+  const limpio = slugifySorteo(slug || '');
+  if (!limpio) return { data: null, error: 'Falta el slug del sorteo' };
+  const { data, error } = await getCollection(
+    COLLECTION,
+    [{ field: 'slug', operator: '==', value: limpio }],
+  );
+  if (error) return { data: null, error };
+  // Por si hubiera colisión histórica, prioriza el activo más reciente.
+  const ms = (t) => t?.toMillis?.() ?? t?.seconds ?? 0;
+  const ordenados = [...(data || [])].sort((a, b) => {
+    const activoA = a.estado === 'activo' ? 1 : 0;
+    const activoB = b.estado === 'activo' ? 1 : 0;
+    if (activoA !== activoB) return activoB - activoA;
+    return ms(b.createdAt) - ms(a.createdAt);
+  });
+  return { data: ordenados[0] || null, error: null };
 };
 
 /**
@@ -115,10 +168,11 @@ export const getContadorSorteo = async (sorteoId) => {
  * @param {boolean} origenApp
  * @returns {Promise<{ data: object|null, error: string|null }>}
  */
-export const participarGratis = async (sorteoId, origenApp = false) => {
+export const participarGratis = async (sorteoId, origenApp = false, datos = {}) => {
   try {
     const callable = httpsCallable(getFunctions(), 'participarSorteoGratis');
-    const res = await callable({ sorteoId, origenApp: !!origenApp });
+    // `datos` = formulario público (nombres/apellidos/documento/teléfono/correo…).
+    const res = await callable({ sorteoId, origenApp: !!origenApp, datos });
     return { data: res.data, error: null };
   } catch (e) {
     return { data: null, error: e?.message || 'No se pudo registrar la participación.' };
@@ -159,6 +213,10 @@ const construirDocSorteo = (data) => {
   const tipo = data.tipo === 'pagado' ? 'pagado' : 'gratis';
   return {
     titulo: (data.titulo || '').trim(),
+    // Slug del sorteo (para /sorteos/{slug}). Si el form trae uno, se respeta
+    // (ya normalizado); si no, se deriva del título. La UNICIDAD la garantiza
+    // createSorteo/updateSorteo con slugUnicoSorteo antes de escribir.
+    slug: slugifySorteo(data.slug || data.titulo),
     descripcion: (data.descripcion || '').trim(),
     tipo,
     // El precio del ticket SIEMPRE se guarda en el doc del sorteo; es la única
@@ -188,7 +246,11 @@ const construirDocSorteo = (data) => {
  * @returns {Promise<{ id: string|null, error: string|null }>}
  */
 export const createSorteo = async (data) => {
-  return await createDocument(COLLECTION, construirDocSorteo(data));
+  const doc = construirDocSorteo(data);
+  // Slug ÚNICO derivado del título (o del slug editado). Se genera SIEMPRE al
+  // crear para que /sorteos/{slug} funcione de una vez.
+  doc.slug = await slugUnicoSorteo(doc.slug || doc.titulo);
+  return await createDocument(COLLECTION, doc);
 };
 
 /**
@@ -200,7 +262,11 @@ export const createSorteo = async (data) => {
  */
 export const updateSorteo = async (id, data) => {
   if (!id) return { error: 'Falta el id del sorteo' };
-  return await updateDocument(COLLECTION, id, construirDocSorteo(data));
+  const doc = construirDocSorteo(data);
+  // Mantiene el slug único (excluyendo este mismo sorteo). Si el título/slug no
+  // cambió, slugUnicoSorteo devuelve el mismo valor.
+  doc.slug = await slugUnicoSorteo(doc.slug || doc.titulo, id);
+  return await updateDocument(COLLECTION, id, doc);
 };
 
 /**
@@ -275,10 +341,12 @@ export const asignarTicketsManual = async ({ sorteoId, correo, telefono, dni, ca
  * @param {{ sorteoId:string, cantidad:number }} params
  * @returns {Promise<{ data: object|null, error: string|null }>}
  */
-export const comprarTicketSorteo = async ({ sorteoId, cantidad }) => {
+export const comprarTicketSorteo = async ({ sorteoId, cantidad, datos = {} }) => {
   try {
     const callable = httpsCallable(getFunctions(), 'comprarTicketSorteoSecure');
-    const res = await callable({ sorteoId, cantidad: Number(cantidad) || 1 });
+    // `datos` = formulario público; el servidor lo guarda en el ticket (no afecta
+    // el MONTO, que se recalcula precioTicket*cantidad server-side).
+    const res = await callable({ sorteoId, cantidad: Number(cantidad) || 1, datos });
     return { data: res.data, error: null };
   } catch (e) {
     return { data: null, error: e?.message || 'No se pudo crear la intención de compra.' };

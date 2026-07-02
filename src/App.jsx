@@ -399,6 +399,8 @@ function App() {
                         <Route path="/pago-demo/:orderId" element={<CheckoutDemoPage />} />
                         <Route path="/ofertas" element={<OfertasFlashPage />} />
                         <Route path="/sorteos" element={<SorteosPage />} />
+                        {/* Sorteo específico por slug (compartible desde lives). */}
+                        <Route path="/sorteos/:slug" element={<SorteosPage />} />
 
                         {/* Página pública LINK-IN-BIO (/l/:slug). DEBE ir ANTES
                             del catch-all /:slug para no ser interceptada por las

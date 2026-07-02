@@ -3337,11 +3337,38 @@ exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) 
 // Debe coincidir con la constante que use el cliente al sumar los shards.
 const SORTEO_CONTADOR_SHARDS = 10;
 
+// Normaliza y recorta los DATOS que envía el formulario público de sorteos
+// (nombre, apellidos, documento, teléfono, correo, etc.). Devuelve un objeto con
+// strings limpios + `nombre` (nombre completo listo para mostrar). NO valida
+// obligatoriedad: cada CF decide qué campos exige. Se usa tanto en la
+// participación gratis como en la compra de tickets para capturar el lead.
+function sanitizarDatosSorteo(datos) {
+  const d = datos && typeof datos === "object" ? datos : {};
+  const s = (v) => (typeof v === "string" ? v.trim() : "");
+  const nombres = s(d.nombres);
+  const apellidos = s(d.apellidos);
+  const nombre = `${nombres} ${apellidos}`.trim();
+  return {
+    nombres,
+    apellidos,
+    tipoDocumento: s(d.tipoDocumento) || "DNI",
+    numeroDocumento: s(d.numeroDocumento),
+    fechaNacimiento: s(d.fechaNacimiento),
+    pais: s(d.pais) || "PE",
+    telefono: s(d.telefono),
+    correo: s(d.correo),
+    nombre,
+  };
+}
+
 // ── Participar en un sorteo GRATIS (onCall) ──────────────────────────────────
-// params: { sorteoId:string, origenApp:bool }
-// Server-authoritative: usa el uid del token y el perfil leído server-side; del
-// cliente solo se confía origenApp (si entró desde el app nativo). Idempotente:
-// el doc participante tiene id=uid, reentrar es no-op (no duplica ni recuenta).
+// params: { sorteoId:string, origenApp:bool, datos:{ nombres, apellidos,
+//           tipoDocumento, numeroDocumento, fechaNacimiento, pais, telefono, correo } }
+// Server-authoritative para el estado del sorteo y el contador. Los DATOS de
+// contacto los aporta el FORMULARIO público (no se exige un perfil ya completo:
+// la gente llega de lives sin perfil y hay que captar el lead ahí mismo). Se
+// exige lo MÍNIMO para poder contactar al ganador (nombre, teléfono, documento).
+// Idempotente: el doc participante tiene id=uid, reentrar es no-op.
 exports.participarSorteoGratis = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const sorteoId = data && data.sorteoId;
@@ -3350,6 +3377,8 @@ exports.participarSorteoGratis = functions.https.onCall(async (data, context) =>
   }
   // Único dato de confianza que aporta el cliente: si la sesión corre en el app.
   const origenApp = data && data.origenApp === true;
+  // Datos del participante que llegan del formulario público (recortados).
+  const datos = sanitizarDatosSorteo(data && data.datos);
 
   const sorteoRef = db.collection("sorteos").doc(sorteoId);
   const participanteRef = sorteoRef.collection("participantes").doc(uid);
@@ -3371,27 +3400,45 @@ exports.participarSorteoGratis = functions.https.onCall(async (data, context) =>
     throw new functions.https.HttpsError("failed-precondition", "Tipo de sorteo no válido.");
   }
 
-  // 2) El perfil del uid debe estar COMPLETO (equivalente a !profileIncomplete):
-  //    displayName, phone, email y dni presentes. Se lee server-side; nunca se
-  //    confía en datos de perfil enviados por el cliente.
-  const userSnap = await userRef.get();
-  if (!userSnap.exists) {
-    throw new functions.https.HttpsError("failed-precondition", "completa tu perfil");
+  // 2) Datos de contacto: los aporta el FORMULARIO. El correo cae al del perfil o
+  //    al del token si el formulario no lo trae. Se lee el perfil solo como
+  //    fallback y para completarlo (captura de lead), NUNCA como gate.
+  let perfil = {};
+  try {
+    const userSnap = await userRef.get();
+    if (userSnap.exists) perfil = userSnap.data() || {};
+  } catch (e) {
+    console.warn("participarSorteoGratis: no se pudo leer el perfil (se continúa):", e.message);
   }
-  const u = userSnap.data();
-  const telefono = u.phone;
-  const correo = u.email;
-  const dni = u.dni;
-  // nombre: si no hay displayName, cae al correo (siempre presente tras login).
-  const nombre = (u.displayName && String(u.displayName).trim()) || correo || "Participante";
-  // "Perfil completo" = MISMO criterio que el cliente (AuthContext.profileIncomplete):
-  // teléfono + documento. El correo siempre existe tras el login; el nombre tiene
-  // fallback. Así el gate del cliente y la validación del servidor no discrepan.
-  const perfilCompleto =
-    !!(telefono && String(telefono).trim()) &&
-    !!(dni && String(dni).trim());
-  if (!perfilCompleto) {
-    throw new functions.https.HttpsError("failed-precondition", "completa tu perfil");
+  const telefono = datos.telefono || (perfil.phone ? String(perfil.phone).trim() : "");
+  const dni = datos.numeroDocumento || (perfil.dni ? String(perfil.dni).trim() : "");
+  const correo =
+    datos.correo ||
+    perfil.email ||
+    (context.auth && context.auth.token && context.auth.token.email) ||
+    "";
+  const nombre =
+    datos.nombre || (perfil.displayName && String(perfil.displayName).trim()) || correo || "Participante";
+
+  // Mínimo para contactar al ganador: nombre + teléfono + documento.
+  if (!datos.nombres || !telefono || !dni) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Completa tus datos para participar (nombre, teléfono y documento).",
+    );
+  }
+
+  // Captura de lead (marketing): completa el perfil con lo que falte, sin pisar
+  // datos ya existentes. Best-effort: jamás rompe la participación.
+  try {
+    const parche = {};
+    if (!perfil.phone && telefono) parche.phone = telefono;
+    if (!perfil.dni && dni) parche.dni = dni;
+    if (!perfil.displayName && datos.nombre) parche.displayName = datos.nombre;
+    if (!perfil.documentType && datos.tipoDocumento) parche.documentType = datos.tipoDocumento;
+    if (Object.keys(parche).length > 0) await userRef.set(parche, { merge: true });
+  } catch (e) {
+    console.warn("participarSorteoGratis: no se pudo capturar el lead en el perfil:", e.message);
   }
 
   // 3) Requisito de app.
@@ -3424,6 +3471,12 @@ exports.participarSorteoGratis = functions.https.onCall(async (data, context) =>
       const participacion = {
         uid,
         nombre,
+        nombres: datos.nombres,
+        apellidos: datos.apellidos,
+        tipoDocumento: datos.tipoDocumento,
+        numeroDocumento: dni,
+        fechaNacimiento: datos.fechaNacimiento || null,
+        pais: datos.pais,
         telefono,
         correo,
         dni,
@@ -3517,20 +3570,34 @@ exports.comprarTicketSorteoSecure = functions.https.onCall(async (data, context)
   const { sorteoRef, sorteo, cantidad: n, precioCentimos, montoCentimos } =
     await leerPrecioTicketSorteo(sorteoId, cantidad);
 
-  // Snapshot mínimo de datos del comprador (para asignar el ticket sin confiar en
-  // el cliente). Se lee del perfil del portal; correo/tel/dni pueden faltar y se
-  // completan luego en la confirmación si es necesario.
-  let correo = null; let telefono = null; let dni = null;
+  // Datos del comprador: PRIORIZA el formulario público (captura el lead aunque
+  // no tenga perfil completo); cae al perfil del portal como respaldo. Estos
+  // datos NO influyen en el MONTO (que ya se calculó server-side arriba): son
+  // solo para casar el ticket y contactar al ganador.
+  const datos = sanitizarDatosSorteo(data && data.datos);
+  let perfil = {};
   try {
     const uSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
-    if (uSnap.exists) {
-      const u = uSnap.data() || {};
-      correo = u.email || null;
-      telefono = u.phone || null;
-      dni = u.dni || null;
-    }
+    if (uSnap.exists) perfil = uSnap.data() || {};
   } catch (e) {
     console.warn("comprarTicketSorteoSecure: no se pudo leer el perfil (se continúa):", e.message);
+  }
+  const correo = datos.correo || perfil.email || null;
+  const telefono = datos.telefono || perfil.phone || null;
+  const dni = datos.numeroDocumento || perfil.dni || null;
+  const nombre = datos.nombre || perfil.displayName || correo || "Participante";
+
+  // Captura de lead best-effort (no rompe la compra si falla).
+  try {
+    const parche = {};
+    if (!perfil.phone && telefono) parche.phone = telefono;
+    if (!perfil.dni && dni) parche.dni = dni;
+    if (!perfil.displayName && datos.nombre) parche.displayName = datos.nombre;
+    if (Object.keys(parche).length > 0) {
+      await db.collection(PORTAL_USERS_COLLECTION).doc(uid).set(parche, { merge: true });
+    }
+  } catch (e) {
+    console.warn("comprarTicketSorteoSecure: no se pudo capturar el lead:", e.message);
   }
 
   // Crea el doc de INTENCIÓN (pagoConfirmado=false). id autogenerado = ticketId.
@@ -3539,6 +3606,12 @@ exports.comprarTicketSorteoSecure = functions.https.onCall(async (data, context)
   await ticketRef.set({
     sorteoId,
     participanteUid: uid,
+    nombre,
+    nombres: datos.nombres || null,
+    apellidos: datos.apellidos || null,
+    tipoDocumento: datos.tipoDocumento || null,
+    fechaNacimiento: datos.fechaNacimiento || null,
+    pais: datos.pais || null,
     correo,
     telefono,
     dni,
@@ -3669,7 +3742,13 @@ async function confirmarTicketSorteoDesdePago({ metadata, pagoId, metodoPago } =
         const chancesBase = 1;
         t.set(participanteRef, {
           uid,
-          nombre: ticket.correo || "Participante",
+          nombre: ticket.nombre || ticket.correo || "Participante",
+          nombres: ticket.nombres || null,
+          apellidos: ticket.apellidos || null,
+          tipoDocumento: ticket.tipoDocumento || null,
+          numeroDocumento: ticket.dni || null,
+          fechaNacimiento: ticket.fechaNacimiento || null,
+          pais: ticket.pais || null,
           telefono: ticket.telefono || null,
           correo: ticket.correo || null,
           dni: ticket.dni || null,
