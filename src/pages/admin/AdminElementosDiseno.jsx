@@ -38,11 +38,7 @@ const AdminElementosDiseno = () => {
             key={el.slug}
             type="button"
             className={styles.card}
-            onClick={() =>
-              // Elementos con Editor inline → su página por slug; elementos que son
-              // módulos completos (Raffles, Enlaces útiles) enlazan a su propia ruta.
-              navigate(el.to || `/admin/elementos-diseno/${el.slug}`)
-            }
+            onClick={() => navigate(`/admin/elementos-diseno/${el.slug}`)}
           >
             <span className={styles.cardIcon}>{el.icon}</span>
             <span className={styles.cardBody}>

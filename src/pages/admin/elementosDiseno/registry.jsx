@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutGrid, Ticket } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 import NavegacionCategoriasEditor from './editores/NavegacionCategoriasEditor';
 
 /**
@@ -25,10 +25,7 @@ import NavegacionCategoriasEditor from './editores/NavegacionCategoriasEditor';
  *  @property {string} nombre       título visible (tarjeta + encabezado).
  *  @property {string} descripcion  texto corto explicativo (tarjeta).
  *  @property {React.ReactNode} icon  icono ya instanciado para la tarjeta.
- *  @property {React.ComponentType} [Editor]  editor inline (página por slug).
- *  @property {string} [to]  ruta a la que enlaza la tarjeta cuando el elemento es
- *                           un MÓDULO completo con sus propias sub-páginas (Raffles,
- *                           Enlaces útiles). Si viene `to`, se usa en vez del slug.
+ *  @property {React.ComponentType} Editor  componente editor del elemento.
  */
 export const ELEMENTOS_DISENO = [
   {
@@ -38,15 +35,6 @@ export const ELEMENTOS_DISENO = [
     icon: <LayoutGrid size={28} />,
     Editor: NavegacionCategoriasEditor,
   },
-  {
-    slug: 'raffles',
-    nombre: 'Raffles',
-    descripcion: 'Sorteos y rifas: crea sorteos gratis o pagados, gestiona participantes y decide ganadores.',
-    icon: <Ticket size={28} />,
-    to: '/admin/sorteos',
-  },
-  // 'Enlaces útiles' (constructor tipo Linktree) se añade aquí cuando su módulo
-  // esté construido, para no dejar una tarjeta que apunte a una ruta inexistente.
 ];
 
 /** Busca un elemento del registro por su slug. */

@@ -97,6 +97,14 @@ const AdminLayout = () => {
               >
                 🎨 Elementos con diseño
               </NavLink>
+              {/* Raffles (sorteos y rifas): su propio botón, JUSTO DEBAJO de
+                  "Elementos con diseño" (separado, no anidado). */}
+              <NavLink
+                to="/admin/sorteos"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                🎁 Raffles
+              </NavLink>
               {/* Panel de comportamiento: wishlists, carritos y fechas de los usuarios. */}
               <NavLink
                 to="/admin/usuarios-comportamiento"
