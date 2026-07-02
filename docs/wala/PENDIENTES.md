@@ -1,9 +1,10 @@
 # Pendientes del DUEÑO — qué desplegar / actualizar (Cloud Shell + consola)
 
 > **Para el dueño (no requiere programar).** Esta es la lista corta y clara de lo que **falta
-> hacer del lado de producción** para que lo construido en la sesión del **2026-06-29** quede
-> 100 % activo. El **frontend ya está desplegado** (Vercel auto-deploy desde `master`); lo que
-> queda es **backend** (Cloud Functions) y un par de **confirmaciones de configuración**.
+> hacer del lado de producción** para que lo construido en las sesiones del **2026-06-29** y del
+> **2026-07-01/02** (integridad de datos + analítica) quede 100 % activo. El **frontend ya está
+> desplegado** (Vercel auto-deploy desde `master`); lo que queda es **backend** (Cloud Functions),
+> un **script de rescate opcional** y un par de **confirmaciones de configuración**.
 >
 > Regla de oro del proyecto: **producción primero se respalda, después se toca** (ver
 > [README.md](./README.md) y [ops/backup](../../ops/backup/README.md)). Y **nunca** se despliegan
@@ -18,47 +19,91 @@ Leyenda: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
-## 1. Desplegar Cloud Functions (lo único que bloquea features ya en vivo) ⬜
+## 1. Desplegar las 2 Cloud Functions de AGREGACIÓN de analítica (sesión 2026-07-01) ✅ HECHO
 
-El frontend del **2026-06-29** ya está en producción, pero **dos cosas no se ven completas hasta
-redesplegar funciones**:
-
-1. **Sync de pago a la FUENTE DE VERDAD** (`wala_pedidos.estadoWala`): hoy el frontend ya escribe
-   y lee `estadoWala`, pero **el pago no lo marca "pagado" hasta redesplegar** las 3 funciones de
-   confirmación de pago. Sin esto, un pedido pagado puede seguir mostrándose como
-   "Por confirmar pago" en "Mis Compras"/"Recepción". (Código: `marcarWalaPedidoPagado(...)` en
-   `functions/index.js`, en `processCulqiPayment`, `culqiWebhook` y `capturePaypalOrderSecure`;
-   ver [FLUJO-PEDIDOS.md §4-bis.5 / §4-bis.9](./FLUJO-PEDIDOS.md).)
-2. **Foto de la persona en `/regalar`**: el frontend ya muestra las **tarjetas grandes**, pero la
-   **foto** (y `roleKey`/`gender` para las ocasiones) solo llegan a la página pública cuando se
-   redesplega `getPublicGiftRegistry`. (Código: `getPublicGiftRegistry` en `functions/index.js`;
-   ver [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md) y
-   [PLAN-FECHAS-ESPECIALES.md](./PLAN-FECHAS-ESPECIALES.md).)
-
-### Comando combinado (un solo deploy, recomendado)
+**✅ EJECUTADO por el dueño el 2026-07-02** (junto con `getPublicGiftRegistry`): las 3 funciones
+se actualizaron con "Successful update operation". Desde ese despliegue, el doc diario incluye los
+desgloses nuevos. Los días ANTERIORES al despliegue siguen mostrando "sin datos" en los desgloses
+salvo que se corra el backfill (§1-bis). Se conserva el comando por referencia:
 
 En **Cloud Shell**, desde la carpeta del proyecto:
 
 ```bash
 firebase deploy \
-  --only functions:processCulqiPayment,functions:culqiWebhook,functions:capturePaypalOrderSecure,functions:getPublicGiftRegistry \
+  --only functions:aggregateAnalyticsDaily,functions:aggregateAnalyticsDailyBackfill \
   --project sistema-gestion-3b225
 ```
 
-- Si quieres separarlos, puedes hacer dos deploys (uno con las 3 de pago, otro con
-  `functions:getPublicGiftRegistry`); el combinado de arriba hace lo mismo en un paso.
 - **Si te pregunta si borrar funciones/índices del ERP → responde `N` (No).** Son del ERP/CRM
   compartido (ver [DESPLIEGUE-ESTADO.md §4](./DESPLIEGUE-ESTADO.md)).
-- Estas funciones marcan pago/exponen la foto pero **no cambian montos ni la firma del pedido**:
-  el cambio es **aditivo, idempotente y best-effort** (un fallo no rompe el cobro ni el checkout).
+- Es **aditivo e idempotente**: la versión nueva agrega campos al doc diario
+  (`byCountry`, `byCountryAprox`, `byDevice`/`byBrowser`/`byOS`, `byClientType`,
+  `identitiesTotal`/`identitiesLoggedIn`/`identitiesAnon`, `funnelFull`, `topIdentities`);
+  no toca pagos ni pedidos. Ver [MODELO-DATOS.md §3.8](./MODELO-DATOS.md).
+- Desplegar **no rompe nada si tarda**: mientras tanto el dashboard sigue funcionando con los
+  agregados viejos y sus avisos honestos.
 
-> **Nota:** desplegar el **sync de pago no rompe nada si aún no está**: hasta entonces el portal
-> simplemente muestra el estado derivado del ERP como siempre; el campo `estadoWala` ya existe y
-> queda listo para cuando se redesplegue.
+### 1-bis. (Opcional) Backfill analítico del histórico ⬜
+
+Tras el redeploy, puedes **re-agregar días pasados** llamando la función callable
+`aggregateAnalyticsDailyBackfill` (solo admin; acepta `{ day }` o `{ fromDay, toDay }`, máximo
+120 días por llamada). Eso añade a los días viejos los campos que el histórico permite —en
+particular **`byCountryAprox`** (país aproximado por zona horaria) y el **embudo completo sin el
+tope de 5000**—. Los campos que dependen de la **captura nueva** del cliente (`geoSource` por IP,
+`device`/`browser`/`os` de sesión, metadatos del heatmap) **solo existen desde el 2026-07-01**:
+para fechas anteriores seguirán los avisos de "sin datos", y es lo esperado.
 
 ---
 
-## 2. Confirmar las REGLAS de Firestore en producción 🔧
+## 2. Script de RESCATE del historial (productos borrados ANTES del soft-delete) ⬜
+
+Desde el 2026-07-01, **"eliminar" un producto ya no borra nada físico** (soft-delete/tombstone; el
+historial del cliente no se rompe). Pero los productos **borrados físicamente ANTES** de ese cambio
+siguen dejando huecos (imagen rota / "S/ 0.00") en Mis Compras, wishlists y `/regalar`. Para
+repararlos existe **`scripts/rescate-historial.js`**:
+
+```bash
+# 1) SIEMPRE primero en seco (no escribe nada, solo reporta):
+node scripts/rescate-historial.js --project sistema-gestion-3b225
+
+# 2) Si el reporte se ve bien, aplicar:
+node scripts/rescate-historial.js --project sistema-gestion-3b225 --apply
+```
+
+- Reconstruye **tombstones** (`{ name, price, visible:false, deleted:true, deletedAt,
+  rescatado:true }`) en `productos_wala` a partir de los snapshots de wishlists/pedidos, y limpia
+  URLs de imagen muertas en las wishlists.
+- **SOLO escribe en `productos_wala` y `wishlists`** (colecciones del portal). No toca pedidos,
+  pagos ni nada del ERP.
+- Es **idempotente**: una segunda corrida no duplica nada (los tombstones ya existen).
+- **Respaldo antes de `--apply`** (regla de oro).
+
+---
+
+## 3. Cloud Functions de la sesión 2026-06-29 — estado 🔧
+
+1. ✅ **`getPublicGiftRegistry` — redeploy HECHO por el dueño (2026-07-01).** La página pública
+   `/regalar` ya recibe la **foto de la persona** (`recipientPhoto`/`roleKey`/`gender`) y el
+   **precio snapshot** de cada item (`price`, añadido en el ciclo de integridad — evita el
+   `S/ 0.00` en productos borrados).
+2. 🔧 **Sync de pago a la FUENTE DE VERDAD** (`wala_pedidos.estadoWala`) — **confirmar si ya se
+   desplegó**: son las 3 funciones de confirmación de pago (`processCulqiPayment`, `culqiWebhook`,
+   `capturePaypalOrderSecure`, con `marcarWalaPedidoPagado`). Si aún no, en Cloud Shell:
+
+   ```bash
+   firebase deploy \
+     --only functions:processCulqiPayment,functions:culqiWebhook,functions:capturePaypalOrderSecure \
+     --project sistema-gestion-3b225
+   ```
+
+   **Cómo saber si falta:** paga un pedido de prueba y mira "Mis Compras" — si tras pagar sigue
+   en "Por confirmar pago" al recargar, falta este redeploy (ver
+   [PRUEBAS-Y-DEBUGGING.md](./PRUEBAS-Y-DEBUGGING.md)). Aditivo, idempotente y best-effort: no
+   cambia montos ni la firma del pedido.
+
+---
+
+## 4. Confirmar las REGLAS de Firestore en producción 🔧
 
 > **NUNCA `deploy --only firestore:rules` sin consultar.** Tumbó el ERP una vez (base compartida
 > sin Firebase Auth). Esta sección es para **CONFIRMAR**, no para desplegar a ciegas.
@@ -74,9 +119,11 @@ Hay **tres** archivos de reglas en el repo (`firebase/`), y es clave saber **cu�
 - ⬜ **Confirmar que en producción esté el equivalente a `firebase/firestore.rules`**
   (`delete: if isAdmin()`) y **NO** `firestore.rules.produccion` (`delete: if isAuth()`). La
   colección **`wala_pedidos` es la FUENTE DE VERDAD y jamás debe poder borrarla un cliente
-  logueado** — solo admin (o, idealmente, nadie). Con el modelo restrictivo de
-  `firestore.rules`, una colección sin regla propia **no se puede borrar** por defecto; con el
-  catch-all de `.produccion`, **cualquier usuario autenticado podría borrarla**.
+  logueado** — solo admin (o, idealmente, nadie).
+- ⬜ **Nueva regla `analytics_daily` (sesión 2026-07-01):** el repo (`firebase/firestore.rules`)
+  ya incluye `match /analytics_daily/{id} { allow read: if isAdmin(); allow write: if false; }`
+  — **NO desplegada** (regla de la casa). Cuando toque un despliegue de reglas (fusionado con las
+  del ERP y validado en Rules Playground), incluirla.
 - ⬜ **`firestore.rules.propuesto` queda guardado pero NO se despliega todavía.**
   **Precondición:** que **PayPal esté validado server-side** (cierra el `update` de `pedidos_web`
   que hoy aún necesita el flujo de pago). Ver
@@ -87,7 +134,7 @@ Hay **tres** archivos de reglas en el repo (`firebase/`), y es clave saber **cu�
 
 ---
 
-## 3. FASE SIGUIENTE — Endpoint con API KEY para el ERP ⬜
+## 5. FASE SIGUIENTE — Endpoint con API KEY para el ERP ⬜
 
 > **No hecha. El campo ya está listo; falta el endpoint/credencial.**
 
@@ -105,24 +152,29 @@ siguiente paso es conectar el **ERP externo** para que la mantenga al día **sin
 
 ---
 
-## 4. Recordatorio de lo que NO toca esta tanda
+## 6. Recordatorio de lo que NO toca la tanda 2026-07-01/02
 
-- **No** hay cambios de **montos, firma del pedido, ni del marcado de `pedidos_web`**: todo lo de
-  pedidos del 2026-06-29 es **aditivo** (`estadoWala` + el espejo `wala_pedidos`).
-- **No** se desplegaron **reglas** ni **Storage** en esta sesión (solo se documentan).
-- El **modo noche**, **compra directa**, **tabs de la cuenta** y **tarjeta clickeable** son
-  **frontend puro** (CSS + estado de cliente): **ya están en vivo, no requieren backend**.
+- **No** hay cambios de **montos, pagos ni firma del pedido**: el soft-delete, los snapshots, la
+  captura de analítica, el dashboard con filtros y el panel "Ver qué hacen los usuarios" son
+  **aditivos**.
+- **No** se desplegaron **reglas** ni **Storage** (la regla `analytics_daily` solo se añadió al
+  repo).
+- Todo el ciclo es **frontend ya en vivo** (Vercel) **salvo** las 2 functions de agregación (§1).
+- El panel "👥 Ver qué hacen los usuarios" **no requiere índices Firestore nuevos**.
 
 ---
 
-## 5. Checklist rápido (marca al terminar)
+## 7. Checklist rápido (marca al terminar)
 
 - [ ] Respaldo hecho antes de tocar producción (regla de oro).
-- [ ] `firebase deploy --only functions:processCulqiPayment,functions:culqiWebhook,functions:capturePaypalOrderSecure,functions:getPublicGiftRegistry --project sistema-gestion-3b225` ejecutado, respondiendo **`N`** a borrar funciones/índices del ERP.
-- [ ] Probado: pagar un pedido y ver que en "Mis Compras" queda **"Pagado"** y **persiste** (ver [PRUEBAS-Y-DEBUGGING.md](./PRUEBAS-Y-DEBUGGING.md)).
-- [ ] Probado: en `/regalar` se ve la **foto de la persona** en su tarjeta.
+- [x] `firebase deploy --only functions:aggregateAnalyticsDaily,functions:aggregateAnalyticsDailyBackfill --project sistema-gestion-3b225` — **hecho por el dueño el 2026-07-02**.
+- [ ] Probado: al día siguiente (o tras un backfill del día anterior), en el dashboard aparecen **País / Dispositivo / Navegador / SO / App vs Web** y el **Top visitantes**.
+- [ ] (Opcional) Backfill del histórico con `aggregateAnalyticsDailyBackfill` (§1-bis).
+- [x] `node scripts/rescate-historial.js` dry-run + `--apply` — **hecho por el dueño el 2026-07-02**: 6 tombstones creados (Termo Stanley con price 90 recuperado, SITCH PURO BICOLOR, POLOS CON FOTO, COMBO CHIBIS, Taza Barcelona, Polera básica), 6 imágenes muertas limpiadas y 6 prices backfilleados en 4 wishlists. Hallazgo: de 10 032 docs en `pedidos`, **0 conservan marcadores WALA** (confirma que el ERP los quita al absorber).
+- [x] Redeploy de `getPublicGiftRegistry` (foto + `price` en `/regalar`) — **hecho por el dueño**.
+- [ ] Confirmado el estado del sync de pago (`estadoWala`): pagar un pedido y ver que en "Mis Compras" queda **"Pagado"** y **persiste**; si no, redeploy de las 3 funciones de pago (§3.2).
 - [ ] Confirmado que producción tiene `firebase/firestore.rules` (`delete: if isAdmin()`) y **NO** `firestore.rules.produccion`.
-- [ ] `firestore.rules.propuesto` **NO** desplegado (esperando PayPal server-side).
+- [ ] `firestore.rules.propuesto` **NO** desplegado (esperando PayPal server-side); la regla `analytics_daily` del repo queda para el próximo despliegue fusionado de reglas.
 - [ ] (Futuro) Endpoint con API KEY para que el ERP actualice `estadoWala` sin borrar.
 
 ---
@@ -130,6 +182,6 @@ siguiente paso es conectar el **ERP externo** para que la mantenga al día **sin
 > Documentos relacionados: [PRUEBAS-Y-DEBUGGING.md](./PRUEBAS-Y-DEBUGGING.md) (qué probar tras
 > desplegar), [DESPLIEGUE-ESTADO.md](./DESPLIEGUE-ESTADO.md) (qué está desplegado y qué falta),
 > [DESPLIEGUE.md](./DESPLIEGUE.md) (procedimiento), [FLUJO-PEDIDOS.md](./FLUJO-PEDIDOS.md) y
-> [MODELO-DATOS.md](./MODELO-DATOS.md) (`wala_pedidos`/`estadoWala`),
+> [MODELO-DATOS.md](./MODELO-DATOS.md) (`wala_pedidos`/`estadoWala`, tombstones y analítica §3.8),
 > [PLAN-SEGURIDAD-REGLAS.md](./PLAN-SEGURIDAD-REGLAS.md) (las reglas) y
 > [README.md](./README.md) (índice).

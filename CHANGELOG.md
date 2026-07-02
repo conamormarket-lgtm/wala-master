@@ -1,11 +1,12 @@
 # Changelog — Wala
 
 Registro de actualizaciones y funciones, de lo más nuevo a lo más viejo. Las entradas más
-recientes (**2026-06-25**, **2026-06-27**, **2026-06-28**, **2026-06-29** y **2026-06-30**) ya están
-**desplegadas a producción** (`sistema-gestion-3b225`): frontend por **Vercel** (auto-deploy desde
-`master`) y backend (Cloud Functions / índices / backfills) por **Cloud Shell**. *(Algunas funciones del
-**2026-06-29** —pago marca `estadoWala`, foto en `/regalar`— requieren **redeploy de functions**;
-se indica en cada entrada.)* Las entradas más antiguas marcadas
+recientes (**2026-06-25**, **2026-06-27**, **2026-06-28**, **2026-06-29**, **2026-06-30** y
+**2026-07-01/02**) ya están **desplegadas a producción** (`sistema-gestion-3b225`): frontend por
+**Vercel** (auto-deploy desde `master`) y backend (Cloud Functions / índices / backfills) por
+**Cloud Shell**. *(Algunas funciones del **2026-06-29** —pago marca `estadoWala`— y del
+**2026-07-01** —los agregados diarios de analítica— requieren **redeploy de functions**; se
+indica en cada entrada.)* Las entradas más antiguas marcadas
 `[Sin liberar]` se construyeron en la rama `fase-0-seguridad` (hoy `master`) y se
 **verificaron en local** (build + emulador) antes de desplegarse en esas tandas. Detalle de
 estado en [docs/wala/ESTADO-DEL-PROYECTO.md](docs/wala/ESTADO-DEL-PROYECTO.md); detalle por
@@ -14,6 +15,48 @@ fase en [`docs/wala/fases/`](docs/wala/fases/README.md).
 Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
+
+## [2026-07-01/02] — INTEGRIDAD DE DATOS + ANALÍTICA: soft-delete de productos (el historial nunca se rompe), captura enriquecida de analítica, dashboard con filtros/comparación y nueva área "👥 Ver qué hacen los usuarios" (frontend por Vercel; **requiere redeploy de las 2 functions de agregación**)
+
+Ciclo de **4 fases** (P0–P3, commits `88a3368` → `d293ea0`) con dos objetivos del dueño: (1) que
+**"eliminar" un producto NUNCA rompa el historial** del cliente (Mis Compras, wishlist, `/regalar`),
+y (2) **saber quién visita y qué hace** (país, dispositivo, app vs web, wishlists, carritos,
+cumpleaños). **No toca montos, pagos ni la firma del pedido.** Build verde en las 4 tandas; cada
+fase pasó auditoría adversarial. **Frontend DESPLEGADO** por **Vercel** (auto-deploy desde
+`master`). **Backend:** los agregados diarios nuevos **REQUIEREN redeploy** de
+`functions:aggregateAnalyticsDaily,functions:aggregateAnalyticsDailyBackfill` (ver
+[PENDIENTES.md](docs/wala/PENDIENTES.md)); el redeploy de `getPublicGiftRegistry` (expone `price`)
+**ya lo hizo el dueño**. Modelo de datos en [MODELO-DATOS.md](docs/wala/MODELO-DATOS.md); notas de
+admin y cliente en [FUNCIONES-ADMIN.md](docs/wala/FUNCIONES-ADMIN.md) y
+[FUNCIONES-CLIENTE.md](docs/wala/FUNCIONES-CLIENTE.md); checklist de prueba en
+[PRUEBAS-Y-DEBUGGING.md](docs/wala/PRUEBAS-Y-DEBUGGING.md).
+
+### P0 — INTEGRIDAD DE HISTORIAL: soft-delete + snapshots + carrito (commit `88a3368`)
+- ✅ `88a3368` — **"Eliminar" un producto ya NO borra nada físico (SOFT-DELETE):** `deleteProduct` (`src/services/products.js`) marca el doc con un **tombstone** `{ visible:false, deleted:true, deletedAt:<ISO> }` y **vacía `searchTokens`** (deja de salir en búsqueda), pero **CONSERVA el documento y las fotos de Storage** (`name`/`mainImage`/`images`/`price`/`salePrice`/`brandId`/`variants`). El borrado físico sigue existiendo como **`deleteProductPermanently`**, **sin ningún llamador de UI** (solo uso deliberado por consola/script). **Restaurar** (mostrar de nuevo desde `/admin/productos`) escribe `{ visible:true, deleted:false }` — sin productos "zombi".
+- ✅ `88a3368` — **Los borrados no se pueden comprar:** `ProductPage` y `EditorPage` detectan `deleted:true` y muestran **"Ya no está disponible"** (sin botones de compra/personalización).
+- ✅ `88a3368` — **SNAPSHOTS que congelan lo comprado/deseado:** cada **línea de pedido** nueva congela `urlImagen` (checkout); la **wishlist** guarda `price` al agregar (`snapshot salePrice||price`); el espejo **`wala_pedidos`** conserva `urlImagen`/`urlImagenPersonalizada`/`textoPersonalizado`/`designId`/`giftDetails`/`deliveryDate` (aditivo, solo si la línea los trae). La CF **`getPublicGiftRegistry` expone `price`** por item (**redeploy ya hecho por el dueño**).
+- ✅ `88a3368` — **El historial lee tombstones y nunca se rompe:** Mis Compras, detalle de compra, wishlist y `/regalar` leen el catálogo con **`useProducts` + `includeHidden`** (el tombstone resuelve nombre/imagen/precio) y **fallback a `linea.urlImagen`**. En `/regalar`, un producto borrado sale como **"No disponible"** (sin imagen rota, sin `S/ 0.00`, sin link roto, regalar deshabilitado); en la **wishlist** sale **"Ya no disponible"** con opción de quitar (antes desaparecía en silencio).
+- ✅ `88a3368` — **Carrito (4 fixes):** (1) **COLOR perdido** — `addToCart` normaliza `variant.color` desde `selectedVariant.name`, así el color elegido llega al pedido/WhatsApp; (2) **logout limpia el carrito** (no se hereda en PC compartida) sin tocar el flujo anónimo→login; (3) **sync Firestore sin cruzar carritos entre cuentas**; (4) **multi-pestaña** re-hidrata con guard anti-ciclo. Extra: regalo desde wishlist pública conserva imagen en productos con variantes; guard de stock real (`inStock`) en "Agregar todo al carrito".
+- ✅ `88a3368` — **Flujos residuales que borraban Storage vivo, cerrados:** descartar el borrador de un producto ya publicado y la recaptura de mockup **solo** borran archivos de la propia sesión, nunca URLs persistidas.
+- ✅ `88a3368` — **Script de rescate `scripts/rescate-historial.js`** (**dry-run por defecto**, escribe solo con `--apply`): reconstruye **tombstones** de productos **ya borrados físicamente** antes de este ciclo, a partir de los snapshots de wishlists/pedidos (crea docs con `{ name, price, visible:false, deleted:true, deletedAt, rescatado:true }`) y limpia URLs de imagen muertas. **SOLO escribe en `productos_wala` y `wishlists`.** Auditoría adversarial: 7 defectos encontrados y corregidos.
+
+### P1 — CAPTURA DE ANALÍTICA: país/dispositivo/navegador/app-web + agregados diarios + fix de conversión (commit `66c6081`)
+- ✅ `66c6081` — **Sesiones enriquecidas:** cada sesión nueva de `analytics_sessions` guarda **`device`/`browser`/`os`** (parser compartido **`src/services/analytics/ua.js`**, el mismo en captura y lectura) y **`countryCode`/`countryName`/`geoSource`** (`detectCountry` en `src/services/geo.js` devuelve `source` EXPLÍCITO `'ip'|'fallback'`; caché síncrona o update en background fire-and-forget — **jamás bloquea la UX**). Los lotes de **`heatmap_events`** llevan `sessionId`/`uid`/`clientType`/`device`. **Fix de carrera de doble sesión** (promesa de creación memoizada).
+- ✅ `66c6081` (**requiere redeploy de functions**) — **Agregados diarios nuevos** (`functions/analyticsDaily.js`, ADITIVO): el doc `analytics_daily/{YYYY-MM-DD}` suma **`byCountry`** (solo sesiones con `geoSource:'ip'`; el resto cuenta como "unknown"), **`byCountryAprox`** (aproximación histórica por `timeZone`), **`byDevice`/`byBrowser`/`byOS`**, **`byClientType`** (APP/WEB), **`identitiesTotal`/`identitiesLoggedIn`/`identitiesAnon`**, **`funnelFull`** (embudo del día **SIN el tope de 5000 eventos**) y **`topIdentities`** (top **25**/día por vistas/tiempo). Mapas capados a 50 claves + "otros". **Redeploy:** `firebase deploy --only functions:aggregateAnalyticsDaily,functions:aggregateAnalyticsDailyBackfill`.
+- ✅ `66c6081` — **Leyenda honesta ⓘ en los KPIs:** "Sesiones" = visitas por pestaña; "Identidades activas" = navegadores/dispositivos únicos (**TECHO de personas, NO personas exactas**). El lector (`src/services/analyticsDaily.js` + `dashShared`) expone los campos nuevos con tolerancia a docs viejos.
+- ✅ `66c6081` — **CONVERSIÓN 0 %: causa real encontrada y corregida** — el botón **"Listo, ya envié mis pedidos"** (cierre de compra por WhatsApp) **no emitía `purchase_complete`**; ahora lo emite (idempotente, fuera de la lógica de pago). También distorsionaba el tope legacy de 5000 eventos, que el embudo diario nuevo elimina.
+- ✅ `66c6081` — **Regla `analytics_daily` añadida a `firebase/firestore.rules` del repo** (`read: if isAdmin(); write: if false`) — **NO desplegada** (regla de la casa: jamás `deploy --only firestore:rules` sin fusionar con las reglas vivas del ERP).
+
+### P2 — DASHBOARD CON FILTROS: rango libre + comparación + APP/WEB + heatmap filtrable (commit `0336abb`)
+- ✅ `0336abb` — **`useDashboardFilters`** (`dashShared.jsx`): presets 7/30/90 **+ rango PERSONALIZADO** con date-pickers (claves de día **Lima**, idénticas a `analytics_daily`; **tope 365 días** con etiqueta honesta) **+ COMPARACIÓN con el periodo anterior** (deltas **▲/▼** en KPIs; una sola carga extra de docs diarios) **+ filtro global APP/WEB + conmutador Sesiones/Identidades/Solo logueados**. Estado en **querystring** (`rango`/`desde`/`hasta`/`comparar`/`origen`/`metrica`), **heredado por las sub-páginas**. KPIs no aditivos (identidades/logueados) solo se comparan cuando el periodo viene del pre-agregado (con nota si se suprime); conversión comparada en puntos porcentuales.
+- ✅ `0336abb` — **DashOrigen:** desgloses de **País** (`byCountry` + aproximado histórico por zona horaria), **Dispositivo** (con Tablet), **Navegador**, **SO** y **App vs Web** desde los agregados diarios, con avisos **"sin datos antes del despliegue"** para el histórico.
+- ✅ `0336abb` — **DashUso:** **Top visitantes** (`topIdentities` recombinado del rango, logueado/anónimo, con advertencia identidades≠personas); KPIs y rankings **respetan el corte APP/WEB**; "Páginas vistas" sale del **contador completo** (ya no top-10).
+- ✅ `0336abb` — **Heatmap filtrable:** lectura **PAGINADA por rango con cursor + caché 30 s**; filtros **fecha/ruta/APP-WEB/dispositivo** (con aviso honesto para lotes históricos sin metadatos) + **corte retroactivo por ancho de pantalla** (móvil/tablet/desktop); tope 300 lotes con sonda anti falso-positivo; `HeatmapViewer` en modo controlado. Lecturas baratas: todo sale del agregado diario, **sin escaneos nuevos de eventos crudos**. Auditoría adversarial: 6 defectos corregidos.
+
+### P3 — "👥 VER QUÉ HACEN LOS USUARIOS": nueva área admin (commit `d293ea0`)
+- ✅ `d293ea0` — **Nueva sección `/admin/usuarios-comportamiento`** (enlace propio **"👥 Ver qué hacen los usuarios"** en el grupo *Diseño de Tienda*, debajo de "🎨 Elementos con diseño"). **Dashboard:** KPIs (usuarios con wishlist, con carrito activo, valor ESTIMADO en carritos, cumpleaños en 30 días) + **"Qué apartan más"** (top de wishlists) + **"Qué hay en los carritos"** (foto del momento) + **"Próximos cumpleaños"** (del titular o de sus personas agendadas, con rol) — oro para campañas personalizadas.
+- ✅ `d293ea0` — **Lista de usuarios** paginada con búsqueda (nombre/email/dni) y **ficha por usuario con tabs**: 💝 Lista de deseos, 🛒 Carrito (incl. "no comprar esta vez"), 📅 Fechas y personas (cumpleaños, encuesta, `giftRecipients` con foto/relación/fechas), 📈 Actividad (enlaza a *Usuarios y métricas*, sin duplicar).
+- ✅ `d293ea0` — **Servicio `src/services/adminUserInsights.js`:** formas de datos **verificadas contra el código que las escribe** (cart sync del `CartContext`, wishlists, `giftRecipients`, `birthDate`); lecturas **paginadas con topes y avisos honestos (`truncated`)**; una sola pasada de perfiles compartida entre agregados (dedupe de promesa en vuelo) + caché 5–10 min; **sin índices nuevos**. Solo admin; no toca pagos.
 
 ## [2026-06-29/30] — AISLAMIENTO ENTRE MARCAS: el sidebar, el header, los carruseles, la identidad y la búsqueda ya NO mezclan Con Amor con MUSSA/MUEBLERIA (frontend por Vercel; NO requiere backend)
 

@@ -444,6 +444,105 @@ Componente `Header.jsx`.
 
 ---
 
+## 4-quater. Checklist POR PROBAR — INTEGRIDAD DE DATOS + ANALÍTICA (sesión 2026-07-01/02)
+
+> Ciclo de 4 fases (commits `88a3368` → `d293ea0`): soft-delete de productos + snapshots +
+> analítica enriquecida + dashboard con filtros + panel "👥 Ver qué hacen los usuarios". Todo el
+> **frontend ya está en vivo** (Vercel). Los puntos de analítica marcados **[requiere deploy]**
+> dependen del redeploy de las **2 functions de agregación** —
+> ver [PENDIENTES.md §1](./PENDIENTES.md). *(El redeploy de `getPublicGiftRegistry` ya se hizo.)*
+
+### A. Borrar un producto NO rompe el historial (soft-delete)
+- [ ] **Preparación:** con una cuenta de cliente, compra (o ten comprado) un producto X y tenlo
+      también en la **wishlist**; luego, como admin, **elimínalo** en `/admin/productos`.
+- [ ] **Mis Compras** (`/cuenta/pedidos` y el detalle): el pedido con X sigue mostrando su
+      **nombre e imagen** (ni imagen rota ni "producto desconocido").
+- [ ] **Ficha pública** (`/producto/<id de X>`): muestra **"Ya no está disponible"**, **sin**
+      botones de compra/personalizar. El editor (`/editor/<id>`) tampoco deja personalizarlo.
+- [ ] **Wishlist** (`/cuenta/wishlist`): X aparece atenuado como **"Ya no disponible"** con botón
+      para **quitar** (no desaparece en silencio). "Agregar todo al carrito" lo **omite**.
+- [ ] **Tienda y búsqueda:** X ya **no aparece** en el catálogo ni al buscarlo.
+- [ ] **Restaurar:** como admin, vuelve a **mostrar** X → reaparece en la tienda y se puede
+      comprar normal (sin quedar "zombi").
+- [ ] *(Consola/Firestore, opcional)*: el doc de X sigue existiendo con
+      `{visible:false, deleted:true, deletedAt}` mientras está borrado, y sus fotos de Storage
+      **no** se borraron.
+
+### B. `/regalar` sin `S/ 0.00` ni imágenes rotas
+- [ ] En el registro público `/regalar/:codigo` de una cuenta cuya wishlist tiene un producto
+      **borrado**: la tarjeta dice **"No disponible"**, **sin** imagen rota, **sin `S/ 0.00`**
+      (usa el precio snapshot) y **sin link roto**; su botón **"Regalar este" está deshabilitado**.
+- [ ] Los productos **vivos** de esa misma wishlist se ven y se regalan normal (precio real,
+      drag-and-drop intacto).
+
+### C. El COLOR llega al pedido
+- [ ] Agrega al carrito un producto **eligiendo una variante de color**; el color se ve en el
+      carrito, en el **checkout** y en el **mensaje de WhatsApp** del pedido (antes algunos
+      llegaban "sin color").
+
+### D. Higiene del carrito (logout / cuentas / pestañas)
+- [ ] **Logout limpia:** llena el carrito logueado, cierra sesión → el carrito queda **vacío**
+      (nadie hereda tu carrito en una PC compartida).
+- [ ] **Flujo anónimo intacto:** llena el carrito **sin** sesión, inicia sesión → el carrito **se
+      conserva** (ese flujo no cambió).
+- [ ] **Sin cruces:** inicia sesión con la cuenta A (con carrito), sal, entra con la cuenta B →
+      B **no** ve el carrito de A.
+- [ ] **Multi-pestaña:** con dos pestañas abiertas, agrega algo en una → la otra se actualiza sin
+      ciclos raros.
+
+### E. Dashboard con filtros y comparación (`/admin/dashboard`)
+- [ ] **Rango personalizado:** elige fechas con los date-pickers; el rango se refleja en KPIs y
+      gráficos (tope 365 días, con etiqueta si se recorta).
+- [ ] **Comparación:** activa "comparar con el periodo anterior" → los KPIs muestran deltas
+      **▲/▼** (y la conversión, puntos porcentuales). En rangos sin pre-agregado, identidades/
+      logueados avisan que no se comparan.
+- [ ] **Filtro APP/WEB** y **conmutador Sesiones/Identidades/Logueados**: cambian KPIs y rankings;
+      la selección queda en la **URL** y se **hereda** al entrar a las sub-páginas (Origen, Uso,
+      Heatmap).
+- [ ] **Leyenda ⓘ:** el KPI de identidades explica que es un **techo de personas**, no personas.
+- [ ] **DashOrigen [requiere deploy]:** aparecen País / Dispositivo (con Tablet) / Navegador / SO /
+      App vs Web; para fechas anteriores al despliegue salen los avisos "sin datos" (esperado).
+- [ ] **DashUso [requiere deploy]:** "Top visitantes" lista identidades del rango
+      (logueado/anónimo); "Páginas vistas" ya no es top-10.
+- [ ] **Conversión ya no 0 %:** cierra una compra por **WhatsApp** ("Listo, ya envié mis
+      pedidos") → el embudo del dashboard cuenta la compra (`purchase_complete`).
+
+### F. Heatmap filtrable (`/admin/dashboard` → Mapa de calor)
+- [ ] Filtra por **fecha / ruta / APP-WEB / dispositivo** y verifica que los puntos cambian; los
+      **lotes históricos sin metadatos** muestran su aviso (esperado, no es bug).
+- [ ] **Corte por ancho de pantalla** (móvil/tablet/desktop): los clics se separan por tamaño.
+- [ ] La carga es paginada (no se congela con rangos largos; caché de ~30 s al repetir).
+
+### G. Panel "👥 Ver qué hacen los usuarios" (`/admin/usuarios-comportamiento`)
+- [ ] El enlace **👥** aparece en el menú lateral (*Diseño de Tienda*, debajo de "Elementos con
+      diseño") y solo para admins.
+- [ ] **Dashboard:** KPIs (con wishlist / con carrito / valor estimado / cumpleaños 30 días),
+      "Qué apartan más", "Qué hay en los carritos" y "Próximos cumpleaños" (con el **rol** de la
+      persona) cargan sin errores.
+- [ ] **Lista:** la búsqueda por nombre/email/DNI filtra; **"Cargar más"** pagina (visible incluso
+      con 0 coincidencias en pantalla).
+- [ ] **Ficha:** los tabs 💝 Deseos / 🛒 Carrito / 📅 Fechas y personas / 📈 Actividad muestran los
+      datos del usuario; productos borrados salen con **inicial de respaldo** (no imagen rota);
+      "Actividad" enlaza a *Usuarios y métricas*.
+- [ ] Si un agregado avisa **"lista truncada"**, es el tope de lectura honesto — no es un bug.
+
+### H. Script de rescate (una sola vez, si hay historial roto viejo)
+- [ ] `node scripts/rescate-historial.js --project sistema-gestion-3b225` (dry-run) reporta
+      productos a rescatar **sin escribir nada**.
+- [ ] Tras `--apply`, las compras/wishlists con productos borrados **antes** del ciclo dejan de
+      mostrar huecos (nombre/precio reaparecen como "No disponible").
+
+### Cómo distinguir "falta deploy" de "bug de verdad"
+- Si **E (DashOrigen/DashUso)** muestra "sin datos" en fechas RECIENTES (posteriores al
+  2026-07-01) pero todo lo demás funciona, casi seguro **falta el redeploy de
+  `aggregateAnalyticsDaily`/`aggregateAnalyticsDailyBackfill`** — ver
+  [PENDIENTES.md §1](./PENDIENTES.md). En fechas viejas, los avisos son **esperados**.
+- Si el heatmap no filtra los lotes viejos por dispositivo, es **esperado** (no tienen metadatos);
+  solo los lotes nuevos los traen.
+- Para cualquier otro síntoma, abre la consola (F12) y revisa el **primer error rojo** (ver §4).
+
+---
+
 ## 5. Checklist antes de publicar (Vercel promote / auto-deploy)
 
 Marca cada punto **antes** de promover en Vercel o dejar que el auto-deploy salga a producción.

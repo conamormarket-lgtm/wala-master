@@ -82,7 +82,7 @@ hay proyecto ERP separado en producción), así que todas deben estar en las mis
 
 | Colección (real) | Proyecto | Propósito | Campos clave |
 |---|---|---|---|
-| `productos_wala` | PROD | Catálogo real de productos de la tienda/editor. | `name`, `price`, `salePrice`, `visible`, `featured`, `featuredOrder`, `categories[]`, `collections[]`, `tags[]`, `characters[]`, `vendors[]` (tag string, NO entidad), **`brandId`** (doc id de `tienda_brands`; **sistema multi-marca activo**, 1 producto = 1 marca; ausente/`''` = catálogo global — ver §3.6), `hasVariants`, `variants[]`, `mainImage`, `mainSizes[]`, `customizationViews[]`, `printAreas`, `isComboProduct`, `comboItems[]`, `inStock` (escalar global) |
+| `productos_wala` | PROD | Catálogo real de productos de la tienda/editor. | `name`, `price`, `salePrice`, `visible`, `featured`, `featuredOrder`, `categories[]`, `collections[]`, `tags[]`, `characters[]`, `vendors[]` (tag string, NO entidad), **`brandId`** (doc id de `tienda_brands`; **sistema multi-marca activo**, 1 producto = 1 marca; ausente/`''` = catálogo global — ver §3.6), `hasVariants`, `variants[]`, `mainImage`, `mainSizes[]`, `customizationViews[]`, `printAreas`, `isComboProduct`, `comboItems[]`, `inStock` (escalar global) · **(2026-07-01, soft-delete ✅)** `deleted`/`deletedAt` (+ `rescatado` si el tombstone lo creó el script de rescate) — **"eliminar" ya NO borra el doc ni sus fotos de Storage**: marca `{visible:false, deleted:true, deletedAt}` y vacía `searchTokens` (ver §3.8) |
 | `tienda_categories` | PROD | Categorías visuales V2 (Hoodies, Polos…). | `name`, `imageUrl`, `order`, `createdAt`, `updatedAt` |
 | `categories` | PROD | Categorías legacy. **Duplicado** de `tienda_categories`; `getCategories()` lee de aquí. | `name`, `order` |
 | `tienda_collections` | PROD | Colecciones/campañas temporales (drops). | `name`, `imageUrl`, `order` |
@@ -97,7 +97,7 @@ hay proyecto ERP separado en producción), así que todas deben estar en las mis
 | `wordle` | PROD | Registro por partida diaria (1 doc por `${uid}_${YYYY-MM-DD}`). | `userId`, `displayName`, `date`, `word`, `length`, `attempts`, `timeSeconds`, `won`, `currentStreak` |
 | `wordle_daily_words` | PROD | Palabra del día (docId = fecha). | `word` |
 | `referrals` | PROD | Embudo de referidos (sent→clicked→…→completed→claimed). | `referrerCode`, `orderId`, `status`, `earnedCoins`, `createdAt`, `clickedAt`, `completedAt`, `updatedAt` |
-| `wishlist` | PROD | Lista de deseos por cliente. | `userCode`, items |
+| `wishlists` | PROD | Lista de deseos por cliente (nombre real de la colección: `wishlists`, ver `WISHLIST_COLLECTION` en `src/services/wishlist.js`). | `userCode`, `items[]` · **(2026-07-01 ✅)** cada item guarda el **snapshot `price`** (`salePrice \|\| price` al momento de agregar) — así la lista y `/regalar` muestran precio aunque el producto se borre después (ver §3.8) |
 | `suggested_packages` | PROD | Paquetes sugeridos por usuario. | `userId`, `isSelected` |
 | `fechasImportantes` (servicio) | PROD | Fechas importantes del usuario. | `userId`, `isSelected` |
 | `inventoryLogs` | PROD | Auditoría de cambios de stock. | `productId`, `productName`, `oldStock`, `newStock`, `userEmail`, `timestamp` (millis) |
@@ -105,15 +105,17 @@ hay proyecto ERP separado en producción), así que todas deben estar en las mis
 | (ruleta) `PRIZES_COLLECTION` | PROD | Premios de ruleta. | `probability` |
 | `pedidos` | ERP (mismo proyecto `sistema-gestion-3b225`) | Pedidos legacy/validados del ERP (incluye pedidos del portal ya aprobados). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`, `clienteNumeroDocumento`, `numeroPedido`, `createdAt`, `email`, `canalVenta`, `estadoGeneral`, `montoTotal`/`montoPendiente`, `pagado`/`estadoPago` |
 | `pedidos_web` | ERP (mismo proyecto `sistema-gestion-3b225`) | Cola web de pedidos del portal (los crea el checkout vía `createWebOrder`, con `estadoValidacion:'pendiente'`, pendientes de validación manual). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`/`clienteNumeroDocumento` (normalizados) + `dniRaw`, `numeroPedido`, `createdAt`, `canalVenta:'Portal Web'`, `web:true`, `estadoGeneral:'Nuevo'`, `estadoValidacion`, `montoTotal`/`montoPendiente`, `productos` (mapa `item_N`) |
-| `wala_pedidos` | **PROD (WALA-only)** — el ERP NO la toca | **FUENTE DE VERDAD del pedido del portal** (base interna independiente del ERP; nació como espejo anti-pérdida y se graduó a fuente de verdad con su propio `estadoWala`). Lo escribe `createWebOrder` (`src/services/erp/firebase.js`) en **fire-and-forget best-effort** tras guardar en `pedidos_web` (no demora ni rompe el checkout). **NO copia secretos de pago**, solo campos de display + estado. Servicio: `src/services/walaOrders.js`; el pago lo sincroniza también `functions/index.js` (`marcarWalaPedidoPagado`, **requiere redeploy**). **Límite:** solo cubre pedidos creados DESDE el deploy (29-06-2026). Detalle en §3.7. | `numeroPedido`, `portalPseudoOrderId`, `pedidoWebId`, `buyerUid`, `dni`/`dniRaw`/`clienteNumeroDocumento`, `clienteNombreCompleto`, `productos` (resumen), `montoTotal`, `moneda`, `canalVenta:'Portal Web'`, `web:true`, **`estadoWala`** (`pendiente_pago`→`pagado`→…), **`pagado`**, `createdAt`, `fuente:'wala-mirror'` · _al pagar se añaden_ `pagadoAt`/`metodoPago`/`montoPagado`/`estadoWalaUpdatedAt` |
+| `wala_pedidos` | **PROD (WALA-only)** — el ERP NO la toca | **FUENTE DE VERDAD del pedido del portal** (base interna independiente del ERP; nació como espejo anti-pérdida y se graduó a fuente de verdad con su propio `estadoWala`). Lo escribe `createWebOrder` (`src/services/erp/firebase.js`) en **fire-and-forget best-effort** tras guardar en `pedidos_web` (no demora ni rompe el checkout). **NO copia secretos de pago**, solo campos de display + estado. Servicio: `src/services/walaOrders.js`; el pago lo sincroniza también `functions/index.js` (`marcarWalaPedidoPagado`, **requiere redeploy**). **Límite:** solo cubre pedidos creados DESDE el deploy (29-06-2026). Detalle en §3.7. | `numeroPedido`, `portalPseudoOrderId`, `pedidoWebId`, `buyerUid`, `dni`/`dniRaw`/`clienteNumeroDocumento`, `clienteNombreCompleto`, `productos` (resumen; **desde 2026-07-01 cada línea conserva los snapshots** `urlImagen`/`urlImagenPersonalizada`/`textoPersonalizado`/`designId` si la línea los trae), `montoTotal`, `moneda`, `canalVenta:'Portal Web'`, `web:true`, **`estadoWala`** (`pendiente_pago`→`pagado`→…), **`pagado`**, `createdAt`, `fuente:'wala-mirror'`, `giftDetails`/`deliveryDate` (modo regalo, si vienen) · _al pagar se añaden_ `pagadoAt`/`metodoPago`/`montoPagado`/`estadoWalaUpdatedAt` |
 
 > **Ciclo de vida del pedido (creación → pago → estado → visibilidad):** la lógica completa
 > (en qué momento exacto se crea el documento, qué hace cada método de pago, cómo se DERIVA
 > el estado y dónde se ve el pedido en cliente/admin) está en
 > **[FLUJO-PEDIDOS.md](./FLUJO-PEDIDOS.md)**, con archivo:línea. Esta tabla solo describe las
 > colecciones; el flujo va allí.
-| `analytics_events` | PROD (analytics) | Eventos de analytics/heatmap propios. **Mismo proyecto `sistema-gestion-3b225`; deben estar en las reglas.** | evento, sesión, ts, UTM, geo |
-| `analytics_sessions` | PROD (analytics) | Sesiones de analytics. **Mismo proyecto; deben estar en las reglas.** | sessionId, uid, inicio/fin, fuente |
+| `analytics_events` | PROD (analytics) | Eventos de analytics propios. **Mismo proyecto `sistema-gestion-3b225`; deben estar en las reglas.** | evento, sesión, ts, UTM, geo |
+| `analytics_sessions` | PROD (analytics) | Sesiones de analytics (las crea `src/services/analytics/tracker.js`). **Mismo proyecto; deben estar en las reglas.** | `sessionKey`, `anonymousId`, `uid`, `email`, `displayName`, `referrer`, `userAgent`, `language`, `platform`, `timeZone`, `clientType` (APP/WEB) · **(2026-07-01 ✅)** `device`/`browser`/`os` (parser compartido `src/services/analytics/ua.js`) + `countryCode`/`countryName`/**`geoSource`** (`'ip'` = país real por IP \| `'fallback'` = aproximado; `detectCountry` nunca bloquea la UX) — ver §3.8 |
+| `heatmap_events` | PROD (analytics) | Lotes de clics del mapa de calor (los escribe `src/hooks/useHeatmapTracker.js` por batch). | `events[]` (clics con coordenadas/viewport) · **(2026-07-01 ✅)** metadatos por lote: `sessionId`, `uid`, `clientType`, `device` — permiten filtrar el heatmap por app/web/dispositivo (los lotes históricos sin metadatos se avisan en la UI) |
+| `analytics_daily/{YYYY-MM-DD}` | PROD (analytics) | **Pre-agregado diario** que lee el dashboard (lo genera `aggregateAnalyticsDaily`, `functions/analyticsDaily.js`). Regla añadida al repo (`read: if isAdmin(); write: if false`) — **NO desplegada aún**. | KPIs del día (sesiones/views/embudo/productos/páginas) · **(2026-07-01, requiere redeploy de la CF)** `byCountry` (solo `geoSource:'ip'`), `byCountryAprox` (por `timeZone`), `byDevice`/`byBrowser`/`byOS`, `byClientType`, `identitiesTotal`/`identitiesLoggedIn`/`identitiesAnon`, `funnelFull` (sin tope 5000), `topIdentities` (top 25/día) — ver §3.8 |
 | `analytics_user_summary` | PROD (analytics) | Resumen agregado por usuario. **Mismo proyecto; deben estar en las reglas.** | uid, métricas agregadas |
 | `analytics_global_summary` | PROD (analytics) | Resumen global agregado. **Mismo proyecto; deben estar en las reglas.** | métricas globales |
 
@@ -579,6 +581,11 @@ Cada doc lleva `estadoWala` con su propio flujo, **independiente** del `estadoGe
 - **Idempotente:** doc id estable (`sanearDocId(numeroPedido || pedidoWebId)`) +
   `setDoc(..., { merge: true })`. Usa la misma instancia Firestore del ERP (`erpDb`).
 - **NO copia secretos de pago.** Solo campos display ya calculados.
+- **Snapshots visuales (2026-07-01, commit `88a3368`, ADITIVO):** cada línea de `productos`
+  conserva `urlImagen` / `urlImagenPersonalizada` / `textoPersonalizado` / `designId` (solo si la
+  línea los trae), y el doc conserva `giftDetails` / `deliveryDate` del modo regalo. Así el
+  historial muestra la imagen y la personalización de lo comprado **aunque el producto se borre
+  después del catálogo** (ver §3.8).
 
 ### Forma del documento
 
@@ -670,6 +677,77 @@ verdad y *"ya no importan los pedidos viejos"*.
 - ⬜ **Endpoint con API KEY para el ERP**: que el ERP **LEA** y **SOLO ACTUALICE** `estadoWala`
   (avanzarlo a `en_preparacion`/`enviado`/`entregado`/`cancelado`) y **jamás borre**. `estadoWala`
   + `updateWalaOrderEstado` ya quedan listos; falta el endpoint y la credencial.
+
+---
+
+## 3.8 Integridad de historial + analítica enriquecida (ciclo 2026-07-01/02) ✅ DESPLEGADO (frontend)
+
+> Ciclo de 4 fases (commits `88a3368` → `d293ea0`). Aquí solo el **modelo de datos**; el detalle
+> funcional está en el [CHANGELOG](../../CHANGELOG.md), [FUNCIONES-ADMIN.md](./FUNCIONES-ADMIN.md)
+> y [FUNCIONES-CLIENTE.md](./FUNCIONES-CLIENTE.md). Los agregados diarios nuevos **requieren
+> redeploy** de `aggregateAnalyticsDaily`/`aggregateAnalyticsDailyBackfill` (ver
+> [PENDIENTES.md](./PENDIENTES.md)).
+
+### 3.8.1 Tombstone de producto (soft-delete en `productos_wala`)
+
+"Eliminar" un producto (`deleteProduct`, `src/services/products.js`) ya **NO borra el documento ni
+sus fotos de Storage**: escribe un **tombstone** y conserva todo lo que el historial necesita
+(`name`, `mainImage`, `images`, `price`, `salePrice`, `brandId`, `variants`).
+
+```jsonc
+{
+  // Lo que escribe deleteProduct sobre el doc existente:
+  "visible": false,
+  "deleted": true,
+  "deletedAt": "<ISO string>",   // momento del borrado lógico
+  "searchTokens": []             // vaciados: deja de salir en la búsqueda por Firestore
+
+  // Solo en tombstones RECONSTRUIDOS por scripts/rescate-historial.js
+  // (productos que ya habían sido borrados físicamente antes del ciclo):
+  // "rescatado": true  — marca de que lo creó el script, no un borrado normal
+}
+```
+
+- **Restaurar** (mostrar de nuevo desde `/admin/productos`) escribe `{ visible:true, deleted:false }`
+  — sin productos "zombi" que sigan marcados como borrados.
+- **`deleteProductPermanently`** conserva el borrado físico (doc + fotos) pero **NO tiene ningún
+  llamador de UI**: solo uso deliberado por consola/script.
+- **Lectores:** `getProductById` NO filtra por `deleted` (intencional: el historial necesita leer
+  el tombstone); `useProducts` acepta **`includeHidden`** para que Mis Compras / wishlist /
+  `/regalar` resuelvan nombre/imagen/precio de productos borrados. `ProductPage`/`EditorPage`
+  muestran "Ya no está disponible" y bloquean la compra.
+- **Script de rescate:** `scripts/rescate-historial.js` (dry-run por defecto; escribe solo con
+  `--apply`; **SOLO toca `productos_wala` y `wishlists`**) reconstruye tombstones
+  `{ name, price, mainImage:'', visible:false, deleted:true, deletedAt, rescatado:true }` desde
+  los snapshots de wishlists/pedidos y limpia URLs de imagen muertas.
+
+### 3.8.2 Snapshots que congelan lo comprado/deseado
+
+| Dónde | Campo(s) | Quién lo escribe |
+|---|---|---|
+| Línea de pedido (`pedidos_web.productos` / espejo `wala_pedidos`) | `urlImagen` (imagen del producto AL COMPRAR) | checkout (`CheckoutPage`) / `mirrorWebOrder` |
+| Espejo `wala_pedidos` (por línea) | `urlImagenPersonalizada`, `textoPersonalizado`, `designId` (aditivos) | `mirrorWebOrder` (`src/services/walaOrders.js`) |
+| Espejo `wala_pedidos` (doc) | `giftDetails` / `deliveryDate` (modo regalo) | `mirrorWebOrder` |
+| `wishlists.items[]` | `price` (= `salePrice \|\| price` al agregar) | `src/services/wishlist.js` |
+| CF `getPublicGiftRegistry` | expone `price` por item (`price: it.price ?? null`) | `functions/index.js` (**redeploy ya hecho por el dueño**) |
+
+### 3.8.3 Campos nuevos de analítica (P1, commit `66c6081`)
+
+- **`analytics_sessions`** (sesiones nuevas): `device` / `browser` / `os` (parser compartido
+  `src/services/analytics/ua.js`, el mismo en captura y lectura) + `countryCode` / `countryName` /
+  **`geoSource`** (`'ip'` = país real por IP, `'fallback'` = aproximado; `detectCountry` en
+  `src/services/geo.js` **nunca bloquea la UX** — caché síncrona o update en background). Fix de
+  carrera: la creación de sesión se memoiza (no más sesiones dobles).
+- **`heatmap_events`** (cada lote): `sessionId`, `uid`, `clientType`, `device` — habilitan los
+  filtros del heatmap. Los lotes históricos sin metadatos se marcan con aviso en la UI.
+- **`analytics_daily/{YYYY-MM-DD}`** (agregado por `functions/analyticsDaily.js`, ADITIVO —
+  **requiere redeploy de la CF**): `byCountry` (solo sesiones `geoSource:'ip'`; el resto suma a
+  "unknown"), `byCountryAprox` (aproximación histórica por `timeZone`), `byDevice` / `byBrowser` /
+  `byOS`, `byClientType` (`{APP, WEB}`), `identitiesTotal` / `identitiesLoggedIn` /
+  `identitiesAnon`, `funnelFull` (`views`/`productViews`/`addToCart`/`checkoutStart`/`purchases`,
+  **sin el tope legacy de 5000 eventos**) y `topIdentities` (top **25**/día por vistas/tiempo).
+  Mapas capados a 50 claves + "otros". Regla `analytics_daily` añadida a
+  `firebase/firestore.rules` del repo (`read: if isAdmin(); write: if false`) — **NO desplegada**.
 
 ---
 

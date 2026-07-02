@@ -16,7 +16,7 @@ Al entrar a `/admin` se ve una **barra lateral izquierda** (el menú) y, a la de
 3. **Catálogo** — productos, inventario, vendedores, envíos, ofertas, etc.
 4. **Clientes y Pagos** — usuarios, métodos de pago, reclamos, referidos, etc.
 
-> En el grupo *Diseño de Tienda*, justo **debajo de "📊 Dashboard Analítica"**, aparece el enlace **"📦 Recepción de Pedidos"** (`/admin/dashboard/recepcion`) para organizar los envíos del portal y, **debajo de este**, el enlace **"🎨 Elementos con diseño"** (`/admin/elementos-diseno`) para editar las piezas visuales de cada marca (hoy: el nav de categorías).
+> En el grupo *Diseño de Tienda*, justo **debajo de "📊 Dashboard Analítica"**, aparece el enlace **"📦 Recepción de Pedidos"** (`/admin/dashboard/recepcion`) para organizar los envíos del portal; **debajo de este**, el enlace **"🎨 Elementos con diseño"** (`/admin/elementos-diseno`) para editar las piezas visuales de cada marca (hoy: el nav de categorías); y **debajo**, el enlace **"👥 Ver qué hacen los usuarios"** (`/admin/usuarios-comportamiento`) — el panel de comportamiento (wishlists, carritos y fechas de los usuarios, sesión 2026-07-02).
 
 ### Quién ve qué (permisos)
 
@@ -40,8 +40,9 @@ El menú **se adapta al permiso** de cada administrador. Los permisos se asignan
 | Sección | Ruta | Qué hace |
 |---|---|---|
 | **Panel Principal** | `/admin` | Pantalla de bienvenida con accesos rápidos a las secciones más usadas. |
-| **Dashboard Analítica** | `/admin/dashboard` | Tablero de métricas (estilo liquid-glass): KPIs, tráfico por día, productos más vistos/agregados al carrito, categorías, páginas más visitadas, tags, embudo de conversión, origen/región, sesiones en vivo, búsquedas, más vendidos y **mapa de calor**. |
+| **Dashboard Analítica** | `/admin/dashboard` | Tablero de métricas (estilo liquid-glass): KPIs, tráfico por día, productos más vistos/agregados al carrito, categorías, páginas más visitadas, tags, embudo de conversión, origen/región, sesiones en vivo, búsquedas, más vendidos y **mapa de calor**. **Desde 2026-07-01:** rango de fechas **personalizado** (hasta 365 días), **comparación con el periodo anterior** (▲/▼), filtro global **APP/WEB**, conmutador **Sesiones/Identidades/Logueados** (estado en la URL, heredado por las sub-páginas), desgloses de **País/Dispositivo/Navegador/SO** y **heatmap filtrable**. |
 | **Recepción de Pedidos** | `/admin/dashboard/recepcion` | Panel **solo-lectura** para **organizar envíos** del portal: KPIs de pedidos + **tarjetas por pedido** con dirección de entrega, cliente, productos y WhatsApp. Lee `pedidos_web` + `pedidos` **y la red de seguridad `wala_pedidos`** (rescata pedidos que el ERP borró/desmarcó, con badge "Procesado en ERP"). **Enlace propio en el menú lateral** (📦 Recepción de Pedidos, justo **debajo de "Dashboard Analítica"**); también embebida al final del dashboard de analítica. |
+| **Ver qué hacen los usuarios** | `/admin/usuarios-comportamiento` | **Panel de comportamiento (sesión 2026-07-02):** qué **apartan** los clientes (top de wishlists), qué tienen **en el carrito** ahora mismo (foto del momento, con valor **estimado**) y **próximos cumpleaños en 30 días** (del titular o de sus personas agendadas) + **lista de usuarios** con búsqueda y **ficha por usuario** con tabs (deseos / carrito / fechas y personas / actividad). Enlace **"👥 Ver qué hacen los usuarios"** en *Diseño de Tienda*, debajo de "Elementos con diseño". |
 | **Elementos con diseño** | `/admin/elementos-diseno` | **Catálogo de TARJETAS** de las piezas visuales editables de la tienda. Cada elemento tiene su **slug** y su propia página `/admin/elementos-diseno/{slug}`. **Hoy hay 1 elemento: "Navegación por categorías"** — eliges una marca y editas su **nav de categorías** (las burbujas: qué categoría filtra, nombre, miniatura, agregar/quitar/reordenar) **y su "Estilo del nav"** (alineación + modo estático/slider). **Enlace propio en el menú lateral** (🎨 Elementos con diseño, **debajo de "Recepción de Pedidos"**). **Registro extensible** (`registry.jsx`): pensado para sumar más elementos en el futuro. |
 | **Vista Tienda (WYSIWYG)** | `/tienda` | Abre la tienda real con el **Editor Visual** flotante para construir las páginas arrastrando módulos (Hero, carruseles, catálogo, testimonios, etc.). |
 | **Destacados** | `/admin/destacados` | Ordena qué productos salen como "destacados" en la portada. |
@@ -50,7 +51,7 @@ El menú **se adapta al permiso** de cada administrador. Los permisos se asignan
 | **Mascota** | `/admin/mascota` | Imagen de la mascota de retención (Kapi) que aparece flotando en la tienda. |
 | **La Palabra del Día (Wordle)** | `/admin/wordle` | Define la palabra del minijuego diario por fecha. |
 | **Ruleta Semanal** | `/admin/ruleta` | Premios de la ruleta y sus probabilidades. |
-| **Productos** | `/admin/productos` | Lista de productos: crear, editar, duplicar, ocultar/mostrar, eliminar, acciones masivas, exportar. |
+| **Productos** | `/admin/productos` | Lista de productos: crear, editar, duplicar, ocultar/mostrar, **eliminar (= archivar, soft-delete desde 2026-07-01: no borra el doc ni las fotos; el historial del cliente no se rompe)**, acciones masivas, exportar. |
 | **Inventario** | `/admin/inventario` | Tabla rápida para editar el stock de muchos productos a la vez. |
 | **Mockups Base** | `/admin/mockups` | Plantillas/mockups base de prendas (con variantes) para los productos personalizables. |
 | **Categorías** | `/admin/categorias` | Categorías del catálogo (con imagen y orden). |
@@ -102,7 +103,7 @@ Es la **pantalla de inicio** del panel. Muestra un mensaje de bienvenida y una r
 
 ### Dashboard Analítica — `/admin/dashboard`
 Archivo: `src/pages/admin/AdminDashboard.jsx`.
-Tablero de analítica con diseño "liquid-glass" (fondo violeta con orbes y tarjetas de vidrio). Tiene un **selector de rango** (7 / 30 / 90 días) y un botón **Actualizar** (refresco manual; no recarga solo para no consumir lecturas de la base de datos). Incluye:
+Tablero de analítica con diseño "liquid-glass" (fondo violeta con orbes y tarjetas de vidrio). Tiene un **selector de rango** (7 / 30 / 90 días **o personalizado**, ver abajo) y un botón **Actualizar** (refresco manual; no recarga solo para no consumir lecturas de la base de datos). Incluye:
 - **Fila de KPIs**: Sesiones, Identidades activas, Page views y Tiempo navegado (cada uno con mini-gráfico).
 - **Tráfico por día**: gráfico de área de las visitas, con conmutador TOTAL / APP / WEB.
 - **Productos más vistos**: top 10 por vistas, con miniatura y cuántas veces se agregó al carrito.
@@ -116,6 +117,43 @@ Tablero de analítica con diseño "liquid-glass" (fondo violeta con orbes y tarj
 - **Más vendidos** (sección dedicada) y **Mapa de calor** (`HeatmapViewer`): dónde hacen clic los usuarios.
 
 > **Pre-agregación de analítica (sesión 2026-06-28):** para no releer miles de eventos crudos en cada carga, el dashboard lee documentos **pre-agregados por día** `analytics_daily/{YYYY-MM-DD}` (uno por día del rango: 7/30/90 lecturas en vez de ~5300). Esos documentos los genera la Cloud Function programada **`aggregateAnalyticsDaily`** (ver "Cloud Functions"). El **día en curso** se completa con una query EN VIVO pequeña, y si todavía no existe ningún doc diario (la CF no se desplegó/ejecutó) cae automáticamente al cálculo legacy (`getGlobalAnalytics`), de modo que el tablero nunca queda vacío. Servicio de lectura: `src/services/analyticsDaily.js` (`getAnalyticsDailyRange`).
+
+#### Filtros globales del dashboard (sesión 2026-07-01, commits `66c6081` + `0336abb`) ✅
+
+El hub y **todas las sub-páginas** (Origen, Uso, Heatmap…) comparten un juego de filtros
+(`useDashboardFilters`, `src/pages/admin/dashboard/dashShared.jsx`) cuyo **estado vive en la URL**
+(querystring `rango`/`desde`/`hasta`/`comparar`/`origen`/`metrica`), así que al navegar entre
+sub-páginas los filtros **se heredan** y un enlace copiado conserva la vista exacta:
+
+- **Rango de fechas libre:** además de los presets 7/30/90, un rango **PERSONALIZADO** con
+  date-pickers (las claves de día usan la zona **Lima**, idénticas a `analytics_daily`; **tope 365
+  días** con etiqueta honesta si se recorta).
+- **Comparación con el periodo anterior:** activa deltas **▲/▼** en los KPIs contra el periodo
+  inmediatamente anterior del mismo largo (una sola carga extra de docs diarios). Los KPIs **no
+  aditivos** (identidades / logueados) solo se comparan cuando el periodo sale del pre-agregado
+  (con nota cuando la comparación se suprime); la conversión se compara en **puntos porcentuales**.
+- **Filtro global APP / WEB:** corta KPIs y rankings por tipo de cliente; donde una cifra solo
+  existe en total, aparece un **chip de aviso**.
+- **Conmutador de métrica:** **Sesiones / Identidades / Solo logueados**. Con **leyenda honesta ⓘ**:
+  "Sesiones" = visitas por pestaña; "Identidades activas" = navegadores/dispositivos únicos — un
+  **TECHO de personas, no personas exactas**.
+- **DashOrigen:** desgloses de **País** (`byCountry`, solo sesiones con país real por IP + un
+  aproximado histórico por zona horaria), **Dispositivo** (con Tablet), **Navegador**, **SO** y
+  **App vs Web**, todo desde los agregados diarios, con avisos **"sin datos antes del despliegue"**
+  para fechas previas a la captura enriquecida.
+- **DashUso:** **Top visitantes** (`topIdentities` del rango recombinado, distingue
+  logueado/anónimo, con advertencia identidades≠personas); KPIs y rankings respetan el corte
+  APP/WEB; "Páginas vistas" sale del **contador completo** (ya no top-10).
+- **Heatmap filtrable** (`DashHeatmap.jsx` + `src/services/heatmapData.js`): lectura **paginada
+  por rango con cursor + caché 30 s** (tope 300 lotes con sonda anti falso-positivo); filtros de
+  **fecha / ruta / APP-WEB / dispositivo** (los lotes históricos sin metadatos se avisan) y **corte
+  retroactivo por ancho de pantalla** (móvil &lt;768 / tablet 768–1024 / desktop &gt;1024);
+  `HeatmapViewer` en modo controlado.
+
+> **Requiere redeploy de functions:** los desgloses nuevos (país/dispositivo/navegador/SO,
+> identidades, top visitantes, embudo completo) salen de campos que agrega la versión nueva de
+> `aggregateAnalyticsDaily`/`aggregateAnalyticsDailyBackfill` — hasta redesplegarlas, esas
+> tarjetas muestran los avisos de "sin datos". Ver [PENDIENTES.md](./PENDIENTES.md).
 
 ### Recepción de Pedidos (organización de ENVÍOS) — `/admin/dashboard/recepcion`
 Archivo: `src/pages/admin/dashboard/RecepcionPedidos.jsx` (hook `src/hooks/useAdminWalaOrders.js`, capa de datos `src/services/adminOrders.js`; KPIs en `DashRecepcion.jsx`).
@@ -162,6 +200,38 @@ Y sobre el conjunto: **Agregar** una burbuja (desde una categoría disponible), 
 
 > **Tres caminos para lo MISMO:** este editor (`CategoryNavEditor`, que incluye burbujas **+ "Estilo del nav"**) es el **mismo** que aparece (a) aquí, (b) en *Marcas → "Gestionar productos" → pestaña "Nav de categorías"* y (c) **inline en el Editor Visual** al seleccionar una sección "Navegación por categorías" con marca. Los tres editan el `categoryNav` y el `categoryNavStyle` de la marca, así que los cambios están **sincronizados**.
 
+### 👥 Ver qué hacen los usuarios — `/admin/usuarios-comportamiento` (sesión 2026-07-02, commit `d293ea0`) ✅
+Archivos: `src/pages/admin/AdminUsuariosComportamiento.jsx` (página) y `src/services/adminUserInsights.js` (capa de datos).
+Panel nuevo (pedido explícito del dueño) para responder **"¿qué están haciendo mis usuarios?"** sin
+mirar la base de datos. Enlace propio **"👥 Ver qué hacen los usuarios"** en el grupo *Diseño de
+Tienda*, debajo de "🎨 Elementos con diseño". **Solo admin; no toca pagos.**
+
+**Dashboard (arriba):**
+- **KPIs:** usuarios con wishlist, usuarios con carrito activo, **valor ESTIMADO** de lo que hay en
+  los carritos y cumpleaños en los próximos 30 días.
+- **"Qué apartan más":** top de productos presentes en las wishlists de los clientes.
+- **"Qué hay en los carritos":** foto **del momento** de los carritos sincronizados (lo que cada
+  cliente dejó en su carrito), con el valor estimado — el monto es orientativo, **no** es una venta.
+- **"Próximos cumpleaños (30 días)":** del **titular** de la cuenta o de sus **personas agendadas**
+  (`giftRecipients` de Fechas Importantes / encuesta), con su **rol/relación** — oro para campañas
+  personalizadas ("su mamá cumple años la otra semana").
+
+**Usuarios (abajo):** lista **paginada** ("Cargar más", 25 por página) con **búsqueda** por
+nombre/email/DNI, y **ficha por usuario** con tabs:
+- **💝 Lista de deseos** — lo que ese cliente apartó (con precio snapshot).
+- **🛒 Carrito** — su carrito sincronizado, incluidos los ítems marcados "no comprar esta vez".
+- **📅 Fechas y personas** — su cumpleaños, si contestó la encuesta y sus `giftRecipients`
+  (foto/relación/fechas).
+- **📈 Actividad** — enlaza a **Usuarios y métricas** (`/admin/usuarios-analytics`), sin duplicar
+  esa vista.
+
+> **Cómo lee los datos (barato y honesto):** `adminUserInsights.js` usa **lecturas paginadas con
+> topes** y avisa con `truncated` cuando un agregado no cubrió todo (p. ej. más de 500 wishlists);
+> una **sola pasada de perfiles** se comparte entre los agregados (dedupe de promesa en vuelo) +
+> **caché de 5–10 min**; **sin índices Firestore nuevos**. Las formas de datos están verificadas
+> contra el código que las escribe (cart sync del `CartContext`, `wishlists`, `giftRecipients`,
+> `birthDate`). Miniaturas con inicial de respaldo para productos borrados (tombstones).
+
 ### Vista Tienda (WYSIWYG) — `/tienda`
 Enlace directo a la tienda. Es la puerta de entrada al **Page Builder / Editor Visual** (ver sección "Page Builder" al final).
 
@@ -198,6 +268,22 @@ Gestiona los **premios de la ruleta** (nombre, tipo —ej. Monedas—, monto y *
 ### Productos — `/admin/productos`
 Archivo: `src/pages/Tienda/admin/AdminProductos.jsx`.
 Gestión completa del catálogo: ver en **tarjetas o tabla**, **buscar**, crear, **editar**, **duplicar**, ocultar/mostrar (visibilidad), eliminar, **acciones masivas** (selección múltiple) y **exportar** productos. Conserva borradores locales. El alta/edición abre el formulario en `/admin/productos/nuevo` o `/admin/productos/:id`.
+
+> **"Eliminar" = ARCHIVAR (soft-delete, sesión 2026-07-01, commit `88a3368`) ✅:** eliminar un
+> producto ya **NO borra el documento ni sus fotos de Storage**. `deleteProduct`
+> (`src/services/products.js`) lo marca con un **tombstone** `{ visible:false, deleted:true,
+> deletedAt }` y vacía `searchTokens` (desaparece de la tienda y de la búsqueda), pero **conserva**
+> nombre, imágenes y precio para que el **historial del cliente nunca se rompa** (Mis Compras,
+> wishlist y `/regalar` siguen mostrando lo comprado/apartado; la ficha pública dice "Ya no está
+> disponible" y no se puede comprar). **Restaurar** (mostrar de nuevo) limpia el tombstone
+> (`{ visible:true, deleted:false }`) — sin productos "zombi". El **borrado físico** sigue
+> existiendo como `deleteProductPermanently`, **sin botón en la UI** (solo uso deliberado por
+> consola/script). Para los productos que ya se habían borrado físicamente ANTES de este cambio
+> existe el script **`scripts/rescate-historial.js`** (dry-run + `--apply`; ver
+> [PENDIENTES.md](./PENDIENTES.md)). Modelo del tombstone en
+> [MODELO-DATOS.md §3.8](./MODELO-DATOS.md). También se cerraron los flujos residuales que
+> borraban Storage vivo (descartar el borrador de un producto publicado; la recaptura de mockup
+> solo borra archivos de la sesión, nunca URLs persistidas).
 
 > **Editor de producto** — `/admin/productos/nuevo` y `/admin/productos/:id` (`AdminProductoFormV2.jsx`). Formulario avanzado del producto: imágenes, mockups, **marca**/nicho/vendedor, categorías, colecciones, tags, personajes, descripción con editor de texto enriquecido (ReactQuill), vistas de personalización (canvas con Fabric.js) y editor de combos. La **marca** se elige en un carrusel de miniaturas (clic para asignar/quitar) y se persiste en `brandId`. **Preselección de marca (multi-marca):** si el formulario se abre con `?brandId=<id>` (lo hace el botón "Crear producto en {marca}" del panel por marca), la marca queda **preseleccionada** en un producto nuevo, sin tocar nada de precios/stock.
 
@@ -406,8 +492,8 @@ Así el dueño coloca el catálogo/nav de una marca **ya filtrado**, **sin tocar
 
 | Función | Tipo | Qué hace |
 |---|---|---|
-| **`aggregateAnalyticsDaily`** | `onSchedule` (gen2) | Cron diario (**00:20 hora de Lima**, `America/Lima`, `retryCount: 2`, `512MiB`, `timeoutSeconds: 540`) que agrega el **día anterior completo** de `analytics_events` + `analytics_sessions` en un único doc `analytics_daily/{YYYY-MM-DD}`. **Idempotente** (reescribe el doc con `.set()` sin merge) y paginado con cursor (páginas de 2000) para escalar. Reduce las lecturas del dashboard 60–170×. Archivo: `functions/analyticsDaily.js` (lógica pura en `functions/analyticsAggregations.js`). |
-| **`aggregateAnalyticsDailyBackfill`** | `onCall` (callable) | **Solo admin** (exige `context.auth.token.admin === true`; si no, `permission-denied`). Reconstruye días concretos con la MISMA lógica (`procesarDia`): acepta `{ day }` o `{ fromDay, toDay }` (máximo 120 días por llamada). Pensado para **llenar el histórico una vez** tras desplegar, o re-agregar un día que cambió. |
+| **`aggregateAnalyticsDaily`** | `onSchedule` (gen2) | Cron diario (**00:20 hora de Lima**, `America/Lima`, `retryCount: 2`, `512MiB`, `timeoutSeconds: 540`) que agrega el **día anterior completo** de `analytics_events` + `analytics_sessions` en un único doc `analytics_daily/{YYYY-MM-DD}`. **Idempotente** (reescribe el doc con `.set()` sin merge) y paginado con cursor (páginas de 2000) para escalar. Reduce las lecturas del dashboard 60–170×. Archivo: `functions/analyticsDaily.js` (lógica pura en `functions/analyticsAggregations.js`). **(2026-07-01, commit `66c6081` — REQUIERE REDEPLOY)** la versión nueva agrega además: `byCountry` (solo sesiones con país por IP), `byCountryAprox` (histórico por zona horaria), `byDevice`/`byBrowser`/`byOS`, `byClientType` (APP/WEB), `identitiesTotal`/`identitiesLoggedIn`/`identitiesAnon`, `funnelFull` (embudo del día **sin el tope de 5000 eventos**) y `topIdentities` (top 25/día) — son los datos que alimentan DashOrigen/DashUso y la comparación de periodos. |
+| **`aggregateAnalyticsDailyBackfill`** | `onCall` (callable) | **Solo admin** (exige `context.auth.token.admin === true`; si no, `permission-denied`). Reconstruye días concretos con la MISMA lógica (`procesarDia`): acepta `{ day }` o `{ fromDay, toDay }` (máximo 120 días por llamada). Pensado para **llenar el histórico una vez** tras desplegar, o re-agregar un día que cambió. **(2026-07-01 — REQUIERE REDEPLOY junto con la de arriba)**: re-agregar días pasados con la versión nueva añade a esos días los campos que el histórico permita (p. ej. `byCountryAprox` por zona horaria); los campos que dependen de la captura nueva (`geoSource`, `device`…) solo existen desde el despliegue del frontend (2026-07-01). |
 
 > El dashboard ya lee estos docs (ver "Dashboard Analítica" arriba) con fallback automático al cálculo legacy si aún no existen.
 
