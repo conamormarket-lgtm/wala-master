@@ -46,6 +46,7 @@
 | Mascota Kapi (botón flotante global) | en todas las páginas | Activo |
 | Ofertas Flash + Cofre diario | `/ofertas` | Activo |
 | Sorteos y Rifas (participar gratis / comprar ticket / ganadores) | `/sorteos` | Activo (requiere login para participar) |
+| Sorteo por suscripción (suscribirse con auto-débito Culqi/PayPal + Mi cuenta) | `/suscrito-sorteo`, `/suscrito-sorteo/:slug` | Activo (requiere login para suscribirse) |
 | Página de enlaces (link-in-bio tipo Linktree) | `/l/:slug` | Activo (pública) |
 | Suscripciones (landing) | `/suscripciones` | Activo (pagos "muy pronto") |
 | Encuesta de suscripción / perfil de regalos | `/encuesta-suscripcion` | Activo |
@@ -471,6 +472,31 @@ Cuatro arreglos del carrito (`src/contexts/CartContext.jsx`, commit `88a3368`), 
   - `src/pages/LinkInBioPage.jsx` (+ `LinkInBioPage.module.css`)
   - `src/services/enlaces.js` (`getLinkPageBySlug`, `registrarClic`, `registrarVisita`)
   - `src/services/analytics/tracker.js` (`ensureAnalyticsSession`, contexto de sesión), `functions/index.js` (`registrarVisitaEnlace` / `registrarClicEnlace`)
+
+---
+
+## 9-quater. Sorteo por suscripción (`/suscrito-sorteo`)
+
+- **Qué es:** la página pública del módulo de **sorteos por SUSCRIPCIÓN**, al estilo de *jorgitoluna.com* ("No Hay Sin Suerte"), **móvil-first**. En vez de comprar un ticket suelto, el cliente **se suscribe** a un plan (con **auto-débito recurrente**) y por eso participa en los sorteos: **mientras más tiempo lleva suscrito, más chances acumula**, y **solo los suscriptores vigentes** pueden ganar. Lo administra el dueño desde `/admin/sorteos-suscripcion` (ver FUNCIONES-ADMIN.md → "🎟️ Sorteo por suscripción"). Es **aditivo**: no reemplaza los Sorteos/Rifas de pago único (§9-bis).
+- **Cómo resuelve la campaña:** con `:slug` usa `getCampaignBySlug(slug)`; sin slug, intenta el slug por defecto `suscrito-sorteo` y, si no existe, cae a la **primera campaña activa**. Los **colores** de la campaña se inyectan como variables CSS (fallback morado).
+- **Qué hace:**
+  - **Hero del premio + planes:** muestra el premio, la descripción y las **tarjetas de planes** (mensual / trimestral / semestral / anual) con su **precio**, sus **beneficios** y las **chances por ciclo** (el plan anual da más chances que el mensual, proporcional a los meses). El plan **destacado** se resalta. Un **contador de suscriptores en vivo** (suma de shards, refresco suave, sin `onSnapshot`).
+  - **Login Google prioritario:** para suscribirse el visitante debe **iniciar sesión** (botón de **Google** destacado; `signInWithGoogle`).
+  - **Suscribirse con auto-débito (consentimiento recurrente):** antes de mostrar los botones de pago se exige el **consentimiento explícito de cobro recurrente**. Luego, según la región:
+    - **Perú → Culqi:** el SDK de Culqi **tokeniza** la tarjeta y llama a `crearSuscripcionCulqi` (el servidor guarda Customer + Card y cobra el 1.er periodo; las renovaciones las cobra el cron diario `cobrarSuscripcionesCulqi`).
+    - **Internacional → PayPal Subscriptions:** `createSubscription` pide el `subscriptionId` al servidor (`crearSuscripcionPaypal`, con `vault:true` / `intent:"subscription"`) y `onApprove` lo confirma (`confirmarSuscripcionPaypal`; si el backend responde `pendiente=true`, avisa que la suscripción se activará al confirmarse el primer cobro).
+    - El **monto lo pone SIEMPRE el servidor** (el precio del plan); el cliente solo lo muestra, nunca lo reenvía como autoritativo.
+  - **Mi cuenta** (solo logueado, ancla `#mi-cuenta`): pestañas con
+    - **Mi suscripción:** estado (Activa / Pendiente de pago / Vencida / Cancelada), **vigencia** (`vigenciaHasta`) y **próximo cobro**, con botón **"Cancelar suscripción"** (`cancelarSuscripcion`) cuando está activa o pendiente.
+    - **Mis chances:** el total de **chances acumuladas** para el sorteo (cada ciclo pagado suma según el plan).
+    - **Mis recibos:** el historial de cobros del suscriptor (`getRecibos`, bajo demanda).
+  - **Revelación de ganadores:** cuando la campaña está cerrada, los ganadores oficiales (los escribe **solo el servidor** en `decidirGanadoresSuscripcion`) se muestran; la galería de ganadores da prueba social.
+- **Ruta:** `/suscrito-sorteo` y `/suscrito-sorteo/:slug`.
+- **Archivos clave:**
+  - `src/pages/SuscripcionSorteoPage.jsx` (+ `SuscripcionSorteoPage.module.css`)
+  - `src/pages/suscripcion/PagoSuscripcion.jsx` (`CulqiSuscripcionButton` + `PaypalSuscripcionButtons`)
+  - `src/services/suscripcionSorteos.js` (lecturas públicas + wrappers de las callables: `crearSuscripcionCulqi`, `crearSuscripcionPaypal`, `confirmarSuscripcionPaypal`, `getMiSuscripcion`, `getRecibos`, `cancelarSuscripcion`)
+  - `functions/index.js` (`crearSuscripcionCulqi`, `cobrarSuscripcionesCulqi`, `crearSuscripcionPaypal`, `confirmarSuscripcionPaypal`, `paypalSubscriptionWebhook`, `decidirGanadoresSuscripcion`, `cancelarSuscripcion`, `grantChancesSuscripcion`)
 
 ---
 

@@ -101,7 +101,7 @@ hay proyecto ERP separado en producción), así que todas deben estar en las mis
 | `suggested_packages` | PROD | Paquetes sugeridos por usuario. | `userId`, `isSelected` |
 | `fechasImportantes` (servicio) | PROD | Fechas importantes del usuario. | `userId`, `isSelected` |
 | `inventoryLogs` | PROD | Auditoría de cambios de stock. | `productId`, `productName`, `oldStock`, `newStock`, `userEmail`, `timestamp` (millis) |
-| `enlaces_pago` | PROD | Enlaces de pago. **Reglas inseguras** (`allow update,delete: if true`, ver synthesis). | — |
+| `enlaces_pago` | PROD | Enlaces de pago rápidos (concepto + monto, `/pago-rapido/{id}`). **Reglas inseguras** (`allow update,delete: if true`, ver synthesis). **(Módulo Gestión de Pagos ✅)** el estado ahora lo cierran **ambos** métodos: PayPal (cliente, con `paypalOrderId`) **y Culqi/PEN** — `processCulqiPayment` marca `{estado:'pagado', culqiChargeId, pagadoEn, metodoPago:'culqi'}` server-side cuando el cobro trae `metadata.enlaceId` (antes un enlace PEN quedaba `pendiente` y reutilizable). Ver §3.11.6. | `concepto`, `moneda` (`PEN`\|`USD`), `monto`, `montoPEN?`/`montoUSD?`, `estado` (`pendiente`\|`pagado`), `createdAt`, `pagadoEn?`, `paypalOrderId?`, `culqiChargeId?`, `metodoPago?` |
 | (ruleta) `PRIZES_COLLECTION` | PROD | Premios de ruleta. | `probability` |
 | `pedidos` | ERP (mismo proyecto `sistema-gestion-3b225`) | Pedidos legacy/validados del ERP (incluye pedidos del portal ya aprobados). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`, `clienteNumeroDocumento`, `numeroPedido`, `createdAt`, `email`, `canalVenta`, `estadoGeneral`, `montoTotal`/`montoPendiente`, `pagado`/`estadoPago` |
 | `pedidos_web` | ERP (mismo proyecto `sistema-gestion-3b225`) | Cola web de pedidos del portal (los crea el checkout vía `createWebOrder`, con `estadoValidacion:'pendiente'`, pendientes de validación manual). **Deben estar en las reglas Firestore del proyecto.** | `phone`, `dni`/`clienteNumeroDocumento` (normalizados) + `dniRaw`, `numeroPedido`, `createdAt`, `canalVenta:'Portal Web'`, `web:true`, `estadoGeneral:'Nuevo'`, `estadoValidacion`, `montoTotal`/`montoPendiente`, `productos` (mapa `item_N`) |
@@ -1015,6 +1015,312 @@ conteo). A diferencia del resto de eventos, llevan **`pageId` top-level** (permi
 > `totalVisitas`/`totalClics` + desglose por país/dispositivo/día, y para los eventos sin
 > `countryCode`/`device` propios **une con `analytics_sessions` por `sessionId`** (en lotes de 10
 > con `documentId() in […]`), el mismo mecanismo que el dashboard. Tope `EVENT_CAP = 2000` eventos.
+
+---
+
+## 3.11 `sorteos_suscripcion/{id}` — Sorteo por suscripción ("No Hay Sin Suerte") ✅ (código listo; reglas + índices DESPLEGADOS, CFs las despliega el dueño)
+
+> Módulo de **sorteo por suscripción** con **auto-débito recurrente** (estilo Jorge Luna,
+> "No Hay Sin Suerte"). Página pública `/suscrito-sorteo` y `/suscrito-sorteo/:slug`
+> (`src/pages/SuscripcionSorteoPage.jsx` + `src/pages/suscripcion/PagoSuscripcion.jsx`) +
+> admin `/admin/sorteos-suscripcion` (`AdminSuscripcionSorteos.jsx`, editor de campaña) y
+> `/admin/sorteos-suscripcion/:id` (`AdminSuscripcionDetalle.jsx`, suscriptores + decidir
+> ganadores). Servicio: `src/services/suscripcionSorteos.js`. Backend: `functions/index.js`.
+> **100% ADITIVO**: colección nueva; NO toca el pago único ni sus locks
+> (`culqiCharges`/`culqiWebhookEvents`/`pedidos_web.paypalCaptureId`).
+>
+> **Regla dura de negocio:** **SOLO** los suscriptores con **pago vigente** ganan
+> (`estado=="activo"` **Y** `vigenciaHasta >= ahora`). Las **chances son proporcionales a los
+> meses del plan** (peso `= max(1, chancesTotal)`; mensual×1 … anual×12). El **MONTO es siempre
+> server-side**: sale del plan del doc de campaña (`plan.precioCentimos` para Culqi/PEN,
+> `plan.precioUsd` para PayPal), NUNCA del cliente. El motor de sorteo (RNG cripto ponderado +
+> evidencia) **REUSA** el mismo de `decidirGanadoresSorteo` (`crypto.randomBytes(32)` + DRBG
+> SHA-256 + `poolHash`).
+>
+> **Pagos:** Culqi (Perú) guarda **Customer + Card** y cobra las renovaciones por un **CRON diario**
+> (`cobrarSuscripcionesCulqi`, `onSchedule "0 9 * * *"` America/Lima, `retryCount:2`);
+> PayPal usa **Subscriptions** (Product+Plan cacheados). El webhook de PayPal tiene la **FIRMA
+> VERIFICADA** (`/v1/notifications/verify-webhook-signature`) y es **FAIL-CLOSED** (sin
+> `PAYPAL_WEBHOOK_ID` rechaza el evento).
+>
+> **Reglas Firestore** (`firebase/firestore.rules`, **DESPLEGADAS OK**): `sorteos_suscripcion`
+> read público / write admin; `suscriptores` + `recibos` read dueño-o-admin / `write: if false`;
+> `contador` read público / `write: if false`; ídem internas (`beneficios`/`ganadores_galeria`
+> read público, `suscriptores`/`sorteos_realizados` solo servidor). Colecciones de idempotencia
+> (`suscripcionCharges`/`paypalSubEvents`/`paypalPlanes`) con `read/write: if false`.
+> **Índices** (`firestore.indexes.json`, **DESPLEGADOS**): collectionGroup `suscriptores`
+> `(estado ASC, proximoCobro ASC)` para el cron + `(estado ASC, vigenciaHasta ASC)` para el sorteo.
+
+### 3.11.1 `sorteos_suscripcion/{id}` (doc raíz de campaña)
+
+Config escrita por el CRUD admin (`construirDocCampana`, `src/services/suscripcionSorteos.js:229`).
+`contadorSuscriptores` y `ganadores` los mantiene **solo el servidor** (CFs); el cliente NUNCA
+los escribe. El **slug es único** en la colección (`slugUnico`).
+
+```jsonc
+{
+  // ── Config (la escribe el admin) ──────────────────────────────────────────
+  "titulo": "No Hay Sin Suerte",
+  "slug": "no-hay-sin-suerte",          // ÚNICO; ruta pública /suscrito-sorteo/{slug}
+  "descripcion": "Suscríbete y participa cada mes…",
+  "estado": "activo",                   // "borrador" | "activo" | "cerrado"
+  "heroImagenUrl": "",
+  "logoUrl": "",
+  "colores": {                          // branding de la landing pública
+    "primario": "#111111", "fondo": "#ffffff", "texto": "#111111", "acento": "#e60023"
+  },
+  "numGanadores": 1,                    // N ganadores por defecto del sorteo
+  "premios": [ { "nombre": "iPhone 15", "imagenUrl": "" } ],
+
+  // ── Planes (definen el MONTO autoritativo y las chances por ciclo) ────────
+  "planes": [
+    {
+      "id": "plan_0",
+      "nombre": "Mensual",
+      "intervalo": "mensual",           // "mensual" | "trimestral" | "semestral" | "anual"
+      "meses": 1,                       // 1 | 3 | 6 | 12 (define vigencia y peso)
+      "precioCentimos": 1990,           // PEN ENTERO en céntimos (Culqi, server-side)
+      "precioUsd": 5.99,                // PayPal (server-side)
+      "chancesPorCiclo": 1,             // default = meses si no se indica
+      "beneficios": ["Acceso a descuentos"],
+      "destacado": false,
+      "orden": 0
+    }
+  ],
+
+  // ── Denormalizados (SOLO servidor) ────────────────────────────────────────
+  "contadorSuscriptores": 128,          // rápido (la fuente exacta = shards, §3.11.5)
+  "ganadores": [ { "uid": "…", "nombre": "…" } ], // se fija al cerrar / arrayUnion al re-sortear
+  "ultimoSorteoAt": "<serverTimestamp>",// se añade al decidir ganadores (cierre normal)
+
+  "createdAt": "<serverTimestamp>",
+  "updatedAt": "<serverTimestamp>"
+}
+```
+
+> **`getCampaignBySlug`** (`suscripcionSorteos.js:80`) filtra `where slug=='…'` (UN solo campo →
+> sin índice compuesto) y prioriza la **activa más reciente** en cliente.
+
+### 3.11.2 `sorteos_suscripcion/{id}/suscriptores/{uid}` — 1 doc por suscriptor (id = uid)
+
+UPSERT idempotente por `crearSuscripcionCulqi` (`functions/index.js:5162`) o
+`confirmarSuscripcionPaypal` (`functions/index.js:5537`). Las chances y el estado se ajustan solo
+server-side. Los campos de perfil salen de `normalizarDatosSuscriptor` (nombre + correo
+obligatorios).
+
+```jsonc
+{
+  // ── Perfil (normalizarDatosSuscriptor) ────────────────────────────────────
+  "uid": "cliente-uid",
+  "nombre": "Nombre Cliente",           // nombre || `${nombres} ${apellidos}`
+  "nombres": "Nombre",                  // o null
+  "apellidos": "Cliente",               // o null
+  "correo": "cliente@correo.com",       // lowercase, validado
+  "telefono": "999888777",              // o null
+  "dni": "12345678",                    // o null
+  "tipoDocumento": "DNI",               // o null
+  "fechaNacimiento": "1990-01-01",      // o null
+  "pais": "PE",                         // o null
+
+  // ── Plan / chances (peso del sorteo) ──────────────────────────────────────
+  "planId": "plan_0",
+  "intervalo": "mensual",               // o null
+  "meses": 1,
+  "chancesPorCiclo": 1,                 // del plan
+  "chancesExtra": 0,                    // ajustes admin (grantChancesSuscripcion)
+  "chancesTotal": 1,                    // chancesPorCiclo + chancesExtra (peso del sorteo)
+
+  // ── Estado / vigencia (SOLO servidor) ─────────────────────────────────────
+  "estado": "activo",                   // "activo" | "vencido" | "cancelado" | "pendiente_pago"
+  "vigenciaHasta": "<Timestamp>",       // ahora + meses; SOLO gana si >= ahora
+  "proximoCobro": "<Timestamp>",        // = vigenciaHasta; el cron cobra los <= hoy
+  "intentosFallidos": 0,                // +1 por rechazo del cron; > 3 → estado "vencido"
+
+  // ── Método de pago (mutuamente excluyentes) ───────────────────────────────
+  "metodoPago": "culqi",                // "culqi" | "paypal"
+  "culqiCustomerId": "cus_…",           // Culqi (null en PayPal)
+  "culqiCardId": "crd_…",               // Culqi: fuente del cobro recurrente (null en PayPal)
+  "paypalSubscriptionId": "I-…",        // PayPal (null en Culqi)
+
+  "createdAt": "<serverTimestamp>",     // solo al crear
+  "updatedAt": "<serverTimestamp>"
+}
+```
+
+> **Elegibilidad para ganar** (`decidirGanadoresSuscripcion`, `functions/index.js:5763`): pool =
+> `where estado=='activo'` + `where vigenciaHasta >= ahora` (índice collectionGroup
+> `estado,vigenciaHasta`), paginado. El **peso** ponderado es `max(1, chancesTotal)`.
+> `confirmarSuscripcionPaypal` deja el suscriptor en `pendiente_pago` si PayPal solo devuelve
+> `APPROVED` (aprobado pero SIN primer cobro) → NO entra al pool hasta que el webhook lo active a
+> `activo`.
+
+### 3.11.3 `sorteos_suscripcion/{id}/suscriptores/{uid}/recibos/{reciboId}` — comprobantes de cobro
+
+1 doc por cobro acreditado. Lo escriben `crearSuscripcionCulqi` / `cobrarSuscripcionesCulqi`
+(id = `chargeId` de Culqi), `confirmarSuscripcionPaypal` (id = `paypal_confirm_{periodo}`) y el
+webhook `paypalSubscriptionWebhook` (id = `paypal_{pagoId}`). **Read dueño-o-admin,
+`write: if false`** (solo la CF via admin SDK). El recibo se escribe **solo cuando hay cobro
+confirmado** (en PayPal `APPROVED` sin cobro NO genera recibo).
+
+```jsonc
+{
+  "periodo": "2026-07-02",              // YYYY-MM-DD (zona Lima); parte de la idempotencia
+  "montoCentimos": 1990,                // solo Culqi (PEN)
+  "montoUsd": 5.99,                     // solo PayPal (USD)
+  "moneda": "PEN",                      // "PEN" (Culqi) | "USD" (PayPal)
+  "metodoPago": "culqi",                // "culqi" | "paypal"
+  "pagoId": "chr_…",                    // chargeId Culqi / subscriptionId o saleId PayPal
+  "fecha": "<serverTimestamp>"
+}
+```
+
+### 3.11.4 `sorteos_suscripcion/{id}/beneficios/{beneficioId}` y `.../ganadores_galeria/{gid}` — contenido público
+
+Lectura pública (cacheable), escritura admin (`createBeneficio` / `createGanadorGaleria`,
+`src/services/suscripcionSorteos.js:309` y `:335`). Se muestran en la landing pública; se ordenan
+por `orden` asc en cliente.
+
+```jsonc
+// beneficios/{id} — marcas/descuentos del club de suscriptores
+{ "marca": "Marca X", "titulo": "20% off", "descuento": "20%", "imagenUrl": "",
+  "categoria": "Moda", "ubicacion": "Lima", "url": "https://…", "orden": 0 }
+
+// ganadores_galeria/{gid} — ganadores anteriores (prueba social)
+{ "nombre": "Ganador", "premio": "iPhone 15", "fotoUrl": "", "fecha": "2026-06", "orden": 0 }
+```
+
+### 3.11.5 `sorteos_suscripcion/{id}/contador/{0..9}` — contador distribuido por shards
+
+Contador en vivo de suscriptores con **shards** (`SUSCRIPCION_SHARDS = 10`, ids `"0".."9"`) para
+evitar el hot-doc. Cada suscriptor **nuevo** hace `+1` en un shard **aleatorio**
+(`incrementarContadorSuscriptores`, `functions/index.js:4998`, dentro de la misma transacción del
+upsert). La página pública lee la subcolección completa (≤10 docs) y **suma** los `count`
+(`getContadorSuscriptores`, `suscripcionSorteos.js:132`); NO escanea `suscriptores`.
+
+```jsonc
+// sorteos_suscripcion/{id}/contador/3
+{ "count": 42 }
+```
+
+> La constante `SUSCRIPCION_SHARDS = 10` está en **backend** (`functions/index.js:4902`) y
+> **frontend** (`src/services/suscripcionSorteos.js:27`) y **debe coincidir**.
+
+### 3.11.6 `sorteos_suscripcion/{id}/sorteos_realizados/{drawId}` — evidencia auditable del sorteo
+
+Escrito por `decidirGanadoresSuscripcion` (`functions/index.js:5847`) con `t.create` (lock de
+idempotencia por `drawId`). Misma evidencia verificable que `sorteos` (§3.9.4): RNG seguro
+`crypto.randomBytes(32)` + DRBG SHA-256, ponderado sin reemplazo. Un cierre + varios re-sorteos =
+varios `drawId`. El re-sorteo excluye a los ganadores previos (`excluirUids`) y **agrega** con
+`arrayUnion` en la campaña sin re-cerrar.
+
+```jsonc
+{
+  "seed": "<hex de 64 chars>",          // semilla del DRBG (evidencia)
+  "poolHash": "<sha256 hex>",           // hash del pool ORDENADO por uid de {uid,peso}
+  "totalElegibles": 120,
+  "numGanadores": 1,                    // nEfectivo = min(numGanadores, pool.length)
+  "ganadores": [                        // evidencia con el peso usado
+    { "uid": "…", "nombre": "…", "correo": "…", "telefono": "…", "pesoUsado": 3 }
+  ],
+  "excluirUids": [],                    // no vacío ⇒ fue un RE-SORTEO
+  "decididoPor": "<admin-uid>",
+  "algoritmo": "HMAC/SHA256-DRBG",
+  "createdAt": "<serverTimestamp>"
+}
+```
+
+### 3.11.7 `sorteos_suscripcion/{id}/chancesAjustes/{id}` — auditoría de chances manuales
+
+Escrito por `grantChancesSuscripcion` (`functions/index.js:5991`) con `t.create` dentro de la misma
+transacción que ajusta `chancesExtra`/`chancesTotal` del suscriptor (clamp `>= 0`). Solo servidor
+(admin SDK). Deja rastro de cada ajuste manual.
+
+```jsonc
+{
+  "uid": "cliente-uid",                 // suscriptor ajustado (resuelto por correo/telefono/dni)
+  "chances": 3,                         // entero != 0 (permite negativo)
+  "motivo": "Ganó en el live",          // o null
+  "por": "<admin-uid>",
+  "chancesTotalAntes": 1,
+  "chancesTotalDespues": 4,
+  "at": "<serverTimestamp>"
+}
+```
+
+### 3.11.8 Colecciones de idempotencia (top-level, `read/write: if false`)
+
+Locks e índices auxiliares del camino del dinero. **Ninguna es legible/escribible desde el
+cliente** (solo la CF via admin SDK); todas usan `t.create` o `merge` para ser idempotentes.
+
+#### `suscripcionCharges/{subId}__{periodo}`
+
+Lock por **suscriptor + periodo** (`subId = {uid}_{campaignId}`, `periodo = YYYY-MM-DD` Lima).
+Reservado con `t.create` **ANTES** de cobrar en Culqi (`crearSuscripcionCulqi` y el cron
+`cobrarSuscripcionesCulqi`). Impide el doble cobro del mismo periodo; guarda el `chargeId` del
+cobro antes de acreditar la vigencia (si la acreditación fallara, el dinero no se pierde).
+
+```jsonc
+{
+  "subId": "cliente-uid_campaign-id",
+  "campaignId": "campaign-id",
+  "uid": "cliente-uid",
+  "planId": "plan_0",                   // o null (cron)
+  "periodo": "2026-07-02",              // YYYY-MM-DD (Lima)
+  "metodoPago": "culqi",
+  "status": "succeeded",                // "processing" → "charged" → "succeeded" | "failed"
+  "amount": 1990,                       // céntimos (null cuando lo crea el cron)
+  "currency": "PEN",
+  "origen": "cron",                     // solo cuando lo crea el cron (ausente en el alta)
+  "chargeId": "chr_…",                  // se añade tras cobrar
+  "error": "…",                         // solo en status "failed"
+  "createdAt": "<serverTimestamp>",
+  "updatedAt": "<serverTimestamp>"      // en cada cambio de status
+}
+```
+
+#### `paypalSubEvents/{eventId}`
+
+Lock de **idempotencia por id de evento** del webhook de PayPal (`paypalSubscriptionWebhook`,
+`functions/index.js:5658`). Un evento ya visto se ACK con 200 sin reprocesar.
+
+```jsonc
+{ "eventType": "PAYMENT.SALE.COMPLETED", "receivedAt": "<serverTimestamp>" }
+```
+
+#### `paypalPlanes/{campaignId__planId}`
+
+Caché del **Product + Billing Plan de PayPal** por (campaña, plan) para no recrearlos en cada
+suscripción (`asegurarPaypalPlan`, `functions/index.js:5383`). Pocas lecturas.
+
+```jsonc
+{
+  "campaignId": "campaign-id",
+  "planId": "plan_0",
+  "productId": "PROD-…",                // PayPal catalog product
+  "paypalPlanId": "P-…",                // PayPal billing plan (lo que se reusa)
+  "precioUsd": 5.99,
+  "meses": 1,
+  "createdAt": "<serverTimestamp>"
+}
+```
+
+### 3.11.9 Cloud Functions del módulo (contrato)
+
+| CF | Tipo | Qué hace |
+|---|---|---|
+| `crearSuscripcionCulqi` | onCall (auth) | Crea Customer+Card en Culqi, cobra el 1er periodo (`plan.precioCentimos`, PEN), UPSERT suscriptor + recibo + shard. Idempotente por `suscripcionCharges/{subId}__{periodo}`. |
+| `cobrarSuscripcionesCulqi` | `onSchedule "0 9 * * *"` America/Lima, `retryCount:2` | CRON diario. `collectionGroup("suscriptores")` acotado por índice `(estado, proximoCobro)`; cobra renovaciones vencidas (Culqi), reintenta la acreditación, y marca `vencido` tras `> 3` fallos. Best-effort (nunca lanza). |
+| `crearSuscripcionPaypal` | onCall (auth) | Asegura Product+Plan PayPal (cache `paypalPlanes`) y crea la Subscription; devuelve `approveUrl`. |
+| `confirmarSuscripcionPaypal` | onCall (auth) | Verifica la Subscription; **solo acredita vigencia en status ACTIVE** (`APPROVED` → `pendiente_pago`). UPSERT suscriptor + recibo. |
+| `paypalSubscriptionWebhook` | onRequest | **FIRMA VERIFICADA** (fail-closed) e idempotente (`paypalSubEvents`). `PAYMENT.SALE.COMPLETED`/`ACTIVATED` → extiende vigencia + recibo; `CANCELLED` → `cancelado`; `SUSPENDED`/`EXPIRED` → `vencido`. |
+| `decidirGanadoresSuscripcion` | onCall (admin) | Sorteo justo entre elegibles (activos + vigentes), RNG cripto ponderado, evidencia en `sorteos_realizados`. `excluirUids` = re-sorteo. |
+| `cancelarSuscripcion` | onCall (auth) | El usuario cancela SU suscripción; en PayPal cancela la Subscription (deja de cobrar); respeta `vigenciaHasta` ya pagada. |
+| `grantChancesSuscripcion` | onCall (admin) | Ajusta `chancesExtra`/`chancesTotal` de un suscriptor (por correo/telefono/dni; permite negativo; clamp `>= 0`) + auditoría en `chancesAjustes`. |
+
+> **Despliegue (dueño):** `firebase deploy --only functions:crearSuscripcionCulqi,functions:cobrarSuscripcionesCulqi,functions:crearSuscripcionPaypal,functions:confirmarSuscripcionPaypal,functions:paypalSubscriptionWebhook,functions:decidirGanadoresSuscripcion,functions:cancelarSuscripcion,functions:grantChancesSuscripcion,functions:processCulqiPayment --project sistema-gestion-3b225`
+> (+ `firebase deploy --only firestore:indexes`; responder **N** a borrar). PayPal requiere
+> registrar el webhook (`https://us-central1-sistema-gestion-3b225.cloudfunctions.net/paypalSubscriptionWebhook`)
+> y `PAYPAL_WEBHOOK_ID` en `functions/.env.sistema-gestion-3b225`; Culqi/Perú opera sin config extra.
 
 ---
 

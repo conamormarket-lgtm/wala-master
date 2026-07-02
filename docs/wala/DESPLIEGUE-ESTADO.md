@@ -87,6 +87,70 @@ firebase deploy --only functions:participarSorteoGratis,functions:comprarTicketS
 - Detalle funcional en [SORTEOS-Y-RIFAS.md](./SORTEOS-Y-RIFAS.md) y [ENLACES-UTILES.md](./ENLACES-UTILES.md);
   checklist del dueño en [PENDIENTES.md](./PENDIENTES.md).
 
+## 3.ter Cloud Functions del módulo SORTEO POR SUSCRIPCIÓN (2026-07-02, tarde) ✅ DESPLEGADO
+
+> **Todo DESPLEGADO** en este ciclo: **frontend** (Vercel), **9 Cloud Functions**, **reglas
+> Firestore de suscripción** (el deploy de reglas salió **OK** esta vez, acotado a las colecciones
+> nuevas) e **índices** `collectionGroup`. Queda **un solo paso del dueño**: registrar el webhook de
+> PayPal (ver abajo).
+
+Además del módulo de suscripción se sumaron **Gestión de Pagos** (`/admin/gestion-pagos`, unifica
+métodos + generar enlace + historial/analíticas) y **Usuarios de la App** (`/admin/usuarios-app`);
+ambos son **frontend + servicios**, no traen Cloud Functions propias (el fix del enlace vive en
+`processCulqiPayment`, incluido en el comando de abajo).
+
+Son **9 funciones** (8 nuevas de suscripción + `processCulqiPayment`, que ganó el marcado del
+`enlaces_pago/{enlaceId}` como pagado):
+
+| Módulo | Cloud Functions |
+|---|---|
+| **Sorteo por suscripción** | `crearSuscripcionCulqi`, `cobrarSuscripcionesCulqi` (`onSchedule "0 9 * * *"` America/Lima), `crearSuscripcionPaypal`, `confirmarSuscripcionPaypal`, `paypalSubscriptionWebhook`, `decidirGanadoresSuscripcion`, `cancelarSuscripcion`, `grantChancesSuscripcion` |
+| **Pago (rama nueva)** | `processCulqiPayment` (marca `enlaces_pago/{enlaceId}` como pagado tras el cobro) |
+
+**Comando único de despliegue (ya EJECUTADO por el dueño en Cloud Shell):**
+
+```bash
+firebase deploy --only functions:crearSuscripcionCulqi,functions:cobrarSuscripcionesCulqi,functions:crearSuscripcionPaypal,functions:confirmarSuscripcionPaypal,functions:paypalSubscriptionWebhook,functions:decidirGanadoresSuscripcion,functions:cancelarSuscripcion,functions:grantChancesSuscripcion,functions:processCulqiPayment --project sistema-gestion-3b225
+```
+
+Y los **índices** `collectionGroup` (también DESPLEGADOS):
+
+```bash
+firebase deploy --only firestore:indexes --project sistema-gestion-3b225
+```
+
+- **Índices desplegados:** `collectionGroup(suscriptores)` `(estado, proximoCobro)` — usado por el
+  CRON `cobrarSuscripcionesCulqi` — y `(estado, vigenciaHasta)` — usado al elegir elegibles en
+  `decidirGanadoresSuscripcion` (`firestore.indexes.json`).
+- **Si te pregunta si borrar funciones/índices del ERP → responde `N` (No).** Borrar cualquiera fuera
+  de la lista **tumbaría el ERP** (ver §4).
+- Es **aditivo**: las 8 de suscripción son nuevas; `processCulqiPayment` solo suma el marcado del
+  enlace y **no cambia** el camino de pago de pedidos ni el pago único.
+
+### ⬜ PENDIENTE del dueño — registrar el webhook de PayPal (único paso que falta)
+
+`paypalSubscriptionWebhook` es **FAIL-CLOSED**: sin `PAYPAL_WEBHOOK_ID` verifica la firma y **rechaza
+todo**. Para activarlo:
+
+1. En el panel de **PayPal Developer** → tu app → **Webhooks**, registrar la URL
+   `https://us-central1-sistema-gestion-3b225.cloudfunctions.net/paypalSubscriptionWebhook` y
+   suscribir los eventos de **Billing subscription** / **Payment sale completed**.
+2. Copiar el **Webhook ID** que genera PayPal y ponerlo como `PAYPAL_WEBHOOK_ID` en
+   `functions/.env.sistema-gestion-3b225` (mismo archivo de secretos que Culqi).
+3. **Redeploy** solo del webhook:
+
+   ```bash
+   firebase deploy --only functions:paypalSubscriptionWebhook --project sistema-gestion-3b225
+   ```
+
+- **Culqi / Perú NO requiere config extra** (usa el `CULQI_SECRET_KEY` ya presente; el CRON diario
+  cobra renovaciones sin más).
+- **NUNCA** en el mismo golpe con `firestore:rules` de otras colecciones: aquí las reglas de
+  suscripción **sí** se desplegaron OK porque van **acotadas** a las colecciones nuevas; el resto de
+  reglas del ERP sigue bajo la regla dura (no desplegar sin permiso, ver §4).
+- Detalle funcional en [SORTEO-POR-SUSCRIPCION.md](./SORTEO-POR-SUSCRIPCION.md); checklist del dueño en
+  [PENDIENTES.md](./PENDIENTES.md).
+
 ## 4. Reglas de oro aprendidas (para no repetir errores)
 
 - **Siempre desplegar con `--project sistema-gestion-3b225`** (ya corregido en `.firebaserc` y `package.json`).

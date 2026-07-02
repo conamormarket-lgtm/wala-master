@@ -18,6 +18,62 @@
 
 > ## 📌 Banner de estado (actualizado 2026-07-02)
 >
+> **CICLO 2026-07-02 (tarde) — SORTEO POR SUSCRIPCIÓN + GESTIÓN DE PAGOS + USUARIOS DE LA APP
+> IMPLEMENTADOS y DESPLEGADOS (frontend Vercel + 9 Cloud Functions + reglas/índices):** tres
+> módulos nuevos, **100 % ADITIVOS** (no tocan el carrito/precios/cobro ni el pago único).
+> **(1) SORTEO POR SUSCRIPCIÓN (estilo Jorge Luna, "No Hay Sin Suerte"):** rifa con **auto-débito
+> recurrente** — **Culqi** (Perú: guarda `Customer`+`Card` y **cobra por CRON diario**) + **PayPal
+> Subscriptions** (internacional) — donde las **chances son proporcionales a los meses del plan**
+> (mensual×1 … anual×12) y **SOLO** ganan los suscriptores con `estado=="activo"` **y**
+> `vigenciaHasta>=ahora` (reusa el **motor RNG cripto** de `decidirGanadoresSorteo`). Rutas públicas
+> **`/suscrito-sorteo`** y **`/suscrito-sorteo/:slug`** (`src/pages/SuscripcionSorteoPage.jsx` +
+> `src/pages/suscripcion/PagoSuscripcion.jsx`: login Google prioritario, consentimiento recurrente,
+> Culqi tokeniza→`crearSuscripcionCulqi`, PayPal `createSubscription`→`crearSuscripcionPaypal` /
+> `onApprove`→`confirmarSuscripcionPaypal`; **monto server-side**). Admin
+> **`/admin/sorteos-suscripcion`** (`AdminSuscripcionSorteos.jsx`: editor de campaña con
+> planes/premios/beneficios/galería/colores) + **`/admin/sorteos-suscripcion/:id`**
+> (`AdminSuscripcionDetalle.jsx`: suscriptores + **Decidir ganadores** + re-sortear + otorgar
+> chances). Servicio `src/services/suscripcionSorteos.js`. NavLink **"🎟️ Sorteo por suscripción"**
+> debajo de **"🎁 Raffles"**. Modelo `sorteos_suscripcion/{id}` (planes con `precioCentimos` PEN
+> ENTERO en céntimos, `chancesPorCiclo`, `intervalo`/`meses`) + subcolecciones
+> `suscriptores/{uid}` (estado activo/vencido/cancelado/pendiente_pago, `metodoPago` culqi/paypal,
+> `vigenciaHasta`, `proximoCobro`, ids de Culqi/PayPal), `recibos`, `contador/{0..9}`
+> (SUSCRIPCION_SHARDS=10) y `sorteos_realizados/{drawId}` (evidencia seed/poolHash/ganadores) +
+> colecciones de idempotencia `suscripcionCharges`/`paypalSubEvents`/`paypalPlanes`. **8 Cloud
+> Functions nuevas** (`functions/index.js`): `crearSuscripcionCulqi`
+> (`Customer`+`Card`+cobra 1er periodo), **`cobrarSuscripcionesCulqi`** (`onSchedule "0 9 * * *"`
+> America/Lima, `retryCount:2`, `collectionGroup` acotado por índice `(estado,proximoCobro)`, cobra
+> renovaciones vencidas, reintenta y marca **vencido** tras >3 fallos),
+> `crearSuscripcionPaypal`/`confirmarSuscripcionPaypal` (solo acredita en `status:ACTIVE`; `APPROVED`
+> queda pendiente), **`paypalSubscriptionWebhook`** (**firma VERIFICADA** vía
+> `/v1/notifications/verify-webhook-signature`, **FAIL-CLOSED**: sin `PAYPAL_WEBHOOK_ID` rechaza;
+> idempotente por `paypalSubEvents`), `decidirGanadoresSuscripcion` (elegibles activos+vigentes, RNG
+> cripto ponderado, evidencia), `cancelarSuscripcion` y `grantChancesSuscripcion`. **Regla dura:
+> SOLO suscriptores con pago vigente ganan.** **(2) GESTIÓN DE PAGOS** (`src/pages/admin/AdminGestionPagos.jsx`,
+> ruta `/admin/gestion-pagos`, NavLink **"💳 Gestión de Pagos"** en el grupo **Diseño de Tienda**
+> debajo de "👥 Ver qué hacen los usuarios"): **unifica en una página con pestañas** la Configuración
+> (métodos Yape/Plin/WhatsApp vía `messages`), Generar enlace (`enlaces_pago`, URL `/pago-rapido/{id}`,
+> PEN→Culqi / USD→PayPal) e **Historial + Analíticas** (`src/services/enlacesPago.js`: KPIs
+> generados/pagados/conversión/monto/tiempo promedio + gráfico). Se quitaron del sidebar los viejos
+> "Métodos de Pago" y "Generador de Enlaces" (sus rutas siguen por compat). **FIX:**
+> `processCulqiPayment` ahora marca `enlaces_pago/{enlaceId}` como **pagado** tras el cobro (antes un
+> enlace PEN quedaba pendiente y reutilizable). **(3) USUARIOS DE LA APP**
+> (`src/pages/admin/AdminUsuariosApp.jsx`, ruta `/admin/usuarios-app`, NavLink **"📱 Usuarios de la
+> App"** debajo de Gestión de Pagos + `src/services/adminAppUsers.js`): tabla de quién usó la app
+> (`analytics_sessions` `clientType=="APP"`) con nº de sesiones / última actividad / device-os / país,
+> unida con `portal_clientes_users` por `uid`; el detalle reusa `getUserAnalytics` con desglose
+> **APP/WEB** por ruta. **EXTRA:** "Enlaces útiles" ganó **alineación de texto** (`diseno.textAlign`)
+> en el editor y en la página pública `/l/{slug}`. **Estado:** **frontend DESPLEGADO** (Vercel) +
+> **9 Cloud Functions DESPLEGADAS** (las 8 de suscripción + `processCulqiPayment` con el fix del
+> enlace) + **reglas Firestore de suscripción DESPLEGADAS** (deploy de reglas salió OK esta vez) +
+> **índices `collectionGroup` `(estado,proximoCobro)` y `(estado,vigenciaHasta)` DESPLEGADOS**.
+> **PENDIENTE del dueño:** registrar el **webhook de PayPal** (URL
+> `https://us-central1-sistema-gestion-3b225.cloudfunctions.net/paypalSubscriptionWebhook` +
+> `PAYPAL_WEBHOOK_ID` en `functions/.env.sistema-gestion-3b225` + redeploy de
+> `paypalSubscriptionWebhook`) y **crear la campaña** con slug `suscrito-sorteo`; Culqi/Perú opera sin
+> config extra. Detalle en [SORTEO-POR-SUSCRIPCION.md](./SORTEO-POR-SUSCRIPCION.md) y comando en
+> [DESPLIEGUE-ESTADO.md](./DESPLIEGUE-ESTADO.md).
+>
 > **CICLO 2026-07-02 — dos módulos nuevos IMPLEMENTADOS (frontend desplegado por Vercel; sus
 > Cloud Functions PENDIENTES de desplegar por el dueño desde Cloud Shell):** se sumaron dos
 > módulos completos, **sin tocar carrito/precios/cobro** del flujo de compra normal.
@@ -302,6 +358,9 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | **"Elementos con diseño" (admin)** | Lugar propio para personalizar **elementos de diseño por marca**. **2026-06-29 (`425e9ce`):** **catálogo de tarjetas con slug propio por elemento** (`/admin/elementos-diseno/{slug}`); el nav de categorías se edita por marca (qué filtra / nombre / miniatura) y gana **"Estilo del nav"** (alineación + estático/slider, `categoryNavStyle` en `tienda_brands`). | `/admin/elementos-diseno` |
 | **Sorteos y Rifas ("Raffles")** | **2026-07-02:** módulo completo de sorteos gratis/pago. Público **`/sorteos`** (participar gratis o comprar ticket Culqi/PayPal, contador en vivo, compartir, referido, ganadores con confeti); admin **`/admin/sorteos`** + **`/admin/sorteos/:id`** ("Decidir ganadores" con **sorteo justo server-side** `crypto` + DRBG sin sesgo, evidencia auditable y re-sorteo). NavLink **"🎁 Raffles"**. **Frontend desplegado**; sus **9 Cloud Functions** quedan **PENDIENTES de desplegar** por el dueño (Cloud Shell). Detalle: [SORTEOS-Y-RIFAS.md](./SORTEOS-Y-RIFAS.md). | `/sorteos`, `/admin/sorteos` |
 | **Enlaces útiles (Linktree / link-in-bio)** | **2026-07-02:** constructor tipo Linktree. Público **`/l/:slug`** (página móvil-first con botones/redes) y admin **`/admin/enlaces`** + **`/admin/enlaces/:id`** (constructor con vista previa móvil en vivo, arrastrar-para-reordenar, panel de diseño y **Analítica**: visitas + clics por botón + país/dispositivo/día). Contadores en la **NUBE** (`FieldValue.increment`), nunca `localStorage`. NavLink **"🔗 Enlaces útiles"**. **Frontend desplegado**; sus **2 Cloud Functions** (`registrarClicEnlace`/`registrarVisitaEnlace`) quedan **PENDIENTES de desplegar**. Detalle: [ENLACES-UTILES.md](./ENLACES-UTILES.md). | `/l/:slug`, `/admin/enlaces` |
+| **Sorteo por suscripción (estilo Jorge Luna)** | **2026-07-02:** rifa con **auto-débito recurrente** (Culqi guarda `Customer`+`Card` y **cobra por CRON diario** `0 9 * * *`; PayPal Subscriptions para internacional). **Chances proporcionales a los meses del plan** (mensual×1…anual×12); **SOLO** ganan suscriptores `activo` **y** `vigenciaHasta>=ahora`. Público **`/suscrito-sorteo`** + **`/suscrito-sorteo/:slug`** (login Google, consentimiento recurrente, monto server-side); admin **`/admin/sorteos-suscripcion`** + **`/admin/sorteos-suscripcion/:id`** ("Decidir ganadores" con el mismo RNG cripto ponderado + evidencia). NavLink **"🎟️ Sorteo por suscripción"**. **Frontend + 8 CFs + reglas + índices DESPLEGADOS**; falta que el dueño registre el webhook de PayPal y cree la campaña. Detalle: [SORTEO-POR-SUSCRIPCION.md](./SORTEO-POR-SUSCRIPCION.md). | `/suscrito-sorteo`, `/admin/sorteos-suscripcion` |
+| **Gestión de Pagos (admin, unificada)** | **2026-07-02:** una página con **pestañas** que unifica Configuración (Yape/Plin/WhatsApp), Generar enlace (`enlaces_pago`, `/pago-rapido/{id}`, PEN→Culqi / USD→PayPal) e **Historial + Analíticas** (`enlacesPago.js`: KPIs generados/pagados/conversión/monto/tiempo + gráfico). Se retiraron del sidebar "Métodos de Pago" y "Generador de Enlaces" (rutas por compat). **FIX:** `processCulqiPayment` marca el enlace PEN como **pagado** tras el cobro. **DESPLEGADO.** | `/admin/gestion-pagos` |
+| **Usuarios de la App (admin)** | **2026-07-02:** tabla de quién usó la app (`analytics_sessions` `clientType=="APP"`) con nº sesiones / última actividad / device-os / país (une con `portal_clientes_users`); el detalle reusa `getUserAnalytics` con desglose **APP/WEB** por ruta. **DESPLEGADO.** | `/admin/usuarios-app` |
 | **i18n gratis (ES/EN/PT) + perfil/cumpleaños** | Toggle de idioma (traductor nativo del navegador), tipos de documento DNI/CE/Pasaporte, **Avatar Studio** (sin Ready Player Me) y **captura de cumpleaños** (import opcional desde Google). | Header, `/cuenta/perfil`, checkout |
 | **Despliegue real** | **Frontend en Vercel** (wala.pe, auto-deploy desde `master`); **Cloud Functions** e **índices** desplegados en `sistema-gestion-3b225`. | wala.pe |
 | **Seguridad (mitigación viva)** | **Bloqueo de borrado (delete-block)** aplicado a las reglas vivas para frenar el destrozo anónimo. | Consola Firebase |
@@ -313,6 +372,7 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | **1 — CRÍTICA** | **Publicar las reglas de seguridad completas** (`firebase/firestore.rules.produccion`). | Hoy la **lectura anónima de datos personales (PII) sigue abierta**: cualquiera en internet puede leer clientes/pedidos. Es la única fuga grave que queda. |
 | **1.bis — Alta (redeploy del ciclo 2026-06-29)** | **Redeploy de functions**: (a) las **3 de pago** (`processCulqiPayment`, `culqiWebhook`, `capturePaypalOrderSecure`) para que el pago marque `estadoWala:"pagado"` en `wala_pedidos`; (b) **`getPublicGiftRegistry`** para que la **foto/roleKey/gender** lleguen a `/regalar`. Por Cloud Shell. | El **frontend ya está desplegado**, pero hasta el redeploy el pago no marca el estado en la fuente de verdad y las tarjetas de `/regalar` no muestran foto. |
 | **1.ter — Alta (Cloud Functions de Sorteos + Enlaces, 2026-07-02)** | **Desplegar las 13 Cloud Functions** de los módulos nuevos (9 de Sorteos + 2 de Enlaces + las ramas "sorteo" de `processCulqiPayment`/`culqiWebhook`) con el **comando único** de [DESPLIEGUE-ESTADO.md](./DESPLIEGUE-ESTADO.md), respondiendo **`N`** a los prompts de borrado. Por Cloud Shell. | El **frontend de `/sorteos` y `/l/:slug` ya está desplegado**, pero sin estas CFs no se puede participar/comprar tickets, decidir ganadores ni contar visitas/clics de los enlaces. |
+| **1.quater — Config del dueño (Sorteo por suscripción, 2026-07-02)** | **(a)** Registrar el **webhook de PayPal** (URL `https://us-central1-sistema-gestion-3b225.cloudfunctions.net/paypalSubscriptionWebhook`) + poner `PAYPAL_WEBHOOK_ID` en `functions/.env.sistema-gestion-3b225` + **redeploy de `paypalSubscriptionWebhook`**. **(b)** **Crear la campaña** de suscripción con slug **`suscrito-sorteo`** desde `/admin/sorteos-suscripcion`. | Las **CFs, reglas e índices YA están desplegados**; sin el `PAYPAL_WEBHOOK_ID` el webhook de PayPal es **FAIL-CLOSED** (rechaza todo) y sin campaña no hay página pública. Culqi/Perú ya opera. |
 | **2 — Alta** | **Reestructurar el dashboard en páginas por área** (resumen, heatmap, productos, origen, páginas, categorías) con rutas propias; **arreglar el iframe de preview** (doble init de Firebase) y el **warning `willReadFrequently`** del canvas del heatmap. | El dashboard es hoy una sola página muy pesada; dividirlo lo hace usable y corrige errores de consola. |
 | **3 — Media** | **Push v2 (FCM)**, **Cloud Scheduler / cron** de segmentación y campañas, **Algolia / Typesense** (búsqueda externa), **integración del editor POD** (arte / PDF de producción), **rol `vendor` por claims** y **scoping por dueño/rol en las reglas (Fase C)**. | Son mejoras de alcance y automatización sobre lo ya construido; no bloquean la operación diaria. |
 

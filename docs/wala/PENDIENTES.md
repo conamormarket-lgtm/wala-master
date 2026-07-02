@@ -2,8 +2,9 @@
 
 > **Para el dueño (no requiere programar).** Esta es la lista corta y clara de lo que **falta
 > hacer del lado de producción** para que lo construido en las sesiones del **2026-06-29**, del
-> **2026-07-01/02** (integridad de datos + analítica) y del **2026-07-02** (módulos **Sorteos/Rifas**
-> y **Enlaces útiles**, §3.bis) quede 100 % activo. El **frontend ya está
+> **2026-07-01/02** (integridad de datos + analítica), del **2026-07-02** (módulos **Sorteos/Rifas**
+> y **Enlaces útiles**, §3.bis) y del **2026-07-02 (tarde)** (**Sorteo por suscripción** + Gestión de
+> Pagos + Usuarios de la App, §3.ter — **ya casi todo desplegado**) quede 100 % activo. El **frontend ya está
 > desplegado** (Vercel auto-deploy desde `master`); lo que queda es **backend** (Cloud Functions),
 > un **script de rescate opcional** y un par de **confirmaciones de configuración**.
 >
@@ -136,6 +137,48 @@ permiso explícito del dueño.
 
 ---
 
+## 3.ter Módulo SORTEO POR SUSCRIPCIÓN — casi listo, faltan 2 pasos del dueño 🔧
+
+> **Todo lo de código YA está DESPLEGADO** (a diferencia de §3.bis): **frontend** (Vercel), las
+> **9 Cloud Functions** (8 de suscripción + `processCulqiPayment` con el fix del enlace), las
+> **reglas Firestore de suscripción** (deploy OK, acotado) y los **índices** `collectionGroup`. Ver
+> [DESPLIEGUE-ESTADO.md §3.ter](./DESPLIEGUE-ESTADO.md). Quedan **solo 2 pasos del dueño**, ninguno
+> de programación.
+
+⬜ **(1) Registrar el webhook de PayPal.** `paypalSubscriptionWebhook` es **FAIL-CLOSED**: sin el
+`PAYPAL_WEBHOOK_ID` verifica la firma y **rechaza todo** (así ningún cobro puede forjarse). Para
+encenderlo:
+
+1. En **PayPal Developer** → tu app → **Webhooks**, registrar la URL
+   `https://us-central1-sistema-gestion-3b225.cloudfunctions.net/paypalSubscriptionWebhook`
+   (eventos de **Billing subscription** / **Payment sale completed**).
+2. Copiar el **Webhook ID** y ponerlo como `PAYPAL_WEBHOOK_ID` en
+   `functions/.env.sistema-gestion-3b225` (mismo archivo de secretos que Culqi).
+3. Redeploy solo del webhook, en Cloud Shell:
+
+   ```bash
+   firebase deploy --only functions:paypalSubscriptionWebhook --project sistema-gestion-3b225
+   ```
+
+⬜ **(2) Crear la campaña de suscripción** con slug **`suscrito-sorteo`** desde
+**`/admin/sorteos-suscripcion`** (planes con `precioCentimos` en **céntimos PEN enteros**, premios,
+beneficios, colores, `numGanadores`) y pasarla a **`estado: activo`**. Sin campaña, las páginas
+públicas `/suscrito-sorteo` y `/suscrito-sorteo/:slug` no tienen qué mostrar.
+
+- **Culqi / Perú NO necesita config extra**: usa el `CULQI_SECRET_KEY` ya presente y el CRON diario
+  `cobrarSuscripcionesCulqi` (`0 9 * * *` America/Lima) cobra las renovaciones vencidas solo.
+- **Cómo saber si funciona:** entra a `/suscrito-sorteo/suscrito-sorteo`, suscríbete con una tarjeta
+  de prueba (Culqi) y verifica que aparezca en `/admin/sorteos-suscripcion/:id` como suscriptor
+  `activo`; para PayPal, que el webhook registre el evento y lo deje `activo`.
+- Detalle funcional en [SORTEO-POR-SUSCRIPCION.md](./SORTEO-POR-SUSCRIPCION.md).
+
+> **Nota:** los módulos **Gestión de Pagos** (`/admin/gestion-pagos`) y **Usuarios de la App**
+> (`/admin/usuarios-app`) del mismo ciclo **no requieren ningún paso del dueño**: son frontend +
+> servicios ya desplegados (el fix del `enlaces_pago` viaja dentro de `processCulqiPayment`, ya
+> desplegado en §3.ter).
+
+---
+
 ## 4. Confirmar las REGLAS de Firestore en producción 🔧
 
 > **NUNCA `deploy --only firestore:rules` sin consultar.** Tumbó el ERP una vez (base compartida
@@ -209,6 +252,9 @@ siguiente paso es conectar el **ERP externo** para que la mantenga al día **sin
 - [ ] Desplegadas las **13 Cloud Functions de Sorteos + Enlaces** con el comando único (§3.bis), respondiendo `N` a los prompts de borrado.
 - [ ] Probado: en `/sorteos` se puede participar/comprar ticket y "Decidir ganadores"; en un `/l/:slug` suben visitas/clics en la Analítica del editor.
 - [ ] Reglas de `sorteos` y `link_pages` **NO** desplegadas a ciegas (§3.bis / §4): solo con permiso, fusionadas con las del ERP y validadas en Rules Playground.
+- [x] **Sorteo por suscripción**: 9 CFs + reglas de suscripción + índices `collectionGroup` **desplegados** (§3.ter / [DESPLIEGUE-ESTADO.md §3.ter](./DESPLIEGUE-ESTADO.md)).
+- [ ] **Sorteo por suscripción — webhook de PayPal**: registrar la URL, poner `PAYPAL_WEBHOOK_ID` en `functions/.env.sistema-gestion-3b225` y **redeploy de `paypalSubscriptionWebhook`** (§3.ter). Culqi/Perú ya opera sin esto.
+- [ ] **Sorteo por suscripción — crear la campaña** con slug `suscrito-sorteo` en `/admin/sorteos-suscripcion` y ponerla `activa` (§3.ter).
 - [ ] Confirmado que producción tiene `firebase/firestore.rules` (`delete: if isAdmin()`) y **NO** `firestore.rules.produccion`.
 - [ ] `firestore.rules.propuesto` **NO** desplegado (esperando PayPal server-side); la regla `analytics_daily` del repo queda para el próximo despliegue fusionado de reglas.
 - [ ] (Futuro) Endpoint con API KEY para que el ERP actualice `estadoWala` sin borrar.

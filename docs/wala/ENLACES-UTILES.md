@@ -77,6 +77,7 @@ Valores por defecto en `disenoPorDefecto()` (`src/services/enlaces.js:75`) y nor
 | `buttonShadow` | `'none'` \| `'soft'` \| `'strong'` | `'soft'` | Intensidad de la sombra. |
 | `buttonColor` | string (hex) | `'#111827'` | Color base del botón. |
 | `buttonTextColor` | string (hex) | `'#ffffff'` | Color del texto del botón (y del texto de cabecera en la página pública). |
+| `textAlign` | `'left'` \| `'center'` \| `'right'` \| `'justify'` | `'center'` | **Alineación del texto** de la página (título, descripción, fila de redes y pie). Valor fuera de la lista → cae al default `'center'` (`normalizarDiseno`, `src/services/enlaces.js:130`). |
 | `background` | objeto `{ type, value }` | `{ type: 'color', value: '#f3f4f6' }` | Fondo de la página. |
 | `background.type` | `'color'` \| `'gradient'` \| `'image'` | `'color'` | Modo del fondo. |
 | `background.value` | string | `'#f3f4f6'` | Color hex / CSS de degradado / URL de imagen según `type`. |
@@ -130,6 +131,11 @@ Todo se edita en el constructor (`AdminEnlaceEditor.jsx`) con **vista previa mó
 - **Redondez de esquinas:** slider `0–40 px` (`cornerRoundness`).
 - **Sombra:** `Ninguna` / `Suave` / `Fuerte` (`buttonShadow`).
 - **Colores:** color del botón y color del texto (picker de color + campo hex).
+- **Alineación del texto:** control segmentado **Izquierda / Centro / Derecha / Justificado**
+  (`textAlign`, `AdminEnlaceEditor.jsx:799`). Alinea el **título, la descripción, la fila de redes
+  y el pie** de la página (por defecto **Centro**). La **vista previa móvil** lo refleja al instante
+  (usa `alignItems`/`justifyContent` derivados de `textAlign`) y la página pública lo aplica en
+  `LinkInBioPage.jsx:203` con la misma lista de valores válidos, así que preview y público coinciden.
 - **Fondo de la página:** `Color` (picker), `Degradado` (se pega CSS `linear-gradient(...)`)
   o `Imagen` (se sube por `uploadFile`).
 - **Tipografía:** selector con `Por defecto`, `Poppins`, `Montserrat`, `Georgia (serif)`,
@@ -168,7 +174,9 @@ Componente: `src/pages/LinkInBioPage.jsx`. Móvil-first; renderiza **todo** el d
 El `diseno` se traduce a **variables CSS inline** (`--lb-bg`, `--lb-btn-bg`, `--lb-btn-text`,
 `--lb-radius`, `--lb-shadow`, `--lb-btn-glass`, `--lb-font`, etc. — `LinkInBioPage.jsx:228`).
 `construirFondo` maneja color / degradado / `url("…")`; `construirSombra` traduce
-`none|soft|strong`; el estilo del botón se elige con `CLASE_ESTILO[estilo]`. Las imágenes rotas
+`none|soft|strong`; el estilo del botón se elige con `CLASE_ESTILO[estilo]`. La **alineación del
+texto** (`diseno.textAlign`, validada contra `left|center|right|justify`, `LinkInBioPage.jsx:203`)
+se aplica al título, la descripción, la fila de redes y el pie. Las imágenes rotas
 caen a `PLACEHOLDER_IMG` (`onImgError`, con guarda anti-bucle).
 
 ### 4.4 Apertura de enlaces **sin bloquear**

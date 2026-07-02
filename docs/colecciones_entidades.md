@@ -211,3 +211,73 @@ Los módulos añaden dos tipos de evento al esquema (`src/services/analytics/sch
 - **`link_click`**: clic en un botón (la escribe `registrarClicEnlace`). Igual que arriba + `botonId` y `url`; `eventData:{pageId, botonId, url}`.
 
 El país/dispositivo se completa uniendo el evento con `analytics_sessions` por `sessionId` (mismo mecanismo que el dashboard). `getAnaliticaEnlace` consulta `where pageId=='…'` (índice de un solo campo, sin compuesto).
+
+---
+
+## 4. Módulo Nuevo: Sorteo por Suscripción ("No Hay Sin Suerte")
+
+Colecciones añadidas por el módulo **Sorteo por suscripción** (auto-débito recurrente Culqi/PayPal;
+solo los suscriptores con pago vigente ganan; chances proporcionales a los meses del plan). Los
+contadores, chances, cobros, vigencia, ganadores y evidencia los mantienen **exclusivamente Cloud
+Functions** (`functions/index.js`, onCall/onSchedule/onRequest); el cliente nunca los escribe.
+Detalle con campos EXACTOS en `docs/wala/MODELO-DATOS.md` §3.11. Servicio:
+`src/services/suscripcionSorteos.js`. Público en `/suscrito-sorteo` y `/suscrito-sorteo/:slug`;
+admin en `/admin/sorteos-suscripcion` y `/admin/sorteos-suscripcion/:id`.
+
+### `sorteos_suscripcion`
+Colección raíz de cada campaña de sorteo por suscripción. Config escrita por el admin
+(`construirDocCampana`, `src/services/suscripcionSorteos.js`); `contadorSuscriptores`/`ganadores`
+los mantiene solo el servidor.
+**Campos:**
+- `titulo`, `slug` (único; ruta pública `/suscrito-sorteo/{slug}`), `descripcion` (string).
+- `estado` (string): `"borrador"` | `"activo"` | `"cerrado"`.
+- `heroImagenUrl`, `logoUrl` (string).
+- `colores` (object): `{ primario, fondo, texto, acento }` (branding de la landing).
+- `numGanadores` (number): N ganadores por defecto.
+- `premios` (array): `[{ nombre, imagenUrl }]`.
+- `planes` (array): `[{ id, nombre, intervalo ("mensual"|"trimestral"|"semestral"|"anual"), meses (1|3|6|12), precioCentimos (PEN entero en céntimos), precioUsd (number), chancesPorCiclo, beneficios[], destacado, orden }]`. Define el **MONTO autoritativo** (server-side) y el peso del sorteo.
+- **Denormalizados (SOLO servidor):** `contadorSuscriptores` (number, aproximado), `ganadores` (array `[{uid, nombre}]`; set al cerrar / `arrayUnion` al re-sortear), `ultimoSorteoAt` (timestamp).
+- `createdAt`, `updatedAt` (timestamp).
+
+### `sorteos_suscripcion/{id}/suscriptores` (subcolección, id del doc = `uid`)
+Un doc por suscriptor, UPSERT idempotente por `crearSuscripcionCulqi` o `confirmarSuscripcionPaypal`. Read dueño-o-admin, `write: if false`.
+**Campos:** perfil (`uid`, `nombre`, `nombres`, `apellidos`, `correo`, `telefono`, `dni`, `tipoDocumento`, `fechaNacimiento`, `pais`); plan/chances (`planId`, `intervalo`, `meses`, `chancesPorCiclo`, `chancesExtra`, `chancesTotal` = peso del sorteo); estado/vigencia server-side (`estado` `"activo"`|`"vencido"`|`"cancelado"`|`"pendiente_pago"`, `vigenciaHasta` (Timestamp; solo gana si `>= ahora`), `proximoCobro` (Timestamp), `intentosFallidos`); método de pago (`metodoPago` `"culqi"`|`"paypal"`, `culqiCustomerId`, `culqiCardId`, `paypalSubscriptionId`); `createdAt`, `updatedAt`.
+
+### `sorteos_suscripcion/{id}/suscriptores/{uid}/recibos` (sub-subcolección)
+Comprobante por cada cobro acreditado (id = `chargeId` Culqi / `paypal_confirm_{periodo}` / `paypal_{pagoId}`). Read dueño-o-admin, `write: if false`. Solo se escribe cuando hay cobro confirmado.
+**Campos:** `periodo` (YYYY-MM-DD Lima), `montoCentimos` (Culqi/PEN) o `montoUsd` (PayPal/USD), `moneda` (`"PEN"`|`"USD"`), `metodoPago`, `pagoId`, `fecha` (timestamp).
+
+### `sorteos_suscripcion/{id}/beneficios` y `.../ganadores_galeria` (subcolecciones)
+Contenido público de la landing (read público, write admin; ordenados por `orden`).
+**`beneficios`:** `marca`, `titulo`, `descuento`, `imagenUrl`, `categoria`, `ubicacion`, `url`, `orden`.
+**`ganadores_galeria`:** `nombre`, `premio`, `fotoUrl`, `fecha`, `orden`.
+
+### `sorteos_suscripcion/{id}/contador` (subcolección, ids `"0".."9"`)
+Contador distribuido por **shards** (`SUSCRIPCION_SHARDS = 10`) del número de suscriptores. Cada suscriptor nuevo hace `+1` en un shard aleatorio; la landing lee ≤10 docs y suma (`getContadorSuscriptores`).
+**Campos:** `count` (number).
+
+### `sorteos_suscripcion/{id}/sorteos_realizados` (subcolección, id = `drawId`)
+Evidencia auditable de cada sorteo (RNG seguro `crypto.randomBytes(32)` + DRBG SHA-256 ponderado; mismo motor que `sorteos`). La escribe `decidirGanadoresSuscripcion` con lock `t.create`. Varios docs = cierre + re-sorteos.
+**Campos:** `seed` (hex 64), `poolHash` (sha256 del pool ordenado por uid de `{uid,peso}`), `totalElegibles`, `numGanadores`, `ganadores` (`[{uid, nombre, correo, telefono, pesoUsado}]`), `excluirUids` (no vacío ⇒ re-sorteo), `decididoPor` (admin uid), `algoritmo` (`"HMAC/SHA256-DRBG"`), `createdAt`.
+
+### `sorteos_suscripcion/{id}/chancesAjustes` (subcolección, id autogenerado)
+Auditoría de cada ajuste manual de chances (`grantChancesSuscripcion`, `t.create`). Solo servidor.
+**Campos:** `uid`, `chances` (entero != 0), `motivo` (o null), `por` (admin uid), `chancesTotalAntes`, `chancesTotalDespues`, `at` (timestamp).
+
+### Colecciones de idempotencia (top-level, `read/write: if false`)
+Locks e índices auxiliares del camino del dinero; solo la CF los escribe (admin SDK), idempotentes por `t.create`/`merge`.
+
+#### `suscripcionCharges/{subId}__{periodo}`
+Lock por suscriptor + periodo (`subId = {uid}_{campaignId}`, `periodo = YYYY-MM-DD` Lima) reservado ANTES de cobrar en Culqi. Evita el doble cobro del mismo periodo.
+**Campos:** `subId`, `campaignId`, `uid`, `planId` (o null), `periodo`, `metodoPago` (`"culqi"`), `status` (`"processing"`→`"charged"`→`"succeeded"`|`"failed"`), `amount` (céntimos; null en cron), `currency` (`"PEN"`), `origen` (`"cron"`, solo en renovaciones), `chargeId` (tras cobrar), `error` (en `"failed"`), `createdAt`, `updatedAt`.
+
+#### `paypalSubEvents/{eventId}`
+Lock de idempotencia por id de evento del webhook de PayPal (`paypalSubscriptionWebhook`).
+**Campos:** `eventType`, `receivedAt` (timestamp).
+
+#### `paypalPlanes/{campaignId__planId}`
+Caché del Product + Billing Plan de PayPal por (campaña, plan) para no recrearlos (`asegurarPaypalPlan`).
+**Campos:** `campaignId`, `planId`, `productId` (PayPal product), `paypalPlanId` (PayPal billing plan; se reusa), `precioUsd`, `meses`, `createdAt`.
+
+### Nota sobre `enlaces_pago` (Módulo Gestión de Pagos)
+La colección **`enlaces_pago`** (enlaces de pago rápidos, `/pago-rapido/{id}`) ahora se marca **pagado también por Culqi**: `processCulqiPayment` escribe `{ estado: "pagado", culqiChargeId, pagadoEn (ISO), metodoPago: "culqi" }` server-side cuando el cobro trae `metadata.enlaceId` (antes solo PayPal la cerraba en el cliente vía `paypalOrderId`; un enlace PEN quedaba `pendiente` y reutilizable). Campos: `concepto`, `moneda` (`PEN`|`USD`), `monto`, `montoPEN?`/`montoUSD?`, `estado` (`pendiente`|`pagado`), `createdAt`, `pagadoEn?`, `paypalOrderId?`, `culqiChargeId?`, `metodoPago?`. Ver la fila `enlaces_pago` de §1 en `docs/wala/MODELO-DATOS.md`.
