@@ -55,7 +55,11 @@
   place-items: center;
 }
 
+/* La imagen se SUPERPONE a la inicial de respaldo (que se renderiza siempre
+   debajo): si la imagen falla, onError la oculta y la inicial queda visible. */
 .thumbImg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;

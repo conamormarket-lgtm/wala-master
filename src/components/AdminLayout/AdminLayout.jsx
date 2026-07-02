@@ -97,6 +97,13 @@ const AdminLayout = () => {
               >
                 🎨 Elementos con diseño
               </NavLink>
+              {/* Panel de comportamiento: wishlists, carritos y fechas de los usuarios. */}
+              <NavLink
+                to="/admin/usuarios-comportamiento"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                👥 Ver qué hacen los usuarios
+              </NavLink>
               <a
                 href="/tienda"
                 className={getLinkClass(false, 'diseno')}

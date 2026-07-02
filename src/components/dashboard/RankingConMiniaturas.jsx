@@ -79,8 +79,14 @@ export default function RankingConMiniaturas({
           >
             <span className={`${styles.rank} ${i < 3 ? styles.rankTop : ''}`}>{i + 1}</span>
 
+            {/* La inicial de respaldo se renderiza SIEMPRE debajo y la imagen se
+                superpone encima solo si hay URL: si la imagen falla (p.ej. producto
+                tombstone con URL rota), onError la oculta y queda la inicial en vez
+                de un cuadrado vacío. Mismo patrón que MiniaturaProducto en
+                AdminUsuariosComportamiento.jsx. */}
             <span className={styles.thumb}>
-              {it.image ? (
+              <span className={styles.thumbFallback}>{initialOf(it.label)}</span>
+              {it.image && (
                 <img
                   className={styles.thumbImg}
                   src={it.image}
@@ -91,8 +97,6 @@ export default function RankingConMiniaturas({
                     e.currentTarget.style.display = 'none';
                   }}
                 />
-              ) : (
-                <span className={styles.thumbFallback}>{initialOf(it.label)}</span>
               )}
             </span>
 

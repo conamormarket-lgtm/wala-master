@@ -1,0 +1,548 @@
+/* ============================================================================
+   AdminUsuariosComportamiento — estilos del panel "Ver qué hacen los usuarios"
+   ----------------------------------------------------------------------------
+   Estética del design system "Aurora Violeta Serena": superficies glass
+   (GlassCard/GlassButton/GlassInput vienen de src/components/ui), acentos
+   violeta escasos y tokens semánticos de tema (--color-*) para que el modo
+   noche funcione sin overrides extra. Mobile-first: las "columnas" de la
+   tabla de usuarios se apilan en móvil con etiquetas inline.
+   ========================================================================== */
+
+.pagina {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.1rem clamp(0.75rem, 2.5vw, 1.75rem) 2.5rem;
+  max-width: var(--container-wide, 1400px);
+  margin: 0 auto;
+  color: var(--color-text, #0f172a);
+}
+
+/* ── Encabezado ── */
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.titulo {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text, #0f172a);
+}
+
+.subtitulo {
+  margin: 0.3rem 0 0;
+  max-width: 62ch;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--color-text-muted, #475569);
+}
+
+/* ── KPIs ── */
+
+.kpis {
+  margin: 0;
+}
+
+/* ── Grilla de tarjetas "top" (wishlist / carritos) ── */
+
+.gridTops {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .gridTops {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cardTop,
+.cardCumples,
+.cardUsuarios {
+  min-width: 0; /* evita que los nombres largos rompan la grilla */
+}
+
+/* ── Avisos honestos (truncados, foto del momento, búsquedas limitadas) ── */
+
+.aviso {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--color-text-muted, #475569);
+}
+
+.avisoWarning {
+  color: #b45309; /* ámbar legible en claro */
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+}
+
+[data-theme='dark'] .avisoWarning {
+  color: #fcd34d; /* ámbar claro sobre fondo oscuro */
+}
+
+/* ── Estados de carga / vacíos ── */
+
+.cargando {
+  padding: 1.2rem 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #475569);
+}
+
+.vacio {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.1rem 0.75rem;
+  border: 1px dashed var(--color-border, #e2e8f0);
+  border-radius: 14px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #475569);
+}
+
+.vacioIcono {
+  font-size: 1.3rem;
+}
+
+/* ── Chips de datos (mini-resumen dentro de tarjetas y fichas) ── */
+
+.chipsDatos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+/* ── Tarjeta de cumpleaños ── */
+
+.listaCumples {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.filaCumple {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+}
+
+.badgeDias {
+  min-width: 74px;
+  justify-content: center;
+  text-align: center;
+}
+
+.cumpleInfo {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.cumpleQuien {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cumpleDetalle {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #475569);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Buscador ── */
+
+.buscadorZona {
+  margin-bottom: 0.75rem;
+}
+
+.buscador {
+  max-width: 460px;
+}
+
+/* ── Lista de usuarios (tabla responsive) ──
+   Desktop: fila en grid de 6 columnas. Móvil: las celdas se apilan y muestran
+   su etiqueta (.celdaEtiqueta) para no perder contexto. */
+
+.listaUsuarios {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.itemUsuario {
+  min-width: 0;
+}
+
+.filaUsuario {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) 0.8fr 1.3fr 0.9fr 0.9fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border-radius: 14px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text, #0f172a);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.filaCabecera {
+  /* La cabecera no lleva la columna del chevron visible; se alinea igual. */
+  grid-template-columns: minmax(0, 2.4fr) 0.8fr 1.3fr 0.9fr 0.9fr auto;
+  border: none;
+  background: transparent;
+  padding-block: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, #475569);
+}
+
+.filaClicable {
+  cursor: pointer;
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.filaClicable:hover {
+  background: var(--color-hover, #f1f5f9);
+  box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.08));
+}
+
+.filaClicable:focus-visible {
+  outline: 2px solid var(--primary-color, #6d28d9);
+  outline-offset: 2px;
+}
+
+.filaAbierta {
+  border-color: var(--primary-color, #6d28d9);
+  background: var(--primary-light, rgba(109, 40, 217, 0.08));
+}
+
+.celdaUsuario {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.celda {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text, #0f172a);
+}
+
+/* Etiqueta de celda: solo visible cuando la fila se apila (móvil). */
+.celdaEtiqueta {
+  display: none;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-muted, #475569);
+}
+
+.chevron {
+  color: var(--color-text-muted, #475569);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 760px) {
+  .filaCabecera {
+    display: none;
+  }
+
+  .filaUsuario {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .celdaUsuario {
+    grid-column: 1 / -1;
+  }
+
+  .celdaEtiqueta {
+    display: inline;
+  }
+
+  /* El chevron se oculta en móvil: la fila entera es el control clicable. */
+  .chevron {
+    display: none;
+  }
+}
+
+/* ── Avatares e info compartida (filas y fichas) ── */
+
+.avatar,
+.avatarMini,
+.avatarPersona {
+  position: relative;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--primary-light, rgba(109, 40, 217, 0.08));
+  border: 1px solid var(--color-border, #e2e8f0);
+  color: var(--primary-color, #6d28d9);
+  font-weight: 800;
+}
+
+.avatar {
+  width: 46px;
+  height: 46px;
+  font-size: 1.05rem;
+}
+
+.avatarMini {
+  width: 34px;
+  height: 34px;
+  font-size: 0.85rem;
+}
+
+.avatarPersona {
+  width: 40px;
+  height: 40px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+}
+
+.itemInfo {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.itemNombre {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  overflow: hidden;
+}
+
+.itemDetalle {
+  font-size: 0.74rem;
+  color: var(--color-text-muted, #475569);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Ficha expandible ── */
+
+.ficha {
+  margin-top: 0.4rem;
+  padding: 0.85rem;
+  border-radius: 16px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface-2, #ffffff);
+  box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.06));
+}
+
+.fichaCabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.7rem;
+}
+
+.fichaIdentidad {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.fichaNombre {
+  font-size: 1rem;
+  color: var(--color-text, #0f172a);
+}
+
+.fichaMeta {
+  font-size: 0.76rem;
+  color: var(--color-text-muted, #475569);
+  word-break: break-word;
+}
+
+.fichaChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* ── Tabs de la ficha ── */
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  border-radius: 12px;
+  background: var(--color-hover, #f1f5f9);
+  margin-bottom: 0.7rem;
+}
+
+.tabBtn {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.7rem;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-muted, #475569);
+  cursor: pointer;
+  transition: var(--transicion-rapida, all 0.2s ease);
+  min-height: 36px;
+}
+
+.tabBtn:hover {
+  color: var(--color-text, #0f172a);
+}
+
+.tabBtn:focus-visible {
+  outline: 2px solid var(--primary-color, #6d28d9);
+  outline-offset: 1px;
+}
+
+.tabActiva {
+  background: var(--color-surface, #ffffff);
+  color: var(--primary-color, #6d28d9);
+  box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.08));
+}
+
+.tabPanel {
+  display: grid;
+  gap: 0.55rem;
+}
+
+/* ── Items (wishlist / carrito) dentro de la ficha ── */
+
+.listaItems,
+.listaPersonas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.filaItem,
+.filaPersona {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+}
+
+.filaPersona {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+}
+
+/* Item de carrito marcado "no comprar esta vez": se atenúa, sin ocultarlo. */
+.filaDeseleccionada {
+  opacity: 0.62;
+}
+
+/* ── Miniaturas de producto con fallback de inicial ── */
+
+.thumb {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--primary-light, rgba(109, 40, 217, 0.08));
+  border: 1px solid var(--color-border, #e2e8f0);
+}
+
+.thumbImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbFallback {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--primary-color, #6d28d9);
+}
+
+/* ── Eventos de las personas agendadas ── */
+
+.eventosPersona {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+.eventoChip {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-hover, #f1f5f9);
+  border: 1px solid var(--color-border, #e2e8f0);
+  color: var(--color-text-muted, #475569);
+}
+
+/* ── Pie de paginación ── */
+
+.piePaginacion {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.8rem;
+}
+
+/* ── Accesibilidad: menos movimiento = sin transiciones ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .filaClicable,
+  .tabBtn {
+    transition: none;
+  }
+}

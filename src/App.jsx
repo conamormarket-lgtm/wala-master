@@ -145,6 +145,8 @@ const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion')
 const AdminCrearCuentasPedidos = lazy(() => import('./pages/admin/AdminCrearCuentasPedidos'));
 const AdminRetos = lazy(() => import('./pages/admin/AdminRetos'));
 const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuariosAnalyticsPage'));
+// Panel "Ver qué hacen los usuarios": wishlists, carritos y fechas (solo-admin).
+const AdminUsuariosComportamiento = lazy(() => import('./pages/admin/AdminUsuariosComportamiento'));
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
 const AdminElementosDiseno = lazy(() => import('./pages/admin/AdminElementosDiseno'));
@@ -337,6 +339,7 @@ function App() {
                             <Route path="mascota" element={<AdminMascota />} />
                             <Route path="crear-cuentas-pedidos" element={<AdminCrearCuentasPedidos />} />
                             <Route path="usuarios-analytics" element={<AdminUsuariosAnalyticsPage />} />
+                            <Route path="usuarios-comportamiento" element={<AdminUsuariosComportamiento />} />
                             <Route path="wordle" element={<AdminWordlePage />} />
                             <Route path="notificaciones" element={<AdminNotifications />} />
                             <Route path="marcas" element={<AdminMarcas />} />
