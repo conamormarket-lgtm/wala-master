@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { signInWithEmail, signInWithGoogle } from '../services/firebase/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
@@ -11,6 +11,10 @@ import styles from './LoginPage.module.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Ruta a la que volver tras iniciar sesión (p.ej. /sorteos manda state.from).
+  // Si no vino de ningún lado, el destino por defecto es la home / encuesta.
+  const from = location.state?.from || null;
   const { user, userProfile, loading: authLoading } = useAuth();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -20,15 +24,20 @@ const LoginPage = () => {
   React.useEffect(() => {
     if (authLoading || !user) return;
     if (userProfile?.dni && userProfile?.phone) {
-      if (shouldPromptSurvey(userProfile)) {
+      // Perfil completo: si vino de una página concreta (ej. /sorteos), vuelve ahí;
+      // si no, encuesta o home como siempre.
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (shouldPromptSurvey(userProfile)) {
         navigate('/encuesta-suscripcion', { replace: true });
       } else {
         navigate('/', { replace: true });
       }
     } else {
-      navigate('/completar-perfil', { replace: true });
+      // Perfil incompleto: completar datos, conservando el destino para después.
+      navigate('/completar-perfil', { replace: true, state: from ? { from } : undefined });
     }
-  }, [user, userProfile, authLoading, navigate]);
+  }, [user, userProfile, authLoading, navigate, from]);
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
@@ -38,13 +47,9 @@ const LoginPage = () => {
     const { error: err, errorCode } = await signInWithEmail(email, password);
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
-    } else {
-      if (shouldPromptSurvey(userProfile)) {
-        navigate('/encuesta-suscripcion');
-      } else {
-        navigate('/');
-      }
     }
+    // En éxito, la redirección la maneja el useEffect cuando carga el perfil
+    // (así respeta el retorno a la página de origen, p.ej. /sorteos).
     setLoading(false);
   };
 
@@ -55,9 +60,8 @@ const LoginPage = () => {
     const { error: err, errorCode } = await signInWithGoogle();
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
-    } else {
-      navigate('/completar-perfil');
     }
+    // En éxito, la redirección la maneja el useEffect (respeta el retorno).
     setLoading(false);
   };
 

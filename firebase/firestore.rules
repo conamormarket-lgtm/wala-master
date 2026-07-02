@@ -288,5 +288,36 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update, delete: if isAdmin(); // H-08: antes era 'if true' (fraude/DoS)
     }
+
+    // ── MÓDULO SORTEOS (NUEVO — server-authoritative) ────────────────────────────
+    // La página de sorteos es pública (lectura del doc + contador). La participación
+    // NO se escribe desde el cliente: pasa por la Cloud Function participarSorteoGratis
+    // (admin SDK, bypassa estas reglas). Por eso todas las subcolecciones son
+    // write:false para el cliente. Los admin gestionan el catálogo de sorteos.
+    match /sorteos/{id} {
+      allow read: if true;               // Vitrina pública del sorteo.
+      allow write: if isAdmin();         // Solo el admin crea/edita/cierra sorteos.
+
+      // Participantes: los crea SOLO la Cloud Function. El cliente autenticado puede
+      // leer (p. ej. para verificar su propia participación); nunca escribe.
+      match /participantes/{uid} {
+        allow read: if isAuthenticated();
+        allow write: if false;
+      }
+      // Contador con shards: lectura pública (la página suma los shards); solo la CF escribe.
+      match /contador/{shardId} {
+        allow read: if true;
+        allow write: if false;
+      }
+      // Tickets y sorteos realizados (builds futuros): solo el admin lee; solo la CF escribe.
+      match /tickets/{ticketId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+      match /sorteos_realizados/{realizadoId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+    }
   }
 }

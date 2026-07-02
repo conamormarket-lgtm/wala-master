@@ -3267,3 +3267,131 @@ exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) 
     pedidoId: String(pedidoId),
   };
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// MÓDULO SORTEOS (server-authoritative, idempotente, contador con shards)
+// El cliente NO escribe en /sorteos ni sus subcolecciones (las reglas lo bloquean):
+// toda participación pasa por esta callable, que valida server-side el perfil, el
+// estado del sorteo y el requisito de app. La página lee el doc del sorteo + los
+// shards del contador (NO escanea /participantes) para minimizar lecturas en lives.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Número de shards del contador de participantes (subcolección /contador/{0..N-1}).
+// Debe coincidir con la constante que use el cliente al sumar los shards.
+const SORTEO_CONTADOR_SHARDS = 10;
+
+// ── Participar en un sorteo GRATIS (onCall) ──────────────────────────────────
+// params: { sorteoId:string, origenApp:bool }
+// Server-authoritative: usa el uid del token y el perfil leído server-side; del
+// cliente solo se confía origenApp (si entró desde el app nativo). Idempotente:
+// el doc participante tiene id=uid, reentrar es no-op (no duplica ni recuenta).
+exports.participarSorteoGratis = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const sorteoId = data && data.sorteoId;
+  if (!sorteoId || typeof sorteoId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta sorteoId.");
+  }
+  // Único dato de confianza que aporta el cliente: si la sesión corre en el app.
+  const origenApp = data && data.origenApp === true;
+
+  const sorteoRef = db.collection("sorteos").doc(sorteoId);
+  const participanteRef = sorteoRef.collection("participantes").doc(uid);
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+
+  // 1) El sorteo debe existir, estar activo y ser gratis.
+  const sorteoSnap = await sorteoRef.get();
+  if (!sorteoSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "El sorteo no existe.");
+  }
+  const sorteo = sorteoSnap.data();
+  if (sorteo.estado !== "activo") {
+    throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
+  }
+  if (sorteo.tipo === "pagado") {
+    throw new functions.https.HttpsError("failed-precondition", "este sorteo requiere comprar ticket");
+  }
+  if (sorteo.tipo !== "gratis") {
+    throw new functions.https.HttpsError("failed-precondition", "Tipo de sorteo no válido.");
+  }
+
+  // 2) El perfil del uid debe estar COMPLETO (equivalente a !profileIncomplete):
+  //    displayName, phone, email y dni presentes. Se lee server-side; nunca se
+  //    confía en datos de perfil enviados por el cliente.
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    throw new functions.https.HttpsError("failed-precondition", "completa tu perfil");
+  }
+  const u = userSnap.data();
+  const telefono = u.phone;
+  const correo = u.email;
+  const dni = u.dni;
+  // nombre: si no hay displayName, cae al correo (siempre presente tras login).
+  const nombre = (u.displayName && String(u.displayName).trim()) || correo || "Participante";
+  // "Perfil completo" = MISMO criterio que el cliente (AuthContext.profileIncomplete):
+  // teléfono + documento. El correo siempre existe tras el login; el nombre tiene
+  // fallback. Así el gate del cliente y la validación del servidor no discrepan.
+  const perfilCompleto =
+    !!(telefono && String(telefono).trim()) &&
+    !!(dni && String(dni).trim());
+  if (!perfilCompleto) {
+    throw new functions.https.HttpsError("failed-precondition", "completa tu perfil");
+  }
+
+  // 3) Requisito de app.
+  //    - "obligatorio": debe entrar desde el app.
+  //    - "chanceExtra": +1 chance si entra desde el app.
+  //    - "opcional": sin efecto.
+  const requisitoApp = sorteo.requisitoApp;
+  if (requisitoApp === "obligatorio" && !origenApp) {
+    throw new functions.https.HttpsError("failed-precondition", "debes entrar desde el app");
+  }
+  const chanceExtraApp = requisitoApp === "chanceExtra" && origenApp ? 1 : 0;
+
+  // 4) Transacción idempotente: si ya participa, no-op; si no, crea el doc
+  //    participante (id=uid) e incrementa un shard aleatorio del contador.
+  const shardIndex = Math.floor(Math.random() * SORTEO_CONTADOR_SHARDS);
+  const shardRef = sorteoRef.collection("contador").doc(String(shardIndex));
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const pSnap = await t.get(participanteRef);
+      if (pSnap.exists) {
+        // Idempotencia: reentrar NO duplica ni recuenta.
+        return { ok: true, yaParticipa: true, participacion: pSnap.data() };
+      }
+
+      const chancesBase = 1;
+      const chancesExtra = chanceExtraApp;
+      const chancesTotal = chancesBase + chancesExtra;
+
+      const participacion = {
+        uid,
+        nombre,
+        telefono,
+        correo,
+        dni,
+        tickets: 0,          // gratis: sin tickets
+        ticketsPagados: 0,
+        chancesBase,
+        chancesExtra,
+        chancesTotal,
+        origenApp,
+        estado: "elegible",
+        createdAt: FieldValue.serverTimestamp(),
+      };
+
+      t.set(participanteRef, participacion);
+      // Contador con shards: +1 en un shard aleatorio (evita hot-doc en lives).
+      // merge:true crea el shard si aún no existe (count arranca en 1).
+      t.set(shardRef, { count: FieldValue.increment(1) }, { merge: true });
+      // Denormalizado aproximado en el doc del sorteo (solo referencia rápida).
+      t.set(sorteoRef, { contadorParticipantes: FieldValue.increment(1) }, { merge: true });
+
+      return { ok: true, yaParticipa: false, participacion };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("participarSorteoGratis error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo registrar la participación.");
+  }
+});
