@@ -198,6 +198,9 @@ const AdminSuscripcionDetalle = () => {
   // Mapa planId → nombre del plan (para mostrar el plan legible en la tabla).
   const planNombre = (planId) =>
     campaign?.planes?.find((p) => p.id === planId)?.nombre || planId || '—';
+  // El precio NO se guarda en el suscriptor; se deriva del plan de la campaña por planId.
+  const planPrecioCentimos = (planId) =>
+    Number(campaign?.planes?.find((p) => p.id === planId)?.precioCentimos) || 0;
 
   return (
     <div className={styles.wrapper}>
@@ -432,10 +435,10 @@ const AdminSuscripcionDetalle = () => {
                       <td>{s.nombre || s.nombres || s.correo || s.id || '—'}</td>
                       <td>
                         {planNombre(s.planId)}
-                        {s.precioCentimos ? (
+                        {planPrecioCentimos(s.planId) > 0 ? (
                           <span className={styles.planPrecio}>
                             {' '}
-                            · {formatoPrecioPen(s.precioCentimos)}
+                            · {formatoPrecioPen(planPrecioCentimos(s.planId))}
                           </span>
                         ) : null}
                       </td>

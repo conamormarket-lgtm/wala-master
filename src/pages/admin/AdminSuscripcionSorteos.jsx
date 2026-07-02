@@ -249,6 +249,19 @@ const AdminSuscripcionSorteos = () => {
       setFormError('El título es obligatorio.');
       return;
     }
+    // Para publicar (estado "activo") debe haber al menos un plan COMPRABLE:
+    // precioCentimos > 0 (Culqi/PEN) o precioUsd > 0 (PayPal). Evita publicar
+    // una campaña no-comprable (el backend igual rechazaría el cobro).
+    if (form.estado === 'activo') {
+      const planes = Array.isArray(form.planes) ? form.planes : [];
+      const hayComprable = planes.some(
+        (p) => (Number(p.precioCentimos) || 0) > 0 || (Number(p.precioUsd) || 0) > 0,
+      );
+      if (!hayComprable) {
+        setFormError('Para activar la campaña agrega al menos un plan con precio (S/ o USD) mayor a 0.');
+        return;
+      }
+    }
     if (editingId) updateMutation.mutate({ id: editingId, data: form });
     else createMutation.mutate(form);
     window.scrollTo({ top: 0, behavior: 'smooth' });
