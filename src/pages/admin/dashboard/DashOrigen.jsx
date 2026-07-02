@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import GlassCard from '../../../components/dashboard/GlassCard';
 import Donut from '../../../components/dashboard/charts/Donut';
+import CompareBars from '../../../components/dashboard/charts/CompareBars';
 import KpiRow from '../../../components/dashboard/KpiRow';
 import { Reveal } from '../../../components/ui';
 import { chartColors } from '../../../theme';
@@ -14,8 +15,11 @@ import {
   fmtInt,
   fmtTime,
   shortPath,
-  useDateRange,
-  useGlobalAnalytics,
+  useDashboardFilters,
+  useDashboardAnalytics,
+  OrigenPicker,
+  CompareToggle,
+  calcularDelta,
 } from './dashShared';
 import styles from '../AdminDashboard.module.css';
 import extra from './DashOrigen.extra.module.css';
@@ -24,15 +28,47 @@ import extra from './DashOrigen.extra.module.css';
  * DashOrigen — sub-página de ORIGEN / TRÁFICO (versión "Aurora Violeta Serena")
  *   - KPIs de cabecera (sesiones en vivo, muestras de dispositivo, fuente y
  *     región líder) con número animado.
- *   - Dispositivos / Navegador / Sistema operativo: donuts del design system.
+ *   - Dispositivos / Navegador / Sistema operativo: donuts del design system,
+ *     ahora alimentados por los campos NUEVOS del doc diario (byDevice con
+ *     Tablet, byBrowser, byOS) con fallback automático al parseo de UA legacy.
+ *   - NUEVO (P1): País real por IP (byCountry) con la serie APARTE aproximada
+ *     por zona horaria (byCountryAprox, días históricos) y App vs Web
+ *     (byClientType), con avisos HONESTOS cuando el rango incluye días previos
+ *     al despliegue de la captura.
  *   - Fuentes UTM, campañas y regiones (utmStats / geographyStats) con barra
  *     de proporción.
  *   - Panel "En vivo" (sesiones activas en tiempo real).
  *   - Búsquedas más frecuentes (topSearches).
  *
- * Conserva intacto el comportamiento: el fetching compartido
- * (useGlobalAnalytics), el rango 7/30/90, el refresco manual y las rutas.
+ * Usa el CONTRATO de filtros compartidos (useDashboardFilters +
+ * useDashboardAnalytics): rango 7/30/90/personalizado, comparación con el
+ * periodo anterior y filtro de origen APP/WEB, todo en el querystring.
  * ========================================================================= */
+
+/* "YYYY-MM-DD" → "DD/MM/AAAA" legible (helper local: dashShared no exporta el
+ * suyo y esta capa no debe modificarlo). */
+function fmtDiaLegible(key) {
+  const [y, m, d] = String(key || '').split('-');
+  return y && m && d ? `${d}/${m}/${y}` : '';
+}
+
+/* Nombre legible de país en español desde su código ISO-2 (Intl.DisplayNames),
+ * respetando las claves especiales del doc diario ("unknown"/"otros"). Si el
+ * doc ya trae un nombre distinto del código, se respeta. */
+function nombreDePais(code, nombreGuardado) {
+  const c = String(code || '').toUpperCase();
+  if (!c || c === 'UNKNOWN') return 'Sin identificar';
+  if (c === 'OTROS') return 'Otros';
+  if (nombreGuardado && nombreGuardado !== code) return nombreGuardado;
+  try {
+    const dn = new Intl.DisplayNames(['es'], { type: 'region' });
+    const nombre = dn.of(c);
+    if (nombre && nombre !== c) return nombre;
+  } catch {
+    /* código no ISO o Intl sin soporte: caemos al código tal cual */
+  }
+  return c;
+}
 
 /**
  * BloqueDona — envoltura fina sobre el <Donut> del sistema para reutilizar el
@@ -99,22 +135,92 @@ function ListaProporcion({ items, accent, emptyText }) {
 }
 
 export default function DashOrigen() {
-  const { rangeDays, setRangeDays, dateRange } = useDateRange(30);
-  const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useGlobalAnalytics(dateRange);
+  /* Filtros compartidos del panel (querystring): rango + comparación + origen. */
+  const filtros = useDashboardFilters(30);
+  const {
+    rangeDays, setRangeDays, rangeLabel,
+    origen, setOrigen, compare, setCompare, prevRangeLabel,
+  } = filtros;
+  const {
+    data, anterior, isLoading, isFetching, error, refetch, dataUpdatedAt,
+  } = useDashboardAnalytics(filtros);
 
-  /* ----- donuts de dispositivo / navegador / OS (sin cambios de origen) ----- */
+  /* ----- donuts de dispositivo / navegador / OS -----
+   * Fuente NUEVA (P1): byDevice/byBrowser/byOS del doc diario (incluye Tablet).
+   * ensureExtendedAnalytics ya garantiza el fallback al parseo de UA legacy
+   * (deviceStats.top*) cuando el rango solo tiene docs viejos. */
   const deviceItems = useMemo(
-    () => (data?.deviceStats?.topDevices || []).map((d) => ({ name: d.name, value: d.count })),
-    [data?.deviceStats]
+    () => (data?.byDevice || []).map((d) => ({ name: d.name, value: d.count })),
+    [data?.byDevice]
   );
   const browserItems = useMemo(
-    () => (data?.deviceStats?.topBrowsers || []).map((d) => ({ name: d.name, value: d.count })),
-    [data?.deviceStats]
+    () => (data?.byBrowser || []).map((d) => ({ name: d.name, value: d.count })),
+    [data?.byBrowser]
   );
   const osItems = useMemo(
-    () => (data?.deviceStats?.topOS || []).map((d) => ({ name: d.name, value: d.count })),
-    [data?.deviceStats]
+    () => (data?.byOS || []).map((d) => ({ name: d.name, value: d.count })),
+    [data?.byOS]
   );
+
+  /* ----- desgloses NUEVOS: país por IP, aproximado por timezone y App/Web ----- */
+  const countryItems = useMemo(
+    () => (data?.byCountry || []).map((c) => ({
+      name: nombreDePais(c.code, c.name),
+      value: Number(c.count) || 0,
+    })),
+    [data?.byCountry]
+  );
+  const countryAproxItems = useMemo(
+    () => (data?.byCountryAprox || []).map((c) => ({
+      name: nombreDePais(c.code, c.name),
+      value: Number(c.count) || 0,
+    })),
+    [data?.byCountryAprox]
+  );
+  const clientTypeItems = useMemo(
+    () => (data?.byClientType || []).map((c) => ({
+      name: c.name === 'APP' ? 'App (instalada)' : 'Web (navegador)',
+      value: Number(c.count) || 0,
+    })),
+    [data?.byClientType]
+  );
+
+  /* ----- avisos HONESTOS -----
+   * Cobertura de los campos nuevos dentro del rango: si hay días cerrados sin
+   * el desglose (anteriores al despliegue de la CF), se dice con fecha; nunca
+   * se muestran ceros engañosos. El camino legacy no trae cobertura → los
+   * arrays vacíos ya caen al emptyText honesto de cada chart. */
+  const cobertura = data?.extendedCoverage || null;
+  const diasSinDesglose = cobertura
+    ? Math.max(0, cobertura.closedDocs - cobertura.docsWithBreakdowns)
+    : 0;
+  const avisoDesglosesViejos = cobertura && diasSinDesglose > 0
+    ? (cobertura.firstBreakdownDay
+      ? `Sin datos para este desglose antes del ${fmtDiaLegible(cobertura.firstBreakdownDay)} (despliegue de la captura): ${diasSinDesglose} día(s) del rango no lo incluyen.`
+      : `Sin datos para este desglose en ${diasSinDesglose} día(s) del rango (anteriores al despliegue de la captura).`)
+    : null;
+
+  /* Filtro de origen: estos desgloses de sesión NO segmentan APP/WEB (son
+   * conteos simples por clave) → con el filtro activo se muestra el TOTAL con
+   * nota, en vez de un 0 engañoso (regla de honestidad del contrato, segTAW=null). */
+  const avisoOrigen = origen !== 'todos'
+    ? `Filtro de origen "${origen === 'app' ? 'App' : 'Web'}" activo: estos desgloses no distinguen APP/WEB por separado, se muestra el TOTAL del rango. El corte App/Web vive en la tarjeta "App vs Web".`
+    : null;
+
+  /* Comparación: el resumen del periodo anterior solo trae KPIs segmentados
+   * (sessions TAW) → aplicamos ▲/▼ donde ES posible (App vs Web) y lo decimos
+   * honestamente donde no. */
+  const deltasClientType = useMemo(() => {
+    if (!compare || !anterior) return null;
+    if (!anterior.daysWithData) return { sinDatos: true };
+    const buscar = (nombre) => (data?.byClientType || [])
+      .find((c) => c.name === nombre)?.count ?? 0;
+    return {
+      sinDatos: false,
+      app: calcularDelta(buscar('APP'), anterior.sessions?.app),
+      web: calcularDelta(buscar('WEB'), anterior.sessions?.web),
+    };
+  }, [compare, anterior, data?.byClientType]);
 
   /* ----- listas de origen / geografía / búsquedas (mismas fuentes) ----- */
   const utmSources = useMemo(
@@ -212,7 +318,7 @@ export default function DashOrigen() {
         <motion.div variants={itemVariants}>
           <DashHeader
             title="Origen y tráfico"
-            subtitle={`Dispositivos, fuentes y regiones · últimos ${rangeDays} días`}
+            subtitle={`Dispositivos, países, fuentes y regiones · ${rangeLabel}`}
             rangeDays={rangeDays}
             setRangeDays={setRangeDays}
             onRefresh={() => refetch()}
@@ -221,6 +327,24 @@ export default function DashOrigen() {
           />
         </motion.div>
 
+        {/* Filtros compartidos del contrato: origen APP/WEB + comparación. */}
+        <motion.div
+          variants={itemVariants}
+          style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}
+        >
+          <OrigenPicker origen={origen} setOrigen={setOrigen} />
+          <CompareToggle compare={compare} setCompare={setCompare} />
+        </motion.div>
+        {avisoOrigen && (
+          <motion.p
+            variants={itemVariants}
+            className={extra.emptyChip}
+            style={{ marginBottom: '0.85rem' }}
+          >
+            {avisoOrigen}
+          </motion.p>
+        )}
+
         <DashStates isLoading={isLoading} hasData={!!data} error={error} />
 
         {/* KPIs de cabecera */}
@@ -228,10 +352,11 @@ export default function DashOrigen() {
           <KpiRow items={kpiItems} />
         </Reveal>
 
-        {/* Dispositivos / navegador / OS — donuts del design system */}
+        {/* Dispositivos / navegador / OS — donuts del design system,
+            fuente nueva byDevice/byBrowser/byOS (con fallback legacy) */}
         <Reveal as="section" className={`${styles.grid3} ${extra.section}`}>
           <Reveal>
-            <GlassCard title="Dispositivos" subtitle="Escritorio vs. móvil">
+            <GlassCard title="Dispositivos" subtitle="Escritorio, móvil y tablet">
               <BloqueDona
                 titulo="Tipo de dispositivo"
                 accent={chartColors[0]}
@@ -261,6 +386,76 @@ export default function DashOrigen() {
                 emptyText="Sin datos de sistema operativo aún."
                 caption="Plataformas desde las que navegan tus visitantes."
               />
+            </GlassCard>
+          </Reveal>
+        </Reveal>
+
+        {/* NUEVO (P1): país real por IP + App vs Web (campos nuevos del doc diario) */}
+        <Reveal as="section" className={`${styles.grid2} ${extra.section}`}>
+          <Reveal>
+            <GlassCard title="País de tus visitantes" subtitle="Geolocalización por IP de la sesión">
+              <div className={extra.blockHead} style={{ color: chartColors[4] }}>
+                <span className={extra.blockDot} aria-hidden="true" />
+                <h4 className={extra.blockTitle}>País (geo confiable por IP)</h4>
+              </div>
+              <CompareBars
+                data={countryItems}
+                nameKey="name"
+                valueKey="value"
+                color={chartColors[4]}
+                max={8}
+                formatValue={(v) => fmtInt(v)}
+                emptyText="Sin datos para este desglose antes del despliegue de la captura."
+              />
+              {countryItems.length > 0 && avisoDesglosesViejos && (
+                <p className={extra.donutCaption}>{avisoDesglosesViejos}</p>
+              )}
+
+              {/* Serie APARTE: aproximación por zona horaria (días históricos sin geo) */}
+              <div className={extra.blockHead} style={{ color: chartColors[6] }}>
+                <span className={extra.blockDot} aria-hidden="true" />
+                <h4 className={extra.blockTitle}>Aproximado por zona horaria (histórico)</h4>
+              </div>
+              <CompareBars
+                data={countryAproxItems}
+                nameKey="name"
+                valueKey="value"
+                color={chartColors[6]}
+                max={8}
+                formatValue={(v) => fmtInt(v)}
+                emptyText="Sin sesiones históricas que aproximar en este rango."
+              />
+              {countryAproxItems.length > 0 && (
+                <p className={extra.donutCaption}>
+                  Serie aparte para sesiones antiguas SIN geolocalización por IP: el país
+                  se aproxima por la zona horaria del navegador (menos fiable, no se mezcla
+                  con la serie confiable).
+                </p>
+              )}
+            </GlassCard>
+          </Reveal>
+
+          <Reveal delay={0.05}>
+            <GlassCard title="App vs Web" subtitle="Sesiones por tipo de cliente">
+              <BloqueDona
+                titulo="Tipo de cliente"
+                accent={chartColors[3]}
+                items={clientTypeItems}
+                emptyText="Sin datos de sesiones para este rango."
+                caption="Sesiones según lleguen desde la app instalada o el navegador."
+              />
+              {deltasClientType?.sinDatos && (
+                <p className={extra.emptyChip} style={{ marginTop: '0.6rem' }}>
+                  Sin datos del periodo anterior ({prevRangeLabel}) para comparar.
+                </p>
+              )}
+              {deltasClientType && !deltasClientType.sinDatos && (
+                <p className={extra.donutCaption}>
+                  Vs. periodo anterior ({prevRangeLabel}): App{' '}
+                  {deltasClientType.app ? deltasClientType.app.delta : 'sin dato'} · Web{' '}
+                  {deltasClientType.web ? deltasClientType.web.delta : 'sin dato'}
+                </p>
+              )}
             </GlassCard>
           </Reveal>
         </Reveal>

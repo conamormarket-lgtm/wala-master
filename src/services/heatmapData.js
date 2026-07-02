@@ -1,18 +1,29 @@
-import { getCollection } from './firebase/firestore';
+import { getCollectionPaginated } from './firebase/firestore';
 
 /**
  * Servicio de datos para el VISOR DE MAPA DE CALOR.
  *
  * Lee la colección 'heatmap_events' (escrita por src/hooks/useHeatmapTracker.js).
- * Cada documento tiene la forma:
+ * Cada documento (LOTE de clics de una visita) tiene la forma:
  *   {
  *     events: [{ x, y, pageX, pageY, screenWidth, screenHeight, path, elementInfo, time }],
- *     timestamp
+ *     timestamp,                                  // serverTimestamp del envío
+ *     // Campos NUEVOS por lote (P1) — los lotes VIEJOS no los tienen:
+ *     sessionId, uid, clientType ('APP'|'WEB'), device ('Mobile'|'Tablet'|'Desktop')
  *   }
  *
- * Aplana todos los arrays .events, normaliza las coordenadas de clic respecto al
- * viewport (screenWidth/screenHeight) para poder pintarlas sobre un canvas de
- * proporción fija, y agrupa por 'path' (página).
+ * Capa 1 — fetchHeatmapBatches({startDateMs,endDateMs}): lectura PAGINADA por
+ * rango de fechas (where sobre 'timestamp' + orderBy 'timestamp' desc + cursor),
+ * NUNCA la colección entera, con caché en memoria por rango (TTL 30s, misma
+ * convención que el lector legacy de analítica): cambiar filtros visuales NO
+ * vuelve a leer Firestore.
+ *
+ * Capa 2 — aggregateHeatmapBatches(docs, filtros): agregación PURA en cliente.
+ * Aplana los arrays .events, normaliza las coordenadas de clic respecto al
+ * viewport (screenWidth/screenHeight), agrupa por 'path' (página) y aplica los
+ * filtros de ORIGEN (clientType), DISPOSITIVO (device — solo lotes nuevos) y el
+ * corte RETROACTIVO por ANCHO DE PANTALLA (screenWidth existe en cada clic
+ * desde siempre, así que sirve también para el histórico).
  *
  * Además convierte el `elementInfo` crudo (ej. '[svg]', '[IMG]', '[path]',
  * '[BUTTON] "Mi cuenta"') en una ETIQUETA LEGIBLE para humanos, y mapea cada
@@ -23,7 +34,61 @@ export const HEATMAP_COLLECTION = 'heatmap_events';
 
 // Leemos solo los últimos N documentos para no traer toda la colección
 // (cada doc agrupa varios clics, así que 300 docs ya son muchísimos clics).
+// Este tope se CONSERVA en la lectura por rango: si el rango tiene más lotes,
+// se recorta a los N más recientes y se avisa (flag `truncated`).
 const DEFAULT_DOCS_LIMIT = 300;
+
+// Tamaño de página del cursor (lecturas paginadas, nunca un getDocs gigante).
+const PAGE_SIZE = 100;
+
+// TTL de la caché en memoria por rango: 30s, la MISMA convención que la caché
+// del lector legacy de analítica. Cambiar filtros visuales (origen/dispositivo/
+// ancho/ruta) dentro de esa ventana no dispara ninguna lectura nueva.
+const CACHE_TTL_MS = 30 * 1000;
+
+// Tope de entradas de la caché (rangos distintos) para no crecer sin límite.
+const CACHE_MAX_ENTRIES = 12;
+
+// Caché en memoria: clave `${startMs}|${endMs}|${maxDocs}` -> { at, value }.
+const batchesCache = new Map();
+
+/* ------------------------------------------------------------------ *
+ *  OPCIONES DE FILTRO (para la UI de DashHeatmap)
+ * ------------------------------------------------------------------ */
+
+/**
+ * Corte RETROACTIVO por ancho de pantalla: usa `screenWidth`, presente en CADA
+ * clic desde el primer día del tracker, por lo que funciona para TODO el
+ * histórico (a diferencia de `device`, que solo existe en lotes nuevos).
+ */
+export const ANCHOS_PANTALLA = [
+  { value: 'todos', label: 'Todos', title: 'Sin corte por ancho de pantalla' },
+  { value: 'movil', label: 'Móvil', title: 'Pantallas de menos de 768 px' },
+  { value: 'tablet', label: 'Tablet', title: 'Pantallas entre 768 y 1024 px' },
+  { value: 'desktop', label: 'Desktop', title: 'Pantallas de más de 1024 px' },
+];
+
+/**
+ * Dispositivo del LOTE (campo nuevo `device`, valores del parser de UA:
+ * 'Mobile'|'Tablet'|'Desktop'). Los lotes VIEJOS no lo tienen: la UI debe
+ * avisarlo honestamente y ofrecer "incluir sin datos".
+ */
+export const DISPOSITIVOS_HEATMAP = [
+  { value: 'todos', label: 'Todos', title: 'Sin filtro de dispositivo' },
+  { value: 'Mobile', label: 'Móvil', title: 'Lotes registrados desde un móvil (solo lotes nuevos)' },
+  { value: 'Tablet', label: 'Tablet', title: 'Lotes registrados desde una tablet (solo lotes nuevos)' },
+  { value: 'Desktop', label: 'Desktop', title: 'Lotes registrados desde un escritorio (solo lotes nuevos)' },
+];
+
+// Clasifica un ancho de pantalla en su bucket ('movil' <768 / 'tablet' 768-1024
+// / 'desktop' >1024). null = ancho inválido/ausente (no clasificable).
+function bucketAncho(screenWidth) {
+  const w = Number(screenWidth);
+  if (!Number.isFinite(w) || w <= 0) return null;
+  if (w < 768) return 'movil';
+  if (w <= 1024) return 'tablet';
+  return 'desktop';
+}
 
 function clamp01(n) {
   if (!Number.isFinite(n)) return null;
@@ -366,12 +431,128 @@ function deriveElementLabel(raw, zoneIndex) {
   return { label: withEmoji(emoji, fallback), key: `tag:${tag}:${(value || '').toLowerCase()}`, generic: false };
 }
 
+/* ------------------------------------------------------------------ *
+ *  CAPA 1 — LECTURA PAGINADA POR RANGO (con caché en memoria)
+ * ------------------------------------------------------------------ */
+
 /**
- * Lee y agrega los clics de heatmap agrupados por página (path).
+ * fetchHeatmapBatches — lee los LOTES de heatmap_events del rango indicado,
+ * paginando con cursor (jamás la colección entera de una vez).
+ *
+ * Índice: el filtro de rango y el orderBy usan el MISMO campo único
+ * ('timestamp'), así que basta el índice automático de campo único de
+ * Firestore — NO requiere índice compuesto.
+ *
+ * Volumen: corta en `maxDocs` (mismo tope de 300 del lector original). Como el
+ * orden es descendente, lo recortado son los lotes MÁS ANTIGUOS: `truncated`
+ * avisa a la UI para mostrar "mostrando los N más recientes".
+ *
+ * Caché: en memoria por (rango, maxDocs) con TTL de 30s → cambiar los filtros
+ * visuales (origen/dispositivo/ancho/ruta) NO relee Firestore.
  *
  * @param {Object} [options]
- * @param {number} [options.docsLimit=300] Máximo de documentos a leer.
- * @returns {Promise<{
+ * @param {number} [options.startDateMs]  Inicio del rango (epoch ms). Opcional.
+ * @param {number} [options.endDateMs]    Fin del rango (epoch ms). Opcional.
+ * @param {number} [options.maxDocs=300]  Tope duro de lotes a leer.
+ * @returns {Promise<{ docs: Array<Object>, truncated: boolean, maxDocs: number, error: (string|null) }>}
+ */
+export async function fetchHeatmapBatches(options = {}) {
+  const startDateMs = Number.isFinite(options.startDateMs) ? options.startDateMs : null;
+  const endDateMs = Number.isFinite(options.endDateMs) ? options.endDateMs : null;
+  const maxDocs = Number.isFinite(options.maxDocs) && options.maxDocs > 0
+    ? Math.round(options.maxDocs)
+    : DEFAULT_DOCS_LIMIT;
+
+  // Caché por rango: mismo rango dentro del TTL → cero lecturas nuevas.
+  const cacheKey = `${startDateMs ?? ''}|${endDateMs ?? ''}|${maxDocs}`;
+  const hit = batchesCache.get(cacheKey);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.value;
+
+  // El SDK convierte Date -> Timestamp de Firestore automáticamente.
+  const filters = [];
+  if (startDateMs != null) filters.push({ field: 'timestamp', operator: '>=', value: new Date(startDateMs) });
+  if (endDateMs != null) filters.push({ field: 'timestamp', operator: '<=', value: new Date(endDateMs) });
+
+  const docs = [];
+  let lastDoc = null;
+  let hasMore = true;
+  let error = null;
+
+  while (hasMore && docs.length < maxDocs) {
+    const pageSize = Math.min(PAGE_SIZE, maxDocs - docs.length);
+    // Secuencial a propósito: cada página necesita el cursor de la anterior.
+    // eslint-disable-next-line no-await-in-loop
+    const page = await getCollectionPaginated(
+      HEATMAP_COLLECTION,
+      filters,
+      { field: 'timestamp', direction: 'desc' },
+      pageSize,
+      lastDoc
+    );
+    if (page.error) {
+      error = page.error;
+      break;
+    }
+    docs.push(...(page.data || []));
+    lastDoc = page.lastDoc || null;
+    hasMore = Boolean(page.hasMore && page.lastDoc);
+  }
+
+  // Aviso de recorte SIN falso positivo (FIX auditoría): `hasMore` de la última
+  // página solo dice que vino llena (length === pageSize), lo que también pasa
+  // cuando había EXACTAMENTE maxDocs lotes y no queda nada más. Sonda BARATA de
+  // 1 doc con el cursor: el aviso solo se muestra si de verdad existe al menos
+  // un lote más antiguo (máx. 1 lectura extra, y solo al alcanzar el tope).
+  let truncated = false;
+  if (!error && hasMore && docs.length >= maxDocs && lastDoc) {
+    const probe = await getCollectionPaginated(
+      HEATMAP_COLLECTION,
+      filters,
+      { field: 'timestamp', direction: 'desc' },
+      1,
+      lastDoc
+    );
+    // Si la sonda falla, preferimos avisar de más (posible recorte) que ocultar
+    // un recorte real; la lectura principal ya terminó sin error.
+    truncated = probe.error ? true : (probe.data || []).length > 0;
+  }
+  const value = { docs, truncated, maxDocs, error };
+
+  // Solo cacheamos lecturas sin error (un error transitorio no debe "pegarse").
+  if (!error) {
+    if (batchesCache.size >= CACHE_MAX_ENTRIES) {
+      // Descarta la entrada más vieja (los Map iteran en orden de inserción).
+      const oldestKey = batchesCache.keys().next().value;
+      batchesCache.delete(oldestKey);
+    }
+    batchesCache.set(cacheKey, { at: Date.now(), value });
+  }
+  return value;
+}
+
+/* ------------------------------------------------------------------ *
+ *  CAPA 2 — AGREGACIÓN PURA CON FILTROS (sin lecturas)
+ * ------------------------------------------------------------------ */
+
+/**
+ * aggregateHeatmapBatches — agrega los lotes YA LEÍDOS aplicando los filtros.
+ * Función PURA (sin red): se puede re-ejecutar al vuelo con cada cambio de
+ * filtro visual sin costo de lecturas.
+ *
+ * Filtros por LOTE (solo lotes nuevos traen los campos):
+ *   - origen:      'todos'|'app'|'web'  vs. doc.clientType ('APP'|'WEB')
+ *   - dispositivo: 'todos'|'Mobile'|'Tablet'|'Desktop' vs. doc.device
+ *   - incluirSinMeta: si true, los lotes VIEJOS (sin clientType/device) se
+ *     incluyen aunque haya filtro de origen/dispositivo activo (la UI lo
+ *     ofrece junto al aviso honesto); si false (default), quedan fuera.
+ *
+ * Filtro por CLIC (retroactivo, funciona para todo el histórico):
+ *   - ancho: 'todos'|'movil'|'tablet'|'desktop' según ev.screenWidth
+ *     (<768 / 768–1024 / >1024).
+ *
+ * @param {Array<Object>} docs   Lotes crudos de fetchHeatmapBatches.
+ * @param {Object} [filtros]
+ * @returns {{
  *   paths: string[],
  *   pageNames: Record<string,string>,
  *   pointsByPath: Record<string, Array<{xNorm:number,yNorm:number,weight:number}>>,
@@ -380,18 +561,17 @@ function deriveElementLabel(raw, zoneIndex) {
  *   topElementsByPath: Record<string, Array<{label:string,count:number,generic:boolean}>>,
  *   totalClicks: number,
  *   totalDocs: number,
- *   error: (string|null)
- * }>}
+ *   batchesUsados: number,
+ *   batchesExcluidos: number,
+ *   batchesSinMeta: number,
+ *   clicksSinMeta: number
+ * }}
  */
-export async function getHeatmapByPage(options = {}) {
-  const docsLimit = Number.isFinite(options.docsLimit) ? options.docsLimit : DEFAULT_DOCS_LIMIT;
-
-  const { data, error } = await getCollection(
-    HEATMAP_COLLECTION,
-    [],
-    { field: 'timestamp', direction: 'desc' },
-    docsLimit
-  );
+export function aggregateHeatmapBatches(docs = [], filtros = {}) {
+  const origen = filtros.origen || 'todos';
+  const dispositivo = filtros.dispositivo || 'todos';
+  const ancho = filtros.ancho || 'todos';
+  const incluirSinMeta = Boolean(filtros.incluirSinMeta);
 
   // pointsByPath: path -> [{xNorm,yNorm,weight}]
   const pointsByPath = {};
@@ -405,11 +585,57 @@ export async function getHeatmapByPage(options = {}) {
   const zoneAssignByPath = {};
 
   let totalClicks = 0;
-  const docs = data || [];
+  // Métricas de HONESTIDAD: cuántos lotes del rango NO traen origen/dispositivo
+  // (anteriores al despliegue de los campos nuevos) y cuántos clics contienen.
+  let batchesSinMeta = 0;
+  let clicksSinMeta = 0;
+  let batchesUsados = 0;
+  let batchesExcluidos = 0;
 
-  docs.forEach((docData) => {
+  const lista = Array.isArray(docs) ? docs : [];
+
+  lista.forEach((docData) => {
     const events = Array.isArray(docData?.events) ? docData.events : [];
+    const clientType = typeof docData?.clientType === 'string'
+      ? docData.clientType.trim().toUpperCase()
+      : null;
+    const device = typeof docData?.device === 'string' ? docData.device.trim() : null;
+
+    // Lote VIEJO = sin ninguno de los campos nuevos (se escriben juntos).
+    if (clientType == null && device == null) {
+      batchesSinMeta += 1;
+      clicksSinMeta += events.length;
+    }
+
+    // -- Filtros a nivel de LOTE (origen / dispositivo) --
+    if (origen !== 'todos') {
+      if (clientType == null) {
+        if (!incluirSinMeta) {
+          batchesExcluidos += 1;
+          return;
+        }
+      } else if (clientType !== origen.toUpperCase()) {
+        batchesExcluidos += 1;
+        return;
+      }
+    }
+    if (dispositivo !== 'todos') {
+      if (device == null) {
+        if (!incluirSinMeta) {
+          batchesExcluidos += 1;
+          return;
+        }
+      } else if (device !== dispositivo) {
+        batchesExcluidos += 1;
+        return;
+      }
+    }
+    batchesUsados += 1;
+
     events.forEach((ev) => {
+      // -- Filtro a nivel de CLIC: corte retroactivo por ancho de pantalla --
+      if (ancho !== 'todos' && bucketAncho(ev?.screenWidth) !== ancho) return;
+
       const path = (ev && typeof ev.path === 'string' && ev.path.trim()) ? ev.path : 'unknown';
 
       const point = normalizePoint(ev);
@@ -492,7 +718,41 @@ export async function getHeatmapByPage(options = {}) {
     maxClicks,
     topElementsByPath,
     totalClicks,
-    totalDocs: docs.length,
+    totalDocs: lista.length,
+    batchesUsados,
+    batchesExcluidos,
+    batchesSinMeta,
+    clicksSinMeta,
+  };
+}
+
+/**
+ * getHeatmapByPage — API RETROCOMPATIBLE (lee + agrega en un paso).
+ *
+ * Sin opciones se comporta como siempre: últimos 300 lotes, sin filtros (modo
+ * autónomo de HeatmapViewer). Acepta además rango y filtros para quien prefiera
+ * el paso único; DashHeatmap usa las dos capas por separado para re-filtrar
+ * sin releer.
+ *
+ * @param {Object} [options]
+ * @param {number} [options.docsLimit=300]  Máximo de lotes a leer.
+ * @param {number} [options.startDateMs]    Inicio del rango (epoch ms).
+ * @param {number} [options.endDateMs]      Fin del rango (epoch ms).
+ * @param {Object} [options.filtros]        Filtros de aggregateHeatmapBatches.
+ * @returns {Promise<Object>} La salida de aggregateHeatmapBatches más
+ *   { truncated, error }.
+ */
+export async function getHeatmapByPage(options = {}) {
+  const docsLimit = Number.isFinite(options.docsLimit) ? options.docsLimit : DEFAULT_DOCS_LIMIT;
+  const { docs, truncated, error } = await fetchHeatmapBatches({
+    startDateMs: options.startDateMs,
+    endDateMs: options.endDateMs,
+    maxDocs: docsLimit,
+  });
+  const agregado = aggregateHeatmapBatches(docs, options.filtros || {});
+  return {
+    ...agregado,
+    truncated,
     error: error || null,
   };
 }

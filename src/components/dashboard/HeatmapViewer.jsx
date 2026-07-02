@@ -7,10 +7,18 @@ import styles from './HeatmapViewer.module.css';
 /**
  * VISOR DE MAPA DE CALOR (HeatmapViewer)
  *
- * Lee los clics agregados desde services/heatmapData.getHeatmapByPage() y deja:
+ * DOS MODOS de datos (regla: el render NO duplica lógica de filtrado):
+ *  - CONTROLADO (DashHeatmap): recibe por props `data` (la salida de
+ *    aggregateHeatmapBatches, YA filtrada por rango/origen/dispositivo/ancho)
+ *    más `loading`/`error`. Este componente solo PINTA.
+ *  - AUTÓNOMO (retrocompatible): sin props hace su propia lectura única con
+ *    getHeatmapByPage() al montar, como siempre.
+ *
+ * La UI ofrece:
  *  1) SELECTOR DE PÁGINAS como MINI-TARJETAS: cada una muestra el nombre legible
  *     de la página, su número grande de clics (AnimatedNumber) y una barra de
  *     intensidad (gradiente violeta proporcional al máximo). La activa se resalta.
+ *     (Este selector ES el filtro de RUTA: agrupa y elige por `path`.)
  *  2) PREVIEW REAL de la página dentro de un <iframe src={path}> (misma-origen,
  *     wala.pe) con el canvas del heatmap superpuesto. La preview es ROBUSTA:
  *     timeout con reintentos y, si el iframe envía postMessage
@@ -21,6 +29,18 @@ import styles from './HeatmapViewer.module.css';
  *
  * Estética liquid-glass del design system. Sin props requeridas.
  */
+
+// Forma vacía y estable de los datos (evita optional chaining por todo el JSX).
+const EMPTY_HEATMAP_DATA = {
+  paths: [],
+  pageNames: {},
+  pointsByPath: {},
+  clicksByPath: {},
+  maxClicks: 0,
+  topElementsByPath: {},
+  totalClicks: 0,
+  totalDocs: 0,
+};
 
 // Proporción del lienzo de respaldo (16:10, similar a un viewport de escritorio).
 const FALLBACK_W = 960;
@@ -148,20 +168,34 @@ function initialsOf(name) {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-export default function HeatmapViewer() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [data, setData] = useState({
-    paths: [],
-    pageNames: {},
-    pointsByPath: {},
-    clicksByPath: {},
-    maxClicks: 0,
-    topElementsByPath: {},
-    totalClicks: 0,
-    totalDocs: 0,
-  });
+/**
+ * @param {Object}  props
+ * @param {Object}  [props.data]         Modo CONTROLADO: salida de
+ *                                       aggregateHeatmapBatches YA filtrada.
+ *                                       Si llega, el visor NO lee Firestore.
+ * @param {boolean} [props.loading]      Estado de carga externo (modo controlado).
+ * @param {string}  [props.error]        Error externo (modo controlado).
+ * @param {string}  [props.emptyMessage] Mensaje honesto para el estado vacío
+ *                                       (p. ej. "sin clics para estos filtros").
+ */
+export default function HeatmapViewer({
+  data: dataProp = null,
+  loading: loadingProp = false,
+  error: errorProp = null,
+  emptyMessage = null,
+}) {
+  // Modo controlado = los datos llegan filtrados desde fuera (DashHeatmap).
+  const controlled = dataProp != null;
+
+  const [internalLoading, setInternalLoading] = useState(!controlled);
+  const [internalError, setInternalError] = useState(null);
+  const [internalData, setInternalData] = useState(EMPTY_HEATMAP_DATA);
   const [selectedPath, setSelectedPath] = useState(null);
+
+  // Resolución única de la fuente de datos según el modo.
+  const data = controlled ? { ...EMPTY_HEATMAP_DATA, ...dataProp } : internalData;
+  const loading = controlled ? Boolean(loadingProp) : internalLoading;
+  const error = controlled ? (errorProp || null) : internalError;
   // Estado de la preview con iframe: 'loading' | 'ready' | 'failed'
   const [iframeState, setIframeState] = useState('loading');
   // Nº de intento actual (también fuerza el remount del iframe al reintentar).
@@ -174,27 +208,43 @@ export default function HeatmapViewer() {
   const iframeTimerRef = useRef(null);
   const retriesRef = useRef(0);
 
+  // Lectura propia SOLO en modo autónomo (retrocompatible). En modo controlado
+  // los datos llegan ya filtrados por props y aquí no se lee nada.
   useEffect(() => {
+    if (controlled) return undefined;
     let mounted = true;
     (async () => {
-      setLoading(true);
+      setInternalLoading(true);
       try {
         const result = await getHeatmapByPage();
         if (!mounted) return;
-        setData(result);
-        setError(result.error || null);
-        setSelectedPath(result.paths?.[0] || null);
+        setInternalData(result);
+        setInternalError(result.error || null);
       } catch (e) {
         if (!mounted) return;
-        setError(e?.message || 'Error cargando el mapa de calor');
+        setInternalError(e?.message || 'Error cargando el mapa de calor');
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setInternalLoading(false);
       }
     })();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [controlled]);
+
+  // Mantiene la RUTA seleccionada coherente con los datos vigentes (ambos
+  // modos): si la página elegida desaparece al cambiar filtros/rango, cae a la
+  // primera disponible; si sigue existiendo, se respeta la elección del admin.
+  useEffect(() => {
+    const paths = data.paths || [];
+    if (paths.length === 0) {
+      if (selectedPath !== null) setSelectedPath(null);
+      return;
+    }
+    if (!selectedPath || !paths.includes(selectedPath)) {
+      setSelectedPath(paths[0]);
+    }
+  }, [data.paths, selectedPath]);
 
   const points = useMemo(
     () => (selectedPath ? data.pointsByPath[selectedPath] || [] : []),
@@ -384,8 +434,10 @@ export default function HeatmapViewer() {
       {!loading && !error && data.totalClicks === 0 && (
         <motion.div className={styles.stateBox} variants={itemVariants}>
           <span className={styles.emptyIcon} aria-hidden="true">🗺️</span>
-          Aún sin datos de heatmap. En cuanto tus visitantes empiecen a interactuar,
-          verás aquí dónde hacen clic.
+          {/* Mensaje honesto: el padre puede explicar si el vacío se debe a los
+              filtros/rango elegidos (y no a la falta total de datos). */}
+          {emptyMessage
+            || 'Aún sin datos de heatmap. En cuanto tus visitantes empiecen a interactuar, verás aquí dónde hacen clic.'}
         </motion.div>
       )}
 

@@ -170,3 +170,18 @@
     max-width: 9rem;
   }
 }
+
+/* --------------------- aviso del filtro de origen APP/WEB --------------------- */
+/* Chip honesto bajo el header cuando origen !== 'todos' (mismo patrón visual
+ * que el emptyChip de DashOrigen.extra.module.css: tokens glass + borde a trazos). */
+
+.avisoChip {
+  margin: 0 0 0.85rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radio-md, 14px);
+  background: var(--glass-fill, rgba(255, 255, 255, 0.4));
+  border: 1px dashed var(--glass-stroke, rgba(109, 40, 217, 0.18));
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--gris-600, #4b5563);
+}

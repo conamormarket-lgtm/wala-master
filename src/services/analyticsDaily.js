@@ -153,6 +153,44 @@ function accCountMap(map, list, nameKey = 'name', valueKey = 'count') {
 /* Agregación EN VIVO del día en curso (mismas reglas que el doc diario)        */
 /* -------------------------------------------------------------------------- */
 
+// ── Top identidades del día EN VIVO (espejo de aggregateTopIdentities de la CF,
+// functions/analyticsDaily.js) ────────────────────────────────────────────────
+// Clave = uid || anonymousId; acumula page_views y dwellMs por identidad y
+// devuelve el top-25 por views (desempate por dwellMs) con el MISMO shape que
+// la CF escribe en el doc diario: { clave, nombre, views, dwellMs, logueado }.
+// Así el "Top visitantes" del rango incluye también el día en curso.
+function buildTopIdentitiesFromEvents(events = []) {
+  const T = ANALYTICS_EVENT_TYPES;
+  const porIdentidad = new Map();
+  events.forEach((ev) => {
+    if (!ev) return;
+    const clave = ev.uid || ev.anonymousId;
+    if (!clave) return;
+    if (!porIdentidad.has(clave)) {
+      porIdentidad.set(clave, {
+        clave, displayName: null, email: null, views: 0, dwellMs: 0, logueado: false,
+      });
+    }
+    const ent = porIdentidad.get(clave);
+    if (ev.type === T.PAGE_VIEW) ent.views += 1;
+    if (ev.type === T.ROUTE_DWELL) ent.dwellMs += safeNumber(ev.dwellMs);
+    // Se queda con el primer displayName/email no vacío visto en el día.
+    if (ev.displayName && !ent.displayName) ent.displayName = ev.displayName;
+    if (ev.email && !ent.email) ent.email = ev.email;
+    if (ev.uid) ent.logueado = true;
+  });
+  return [...porIdentidad.values()]
+    .sort((a, b) => (b.views - a.views) || (b.dwellMs - a.dwellMs))
+    .slice(0, COMBINE_TOP_N)
+    .map((ent) => ({
+      clave: ent.clave,
+      nombre: ent.displayName || ent.email || 'anónimo',
+      views: ent.views,
+      dwellMs: ent.dwellMs,
+      logueado: ent.logueado,
+    }));
+}
+
 // Construye, a partir de los eventos crudos de HOY, un "doc diario" parcial con
 // la MISMA forma que produce la CF, para poder combinarlo con los días cerrados.
 // Replica la lógica de adminAnalytics.js (segmentación por clientType WEB/APP).
@@ -392,6 +430,9 @@ function buildTodayDailyDoc(events = []) {
     },
     // Forma CRUDA igual a la CF; combineDailyDocs la promedia correctamente.
     orderTracking: orderTrackingRaw,
+    // Top identidades del día EN VIVO (mismo shape que escribe la CF): permite
+    // que el "Top visitantes" del rango incluya HOY además de los días cerrados.
+    topIdentities: buildTopIdentitiesFromEvents(events),
     // sessions/devices/utm/geography: el día en vivo NO los calcula (requieren leer
     // sesiones); el dashboard los toma de los días cerrados. Quedan en cero hoy.
     eventCount: events.length,
@@ -512,11 +553,25 @@ function combineDailyDocs(docs, dayList) {
   //     segmento APP/WEB e identidades desglosadas. Docs viejos sin estos campos
   //     NO aportan nada y el resultado queda vacío ("sin datos" en la UI). ---
   const byCountryNew = new Map();     // code -> { code, name, count }
+  const byCountryAproxNew = new Map();// code -> { code, name, count } (aprox. por timezone, días históricos)
   const byDeviceNew = new Map();      // name -> count (campo nuevo del doc)
   const byBrowserNew = new Map();
   const byOSNew = new Map();
   const byClientTypeNew = new Map();  // 'APP'|'WEB' -> count
   const identitiesNew = {};           // subclave (logged/anonymous/…) -> TAW
+  const topIdentitiesAcc = new Map(); // clave -> { clave, nombre, views, dwellMs, logueado }
+
+  // Cobertura de los campos NUEVOS dentro del rango, para que la UI pueda dar
+  // el aviso HONESTO ("sin datos para este desglose antes del <fecha>") en vez
+  // de ceros engañosos. Solo cuenta días CERRADOS (docs de la CF): el día en
+  // vivo no trae desgloses de sesión (byCountry/byDevice…) por diseño.
+  const cobertura = {
+    closedDocs: 0,             // días cerrados combinados en el rango
+    docsWithBreakdowns: 0,     // días con los desgloses nuevos (byCountry/byDevice/…)
+    docsWithTopIdentities: 0,  // días con topIdentities
+    firstBreakdownDay: null,   // primera clave 'YYYY-MM-DD' con desgloses nuevos
+    firstTopIdentitiesDay: null,
+  };
 
   // --- uso de funciones ---
   const feature = { editor: 0, minijuegos: 0, misiones: 0, wishlist: 0, busqueda: 0 };
@@ -592,6 +647,9 @@ function combineDailyDocs(docs, dayList) {
     // País real por IP de las sesiones del día (nuevo en la CF; puede vivir en
     // la raíz del doc o bajo geography según la versión que lo escribió).
     accCountryTolerant(byCountryNew, doc.byCountry ?? doc.geography?.byCountry);
+    // País APROXIMADO por zona horaria: serie APARTE que la CF emite SOLO para
+    // sesiones históricas sin geo por IP. No se mezcla con byCountry (confiable).
+    accCountryTolerant(byCountryAproxNew, doc.byCountryAprox ?? doc.geography?.byCountryAprox);
     // Dispositivo/navegador/SO: preferimos el campo NUEVO (derivado de los
     // campos guardados en la sesión); si el doc es viejo, caemos al desglose
     // existente devices.* (parseo de UA), para no dejar el rango "sin datos".
@@ -611,6 +669,27 @@ function combineDailyDocs(docs, dayList) {
     // Identidades desglosadas (identities / identitiesLogged / …): suma diaria
     // (aproximación etiquetada, igual que activeIdentities).
     accIdentitiesTolerant(identitiesNew, doc);
+    // Top identidades: recombina el top-25 diario sumando views/dwell por clave
+    // (docs viejos sin el campo = no-op). El día en vivo también lo aporta.
+    accTopIdentities(topIdentitiesAcc, doc.topIdentities);
+
+    // Cobertura de los campos NUEVOS (solo días cerrados, para avisos honestos).
+    if (!doc.__raw) {
+      cobertura.closedDocs += 1;
+      const diaDoc = doc.day || doc.__day || null;
+      if (doc.byCountry != null || doc.byDevice != null || doc.byClientType != null) {
+        cobertura.docsWithBreakdowns += 1;
+        if (diaDoc && (!cobertura.firstBreakdownDay || diaDoc < cobertura.firstBreakdownDay)) {
+          cobertura.firstBreakdownDay = diaDoc;
+        }
+      }
+      if (Array.isArray(doc.topIdentities)) {
+        cobertura.docsWithTopIdentities += 1;
+        if (diaDoc && (!cobertura.firstTopIdentitiesDay || diaDoc < cobertura.firstTopIdentitiesDay)) {
+          cobertura.firstTopIdentitiesDay = diaDoc;
+        }
+      }
+    }
 
     // Uso de funciones.
     const fu2 = doc.featureUsage || {};
@@ -770,6 +849,9 @@ function combineDailyDocs(docs, dayList) {
     // ── Campos NUEVOS expuestos (P1; la UI de filtros llega en P2) ──────────
     // Forma estable para las páginas: arrays ordenados desc; [] = "sin datos".
     byCountry: [...byCountryNew.values()].sort((a, b) => b.count - a.count),
+    // País APROXIMADO por zona horaria (serie APARTE de byCountry): solo días
+    // históricos sin geo por IP; [] = "sin datos" o rango totalmente geolocalizado.
+    byCountryAprox: [...byCountryAproxNew.values()].sort((a, b) => b.count - a.count),
     byDevice: mapToSorted(byDeviceNew),
     byBrowser: mapToSorted(byBrowserNew),
     byOS: mapToSorted(byOSNew),
@@ -778,6 +860,14 @@ function combineDailyDocs(docs, dayList) {
     funnel: { events: funnelEvents, users: funnelUsers },
     // Identidades desglosadas: {} = "sin datos" (docs viejos no las traen).
     identities: identitiesNew,
+    // Top identidades del rango: recombinado de los top-25 DIARIOS (máx. 25).
+    // Honestidad: cada doc guarda solo su top-25 → los totales del rango son un
+    // MÍNIMO (una identidad fuera del top de un día no aporta ese día).
+    topIdentities: [...topIdentitiesAcc.values()]
+      .sort((a, b) => (b.views - a.views) || (b.dwellMs - a.dwellMs))
+      .slice(0, COMBINE_TOP_N),
+    // Cobertura de los campos nuevos en el rango (avisos honestos en la UI).
+    extendedCoverage: cobertura,
     estimatedSummary: null,
     eventsForCharts,
     // Bloque realtime: lo añade el consumidor desde getGlobalAnalytics (lectura
@@ -880,6 +970,29 @@ function accCountryTolerant(map, value) {
       bump(code, v.name ?? v.countryName ?? null, v.count ?? v.total ?? v.value);
     } else {
       bump(code, null, v);
+    }
+  });
+}
+
+// Acumula topIdentities del doc diario en un Map por clave de identidad:
+// suma views/dwellMs, hace OR de `logueado` y conserva el primer nombre "real"
+// (distinto de 'anónimo') visto en el rango — si la persona se logueó un solo
+// día, el rango completo muestra su nombre. Docs viejos sin el campo = no-op.
+function accTopIdentities(map, rows) {
+  if (!Array.isArray(rows)) return;
+  rows.forEach((row) => {
+    if (!row || typeof row !== 'object' || row.clave == null) return;
+    if (!map.has(row.clave)) {
+      map.set(row.clave, { clave: row.clave, nombre: null, views: 0, dwellMs: 0, logueado: false });
+    }
+    const ent = map.get(row.clave);
+    ent.views += safeNumber(row.views);
+    ent.dwellMs += safeNumber(row.dwellMs);
+    if (row.logueado) ent.logueado = true;
+    if (row.nombre && row.nombre !== 'anónimo') {
+      if (!ent.nombre || ent.nombre === 'anónimo') ent.nombre = row.nombre;
+    } else if (!ent.nombre && row.nombre) {
+      ent.nombre = row.nombre;
     }
   });
 }
