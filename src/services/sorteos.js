@@ -284,3 +284,119 @@ export const comprarTicketSorteo = async ({ sorteoId, cantidad }) => {
     return { data: null, error: e?.message || 'No se pudo crear la intención de compra.' };
   }
 };
+
+// ── WRAPPERS DE CHANCES EXTRA (contrato Agente A, Build 3) ───────────────────
+// Chances por acciones virales. La CF suma la chance server-side (el cliente
+// NUNCA suma sus propias chances directamente) y es idempotente por lock, así
+// que llamar dos veces no acredita de más.
+
+/**
+ * Wrapper de la callable `sumarChanceCompartir` (Agente A). Suma +1 chance por
+ * compartir el sorteo, UNA sola vez por sorteo. La CF es idempotente: si ya se
+ * reclamó, devuelve { ok:true, yaReclamado:true } sin acreditar de nuevo.
+ *
+ * @param {string} sorteoId
+ * @returns {Promise<{ data: { ok:boolean, yaReclamado:boolean }|null, error: string|null }>}
+ */
+export const sumarChanceCompartir = async (sorteoId) => {
+  if (!sorteoId) return { data: null, error: 'Falta el id del sorteo' };
+  try {
+    const callable = httpsCallable(getFunctions(), 'sumarChanceCompartir');
+    const res = await callable({ sorteoId });
+    return { data: res.data, error: null };
+  } catch (e) {
+    return { data: null, error: e?.message || 'No se pudo sumar la chance por compartir.' };
+  }
+};
+
+/**
+ * Wrapper de la callable `claimRaffleReferralSecure` (Agente A). El REFERIDO
+ * (quien entra con ?ref=CODE) acredita +1 chance al DUEÑO del refCode. La CF es
+ * idempotente por lock, así que se puede llamar sin miedo a duplicar.
+ *
+ * @param {string} sorteoId
+ * @param {string} refCode - código "KS-XXXXXX" del referente
+ * @returns {Promise<{ data: { ok:boolean, acreditado:boolean }|null, error: string|null }>}
+ */
+export const claimRaffleReferral = async (sorteoId, refCode) => {
+  if (!sorteoId || !refCode) return { data: null, error: 'Faltan datos del referido' };
+  try {
+    const callable = httpsCallable(getFunctions(), 'claimRaffleReferralSecure');
+    const res = await callable({ sorteoId, refCode });
+    return { data: res.data, error: null };
+  } catch (e) {
+    return { data: null, error: e?.message || 'No se pudo acreditar el referido.' };
+  }
+};
+
+// ── WRAPPERS ADMIN: GANADORES + CHANCES (contrato Agente A, Build 3) ──────────
+// El sorteo real (RNG + elegibilidad) vive 100% server-side. El cliente admin
+// SOLO dispara la llamada y muestra el resultado + la evidencia auditable; NUNCA
+// decide ganadores ni recalcula chances por su cuenta.
+
+/**
+ * Wrapper de la callable `decidirGanadoresSorteo` (Agente A). SOLO admin.
+ *
+ * MODO CIERRE: sin `excluirUids` → cierra el sorteo y fija los ganadores.
+ * MODO RE-SORTEO: con `excluirUids` (uids de ganadores previos) → vuelve a
+ * sortear SIN re-cerrar, excluyendo a esos uids del pool.
+ *
+ * Respuesta OK del servidor:
+ *   { ok:true, drawId, ganadores:[{uid,nombre,correo,telefono,pesoUsado}],
+ *     totalElegibles, seed (hex de 64 chars) }.
+ * El hash del pool y demás evidencia viajan dentro de `res.data` y se muestran
+ * tal cual como prueba de que el sorteo es verificable server-side.
+ *
+ * @param {{ sorteoId:string, numGanadores?:number, excluirUids?:string[] }} params
+ * @returns {Promise<{ data: object|null, error: string|null }>}
+ */
+export const decidirGanadoresSorteo = async ({ sorteoId, numGanadores, excluirUids }) => {
+  if (!sorteoId) return { data: null, error: 'Falta el id del sorteo' };
+  try {
+    const callable = httpsCallable(getFunctions(), 'decidirGanadoresSorteo');
+    const payload = { sorteoId };
+    // Los opcionales solo se envían con valor; el servidor aplica sus defaults
+    // (numGanadores = sorteo.numGanadores || 1) cuando se omiten.
+    if (Number.isFinite(Number(numGanadores)) && Number(numGanadores) > 0) {
+      payload.numGanadores = Math.floor(Number(numGanadores));
+    }
+    // La PRESENCIA de excluirUids activa el MODO RE-SORTEO en el backend.
+    if (Array.isArray(excluirUids) && excluirUids.length > 0) {
+      payload.excluirUids = excluirUids;
+    }
+    const res = await callable(payload);
+    return { data: res.data, error: null };
+  } catch (e) {
+    return { data: null, error: e?.message || 'No se pudo decidir los ganadores.' };
+  }
+};
+
+/**
+ * Wrapper de la callable `grantRaffleChancesSecure` (Agente A). SOLO admin.
+ * Ajusta las chances de un participante identificado por correo, teléfono o DNI
+ * (al menos UNO requerido). `chances` es un entero != 0 y PUEDE ser NEGATIVO
+ * (para restar). El servidor recalcula chancesTotal de forma segura.
+ *
+ * Respuesta OK del servidor: { ok:true, uid, chancesTotal }.
+ * NO toca pagos ni montos: solo mueve chances.
+ *
+ * @param {{ sorteoId:string, correo?:string, telefono?:string, dni?:string, chances:number, motivo?:string }} params
+ * @returns {Promise<{ data: object|null, error: string|null }>}
+ */
+export const grantRaffleChancesSecure = async ({ sorteoId, correo, telefono, dni, chances, motivo }) => {
+  if (!sorteoId) return { data: null, error: 'Falta el id del sorteo' };
+  try {
+    const callable = httpsCallable(getFunctions(), 'grantRaffleChancesSecure');
+    // chances se envía como entero (permite negativo); Math.trunc no redondea.
+    const payload = { sorteoId, chances: Math.trunc(Number(chances) || 0) };
+    // Solo se envían los identificadores presentes (correo / teléfono / DNI).
+    if (correo) payload.correo = correo;
+    if (telefono) payload.telefono = telefono;
+    if (dni) payload.dni = dni;
+    if (motivo) payload.motivo = motivo;
+    const res = await callable(payload);
+    return { data: res.data, error: null };
+  } catch (e) {
+    return { data: null, error: e?.message || 'No se pudieron ajustar las chances.' };
+  }
+};

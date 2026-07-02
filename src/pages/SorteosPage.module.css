@@ -170,24 +170,8 @@
   color: var(--color-text);
 }
 
-/* --- Ganadores ----------------------------------------------------------- */
-.ganadores {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  text-align: center;
-}
-
-.ganadoresList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  color: var(--color-text);
-  font-weight: 600;
-}
+/* Ganadores: los estilos viven ahora en la sección "REVELACIÓN del ganador"
+   (Build 3) más abajo, con el realce dorado y el banner "¡GANASTE!". */
 
 /* --- Zona de acción ------------------------------------------------------ */
 .accion {
@@ -382,6 +366,167 @@
 
 .linkCancelar:hover {
   color: var(--color-text);
+}
+
+/* --- Chances virales: compartir + referido (Build 3) --------------------- */
+.viral {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.viralBloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.viralTexto {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  font-size: 0.95rem;
+}
+
+.viralTexto strong {
+  color: var(--primary-color);
+}
+
+/* Fila del enlace de referido: input read-only + botón copiar. */
+.refRow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.refInput {
+  flex: 1 1 auto;
+  min-width: 0; /* permite que el input encoja en móvil */
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-hover);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.refInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* --- REVELACIÓN del ganador (Build 3) ------------------------------------ */
+.ganadores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+/* Borde/realce dorado cuando el usuario actual ganó. */
+.ganadoresYoGane {
+  border: 2px solid var(--amarillo-oro, #f59e0b);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--amarillo-oro, #f59e0b) 40%, transparent);
+}
+
+.ganadoresTitulo {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--color-text);
+}
+
+/* Banner destacado "¡GANASTE!" para el usuario que ganó. */
+.yoGaneBanner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--amarillo-oro, #f59e0b) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amarillo-oro, #f59e0b) 45%, transparent);
+  color: var(--color-text);
+  font-size: 1.15rem;
+  animation: yoGanePulse 1.4s ease-in-out infinite;
+}
+
+.yoGaneEmoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.yoGaneSub {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+@keyframes yoGanePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yoGaneBanner { animation: none; }
+}
+
+.ganadoresList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+/* Resalta la fila del propio usuario dentro de la lista de ganadores. */
+.ganadorYo {
+  color: var(--primary-color);
+  font-weight: 900;
+}
+
+.ganadorTuBadge {
+  color: var(--amarillo-oro, #f59e0b);
+}
+
+/* --- Confeti (CSS puro) -------------------------------------------------- */
+/* Capa fija sobre toda la pantalla; no bloquea toques (pointer-events:none). */
+.confeti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.confetiPieza {
+  position: absolute;
+  top: -12px;
+  border-radius: 2px;
+  will-change: transform, opacity;
+  animation-name: confetiCae;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+
+@keyframes confetiCae {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(720deg);
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confeti { display: none; }
 }
 
 /* --- Tablet / desktop ---------------------------------------------------- */

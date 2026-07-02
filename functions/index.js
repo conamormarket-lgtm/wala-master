@@ -4035,3 +4035,588 @@ exports.capturePaypalTicketSorteoSecure = functions.https.onCall(async (data, co
     ticketId: String(ticketId),
   };
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// SORTEOS — CIERRE / DECISIÓN DE GANADORES (server-authoritative, AUDITABLE)
+// El RNG y la elegibilidad viven SOLO aquí. El cliente NUNCA decide ganadores ni
+// suma sus propias chances directamente. Toda evidencia (semilla + hash del pool +
+// ganadores) queda guardada en sorteos/{id}/sorteos_realizados/{drawId} para poder
+// reproducir y auditar el sorteo. No se tocan pagos ni montos (regla dura #6).
+// ════════════════════════════════════════════════════════════════════════════
+
+// Tamaño de página al leer TODA la subcolección /participantes server-side.
+const SORTEO_PARTICIPANTES_PAGE_SIZE = 300;
+
+// ── Lee TODOS los participantes de un sorteo paginando (patrón fetchAllPaged) ──
+// Ordena por __name__ (el id del doc = uid) y avanza con startAfter(doc). No carga
+// toda la colección de golpe. Devuelve un array plano de { uid, ...data }.
+async function leerTodosLosParticipantes(participantesCol) {
+  const out = [];
+  const base = participantesCol
+    .orderBy(admin.firestore.FieldPath.documentId())
+    .limit(SORTEO_PARTICIPANTES_PAGE_SIZE);
+  let cursor = null;
+  // Bucle de paginación: se detiene cuando una página devuelve < PAGE_SIZE docs.
+  for (;;) {
+    let q = base;
+    if (cursor) q = q.startAfter(cursor);
+    const snap = await q.get();
+    if (snap.empty) break;
+    snap.docs.forEach((doc) => out.push({ uid: doc.id, ...doc.data() }));
+    if (snap.size < SORTEO_PARTICIPANTES_PAGE_SIZE) break;
+    cursor = snap.docs[snap.docs.length - 1];
+  }
+  return out;
+}
+
+// ── DRBG determinista sembrado con SHA-256 (azar SEGURO y reproducible) ────────
+// A partir de una semilla hex (crypto.randomBytes) produce enteros deterministas.
+// Cada llamada mezcla un contador monótono en el hash, de modo que la secuencia es
+// reproducible a partir de la semilla (auditable) pero imposible de predecir sin
+// ella. Se usa rechazo de módulo para no sesgar el rango [0, max).
+function crearDrbgSha256(seed) {
+  let contador = 0;
+  // Devuelve 6 bytes (48 bits) de entropía por paso, derivados de sha256(seed|contador).
+  function siguienteEntero48() {
+    const h = crypto.createHash("sha256").update(`${seed}|${contador}`).digest();
+    contador += 1;
+    // Toma 6 bytes → entero seguro (< 2^48, dentro de Number.MAX_SAFE_INTEGER).
+    return h.readUIntBE(0, 6);
+  }
+  // Entero uniforme en [0, max) por rechazo de módulo (evita sesgo de baja magnitud).
+  return function nextIntBelow(max) {
+    const m = Math.floor(max);
+    if (!Number.isInteger(m) || m <= 0) return 0;
+    const RANGE = 281474976710656; // 2^48
+    const limite = RANGE - (RANGE % m); // mayor múltiplo de m que cabe en 2^48
+    let x = siguienteEntero48();
+    while (x >= limite) x = siguienteEntero48(); // rechaza para no sesgar
+    return x % m;
+  };
+}
+
+// ── Selección PONDERADA SIN REEMPLAZO ─────────────────────────────────────────
+// pool: [{ uid, peso, ...datos }] con peso >= 1. Elige N ganadores: en cada paso
+// se sortea un ganador con probabilidad proporcional a su peso, se quita del pool
+// y se renormaliza (el peso total baja). Usa el DRBG para el punto de corte.
+function elegirGanadoresPonderado(pool, n, nextIntBelow) {
+  const restante = pool.slice(); // copia mutable
+  const ganadores = [];
+  const cuantos = Math.min(n, restante.length);
+  for (let k = 0; k < cuantos; k += 1) {
+    // Peso total del pool restante (entero: los pesos son enteros >= 1).
+    let total = 0;
+    for (const p of restante) total += p.peso;
+    if (total <= 0) break;
+    // Punto de corte uniforme en [0, total); se recorre acumulando pesos.
+    const corte = nextIntBelow(total);
+    let acc = 0;
+    let idx = restante.length - 1; // fallback defensivo (último)
+    for (let i = 0; i < restante.length; i += 1) {
+      acc += restante[i].peso;
+      if (corte < acc) { idx = i; break; }
+    }
+    ganadores.push(restante[idx]);
+    restante.splice(idx, 1); // SIN reemplazo: se quita del pool y se renormaliza
+  }
+  return ganadores;
+}
+
+// ── decidirGanadoresSorteo({ sorteoId, numGanadores?, excluirUids? }) ──────────
+// Callable SOLO admin. Lee TODOS los participantes server-side, filtra elegibles,
+// arma el pool ponderado (peso = max(1, chancesTotal)), sortea N ganadores SIN
+// reemplazo con RNG SEGURO y guarda evidencia auditable. Idempotente: cada llamada
+// crea un draw nuevo (drawId propio) protegido por lock t.create.
+// - Cierre normal: marca ganadores estado="ganador", fija sorteos/{id}.ganadores y
+//   estado="cerrado".
+// - Re-sorteo (viene excluirUids): AGREGA los nuevos ganadores a los existentes sin
+//   volver a cerrar (el sorteo ya estaba cerrado).
+exports.decidirGanadoresSorteo = functions.https.onCall(async (data, context) => {
+  // 1) Autorización: autenticado + admin.
+  requireAuth(context);
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede decidir ganadores.");
+  }
+  const adminUid = context.auth.uid;
+
+  // 2) Validaciones de entrada.
+  const sorteoId = data && data.sorteoId;
+  if (!sorteoId || typeof sorteoId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta sorteoId.");
+  }
+  // excluirUids: lista de uids a excluir (re-sorteo = ganadores previos). Se normaliza.
+  const excluirUids = Array.isArray(data && data.excluirUids)
+    ? data.excluirUids.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim())
+    : [];
+  const excluirSet = new Set(excluirUids);
+
+  const sorteoRef = db.collection("sorteos").doc(sorteoId);
+  const participantesCol = sorteoRef.collection("participantes");
+
+  // 3) Lee el sorteo (tipo + numGanadores por defecto).
+  const sorteoSnap = await sorteoRef.get();
+  if (!sorteoSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "El sorteo no existe.");
+  }
+  const sorteo = sorteoSnap.data() || {};
+  const esReSorteo = excluirUids.length > 0;
+  // IDEMPOTENCIA/SEGURIDAD: en modo CIERRE (sin excluirUids) NO se puede re-sortear
+  // un sorteo que ya está cerrado (evita reemplazar silenciosamente los ganadores
+  // oficiales por un doble-click). Para añadir más ganadores hay que usar el
+  // RE-SORTEO (que envía excluirUids con los ganadores previos).
+  if (!esReSorteo && sorteo.estado === "cerrado") {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "Este sorteo ya fue cerrado. Usa 'Re-sortear' para elegir ganadores adicionales excluyendo a los actuales.",
+    );
+  }
+  // numGanadores: del param si es entero>0; si no, del sorteo; por defecto 1.
+  let numGanadores = Number(data && data.numGanadores);
+  if (!Number.isInteger(numGanadores) || numGanadores <= 0) {
+    numGanadores = Number(sorteo.numGanadores);
+  }
+  if (!Number.isInteger(numGanadores) || numGanadores <= 0) {
+    numGanadores = 1;
+  }
+
+  // 4) Lee TODOS los participantes server-side (paginado).
+  const todos = await leerTodosLosParticipantes(participantesCol);
+
+  // 5) FILTRA ELEGIBLES según el tipo de sorteo, quitando los excluirUids.
+  //    - "pagado" → solo con ticketsPagados >= 1 (pago confirmado server-side).
+  //    - "gratis" → estado === "elegible" (perfil completo).
+  const esPagado = sorteo.tipo === "pagado";
+  const elegibles = todos.filter((p) => {
+    if (excluirSet.has(p.uid)) return false;
+    if (esPagado) return Number(p.ticketsPagados) >= 1;
+    return p.estado === "elegible";
+  });
+
+  if (elegibles.length === 0) {
+    throw new functions.https.HttpsError("failed-precondition", "No hay participantes elegibles para sortear.");
+  }
+
+  // 6) POOL PONDERADO: peso = max(1, chancesTotal) por participante.
+  const pool = elegibles.map((p) => ({
+    uid: p.uid,
+    nombre: p.nombre || p.correo || "Participante",
+    correo: p.correo || null,
+    telefono: p.telefono || null,
+    peso: Math.max(1, Number(p.chancesTotal) || 0),
+  }));
+
+  // Si no hay suficientes elegibles para numGanadores, se eligen los que haya.
+  const nEfectivo = Math.min(numGanadores, pool.length);
+
+  // 7) RNG SEGURO Y AUDITABLE: semilla aleatoria + DRBG determinista sembrado.
+  const seed = crypto.randomBytes(32).toString("hex");
+  const nextIntBelow = crearDrbgSha256(seed);
+
+  // poolHash: sha256 del array ORDENADO por uid de { uid, peso } (evidencia estable).
+  const poolOrdenado = pool
+    .map((p) => ({ uid: p.uid, peso: p.peso }))
+    .sort((a, b) => (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0));
+  const poolHash = crypto
+    .createHash("sha256")
+    .update(JSON.stringify(poolOrdenado))
+    .digest("hex");
+
+  // 8) Elige ganadores ponderados SIN reemplazo.
+  const elegidos = elegirGanadoresPonderado(pool, nEfectivo, nextIntBelow);
+  // Forma de la evidencia de ganadores (con el peso usado en el sorteo).
+  const ganadoresEvidencia = elegidos.map((g) => ({
+    uid: g.uid,
+    nombre: g.nombre,
+    correo: g.correo,
+    telefono: g.telefono,
+    pesoUsado: g.peso,
+  }));
+  // Forma compacta que se guarda en sorteos/{id}.ganadores (array {uid,nombre}).
+  const ganadoresCompactos = elegidos.map((g) => ({ uid: g.uid, nombre: g.nombre }));
+
+  // 9) GUARDA EVIDENCIA + marca ganadores, todo en una transacción con lock t.create.
+  const drawRef = sorteoRef.collection("sorteos_realizados").doc(); // drawId nuevo
+  const drawId = drawRef.id;
+
+  try {
+    await db.runTransaction(async (t) => {
+      // Lock de idempotencia: t.create falla si el drawId ya existe (doble escritura).
+      t.create(drawRef, {
+        seed,
+        poolHash,
+        totalElegibles: elegibles.length,
+        numGanadores: nEfectivo,
+        ganadores: ganadoresEvidencia,
+        excluirUids,
+        decididoPor: adminUid,
+        algoritmo: "HMAC/SHA256-DRBG",
+        at: FieldValue.serverTimestamp(),
+      });
+
+      // Marca cada participante ganador como estado="ganador".
+      for (const g of elegidos) {
+        t.set(participantesCol.doc(g.uid), { estado: "ganador" }, { merge: true });
+      }
+
+      if (esReSorteo) {
+        // Re-sorteo: AGREGA a los ganadores existentes sin re-cerrar (ya estaba cerrado).
+        t.set(sorteoRef, {
+          ganadores: FieldValue.arrayUnion(...ganadoresCompactos),
+        }, { merge: true });
+      } else {
+        // Cierre normal: fija la lista de ganadores y cierra el sorteo.
+        t.set(sorteoRef, {
+          ganadores: ganadoresCompactos,
+          estado: "cerrado",
+          cerradoAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      }
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("decidirGanadoresSorteo error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo decidir a los ganadores.");
+  }
+
+  return {
+    ok: true,
+    drawId,
+    ganadores: ganadoresEvidencia,
+    totalElegibles: elegibles.length,
+    seed,
+    poolHash, // evidencia: el admin puede mostrar/verificar el hash del pool
+  };
+});
+
+// ── sumarChanceCompartir({ sorteoId }) ─────────────────────────────────────────
+// Callable (autenticado). +1 chance por compartir el sorteo, UNA sola vez por
+// participante y por sorteo (flag compartioClaim, sistema de honor). Solo si el
+// sorteo tiene chanceExtraCompartir=true y estado="activo". El cliente NUNCA suma
+// sus propias chances directamente: esta callable server-side es la única vía.
+exports.sumarChanceCompartir = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const sorteoId = data && data.sorteoId;
+  if (!sorteoId || typeof sorteoId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta sorteoId.");
+  }
+
+  const sorteoRef = db.collection("sorteos").doc(sorteoId);
+  const participanteRef = sorteoRef.collection("participantes").doc(uid);
+
+  // Valida el sorteo antes de la transacción (activo + con chance por compartir).
+  const sorteoSnap = await sorteoRef.get();
+  if (!sorteoSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "El sorteo no existe.");
+  }
+  const sorteo = sorteoSnap.data() || {};
+  if (sorteo.chanceExtraCompartir !== true) {
+    throw new functions.https.HttpsError("failed-precondition", "Este sorteo no otorga chance por compartir.");
+  }
+  if (sorteo.estado !== "activo") {
+    throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
+  }
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const pSnap = await t.get(participanteRef);
+      if (!pSnap.exists) {
+        throw new functions.https.HttpsError("failed-precondition", "Primero participa en el sorteo.");
+      }
+      const p = pSnap.data() || {};
+      // Idempotencia por flag: ya reclamó la chance de compartir → no-op.
+      if (p.compartioClaim === true) {
+        return { ok: true, yaReclamado: true };
+      }
+      // +1 a chancesExtra y chancesTotal; marca el flag (1 sola vez por sorteo).
+      t.set(participanteRef, {
+        chancesExtra: FieldValue.increment(1),
+        chancesTotal: FieldValue.increment(1),
+        compartioClaim: true,
+        compartioAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return { ok: true, yaReclamado: false };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("sumarChanceCompartir error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo sumar la chance por compartir.");
+  }
+});
+
+// ── claimRaffleReferralSecure({ sorteoId, refCode }) ───────────────────────────
+// Callable (autenticado). El REFERIDO (uid del token) acredita +1 chance al DUEÑO
+// del refCode (KS-...). Solo si el sorteo tiene chanceExtraReferido=true y activo.
+// Anti self-referral (el referido no puede ser el dueño del código). LOCK por
+// referido: sorteos/{id}/referralClaims/{referidoUid} con t.create → cada referido
+// acredita UNA sola vez en este sorteo. Suma +1 al participante dueño del código
+// (solo si participa). El cliente NUNCA suma chances directamente.
+exports.claimRaffleReferralSecure = functions.https.onCall(async (data, context) => {
+  const referidoUid = requireAuth(context);
+  const sorteoId = data && data.sorteoId;
+  if (!sorteoId || typeof sorteoId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta sorteoId.");
+  }
+  // Normaliza el refCode igual que el resto de la app (KS-XXXXXX, mayúsculas).
+  const refCodeRaw = data && data.refCode;
+  const refCode =
+    typeof refCodeRaw === "string" && refCodeRaw.trim() ? refCodeRaw.trim().toUpperCase() : null;
+  if (!refCode) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta el código de referido.");
+  }
+
+  const sorteoRef = db.collection("sorteos").doc(sorteoId);
+
+  // 1) Valida el sorteo (activo + con chance por referido).
+  const sorteoSnap = await sorteoRef.get();
+  if (!sorteoSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "El sorteo no existe.");
+  }
+  const sorteo = sorteoSnap.data() || {};
+  if (sorteo.chanceExtraReferido !== true) {
+    throw new functions.https.HttpsError("failed-precondition", "Este sorteo no otorga chance por referido.");
+  }
+  if (sorteo.estado !== "activo") {
+    throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
+  }
+
+  // 2) Resuelve el DUEÑO del refCode en portal_clientes_users (referralCode==refCode).
+  let dueñoUid = null;
+  try {
+    const q = await db
+      .collection(PORTAL_USERS_COLLECTION)
+      .where("referralCode", "==", refCode)
+      .limit(1)
+      .get();
+    if (!q.empty) dueñoUid = q.docs[0].id;
+  } catch (e) {
+    console.warn("claimRaffleReferralSecure: fallo al resolver el dueño del refCode:", e.message);
+  }
+  if (!dueñoUid) {
+    throw new functions.https.HttpsError("not-found", "El código de referido no existe.");
+  }
+  // 3) Anti self-referral: el referido no puede ser el dueño del código.
+  if (dueñoUid === referidoUid) {
+    throw new functions.https.HttpsError("permission-denied", "No puedes usar tu propio código.");
+  }
+
+  const dueñoParticipanteRef = sorteoRef.collection("participantes").doc(dueñoUid);
+  // LOCK por referido: cada referido acredita UNA sola vez en este sorteo.
+  const claimRef = sorteoRef.collection("referralClaims").doc(referidoUid);
+
+  try {
+    return await db.runTransaction(async (t) => {
+      const [claimSnap, dueñoSnap] = await Promise.all([
+        t.get(claimRef),
+        t.get(dueñoParticipanteRef),
+      ]);
+      // Idempotencia estricta: si este referido ya acreditó, no-op (sin doble crédito).
+      if (claimSnap.exists) {
+        return { ok: true, acreditado: false };
+      }
+      // El dueño del código debe PARTICIPAR en el sorteo para acreditarle la chance.
+      if (!dueñoSnap.exists) {
+        throw new functions.https.HttpsError(
+          "failed-precondition",
+          "El dueño del código aún no participa en este sorteo."
+        );
+      }
+      // Crea el lock (t.create falla si otra ejecución ya lo creó → sin doble crédito).
+      t.create(claimRef, {
+        referidoUid,
+        dueñoUid,
+        refCode,
+        at: FieldValue.serverTimestamp(),
+      });
+      // +1 chance al PARTICIPANTE dueño del código.
+      t.set(dueñoParticipanteRef, {
+        chancesExtra: FieldValue.increment(1),
+        chancesTotal: FieldValue.increment(1),
+      }, { merge: true });
+      return { ok: true, acreditado: true };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("claimRaffleReferralSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo acreditar la chance por referido.");
+  }
+});
+
+// ── grantRaffleChancesSecure({ sorteoId, correo?/telefono?/dni?, chances }) ─────
+// Callable SOLO admin. Ajusta MANUALMENTE las chances de un participante (chances
+// puede ser NEGATIVO para corregir). Resuelve el uid igual que asignarTicketsManual
+// (participante existente o cuenta en portal_clientes_users; si no, failed-precondition).
+// NO toca pagos ni montos. Registra auditoría. Devuelve { ok, uid, chancesTotal }.
+exports.grantRaffleChancesSecure = functions.https.onCall(async (data, context) => {
+  // 1) Autorización: autenticado + admin.
+  requireAuth(context);
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ajustar chances.");
+  }
+  const adminUid = context.auth.uid;
+
+  // 2) Validaciones de entrada. chances: entero (puede ser negativo), != 0.
+  const sorteoId = data && data.sorteoId;
+  if (!sorteoId || typeof sorteoId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta sorteoId.");
+  }
+  const chances = Number(data && data.chances);
+  if (!Number.isInteger(chances) || chances === 0) {
+    throw new functions.https.HttpsError("invalid-argument", "chances debe ser un entero distinto de 0.");
+  }
+  const motivo = data && typeof data.motivo === "string" ? data.motivo.trim() : null;
+
+  // Normaliza los identificadores (igual que asignarTicketsManual).
+  const correoRaw = data && data.correo;
+  const telefonoRaw = data && data.telefono;
+  const dniRaw = data && data.dni;
+  const correo = correoRaw ? String(correoRaw).trim().toLowerCase() : null;
+  const telefono = telefonoRaw ? String(telefonoRaw).replace(/\s+/g, "") : null;
+  const dni = dniRaw ? String(dniRaw).replace(/\s+/g, "") : null;
+  if (!correo && !telefono && !dni) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Indica al menos correo, teléfono o DNI del participante."
+    );
+  }
+
+  const sorteoRef = db.collection("sorteos").doc(sorteoId);
+  const participantesCol = sorteoRef.collection("participantes");
+
+  // 3) RESOLVER el uid (sin crear cuentas fantasma), igual que asignarTicketsManual.
+  let uid = null;
+  let perfil = { nombre: null, correo, telefono, dni };
+
+  // (a) Participante EXISTENTE en el sorteo (el id del doc participante es el uid).
+  try {
+    const consultas = [];
+    if (correo) consultas.push(["correo", correo]);
+    if (telefono) consultas.push(["telefono", telefono]);
+    if (dni) consultas.push(["dni", dni]);
+    for (const [campo, valor] of consultas) {
+      const snap = await participantesCol.where(campo, "==", valor).limit(1).get();
+      if (!snap.empty) {
+        const doc = snap.docs[0];
+        uid = doc.id;
+        const p = doc.data() || {};
+        perfil = {
+          nombre: p.nombre || perfil.nombre,
+          correo: p.correo || correo,
+          telefono: p.telefono || telefono,
+          dni: p.dni || dni,
+        };
+        break;
+      }
+    }
+  } catch (e) {
+    console.warn("grantRaffleChancesSecure: fallo buscando participante existente:", e.message);
+  }
+
+  // (b) Cuenta EXISTENTE en portal_clientes_users (email/phone/dni).
+  if (!uid) {
+    try {
+      const consultas = [];
+      if (correo) consultas.push(["email", correo]);
+      if (telefono) consultas.push(["phone", telefono]);
+      if (dni) consultas.push(["dni", dni]);
+      for (const [campo, valor] of consultas) {
+        const snap = await db.collection(PORTAL_USERS_COLLECTION).where(campo, "==", valor).limit(1).get();
+        if (!snap.empty) {
+          const doc = snap.docs[0];
+          uid = doc.id;
+          const u = doc.data() || {};
+          perfil = {
+            nombre: (u.displayName && String(u.displayName).trim()) || u.email || perfil.nombre,
+            correo: u.email || correo,
+            telefono: u.phone || telefono,
+            dni: u.dni || dni,
+          };
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn("grantRaffleChancesSecure: fallo buscando cuenta en portal:", e.message);
+    }
+  }
+
+  // (c) No se resolvió ningún uid: no se crean cuentas fantasma.
+  if (!uid) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "No se encontró un usuario con esos datos. Pídele que inicie sesión en WALA primero."
+    );
+  }
+
+  // 4) Ajuste transaccional de chances + auditoría. clamp chancesTotal >= 0.
+  const participanteRef = participantesCol.doc(uid);
+  const auditRef = sorteoRef.collection("chancesAjustes").doc();
+
+  try {
+    const chancesTotalFinal = await db.runTransaction(async (t) => {
+      const pSnap = await t.get(participanteRef);
+
+      if (pSnap.exists) {
+        const p = pSnap.data() || {};
+        const extraActual = Number(p.chancesExtra) || 0;
+        const totalActual = Number(p.chancesTotal) || 0;
+        // clamp: ni chancesTotal ni chancesExtra bajan de 0 (mantiene la invariante
+        // chancesTotal = base + extra + tickets consistente y evita valores negativos
+        // confusos en la tabla de participantes / auditoría).
+        const nuevoTotal = Math.max(0, totalActual + chances);
+        const nuevoExtra = Math.max(0, extraActual + chances);
+        t.set(participanteRef, {
+          chancesExtra: nuevoExtra,
+          chancesTotal: nuevoTotal,
+        }, { merge: true });
+        // Auditoría del ajuste.
+        t.set(auditRef, {
+          uid,
+          chances,
+          motivo,
+          asignadoPor: "admin",
+          asignadoPorUid: adminUid,
+          chancesTotalAntes: totalActual,
+          chancesTotalDespues: nuevoTotal,
+          at: FieldValue.serverTimestamp(),
+        });
+        return nuevoTotal;
+      }
+
+      // Participante NUEVO: se CREA con snapshot del perfil. chancesBase=1.
+      // El ajuste se aplica sobre chancesExtra; chancesTotal = max(0, 1 + chances).
+      const chancesBase = 1;
+      const nuevoTotal = Math.max(0, chancesBase + chances);
+      t.set(participanteRef, {
+        uid,
+        nombre: perfil.nombre || perfil.correo || "Participante",
+        telefono: perfil.telefono || null,
+        correo: perfil.correo || null,
+        dni: perfil.dni || null,
+        tickets: 0,
+        ticketsPagados: 0,
+        chancesBase,
+        chancesExtra: chances,
+        chancesTotal: nuevoTotal,
+        origenApp: false,
+        estado: "elegible",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      t.set(auditRef, {
+        uid,
+        chances,
+        motivo,
+        asignadoPor: "admin",
+        asignadoPorUid: adminUid,
+        chancesTotalAntes: 0,
+        chancesTotalDespues: nuevoTotal,
+        at: FieldValue.serverTimestamp(),
+      });
+      return nuevoTotal;
+    });
+
+    return { ok: true, uid, chancesTotal: chancesTotalFinal };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("grantRaffleChancesSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudieron ajustar las chances.");
+  }
+});

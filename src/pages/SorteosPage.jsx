@@ -20,7 +20,7 @@
 //   - NO se duplica la lógica de montos de Culqi/PayPal: se reusan sus SDKs
 //     (checkout-js / @paypal/react-paypal-js) y las callables del contrato.
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
@@ -33,6 +33,8 @@ import {
   getMiParticipacion,
   getContadorSorteo,
   participarGratis,
+  sumarChanceCompartir,
+  claimRaffleReferral,
 } from '../services/sorteos';
 import styles from './SorteosPage.module.css';
 
@@ -91,6 +93,48 @@ function ImagenConFallback({ src, alt, className }) {
       loading="lazy"
       onError={() => setError(true)}
     />
+  );
+}
+
+// ── Confeti de celebración (CSS puro, sin dependencias) ──────────────────────
+// Se muestra cuando el usuario actual GANÓ el sorteo. No existe RuletaPage con
+// confeti CSS reutilizable (usa un evento global de monedas), así que aquí se
+// hace una animación CSS ligera: N partículas con retardos/posiciones aleatorias
+// que caen una sola vez. `pointer-events:none` para no bloquear la interacción.
+const CONFETI_COLORES = ['#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#ec4899'];
+
+function Confeti({ activo }) {
+  // Genera las partículas una sola vez (posición/color/retardo aleatorios) para
+  // que no cambien en cada render mientras dura la animación.
+  const particulas = useMemo(() => {
+    return Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      delay: `${Math.random() * 0.6}s`,
+      duration: `${1.8 + Math.random() * 1.4}s`,
+      color: CONFETI_COLORES[i % CONFETI_COLORES.length],
+      size: `${6 + Math.round(Math.random() * 6)}px`,
+    }));
+  }, []);
+
+  if (!activo) return null;
+  return (
+    <div className={styles.confeti} aria-hidden="true">
+      {particulas.map((p) => (
+        <span
+          key={p.id}
+          className={styles.confetiPieza}
+          style={{
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            background: p.color,
+            animationDelay: p.delay,
+            animationDuration: p.duration,
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -355,6 +399,16 @@ const SorteosPage = () => {
   const [accionError, setAccionError] = useState('');
   const [participando, setParticipando] = useState(false);
 
+  // ── Chances virales (Build 3): compartir + referido ────────────────────────
+  const [searchParams] = useSearchParams();
+  const refCodeUrl = searchParams.get('ref') || '';       // ?ref=KS-XXXXXX
+  const [compartiendo, setCompartiendo] = useState(false); // en curso: sumarChanceCompartir
+  const [yaCompartio, setYaCompartio] = useState(false);   // botón deshabilitado si ya reclamó
+  const [copiado, setCopiado] = useState(false);           // feedback "¡Copiado!" del enlace referido
+  // Guard: solo intentamos acreditar el referido UNA vez por montaje (la CF ya
+  // es idempotente por lock, pero evitamos llamadas repetidas del efecto).
+  const referidoIntentadoRef = useRef(false);
+
   // ── Estado del flujo de compra de tickets (sorteos pagados) ────────────────
   const [cantidad, setCantidad] = useState(1);        // selector [− N +], mín 1
   const [preparando, setPreparando] = useState(false); // creando la intención (CF)
@@ -423,6 +477,24 @@ const SorteosPage = () => {
   // Correo del comprador (Culqi lo exige): perfil → auth → vacío.
   const emailComprador = userProfile?.email || user?.email || '';
 
+  // ── Chances virales: enlaces y estado derivado (Build 3) ───────────────────
+  // Código de referido del usuario (KS-XXXXXX). El backend acredita +1 chance al
+  // dueño de este código por cada persona que participe con su enlace.
+  const miRefCode = userProfile?.referralCode || '';
+
+  // URL base de la página del sorteo (SorteosPage vive en /sorteos y carga el
+  // sorteo activo; no lleva id en la ruta). Se usa para compartir y referir.
+  const urlSorteo = useMemo(() => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/sorteos`;
+  }, []);
+
+  // Enlace de referido del usuario = URL del sorteo + ?ref={miRefCode}.
+  const enlaceReferido = useMemo(
+    () => (miRefCode ? `${urlSorteo}?ref=${encodeURIComponent(miRefCode)}` : urlSorteo),
+    [urlSorteo, miRefCode],
+  );
+
   // Refresca los datos server-side tras participar (mi participación + contador).
   const refrescarTrasParticipar = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['mi-participacion', sorteoId, user?.uid] });
@@ -452,6 +524,88 @@ const SorteosPage = () => {
       refrescarTrasParticipar();
     }
   }, [sorteoId, profileIncomplete, origenApp, navigate, refrescarTrasParticipar]);
+
+  // Handler COMPARTIR: usa navigator.share (móvil) o copia el enlace; luego
+  // llama a la CF para acreditar +1 chance (una sola vez por sorteo). El servidor
+  // es la única fuente de verdad: el cliente NUNCA suma su propia chance.
+  const handleCompartir = useCallback(async () => {
+    setAccionError('');
+    if (!sorteoId || compartiendo || yaCompartio) return;
+
+    // Enlace a compartir: si el usuario tiene refCode, comparte SU enlace de
+    // referido (así también gana chances por referidos); si no, la URL simple.
+    const url = miRefCode ? enlaceReferido : urlSorteo;
+    const premio = sorteo?.premio?.nombre || sorteo?.titulo || 'este sorteo';
+    const shareData = {
+      title: 'Sorteo Walá',
+      text: `¡Estoy participando para ganar ${premio} en Walá! Participa tú también:`,
+      url,
+    };
+
+    // Intento de compartir nativo; si no está disponible o el usuario cancela,
+    // caemos a copiar el enlace. NINGUNA de las dos ramas debe frenar la chance:
+    // el objetivo (difundir) se cumplió al abrir el diálogo o copiar.
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share(shareData);
+      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        toast.success('Enlace copiado. ¡Compártelo!');
+      }
+    } catch (e) {
+      // AbortError = el usuario cerró el diálogo nativo: no es un fallo real y no
+      // debe bloquear el reclamo de la chance.
+      if (e?.name !== 'AbortError') {
+        // Fallback final: si share falló por otra razón, intentamos copiar.
+        try {
+          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            await navigator.clipboard.writeText(url);
+            toast.success('Enlace copiado. ¡Compártelo!');
+          }
+        } catch {
+          /* sin clipboard: seguimos igual y reclamamos la chance */
+        }
+      }
+    }
+
+    // Acredita la chance server-side (idempotente: si ya se reclamó, no duplica).
+    setCompartiendo(true);
+    const { data, error } = await sumarChanceCompartir(sorteoId);
+    setCompartiendo(false);
+
+    if (error) {
+      setAccionError(error);
+      return;
+    }
+    if (data?.ok) {
+      setYaCompartio(true);
+      if (!data.yaReclamado) toast.success('¡+1 chance por compartir! 🎉');
+      refrescarTrasParticipar(); // refresca "Tus chances: N"
+    }
+  }, [
+    sorteoId,
+    compartiendo,
+    yaCompartio,
+    miRefCode,
+    enlaceReferido,
+    urlSorteo,
+    sorteo,
+    toast,
+    refrescarTrasParticipar,
+  ]);
+
+  // Handler COPIAR ENLACE de referido (botón junto al enlace mostrado).
+  const handleCopiarReferido = useCallback(async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(enlaceReferido);
+      }
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      toast.error('No se pudo copiar. Copia el enlace manualmente.');
+    }
+  }, [enlaceReferido, toast]);
 
   // ── Selector de cantidad (mín 1, sin máximo duro; el server valida) ────────
   const decCantidad = useCallback(() => setCantidad((c) => Math.max(1, c - 1)), []);
@@ -512,6 +666,31 @@ const SorteosPage = () => {
     setAccionError('');
   }, []);
 
+  // ── Reclamo del referido al entrar con ?ref=CODE ───────────────────────────
+  // Cuando el usuario YA participa (recién o de antes) y llegó con un ?ref=CODE
+  // válido en la URL, acreditamos +1 chance al DUEÑO del código. La CF es
+  // idempotente por lock; el ref local solo evita re-llamar en cada render.
+  // No se acredita si el código es el propio (el backend igual lo rechazaría).
+  useEffect(() => {
+    if (!sorteoId || !user?.uid || !yaParticipa) return;
+    if (!refCodeUrl) return;
+    if (referidoIntentadoRef.current) return;
+    // Evita autoacreditarse con su propio enlace.
+    if (miRefCode && refCodeUrl.toUpperCase() === miRefCode.toUpperCase()) {
+      referidoIntentadoRef.current = true;
+      return;
+    }
+    referidoIntentadoRef.current = true;
+    (async () => {
+      const { data } = await claimRaffleReferral(sorteoId, refCodeUrl);
+      // Si se acreditó al referente, su "chances" cambian (no las nuestras),
+      // pero refrescamos por si el backend también nos devuelve algo.
+      if (data?.ok && data?.acreditado) {
+        refrescarTrasParticipar();
+      }
+    })();
+  }, [sorteoId, user?.uid, yaParticipa, refCodeUrl, miRefCode, refrescarTrasParticipar]);
+
   // ── Estados de carga / error / vacío ─────────────────────────────────────
   if (cargandoSorteo) {
     return (
@@ -551,11 +730,28 @@ const SorteosPage = () => {
   // Sorteo cerrado: mostrar ganadores si existen.
   const cerrado = sorteo.estado === 'cerrado' || terminado;
 
+  // Ganadores oficiales (los escribe SOLO el servidor en decidirGanadoresSorteo).
+  const ganadores = Array.isArray(sorteo.ganadores) ? sorteo.ganadores : [];
+  const hayGanadores = ganadores.length > 0;
+  // Solo revelamos cuando el sorteo está CERRADO y hay ganadores publicados.
+  const revelarGanadores = sorteo.estado === 'cerrado' && hayGanadores;
+  // ¿El usuario actual es uno de los ganadores? (por uid del token).
+  const soyGanador = !!user?.uid && ganadores.some((g) => g?.uid === user.uid);
+
   // Tickets pagados del usuario (para el estado "Tus tickets pagados: N").
   const ticketsPagados = miParticipacion?.ticketsPagados ?? 0;
 
+  // Muestra los botones/enlaces de chances virales solo si el usuario participa,
+  // el sorteo sigue abierto, y el admin activó la mecánica correspondiente.
+  const mostrarCompartir = user && yaParticipa && !cerrado && sorteo.chanceExtraCompartir;
+  const mostrarReferido =
+    user && yaParticipa && !cerrado && sorteo.chanceExtraReferido && !!miRefCode;
+
   return (
     <div className={styles.page}>
+      {/* CONFETI: solo si el usuario actual GANÓ y el sorteo revela ganadores. */}
+      <Confeti activo={revelarGanadores && soyGanador} />
+
       {/* HERO ---------------------------------------------------------------- */}
       <section className={styles.hero}>
         <div className={styles.heroImgWrap}>
@@ -610,6 +806,62 @@ const SorteosPage = () => {
         </GlassPanel>
       )}
 
+      {/* Chances virales: compartir + enlace de referido (solo si participa) -- */}
+      {(mostrarCompartir || mostrarReferido) && (
+        <GlassCard
+          variant="soft"
+          padding="md"
+          title="Suma más chances"
+          className={styles.viral}
+        >
+          {mostrarCompartir && (
+            <div className={styles.viralBloque}>
+              <p className={styles.viralTexto}>
+                Comparte este sorteo y gana <strong>+1 chance</strong> (una sola vez).
+              </p>
+              <GlassButton
+                variant="primary"
+                size="md"
+                fullWidth
+                loading={compartiendo}
+                disabled={compartiendo || yaCompartio}
+                onClick={handleCompartir}
+              >
+                {yaCompartio
+                  ? '¡Chance por compartir reclamada! ✓'
+                  : '📢 Compartir y ganar +1 chance'}
+              </GlassButton>
+            </div>
+          )}
+
+          {mostrarReferido && (
+            <div className={styles.viralBloque}>
+              <p className={styles.viralTexto}>
+                Tu enlace de invitación: ganas <strong>+1 chance</strong> por cada persona
+                que participe con él.
+              </p>
+              <div className={styles.refRow}>
+                <input
+                  className={styles.refInput}
+                  type="text"
+                  value={enlaceReferido}
+                  readOnly
+                  onFocus={(e) => e.target.select()}
+                  aria-label="Tu enlace de referido"
+                />
+                <GlassButton
+                  variant={copiado ? 'glass' : 'primary'}
+                  size="md"
+                  onClick={handleCopiarReferido}
+                >
+                  {copiado ? '¡Copiado! ✓' : 'Copiar'}
+                </GlassButton>
+              </div>
+            </div>
+          )}
+        </GlassCard>
+      )}
+
       {/* Reglas: cómo ganar chances ------------------------------------------ */}
       <GlassCard
         variant="soft"
@@ -627,10 +879,10 @@ const SorteosPage = () => {
             <li>Entrar desde el <strong>app de Walá</strong> te da 1 chance extra.</li>
           )}
           {sorteo.chanceExtraCompartir && (
-            <li>Compartir el sorteo suma una chance extra (próximamente).</li>
+            <li>Compartir el sorteo te suma <strong>+1 chance</strong> (una vez).</li>
           )}
           {sorteo.chanceExtraReferido && (
-            <li>Invitar a un amigo con tu código suma una chance extra (próximamente).</li>
+            <li>Ganas <strong>+1 chance</strong> por cada amigo que participe con tu enlace.</li>
           )}
           {requiereApp && (
             <li>Este sorteo requiere participar <strong>desde el app</strong>.</li>
@@ -638,13 +890,39 @@ const SorteosPage = () => {
         </ul>
       </GlassCard>
 
-      {/* Cerrado: mostrar ganadores si existen ------------------------------- */}
-      {cerrado && Array.isArray(sorteo.ganadores) && sorteo.ganadores.length > 0 && (
-        <GlassCard variant="soft" padding="md" title="Ganadores" className={styles.ganadores}>
+      {/* REVELACIÓN DEL GANADOR: solo con estado="cerrado" y ganadores oficiales */}
+      {revelarGanadores && (
+        <GlassCard
+          variant="soft"
+          padding="lg"
+          className={`${styles.ganadores} ${soyGanador ? styles.ganadoresYoGane : ''}`}
+        >
+          <h2 className={styles.ganadoresTitulo}>
+            🏆 {ganadores.length > 1 ? 'Ganadores' : 'Ganador'}
+          </h2>
+
+          {/* Mensaje destacado si el usuario actual ganó. */}
+          {soyGanador && (
+            <div className={styles.yoGaneBanner}>
+              <span className={styles.yoGaneEmoji} aria-hidden="true">🎉</span>
+              <strong>¡FELICIDADES, GANASTE!</strong>
+              <span className={styles.yoGaneSub}>Pronto nos contactaremos contigo para tu premio.</span>
+            </div>
+          )}
+
           <ul className={styles.ganadoresList}>
-            {sorteo.ganadores.map((g, i) => (
-              <li key={g?.uid || g?.nombre || i}>🏆 {g?.nombre || 'Ganador'}</li>
-            ))}
+            {ganadores.map((g, i) => {
+              const esYo = !!user?.uid && g?.uid === user.uid;
+              return (
+                <li
+                  key={g?.uid || g?.nombre || i}
+                  className={esYo ? styles.ganadorYo : undefined}
+                >
+                  🏆 {g?.nombre || 'Ganador'}
+                  {esYo && <span className={styles.ganadorTuBadge}> (¡tú!)</span>}
+                </li>
+              );
+            })}
           </ul>
         </GlassCard>
       )}
