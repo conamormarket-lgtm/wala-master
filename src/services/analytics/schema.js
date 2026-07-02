@@ -35,6 +35,11 @@ export const ANALYTICS_EVENT_TYPES = {
   // Se registran fire-and-forget; no contienen PII (solo message/stack/url/ua).
   CLIENT_ERROR: 'client_error',
   WEB_VITAL: 'web_vital',
+  // Enlaces útiles (link-in-bio): visita a la página pública /l/{slug} y clic en
+  // un botón. eventData lleva { pageId, slug } / { pageId, botonId, url }. El país
+  // y el dispositivo se derivan de la sesión (mismo mecanismo que el resto).
+  LINK_PAGE_VIEW: 'link_page_view',
+  LINK_CLICK: 'link_click',
 };
 
 export const ANALYTICS_KEYS = {

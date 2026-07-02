@@ -105,6 +105,14 @@ const AdminLayout = () => {
               >
                 🎁 Raffles
               </NavLink>
+              {/* Enlaces útiles (constructor tipo Linktree / link-in-bio):
+                  su propio botón, JUSTO DEBAJO de "🎁 Raffles". */}
+              <NavLink
+                to="/admin/enlaces"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                🔗 Enlaces útiles
+              </NavLink>
               {/* Panel de comportamiento: wishlists, carritos y fechas de los usuarios. */}
               <NavLink
                 to="/admin/usuarios-comportamiento"

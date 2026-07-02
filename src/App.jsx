@@ -102,6 +102,8 @@ const VendorStorefrontPage = lazy(() => import('./pages/VendorStorefrontPage'));
 const CheckoutDemoPage = lazy(() => import('./pages/CheckoutDemoPage'));
 const OfertasFlashPage = lazy(() => import('./pages/OfertasFlashPage'));
 const SorteosPage = lazy(() => import('./pages/SorteosPage'));
+// Página pública LINK-IN-BIO (constructor tipo Linktree). Ruta /l/:slug.
+const LinkInBioPage = lazy(() => import('./pages/LinkInBioPage'));
 
 // ── Admin Layout ─────────────────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
@@ -152,6 +154,9 @@ const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuario
 const AdminUsuariosComportamiento = lazy(() => import('./pages/admin/AdminUsuariosComportamiento'));
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
+// Enlaces útiles (constructor tipo Linktree / link-in-bio).
+const AdminEnlaces = lazy(() => import('./pages/admin/AdminEnlaces'));
+const AdminEnlaceEditor = lazy(() => import('./pages/admin/AdminEnlaceEditor'));
 const AdminElementosDiseno = lazy(() => import('./pages/admin/AdminElementosDiseno'));
 const AdminElementoDisenoPage = lazy(() => import('./pages/admin/elementosDiseno/AdminElementoDisenoPage'));
 const AdminLandingPages = lazy(() => import('./pages/Tienda/admin/AdminLandingPages'));
@@ -338,6 +343,9 @@ function App() {
                             <Route path="retos" element={<AdminRetos />} />
                             <Route path="sorteos" element={<AdminSorteos />} />
                             <Route path="sorteos/:id" element={<AdminSorteoDetalle />} />
+                            {/* Enlaces útiles (constructor tipo Linktree): lista + editor. */}
+                            <Route path="enlaces" element={<AdminEnlaces />} />
+                            <Route path="enlaces/:id" element={<AdminEnlaceEditor />} />
                             <Route path="destacados" element={<AdminDestacados />} />
                             <Route path="zonas" element={<Navigate to="/admin" replace />} />
                             <Route path="cliparts" element={<AdminCliparts />} />
@@ -391,6 +399,11 @@ function App() {
                         <Route path="/pago-demo/:orderId" element={<CheckoutDemoPage />} />
                         <Route path="/ofertas" element={<OfertasFlashPage />} />
                         <Route path="/sorteos" element={<SorteosPage />} />
+
+                        {/* Página pública LINK-IN-BIO (/l/:slug). DEBE ir ANTES
+                            del catch-all /:slug para no ser interceptada por las
+                            landing pages dinámicas. */}
+                        <Route path="/l/:slug" element={<LinkInBioPage />} />
 
                         {/* Dynamic Landing Pages Interceptor */}
                         <Route path="/:slug" element={<DynamicLandingPage />} />

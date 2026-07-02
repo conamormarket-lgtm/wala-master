@@ -4620,3 +4620,160 @@ exports.grantRaffleChancesSecure = functions.https.onCall(async (data, context) 
     throw new functions.https.HttpsError("internal", "No se pudieron ajustar las chances.");
   }
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// ENLACES ÚTILES (link-in-bio) — registrar clic en un botón (onCall PÚBLICO)
+// ────────────────────────────────────────────────────────────────────────────
+// SIN autenticación obligatoria: un visitante anónimo puede clickear un enlace.
+// Valida que la página y el botón EXISTAN (server-side, contra link_pages), luego:
+//   1) incrementa link_pages/{pageId}/clics/{botonId}.count con FieldValue.increment(1)
+//      (merge:true → crea el shard si no existía; denormalizado, en la nube).
+//   2) escribe un evento link_click en analytics_events con { pageId, botonId, url }
+//      + el contexto de sesión que aporte el cliente (sessionId/anonymousId/uid/
+//      clientType/countryCode/device). El país/dispositivo también viven en la
+//      sesión; aquí se guardan tal cual llegan (retrocompatible: se omiten si faltan).
+// Idempotencia NO crítica: cada clic cuenta. Rate-limit suave: se rechaza un
+// payload sin pageId/botonId válidos. El cliente NUNCA escribe el contador
+// directamente (reglas: subcolección clics con write:false); solo esta CF (admin SDK).
+exports.registrarClicEnlace = functions.https.onCall(async (data, context) => {
+  const pageId = data && typeof data.pageId === "string" ? data.pageId.trim() : "";
+  const botonId = data && typeof data.botonId === "string" ? data.botonId.trim() : "";
+  if (!pageId || !botonId) {
+    throw new functions.https.HttpsError("invalid-argument", "Faltan pageId/botonId.");
+  }
+
+  const pageRef = db.collection("link_pages").doc(pageId);
+
+  // 1) La página debe existir y el botón debe pertenecer a ella (evita inflar
+  //    contadores de páginas/botones inexistentes desde clientes maliciosos).
+  const pageSnap = await pageRef.get();
+  if (!pageSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "La página de enlaces no existe.");
+  }
+  const page = pageSnap.data() || {};
+  const botones = Array.isArray(page.botones) ? page.botones : [];
+  const boton = botones.find((b) => b && b.id === botonId);
+  if (!boton) {
+    throw new functions.https.HttpsError("not-found", "El botón no existe en esta página.");
+  }
+  // La URL de confianza es la del modelo server-side, no la que envíe el cliente.
+  const url = boton.url || (data && typeof data.url === "string" ? data.url : null) || null;
+
+  // 2) Contexto de sesión que aporta el cliente (visitante anónimo: no hay token).
+  //    Se usa el uid del token SI existe (usuario logueado); si no, el que venga
+  //    en el payload (puede ser null). Nada de esto es de confianza para saldos:
+  //    solo es metadata de analítica.
+  const uidToken = context && context.auth ? context.auth.uid : null;
+  const ctx = {
+    sessionId: data && typeof data.sessionId === "string" ? data.sessionId : null,
+    anonymousId: data && typeof data.anonymousId === "string" ? data.anonymousId : null,
+    uid: uidToken || (data && typeof data.uid === "string" ? data.uid : null),
+    clientType: data && (data.clientType === "APP" || data.clientType === "WEB") ? data.clientType : "WEB",
+    countryCode: data && typeof data.countryCode === "string" ? data.countryCode : null,
+    device: data && typeof data.device === "string" ? data.device : null,
+  };
+
+  try {
+    // 1) Incremento denormalizado del contador del botón (en la nube).
+    const clicRef = pageRef.collection("clics").doc(botonId);
+    await clicRef.set({ count: FieldValue.increment(1) }, { merge: true });
+
+    // 2) Evento link_click en analytics_events (mismo shape que el tracker del
+    //    cliente para que el dashboard lo consuma sin cambios). fire-and-forget:
+    //    si falla el evento, el contador ya quedó incrementado (no se revierte).
+    try {
+      await db.collection("analytics_events").add({
+        type: "link_click",
+        path: `/l/${page.slug || ""}`,
+        pageId,
+        botonId,
+        url,
+        uid: ctx.uid,
+        anonymousId: ctx.anonymousId,
+        sessionId: ctx.sessionId,
+        clientType: ctx.clientType,
+        countryCode: ctx.countryCode,
+        device: ctx.device,
+        clientTsMs: Date.now(),
+        serverTs: FieldValue.serverTimestamp(),
+        eventData: { pageId, botonId, url },
+      });
+    } catch (evErr) {
+      // El evento de analítica jamás debe romper el conteo del clic.
+      console.error("registrarClicEnlace: fallo al escribir evento link_click:", evErr);
+    }
+
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("registrarClicEnlace error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo registrar el clic.");
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// ENLACES ÚTILES (link-in-bio) — registrar VISITA de la página (onCall PÚBLICO)
+// ────────────────────────────────────────────────────────────────────────────
+// SIN autenticación obligatoria: un visitante anónimo llega desde un live y abre
+// /l/{slug}. Valida que la página EXISTA (server-side, contra link_pages), luego:
+//   1) incrementa el contador denormalizado link_pages/{pageId}.visitas con
+//      FieldValue.increment(1) (merge:true; en la nube, NUNCA localStorage).
+//   2) escribe UN único evento link_page_view en analytics_events con el contexto
+//      de sesión que aporte el cliente (sessionId/anonymousId/uid/clientType/
+//      countryCode/device). Este es el ÚNICO escritor del evento de vista: el
+//      cliente ya NO lo escribe (evita el doble conteo).
+// El fallo del evento NO revierte el contador (fire-and-forget interno).
+exports.registrarVisitaEnlace = functions.https.onCall(async (data, context) => {
+  const pageId = data && typeof data.pageId === "string" ? data.pageId.trim() : "";
+  if (!pageId) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta pageId.");
+  }
+
+  const pageRef = db.collection("link_pages").doc(pageId);
+  const pageSnap = await pageRef.get();
+  if (!pageSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "La página de enlaces no existe.");
+  }
+  const page = pageSnap.data() || {};
+
+  const uidToken = context && context.auth ? context.auth.uid : null;
+  const ctx = {
+    sessionId: data && typeof data.sessionId === "string" ? data.sessionId : null,
+    anonymousId: data && typeof data.anonymousId === "string" ? data.anonymousId : null,
+    uid: uidToken || (data && typeof data.uid === "string" ? data.uid : null),
+    clientType: data && (data.clientType === "APP" || data.clientType === "WEB") ? data.clientType : "WEB",
+    countryCode: data && typeof data.countryCode === "string" ? data.countryCode : null,
+    device: data && typeof data.device === "string" ? data.device : null,
+  };
+
+  try {
+    // 1) Incremento denormalizado del contador de visitas (en la nube).
+    await pageRef.set({ visitas: FieldValue.increment(1) }, { merge: true });
+
+    // 2) Evento link_page_view (único escritor; el cliente ya no lo emite).
+    try {
+      await db.collection("analytics_events").add({
+        type: "link_page_view",
+        path: `/l/${page.slug || ""}`,
+        pageId,
+        uid: ctx.uid,
+        anonymousId: ctx.anonymousId,
+        sessionId: ctx.sessionId,
+        clientType: ctx.clientType,
+        countryCode: ctx.countryCode,
+        device: ctx.device,
+        clientTsMs: Date.now(),
+        serverTs: FieldValue.serverTimestamp(),
+        eventData: { pageId, slug: page.slug || null },
+      });
+    } catch (evErr) {
+      console.error("registrarVisitaEnlace: fallo al escribir evento link_page_view:", evErr);
+    }
+
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("registrarVisitaEnlace error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo registrar la visita.");
+  }
+});

@@ -1,0 +1,350 @@
+/* =========================================================================
+   AdminEnlaces — lista de páginas "Enlaces útiles"
+   Molde visual de AdminFlashOffers.module.css (tarjetas + modal + dark mode).
+   ========================================================================= */
+.wrapper {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+  max-width: 640px;
+  line-height: 1.5;
+}
+
+.subtitle code {
+  background: #f1f3f5;
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+
+/* Formulario rápido de creación */
+.createCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 2rem;
+}
+
+.cardTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 1.5rem 0;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background-color: #fafafa;
+  width: 100%;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #111;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.1);
+}
+
+.slugInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.slugPrefix {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #888;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+}
+
+.helpText {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.loading {
+  color: #888;
+}
+
+.error {
+  color: #ff4757;
+  margin: 0.5rem 0 0 0;
+  font-size: 0.9rem;
+}
+
+/* Grid de páginas */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.pageCard {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 14px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  min-width: 0;
+}
+
+.pageCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: #e0e0e0;
+}
+
+.pageTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.statusBadge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+.statusActive {
+  background: #e6f7ee;
+  color: #0a8f4f;
+}
+
+.statusDraft {
+  background: #fff4e5;
+  color: #b45309;
+}
+
+.visitasBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f1f3f5;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+}
+
+.pageName {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0.5rem 0 0 0;
+  color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pageSlug {
+  font-size: 0.82rem;
+  color: #999;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pageActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  color: #444;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.actionBtn:hover {
+  background: #e9ecef;
+  color: #111;
+}
+
+.actionBtnDelete {
+  margin-left: auto;
+}
+
+.actionBtnDelete:hover {
+  background: #fff0f0;
+  color: #ff4757;
+  border-color: #ff4757;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: #888;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.emptyIcon {
+  color: #cbd5e1;
+  margin-bottom: 0.5rem;
+}
+
+/* Modal de borrado */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.modalTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.modalText {
+  margin: 0 0 2rem 0;
+  color: #555;
+  line-height: 1.5;
+}
+
+.modalText code {
+  background: #f1f3f5;
+  padding: 0.05rem 0.35rem;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — solo color/fondo/borde (tokens de src/styles/variables.css).
+   ═════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .title { color: var(--color-text); }
+[data-theme="dark"] .subtitle { color: var(--color-text-muted); }
+[data-theme="dark"] .subtitle code,
+[data-theme="dark"] .modalText code {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+[data-theme="dark"] .createCard { background: var(--color-surface); border-color: var(--color-border); }
+[data-theme="dark"] .cardTitle { color: var(--color-text); }
+[data-theme="dark"] .label { color: var(--color-text); }
+[data-theme="dark"] .input { border-color: var(--color-border); background: var(--color-surface); color: var(--color-text); }
+[data-theme="dark"] .input:focus { background: var(--color-surface); }
+[data-theme="dark"] .pageCard { background: var(--color-surface); border-color: var(--color-border); }
+[data-theme="dark"] .pageCard:hover { border-color: var(--color-border); }
+[data-theme="dark"] .pageName { color: var(--color-text); }
+[data-theme="dark"] .visitasBadge { background: var(--color-surface-2); color: var(--color-text-muted); }
+[data-theme="dark"] .statusActive { background: rgba(16, 185, 129, 0.16); color: #6EE7B7; }
+[data-theme="dark"] .statusDraft { background: rgba(245, 158, 11, 0.16); color: #FCD34D; }
+[data-theme="dark"] .actionBtn { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text); }
+[data-theme="dark"] .actionBtn:hover { background: var(--color-surface-2); color: var(--color-text); }
+[data-theme="dark"] .actionBtnDelete:hover { background: rgba(239, 68, 68, 0.16); }
+[data-theme="dark"] .modal { background: var(--color-surface); }
+[data-theme="dark"] .modalTitle { color: var(--color-text); }
+[data-theme="dark"] .modalText { color: var(--color-text-muted); }
+
+/* Responsive: en móvil el header se apila. */
+@media (max-width: 640px) {
+  .wrapper { padding: 1.25rem; }
+  .header { flex-direction: column; }
+  .fieldRow { flex-direction: column; }
+}

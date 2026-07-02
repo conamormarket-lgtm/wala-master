@@ -94,6 +94,26 @@ service cloud.firestore {
     // Fase 5: ofertas flash (lectura pública para la vitrina; escritura solo admin).
     match /flashOffers/{id} { allow read: if true; allow write: if isAdmin(); }
 
+    // ── ENLACES ÚTILES (link-in-bio / LINKTREE) — NUEVO, NO DESPLEGAR AÚN ─────────
+    // Páginas públicas de botones servidas en /l/{slug}. Lectura pública (la página
+    // /l/{slug} lee 1 doc por slug); escritura SOLO admin (constructor en /admin/enlaces).
+    // Las VISITAS (campo denormalizado 'visitas') y los CLICS por botón (subcolección
+    // 'clics/{botonId}.count') se incrementan ÚNICAMENTE desde la Cloud Function
+    // registrarClicEnlace (admin SDK, bypassa reglas). El cliente jamás escribe la
+    // subcolección clics (write:false); el admin la LEE vía getClicsDeLinkPage
+    // (read:true) para mostrar el conteo por botón en el editor.
+    match /link_pages/{id} {
+      allow read: if true;         // Vitrina pública de la página de enlaces.
+      allow write: if isAdmin();   // Solo el admin crea/edita/borra páginas.
+
+      // Contadores de clic por botón (id del doc = botonId). Lectura pública
+      // (el admin los suma en el editor); solo la CF los incrementa.
+      match /clics/{botonId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
     // ── Gamificación / fidelización ──────────────────────────────────────────────
     match /globals/{id}            { allow read: if true;  allow write: if isAdmin(); } // activeChallenge
     match /weeklyChallenges/{id}   { allow read: if true;  allow write: if isAdmin(); }

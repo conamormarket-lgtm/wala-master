@@ -548,3 +548,52 @@ export async function trackWishlist(wishlistInfo = {}, userCtx = {}) {
     eventData: wishlistInfo // Esperado: { action, productId, categoryId }
   });
 }
+
+// ── Enlaces útiles (link-in-bio): visitas y clics ────────────────────────────
+// Ambos son FIRE-AND-FORGET: jamás bloquean la carga de /l/{slug} ni la apertura
+// del enlace. País y dispositivo se derivan de la sesión (mismo mecanismo que el
+// resto de eventos: la sesión enriquece countryCode/device/clientType y el
+// dashboard une evento→sesión por sessionId). El clic escribe TAMBIÉN el evento
+// aquí; el contador denormalizado por botón lo mueve la CF registrarClicEnlace.
+
+// Visita a la página pública de enlaces. `slug` es el de la URL /l/{slug}.
+export async function trackLinkPageView(pageId, slug, userCtx = {}) {
+  if (!pageId) return;
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx, window.location.pathname || `/l/${slug || ''}`);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.LINK_PAGE_VIEW,
+    path: window.location.pathname || `/l/${slug || ''}`,
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: { pageId, slug: slug || null } // Esperado: { pageId, slug }
+  });
+}
+
+// Clic en un botón de la página de enlaces. Devuelve el sessionId para que quien
+// dispare el clic pueda reenviarlo a la CF registrarClicEnlace (contexto server).
+export async function trackLinkClick(pageId, botonId, url, userCtx = {}) {
+  if (!pageId || !botonId) return null;
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx, window.location.pathname || '/');
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type: ANALYTICS_EVENT_TYPES.LINK_CLICK,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: { pageId, botonId, url: url || null } // Esperado: { pageId, botonId, url }
+  });
+  return sessionId || null;
+}
