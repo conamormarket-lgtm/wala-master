@@ -9,9 +9,15 @@
 //   - El contador en vivo se calcula sumando ~10 shards de la subcolección
 //     `contador` (lectura pública barata), NO con onSnapshot ni escaneos.
 //   - El estado "mi participación" es 1 solo doc por uid (idempotente).
-import { getCollection, getDocument } from './firebase/firestore';
+import {
+  getCollection,
+  getDocument,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+} from './firebase/firestore';
 import { db } from './firebase/config';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Colección raíz de sorteos.
@@ -116,5 +122,165 @@ export const participarGratis = async (sorteoId, origenApp = false) => {
     return { data: res.data, error: null };
   } catch (e) {
     return { data: null, error: e?.message || 'No se pudo registrar la participación.' };
+  }
+};
+
+// ── CRUD ADMIN ──────────────────────────────────────────────────────────────
+// Escrituras del panel admin. Las reglas de Firestore restringen estas
+// operaciones al administrador (base compartida con el ERP). Sigue el molde de
+// services/flashOffers.js. Convención de retorno de firebase/firestore:
+//   createDocument → { id, error }; update/delete → { error }.
+
+/**
+ * Lista TODOS los sorteos (uso admin), del más reciente al más antiguo.
+ * Ordena por createdAt desc en cliente (son pocos docs, barato) para no exigir
+ * un índice compuesto. Convención de retorno: { data, error }.
+ *
+ * @returns {Promise<{ data: object[], error: string|null }>}
+ */
+export const getSorteos = async () => {
+  const { data, error } = await getCollection(COLLECTION);
+  if (error) return { data: [], error };
+  const ms = (t) => t?.toMillis?.() ?? t?.seconds ?? 0;
+  const ordenados = [...(data || [])].sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
+  return { data: ordenados, error: null };
+};
+
+/**
+ * Normaliza el payload del formulario admin al CONTRATO del doc sorteo.
+ * El precioTicket solo tiene sentido si el tipo es "pagado"; en "gratis" se
+ * fuerza a 0. NUNCA se escribe contadorParticipantes desde el cliente: lo
+ * mantienen los shards del contador (Build 1).
+ *
+ * @param {object} data - valores del formulario
+ * @returns {object} documento listo para Firestore
+ */
+const construirDocSorteo = (data) => {
+  const tipo = data.tipo === 'pagado' ? 'pagado' : 'gratis';
+  return {
+    titulo: (data.titulo || '').trim(),
+    descripcion: (data.descripcion || '').trim(),
+    tipo,
+    // El precio del ticket SIEMPRE se guarda en el doc del sorteo; es la única
+    // fuente de verdad del cobro server-side. En sorteos gratis va en 0.
+    precioTicket: tipo === 'pagado' ? Number(data.precioTicket) || 0 : 0,
+    moneda: 'PEN',
+    requisitoApp: data.requisitoApp || 'ninguno',
+    numGanadores: Number(data.numGanadores) || 1,
+    premio: {
+      nombre: (data.premioNombre || '').trim(),
+      imagenUrl: data.premioImagenUrl || '',
+      valor: Number(data.premioValor) || 0,
+    },
+    heroImagenUrl: data.heroImagenUrl || '',
+    fechaInicio: data.fechaInicio || '',
+    fechaFin: data.fechaFin || '',
+    estado: data.estado || 'borrador',
+    chanceExtraCompartir: !!data.chanceExtraCompartir,
+    chanceExtraReferido: !!data.chanceExtraReferido,
+  };
+};
+
+/**
+ * Crea un sorteo. createDocument añade createdAt/updatedAt (serverTimestamp).
+ *
+ * @param {object} data - valores del formulario admin
+ * @returns {Promise<{ id: string|null, error: string|null }>}
+ */
+export const createSorteo = async (data) => {
+  return await createDocument(COLLECTION, construirDocSorteo(data));
+};
+
+/**
+ * Actualiza un sorteo existente. updateDocument añade updatedAt.
+ *
+ * @param {string} id
+ * @param {object} data - valores del formulario admin
+ * @returns {Promise<{ error: string|null }>}
+ */
+export const updateSorteo = async (id, data) => {
+  if (!id) return { error: 'Falta el id del sorteo' };
+  return await updateDocument(COLLECTION, id, construirDocSorteo(data));
+};
+
+/**
+ * Elimina un sorteo (solo el doc raíz).
+ *
+ * @param {string} id
+ * @returns {Promise<{ error: string|null }>}
+ */
+export const deleteSorteo = async (id) => {
+  if (!id) return { error: 'Falta el id del sorteo' };
+  return await deleteDocument(COLLECTION, id);
+};
+
+/**
+ * Lee la subcolección de participantes de un sorteo (SOLO uso admin).
+ * Con límite/paginación básica para no escanear colecciones grandes: por
+ * defecto 200 docs ordenados por createdAt desc. NO se usa en la página
+ * pública (allí rige la filosofía de pocas lecturas).
+ *
+ * @param {string} sorteoId
+ * @param {number} [max=200] - tope de documentos a leer
+ * @returns {Promise<{ data: object[], error: string|null }>}
+ */
+export const getParticipantes = async (sorteoId, max = 200) => {
+  if (!sorteoId) return { data: [], error: 'Falta el id del sorteo' };
+  if (!db) return { data: [], error: null };
+  try {
+    const ref = collection(db, COLLECTION, sorteoId, 'participantes');
+    // Ordena por createdAt desc con tope; si no hubiera índice/campo, Firestore
+    // igual responde porque es una subcolección de un solo campo de orden.
+    const q = query(ref, orderBy('createdAt', 'desc'), limit(max));
+    const snap = await getDocs(q);
+    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return { data, error: null };
+  } catch (e) {
+    return { data: [], error: e?.message || 'Error al leer los participantes' };
+  }
+};
+
+// ── WRAPPERS DE CALLABLES (contrato Agente A) ────────────────────────────────
+
+/**
+ * Wrapper de la callable `asignarTicketsManual` (Agente A). Permite al admin
+ * asignar tickets a un participante identificado por correo, teléfono o DNI.
+ * Si la CF aún no existe, el botón queda cableado a este nombre y devolverá el
+ * error de la llamada.
+ *
+ * @param {{ sorteoId:string, correo?:string, telefono?:string, dni?:string, cantidad:number }} params
+ * @returns {Promise<{ data: object|null, error: string|null }>}
+ */
+export const asignarTicketsManual = async ({ sorteoId, correo, telefono, dni, cantidad }) => {
+  try {
+    const callable = httpsCallable(getFunctions(), 'asignarTicketsManual');
+    const payload = { sorteoId, cantidad: Number(cantidad) || 0 };
+    // Solo se envían los identificadores presentes (correo / teléfono / DNI).
+    if (correo) payload.correo = correo;
+    if (telefono) payload.telefono = telefono;
+    if (dni) payload.dni = dni;
+    const res = await callable(payload);
+    return { data: res.data, error: null };
+  } catch (e) {
+    return { data: null, error: e?.message || 'No se pudieron asignar los tickets.' };
+  }
+};
+
+/**
+ * Wrapper de la callable `comprarTicketSorteoSecure` (Agente A). SOLO crea la
+ * intención de compra (ticket con pagoConfirmado=false); NO cobra. El precio lo
+ * calcula el servidor a partir del doc del sorteo (precioTicket*cantidad). El
+ * cliente debe reenviar la `metadata` devuelta TAL CUAL al disparar el pago.
+ *
+ * @param {{ sorteoId:string, cantidad:number }} params
+ * @returns {Promise<{ data: object|null, error: string|null }>}
+ */
+export const comprarTicketSorteo = async ({ sorteoId, cantidad }) => {
+  try {
+    const callable = httpsCallable(getFunctions(), 'comprarTicketSorteoSecure');
+    const res = await callable({ sorteoId, cantidad: Number(cantidad) || 1 });
+    return { data: res.data, error: null };
+  } catch (e) {
+    return { data: null, error: e?.message || 'No se pudo crear la intención de compra.' };
   }
 };

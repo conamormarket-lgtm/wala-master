@@ -135,6 +135,8 @@ const AdminEnviosZonas = lazy(() => import('./pages/admin/AdminEnviosZonas'));
 const AdminPayouts = lazy(() => import('./pages/admin/AdminPayouts'));
 const AdminBlueprints = lazy(() => import('./pages/admin/AdminBlueprints'));
 const AdminFlashOffers = lazy(() => import('./pages/admin/AdminFlashOffers'));
+const AdminSorteos = lazy(() => import('./pages/admin/AdminSorteos'));
+const AdminSorteoDetalle = lazy(() => import('./pages/admin/AdminSorteoDetalle'));
 
 const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminPagos = lazy(() => import('./pages/admin/AdminPagos'));
@@ -334,6 +336,8 @@ function App() {
                             <Route path="generador-pagos" element={<AdminGeneradorPagos />} />
                             <Route path="libro-reclamaciones" element={<AdminLibroReclamaciones />} />
                             <Route path="retos" element={<AdminRetos />} />
+                            <Route path="sorteos" element={<AdminSorteos />} />
+                            <Route path="sorteos/:id" element={<AdminSorteoDetalle />} />
                             <Route path="destacados" element={<AdminDestacados />} />
                             <Route path="zonas" element={<Navigate to="/admin" replace />} />
                             <Route path="cliparts" element={<AdminCliparts />} />

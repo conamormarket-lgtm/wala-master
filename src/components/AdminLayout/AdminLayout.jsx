@@ -328,6 +328,8 @@ const AdminLayout = () => {
               >
                 Retos Semanales
               </NavLink>
+              {/* "Raffles" (sorteos) NO va aquí: vive como tarjeta dentro de
+                  "Elementos con diseño" (grupo Diseño de Tienda). */}
             </>
           )}
 

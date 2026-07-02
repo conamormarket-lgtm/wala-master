@@ -813,6 +813,38 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
     }
   }
 
+  // ── SORTEOS: recálculo del monto del TICKET server-side ─────────────────────
+  // Si es un pago de sorteo (metadata.tipo==="sorteo"), el monto NO se toma del
+  // cliente: se relee precioTicket*cantidad desde el doc del sorteo (regla dura de
+  // dinero). Si algo no cuadra, se ABORTA el cobro (a diferencia de H-11 de pedidos,
+  // aquí no hay total de ERP de respaldo y no debe cobrarse un monto no verificado).
+  if (metadata && metadata.tipo === "sorteo") {
+    const { montoCentimos } = await leerPrecioTicketSorteo(
+      metadata.sorteoId,
+      // cantidad autoritativa: la del intent creado en comprarTicketSorteoSecure.
+      await (async () => {
+        const tSnap = await db.collection("sorteos").doc(String(metadata.sorteoId))
+          .collection("tickets").doc(String(metadata.ticketId)).get();
+        if (!tSnap.exists) {
+          throw new functions.https.HttpsError("not-found", "El ticket de sorteo no existe.");
+        }
+        const ticket = tSnap.data() || {};
+        // GUARD ANTI DOBLE COBRO: si el ticket YA está pagado, se aborta ANTES de
+        // llamar a la API de Culqi. El lock culqiCharges/{tokenId} solo cubre el
+        // mismo token; esto cubre el mismo TICKET (un reintento con token nuevo
+        // sobre un ticket ya cobrado no debe generar un segundo cargo real).
+        if (ticket.pagoConfirmado === true) {
+          throw new functions.https.HttpsError("failed-precondition", "Este ticket ya está pagado.");
+        }
+        return Number(ticket.cantidad);
+      })()
+    );
+    if (payCurrency !== "PEN") {
+      throw new functions.https.HttpsError("failed-precondition", "Los tickets de sorteo se cobran en PEN.");
+    }
+    chargeAmount = montoCentimos; // monto autoritativo del ticket (céntimos)
+  }
+
   // La llave privada de Culqi DEBE venir de un secret de Functions. Sin fallback dummy
   // y sin prefijo REACT_APP_ (que se expondría en el bundle del cliente).
   const secretKey = process.env.CULQI_SECRET_KEY;
@@ -966,6 +998,18 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
     // Best-effort e idempotente; no afecta el cálculo del monto ni la respuesta al
     // cliente. Se ejecuta ADEMÁS de la marca en pedidos_web de arriba.
     await marcarWalaPedidoPagado({ pedidoId, metodoPago: "culqi", montoPagado: chargeAmount });
+
+    // ── SORTEOS: si el pago era de un ticket, se confirma server-side (idempotente) ─
+    // Corre dentro de la rama de ÉXITO protegida por el lock culqiCharges/{tokenId},
+    // así que solo se ejecuta una vez por cobro real. Si además llega el culqiWebhook,
+    // confirmarTicketSorteoDesdePago es idempotente por pagoId (no dobla el crédito).
+    if (metadata && metadata.tipo === "sorteo") {
+      await confirmarTicketSorteoDesdePago({
+        metadata,
+        pagoId: String(result.id),
+        metodoPago: "culqi",
+      });
+    }
 
     return {
       success: true,
@@ -2613,6 +2657,19 @@ exports.culqiWebhook = functions.https.onRequest(async (req, res) => {
       return res.status(200).send("already processed");
     }
 
+    // ── SORTEOS: si el cargo era de un ticket, se confirma server-side y se retorna ─
+    // Gateado por metadata.tipo==="sorteo". Idempotente por culqiWebhookEvents/{chargeId}
+    // (arriba) y, además, por pagoId dentro de confirmarTicketSorteoDesdePago (no dobla
+    // el crédito si processCulqiPayment ya lo había confirmado con el mismo chargeId).
+    if (meta && meta.tipo === "sorteo") {
+      await confirmarTicketSorteoDesdePago({
+        metadata: meta,
+        pagoId: String(chargeId),
+        metodoPago: "culqi",
+      });
+      return res.status(200).send("ok sorteo");
+    }
+
     // ── Marcar el pedido como pagado en pedidos_web (ERP), de forma idempotente ─
     if (pedidoId) {
       try {
@@ -3394,4 +3451,587 @@ exports.participarSorteoGratis = functions.https.onCall(async (data, context) =>
     console.error("participarSorteoGratis error:", e);
     throw new functions.https.HttpsError("internal", "No se pudo registrar la participación.");
   }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// SORTEOS — TICKETS PAGADOS (server-authoritative, idempotente)
+// El precio del ticket se toma SIEMPRE del doc del sorteo server-side
+// (precioTicket * cantidad); NUNCA del cliente. Un ticket queda pagoConfirmado
+// SOLO cuando el pago se confirma server-side (webhook/captura), reusando los
+// locks de idempotencia ya existentes (culqiCharges / culqiWebhookEvents /
+// paypalCaptureId). El cliente jamás escribe pagoConfirmado.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Máximo de tickets por compra (evita intents absurdos; ajusta si hace falta).
+const SORTEO_MAX_TICKETS_POR_COMPRA = 100;
+
+/**
+ * Relee el precio del ticket de un sorteo y valida que sea comprable AHORA.
+ * Devuelve { sorteoRef, sorteo, precioCentimos, montoCentimos } o lanza HttpsError.
+ * El monto se calcula en CÉNTIMOS (precioTicket*100*cantidad) para casar con Culqi.
+ */
+async function leerPrecioTicketSorteo(sorteoId, cantidad) {
+  if (!sorteoId || typeof sorteoId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta sorteoId.");
+  }
+  const n = Number(cantidad);
+  if (!Number.isInteger(n) || n <= 0 || n > SORTEO_MAX_TICKETS_POR_COMPRA) {
+    throw new functions.https.HttpsError("invalid-argument", "Cantidad de tickets inválida.");
+  }
+  const sorteoRef = db.collection("sorteos").doc(sorteoId);
+  const snap = await sorteoRef.get();
+  if (!snap.exists) {
+    throw new functions.https.HttpsError("not-found", "El sorteo no existe.");
+  }
+  const sorteo = snap.data();
+  if (sorteo.estado !== "activo") {
+    throw new functions.https.HttpsError("failed-precondition", "El sorteo no está activo.");
+  }
+  if (sorteo.tipo !== "pagado") {
+    throw new functions.https.HttpsError("failed-precondition", "Este sorteo no vende tickets.");
+  }
+  // Precio autoritativo: SIEMPRE del doc del sorteo (regla dura de dinero).
+  const precioTicket = Number(sorteo.precioTicket);
+  if (!Number.isFinite(precioTicket) || precioTicket <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "El sorteo no tiene un precio de ticket válido.");
+  }
+  const precioCentimos = Math.round(precioTicket * 100);
+  const montoCentimos = precioCentimos * n;
+  if (montoCentimos <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "Monto de tickets inválido.");
+  }
+  return { sorteoRef, sorteo, cantidad: n, precioTicket, precioCentimos, montoCentimos };
+}
+
+// ── comprarTicketSorteoSecure({ sorteoId, cantidad }) ──────────────────────────
+// Crea una INTENCIÓN de compra: doc sorteos/{id}/tickets/{ticketId} con
+// pagoConfirmado=false y participanteUid=uid. NO cobra aquí: solo prepara y
+// devuelve el monto server-side + la metadata para casar el pago (Culqi/PayPal).
+// El monto que se devuelve es SIEMPRE el recalculado del doc del sorteo.
+exports.comprarTicketSorteoSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const sorteoId = data && data.sorteoId;
+  const cantidad = data && data.cantidad;
+
+  // Precio y validaciones 100% server-side (precioTicket*cantidad, en céntimos).
+  const { sorteoRef, sorteo, cantidad: n, precioCentimos, montoCentimos } =
+    await leerPrecioTicketSorteo(sorteoId, cantidad);
+
+  // Snapshot mínimo de datos del comprador (para asignar el ticket sin confiar en
+  // el cliente). Se lee del perfil del portal; correo/tel/dni pueden faltar y se
+  // completan luego en la confirmación si es necesario.
+  let correo = null; let telefono = null; let dni = null;
+  try {
+    const uSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+    if (uSnap.exists) {
+      const u = uSnap.data() || {};
+      correo = u.email || null;
+      telefono = u.phone || null;
+      dni = u.dni || null;
+    }
+  } catch (e) {
+    console.warn("comprarTicketSorteoSecure: no se pudo leer el perfil (se continúa):", e.message);
+  }
+
+  // Crea el doc de INTENCIÓN (pagoConfirmado=false). id autogenerado = ticketId.
+  const ticketRef = sorteoRef.collection("tickets").doc();
+  const ticketId = ticketRef.id;
+  await ticketRef.set({
+    sorteoId,
+    participanteUid: uid,
+    correo,
+    telefono,
+    dni,
+    cantidad: n,
+    montoCentimos,               // monto autoritativo (céntimos) esperado para este intent
+    moneda: sorteo.moneda || "PEN",
+    pagoId: null,                // se rellena al confirmar (chargeId / captureId)
+    metodoPago: null,            // "culqi" | "paypal" (se fija al confirmar)
+    pagoConfirmado: false,       // SOLO el servidor lo pone en true (webhook/captura)
+    asignadoPor: "pago",
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  // Metadata que el cliente debe reenviar al iniciar el pago para casar el webhook/
+  // captura con este intent. tipo:"sorteo" activa el branch de confirmación.
+  const metadata = {
+    tipo: "sorteo",
+    sorteoId: String(sorteoId),
+    ticketId: String(ticketId),
+    uid: String(uid),
+  };
+
+  return {
+    ok: true,
+    sorteoId: String(sorteoId),
+    ticketId,
+    cantidad: n,
+    // Monto SERVER-SIDE. Céntimos para Culqi; en soles (2 decimales) para display/PayPal.
+    montoCentimos,
+    monto: Number((montoCentimos / 100).toFixed(2)),
+    moneda: sorteo.moneda || "PEN",
+    // Reenviar TAL CUAL como metadata del cargo Culqi / custom del PayPal.
+    metadata,
+  };
+});
+
+/**
+ * CONFIRMACIÓN server-side de un ticket de sorteo. Se invoca desde los puntos de
+ * ÉXITO de pago YA EXISTENTES (processCulqiPayment, culqiWebhook,
+ * capturePaypalOrderSecure) cuando metadata.tipo === "sorteo". Es IDEMPOTENTE:
+ * - Cada punto de pago ya está protegido por su propio lock (culqiCharges/{tokenId},
+ *   culqiWebhookEvents/{chargeId}, pedidos_web.paypalCaptureId), así que este helper
+ *   solo corre una vez por cobro real. Además, dentro de la transacción se comprueba
+ *   ticket.pagoConfirmado y ticket.pagoId para no doblar increments si dos vías
+ *   (p.ej. processCulqiPayment + webhook) llegaran a confirmar el mismo cargo.
+ *
+ * Efectos (en una sola transacción sobre el ticket + el participante):
+ *   - marca el ticket pagoConfirmado=true, pagoId, metodoPago.
+ *   - crea el participante (id=uid) si no existía, con ticketsPagados=cantidad,
+ *     chancesBase=1, chancesTotal=1+cantidad, estado="elegible" (+ increment del
+ *     contador shard SOLO si es nuevo); si ya existía, incrementa ticketsPagados y
+ *     chancesTotal con FieldValue.increment(cantidad).
+ *
+ * BEST-EFFORT: nunca lanza (el cobro ya ocurrió). Loguea y retorna en cualquier fallo.
+ *
+ * @param {object} p
+ * @param {object} p.metadata metadata del cargo (debe traer tipo/sorteoId/ticketId/uid)
+ * @param {string} p.pagoId   chargeId de Culqi o captureId de PayPal
+ * @param {"culqi"|"paypal"} p.metodoPago
+ */
+async function confirmarTicketSorteoDesdePago({ metadata, pagoId, metodoPago } = {}) {
+  try {
+    const meta = metadata || {};
+    if (meta.tipo !== "sorteo") return; // no es un pago de sorteo: no hace nada
+    const sorteoId = meta.sorteoId ? String(meta.sorteoId) : null;
+    const ticketId = meta.ticketId ? String(meta.ticketId) : null;
+    const uid = meta.uid ? String(meta.uid) : null;
+    if (!sorteoId || !ticketId || !uid) {
+      console.warn("confirmarTicketSorteoDesdePago: metadata de sorteo incompleta:", meta);
+      return;
+    }
+
+    const sorteoRef = db.collection("sorteos").doc(sorteoId);
+    const ticketRef = sorteoRef.collection("tickets").doc(ticketId);
+    const participanteRef = sorteoRef.collection("participantes").doc(uid);
+    // Shard aleatorio para el contador (solo se toca si el participante es NUEVO).
+    const shardIndex = Math.floor(Math.random() * SORTEO_CONTADOR_SHARDS);
+    const shardRef = sorteoRef.collection("contador").doc(String(shardIndex));
+
+    await db.runTransaction(async (t) => {
+      const tSnap = await t.get(ticketRef);
+      if (!tSnap.exists) {
+        console.warn(`confirmarTicketSorteoDesdePago: ticket ${sorteoId}/${ticketId} no existe.`);
+        return;
+      }
+      const ticket = tSnap.data() || {};
+      // IDEMPOTENCIA: si este mismo cobro ya confirmó el ticket, no se recuenta.
+      if (ticket.pagoConfirmado === true && ticket.pagoId === String(pagoId)) {
+        return;
+      }
+      // Si el ticket ya está confirmado por OTRO pagoId, es una anomalía: no se
+      // vuelve a incrementar (evita doble crédito). Se registra en log.
+      if (ticket.pagoConfirmado === true) {
+        console.warn(
+          `confirmarTicketSorteoDesdePago: ticket ${sorteoId}/${ticketId} ya confirmado ` +
+          `por pagoId ${ticket.pagoId}; llega ${pagoId}. Se ignora (sin doble crédito).`
+        );
+        return;
+      }
+
+      const cantidad = Number(ticket.cantidad) || 0;
+      if (cantidad <= 0) {
+        console.warn(`confirmarTicketSorteoDesdePago: ticket ${sorteoId}/${ticketId} con cantidad inválida.`);
+      }
+
+      // Lee el participante DENTRO de la transacción (create-or-increment).
+      const pSnap = await t.get(participanteRef);
+
+      // 1) Marca el ticket como PAGADO (server-side, único punto que lo hace true).
+      t.set(ticketRef, {
+        pagoConfirmado: true,
+        pagoId: String(pagoId),
+        metodoPago: metodoPago || ticket.metodoPago || null,
+        confirmadoAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+
+      if (pSnap.exists) {
+        // 2a) Participante YA existe: incrementa tickets y chances (increment atómico).
+        t.set(participanteRef, {
+          ticketsPagados: FieldValue.increment(cantidad),
+          chancesTotal: FieldValue.increment(cantidad),
+          estado: "elegible",
+        }, { merge: true });
+        // No se toca el contador de participantes (no es nuevo).
+      } else {
+        // 2b) Participante NUEVO (compró sin haber "participado" antes): se CREA con
+        //     snapshot de datos del ticket. chancesBase=1, chancesTotal=1+cantidad.
+        const chancesBase = 1;
+        t.set(participanteRef, {
+          uid,
+          nombre: ticket.correo || "Participante",
+          telefono: ticket.telefono || null,
+          correo: ticket.correo || null,
+          dni: ticket.dni || null,
+          tickets: 0,
+          ticketsPagados: cantidad,
+          chancesBase,
+          chancesExtra: 0,
+          chancesTotal: chancesBase + cantidad,
+          origenApp: false,
+          estado: "elegible",
+          createdAt: FieldValue.serverTimestamp(),
+        });
+        // Contador con shards: +1 SOLO al crear un participante nuevo.
+        t.set(shardRef, { count: FieldValue.increment(1) }, { merge: true });
+        t.set(sorteoRef, { contadorParticipantes: FieldValue.increment(1) }, { merge: true });
+      }
+    });
+  } catch (e) {
+    // BEST-EFFORT: el cobro ya se confirmó server-side; nunca se propaga el error.
+    console.error("confirmarTicketSorteoDesdePago: error (ignorado, pago ya confirmado):", e);
+  }
+}
+
+// ── asignarTicketsManual({ sorteoId, correo?, telefono?, dni?, cantidad }) ─────
+// Callable SOLO admin. Suma tickets PAGADOS a un participante de forma manual
+// (el admin confirma el pago offline). NO cobra ni toca montos de pedidos.
+// Resuelve el uid del destinatario SIN crear cuentas fantasma:
+//   (a) primero busca un participante EXISTENTE en el sorteo por correo/telefono/dni;
+//   (b) si no, busca una cuenta existente en portal_clientes_users;
+//   (c) si no se resuelve ningún uid, falla con failed-precondition (mensaje claro).
+// Con el uid: UPSERT del participante (increment si existe, crea si no) + doc de
+// auditoría del ticket, todo en una transacción. Devuelve { ok, uid, cantidad }.
+exports.asignarTicketsManual = functions.https.onCall(async (data, context) => {
+  // 1) Autorización: autenticado + admin (claim o puente adminUsers).
+  requireAuth(context);
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede asignar tickets.");
+  }
+  const adminUid = context.auth.uid;
+
+  // 2) Validaciones de entrada.
+  const sorteoId = data && data.sorteoId;
+  if (!sorteoId || typeof sorteoId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta sorteoId.");
+  }
+  const cantidad = Number(data && data.cantidad);
+  if (!Number.isInteger(cantidad) || cantidad <= 0) {
+    throw new functions.https.HttpsError("invalid-argument", "La cantidad debe ser un entero mayor a 0.");
+  }
+  // Normaliza los identificadores: correo lowercase/trim; teléfono y dni sin espacios.
+  const correoRaw = data && data.correo;
+  const telefonoRaw = data && data.telefono;
+  const dniRaw = data && data.dni;
+  const correo = correoRaw ? String(correoRaw).trim().toLowerCase() : null;
+  const telefono = telefonoRaw ? String(telefonoRaw).replace(/\s+/g, "") : null;
+  const dni = dniRaw ? String(dniRaw).replace(/\s+/g, "") : null;
+  if (!correo && !telefono && !dni) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Indica al menos correo, teléfono o DNI del participante."
+    );
+  }
+
+  const sorteoRef = db.collection("sorteos").doc(sorteoId);
+  const participantesCol = sorteoRef.collection("participantes");
+
+  // 3) RESOLVER el uid del destinatario (sin crear cuentas fantasma).
+  let uid = null;
+  // Snapshot de datos del perfil (para poblar el participante si es nuevo).
+  let perfil = { nombre: null, correo: correo, telefono: telefono, dni: dni };
+
+  // (a) Participante EXISTENTE en el sorteo. Queries de un solo campo, secuenciales.
+  //     El id del doc participante es el uid, así que basta con hallar el doc.
+  try {
+    const consultas = [];
+    if (correo) consultas.push(["correo", correo]);
+    if (telefono) consultas.push(["telefono", telefono]);
+    if (dni) consultas.push(["dni", dni]);
+    for (const [campo, valor] of consultas) {
+      const snap = await participantesCol.where(campo, "==", valor).limit(1).get();
+      if (!snap.empty) {
+        const doc = snap.docs[0];
+        uid = doc.id;
+        const p = doc.data() || {};
+        perfil = {
+          nombre: p.nombre || perfil.nombre,
+          correo: p.correo || correo,
+          telefono: p.telefono || telefono,
+          dni: p.dni || dni,
+        };
+        break;
+      }
+    }
+  } catch (e) {
+    console.warn("asignarTicketsManual: fallo buscando participante existente:", e.message);
+  }
+
+  // (b) Cuenta EXISTENTE en portal_clientes_users (email/phone/dni). Secuencial.
+  if (!uid) {
+    try {
+      const consultas = [];
+      if (correo) consultas.push(["email", correo]);
+      if (telefono) consultas.push(["phone", telefono]);
+      if (dni) consultas.push(["dni", dni]);
+      for (const [campo, valor] of consultas) {
+        const snap = await db.collection(PORTAL_USERS_COLLECTION).where(campo, "==", valor).limit(1).get();
+        if (!snap.empty) {
+          const doc = snap.docs[0];
+          uid = doc.id;
+          const u = doc.data() || {};
+          perfil = {
+            nombre: (u.displayName && String(u.displayName).trim()) || u.email || perfil.nombre,
+            correo: u.email || correo,
+            telefono: u.phone || telefono,
+            dni: u.dni || dni,
+          };
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn("asignarTicketsManual: fallo buscando cuenta en portal:", e.message);
+    }
+  }
+
+  // (c) No se resolvió ningún uid: no se crean cuentas fantasma.
+  if (!uid) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "No se encontró un usuario con esos datos. Pídele que inicie sesión en WALA primero."
+    );
+  }
+
+  // 4) UPSERT del participante + doc de auditoría del ticket, en una transacción.
+  //    Acción admin única: no requiere lock estricto, pero se envuelve en tx por
+  //    consistencia (marca los tickets como PAGADOS/elegibles; pago offline).
+  const participanteRef = participantesCol.doc(uid);
+  const ticketRef = sorteoRef.collection("tickets").doc();
+  const shardIndex = Math.floor(Math.random() * SORTEO_CONTADOR_SHARDS);
+  const shardRef = sorteoRef.collection("contador").doc(String(shardIndex));
+
+  try {
+    await db.runTransaction(async (t) => {
+      const pSnap = await t.get(participanteRef);
+
+      if (pSnap.exists) {
+        // Participante YA existe: increment atómico de tickets y chances.
+        t.set(participanteRef, {
+          ticketsPagados: FieldValue.increment(cantidad),
+          chancesTotal: FieldValue.increment(cantidad),
+          estado: "elegible",
+        }, { merge: true });
+        // No se toca el contador (no es nuevo).
+      } else {
+        // Participante NUEVO: se CREA con snapshot del perfil. chancesBase=1.
+        const chancesBase = 1;
+        t.set(participanteRef, {
+          uid,
+          nombre: perfil.nombre || perfil.correo || "Participante",
+          telefono: perfil.telefono || null,
+          correo: perfil.correo || null,
+          dni: perfil.dni || null,
+          tickets: 0,
+          ticketsPagados: cantidad,
+          chancesBase,
+          chancesExtra: 0,
+          chancesTotal: chancesBase + cantidad,
+          origenApp: false,
+          estado: "elegible",
+          createdAt: FieldValue.serverTimestamp(),
+        });
+        // Contador con shards: +1 SOLO al crear un participante nuevo.
+        t.set(shardRef, { count: FieldValue.increment(1) }, { merge: true });
+        t.set(sorteoRef, { contadorParticipantes: FieldValue.increment(1) }, { merge: true });
+      }
+
+      // Doc de AUDITORÍA: ticket manual ya confirmado (pago offline por el admin).
+      t.set(ticketRef, {
+        sorteoId,
+        participanteUid: uid,
+        cantidad,
+        pagoConfirmado: true,
+        metodoPago: "manual",
+        asignadoPor: "admin",
+        asignadoPorUid: adminUid,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("asignarTicketsManual error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudieron asignar los tickets.");
+  }
+
+  return { ok: true, uid, cantidad };
+});
+
+// ── PayPal para TICKETS de sorteo ─────────────────────────────────────────────
+// Par dedicado que NO toca el flujo PayPal de pedidos (createPaypalOrderSecure /
+// capturePaypalOrderSecure siguen intactos, regla dura #1). El monto USD se deriva
+// del PRECIO DEL TICKET en PEN (recalculado server-side desde el doc del sorteo) con
+// la misma tasa config/fx que usa el resto de la app. reference_id = ticketId, para
+// casar la captura con el intent. La confirmación reusa confirmarTicketSorteoDesdePago.
+
+// Convierte un monto en céntimos PEN a USD (formato PayPal "12.34") con config/fx.
+async function penCentimosAUsd(montoCentimos) {
+  const penTotal = Number(montoCentimos) / 100;
+  if (!Number.isFinite(penTotal) || penTotal <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "Monto PEN inválido para conversión.");
+  }
+  const fxSnap = await db.collection("config").doc("fx").get();
+  if (!fxSnap.exists) {
+    throw new functions.https.HttpsError("failed-precondition", "Tipo de cambio no disponible (config/fx).");
+  }
+  const fx = fxSnap.data() || {};
+  const penPerUsd = Number(fx.penPerUsd);
+  const margin = Number.isFinite(Number(fx.margin)) ? Number(fx.margin) : 0;
+  if (!Number.isFinite(penPerUsd) || penPerUsd <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "Tipo de cambio inválido (penPerUsd).");
+  }
+  const usd = ((penTotal / penPerUsd) * (1 + margin)).toFixed(2);
+  if (!(Number(usd) > 0)) {
+    throw new functions.https.HttpsError("failed-precondition", "Monto USD calculado inválido.");
+  }
+  return usd;
+}
+
+// createPaypalTicketSorteoSecure({ sorteoId, ticketId }): crea la orden PayPal para
+// un ticket ya intencionado. Relee el intent (para la cantidad) y el precio del
+// sorteo (server-side); devuelve { orderID, amountUsd, sorteoId, ticketId }.
+exports.createPaypalTicketSorteoSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const sorteoId = data && data.sorteoId;
+  const ticketId = data && data.ticketId;
+  if (!sorteoId || !ticketId) {
+    throw new functions.https.HttpsError("invalid-argument", "Faltan sorteoId/ticketId.");
+  }
+
+  // El intent debe existir, pertenecer al usuario y no estar ya pagado.
+  const ticketRef = db.collection("sorteos").doc(String(sorteoId))
+    .collection("tickets").doc(String(ticketId));
+  const tSnap = await ticketRef.get();
+  if (!tSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "El ticket no existe.");
+  }
+  const ticket = tSnap.data() || {};
+  if (ticket.participanteUid !== uid) {
+    throw new functions.https.HttpsError("permission-denied", "Este ticket no es tuyo.");
+  }
+  if (ticket.pagoConfirmado === true) {
+    throw new functions.https.HttpsError("already-exists", "Este ticket ya está pagado.");
+  }
+
+  // Monto autoritativo: precioTicket*cantidad del doc del sorteo (no del ticket ni del cliente).
+  const { montoCentimos } = await leerPrecioTicketSorteo(String(sorteoId), Number(ticket.cantidad));
+  const usd = await penCentimosAUsd(montoCentimos);
+
+  const accessToken = await getPaypalAccessToken();
+  const resp = await fetch(`${paypalApiBase()}/v2/checkout/orders`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [{
+        // reference_id/custom_id ligan la orden con el ticket para validar al capturar.
+        reference_id: String(ticketId),
+        custom_id: String(ticketId),
+        description: `Ticket(s) sorteo #${sorteoId}`,
+        amount: { currency_code: "USD", value: usd },
+      }],
+    }),
+  });
+  const json = await resp.json().catch(() => ({}));
+  if (!resp.ok || !json.id) {
+    console.error("createPaypalTicketSorteoSecure: PayPal rechazó la creación:", resp.status, json);
+    throw new functions.https.HttpsError("internal", "PayPal no pudo crear la orden.");
+  }
+  return { orderID: json.id, amountUsd: usd, sorteoId: String(sorteoId), ticketId: String(ticketId) };
+});
+
+// capturePaypalTicketSorteoSecure({ orderID, sorteoId, ticketId }): captura, valida
+// COMPLETED + USD esperado + reference_id, y SOLO entonces confirma el ticket
+// server-side (idempotente por captureId dentro de confirmarTicketSorteoDesdePago).
+exports.capturePaypalTicketSorteoSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const orderID = data && data.orderID;
+  const sorteoId = data && data.sorteoId;
+  const ticketId = data && data.ticketId;
+  if (!orderID || !sorteoId || !ticketId) {
+    throw new functions.https.HttpsError("invalid-argument", "Faltan orderID/sorteoId/ticketId.");
+  }
+
+  // Re-lee el intent y re-valida propiedad + monto esperado ANTES de aceptar la captura.
+  const ticketRef = db.collection("sorteos").doc(String(sorteoId))
+    .collection("tickets").doc(String(ticketId));
+  const tSnap = await ticketRef.get();
+  if (!tSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "El ticket no existe.");
+  }
+  const ticket = tSnap.data() || {};
+  if (ticket.participanteUid !== uid) {
+    throw new functions.https.HttpsError("permission-denied", "Este ticket no es tuyo.");
+  }
+  const { montoCentimos } = await leerPrecioTicketSorteo(String(sorteoId), Number(ticket.cantidad));
+  const expectedUsd = await penCentimosAUsd(montoCentimos);
+
+  const accessToken = await getPaypalAccessToken();
+  const resp = await fetch(
+    `${paypalApiBase()}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`,
+    {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    }
+  );
+  const json = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    console.error("capturePaypalTicketSorteoSecure: PayPal rechazó la captura:", resp.status, json);
+    throw new functions.https.HttpsError("internal", "PayPal no pudo capturar la orden.");
+  }
+  if (json.status !== "COMPLETED") {
+    throw new functions.https.HttpsError("failed-precondition", `El pago no se completó (status: ${json.status}).`);
+  }
+
+  const pu = (json.purchase_units && json.purchase_units[0]) || {};
+  const capture = (pu.payments && pu.payments.captures && pu.payments.captures[0]) || {};
+  const captureStatus = capture.status;
+  const capturedValue = capture.amount && capture.amount.value;
+  const capturedCurrency = capture.amount && capture.amount.currency_code;
+  const captureId = capture.id || null;
+  const refId = pu.reference_id || pu.custom_id || null;
+
+  if (captureStatus !== "COMPLETED") {
+    throw new functions.https.HttpsError("failed-precondition", `La captura no se completó (status: ${captureStatus}).`);
+  }
+  if (capturedCurrency !== "USD") {
+    throw new functions.https.HttpsError("failed-precondition", `Moneda inesperada en la captura: ${capturedCurrency}.`);
+  }
+  if (Math.abs(Number(capturedValue) - Number(expectedUsd)) > 0.01) {
+    console.error(
+      `capturePaypalTicketSorteoSecure: monto capturado (${capturedValue}) != esperado (${expectedUsd}) ` +
+      `para ticket ${sorteoId}/${ticketId}.`
+    );
+    throw new functions.https.HttpsError("failed-precondition", "El monto capturado no coincide con el del ticket.");
+  }
+  if (refId && String(refId) !== String(ticketId)) {
+    console.error(`capturePaypalTicketSorteoSecure: reference_id (${refId}) != ticketId (${ticketId}).`);
+    throw new functions.https.HttpsError("failed-precondition", "La orden de PayPal no corresponde a este ticket.");
+  }
+
+  // Confirmación server-side del ticket (idempotente por captureId).
+  await confirmarTicketSorteoDesdePago({
+    metadata: { tipo: "sorteo", sorteoId: String(sorteoId), ticketId: String(ticketId), uid: String(uid) },
+    pagoId: captureId ? String(captureId) : String(orderID),
+    metodoPago: "paypal",
+  });
+
+  return {
+    success: true,
+    status: "COMPLETED",
+    captureId,
+    amountUsd: capturedValue,
+    sorteoId: String(sorteoId),
+    ticketId: String(ticketId),
+  };
 });

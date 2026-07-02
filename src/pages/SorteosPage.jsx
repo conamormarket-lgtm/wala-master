@@ -1,7 +1,8 @@
-// ── SorteosPage — Página pública del Módulo Sorteos (Build 1) ────────────────
+// ── SorteosPage — Página pública del Módulo Sorteos (Build 1 + Build 2) ──────
 // Móvil-first (el tráfico viene de lives en el teléfono). Muestra el sorteo
 // activo con hero del premio, countdown, reglas de cómo ganar chances, gate de
-// login, y el botón PARTICIPAR (gratis via callable; pagado se cablea en Build 2).
+// login, y el botón PARTICIPAR (gratis via callable). En Build 2 se añade el
+// FLUJO REAL DE COMPRA DE TICKETS para sorteos tipo="pagado".
 //
 // PRINCIPIOS DE POCAS LECTURAS (regla dura):
 //   - Contador en vivo = suma de shards (getContadorSorteo), refresco suave con
@@ -9,10 +10,22 @@
 //   - "Mi participación" = 1 doc por uid (getMiParticipacion), staleTime 30s.
 //   - El estado del sorteo (contador/tickets) vive en Firestore, nunca en
 //     localStorage.
-import React, { useState, useMemo, useCallback } from 'react';
+//
+// REGLAS DE DINERO (Build 2 — NO negociables):
+//   - El precio del ticket lo fija SIEMPRE el servidor (precioTicket*cantidad):
+//     comprarTicketSorteoSecure devuelve montoCentimos/metadata autoritativos y
+//     el cliente los reenvía TAL CUAL. El total mostrado aquí es solo display.
+//   - pagoConfirmado lo escribe SOLO el servidor (webhook Culqi / captura PayPal).
+//   - Idempotente por pagoId (chargeId Culqi / captureId PayPal) en el backend.
+//   - NO se duplica la lógica de montos de Culqi/PayPal: se reusan sus SDKs
+//     (checkout-js / @paypal/react-paypal-js) y las callables del contrato.
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { useAuth } from '../contexts/AuthContext';
+import { useGlobalToast } from '../contexts/ToastContext';
 import { getClientType } from '../services/analytics/tracker';
 import { GlassCard, GlassButton, GlassPanel, Badge } from '../components/ui';
 import {
@@ -81,16 +94,272 @@ function ImagenConFallback({ src, alt, className }) {
   );
 }
 
+// ── Botón Culqi para tickets de sorteo ───────────────────────────────────────
+// Reusa el MISMO SDK (checkout-js) y la MISMA callable processCulqiPayment que
+// CulqiCustomCheckout, sin duplicar lógica de montos: el `amount` que se envía es
+// solo referencial (el servidor RECALCULA precioTicket*cantidad para metadata
+// tipo:"sorteo" y aborta si no cuadra). Lo que casa el cobro con el ticket es la
+// `metadata` devuelta por comprarTicketSorteoSecure, que se reenvía TAL CUAL.
+//
+// Props:
+//   intento  = { montoCentimos, monto, moneda, metadata } (de la CF)
+//   email    = correo del comprador (Culqi lo exige)
+//   onPaid   = callback tras confirmar el cargo server-side
+//   onError  = callback en error de negocio/red
+function CulqiTicketButton({ intento, email, onPaid, onError }) {
+  const toast = useGlobalToast();
+  const [isReady, setIsReady] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const culqiRef = useRef(null);
+  // Guard SÍNCRONO anti doble-cobro (isProcessing es async y no frena una
+  // segunda invocación inmediata del callback de Culqi; este ref sí).
+  const processingRef = useRef(false);
+  // Callbacks vía ref estable: no recrean la instancia de Culqi en cada render.
+  const onPaidRef = useRef(onPaid);
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onPaidRef.current = onPaid;
+    onErrorRef.current = onError;
+  }, [onPaid, onError]);
+
+  // Carga perezosa del script de Culqi (idéntico patrón a CulqiCustomCheckout).
+  useEffect(() => {
+    const scriptId = 'culqi-js-v4';
+    const checkAndSetReady = () => {
+      if (window.CulqiCheckout) setIsReady(true);
+      else setTimeout(checkAndSetReady, 200);
+    };
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://js.culqi.com/checkout-js';
+      script.async = true;
+      script.onload = checkAndSetReady;
+      document.body.appendChild(script);
+    } else {
+      checkAndSetReady();
+    }
+  }, []);
+
+  // Construye la instancia de Culqi cuando el SDK está listo o cambia el intento.
+  useEffect(() => {
+    if (!isReady || !window.CulqiCheckout || !intento) return undefined;
+
+    // Monto SOLO referencial para el modal: el servidor recalcula el autoritativo.
+    const currency = intento.moneda || 'PEN';
+    const amountInt = Number(intento.montoCentimos || 0);
+
+    const publicKey = process.env.REACT_APP_CULQI_PUBLIC_KEY;
+    if (!publicKey) {
+      console.error('Culqi: Falta REACT_APP_CULQI_PUBLIC_KEY en .env');
+      return undefined;
+    }
+
+    const config = {
+      settings: {
+        title: 'Ticket de Sorteo - Walá',
+        currency,
+        amount: amountInt,
+      },
+      client: { email: email || '' },
+      options: { lang: 'auto', installments: false, modal: true },
+      appearance: {
+        theme: 'default',
+        hiddenCulqiLogo: false,
+        hiddenBannerContent: false,
+        hiddenBanner: false,
+        hiddenToolBarAmount: false,
+        menuType: 'sidebar',
+      },
+    };
+
+    const culqiInstance = new window.CulqiCheckout(publicKey, config);
+    culqiRef.current = culqiInstance;
+
+    culqiInstance.culqi = async () => {
+      if (culqiInstance.token) {
+        // Evita un SEGUNDO cargo si el callback se dispara dos veces.
+        if (processingRef.current) return;
+        processingRef.current = true;
+        const token = culqiInstance.token.id;
+        const tokenEmail = culqiInstance.token.email;
+        culqiInstance.close();
+
+        setIsProcessing(true);
+        toast.info('Procesando pago seguro con Culqi...');
+        try {
+          const processCulqiPayment = httpsCallable(getFunctions(), 'processCulqiPayment');
+          const result = await processCulqiPayment({
+            tokenId: token,
+            // `amount` es referencial: el servidor recalcula para sorteos.
+            amount: amountInt,
+            currency,
+            email: tokenEmail || email,
+            description: 'Ticket(s) de sorteo Walá',
+            // CLAVE: la metadata (tipo:"sorteo", sorteoId, ticketId, uid) casa el
+            // cargo con el ticket y activa el recálculo/confirmación server-side.
+            metadata: intento.metadata,
+          });
+          if (result.data && result.data.success) {
+            toast.success('¡Pago procesado exitosamente! 🎟️');
+            if (onPaidRef.current) onPaidRef.current(result.data);
+          } else {
+            const msg = result.data?.message || 'Error al procesar el pago en el servidor.';
+            toast.error(msg);
+            if (onErrorRef.current) onErrorRef.current(msg);
+          }
+        } catch (error) {
+          console.error('Error processCulqiPayment (sorteo):', error);
+          const msg = error?.message || 'Error de comunicación con el servidor.';
+          toast.error(msg);
+          if (onErrorRef.current) onErrorRef.current(msg);
+        } finally {
+          setIsProcessing(false);
+          processingRef.current = false; // libera el guard (permite reintento)
+        }
+      } else if (culqiInstance.error) {
+        console.error('Error de Culqi:', culqiInstance.error);
+        const msg = culqiInstance.error.user_message || 'El pago no pudo completarse.';
+        toast.error(msg);
+        culqiInstance.close();
+        if (onErrorRef.current) onErrorRef.current(msg);
+      }
+    };
+    return undefined;
+    // onPaid/onError NO van en deps (se leen vía refs estables).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady, intento, email]);
+
+  const handleOpen = () => {
+    if (!isReady || !culqiRef.current) {
+      toast.error('El sistema de pagos aún no está listo. Espera unos segundos.');
+      return;
+    }
+    if (isProcessing) {
+      toast.warning('Ya hay un pago procesándose.');
+      return;
+    }
+    culqiRef.current.open();
+  };
+
+  return (
+    <GlassButton
+      variant="primary"
+      size="lg"
+      fullWidth
+      loading={isProcessing}
+      disabled={!isReady || isProcessing}
+      onClick={handleOpen}
+    >
+      {isProcessing ? 'Procesando tu pago…' : '💳 Pagar con tarjeta (Culqi)'}
+    </GlassButton>
+  );
+}
+
+// ── Botones PayPal para tickets de sorteo ────────────────────────────────────
+// Usa el MISMO SDK (@paypal/react-paypal-js) que PaypalCheckout, pero con las
+// callables DEDICADAS del contrato de sorteos (createPaypalTicketSorteoSecure /
+// capturePaypalTicketSorteoSecure): el monto USD lo calcula/valida el SERVIDOR y
+// el ticket se marca pagado solo cuando la captura devuelve COMPLETED.
+//
+// Props:
+//   sorteoId, ticketId = del intento (comprarTicketSorteoSecure)
+//   onPaid   = callback tras captura confirmada
+//   onError  = callback en error
+function PaypalTicketButtons({ sorteoId, ticketId, onPaid, onError }) {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Si el .env dice 'sb' o está vacío, usamos 'test' (sandbox oficial del SDK),
+  // idéntico a PaypalCheckout para no divergir en configuración.
+  const actualClientId =
+    !process.env.REACT_APP_PAYPAL_CLIENT_ID || process.env.REACT_APP_PAYPAL_CLIENT_ID === 'sb'
+      ? 'test'
+      : process.env.REACT_APP_PAYPAL_CLIENT_ID;
+
+  const initialOptions = { clientId: actualClientId, currency: 'USD', intent: 'capture' };
+
+  // Crea la orden en el SERVIDOR (recalcula el USD del ticket real). Devolvemos
+  // el orderID para que el SDK de PayPal abra esa orden ya creada server-side.
+  const createOrder = () => {
+    const createSecure = httpsCallable(getFunctions(), 'createPaypalTicketSorteoSecure');
+    return createSecure({ sorteoId, ticketId })
+      .then((res) => {
+        const orderID = res && res.data && res.data.orderID;
+        if (!orderID) throw new Error('El servidor no devolvió el orderID de PayPal.');
+        return orderID;
+      })
+      .catch((err) => {
+        console.error('createPaypalTicketSorteoSecure falló:', err);
+        const msg = err?.message || 'No se pudo iniciar el pago con PayPal. Inténtalo más tarde.';
+        if (onError) onError(msg);
+        throw err; // aborta el flujo del SDK (no abre aprobador)
+      });
+  };
+
+  // La captura y el marcado del ticket como pagado los hace el SERVIDOR: el front
+  // NO captura ni escribe nada; solo confía en lo que devuelve la CF.
+  const onApprove = async (data) => {
+    try {
+      setIsProcessing(true);
+      const captureSecure = httpsCallable(getFunctions(), 'capturePaypalTicketSorteoSecure');
+      const res = await captureSecure({ orderID: data.orderID, sorteoId, ticketId });
+      const cap = res && res.data;
+      if (!cap || cap.success !== true || cap.status !== 'COMPLETED') {
+        throw new Error('El servidor no confirmó el pago de PayPal.');
+      }
+      if (onPaid) onPaid(cap);
+    } catch (err) {
+      console.error('capturePaypalTicketSorteoSecure falló:', err);
+      const msg = err?.message || 'No se pudo verificar el pago con el servidor. No se realizó ningún cargo confirmado.';
+      if (onError) onError(msg);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleError = (err) => {
+    console.error('PayPal Error (sorteo):', err);
+    if (onError) onError('Ocurrió un error al cargar la pasarela de PayPal.');
+  };
+
+  return (
+    <div className={styles.paypalWrap}>
+      {isProcessing ? (
+        <div className={styles.payProcessing}>
+          <strong>Procesando pago…</strong>
+          <p>Verificando de forma segura. Por favor, no cierres esta ventana.</p>
+        </div>
+      ) : (
+        <PayPalScriptProvider options={initialOptions}>
+          <PayPalButtons
+            createOrder={createOrder}
+            onApprove={onApprove}
+            onError={handleError}
+            style={{ layout: 'vertical', shape: 'rect' }}
+          />
+        </PayPalScriptProvider>
+      )}
+    </div>
+  );
+}
+
 const SorteosPage = () => {
-  const { user, profileIncomplete } = useAuth();
+  const { user, userProfile, profileIncomplete } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useGlobalToast();
 
   // origenApp: detecta si venimos del app (Capacitor) o de la web. tracker.js:50.
   const origenApp = useMemo(() => getClientType() === 'APP', []);
 
   const [accionError, setAccionError] = useState('');
   const [participando, setParticipando] = useState(false);
+
+  // ── Estado del flujo de compra de tickets (sorteos pagados) ────────────────
+  const [cantidad, setCantidad] = useState(1);        // selector [− N +], mín 1
+  const [preparando, setPreparando] = useState(false); // creando la intención (CF)
+  const [intento, setIntento] = useState(null);        // respuesta de comprarTicketSorteoSecure
+  const [metodo, setMetodo] = useState(null);          // 'culqi' | 'paypal' (elegido tras preparar)
 
   // 1) Sorteo activo (1 query barata). staleTime 30s: no re-consulta al enfocar.
   const {
@@ -146,13 +415,21 @@ const SorteosPage = () => {
   const requiereApp = sorteo?.requisitoApp === 'obligatorio';
   const bloqueadoPorApp = requiereApp && !origenApp;
 
+  // Precio del ticket SOLO para display (el server recalcula el autoritativo).
+  const precioTicket = Number(sorteo?.precioTicket || 0);
+  const monedaSorteo = sorteo?.moneda || 'PEN';
+  const totalDisplay = (precioTicket * cantidad).toFixed(2);
+
+  // Correo del comprador (Culqi lo exige): perfil → auth → vacío.
+  const emailComprador = userProfile?.email || user?.email || '';
+
   // Refresca los datos server-side tras participar (mi participación + contador).
   const refrescarTrasParticipar = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['mi-participacion', sorteoId, user?.uid] });
     queryClient.invalidateQueries({ queryKey: ['contador-sorteo', sorteoId] });
   }, [queryClient, sorteoId, user?.uid]);
 
-  // Handler PARTICIPAR (solo sorteos gratis en Build 1).
+  // Handler PARTICIPAR (sorteos gratis).
   const handleParticipar = useCallback(async () => {
     setAccionError('');
     if (!sorteoId) return;
@@ -175,6 +452,65 @@ const SorteosPage = () => {
       refrescarTrasParticipar();
     }
   }, [sorteoId, profileIncomplete, origenApp, navigate, refrescarTrasParticipar]);
+
+  // ── Selector de cantidad (mín 1, sin máximo duro; el server valida) ────────
+  const decCantidad = useCallback(() => setCantidad((c) => Math.max(1, c - 1)), []);
+  const incCantidad = useCallback(() => setCantidad((c) => Math.min(99, c + 1)), []);
+
+  // Handler COMPRAR: crea la intención (ticket pagoConfirmado=false) vía la CF.
+  // NO cobra: solo prepara el intento y muestra los métodos de pago (Culqi/PayPal).
+  const handleComprar = useCallback(async () => {
+    setAccionError('');
+    if (!sorteoId) return;
+
+    // Mismos gates que el gratis: login + perfil completo (el server revalida).
+    if (profileIncomplete) {
+      navigate('/completar-perfil', { state: { from: '/sorteos' } });
+      return;
+    }
+
+    setPreparando(true);
+    setIntento(null);
+    setMetodo(null);
+    try {
+      const comprar = httpsCallable(getFunctions(), 'comprarTicketSorteoSecure');
+      const res = await comprar({ sorteoId, cantidad: Number(cantidad) });
+      const data = res?.data;
+      if (!data?.ok || !data?.ticketId || !data?.metadata) {
+        throw new Error('No se pudo preparar la compra. Inténtalo de nuevo.');
+      }
+      setIntento(data); // { sorteoId, ticketId, cantidad, montoCentimos, monto, moneda, metadata }
+    } catch (e) {
+      console.error('comprarTicketSorteoSecure falló:', e);
+      setAccionError(e?.message || 'No se pudo preparar la compra de tickets.');
+    } finally {
+      setPreparando(false);
+    }
+  }, [sorteoId, cantidad, profileIncomplete, navigate]);
+
+  // Éxito de pago (Culqi o PayPal): refresca mi participación/contador para ver
+  // los tickets, cierra el flujo y avisa. La CACHÉ vive en react-query (nube),
+  // NUNCA en localStorage.
+  const handlePagoConfirmado = useCallback(() => {
+    setIntento(null);
+    setMetodo(null);
+    setCantidad(1);
+    refrescarTrasParticipar();
+    toast.success('¡Tus tickets ya están registrados! 🎉');
+  }, [refrescarTrasParticipar, toast]);
+
+  // Error de pago: muestra el mensaje pero MANTIENE el intento vivo para reintentar
+  // (el mismo ticket puede pagarse de nuevo; el backend es idempotente por pagoId).
+  const handlePagoError = useCallback((msg) => {
+    setAccionError(msg || 'El pago no pudo completarse. Inténtalo de nuevo.');
+  }, []);
+
+  // Cancelar el flujo de pago y volver al selector de cantidad.
+  const cancelarCompra = useCallback(() => {
+    setIntento(null);
+    setMetodo(null);
+    setAccionError('');
+  }, []);
 
   // ── Estados de carga / error / vacío ─────────────────────────────────────
   if (cargandoSorteo) {
@@ -215,6 +551,9 @@ const SorteosPage = () => {
   // Sorteo cerrado: mostrar ganadores si existen.
   const cerrado = sorteo.estado === 'cerrado' || terminado;
 
+  // Tickets pagados del usuario (para el estado "Tus tickets pagados: N").
+  const ticketsPagados = miParticipacion?.ticketsPagados ?? 0;
+
   return (
     <div className={styles.page}>
       {/* HERO ---------------------------------------------------------------- */}
@@ -225,7 +564,7 @@ const SorteosPage = () => {
         <div className={styles.heroContent}>
           <div className={styles.heroBadges}>
             <Badge tone="violet" variant="solid">
-              {esGratis ? 'GRATIS' : `${sorteo.moneda || 'PEN'} ${sorteo.precioTicket || 0} / ticket`}
+              {esGratis ? 'GRATIS' : `${monedaSorteo} ${precioTicket} / ticket`}
             </Badge>
             {sorteo.numGanadores > 1 && (
               <Badge tone="neutral" variant="soft">
@@ -259,7 +598,11 @@ const SorteosPage = () => {
       {/* Estado del usuario (si ya participa) -------------------------------- */}
       {user && yaParticipa && (
         <GlassPanel variant="solid" padding="md" className={styles.miEstado}>
-          <span>🎟️ Tus tickets: {miParticipacion.ticketsPagados ?? miParticipacion.tickets ?? 0}</span>
+          {esPagado ? (
+            <span>🎟️ Tus tickets pagados: {ticketsPagados}</span>
+          ) : (
+            <span>🎟️ Tus tickets: {miParticipacion.ticketsPagados ?? miParticipacion.tickets ?? 0}</span>
+          )}
           <span aria-hidden="true">·</span>
           <span>⭐ Chances: {miParticipacion.chancesTotal ?? miParticipacion.chancesBase ?? 1}</span>
           <span aria-hidden="true">·</span>
@@ -275,7 +618,11 @@ const SorteosPage = () => {
         className={styles.reglas}
       >
         <ul className={styles.reglasList}>
-          <li>Participar te da 1 chance base.</li>
+          {esPagado ? (
+            <li>Cada ticket pagado suma 1 chance para el sorteo.</li>
+          ) : (
+            <li>Participar te da 1 chance base.</li>
+          )}
           {sorteo.requisitoApp === 'chanceExtra' && (
             <li>Entrar desde el <strong>app de Walá</strong> te da 1 chance extra.</li>
           )}
@@ -326,12 +673,130 @@ const SorteosPage = () => {
             Sorteo cerrado
           </GlassButton>
         ) : esPagado ? (
-          // Build 1: los sorteos pagados aún no venden tickets aquí.
-          <GlassCard variant="soft" padding="md" className={styles.loginGate}>
-            <p className={styles.loginPrompt}>Compra de tickets: disponible pronto</p>
-          </GlassCard>
+          // ── FLUJO REAL de compra de tickets (Build 2) ───────────────────────
+          bloqueadoPorApp ? (
+            // requisitoApp == 'obligatorio' y no venimos del app.
+            <>
+              <p className={styles.appHint}>Este sorteo solo está disponible desde el app.</p>
+              <GlassButton as={Link} to="/descargar" variant="primary" size="lg" fullWidth>
+                Descargar app
+              </GlassButton>
+            </>
+          ) : intento ? (
+            // Paso 2: intención creada → elegir/mostrar método de pago.
+            <GlassCard variant="soft" padding="md" className={styles.pagoCard}>
+              <div className={styles.pagoResumen}>
+                <span>
+                  {intento.cantidad} ticket{intento.cantidad > 1 ? 's' : ''}
+                </span>
+                <strong>
+                  {intento.moneda || monedaSorteo} {Number(intento.monto).toFixed(2)}
+                </strong>
+              </div>
+              <p className={styles.pagoNota}>
+                El monto lo confirma el servidor. Elige cómo pagar:
+              </p>
+
+              {!metodo && (
+                <div className={styles.pagoMetodos}>
+                  <GlassButton
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onClick={() => setMetodo('culqi')}
+                  >
+                    💳 Pagar con tarjeta
+                  </GlassButton>
+                  <GlassButton
+                    variant="ghost"
+                    size="lg"
+                    fullWidth
+                    onClick={() => setMetodo('paypal')}
+                  >
+                    🅿️ Pagar con PayPal
+                  </GlassButton>
+                </div>
+              )}
+
+              {metodo === 'culqi' && (
+                <CulqiTicketButton
+                  intento={intento}
+                  email={emailComprador}
+                  onPaid={handlePagoConfirmado}
+                  onError={handlePagoError}
+                />
+              )}
+
+              {metodo === 'paypal' && (
+                <PaypalTicketButtons
+                  sorteoId={intento.sorteoId}
+                  ticketId={intento.ticketId}
+                  onPaid={handlePagoConfirmado}
+                  onError={handlePagoError}
+                />
+              )}
+
+              <button type="button" className={styles.linkCancelar} onClick={cancelarCompra}>
+                Cancelar
+              </button>
+            </GlassCard>
+          ) : (
+            // Paso 1: selector de cantidad + total (display) + botón comprar.
+            <GlassCard variant="soft" padding="md" className={styles.compraCard}>
+              <div className={styles.cantidadRow}>
+                <span className={styles.cantidadLabel}>Cantidad de tickets</span>
+                <div className={styles.stepper}>
+                  <button
+                    type="button"
+                    className={styles.stepperBtn}
+                    onClick={decCantidad}
+                    disabled={cantidad <= 1 || preparando}
+                    aria-label="Quitar un ticket"
+                  >
+                    −
+                  </button>
+                  <span className={styles.stepperValue} aria-live="polite">{cantidad}</span>
+                  <button
+                    type="button"
+                    className={styles.stepperBtn}
+                    onClick={incCantidad}
+                    disabled={preparando}
+                    aria-label="Agregar un ticket"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.totalRow}>
+                <span>Total</span>
+                <strong className={styles.totalValue}>
+                  {monedaSorteo} {totalDisplay}
+                </strong>
+              </div>
+
+              <GlassButton
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={preparando}
+                disabled={preparando}
+                onClick={handleComprar}
+              >
+                {preparando
+                  ? 'Preparando…'
+                  : `Comprar ${cantidad} ticket${cantidad > 1 ? 's' : ''}`}
+              </GlassButton>
+
+              {profileIncomplete && (
+                <p className={styles.perfilHint}>
+                  Necesitas <Link to="/completar-perfil" state={{ from: '/sorteos' }}>completar tu perfil</Link> para comprar tickets.
+                </p>
+              )}
+            </GlassCard>
+          )
         ) : bloqueadoPorApp ? (
-          // requisitoApp == 'obligatorio' y no venimos del app.
+          // requisitoApp == 'obligatorio' y no venimos del app (sorteo gratis).
           <>
             <p className={styles.appHint}>Este sorteo solo está disponible desde el app.</p>
             <GlassButton as={Link} to="/descargar" variant="primary" size="lg" fullWidth>
@@ -354,7 +819,7 @@ const SorteosPage = () => {
           </GlassButton>
         )}
 
-        {/* Aviso de perfil incompleto (no bloquea el render; el click lo maneja). */}
+        {/* Aviso de perfil incompleto para el flujo GRATIS (el pagado tiene el suyo). */}
         {user && esGratis && !cerrado && !yaParticipa && profileIncomplete && (
           <p className={styles.perfilHint}>
             Necesitas <Link to="/completar-perfil" state={{ from: '/sorteos' }}>completar tu perfil</Link> para participar.
