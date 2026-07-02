@@ -198,6 +198,10 @@ const LinkInBioPage = () => {
   // color del texto del botón para páginas antiguas, ya resuelto en el servicio).
   const tituloColor = diseno.titleColor || diseno.buttonTextColor || '#111827';
   const textoColor = diseno.textColor || diseno.buttonTextColor || '#374151';
+  // Alineación del contenido (título/descr./redes/footer). "justify" solo afecta
+  // al texto; para colocar los elementos se traduce a align-items (cross).
+  const alineacion = ['left', 'center', 'right', 'justify'].includes(diseno.textAlign) ? diseno.textAlign : 'center';
+  const crossAlign = alineacion === 'left' ? 'flex-start' : alineacion === 'right' ? 'flex-end' : 'center';
 
   const styleVars = {
     '--lb-font': diseno.fontFamily || 'inherit',
@@ -210,6 +214,8 @@ const LinkInBioPage = () => {
     // Colores de texto de cabecera/redes/footer.
     '--lb-title': tituloColor,
     '--lb-text': textoColor,
+    '--lb-text-align': alineacion,
+    '--lb-cross': crossAlign,
   };
 
   const botones = Array.isArray(page.botones) ? page.botones : [];

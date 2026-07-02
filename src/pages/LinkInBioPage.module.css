@@ -30,7 +30,7 @@
   max-width: 520px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: var(--lb-cross, center);
   gap: 1rem;
   animation: lbFadeIn 0.35s ease-out;
 }
@@ -42,12 +42,13 @@
 
 /* ── Cabecera: avatar + título + descripción ── */
 .header {
-  text-align: center;
+  text-align: var(--lb-text-align, center);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: var(--lb-cross, center);
   gap: 0.5rem;
   margin-bottom: 0.5rem;
+  width: 100%;
 }
 
 .avatar {
@@ -85,9 +86,10 @@
 .socialRow {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: var(--lb-cross, center);
   gap: 0.75rem;
   margin: 0.25rem 0 0.75rem;
+  width: 100%;
 }
 
 .socialItem {
@@ -216,7 +218,8 @@
 /* ── Pie: marca discreta ── */
 .footer {
   margin-top: 1.5rem;
-  text-align: center;
+  text-align: var(--lb-text-align, center);
+  width: 100%;
 }
 
 .footerLink {

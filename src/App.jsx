@@ -102,6 +102,9 @@ const VendorStorefrontPage = lazy(() => import('./pages/VendorStorefrontPage'));
 const CheckoutDemoPage = lazy(() => import('./pages/CheckoutDemoPage'));
 const OfertasFlashPage = lazy(() => import('./pages/OfertasFlashPage'));
 const SorteosPage = lazy(() => import('./pages/SorteosPage'));
+// Página pública "Sorteo por suscripción" (auto-débito Culqi/PayPal). Rutas
+// /suscrito-sorteo y /suscrito-sorteo/:slug. Debe ir ANTES del catch-all /:slug.
+const SuscripcionSorteoPage = lazy(() => import('./pages/SuscripcionSorteoPage'));
 // Página pública LINK-IN-BIO (constructor tipo Linktree). Ruta /l/:slug.
 const LinkInBioPage = lazy(() => import('./pages/LinkInBioPage'));
 
@@ -139,6 +142,9 @@ const AdminBlueprints = lazy(() => import('./pages/admin/AdminBlueprints'));
 const AdminFlashOffers = lazy(() => import('./pages/admin/AdminFlashOffers'));
 const AdminSorteos = lazy(() => import('./pages/admin/AdminSorteos'));
 const AdminSorteoDetalle = lazy(() => import('./pages/admin/AdminSorteoDetalle'));
+// Sorteo por suscripción (auto-débito): lista/editor de campañas + detalle.
+const AdminSuscripcionSorteos = lazy(() => import('./pages/admin/AdminSuscripcionSorteos'));
+const AdminSuscripcionDetalle = lazy(() => import('./pages/admin/AdminSuscripcionDetalle'));
 
 const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminPagos = lazy(() => import('./pages/admin/AdminPagos'));
@@ -167,6 +173,10 @@ const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
 const AdminGeneradorPagos = lazy(() => import('./pages/admin/AdminGeneradorPagos'));
 const AdminLibroReclamaciones = lazy(() => import('./pages/admin/AdminLibroReclamaciones'));
+// Gestión de Pagos (unifica Métodos de Pago + Generador de Enlaces + historial/analíticas).
+const AdminGestionPagos = lazy(() => import('./pages/admin/AdminGestionPagos'));
+// Usuarios de la App: uso de la app por usuario identificado (sesiones/pantallas APP/WEB).
+const AdminUsuariosApp = lazy(() => import('./pages/admin/AdminUsuariosApp'));
 
 const AppRedirect = lazy(() => import('./pages/AppRedirect'));
 const PagoRapidoPage = lazy(() => import('./pages/PagoRapidoPage'));
@@ -339,10 +349,17 @@ function App() {
                             <Route path="referidos" element={<AdminReferidos />} />
                             <Route path="pagos" element={<AdminPagos />} />
                             <Route path="generador-pagos" element={<AdminGeneradorPagos />} />
+                            {/* Gestión de Pagos: módulo unificado (config + generar + historial). */}
+                            <Route path="gestion-pagos" element={<AdminGestionPagos />} />
+                            {/* Usuarios de la App: uso de la app por usuario. */}
+                            <Route path="usuarios-app" element={<AdminUsuariosApp />} />
                             <Route path="libro-reclamaciones" element={<AdminLibroReclamaciones />} />
                             <Route path="retos" element={<AdminRetos />} />
                             <Route path="sorteos" element={<AdminSorteos />} />
                             <Route path="sorteos/:id" element={<AdminSorteoDetalle />} />
+                            {/* Sorteo por suscripción (auto-débito): campañas + detalle. */}
+                            <Route path="sorteos-suscripcion" element={<AdminSuscripcionSorteos />} />
+                            <Route path="sorteos-suscripcion/:id" element={<AdminSuscripcionDetalle />} />
                             {/* Enlaces útiles (constructor tipo Linktree): lista + editor. */}
                             <Route path="enlaces" element={<AdminEnlaces />} />
                             <Route path="enlaces/:id" element={<AdminEnlaceEditor />} />
@@ -401,6 +418,12 @@ function App() {
                         <Route path="/sorteos" element={<SorteosPage />} />
                         {/* Sorteo específico por slug (compartible desde lives). */}
                         <Route path="/sorteos/:slug" element={<SorteosPage />} />
+
+                        {/* Sorteo por suscripción (auto-débito Culqi/PayPal). Página
+                            pública general + campaña por slug. DEBEN ir ANTES del
+                            catch-all /:slug para no ser interceptadas por landings. */}
+                        <Route path="/suscrito-sorteo" element={<SuscripcionSorteoPage />} />
+                        <Route path="/suscrito-sorteo/:slug" element={<SuscripcionSorteoPage />} />
 
                         {/* Página pública LINK-IN-BIO (/l/:slug). DEBE ir ANTES
                             del catch-all /:slug para no ser interceptada por las

@@ -1,0 +1,717 @@
+/* ===========================================================================
+   SuscripcionSorteoPage — estilos (Módulo "Sorteo por Suscripción")
+   ---------------------------------------------------------------------------
+   MÓVIL-FIRST y de una sola página con navegación por anclas. El THEMING lo
+   inyecta la campaña vía variables locales (--sus-primario/--sus-fondo/
+   --sus-texto/--sus-acento) que se setean en el contenedor raíz desde
+   campaign.colores; con fallback morado estilo Jorge Luna. Se apoya en los
+   tokens --color-* del design system para respetar el dark mode donde procede.
+   =========================================================================== */
+
+/* Contenedor raíz: aplica el fondo y color de texto del theming de la campaña. */
+.page {
+  --sus-primario: #7c3aed;
+  --sus-fondo: #faf7ff;
+  --sus-texto: #1a1030;
+  --sus-acento: #f59e0b;
+  min-height: 100vh;
+  background: var(--sus-fondo);
+  color: var(--sus-texto);
+  padding-bottom: 3rem;
+}
+
+.contenido {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 var(--page-padding-movil, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* --- Estados (carga / no disponible) ------------------------------------- */
+.stateWrap {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.stateBox {
+  text-align: center;
+  max-width: 420px;
+}
+
+.stateEmoji {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.stateTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 0.4rem;
+}
+
+.stateText {
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* --- Nav sticky por anclas ----------------------------------------------- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.55rem var(--page-padding-movil, 1rem);
+  background: color-mix(in srgb, var(--sus-fondo) 90%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid color-mix(in srgb, var(--sus-texto) 10%, transparent);
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+
+.navLink {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--sus-texto);
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--sus-texto) 14%, transparent);
+  background: color-mix(in srgb, var(--sus-fondo) 60%, transparent);
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.navLink:hover {
+  background: var(--sus-primario);
+  color: #fff;
+  border-color: var(--sus-primario);
+}
+
+/* --- HERO ---------------------------------------------------------------- */
+.hero {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  margin-top: 1rem;
+  color: #fff;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--sus-primario) 30%, transparent) 0%, color-mix(in srgb, var(--sus-primario) 92%, #000 8%) 100%),
+    var(--sus-primario);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--sus-primario) 35%, transparent);
+}
+
+.heroBg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 1.25rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.heroLogo {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 6px;
+}
+
+.heroTitle {
+  font-size: 1.9rem;
+  line-height: 1.15;
+  font-weight: 900;
+  margin: 0;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.heroDesc {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 46ch;
+  opacity: 0.95;
+}
+
+.contadorVivo {
+  margin-top: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-weight: 700;
+}
+.contadorNum {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--sus-acento);
+}
+.contadorPulso {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+  animation: pulso 1.8s infinite;
+}
+@keyframes pulso {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.heroCta {
+  margin-top: 0.6rem;
+}
+
+/* --- Secciones genéricas ------------------------------------------------- */
+.seccion {
+  scroll-margin-top: 68px; /* para que el nav sticky no tape el título */
+}
+
+.seccionTitulo {
+  font-size: 1.4rem;
+  font-weight: 850;
+  margin: 0 0 0.35rem;
+  color: var(--sus-texto);
+}
+.seccionSub {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+/* --- PLANES -------------------------------------------------------------- */
+.planes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 640px) {
+  .planes { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 900px) {
+  .planes { grid-template-columns: repeat(3, 1fr); }
+}
+
+.planCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.25rem 1.1rem 1.4rem;
+  border-radius: 18px;
+  background: var(--color-surface, #fff);
+  border: 1.5px solid color-mix(in srgb, var(--sus-texto) 12%, transparent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.planDestacado {
+  border-color: var(--sus-primario);
+  box-shadow: 0 8px 26px color-mix(in srgb, var(--sus-primario) 28%, transparent);
+  transform: translateY(-2px);
+}
+
+.planBadge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  background: var(--sus-acento);
+  color: #1a1030;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.planNombre {
+  font-size: 1.2rem;
+  font-weight: 850;
+  margin: 0;
+  color: var(--sus-texto);
+}
+.planIntervalo {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.planPrecio {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0.2rem 0;
+}
+.planPrecioValor {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--sus-primario);
+  line-height: 1;
+}
+.planPrecioUsd {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.planEquivalente {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.planChances {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sus-primario) 12%, transparent);
+  color: var(--sus-primario);
+  font-weight: 800;
+  font-size: 0.9rem;
+  align-self: flex-start;
+}
+
+.planBeneficios {
+  list-style: none;
+  margin: 0.4rem 0 0.2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.planBeneficios li {
+  font-size: 0.88rem;
+  color: var(--sus-texto);
+  padding-left: 1.4rem;
+  position: relative;
+  line-height: 1.4;
+}
+.planBeneficios li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #22c55e;
+  font-weight: 900;
+}
+
+.planBtn {
+  margin-top: auto;
+}
+
+/* Botón de suscripción con el color primario de la campaña (override glass). */
+.btnCampana {
+  background: var(--sus-primario) !important;
+  border-color: var(--sus-primario) !important;
+  color: #fff !important;
+}
+
+/* --- PREMIOS ------------------------------------------------------------- */
+.premios {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.9rem;
+}
+@media (min-width: 640px) {
+  .premios { grid-template-columns: repeat(3, 1fr); }
+}
+.premioCard {
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--color-surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--sus-texto) 10%, transparent);
+}
+.premioImg {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: var(--color-hover);
+}
+.premioNombre {
+  padding: 0.6rem 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--sus-texto);
+}
+
+/* --- GANADORES ----------------------------------------------------------- */
+.ganadores {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.9rem;
+}
+@media (min-width: 640px) {
+  .ganadores { grid-template-columns: repeat(3, 1fr); }
+}
+.ganadorCard {
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--color-surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--sus-texto) 10%, transparent);
+  text-align: center;
+}
+.ganadorFoto {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: var(--color-hover);
+}
+.ganadorInfo {
+  padding: 0.6rem 0.6rem 0.8rem;
+}
+.ganadorNombre {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--sus-texto);
+  margin: 0;
+}
+.ganadorPremio {
+  font-size: 0.82rem;
+  color: var(--sus-primario);
+  font-weight: 600;
+  margin: 0.15rem 0 0;
+}
+.ganadorFecha {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0.2rem 0 0;
+}
+
+/* --- BENEFICIOS ---------------------------------------------------------- */
+.filtros {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
+  scrollbar-width: none;
+}
+.filtros::-webkit-scrollbar { display: none; }
+.filtroChip {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--sus-texto) 16%, transparent);
+  background: transparent;
+  color: var(--sus-texto);
+  white-space: nowrap;
+}
+.filtroChipActivo {
+  background: var(--sus-primario);
+  color: #fff;
+  border-color: var(--sus-primario);
+}
+
+.beneficios {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+@media (min-width: 640px) {
+  .beneficios { grid-template-columns: repeat(2, 1fr); }
+}
+.beneficioCard {
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  border-radius: 14px;
+  background: var(--color-surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--sus-texto) 10%, transparent);
+  text-decoration: none;
+  color: inherit;
+}
+.beneficioImg {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--color-hover);
+}
+.beneficioTextos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.beneficioMarca {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--sus-primario);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.beneficioTitulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--sus-texto);
+  margin: 0;
+}
+.beneficioDescuento {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--sus-acento);
+}
+.beneficioUbicacion {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+/* --- MI CUENTA ----------------------------------------------------------- */
+.tabs {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--sus-texto) 12%, transparent);
+}
+.tab {
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  color: var(--color-text-muted);
+}
+.tabActivo {
+  color: var(--sus-primario);
+  border-bottom-color: var(--sus-primario);
+}
+
+.miSuscKV {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.kvRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px dashed color-mix(in srgb, var(--sus-texto) 12%, transparent);
+}
+.kvLabel { color: var(--color-text-muted); font-size: 0.9rem; }
+.kvValor { font-weight: 700; text-align: right; }
+
+.chancesBig {
+  text-align: center;
+  padding: 1rem 0;
+}
+.chancesNum {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--sus-primario);
+  line-height: 1;
+}
+.chancesLabel {
+  color: var(--color-text-muted);
+  margin-top: 0.3rem;
+}
+
+.recibosList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.reciboRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--sus-texto) 8%, transparent);
+}
+.reciboFecha { font-size: 0.85rem; color: var(--color-text-muted); }
+.reciboMonto { font-weight: 800; color: var(--sus-texto); }
+
+.miCuentaVacia {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 1rem;
+}
+
+/* --- MODAL de suscripción ------------------------------------------------ */
+.modalPaso { display: flex; flex-direction: column; gap: 1rem; }
+.modalPlanResumen {
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sus-primario) 10%, transparent);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modalPlanNombre { font-weight: 800; color: var(--sus-texto); }
+.modalPlanPrecio { font-weight: 900; color: var(--sus-primario); }
+
+.googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid #dadce0;
+  background: #fff;
+  color: #3c4043;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.googleBtn:hover { background: #f7f8f8; }
+.googleBtn:disabled { opacity: 0.6; cursor: default; }
+.googleIcon { width: 20px; height: 20px; flex: 0 0 20px; }
+
+.divisor {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin: 0.2rem 0;
+}
+.divisor::before,
+.divisor::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--sus-texto) 14%, transparent);
+}
+
+.formGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.formRow2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+@media (min-width: 480px) {
+  .formRow2 { grid-template-columns: 1fr 1fr; }
+}
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.formField > span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.formInput {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--sus-texto) 18%, transparent);
+  background: var(--color-surface, #fff);
+  color: var(--sus-texto);
+  font-size: 16px; /* evita zoom en iOS */
+}
+.formInput:focus {
+  outline: none;
+  border-color: var(--sus-primario);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sus-primario) 22%, transparent);
+}
+
+/* Consentimiento de cobro recurrente (obligatorio marcar). */
+.consentimiento {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sus-acento) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sus-acento) 40%, transparent);
+}
+.consentimiento input { margin-top: 0.2rem; flex: 0 0 auto; width: 18px; height: 18px; }
+.consentimiento label { font-size: 0.86rem; line-height: 1.45; color: var(--sus-texto); }
+
+.metodos { display: flex; flex-direction: column; gap: 0.7rem; }
+.metodoSelectorBtns { display: flex; flex-direction: column; gap: 0.6rem; }
+.paypalWrap { min-height: 48px; }
+
+.avisoPendiente {
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sus-acento) 14%, transparent);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--sus-texto);
+}
+
+.errorBox {
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, #ef4444 14%, transparent);
+  border: 1px solid color-mix(in srgb, #ef4444 40%, transparent);
+  color: #b91c1c;
+  font-size: 0.88rem;
+}
+
+.exitoBox {
+  text-align: center;
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+.exitoEmoji { font-size: 3rem; line-height: 1; }
+
+.linkCancelar {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.3rem;
+  align-self: center;
+}
+
+/* Empuja el ancho del botón campaña dentro del selector de método. */
+.metodoBtn { width: 100%; }

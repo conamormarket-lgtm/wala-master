@@ -1,0 +1,403 @@
+/* =========================================================================
+   AdminGestionPagos — módulo unificado "Gestión de Pagos"
+   -------------------------------------------------------------------------
+   Estética de DASHBOARD (Aurora Violeta Serena): fondo con orbes, contenido
+   en grid centrado, superficies de vidrio (ui/GlassCard/GlassPanel), tabla
+   con tabular-nums y controles glass. Solo color/espaciado/layout; el modo
+   noche se cubre con los tokens semánticos (--color-*) al final.
+   ========================================================================= */
+
+.page {
+  position: relative;
+  min-height: 100%;
+  padding: 1.25rem;
+  isolation: isolate;
+}
+
+/* ---------- Fondo: gradiente violeta + orbes difuminados ---------- */
+.bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: linear-gradient(160deg, #f5f3ff 0%, #faf9ff 45%, #f3f0ff 100%);
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.orb1 {
+  width: 420px;
+  height: 420px;
+  top: -120px;
+  left: -80px;
+  background: radial-gradient(circle at 30% 30%, rgba(109, 40, 217, 0.45), transparent 70%);
+}
+
+.orb2 {
+  width: 360px;
+  height: 360px;
+  top: 30%;
+  right: -120px;
+  background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.4), transparent 70%);
+}
+
+.orb3 {
+  width: 300px;
+  height: 300px;
+  bottom: -100px;
+  left: 25%;
+  background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.28), transparent 70%);
+}
+
+/* ---------- Contenido ---------- */
+.content {
+  display: grid;
+  gap: 1.1rem;
+  max-width: var(--container-default, 1200px);
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--gris-texto-secundario, #475569);
+  font-size: 0.9rem;
+}
+
+/* ---------- Pestañas (Configuración / Generar / Historial) ---------- */
+.tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.28rem;
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.06));
+}
+
+.tabBtn {
+  border: none;
+  background: transparent;
+  color: var(--gris-texto-secundario, #475569);
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 0.42rem 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.tabActive {
+  background: var(--primary-color, #6d28d9);
+  color: #fff;
+  box-shadow: 0 4px 12px -4px rgba(109, 40, 217, 0.5);
+}
+
+/* ---------- Formularios (config / generar) ---------- */
+.form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.blockTitle {
+  margin: 0 0 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* ---------- Mensajes de estado ---------- */
+.okMsg {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radio-mediano, 16px);
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: #047857;
+  font-size: 0.85rem;
+}
+
+.errMsg {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radio-mediano, 16px);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+/* ---------- Enlace generado ---------- */
+.linkBox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.linkInput {
+  flex: 1;
+  min-width: 220px;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+  color: var(--gris-texto-principal, #0f172a);
+  font-family: inherit;
+}
+
+/* ---------- Filtros del historial ---------- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-end;
+}
+
+.filterField {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.filterLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.control {
+  padding: 0.5rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 0.82rem;
+  color: var(--gris-texto-principal, #0f172a);
+  font-family: inherit;
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--primary-color, #6d28d9);
+  outline-offset: 1px;
+}
+
+.grow {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* ---------- Tabla ---------- */
+.tableWrap {
+  margin-top: 0.35rem;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.table th,
+.table td {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  white-space: nowrap;
+}
+
+.table th {
+  color: var(--gris-texto-secundario, #475569);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.table tbody tr:hover {
+  background: rgba(109, 40, 217, 0.04);
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.concepto {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copyBtn {
+  border: 1px solid rgba(109, 40, 217, 0.25);
+  background: rgba(109, 40, 217, 0.08);
+  color: var(--primary-color, #6d28d9);
+  font-weight: 600;
+  font-size: 0.74rem;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.copyBtn:hover {
+  background: var(--primary-color, #6d28d9);
+  color: #fff;
+}
+
+.metodoTag {
+  font-variant-numeric: tabular-nums;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+/* ---------- Gráfico ---------- */
+.chartHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.chartLegend {
+  display: inline-flex;
+  gap: 0.9rem;
+  font-size: 0.76rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ---------- Estados ---------- */
+.empty {
+  margin: 1.25rem 0;
+  color: var(--gris-texto-secundario, #475569);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.loading {
+  padding: 2rem;
+  text-align: center;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.errorBox {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radio-mediano, 16px);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #b91c1c;
+  font-size: 0.88rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 720px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .page {
+    padding: 0.875rem;
+  }
+}
+
+/* ---------- Fallback opaco sin blur ---------- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tabs {
+    background: #ffffff;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (solo color/fondo/borde)
+   ═════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .bg {
+  background: var(--color-bg);
+}
+[data-theme="dark"] .tabs {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .tabActive {
+  color: #fff;
+}
+[data-theme="dark"] .linkInput,
+[data-theme="dark"] .control {
+  background: var(--color-surface-2, var(--color-surface));
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .table tbody tr:hover {
+  background: rgba(139, 92, 246, 0.12);
+}
+[data-theme="dark"] .errorBox,
+[data-theme="dark"] .errMsg {
+  color: #fca5a5;
+}
+[data-theme="dark"] .okMsg {
+  color: #6ee7b7;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-theme="dark"] .tabs {
+    background: var(--color-surface);
+  }
+}

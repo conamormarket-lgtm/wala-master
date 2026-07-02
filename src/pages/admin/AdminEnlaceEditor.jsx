@@ -191,6 +191,7 @@ const AdminEnlaceEditor = () => {
           // Título y texto: si faltan (página vieja), caen al color del texto del botón.
           titleColor: pageData.diseno?.titleColor || pageData.diseno?.buttonTextColor || '#111827',
           textColor: pageData.diseno?.textColor || pageData.diseno?.buttonTextColor || '#374151',
+          textAlign: pageData.diseno?.textAlign || 'center',
           background: {
             type: pageData.diseno?.background?.type || 'color',
             value: pageData.diseno?.background?.value ?? '#f3f4f6',
@@ -795,6 +796,28 @@ const AdminEnlaceEditor = () => {
               </div>
             </div>
 
+            {/* Alineación del texto (título/descripción/redes/pie) */}
+            <div className={styles.field}>
+              <label className={styles.label}>Alineación del texto</label>
+              <div className={styles.segmented}>
+                {[
+                  { v: 'left', t: 'Izquierda' },
+                  { v: 'center', t: 'Centro' },
+                  { v: 'right', t: 'Derecha' },
+                  { v: 'justify', t: 'Justificado' },
+                ].map((op) => (
+                  <button
+                    key={op.v}
+                    type="button"
+                    className={`${styles.segBtn} ${(form.diseno.textAlign || 'center') === op.v ? styles.segBtnActive : ''}`}
+                    onClick={() => setDiseno({ textAlign: op.v })}
+                  >
+                    {op.t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* COLORES (los 5 controles, como Linktree) */}
             <label className={styles.label} style={{ marginTop: '0.5rem' }}>Colores</label>
             <div className={styles.fieldRow}>
@@ -1029,7 +1052,15 @@ const AdminEnlaceEditor = () => {
               style={{ ...construirFondoStyle(form.diseno.background), fontFamily: fuentePreview }}
             >
               {/* Cabecera de la preview */}
-              <div className={styles.pvHeader}>
+              <div
+                className={styles.pvHeader}
+                style={{
+                  textAlign: form.diseno.textAlign || 'center',
+                  alignItems: form.diseno.textAlign === 'left'
+                    ? 'flex-start'
+                    : form.diseno.textAlign === 'right' ? 'flex-end' : 'center',
+                }}
+              >
                 {form.avatarUrl ? (
                   <img src={form.avatarUrl} alt="" className={styles.pvAvatar} />
                 ) : (
@@ -1047,7 +1078,14 @@ const AdminEnlaceEditor = () => {
 
               {/* Fila de redes */}
               {form.redes.length > 0 && (
-                <div className={styles.pvRedes}>
+                <div
+                  className={styles.pvRedes}
+                  style={{
+                    justifyContent: form.diseno.textAlign === 'left'
+                      ? 'flex-start'
+                      : form.diseno.textAlign === 'right' ? 'flex-end' : 'center',
+                  }}
+                >
                   {form.redes.map((r) => {
                     const IconoTipo = iconoDeTipo(r.tipo);
                     return (

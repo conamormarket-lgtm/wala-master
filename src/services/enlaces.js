@@ -80,6 +80,7 @@ const disenoPorDefecto = () => ({
   buttonTextColor: '#ffffff',
   titleColor: '#111827',       // color del TÍTULO (independiente del botón)
   textColor: '#374151',        // color del TEXTO normal (descripción/redes/footer)
+  textAlign: 'center',         // alineación: "left" | "center" | "right" | "justify"
   // background.type: "color" | "gradient" | "pattern" | "image".
   // Para "pattern", `color` es el color base sobre el que se dibuja la textura.
   background: { type: 'color', value: '#f3f4f6', color: '#4B0055' },
@@ -126,6 +127,7 @@ const normalizarDiseno = (diseno) => {
     // texto del botón (comportamiento previo), así no cambia su apariencia.
     titleColor: d.titleColor || d.buttonTextColor || base.titleColor,
     textColor: d.textColor || d.buttonTextColor || base.textColor,
+    textAlign: ['left', 'center', 'right', 'justify'].includes(d.textAlign) ? d.textAlign : base.textAlign,
     background: d.background && d.background.type
       ? {
           type: d.background.type,

@@ -105,6 +105,14 @@ const AdminLayout = () => {
               >
                 🎁 Raffles
               </NavLink>
+              {/* Sorteo por suscripción (auto-débito Culqi/PayPal): su propio
+                  botón, JUSTO DEBAJO de "🎁 Raffles". */}
+              <NavLink
+                to="/admin/sorteos-suscripcion"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                🎟️ Sorteo por suscripción
+              </NavLink>
               {/* Enlaces útiles (constructor tipo Linktree / link-in-bio):
                   su propio botón, JUSTO DEBAJO de "🎁 Raffles". */}
               <NavLink
@@ -119,6 +127,21 @@ const AdminLayout = () => {
                 className={({ isActive }) => getLinkClass(isActive, 'diseno')}
               >
                 👥 Ver qué hacen los usuarios
+              </NavLink>
+              {/* Gestión de Pagos (unifica Métodos de Pago + Generador de Enlaces
+                  + historial/analíticas): JUSTO DEBAJO de "Ver qué hacen los usuarios". */}
+              <NavLink
+                to="/admin/gestion-pagos"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                💳 Gestión de Pagos
+              </NavLink>
+              {/* Usuarios de la App: quién usa la app, sesiones, pantallas, APP/WEB. */}
+              <NavLink
+                to="/admin/usuarios-app"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                📱 Usuarios de la App
               </NavLink>
               <a
                 href="/tienda"
@@ -290,18 +313,10 @@ const AdminLayout = () => {
                 <span>Clientes y Pagos</span>
                 <ChevronIcon open={openGroups.clientes} />
               </h3>
-              <NavLink
-                to="/admin/pagos"
-                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
-              >
-                Métodos de Pago
-              </NavLink>
-              <NavLink
-                to="/admin/generador-pagos"
-                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
-              >
-                Generador de Enlaces
-              </NavLink>
+              {/* "Métodos de Pago" y "Generador de Enlaces" se unificaron en
+                  "💳 Gestión de Pagos" (grupo Diseño de Tienda, bajo "Ver qué hacen
+                  los usuarios"). Sus rutas /admin/pagos y /admin/generador-pagos
+                  siguen existiendo por compatibilidad. */}
               <NavLink
                 to="/admin/libro-reclamaciones"
                 className={({ isActive }) => getLinkClass(isActive, 'clientes')}

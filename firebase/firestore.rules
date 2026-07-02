@@ -339,5 +339,57 @@ service cloud.firestore {
         allow write: if false;
       }
     }
+
+    // ── MÓDULO "SORTEO POR SUSCRIPCIÓN" (NUEVO — server-authoritative) ────────────
+    // Página pública: lee el doc de campaña + beneficios + galería de ganadores +
+    // shards del contador. Los suscriptores y recibos SOLO los escribe la Cloud
+    // Function (Admin SDK, bypassa estas reglas); el cliente jamás escribe.
+    match /sorteos_suscripcion/{id} {
+      allow read: if true;               // Vitrina pública de la campaña.
+      allow write: if isAdmin();         // Solo el admin crea/edita la campaña.
+
+      // Beneficios (marcas/descuentos): lectura pública; el admin los gestiona.
+      match /beneficios/{b} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+      // Galería de ganadores anteriores: lectura pública; el admin la gestiona.
+      match /ganadores_galeria/{g} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+      // Contador con shards: lectura pública (la página suma los shards); solo la CF escribe.
+      match /contador/{s} {
+        allow read: if true;
+        allow write: if false;
+      }
+      // Suscriptor: SOLO su dueño (o el admin) lo lee; nunca lo escribe el cliente.
+      match /suscriptores/{uid} {
+        allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+        allow write: if false;
+
+        // Recibos de cobro: mismos permisos de lectura que el suscriptor.
+        match /recibos/{r} {
+          allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+          allow write: if false;
+        }
+      }
+      // Evidencia de sorteos realizados: solo el admin lee; solo la CF escribe.
+      match /sorteos_realizados/{d} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+    }
+
+    // Idempotencia de cobros de suscripción: interno (solo la CF con Admin SDK).
+    match /suscripcionCharges/{c} {
+      allow read: if false;
+      allow write: if false;
+    }
+    // Marcas de eventos de webhook de suscripción de PayPal: interno.
+    match /paypalSubEvents/{e} {
+      allow read: if false;
+      allow write: if false;
+    }
   }
 }

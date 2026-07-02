@@ -1,0 +1,349 @@
+/* ============================================================================
+ * AdminUsuariosApp.module.css — estilos co-localizados de la vista
+ * "Usuarios de la App". Usa exclusivamente tokens del sistema de diseño
+ * (variables.css / tokens.css): --primary-color, --gris-*, --glass-*, --radio-*,
+ * --dur-*, --ease-signature. Mobile-first, dark-mode friendly (tokens) y
+ * tolerante a prefers-reduced-motion.
+ * ========================================================================== */
+
+.page {
+  position: relative;
+  min-height: 100%;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ------------------------------ cabecera ------------------------------ */
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--gris-texto-principal, #1e293b);
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: var(--gris-texto-secundario, #64748b);
+  max-width: 60ch;
+  line-height: 1.5;
+}
+
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ------------------------------ estados ------------------------------ */
+
+.errorBox {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radio-mediano, 14px);
+  background: var(--danger-soft, rgba(239, 68, 68, 0.1));
+  border: 1px solid var(--danger-border, rgba(239, 68, 68, 0.3));
+  color: var(--danger-text, #b91c1c);
+  font-size: 0.9rem;
+}
+
+.loading,
+.empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--gris-texto-secundario, #64748b);
+  font-size: 0.9rem;
+}
+
+/* ------------------------------ toolbar / búsqueda ------------------------------ */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.searchWrap {
+  flex: 1 1 260px;
+  max-width: 380px;
+}
+
+.count {
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario, #64748b);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------ tabla ------------------------------ */
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: var(--radio-grande, 18px);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris-texto-secundario, #64748b);
+  background: var(--glass-bg-tint, rgba(245, 243, 255, 0.6));
+  border-bottom: 1px solid var(--glass-stroke, rgba(109, 40, 217, 0.15));
+  white-space: nowrap;
+}
+
+.row {
+  cursor: pointer;
+  transition: background var(--dur-rapida, 0.18s) ease;
+}
+
+.row:hover {
+  background: var(--glass-bg-tint, rgba(245, 243, 255, 0.5));
+}
+
+.table tbody td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--gris-borde, rgba(148, 163, 184, 0.18));
+  color: var(--gris-texto-principal, #1e293b);
+  vertical-align: middle;
+}
+
+.userCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.userName {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22ch;
+}
+
+.userMail {
+  font-size: 0.78rem;
+  color: var(--gris-texto-secundario, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 24ch;
+}
+
+.numCell {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--primary-color, #6d28d9);
+}
+
+.muted {
+  color: var(--gris-texto-secundario, #94a3b8);
+}
+
+.deviceCell {
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+/* ------------------------------ modal de detalle ------------------------------ */
+
+.modalHead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.modalMail {
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.modalNote {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radio-md, 12px);
+  background: var(--glass-fill, rgba(255, 255, 255, 0.4));
+  border: 1px dashed var(--glass-stroke, rgba(109, 40, 217, 0.18));
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--gris-600, #4b5563);
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.metricCard {
+  padding: 0.85rem;
+  border-radius: var(--radio-mediano, 14px);
+  background: var(--glass-bg-tint, rgba(245, 243, 255, 0.55));
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.45));
+}
+
+.metricLabel {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris-texto-secundario, #64748b);
+  margin-bottom: 0.3rem;
+}
+
+.metricValue {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal, #1e293b);
+  font-variant-numeric: tabular-nums;
+}
+
+.sectionTitle {
+  margin: 1.25rem 0 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #1e293b);
+}
+
+/* tabla de desglose APP/WEB por ruta dentro del modal */
+.breakTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.breakTable th {
+  text-align: right;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--gris-texto-secundario, #64748b);
+  border-bottom: 1px solid var(--glass-stroke, rgba(109, 40, 217, 0.15));
+}
+
+.breakTable th:first-child {
+  text-align: left;
+}
+
+.breakTable td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--gris-borde, rgba(148, 163, 184, 0.15));
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakTable td:first-child {
+  text-align: left;
+  max-width: 18rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--gris-texto-principal, #1e293b);
+}
+
+.pathCol {
+  color: var(--gris-texto-principal, #1e293b);
+}
+
+.colApp {
+  color: var(--primary-color, #6d28d9);
+  font-weight: 700;
+}
+
+.colWeb {
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+/* lista de eventos recientes */
+.events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.eventItem {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radio-md, 12px);
+  background: var(--glass-bg-tint, rgba(245, 243, 255, 0.5));
+  font-size: 0.82rem;
+}
+
+.eventType {
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--primary-color, #6d28d9);
+  white-space: nowrap;
+}
+
+.eventPath {
+  color: var(--gris-texto-principal, #334155);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eventTime {
+  color: var(--gris-texto-secundario, #64748b);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.modalError {
+  color: var(--danger-text, #b91c1c);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 520px) {
+  .userName,
+  .userMail {
+    max-width: 16ch;
+  }
+}

@@ -1011,6 +1011,24 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
       });
     }
 
+    // ── ENLACE DE PAGO: si el cobro corresponde a un enlace rápido (metadata.enlaceId),
+    // se marca el doc enlaces_pago como PAGADO server-side (igual que PayPal ya hace en
+    // el cliente). Cierra la brecha: antes un enlace PEN quedaba "pendiente" y reutilizable,
+    // y el historial no lo veía pagado. Best-effort e idempotente (merge): el cobro ya ocurrió.
+    const enlaceId = metadata && typeof metadata.enlaceId === "string" ? metadata.enlaceId.trim() : "";
+    if (enlaceId) {
+      try {
+        await db.collection("enlaces_pago").doc(enlaceId).set({
+          estado: "pagado",
+          culqiChargeId: String(result.id),
+          pagadoEn: new Date().toISOString(),
+          metodoPago: "culqi",
+        }, { merge: true });
+      } catch (e) {
+        console.error(`processCulqiPayment: cobro OK (charge ${result.id}) pero no se pudo marcar enlaces_pago/${enlaceId}:`, e);
+      }
+    }
+
     return {
       success: true,
       charge_id: result.id,
@@ -4854,5 +4872,1133 @@ exports.registrarVisitaEnlace = functions.https.onCall(async (data, context) => 
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("registrarVisitaEnlace error:", e);
     throw new functions.https.HttpsError("internal", "No se pudo registrar la visita.");
+  }
+});
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// MÓDULO "SORTEO POR SUSCRIPCIÓN" (estilo "No Hay Sin Suerte") — 100% ADITIVO
+// ════════════════════════════════════════════════════════════════════════════
+// La gente se SUSCRIBE (plan mensual/trimestral/semestral/anual con AUTO-DÉBITO
+// de tarjeta) y por eso participa en sorteos: más meses de plan = más chances.
+// SOLO suscriptores con pago vigente pueden ganar; el azar es 100% justo por
+// ticket (mismo motor auditable que decidirGanadoresSorteo: crearDrbgSha256 +
+// elegirGanadoresPonderado + semilla crypto + poolHash).
+//
+// REGLAS DURAS QUE RESPETA ESTE BLOQUE:
+//  - NO modifica processCulqiPayment/culqiWebhook/createPaypalOrderSecure/
+//    capturePaypalOrderSecure/createPaypalTicketSorteoSecure/capturePaypalTicketSorteoSecure
+//    ni sus locks (culqiCharges/culqiWebhookEvents/pedidos_web.paypalCaptureId).
+//  - MONTO server-side SIEMPRE: sale del doc del plan (plan.precioCentimos para
+//    Culqi/PEN, plan.precioUsd para PayPal), NUNCA del cliente.
+//  - Idempotencia con locks NUEVOS por t.create: suscripcionCharges/{subId}__{periodo}.
+//  - Pocas lecturas: contadores denormalizados + shards (10). El cron solo toca
+//    suscripciones cuyo proximoCobro <= hoy (collectionGroup acotado por índice).
+//
+// Colección raíz: sorteos_suscripcion/{campaignId}. Ver el CONTRATO al final.
+
+// Número de shards del contador de suscriptores (DEBE coincidir con el front:
+// suscripcionSorteos.js SUSCRIPCION_SHARDS). Docs con id "0".."9".
+const SUSCRIPCION_SHARDS = 10;
+// Tope por lote del cron de cobro (páginas acotadas; no escanea toda la colección).
+const SUSCRIPCION_COBRO_LOTE = 100;
+// Tope de suscriptores elegibles que se leen para el sorteo (paginado).
+const SUSCRIPCION_ELEGIBLES_PAGE_SIZE = 300;
+
+// ── Helpers internos del módulo (comentarios en español) ──────────────────────
+
+// Deriva la fecha "periodo" (string YYYY-MM-DD en zona Lima) de un instante dado.
+// Se usa como parte de la clave de idempotencia suscripcionCharges/{subId}__{periodo}
+// y como campo `periodo` del recibo. Reutiliza el patrón de limaTodayStr.
+function suscripcionPeriodoStr(fecha) {
+  const d = fecha instanceof Date ? fecha : new Date();
+  // en-CA da formato YYYY-MM-DD; timeZone America/Lima homogeneiza con el resto del proyecto.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+// Suma `meses` calendario a un instante (para vigenciaHasta / proximoCobro).
+// Usa UTC para evitar saltos por DST; los cobros se agendan por fecha, no por hora exacta.
+function sumarMeses(desde, meses) {
+  const base = desde instanceof Date ? new Date(desde.getTime()) : new Date();
+  const d = new Date(base.getTime());
+  const diaOriginal = d.getUTCDate();
+  d.setUTCMonth(d.getUTCMonth() + (Number(meses) || 0));
+  // Si el mes destino tiene menos días (p. ej. 31 ene + 1 mes), setUTCMonth desborda:
+  // se corrige al último día del mes destino.
+  if (d.getUTCDate() < diaOriginal) d.setUTCDate(0);
+  return d;
+}
+
+// Normaliza y valida los datos mínimos del suscriptor. Lanza HttpsError si falta
+// nombre o correo. Devuelve un objeto con SOLO los campos del contrato del suscriptor.
+function normalizarDatosSuscriptor(datos) {
+  const d = datos && typeof datos === "object" ? datos : {};
+  const nombres = d.nombres ? String(d.nombres).trim() : "";
+  const apellidos = d.apellidos ? String(d.apellidos).trim() : "";
+  const nombre = (d.nombre ? String(d.nombre).trim() : "") || `${nombres} ${apellidos}`.trim();
+  const correo = d.correo ? String(d.correo).trim().toLowerCase() : "";
+  if (!nombre) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta el nombre del suscriptor.");
+  }
+  if (!correo || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta un correo válido del suscriptor.");
+  }
+  return {
+    nombre,
+    nombres: nombres || null,
+    apellidos: apellidos || null,
+    correo,
+    telefono: d.telefono ? String(d.telefono).replace(/\s+/g, "") : null,
+    dni: d.dni ? String(d.dni).replace(/\s+/g, "") : null,
+    tipoDocumento: d.tipoDocumento ? String(d.tipoDocumento).trim() : null,
+    fechaNacimiento: d.fechaNacimiento ? String(d.fechaNacimiento).trim() : null,
+    pais: d.pais ? String(d.pais).trim() : null,
+  };
+}
+
+// Lee la campaña + el plan por id, devolviendo el plan tal cual está en el doc
+// (con el MONTO autoritativo). Lanza HttpsError si no existen o no está activa.
+async function leerCampanaYPlan(campaignId, planId) {
+  if (!campaignId || typeof campaignId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta campaignId.");
+  }
+  if (!planId || typeof planId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta planId.");
+  }
+  const campRef = db.collection("sorteos_suscripcion").doc(campaignId);
+  const campSnap = await campRef.get();
+  if (!campSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "La campaña de sorteo no existe.");
+  }
+  const campana = campSnap.data() || {};
+  if (campana.estado === "cerrado") {
+    throw new functions.https.HttpsError("failed-precondition", "La campaña está cerrada.");
+  }
+  const planes = Array.isArray(campana.planes) ? campana.planes : [];
+  const plan = planes.find((p) => p && p.id === planId);
+  if (!plan) {
+    throw new functions.https.HttpsError("not-found", "El plan no existe en esta campaña.");
+  }
+  // Normaliza meses/chances con defaults del contrato (chancesPorCiclo default = meses).
+  const meses = Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0 ? Number(plan.meses) : 1;
+  const chancesPorCiclo =
+    Number.isInteger(Number(plan.chancesPorCiclo)) && Number(plan.chancesPorCiclo) > 0
+      ? Number(plan.chancesPorCiclo)
+      : meses;
+  return { campRef, campana, plan, meses, chancesPorCiclo };
+}
+
+// Incrementa un shard aleatorio del contador de suscriptores (solo suscriptor NUEVO).
+// Recibe la transacción para escribir atómicamente con el upsert del suscriptor.
+function incrementarContadorSuscriptores(t, campRef) {
+  const shardIndex = Math.floor(Math.random() * SUSCRIPCION_SHARDS);
+  const shardRef = campRef.collection("contador").doc(String(shardIndex));
+  t.set(shardRef, { count: FieldValue.increment(1) }, { merge: true });
+  t.set(campRef, { contadorSuscriptores: FieldValue.increment(1) }, { merge: true });
+}
+
+// ── crearSuscripcionCulqi ─────────────────────────────────────────────────────
+// onCall (requireAuth). Crea Customer + Card en Culqi, cobra el 1er periodo con el
+// MONTO del plan (server-side, PEN), y hace UPSERT del suscriptor + recibo. Idempotente
+// por lock NUEVO suscripcionCharges/{uid}_{campaignId}__{periodo0} (t.create).
+// params: { campaignId, planId, tokenId, datos:{nombre,nombres,apellidos,correo,...}, origenApp }
+// return: { ok, estado, vigenciaHasta(ISO), subId, chargeId }
+exports.crearSuscripcionCulqi = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const campaignId = data && data.campaignId;
+  const planId = data && data.planId;
+  const tokenId = data && data.tokenId;
+  if (!tokenId || typeof tokenId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta el token de la tarjeta (tokenId).");
+  }
+
+  // Datos mínimos + campaña/plan (MONTO autoritativo = plan.precioCentimos).
+  const perfil = normalizarDatosSuscriptor(data && data.datos);
+  const { campRef, plan, meses, chancesPorCiclo } = await leerCampanaYPlan(campaignId, planId);
+  const montoCentimos = Number(plan.precioCentimos);
+  if (!Number.isInteger(montoCentimos) || montoCentimos <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "El plan no tiene precioCentimos válido (PEN).");
+  }
+
+  const secretKey = process.env.CULQI_SECRET_KEY;
+  if (!secretKey) {
+    console.error("crearSuscripcionCulqi: CULQI_SECRET_KEY no configurada.");
+    throw new functions.https.HttpsError("failed-precondition", "Pago no disponible temporalmente.");
+  }
+
+  const subId = `${uid}_${campaignId}`;
+  const periodo = suscripcionPeriodoStr(new Date());
+  const subRef = campRef.collection("suscriptores").doc(uid);
+  const lockRef = db.collection("suscripcionCharges").doc(`${subId}__${periodo}`);
+
+  // ── LOCK de idempotencia (NUEVO, no reutiliza los locks de pago existentes) ──
+  // Reserva suscripcionCharges/{subId}__{periodo} ANTES de cobrar. Si ya existe:
+  // no re-cobra (mismo comportamiento defensivo que processCulqiPayment).
+  let lockAcquired = false;
+  try {
+    const prev = await db.runTransaction(async (t) => {
+      const snap = await t.get(lockRef);
+      if (snap.exists) return snap.data() || {};
+      t.create(lockRef, {
+        subId,
+        campaignId,
+        uid,
+        planId,
+        periodo,
+        metodoPago: "culqi",
+        status: "processing",
+        amount: montoCentimos,
+        currency: "PEN",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      return null;
+    });
+    if (prev) {
+      if (prev.status === "succeeded") {
+        // Ya se cobró este periodo: devuelve el estado vigente (idempotente).
+        const s = await subRef.get();
+        const sd = s.exists ? s.data() : {};
+        return {
+          ok: true,
+          estado: sd.estado || "activo",
+          vigenciaHasta: sd.vigenciaHasta && sd.vigenciaHasta.toDate ? sd.vigenciaHasta.toDate().toISOString() : null,
+          subId,
+          idempotent: true,
+        };
+      }
+      if (prev.status === "processing") {
+        throw new functions.https.HttpsError("already-exists", "Tu suscripción ya se está procesando. Espera unos segundos.");
+      }
+      // status "failed": el token es de un solo uso; hay que reintentar con uno nuevo.
+      throw new functions.https.HttpsError("failed-precondition", "El cobro anterior falló. Vuelve a iniciar el pago.");
+    }
+    lockAcquired = true;
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.warn("crearSuscripcionCulqi: no se pudo adquirir el lock, se procede sin él:", e.message);
+  }
+
+  // Marca el lock como fallido (best-effort) para no re-llamar a Culqi con el mismo token.
+  const marcarLockFallido = async (motivo) => {
+    if (!lockAcquired) return;
+    try {
+      await lockRef.set({ status: "failed", error: motivo, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    } catch (e) {
+      console.warn("crearSuscripcionCulqi: no se pudo marcar el lock como failed:", e.message);
+    }
+  };
+
+  try {
+    // 1) Customer en Culqi (guarda la relación para futuros cobros del cron).
+    const custResp = await fetch("https://api.culqi.com/v2/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${secretKey}` },
+      body: JSON.stringify({
+        first_name: (perfil.nombres || perfil.nombre || "Suscriptor").slice(0, 50),
+        last_name: (perfil.apellidos || perfil.nombre || "WALA").slice(0, 50),
+        email: perfil.correo,
+        address: "Lima",
+        address_city: "Lima",
+        country_code: "PE",
+        phone_number: perfil.telefono || "999999999",
+      }),
+    });
+    const custJson = await custResp.json().catch(() => ({}));
+    if (!custResp.ok || !custJson.id) {
+      console.error("crearSuscripcionCulqi: Culqi rechazó el customer:", custResp.status, custJson);
+      await marcarLockFallido(custJson.user_message || "rechazo customer Culqi");
+      throw new functions.https.HttpsError("internal", custJson.user_message || "No se pudo crear el cliente en Culqi.");
+    }
+    const culqiCustomerId = custJson.id;
+
+    // 2) Card en Culqi (customer_id + token_id de un solo uso).
+    const cardResp = await fetch("https://api.culqi.com/v2/cards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${secretKey}` },
+      body: JSON.stringify({ customer_id: culqiCustomerId, token_id: tokenId }),
+    });
+    const cardJson = await cardResp.json().catch(() => ({}));
+    if (!cardResp.ok || !cardJson.id) {
+      console.error("crearSuscripcionCulqi: Culqi rechazó la tarjeta:", cardResp.status, cardJson);
+      await marcarLockFallido(cardJson.user_message || "rechazo card Culqi");
+      throw new functions.https.HttpsError("internal", cardJson.user_message || "No se pudo guardar la tarjeta en Culqi.");
+    }
+    const culqiCardId = cardJson.id;
+
+    // 3) Cobro del 1er periodo con source_id=cardId, monto autoritativo del plan.
+    const chargeResp = await fetch("https://api.culqi.com/v2/charges", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${secretKey}` },
+      body: JSON.stringify({
+        amount: montoCentimos,
+        currency_code: "PEN",
+        email: perfil.correo,
+        source_id: culqiCardId,
+        description: `Suscripción sorteo #${campaignId} (${plan.nombre || planId})`,
+        metadata: { tipo: "suscripcion", campaignId, uid, planId, periodo },
+      }),
+    });
+    const chargeJson = await chargeResp.json().catch(() => ({}));
+    if (!chargeResp.ok || !chargeJson.id) {
+      console.error("crearSuscripcionCulqi: Culqi rechazó el cobro:", chargeResp.status, chargeJson);
+      await marcarLockFallido(chargeJson.user_message || "rechazo charge Culqi");
+      throw new functions.https.HttpsError("internal", chargeJson.user_message || "No se pudo cobrar la suscripción.");
+    }
+    const chargeId = chargeJson.id;
+
+    // 4) UPSERT del suscriptor + recibo (+ shard SOLO si es nuevo), en transacción.
+    const ahora = new Date();
+    const vigenciaHasta = sumarMeses(ahora, meses);
+    const reciboRef = subRef.collection("recibos").doc(chargeId);
+    await db.runTransaction(async (t) => {
+      const sSnap = await t.get(subRef);
+      const esNuevo = !sSnap.exists;
+      const chancesTotal = chancesPorCiclo + (esNuevo ? 0 : Number((sSnap.data() || {}).chancesExtra) || 0);
+      t.set(subRef, {
+        uid,
+        ...perfil,
+        planId,
+        intervalo: plan.intervalo || null,
+        meses,
+        chancesPorCiclo,
+        chancesExtra: esNuevo ? 0 : FieldValue.increment(0),
+        chancesTotal,
+        estado: "activo",
+        metodoPago: "culqi",
+        vigenciaHasta: admin.firestore.Timestamp.fromDate(vigenciaHasta),
+        proximoCobro: admin.firestore.Timestamp.fromDate(vigenciaHasta),
+        intentosFallidos: 0,
+        culqiCustomerId,
+        culqiCardId,
+        paypalSubscriptionId: null,
+        updatedAt: FieldValue.serverTimestamp(),
+        ...(esNuevo ? { createdAt: FieldValue.serverTimestamp() } : {}),
+      }, { merge: true });
+      t.set(reciboRef, {
+        periodo,
+        montoCentimos,
+        moneda: "PEN",
+        metodoPago: "culqi",
+        pagoId: chargeId,
+        fecha: FieldValue.serverTimestamp(),
+      });
+      if (esNuevo) incrementarContadorSuscriptores(t, campRef);
+    });
+
+    // 5) Marca el lock como cobrado (sirve reintentos idempotentes).
+    if (lockAcquired) {
+      try {
+        await lockRef.set({ status: "succeeded", chargeId, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      } catch (e) {
+        console.warn("crearSuscripcionCulqi: no se pudo marcar el lock como succeeded:", e.message);
+      }
+    }
+
+    return { ok: true, estado: "activo", vigenciaHasta: vigenciaHasta.toISOString(), subId, chargeId };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("crearSuscripcionCulqi error:", e);
+    await marcarLockFallido(e.message || "error interno");
+    throw new functions.https.HttpsError("internal", "No se pudo crear la suscripción.");
+  }
+});
+
+// ── cobrarSuscripcionesCulqi ──────────────────────────────────────────────────
+// onSchedule diario (molde updateFxRate). collectionGroup("suscriptores") acotado
+// por índice (estado ASC, proximoCobro ASC): solo toca los que vencen hoy o antes.
+// Filtra metodoPago=="culqi" en memoria. Best-effort: NUNCA lanza; loguea.
+// Idempotente por lock suscripcionCharges/{subId}__{periodoActual}.
+exports.cobrarSuscripcionesCulqi = onSchedule(
+  {
+    schedule: "0 9 * * *", // diario 09:00
+    timeZone: "America/Lima",
+    retryCount: 2,
+  },
+  async (event) => {
+    const secretKey = process.env.CULQI_SECRET_KEY;
+    if (!secretKey) {
+      console.error("cobrarSuscripcionesCulqi: CULQI_SECRET_KEY no configurada; no se cobra.");
+      return;
+    }
+    const ahora = new Date();
+    const ahoraTs = admin.firestore.Timestamp.fromDate(ahora);
+
+    // Query acotada por índice compuesto collectionGroup (estado, proximoCobro).
+    let procesados = 0;
+    let cursor = null;
+    // Se pagina por lotes para no cargar todo en memoria.
+    for (let pagina = 0; pagina < 50; pagina += 1) {
+      let q = db.collectionGroup("suscriptores")
+        .where("estado", "==", "activo")
+        .where("proximoCobro", "<=", ahoraTs)
+        .orderBy("proximoCobro", "asc")
+        .limit(SUSCRIPCION_COBRO_LOTE);
+      if (cursor) q = q.startAfter(cursor);
+      let snap;
+      try {
+        snap = await q.get();
+      } catch (e) {
+        console.error("cobrarSuscripcionesCulqi: fallo la query acotada (¿falta el índice?):", e.message);
+        return;
+      }
+      if (snap.empty) break;
+      cursor = snap.docs[snap.docs.length - 1];
+
+      for (const doc of snap.docs) {
+        const sub = doc.data() || {};
+        if (sub.metodoPago !== "culqi") continue; // los de PayPal los cobra PayPal
+        const subRef = doc.ref;
+        const campRef = subRef.parent.parent; // sorteos_suscripcion/{campaignId}
+        const uid = sub.uid || doc.id;
+        const subId = `${uid}_${campRef.id}`;
+        const periodo = suscripcionPeriodoStr(ahora);
+        const lockRef = db.collection("suscripcionCharges").doc(`${subId}__${periodo}`);
+
+        // Lock por periodo: si ya se cobró (o se está cobrando) este periodo, se salta.
+        let lockAcquired = false;
+        try {
+          const prev = await db.runTransaction(async (t) => {
+            const ls = await t.get(lockRef);
+            if (ls.exists) return ls.data() || {};
+            t.create(lockRef, {
+              subId, campaignId: campRef.id, uid, planId: sub.planId || null, periodo,
+              metodoPago: "culqi", status: "processing", amount: null, currency: "PEN",
+              origen: "cron", createdAt: FieldValue.serverTimestamp(),
+            });
+            return null;
+          });
+          if (prev) continue; // ya procesado/en proceso este periodo
+          lockAcquired = true;
+        } catch (e) {
+          console.warn(`cobrarSuscripcionesCulqi: lock falló para ${subId}, se salta:`, e.message);
+          continue;
+        }
+
+        try {
+          // MONTO autoritativo: se re-lee del plan de la campaña (no del suscriptor).
+          const campSnap = await campRef.get();
+          const campana = campSnap.exists ? campSnap.data() : {};
+          const planes = Array.isArray(campana.planes) ? campana.planes : [];
+          const plan = planes.find((p) => p && p.id === sub.planId) || {};
+          const montoCentimos = Number(plan.precioCentimos);
+          const meses = Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0 ? Number(plan.meses) : Number(sub.meses) || 1;
+          if (!Number.isInteger(montoCentimos) || montoCentimos <= 0 || !sub.culqiCardId) {
+            await lockRef.set({ status: "failed", error: "plan/card inválido", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+            continue;
+          }
+
+          const chargeResp = await fetch("https://api.culqi.com/v2/charges", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${secretKey}` },
+            body: JSON.stringify({
+              amount: montoCentimos,
+              currency_code: "PEN",
+              email: sub.correo || "sin-correo@wala.pe",
+              source_id: sub.culqiCardId,
+              description: `Renovación suscripción #${campRef.id} (${plan.nombre || sub.planId})`,
+              metadata: { tipo: "suscripcion", campaignId: campRef.id, uid, planId: sub.planId, periodo },
+            }),
+          });
+          const chargeJson = await chargeResp.json().catch(() => ({}));
+
+          if (chargeResp.ok && chargeJson.id) {
+            // El DINERO ya se cobró: registra el chargeId en el lock ANTES de acreditar,
+            // para no perder el hecho del cobro si la escritura de vigencia fallara.
+            try {
+              await lockRef.set({ status: "charged", chargeId: chargeJson.id, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+            } catch (_e) { /* noop: el charge ya está hecho */ }
+
+            const nuevaVigencia = sumarMeses(ahora, meses);
+            const reciboRef = subRef.collection("recibos").doc(chargeJson.id);
+            // Acreditación con reintentos: extiende vigencia+proximoCobro, resetea intentos,
+            // escribe recibo. Es idempotente (recibo con id=chargeId, set merge).
+            let acreditado = false;
+            for (let intento = 0; intento < 3 && !acreditado; intento += 1) {
+              try {
+                // eslint-disable-next-line no-await-in-loop
+                await db.runTransaction(async (t) => {
+                  t.set(subRef, {
+                    estado: "activo",
+                    vigenciaHasta: admin.firestore.Timestamp.fromDate(nuevaVigencia),
+                    proximoCobro: admin.firestore.Timestamp.fromDate(nuevaVigencia),
+                    intentosFallidos: 0,
+                    updatedAt: FieldValue.serverTimestamp(),
+                  }, { merge: true });
+                  t.set(reciboRef, {
+                    periodo, montoCentimos, moneda: "PEN", metodoPago: "culqi",
+                    pagoId: chargeJson.id, fecha: FieldValue.serverTimestamp(),
+                  }, { merge: true });
+                });
+                acreditado = true;
+              } catch (e2) {
+                console.error(`cobrarSuscripcionesCulqi: reintento ${intento + 1} de acreditación falló para ${subId}:`, e2.message);
+              }
+            }
+            if (acreditado) {
+              await lockRef.set({ status: "succeeded", chargeId: chargeJson.id, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+              procesados += 1;
+            } else {
+              // COBRADO PERO NO ACREDITADO (rarísimo): reconciliación manual. NUNCA marcar
+              // vencido a alguien que YA pagó; el lock queda "charged" con el chargeId.
+              console.error(`RECONCILIAR: cobro Culqi OK (charge ${chargeJson.id}) pero no se pudo acreditar vigencia a ${subId}.`);
+            }
+            continue; // no caer al catch genérico tras un cobro exitoso
+          } else {
+            // Fallo: +1 intento; si supera 3 → vencido. Empuja proximoCobro +1 día
+            // para reintentar mañana sin re-cobrar hoy (el lock del periodo lo evita).
+            console.warn(`cobrarSuscripcionesCulqi: cobro rechazado para ${subId}:`, chargeJson.user_message || chargeResp.status);
+            const nuevosIntentos = (Number(sub.intentosFallidos) || 0) + 1;
+            const reintentoTs = admin.firestore.Timestamp.fromDate(new Date(ahora.getTime() + 24 * 60 * 60 * 1000));
+            await subRef.set({
+              intentosFallidos: nuevosIntentos,
+              ...(nuevosIntentos > 3 ? { estado: "vencido" } : { proximoCobro: reintentoTs }),
+              updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+            await lockRef.set({ status: "failed", error: chargeJson.user_message || "rechazo Culqi", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+          }
+        } catch (e) {
+          // Best-effort: nunca lanza. Deja el lock en processing para no re-cobrar hoy.
+          console.error(`cobrarSuscripcionesCulqi: error cobrando ${subId}:`, e.message);
+          if (lockAcquired) {
+            try { await lockRef.set({ status: "failed", error: e.message || "error", updatedAt: FieldValue.serverTimestamp() }, { merge: true }); } catch (_e) { /* noop */ }
+          }
+        }
+      }
+
+      if (snap.size < SUSCRIPCION_COBRO_LOTE) break;
+    }
+    console.log(`cobrarSuscripcionesCulqi: cobros procesados=${procesados}`);
+  }
+);
+
+// ── PayPal (suscripciones recurrentes) — Product + Plan + Subscription ─────────
+// Asegura un Product y un Plan de facturación en PayPal para (campaign, plan) y
+// cachea el paypalPlanId en paypalPlanes/{campaignId__planId} (pocas lecturas).
+async function asegurarPaypalPlan(campaignId, campana, plan, meses) {
+  const cacheRef = db.collection("paypalPlanes").doc(`${campaignId}__${plan.id}`);
+  const cacheSnap = await cacheRef.get();
+  if (cacheSnap.exists && cacheSnap.data().paypalPlanId) {
+    return cacheSnap.data().paypalPlanId;
+  }
+  const precioUsd = Number(plan.precioUsd);
+  if (!Number.isFinite(precioUsd) || precioUsd <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "El plan no tiene precioUsd válido (PayPal).");
+  }
+  const accessToken = await getPaypalAccessToken();
+
+  // 1) Product (idempotente por PayPal-Request-Id estable por campaña/plan).
+  const prodResp = await fetch(`${paypalApiBase()}/v1/catalogs/products`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "PayPal-Request-Id": `prod_${campaignId}_${plan.id}`,
+    },
+    body: JSON.stringify({
+      name: `Suscripción ${campana.titulo || campaignId} - ${plan.nombre || plan.id}`,
+      type: "SERVICE",
+      category: "MEMBERSHIP_CLUBS_AND_ORGANIZATIONS",
+    }),
+  });
+  const prodJson = await prodResp.json().catch(() => ({}));
+  if (!prodResp.ok || !prodJson.id) {
+    console.error("asegurarPaypalPlan: PayPal rechazó el product:", prodResp.status, prodJson);
+    throw new functions.https.HttpsError("internal", "No se pudo crear el producto en PayPal.");
+  }
+  const productId = prodJson.id;
+
+  // 2) Billing Plan (intervalo por meses; USD; ciclos infinitos = total_cycles 0).
+  const planResp = await fetch(`${paypalApiBase()}/v1/billing/plans`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "PayPal-Request-Id": `plan_${campaignId}_${plan.id}`,
+    },
+    body: JSON.stringify({
+      product_id: productId,
+      name: `${campana.titulo || campaignId} - ${plan.nombre || plan.id}`,
+      status: "ACTIVE",
+      billing_cycles: [
+        {
+          frequency: { interval_unit: "MONTH", interval_count: meses },
+          tenure_type: "REGULAR",
+          sequence: 1,
+          total_cycles: 0, // recurrente indefinido hasta cancelar
+          pricing_scheme: { fixed_price: { value: precioUsd.toFixed(2), currency_code: "USD" } },
+        },
+      ],
+      payment_preferences: {
+        auto_bill_outstanding: true,
+        setup_fee_failure_action: "CONTINUE",
+        payment_failure_threshold: 3,
+      },
+    }),
+  });
+  const planJson = await planResp.json().catch(() => ({}));
+  if (!planResp.ok || !planJson.id) {
+    console.error("asegurarPaypalPlan: PayPal rechazó el plan:", planResp.status, planJson);
+    throw new functions.https.HttpsError("internal", "No se pudo crear el plan en PayPal.");
+  }
+  const paypalPlanId = planJson.id;
+  await cacheRef.set({
+    campaignId, planId: plan.id, productId, paypalPlanId,
+    precioUsd, meses, createdAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  return paypalPlanId;
+}
+
+// ── crearSuscripcionPaypal ────────────────────────────────────────────────────
+// onCall (requireAuth). Asegura Product+Plan de PayPal y crea una Subscription
+// (intent recurring). Devuelve el subscriptionId + approveUrl para redirigir.
+// params: { campaignId, planId, datos } → return: { ok, subscriptionId, approveUrl }
+exports.crearSuscripcionPaypal = functions.https.onCall(async (data, context) => {
+  requireAuth(context);
+  const campaignId = data && data.campaignId;
+  const planId = data && data.planId;
+  const perfil = normalizarDatosSuscriptor(data && data.datos);
+  const { campana, plan, meses } = await leerCampanaYPlan(campaignId, planId);
+
+  const paypalPlanId = await asegurarPaypalPlan(campaignId, campana, plan, meses);
+  const accessToken = await getPaypalAccessToken();
+
+  const subResp = await fetch(`${paypalApiBase()}/v1/billing/subscriptions`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      plan_id: paypalPlanId,
+      // custom_id liga la subscription a (campaign, plan, uid) para el webhook.
+      custom_id: `${campaignId}|${planId}|${context.auth.uid}`,
+      subscriber: {
+        name: { given_name: (perfil.nombres || perfil.nombre || "Suscriptor").slice(0, 140), surname: (perfil.apellidos || "WALA").slice(0, 140) },
+        email_address: perfil.correo,
+      },
+      application_context: {
+        brand_name: campana.titulo || "WALA",
+        shipping_preference: "NO_SHIPPING",
+        user_action: "SUBSCRIBE_NOW",
+      },
+    }),
+  });
+  const subJson = await subResp.json().catch(() => ({}));
+  if (!subResp.ok || !subJson.id) {
+    console.error("crearSuscripcionPaypal: PayPal rechazó la subscription:", subResp.status, subJson);
+    throw new functions.https.HttpsError("internal", "No se pudo crear la suscripción en PayPal.");
+  }
+  const approveLink = (subJson.links || []).find((l) => l.rel === "approve");
+  return { ok: true, subscriptionId: subJson.id, approveUrl: approveLink ? approveLink.href : null };
+});
+
+// ── confirmarSuscripcionPaypal ────────────────────────────────────────────────
+// onCall (requireAuth). Tras aprobar en PayPal, verifica que la subscription esté
+// ACTIVE (GET) y hace UPSERT del suscriptor + recibo. MONTO/meses del plan del doc.
+// params: { campaignId, planId, subscriptionId, datos } → return: { ok, estado, vigenciaHasta }
+exports.confirmarSuscripcionPaypal = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const campaignId = data && data.campaignId;
+  const planId = data && data.planId;
+  const subscriptionId = data && data.subscriptionId;
+  if (!subscriptionId || typeof subscriptionId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta subscriptionId.");
+  }
+  const perfil = normalizarDatosSuscriptor(data && data.datos);
+  const { campRef, plan, meses, chancesPorCiclo } = await leerCampanaYPlan(campaignId, planId);
+
+  const accessToken = await getPaypalAccessToken();
+  const resp = await fetch(`${paypalApiBase()}/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+    method: "GET",
+    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+  });
+  const json = await resp.json().catch(() => ({}));
+  if (!resp.ok || !json.id) {
+    console.error("confirmarSuscripcionPaypal: PayPal no devolvió la subscription:", resp.status, json);
+    throw new functions.https.HttpsError("internal", "No se pudo verificar la suscripción en PayPal.");
+  }
+  const esActive = json.status === "ACTIVE";
+  const esApproved = json.status === "APPROVED";
+  if (!esActive && !esApproved) {
+    throw new functions.https.HttpsError("failed-precondition", `La suscripción no está activa (status: ${json.status}).`);
+  }
+
+  const subId = `${uid}_${campaignId}`;
+  const periodo = suscripcionPeriodoStr(new Date());
+  const subRef = campRef.collection("suscriptores").doc(uid);
+  const ahora = new Date();
+  // Solo se acredita vigencia si PayPal confirmó el PRIMER cobro (status ACTIVE).
+  // APPROVED = el usuario aprobó pero aún no hay cobro → queda PENDIENTE (no elegible).
+  const vigenciaHasta = esActive ? sumarMeses(ahora, meses) : null;
+  const reciboRef = subRef.collection("recibos").doc(`paypal_confirm_${periodo}`);
+
+  await db.runTransaction(async (t) => {
+    const sSnap = await t.get(subRef);
+    const esNuevo = !sSnap.exists;
+    const chancesTotal = chancesPorCiclo + (esNuevo ? 0 : Number((sSnap.data() || {}).chancesExtra) || 0);
+    const base = {
+      uid,
+      ...perfil,
+      planId,
+      intervalo: plan.intervalo || null,
+      meses,
+      chancesPorCiclo,
+      chancesExtra: esNuevo ? 0 : FieldValue.increment(0),
+      chancesTotal,
+      metodoPago: "paypal",
+      paypalSubscriptionId: subscriptionId,
+      culqiCustomerId: null,
+      culqiCardId: null,
+      updatedAt: FieldValue.serverTimestamp(),
+      ...(esNuevo ? { createdAt: FieldValue.serverTimestamp() } : {}),
+    };
+    if (esActive) {
+      t.set(subRef, {
+        ...base,
+        estado: "activo",
+        vigenciaHasta: admin.firestore.Timestamp.fromDate(vigenciaHasta),
+        proximoCobro: admin.firestore.Timestamp.fromDate(vigenciaHasta),
+        intentosFallidos: 0,
+      }, { merge: true });
+      // Recibo SOLO cuando hay cobro confirmado.
+      t.set(reciboRef, {
+        periodo,
+        montoUsd: Number(plan.precioUsd) || null,
+        moneda: "USD",
+        metodoPago: "paypal",
+        pagoId: subscriptionId,
+        fecha: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    } else {
+      // PENDIENTE: se guarda para que el webhook (ACTIVATED/SALE.COMPLETED) lo active.
+      // NO se acredita vigencia ni recibo → NO entra al pool del sorteo hasta pagar.
+      t.set(subRef, { ...base, estado: "pendiente_pago" }, { merge: true });
+    }
+    if (esNuevo) incrementarContadorSuscriptores(t, campRef);
+  });
+
+  return esActive
+    ? { ok: true, estado: "activo", vigenciaHasta: vigenciaHasta.toISOString(), subId }
+    : { ok: true, estado: "pendiente_pago", vigenciaHasta: null, subId, pendiente: true };
+});
+
+// Verifica la FIRMA de un webhook de PayPal contra la API oficial
+// /v1/notifications/verify-webhook-signature. FAIL-CLOSED: si falta PAYPAL_WEBHOOK_ID,
+// faltan las cabeceras de transmisión, o la verificación no devuelve SUCCESS, retorna
+// false y el evento NO se procesa. Esto impide que alguien FORJE un evento
+// PAYMENT.SALE.COMPLETED para activar una suscripción sin pagar (lo que contaminaría
+// la elegibilidad del sorteo). El PAYPAL_WEBHOOK_ID se obtiene al crear el webhook en
+// el panel de PayPal y se configura como env var en Functions.
+async function verificarFirmaPaypalWebhook(req) {
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  if (!webhookId) {
+    console.error("paypalSubscriptionWebhook: falta PAYPAL_WEBHOOK_ID; se rechaza el evento por seguridad.");
+    return false;
+  }
+  const h = req.headers || {};
+  const transmissionId = h["paypal-transmission-id"];
+  const transmissionTime = h["paypal-transmission-time"];
+  const certUrl = h["paypal-cert-url"];
+  const authAlgo = h["paypal-auth-algo"];
+  const transmissionSig = h["paypal-transmission-sig"];
+  if (!transmissionId || !transmissionTime || !certUrl || !authAlgo || !transmissionSig) {
+    console.error("paypalSubscriptionWebhook: faltan cabeceras de firma de PayPal; se rechaza.");
+    return false;
+  }
+  try {
+    const accessToken = await getPaypalAccessToken();
+    const resp = await fetch(`${paypalApiBase()}/v1/notifications/verify-webhook-signature`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        auth_algo: authAlgo,
+        cert_url: certUrl,
+        transmission_id: transmissionId,
+        transmission_sig: transmissionSig,
+        transmission_time: transmissionTime,
+        webhook_id: webhookId,
+        webhook_event: req.body,
+      }),
+    });
+    const json = await resp.json().catch(() => ({}));
+    return resp.ok && json.verification_status === "SUCCESS";
+  } catch (e) {
+    console.error("paypalSubscriptionWebhook: error verificando firma:", e.message);
+    return false;
+  }
+}
+
+// ── paypalSubscriptionWebhook (onRequest, endpoint NUEVO y separado) ───────────
+// Maneja eventos de facturación recurrente de PayPal. VERIFICA LA FIRMA (fail-closed)
+// e idempotente por id de evento (paypalSubEvents/{eventId} con t.create). NO toca el
+// flujo de pago único de PayPal.
+//  - PAYMENT.SALE.COMPLETED / BILLING.SUBSCRIPTION.ACTIVATED → extiende vigencia + recibo.
+//  - BILLING.SUBSCRIPTION.CANCELLED → estado="cancelado".
+//  - BILLING.SUBSCRIPTION.SUSPENDED / .EXPIRED → estado="vencido".
+exports.paypalSubscriptionWebhook = functions.https.onRequest(async (req, res) => {
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).send("Method Not Allowed");
+    }
+    // SEGURIDAD (dinero): sin firma válida no se procesa NADA (evita cobros forjados).
+    const firmaOk = await verificarFirmaPaypalWebhook(req);
+    if (!firmaOk) {
+      return res.status(403).send("firma inválida");
+    }
+    const evento = (typeof req.body === "object" && req.body) || {};
+    const eventId = evento.id;
+    const eventType = evento.event_type;
+    if (!eventId || !eventType) {
+      return res.status(400).send("evento inválido");
+    }
+
+    // Idempotencia por id de evento (lock t.create). Si ya se procesó, 200 y salir.
+    const evRef = db.collection("paypalSubEvents").doc(String(eventId));
+    try {
+      const nuevo = await db.runTransaction(async (t) => {
+        const s = await t.get(evRef);
+        if (s.exists) return false;
+        t.create(evRef, { eventType, receivedAt: FieldValue.serverTimestamp() });
+        return true;
+      });
+      if (!nuevo) return res.status(200).send("evento ya procesado");
+    } catch (e) {
+      console.warn("paypalSubscriptionWebhook: fallo lock de idempotencia:", e.message);
+      // Se continúa: las escrituras abajo son idempotentes por naturaleza.
+    }
+
+    const recurso = evento.resource || {};
+    // subscriptionId: en eventos de subscription es resource.id; en SALE es billing_agreement_id.
+    const subscriptionId = recurso.id || recurso.billing_agreement_id || null;
+    // custom_id = "campaignId|planId|uid" (lo pusimos al crear la subscription).
+    let customId = recurso.custom_id || recurso.custom || null;
+
+    // Localiza el suscriptor por paypalSubscriptionId (collectionGroup, 1 doc).
+    let subRef = null;
+    let subData = null;
+    if (subscriptionId) {
+      try {
+        const q = await db.collectionGroup("suscriptores")
+          .where("paypalSubscriptionId", "==", String(subscriptionId))
+          .limit(1)
+          .get();
+        if (!q.empty) { subRef = q.docs[0].ref; subData = q.docs[0].data() || {}; }
+      } catch (e) {
+        console.warn("paypalSubscriptionWebhook: fallo buscando suscriptor:", e.message);
+      }
+    }
+    // Fallback por custom_id si aún no existe el doc (evento llegó antes de confirmar).
+    if (!subRef && customId && typeof customId === "string" && customId.includes("|")) {
+      const [campId, , uidCustom] = customId.split("|");
+      if (campId && uidCustom) {
+        const posibleRef = db.collection("sorteos_suscripcion").doc(campId).collection("suscriptores").doc(uidCustom);
+        const s = await posibleRef.get();
+        if (s.exists) { subRef = posibleRef; subData = s.data() || {}; } // no crear fantasma desde el webhook
+      }
+    }
+
+    if (!subRef) {
+      // No hay suscriptor local todavía: se ACK igual (idempotente) para no reintentar infinito.
+      console.log("paypalSubscriptionWebhook: sin suscriptor local para", subscriptionId, eventType);
+      return res.status(200).send("ok (sin suscriptor local)");
+    }
+
+    const campRef = subRef.parent.parent;
+    const ahora = new Date();
+    const periodo = suscripcionPeriodoStr(ahora);
+
+    if (eventType === "PAYMENT.SALE.COMPLETED" || eventType === "BILLING.SUBSCRIPTION.ACTIVATED") {
+      // Cobro recurrente OK: extiende vigencia por los meses del plan + recibo.
+      let meses = Number(subData && subData.meses) || 1;
+      let montoUsd = null;
+      try {
+        const campSnap = await campRef.get();
+        const planes = campSnap.exists && Array.isArray(campSnap.data().planes) ? campSnap.data().planes : [];
+        const plan = planes.find((p) => p && p.id === (subData && subData.planId)) || {};
+        if (Number.isInteger(Number(plan.meses)) && Number(plan.meses) > 0) meses = Number(plan.meses);
+        montoUsd = Number(plan.precioUsd) || (recurso.amount && Number(recurso.amount.total)) || null;
+      } catch (_e) { /* usa defaults */ }
+      const nuevaVigencia = sumarMeses(ahora, meses);
+      const pagoId = recurso.id || `${eventId}`;
+      const reciboRef = subRef.collection("recibos").doc(`paypal_${pagoId}`);
+      await db.runTransaction(async (t) => {
+        t.set(subRef, {
+          estado: "activo",
+          vigenciaHasta: admin.firestore.Timestamp.fromDate(nuevaVigencia),
+          proximoCobro: admin.firestore.Timestamp.fromDate(nuevaVigencia),
+          intentosFallidos: 0,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        t.set(reciboRef, {
+          periodo, montoUsd, moneda: "USD", metodoPago: "paypal",
+          pagoId, fecha: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      });
+    } else if (eventType === "BILLING.SUBSCRIPTION.CANCELLED") {
+      await subRef.set({ estado: "cancelado", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    } else if (eventType === "BILLING.SUBSCRIPTION.SUSPENDED" || eventType === "BILLING.SUBSCRIPTION.EXPIRED") {
+      await subRef.set({ estado: "vencido", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    } else {
+      console.log("paypalSubscriptionWebhook: evento ignorado:", eventType);
+    }
+
+    return res.status(200).send("ok");
+  } catch (e) {
+    // Nunca 500 al webhook por errores propios (evita reintentos infinitos de PayPal).
+    console.error("paypalSubscriptionWebhook error:", e);
+    return res.status(200).send("error handled");
+  }
+});
+
+// ── decidirGanadoresSuscripcion ───────────────────────────────────────────────
+// onCall (callerIsAdmin). Sorteo JUSTO entre suscriptores ELEGIBLES (estado=="activo"
+// AND vigenciaHasta>=now). peso=max(1,chancesTotal). REUSA crearDrbgSha256 +
+// elegirGanadoresPonderado + semilla crypto + poolHash (mismo motor auditable que
+// decidirGanadoresSorteo). Lock t.create sorteos_realizados/{drawId}. excluirUids
+// activa el modo re-sorteo (arrayUnion en la campaña).
+// params: { campaignId, numGanadores?, excluirUids? }
+// return: { ok, drawId, ganadores, totalElegibles, seed, poolHash }
+exports.decidirGanadoresSuscripcion = functions.https.onCall(async (data, context) => {
+  requireAuth(context);
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede decidir ganadores.");
+  }
+  const adminUid = context.auth.uid;
+
+  const campaignId = data && data.campaignId;
+  if (!campaignId || typeof campaignId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta campaignId.");
+  }
+  const excluirUids = Array.isArray(data && data.excluirUids)
+    ? data.excluirUids.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim())
+    : [];
+  const excluirSet = new Set(excluirUids);
+  const esReSorteo = excluirUids.length > 0;
+
+  const campRef = db.collection("sorteos_suscripcion").doc(campaignId);
+  const campSnap = await campRef.get();
+  if (!campSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "La campaña no existe.");
+  }
+  const campana = campSnap.data() || {};
+
+  let numGanadores = Number(data && data.numGanadores);
+  if (!Number.isInteger(numGanadores) || numGanadores <= 0) numGanadores = Number(campana.numGanadores);
+  if (!Number.isInteger(numGanadores) || numGanadores <= 0) numGanadores = 1;
+
+  // Lee suscriptores ELEGIBLES server-side (paginado): estado activo + vigencia futura.
+  const ahoraTs = admin.firestore.Timestamp.fromDate(new Date());
+  const suscriptoresCol = campRef.collection("suscriptores");
+  const elegibles = [];
+  let cursor = null;
+  for (let pagina = 0; pagina < 50; pagina += 1) {
+    let q = suscriptoresCol
+      .where("estado", "==", "activo")
+      .where("vigenciaHasta", ">=", ahoraTs)
+      .orderBy("vigenciaHasta", "asc")
+      .limit(SUSCRIPCION_ELEGIBLES_PAGE_SIZE);
+    if (cursor) q = q.startAfter(cursor);
+    const snap = await q.get();
+    if (snap.empty) break;
+    for (const d of snap.docs) {
+      const p = d.data() || {};
+      if (excluirSet.has(d.id)) continue;
+      elegibles.push({ uid: d.id, ...p });
+    }
+    cursor = snap.docs[snap.docs.length - 1];
+    if (snap.size < SUSCRIPCION_ELEGIBLES_PAGE_SIZE) break;
+  }
+
+  if (elegibles.length === 0) {
+    throw new functions.https.HttpsError("failed-precondition", "No hay suscriptores elegibles (con pago vigente) para sortear.");
+  }
+
+  // POOL PONDERADO: peso = max(1, chancesTotal). Más meses de plan = más chances.
+  const pool = elegibles.map((p) => ({
+    uid: p.uid,
+    nombre: p.nombre || p.correo || "Suscriptor",
+    correo: p.correo || null,
+    telefono: p.telefono || null,
+    peso: Math.max(1, Number(p.chancesTotal) || 0),
+  }));
+  const nEfectivo = Math.min(numGanadores, pool.length);
+
+  // RNG SEGURO Y AUDITABLE (mismo motor que decidirGanadoresSorteo).
+  const seed = crypto.randomBytes(32).toString("hex");
+  const nextIntBelow = crearDrbgSha256(seed);
+  const poolOrdenado = pool
+    .map((p) => ({ uid: p.uid, peso: p.peso }))
+    .sort((a, b) => (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0));
+  const poolHash = crypto.createHash("sha256").update(JSON.stringify(poolOrdenado)).digest("hex");
+
+  const elegidos = elegirGanadoresPonderado(pool, nEfectivo, nextIntBelow);
+  const ganadoresEvidencia = elegidos.map((g) => ({
+    uid: g.uid, nombre: g.nombre, correo: g.correo, telefono: g.telefono, pesoUsado: g.peso,
+  }));
+  const ganadoresCompactos = elegidos.map((g) => ({ uid: g.uid, nombre: g.nombre }));
+
+  const drawRef = campRef.collection("sorteos_realizados").doc();
+  const drawId = drawRef.id;
+
+  try {
+    await db.runTransaction(async (t) => {
+      t.create(drawRef, {
+        seed,
+        poolHash,
+        totalElegibles: elegibles.length,
+        numGanadores: nEfectivo,
+        ganadores: ganadoresEvidencia,
+        excluirUids,
+        decididoPor: adminUid,
+        algoritmo: "HMAC/SHA256-DRBG",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      // Fija ganadores en el doc de campaña (arrayUnion en re-sorteo; set en cierre normal).
+      if (esReSorteo) {
+        t.set(campRef, { ganadores: FieldValue.arrayUnion(...ganadoresCompactos), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      } else {
+        t.set(campRef, { ganadores: ganadoresCompactos, ultimoSorteoAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      }
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("decidirGanadoresSuscripcion error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo decidir a los ganadores.");
+  }
+
+  return { ok: true, drawId, ganadores: ganadoresEvidencia, totalElegibles: elegibles.length, seed, poolHash };
+});
+
+// ── cancelarSuscripcion ───────────────────────────────────────────────────────
+// onCall (requireAuth). El propio usuario cancela SU suscripción. Si es PayPal,
+// cancela la subscription en PayPal (deja de cobrar). Si es Culqi, el cron ignora
+// los cancelados. La vigenciaHasta se respeta hasta el fin del periodo ya pagado.
+// params: { campaignId } → return: { ok, estado, vigenciaHasta }
+exports.cancelarSuscripcion = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const campaignId = data && data.campaignId;
+  if (!campaignId || typeof campaignId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta campaignId.");
+  }
+  const subRef = db.collection("sorteos_suscripcion").doc(campaignId).collection("suscriptores").doc(uid);
+  const snap = await subRef.get();
+  if (!snap.exists) {
+    throw new functions.https.HttpsError("not-found", "No tienes una suscripción en esta campaña.");
+  }
+  const sub = snap.data() || {};
+
+  // PayPal: cancela la subscription para detener el auto-débito.
+  if (sub.metodoPago === "paypal" && sub.paypalSubscriptionId) {
+    try {
+      const accessToken = await getPaypalAccessToken();
+      const resp = await fetch(
+        `${paypalApiBase()}/v1/billing/subscriptions/${encodeURIComponent(sub.paypalSubscriptionId)}/cancel`,
+        {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: "Cancelada por el usuario desde WALA." }),
+        }
+      );
+      if (!resp.ok && resp.status !== 422) {
+        // 422 = ya estaba cancelada/inactiva; no es un error real para el usuario.
+        const j = await resp.json().catch(() => ({}));
+        console.warn("cancelarSuscripcion: PayPal no canceló limpio:", resp.status, j);
+      }
+    } catch (e) {
+      console.warn("cancelarSuscripcion: fallo cancelando en PayPal (se marca cancelado igual):", e.message);
+    }
+  }
+
+  await subRef.set({ estado: "cancelado", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return {
+    ok: true,
+    estado: "cancelado",
+    vigenciaHasta: sub.vigenciaHasta && sub.vigenciaHasta.toDate ? sub.vigenciaHasta.toDate().toISOString() : null,
+  };
+});
+
+// ── grantChancesSuscripcion ───────────────────────────────────────────────────
+// onCall (callerIsAdmin). Ajusta chancesExtra/chancesTotal de un suscriptor
+// identificado por correo/telefono/dni (permite negativo; clamp chancesTotal>=0).
+// Molde grantRaffleChancesSecure. params: { campaignId, correo?, telefono?, dni?, chances, motivo }
+// return: { ok, uid, chancesTotal }
+exports.grantChancesSuscripcion = functions.https.onCall(async (data, context) => {
+  requireAuth(context);
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ajustar chances.");
+  }
+  const adminUid = context.auth.uid;
+
+  const campaignId = data && data.campaignId;
+  if (!campaignId || typeof campaignId !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta campaignId.");
+  }
+  const chances = Number(data && data.chances);
+  if (!Number.isInteger(chances) || chances === 0) {
+    throw new functions.https.HttpsError("invalid-argument", "chances debe ser un entero distinto de 0.");
+  }
+  const motivo = data && typeof data.motivo === "string" ? data.motivo.trim() : null;
+
+  const correo = data && data.correo ? String(data.correo).trim().toLowerCase() : null;
+  const telefono = data && data.telefono ? String(data.telefono).replace(/\s+/g, "") : null;
+  const dni = data && data.dni ? String(data.dni).replace(/\s+/g, "") : null;
+  if (!correo && !telefono && !dni) {
+    throw new functions.https.HttpsError("invalid-argument", "Indica al menos correo, teléfono o DNI del suscriptor.");
+  }
+
+  const campRef = db.collection("sorteos_suscripcion").doc(campaignId);
+  const suscriptoresCol = campRef.collection("suscriptores");
+
+  // Resuelve el uid del suscriptor EXISTENTE (no crea fantasmas).
+  let uid = null;
+  try {
+    const consultas = [];
+    if (correo) consultas.push(["correo", correo]);
+    if (telefono) consultas.push(["telefono", telefono]);
+    if (dni) consultas.push(["dni", dni]);
+    for (const [campo, valor] of consultas) {
+      const snap = await suscriptoresCol.where(campo, "==", valor).limit(1).get();
+      if (!snap.empty) { uid = snap.docs[0].id; break; }
+    }
+  } catch (e) {
+    console.warn("grantChancesSuscripcion: fallo buscando suscriptor:", e.message);
+  }
+  if (!uid) {
+    throw new functions.https.HttpsError("failed-precondition", "No se encontró un suscriptor con esos datos en esta campaña.");
+  }
+
+  const subRef = suscriptoresCol.doc(uid);
+  const auditRef = campRef.collection("chancesAjustes").doc();
+
+  try {
+    const chancesTotalFinal = await db.runTransaction(async (t) => {
+      const pSnap = await t.get(subRef);
+      if (!pSnap.exists) {
+        throw new functions.https.HttpsError("failed-precondition", "El suscriptor ya no existe.");
+      }
+      const p = pSnap.data() || {};
+      const extraActual = Number(p.chancesExtra) || 0;
+      const totalActual = Number(p.chancesTotal) || 0;
+      const nuevoExtra = Math.max(0, extraActual + chances);
+      const nuevoTotal = Math.max(0, totalActual + chances);
+      t.set(subRef, {
+        chancesExtra: nuevoExtra,
+        chancesTotal: nuevoTotal,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      t.create(auditRef, {
+        uid, chances, motivo, por: adminUid,
+        chancesTotalAntes: totalActual, chancesTotalDespues: nuevoTotal,
+        at: FieldValue.serverTimestamp(),
+      });
+      return nuevoTotal;
+    });
+    return { ok: true, uid, chancesTotal: chancesTotalFinal };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("grantChancesSuscripcion error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudieron ajustar las chances.");
   }
 });
