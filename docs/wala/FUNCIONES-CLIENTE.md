@@ -29,6 +29,7 @@
 | Pago rápido (link directo) | `/pago-rapido/:id` | Activo |
 | Mi Cuenta (layout con pestañas) | `/cuenta` | Activo (requiere login) |
 | Mis Compras (lista de pedidos) | `/cuenta/pedidos` | Activo |
+| Rastreo del Pedido (stepper de fases de producción del ERP) | `/cuenta/rastreo` | Activo |
 | Detalle de compra (estado real pago + producción) | `/cuenta/pedidos/:id` | Activo |
 | Lista de Deseos (privada) | `/cuenta/wishlist` | Activo |
 | Lista de Deseos pública (compartible) | `/wishlist/:userCode` | Activo |
@@ -298,7 +299,7 @@ Cuatro arreglos del carrito (`src/contexts/CartContext.jsx`, commit `88a3368`), 
 ## 7. Mi Cuenta (`/cuenta`)
 
 - **Qué es:** el área privada del cliente, con un layout de **pestañas**. Requiere iniciar sesión (si no, muestra un mensaje para loguearse).
-- **Pestañas:** Mis Pedidos, Lista de Deseos, Mis Creaciones, Mis Referidos, Fechas Importantes, Misiones, Catálogo Recompensas, y el botón "Mi Perfil".
+- **Pestañas:** Mis Compras, **Rastreo del Pedido** (al lado de Mis Compras, ver §7.2-bis), Lista de Deseos, Mis Creaciones, Mis Referidos, Fechas Importantes, Misiones, Catálogo Recompensas, y el botón "Mi Perfil".
 - **Navegación de pestañas (sesión 2026-06-29, ✅ desplegado):** en **desktop** los tabs se reparten en **dos líneas** (`flex-wrap: wrap`) para que no se corten ni saturen; en **móvil** la barra de tabs (`<nav>`) hace un **auto-scroll de "asomo"** al montar (si los tabs no caben: dos asomos lentos de ~56 px a la derecha y vuelta a 0) como **pista visual** de que hay más pestañas deslizables (no asoma si todo cabe, comprueba `scrollWidth > clientWidth`).
 - **Archivo clave del layout:** `src/pages/CuentaLayout.jsx` (+ `src/pages/CuentaPage.module.css`)
 - (Entrar a `/cuenta` o `/pedidos` redirige a `/cuenta/pedidos`.)
@@ -315,6 +316,7 @@ Cuatro arreglos del carrito (`src/contexts/CartContext.jsx`, commit `88a3368`), 
 ### 7.2 Mis Compras / Mis Pedidos (`/cuenta/pedidos` + detalle `/cuenta/pedidos/:id`) — estilo MercadoLibre (sesión 2026-06-27)
 - **Qué es:** el historial de pedidos del cliente con un **estado de compra real** y una **página de detalle por pedido**, al estilo "Mis Compras" de MercadoLibre.
 - **Qué hace (lista, `/cuenta/pedidos`):** busca los pedidos por el **DNI/documento** del perfil (en el ERP, con `searchOrdersByDniInERP`). Si falta el documento, pide completar el perfil; si no hay pedidos, lo indica e invita a la tienda. Cada pedido muestra un **badge de estado** y enlaza a su detalle.
+- **"Mis Compras" NO muestra el stepper de fases (separada del Rastreo, sesión 2026-07-02):** esta pestaña es una **lista de compras** (miniatura + productos + fecha/total/código + **badge de estado resumido**) con dos acciones por tarjeta: **"Ver compra"** (→ `/cuenta/pedidos/:id`) y **"📦 Rastrear pedido"** (→ `/cuenta/rastreo`, `CuentaPedidosPage.jsx:311-320`, con `stopPropagation` para no disparar el clic de la tarjeta). El **stepper de 8 pasos** de producción vive ahora en la pestaña **"Rastreo del Pedido"** (§7.2-bis), no aquí.
 - **Tarjeta de compra clickeable completa (sesión 2026-06-29, ✅ desplegado):** **toda** la tarjeta del pedido es clickeable (no solo un enlace dentro), con navegación programática al detalle `/cuenta/pedidos/:id` (`role="link"` + `tabIndex={0}` + `onClick`/`onKeyDown`, también accesible por teclado).
 - **Búsqueda por DNI normalizado + respaldo con DNI crudo (fix `de1594b`, sesión 2026-06-28):** `searchOrdersByDniInERP` busca primero por el **documento normalizado** (`trim` + sin espacios) en `pedidos` y `pedidos_web` — que es como lo guarda ahora `createWebOrder`. Si esa búsqueda da **0 resultados** y el valor original difería del normalizado, **reintenta con el DNI crudo** (tal cual se tecleó), para **rescatar pedidos históricos** guardados antes de la normalización. Así un cliente cuyo documento antiguo tenía espacios igual ve sus compras viejas.
 - **El historial NO se rompe si el producto se borra del catálogo (sesión 2026-07-01, commit `88a3368`, ✅ desplegado):** "eliminar" un producto en el admin ahora es un **archivado** (soft-delete) que conserva nombre, imágenes y precio, y la lista y el detalle de compra leen el catálogo **incluyendo esos archivados** (`useProducts` con `includeHidden`) con **respaldo en la imagen congelada del propio pedido** (`linea.urlImagen`). Resultado: una compra vieja **siempre** muestra su nombre y su foto — nada de imágenes rotas ni "producto desconocido" porque el admin limpió el catálogo. *(Para productos borrados físicamente ANTES de este cambio existe el script de rescate del admin, ver [PENDIENTES.md](./PENDIENTES.md).)*
@@ -326,6 +328,28 @@ Cuatro arreglos del carrito (`src/contexts/CartContext.jsx`, commit `88a3368`), 
   - **WhatsApp al asesor:** botón para consultar el estado por WhatsApp **al asesor de la marca** del pedido (usa `whatsappNumber` de la marca); si la marca no tiene número, cae a un número general de la cuenta. Si el pedido tiene **varias marcas con asesor**, muestra un botón por marca.
 - **Cómo obtiene el detalle:** el pedido normalizado de la lista descarta campos (productos, método de pago, dirección, `numeroPedido`), así que el detalle trae el **pedido CRUDO por id** buscándolo en **ambas colecciones** del ERP (`getOrderByIdAnyCollection` → `pedidos` y `pedidos_web`); como respaldo usa el `_raw` que `usePedidos` adjunta a cada pedido normalizado.
 - **Archivos clave:** `src/pages/cuenta/CuentaPedidosPage.jsx` (lista), `src/pages/cuenta/CuentaCompraDetallePage.jsx` (detalle), `src/utils/estadoCompra.js` (`derivarEstadoCompra`, `esPagado`, `getProductosPedido`, `getCodigoPedido`, `getBrandIdsDePedido`), `src/hooks/usePedidos.js` (filtra `esPedidoWala` por `canalVenta:'Portal Web'` + adjunta `_raw`), `src/services/erp/firebase.js` (`searchOrdersByDniInERP` con respaldo de DNI crudo, `getOrderByIdAnyCollection`), `src/components/Results.jsx`
+
+### 7.2-bis Rastreo del Pedido (`/cuenta/rastreo`) — stepper de fases de producción del ERP (sesión 2026-07-02, commit `5a5bbfb`)
+- **Qué es:** una **pestaña nueva de la cuenta, al lado de "Mis Compras"** (`CuentaLayout.jsx:83-88`, NavLink `to="/cuenta/rastreo"`; ruta en `App.jsx:315`), enfocada **solo** en **en qué fase de producción del ERP** está cada pedido. Se separó del listado de compras (§7.2): "Mis Compras" es la lista de compras + estado resumido; "Rastreo del Pedido" es el **seguimiento visual por etapas**.
+- **De dónde saca los datos:** carga clonada de "Mis Compras" — `usePedidos(dni, uid)` con `userProfile.dni` + `user.uid` (`CuentaRastreoPage.jsx:213-229`), cruzando con `useProducts([], { includeHidden:true })` para la miniatura/nombre del primer producto de cada pedido (`resumirRastreo`, `CuentaRastreoPage.jsx:56-165`). Reusa exactamente el mismo filtro `esPedidoWala` y el `_raw` que la lista.
+- **Qué muestra por cada pedido (cuando SÍ hay fase real del ERP):**
+  - El **stepper de FASES DE PRODUCCIÓN de 8 pasos** reutilizando el **mismo componente** `src/components/Timeline/Timeline.jsx` (el de "Mis Compras" histórico): **Compra → Diseño → Impresión → Preparación → Estampado → Empaquetado → Reparto → Finalizado** (orden fijo en `ETAPAS_TIMELINE`, `src/utils/constants.js:5-14`). El paso "actual" se marca con `getQueueStage(estadoGeneral) || estadoToKey(estadoGeneral)` y las **fechas por etapa** salen de `buildFechasDesdeErp` (`src/utils/pedidos.js:85-102`: lee `impresion/diseño/preparación/estampado/empaquetado/reparto.fechaSalida`) — el mismo `pedido.fechas` que ya trae `usePedidos`.
+  - Un **badge de fase** con el nombre legible de la etapa (`getEtapaBadgeLabel`) y su color (`ESTADOS_COLORS`).
+- **¿Cuándo se considera que "hay fase real del ERP"?** (`hayFaseErpReal`, `CuentaRastreoPage.jsx:96-105`): si la key del estado es una **etapa de producción** (`diseno/impresion/preparacion/estampado/empaquetado/reparto/finalizado/entregado`), **o** el pedido tiene **fechas de etapa**, **o** el texto del `estadoGeneral` nombra una etapa / estado terminal / stock. Esto evita mostrar un timeline vacío engañoso cuando `usePedidos` normalizó `estadoGeneral` a `'Pendiente'` por defecto.
+- **Estados especiales (destacados encima del stepper):**
+  - **"Pausa por stock":** cuando el `estadoGeneral` (mayúsculas) incluye `'STOCK'` (`isProblemaStock`, `:108`).
+  - **"Pagar deuda":** cuando `conDeuda` **y** `montoDeuda > 0` (`:109-110`); muestra el monto (`S/ …`) y enlaza al detalle `/cuenta/pedidos/:id` para pagar.
+  - **"Anulado":** cuando el estado casa `/anul|cancel/` (`esAnulado`, `:111`).
+- **Stepper REDUCIDO (fallback) si el pedido NO tiene fase real del ERP (solo espejo `wala_pedidos` o recién creado):** en vez del timeline de 8 pasos se muestra un **stepper de 5 nodos** (`StepperCoarse`, `CuentaRastreoPage.jsx:171-202`) con etiquetas `PASOS_COARSE = ['Pago','Pagado','En preparación','Enviado','Entregado']`, **más una nota** aclaratoria ("La fase detallada de producción … aparecerá aquí cuando el taller la registre"). El **paso 0–4** sale de `estadoWalaADisplay(estadoWala)` (`src/services/walaOrders.js:424-433`: `pendiente_pago=0 → pagado=1 → en_preparacion=2 → enviado=3 → entregado=4`, `cancelado=-1` = "Pedido cancelado"); si el pedido no trae `estadoWala`, cae a `derivarEstadoCompra(fuente)` mapeando su `key` a paso (`por_confirmar_pago=0 … entregado=4`, `anulado=-1`). Es el mismo criterio de estado grueso que "Mis Compras", ahora dibujado como progreso.
+- **Enlace al detalle:** cada tarjeta lleva un botón **"Ver detalle"** → `/cuenta/pedidos/:id`.
+- **Estados de la página:** cargando (skeletons reutilizados de `PedidosPage.module.css`), sin login / sin DNI ("Completa tu perfil para rastrear"), error (con "Reintentar"), vacío ("Aún no tienes pedidos para rastrear" → "Ir a la tienda").
+- **Ruta:** `/cuenta/rastreo` (requiere login; `CuentaLayout` cubre el gate).
+- **Archivos clave:**
+  - `src/pages/cuenta/CuentaRastreoPage.jsx` (la página; `resumirRastreo`, `StepperCoarse`, `hayFaseErpReal`)
+  - `src/components/Timeline/Timeline.jsx` (stepper de 8 pasos REUTILIZADO) + `src/utils/constants.js` (`ETAPAS_TIMELINE`, `getQueueStage`, `estadoToKey`, `getEtapaBadgeLabel`, `ESTADOS_COLORS`)
+  - `src/utils/pedidos.js` (`buildFechasDesdeErp` → `pedido.fechas` por etapa)
+  - `src/services/walaOrders.js` (`estadoWalaADisplay` para el stepper reducido), `src/utils/estadoCompra.js` (`derivarEstadoCompra`, `getProductosPedido`, `getCodigoPedido`)
+  - `src/hooks/usePedidos.js` (misma carga que "Mis Compras"), `src/pages/CuentaLayout.jsx` (pestaña), `src/App.jsx` (ruta `rastreo`)
 
 ### 7.3 Lista de Deseos privada (`/cuenta/wishlist`)
 - **Qué es:** los productos que el cliente guardó como favoritos.

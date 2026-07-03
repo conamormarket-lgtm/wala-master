@@ -18,6 +18,34 @@
 
 > ## 📌 Banner de estado (actualizado 2026-07-02)
 >
+> **CICLO 2026-07-02 — RASTREO DEL PEDIDO (nueva página) + FIX de pedidos que desaparecían
+> (commits `5a5bbfb`/`c81359c`):** dos cambios **ADITIVOS** del camino de pedidos, sin tocar
+> carrito/precios/cobro. **(1) RASTREO DEL PEDIDO:** pestaña nueva **"Rastreo del Pedido"** en la
+> cuenta, **al lado de "Mis Compras"** (`src/pages/CuentaLayout.jsx`), ruta **`/cuenta/rastreo`**
+> (`src/pages/cuenta/CuentaRastreoPage.jsx`, ruta en `App.jsx`). Por cada pedido dibuja el
+> **stepper de FASES DE PRODUCCIÓN del ERP** reutilizando el componente
+> `src/components/Timeline/Timeline.jsx` (**Compra→Diseño→Impresión→Preparación→Estampado→
+> Empaquetado→Reparto→Finalizado**, leyendo `estadoGeneral` + las fechas por etapa de
+> `buildFechasDesdeErp`). Estados especiales: **"Pausa por stock"** (`estadoGeneral` incluye
+> `STOCK`), **"Pagar deuda"** (`conDeuda` + `montoDeuda>0`), **"Anulado"**. Si el pedido **no
+> tiene fase real del ERP** (solo espejo `wala_pedidos`), muestra un **stepper reducido de 5
+> nodos** con `estadoWalaADisplay` (Pago→Pagado→En preparación→Enviado→Entregado) + una nota.
+> **"Mis Compras"** quedó separada: es lista de compras + estado resumido + "Ver compra", y se le
+> añadió un enlace **"📦 Rastrear pedido"** → `/cuenta/rastreo` (ya **no** dibuja el stepper).
+> **(2) FIX de pedidos que "desaparecían" de la web (`c81359c`):** el filtro `esPedidoWala`
+> (`usePedidos.js`) era una **allowlist estricta** por flags web/`canalVenta`/`activador`/
+> `vendedor`; cuando el ERP pasa un pedido WALA a producción y **le quita esos flags**, y **no hay
+> espejo** `wala_pedidos` (pedidos **previos al 29/06**), el pedido **desaparecía** de "Mis
+> Compras"/"Rastreo" en la **web** (el **APP**, con build viejo sin el filtro, sí los mostraba).
+> **FIX:** (a) `esPedidoWala` acepta ahora señales de proveniencia WALA que el ERP no borra —
+> **`_esWalaMirror`**, **`portalPseudoOrderId`**, **`pedidoWebId`**, **`buyerUid`**; (b)
+> `searchOrdersByDniInERP` (`erp/firebase.js`) marca el pedido **vivo** con `_esWalaMirror=true` al
+> emparejarlo con el espejo por **clave de negocio**, **conservando la ETAPA de producción del
+> ERP** (sin degradar al estado grueso) y **sin duplicar**. **Lección:** no filtrar "Mis Compras"
+> solo por flags web/`canalVenta` que el ERP puede reescribir. **Frontend DESPLEGADO** (Vercel);
+> **no requiere backend**. Detalle en [FUNCIONES-CLIENTE.md §7.2-bis](./FUNCIONES-CLIENTE.md) y
+> [FLUJO-PEDIDOS.md §5.5](./FLUJO-PEDIDOS.md).
+>
 > **CICLO 2026-07-02 (tarde) — SORTEO POR SUSCRIPCIÓN + GESTIÓN DE PAGOS + USUARIOS DE LA APP
 > IMPLEMENTADOS y DESPLEGADOS (frontend Vercel + 9 Cloud Functions + reglas/índices):** tres
 > módulos nuevos, **100 % ADITIVOS** (no tocan el carrito/precios/cobro ni el pago único).
@@ -346,7 +374,8 @@ Vista rápida para el dueño del negocio. El detalle está en las secciones sigu
 | **Venta internacional** | Documento + país + **teléfono internacional**, **PayPal** para compradores del extranjero, aviso de envío **7–30 días**. | Checkout |
 | **Dashboard de analítica v2** | Panel liquid-glass con **heatmap**, tráfico, **productos más vistos / más vendidos**, origen, páginas, categorías, miniaturas; lecturas optimizadas (cuota). | `/admin/dashboard` |
 | **Recepción de Pedidos (organizar envíos)** | Panel **solo-lectura** para preparar envíos: KPIs (por entregar, pendientes de pago, en producción, entregados, monto) + **tarjetas por pedido** con dirección de entrega, cliente, productos y **WhatsApp**. **Enlace en el menú lateral** (📦 Recepción de Pedidos, bajo "Dashboard Analítica") + embebida + ruta directa. | sidebar admin · `/admin/dashboard/recepcion` |
-| **"Mis Compras" estilo MercadoLibre** | Lista + **detalle por pedido** con **estado real** (pago + producción), método de pago, productos, dirección y **WhatsApp al asesor de la marca**. **Fix 2026-06-28 (`de1594b`):** los pedidos ya **aparecen** (se normaliza el DNI al crearlos + fallback al DNI crudo para rescatar históricos); y si el guardado falla **ya no se abre WhatsApp fingiendo éxito**. **Fix 2026-06-28 (`e84b6b1`):** un pedido pagado con **Culqi ya queda marcado como pagado**. **2026-06-29 (`e9ec48d`):** la **tarjeta del pedido es clickeable completa** (al detalle). | `/cuenta/pedidos`, `/cuenta/pedidos/:id` |
+| **"Mis Compras" estilo MercadoLibre** | Lista + **detalle por pedido** con **estado real** (pago + producción), método de pago, productos, dirección y **WhatsApp al asesor de la marca**. **Fix 2026-06-28 (`de1594b`):** los pedidos ya **aparecen** (se normaliza el DNI al crearlos + fallback al DNI crudo para rescatar históricos); y si el guardado falla **ya no se abre WhatsApp fingiendo éxito**. **Fix 2026-06-28 (`e84b6b1`):** un pedido pagado con **Culqi ya queda marcado como pagado**. **2026-06-29 (`e9ec48d`):** la **tarjeta del pedido es clickeable completa** (al detalle). **2026-07-02 (`5a5bbfb`):** la lista se **separó del stepper** (es lista + estado resumido + "Ver compra"/"Rastrear pedido"); el seguimiento por fases vive en la pestaña **Rastreo del Pedido**. | `/cuenta/pedidos`, `/cuenta/pedidos/:id` |
+| **Rastreo del Pedido (fases de producción)** | **2026-07-02 (`5a5bbfb`):** pestaña nueva **al lado de "Mis Compras"** con el **stepper de 8 fases del ERP** (Compra→Diseño→Impresión→Preparación→Estampado→Empaquetado→Reparto→Finalizado, reutiliza `Timeline`) + fechas por etapa; estados especiales **Pausa por stock / Pagar deuda / Anulado**; **stepper reducido de 5 nodos** para pedidos sin fase real del ERP (solo espejo). **Fix `c81359c`:** pedidos WALA que el ERP pasó a producción (le quitó los flags web/`canalVenta`) **ya no desaparecen** — `esPedidoWala` acepta `_esWalaMirror`/`portalPseudoOrderId`/`pedidoWebId`/`buyerUid`. **Frontend desplegado**; no requiere backend. | `/cuenta/rastreo` |
 | **Base interna FUENTE DE VERDAD de pedidos (`wala_pedidos` + `estadoWala`)** | **2026-06-29 (`68447dc`, `1d8f639`):** colección WALA-only **`wala_pedidos`** (espejo que el ERP NO toca) con su **propio `estadoWala`** (`pendiente_pago→pagado→en_preparacion→enviado→entregado`) que el portal **NO degrada**; "Mis Compras"/"Recepción" la leen como **PRIMARIA** y muestran el **estado más avanzado**. **Frontend desplegado**; **el pago la marca pagada solo tras redeploy de las 3 functions de pago** (pendiente del dueño). | `/cuenta/pedidos`, `/admin/dashboard/recepcion` |
 | **Regalos por fecha "Mis fechas especiales"** | Registro de regalos público con **drag-and-drop** (arrastre por Pointer Events, sin parpadeo). **2026-06-29 (`4f775a4`):** cada fecha es una **tarjeta grande de persona** con **foto circular** (subida en la cuenta), nombre, relación, ocasiones y fecha. **Frontend desplegado**; la foto llega tras **redeploy de `getPublicGiftRegistry`** (pendiente del dueño). | `/regalar/:referralCode`, wishlist |
 | **Compra directa (ficha de producto)** | **2026-06-29 (`fbb53ab`):** botones **"Comprar"** y **"Comprar todo el carrito"** que van **directo a la pasarela** (`/checkout`), reusando la selección de items "No comprar esta vez" (sin tocar el flujo de "Agregar al carrito"). | ficha de producto · `/checkout` |

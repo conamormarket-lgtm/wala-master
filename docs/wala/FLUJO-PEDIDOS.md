@@ -4,7 +4,8 @@
 > código (`src/pages/CheckoutPage.jsx`, `src/services/erp/firebase.js`,
 > `src/services/walaOrders.js`, `src/utils/estadoCompra.js`, `src/utils/pedidos.js`,
 > `src/hooks/usePedidos.js`, `src/services/adminOrders.js`, `src/components/CulqiCustomCheckout/`,
-> `src/components/PaypalCheckout/`, `functions/index.js`).
+> `src/components/PaypalCheckout/`, `src/pages/cuenta/CuentaRastreoPage.jsx`,
+> `src/components/Timeline/Timeline.jsx`, `functions/index.js`).
 >
 > **Complementa a [MODELO-DATOS.md](./MODELO-DATOS.md)** (que describe las COLECCIONES
 > `pedidos`/`pedidos_web` y sus índices). Aquí se documenta el CICLO de vida: en qué
@@ -271,8 +272,17 @@ el comportamiento es **exactamente** el histórico de §3.1–§3.3.
   `createOrderInERP` (`erp/firebase.js:96-98`).
 - **Fallback crudo:** si la búsqueda normalizada da 0, reintenta con el DNI **crudo** del
   perfil (rescata pedidos históricos guardados antes de normalizar) — `erp/firebase.js:158-208`.
-- Tras traer, `usePedidos` FILTRA con `esPedidoWala` (`usePedidos.js:33`, `:85`) ANTES de
-  normalizar (el ERP mezcla pedidos nativos + del portal).
+- Tras traer, `usePedidos` FILTRA con `esPedidoWala` (`usePedidos.js:41`, `:109`) ANTES de
+  normalizar (el ERP mezcla pedidos nativos + del portal). **Desde `c81359c` (2026-07-02)** el
+  filtro **ya no es una allowlist solo por flags web/`canalVenta`** (que el ERP borra): acepta
+  también señales de proveniencia WALA que el ERP no reescribe — **`_esWalaMirror`**,
+  **`portalPseudoOrderId`**, **`pedidoWebId`**, **`buyerUid`** (§5.5). Así un pedido WALA que el
+  ERP ya pasó a producción (y le quitó `web:true`) **no desaparece** de la vista.
+- **La pestaña "Rastreo del Pedido" (`/cuenta/rastreo`) usa la MISMA carga:** `CuentaRastreoPage`
+  llama `usePedidos(dni, uid)` idéntico a "Mis Compras" y dibuja el **stepper de fases de
+  producción** (`Timeline`, 8 pasos) usando `pedido.fechas` de `buildFechasDesdeErp`; para pedidos
+  sin fase real del ERP (solo espejo) muestra un stepper reducido de 5 nodos. Detalle funcional en
+  [FUNCIONES-CLIENTE.md §7.2-bis](./FUNCIONES-CLIENTE.md).
 - **Lectura PRIMARIA `wala_pedidos` (desde 2026-06-29):** `searchOrdersByDniInERP`
   (`erp/firebase.js:234-294`) trae **SIEMPRE** el espejo `wala_pedidos`
   (`getWalaMirrorOrders({ userId, dni })`, busca por `buyerUid` y por DNI normalizado+crudo) y lo
@@ -459,8 +469,10 @@ ERP ya los borró de `pedidos_web` **y** de `pedidos`, **no se pueden recuperar*
   credencial.
 
 **Sigue ⬜ (no implementado):**
-- **Robustecer `esPedidoWala`** para que **no dependa de `web===true`** (que el ERP puede
-  apagar): bastaría con cualquiera de `canalVenta`/`activador`/`vendedor` = `'Portal Web'`.
+- ✅ **HECHO (`c81359c`, 2026-07-02): Robustecer `esPedidoWala`** para que **no dependa de
+  `web===true`** (que el ERP puede apagar): ahora acepta además `_esWalaMirror` /
+  `portalPseudoOrderId` / `pedidoWebId` / `buyerUid`, señales de proveniencia WALA que el ERP no
+  reescribe. Ver §5.5 y §4.1.
 - **Distinguir "Aprobado" de "no existe"**: hoy `CartContext` trata "doc ausente" como
   "aprobado" (`CartContext.jsx:82-85`); convendría no asumir aprobación por simple ausencia.
 
@@ -583,6 +595,49 @@ Culqi usa `pagado:true`/`estadoPago:'pagado'`/`montoPendiente:0`; PayPal (client
 `montoDeuda:0`/`conDeuda:false`/`historialPagos`. Ambos son reconocidos por `esPagado` (§3.2),
 pero al leer/filtrar pagos hay que recordar que **no comparten el mismo conjunto de campos**.
 
+### 5.5 `esPedidoWala` como allowlist estricta hacía DESAPARECER pedidos sin espejo (fix `c81359c`, 2026-07-02)
+
+> **Lección clave:** **no filtrar "Mis Compras"/"Rastreo" solo por los flags web/`canalVenta`
+> que el ERP puede reescribir.** El ERP entra por Admin SDK (ignora reglas) y, al pasar un
+> pedido WALA a producción, le **quita** esos flags; si el pedido **no tiene espejo**
+> `wala_pedidos` (los creados **antes del 29/06**), se caía del filtro y se perdía de la vista.
+
+**Síntoma:** un pedido del portal **se veía en el APP** (móvil, con un build viejo que aún no
+tenía el filtro) pero **NO en la web** ("Mis Compras" / "Rastreo del Pedido"). Concretamente
+pedidos **previos al 29/06** (sin espejo `wala_pedidos`, §4-bis.5) que el ERP ya había pasado a
+producción.
+
+**Causa raíz:** `esPedidoWala` (`src/hooks/usePedidos.js:41-55`) era una **allowlist estricta**
+por `canalVenta === 'Portal Web'` **/** `web === true` **/** `activador === 'portal_web'` **/**
+`vendedor === 'Portal Web'`. Cuando el ERP procesa un pedido WALA y le **borra esos flags**
+(p. ej. `web → false`), el pedido **deja de cumplir el filtro** y `usePedidos` lo **descarta antes
+de normalizar** (`usePedidos.js:109`). Si además **no hay espejo** que lo rescate (pedido viejo),
+**desaparece** por completo de la web. El APP no lo perdía porque su bundle desplegado aún no
+incluía ese filtro (mostraba todo lo que devolvía el ERP).
+
+**FIX (commit `c81359c`), en dos frentes — sin tocar montos ni el cobro:**
+
+1. **`esPedidoWala` acepta ahora señales de PROVENIENCIA WALA que el ERP NO borra**
+   (`usePedidos.js:52-55`): además de los 4 flags históricos, es `true` si el pedido trae
+   **`_esWalaMirror === true`** (lo marca la fusión con el espejo, ver punto 2), o
+   **`portalPseudoOrderId`**, o **`pedidoWebId`**, o **`buyerUid`**. Estos campos **los escribe
+   el checkout/espejo del portal y el ERP no los reescribe** al pasar el pedido a producción, así
+   que un pedido WALA ya desmarcado (`web:false`) **sigue reconociéndose** como del portal. Los
+   pedidos **nativos** del ERP no los tienen → no se cuelan.
+2. **`searchOrdersByDniInERP` marca el pedido VIVO con `_esWalaMirror=true` al emparejarlo con el
+   espejo** por **clave de negocio** (`src/services/erp/firebase.js:273-294`): cuando existe un
+   doc vivo del ERP con la misma clave que un `wala_pedidos`, el match **PRUEBA** que el pedido es
+   de WALA, así que se le pone `_esWalaMirror=true` (`erp/firebase.js:285`) para que **sobreviva**
+   el filtro de `esPedidoWala` **conservando la ETAPA de producción del ERP** (no se degrada al
+   estado grueso del espejo) y **sin duplicar** (el vivo representa el pedido; el espejo solo se
+   agrega como doc aparte cuando **no** hay vivo, `erp/firebase.js:290-293`). Ver §4.1 y §4-bis.7.
+
+> Esto **cierra** el ítem "Robustecer `esPedidoWala` para que no dependa de `web===true`" que
+> quedaba pendiente en §4-bis.5. **Límite heredado:** para un pedido **previo al 29/06** que el
+> ERP **borró de AMBAS** colecciones (`pedidos` y `pedidos_web`) **y** que **no tiene espejo**, no
+> hay nada que rescatar desde el lado WALA (el espejo solo existe para pedidos creados desde el
+> deploy del 2026-06-29).
+
 ---
 
 ## 6. Referencias de archivos
@@ -597,15 +652,27 @@ pero al leer/filtrar pagos hay que recordar que **no comparten el mismo conjunto
 | `src/components/PaypalCheckout/PaypalCheckout.jsx` | Captura PayPal (USD); marca pagado en cliente o server-side (flag). |
 | `src/utils/estadoCompra.js` | `derivarEstadoCompra`/`esPagado`/`getProductosPedido` (estado y líneas). |
 | `src/utils/pedidos.js` | `normalizarPedidoParaVista` (descarta campos → `_raw`). |
-| `src/hooks/usePedidos.js` | Mis Compras: busca por DNI, filtra `esPedidoWala`, adjunta `_raw`. |
+| `src/hooks/usePedidos.js` | Mis Compras / Rastreo: busca por DNI+uid, filtra `esPedidoWala` (con señales de proveniencia WALA, `c81359c`), adjunta `_raw`. |
 | `src/services/adminOrders.js` + `src/hooks/useAdminWalaOrders.js` | Recepción admin: lee, filtra, dedup, normaliza, resume. |
-| `src/pages/cuenta/CuentaPedidosPage.jsx` | Vista "Mis Compras" (toma DNI del perfil). |
+| `src/pages/cuenta/CuentaPedidosPage.jsx` | Vista "Mis Compras" (lista + estado resumido + "Ver compra" / "Rastrear pedido"; SIN stepper). |
+| `src/pages/cuenta/CuentaRastreoPage.jsx` | Vista "Rastreo del Pedido" (`/cuenta/rastreo`): stepper de fases del ERP (`Timeline`) + stepper reducido de 5 nodos (`estadoWalaADisplay`) como fallback. |
+| `src/components/Timeline/Timeline.jsx` | Stepper de 8 fases de producción (Compra→…→Finalizado), reutilizado por Rastreo. |
 | `src/components/AdminLayout/AdminLayout.jsx` | Enlace de sidebar a Recepción. |
 
 ---
 
 ## 7. Commits relevantes (recientes)
 
+- `c81359c` — fix(pedidos): "Mis Compras"/"Rastreo" ya **no pierden** pedidos WALA que el ERP
+  pasó a producción (le quitó los flags web/`canalVenta`) y **no tienen espejo**: `esPedidoWala`
+  acepta ahora `_esWalaMirror`/`portalPseudoOrderId`/`pedidoWebId`/`buyerUid`, y
+  `searchOrdersByDniInERP` marca el vivo con `_esWalaMirror=true` al emparejarlo con el espejo
+  (conserva la etapa del ERP, sin duplicar). Ver §5.5, §4.1 y §4-bis.5.
+- `5a5bbfb` — feat(cuenta): nueva pestaña **"Rastreo del Pedido"** (`/cuenta/rastreo`,
+  `CuentaRastreoPage`) al lado de "Mis Compras" con el **stepper de 8 fases de producción**
+  (reutiliza `Timeline`) y un stepper reducido de 5 nodos para pedidos sin fase real del ERP;
+  "Mis Compras" queda como lista + enlace "Rastrear pedido". Detalle en
+  [FUNCIONES-CLIENTE.md §7.2-bis](./FUNCIONES-CLIENTE.md).
 - `1d8f639` — feat(pedidos): `wala_pedidos` pasa de respaldo a **FUENTE DE VERDAD** — nuevo
   `estadoWala` + helpers (`updateWalaOrderEstado`/`markWalaOrderPagado`/`estadoWalaADisplay`),
   `mirrorWebOrder` no degrada un pedido ya pagado, el pago marca `estadoWala:"pagado"` desde
