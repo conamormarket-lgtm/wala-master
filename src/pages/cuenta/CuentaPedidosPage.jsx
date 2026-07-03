@@ -297,7 +297,7 @@ const CuentaPedidosPage = () => {
                     </div>
                   </div>
 
-                  {/* Acción: ir al detalle de la compra. */}
+                  {/* Acciones: ver la compra + rastrear su fase de producción. */}
                   <div className={glass.compraActions}>
                     <GlassButton
                       as={Link}
@@ -307,6 +307,16 @@ const CuentaPedidosPage = () => {
                       fullWidth
                     >
                       Ver compra
+                    </GlassButton>
+                    <GlassButton
+                      as={Link}
+                      to="/cuenta/rastreo"
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      📦 Rastrear pedido
                     </GlassButton>
                   </div>
                 </GlassCard>

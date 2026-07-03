@@ -277,14 +277,19 @@ export async function searchOrdersByDniInERP(dni, { userId } = {}) {
             // Enriquecemos el doc vivo con el estado propio de WALA (aditivo).
             vivo._walaEstado = m.estadoWala ?? vivo._walaEstado ?? null;
             vivo._walaPagado = m.pagado === true || vivo._walaPagado === true;
-            // Si el vivo SIGUE siendo WALA, él representa el pedido: no duplicamos.
-            if (esWala(vivo)) return;
-            // Si el vivo fue desmarcado por el ERP, caerá del filtro esPedidoWala;
-            // dejamos pasar el espejo (más abajo) para que el pedido no desaparezca.
+            // El match con el espejo PRUEBA que es un pedido de WALA: lo marcamos
+            // para que SOBREVIVA el filtro esPedidoWala aunque el ERP le haya
+            // quitado los flags (web/canalVenta) al pasarlo a producción. Así el
+            // pedido conserva su ETAPA DE PRODUCCIÓN del ERP (no se degrada al
+            // estado grueso del espejo). El vivo representa el pedido: NO duplicamos.
+            vivo._esWalaMirror = true;
+            return;
           }
-          // Evita duplicar dos espejos con la misma clave y agrega la copia.
+          // Sin vivo (el ERP ya no tiene el doc): agregamos la copia espejo para
+          // garantizar la presencia, marcada como WALA para que pase el filtro.
           if (c && clavesEspejoVistas.has(c)) return;
           if (c) clavesEspejoVistas.add(c);
+          m._esWalaMirror = true;
           pedidos.push(m);
         });
       }

@@ -43,7 +43,16 @@ const esPedidoWala = (p) =>
   (p.canalVenta === 'Portal Web' ||
     p.web === true ||
     p.activador === 'portal_web' ||
-    p.vendedor === 'Portal Web');
+    p.vendedor === 'Portal Web' ||
+    // Señales de PROVENIENCIA WALA que el ERP NO puede quitar al pasar un pedido
+    // a producción (los pedidos NATIVOS del ERP no las tienen). Sin esto, un
+    // pedido WALA ya en producción cuyo doc perdió los flags web/canalVenta
+    // desaparecía de "Mis Compras" (regresión desde el commit d83eeef). El match
+    // con el espejo wala_pedidos (_esWalaMirror) lo marca searchOrdersByDniInERP.
+    p._esWalaMirror === true ||
+    !!p.portalPseudoOrderId ||
+    !!p.pedidoWebId ||
+    !!p.buyerUid);
 
 /**
  * Hook para búsqueda de pedidos por DNI. Usa caché por (DNI + userId): si ya se
