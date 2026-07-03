@@ -186,6 +186,8 @@ const CuentaLayout = lazy(() => import('./pages/CuentaLayout'));
 const PerfilPage = lazy(() => import('./pages/cuenta/PerfilPage'));
 const CuentaPedidosPage = lazy(() => import('./pages/cuenta/CuentaPedidosPage'));
 const CuentaCompraDetallePage = lazy(() => import('./pages/cuenta/CuentaCompraDetallePage'));
+// Rastreo del pedido por fases de producción del ERP (tab al lado de "Mis Compras").
+const CuentaRastreoPage = lazy(() => import('./pages/cuenta/CuentaRastreoPage'));
 const MisCreacionesPage = lazy(() => import('./pages/cuenta/MisCreacionesPage'));
 const CuentaReferidosPage = lazy(() => import('./pages/cuenta/CuentaReferidosPage'));
 const CuentaFechasImportantesPage = lazy(() => import('./pages/cuenta/CuentaFechasImportantesPage'));
@@ -310,6 +312,7 @@ function App() {
                           <Route path="perfil" element={<PerfilPage />} />
                           <Route path="pedidos" element={<CuentaPedidosPage />} />
                           <Route path="pedidos/:id" element={<CuentaCompraDetallePage />} />
+                          <Route path="rastreo" element={<CuentaRastreoPage />} />
                           <Route path="creaciones" element={<MisCreacionesPage />} />
                           <Route path="referidos" element={<CuentaReferidosPage />} />
                           <Route path="fechas-importantes" element={<CuentaFechasImportantesPage />} />

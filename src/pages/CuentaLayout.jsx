@@ -79,6 +79,13 @@ const CuentaLayout = () => {
             >
               {t('account.misCompras', 'Mis Compras')}
             </NavLink>
+            {/* Rastreo del pedido por fases de producción del ERP — al lado de Mis Compras. */}
+            <NavLink
+              to="/cuenta/rastreo"
+              className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
+            >
+              {t('account.rastreo', 'Rastreo del Pedido')}
+            </NavLink>
             <NavLink
               to="/cuenta/wishlist"
               className={({ isActive }) => (isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab)}
