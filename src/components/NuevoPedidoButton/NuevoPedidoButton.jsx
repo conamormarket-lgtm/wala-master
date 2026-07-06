@@ -1,22 +1,27 @@
 import React from 'react';
-import { WHATSAPP_NUMBER, WHATSAPP_MESSAGE } from '../../utils/constants';
 import styles from './NuevoPedidoButton.module.css';
 
+const WHATSAPP_NUMBER = '51912881722';
+
 const NuevoPedidoButton = ({ nombreCliente }) => {
-  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
+  const nombre = nombreCliente || 'Cliente';
+
+  const mensaje = `Hola, soy ${nombre}. Quiero hacer un nuevo pedido personalizado.`;
+  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
 
   return (
     <div className={styles.container}>
-      <a 
-        href={whatsappUrl} 
-        target="_blank" 
+      <a
+        href={whatsappUrl}
+        target="_blank"
         rel="noopener noreferrer"
         className={styles.button}
       >
-        HACER UN PEDIDO NUEVO
+        Solicitar un nuevo pedido
       </a>
-      <p className={styles.subtexto}>
-        <strong>{nombreCliente}</strong>, tenemos promociones y descuentos por ser uno de nuestros apreciados clientes.
+
+      <p className={styles.text}>
+        Puedes solicitar otro pedido personalizado cuando lo necesites. Te ayudaremos a revisar opciones, diseños y detalles.
       </p>
     </div>
   );

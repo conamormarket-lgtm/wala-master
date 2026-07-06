@@ -44,21 +44,35 @@ async function callerIsAdmin(context) {
 let erpApp = null;
 function getErpDb() {
   const raw = process.env.ERP_SERVICE_ACCOUNT;
+
+  // En este proyecto, las colecciones del ERP/WALA están en el mismo Firestore:
+  // pedidos, pedidos_web y wala_pedidos viven dentro de sistema-gestion-3b225.
+  // Por eso, si no existe ERP_SERVICE_ACCOUNT, usamos el Firestore principal.
   if (!raw) {
-    // En el emulador, los pedidos del ERP se siembran en el MISMO proyecto demo,
-    // así que se usa el Firestore por defecto (evita exigir credenciales del ERP en local).
-    if (process.env.FUNCTIONS_EMULATOR === "true") return db;
-    return null;
+    console.warn(
+      "getErpDb: ERP_SERVICE_ACCOUNT no configurado; usando Firestore principal del mismo proyecto."
+    );
+    return db;
   }
+
   if (!erpApp) {
     try {
       const sa = JSON.parse(raw);
-      erpApp = admin.initializeApp({ credential: admin.credential.cert(sa) }, "erp");
+      erpApp = admin.initializeApp(
+        { credential: admin.credential.cert(sa) },
+        "erp"
+      );
     } catch (e) {
-      console.error("ERP_SERVICE_ACCOUNT inválido (no es JSON de service account):", e.message);
-      return null;
+      console.error(
+        "ERP_SERVICE_ACCOUNT inválido (no es JSON de service account):",
+        e.message
+      );
+
+      // Fallback seguro para este proyecto, porque pedidos/wala_pedidos están en el mismo Firestore.
+      return db;
     }
   }
+
   return erpApp.firestore();
 }
 
@@ -347,6 +361,199 @@ exports.ensureAccountFromOrder = functions.https.onRequest(async (req, res) => {
  * Cloud Function (Callable): Securely claim coins for an order.
  * Ensures the order exists, is completed, belongs to the user, and hasn't been claimed yet.
  */
+
+function normalizeCoinText(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalizeCoinId(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeCoinDni(value) {
+  return String(value ?? "").replace(/\D/g, "").trim();
+}
+
+function uniqueCoinValues(values) {
+  return [...new Set(
+    values
+      .map((v) => normalizeCoinId(v))
+      .filter(Boolean)
+  )];
+}
+
+function buildPedidoSearchIds(pedidoId) {
+  const raw = normalizeCoinId(pedidoId);
+  const sinHash = raw.replace(/^#/, "");
+  const sinPrefijoPedido = sinHash.replace(/^pedido[:\s-]*/i, "");
+  const sinCeros = sinPrefijoPedido.replace(/^0+/, "");
+
+  return uniqueCoinValues([
+    raw,
+    sinHash,
+    sinPrefijoPedido,
+    sinCeros,
+    sinCeros ? sinCeros.padStart(6, "0") : "",
+  ]);
+}
+
+function getOrderDniCandidates(orderData) {
+  return [
+    orderData?.dni,
+    orderData?.dniRaw,
+    orderData?.clienteNumeroDocumento,
+    orderData?.envioNumeroDocumento,
+    orderData?.documento,
+    orderData?.numeroDocumento,
+    orderData?.customerDni,
+  ]
+    .map((v) => normalizeCoinDni(v))
+    .filter(Boolean);
+}
+
+function getUserDniCandidates(userData) {
+  return [
+    userData?.dni,
+    userData?.dniRaw,
+    userData?.numeroDocumento,
+    userData?.documento,
+  ]
+    .map((v) => normalizeCoinDni(v))
+    .filter(Boolean);
+}
+
+function getOrderUidCandidates(orderData) {
+  return [
+    orderData?.userId,
+    orderData?.buyerUid,
+    orderData?.uid,
+    orderData?.clienteUid,
+    orderData?.portalUserId,
+    orderData?.userUid,
+  ]
+    .map((v) => normalizeCoinId(v))
+    .filter(Boolean);
+}
+
+function getOrderEstadoKey(orderData) {
+  const estadoWala = normalizeCoinText(orderData?.estadoWala);
+  const estadoGeneral = normalizeCoinText(orderData?.estadoGeneral);
+  const estado = normalizeCoinText(orderData?.estado);
+  const status = normalizeCoinText(orderData?.status);
+  const estadoPago = normalizeCoinText(orderData?.estadoPago);
+
+  if (estadoWala) return estadoWala;
+  if (estadoGeneral) return estadoGeneral;
+  if (estado) return estado;
+  if (status) return status;
+  if (estadoPago) return estadoPago;
+
+  return "";
+}
+
+function isOrderCompletedForCoins(orderData) {
+  const estadoWala = normalizeCoinText(orderData?.estadoWala);
+  const estadoGeneral = normalizeCoinText(orderData?.estadoGeneral);
+  const estado = normalizeCoinText(orderData?.estado);
+  const status = normalizeCoinText(orderData?.status);
+
+  const finalizados = new Set([
+    "finalizado",
+    "finalizados",
+    "entregado",
+    "entregados",
+    "completado",
+    "completados",
+    "complete",
+    "completed",
+  ]);
+
+  if (finalizados.has(estadoWala)) return true;
+  if (finalizados.has(estadoGeneral)) return true;
+  if (finalizados.has(estado)) return true;
+  if (finalizados.has(status)) return true;
+
+  return false;
+}
+
+function getCoinClaimIdsFromOrder(inputPedidoId, orderData, orderDocId) {
+  return uniqueCoinValues([
+    inputPedidoId,
+    orderDocId,
+    orderData?.id,
+    orderData?.numeroPedido,
+    orderData?.portalPseudoOrderId,
+    orderData?.pedidoWebId,
+  ]);
+}
+
+async function findOrderForCoinClaim(erpDb, pedidoId) {
+  const searchIds = buildPedidoSearchIds(pedidoId);
+
+  const collections = [
+    "wala_pedidos",
+    "pedidos_web",
+    "pedidos",
+  ];
+
+  const fieldCandidates = [
+    "numeroPedido",
+    "portalPseudoOrderId",
+    "pedidoWebId",
+    "id",
+  ];
+
+  for (const coll of collections) {
+    const ref = erpDb.collection(coll);
+
+    for (const id of searchIds) {
+      try {
+        const snap = await ref.doc(id).get();
+
+        if (snap.exists) {
+          return {
+            collection: coll,
+            docId: snap.id,
+            data: snap.data() || {},
+          };
+        }
+      } catch (e) {
+        console.warn(`secureClaimMonedas: fallo buscando doc ${coll}/${id}:`, e.message);
+      }
+    }
+
+    for (const field of fieldCandidates) {
+      for (const id of searchIds) {
+        try {
+          const snap = await ref.where(field, "==", id).limit(1).get();
+
+          if (!snap.empty) {
+            const docSnap = snap.docs[0];
+
+            return {
+              collection: coll,
+              docId: docSnap.id,
+              data: docSnap.data() || {},
+            };
+          }
+        } catch (e) {
+          console.warn(`secureClaimMonedas: fallo query ${coll}.${field} == ${id}:`, e.message);
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Cloud Function (Callable): Securely claim coins for an order.
+ * Valida pedido en WALA/ERP, confirma pertenencia y acredita monedas una sola vez.
+ */
 exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
@@ -355,8 +562,8 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
     );
   }
 
-  // Normalizado a string una sola vez (H-06 #6): evita doble reclamo por '123' vs 123.
-  const pedidoId = data && data.pedidoId != null ? String(data.pedidoId) : null;
+  const pedidoId = normalizeCoinId(data && data.pedidoId);
+
   if (!pedidoId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
@@ -367,14 +574,12 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
   const uid = context.auth.uid;
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
 
-  // Monto SERVER-AUTHORITATIVE: se ignora cualquier `amount` enviado por el cliente (H-02/H-06).
   const amount = REWARD_COINS_PER_ORDER;
 
-  // 1) Validar el pedido contra el ERP (H-02). FALLA CERRADO si el ERP no está
-  //    configurado: sin verificar propiedad/estado del pedido NO se acuñan monedas.
   const erpDb = getErpDb();
+
   if (!erpDb) {
-    console.error("secureClaimMonedas: ERP_SERVICE_ACCOUNT no configurado; reclamo rechazado (fail-closed).");
+    console.error("secureClaimMonedas: ERP_SERVICE_ACCOUNT no configurado; reclamo rechazado.");
     throw new functions.https.HttpsError(
       "failed-precondition",
       "La validación de pedidos no está disponible temporalmente. Intenta más tarde."
@@ -382,97 +587,162 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
   }
 
   const preUserDoc = await userRef.get();
+
   if (!preUserDoc.exists) {
     throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
   }
-  const userData0 = preUserDoc.data();
 
-  // Buscar el pedido en el ERP (pedidos_web o pedidos).
-  let orderData = null;
-  for (const coll of ["pedidos_web", "pedidos"]) {
-    const snap = await erpDb.collection(coll).doc(String(pedidoId)).get();
-    if (snap.exists) { orderData = snap.data(); break; }
-  }
-  if (!orderData) {
-    throw new functions.https.HttpsError("not-found", "Pedido no encontrado.");
+  const userData0 = preUserDoc.data() || {};
+
+  const orderMatch = await findOrderForCoinClaim(erpDb, pedidoId);
+
+  if (!orderMatch || !orderMatch.data) {
+    throw new functions.https.HttpsError(
+      "not-found",
+      `Pedido no encontrado para reclamar monedas: ${pedidoId}.`
+    );
   }
 
-  // Propiedad: por userId o por DNI del usuario.
-  const ownsByUid = orderData.userId && orderData.userId === uid;
-  const ownsByDni = orderData.dni && userData0.dni && String(orderData.dni) === String(userData0.dni);
+  const orderData = orderMatch.data;
+
+  const userUid = normalizeCoinId(uid);
+  const orderUids = getOrderUidCandidates(orderData);
+  const ownsByUid = orderUids.includes(userUid);
+
+  const userDnis = getUserDniCandidates(userData0);
+  const orderDnis = getOrderDniCandidates(orderData);
+  const ownsByDni = userDnis.some((dni) => orderDnis.includes(dni));
+
   if (!ownsByUid && !ownsByDni) {
-    throw new functions.https.HttpsError("permission-denied", "Este pedido no le pertenece.");
+    console.warn("secureClaimMonedas: pedido no pertenece al usuario", {
+      uid,
+      pedidoId,
+      collection: orderMatch.collection,
+      docId: orderMatch.docId,
+      orderUids,
+      userDnis,
+      orderDnis,
+    });
+
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Este pedido no le pertenece."
+    );
   }
 
-  // Estado: debe estar finalizado/entregado/completado.
-  const estado = (orderData.estadoGeneral || orderData.estado || "")
-    .toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  if (!["finalizado", "entregado", "completado"].includes(estado)) {
-    throw new functions.https.HttpsError("failed-precondition", "El pedido aún no está finalizado.");
+  if (!isOrderCompletedForCoins(orderData)) {
+    console.warn("secureClaimMonedas: pedido aún no finalizado", {
+      pedidoId,
+      collection: orderMatch.collection,
+      docId: orderMatch.docId,
+      estadoDetectado: getOrderEstadoKey(orderData),
+      estadoWala: orderData.estadoWala || null,
+      estadoGeneral: orderData.estadoGeneral || null,
+      estado: orderData.estado || null,
+      status: orderData.status || null,
+      pagado: orderData.pagado ?? null,
+    });
+
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "El pedido aún no está finalizado o entregado."
+    );
   }
+
+  const claimIds = getCoinClaimIdsFromOrder(pedidoId, orderData, orderMatch.docId);
+  const primaryClaimId = claimIds[0] || pedidoId;
 
   try {
     return await db.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userRef);
-      const userData = userDoc.data() || {};
 
-
-      // Check if already claimed
-      const reclamadas = userData.monedasReclamadas || [];
-      if (reclamadas.includes(pedidoId)) {
-        throw new functions.https.HttpsError("already-exists", "Las monedas de este pedido ya fueron reclamadas.");
+      if (!userDoc.exists) {
+        throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       }
 
-      // Manejo de Monedas con TTL (90 días por defecto para pedidos)
+      const userData = userDoc.data() || {};
+
+      const reclamadas = Array.isArray(userData.monedasReclamadas)
+        ? userData.monedasReclamadas.map((id) => normalizeCoinId(id))
+        : [];
+
+      const alreadyClaimed = claimIds.some((id) => reclamadas.includes(id));
+
+      if (alreadyClaimed) {
+        throw new functions.https.HttpsError(
+          "already-exists",
+          "Las monedas de este pedido ya fueron reclamadas."
+        );
+      }
+
       const TTL_DAYS = 90;
       const now = new Date();
-      
-      // Fecha de expiración al final del día (23:59:59) para agrupar mejor
+
       const expirationDate = new Date(now);
       expirationDate.setDate(expirationDate.getDate() + TTL_DAYS);
       expirationDate.setHours(23, 59, 59, 999);
+
       const expiresAtIso = expirationDate.toISOString();
 
-      let monedasActivas = userData.monedasActivas || [];
-      
-      // Intentar encontrar un lote existente con exactamente la misma fecha de expiración
-      const existingBatchIndex = monedasActivas.findIndex(b => b.expiresAt === expiresAtIso);
-      
+      const monedasActivas = Array.isArray(userData.monedasActivas)
+        ? userData.monedasActivas.map((batch) => ({ ...batch }))
+        : [];
+
+      const existingBatchIndex = monedasActivas.findIndex((batch) => {
+        return batch && batch.expiresAt === expiresAtIso;
+      });
+
       if (existingBatchIndex >= 0) {
-        monedasActivas[existingBatchIndex].amount += amount;
+        monedasActivas[existingBatchIndex].amount =
+          Number(monedasActivas[existingBatchIndex].amount || 0) + amount;
       } else {
         monedasActivas.push({
-          amount: amount,
+          amount,
           expiresAt: expiresAtIso,
-          source: "pedido_" + pedidoId,
-          createdAt: now.toISOString()
+          source: "pedido_" + primaryClaimId,
+          createdAt: now.toISOString(),
         });
       }
 
-      // Update user document safely
-      const currentMonedas = userData.monedas || 0;
+      const currentMonedas = Number(userData.monedas || 0);
       const newBalance = currentMonedas + amount;
+
       transaction.update(userRef, {
-        monedas: newBalance, // Mantenemos el campo global por compatibilidad, aunque el cliente calculará sobre monedasActivas
-        monedasActivas: monedasActivas,
-        monedasReclamadas: FieldValue.arrayUnion(pedidoId)
+        monedas: newBalance,
+        monedasActivas,
+        monedasReclamadas: FieldValue.arrayUnion(...claimIds),
       });
 
       writeLedger(transaction, uid, {
         type: "earn",
         amount,
-        source: "pedido_" + pedidoId,
+        source: "pedido_" + primaryClaimId,
         balanceAfter: newBalance,
       });
 
-      return { success: true, nuevasMonedas: newBalance, monedasActivas };
+      return {
+        success: true,
+        earned: amount,
+        nuevasMonedas: newBalance,
+        monedasActivas,
+        pedidoId: primaryClaimId,
+        claimIds,
+        orderCollection: orderMatch.collection,
+        orderDocId: orderMatch.docId,
+      };
     });
   } catch (error) {
     if (error instanceof functions.https.HttpsError) throw error;
+
     console.error("secureClaimMonedas error:", error);
-    throw new functions.https.HttpsError("internal", error.message || "Error al procesar el reclamo.");
+
+    throw new functions.https.HttpsError(
+      "internal",
+      error.message || "Error al procesar el reclamo."
+    );
   }
 });
+
 
 /**
  * Cron Job mensual: Resetea kapiCoins a 0 el último día de cada mes a las 23:59.
@@ -496,7 +766,7 @@ exports.resetKapiCoins = onSchedule("59 23 28-31 * *", async (event) => {
     const usersSnapshot = await db.collection(PORTAL_USERS_COLLECTION)
       .where("kapiCoins", ">", 0)
       .get();
-      
+
     if (usersSnapshot.empty) {
       console.log("No users with kapiCoins > 0 found.");
       return;
@@ -505,9 +775,9 @@ exports.resetKapiCoins = onSchedule("59 23 28-31 * *", async (event) => {
     const batch = db.batch();
     const analyticsRef = db.collection("analytics_kapi");
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    
+
     let totalUnspent = 0;
-    
+
     usersSnapshot.forEach(doc => {
       const data = doc.data();
       const unspent = data.kapiCoins || 0;
@@ -545,7 +815,7 @@ exports.notifyWishlistBirthdays = onSchedule("0 9 * * *", async (event) => {
     // Calcular la fecha objetivo: hoy + 14 días
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 14);
-    
+
     // Extraer mes y día en formato MM-DD
     const targetMonth = String(targetDate.getMonth() + 1).padStart(2, '0');
     const targetDay = String(targetDate.getDate()).padStart(2, '0');
@@ -554,7 +824,7 @@ exports.notifyWishlistBirthdays = onSchedule("0 9 * * *", async (event) => {
     // Obtener todos los usuarios (idealmente indexados, o se filtra en memoria si no son muchos)
     // Para bases de datos grandes, sería mejor guardar birthMonthDay como un campo aparte.
     const usersSnapshot = await db.collection(PORTAL_USERS_COLLECTION).get();
-    
+
     if (usersSnapshot.empty) {
       console.log("No users found.");
       return;
@@ -571,7 +841,7 @@ exports.notifyWishlistBirthdays = onSchedule("0 9 * * *", async (event) => {
         // Verificar si tiene una wishlist
         const wishlistRef = db.collection('wishlists').doc(doc.id);
         const wishlistSnap = await wishlistRef.get();
-        
+
         if (wishlistSnap.exists) {
           const items = wishlistSnap.data().items || [];
           if (items.length > 0) {
@@ -618,15 +888,15 @@ exports.rotateWeeklyChallenge = onSchedule({
       console.log("No hay retos disponibles para rotar.");
       return;
     }
-    
+
     // Convertir a array
     const challenges = [];
     challengesSnap.forEach(doc => challenges.push({ id: doc.id, ...doc.data() }));
-    
+
     // Seleccionar uno al azar
     const randomIndex = Math.floor(Math.random() * challenges.length);
     const selectedChallenge = challenges[randomIndex];
-    
+
     // Actualizar o crear el documento global 'activeChallenge'
     await db.collection("globals").doc("activeChallenge").set({
       challengeId: selectedChallenge.id,
@@ -639,7 +909,7 @@ exports.rotateWeeklyChallenge = onSchedule({
       startedAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
-    
+
     console.log("Reto semanal rotado exitosamente:", selectedChallenge.title);
   } catch (err) {
     console.error("Error al rotar reto semanal:", err);
@@ -662,7 +932,7 @@ exports.submitChallengeEvidence = functions.https.onCall(async (data, context) =
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
   const userDoc = await userRef.get();
   const userName = userDoc.exists ? userDoc.data().displayName : "Usuario";
-  
+
   await db.collection("challengeEvidences").add({
     userId: uid,
     userName: userName,
@@ -683,14 +953,14 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
   }
-  
+
   const { evidenceId, action, rewardCoins, rewardType } = data; // action: 'approve' | 'reject'
   if (!evidenceId || !action) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan datos.");
   }
 
   const evidenceRef = db.collection("challengeEvidences").doc(evidenceId);
-  
+
   await db.runTransaction(async (transaction) => {
     const evidenceDoc = await transaction.get(evidenceRef);
     if (!evidenceDoc.exists) {
@@ -701,7 +971,7 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
       throw new functions.https.HttpsError("failed-precondition", "La evidencia ya fue procesada.");
     }
 
-    transaction.update(evidenceRef, { 
+    transaction.update(evidenceRef, {
       status: action === "approve" ? "approved" : "rejected",
       processedAt: FieldValue.serverTimestamp(),
       processedBy: context.auth.uid
@@ -710,24 +980,24 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
     if (action === "approve") {
       const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(evData.userId);
       const userDoc = await transaction.get(userRef);
-      if(userDoc.exists) {
+      if (userDoc.exists) {
         const userData = userDoc.data();
         let updates = {
-           challengeEvidencesApproved: FieldValue.arrayUnion(evData.challengeId)
+          challengeEvidencesApproved: FieldValue.arrayUnion(evData.challengeId)
         };
         // Acreditar monedas si se aprobaron directamente acá
         if (rewardType === 'main') {
-           // Usamos la misma lógica de earnMainCoins pero en backend
-           let activas = userData.monedasActivas || [];
-           const tzOffset = -5 * 60; // Peru
-           const expirationDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000 + tzOffset * 60000);
-           const expiresAt = expirationDate.toISOString().replace('Z', '-05:00');
-           activas.push({ amount: rewardCoins, reason: 'Reto Manual Completado', expiresAt, createdAt: new Date().toISOString() });
-           updates.monedas = (userData.monedas || 0) + rewardCoins;
-           updates.monedasActivas = activas;
+          // Usamos la misma lógica de earnMainCoins pero en backend
+          let activas = userData.monedasActivas || [];
+          const tzOffset = -5 * 60; // Peru
+          const expirationDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000 + tzOffset * 60000);
+          const expiresAt = expirationDate.toISOString().replace('Z', '-05:00');
+          activas.push({ amount: rewardCoins, reason: 'Reto Manual Completado', expiresAt, createdAt: new Date().toISOString() });
+          updates.monedas = (userData.monedas || 0) + rewardCoins;
+          updates.monedasActivas = activas;
         } else if (rewardType === 'kapi_double_3d') {
-           updates.activeMultiplier = 'kapi_double_3d';
-           updates.multiplierExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+          updates.activeMultiplier = 'kapi_double_3d';
+          updates.multiplierExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
         }
         transaction.set(userRef, updates, { merge: true });
       }
@@ -1132,7 +1402,7 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
 
       let add = 1;
       if (u.activeMultiplier === "kapi_double_3d" && u.multiplierExpiresAt &&
-          new Date(u.multiplierExpiresAt) > new Date()) {
+        new Date(u.multiplierExpiresAt) > new Date()) {
         add = 2;
       }
       const updates = {
@@ -2120,14 +2390,16 @@ async function confirmPaymentForOrder(orderId) {
     subSnap.forEach((doc) => {
       const sub = doc.data();
       const payoutRef = db.collection("payouts").doc();
-      payoutRefs.push({ ref: payoutRef, data: {
-        vendorId: sub.vendorId,
-        orderId: oid,
-        subOrderId: doc.id,
-        amount: sub.vendorPayoutAmount,
-        status: "pending",
-        createdAt: FieldValue.serverTimestamp(),
-      }});
+      payoutRefs.push({
+        ref: payoutRef, data: {
+          vendorId: sub.vendorId,
+          orderId: oid,
+          subOrderId: doc.id,
+          amount: sub.vendorPayoutAmount,
+          status: "pending",
+          createdAt: FieldValue.serverTimestamp(),
+        }
+      });
     });
 
     t.update(orderRef, {
@@ -4154,7 +4426,7 @@ async function leerTodosLosParticipantes(participantesCol) {
     .limit(SORTEO_PARTICIPANTES_PAGE_SIZE);
   let cursor = null;
   // Bucle de paginación: se detiene cuando una página devuelve < PAGE_SIZE docs.
-  for (;;) {
+  for (; ;) {
     let q = base;
     if (cursor) q = q.startAfter(cursor);
     const snap = await q.get();

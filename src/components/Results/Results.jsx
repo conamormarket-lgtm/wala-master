@@ -22,14 +22,21 @@ const Results = ({ pedidos, onNewSearch, dataSource }) => {
 
   const brandsMap = useMemo(() => {
     const map = new Map();
+
     if (brandsData && brandsData.length > 0) {
-      brandsData.forEach(b => {
+      brandsData.forEach((b) => {
         if (b.name && b.logoUrl) {
-          const key = b.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+          const key = b.name
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .trim();
+
           map.set(key, b.logoUrl);
         }
       });
     }
+
     return map;
   }, [brandsData]);
 
@@ -39,9 +46,11 @@ const Results = ({ pedidos, onNewSearch, dataSource }) => {
 
   const nombreCliente = pedidos[0].nombreCliente || 'Cliente';
   const numPedidos = pedidos.length;
-  const mensajePedidos = numPedidos === 1 
-    ? 'Hemos encontrado 1 pedido para ti:' 
-    : `Hemos encontrado ${numPedidos} pedidos para ti:`;
+
+  const mensajePedidos =
+    numPedidos === 1
+      ? 'Tienes 1 pedido asociado a tu cuenta.'
+      : `Tienes ${numPedidos} pedidos asociados a tu cuenta.`;
 
   const handleImageClick = (images, index) => {
     setCarouselImages(images);
@@ -64,15 +73,20 @@ const Results = ({ pedidos, onNewSearch, dataSource }) => {
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
-        <h1>¡Hola, {nombreCliente}!</h1>
-        <p>Esperamos que estés teniendo un excelente día.</p>
+        <h1>Tus pedidos</h1>
+        <p>Hola, {nombreCliente}. Aquí puedes revisar el estado, avances y detalles de tus pedidos.</p>
       </div>
+
       <p className={styles.pedidosInfo}>{mensajePedidos}</p>
+
       {dataSource && (
         <p className={styles.dataSource}>
-          {dataSource === 'erp' ? 'Datos desde el sistema central' : 'Datos desde respaldo'}
+          {dataSource === 'erp'
+            ? 'Información actualizada desde nuestro sistema de pedidos.'
+            : 'Información cargada desde respaldo de pedidos.'}
         </p>
       )}
+
       <div className={styles.accordionContainer}>
         {pedidos.map((pedido, index) => (
           <PedidoCard
@@ -83,12 +97,13 @@ const Results = ({ pedidos, onNewSearch, dataSource }) => {
           />
         ))}
       </div>
+
       <NuevoPedidoButton nombreCliente={nombreCliente} />
-      
+
       {onNewSearch && (
         <div className={styles.newSearchContainer}>
-          <Button 
-            variant="secondary" 
+          <Button
+            variant="secondary"
             onClick={onNewSearch}
             className={styles.newSearchButton}
           >
@@ -96,7 +111,7 @@ const Results = ({ pedidos, onNewSearch, dataSource }) => {
           </Button>
         </div>
       )}
-      
+
       {carouselIndex !== null && (
         <ImageCarousel
           images={carouselImages}

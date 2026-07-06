@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!db) return;
+
     const unsub = onSnapshot(doc(db, 'globals', 'activeChallenge'), (snapshot) => {
       if (snapshot.exists()) {
         setActiveWeeklyChallenge(snapshot.data());
@@ -36,6 +37,7 @@ export const AuthProvider = ({ children }) => {
         setActiveWeeklyChallenge(null);
       }
     });
+
     return () => unsub();
   }, []);
 
@@ -54,8 +56,9 @@ export const AuthProvider = ({ children }) => {
         }
 
         const { data: portalDoc } = await getDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid);
-        
+
         let profileData = null;
+
         if (portalDoc) {
           profileData = portalDoc;
         } else {
@@ -63,7 +66,7 @@ export const AuthProvider = ({ children }) => {
           const { data: legacyDoc } = await getDocument(LEGACY_USERS_COLLECTION, firebaseUser.uid);
           profileData = legacyDoc || {
             email: firebaseUser.email,
-            role: 'client'
+            role: 'client',
           };
         }
 
@@ -71,6 +74,7 @@ export const AuthProvider = ({ children }) => {
         if (!profileData.referralCode) {
           const newCode = 'KS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
           profileData.referralCode = newCode;
+
           // Guardar en Firestore asíncronamente
           setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { referralCode: newCode });
         }
@@ -85,7 +89,8 @@ export const AuthProvider = ({ children }) => {
 
         // Update lastAppOpen if not updated today
         const _d1 = new Date();
-        const todayStr = `${_d1.getFullYear()}-${String(_d1.getMonth()+1).padStart(2, '0')}-${String(_d1.getDate()).padStart(2, '0')}`;
+        const todayStr = `${_d1.getFullYear()}-${String(_d1.getMonth() + 1).padStart(2, '0')}-${String(_d1.getDate()).padStart(2, '0')}`;
+
         if (profileData.lastAppOpen !== todayStr) {
           profileData.lastAppOpen = todayStr;
           setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { lastAppOpen: todayStr });
@@ -98,6 +103,7 @@ export const AuthProvider = ({ children }) => {
         setAdminPermissions(null);
         setIsAdminClaim(false);
       }
+
       setLoading(false);
     });
 
@@ -108,14 +114,17 @@ export const AuthProvider = ({ children }) => {
     if (!user) return { error: 'Usuario no autenticado' };
 
     const { error } = await setDocument(PORTAL_USERS_COLLECTION, user.uid, updates);
+
     if (error && error.includes('Firebase no está configurado')) {
       // En modo desarrollo, actualizar solo localmente
-      setUserProfile(prev => ({ ...prev, ...updates }));
+      setUserProfile((prev) => ({ ...prev, ...updates }));
       return { error: null };
     }
+
     if (!error) {
-      setUserProfile(prev => ({ ...prev, ...updates }));
+      setUserProfile((prev) => ({ ...prev, ...updates }));
     }
+
     return { error };
   }, [user]);
 
@@ -135,22 +144,109 @@ export const AuthProvider = ({ children }) => {
       const res = await httpsCallable(getFunctions(), name)(payload);
       return { error: null, data: res.data };
     } catch (e) {
-      return { error: e?.message || 'Error en el servidor' };
+      return {
+        error: e?.message || e?.code || 'Error en el servidor',
+        code: e?.code,
+        details: e?.details,
+      };
     }
   }, []);
 
   // Recarga el perfil tras una mutación server-side (saldos, rachas, etc.).
   const reloadProfile = React.useCallback(async () => {
-    if (!user) return;
-    const { data } = await getDocument(PORTAL_USERS_COLLECTION, user.uid);
-    if (data) setUserProfile(data);
+    if (!user) return null;
+
+    const { data, error } = await getDocument(PORTAL_USERS_COLLECTION, user.uid);
+
+    if (!error && data) {
+      setUserProfile(data);
+      return data;
+    }
+
+    return null;
   }, [user]);
 
-  const claimMonedas = React.useCallback(async (pedidoId) => {
-    const res = await callFn('secureClaimMonedas', { pedidoId });
-    if (!res.error) await reloadProfile();
+  const claimMonedas = React.useCallback(async (pedidoId, amount = 10) => {
+    const cleanPedidoId = String(pedidoId ?? '').trim();
+    const cleanAmount = Number(amount) || 10;
+
+    if (!user) {
+      return { error: 'Usuario no autenticado' };
+    }
+
+    if (!userProfile) {
+      return { error: 'No profile' };
+    }
+
+    if (!cleanPedidoId) {
+      return { error: 'Pedido inválido' };
+    }
+
+    const reclamadas = Array.isArray(userProfile?.monedasReclamadas)
+      ? userProfile.monedasReclamadas.map((id) => String(id ?? '').trim())
+      : [];
+
+    if (reclamadas.includes(cleanPedidoId)) {
+      return { error: 'Ya reclamado' };
+    }
+
+    const res = await callFn('secureClaimMonedas', {
+      pedidoId: cleanPedidoId,
+      amount: cleanAmount,
+    });
+
+    if (res.error) {
+      console.error('secureClaimMonedas error:', res);
+      return res;
+    }
+
+    const freshProfile = await reloadProfile();
+
+    // Si la Cloud Function sí respondió bien pero el perfil todavía no llegó
+    // actualizado por latencia/cache, reflejamos el cambio localmente para que
+    // el header suba al instante. La fuente real sigue siendo el servidor.
+    if (!freshProfile) {
+      setUserProfile((prev) => {
+        if (!prev) return prev;
+
+        const prevReclamadas = Array.isArray(prev.monedasReclamadas)
+          ? prev.monedasReclamadas.map((id) => String(id ?? '').trim())
+          : [];
+
+        if (prevReclamadas.includes(cleanPedidoId)) return prev;
+
+        return {
+          ...prev,
+          monedas: Number(prev.monedas || 0) + cleanAmount,
+          monedasReclamadas: [...prevReclamadas, cleanPedidoId],
+        };
+      });
+    } else {
+      const freshReclamadas = Array.isArray(freshProfile.monedasReclamadas)
+        ? freshProfile.monedasReclamadas.map((id) => String(id ?? '').trim())
+        : [];
+
+      if (!freshReclamadas.includes(cleanPedidoId)) {
+        setUserProfile((prev) => {
+          if (!prev) return freshProfile;
+
+          const prevReclamadas = Array.isArray(prev.monedasReclamadas)
+            ? prev.monedasReclamadas.map((id) => String(id ?? '').trim())
+            : [];
+
+          if (prevReclamadas.includes(cleanPedidoId)) return prev;
+
+          return {
+            ...freshProfile,
+            monedas: Number(freshProfile.monedas || prev.monedas || 0) + cleanAmount,
+            monedasReclamadas: [...prevReclamadas, cleanPedidoId],
+          };
+        });
+      }
+    }
+
     return res;
-  }, [callFn, reloadProfile]);
+  }, [user, userProfile, callFn, reloadProfile]);
 
   const spendMonedas = React.useCallback(async (amount) => {
     const res = await callFn('spendCoinsSecure', { amount });
@@ -172,8 +268,10 @@ export const AuthProvider = ({ children }) => {
 
   const processChallengeEvent = React.useCallback(async (actionType, count = 1) => {
     if (!activeWeeklyChallenge) return { error: null };
+
     const res = await callFn('recordChallengeEventSecure', { actionType, count });
     if (!res.error) await reloadProfile();
+
     return res;
   }, [callFn, reloadProfile, activeWeeklyChallenge]);
 
@@ -187,9 +285,12 @@ export const AuthProvider = ({ children }) => {
     const covered = (completedOrders || [])
       .filter((o) => o.fechaEspecial || o.motivoRegalo)
       .map((o) => o.fechaEspecial || o.motivoRegalo);
+
     const uniqueDates = [...new Set(covered)].length;
+
     const res = await callFn('claimDatesStreakSecure', { uniqueDates });
     if (!res.error) await reloadProfile();
+
     return res;
   }, [callFn, reloadProfile]);
 
@@ -227,7 +328,26 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     isAdmin,
     profileIncomplete,
-  }), [user, userProfile, effectiveAdminPermissions, loading, updateUserProfile, linkDNI, claimMonedas, spendMonedas, freezeMonedas, grantSurveyReward, feedKapi, validateDatesStreak, processChallengeEvent, reloadProfile, activeWeeklyChallenge, calculateActiveCoins, profileIncomplete, isAdmin]);
+  }), [
+    user,
+    userProfile,
+    effectiveAdminPermissions,
+    loading,
+    updateUserProfile,
+    linkDNI,
+    claimMonedas,
+    spendMonedas,
+    freezeMonedas,
+    grantSurveyReward,
+    feedKapi,
+    validateDatesStreak,
+    processChallengeEvent,
+    reloadProfile,
+    activeWeeklyChallenge,
+    calculateActiveCoins,
+    profileIncomplete,
+    isAdmin,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
