@@ -1,15 +1,16 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
-import { EditorProvider } from './contexts/EditorContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { VisualEditorProvider } from './pages/Tienda/contexts/VisualEditorContext';
 import { LayoutProvider } from './contexts/LayoutContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+
 import AdminNotifications from './pages/admin/AdminNotifications/AdminNotifications';
 import AdminRoute from './components/AdminRoute/AdminRoute';
 import RouteTracker from './components/analytics/RouteTracker';
@@ -23,6 +24,7 @@ import NavProgressBar from './components/common/NavProgressBar/NavProgressBar';
 import CustomFontsInjector from './components/common/CustomFontsInjector/CustomFontsInjector';
 import { useHeatmapTracker } from './hooks/useHeatmapTracker';
 import ScrollTracker from './components/analytics/ScrollTracker';
+
 import './App.css';
 
 // ── Páginas principales y Layout Crítico (Carga Inmediata para evitar efecto Waterfall de Suspense) ──
@@ -51,17 +53,30 @@ if (typeof window !== 'undefined') {
     try {
       const KEY = 'wala_chunk_reload_ts';
       const last = Number(sessionStorage.getItem(KEY) || 0);
+
       if (Date.now() - last > 15000) {
         sessionStorage.setItem(KEY, String(Date.now()));
         window.location.reload();
       }
-    } catch { window.location.reload(); }
+    } catch {
+      window.location.reload();
+    }
   };
+
   // Vite emite este evento cuando falla el preload de un chunk.
-  window.addEventListener('vite:preloadError', (e) => { e?.preventDefault?.(); reloadOnceForStaleChunk(); });
+  window.addEventListener('vite:preloadError', (e) => {
+    e?.preventDefault?.();
+    reloadOnceForStaleChunk();
+  });
+
   window.addEventListener('unhandledrejection', (e) => {
     const msg = String(e?.reason?.message || e?.reason || '');
-    if (/Failed to fetch dynamically imported module|Failed to load module script|Importing a module script failed|error loading dynamically imported module/i.test(msg)) {
+
+    if (
+      /Failed to fetch dynamically imported module|Failed to load module script|Importing a module script failed|error loading dynamically imported module/i.test(
+        msg
+      )
+    ) {
       reloadOnceForStaleChunk();
     }
   });
@@ -70,7 +85,11 @@ if (typeof window !== 'undefined') {
   // Registra handlers globales de error (window.onerror / unhandledrejection)
   // y Web Vitals. Es idempotente, fire-and-forget y a prueba de fallos: si algo
   // sale mal, la app se comporta exactamente como hoy.
-  try { initObservability(); } catch { /* no-op */ }
+  try {
+    initObservability();
+  } catch {
+    /* no-op */
+  }
 }
 
 // ── Páginas secundarias — lazy para no bloquear ──────────
@@ -92,6 +111,7 @@ const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
 const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
+
 // MussaPage retirado: /MUSSA ahora es la página de la marca vía DynamicLandingPage (/:slug).
 const RegalosCatasPage = lazy(() => import('./pages/RegalosCatasPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
@@ -102,9 +122,11 @@ const VendorStorefrontPage = lazy(() => import('./pages/VendorStorefrontPage'));
 const CheckoutDemoPage = lazy(() => import('./pages/CheckoutDemoPage'));
 const OfertasFlashPage = lazy(() => import('./pages/OfertasFlashPage'));
 const SorteosPage = lazy(() => import('./pages/SorteosPage'));
+
 // Página pública "Sorteo por suscripción" (auto-débito Culqi/PayPal). Rutas
 // /suscrito-sorteo y /suscrito-sorteo/:slug. Debe ir ANTES del catch-all /:slug.
 const SuscripcionSorteoPage = lazy(() => import('./pages/SuscripcionSorteoPage'));
+
 // Página pública LINK-IN-BIO (constructor tipo Linktree). Ruta /l/:slug.
 const LinkInBioPage = lazy(() => import('./pages/LinkInBioPage'));
 
@@ -142,6 +164,7 @@ const AdminBlueprints = lazy(() => import('./pages/admin/AdminBlueprints'));
 const AdminFlashOffers = lazy(() => import('./pages/admin/AdminFlashOffers'));
 const AdminSorteos = lazy(() => import('./pages/admin/AdminSorteos'));
 const AdminSorteoDetalle = lazy(() => import('./pages/admin/AdminSorteoDetalle'));
+
 // Sorteo por suscripción (auto-débito): lista/editor de campañas + detalle.
 const AdminSuscripcionSorteos = lazy(() => import('./pages/admin/AdminSuscripcionSorteos'));
 const AdminSuscripcionDetalle = lazy(() => import('./pages/admin/AdminSuscripcionDetalle'));
@@ -156,10 +179,12 @@ const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion')
 const AdminCrearCuentasPedidos = lazy(() => import('./pages/admin/AdminCrearCuentasPedidos'));
 const AdminRetos = lazy(() => import('./pages/admin/AdminRetos'));
 const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuariosAnalyticsPage'));
+
 // Panel "Ver qué hacen los usuarios": wishlists, carritos y fechas (solo-admin).
 const AdminUsuariosComportamiento = lazy(() => import('./pages/admin/AdminUsuariosComportamiento'));
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
+
 // Enlaces útiles (constructor tipo Linktree / link-in-bio).
 const AdminEnlaces = lazy(() => import('./pages/admin/AdminEnlaces'));
 const AdminEnlaceEditor = lazy(() => import('./pages/admin/AdminEnlaceEditor'));
@@ -173,8 +198,10 @@ const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
 const AdminGeneradorPagos = lazy(() => import('./pages/admin/AdminGeneradorPagos'));
 const AdminLibroReclamaciones = lazy(() => import('./pages/admin/AdminLibroReclamaciones'));
+
 // Gestión de Pagos (unifica Métodos de Pago + Generador de Enlaces + historial/analíticas).
 const AdminGestionPagos = lazy(() => import('./pages/admin/AdminGestionPagos'));
+
 // Usuarios de la App: uso de la app por usuario identificado (sesiones/pantallas APP/WEB).
 const AdminUsuariosApp = lazy(() => import('./pages/admin/AdminUsuariosApp'));
 
@@ -186,7 +213,8 @@ const CuentaLayout = lazy(() => import('./pages/CuentaLayout'));
 const PerfilPage = lazy(() => import('./pages/cuenta/PerfilPage'));
 const CuentaPedidosPage = lazy(() => import('./pages/cuenta/CuentaPedidosPage'));
 const CuentaCompraDetallePage = lazy(() => import('./pages/cuenta/CuentaCompraDetallePage'));
-// Rastreo del pedido por fases de producción del ERP (tab al lado de "Mis Compras").
+
+// Rastreo del pedido por fases de producción del ERP (tab al lado de "Mis Pedidos").
 const CuentaRastreoPage = lazy(() => import('./pages/cuenta/CuentaRastreoPage'));
 const MisCreacionesPage = lazy(() => import('./pages/cuenta/MisCreacionesPage'));
 const CuentaReferidosPage = lazy(() => import('./pages/cuenta/CuentaReferidosPage'));
@@ -215,7 +243,7 @@ const queryClient = new QueryClient({
 const GlobalLayout = ({ children }) => {
   const location = useLocation();
   const isIndependentRoute = location.pathname.startsWith('/regalos-con-amor');
-  
+
   // Activar Heatmap Tracker globalmente
   useHeatmapTracker(true, 10); // Batch de 10 clics
 
@@ -239,11 +267,14 @@ const GlobalLayout = ({ children }) => {
       <AdminBar />
       <VisualEditorPanel />
       <Header />
+
       <main id="main-content-area">
         {children}
       </main>
+
       <Footer />
       <BottomNav />
+
       <div className="floating-action-stack">
         <WhatsAppButton />
         <KapiPet />
@@ -251,6 +282,7 @@ const GlobalLayout = ({ children }) => {
       </div>
 
       <FirebaseWarning />
+
       {/* Popup discreto de sugerencia de idioma (se muestra una sola vez). */}
       <LanguagePopup />
     </div>
@@ -260,200 +292,223 @@ const GlobalLayout = ({ children }) => {
 function App() {
   return (
     <AppErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <CustomFontsInjector />
-      {/* Prefetch silencioso en background cuando el navegador está libre */}
-      <AppPrefetcher />
-      <ToastProvider>
-        <ThemeProvider>
-        <LanguageProvider>
-        <AuthProvider>
-          <WishlistProvider>
-            <VisualEditorProvider>
-              <CartProvider>
-                <LayoutProvider>
-                  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                  <DeepLinkHandler />
-                <GlobalLayout>
-                  <ErrorBoundary>
-                    <Suspense fallback={<PageLoading />}>
-                      <Routes>
-                        {/* Tienda abierta para todos */}
-                        <Route path="/" element={<TiendaPage />} />
-                        {/* /tienda usa el MISMO catálogo escalable que la home (TiendaPage deriva pageId='tienda'
-                            de la URL y monta el módulo sidebar_catalog con todos los filtros). Antes usaba la
-                            LegacyTiendaPage (solo categoría); unificado el 2026-06-25. */}
-                        <Route path="/tienda" element={<TiendaPage />} />
-                        <Route path="/encuesta-suscripcion" element={
-                          <Suspense fallback={<PageLoading />}>
-                            <SubscriptionSurveyPage />
-                          </Suspense>
-                        } />
-                        <Route path="/suscripciones" element={
-                          <Suspense fallback={<PageLoading />}>
-                            <SubscriptionLandingPage />
-                          </Suspense>
-                        } />
-                        <Route path="/producto/:id" element={<ProductPage />} />
-                        <Route path="/personalizar" element={<PersonalizarPage />} />
-                        <Route path="/editor/:id" element={<EditorPage />} />
-                        <Route path="/carrito" element={<CartPage />} />
-                        <Route path="/checkout" element={<CheckoutPage />} />
-                        <Route path="/wishlist/:userCode" element={<WishlistPublicPage />} />
-                        <Route path="/regalar/:referralCode" element={<GiftRegistryPage />} />
-                        <Route path="/app" element={<AppRedirect />} />
-                        <Route path="/descargar" element={<AppRedirect />} />
-                        <Route path="/pago-rapido/:id" element={<PagoRapidoPage />} />
+      <QueryClientProvider client={queryClient}>
+        <CustomFontsInjector />
 
-                        <Route path="/pedidos" element={<Navigate to="/cuenta/pedidos" replace />} />
+        {/* Prefetch silencioso en background cuando el navegador está libre */}
+        <AppPrefetcher />
 
-                        <Route path="/cuenta" element={<CuentaLayout />}>
-                          <Route index element={<Navigate to="/cuenta/pedidos" replace />} />
-                          <Route path="perfil" element={<PerfilPage />} />
-                          <Route path="pedidos" element={<CuentaPedidosPage />} />
-                          <Route path="pedidos/:id" element={<CuentaCompraDetallePage />} />
-                          <Route path="rastreo" element={<CuentaRastreoPage />} />
-                          <Route path="creaciones" element={<MisCreacionesPage />} />
-                          <Route path="referidos" element={<CuentaReferidosPage />} />
-                          <Route path="fechas-importantes" element={<CuentaFechasImportantesPage />} />
-                          <Route path="misiones" element={<MisionesPage />} />
-                          <Route path="catalogo" element={<CatalogReward />} />
-                          <Route path="wishlist" element={<WishlistPrivatePage />} />
-                        </Route>
+        <ToastProvider>
+          <ThemeProvider>
+            <LanguageProvider>
+              <AuthProvider>
+                <WishlistProvider>
+                  <VisualEditorProvider>
+                    <CartProvider>
+                      <LayoutProvider>
+                        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                          <DeepLinkHandler />
 
-                        <Route path="/admin" element={<AdminRoute />}>
-                          <Route element={<AdminLayout />}>
-                            <Route index element={<AdminDashboard />} />
-                            <Route path="dashboard" element={<AdminDashboardAnalytics />} />
-                            <Route path="dashboard/heatmap" element={<DashHeatmap />} />
-                            <Route path="dashboard/productos" element={<DashProductos />} />
-                            <Route path="dashboard/origen" element={<DashOrigen />} />
-                            <Route path="dashboard/paginas" element={<DashPaginas />} />
-                            <Route path="dashboard/categorias" element={<DashCategorias />} />
-                            <Route path="dashboard/uso" element={<DashUso />} />
-                            <Route path="dashboard/recepcion" element={<DashRecepcion />} />
-                            <Route path="design" element={<DesignSystemPage />} />
-                            <Route path="productos" element={<AdminProductos />} />
-                            <Route path="inventario" element={<AdminInventario />} />
-                            <Route path="mockups" element={<AdminMockups />} />
-                            <Route path="productos/nuevo" element={<AdminProductoFormV2 />} />
-                            <Route path="productos/:id" element={<AdminProductoFormV2 />} />
-                            <Route path="categorias" element={<AdminCategorias />} />
-                            <Route path="colecciones" element={<AdminColecciones />} />
-                            <Route path="nichos" element={<AdminNichos />} />
-                            <Route path="vendedores" element={<AdminVendors />} />
-                            <Route path="recompensas" element={<AdminRecompensas />} />
-                            <Route path="envios" element={<AdminEnviosZonas />} />
-                            <Route path="payouts" element={<AdminPayouts />} />
-                            <Route path="blueprints" element={<AdminBlueprints />} />
-                            <Route path="flash-offers" element={<AdminFlashOffers />} />
+                          <GlobalLayout>
+                            <ErrorBoundary>
+                              <Suspense fallback={<PageLoading />}>
+                                <Routes>
+                                  {/* Tienda abierta para todos */}
+                                  <Route path="/" element={<TiendaPage />} />
 
-                            <Route path="whatsapp" element={<AdminWhatsApp />} />
-                            <Route path="referidos" element={<AdminReferidos />} />
-                            <Route path="pagos" element={<AdminPagos />} />
-                            <Route path="generador-pagos" element={<AdminGeneradorPagos />} />
-                            {/* Gestión de Pagos: módulo unificado (config + generar + historial). */}
-                            <Route path="gestion-pagos" element={<AdminGestionPagos />} />
-                            {/* Usuarios de la App: uso de la app por usuario. */}
-                            <Route path="usuarios-app" element={<AdminUsuariosApp />} />
-                            <Route path="libro-reclamaciones" element={<AdminLibroReclamaciones />} />
-                            <Route path="retos" element={<AdminRetos />} />
-                            <Route path="sorteos" element={<AdminSorteos />} />
-                            <Route path="sorteos/:id" element={<AdminSorteoDetalle />} />
-                            {/* Sorteo por suscripción (auto-débito): campañas + detalle. */}
-                            <Route path="sorteos-suscripcion" element={<AdminSuscripcionSorteos />} />
-                            <Route path="sorteos-suscripcion/:id" element={<AdminSuscripcionDetalle />} />
-                            {/* Enlaces útiles (constructor tipo Linktree): lista + editor. */}
-                            <Route path="enlaces" element={<AdminEnlaces />} />
-                            <Route path="enlaces/:id" element={<AdminEnlaceEditor />} />
-                            <Route path="destacados" element={<AdminDestacados />} />
-                            <Route path="zonas" element={<Navigate to="/admin" replace />} />
-                            <Route path="cliparts" element={<AdminCliparts />} />
-                            <Route path="mascota" element={<AdminMascota />} />
-                            <Route path="crear-cuentas-pedidos" element={<AdminCrearCuentasPedidos />} />
-                            <Route path="usuarios-analytics" element={<AdminUsuariosAnalyticsPage />} />
-                            <Route path="usuarios-comportamiento" element={<AdminUsuariosComportamiento />} />
-                            <Route path="wordle" element={<AdminWordlePage />} />
-                            <Route path="notificaciones" element={<AdminNotifications />} />
-                            <Route path="marcas" element={<AdminMarcas />} />
-                            <Route path="elementos-diseno" element={<AdminElementosDiseno />} />
-                            <Route path="elementos-diseno/:elementSlug" element={<AdminElementoDisenoPage />} />
-                            <Route path="landing-pages" element={<AdminLandingPages />} />
-                            <Route path="temas" element={<AdminThemes />} />
-                            <Route path="store-editor" element={<AdminStoreEditor />} />
-                            <Route path="ruleta" element={<AdminRuletaPage />} />
-                            <Route path="backups" element={<AdminBackups />} />
-                            <Route path="configuracion" element={<AdminConfiguracion />} />
-                            <Route path="encuestas" element={<AdminEncuestas />} />
-                            <Route path="fechas-importantes" element={<AdminFechasImportantesPage />} />
-                          </Route>
-                        </Route>
+                                  {/* /tienda usa el MISMO catálogo escalable que la home (TiendaPage deriva pageId='tienda'
+                                      de la URL y monta el módulo sidebar_catalog con todos los filtros). Antes usaba la
+                                      LegacyTiendaPage (solo categoría); unificado el 2026-06-25. */}
+                                  <Route path="/tienda" element={<TiendaPage />} />
 
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/registro" element={<RegisterPage />} />
-                        <Route path="/completar-perfil" element={<CompleteProfilePage />} />
-                        <Route path="/palabra-del-dia" element={<WordlePage />} />
-                        <Route path="/minijuegos" element={<MinijuegosPage />} />
-                        <Route path="/ruleta" element={<RuletaPage />} />
-                        <Route path="/ball-sort" element={<BallSortPage />} />
-                        <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
-                        <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
-                        <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
-                        <Route path="/libro-de-reclamaciones" element={<LibroReclamacionesPage />} />
-                        <Route path="/regalos-con-amor" element={<NuevosUsuariosPage />} />
-                        <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
-                        <Route path="/regalo/:orderId" element={<GiftExperiencePage />} />
-                        
-                        {/* Mussa: la ruta hardcodeada se eliminó. Ahora /MUSSA (y /mussa,
-                            slug case-insensitive) cae en el catch-all /:slug -> DynamicLandingPage
-                            y resuelve la landingPage 'MUSSA' como página de marca editable. */}
-                        <Route path="/regalos-catas" element={<RegalosCatasPage />} />
+                                  <Route
+                                    path="/encuesta-suscripcion"
+                                    element={
+                                      <Suspense fallback={<PageLoading />}>
+                                        <SubscriptionSurveyPage />
+                                      </Suspense>
+                                    }
+                                  />
 
-                        {/* Fase 1: búsqueda con facetas y páginas de nicho (multi-vendor) */}
-                        <Route path="/buscar" element={<SearchPage />} />
-                        <Route path="/nicho/:slug" element={<NichePage />} />
-                        <Route path="/nichos" element={<NichesPage />} />
-                        <Route path="/vendedor" element={<VendorPanel />} />
-                        <Route path="/tienda-vendedor/:slug" element={<VendorStorefrontPage />} />
-                        <Route path="/checkout-demo" element={<CheckoutDemoPage />} />
-                        <Route path="/pago-demo/:orderId" element={<CheckoutDemoPage />} />
-                        <Route path="/ofertas" element={<OfertasFlashPage />} />
-                        <Route path="/sorteos" element={<SorteosPage />} />
-                        {/* Sorteo específico por slug (compartible desde lives). */}
-                        <Route path="/sorteos/:slug" element={<SorteosPage />} />
+                                  <Route
+                                    path="/suscripciones"
+                                    element={
+                                      <Suspense fallback={<PageLoading />}>
+                                        <SubscriptionLandingPage />
+                                      </Suspense>
+                                    }
+                                  />
 
-                        {/* Sorteo por suscripción (auto-débito Culqi/PayPal). Página
-                            pública general + campaña por slug. DEBEN ir ANTES del
-                            catch-all /:slug para no ser interceptadas por landings. */}
-                        <Route path="/suscrito-sorteo" element={<SuscripcionSorteoPage />} />
-                        <Route path="/suscrito-sorteo/:slug" element={<SuscripcionSorteoPage />} />
+                                  <Route path="/producto/:id" element={<ProductPage />} />
+                                  <Route path="/personalizar" element={<PersonalizarPage />} />
+                                  <Route path="/editor/:id" element={<EditorPage />} />
+                                  <Route path="/carrito" element={<CartPage />} />
+                                  <Route path="/checkout" element={<CheckoutPage />} />
+                                  <Route path="/wishlist/:userCode" element={<WishlistPublicPage />} />
+                                  <Route path="/regalar/:referralCode" element={<GiftRegistryPage />} />
+                                  <Route path="/app" element={<AppRedirect />} />
+                                  <Route path="/descargar" element={<AppRedirect />} />
+                                  <Route path="/pago-rapido/:id" element={<PagoRapidoPage />} />
 
-                        {/* Página pública LINK-IN-BIO (/l/:slug). DEBE ir ANTES
-                            del catch-all /:slug para no ser interceptada por las
-                            landing pages dinámicas. */}
-                        <Route path="/l/:slug" element={<LinkInBioPage />} />
+                                  <Route path="/pedidos" element={<Navigate to="/cuenta/pedidos" replace />} />
 
-                        {/* Dynamic Landing Pages Interceptor */}
-                        <Route path="/:slug" element={<DynamicLandingPage />} />
-                        
-                        <Route path="*" element={<Navigate to="/cuenta" replace />} />
-                      </Routes>
-                    </Suspense>
-                  </ErrorBoundary>
-                </GlobalLayout>
-                </Router>
-                </LayoutProvider>
-              </CartProvider>
-            </VisualEditorProvider>
-          </WishlistProvider>
-        </AuthProvider>
-        </LanguageProvider>
-        </ThemeProvider>
-      </ToastProvider>
-    </QueryClientProvider>
+                                  <Route path="/cuenta" element={<CuentaLayout />}>
+                                    <Route index element={<Navigate to="/cuenta/pedidos" replace />} />
+                                    <Route path="perfil" element={<PerfilPage />} />
+                                    <Route path="pedidos" element={<CuentaPedidosPage />} />
+                                    <Route path="pedidos/:id" element={<CuentaCompraDetallePage />} />
+                                    <Route path="rastreo" element={<CuentaRastreoPage />} />
+                                    <Route path="creaciones" element={<MisCreacionesPage />} />
+                                    <Route path="referidos" element={<CuentaReferidosPage />} />
+                                    <Route path="fechas-importantes" element={<CuentaFechasImportantesPage />} />
+                                    <Route path="misiones" element={<MisionesPage />} />
+                                    <Route path="catalogo" element={<CatalogReward />} />
+                                    <Route path="wishlist" element={<WishlistPrivatePage />} />
+                                  </Route>
+
+                                  <Route path="/admin" element={<AdminRoute />}>
+                                    <Route element={<AdminLayout />}>
+                                      <Route index element={<AdminDashboard />} />
+
+                                      <Route path="dashboard" element={<AdminDashboardAnalytics />} />
+                                      <Route path="dashboard/heatmap" element={<DashHeatmap />} />
+                                      <Route path="dashboard/productos" element={<DashProductos />} />
+                                      <Route path="dashboard/origen" element={<DashOrigen />} />
+                                      <Route path="dashboard/paginas" element={<DashPaginas />} />
+                                      <Route path="dashboard/categorias" element={<DashCategorias />} />
+                                      <Route path="dashboard/uso" element={<DashUso />} />
+                                      <Route path="dashboard/recepcion" element={<DashRecepcion />} />
+                                      <Route path="design" element={<DesignSystemPage />} />
+
+                                      <Route path="productos" element={<AdminProductos />} />
+                                      <Route path="inventario" element={<AdminInventario />} />
+                                      <Route path="mockups" element={<AdminMockups />} />
+                                      <Route path="productos/nuevo" element={<AdminProductoFormV2 />} />
+                                      <Route path="productos/:id" element={<AdminProductoFormV2 />} />
+                                      <Route path="categorias" element={<AdminCategorias />} />
+                                      <Route path="colecciones" element={<AdminColecciones />} />
+                                      <Route path="nichos" element={<AdminNichos />} />
+                                      <Route path="vendedores" element={<AdminVendors />} />
+                                      <Route path="recompensas" element={<AdminRecompensas />} />
+                                      <Route path="envios" element={<AdminEnviosZonas />} />
+                                      <Route path="payouts" element={<AdminPayouts />} />
+                                      <Route path="blueprints" element={<AdminBlueprints />} />
+                                      <Route path="flash-offers" element={<AdminFlashOffers />} />
+
+                                      <Route path="whatsapp" element={<AdminWhatsApp />} />
+                                      <Route path="referidos" element={<AdminReferidos />} />
+                                      <Route path="pagos" element={<AdminPagos />} />
+                                      <Route path="generador-pagos" element={<AdminGeneradorPagos />} />
+
+                                      {/* Gestión de Pagos: módulo unificado (config + generar + historial). */}
+                                      <Route path="gestion-pagos" element={<AdminGestionPagos />} />
+
+                                      {/* Usuarios de la App: uso de la app por usuario. */}
+                                      <Route path="usuarios-app" element={<AdminUsuariosApp />} />
+
+                                      <Route path="libro-reclamaciones" element={<AdminLibroReclamaciones />} />
+                                      <Route path="retos" element={<AdminRetos />} />
+                                      <Route path="sorteos" element={<AdminSorteos />} />
+                                      <Route path="sorteos/:id" element={<AdminSorteoDetalle />} />
+
+                                      {/* Sorteo por suscripción (auto-débito): campañas + detalle. */}
+                                      <Route path="sorteos-suscripcion" element={<AdminSuscripcionSorteos />} />
+                                      <Route path="sorteos-suscripcion/:id" element={<AdminSuscripcionDetalle />} />
+
+                                      {/* Enlaces útiles (constructor tipo Linktree): lista + editor. */}
+                                      <Route path="enlaces" element={<AdminEnlaces />} />
+                                      <Route path="enlaces/:id" element={<AdminEnlaceEditor />} />
+
+                                      <Route path="destacados" element={<AdminDestacados />} />
+                                      <Route path="zonas" element={<Navigate to="/admin" replace />} />
+                                      <Route path="cliparts" element={<AdminCliparts />} />
+                                      <Route path="mascota" element={<AdminMascota />} />
+                                      <Route path="crear-cuentas-pedidos" element={<AdminCrearCuentasPedidos />} />
+                                      <Route path="usuarios-analytics" element={<AdminUsuariosAnalyticsPage />} />
+                                      <Route path="usuarios-comportamiento" element={<AdminUsuariosComportamiento />} />
+                                      <Route path="wordle" element={<AdminWordlePage />} />
+                                      <Route path="notificaciones" element={<AdminNotifications />} />
+                                      <Route path="marcas" element={<AdminMarcas />} />
+                                      <Route path="elementos-diseno" element={<AdminElementosDiseno />} />
+                                      <Route path="elementos-diseno/:elementSlug" element={<AdminElementoDisenoPage />} />
+                                      <Route path="landing-pages" element={<AdminLandingPages />} />
+                                      <Route path="temas" element={<AdminThemes />} />
+                                      <Route path="store-editor" element={<AdminStoreEditor />} />
+                                      <Route path="ruleta" element={<AdminRuletaPage />} />
+                                      <Route path="backups" element={<AdminBackups />} />
+                                      <Route path="configuracion" element={<AdminConfiguracion />} />
+                                      <Route path="encuestas" element={<AdminEncuestas />} />
+                                      <Route path="fechas-importantes" element={<AdminFechasImportantesPage />} />
+                                    </Route>
+                                  </Route>
+
+                                  <Route path="/login" element={<LoginPage />} />
+                                  <Route path="/registro" element={<RegisterPage />} />
+                                  <Route path="/completar-perfil" element={<CompleteProfilePage />} />
+                                  <Route path="/palabra-del-dia" element={<WordlePage />} />
+                                  <Route path="/minijuegos" element={<MinijuegosPage />} />
+                                  <Route path="/ruleta" element={<RuletaPage />} />
+                                  <Route path="/ball-sort" element={<BallSortPage />} />
+                                  <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
+                                  <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
+                                  <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
+                                  <Route path="/libro-de-reclamaciones" element={<LibroReclamacionesPage />} />
+                                  <Route path="/regalos-con-amor" element={<NuevosUsuariosPage />} />
+                                  <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
+                                  <Route path="/regalo/:orderId" element={<GiftExperiencePage />} />
+
+                                  {/* Mussa: la ruta hardcodeada se eliminó. Ahora /MUSSA (y /mussa,
+                                      slug case-insensitive) cae en el catch-all /:slug -> DynamicLandingPage
+                                      y resuelve la landingPage 'MUSSA' como página de marca editable. */}
+                                  <Route path="/regalos-catas" element={<RegalosCatasPage />} />
+
+                                  {/* Fase 1: búsqueda con facetas y páginas de nicho (multi-vendor) */}
+                                  <Route path="/buscar" element={<SearchPage />} />
+                                  <Route path="/nicho/:slug" element={<NichePage />} />
+                                  <Route path="/nichos" element={<NichesPage />} />
+                                  <Route path="/vendedor" element={<VendorPanel />} />
+                                  <Route path="/tienda-vendedor/:slug" element={<VendorStorefrontPage />} />
+                                  <Route path="/checkout-demo" element={<CheckoutDemoPage />} />
+                                  <Route path="/pago-demo/:orderId" element={<CheckoutDemoPage />} />
+                                  <Route path="/ofertas" element={<OfertasFlashPage />} />
+                                  <Route path="/sorteos" element={<SorteosPage />} />
+
+                                  {/* Sorteo específico por slug (compartible desde lives). */}
+                                  <Route path="/sorteos/:slug" element={<SorteosPage />} />
+
+                                  {/* Sorteo por suscripción (auto-débito Culqi/PayPal). Página
+                                      pública general + campaña por slug. DEBEN ir ANTES del
+                                      catch-all /:slug para no ser interceptadas por landings. */}
+                                  <Route path="/suscrito-sorteo" element={<SuscripcionSorteoPage />} />
+                                  <Route path="/suscrito-sorteo/:slug" element={<SuscripcionSorteoPage />} />
+
+                                  {/* Página pública LINK-IN-BIO (/l/:slug). DEBE ir ANTES
+                                      del catch-all /:slug para no ser interceptada por las
+                                      landing pages dinámicas. */}
+                                  <Route path="/l/:slug" element={<LinkInBioPage />} />
+
+                                  {/* Dynamic Landing Pages Interceptor */}
+                                  <Route path="/:slug" element={<DynamicLandingPage />} />
+
+                                  <Route path="*" element={<Navigate to="/cuenta" replace />} />
+                                </Routes>
+                              </Suspense>
+                            </ErrorBoundary>
+                          </GlobalLayout>
+                        </Router>
+                      </LayoutProvider>
+                    </CartProvider>
+                  </VisualEditorProvider>
+                </WishlistProvider>
+              </AuthProvider>
+            </LanguageProvider>
+          </ThemeProvider>
+        </ToastProvider>
+      </QueryClientProvider>
     </AppErrorBoundary>
   );
 }
 
 export default App;
+
 // Force dev server update

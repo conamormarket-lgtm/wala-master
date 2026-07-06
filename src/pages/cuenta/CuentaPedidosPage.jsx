@@ -7,7 +7,7 @@ import { useProducts } from '../../hooks/useProducts';
 // SOLO estética; no se altera la búsqueda de pedidos por DNI ni el flujo de datos
 // del hook, ni se toca ninguna lógica de cobro/totales.
 import { GlassCard, GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
-// Utilidades puras de "estado de la compra" (estilo MercadoLibre).
+// Utilidades puras de "estado del pedido" (estilo MercadoLibre).
 import {
   derivarEstadoCompra,
   getProductosPedido,
@@ -26,7 +26,12 @@ import glass from './CuentaPedidosPage.module.css';
  */
 function thumbDeProductoCatalogo(producto) {
   if (!producto || typeof producto !== 'object') return '';
-  const url = producto.mainImage || (Array.isArray(producto.images) ? producto.images[0] : '') || '';
+
+  const url =
+    producto.mainImage ||
+    (Array.isArray(producto.images) ? producto.images[0] : '') ||
+    '';
+
   return url ? toThumbnailImageUrl(url) : '';
 }
 
@@ -51,24 +56,35 @@ function resumirPedido(pedido, indiceCatalogo) {
   // Nombre + miniatura del primer producto (cruzando con el catálogo).
   let miniatura = '';
   let nombrePrincipal = '';
+
   if (lineas.length > 0) {
     const primera = lineas[0];
-    const prodCat = primera?.productoId != null ? indiceCatalogo.get(String(primera.productoId)) : null;
+    const prodCat =
+      primera?.productoId != null
+        ? indiceCatalogo.get(String(primera.productoId))
+        : null;
+
     miniatura = thumbDeProductoCatalogo(prodCat);
+
     // Fallback NUEVO: las líneas de pedidos nuevos guardan la imagen del
     // producto al momento de comprar (urlImagen). Si el catálogo no resolvió
     // (p.ej. borrado físico legado), usamos esa foto congelada.
     if (!miniatura && primera?.urlImagen) {
       miniatura = toThumbnailImageUrl(primera.urlImagen);
     }
+
     nombrePrincipal = primera?.producto || prodCat?.name || '';
   }
 
   // Fallbacks de miniatura: imagen de diseño del propio pedido (el pedido
   // normalizado suele NO traer productos pero sí imageURLs) -> placeholder.
   if (!miniatura) {
-    const diseno = Array.isArray(fuente?.imageURLs) ? fuente.imageURLs[0]
-      : (Array.isArray(pedido?.imageURLs) ? pedido.imageURLs[0] : '');
+    const diseno = Array.isArray(fuente?.imageURLs)
+      ? fuente.imageURLs[0]
+      : Array.isArray(pedido?.imageURLs)
+        ? pedido.imageURLs[0]
+        : '';
+
     miniatura = diseno ? toThumbnailImageUrl(diseno) : PLACEHOLDER_IMG;
   }
 
@@ -76,26 +92,34 @@ function resumirPedido(pedido, indiceCatalogo) {
   // Si no hay líneas (pedido normalizado sin productos), usamos la marca como
   // pista legible o un texto neutro.
   let textoProductos;
+
   if (lineas.length > 0) {
     const total = lineas.length;
     const cant = lineas[0]?.cantidad;
     const base = nombrePrincipal || 'Producto';
     const conCant = cant != null ? `${base} (x${cant})` : base;
+
     textoProductos = total > 1 ? `${conCant} y ${total - 1} más` : conCant;
   } else if (fuente?.marca || pedido?.marca) {
     textoProductos = String(fuente?.marca || pedido?.marca);
   } else {
-    textoProductos = 'Tu compra Walá';
+    textoProductos = 'Tu pedido Walá';
   }
 
   // Total: respeta el dato tal cual (NO se recalcula nada de cobro/totales).
   const totalCrudo = fuente?.montoTotal ?? pedido?.montoTotal ?? pedido?.total;
   const totalNum = totalCrudo != null ? Number(totalCrudo) : NaN;
+
   const totalTexto = !Number.isNaN(totalNum)
     ? `S/ ${totalNum.toFixed(2)}`
-    : (totalCrudo != null ? `S/ ${totalCrudo}` : null);
+    : totalCrudo != null
+      ? `S/ ${totalCrudo}`
+      : null;
 
-  const fecha = pedido?.fechaCompra && pedido.fechaCompra !== 'N/A' ? pedido.fechaCompra : null;
+  const fecha =
+    pedido?.fechaCompra && pedido.fechaCompra !== 'N/A'
+      ? pedido.fechaCompra
+      : null;
 
   return {
     id: pedido?.id,
@@ -109,20 +133,25 @@ function resumirPedido(pedido, indiceCatalogo) {
 }
 
 /**
- * Contenido de "Mis Compras" dentro de Mi cuenta (estilo MercadoLibre).
- * Carga pedidos por DNI del perfil (clienteNumeroDocumento en ERP) y los
- * enriquece con el catálogo (useProducts) para mostrar imagen y nombre.
+ * Contenido de "Mis Pedidos" dentro de Mi cuenta.
+ * Carga pedidos por DNI del perfil (clienteNumeroDocumento en ERP) y también
+ * por buyerUid desde el espejo wala_pedidos. Luego los enriquece con el catálogo
+ * (useProducts) para mostrar imagen y nombre.
  */
 const CuentaPedidosPage = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
+
   // Navegación programática para que TODA la tarjeta sea clickeable (no solo el
-  // botón "Ver compra"). No tocamos carrito/precios/cobro.
+  // botón "Ver pedido"). No tocamos carrito/precios/cobro.
   const navigate = useNavigate();
+
   const hasDni = !!(userProfile?.dni && String(userProfile.dni).trim());
   const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
+
   // UID del usuario autenticado: se hila al hook para recuperar también los
   // pedidos del espejo (wala_pedidos) por buyerUid, no solo por DNI.
   const uid = user?.uid || undefined;
+
   const { loading, error, data, buscar } = usePedidos(dni, uid);
   const [hasFetched, setHasFetched] = useState(false);
 
@@ -134,7 +163,9 @@ const CuentaPedidosPage = () => {
 
   useEffect(() => {
     if (!user || (!hasDni && !authLoading) || hasFetched) return;
+
     setHasFetched(true);
+
     // Disparar búsqueda sin await (lo maneja el hook, que a su vez usa su propia caché).
     // Pasamos el uid para que la lectura incluya la copia espejo por buyerUid.
     buscar(dni, uid);
@@ -143,20 +174,24 @@ const CuentaPedidosPage = () => {
   // Índice productoId -> producto del catálogo (memoizado para no recorrerlo por pedido).
   const indiceCatalogo = useMemo(() => {
     const idx = new Map();
+
     if (Array.isArray(productos)) {
       for (const p of productos) {
-        if (p && p.id != null) idx.set(String(p.id), p);
+        if (p && p.id != null) {
+          idx.set(String(p.id), p);
+        }
       }
     }
+
     return idx;
   }, [productos]);
 
-  // Si todavía estamos validando al usuario con Firebase, o si falta extraer el perfil local
+  // Si todavía estamos validando al usuario con Firebase, o si falta extraer el perfil local.
   if (authLoading) {
     return (
       <div className={styles.content}>
         <div className={styles.skeletonList}>
-          {[1, 2, 3].map(n => (
+          {[1, 2, 3].map((n) => (
             <div key={n} className={styles.skeletonOrder} />
           ))}
         </div>
@@ -170,19 +205,22 @@ const CuentaPedidosPage = () => {
       <div className={styles.content}>
         <Reveal className={`${styles.profileCard} ${glass.card}`}>
           <h2>Completa tu perfil</h2>
-          <p>Para ver tus compras necesitamos tu DNI o CE en tu perfil.</p>
-          <GlassButton as={Link} to="/completar-perfil" variant="primary">Completar perfil</GlassButton>
+          <p>Para ver tus pedidos necesitamos tu DNI o CE en tu perfil.</p>
+          <GlassButton as={Link} to="/completar-perfil" variant="primary">
+            Completar perfil
+          </GlassButton>
         </Reveal>
       </div>
     );
   }
 
-  // Para evitar "flash de spinner" si sabemos que vienen datos locales, priorizamos si 'data' ya tiene algun valor (por cache)
+  // Para evitar "flash de spinner" si sabemos que vienen datos locales,
+  // priorizamos si 'data' ya tiene algún valor (por caché).
   if (loading && !data) {
     return (
       <div className={styles.content}>
         <div className={styles.skeletonList}>
-          {[1, 2, 3].map(n => (
+          {[1, 2, 3].map((n) => (
             <div key={n} className={styles.skeletonOrder} />
           ))}
         </div>
@@ -198,20 +236,23 @@ const CuentaPedidosPage = () => {
     return (
       <div className={styles.content}>
         <Reveal className={glass.header}>
-          <h2 className={glass.headerTitle}>Mis compras</h2>
+          <h2 className={glass.headerTitle}>Mis pedidos</h2>
           <p className={glass.headerSub}>
-            {pedidos.length === 1 ? '1 compra' : `${pedidos.length} compras`} en tu cuenta
+            {pedidos.length === 1 ? '1 pedido' : `${pedidos.length} pedidos`} en tu cuenta
           </p>
         </Reveal>
 
         <Stagger as="ul" className={glass.grid}>
           {pedidos.map((pedido) => {
             const r = resumirPedido(pedido, indiceCatalogo);
-            // Destino del detalle de la compra (mismo que el botón "Ver compra").
+
+            // Destino del detalle del pedido (mismo que el botón "Ver pedido").
             const destino = `/cuenta/pedidos/${r.id}`;
+
             // Toda la tarjeta navega al detalle. El <Link> interno sigue funcionando
             // (no anidamos <a>: el card usa onClick, no as={Link}).
             const irADetalle = () => navigate(destino);
+
             const onCardKeyDown = (e) => {
               // Enter o Espacio activan la "tarjeta-enlace" (accesibilidad).
               if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
@@ -219,6 +260,7 @@ const CuentaPedidosPage = () => {
                 irADetalle();
               }
             };
+
             return (
               <StaggerItem as="li" key={r.id} className={glass.gridItem}>
                 <GlassCard
@@ -231,7 +273,7 @@ const CuentaPedidosPage = () => {
                   bodyClassName={glass.compraBody}
                   role="link"
                   tabIndex={0}
-                  aria-label={`Ver compra: ${r.textoProductos}`}
+                  aria-label={`Ver pedido: ${r.textoProductos}`}
                   onClick={irADetalle}
                   onKeyDown={onCardKeyDown}
                 >
@@ -246,7 +288,11 @@ const CuentaPedidosPage = () => {
                         borderColor: `${r.estado.color}33`,     // ~20% de opacidad
                       }}
                     >
-                      <span className={glass.estadoDot} style={{ backgroundColor: r.estado.color }} aria-hidden="true" />
+                      <span
+                        className={glass.estadoDot}
+                        style={{ backgroundColor: r.estado.color }}
+                        aria-hidden="true"
+                      />
                       {r.estado.label}
                     </span>
                   </div>
@@ -272,6 +318,7 @@ const CuentaPedidosPage = () => {
                       <p className={glass.productoNombre} title={r.textoProductos}>
                         {r.textoProductos}
                       </p>
+
                       <p className={glass.paymentLabel}>{r.estado.paymentLabel}</p>
 
                       <dl className={glass.metaList}>
@@ -281,23 +328,29 @@ const CuentaPedidosPage = () => {
                             <dd className={glass.metaValue}>{r.fecha}</dd>
                           </div>
                         )}
+
                         {r.totalTexto && (
                           <div className={glass.metaItem}>
                             <dt className={glass.metaLabel}>Total</dt>
-                            <dd className={`${glass.metaValue} ${glass.total}`}>{r.totalTexto}</dd>
+                            <dd className={`${glass.metaValue} ${glass.total}`}>
+                              {r.totalTexto}
+                            </dd>
                           </div>
                         )}
+
                         {r.codigo && (
                           <div className={glass.metaItem}>
                             <dt className={glass.metaLabel}>Código</dt>
-                            <dd className={`${glass.metaValue} ${glass.codigo}`}>{r.codigo}</dd>
+                            <dd className={`${glass.metaValue} ${glass.codigo}`}>
+                              {r.codigo}
+                            </dd>
                           </div>
                         )}
                       </dl>
                     </div>
                   </div>
 
-                  {/* Acciones: ver la compra + rastrear su fase de producción. */}
+                  {/* Acciones: ver el pedido + rastrear su fase de producción. */}
                   <div className={glass.compraActions}>
                     <GlassButton
                       as={Link}
@@ -305,9 +358,11 @@ const CuentaPedidosPage = () => {
                       variant="primary"
                       size="sm"
                       fullWidth
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      Ver compra
+                      Ver pedido
                     </GlassButton>
+
                     <GlassButton
                       as={Link}
                       to="/cuenta/rastreo"
@@ -332,9 +387,11 @@ const CuentaPedidosPage = () => {
     return (
       <div className={styles.content}>
         <Reveal className={`${styles.profileCard} ${glass.card}`}>
-          <h2>No hay compras</h2>
-          <p>Aún no tienes compras asociadas a tu cuenta. Cuando hagas una compra, aparecerá aquí.</p>
-          <GlassButton as={Link} to="/tienda" variant="primary">Ir a la tienda</GlassButton>
+          <h2>No hay pedidos</h2>
+          <p>Aún no tienes pedidos asociados a tu cuenta. Cuando hagas un pedido, aparecerá aquí.</p>
+          <GlassButton as={Link} to="/tienda" variant="primary">
+            Ir a la tienda
+          </GlassButton>
         </Reveal>
       </div>
     );
@@ -344,7 +401,7 @@ const CuentaPedidosPage = () => {
     return (
       <div className={styles.content}>
         <Reveal className={`${styles.profileCard} ${glass.card}`}>
-          <h2>Error al cargar compras</h2>
+          <h2>Error al cargar pedidos</h2>
           <p className={styles.errorText}>{error}</p>
           <GlassButton variant="primary" onClick={() => setHasFetched(false)}>
             Reintentar
@@ -357,7 +414,7 @@ const CuentaPedidosPage = () => {
   return (
     <div className={styles.content}>
       <div className={styles.skeletonList}>
-        {[1, 2].map(n => (
+        {[1, 2].map((n) => (
           <div key={n} className={styles.skeletonOrder} />
         ))}
       </div>
