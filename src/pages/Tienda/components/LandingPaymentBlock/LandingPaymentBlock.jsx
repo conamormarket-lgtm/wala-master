@@ -93,10 +93,18 @@ const LandingPaymentBlock = ({ config = {} }) => {
   const [metodoPagado, setMetodoPagado] = useState(null);
   const [numeroPedidoOk, setNumeroPedidoOk] = useState('');
   const [paymentMode, setPaymentMode] = useState('full'); // 'full' = pago completo · 'adelanto' = separa con S/10
+  const [cardOpen, setCardOpen] = useState(false); // "Tarjeta o Yape" desplegado (contiene completo/adelanto)
+  const [acabadoSel, setAcabadoSel] = useState('');
+  const [acabadoImg, setAcabadoImg] = useState(''); // imagen del reloj elegido en el carrusel
+  const [flashHint, setFlashHint] = useState(''); // aviso flotante "Completa tus datos…"
+  const flashHintTimer = useRef(null);
+  const [showExit, setShowExit] = useState(false); // popup de salida (exit-intent) // reloj/acabado elegido en el carrusel (label real, no "Matador")
   const paymentPedidoRef = useRef(null);
 
   const showPriceBlock = config.showPriceBlock !== false;
-  const hideHeader = config.hideCheckoutHeader === true;
+  // Si ya hay un título de sección (config.title), ocultamos el header interno de
+  // la tarjeta para NO duplicar "Finaliza tu compra".
+  const hideHeader = config.hideCheckoutHeader === true || Boolean((config.title || '').trim());
   const productId = config.productId || '';
   const peruOnly = config.peruOnly === true || config.landingSlug === 'reloj-matador-pro-2026';
   const showCulqi = config.showCulqi !== false;
@@ -121,6 +129,11 @@ const LandingPaymentBlock = ({ config = {} }) => {
   const chargeAmount = effectiveMode === 'adelanto' ? Math.min(adelantoMonto, montoPEN) : montoPEN;
   const saldoPendiente = effectiveMode === 'adelanto' ? Math.max(0, montoPEN - chargeAmount) : 0;
   const isAdelanto = effectiveMode === 'adelanto';
+
+  // ── Comprar por WhatsApp ────────────────────────────────────────────────
+  // Número desde el config de la landing (config.whatsappNumber). Solo dígitos.
+  const whatsappNumber = String(config.whatsappNumber || '').replace(/[^\d]/g, '');
+  const showWhatsApp = whatsappNumber.length >= 8;
   const mascotPhrases = useMemo(() => {
     if (Array.isArray(config.mascotPhrases) && config.mascotPhrases.length > 0) {
       const cleaned = config.mascotPhrases.map((s) => String(s || '').trim()).filter(Boolean);
@@ -145,6 +158,29 @@ const LandingPaymentBlock = ({ config = {} }) => {
     if (!peruOnly) return;
     setCustomer((prev) => (prev.country === 'PE' ? prev : { ...prev, country: 'PE' }));
   }, [peruOnly]);
+
+  // Reloj elegido en el carrusel (ConversionFold). Se lee de localStorage y se
+  // mantiene en vivo con el evento 'landing-acabado-change' para mostrar el
+  // modelo real en "TU PEDIDO" (no el genérico "Matador").
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = localStorage.getItem(LANDING_ACABADO_KEY);
+        if (raw) {
+          const p = JSON.parse(raw) || {};
+          setAcabadoSel(p.label || '');
+          setAcabadoImg(p.imageUrl || '');
+        }
+      } catch { /* ignore */ }
+    };
+    read();
+    const onChange = (e) => {
+      setAcabadoSel(e?.detail?.label || '');
+      setAcabadoImg(e?.detail?.imageUrl || '');
+    };
+    window.addEventListener('landing-acabado-change', onChange);
+    return () => window.removeEventListener('landing-acabado-change', onChange);
+  }, []);
 
   useEffect(() => {
     if (!user && !userProfile) return;
@@ -192,6 +228,16 @@ const LandingPaymentBlock = ({ config = {} }) => {
     setCustomer((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Documento: si es DNI, solo números y máx 8 dígitos. CE/Pasaporte: libre.
+  const updateDni = (value) => {
+    setCustomer((prev) => {
+      const next = prev.docType === 'DNI'
+        ? String(value).replace(/\D/g, '').slice(0, 8)
+        : value;
+      return { ...prev, dni: next };
+    });
+  };
+
   // ── Cascada de ubicación (departamento → provincia → distrito) ────────────
   const provinciasOpts = getProvincias(customer.departamento);
   const distritosOpts = getDistritos(customer.departamento, customer.provincia);
@@ -217,8 +263,18 @@ const LandingPaymentBlock = ({ config = {} }) => {
     const address = String(customer.address || '').trim();
     if (name.length < 3) return 'Ingresa tu nombre completo.';
     if (!customer.country) return 'Selecciona tu país.';
-    if (dni.length < 3) return 'Ingresa un documento válido.';
-    if (phone.length < 6) return 'Ingresa un teléfono válido.';
+    if (customer.docType === 'DNI') {
+      if (!/^\d{8}$/.test(dni)) return 'El DNI debe tener 8 dígitos.';
+    } else if (dni.length < 3) {
+      return 'Ingresa un documento válido.';
+    }
+    // Teléfono peruano (+51): exactamente 9 dígitos. Otros países: mínimo 6.
+    const esTelPeru = String(phoneFull || '').startsWith('+51') || isPeru(customer.country);
+    if (esTelPeru) {
+      if (!/^\d{9}$/.test(phone)) return 'El teléfono peruano debe tener 9 dígitos.';
+    } else if (phone.length < 6) {
+      return 'Ingresa un teléfono válido.';
+    }
     if (!email || !email.includes('@')) return 'Ingresa un correo válido.';
     if (!departamento) return 'Selecciona tu departamento.';
     if (!provincia) return 'Selecciona tu provincia.';
@@ -387,6 +443,96 @@ const LandingPaymentBlock = ({ config = {} }) => {
     document.documentElement.classList.remove('landing-has-sticky');
   };
 
+  // Aviso flotante temporal + scroll al formulario (cuando faltan datos).
+  const showFlashHint = (msg = 'Completa tus datos para continuar') => {
+    setFlashHint(msg);
+    if (flashHintTimer.current) clearTimeout(flashHintTimer.current);
+    flashHintTimer.current = setTimeout(() => setFlashHint(''), 3500);
+    const el = document.getElementById(anchorId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  useEffect(() => () => { if (flashHintTimer.current) clearTimeout(flashHintTimer.current); }, []);
+
+  // ── Exit-intent: al retroceder (botón atrás) o intentar salir, mostrar el popup
+  // "¿Ya te vas, K-CHERO?". Solo una vez por sesión y solo si hay WhatsApp.
+  const EXIT_KEY = 'landing_exit_shown';
+  const triggerExit = () => {
+    try {
+      if (sessionStorage.getItem(EXIT_KEY)) return false;
+      sessionStorage.setItem(EXIT_KEY, '1');
+    } catch { /* ignore */ }
+    setShowExit(true);
+    return true;
+  };
+  useEffect(() => {
+    if (!showWhatsApp || pagoCompletado) return undefined;
+    let alreadyShown = false;
+    try { alreadyShown = !!sessionStorage.getItem(EXIT_KEY); } catch { /* ignore */ }
+    if (alreadyShown) return undefined;
+
+    // 1) Botón ATRÁS / retroceder: metemos un estado extra para interceptar el
+    //    primer "back" y mostrar el popup en vez de abandonar la página.
+    window.history.pushState({ lpExit: true }, '');
+    const onPop = () => {
+      if (triggerExit()) {
+        // re-empujamos para que el usuario se quede viendo el popup
+        window.history.pushState({ lpExit: true }, '');
+      }
+    };
+    // 2) Salida del mouse por arriba (desktop): intención de cerrar/irse.
+    const onMouseOut = (e) => {
+      if ((e.clientY || 0) <= 0) triggerExit();
+    };
+    window.addEventListener('popstate', onPop);
+    document.addEventListener('mouseout', onMouseOut);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      document.removeEventListener('mouseout', onMouseOut);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showWhatsApp, pagoCompletado]);
+
+  const handleExitWhatsApp = () => {
+    setShowExit(false);
+    handleComprarWhatsApp();
+  };
+
+  // Acción "Tarjeta o Yape": si faltan datos avisa; si no, registra y va al pago.
+  const handlePayCard = () => {
+    if (!isCustomerComplete()) { showFlashHint(); return; }
+    handleConfirmDatos();
+  };
+
+  const handleWhatsAppClick = () => {
+    if (!isCustomerComplete()) { showFlashHint(); return; }
+    handleComprarWhatsApp();
+  };
+
+  const handleComprarWhatsApp = () => {
+    if (!showWhatsApp) return;
+    // Emojis por codigo (String.fromCodePoint) para que NUNCA se corrompan.
+    const CHK = String.fromCodePoint(0x2705);   // ✅ check verde
+    const CART = String.fromCodePoint(0x1F6D2); // 🛒 carrito
+    const modelo = acabadoSel || concepto;
+    const modoPago = isAdelanto
+      ? `Adelanto S/ ${chargeAmount.toFixed(2)} (saldo S/ ${saldoPendiente.toFixed(2)} contra entrega)`
+      : `Pago completo S/ ${montoPEN.toFixed(2)}`;
+    const c = customer;
+    const lineas = [
+      `${CART} *Nuevo pedido* — quiero comprar este reloj:`,
+      `${CHK} Modelo: ${modelo}`,
+      `${CHK} Precio: S/ ${montoPEN.toFixed(2)}`,
+      `${CHK} Forma de pago: ${modoPago}`,
+    ];
+    if (String(c.customerName || '').trim()) lineas.push(`${CHK} Nombre: ${c.customerName}`);
+    if (String(c.dni || '').trim()) lineas.push(`${CHK} Documento: ${`${c.docType || ''} ${c.dni}`.trim()}`);
+    if (String(c.phone || '').trim()) lineas.push(`${CHK} Telefono: ${phoneFull || c.phone}`);
+    if (String(c.distrito || '').trim()) lineas.push(`${CHK} Envio: ${c.departamento || ''} / ${c.provincia || ''} / ${c.distrito}`);
+    if (String(c.address || '').trim()) lineas.push(`${CHK} Direccion: ${c.address}`);
+    const msg = encodeURIComponent(lineas.join('\n'));
+    window.open(`https://wa.me/${whatsappNumber}?text=${msg}`, '_blank', 'noopener');
+  };
+
   const handleStartCulqi = async () => {
     if (!paymentPedido) {
       setError('Primero completa tus datos de entrega.');
@@ -413,7 +559,10 @@ const LandingPaymentBlock = ({ config = {} }) => {
 
   const handleStickyClick = () => {
     scrollToCheckout();
-    if (checkoutStep === 'datos' && !isCustomerComplete()) return;
+    if (checkoutStep === 'datos' && !isCustomerComplete()) {
+      showFlashHint();
+      return;
+    }
     if (checkoutStep === 'datos' && isCustomerComplete()) {
       handleConfirmDatos();
     }
@@ -512,7 +661,22 @@ const LandingPaymentBlock = ({ config = {} }) => {
 
               <div className={styles.summary}>
                 <p className={styles.conceptLabel}>Tu pedido</p>
-                <p className={styles.concept}>{concepto}</p>
+                <div className={styles.productRow}>
+                  {acabadoImg && (
+                    <img
+                      className={styles.productThumb}
+                      src={acabadoImg}
+                      alt={acabadoSel || 'Reloj elegido'}
+                      loading="lazy"
+                    />
+                  )}
+                  <div className={styles.productInfo}>
+                    <p className={styles.concept}>{acabadoSel || concepto}</p>
+                    {acabadoSel && (
+                      <p className={styles.conceptHint}>Modelo elegido en el carrusel</p>
+                    )}
+                  </div>
+                </div>
                 <div className={styles.totalRow}>
                   <span className={styles.totalLabel}>Total</span>
                   <span className={styles.totalAmount}>
@@ -531,7 +695,11 @@ const LandingPaymentBlock = ({ config = {} }) => {
                 </div>
               </div>
 
-              <div className={styles.customerForm}>
+              <form
+                className={styles.customerForm}
+                autoComplete="on"
+                onSubmit={(e) => e.preventDefault()}
+              >
                 <p className={styles.formLabel}>Datos de entrega</p>
                 <p className={styles.stepHint}>
                   {checkoutStep === 'datos'
@@ -553,6 +721,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
                 <label className={styles.fieldLabel} htmlFor="landing-name">Nombre completo *</label>
                 <input
                   id="landing-name"
+                  name="name"
                   className={styles.input}
                   type="text"
                   placeholder="Ej: Juan Pérez"
@@ -574,7 +743,17 @@ const LandingPaymentBlock = ({ config = {} }) => {
                           className={`${styles.input} ${styles.selectInput}`}
                           value={customer.docType}
                           disabled={formLocked}
-                          onChange={(e) => updateField('docType', e.target.value)}
+                          onChange={(e) => {
+                            const dt = e.target.value;
+                            setCustomer((prev) => ({
+                              ...prev,
+                              docType: dt,
+                              // al cambiar a DNI, re-sanea el valor a 8 dígitos numéricos
+                              dni: dt === 'DNI'
+                                ? String(prev.dni || '').replace(/\D/g, '').slice(0, 8)
+                                : prev.dni,
+                            }));
+                          }}
                           aria-label="Tipo de documento"
                         >
                           {(getDocTypesForCountry(customer.country) || []).map((t) => (
@@ -583,23 +762,29 @@ const LandingPaymentBlock = ({ config = {} }) => {
                         </select>
                         <input
                           id="landing-dni"
+                          name="documento"
                           className={styles.input}
                           type="text"
-                          placeholder="Número"
+                          inputMode={customer.docType === 'DNI' ? 'numeric' : 'text'}
+                          placeholder={customer.docType === 'DNI' ? '8 dígitos' : 'Número'}
                           value={customer.dni}
                           disabled={formLocked}
-                          onChange={(e) => updateField('dni', e.target.value)}
+                          onChange={(e) => updateDni(e.target.value)}
+                          {...(customer.docType === 'DNI' ? { maxLength: 8 } : {})}
+                          autoComplete="on"
                         />
                       </div>
                     ) : (
                       <input
                         id="landing-dni"
+                        name="documento"
                         className={styles.input}
                         type="text"
                         placeholder={FOREIGN_DOC_LABEL}
                         value={customer.dni}
                         disabled={formLocked}
                         onChange={(e) => updateField('dni', e.target.value)}
+                        autoComplete="on"
                       />
                     )}
                   </div>
@@ -620,6 +805,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
                 <label className={styles.fieldLabel} htmlFor="landing-email">Email *</label>
                 <input
                   id="landing-email"
+                  name="email"
                   className={styles.input}
                   type="email"
                   placeholder="correo@ejemplo.com"
@@ -634,6 +820,8 @@ const LandingPaymentBlock = ({ config = {} }) => {
                     <label className={styles.fieldLabel} htmlFor="landing-departamento">Departamento *</label>
                     <select
                       id="landing-departamento"
+                      name="departamento"
+                      autoComplete="address-level1"
                       className={`${styles.input} ${styles.selectInput}`}
                       value={customer.departamento}
                       disabled={formLocked}
@@ -648,6 +836,8 @@ const LandingPaymentBlock = ({ config = {} }) => {
                     <label className={styles.fieldLabel} htmlFor="landing-provincia">Provincia *</label>
                     <select
                       id="landing-provincia"
+                      name="provincia"
+                      autoComplete="address-level2"
                       className={`${styles.input} ${styles.selectInput}`}
                       value={customer.provincia}
                       disabled={formLocked}
@@ -663,6 +853,8 @@ const LandingPaymentBlock = ({ config = {} }) => {
                 <label className={styles.fieldLabel} htmlFor="landing-distrito">Distrito *</label>
                 <select
                   id="landing-distrito"
+                  name="distrito"
+                  autoComplete="address-level3"
                   className={`${styles.input} ${styles.selectInput}`}
                   value={customer.distrito}
                   disabled={formLocked}
@@ -677,6 +869,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
                 <label className={styles.fieldLabel} htmlFor="landing-address">Dirección exacta *</label>
                 <input
                   id="landing-address"
+                  name="address"
                   className={styles.input}
                   type="text"
                   placeholder="Avenida, Calle, Nro, Dpto, Referencia"
@@ -686,61 +879,97 @@ const LandingPaymentBlock = ({ config = {} }) => {
                   autoComplete="street-address"
                 />
 
-                {allowAdelanto && (
-                  <>
-                    <label className={styles.fieldLabel}>¿Cómo quieres pagar? *</label>
-                    <div className={styles.payModeGroup} role="radiogroup" aria-label="Forma de pago">
-                      <button
-                        type="button"
-                        role="radio"
-                        aria-checked={!isAdelanto}
-                        className={`${styles.payModeCard} ${!isAdelanto ? styles.payModeActive : ''}`}
-                        onClick={() => !formLocked && setPaymentMode('full')}
-                        disabled={formLocked}
-                      >
-                        <span className={styles.payModeRadio} aria-hidden="true" />
-                        <span className={styles.payModeBody}>
-                          <span className={styles.payModeTitle}>Pago completo</span>
-                          <span className={styles.payModeDesc}>Paga todo ahora con tarjeta o Yape</span>
-                        </span>
-                        <span className={styles.payModeAmount}>S/ {montoPEN.toFixed(2)}</span>
-                      </button>
-                      <button
-                        type="button"
-                        role="radio"
-                        aria-checked={isAdelanto}
-                        className={`${styles.payModeCard} ${isAdelanto ? styles.payModeActive : ''}`}
-                        onClick={() => !formLocked && setPaymentMode('adelanto')}
-                        disabled={formLocked}
-                      >
-                        <span className={styles.payModeRadio} aria-hidden="true" />
-                        <span className={styles.payModeBody}>
-                          <span className={styles.payModeTitle}>Adelanto S/ {adelantoMonto.toFixed(2)}</span>
-                          <span className={styles.payModeDesc}>
-                            Sepáralo con S/ {adelantoMonto.toFixed(2)} · paga S/ {Math.max(0, montoPEN - adelantoMonto).toFixed(2)} al recibir
-                          </span>
-                        </span>
-                        <span className={styles.payModeAmount}>S/ {adelantoMonto.toFixed(2)}</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-
                 {checkoutStep === 'datos' && (
-                  <button
-                    type="button"
-                    className={styles.confirmBtn}
-                    onClick={handleConfirmDatos}
-                    disabled={creating || !isCustomerComplete()}
-                  >
-                    {creating
-                      ? 'Registrando pedido…'
-                      : isAdelanto
-                        ? `Separar con S/ ${chargeAmount.toFixed(2)}`
-                        : 'Confirmar y seleccionar pago'}
-                  </button>
+                  <div className={styles.payChannels}>
+                    <label className={styles.fieldLabel}>¿Cómo quieres pagar? *</label>
+
+                    {/* ── Botón principal 1: Tarjeta o Yape (contiene pago completo/adelanto) ── */}
+                    <button
+                      type="button"
+                      className={`${styles.channelBtn} ${cardOpen ? styles.channelBtnActive : ''}`}
+                      onClick={() => setCardOpen((o) => !o)}
+                      aria-expanded={cardOpen}
+                    >
+                      <span className={styles.channelIcon} aria-hidden="true">💳</span>
+                      <span className={styles.channelBody}>
+                        <span className={styles.channelTitle}>Tarjeta o Yape</span>
+                        <span className={styles.channelSub}>Paga online, 100% seguro</span>
+                      </span>
+                      <span className={styles.channelChevron} aria-hidden="true">{cardOpen ? '▲' : '▼'}</span>
+                    </button>
+
+                    {cardOpen && (
+                      <div className={styles.cardOptions}>
+                        {allowAdelanto && (
+                          <div className={styles.payModeGroup} role="radiogroup" aria-label="Forma de pago">
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={!isAdelanto}
+                              className={`${styles.payModeCard} ${!isAdelanto ? styles.payModeActive : ''}`}
+                              onClick={() => setPaymentMode('full')}
+                            >
+                              <span className={styles.payModeRadio} aria-hidden="true" />
+                              <span className={styles.payModeBody}>
+                                <span className={styles.payModeTitle}>Pago completo</span>
+                                <span className={styles.payModeDesc}>Paga todo ahora</span>
+                              </span>
+                              <span className={styles.payModeAmount}>S/ {montoPEN.toFixed(2)}</span>
+                            </button>
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={isAdelanto}
+                              className={`${styles.payModeCard} ${isAdelanto ? styles.payModeActive : ''}`}
+                              onClick={() => setPaymentMode('adelanto')}
+                            >
+                              <span className={styles.payModeRadio} aria-hidden="true" />
+                              <span className={styles.payModeBody}>
+                                <span className={styles.payModeTitle}>Adelanto S/ {adelantoMonto.toFixed(2)}</span>
+                                <span className={styles.payModeDesc}>
+                                  Sepáralo con S/ {adelantoMonto.toFixed(2)} · paga S/ {Math.max(0, montoPEN - adelantoMonto).toFixed(2)} al recibir
+                                </span>
+                              </span>
+                              <span className={styles.payModeAmount}>S/ {adelantoMonto.toFixed(2)}</span>
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className={styles.confirmBtn}
+                          onClick={handlePayCard}
+                          disabled={creating}
+                        >
+                          {creating
+                            ? 'Registrando pedido…'
+                            : isAdelanto
+                              ? `Pagar adelanto S/ ${chargeAmount.toFixed(2)}`
+                              : `Pagar S/ ${montoPEN.toFixed(2)}`}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* ── Botón principal 2: Comprar por WhatsApp ── */}
+                    {showWhatsApp && (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.whatsappBtn}
+                          onClick={handleWhatsAppClick}
+                        >
+                          <span className={styles.waIcon} aria-hidden="true">💬</span>
+                          Comprar por WhatsApp
+                        </button>
+                        <p className={styles.waHint}>
+                          {isCustomerComplete()
+                            ? 'Enviamos por chat el reloj elegido y tus datos para coordinar.'
+                            : 'Completa tus datos para enviar tu pedido por WhatsApp.'}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 )}
-              </div>
+              </form>
 
               {error && <div className={styles.error}>{error}</div>}
 
@@ -845,12 +1074,43 @@ const LandingPaymentBlock = ({ config = {} }) => {
           )}
           <div className={styles.stickySpacer} aria-hidden="true" />
 
+          {/* Aviso flotante "Completa tus datos para continuar" (portal a body). */}
+          {typeof document !== 'undefined' && flashHint && createPortal(
+            <div className={styles.flashHint} role="alert">
+              <span className={styles.flashHintIcon} aria-hidden="true">👆</span>
+              {flashHint}
+            </div>,
+            document.body,
+          )}
+
           {config.showMascotBubble === true && mascotMessage && (
             <div className={styles.mascotComment} aria-live="polite">
               <KapMessage message={mascotMessage} bubbleOnly className={styles.mascotBubble} />
             </div>
           )}
         </>
+      )}
+
+      {/* ── Exit-intent popup "¿Ya te vas, K-CHERO?" ── */}
+      {typeof document !== 'undefined' && showExit && createPortal(
+        <div className={styles.exitOverlay} onClick={() => setShowExit(false)} role="dialog" aria-modal="true">
+          <div className={styles.exitModal} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.exitClose} onClick={() => setShowExit(false)} aria-label="Cerrar">✕</button>
+            <h3 className={styles.exitTitle}>¿Ya te vas, K-CHERO? 😏</h3>
+            <p className={styles.exitText}>
+              Tu reloj todavía te está esperando. Sigue tu compra por WhatsApp y asegura tu oferta antes de que termine.
+            </p>
+            <button type="button" className={styles.exitWhatsapp} onClick={handleExitWhatsApp}>
+              <span className={styles.waIcon} aria-hidden="true">💬</span>
+              Seguir compra por WhatsApp
+            </button>
+            <button type="button" className={styles.exitSecondary} onClick={() => setShowExit(false)}>
+              Seguir viendo modelos
+            </button>
+            <p className={styles.exitProof}>+2.400 clientes ya lo eligieron · Oferta por tiempo limitado</p>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

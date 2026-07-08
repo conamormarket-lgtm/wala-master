@@ -63,8 +63,14 @@ export default function PhoneIntlInput({
     emit(next, value);
   };
 
+  // Perú (+51): los celulares tienen 9 dígitos → capamos a 9. Otros países:
+  // sin límite (cada país tiene su propio largo).
+  const maxDigits = dialCode === '+51' ? 9 : null;
+
   const handleNumberChange = (e) => {
-    emit(dialCode, e.target.value);
+    let digits = onlyDigits(e.target.value);
+    if (maxDigits) digits = digits.slice(0, maxDigits);
+    emit(dialCode, digits);
   };
 
   return (
@@ -103,6 +109,7 @@ export default function PhoneIntlInput({
         onChange={handleNumberChange}
         placeholder={placeholder}
         disabled={disabled}
+        {...(maxDigits ? { maxLength: maxDigits } : {})}
         style={{
           flex: '1 1 auto',
           minWidth: 0,

@@ -137,11 +137,18 @@ const ConversionFold = ({ config = {} }) => {
 
   useEffect(() => {
     if (!current) return;
+    const payload = {
+      id: current.id || '',
+      label: current.label || '',
+      imageUrl: current.imageUrl || '',
+    };
     try {
-      localStorage.setItem(
-        'landing_matador_acabado',
-        JSON.stringify({ id: current.id || '', label: current.label || '' }),
-      );
+      localStorage.setItem('landing_matador_acabado', JSON.stringify(payload));
+    } catch { /* ignore */ }
+    // Avisar al checkout (LandingPaymentBlock) para que muestre el reloj elegido
+    // en "TU PEDIDO" en tiempo real, sin depender de recargar.
+    try {
+      window.dispatchEvent(new CustomEvent('landing-acabado-change', { detail: payload }));
     } catch { /* ignore */ }
   }, [current]);
 
@@ -223,6 +230,21 @@ const ConversionFold = ({ config = {} }) => {
     if (!variants.length) return;
     setActiveVariant((prev) => (prev + dir + variants.length) % variants.length);
   };
+
+  // Al ELEGIR un reloj (clic en tarjeta o miniatura), centrarlo y bajar al
+  // formulario de compra. Las flechas ‹ › solo navegan (no bajan) para poder ojear.
+  const pickTimer = useRef(null);
+  const pickWatch = (i) => {
+    setActiveVariant(i);
+    const anchorId = config.ctaPrimaryLink?.replace('#', '') || 'pagar-ahora';
+    if (pickTimer.current) clearTimeout(pickTimer.current);
+    // pequeño delay para que el coverflow centre el reloj antes de desplazar
+    pickTimer.current = setTimeout(() => {
+      const el = document.getElementById(anchorId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 320);
+  };
+  useEffect(() => () => { if (pickTimer.current) clearTimeout(pickTimer.current); }, []);
 
   const onTouchStart = (e) => {
     touchStartX.current = e.changedTouches?.[0]?.clientX ?? null;
@@ -318,7 +340,7 @@ const ConversionFold = ({ config = {} }) => {
                       '--abs': abs,
                       zIndex: 20 - abs,
                     }}
-                    onClick={() => setActiveVariant(i)}
+                    onClick={() => pickWatch(i)}
                   >
                     <div className={styles.coverMedia}>
                       <img src={src} alt={v.label || `Acabado ${i + 1}`} />
@@ -353,7 +375,7 @@ const ConversionFold = ({ config = {} }) => {
                     className={`${styles.coverThumb} ${i === activeVariant ? styles.coverThumbOn : ''}`}
                     aria-label={v.label || `Acabado ${i + 1}`}
                     aria-current={i === activeVariant}
-                    onClick={() => setActiveVariant(i)}
+                    onClick={() => pickWatch(i)}
                   >
                     <img src={src} alt="" loading="lazy" />
                     <span className={styles.coverThumbNum}>{i + 1}</span>
