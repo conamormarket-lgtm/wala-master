@@ -39,7 +39,11 @@ export const SECTION_TYPES = [
   { id: 'marquee', label: 'Carrusel de Logos / Marcas' },
   { id: 'bestsellers_row', label: 'Lo Más Vendido (Fila de 5)' },
   { id: 'footer_columns', label: 'Pie de Página (Columnas/Enlaces)' },
-  { id: 'map_location', label: 'Ubicación / Mapa' }
+  { id: 'map_location', label: 'Ubicación / Mapa' },
+  { id: 'landing_payment', label: 'Checkout de Pago (Culqi + PayPal)' },
+  { id: 'conversion_fold', label: 'Primera Impresión (Balvi — Above the Fold)' },
+  { id: 'feature_list', label: 'Lista de Beneficios (Compacta)' },
+  { id: 'faq_accordion', label: 'Preguntas Frecuentes (Acordeón)' }
 ];
 
 export function getDefaultSettings(type) {
@@ -182,6 +186,82 @@ export function getDefaultSettings(type) {
           }
         ]
       };
+    case 'faq_accordion':
+      return {
+        title: 'Preguntas frecuentes',
+        items: [
+          { question: '¿De verdad pago al recibir?', answer: 'Sí. En Lima pagas cuando el courier te lo entrega.' },
+          { question: '¿Cuánto demora el envío?', answer: 'Lima: 24-48h · Provincia: 3-5 días hábiles.' },
+        ],
+        defaultOpen: true,
+        backgroundColor: '#ffffff',
+        paddingTop: '0.5rem',
+        paddingBottom: '0.5rem',
+      };
+    case 'feature_list':
+      return {
+        title: '¿Por qué elegirnos?',
+        subtitle: '',
+        imageUrl: '',
+        imageAlt: '',
+        items: [
+          { icon: '✓', text: 'Calidad premium a precio justo' },
+          { icon: '✓', text: 'Envío rápido a todo el Perú' },
+        ],
+        quote: '',
+        quoteAuthor: '',
+        backgroundColor: '#ffffff',
+        paddingTop: '0.5rem',
+        paddingBottom: '0.5rem',
+      };
+    case 'conversion_fold':
+      return {
+        imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=85&auto=format&fit=crop',
+        imageAlt: 'Producto destacado',
+        imageCaption: '',
+        title: '💕 Producto Estrella 2026 🌹',
+        subtitle: 'El detalle perfecto para enamorar ❤️',
+        socialProofBadge: '🔥 +10,000 CLIENTES LO ELIGIERON ESTE MES',
+        endTime: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+        countdownLabel: '⏳ Oferta termina en',
+        montoPEN: 89.9,
+        precioOriginal: 149.9,
+        discountLabel: '',
+        rating: 5,
+        reviewCount: '1867',
+        ctaPrimaryText: '¡SORPRENDER AHORA!',
+        ctaPrimarySub: '¡ENTREGAS EL MISMO DÍA!',
+        ctaPrimaryLink: '#pagar-ahora',
+        ctaSecondaryText: '¡COMPRAR AHORA!',
+        ctaSecondaryLink: '#pagar-ahora',
+        trustText: 'Tu pedido está en camino',
+        showWhatsApp: true,
+        whatsappNumber: '',
+        whatsappMessage: 'Hola, me interesa el producto de la landing',
+        accentColor: '#dc2626',
+        backgroundColor: '#ffffff',
+        paddingTop: '0',
+        paddingBottom: '0',
+      };
+    case 'landing_payment':
+      return {
+        title: 'Paga ahora y asegura tu pedido',
+        subtitle: 'Tarjeta, Yape (Culqi) o PayPal — sin salir de esta página',
+        concepto: 'Compra en línea',
+        montoPEN: 89.9,
+        montoUSD: 23.99,
+        precioOriginal: 149.9,
+        offerBadge: '40% OFF — Oferta limitada',
+        stickyCTA: 'COMPRAR AHORA',
+        productId: '',
+        showCulqi: true,
+        showPayPal: true,
+        anchorId: 'pagar-ahora',
+        backgroundColor: '#0a0a0a',
+        titleColor: '#fbbf24',
+        paddingTop: '2rem',
+        paddingBottom: '1rem',
+      };
     case 'map_location':
       return {
         title: 'Encuéntranos',
@@ -213,7 +293,8 @@ export async function getStorefrontConfig(pageId = 'home') {
   if (data?.sections && Array.isArray(data.sections)) {
     return { sections: [...data.sections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)), error: null };
   }
-// eslint-disable-next-line no-unused-vars
+
+// eslint-disable-next-line no-unused-vars
 
   // Fallback para Home desde la colección antigua 'storefront'
   if (pageId === 'home') {

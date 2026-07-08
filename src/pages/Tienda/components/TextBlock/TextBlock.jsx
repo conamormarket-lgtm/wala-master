@@ -12,8 +12,9 @@ const TextBlock = ({ config }) => {
     textColor = 'var(--color-text-muted)',
     headingColor = 'var(--color-text)',
     textAlign = 'left',
-    paddingTop = '2rem',
-    paddingBottom = '2rem',
+    compact = false,
+    paddingTop,
+    paddingBottom,
     maxWidth = '800px',
     headingFontFamily,
     headingFontSize,
@@ -22,8 +23,11 @@ const TextBlock = ({ config }) => {
     contentFontFamily,
     contentFontSize,
     contentFontWeight,
-    contentTextTransform
+    contentTextTransform,
   } = config || {};
+
+  const padTop = paddingTop ?? (compact ? '0.35rem' : '2rem');
+  const padBottom = paddingBottom ?? (compact ? '0.35rem' : '2rem');
 
   if (!heading && !content) return null;
 
@@ -31,8 +35,8 @@ const TextBlock = ({ config }) => {
     <div 
       style={{ 
         backgroundColor, 
-        paddingTop, 
-        paddingBottom,
+        paddingTop: padTop, 
+        paddingBottom: padBottom,
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
@@ -43,7 +47,7 @@ const TextBlock = ({ config }) => {
         style={{ 
           maxWidth, 
           width: '100%',
-          padding: '0 1.5rem',
+          padding: compact ? '0 1rem' : '0 1.5rem',
           textAlign,
           boxSizing: 'border-box'
         }}
@@ -57,7 +61,7 @@ const TextBlock = ({ config }) => {
           style={{
             color: headingColor,
             marginBottom: content ? '1rem' : '0',
-            fontSize: headingFontSize || '2rem',
+            fontSize: headingFontSize || (compact ? '0.95rem' : '2rem'),
             fontWeight: headingFontWeight || 'bold',
             fontFamily: headingFontFamily || 'inherit',
             textTransform: headingTextTransform || 'none'
@@ -73,7 +77,7 @@ const TextBlock = ({ config }) => {
           as="div"
           style={{
             color: textColor,
-            fontSize: contentFontSize || '1.1rem',
+            fontSize: contentFontSize || (compact ? '0.8rem' : '1.1rem'),
             fontWeight: contentFontWeight || 'normal',
             fontFamily: contentFontFamily || 'inherit',
             textTransform: contentTextTransform || 'none',

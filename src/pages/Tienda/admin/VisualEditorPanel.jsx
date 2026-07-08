@@ -2417,6 +2417,147 @@ const VisualEditorPanel = () => {
         );
       }
 
+      if (section.type === 'conversion_fold') {
+        const s = section.settings || {};
+        const set = (key, val) => {
+          const newSections = [...storeConfigDraft.sections];
+          newSections[dynamicSectionIndex].settings[key] = val;
+          updateSectionsDraft(newSections);
+        };
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: Primera Impresión (Balvi)
+            </h4>
+
+            <label>URL imagen hero</label>
+            <input type="text" value={s.imageUrl || ''} onChange={e => set('imageUrl', e.target.value)} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>Título (con emojis)</label>
+            <input type="text" value={s.title || ''} onChange={e => set('title', e.target.value)} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>Subtítulo</label>
+            <input type="text" value={s.subtitle || ''} onChange={e => set('subtitle', e.target.value)} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>Badge social proof</label>
+            <input type="text" value={s.socialProofBadge || ''} onChange={e => set('socialProofBadge', e.target.value)} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>Fin oferta (ISO datetime-local)</label>
+            <input type="datetime-local" value={s.endTime ? s.endTime.slice(0, 16) : ''} onChange={e => set('endTime', e.target.value ? new Date(e.target.value).toISOString() : '')} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '10px'}}>
+              <div style={{flex: 1}}>
+                <label>Precio S/</label>
+                <input type="number" step="0.01" value={s.montoPEN ?? ''} onChange={e => set('montoPEN', Number(e.target.value))} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Tachado S/</label>
+                <input type="number" step="0.01" value={s.precioOriginal ?? ''} onChange={e => set('precioOriginal', Number(e.target.value))} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+
+            <label>Reseñas (texto)</label>
+            <input type="text" value={s.reviewCount || ''} onChange={e => set('reviewCount', e.target.value)} placeholder="1867" style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>CTA principal</label>
+            <input type="text" value={s.ctaPrimaryText || ''} onChange={e => set('ctaPrimaryText', e.target.value)} style={{width: '100%', padding: '6px', marginBottom: '6px'}} />
+            <input type="text" value={s.ctaPrimarySub || ''} onChange={e => set('ctaPrimarySub', e.target.value)} placeholder="Subtítulo CTA" style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>CTA secundario</label>
+            <input type="text" value={s.ctaSecondaryText || ''} onChange={e => set('ctaSecondaryText', e.target.value)} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>Texto confianza</label>
+            <input type="text" value={s.trustText || ''} onChange={e => set('trustText', e.target.value)} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>Color acento (#hex)</label>
+            <input type="text" value={s.accentColor || '#dc2626'} onChange={e => set('accentColor', e.target.value)} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+          </div>
+        );
+      }
+
+      if (section.type === 'landing_payment') {
+        const s = section.settings || {};
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
+              Editando: Checkout de Pago (Culqi + PayPal)
+            </h4>
+
+            <label>Título de la sección</label>
+            <input type="text" value={s.title || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.title = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>Subtítulo</label>
+            <input type="text" value={s.subtitle || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.subtitle = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>Concepto del pago</label>
+            <input type="text" value={s.concepto || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.concepto = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '10px'}} placeholder="Ej. Reloj Matador Pro 2026" />
+
+            <div style={{display: 'flex', gap: '10px', marginBottom: '10px'}}>
+              <div style={{flex: 1}}>
+                <label>Monto PEN (S/)</label>
+                <input type="number" step="0.01" min="3" value={s.montoPEN ?? ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.montoPEN = Number(e.target.value); updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Monto USD ($)</label>
+                <input type="number" step="0.01" min="1" value={s.montoUSD ?? ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.montoUSD = Number(e.target.value); updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+
+            <label>Precio tachado (S/ — opcional, estilo Balvi)</label>
+            <input type="number" step="0.01" value={s.precioOriginal ?? ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.precioOriginal = Number(e.target.value); updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '10px'}} placeholder="149.90" />
+
+            <label>Etiqueta de oferta</label>
+            <input type="text" value={s.offerBadge || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.offerBadge = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '10px'}} placeholder="40% OFF — Oferta limitada" />
+
+            <label>Texto botón sticky móvil</label>
+            <input type="text" value={s.stickyCTA || 'COMPRAR AHORA'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.stickyCTA = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <label>ID de producto (opcional — toma precio y nombre)</label>
+            <input type="text" value={s.productId || ''} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.productId = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '10px'}} placeholder="reloj-matador-pro-2026" />
+
+            <label>Ancla HTML (para CTAs #pagar-ahora)</label>
+            <input type="text" value={s.anchorId || 'pagar-ahora'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.anchorId = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px', marginBottom: '10px'}} />
+
+            <div style={{display: 'flex', gap: '1rem', marginBottom: '15px'}}>
+              <label style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                <input type="checkbox" checked={s.showCulqi !== false} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.showCulqi = e.target.checked; updateSectionsDraft(newSections); }} />
+                Mostrar Culqi (PEN)
+              </label>
+              <label style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                <input type="checkbox" checked={s.showPayPal !== false} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.showPayPal = e.target.checked; updateSectionsDraft(newSections); }} />
+                Mostrar PayPal (USD)
+              </label>
+            </div>
+
+            <BackgroundStylesControl
+              settings={s}
+              onChange={(key, value) => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings[key] = value;
+                updateSectionsDraft(newSections);
+              }}
+            />
+
+            <div style={{display: 'flex', gap: '10px', marginTop: '15px'}}>
+              <div style={{flex: 1}}>
+                <label>Padding Superior</label>
+                <input type="text" placeholder="Ej: 3rem" value={s.paddingTop || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+              <div style={{flex: 1}}>
+                <label>Padding Inferior</label>
+                <input type="text" placeholder="Ej: 3rem" value={s.paddingBottom || '2rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       if (section.type === 'trust_badges') {
         const s = section.settings || {};
         const availableIcons = ['truck', 'shield', 'clock', 'credit_card', 'return', 'heart', 'star', 'check'];

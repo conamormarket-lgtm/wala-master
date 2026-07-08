@@ -8,6 +8,17 @@ class ErrorBoundary extends React.Component {
     const msg = error && typeof error.message === 'string' ? error.message : '';
     // Prevent some canvas errors from crashing the app
     if (msg.includes("reading 'clearRect')")) return null;
+
+    // Google Translate / extensiones mutan el DOM y React lanza NotFoundError
+    // en removeChild. Recuperar con un pantallazo blanco empeora el loop.
+    if (
+      error?.name === 'NotFoundError' ||
+      msg.includes("removeChild") ||
+      msg.includes("insertBefore") ||
+      msg.includes("The node to be removed is not a child")
+    ) {
+      return null;
+    }
     
     // Auto-reload on ChunkLoadError (very common with lazy loading and new deployments)
     if (error && error.name === 'ChunkLoadError') {
@@ -18,6 +29,15 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
+    const msg = error && typeof error.message === 'string' ? error.message : '';
+    if (
+      error?.name === 'NotFoundError' ||
+      msg.includes('removeChild') ||
+      msg.includes('insertBefore')
+    ) {
+      console.warn('ErrorBoundary: ignorando conflicto de DOM (extensión/traductor):', msg);
+      return;
+    }
     console.error('ErrorBoundary:', error, errorInfo);
     if (error && error.name === 'ChunkLoadError') {
       // Intentar refrescar automáticamente una sola vez

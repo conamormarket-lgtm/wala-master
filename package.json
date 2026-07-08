@@ -47,6 +47,7 @@
     "preview": "vite preview",
     "emulators": "node scripts/emulators.js",
     "seed": "node scripts/seed-emulator.js",
+    "seed:landing-balvi": "node scripts/seed-landing-balvi.js",
     "deploy:firestore-rules": "node scripts/deploy-firestore-rules.js",
     "deploy:storage-rules": "node scripts/deploy-storage-rules.js",
     "deploy:functions": "firebase deploy --only functions --project sistema-gestion-3b225",

@@ -7,12 +7,13 @@ import { useVisualEditor } from './contexts/VisualEditorContext';
 import TiendaPage from './TiendaPage';
 import PageLoading from '../../components/common/PageLoading/PageLoading';
 import { useAuth } from '../../contexts/AuthContext';
+import './landing-mobile.css';
 
 const DynamicLandingPage = () => {
   const { slug } = useParams();
   const { setHeaderVisible, setFooterVisible } = useLayoutContext();
   const { setActivePageId, storeConfigDraft } = useVisualEditor();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [landingPage, setLandingPage] = useState(null);
@@ -51,11 +52,16 @@ const DynamicLandingPage = () => {
     };
   }, [slug, setHeaderVisible, setFooterVisible, setActivePageId]);
 
-  if (loading || authLoading) return <PageLoading />;
+  // Solo bloquear por auth al resolver el redirect cuando la LP no existe.
+  // Si ya tenemos landing, NO remountar a PageLoading cuando authLoading
+  // cambia (login anónimo / onAuthChange): ese unmount produce removeChild.
+  if (loading) return <PageLoading />;
 
   if (!landingPage) {
-    // Redirigir a inicio si está logueado, o a login si no
-    return isAuthenticated ? <Navigate to="/" replace /> : <Navigate to="/login" replace />;
+    if (authLoading) return <PageLoading />;
+    // Landing pública no encontrada: a home si hay sesión; si no, home también
+    // (no mandar a /login: las LP deben ser visibles sin cuenta).
+    return <Navigate to="/" replace />;
   }
 
   return (

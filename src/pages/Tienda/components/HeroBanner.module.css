@@ -126,3 +126,61 @@
   box-shadow: 0 20px 40px rgba(0,0,0,0.4);
   letter-spacing: 0.08em;
 }
+
+/* ── Móvil — estilo PDP Balvi ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .heroContainer {
+    height: 78vh;
+    min-height: 420px;
+    max-height: 640px;
+    margin-bottom: 0;
+    margin-top: 0;
+  }
+
+  .overlay {
+    padding: 4vw 5vw 7vw;
+    align-items: center;
+    text-align: center;
+  }
+
+  .content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .title {
+    font-size: clamp(1.75rem, 9vw, 2.75rem);
+    text-align: center;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+    text-align: center;
+    max-width: 100%;
+  }
+
+  .actionButton {
+    width: 100%;
+    max-width: 100%;
+    padding: 1rem 1.25rem !important;
+    font-size: 0.88rem !important;
+    border-radius: 12px !important;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 420px) {
+  .heroContainer {
+    min-height: 380px;
+    height: 72vh;
+  }
+
+  .title {
+    font-size: clamp(1.5rem, 8.5vw, 2.2rem);
+  }
+}

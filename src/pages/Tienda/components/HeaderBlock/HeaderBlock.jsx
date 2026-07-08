@@ -11,8 +11,9 @@ const HeaderBlock = ({ config }) => {
     titleColor = 'var(--color-text)',
     subtitleColor = 'var(--color-text-muted)',
     textAlign = 'center',
-    paddingTop = '3rem',
-    paddingBottom = '2rem',
+    compact = false,
+    paddingTop,
+    paddingBottom,
     titleFontFamily,
     titleFontSize,
     titleFontWeight,
@@ -23,14 +24,17 @@ const HeaderBlock = ({ config }) => {
     subtitleTextTransform
   } = config || {};
 
+  const padTop = paddingTop ?? (compact ? '1rem' : '3rem');
+  const padBottom = paddingBottom ?? (compact ? '0.75rem' : '2rem');
+
   if (!title && !subtitle) return null;
 
   return (
     <div 
       style={{ 
         backgroundColor, 
-        paddingTop, 
-        paddingBottom,
+        paddingTop: padTop, 
+        paddingBottom: padBottom,
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
@@ -41,7 +45,7 @@ const HeaderBlock = ({ config }) => {
         style={{ 
           maxWidth: '1200px', 
           width: '100%',
-          padding: '0 1.5rem',
+          padding: compact ? '0 1rem' : '0 1.5rem',
           textAlign,
           boxSizing: 'border-box'
         }}
@@ -55,8 +59,8 @@ const HeaderBlock = ({ config }) => {
           style={{
             color: titleColor,
             marginBottom: subtitle ? '0.5rem' : '0',
-            fontSize: titleFontSize || 'clamp(2rem, 5vw, 3rem)',
-            fontWeight: titleFontWeight || '800',
+            fontSize: titleFontSize || (compact ? '1.05rem' : 'clamp(2rem, 5vw, 3rem)'),
+            fontWeight: titleFontWeight || (compact ? '800' : '800'),
             fontFamily: titleFontFamily || 'inherit',
             textTransform: titleTextTransform || 'none',
             letterSpacing: '-0.02em',
@@ -72,7 +76,7 @@ const HeaderBlock = ({ config }) => {
           as="p"
           style={{
             color: subtitleColor,
-            fontSize: subtitleFontSize || 'clamp(1rem, 2vw, 1.25rem)',
+            fontSize: subtitleFontSize || (compact ? '0.78rem' : 'clamp(1rem, 2vw, 1.25rem)'),
             fontWeight: subtitleFontWeight || 'normal',
             fontFamily: subtitleFontFamily || 'inherit',
             textTransform: subtitleTextTransform || 'none',

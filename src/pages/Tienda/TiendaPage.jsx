@@ -16,6 +16,10 @@ import BestSellersRow from './components/BestSellersRow/BestSellersRow';
 import Testimonials from './components/Testimonials';
 import MapLocation from './components/MapLocation';
 import TrustBadges from './components/TrustBadges/TrustBadges';
+import LandingPaymentBlock from './components/LandingPaymentBlock/LandingPaymentBlock';
+import ConversionFold from './components/ConversionFold/ConversionFold';
+import FeatureList from './components/FeatureList/FeatureList';
+import FaqAccordion from './components/FaqAccordion/FaqAccordion';
 import TextBlock from './components/TextBlock/TextBlock';
 import ImageBlock from './components/ImageBlock/ImageBlock';
 import HeaderBlock from './components/HeaderBlock/HeaderBlock';
@@ -864,6 +868,10 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
                   src={finalUrl} 
                   poster={s.poster || undefined} 
                   controls 
+                  playsInline
+                  muted={s.autoplay !== false}
+                  autoPlay={s.autoplay !== false}
+                  loop={s.loop !== false}
                   style={{ 
                     position: forceRatio ? 'absolute' : 'relative',
                     top: 0, left: 0, 
@@ -930,6 +938,31 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             <TrustBadges badges={s.badges} />
           </section>
         );
+      case 'feature_list':
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
+            <FeatureList config={s} />
+          </section>
+        );
+      case 'faq_accordion':
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
+            <FaqAccordion config={s} />
+          </section>
+        );
+      case 'conversion_fold':
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
+            <ConversionFold config={s} />
+          </section>
+        );
+      case 'landing_payment':
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '1.5rem', paddingBottom: s.paddingBottom || '0', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
+            <LandingPaymentBlock config={{ ...s, landingSlug: pageId }} />
+          </section>
+        );
       case 'marquee':
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
@@ -939,7 +972,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         );
       case 'bestsellers_row':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+          <section
+            key={section.id}
+            id={s.anchorId || undefined}
+            className={styles.sectionBlock}
+            style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'visible' }}
+          >
             <SectionBackground config={s} />
             <BestSellersRow cards={s.cards} />
           </section>
@@ -1163,7 +1201,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </span>
         </div>
       )}
-      {!categoryId && !searchTerm && <AppDownloadBanner />}
+      {!isLandingPage && !categoryId && !searchTerm && <AppDownloadBanner />}
       {sorted.map((section, index) => {
         const rendered = renderSection(section);
         if (!rendered) return null;
