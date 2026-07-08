@@ -310,12 +310,22 @@
   display: flex;
   gap: 0.45rem;
   align-items: stretch;
+  width: 100%;
+  min-width: 0;
 }
 
 .docRow .selectInput {
   flex: 0 0 42%;
+  min-width: 0;
   padding-left: 0.5rem;
   padding-right: 0.35rem;
+}
+
+/* El número (input) debe poder encoger dentro de la fila para NO desbordar la
+   tarjeta en móvil (los <input> traen min-width:auto por defecto). */
+.docRow input {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .selectInput {
@@ -777,6 +787,11 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
+}
+
+/* Las columnas deben poder encoger (evita desbordes de inputs/telefono en móvil) */
+.formRow > div {
+  min-width: 0;
 }
 
 /* Fila con controles compuestos (Documento = tipo+número, Teléfono = código+número).

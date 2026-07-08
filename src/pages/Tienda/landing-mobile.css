@@ -46,9 +46,19 @@
   background: #fff !important;
   color: #0f172a !important;
   caret-color: #0f172a;
+  box-sizing: border-box;
+  min-width: 0;
 }
 .landing-page-wrapper input[type="tel"]::placeholder {
   color: #94a3b8 !important;
+}
+
+/* Evita que inputs/selects del checkout sobrepasen el borde de la tarjeta en
+   móvil: el padding/borde se cuenta dentro del ancho (border-box) y no crecen. */
+.landing-page-wrapper input,
+.landing-page-wrapper select {
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .landing-page-wrapper .sectionBlock,
