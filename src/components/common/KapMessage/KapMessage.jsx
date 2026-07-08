@@ -6,7 +6,7 @@ import styles from './KapMessage.module.css';
  * Mascota con burbuja de mensaje. Muestra la imagen configurada en Admin > Mascota.
  * Si la primera URL falla (p. ej. CORS con Drive), prueba la URL alternativa.
  */
-const KapMessage = ({ message, className = '' }) => {
+const KapMessage = ({ message, className = '', bubbleOnly = false }) => {
   const { src, fallbackSrc } = useMascotaImageUrl();
   const [currentSrc, setCurrentSrc] = useState(src);
   const [triedFallback, setTriedFallback] = useState(false);
@@ -17,7 +17,7 @@ const KapMessage = ({ message, className = '' }) => {
     setTriedFallback(false);
   }, [src]);
 
-  const showImage = currentSrc;
+  const showImage = !bubbleOnly && currentSrc;
   const handleError = () => {
     if (fallbackSrc && !triedFallback) {
       setCurrentSrc(fallbackSrc);
@@ -28,15 +28,20 @@ const KapMessage = ({ message, className = '' }) => {
   };
 
   return (
-    <div className={`${styles.wrapper} ${className}`.trim()} role="complementary" aria-label="Mensaje de mascota">
+    <div
+      className={`${styles.wrapper} ${bubbleOnly ? styles.bubbleOnly : ''} ${className}`.trim()}
+      role="complementary"
+      aria-label="Mensaje de mascota"
+      translate="no"
+    >
       <div className={styles.imageWrap}>
         {showImage ? (
           <img
-            key={currentSrc}
             src={currentSrc}
             alt="Mascota"
             className={styles.kapImage}
             onError={handleError}
+            decoding="async"
           />
         ) : null}
       </div>

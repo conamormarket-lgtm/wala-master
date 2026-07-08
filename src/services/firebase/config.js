@@ -23,19 +23,27 @@ let auth = null;
 let storage = null;
 let messaging = null;
 
-// En DEV usamos los EMULADORES de Firebase (proyecto demo aislado 'demo-wala'), salvo que
-// VITE_USE_EMULATORS='false'. En build/producción se usa el Firebase real del .env.
-const USE_EMULATORS = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS !== 'false';
+// En DEV usamos emuladores por defecto. También en preview local
+// (vite build --mode preview o VITE_USE_EMULATORS=true).
+const USE_EMULATORS =
+  import.meta.env.VITE_USE_EMULATORS === 'true'
+  || import.meta.env.MODE === 'preview'
+  || (import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS !== 'false');
 
 if (USE_EMULATORS) {
   try {
     app = initializeApp({ projectId: 'demo-wala', apiKey: 'demo-emulator', authDomain: 'localhost' });
-    db = getFirestore(app);
+    try {
+      // Long polling evita cuelgues del WebChannel en Windows + emulador.
+      db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+    } catch {
+      db = getFirestore(app);
+    }
     auth = getAuth(app);
     storage = getStorage(app);
     connectFirestoreEmulator(db, 'localhost', 8080);
     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-    connectStorageEmulator(storage, 'localhost', 9199);
+    try { connectStorageEmulator(storage, 'localhost', 9199); } catch (e) { /* storage opcional */ }
     try { connectFunctionsEmulator(getFunctions(app), 'localhost', 5001); } catch (e) { /* functions opcional */ }
     console.info('[Wala] EMULADORES de Firebase activos (proyecto demo-wala) — datos locales, sin tocar producción.');
   } catch (error) {

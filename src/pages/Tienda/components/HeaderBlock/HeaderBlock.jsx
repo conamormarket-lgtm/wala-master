@@ -1,10 +1,25 @@
 import React from 'react';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 
+function renderTitleWithHighlight(title, highlight, color) {
+  if (!title || !highlight) return title;
+  const idx = title.indexOf(highlight);
+  if (idx === -1) return title;
+  return (
+    <>
+      {title.slice(0, idx)}
+      <span style={{ color }}>{highlight}</span>
+      {title.slice(idx + highlight.length)}
+    </>
+  );
+}
+
 const HeaderBlock = ({ config }) => {
   const {
     title = 'Nuestra Tienda',
     subtitle = '',
+    titleHighlight = '',
+    titleHighlightColor = '#e10600',
     backgroundColor = 'transparent',
     // Colores POR DEFECTO referidos a tokens del tema: legibles en claro y en
     // oscuro. Si el admin fija titleColor/subtitleColor, su valor sigue mandando.
@@ -67,7 +82,7 @@ const HeaderBlock = ({ config }) => {
             lineHeight: '1.2'
           }}
         >
-          {title}
+          {renderTitleWithHighlight(title, titleHighlight, titleHighlightColor)}
         </TextoSeccion>
         {/* Subtitulo: TextoSeccion aplica el estilo editable del campo `subtitle`. */}
         <TextoSeccion

@@ -249,6 +249,26 @@
   text-align: right;
 }
 
+.discountInline {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.discountBefore {
+  display: block;
+  text-decoration: line-through;
+  color: #94a3b8;
+  margin-bottom: 0.05rem;
+}
+
+.discountSave {
+  display: block;
+  color: #16a34a;
+}
+
 .totalCurrency {
   font-size: 0.82rem;
   font-weight: 500;
@@ -271,10 +291,174 @@
   font-weight: 600;
 }
 
+.fieldLabel {
+  display: block;
+  margin: 0.35rem 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.stepHint {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.docRow {
+  display: flex;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.docRow .selectInput {
+  flex: 0 0 42%;
+  padding-left: 0.5rem;
+  padding-right: 0.35rem;
+}
+
+.selectInput {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.peruBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: #0f172a;
+}
+
+/* ── Selector de forma de pago (completo vs adelanto) ─────────────────────── */
+.payModeGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.payModeCard {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.7rem 0.8rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.payModeCard:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.payModeActive {
+  border-color: #7c3aed;
+  background: #f6f2ff;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.payModeRadio {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: #fff;
+  position: relative;
+  transition: border-color 0.15s ease;
+}
+
+.payModeActive .payModeRadio {
+  border-color: #7c3aed;
+}
+
+.payModeActive .payModeRadio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #7c3aed;
+}
+
+.payModeBody {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.payModeTitle {
+  font-size: 0.9rem;
+  font-weight: 750;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.payModeDesc {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.payModeAmount {
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.confirmBtn {
+  margin-top: 0.85rem;
+  width: 100%;
+  min-height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(109, 40, 217, 0.22);
+}
+
+.confirmBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .formRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
+}
+
+/* Fila con controles compuestos (Documento = tipo+número, Teléfono = código+número).
+   En móvil no caben 4 sub-controles en un renglón: se apilan en vertical. */
+.formRowStack {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 560px) {
+  .formRowStack {
+    grid-template-columns: 1fr;
+  }
 }
 
 .input {
@@ -594,6 +778,14 @@
     margin-top: 0.05rem;
   }
 
+  .stickyPriceSaving {
+    display: block;
+    margin-top: 0.12rem;
+    font-size: 0.62rem;
+    font-weight: 750;
+    color: #16a34a;
+  }
+
   .stickyBtn {
     flex: 1;
     height: 48px;
@@ -618,6 +810,26 @@
   .stickySpacer {
     display: block;
     height: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.mascotComment {
+  position: fixed;
+  right: 0.75rem;
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  z-index: 220;
+  pointer-events: none;
+  max-width: min(300px, 78vw);
+}
+
+.mascotBubble {
+  width: 100%;
+}
+
+@media (min-width: 769px) {
+  .mascotComment {
+    bottom: 1.35rem;
+    max-width: 320px;
   }
 }
 
