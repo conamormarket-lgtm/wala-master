@@ -122,11 +122,18 @@ const ConversionFold = ({ config = {} }) => {
 
   useEffect(() => {
     const btn = thumbBtnRefs.current[activeVariant];
-    if (!btn?.scrollIntoView) return undefined;
+    const rail = btn?.parentElement; // .coverThumbs (contenedor con overflow-x)
+    if (!btn || !rail) return undefined;
     const behavior = thumbScrollReady.current ? 'smooth' : 'auto';
     thumbScrollReady.current = true;
     const id = requestAnimationFrame(() => {
-      btn.scrollIntoView({ behavior, inline: 'center', block: 'nearest' });
+      // Centrar la miniatura SOLO dentro de su propia fila (scrollTo del riel),
+      // nunca con scrollIntoView: este último desplaza también a los ancestros/
+      // página y corría toda la sección de abajo (timer/comentarios) a la izquierda.
+      const target = btn.offsetLeft - (rail.clientWidth - btn.clientWidth) / 2;
+      const max = rail.scrollWidth - rail.clientWidth;
+      const left = Math.max(0, Math.min(target, max));
+      rail.scrollTo({ left, behavior });
     });
     return () => cancelAnimationFrame(id);
   }, [activeVariant]);
