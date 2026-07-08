@@ -14,12 +14,33 @@
 }
 
 .announcementText {
-  animation: fadeSlide 0.5s ease-in-out;
   margin: 0;
   padding: 0;
   width: 100%;
   display: flex;
   justify-content: center;
+}
+
+.fadeStack {
+  position: relative;
+  width: 100%;
+  min-height: 1.2em;
+}
+
+.fadeIdle {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.fadeActive {
+  position: relative;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  animation: fadeSlide 0.45s ease-in-out;
 }
 
 .announcementLink {

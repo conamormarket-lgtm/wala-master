@@ -24,9 +24,39 @@ try {
   console.warn('[emuladores] No encontré JDK 21 en', jdkBase, '— usaré el java del PATH (debe ser 21+).');
 }
 
-const child = spawn('firebase', ['emulators:start', '--project', 'demo-wala'], {
-  stdio: 'inherit',
-  env,
-  shell: true,
-});
+// Asegurar que firebase.cmd encuentre node.exe al arrancar.
+const nodeDir = path.dirname(process.execPath);
+env.PATH = nodeDir + path.delimiter + (env.PATH || '');
+
+const localFirebase = path.join(
+  __dirname,
+  '..',
+  'node_modules',
+  '.bin',
+  process.platform === 'win32' ? 'firebase.cmd' : 'firebase',
+);
+const globalFirebase = process.platform === 'win32'
+  ? path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'firebase.cmd')
+  : path.join(os.homedir(), '.npm-global', 'bin', 'firebase');
+
+const firebaseBin = [localFirebase, globalFirebase].find((p) => fs.existsSync(p));
+
+if (!firebaseBin) {
+  console.error('[emuladores] No encontré firebase CLI.');
+  console.error('Instálalo con: npm install -g firebase-tools');
+  process.exit(1);
+}
+
+console.log('[emuladores] Firebase CLI:', firebaseBin);
+
+const child = spawn(
+  firebaseBin,
+  ['emulators:start', '--project', 'demo-wala', '--only', 'firestore,auth'],
+  {
+    stdio: 'inherit',
+    env,
+    shell: true,
+    windowsHide: true,
+  },
+);
 child.on('exit', (code) => process.exit(code || 0));

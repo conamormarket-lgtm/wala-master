@@ -84,18 +84,24 @@ function removeEmptyForFirestore(obj) {
 /**
  * Obtener un documento por ID
  */
-export const getDocument = async (collectionName, docId) => {
+export const getDocument = async (collectionName, docId, timeoutMs = 12000) => {
   if (!isFirestoreAvailable()) {
     return { data: null, error: getFirebaseConfigMessage() };
   }
   try {
     const docRef = doc(db, collectionName, docId);
-    const docSnap = await getDoc(docRef);
+    const docSnap = await Promise.race([
+      getDoc(docRef),
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Firestore timeout')), timeoutMs);
+      }),
+    ]);
     if (docSnap.exists()) {
       return { data: { id: docSnap.id, ...docSnap.data() }, error: null };
     }
     return { data: null, error: 'Documento no encontrado' };
   } catch (error) {
+    console.warn(`[Firestore] getDocument ${collectionName}/${docId}:`, error?.message || error);
     return { data: null, error: error.message };
   }
 };

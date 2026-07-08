@@ -1,0 +1,154 @@
+/**
+ * Landing Reloj Matador Pro — premium mobile-first
+ * Lujo accesible · tipografía nativa · CRO
+ */
+
+.landing-page-wrapper {
+  --lp-bg: #070708;
+  --lp-dark: #ffffff;
+  --lp-text: #e4e4e7;
+  --lp-muted: #a1a1aa;
+  --lp-border: rgba(255, 255, 255, 0.1);
+  --lp-soft: #111113;
+  --lp-red: #e10600;
+  --lp-red-dark: #b10000;
+  --lp-gold: #d4af37;
+  --lp-mood-accent: var(--lp-red);
+  --lp-mood-glow: rgba(225, 6, 0, 0.28);
+  --lp-mood-soft: #1a0a0c;
+  --lp-mood-deep: #070708;
+  --lp-mood-mist: rgba(225, 6, 0, 0.18);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  font-size: 15px;
+  line-height: 1.45;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.01em;
+  color: var(--lp-text);
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, var(--lp-mood-mist), transparent 60%),
+    linear-gradient(180deg, var(--lp-mood-deep) 0%, var(--lp-bg) 40%, #050505 100%);
+  transition: background 0.55s ease;
+}
+
+.landing-page-wrapper .container {
+  background-color: var(--lp-bg);
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.landing-page-wrapper .sectionBlock,
+.landing-page-wrapper .featuredSection {
+  padding-left: 0;
+  padding-right: 0;
+  margin-bottom: 0;
+}
+
+.landing-page-wrapper h1,
+.landing-page-wrapper h2,
+.landing-page-wrapper h3 {
+  font-family: inherit;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  color: var(--lp-dark);
+}
+
+/* Banner app / ruido visual — no en landing pública */
+.landing-page-wrapper [class*="AppDownload"],
+.landing-page-wrapper [class*="appDownload"] {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .landing-page-wrapper [class*="AnnouncementBar"] {
+    font-size: 0.7rem !important;
+    min-height: 34px !important;
+    letter-spacing: 0.02em;
+  }
+
+  .landing-page-wrapper .heroContainer {
+    min-height: 260px !important;
+    height: 42vh !important;
+    max-height: 320px !important;
+  }
+
+  .landing-page-wrapper .title {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+  }
+
+  .landing-page-wrapper .subtitle {
+    font-size: 0.82rem !important;
+    margin-bottom: 0.75rem !important;
+    color: var(--lp-muted) !important;
+  }
+
+  .landing-page-wrapper .actionButton {
+    padding: 0.75rem 1.1rem !important;
+    font-size: 0.88rem !important;
+    border-radius: 14px !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  html.landing-has-sticky .landing-page-wrapper {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Video hero: full-bleed + fundido hacia el fold */
+  .landing-page-wrapper .sectionBlock:has(.sectionVideo) {
+    position: relative;
+    padding-bottom: 0 !important;
+    z-index: 2;
+  }
+
+  .landing-page-wrapper .sectionBlock:has(.sectionVideo)::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 6.5rem;
+    z-index: 3;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(5, 5, 5, 0.35) 28%,
+      rgba(7, 7, 8, 0.72) 62%,
+      var(--lp-mood-deep, #070708) 100%
+    );
+  }
+
+  .landing-page-wrapper .sectionBlock:has(.sectionVideo) + .sectionBlock {
+    margin-top: -3.25rem;
+    z-index: 4;
+  }
+
+  .landing-page-wrapper .sectionVideo {
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    /* Evita que el 9:16 ocupe toda la pantalla y bloquee el scroll */
+    max-height: min(68dvh, 520px) !important;
+    touch-action: pan-y !important;
+  }
+
+  .landing-page-wrapper .sectionVideo video,
+  .landing-page-wrapper .sectionVideo iframe {
+    pointer-events: none !important;
+  }
+
+  /* Coverflow: permite scroll vertical aunque haya swipe horizontal */
+  .landing-page-wrapper [class*="coverflow"] {
+    touch-action: pan-y pan-x;
+  }
+}
+
+@media (max-width: 420px) {
+  .landing-page-wrapper {
+    font-size: 14.5px;
+  }
+}

@@ -16,6 +16,10 @@ import BestSellersRow from './components/BestSellersRow/BestSellersRow';
 import Testimonials from './components/Testimonials';
 import MapLocation from './components/MapLocation';
 import TrustBadges from './components/TrustBadges/TrustBadges';
+import LandingPaymentBlock from './components/LandingPaymentBlock/LandingPaymentBlock';
+import ConversionFold from './components/ConversionFold/ConversionFold';
+import FeatureList from './components/FeatureList/FeatureList';
+import FaqAccordion from './components/FaqAccordion/FaqAccordion';
 import TextBlock from './components/TextBlock/TextBlock';
 import ImageBlock from './components/ImageBlock/ImageBlock';
 import HeaderBlock from './components/HeaderBlock/HeaderBlock';
@@ -46,6 +50,24 @@ import styles from './TiendaPage.module.css';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
+
+const MATADOR_FAQ_ITEMS = [
+  {
+    question: '¿De verdad puedo pagar al recibir?',
+    answer:
+      'Sí. Trabajamos con pago contra entrega verificado: liquidas el total cuando el courier te entrega el pedido en mano. Si quieres asegurar tu unidad antes del despacho, puedes separarla con un adelanto de S/ 10 (reserva de stock) y completar el saldo al recibir. Si cambias de opinión antes de que salga de almacén, puedes solicitar la anulación completa del pedido sin penalidad.',
+  },
+  {
+    question: '¿Cuánto demora el delivery?',
+    answer:
+      'En Lima Metropolitana despachamos en modalidad express: entrega en un máximo de 48 horas hábiles desde la confirmación de tu pedido. Te enviamos seguimiento por WhatsApp en cuanto el paquete sale de nuestro centro de distribución.',
+  },
+  {
+    question: '¿Puedo elegir color o acabado?',
+    answer:
+      'Sí. El reloj incluye 14 acabados oficiales disponibles en catálogo (variedad de cronógrafos, deportivos y ediciones limitadas). Al comprar indicas la referencia que ves en el carrusel o nos confirmas por WhatsApp; validamos stock del acabado elegido antes del despacho para garantizar que recibes exactamente el modelo que seleccionaste.',
+  },
+];
 
 // Ordena un array de productos EN MEMORIA según el criterio de la UI.
 // Se usa en los modos NO paginados (categoría/búsqueda) y como red de seguridad
@@ -755,13 +777,27 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const renderSection = (section) => {
     const s = section.settings || {};
     switch (section.type) {
-      case 'header':
+      case 'header': {
+        // Landing específica: "reloj matador" ya tiene otra forma de elegir acabado
+        // (evitamos duplicidad en la estructura final).
+        if (pageId === 'reloj-matador-pro-2026' && (s.title || '').trim() === 'Elige tu acabado') {
+          return null;
+        }
+        if (pageId === 'reloj-matador-pro-2026' && (s.title || '').trim() === 'En acción') {
+          return null;
+        }
+        // Bloque final "Últimas unidades" (CTA "Comprar ahora") — eliminado a pedido:
+        // la barra sticky ya cumple ese rol de cierre.
+        if (pageId === 'reloj-matador-pro-2026' && (s.title || '').trim() === 'Últimas unidades') {
+          return null;
+        }
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
             <SectionBackground config={s} />
             <HeaderBlock config={s} />
           </section>
         );
+      }
       case 'categories_nav': {
         // Nav de categorías con MINIATURAS por marca. La marca se elige en el
         // editor (s.brandId); sus burbujas vienen del `categoryNav` de esa marca.
@@ -816,6 +852,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         );
       case 'video': {
         if (!s.url?.trim()) return null;
+        if (
+          pageId === 'reloj-matador-pro-2026' &&
+          /video-02\.mp4/i.test(s.url)
+        ) {
+          return null;
+        }
         let finalUrl = s.url;
         let isEmbed = false;
 
@@ -835,6 +877,10 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
 
         const forceRatio = isEmbed || aspect !== 'auto';
 
+        const isPortraitVideo = aspect === '9:16';
+        // En mobile el 9:16 ocupa más de 1 viewport y el <video controls> traga la rueda/gesto.
+        const videoMaxHeight = isPortraitVideo ? 'min(68dvh, 520px)' : undefined;
+
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
@@ -842,13 +888,16 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
               className={styles.sectionVideo} 
               style={{ 
                 position: 'relative', 
-                paddingBottom: forceRatio ? paddingBottom : '0', 
-                height: forceRatio ? '0' : 'auto', 
+                paddingBottom: forceRatio && !isPortraitVideo ? paddingBottom : '0',
+                height: isPortraitVideo ? videoMaxHeight : (forceRatio ? '0' : 'auto'),
+                aspectRatio: isPortraitVideo ? '9 / 16' : undefined,
+                maxHeight: videoMaxHeight,
                 overflow: 'hidden', 
                 borderRadius: '12px',
                 maxWidth: aspect === '9:16' ? '450px' : (aspect === '1:1' ? '600px' : '100%'),
                 margin: '0 auto',
-                background: '#000'
+                background: '#000',
+                touchAction: 'pan-y',
               }}
             >
               {isEmbed ? (
@@ -857,20 +906,25 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
                   src={finalUrl} 
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen 
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', pointerEvents: 'none' }}
                 />
               ) : (
                 <video 
                   src={finalUrl} 
                   poster={s.poster || undefined} 
-                  controls 
+                  controls={s.controls === true}
+                  playsInline
+                  muted={s.autoplay !== false}
+                  autoPlay={s.autoplay !== false}
+                  loop={s.loop !== false}
                   style={{ 
-                    position: forceRatio ? 'absolute' : 'relative',
+                    position: forceRatio || isPortraitVideo ? 'absolute' : 'relative',
                     top: 0, left: 0, 
                     width: '100%', 
-                    height: forceRatio ? '100%' : 'auto',
+                    height: forceRatio || isPortraitVideo ? '100%' : 'auto',
                     objectFit: 'cover',
-                    borderRadius: '12px' 
+                    borderRadius: '12px',
+                    pointerEvents: 'none',
                   }} 
                 />
               )}
@@ -909,6 +963,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </section>
         );
       case 'testimonials':
+        // Comentarios ya están en el conversion_fold (carrusel arriba)
+        if (pageId === 'reloj-matador-pro-2026') return null;
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ overflow: 'hidden' }}>
             <SectionBackground config={s} />
@@ -930,6 +986,64 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             <TrustBadges badges={s.badges} />
           </section>
         );
+      case 'feature_list': {
+        if (pageId === 'reloj-matador-pro-2026') {
+          const sub = (s.subtitle || '').trim();
+          const title = (s.title || '').trim();
+          const itemsText = Array.isArray(s.items) ? s.items.map((item) => (item?.text || '').trim()) : [];
+          // Galería redundante (imagen grande + bullets de color)
+          if (sub === 'Indica tu color al pedir o por WhatsApp') return null;
+          // Segunda imagen suelta + testimonio embebido
+          if (!title && !sub && (s.quote || '').trim()) return null;
+          // Bloque compra segura / garantías redundante
+          if (sub === 'Tu dinero protegido hasta que lo tengas en mano') return null;
+          // Bloque de beneficios redundante antes del carrusel
+          if (
+            sub === 'Un reloj elegante, resistente y listo para usar todos los días.' ||
+            itemsText.includes('Cronógrafo funcional + ventana de fecha')
+          ) {
+            return null;
+          }
+        }
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
+            <FeatureList config={s} />
+          </section>
+        );
+      }
+      case 'faq_accordion': {
+        const faqConfig = pageId === 'reloj-matador-pro-2026'
+          ? { ...s, items: MATADOR_FAQ_ITEMS }
+          : s;
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
+            <FaqAccordion config={faqConfig} />
+          </section>
+        );
+      }
+      case 'conversion_fold':
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ padding: 0, overflow: 'hidden' }}>
+            <ConversionFold config={s} />
+          </section>
+        );
+      case 'landing_payment': {
+        const payConfig = pageId === 'reloj-matador-pro-2026'
+          ? {
+              ...s,
+              landingSlug: pageId,
+              peruOnly: true,
+              showPayPal: false,
+              montoUSD: 0,
+            }
+          : { ...s, landingSlug: pageId };
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '1.5rem', paddingBottom: s.paddingBottom || '0', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
+            <LandingPaymentBlock config={payConfig} />
+          </section>
+        );
+      }
       case 'marquee':
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
@@ -938,8 +1052,15 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </section>
         );
       case 'bestsellers_row':
+        // Coverflow del fold ya muestra los 14 acabados arriba
+        if (pageId === 'reloj-matador-pro-2026') return null;
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+          <section
+            key={section.id}
+            id={s.anchorId || undefined}
+            className={styles.sectionBlock}
+            style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'visible' }}
+          >
             <SectionBackground config={s} />
             <BestSellersRow cards={s.cards} />
           </section>
@@ -1163,7 +1284,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </span>
         </div>
       )}
-      {!categoryId && !searchTerm && <AppDownloadBanner />}
+      {!isLandingPage && !categoryId && !searchTerm && <AppDownloadBanner />}
       {sorted.map((section, index) => {
         const rendered = renderSection(section);
         if (!rendered) return null;

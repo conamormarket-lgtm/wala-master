@@ -19,11 +19,35 @@ class AppErrorBoundary extends React.Component {
     this.handleReload = this.handleReload.bind(this);
   }
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(error) {
+    const msg = error && typeof error.message === 'string' ? error.message : '';
+    // Extensiones / Google Translate mutan el DOM → removeChild. No tumbar toda la app.
+    if (
+      error?.name === 'NotFoundError' ||
+      msg.includes('removeChild') ||
+      msg.includes('insertBefore') ||
+      msg.includes('The node to be removed is not a child')
+    ) {
+      return null;
+    }
     return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
+    const msg = error && typeof error.message === 'string' ? error.message : '';
+    if (
+      error?.name === 'NotFoundError' ||
+      msg.includes('removeChild') ||
+      msg.includes('insertBefore')
+    ) {
+      try {
+        // eslint-disable-next-line no-console
+        console.warn('AppErrorBoundary: ignorando conflicto de DOM:', msg);
+      } catch {
+        /* no-op */
+      }
+      return;
+    }
     try {
       // eslint-disable-next-line no-console
       console.error('AppErrorBoundary:', error, errorInfo);

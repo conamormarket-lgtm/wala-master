@@ -116,3 +116,11 @@ ui-debug.log
 
 # Respaldos/snapshots de datos generados por scripts de migración (no subir al repo)
 ops/backup/snapshots/
+
+# Credenciales Admin SDK (NUNCA subir)
+serviceAccountKey.json
+firebase-service-account.json
+service-account.json
+credentials.json
+*-firebase-adminsdk-*.json
+

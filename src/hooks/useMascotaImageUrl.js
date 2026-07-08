@@ -3,6 +3,7 @@ import { getMessage } from '../services/messages';
 import { toDirectImageUrl, getPreviewImageUrl } from '../utils/mascotaImage';
 
 const MASCOTA_KEY = 'mascota_kap_image_url';
+const LOCAL_MASCOT_FALLBACK = `${import.meta.env.BASE_URL}assets/kapi/kapi-happy.png`;
 
 /**
  * Devuelve la URL de la imagen de la mascota configurada en Admin > Mascota.
@@ -22,8 +23,12 @@ export function useMascotaImageUrl() {
 
   const previewUrl = savedUrl ? getPreviewImageUrl(savedUrl) : '';
   const directUrl = savedUrl ? toDirectImageUrl(savedUrl) : '';
-  // Para Drive: principal thumbnail, fallback uc (o al revés si prefieres)
-  const src = previewUrl || directUrl || '';
+  const remoteSrc = previewUrl || directUrl || '';
   const fallbackSrc = (previewUrl && directUrl && previewUrl !== directUrl) ? directUrl : '';
-  return { src: src || '', fallbackSrc: fallbackSrc || '', isLoading };
+  const src = remoteSrc || LOCAL_MASCOT_FALLBACK;
+  return {
+    src,
+    fallbackSrc: fallbackSrc || (remoteSrc ? LOCAL_MASCOT_FALLBACK : ''),
+    isLoading,
+  };
 }

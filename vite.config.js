@@ -37,6 +37,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define,
     server: { port: 3000, open: false },
+    preview: {
+      host: true, // 0.0.0.0 — localhost y 127.0.0.1 en Windows
+      port: 4174,
+      strictPort: false,
+    },
     build: {
       outDir: 'build', // misma carpeta que CRA (Vercel/Firebase ya la detectan)
       // Fase 1 — partir el bundle monolítico (~2.25MB) en chunks vendor por librería grande.
