@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { showFlyingCoins } from '../../../utils/animations';
 import { scheduleKapiNotifications } from '../../../services/kapiNotifications';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -9,6 +10,11 @@ import styles from './KapiPet.module.css';
 
 const KapiPet = () => {
   const { user, userProfile, feedKapi, activeWeeklyChallenge } = useAuth();
+  // En landing pages el header se oculta (LayoutContext). Ahí NO mostramos ni
+  // auto-abrimos a Kapi: el login anónimo del checkout dispararía el modal encima
+  // del pago y espantaría la venta.
+  const layout = useLayoutContext();
+  const onLandingPage = layout && layout.isHeaderVisible === false;
   const [isOpen, setIsOpen] = useState(false);
   const [isFeeding, setIsFeeding] = useState(false);
   const [evidenceUrl, setEvidenceUrl] = useState('');
@@ -63,6 +69,7 @@ const KapiPet = () => {
 
   // Hook para disparar Onboarding Tutorial a usuarios nuevos
   useEffect(() => {
+    if (onLandingPage) return; // no auto-abrir Kapi en landings/checkout
     if (userProfile) {
       const tutorialCompleted = localStorage.getItem('kapiTutorialCompleted');
       if (!tutorialCompleted) {
@@ -70,7 +77,7 @@ const KapiPet = () => {
         setIsOpen(true);
       }
     }
-  }, [userProfile]);
+  }, [userProfile, onLandingPage]);
 
   useEffect(() => {
     if (isOpen) {
@@ -98,6 +105,7 @@ const KapiPet = () => {
     }
   }, [isOpen]);
 
+  if (onLandingPage) return null; // Kapi no aparece en landings (protege la conversión del checkout)
   if (!user || !userProfile) return null;
 
   const _d2 = new Date();
