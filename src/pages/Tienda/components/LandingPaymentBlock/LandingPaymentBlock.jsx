@@ -453,41 +453,36 @@ const LandingPaymentBlock = ({ config = {} }) => {
   };
   useEffect(() => () => { if (flashHintTimer.current) clearTimeout(flashHintTimer.current); }, []);
 
-  // ── Exit-intent: al retroceder (botón atrás) o intentar salir, mostrar el popup
-  // "¿Ya te vas, K-CHERO?". Solo una vez por sesión y solo si hay WhatsApp.
-  const EXIT_KEY = 'landing_exit_shown';
-  const triggerExit = () => {
-    try {
-      if (sessionStorage.getItem(EXIT_KEY)) return false;
-      sessionStorage.setItem(EXIT_KEY, '1');
-    } catch { /* ignore */ }
-    setShowExit(true);
-    return true;
-  };
+  // ── Exit-intent AGRESIVO: cada vez que el cliente intenta irse, mostrar el
+  // popup "¿Ya te vas, K-CHERO?". Se re-arma en cada intento (no una sola vez).
   useEffect(() => {
     if (!showWhatsApp || pagoCompletado) return undefined;
-    let alreadyShown = false;
-    try { alreadyShown = !!sessionStorage.getItem(EXIT_KEY); } catch { /* ignore */ }
-    if (alreadyShown) return undefined;
 
-    // 1) Botón ATRÁS / retroceder: metemos un estado extra para interceptar el
-    //    primer "back" y mostrar el popup en vez de abandonar la página.
+    // 1) Botón ATRÁS / retroceder (compu y celular): interceptamos con un estado
+    //    guardián y en CADA intento mostramos el popup y volvemos a empujarlo,
+    //    así el "atrás" siempre trae el popup en vez de abandonar la página.
     window.history.pushState({ lpExit: true }, '');
     const onPop = () => {
-      if (triggerExit()) {
-        // re-empujamos para que el usuario se quede viendo el popup
-        window.history.pushState({ lpExit: true }, '');
-      }
+      setShowExit(true);
+      window.history.pushState({ lpExit: true }, '');
     };
-    // 2) Salida del mouse por arriba (desktop): intención de cerrar/irse.
+    // 2) Desktop: salida del mouse por arriba (intención de cerrar la pestaña).
     const onMouseOut = (e) => {
-      if ((e.clientY || 0) <= 0) triggerExit();
+      if ((e.clientY || 0) <= 0) setShowExit(true);
+    };
+    // 3) Recargar / cerrar pestaña (compu): aviso nativo "¿Salir del sitio?".
+    const onBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
     };
     window.addEventListener('popstate', onPop);
     document.addEventListener('mouseout', onMouseOut);
+    window.addEventListener('beforeunload', onBeforeUnload);
     return () => {
       window.removeEventListener('popstate', onPop);
       document.removeEventListener('mouseout', onMouseOut);
+      window.removeEventListener('beforeunload', onBeforeUnload);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showWhatsApp, pagoCompletado]);
