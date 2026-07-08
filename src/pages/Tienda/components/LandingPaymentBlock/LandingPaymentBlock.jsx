@@ -453,35 +453,45 @@ const LandingPaymentBlock = ({ config = {} }) => {
   };
   useEffect(() => () => { if (flashHintTimer.current) clearTimeout(flashHintTimer.current); }, []);
 
-  // ── Exit-intent AGRESIVO: cada vez que el cliente intenta irse, mostrar el
-  // popup "¿Ya te vas, K-CHERO?". Se re-arma en cada intento (no una sola vez).
+  // ── Exit-intent: mostrar el popup SOLO al intentar salir (retroceder o, en
+  // desktop, sacar el cursor por arriba). NO debe salir mientras se navega.
   useEffect(() => {
     if (!showWhatsApp || pagoCompletado) return undefined;
+    const isTouch = typeof window !== 'undefined'
+      && ('ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0);
 
     // 1) Botón ATRÁS / retroceder (compu y celular): interceptamos con un estado
-    //    guardián y en CADA intento mostramos el popup y volvemos a empujarlo,
-    //    así el "atrás" siempre trae el popup en vez de abandonar la página.
+    //    guardián y mostramos el popup en vez de abandonar la página.
     window.history.pushState({ lpExit: true }, '');
     const onPop = () => {
       setShowExit(true);
       window.history.pushState({ lpExit: true }, '');
     };
-    // 2) Desktop: salida del mouse por arriba (intención de cerrar la pestaña).
+    window.addEventListener('popstate', onPop);
+
+    // 2) Desktop SOLAMENTE: exit-intent real (cursor sale del documento por arriba)
+    //    y una sola vez. En táctil NO se registra: los toques generan mouseout
+    //    sintéticos con clientY=0 que hacían saltar el popup a cada rato.
+    let mouseFired = false;
     const onMouseOut = (e) => {
-      if ((e.clientY || 0) <= 0) setShowExit(true);
+      if (mouseFired) return;
+      if (e.relatedTarget || (e.clientY || 1) > 0) return; // no salió por arriba del documento
+      mouseFired = true;
+      setShowExit(true);
     };
+    if (!isTouch) document.addEventListener('mouseout', onMouseOut);
+
     // 3) Recargar / cerrar pestaña (compu): aviso nativo "¿Salir del sitio?".
     const onBeforeUnload = (e) => {
       e.preventDefault();
       e.returnValue = '';
       return '';
     };
-    window.addEventListener('popstate', onPop);
-    document.addEventListener('mouseout', onMouseOut);
     window.addEventListener('beforeunload', onBeforeUnload);
+
     return () => {
       window.removeEventListener('popstate', onPop);
-      document.removeEventListener('mouseout', onMouseOut);
+      if (!isTouch) document.removeEventListener('mouseout', onMouseOut);
       window.removeEventListener('beforeunload', onBeforeUnload);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
