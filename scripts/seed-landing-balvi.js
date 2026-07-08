@@ -550,6 +550,7 @@ async function setDoc(coll, id, data) {
         hideCheckoutHeader: false,
         peruOnly: true,
         stickyCTA: "Continuar al pago",
+        whatsappNumber: "51924426791", // botón "Comprar por WhatsApp" → wa.me/51924426791
         mascotPhrases: [
           "¡Se ve más caro de lo que cuesta! 🔥",
           "Activado 2026 · tú también te lo mereces",

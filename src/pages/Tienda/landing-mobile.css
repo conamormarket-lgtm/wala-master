@@ -39,6 +39,18 @@
   margin: 0 auto;
 }
 
+/* Teléfono del checkout: PhoneIntlInput trae estilos propios y en la landing el
+   input del número quedaba con fondo/texto oscuros (el "9999" no se leía).
+   Lo igualamos a los demás campos (fondo blanco, texto oscuro legible). */
+.landing-page-wrapper input[type="tel"] {
+  background: #fff !important;
+  color: #0f172a !important;
+  caret-color: #0f172a;
+}
+.landing-page-wrapper input[type="tel"]::placeholder {
+  color: #94a3b8 !important;
+}
+
 .landing-page-wrapper .sectionBlock,
 .landing-page-wrapper .featuredSection {
   padding-left: 0;
