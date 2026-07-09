@@ -495,6 +495,13 @@ const LandingPaymentBlock = ({ config = {} }) => {
     try {
       const authUser = await ensureAuthForPayment();
       await preparePedido(authUser);
+      // UN SOLO TOQUE: apenas queda registrado el pedido abrimos Culqi. Antes el
+      // cliente tenía que pulsar "Pagar" otra vez en el paso siguiente, y ese
+      // segundo clic hacía perder ventas.
+      if (showCulqi && chargeAmount >= 3) {
+        setActiveGateway('culqi');
+        setCulqiAutoOpen(true);
+      }
     } catch (err) {
       setError(err.message || 'No pudimos registrar tu pedido. Intenta de nuevo.');
     } finally {
