@@ -46,6 +46,7 @@ import HeroBanner from './components/HeroBanner';
 import EditableSection from '../../components/admin/EditableSection';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 import AppDownloadBanner from './components/AppDownloadBanner';
+import { isKcheroLanding } from '../../constants/landingSlugs';
 import styles from './TiendaPage.module.css';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
@@ -780,15 +781,15 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       case 'header': {
         // Landing específica: "reloj matador" ya tiene otra forma de elegir acabado
         // (evitamos duplicidad en la estructura final).
-        if (pageId === 'reloj-matador-pro-2026' && (s.title || '').trim() === 'Elige tu acabado') {
+        if (isKcheroLanding(pageId) && (s.title || '').trim() === 'Elige tu acabado') {
           return null;
         }
-        if (pageId === 'reloj-matador-pro-2026' && (s.title || '').trim() === 'En acción') {
+        if (isKcheroLanding(pageId) && (s.title || '').trim() === 'En acción') {
           return null;
         }
         // Bloque final "Últimas unidades" (CTA "Comprar ahora") — eliminado a pedido:
         // la barra sticky ya cumple ese rol de cierre.
-        if (pageId === 'reloj-matador-pro-2026' && (s.title || '').trim() === 'Últimas unidades') {
+        if (isKcheroLanding(pageId) && (s.title || '').trim() === 'Últimas unidades') {
           return null;
         }
         return (
@@ -853,7 +854,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       case 'video': {
         if (!s.url?.trim()) return null;
         if (
-          pageId === 'reloj-matador-pro-2026' &&
+          isKcheroLanding(pageId) &&
           /video-02\.mp4/i.test(s.url)
         ) {
           return null;
@@ -964,7 +965,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         );
       case 'testimonials':
         // Comentarios ya están en el conversion_fold (carrusel arriba)
-        if (pageId === 'reloj-matador-pro-2026') return null;
+        if (isKcheroLanding(pageId)) return null;
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ overflow: 'hidden' }}>
             <SectionBackground config={s} />
@@ -987,7 +988,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </section>
         );
       case 'feature_list': {
-        if (pageId === 'reloj-matador-pro-2026') {
+        if (isKcheroLanding(pageId)) {
           const sub = (s.subtitle || '').trim();
           const title = (s.title || '').trim();
           const itemsText = Array.isArray(s.items) ? s.items.map((item) => (item?.text || '').trim()) : [];
@@ -1012,7 +1013,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         );
       }
       case 'faq_accordion': {
-        const faqConfig = pageId === 'reloj-matador-pro-2026'
+        const faqConfig = isKcheroLanding(pageId)
           ? { ...s, items: MATADOR_FAQ_ITEMS }
           : s;
         return (
@@ -1028,7 +1029,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </section>
         );
       case 'landing_payment': {
-        const payConfig = pageId === 'reloj-matador-pro-2026'
+        const payConfig = isKcheroLanding(pageId)
           ? {
               ...s,
               landingSlug: pageId,
@@ -1053,7 +1054,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         );
       case 'bestsellers_row':
         // Coverflow del fold ya muestra los 14 acabados arriba
-        if (pageId === 'reloj-matador-pro-2026') return null;
+        if (isKcheroLanding(pageId)) return null;
         return (
           <section
             key={section.id}

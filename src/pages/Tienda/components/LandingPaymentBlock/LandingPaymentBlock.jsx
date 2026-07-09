@@ -13,6 +13,7 @@ import CountrySelect from '../../../../components/intl/CountrySelect';
 import PhoneIntlInput from '../../../../components/intl/PhoneIntlInput';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../../../../constants/documentTypes';
 import { DEPARTAMENTOS, getProvincias, getDistritos, esEnvioLocal } from '../../../../constants/peruUbigeo';
+import { isKcheroLanding } from '../../../../constants/landingSlugs';
 import styles from './LandingPaymentBlock.module.css';
 
 const LANDING_ACABADO_KEY = 'landing_matador_acabado';
@@ -120,7 +121,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
   // la tarjeta para NO duplicar "Finaliza tu compra".
   const hideHeader = config.hideCheckoutHeader === true || Boolean((config.title || '').trim());
   const productId = config.productId || '';
-  const peruOnly = config.peruOnly === true || config.landingSlug === 'reloj-matador-pro-2026';
+  const peruOnly = config.peruOnly === true || isKcheroLanding(config.landingSlug);
   const showCulqi = config.showCulqi !== false;
   const showPayPal = !peruOnly && config.showPayPal !== false;
   const sectionTitle = config.title || '';

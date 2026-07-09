@@ -101,9 +101,11 @@ if (TO_PROD) {
   console.log("→ Sembrando en EMULADOR local (demo-wala)");
 }
 
-const SLUG = "reloj-matador-pro-2026";
-const LP_ID = "lp-reloj-matador-2026";
-const PRODUCT_ID = "reloj-matador-pro-2026";
+// Marca renombrada a K-CHERO. El slug antiguo (reloj-matador-pro-2026) redirige
+// al nuevo desde DynamicLandingPage (src/constants/landingSlugs.js).
+const SLUG = "reloj-kchero-2026";
+const LP_ID = "lp-reloj-kchero-2026";
+const PRODUCT_ID = "reloj-kchero-2026";
 const LINK = `/producto/${PRODUCT_ID}`;
 const PAY_ANCHOR = "#pagar-ahora";
 const MEDIA = "/landing-matador";
@@ -378,10 +380,19 @@ async function setDoc(coll, id, data) {
   });
 
   await setDoc("productos_wala", PRODUCT_ID, {
-    name: "Reloj Matador Pro 2026 — Edición Limitada",
-    sku: "RELOJ-MATADOR-2026",
-    description:
-      "<p>Reloj premium de acero: acabado cronógrafo, fecha, correa metálica o silicona. El regalo que se nota en la muñeca.</p>",
+    name: "Reloj K-CHERO 2026 — Edición Limitada",
+    sku: "RELOJ-KCHERO-2026",
+    description: [
+      "<p><strong>El reloj que te hace ver K-CHERO.</strong> Acero premium, presencia real en la muñeca y ese detalle que se nota apenas entras.</p>",
+      "<ul>",
+      "<li><strong>14 acabados oficiales</strong> — cronógrafos, deportivos y ediciones cuadradas. Eliges el tuyo en el carrusel.</li>",
+      "<li><strong>Acero inoxidable</strong> con correa metálica o silicona según el modelo.</li>",
+      "<li><strong>Cronógrafo y fecha</strong> funcionales, dial multifunción.</li>",
+      "<li><strong>Resistente al agua</strong> para el día a día (salpicaduras y lluvia).</li>",
+      "<li><strong>Garantía 12 meses</strong> y devolución fácil.</li>",
+      "</ul>",
+      "<p>Envío a todo el Perú · Pago seguro con tarjeta o Yape · También puedes coordinarlo por WhatsApp.</p>",
+    ].join(""),
     // price = ORIGINAL (tachado) y salePrice = OFERTA. La PDP muestra salePrice
     // como precio grande, price como precio tachado y el % de descuento entre
     // ambos (ver ProductDetail: displayPrice=salePrice, originalPrice=price).
@@ -413,11 +424,11 @@ async function setDoc(coll, id, data) {
     hasVariants: false,
     inStock: 120,
     categories: ["accesorios", "polos"],
-    tags: ["reloj", "matador", "accesorio", "regalo"],
+    tags: ["reloj", "kchero", "chero", "accesorio", "regalo"],
     // Tokens para búsqueda (misma lógica que buildSearchTokens en products.js)
     searchTokens: [
       "re", "rel", "relo", "reloj",
-      "ma", "mat", "mata", "matad", "matado", "matador",
+      "kc", "kch", "kche", "kcher", "kchero", "ch", "che", "cher", "chero",
       "pr", "pro", "2026",
       "ac", "acc", "acce", "acces", "acceso", "accesor", "accesori", "accesorio",
     ],
@@ -427,7 +438,7 @@ async function setDoc(coll, id, data) {
   });
 
   await setDoc("landingPages", LP_ID, {
-    title: "Reloj Matador Pro 2026 — Landing Balvi",
+    title: "Reloj K-CHERO 2026 — Landing",
     slug: SLUG,
     brandId: "",
     hideHeader: true,
@@ -492,7 +503,7 @@ async function setDoc(coll, id, data) {
       order: next(),
       settings: {
         imageUrl: IMG.hero,
-        imageAlt: "Reloj Matador Pro 2026 — cronógrafo negro",
+        imageAlt: "Reloj K-CHERO 2026 — cronógrafo negro",
         showHeroImage: false,
         coverflow: true,
         brandName: "CHERO",
@@ -513,6 +524,9 @@ async function setDoc(coll, id, data) {
         })),
         socialProofBadge: "+2.400 clientes ya lo eligieron",
         endTime: offerEnds,
+        // Duración de la cuenta regresiva "evergreen": cuando endTime vence, cada
+        // visitante recibe su propia ventana de OFFER_HOURS que se regenera sola.
+        offerHours: OFFER_HOURS,
         countdownLabel: "OFERTA POR TIEMPO LIMITADO",
         montoPEN: PRICE_PEN,
         precioOriginal: PRECIO_ORIGINAL,
@@ -529,7 +543,7 @@ async function setDoc(coll, id, data) {
         shipBarText: "",
         trustText: "Envío gratis a todo el Perú",
         showWhatsApp: true,
-        whatsappMessage: "Hola, me interesa el Reloj Matador Pro 2026",
+        whatsappMessage: "Hola, me interesa el Reloj K-CHERO 2026",
         accentColor: "#e10600",
         backgroundColor: "#070708",
       },
@@ -542,8 +556,8 @@ async function setDoc(coll, id, data) {
       order: next(),
       settings: {
         title: "Finaliza tu compra",
-        subtitle: `Reloj Matador Pro 2026 · ${OFFER_BADGE}`,
-        concepto: `Reloj Matador Pro 2026 — ${OFFER_BADGE}`,
+        subtitle: `Reloj K-CHERO 2026 · ${OFFER_BADGE}`,
+        concepto: `Reloj K-CHERO 2026 — ${OFFER_BADGE}`,
         montoPEN: PRICE_PEN,
         precioOriginal: PRECIO_ORIGINAL,
         showPriceBlock: false,
@@ -606,6 +620,21 @@ async function setDoc(coll, id, data) {
   ];
 
   await setDoc("pages", SLUG, { sections });
+
+  // ── Producto ANTIGUO (slug "matador"): lo ocultamos ──────────────────────
+  // La ficha vive ahora en productos_wala/reloj-kchero-2026. El doc viejo se
+  // marca oculto/borrado (merge: NO se borra el documento ni otros campos) para
+  // que no aparezca en el catálogo ni compita con la nueva ficha. La URL vieja
+  // de la landing ya redirige al nuevo slug desde el front.
+  const LEGACY_PRODUCT_ID = "reloj-matador-pro-2026";
+  if (LEGACY_PRODUCT_ID !== PRODUCT_ID) {
+    await setDoc("productos_wala", LEGACY_PRODUCT_ID, {
+      visible: false,
+      deleted: true,
+      updatedAt: new Date().toISOString(),
+    });
+    console.log(`  Producto viejo oculto: productos_wala/${LEGACY_PRODUCT_ID}`);
+  }
 
   const baseUrl = TO_PROD ? "https://wala.pe" : "http://localhost:3001";
   console.log("");

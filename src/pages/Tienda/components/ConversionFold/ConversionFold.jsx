@@ -15,6 +15,8 @@ const DEFAULT_MOOD = {
 };
 
 const OFFER_DEADLINE_KEY = 'landing_offer_deadline';
+// Duración de la oferta evergreen (horas) si el config no la especifica.
+const OFFER_HOURS_DEFAULT = 1;
 
 /**
  * Devuelve un deadline SIEMPRE futuro (ms).
@@ -27,7 +29,7 @@ function resolveDeadline(configEndTime, hours) {
   const now = Date.now();
   const cfg = configEndTime ? new Date(configEndTime).getTime() : 0;
   if (cfg > now) return cfg;
-  const windowMs = Math.max(1, Number(hours) || 24) * 3600 * 1000;
+  const windowMs = (Number(hours) > 0 ? Number(hours) : OFFER_HOURS_DEFAULT) * 3600 * 1000;
   try {
     const saved = Number(localStorage.getItem(OFFER_DEADLINE_KEY) || 0);
     if (saved > now) return saved;
@@ -39,7 +41,7 @@ function resolveDeadline(configEndTime, hours) {
   }
 }
 
-const Countdown = ({ endTime, offerHours = 24 }) => {
+const Countdown = ({ endTime, offerHours = OFFER_HOURS_DEFAULT }) => {
   const [deadline, setDeadline] = useState(() => resolveDeadline(endTime, offerHours));
   const [parts, setParts] = useState(null);
 
@@ -473,7 +475,7 @@ const ConversionFold = ({ config = {} }) => {
               </span>
               <Countdown
                 endTime={config.endTime}
-                offerHours={Number(config.offerHours) > 0 ? Number(config.offerHours) : 24}
+                offerHours={Number(config.offerHours) > 0 ? Number(config.offerHours) : OFFER_HOURS_DEFAULT}
               />
             </div>
           )}
