@@ -235,11 +235,16 @@ async function setDoc(coll, id, data) {
       type: "image",
       order: next(),
       settings: {
-        imageUrl: HERO_PROMO,
-        imageAlt: `Combo Reloj + Billetera ${PRICE_LABEL}`,
+        // ImageBlock usa `url`/`alt` (NO imageUrl/imageAlt) y si url va vacío no
+        // renderiza nada. Este bloque muestra el arte promocional del combo.
+        url: HERO_PROMO,
+        alt: `Combo Reloj + Billetera ${PRICE_LABEL}`,
+        maxWidth: "430px",
+        alignment: "center",
+        borderRadius: "16px",
         backgroundColor: "#050505",
-        paddingTop: "0",
-        paddingBottom: "0.35rem",
+        paddingTop: "0.35rem",
+        paddingBottom: "0.5rem",
       },
     },
 
@@ -264,6 +269,7 @@ async function setDoc(coll, id, data) {
       order: next(),
       settings: {
         brandName: "CHERO",
+        brandMark: "K",
         badge: "COMBO 2026",
         imageUrl: img("01"),
         imageAlt: "Combo reloj + billetera",

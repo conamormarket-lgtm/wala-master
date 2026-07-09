@@ -383,6 +383,11 @@ const ConversionFold = ({ config = {} }) => {
     '--fold-base': mood.deep,
     '--fold-soft': mood.soft,
     '--fold-mist': mood.mist,
+    // Tema opcional de la sección (p. ej. la landing de billeteras usa una
+    // paleta de cuero cálido en vez del negro/rojo del reloj).
+    ...(config.foldTop && { '--fold-top': config.foldTop }),
+    ...(config.foldBottom && { '--fold-bottom': config.foldBottom }),
+    ...(config.foldText && { '--fold-text': config.foldText }),
   };
 
   const starFill = Math.min(5, Math.max(0, Math.round(rating)));

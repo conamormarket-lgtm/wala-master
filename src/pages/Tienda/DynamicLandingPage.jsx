@@ -5,7 +5,6 @@ import { getThemeById } from './services/themes';
 import { useLayoutContext } from '../../contexts/LayoutContext';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 import TiendaPage from './TiendaPage';
-import PageLoading from '../../components/common/PageLoading/PageLoading';
 import { useAuth } from '../../contexts/AuthContext';
 import { KCHERO_SLUG, KCHERO_SLUG_LEGACY } from '../../constants/landingSlugs';
 import './landing-mobile.css';
@@ -19,6 +18,14 @@ const DynamicLandingPage = () => {
   const [loading, setLoading] = useState(true);
   const [landingPage, setLandingPage] = useState(null);
   const [themeContent, setThemeContent] = useState(null);
+
+  // Oculta el header/footer de la tienda DE INMEDIATO. Si esperamos al fetch de
+  // la landing, el cliente ve por un instante el chrome de WALA + el esqueleto
+  // del catálogo. Tras el fetch se ajusta al valor real de la landing.
+  useEffect(() => {
+    setHeaderVisible(false);
+    setFooterVisible(false);
+  }, [setHeaderVisible, setFooterVisible]);
 
   useEffect(() => {
     let mounted = true;
@@ -62,10 +69,13 @@ const DynamicLandingPage = () => {
     return <Navigate to={`/${KCHERO_SLUG}`} replace />;
   }
 
-  if (loading) return <PageLoading />;
+  // Mientras carga la landing NO mostramos el esqueleto del catálogo (PageLoading
+  // dibuja tarjetas de producto y parece la tienda). Un fondo oscuro neutro hace
+  // que la landing "aparezca de frente".
+  if (loading) return <div className="landing-page-boot" aria-busy="true" aria-label="Cargando" />;
 
   if (!landingPage) {
-    if (authLoading) return <PageLoading />;
+    if (authLoading) return <div className="landing-page-boot" aria-busy="true" />;
     // Landing pública no encontrada: a home si hay sesión; si no, home también
     // (no mandar a /login: las LP deben ser visibles sin cuenta).
     return <Navigate to="/" replace />;

@@ -4,12 +4,18 @@
   --fold-base: #070708;
   --fold-soft: #1a0a0c;
   --fold-mist: rgba(225, 6, 0, 0.22);
+  /* Tope/base del degradado y color de texto: tematizables desde el config de la
+     sección (foldTop / foldBottom / foldBase / foldSoft / foldMist / accentColor).
+     Sin config, quedan los valores por defecto (landing del reloj). */
+  --fold-top: #0a0a0c;
+  --fold-bottom: #050505;
+  --fold-text: #f5f5f5;
   width: 100%;
   background:
     radial-gradient(ellipse 90% 55% at 50% -10%, var(--fold-mist), transparent 55%),
     radial-gradient(ellipse 70% 45% at 50% 35%, var(--fold-soft), transparent 60%),
-    linear-gradient(180deg, #0a0a0c 0%, var(--fold-base) 48%, #050505 100%);
-  color: #f5f5f5;
+    linear-gradient(180deg, var(--fold-top) 0%, var(--fold-base) 48%, var(--fold-bottom) 100%);
+  color: var(--fold-text);
   overflow: hidden;
   position: relative;
   transition: background 0.55s ease;

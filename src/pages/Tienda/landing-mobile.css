@@ -174,3 +174,15 @@
     font-size: 14.5px;
   }
 }
+
+/* Pantalla de arranque de la landing: NO usamos el esqueleto del catálogo
+   (PageLoading dibuja tarjetas de producto y parece la tienda de WALA).
+   Un fondo oscuro neutro hace que la landing aparezca "de frente". */
+.landing-page-boot {
+  min-height: 100dvh;
+  min-height: 100vh;
+  width: 100%;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(225, 6, 0, 0.12), transparent 60%),
+    linear-gradient(180deg, #0a0a0c 0%, #070708 40%, #050505 100%);
+}
