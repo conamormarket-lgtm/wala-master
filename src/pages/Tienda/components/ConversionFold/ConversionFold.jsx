@@ -162,6 +162,19 @@ const ConversionFold = ({ config = {} }) => {
   const thumbBtnRefs = useRef([]);
   const thumbScrollReady = useRef(false);
 
+  // ── Billeteras (landing combo reloj + billetera). ADITIVO: si el config no
+  // trae `wallets`, nada cambia para las landings existentes.
+  const wallets = Array.isArray(config.wallets)
+    ? config.wallets.filter((w) => w && w.imageUrl)
+    : [];
+  const [activeWallet, setActiveWallet] = useState(0);
+  // ¿El cliente ya eligió billetera a propósito? (no cuenta la preselección)
+  const [walletChosen, setWalletChosen] = useState(false);
+  const walletRef = useRef(null);
+  // Mensaje flotante de guía ("¡Buena elección! ahora elige tu billetera")
+  const [stepMsg, setStepMsg] = useState('');
+  const stepTimer = useRef(null);
+
   useEffect(() => {
     setActiveVariant(0);
     thumbScrollReady.current = false;
@@ -205,6 +218,21 @@ const ConversionFold = ({ config = {} }) => {
       window.dispatchEvent(new CustomEvent('landing-acabado-change', { detail: payload }));
     } catch { /* ignore */ }
   }, [current]);
+
+  // Billetera elegida → localStorage + evento para el checkout (igual que el reloj).
+  useEffect(() => {
+    if (!wallets.length) return;
+    const w = wallets[activeWallet];
+    if (!w) return;
+    const payload = { id: w.id || '', label: w.label || '', imageUrl: w.imageUrl || '' };
+    try {
+      localStorage.setItem('landing_combo_billetera', JSON.stringify(payload));
+    } catch { /* ignore */ }
+    try {
+      window.dispatchEvent(new CustomEvent('landing-billetera-change', { detail: payload }));
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWallet, wallets.length]);
 
   // Tonalidad de TODA la landing (wrapper) según el reloj activo
   useEffect(() => {
@@ -285,20 +313,57 @@ const ConversionFold = ({ config = {} }) => {
     setActiveVariant((prev) => (prev + dir + variants.length) % variants.length);
   };
 
-  // Al ELEGIR un reloj (clic en tarjeta o miniatura), centrarlo y bajar al
-  // formulario de compra. Las flechas ‹ › solo navegan (no bajan) para poder ojear.
+  const payAnchorId = (config.ctaPrimaryLink || '').replace('#', '') || 'pagar-ahora';
   const pickTimer = useRef(null);
+
+  const scrollToPay = () => {
+    const el = document.getElementById(payAnchorId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const showStep = (msg) => {
+    setStepMsg(msg);
+    if (stepTimer.current) clearTimeout(stepTimer.current);
+    stepTimer.current = setTimeout(() => setStepMsg(''), 2800);
+  };
+
+  /**
+   * Elegir RELOJ.
+   * - Landing simple (sin billeteras): baja directo al pago (como siempre).
+   * - Landing COMBO: si aún no eligió billetera, lo lleva al selector de
+   *   billetera ("¡Buena elección!"). Si ya la eligió, va al pago.
+   * Las flechas ‹ › solo navegan (no desplazan), para poder ojear tranquilo.
+   */
   const pickWatch = (i) => {
     setActiveVariant(i);
-    const anchorId = config.ctaPrimaryLink?.replace('#', '') || 'pagar-ahora';
     if (pickTimer.current) clearTimeout(pickTimer.current);
-    // pequeño delay para que el coverflow centre el reloj antes de desplazar
+    // delay corto para que el coverflow centre el reloj antes de desplazar
     pickTimer.current = setTimeout(() => {
-      const el = document.getElementById(anchorId);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (wallets.length > 0 && !walletChosen) {
+        showStep('¡Buena elección! Ahora elige tu billetera 👇');
+        if (walletRef.current) walletRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      if (wallets.length > 0) showStep('¡Excelente pack! Completa tu compra 🔥');
+      scrollToPay();
     }, 320);
   };
-  useEffect(() => () => { if (pickTimer.current) clearTimeout(pickTimer.current); }, []);
+
+  /** Elegir BILLETERA → pack completo, directo a comprar. */
+  const pickWallet = (i) => {
+    setActiveWallet(i);
+    setWalletChosen(true);
+    if (pickTimer.current) clearTimeout(pickTimer.current);
+    pickTimer.current = setTimeout(() => {
+      showStep('¡Excelente pack! Completa tu compra 🔥');
+      scrollToPay();
+    }, 380);
+  };
+
+  useEffect(() => () => {
+    if (pickTimer.current) clearTimeout(pickTimer.current);
+    if (stepTimer.current) clearTimeout(stepTimer.current);
+  }, []);
 
   const onTouchStart = (e) => {
     touchStartX.current = e.changedTouches?.[0]?.clientX ?? null;
@@ -437,6 +502,39 @@ const ConversionFold = ({ config = {} }) => {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* ── Selector de billetera (solo landing combo) ────────────────────── */}
+        {wallets.length > 0 && (
+          <div className={styles.walletPicker} ref={walletRef}>
+            <p className={styles.walletTitle}>
+              {config.walletTitle || 'Ahora elige tu billetera'}
+            </p>
+            {config.walletSubtitle && (
+              <p className={styles.walletSubtitle}>{config.walletSubtitle}</p>
+            )}
+            <div className={styles.walletRow} role="radiogroup" aria-label="Colores de billetera">
+              {wallets.map((w, i) => (
+                <button
+                  key={w.id || `wallet-${i}`}
+                  type="button"
+                  role="radio"
+                  aria-checked={i === activeWallet}
+                  className={`${styles.walletCard} ${i === activeWallet ? styles.walletCardOn : ''}`}
+                  onClick={() => pickWallet(i)}
+                >
+                  <span className={styles.walletMedia}>
+                    <img src={toDirectImageUrl(w.imageUrl)} alt={w.label || 'Billetera'} loading="lazy" />
+                  </span>
+                  <span className={styles.walletLabel}>{w.label || `Color ${i + 1}`}</span>
+                  {i === activeWallet && <span className={styles.walletCheck} aria-hidden="true">✓</span>}
+                </button>
+              ))}
+            </div>
+            {wallets[activeWallet]?.blurb && (
+              <p className={styles.walletBlurb}>{wallets[activeWallet].blurb}</p>
+            )}
           </div>
         )}
 
@@ -617,6 +715,12 @@ const ConversionFold = ({ config = {} }) => {
           )}
         </div>
       </div>
+
+      {/* Guía paso a paso del combo: "buena elección… ahora la billetera" */}
+      {typeof document !== 'undefined' && stepMsg && createPortal(
+        <div className={styles.stepToast} role="status">{stepMsg}</div>,
+        document.body,
+      )}
 
       {config.showWhatsApp !== false && waNum && typeof document !== 'undefined' && createPortal(
         <a
