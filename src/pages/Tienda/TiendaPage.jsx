@@ -1255,6 +1255,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const sorted = [...displaySections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   
   if (isConfigLoading && !storefrontConfig) {
+    // En una landing NO mostramos texto de sistema ("Cargando configuración…"):
+    // se ve roto y rompe la continuidad. Reusamos el mismo fondo oscuro del
+    // arranque (.landing-page-boot) para que la transición sea invisible.
+    if (isLandingPage) {
+      return <div className="landing-page-boot" aria-busy="true" aria-label="Cargando" />;
+    }
     return (
       <div className={styles.container}>
         <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--gris-texto-secundario)' }}>
