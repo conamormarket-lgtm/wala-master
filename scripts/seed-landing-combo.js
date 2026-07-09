@@ -87,7 +87,6 @@ const ORIGINAL_LABEL = `S/${PRECIO_ORIGINAL}`;
 
 const img = (n) => `${MEDIA}/img-${n}.jpeg`;
 const VIDEO_1 = `${MEDIA}/video/video-01.mp4`;
-const HERO_PROMO = img("26"); // arte "Reloj + Billetera S/199"
 
 // ── Relojes (14 acabados reales) ─────────────────────────────────────────────
 const WATCHES = [
@@ -154,8 +153,9 @@ async function setDoc(coll, id, data) {
     salePrice: PRICE_PEN,
     compareAtPrice: PRECIO_ORIGINAL,
     precioOriginal: PRECIO_ORIGINAL,
-    mainImage: HERO_PROMO,
-    images: [HERO_PROMO, img("01"), img("18"), img("17"), img("23"), img("12"), img("05")],
+    // No usamos img-26 (arte promo): trae precios antiguos grabados (S/250 / S/51).
+    mainImage: img("01"),
+    images: [img("01"), img("18"), img("17"), img("23"), img("12"), img("05")],
     visible: true,
     deleted: false,
     featured: true,
@@ -229,24 +229,10 @@ async function setDoc(coll, id, data) {
       },
     },
 
-    // Arte promocional del combo (hero visual)
-    {
-      id: sid("promo-img"),
-      type: "image",
-      order: next(),
-      settings: {
-        // ImageBlock usa `url`/`alt` (NO imageUrl/imageAlt) y si url va vacío no
-        // renderiza nada. Este bloque muestra el arte promocional del combo.
-        url: HERO_PROMO,
-        alt: `Combo Reloj + Billetera ${PRICE_LABEL}`,
-        maxWidth: "430px",
-        alignment: "center",
-        borderRadius: "16px",
-        backgroundColor: "#050505",
-        paddingTop: "0.35rem",
-        paddingBottom: "0.5rem",
-      },
-    },
+    // NOTA: aquí había un bloque `image` con el arte promocional (img-26). Se
+    // eliminó a propósito: ese arte tiene grabados precios ANTIGUOS
+    // ("Precio regular S/250 · Ahorra S/51") que contradicen la oferta real
+    // (S/199 antes S/279, ahorra S/80) y confundían al cliente.
 
     {
       id: sid("vid"),
