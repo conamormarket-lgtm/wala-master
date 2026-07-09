@@ -52,6 +52,8 @@
     "seed:landing-balvi:prod": "node scripts/seed-landing-balvi.js --prod --confirm",
     "seed:landing-combo": "node scripts/seed-landing-combo.js",
     "seed:landing-combo:prod": "node scripts/seed-landing-combo.js --prod --confirm",
+    "seed:landing-billetera": "node scripts/seed-landing-billetera.js",
+    "seed:landing-billetera:prod": "node scripts/seed-landing-billetera.js --prod --confirm",
     "deploy:firestore-rules": "node scripts/deploy-firestore-rules.js",
     "deploy:storage-rules": "node scripts/deploy-storage-rules.js",
     "deploy:functions": "firebase deploy --only functions --project sistema-gestion-3b225",
