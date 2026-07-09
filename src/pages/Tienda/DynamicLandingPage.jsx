@@ -7,6 +7,7 @@ import { useVisualEditor } from './contexts/VisualEditorContext';
 import TiendaPage from './TiendaPage';
 import PageLoading from '../../components/common/PageLoading/PageLoading';
 import { useAuth } from '../../contexts/AuthContext';
+import { KCHERO_SLUG, KCHERO_SLUG_LEGACY } from '../../constants/landingSlugs';
 import './landing-mobile.css';
 
 const DynamicLandingPage = () => {
@@ -55,6 +56,12 @@ const DynamicLandingPage = () => {
   // Solo bloquear por auth al resolver el redirect cuando la LP no existe.
   // Si ya tenemos landing, NO remountar a PageLoading cuando authLoading
   // cambia (login anónimo / onAuthChange): ese unmount produce removeChild.
+  // La landing se renombró a K-CHERO: la URL antigua redirige a la nueva para no
+  // romper links ya publicados (anuncios, compartidos, historial).
+  if (slug === KCHERO_SLUG_LEGACY) {
+    return <Navigate to={`/${KCHERO_SLUG}`} replace />;
+  }
+
   if (loading) return <PageLoading />;
 
   if (!landingPage) {
