@@ -14,15 +14,47 @@ const DEFAULT_MOOD = {
   mist: 'rgba(225, 6, 0, 0.22)',
 };
 
-const Countdown = ({ endTime }) => {
+const OFFER_DEADLINE_KEY = 'landing_offer_deadline';
+
+/**
+ * Devuelve un deadline SIEMPRE futuro (ms).
+ * - Si el `endTime` del config aún no vence, se respeta (oferta programada real).
+ * - Si ya venció (o no hay), usa un deadline "evergreen" por visitante guardado
+ *   en localStorage; cuando ese vence, se genera uno nuevo. Así el contador
+ *   nunca se queda clavado en 00:00:00 para quien ya visitó la página antes.
+ */
+function resolveDeadline(configEndTime, hours) {
+  const now = Date.now();
+  const cfg = configEndTime ? new Date(configEndTime).getTime() : 0;
+  if (cfg > now) return cfg;
+  const windowMs = Math.max(1, Number(hours) || 24) * 3600 * 1000;
+  try {
+    const saved = Number(localStorage.getItem(OFFER_DEADLINE_KEY) || 0);
+    if (saved > now) return saved;
+    const next = now + windowMs;
+    localStorage.setItem(OFFER_DEADLINE_KEY, String(next));
+    return next;
+  } catch {
+    return now + windowMs;
+  }
+}
+
+const Countdown = ({ endTime, offerHours = 24 }) => {
+  const [deadline, setDeadline] = useState(() => resolveDeadline(endTime, offerHours));
   const [parts, setParts] = useState(null);
 
   useEffect(() => {
-    if (!endTime) return undefined;
+    setDeadline(resolveDeadline(endTime, offerHours));
+  }, [endTime, offerHours]);
+
+  useEffect(() => {
+    if (!deadline) return undefined;
     const tick = () => {
-      const diff = new Date(endTime) - new Date();
+      const diff = deadline - Date.now();
       if (diff <= 0) {
-        setParts({ h: '00', m: '00', s: '00', done: true });
+        // Venció: reiniciamos el ciclo evergreen en vez de quedarnos en 00:00:00.
+        try { localStorage.removeItem(OFFER_DEADLINE_KEY); } catch { /* ignore */ }
+        setDeadline(resolveDeadline(null, offerHours));
         return;
       }
       const h = Math.floor(diff / (1000 * 60 * 60));
@@ -32,22 +64,21 @@ const Countdown = ({ endTime }) => {
         h: String(h).padStart(2, '0'),
         m: String(m).padStart(2, '0'),
         s: String(s).padStart(2, '0'),
-        done: false,
       });
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [endTime]);
+  }, [deadline, offerHours]);
 
   if (!parts) return null;
 
   return (
     <div className={styles.timerBoxes} aria-label="Cuenta regresiva">
       {[
-        { v: parts.done ? '00' : parts.h, l: 'Hrs' },
-        { v: parts.done ? '00' : parts.m, l: 'Min' },
-        { v: parts.done ? '00' : parts.s, l: 'Seg' },
+        { v: parts.h, l: 'Hrs' },
+        { v: parts.m, l: 'Min' },
+        { v: parts.s, l: 'Seg' },
       ].map((p, i) => (
         <React.Fragment key={p.l}>
           {i > 0 && <span className={styles.timerColon}>:</span>}
@@ -440,7 +471,10 @@ const ConversionFold = ({ config = {} }) => {
               <span className={styles.offerLabel}>
                 {config.countdownLabel || 'OFERTA POR TIEMPO LIMITADO'}
               </span>
-              <Countdown endTime={config.endTime} />
+              <Countdown
+                endTime={config.endTime}
+                offerHours={Number(config.offerHours) > 0 ? Number(config.offerHours) : 24}
+              />
             </div>
           )}
 
