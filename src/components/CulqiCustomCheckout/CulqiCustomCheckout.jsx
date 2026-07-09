@@ -101,7 +101,9 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
         email: isEnlace ? (enlace.email || '') : '',
       },
       options: {
-        lang: 'auto',
+        // 'auto' toma el idioma del navegador y el modal salía en inglés.
+        // La tienda vende en Perú: forzamos español siempre.
+        lang: 'es',
         installments: false,
         modal: true,
       },

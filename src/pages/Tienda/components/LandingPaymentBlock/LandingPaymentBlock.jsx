@@ -17,6 +17,7 @@ import { isKcheroLanding } from '../../../../constants/landingSlugs';
 import styles from './LandingPaymentBlock.module.css';
 
 const LANDING_ACABADO_KEY = 'landing_matador_acabado';
+const LANDING_BILLETERA_KEY = 'landing_combo_billetera';
 
 // Logo REAL de WhatsApp (SVG oficial) para los botones de compra por WhatsApp.
 const WhatsAppLogo = ({ size = 20 }) => (
@@ -111,6 +112,8 @@ const LandingPaymentBlock = ({ config = {} }) => {
   const [cardOpen, setCardOpen] = useState(false); // "Tarjeta o Yape" desplegado (contiene completo/adelanto)
   const [acabadoSel, setAcabadoSel] = useState('');
   const [acabadoImg, setAcabadoImg] = useState(''); // imagen del reloj elegido en el carrusel
+  const [billeteraSel, setBilleteraSel] = useState(''); // billetera elegida (landing combo)
+  const [billeteraImg, setBilleteraImg] = useState('');
   const [flashHint, setFlashHint] = useState(''); // aviso flotante "Completa tus datos…"
   const flashHintTimer = useRef(null);
   const [showExit, setShowExit] = useState(false); // popup de salida (exit-intent) // reloj/acabado elegido en el carrusel (label real, no "Matador")
@@ -144,6 +147,18 @@ const LandingPaymentBlock = ({ config = {} }) => {
   const chargeAmount = effectiveMode === 'adelanto' ? Math.min(adelantoMonto, montoPEN) : montoPEN;
   const saldoPendiente = effectiveMode === 'adelanto' ? Math.max(0, montoPEN - chargeAmount) : 0;
   const isAdelanto = effectiveMode === 'adelanto';
+
+  // Landing combo (reloj + billetera): el checkout muestra e incluye la billetera.
+  const showWallet = config.showWallet === true;
+
+  // Copy del popup de salida (configurable por landing: el combo no vende solo el reloj)
+  const exitTitle = config.exitTitle || '¿Ya te vas, K-CHERO? 😏';
+  const exitText = config.exitText
+    || 'Tu reloj todavía te está esperando. Sigue tu compra por WhatsApp y asegura tu oferta antes de que termine.';
+  const exitCta = config.exitCta || 'Seguir compra por WhatsApp';
+  const exitSecondary = config.exitSecondary || 'Seguir viendo modelos';
+  const exitProof = config.exitProof
+    || '+2.400 clientes ya lo eligieron · Oferta por tiempo limitado';
 
   // ── Comprar por WhatsApp ────────────────────────────────────────────────
   // Número desde el config de la landing (config.whatsappNumber). Solo dígitos.
@@ -196,6 +211,28 @@ const LandingPaymentBlock = ({ config = {} }) => {
     window.addEventListener('landing-acabado-change', onChange);
     return () => window.removeEventListener('landing-acabado-change', onChange);
   }, []);
+
+  // Billetera elegida (solo en la landing combo). Misma mecánica que el reloj.
+  useEffect(() => {
+    if (!showWallet) return undefined;
+    const read = () => {
+      try {
+        const raw = localStorage.getItem(LANDING_BILLETERA_KEY);
+        if (raw) {
+          const p = JSON.parse(raw) || {};
+          setBilleteraSel(p.label || '');
+          setBilleteraImg(p.imageUrl || '');
+        }
+      } catch { /* ignore */ }
+    };
+    read();
+    const onChange = (e) => {
+      setBilleteraSel(e?.detail?.label || '');
+      setBilleteraImg(e?.detail?.imageUrl || '');
+    };
+    window.addEventListener('landing-billetera-change', onChange);
+    return () => window.removeEventListener('landing-billetera-change', onChange);
+  }, [showWallet]);
 
   useEffect(() => {
     if (!user && !userProfile) return;
@@ -333,8 +370,16 @@ const LandingPaymentBlock = ({ config = {} }) => {
       const raw = localStorage.getItem(LANDING_ACABADO_KEY);
       if (raw) acabadoLabel = JSON.parse(raw)?.label || '';
     } catch { /* ignore */ }
+    let billeteraLabel = '';
+    if (showWallet) {
+      try {
+        const raw = localStorage.getItem(LANDING_BILLETERA_KEY);
+        if (raw) billeteraLabel = JSON.parse(raw)?.label || '';
+      } catch { /* ignore */ }
+    }
     const notas = [];
-    if (acabadoLabel) notas.push(`Acabado elegido: ${acabadoLabel}`);
+    if (acabadoLabel) notas.push(`${showWallet ? 'Reloj elegido' : 'Acabado elegido'}: ${acabadoLabel}`);
+    if (billeteraLabel) notas.push(`Billetera elegida: ${billeteraLabel}`);
     if (isAdelanto) {
       notas.push(`Adelanto S/ ${chargeAmount.toFixed(2)} pagado online · saldo S/ ${saldoPendiente.toFixed(2)} contra entrega`);
     }
@@ -383,7 +428,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
       costoEnvio: 0,
       estadoGeneral: 'Nuevo',
       status: 'Nuevo',
-      prendas: `${productName}${acabadoLabel ? ` (${acabadoLabel})` : ''} x1`,
+      prendas: `${productName}${acabadoLabel ? ` (${acabadoLabel})` : ''}${billeteraLabel ? ` + Billetera ${billeteraLabel}` : ''} x1`,
       cantidad: 1,
       productos: {
         item_0: {
@@ -398,6 +443,22 @@ const LandingPaymentBlock = ({ config = {} }) => {
           subtotal: montoPEN,
           personalizado: false,
         },
+        // En el combo, la billetera va como línea informativa (precio 0: ya está
+        // incluida en el total del combo) para que Recepción sepa qué despachar.
+        ...(billeteraLabel && {
+          item_1: {
+            productoId: productId || '',
+            producto: `Billetera ${billeteraLabel} (incluida en el combo)`,
+            brandId: productMeta?.brandId || null,
+            urlImagen: '',
+            cantidad: 1,
+            talla: '',
+            color: billeteraLabel,
+            precio: 0,
+            subtotal: 0,
+            personalizado: false,
+          },
+        }),
       },
       portalPseudoOrderId: pseudoOrderId,
       ...(buyerUid && { userId: buyerUid }),
@@ -539,11 +600,14 @@ const LandingPaymentBlock = ({ config = {} }) => {
       : `Pago completo S/ ${montoPEN.toFixed(2)}`;
     const c = customer;
     const lineas = [
-      `${CART} *Nuevo pedido* — quiero comprar este reloj:`,
-      `${CHK} Modelo: ${modelo}`,
+      `${CART} *Nuevo pedido* — quiero comprar ${showWallet ? 'este combo' : 'este reloj'}:`,
+      `${CHK} ${showWallet ? 'Reloj' : 'Modelo'}: ${modelo}`,
+    ];
+    if (showWallet && billeteraSel) lineas.push(`${CHK} Billetera: ${billeteraSel}`);
+    lineas.push(
       `${CHK} Precio: S/ ${montoPEN.toFixed(2)}`,
       `${CHK} Forma de pago: ${modoPago}`,
-    ];
+    );
     if (String(c.customerName || '').trim()) lineas.push(`${CHK} Nombre: ${c.customerName}`);
     if (String(c.dni || '').trim()) lineas.push(`${CHK} Documento: ${`${c.docType || ''} ${c.dni}`.trim()}`);
     if (String(c.phone || '').trim()) lineas.push(`${CHK} Telefono: ${phoneFull || c.phone}`);
@@ -693,10 +757,28 @@ const LandingPaymentBlock = ({ config = {} }) => {
                   <div className={styles.productInfo}>
                     <p className={styles.concept}>{acabadoSel || concepto}</p>
                     {acabadoSel && (
-                      <p className={styles.conceptHint}>Modelo elegido en el carrusel</p>
+                      <p className={styles.conceptHint}>
+                        {showWallet ? 'Reloj elegido' : 'Modelo elegido en el carrusel'}
+                      </p>
                     )}
                   </div>
                 </div>
+                {showWallet && billeteraSel && (
+                  <div className={styles.productRow}>
+                    {billeteraImg && (
+                      <img
+                        className={styles.productThumb}
+                        src={billeteraImg}
+                        alt={billeteraSel}
+                        loading="lazy"
+                      />
+                    )}
+                    <div className={styles.productInfo}>
+                      <p className={styles.concept}>Billetera {billeteraSel}</p>
+                      <p className={styles.conceptHint}>Incluida en el combo</p>
+                    </div>
+                  </div>
+                )}
                 <div className={styles.totalRow}>
                   <span className={styles.totalLabel}>Total</span>
                   <span className={styles.totalAmount}>
@@ -1116,18 +1198,16 @@ const LandingPaymentBlock = ({ config = {} }) => {
         <div className={styles.exitOverlay} onClick={() => setShowExit(false)} role="dialog" aria-modal="true">
           <div className={styles.exitModal} onClick={(e) => e.stopPropagation()}>
             <button className={styles.exitClose} onClick={() => setShowExit(false)} aria-label="Cerrar">✕</button>
-            <h3 className={styles.exitTitle}>¿Ya te vas, K-CHERO? 😏</h3>
-            <p className={styles.exitText}>
-              Tu reloj todavía te está esperando. Sigue tu compra por WhatsApp y asegura tu oferta antes de que termine.
-            </p>
+            <h3 className={styles.exitTitle}>{exitTitle}</h3>
+            <p className={styles.exitText}>{exitText}</p>
             <button type="button" className={styles.exitWhatsapp} onClick={handleExitWhatsApp}>
               <WhatsAppLogo size={22} />
-              Seguir compra por WhatsApp
+              {exitCta}
             </button>
             <button type="button" className={styles.exitSecondary} onClick={() => setShowExit(false)}>
-              Seguir viendo modelos
+              {exitSecondary}
             </button>
-            <p className={styles.exitProof}>+2.400 clientes ya lo eligieron · Oferta por tiempo limitado</p>
+            <p className={styles.exitProof}>{exitProof}</p>
           </div>
         </div>,
         document.body,
