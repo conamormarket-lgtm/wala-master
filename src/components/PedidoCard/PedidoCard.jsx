@@ -236,8 +236,6 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
     badgeBg = '#ef4444';
   }
 
-  const notes = pedido.detallesEtapas?.compra?.observación || pedido.observacion || '';
-
   return (
     <div className={styles.card}>
       {/* 1. Header (Siempre visible) */}
@@ -501,18 +499,6 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
           )}
         </div>
 
-        {/* SECCIÓN B: NOTAS */}
-        {notes && (
-          <>
-            <div className={styles.sectionDivider} />
-            <div className={styles.sectionTitle}>NOTAS Y ALERTAS</div>
-
-            <div className={styles.notaBox}>
-              <AlertTriangle size={20} className={styles.notaIcono} />
-              <div>{notes}</div>
-            </div>
-          </>
-        )}
       </div>
 
       {/* Modals Footer */}
