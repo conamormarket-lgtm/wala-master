@@ -38,6 +38,7 @@ import {
   sumarChanceCompartir,
   claimRaffleReferral,
 } from '../services/sorteos';
+import { createCulqi, destroyCulqi } from '../components/CulqiCustomCheckout/culqiSingleton';
 import styles from './SorteosPage.module.css';
 
 // Imagen de reemplazo si falla la carga del hero/premio.
@@ -219,7 +220,10 @@ function CulqiTicketButton({ intento, email, onPaid, onError }) {
       },
     };
 
-    const culqiInstance = new window.CulqiCheckout(publicKey, config);
+    // Instancia ÚNICA (singleton): cierra/purga cualquier instancia previa antes de
+    // construir, para no apilar modales si el efecto se re-ejecuta o el componente
+    // se re-monta.
+    const culqiInstance = createCulqi(publicKey, config);
     culqiRef.current = culqiInstance;
 
     culqiInstance.culqi = async () => {
@@ -271,7 +275,9 @@ function CulqiTicketButton({ intento, email, onPaid, onError }) {
         if (onErrorRef.current) onErrorRef.current(msg);
       }
     };
-    return undefined;
+    // Al cambiar deps o desmontar: cierra/purga ESTA instancia si sigue siendo la
+    // global (no pisa la de otro componente montado).
+    return () => { destroyCulqi(culqiInstance); };
     // onPaid/onError NO van en deps (se leen vía refs estables).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, intento, email]);

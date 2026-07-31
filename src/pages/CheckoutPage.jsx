@@ -1256,40 +1256,51 @@ const CheckoutPage = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {paymentStepData.esPeru ? (
                   <>
-                    {/* Plan B: el cliente cerró el modal de Culqi sin pagar → ofrecer WhatsApp. */}
-                    {culqiClosed && (
-                      <div className={styles.recoveryCard}>
-                        <div className={styles.recoveryIcon} aria-hidden="true">💬</div>
-                        <div className={styles.recoveryBody}>
-                          <h4 className={styles.recoveryTitle}>¿Cerraste el pago? Termínalo por WhatsApp</h4>
-                          <p className={styles.recoveryText}>
-                            Tu pedido ya quedó guardado. Un asesor recibe tu lista completa
-                            (qué quieres y para cuándo), te dice el costo final y coordinas el
-                            pago por Yape, Plin o transferencia.
-                          </p>
-                          {/* DOS botones grandes (primary, fullWidth, lg):
-                              (a) reabrir Culqi (remonta el componente y auto-abre),
-                              (b) terminar la compra por WhatsApp (número principal). */}
-                          <div className={styles.recoveryActions}>
-                            <GlassButton
-                              variant="primary"
-                              size="lg"
-                              fullWidth
-                              onClick={() => { setCulqiClosed(false); setCulqiKey((k) => k + 1); }}
-                            >
-                              💳 Continuar comprando con tarjeta
-                            </GlassButton>
-                            {renderWhatsAppFinish(true)}
+                    {/* Plan B: el cliente cerró el modal de Culqi sin pagar → ofrecer WhatsApp.
+                        IMPORTANTE (fix reapertura del modal): este bloque va SIEMPRE dentro de
+                        un contenedor fijo. Si se renderizara como `{culqiClosed && ...}` suelto
+                        (hermano condicional SIN key junto al <CulqiCustomCheckout> keyed), al
+                        activarse React DESMONTA y REMONTA el componente de Culqi; el remonte
+                        resetea sus refs (autoOpenedRef) y el autoOpen VUELVE a disparar el modal.
+                        Con el wrapper fijo, la posición de los hermanos no cambia y Culqi NO se
+                        remonta al cerrar → el modal ya no se reabre solo. El reintento explícito
+                        sigue funcionando porque cambia `culqiKey` (remonte intencional). */}
+                    <div className={styles.recoverySlot}>
+                      {culqiClosed && (
+                        <div className={styles.recoveryCard}>
+                          <div className={styles.recoveryIcon} aria-hidden="true">💬</div>
+                          <div className={styles.recoveryBody}>
+                            <h4 className={styles.recoveryTitle}>¿Cerraste el pago? Termínalo por WhatsApp</h4>
+                            <p className={styles.recoveryText}>
+                              Tu pedido ya quedó guardado. Un asesor recibe tu lista completa
+                              (qué quieres y para cuándo), te dice el costo final y coordinas el
+                              pago por Yape, Plin o transferencia.
+                            </p>
+                            {/* DOS botones grandes (primary, fullWidth, lg):
+                                (a) reabrir Culqi (remonta el componente vía culqiKey y auto-abre),
+                                (b) terminar la compra por WhatsApp (número principal). */}
+                            <div className={styles.recoveryActions}>
+                              <GlassButton
+                                variant="primary"
+                                size="lg"
+                                fullWidth
+                                onClick={() => { setCulqiClosed(false); setCulqiKey((k) => k + 1); }}
+                              >
+                                💳 Continuar comprando con tarjeta
+                              </GlassButton>
+                              {renderWhatsAppFinish(true)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {/* PERÚ: Culqi (idéntico a hoy) + acuerdo por WhatsApp/Yape.
                         autoOpen (Opción A): al entrar al paso de pago tras confirmar,
                         se abre automáticamente el modal de Culqi una sola vez. */}
                     <CulqiCustomCheckout
                       key={culqiKey}
+                      reopenKey={culqiKey}
                       pedido={paymentStepData}
                       autoOpen={true}
                       onSuccess={() => {

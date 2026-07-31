@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getOrCreateCulqi } from './culqiSingleton';
+
+// Recuerda a nivel de MÓDULO (sobrevive a remontes del componente) para qué
+// combinación de pedido + reintento ya se auto-abrió el modal. Así, si el
+// componente se re-monta (StrictMode en dev, re-render del padre, aparición de la
+// tarjeta de recuperación al cerrar), el autoOpen NO vuelve a disparar el modal.
+// El reintento explícito cambia `reopenKey` (= culqiKey) → nueva clave → reabre.
+const autoOpenedFor = new Set();
 
 // Detecta si el modal de Culqi está visible (busca su iframe con 'culqi' en el src
 // y tamaño real). Sirve para saber si el usuario lo cerró sin pagar (plan B WhatsApp).
@@ -16,11 +24,17 @@ const isCulqiModalVisible = () => {
   return false;
 };
 
-const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = false }) => {
+const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = false, reopenKey = 0 }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const culqiRef = useRef(null);
+
+  // Identidad ESTABLE del pedido (sobrevive a remontes): con ella reutilizamos la
+  // misma instancia de Culqi y evitamos parpadeo/reapertura. `reopenKey` (=culqiKey
+  // del checkout) distingue un REINTENTO explícito para permitir reabrir.
+  const orderKey = String(pedido?.id || pedido?.numeroPedido || enlace?.id || 'anon');
+  const openGuardKey = `${orderKey}::${reopenKey}`;
   // Guard para asegurar que el auto-abrir solo se dispare UNA vez (no en cada render).
   const autoOpenedRef = useRef(false);
   // Guard SÍNCRONO anti doble-cobro: isProcessing es estado (async) y no frena una
@@ -117,8 +131,11 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
       }
     };
 
-    // Crear instancia aislada
-    const culqiInstance = new window.CulqiCheckout(publicKey, config);
+    // Reutiliza la instancia si ya existe una para ESTE pedido (orderKey). Un
+    // remonte del componente (StrictMode, re-render del padre, tarjeta de
+    // recuperación) NO recrea el modal → sin parpadeo ni listener nuevo. Solo se
+    // construye una instancia nueva cuando cambia el pedido.
+    const culqiInstance = getOrCreateCulqi(orderKey, publicKey, config);
     culqiRef.current = culqiInstance;
 
     // Manejador de acciones (reemplaza a window.culqi = ...)
@@ -178,9 +195,10 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
       }
     };
 
-    // Limpieza: si las deps reales cambian (isReady/pedido/enlace) y este effect
-    // se vuelve a ejecutar, descartamos la instancia anterior y su watcher para
-    // no dejar pollers huérfanos ni instancias duplicadas en memoria.
+    // Limpieza: SOLO paramos el watcher de cierre. NO destruimos la instancia:
+    // se reutiliza entre remontes del mismo pedido (evita parpadeo). La instancia
+    // anterior se cierra/limpia cuando cambia el pedido (getOrCreateCulqi llama a
+    // destroyCulqi con sus listeners) o al cargar la página de nuevo.
     return () => {
       if (closePollRef.current) { clearInterval(closePollRef.current); closePollRef.current = null; }
     };
@@ -269,12 +287,17 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
   // esta listo (isReady) y la instancia de Culqi ya fue construida (culqiRef).
   // No altera el flujo de token/charge/onSuccess existente: reutiliza handleOpenCheckout.
   useEffect(() => {
-    if (autoOpen && isReady && culqiRef.current && !autoOpenedRef.current) {
+    // Guard a nivel de MÓDULO (no un ref por-montaje): un remonte accidental deja
+    // autoOpenedRef en false, pero `autoOpenedFor` recuerda que ya se abrió para
+    // este pedido+reintento y NO lo reabre. El reintento cambia reopenKey → nueva
+    // clave → sí reabre.
+    if (autoOpen && isReady && culqiRef.current && !autoOpenedFor.has(openGuardKey)) {
+      autoOpenedFor.add(openGuardKey);
       autoOpenedRef.current = true;
       handleOpenCheckout();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoOpen, isReady]);
+  }, [autoOpen, isReady, openGuardKey]);
 
   // Limpia el watcher de cierre al desmontar el componente.
   useEffect(() => () => {

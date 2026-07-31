@@ -506,6 +506,14 @@
 }
 
 /* ── Plan B: panel de recuperación cuando se cierra Culqi (terminar por WhatsApp) ── */
+/* Contenedor SIEMPRE presente que estabiliza el árbol de React para que el
+   <CulqiCustomCheckout> hermano NO se remonte al aparecer/desaparecer la tarjeta
+   de recuperación (el remonte reabría el modal). display:contents => no ocupa
+   caja ni añade gap cuando está vacío; no altera el layout. */
+.recoverySlot {
+  display: contents;
+}
+
 .recoveryCard {
   display: flex;
   align-items: flex-start;

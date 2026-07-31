@@ -20,6 +20,7 @@ import {
   confirmarSuscripcionPaypal,
   formatoPrecioPen,
 } from '../../services/suscripcionSorteos';
+import { createCulqi, destroyCulqi } from '../../components/CulqiCustomCheckout/culqiSingleton';
 import styles from '../SuscripcionSorteoPage.module.css';
 
 // ── Botón Culqi (Perú) — tokeniza y crea la suscripción con auto-débito ──────
@@ -83,7 +84,10 @@ function CulqiSuscripcionButton({ campaignId, plan, email, datos, origenApp, onO
       appearance: { theme: 'default', menuType: 'sidebar' },
     };
 
-    const culqiInstance = new window.CulqiCheckout(publicKey, config);
+    // Instancia ÚNICA (singleton): cierra/purga la anterior antes de construir.
+    // Aquí las deps incluyen `datos` (objeto), que puede cambiar de identidad y
+    // re-ejecutar el efecto; el singleton evita apilar instancias/modales.
+    const culqiInstance = createCulqi(publicKey, config);
     culqiRef.current = culqiInstance;
 
     culqiInstance.culqi = async () => {
@@ -121,7 +125,8 @@ function CulqiSuscripcionButton({ campaignId, plan, email, datos, origenApp, onO
         if (onErrorRef.current) onErrorRef.current(msg);
       }
     };
-    return undefined;
+    // Al cambiar deps o desmontar: cierra/purga ESTA instancia si sigue siendo la global.
+    return () => { destroyCulqi(culqiInstance); };
     // onOk/onError se leen vía refs estables (no van en deps).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, plan, email, campaignId, datos, origenApp]);

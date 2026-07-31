@@ -59,7 +59,7 @@ async function ensureUser(uid, email, password, claims) {
   // ── Productos ───────────────────────────────────────────────────────────────
   const products = [
     { id: "p1", name: "Polo personalizado", sku: "POLO-001", price: 49.9, vendorId: "casa", nicheId: "ropa-personalizada", fulfillmentType: "print_on_demand", customizable: true, categories: ["polos"] },
-    { id: "p2", name: "Taza mágica", sku: "TAZA-001", price: 29.9, vendorId: "casa", nicheId: "regala-con-amor", fulfillmentType: "stock", customizable: false, categories: ["tazas"], inStock: 25 },
+    { id: "p2", name: "Taza mágica", sku: "TAZA-001", price: 1, vendorId: "casa", nicheId: "regala-con-amor", fulfillmentType: "stock", customizable: false, categories: ["tazas"], inStock: 25 },
     { id: "p3", name: "Polo edición Lima", sku: "POLO-LIM", price: 59.9, vendorId: "estampados-lima", nicheId: "ropa-personalizada", fulfillmentType: "print_on_demand", customizable: true, categories: ["polos"] },
     { id: "p4", name: "Gorro bordado", sku: "GORRO-001", price: 39.9, salePrice: 34.9, vendorId: "estampados-lima", nicheId: "regala-con-amor", fulfillmentType: "stock", customizable: false, inStock: 10 },
   ];
