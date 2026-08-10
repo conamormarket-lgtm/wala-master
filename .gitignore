@@ -124,3 +124,4 @@ service-account.json
 credentials.json
 *-firebase-adminsdk-*.json
 
+functions/.env.*
