@@ -60,7 +60,7 @@
     "deploy:indexes": "firebase deploy --only firestore:indexes --project sistema-gestion-3b225",
     "deploy:vercel": "npx vercel",
     "deploy:vercel:prod": "npx vercel --prod",
-    "test:functions": "node functions/test/economyLogic.test.js"
+    "test:functions": "node functions/test/economyLogic.test.js && node functions/test/internationalAdvanceLogic.test.js"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

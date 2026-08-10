@@ -7,6 +7,16 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore"); // robusto en emulador (FieldValue puede ser undefined ahí)
 const crypto = require("crypto");
+const {
+  ADVANCE_TYPE,
+  ADVANCE_AMOUNT_USD,
+  ADVANCE_TTL_MS,
+  validateCreatePayload,
+  paymentLinkId,
+  safeEqual,
+  callbackSignature,
+  isExpired,
+} = require("./internationalAdvanceLogic");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const {
   KAPI_MONTHLY_CAP, BALLSORT_REWARD, STREAK_DATES_BONUS, SURVEY_REWARD_MAX, REWARD_COINS_PER_ORDER,
@@ -3613,6 +3623,301 @@ exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) 
     amountUsd: capturedValue,
     pedidoId: String(pedidoId),
   };
+});
+
+// ── Adelanto internacional de TikTok Live (USD 20, server-authoritative) ──────
+// Kenta crea/reutiliza el enlace por HTTP autenticado. El navegador público solo
+// puede crear/capturar la orden asociada al linkId; monto y moneda nunca vienen
+// del cliente. Los metadatos privados del chat viven fuera de enlaces_pago.
+const KENTA_PAYMENT_META_COLLECTION = "payment_link_integrations";
+
+function kentaPaymentToken() {
+  const token = String(process.env.KENTA_PAYMENT_API_TOKEN || "").trim();
+  if (!token) throw new Error("KENTA_PAYMENT_API_TOKEN no está configurado.");
+  return token;
+}
+
+function allowedTikTokLine(line) {
+  const configured = String(
+    process.env.KENTA_TIKTOK_LINE_KEYS || "qr_0bd059072a,Live - Tik Tok"
+  ).split(",").map((v) => v.trim()).filter(Boolean);
+  return configured.includes(String(line || "").trim());
+}
+
+function publicPaymentUrl(linkId) {
+  const site = String(process.env.PUBLIC_SITE_URL || "https://wala.pe").replace(/\/+$/, "");
+  return `${site}/pago-rapido/${linkId}`;
+}
+
+async function notifyKentaPaymentCompleted(linkId, publicData, privateData) {
+  const callbackUrl = String(process.env.KENTA_PAYMENT_CALLBACK_URL || "").trim();
+  const callbackSecret = String(process.env.KENTA_PAYMENT_CALLBACK_SECRET || "").trim();
+  if (!callbackUrl || !callbackSecret || !privateData) {
+    throw new Error("El callback de pago a Kenta no está configurado completamente.");
+  }
+
+  const event = {
+    event: "payment.completed",
+    paymentLinkId: linkId,
+    tenantId: privateData.tenantId,
+    chatId: privateData.chatId,
+    phone: privateData.phone,
+    line: privateData.line,
+    country: privateData.country,
+    amount: Number(ADVANCE_AMOUNT_USD),
+    currency: "USD",
+    status: "paid",
+    paypalOrderId: publicData.paypalOrderId || null,
+    paypalCaptureId: publicData.paypalCaptureId || null,
+  };
+  const raw = JSON.stringify(event);
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const signature = callbackSignature(callbackSecret, timestamp, raw);
+  const response = await fetch(callbackUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Wala-Timestamp": timestamp,
+      "X-Wala-Signature": signature,
+      "X-Wala-Event-Id": `payment.completed:${linkId}`,
+    },
+    body: raw,
+  });
+  if (!response.ok) throw new Error(`Kenta callback HTTP ${response.status}`);
+  return { sent: true };
+}
+
+exports.createKentaInternationalAdvanceLink = functions.https.onRequest(async (req, res) => {
+  if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
+  try {
+    const token = kentaPaymentToken();
+    const authHeader = String(req.get("authorization") || "");
+    const supplied = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+    if (!safeEqual(token, supplied)) return res.status(401).json({ error: "unauthorized" });
+
+    const payload = validateCreatePayload(req.body);
+    if (!allowedTikTokLine(payload.line)) {
+      return res.status(422).json({ error: "line_not_allowed" });
+    }
+    const idem = String(req.get("idempotency-key") || "").trim();
+    if (!idem || idem.length > 240) return res.status(400).json({ error: "invalid_idempotency_key" });
+
+    const linkId = paymentLinkId(token, idem);
+    const linkRef = db.collection("enlaces_pago").doc(linkId);
+    const metaRef = db.collection(KENTA_PAYMENT_META_COLLECTION).doc(linkId);
+    const expiresAt = admin.firestore.Timestamp.fromMillis(Date.now() + ADVANCE_TTL_MS);
+    let outcome = "created";
+
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(linkRef);
+      const current = snap.exists ? (snap.data() || {}) : null;
+      if (current && current.estado === "pagado") {
+        outcome = "paid";
+        return;
+      }
+      if (current && current.estado === "pendiente" && !isExpired(current)) {
+        outcome = "reused";
+        return;
+      }
+      const base = {
+        concepto: "Adelanto TikTok Live internacional",
+        tipo: ADVANCE_TYPE,
+        moneda: "USD",
+        monto: Number(ADVANCE_AMOUNT_USD),
+        montoUSD: Number(ADVANCE_AMOUNT_USD),
+        estado: "pendiente",
+        expiresAt,
+        updatedAt: FieldValue.serverTimestamp(),
+        generation: Number((current && current.generation) || 0) + 1,
+        paypalOrderId: FieldValue.delete(),
+        paypalCaptureId: FieldValue.delete(),
+        pagadoEn: FieldValue.delete(),
+      };
+      if (!current) base.createdAt = FieldValue.serverTimestamp();
+      t.set(linkRef, base, { merge: true });
+      t.set(metaRef, {
+        ...payload,
+        type: ADVANCE_TYPE,
+        idempotencyKeyHash: crypto.createHash("sha256").update(idem).digest("hex"),
+        updatedAt: FieldValue.serverTimestamp(),
+        ...(current ? {} : { createdAt: FieldValue.serverTimestamp() }),
+      }, { merge: true });
+    });
+
+    const fresh = await linkRef.get();
+    const data = fresh.data() || {};
+    return res.status(outcome === "created" ? 201 : 200).json({
+      id: linkId,
+      url: publicPaymentUrl(linkId),
+      amount: Number(ADVANCE_AMOUNT_USD),
+      currency: "USD",
+      status: data.estado || "pending",
+      outcome,
+      expiresAt: data.expiresAt && data.expiresAt.toDate
+        ? data.expiresAt.toDate().toISOString()
+        : null,
+    });
+  } catch (error) {
+    console.error("createKentaInternationalAdvanceLink:", error);
+    return res.status(422).json({ error: "invalid_request", message: error.message });
+  }
+});
+
+exports.createPaypalInternationalAdvanceOrder = functions.https.onCall(async (data) => {
+  const linkId = String(data && data.linkId || "").trim();
+  if (!linkId) throw new functions.https.HttpsError("invalid-argument", "Se requiere linkId.");
+  const ref = db.collection("enlaces_pago").doc(linkId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new functions.https.HttpsError("not-found", "Enlace no encontrado.");
+  const link = snap.data() || {};
+  if (link.tipo !== ADVANCE_TYPE || link.moneda !== "USD" || Number(link.monto) !== Number(ADVANCE_AMOUNT_USD)) {
+    throw new functions.https.HttpsError("failed-precondition", "El enlace no corresponde al adelanto internacional.");
+  }
+  if (link.estado !== "pendiente" || isExpired(link)) {
+    throw new functions.https.HttpsError("failed-precondition", "El enlace no está vigente.");
+  }
+
+  const accessToken = await getPaypalAccessToken();
+  const response = await fetch(`${paypalApiBase()}/v2/checkout/orders`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "PayPal-Request-Id": `wala-advance-create-${linkId}`,
+    },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [{
+        reference_id: linkId,
+        custom_id: linkId,
+        description: "Adelanto TikTok Live internacional",
+        amount: { currency_code: "USD", value: ADVANCE_AMOUNT_USD },
+      }],
+    }),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok || !json.id) {
+    console.error("createPaypalInternationalAdvanceOrder:", response.status, json);
+    throw new functions.https.HttpsError("internal", "No se pudo iniciar el pago seguro.");
+  }
+  await ref.set({ paypalOrderId: json.id, orderCreatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { orderID: json.id, amountUsd: ADVANCE_AMOUNT_USD, linkId };
+});
+
+exports.capturePaypalInternationalAdvanceOrder = functions.https.onCall(async (data) => {
+  const linkId = String(data && data.linkId || "").trim();
+  const orderID = String(data && data.orderID || "").trim();
+  if (!linkId || !orderID) {
+    throw new functions.https.HttpsError("invalid-argument", "Se requieren linkId y orderID.");
+  }
+  const ref = db.collection("enlaces_pago").doc(linkId);
+  const initial = await ref.get();
+  if (!initial.exists) throw new functions.https.HttpsError("not-found", "Enlace no encontrado.");
+  const before = initial.data() || {};
+  if (before.estado === "pagado") {
+    const retryMetaRef = db.collection(KENTA_PAYMENT_META_COLLECTION).doc(linkId);
+    const retryMetaSnap = await retryMetaRef.get();
+    const retryMeta = retryMetaSnap.exists ? (retryMetaSnap.data() || {}) : null;
+    if (retryMeta && retryMeta.callbackStatus !== "sent") {
+      try {
+        await notifyKentaPaymentCompleted(linkId, before, retryMeta);
+        await retryMetaRef.set({ callbackStatus: "sent", callbackAt: FieldValue.serverTimestamp() }, { merge: true });
+      } catch (error) {
+        console.error("Reintento inmediato de callback a Kenta falló:", error);
+      }
+    }
+    return { success: true, status: "COMPLETED", alreadyPaid: true, captureId: before.paypalCaptureId || null, amountUsd: ADVANCE_AMOUNT_USD };
+  }
+  if (before.tipo !== ADVANCE_TYPE || before.paypalOrderId !== orderID || isExpired(before)) {
+    throw new functions.https.HttpsError("failed-precondition", "La orden no corresponde a un enlace vigente.");
+  }
+
+  const accessToken = await getPaypalAccessToken();
+  const response = await fetch(`${paypalApiBase()}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "PayPal-Request-Id": `wala-advance-capture-${linkId}`,
+    },
+    body: JSON.stringify({}),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok || json.status !== "COMPLETED") {
+    console.error("capturePaypalInternationalAdvanceOrder:", response.status, json);
+    throw new functions.https.HttpsError("failed-precondition", "El pago no pudo confirmarse.");
+  }
+  const pu = (json.purchase_units || [])[0] || {};
+  const capture = (((pu.payments || {}).captures || [])[0]) || {};
+  const capturedAmount = capture.amount || {};
+  if (capture.status !== "COMPLETED" || capturedAmount.currency_code !== "USD" || capturedAmount.value !== ADVANCE_AMOUNT_USD) {
+    throw new functions.https.HttpsError("failed-precondition", "La captura no coincide con el adelanto esperado.");
+  }
+  if (String(pu.reference_id || pu.custom_id || "") !== linkId) {
+    throw new functions.https.HttpsError("failed-precondition", "La captura pertenece a otro enlace.");
+  }
+
+  await db.runTransaction(async (t) => {
+    const latestSnap = await t.get(ref);
+    const latest = latestSnap.data() || {};
+    if (latest.estado === "pagado") return;
+    if (latest.estado !== "pendiente" || latest.paypalOrderId !== orderID) {
+      throw new functions.https.HttpsError("aborted", "El enlace cambió mientras se confirmaba el pago.");
+    }
+    t.set(ref, {
+      estado: "pagado",
+      paypalOrderId: orderID,
+      paypalCaptureId: capture.id || null,
+      pagadoEn: new Date().toISOString(),
+      pagadoAt: FieldValue.serverTimestamp(),
+      metodoPago: "paypal",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+
+  const metaRef = db.collection(KENTA_PAYMENT_META_COLLECTION).doc(linkId);
+  const metaSnap = await metaRef.get();
+  const paidData = (await ref.get()).data() || {};
+  try {
+    await notifyKentaPaymentCompleted(linkId, paidData, metaSnap.exists ? metaSnap.data() : null);
+    await metaRef.set({ callbackStatus: "sent", callbackAt: FieldValue.serverTimestamp() }, { merge: true });
+  } catch (error) {
+    console.error("Callback de pago a Kenta falló:", error);
+    await metaRef.set({ callbackStatus: "failed", callbackError: String(error.message || error), callbackUpdatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  }
+  return { success: true, status: "COMPLETED", captureId: capture.id || null, amountUsd: ADVANCE_AMOUNT_USD, linkId };
+});
+
+// Reconciliación: si Kenta estuvo temporalmente caído después de capturar, el
+// pago no se pierde ni depende de que el comprador vuelva a abrir la página.
+exports.retryKentaPaymentCallbacks = onSchedule("every 5 minutes", async () => {
+  const failed = await db.collection(KENTA_PAYMENT_META_COLLECTION)
+    .where("callbackStatus", "==", "failed")
+    .limit(50)
+    .get();
+  for (const metaDoc of failed.docs) {
+    const meta = metaDoc.data() || {};
+    const attempts = Number(meta.callbackAttempts || 0);
+    if (attempts >= 20) continue;
+    const linkSnap = await db.collection("enlaces_pago").doc(metaDoc.id).get();
+    const link = linkSnap.exists ? (linkSnap.data() || {}) : null;
+    if (!link || link.tipo !== ADVANCE_TYPE || link.estado !== "pagado") continue;
+    try {
+      await notifyKentaPaymentCompleted(metaDoc.id, link, meta);
+      await metaDoc.ref.set({
+        callbackStatus: "sent",
+        callbackAttempts: attempts + 1,
+        callbackAt: FieldValue.serverTimestamp(),
+        callbackError: FieldValue.delete(),
+      }, { merge: true });
+    } catch (error) {
+      await metaDoc.ref.set({
+        callbackAttempts: attempts + 1,
+        callbackError: String(error.message || error),
+        callbackUpdatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+  }
 });
 
 // ════════════════════════════════════════════════════════════════════════════

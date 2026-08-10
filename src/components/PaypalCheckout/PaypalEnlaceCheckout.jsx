@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { updateDocument } from '../../services/firebase/firestore';
+
+const INTERNATIONAL_ADVANCE_TYPE = 'tiktok_live_international_advance';
 
 const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const amountInUSD = Number(enlace.monto || enlace.montoUSD || 0).toFixed(2);
+  const usesSecureInternationalAdvance = enlace.tipo === INTERNATIONAL_ADVANCE_TYPE;
 
   // Si el .env dice 'sb' o está vacío, usamos 'test' que es el sandbox oficial del SDK
   const actualClientId = (!process.env.REACT_APP_PAYPAL_CLIENT_ID || process.env.REACT_APP_PAYPAL_CLIENT_ID === 'sb') 
@@ -20,6 +24,14 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
   };
 
   const createOrder = (data, actions) => {
+    if (usesSecureInternationalAdvance) {
+      const createSecure = httpsCallable(getFunctions(), 'createPaypalInternationalAdvanceOrder');
+      return createSecure({ linkId: enlace.id }).then((result) => {
+        const orderID = result?.data?.orderID;
+        if (!orderID) throw new Error('No se pudo obtener la orden de pago segura.');
+        return orderID;
+      });
+    }
     return actions.order.create({
       purchase_units: [
         {
@@ -36,6 +48,19 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
   const onApprove = async (data, actions) => {
     try {
       setIsProcessing(true);
+      if (usesSecureInternationalAdvance) {
+        const captureSecure = httpsCallable(getFunctions(), 'capturePaypalInternationalAdvanceOrder');
+        const result = await captureSecure({ linkId: enlace.id, orderID: data.orderID });
+        const capture = result?.data;
+        if (!capture?.success || capture?.status !== 'COMPLETED') {
+          throw new Error('El servidor no confirmó el pago.');
+        }
+        if (onSuccess) {
+          onSuccess({ ...capture, id: capture.captureId || data.orderID });
+        }
+        return;
+      }
+
       const details = await actions.order.capture();
       
       // Marcar el enlace como pagado en la base de datos

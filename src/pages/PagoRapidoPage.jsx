@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getDocument, deleteDocument } from '../services/firebase/firestore';
+import { getDocument } from '../services/firebase/firestore';
 import PaypalEnlaceCheckout from '../components/PaypalCheckout/PaypalEnlaceCheckout';
 import CulqiCustomCheckout from '../components/CulqiCustomCheckout';
 
@@ -19,18 +19,20 @@ const PagoRapidoPage = () => {
       if (fetchError || !data) {
         setError('El enlace de pago no es válido o no existe.');
       } else {
-        // Verificar expiración (36 horas)
-        if (data.createdAt) {
-          // data.createdAt es un Timestamp de Firestore
-          const createdAtDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
-          const now = new Date();
-          const diffInHours = (now - createdAtDate) / (1000 * 60 * 60);
-          
-          if (diffInHours > 36 && data.estado !== 'pagado') {
-            // Eliminar el enlace de la base de datos para no ocupar espacio basura
-            await deleteDocument('enlaces_pago', id);
-            
-            setError('Este enlace de pago ha expirado y ha sido eliminado del sistema.');
+        // Los enlaces nuevos traen expiración autoritativa del servidor. Los
+        // enlaces legacy conservan el límite histórico de 36 horas.
+        if (data.expiresAt || data.createdAt) {
+          const rawExpiry = data.expiresAt;
+          const expiryDate = rawExpiry
+            ? (rawExpiry.toDate ? rawExpiry.toDate() : new Date(rawExpiry))
+            : (() => {
+                const created = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+                return new Date(created.getTime() + (36 * 60 * 60 * 1000));
+              })();
+
+          if (expiryDate <= new Date() && data.estado !== 'pagado') {
+            // La página pública nunca elimina documentos. La limpieza corresponde al servidor.
+            setError('Este enlace de pago ha expirado. Solicita uno nuevo por el chat.');
             setLoading(false);
             return;
           }

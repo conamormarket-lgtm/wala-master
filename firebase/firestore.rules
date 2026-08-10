@@ -304,9 +304,15 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
     match /enlaces_pago/{enlaceId} {
-      allow read: if true;               // Público para quien tiene el link (id no adivinable)
+      allow get: if true;                // Público para quien tiene el link (id no adivinable)
+      allow list: if isAdmin();          // Impide enumerar enlaces anónimamente.
       allow create: if isAdmin();
       allow update, delete: if isAdmin(); // H-08: antes era 'if true' (fraude/DoS)
+    }
+    // Relación privada entre el enlace y el chat de Kenta. Solo Cloud Functions
+    // accede mediante Admin SDK; nunca se expone al navegador público.
+    match /payment_link_integrations/{enlaceId} {
+      allow read, write: if false;
     }
 
     // ── MÓDULO SORTEOS (NUEVO — server-authoritative) ────────────────────────────
