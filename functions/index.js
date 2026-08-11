@@ -6579,3 +6579,65 @@ exports.grantChancesSuscripcion = functions.https.onCall(async (data, context) =
     throw new functions.https.HttpsError("internal", "No se pudieron ajustar las chances.");
   }
 });
+
+// ── Kenta: avisos de cambio de etapa del ERP Wala ───────────────────────────
+// Solo observa cambios futuros de estadoGeneral. Kenta decide, según la
+// configuración del tenant, si existe una plantilla activa y si corresponde
+// enviar. La firma y el eventId hacen el callback autenticado e idempotente.
+exports.notifyKentaOrderStageChanged = functions.firestore
+  .document("pedidos/{pedidoId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data() || {};
+    const after = change.after.data() || {};
+    const previousStage = String(before.estadoGeneral || "").trim();
+    const currentStage = String(after.estadoGeneral || "").trim();
+
+    if (!currentStage || currentStage === previousStage) return null;
+
+    const callbackUrl = String(
+      process.env.KENTA_ORDER_STAGE_CALLBACK_URL
+      || "https://kenta.pe/api/integrations/wala/order-stage-webhook"
+    ).trim();
+    const callbackSecret = String(
+      process.env.KENTA_ORDER_STAGE_CALLBACK_SECRET
+      || process.env.KENTA_PAYMENT_CALLBACK_SECRET
+      || ""
+    ).trim();
+    if (!callbackUrl || !callbackSecret) {
+      throw new Error("El callback de etapas hacia Kenta no está configurado.");
+    }
+
+    const updateMillis = change.after.updateTime
+      ? change.after.updateTime.toMillis()
+      : Date.now();
+    const payload = {
+      event: "order.stage.changed",
+      event_id: `${context.params.pedidoId}:${updateMillis}:${currentStage}`,
+      order_id: String(after.id || context.params.pedidoId),
+      firestore_id: String(context.params.pedidoId),
+      previous_stage: previousStage,
+      current_stage: currentStage,
+      order: after,
+    };
+    const raw = JSON.stringify(payload);
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = crypto
+      .createHmac("sha256", callbackSecret)
+      .update(`${timestamp}.${raw}`, "utf8")
+      .digest("hex");
+
+    const response = await fetch(callbackUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-wala-timestamp": timestamp,
+        "x-wala-signature": signature,
+      },
+      body: raw,
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`Kenta order-stage callback HTTP ${response.status}: ${detail.slice(0, 300)}`);
+    }
+    return null;
+  });
