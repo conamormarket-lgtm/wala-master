@@ -32,6 +32,9 @@ const AdminProductos = () => {
     return saved === 'table' ? 'table' : 'cards';
   });
   const [searchQuery, setSearchQuery] = useState('');
+  // Filtro por estado. Por defecto se muestran solo los productos ACTIVOS
+  // (visibles en la tienda); 'hidden' = ocultos/archivados; 'all' = todos.
+  const [statusFilter, setStatusFilter] = useState('active');
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const { toasts, removeToast, success, error: showError } = useToast();
@@ -219,6 +222,13 @@ const AdminProductos = () => {
       return p;
     });
 
+    // Filtrar por estado (activo = visible en la tienda)
+    if (statusFilter === 'active') {
+      filtered = filtered.filter((p) => p.visible !== false);
+    } else if (statusFilter === 'hidden') {
+      filtered = filtered.filter((p) => p.visible === false);
+    }
+
     // Filtrar por búsqueda
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
@@ -233,7 +243,16 @@ const AdminProductos = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return filtered;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productsData, optimisticVisibility, searchQuery]);
+  }, [productsData, optimisticVisibility, searchQuery, statusFilter]);
+
+  // Conteos por estado para las etiquetas del filtro (sobre el total, sin filtrar).
+  const statusCounts = useMemo(() => {
+    const base = (productsData || []).map((p) =>
+      optimisticVisibility[p.id] !== undefined ? { ...p, visible: optimisticVisibility[p.id] } : p
+    );
+    const active = base.filter((p) => p.visible !== false).length;
+    return { all: base.length, active, hidden: base.length - active };
+  }, [productsData, optimisticVisibility]);
 
   const handleToggleVisibility = (product) => {
     const newVisible = !(product.visible !== false);
@@ -518,6 +537,32 @@ const AdminProductos = () => {
               ×
             </button>
           )}
+        </div>
+        <div className={styles.statusFilter} role="group" aria-label="Filtrar productos por estado">
+          <button
+            type="button"
+            className={`${styles.statusBtn} ${statusFilter === 'active' ? styles.active : ''}`}
+            onClick={() => setStatusFilter('active')}
+            aria-pressed={statusFilter === 'active'}
+          >
+            Activos ({statusCounts.active})
+          </button>
+          <button
+            type="button"
+            className={`${styles.statusBtn} ${statusFilter === 'hidden' ? styles.active : ''}`}
+            onClick={() => setStatusFilter('hidden')}
+            aria-pressed={statusFilter === 'hidden'}
+          >
+            Ocultos ({statusCounts.hidden})
+          </button>
+          <button
+            type="button"
+            className={`${styles.statusBtn} ${statusFilter === 'all' ? styles.active : ''}`}
+            onClick={() => setStatusFilter('all')}
+            aria-pressed={statusFilter === 'all'}
+          >
+            Todos ({statusCounts.all})
+          </button>
         </div>
         <div className={styles.viewToggle}>
           <button

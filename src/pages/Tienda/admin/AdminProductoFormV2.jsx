@@ -642,11 +642,14 @@ const AdminProductoFormV2 = () => {
       // Forzamos la descarga de la nueva lista antes de navegar (refetchQueries sí o sí descarga aunque la query esté inactiva)
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ['admin-products'] }),
+        // El formulario de edición lee de ['admin-product', id] con staleTime de 1h.
+        // Sin refetch, al volver a editar se servirían los datos ANTIGUOS de la caché.
+        !isNew && queryClient.refetchQueries({ queryKey: ['admin-product', id] }),
         queryClient.invalidateQueries({ queryKey: ['products'] }),
         queryClient.invalidateQueries({ queryKey: ['product', id] }),
         queryClient.invalidateQueries({ queryKey: ['featured-products'] }),
         queryClient.invalidateQueries({ queryKey: ['collection-products'] })
-      ]);
+      ].filter(Boolean));
       
       navigate('/admin/productos');
     }
