@@ -178,13 +178,13 @@
 }
 
 .brandActiveBarLogo {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
   border: 2px solid var(--color-surface, #fff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.14);
 }
 
 .brandActiveBarLabel {
@@ -215,8 +215,8 @@
     gap: 0.6rem;
   }
   .brandActiveBarLogo {
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
   }
   .brandActiveBarName {
     font-size: 1.05rem;
