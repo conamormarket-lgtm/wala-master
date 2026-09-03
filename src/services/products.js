@@ -761,9 +761,14 @@ export const getCategories = async () => {
   // nav y del sidebar resuelve aunque el id viva solo en una de las dos). Para
   // nombre/imagen gana 'tienda_categories'. Retrocompatible: si una colección está
   // vacía o no existe, se usa la otra; el storefront de Con Amor sigue resolviendo.
+  // IMPORTANTE: se lee SIN orderBy('order'). En Firestore, orderBy por un campo
+  // EXCLUYE silenciosamente los documentos que no tienen ese campo; había categorías
+  // (p. ej. creadas sin `order`) que así desaparecían de TODA la tienda (sidebar,
+  // nav por marca y selectores), dejando a sus productos con un id de categoría
+  // "huérfano" sin nombre. Sin orderBy se traen TODAS y se ordena en memoria abajo.
   const [store, admin] = await Promise.all([
-    getCollection('categories', [], { field: 'order', direction: 'asc' }),
-    getCollection('tienda_categories', [], { field: 'order', direction: 'asc' }),
+    getCollection('categories', []),
+    getCollection('tienda_categories', []),
   ]);
   const porId = new Map();
   (store.data || []).forEach((c) => { if (c && c.id) porId.set(c.id, c); });
