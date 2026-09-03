@@ -345,36 +345,43 @@ const VisualEditorPanel = () => {
     }
   });
 
-  // Ids de categoría REALMENTE usados por los productos de la marca de la página.
-  const { data: brandCategoryIds } = useQuery({
-    queryKey: ['editor-brand-cat-ids', pageBrandId],
+  // Valores de categoría REALMENTE usados por los productos de la marca (tal como
+  // están guardados en los productos: id de tienda_categories o valor legacy).
+  // El enlace del tile usa este mismo valor en ?categoria=, así siempre hay productos.
+  const { data: brandCategoryValues } = useQuery({
+    queryKey: ['editor-brand-cat-values', pageBrandId],
     queryFn: async () => {
       const { data } = await getProductsByBrand(pageBrandId);
-      const ids = new Set();
+      const vals = new Set();
       (data || []).forEach((p) => {
         (Array.isArray(p.categories) ? p.categories : []).forEach((c) => {
-          const id = c && typeof c === 'object' ? c.id : c;
-          if (id) ids.add(id);
+          const v = c && typeof c === 'object' ? c.id : c;
+          if (v) vals.add(v);
         });
         const single = p.category && typeof p.category === 'object' ? p.category.id : p.category;
-        if (single) ids.add(single);
+        if (single) vals.add(single);
       });
-      return [...ids];
+      return [...vals];
     },
     enabled: !!pageBrandId,
   });
 
-  // Categorías que se ofrecen en los selectores: en página de marca, SOLO las suyas;
-  // en páginas globales, todas. Dedupe por nombre para evitar duplicados visibles.
+  // Categorías para los selectores:
+  //  - Página de MARCA: se construyen DIRECTAMENTE de las categorías que usan los
+  //    productos de la marca (solo salen las que tienen productos). El nombre se
+  //    resuelve contra tienda_categories; si no coincide, se usa el valor crudo.
+  //  - Página global (home/tienda): todas las categorías.
+  // Dedupe por nombre para no repetir.
   const selectableCategories = React.useMemo(() => {
     const all = allCategories || [];
-    let base = all;
-    if (pageBrandId) {
-      const filtered = all.filter((c) => (brandCategoryIds || []).includes(c.id));
-      // Fallback: si no hay coincidencias (productos con categorías legacy o
-      // guardadas por nombre/id que no matchean tienda_categories), NO dejamos al
-      // admin sin opciones: mostramos todas. Preferimos las de la marca cuando sí hay.
-      base = filtered.length > 0 ? filtered : all;
+    let base;
+    if (pageBrandId && Array.isArray(brandCategoryValues)) {
+      base = brandCategoryValues.map((val) => {
+        const match = all.find((c) => c.id === val);
+        return { id: val, name: match?.name || val, imageUrl: match?.imageUrl || '' };
+      });
+    } else {
+      base = all;
     }
     const seenNames = new Set();
     return base.filter((c) => {
@@ -383,7 +390,7 @@ const VisualEditorPanel = () => {
       seenNames.add(key);
       return true;
     });
-  }, [allCategories, brandCategoryIds, pageBrandId]);
+  }, [allCategories, brandCategoryValues, pageBrandId]);
 
   // --- Lógica de Arrastre (Drag) para Modo Flotante ---
   const [position, setPosition] = React.useState({ x: window.innerWidth - 380, y: 80 });
