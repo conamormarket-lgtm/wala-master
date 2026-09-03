@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getCollections } from '../../../services/collections';
 import { getBrands } from '../../../services/brands';
 import { getCategories } from '../../../services/categories';
+import { getProductsByBrand } from '../../../services/products';
+import { getLandingPageBySlug } from '../services/landingPages';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import { useLayoutContext } from '../../../contexts/LayoutContext';
@@ -331,6 +333,51 @@ const VisualEditorPanel = () => {
       return data || [];
     }
   });
+
+  // Marca de la página que se está editando (para acotar el selector de categorías).
+  // Las páginas globales (home/tienda) no tienen marca → se muestran todas.
+  const { data: pageBrandId } = useQuery({
+    queryKey: ['editor-page-brand', activePageId],
+    queryFn: async () => {
+      if (!activePageId || ['home', 'tienda', 'footer'].includes(activePageId)) return null;
+      const lp = await getLandingPageBySlug(activePageId);
+      return lp?.brandId || null;
+    }
+  });
+
+  // Ids de categoría REALMENTE usados por los productos de la marca de la página.
+  const { data: brandCategoryIds } = useQuery({
+    queryKey: ['editor-brand-cat-ids', pageBrandId],
+    queryFn: async () => {
+      const { data } = await getProductsByBrand(pageBrandId);
+      const ids = new Set();
+      (data || []).forEach((p) => {
+        (Array.isArray(p.categories) ? p.categories : []).forEach((c) => {
+          const id = c && typeof c === 'object' ? c.id : c;
+          if (id) ids.add(id);
+        });
+        const single = p.category && typeof p.category === 'object' ? p.category.id : p.category;
+        if (single) ids.add(single);
+      });
+      return [...ids];
+    },
+    enabled: !!pageBrandId,
+  });
+
+  // Categorías que se ofrecen en los selectores: en página de marca, SOLO las suyas;
+  // en páginas globales, todas. Dedupe por nombre para evitar duplicados visibles.
+  const selectableCategories = React.useMemo(() => {
+    const base = pageBrandId
+      ? (allCategories || []).filter((c) => (brandCategoryIds || []).includes(c.id))
+      : (allCategories || []);
+    const seenNames = new Set();
+    return base.filter((c) => {
+      const key = (c.name || c.id).trim().toLowerCase();
+      if (seenNames.has(key)) return false;
+      seenNames.add(key);
+      return true;
+    });
+  }, [allCategories, brandCategoryIds, pageBrandId]);
 
   // --- Lógica de Arrastre (Drag) para Modo Flotante ---
   const [position, setPosition] = React.useState({ x: window.innerWidth - 380, y: 80 });
@@ -2297,7 +2344,7 @@ const VisualEditorPanel = () => {
                   style={{width: '100%', padding: '8px', marginBottom: '15px'}}
                 >
                   <option value="">— Selecciona una categoría —</option>
-                  {(allCategories || []).map(c => (
+                  {(selectableCategories || []).map(c => (
                     <option key={c.id} value={c.id}>{c.name || c.id}</option>
                   ))}
                 </select>
@@ -2462,21 +2509,21 @@ const VisualEditorPanel = () => {
             <input type="number" min="2" max="6" value={s.columns || 4} onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.columns=Number(e.target.value); updateSectionsDraft(ns); }} style={{width:'100%', padding:'8px', marginBottom:'15px'}} />
 
             {/* Importar categorías existentes */}
-            {(allCategories || []).length > 0 && (
+            {(selectableCategories || []).length > 0 && (
               <div style={{ background:'rgba(124,58,237,0.06)', border:'1px solid #e5d9fb', borderRadius:8, padding:10, marginBottom:15 }}>
-                <label style={{fontWeight:600}}>Añadir una categoría</label>
+                <label style={{fontWeight:600}}>Añadir una categoría {pageBrandId ? '(de esta marca)' : ''}</label>
                 <select value="" onChange={e => {
-                  const c=(allCategories||[]).find(x=>x.id===e.target.value); if(!c) return;
+                  const c=(selectableCategories||[]).find(x=>x.id===e.target.value); if(!c) return;
                   setItems([...(items), { categoryId: c.id, name: c.name || '', imageUrl: c.imageUrl || '' }]);
                 }} style={{width:'100%', padding:'8px', marginBottom:'8px'}}>
                   <option value="">— Selecciona una categoría —</option>
-                  {(allCategories||[]).map(c => <option key={c.id} value={c.id}>{c.name || c.id}{c.imageUrl ? '' : ' (sin imagen)'}</option>)}
+                  {(selectableCategories||[]).map(c => <option key={c.id} value={c.id}>{c.name || c.id}{c.imageUrl ? '' : ' (sin imagen)'}</option>)}
                 </select>
                 <button type="button" onClick={() => {
                   const yaEstan=new Set(items.map(it=>it.categoryId));
-                  const add=(allCategories||[]).filter(c=>!yaEstan.has(c.id)).map(c=>({categoryId:c.id, name:c.name||'', imageUrl:c.imageUrl||''}));
+                  const add=(selectableCategories||[]).filter(c=>!yaEstan.has(c.id)).map(c=>({categoryId:c.id, name:c.name||'', imageUrl:c.imageUrl||''}));
                   setItems([...items, ...add]);
-                }} style={{width:'100%', padding:'8px', borderRadius:6, border:'none', background:'#7C3AED', color:'#fff', fontWeight:600, cursor:'pointer'}}>Añadir todas las categorías</button>
+                }} style={{width:'100%', padding:'8px', borderRadius:6, border:'none', background:'#7C3AED', color:'#fff', fontWeight:600, cursor:'pointer'}}>Añadir todas las categorías{pageBrandId ? ' de la marca' : ''}</button>
               </div>
             )}
 
