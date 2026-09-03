@@ -2390,6 +2390,70 @@ const VisualEditorPanel = () => {
         );
       }
 
+      if (section.type === 'category_grid') {
+        const s = section.settings || {};
+        const items = s.items || [];
+        const setItems = (next) => {
+          const newSections = [...storeConfigDraft.sections];
+          newSections[dynamicSectionIndex].settings.items = next;
+          updateSectionsDraft(newSections);
+        };
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>Editando: Cuadrícula de Categorías</h4>
+            <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '1rem'}}>
+              Tiles con imagen + nombre que enlazan a cada categoría (filtra el catálogo de esta página).
+            </p>
+
+            <label>Título de la Sección</label>
+            <input type="text" value={s.title || ''} onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.title=e.target.value; updateSectionsDraft(ns); }} style={{width:'100%', padding:'6px', marginBottom:'12px'}} />
+            <TextStyleControl label="Estilo del Título" prefix="title" settings={s} onChange={(key, val) => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings[key]=val; updateSectionsDraft(ns); }} />
+
+            <label>Columnas (escritorio)</label>
+            <input type="number" min="2" max="6" value={s.columns || 4} onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.columns=Number(e.target.value); updateSectionsDraft(ns); }} style={{width:'100%', padding:'8px', marginBottom:'15px'}} />
+
+            {/* Importar categorías existentes */}
+            {(allCategories || []).length > 0 && (
+              <div style={{ background:'rgba(124,58,237,0.06)', border:'1px solid #e5d9fb', borderRadius:8, padding:10, marginBottom:15 }}>
+                <label style={{fontWeight:600}}>Añadir una categoría</label>
+                <select value="" onChange={e => {
+                  const c=(allCategories||[]).find(x=>x.id===e.target.value); if(!c) return;
+                  setItems([...(items), { categoryId: c.id, name: c.name || '', imageUrl: c.imageUrl || '' }]);
+                }} style={{width:'100%', padding:'8px', marginBottom:'8px'}}>
+                  <option value="">— Selecciona una categoría —</option>
+                  {(allCategories||[]).map(c => <option key={c.id} value={c.id}>{c.name || c.id}{c.imageUrl ? '' : ' (sin imagen)'}</option>)}
+                </select>
+                <button type="button" onClick={() => {
+                  const yaEstan=new Set(items.map(it=>it.categoryId));
+                  const add=(allCategories||[]).filter(c=>!yaEstan.has(c.id)).map(c=>({categoryId:c.id, name:c.name||'', imageUrl:c.imageUrl||''}));
+                  setItems([...items, ...add]);
+                }} style={{width:'100%', padding:'8px', borderRadius:6, border:'none', background:'#7C3AED', color:'#fff', fontWeight:600, cursor:'pointer'}}>Añadir todas las categorías</button>
+              </div>
+            )}
+
+            {/* Lista de tiles */}
+            {items.map((it, i) => (
+              <div key={i} style={{border:'1px solid #eee', borderRadius:8, padding:10, marginBottom:10}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6}}>
+                  <strong style={{fontSize:'0.85rem'}}>{it.name || 'Categoría'}</strong>
+                  <button type="button" onClick={() => setItems(items.filter((_,idx)=>idx!==i))} style={{color:'#e03131', background:'none', border:'none', cursor:'pointer', fontSize:'0.8rem'}}>Quitar</button>
+                </div>
+                <label style={{fontSize:'0.78rem'}}>Nombre a mostrar</label>
+                <input type="text" value={it.name||''} onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, name:e.target.value}:x))} style={{width:'100%', padding:'6px', marginBottom:'6px'}} />
+                <label style={{fontSize:'0.78rem'}}>URL de imagen</label>
+                <input type="text" placeholder="https://..." value={it.imageUrl||''} onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, imageUrl:e.target.value}:x))} style={{width:'100%', padding:'6px'}} />
+              </div>
+            ))}
+            {items.length === 0 && <p style={{fontSize:'0.85rem', color:'#888', fontStyle:'italic'}}>Aún no agregaste categorías.</p>}
+
+            <BackgroundStylesControl settings={s} onChange={(key, value) => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings[key]=value; updateSectionsDraft(ns); }} />
+          </div>
+        );
+      }
+
       if (section.type === 'hero_carousel') {
         const s = section.settings || {};
         return (
