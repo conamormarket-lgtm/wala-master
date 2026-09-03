@@ -2390,6 +2390,52 @@ const VisualEditorPanel = () => {
         );
       }
 
+      if (section.type === 'banner_grid') {
+        const s = section.settings || {};
+        const items = s.items || [];
+        const setItems = (next) => {
+          const newSections = [...storeConfigDraft.sections];
+          newSections[dynamicSectionIndex].settings.items = next;
+          updateSectionsDraft(newSections);
+        };
+        return (
+          <div className={styles.formGroup}>
+            <button className={styles.backBtn} onClick={() => closeEditor()}>
+              <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
+            </button>
+            <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>Editando: Mosaico de Banners</h4>
+            <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '1rem'}}>
+              Imágenes promocionales en fila, cada una con su enlace (interno /categorias o externo https://).
+            </p>
+
+            <label>Columnas (escritorio)</label>
+            <input type="number" min="1" max="4" value={s.columns || 3} onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.columns=Number(e.target.value); updateSectionsDraft(ns); }} style={{width:'100%', padding:'8px', marginBottom:'15px'}} />
+
+            {items.map((it, i) => (
+              <div key={i} style={{border:'1px solid #eee', borderRadius:8, padding:10, marginBottom:10}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6}}>
+                  <strong style={{fontSize:'0.85rem'}}>Banner {i+1}</strong>
+                  <button type="button" onClick={() => setItems(items.filter((_,idx)=>idx!==i))} style={{color:'#e03131', background:'none', border:'none', cursor:'pointer', fontSize:'0.8rem'}}>Quitar</button>
+                </div>
+                {it.imageUrl && <img src={it.imageUrl} alt="" style={{width:'100%', maxHeight:90, objectFit:'cover', borderRadius:6, marginBottom:6}} />}
+                <label style={{fontSize:'0.78rem'}}>URL de la imagen</label>
+                <input type="text" placeholder="https://..." value={it.imageUrl||''} onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, imageUrl:e.target.value}:x))} style={{width:'100%', padding:'6px', marginBottom:'6px'}} />
+                <label style={{fontSize:'0.78rem'}}>Enlace de destino</label>
+                <input type="text" placeholder="Ej: /tienda  o  https://..." value={it.link||''} onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, link:e.target.value}:x))} style={{width:'100%', padding:'6px', marginBottom:'6px'}} />
+                <label style={{fontSize:'0.78rem'}}>Texto alternativo (Alt)</label>
+                <input type="text" value={it.alt||''} onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, alt:e.target.value}:x))} style={{width:'100%', padding:'6px'}} />
+              </div>
+            ))}
+
+            <button type="button" onClick={() => setItems([...(items), { imageUrl:'', link:'', alt:'' }])} style={{width:'100%', border:'1px dashed #ccc', background:'transparent', padding:'10px', borderRadius:6, cursor:'pointer', marginBottom:'15px'}}>
+              <Plus size={16} strokeWidth={1.5} style={{marginRight:6}} /> Añadir Banner
+            </button>
+
+            <BackgroundStylesControl settings={s} onChange={(key, value) => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings[key]=value; updateSectionsDraft(ns); }} />
+          </div>
+        );
+      }
+
       if (section.type === 'category_grid') {
         const s = section.settings || {};
         const items = s.items || [];

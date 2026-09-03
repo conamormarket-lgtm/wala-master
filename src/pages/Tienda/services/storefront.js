@@ -32,6 +32,7 @@ export const SECTION_TYPES = [
   { id: 'sale_carousel', label: 'Carrusel de Ofertas (con descuento)' },
   { id: 'category_carousel', label: 'Carrusel por categoría' },
   { id: 'category_grid', label: 'Cuadrícula de Categorías' },
+  { id: 'banner_grid', label: 'Mosaico de Banners' },
   { id: 'categories_nav', label: 'Navegación por categorías' },
   { id: 'product_grid', label: 'Grid de productos simple' },
   { id: 'sidebar_catalog', label: 'Catálogo (todas las marcas)' },

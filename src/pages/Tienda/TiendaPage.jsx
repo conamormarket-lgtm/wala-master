@@ -14,6 +14,7 @@ import SidebarCatalogLayout from './components/SidebarCatalogLayout';
 import BrandMarquee from './components/BrandMarquee/BrandMarquee';
 import ProductQueryCarousel from './components/ProductQueryCarousel/ProductQueryCarousel';
 import CategoryGrid from './components/CategoryGrid/CategoryGrid';
+import BannerGrid from './components/BannerGrid/BannerGrid';
 import BestSellersRow from './components/BestSellersRow/BestSellersRow';
 import Testimonials from './components/Testimonials';
 import MapLocation from './components/MapLocation';
@@ -1136,6 +1137,13 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
             <CategoryGrid config={s} title={s.title} items={s.items} columns={s.columns} />
+          </section>
+        );
+      case 'banner_grid':
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
+            <BannerGrid items={s.items} columns={s.columns} gap={s.gap} />
           </section>
         );
       case 'featured_carousel':
