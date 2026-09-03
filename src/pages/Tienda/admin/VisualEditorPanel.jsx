@@ -367,9 +367,15 @@ const VisualEditorPanel = () => {
   // Categorías que se ofrecen en los selectores: en página de marca, SOLO las suyas;
   // en páginas globales, todas. Dedupe por nombre para evitar duplicados visibles.
   const selectableCategories = React.useMemo(() => {
-    const base = pageBrandId
-      ? (allCategories || []).filter((c) => (brandCategoryIds || []).includes(c.id))
-      : (allCategories || []);
+    const all = allCategories || [];
+    let base = all;
+    if (pageBrandId) {
+      const filtered = all.filter((c) => (brandCategoryIds || []).includes(c.id));
+      // Fallback: si no hay coincidencias (productos con categorías legacy o
+      // guardadas por nombre/id que no matchean tienda_categories), NO dejamos al
+      // admin sin opciones: mostramos todas. Preferimos las de la marca cuando sí hay.
+      base = filtered.length > 0 ? filtered : all;
+    }
     const seenNames = new Set();
     return base.filter((c) => {
       const key = (c.name || c.id).trim().toLowerCase();
