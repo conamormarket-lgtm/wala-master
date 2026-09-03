@@ -15,6 +15,7 @@ import CreatableSelect from 'react-select/creatable';
 import { ImagePlus, Save, ArrowLeft, Loader2, Shirt, Image as ImageIcon, Trash2, Camera, Star, X, Edit2 } from 'lucide-react';
 import Button from '../../../components/common/Button';
 import ProductImageContainer from '../components/ProductImageContainer/ProductImageContainer';
+import ThumbnailCropEditor from '../../../components/admin/ThumbnailCropEditor/ThumbnailCropEditor';
 import AdminCustomizationViewsEditor from '../components/AdminCustomizationViewsEditor/AdminCustomizationViewsEditor';
 import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
 import YoryoPersonalizado from '../../../components/YoryoPersonalizado/YoryoPersonalizado';
@@ -142,6 +143,8 @@ const AdminProductoFormV2 = () => {
   const [uploading, setUploading] = useState(false);
   const canvasElRef = useRef(null);
 
+  // Editor inline de encuadre (crop no destructivo) de la portada de la variante activa.
+  const [cropEditing, setCropEditing] = useState(false);
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [newBrandForm, setNewBrandForm] = useState({ id: null, name: '', logoUrl: '' });
   const [creatingBrand, setCreatingBrand] = useState(false);
@@ -208,6 +211,7 @@ const AdminProductoFormV2 = () => {
           sizes: Array.isArray(productData.mainSizes) ? productData.mainSizes : [],
           sizeLabel: 'Talla',
           showSizeConfig: Array.isArray(productData.mainSizes) && productData.mainSizes.length > 0,
+          thumbnailCrop: productData.thumbnailCrop || null,
           mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
         }];
       }
@@ -671,6 +675,8 @@ const AdminProductoFormV2 = () => {
         sizes: Array.isArray(v.sizes) ? v.sizes : [],
         sizeLabel: v.sizeLabel || 'Talla',
         showSizeConfig: v.showSizeConfig || false,
+        // Encuadre no destructivo de la portada (lo aplican las tarjetas del catálogo).
+        thumbnailCrop: v.thumbnailCrop || null,
       }));
 
       // Identify main image
@@ -1378,11 +1384,42 @@ const AdminProductoFormV2 = () => {
                   </div>
                 ) : (
                   <div className={styles.directWorkspace}>
-                    <ProductImageContainer 
-                      imageUrl={activeVariant.imageUrl} 
-                      style={brandBgStyle}
-                      emptyMessage="Sube una imagen del producto terminado"
-                    />
+                    {cropEditing && activeVariant.imageUrl ? (
+                      <ThumbnailCropEditor
+                        imageUrl={activeVariant.imageUrl}
+                        initialCrop={activeVariant.thumbnailCrop}
+                        onSave={(cropData) => {
+                          updateActiveVariant({ thumbnailCrop: cropData });
+                          setCropEditing(false);
+                        }}
+                        onCancel={() => setCropEditing(false)}
+                      />
+                    ) : (
+                      <>
+                        <ProductImageContainer
+                          imageUrl={activeVariant.imageUrl}
+                          style={brandBgStyle}
+                          emptyMessage="Sube una imagen del producto terminado"
+                          cropData={activeVariant.thumbnailCrop?.percentages}
+                        />
+                        {activeVariant.imageUrl && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => setCropEditing(true)}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, color: '#374151', fontSize: '0.85rem' }}
+                            >
+                              <ImageIcon size={16} /> Ajustar encuadre de portada
+                            </button>
+                            {activeVariant.thumbnailCrop?.percentages && (
+                              <span style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 600 }}>
+                                ✓ Encuadre personalizado
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
                     <div className={styles.field} style={{ marginTop: '1rem' }}>
                       <label className={styles.uploadImageLabel}>
                         <ImagePlus size={24} />

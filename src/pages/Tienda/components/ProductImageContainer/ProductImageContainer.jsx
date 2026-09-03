@@ -3,17 +3,31 @@ import { Info, ImageOff } from 'lucide-react';
 import styles from './ProductImageContainer.module.css';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 
-const ProductImageContainer = ({ 
-  imageUrl, 
-  alt = 'Imagen', 
-  children, 
-  isGallery = false, 
+const ProductImageContainer = ({
+  imageUrl,
+  alt = 'Imagen',
+  children,
+  isGallery = false,
   style = {},
-  emptyMessage = 'Sin imagen'
+  emptyMessage = 'Sin imagen',
+  cropData = null
 }) => {
   const containerClass = isGallery ? styles.galleryContainer : styles.container;
   const isValidUrl = typeof imageUrl === 'string' && imageUrl.trim().length > 0 && imageUrl !== 'undefined' && imageUrl !== 'null';
   const displayUrl = isValidUrl ? toDirectImageUrl(imageUrl) : '';
+
+  // Encuadre (crop no destructivo). Mismo cálculo que OptimizedImage: el contenedor
+  // es 3/4 y el recorte también, así la portada se muestra sin deformarse.
+  const hasValidCrop = cropData && cropData.width > 0 && cropData.height > 0;
+  const cropStyle = hasValidCrop ? {
+    top: `${-(cropData.y / cropData.height) * 100}%`,
+    left: `${-(cropData.x / cropData.width) * 100}%`,
+    width: `${(100 / cropData.width) * 100}%`,
+    height: `${(100 / cropData.height) * 100}%`,
+    maxWidth: 'none',
+    maxHeight: 'none',
+    objectFit: 'fill',
+  } : {};
 
   return (
     <div className={containerClass} style={style}>
@@ -31,7 +45,7 @@ const ProductImageContainer = ({
 
       {/* Imagen Principal (si hay imageUrl) */}
       {displayUrl ? (
-        <img src={displayUrl} alt={alt} className={styles.image} />
+        <img src={displayUrl} alt={alt} className={styles.image} style={cropStyle} />
       ) : !children ? (
         /* Estado Vacío (si no hay ni imageUrl ni children) */
         <div className={styles.emptyState}>
