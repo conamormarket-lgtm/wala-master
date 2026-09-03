@@ -13,6 +13,8 @@ import { recordProductClick, recordVariantViewTime } from '../../../../utils/pro
 import { trackProductView } from '../../../../services/analytics/tracker';
 import { getFallbackHex } from '../../../../utils/colors';
 import { getBrands } from '../../../../services/brands';
+import { getProductsByCategory } from '../../../../services/products';
+import FeaturedCarousel from '../FeaturedCarousel/FeaturedCarousel';
 import { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
@@ -225,6 +227,20 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     staleTime: 300_000,
   });
   const brand = brands?.find(b => b.id === product?.brandId);
+
+  // ── Productos relacionados ("También te puede gustar") ──────────────────────
+  // Misma categoría del producto, acotados a su marca, excluyendo el actual.
+  // Si no hay relacionados, FeaturedCarousel devuelve null y la sección desaparece.
+  const relatedCategoryId = product?.categories?.[0] || '';
+  const { data: relatedProducts } = useQuery({
+    queryKey: ['related-products', relatedCategoryId, product?.brandId || null, product?.id],
+    queryFn: async () => {
+      const { data } = await getProductsByCategory(relatedCategoryId, product?.brandId || null);
+      return (data || []).filter(p => p.id !== product?.id).slice(0, 12);
+    },
+    enabled: !!relatedCategoryId && !!product?.id,
+    staleTime: 300_000,
+  });
 
   const images = React.useMemo(
     () => product ? buildImages(product, selectedVariant, isCombo, comboSels, comboProd) : [],
@@ -585,6 +601,18 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
         </div>
       </div>
+
+      {/* ── También te puede gustar (productos relacionados por categoría) ──
+          FeaturedCarousel se auto-oculta si el array queda vacío. */}
+      {relatedProducts && relatedProducts.length > 0 && (
+        <div style={{ maxWidth: 1400, margin: '2rem auto 0', padding: '0 4vw', width: '100%' }}>
+          <FeaturedCarousel
+            title="También te puede gustar"
+            products={relatedProducts}
+            categories={categories}
+          />
+        </div>
+      )}
 
       <ProductCuestionarioModal
         isOpen={!!cuestionario}
