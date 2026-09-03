@@ -35,24 +35,19 @@
   display: flex;
   gap: 1.5rem;
   overflow-x: auto;
-  padding-bottom: 1rem;
-  scrollbar-width: thin;
+  overflow-y: hidden; /* Evita la barra vertical que fuerza overflow-x: auto */
+  padding-bottom: 0.5rem;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
+  /* Ocultar la barra de scroll (las "rayas") manteniendo el desplazamiento */
+  scrollbar-width: none;    /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge legacy */
 }
 
+/* Ocultar la barra de scroll en Chrome / Safari / Brave (WebKit/Blink) */
 .carouselScrollArea::-webkit-scrollbar {
-  height: 6px;
-}
-
-.carouselScrollArea::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.carouselScrollArea::-webkit-scrollbar-thumb {
-  background: var(--border-color, #ccc);
-  border-radius: 4px;
+  display: none;
 }
 
 /*
