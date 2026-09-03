@@ -1,6 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 import { setDocument, createDocument, getDocument } from '../../../services/firebase/firestore';
 import { saveStorefrontConfig, getStorefrontConfig } from '../services/storefront';
@@ -12,6 +13,7 @@ export const useVisualEditor = () => useContext(VisualEditorContext);
 
 export const VisualEditorProvider = ({ children }) => {
   const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const [isEditModeActive, setIsEditModeActive] = useState(false);
   const [activeSection, setActiveSection] = useState(null); // 'heroBanner', 'layout', 'header'
   const [hoveredSectionId, setHoveredSectionId] = useState(null); // sectionId from drawer
@@ -148,6 +150,19 @@ export const VisualEditorProvider = ({ children }) => {
 
     setIsSaving(false);
     if (!error && !legacyError) {
+      // Invalidar la caché de react-query de la config de esta página para que el
+      // cambio publicado se vea SIN refrescar (el query tiene staleTime alto y
+      // refetchOnMount:false; sin esto, la vista pública seguía mostrando lo viejo).
+      try {
+        await queryClient.invalidateQueries({ queryKey: ['storefront-config', activePageId] });
+        // 'home' también tiene fallback legacy en storefront/config.
+        if (activePageId === 'home') {
+          await queryClient.invalidateQueries({ queryKey: ['storefront-config', 'home'] });
+        }
+      } catch (e) {
+        // La invalidación es best-effort; no debe romper el guardado.
+        console.warn('[VisualEditor] invalidateQueries storefront-config:', e?.message || e);
+      }
       return { success: true };
     }
     return { error: error || legacyError };
