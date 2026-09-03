@@ -12,6 +12,7 @@ import HeroCarousel from './components/HeroCarousel';
 import FlashSales from './components/FlashSales';
 import SidebarCatalogLayout from './components/SidebarCatalogLayout';
 import BrandMarquee from './components/BrandMarquee/BrandMarquee';
+import ProductQueryCarousel from './components/ProductQueryCarousel/ProductQueryCarousel';
 import BestSellersRow from './components/BestSellersRow/BestSellersRow';
 import Testimonials from './components/Testimonials';
 import MapLocation from './components/MapLocation';
@@ -1106,6 +1107,29 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             />
           </section>
         );
+      case 'new_arrivals_carousel':
+      case 'sale_carousel':
+      case 'category_carousel': {
+        const src = section.type === 'sale_carousel' ? 'sale'
+          : section.type === 'category_carousel' ? 'category' : 'newest';
+        const defTitle = src === 'sale' ? 'Ofertas' : src === 'newest' ? 'Novedades' : '';
+        return (
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+            <SectionBackground config={s} />
+            <ProductQueryCarousel
+              source={src}
+              categoryId={s.categoryId}
+              brandId={pageBrandId}
+              title={s.title || defTitle}
+              config={s}
+              categories={categoriesData}
+              visibleItems={s.visibleItems}
+              autoPlay={s.autoPlay}
+              autoPlaySpeed={s.autoPlaySpeed}
+            />
+          </section>
+        );
+      }
       case 'featured_carousel':
         // Reutiliza la MISMA data de productos destacados que 'featured_products'
         // (featuredData/featuredProducts) — no duplicamos la query.

@@ -28,6 +28,9 @@ export const SECTION_TYPES = [
   { id: 'featured_products', label: 'Productos destacados' },
   { id: 'featured_carousel', label: 'Carrusel de Destacados (Slider)' },
   { id: 'collection_carousel', label: 'Carrusel de colección' },
+  { id: 'new_arrivals_carousel', label: 'Carrusel de Novedades (más recientes)' },
+  { id: 'sale_carousel', label: 'Carrusel de Ofertas (con descuento)' },
+  { id: 'category_carousel', label: 'Carrusel por categoría' },
   { id: 'categories_nav', label: 'Navegación por categorías' },
   { id: 'product_grid', label: 'Grid de productos simple' },
   { id: 'sidebar_catalog', label: 'Catálogo (todas las marcas)' },
@@ -125,6 +128,20 @@ export function getDefaultSettings(type) {
     case 'collection_carousel':
       return { title: '', collection: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
+    case 'new_arrivals_carousel':
+      return { title: 'Novedades', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
+    case 'sale_carousel':
+      return { title: 'Ofertas', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
+    case 'category_carousel':
+      return { title: '', categoryId: '', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
+    case 'category_grid':
+      return { title: 'Categorías', items: [], columns: 4, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '' };
+    case 'banner_grid':
+      return { items: [{ imageUrl: '', link: '', alt: '' }], columns: 3, gap: '1rem', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'categories_nav':
       // brandId: marca cuyo `categoryNav` (burbujas con miniatura) se mostrará.
       // Vacío = retrocompat (sin marca, el nav queda vacío o cae al modo global).

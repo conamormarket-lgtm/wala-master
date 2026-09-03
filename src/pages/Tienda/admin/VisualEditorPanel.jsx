@@ -4,6 +4,7 @@ import Button from '../../../components/common/Button';
 import { useQuery } from '@tanstack/react-query';
 import { getCollections } from '../../../services/collections';
 import { getBrands } from '../../../services/brands';
+import { getCategories } from '../../../services/categories';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import { useLayoutContext } from '../../../contexts/LayoutContext';
@@ -318,6 +319,15 @@ const VisualEditorPanel = () => {
     queryKey: ['admin-brands'],
     queryFn: async () => {
       const { data } = await getBrands();
+      return data || [];
+    }
+  });
+
+  // Categorías (para el selector del "Carrusel por categoría" y "Cuadrícula de Categorías").
+  const { data: allCategories } = useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: async () => {
+      const { data } = await getCategories();
       return data || [];
     }
   });
@@ -2252,20 +2262,47 @@ const VisualEditorPanel = () => {
         );
       }
 
-      if (section.type === 'featured_carousel') {
+      if (['featured_carousel', 'new_arrivals_carousel', 'sale_carousel', 'category_carousel'].includes(section.type)) {
         const s = section.settings || {};
+        const carouselDesc = section.type === 'new_arrivals_carousel'
+          ? 'Muestra automáticamente los productos MÁS RECIENTES (por fecha de creación).'
+          : section.type === 'sale_carousel'
+          ? 'Muestra automáticamente los productos con PRECIO DE OFERTA (descuento).'
+          : section.type === 'category_carousel'
+          ? 'Muestra productos de una CATEGORÍA que elijas abajo.'
+          : 'Muestra tus productos destacados en un slider horizontal. Usa la misma lista de "Productos Destacados" de la tienda.';
         return (
           <div className={styles.formGroup}>
             <button className={styles.backBtn} onClick={() => closeEditor()}>
               <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
             </button>
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
-              Editando: Carrusel de Destacados (Slider)
+              Editando: {SECTION_TYPES.find(t => t.id === section.type)?.label || section.type}
             </h4>
 
             <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '1rem'}}>
-              Muestra tus productos destacados en un slider horizontal. Usa la misma lista de "Productos Destacados" de la tienda.
+              {carouselDesc}
             </p>
+
+            {section.type === 'category_carousel' && (
+              <>
+                <label>Categoría a mostrar</label>
+                <select
+                  value={s.categoryId || ''}
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.categoryId = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '8px', marginBottom: '15px'}}
+                >
+                  <option value="">— Selecciona una categoría —</option>
+                  {(allCategories || []).map(c => (
+                    <option key={c.id} value={c.id}>{c.name || c.id}</option>
+                  ))}
+                </select>
+              </>
+            )}
 
             <label>Título de la Sección</label>
             <input
