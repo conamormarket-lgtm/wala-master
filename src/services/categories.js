@@ -6,7 +6,16 @@ const COLLECTION = 'tienda_categories';
  * Obtener todas las categorías ordenadas por order
  */
 export const getCategories = async () => {
-  return await getCollection(COLLECTION, [], { field: 'order', direction: 'asc' });
+  // IMPORTANTE: NO usar orderBy('order') en la query. En Firestore, orderBy por un
+  // campo EXCLUYE silenciosamente los documentos que no tienen ese campo; las
+  // categorías creadas sin `order` desaparecían de esta lista (y por ende de los
+  // selectores del builder, quedando sus productos con un id de categoría sin
+  // nombre). Se leen TODAS y se ordena en memoria (order ?? 9999).
+  const res = await getCollection(COLLECTION, []);
+  if (res?.data) {
+    res.data = [...res.data].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+  }
+  return res;
 };
 
 /**

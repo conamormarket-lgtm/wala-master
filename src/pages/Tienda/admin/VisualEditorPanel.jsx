@@ -7,6 +7,7 @@ import { getBrands } from '../../../services/brands';
 import { getCategories } from '../../../services/categories';
 import { getProductsByBrand } from '../../../services/products';
 import { getLandingPageBySlug } from '../services/landingPages';
+import { getDocument } from '../../../services/firebase/firestore';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import { useLayoutContext } from '../../../contexts/LayoutContext';
@@ -366,10 +367,31 @@ const VisualEditorPanel = () => {
     enabled: !!pageBrandId,
   });
 
+  // Resolución DIRECTA por id de las categorías de la marca (a prueba de caché y
+  // de orderBy): para cada valor de categoría de los productos, se lee el doc
+  // directamente en tienda_categories y, si no está, en categories. Devuelve un
+  // mapa { id -> { name, imageUrl, exists } }. Si un id no existe en ninguna, es
+  // un id realmente huérfano (categoría borrada) y se mostrará el valor crudo.
+  const { data: brandCategoryDocs } = useQuery({
+    queryKey: ['editor-brand-cat-docs', (brandCategoryValues || []).slice().sort().join(',')],
+    queryFn: async () => {
+      const out = {};
+      await Promise.all((brandCategoryValues || []).map(async (id) => {
+        let r = await getDocument('tienda_categories', id);
+        if (!r?.data) r = await getDocument('categories', id);
+        out[id] = r?.data
+          ? { name: r.data.name || '', imageUrl: r.data.imageUrl || '', exists: true }
+          : { name: '', imageUrl: '', exists: false };
+      }));
+      return out;
+    },
+    enabled: !!pageBrandId && Array.isArray(brandCategoryValues) && brandCategoryValues.length > 0,
+  });
+
   // Categorías para los selectores:
   //  - Página de MARCA: se construyen DIRECTAMENTE de las categorías que usan los
   //    productos de la marca (solo salen las que tienen productos). El nombre se
-  //    resuelve contra tienda_categories; si no coincide, se usa el valor crudo.
+  //    resuelve por doc directo → lista global → valor crudo (último recurso).
   //  - Página global (home/tienda): todas las categorías.
   // Dedupe por nombre para no repetir.
   const selectableCategories = React.useMemo(() => {
@@ -377,8 +399,11 @@ const VisualEditorPanel = () => {
     let base;
     if (pageBrandId && Array.isArray(brandCategoryValues)) {
       base = brandCategoryValues.map((val) => {
+        const fromDoc = brandCategoryDocs?.[val];
         const match = all.find((c) => c.id === val);
-        return { id: val, name: match?.name || val, imageUrl: match?.imageUrl || '' };
+        const name = fromDoc?.name || match?.name || val;
+        const imageUrl = fromDoc?.imageUrl || match?.imageUrl || '';
+        return { id: val, name, imageUrl };
       });
     } else {
       base = all;
@@ -390,7 +415,7 @@ const VisualEditorPanel = () => {
       seenNames.add(key);
       return true;
     });
-  }, [allCategories, brandCategoryValues, pageBrandId]);
+  }, [allCategories, brandCategoryValues, brandCategoryDocs, pageBrandId]);
 
   // --- Lógica de Arrastre (Drag) para Modo Flotante ---
   const [position, setPosition] = React.useState({ x: window.innerWidth - 380, y: 80 });
