@@ -1,4 +1,4 @@
-import { getCollection, getDocument, createDocument, updateDocument, deleteDocument } from './firebase/firestore';
+import { getCollection, getDocument, createDocument, updateDocument, deleteDocument, setDocument } from './firebase/firestore';
 
 const COLLECTION = 'tienda_brands';
 
@@ -68,6 +68,69 @@ const normalizeCategoryNavStyle = (style) => {
 };
 
 /**
+ * Secciones por defecto de la PÁGINA de una marca: un encabezado con el nombre
+ * de la marca + el catálogo (sidebar_catalog) filtrado a su brandId. Es lo mínimo
+ * para que WALA.PE/<slug> muestre solo los productos de esa marca.
+ */
+const buildBrandCatalogSections = (brandId, name) => ([
+  {
+    id: 'sec_header',
+    type: 'header',
+    order: 0,
+    settings: {
+      title: name || 'Nuestra Tienda',
+      subtitle: name ? `Productos de ${name}` : 'Explora nuestros productos.',
+      backgroundColor: 'transparent',
+      titleColor: '#000000',
+      subtitleColor: '#666666',
+      textAlign: 'center',
+      paddingTop: '3rem',
+      paddingBottom: '2rem',
+      titleAlign: '', titleUnderline: false, titleBg: '', titleLink: ''
+    }
+  },
+  {
+    id: 'sec_catalog',
+    type: 'sidebar_catalog',
+    order: 1,
+    settings: {
+      title: name ? `Productos ${name}` : 'Catálogo',
+      brandId,
+      backgroundColor: 'transparent',
+      paddingTop: '2rem',
+      paddingBottom: '2rem',
+      titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: ''
+    }
+  }
+]);
+
+/**
+ * Garantiza que exista la PÁGINA DE MARCA (landing + layout) para que
+ * WALA.PE/<slug> muestre solo los productos de esa marca. Idempotente:
+ *  - landingPages/{slug}: crea/actualiza { slug, brandId } (conecta URL ↔ marca).
+ *  - pages/{slug}: crea el layout con el catálogo SOLO si aún no existe uno
+ *    (así no pisa una página ya editada a mano en el Editor Visual).
+ * No lanza: ante un error solo lo registra (crear la marca no debe fallar por esto).
+ */
+export const ensureBrandLanding = async (brandId, slug, name) => {
+  try {
+    if (!brandId || !slug) return { error: 'brandId y slug son requeridos' };
+    // 1) Landing: el eslabón que resuelve /<slug> → marca (vía DynamicLandingPage).
+    await setDocument('landingPages', slug, { slug, brandId, title: name || slug });
+    // 2) Layout de la página. Solo si no hay secciones previas (no pisar ediciones).
+    const existing = await getDocument('pages', slug);
+    const hasSections = Array.isArray(existing?.data?.sections) && existing.data.sections.length > 0;
+    if (!hasSections) {
+      await setDocument('pages', slug, { sections: buildBrandCatalogSections(brandId, name) });
+    }
+    return { error: null };
+  } catch (error) {
+    console.warn('[brands] ensureBrandLanding:', error?.message || error);
+    return { error: error?.message || String(error) };
+  }
+};
+
+/**
  * Crear marca (Firestore genera ID)
  * @param {{ name: string, slug?: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string }, storeTitle?: string, storeSubtitle?: string, storeEmpty?: string }} data
  */
@@ -76,7 +139,7 @@ export const createBrand = async (data) => {
   // deriva del name. createBrand SIEMPRE deja un slug para que la marca sea
   // detectable como página /<slug> desde el Header.
   const slug = slugify(data.slug) || slugify(data.name);
-  return await createDocument(COLLECTION, {
+  const result = await createDocument(COLLECTION, {
     name: data.name || '',
     slug,
     logoUrl: data.logoUrl || '',
@@ -96,6 +159,14 @@ export const createBrand = async (data) => {
     storeSubtitle: data.storeSubtitle || '',
     storeEmpty: data.storeEmpty || ''
   });
+
+  // Auto-crear su página de marca (landing + catálogo) para que WALA.PE/<slug>
+  // funcione sin pasos manuales. Si falla, la marca igual queda creada.
+  if (result?.id && slug) {
+    await ensureBrandLanding(result.id, slug, data.name || '');
+  }
+
+  return result;
 };
 
 /**
