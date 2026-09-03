@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getBrands, createBrand, updateBrand, deleteBrand } from '../../services/brands';
+import { getBrands, createBrand, updateBrand, deleteBrand, ensureAllBrandLandings } from '../../services/brands';
 import { getMessage, setMessage } from '../../services/messages';
 import { uploadFile } from '../../services/firebase/storage';
 import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircle, Boxes } from 'lucide-react';
@@ -28,6 +28,9 @@ const AdminMarcas = () => {
   const [imageToCrop, setImageToCrop] = useState(null);
   // Marca cuya gestión de productos está abierta (null = vista normal de identidad).
   const [managingBrand, setManagingBrand] = useState(null);
+  // Backfill de landings de marca (botón "Generar landings faltantes").
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillMsg, setBackfillMsg] = useState('');
 
   const { data: brandsData, isLoading, error } = useQuery({
     queryKey: ['admin-brands'],
@@ -234,6 +237,27 @@ const AdminMarcas = () => {
     );
   }
 
+  // Genera las páginas de marca (landing + catálogo) que falten, con la sesión
+  // del admin. Idempotente y no destructivo (no pisa páginas ya editadas).
+  const handleGenerarLandings = async () => {
+    if (!window.confirm('¿Generar las páginas de marca (landing + catálogo) que falten para todas las marcas?\n\nNo modifica marcas ni productos, y no pisa páginas ya editadas.')) return;
+    setBackfilling(true);
+    setBackfillMsg('');
+    try {
+      const res = await ensureAllBrandLandings();
+      if (res.error) {
+        setBackfillMsg('❌ Error: ' + res.error);
+      } else {
+        setBackfillMsg(`✅ Listo: ${res.procesadas} marca(s) con su página asegurada${res.sinSlug ? ` · ${res.sinSlug} sin slug (omitidas)` : ''}. Míralas en Admin → Landing Pages.`);
+        queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
+      }
+    } catch (e) {
+      setBackfillMsg('❌ Error: ' + (e?.message || e));
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
@@ -242,6 +266,22 @@ const AdminMarcas = () => {
           <p className={styles.subtitle}>
             Diseña identidades visuales únicas para cada marca y asigna el WhatsApp del asesor de cada una. Los productos heredarán estos fondos en la tienda.
           </p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleGenerarLandings}
+            disabled={backfilling}
+            title="Crea la landing y el catálogo de cada marca que aún no lo tenga, para que WALA.PE/<marca> funcione."
+          >
+            {backfilling ? 'Generando…' : 'Generar landings faltantes'}
+          </Button>
+          {backfillMsg && (
+            <span style={{ fontSize: '0.82rem', color: backfillMsg.startsWith('❌') ? '#e03131' : '#16a34a', maxWidth: 360, textAlign: 'right' }}>
+              {backfillMsg}
+            </span>
+          )}
         </div>
       </div>
 

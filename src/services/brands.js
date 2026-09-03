@@ -131,6 +131,27 @@ export const ensureBrandLanding = async (brandId, slug, name) => {
 };
 
 /**
+ * Backfill: garantiza la página de marca (landing + catálogo) para TODAS las
+ * marcas existentes que aún no la tengan. Pensado para un botón en el admin
+ * (usa la sesión del administrador; no requiere Cloud Shell ni credenciales).
+ * Idempotente: las marcas que ya tienen landing simplemente se re-aseguran.
+ * @returns {{ total:number, procesadas:number, sinSlug:number, error:(string|null) }}
+ */
+export const ensureAllBrandLandings = async () => {
+  const { data: brands, error } = await getBrands();
+  if (error) return { total: 0, procesadas: 0, sinSlug: 0, error };
+  let procesadas = 0;
+  let sinSlug = 0;
+  for (const b of (brands || [])) {
+    const slug = b.slug ? slugify(b.slug) : slugify(b.name);
+    if (!slug) { sinSlug++; continue; }
+    await ensureBrandLanding(b.id, slug, b.name || '');
+    procesadas++;
+  }
+  return { total: (brands || []).length, procesadas, sinSlug, error: null };
+};
+
+/**
  * Crear marca (Firestore genera ID)
  * @param {{ name: string, slug?: string, logoUrl?: string, order: number, bgColor?: string, bgImage?: string, bgOpacity?: number, categoryNav?: Array, categoryNavStyle?: { align?: string, animation?: string }, storeTitle?: string, storeSubtitle?: string, storeEmpty?: string }} data
  */
