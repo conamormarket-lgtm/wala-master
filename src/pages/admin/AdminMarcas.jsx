@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getBrands, createBrand, updateBrand, deleteBrand, ensureAllBrandLandings } from '../../services/brands';
+import { getBrands, createBrand, updateBrand, deleteBrand, ensureAllBrandLandings, dedupeBrandLandings } from '../../services/brands';
 import { getMessage, setMessage } from '../../services/messages';
 import { uploadFile } from '../../services/firebase/storage';
 import { Edit2, Trash2, UploadCloud, Palette, ImageIcon, ImagePlus, MessageCircle, Boxes } from 'lucide-react';
@@ -248,8 +248,29 @@ const AdminMarcas = () => {
       if (res.error) {
         setBackfillMsg('❌ Error: ' + res.error);
       } else {
-        setBackfillMsg(`✅ Listo: ${res.procesadas} marca(s) con su página asegurada${res.sinSlug ? ` · ${res.sinSlug} sin slug (omitidas)` : ''}. Míralas en Admin → Landing Pages.`);
+        setBackfillMsg(`✅ Listo: ${res.creadas} landing(s) creada(s), ${res.yaTenian} ya existían${res.sinSlug ? ` · ${res.sinSlug} sin slug` : ''}. Míralas en Admin → Landing Pages.`);
         queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
+      }
+    } catch (e) {
+      setBackfillMsg('❌ Error: ' + (e?.message || e));
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
+  // Elimina landings duplicadas por marca (conserva la canónica). No toca marcas ni productos.
+  const handleEliminarDuplicadas = async () => {
+    if (!window.confirm('¿Eliminar las landings DUPLICADAS de cada marca?\n\nSe conserva una por marca (la que coincide con su slug). No modifica marcas ni productos.')) return;
+    setBackfilling(true);
+    setBackfillMsg('');
+    try {
+      const res = await dedupeBrandLandings();
+      if (res.error) {
+        setBackfillMsg('❌ Error: ' + res.error);
+      } else {
+        setBackfillMsg(res.eliminadas > 0
+          ? `✅ Se eliminaron ${res.eliminadas} landing(s) duplicada(s).`
+          : '✅ No había landings duplicadas.');
       }
     } catch (e) {
       setBackfillMsg('❌ Error: ' + (e?.message || e));
@@ -268,15 +289,26 @@ const AdminMarcas = () => {
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleGenerarLandings}
-            disabled={backfilling}
-            title="Crea la landing y el catálogo de cada marca que aún no lo tenga, para que WALA.PE/<marca> funcione."
-          >
-            {backfilling ? 'Generando…' : 'Generar landings faltantes'}
-          </Button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleGenerarLandings}
+              disabled={backfilling}
+              title="Crea la landing y el catálogo de cada marca que aún no lo tenga, para que WALA.PE/<marca> funcione."
+            >
+              {backfilling ? 'Procesando…' : 'Generar landings faltantes'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleEliminarDuplicadas}
+              disabled={backfilling}
+              title="Elimina landings repetidas de una misma marca, conservando una."
+            >
+              Eliminar landings duplicadas
+            </Button>
+          </div>
           {backfillMsg && (
             <span style={{ fontSize: '0.82rem', color: backfillMsg.startsWith('❌') ? '#e03131' : '#16a34a', maxWidth: 360, textAlign: 'right' }}>
               {backfillMsg}

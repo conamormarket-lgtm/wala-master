@@ -115,6 +115,15 @@ const buildBrandCatalogSections = (brandId, name) => ([
 export const ensureBrandLanding = async (brandId, slug, name) => {
   try {
     if (!brandId || !slug) return { error: 'brandId y slug son requeridos' };
+    // Anti-DUPLICADOS: si la marca YA tiene una landing (bajo cualquier slug, p.ej.
+    // uno capitalizado como 'ConAmor'), no se crea otra. Se busca por brandId, que
+    // es único por marca — así no importa la capitalización del slug existente.
+    const { data: existentes } = await getCollection('landingPages', [
+      { field: 'brandId', operator: '==', value: brandId }
+    ]);
+    if (Array.isArray(existentes) && existentes.length > 0) {
+      return { error: null, skipped: true };
+    }
     // 1) Landing: el eslabón que resuelve /<slug> → marca (vía DynamicLandingPage).
     await setDocument('landingPages', slug, { slug, brandId, title: name || slug });
     // 2) Layout de la página. Solo si no hay secciones previas (no pisar ediciones).
@@ -139,16 +148,63 @@ export const ensureBrandLanding = async (brandId, slug, name) => {
  */
 export const ensureAllBrandLandings = async () => {
   const { data: brands, error } = await getBrands();
-  if (error) return { total: 0, procesadas: 0, sinSlug: 0, error };
-  let procesadas = 0;
+  if (error) return { total: 0, creadas: 0, yaTenian: 0, sinSlug: 0, error };
+  let creadas = 0;
+  let yaTenian = 0;
   let sinSlug = 0;
   for (const b of (brands || [])) {
     const slug = b.slug ? slugify(b.slug) : slugify(b.name);
     if (!slug) { sinSlug++; continue; }
-    await ensureBrandLanding(b.id, slug, b.name || '');
-    procesadas++;
+    const res = await ensureBrandLanding(b.id, slug, b.name || '');
+    if (res?.skipped) yaTenian++; else creadas++;
   }
-  return { total: (brands || []).length, procesadas, sinSlug, error: null };
+  return { total: (brands || []).length, creadas, yaTenian, sinSlug, error: null };
+};
+
+/**
+ * Limpieza: elimina landings DUPLICADAS de una misma marca, conservando la
+ * canónica. Útil para deshacer duplicados creados por un backfill previo
+ * (ej. /ConAmor + /conamor apuntando al mismo brandId).
+ *
+ * Canónica = la landing cuyo slug coincide EXACTO con el `slug` de la marca
+ * (así se conserva la original, p.ej. la capitalizada /ConAmor que puede tener
+ * la página real editada); si ninguna coincide, se conserva la primera.
+ * Borra también su `pages/{id}` asociado. No toca marcas ni productos.
+ * @returns {{ eliminadas:number, error:(string|null) }}
+ */
+export const dedupeBrandLandings = async () => {
+  try {
+    const [{ data: landings, error: e1 }, { data: brands, error: e2 }] = await Promise.all([
+      getCollection('landingPages'),
+      getBrands(),
+    ]);
+    if (e1 || e2) return { eliminadas: 0, error: e1 || e2 };
+
+    const brandById = new Map((brands || []).map((b) => [b.id, b]));
+    const byBrand = new Map();
+    for (const lp of (landings || [])) {
+      if (!lp.brandId) continue; // solo landings ligadas a una marca
+      if (!byBrand.has(lp.brandId)) byBrand.set(lp.brandId, []);
+      byBrand.get(lp.brandId).push(lp);
+    }
+
+    let eliminadas = 0;
+    for (const [brandId, list] of byBrand) {
+      if (list.length <= 1) continue; // no hay duplicados
+      const brandSlug = brandById.get(brandId)?.slug || '';
+      const canonical = list.find((l) => (l.slug || l.id) === brandSlug) || list[0];
+      for (const l of list) {
+        if (l.id === canonical.id) continue;
+        await deleteDocument('landingPages', l.id);
+        await deleteDocument('pages', l.id);
+        eliminadas++;
+      }
+    }
+    return { eliminadas, error: null };
+  } catch (error) {
+    console.warn('[brands] dedupeBrandLandings:', error?.message || error);
+    return { eliminadas: 0, error: error?.message || String(error) };
+  }
 };
 
 /**
