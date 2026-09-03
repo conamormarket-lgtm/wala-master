@@ -3,11 +3,18 @@ import { Link } from 'react-router-dom';
 import { AuroraBackground, Reveal } from '../../../../components/ui';
 import styles from './BrandMarquee.module.css';
 
-const BrandMarquee = ({ items = [], speed = 15, title = 'Empresas con las que trabajamos' }) => {
+const BrandMarquee = ({ items = [], speed = 25, title = 'Empresas con las que trabajamos' }) => {
   // Si no hay items, no renderizamos nada.
   if (!items || items.length === 0) {
     return null;
   }
+
+  // La velocidad puede llegar en SEGUNDOS (nuevo) o en MILISEGUNDOS (config
+  // guardada por el editor, ej. 20000). animationDuration necesita segundos, así
+  // que normalizamos: los valores grandes (>200) se asumen en ms. Sin esto, un
+  // valor como 20000 daría "20000s" (≈5.5 h por vuelta) → el carrusel parece congelado.
+  const rawSpeed = Number(speed) || 25;
+  const durationSec = Math.max(3, rawSpeed > 200 ? rawSpeed / 1000 : rawSpeed);
 
   // Duplicamos la lista una vez para lograr el loop continuo.
   // El keyframe usa translateX(-50%), por lo que la pista debe contener
@@ -83,7 +90,7 @@ const BrandMarquee = ({ items = [], speed = 15, title = 'Empresas con las que tr
       <div className={styles.marqueeContainer}>
         <div
           className={styles.marqueeTrack}
-          style={{ animationDuration: `${speed}s` }}
+          style={{ animationDuration: `${durationSec}s` }}
         >
           {loopItems.map((item, index) => {
             const content = renderContent(item);
