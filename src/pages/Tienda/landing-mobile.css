@@ -77,6 +77,23 @@
   color: var(--lp-dark);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PÁGINAS DE MARCA / TIENDA (landing con brandId).
+   Este archivo estiliza la landing OSCURA "Reloj Matador" y su tema se aplica
+   a TODAS las landings vía .landing-page-wrapper. Las páginas de marca son
+   tiendas normales (tema claro/oscuro del sitio), así que aquí anulamos el
+   tema oscuro heredado para que fondo y títulos sigan el tema del sitio.
+   ───────────────────────────────────────────────────────────────────────── */
+.landing-page-wrapper.landing-store-page {
+  background: none;
+  color: var(--color-text);
+}
+.landing-page-wrapper.landing-store-page h1,
+.landing-page-wrapper.landing-store-page h2,
+.landing-page-wrapper.landing-store-page h3 {
+  color: var(--color-text);
+}
+
 /* Banner app / ruido visual — no en landing pública */
 .landing-page-wrapper [class*="AppDownload"],
 .landing-page-wrapper [class*="appDownload"] {

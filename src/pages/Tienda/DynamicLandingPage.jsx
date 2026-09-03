@@ -82,7 +82,7 @@ const DynamicLandingPage = () => {
   }
 
   return (
-    <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''}`} id="landing-theme-wrapper" translate="no">
+    <div className={`landing-page-wrapper ${landingPage.hideHeader ? 'no-header' : ''} ${landingPage.brandId ? 'landing-store-page' : ''}`} id="landing-theme-wrapper" translate="no">
       {themeContent && (
         <style dangerouslySetInnerHTML={{ __html: themeContent }} />
       )}
