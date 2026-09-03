@@ -1568,6 +1568,57 @@ const VisualEditorPanel = () => {
               />
             ))}
 
+            {/* Importar marcas ya creadas (tienda_brands): añade su logo + nombre + enlace a su página. */}
+            {(brands || []).length > 0 && (
+              <div style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid #e5d9fb', borderRadius: 8, padding: 10, marginBottom: 15 }}>
+                <label style={{ fontWeight: 600 }}>Añadir una marca de la tienda</label>
+                <select
+                  value=""
+                  onChange={e => {
+                    const b = (brands || []).find(x => x.id === e.target.value);
+                    if (!b) return;
+                    const newSections = [...storeConfigDraft.sections];
+                    if (!newSections[dynamicSectionIndex].settings.items) newSections[dynamicSectionIndex].settings.items = [];
+                    newSections[dynamicSectionIndex].settings.items.push({
+                      name: b.name || '',
+                      imageUrl: b.logoUrl || b.imageUrl || '',
+                      link: b.slug ? '/' + b.slug : '',
+                      shape: 'circle', zoom: 1, posX: 50, posY: 50,
+                      brandId: b.id,
+                    });
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{ width: '100%', padding: '8px', marginBottom: '8px' }}
+                >
+                  <option value="">— Selecciona una marca para añadir —</option>
+                  {(brands || []).map(b => (
+                    <option key={b.id} value={b.id}>{b.name}{(b.logoUrl || b.imageUrl) ? '' : ' (sin logo)'}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newSections = [...storeConfigDraft.sections];
+                    if (!newSections[dynamicSectionIndex].settings.items) newSections[dynamicSectionIndex].settings.items = [];
+                    const items = newSections[dynamicSectionIndex].settings.items;
+                    const yaEstan = new Set(items.map(it => it.brandId).filter(Boolean));
+                    (brands || []).forEach(b => {
+                      if (yaEstan.has(b.id)) return; // no duplicar
+                      if (!(b.logoUrl || b.imageUrl)) return; // solo las que tienen logo
+                      items.push({ name: b.name || '', imageUrl: b.logoUrl || b.imageUrl || '', link: b.slug ? '/' + b.slug : '', shape: 'circle', zoom: 1, posX: 50, posY: 50, brandId: b.id });
+                    });
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{ width: '100%', padding: '8px', borderRadius: 6, border: 'none', background: '#7C3AED', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Añadir todas las marcas con logo
+                </button>
+                <p style={{ fontSize: '0.75rem', color: '#666', margin: '6px 0 0' }}>
+                  Toma el logo y el nombre de cada marca creada en Admin → Marcas. Puedes editarlas o quitarlas abajo.
+                </p>
+              </div>
+            )}
+
             <button
               onClick={() => {
                 const newSections = [...storeConfigDraft.sections];
@@ -1579,7 +1630,7 @@ const VisualEditorPanel = () => {
                 updateSectionsDraft(newSections);
               }}
               style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '15px'}}
-            ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Marca</button>
+            ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Marca (manual)</button>
 
             <BackgroundStylesControl 
               settings={s} 
