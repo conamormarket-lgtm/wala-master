@@ -1513,7 +1513,7 @@ const AdminProductoFormV2 = () => {
                         type="button"
                         onClick={() => setGalleryCropTarget(img)}
                         title="Ajustar encuadre de esta foto"
-                        style={{ position: 'absolute', bottom: 6, right: 6, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: '0.72rem', fontWeight: 600, background: activeVariant.imagesCrops?.[img]?.percentages ? '#16a34a' : 'rgba(0,0,0,0.65)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                        style={{ position: 'absolute', bottom: 6, right: 6, zIndex: 20, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: '0.72rem', fontWeight: 600, background: activeVariant.imagesCrops?.[img]?.percentages ? '#16a34a' : 'rgba(0,0,0,0.65)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
                       >
                         <ImageIcon size={12} /> {activeVariant.imagesCrops?.[img]?.percentages ? 'Encuadrada' : 'Encuadrar'}
                       </button>
