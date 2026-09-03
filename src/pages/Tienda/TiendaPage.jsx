@@ -1327,7 +1327,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             />
           )}
           <span className={styles.brandActiveBarLabel}>
-            Estás en: <span className={styles.brandActiveBarName}>{pageBrandData.name}</span>
+            <span className={styles.brandActiveBarName}>{pageBrandData.name}</span>
           </span>
         </div>
       )}
