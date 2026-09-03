@@ -128,6 +128,8 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
     '';
 
   const secondaryImageUrl = principalVariant?.images?.[0] || principalVariant?.galleryImages?.[0] || product?.images?.[1] || null;
+  // Encuadre propio de la imagen de hover (si el admin lo definió para esa foto).
+  const secondaryCrop = secondaryImageUrl ? principalVariant?.imagesCrops?.[secondaryImageUrl]?.percentages : undefined;
 
   const fallbackImageUrl = toThumbnailImageUrl(
     principalVariant?.imageUrl ||
@@ -209,6 +211,7 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
                 objectFit="cover"
                 loading="lazy"
                 showSkeleton={false}
+                cropData={secondaryCrop}
               />
             )}
           </>

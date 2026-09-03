@@ -114,14 +114,21 @@ function normalizeVariantItem(item, index) {
   const rawImages = Array.isArray(item.images) ? item.images : (Array.isArray(item.galleryImages) ? item.galleryImages : []);
   const images = rawImages.map(extractUrl).filter(Boolean);
   
-  return { 
-    id, 
-    name, 
-    imageUrl, 
-    sizes, 
+  // Encuadre por imagen de galería: mapa { [url]: { percentages: {x,y,width,height} } }.
+  // Se conserva tal cual (se descartan valores no-objeto) para lectura y guardado.
+  const imagesCrops = (item.imagesCrops && typeof item.imagesCrops === 'object' && !Array.isArray(item.imagesCrops))
+    ? item.imagesCrops
+    : {};
+
+  return {
+    id,
+    name,
+    imageUrl,
+    sizes,
     images,
     galleryImages: images,
     thumbnailCrop: item.thumbnailCrop ?? null,
+    imagesCrops,
     ...(item.colorHex ? { colorHex: item.colorHex } : {})
   };
 }

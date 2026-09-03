@@ -181,6 +181,8 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
 
   // Extraer el crop de la variante principal si existe
   const mainVariantCrop = principalVariant?.thumbnailCrop?.percentages;
+  // Encuadre propio de la imagen de hover (si el admin lo definió para esa foto).
+  const secondaryCrop = secondaryImageUrl ? principalVariant?.imagesCrops?.[secondaryImageUrl]?.percentages : undefined;
 
   // eslint-disable-next-line no-unused-vars
   const isFirebase = cardImageUrl && cardImageUrl.includes('firebasestorage.googleapis.com');
@@ -225,6 +227,7 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
                 objectFit="cover"
                 loading="lazy"
                 showSkeleton={false}
+                cropData={secondaryCrop}
               />
             )}
           </>

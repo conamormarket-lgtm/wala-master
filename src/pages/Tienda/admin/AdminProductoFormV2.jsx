@@ -145,6 +145,8 @@ const AdminProductoFormV2 = () => {
 
   // Editor inline de encuadre (crop no destructivo) de la portada de la variante activa.
   const [cropEditing, setCropEditing] = useState(false);
+  // URL de la imagen de galería que se está encuadrando (null = ninguna).
+  const [galleryCropTarget, setGalleryCropTarget] = useState(null);
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [newBrandForm, setNewBrandForm] = useState({ id: null, name: '', logoUrl: '' });
   const [creatingBrand, setCreatingBrand] = useState(false);
@@ -212,6 +214,7 @@ const AdminProductoFormV2 = () => {
           sizeLabel: 'Talla',
           showSizeConfig: Array.isArray(productData.mainSizes) && productData.mainSizes.length > 0,
           thumbnailCrop: productData.thumbnailCrop || null,
+          imagesCrops: productData.imagesCrops || {},
           mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
         }];
       }
@@ -391,6 +394,20 @@ const AdminProductoFormV2 = () => {
     setForm(f => ({
       ...f,
       variants: f.variants.map(v => v.id === activeGalleryTabId ? { ...v, ...updates } : v)
+    }));
+  };
+
+  // Guarda (o quita, si cropData es null) el encuadre de una imagen de galería,
+  // en el mapa imagesCrops keyeado por URL de la variante activa.
+  const setGalleryImageCrop = (url, cropData) => {
+    setForm(f => ({
+      ...f,
+      variants: f.variants.map(v => {
+        if (v.id !== activeGalleryTabId) return v;
+        const next = { ...(v.imagesCrops || {}) };
+        if (cropData) next[url] = cropData; else delete next[url];
+        return { ...v, imagesCrops: next };
+      })
     }));
   };
 
@@ -677,6 +694,8 @@ const AdminProductoFormV2 = () => {
         showSizeConfig: v.showSizeConfig || false,
         // Encuadre no destructivo de la portada (lo aplican las tarjetas del catálogo).
         thumbnailCrop: v.thumbnailCrop || null,
+        // Encuadre por imagen de galería: { [url]: { percentages } }.
+        imagesCrops: (v.imagesCrops && typeof v.imagesCrops === 'object') ? v.imagesCrops : {},
       }));
 
       // Identify main image
@@ -1481,9 +1500,22 @@ const AdminProductoFormV2 = () => {
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, idx)}
                     >
-                      <ProductImageContainer imageUrl={img} isGallery={true} />
+                      <ProductImageContainer
+                        imageUrl={img}
+                        isGallery={true}
+                        cropData={activeVariant.imagesCrops?.[img]?.percentages}
+                      />
                       <button type="button" onClick={() => removeGalleryImage(idx)} className={styles.deleteGalleryBtn}>
                         <Trash2 size={14} />
+                      </button>
+                      {/* Encuadrar esta imagen de galería (mismo editor que la portada) */}
+                      <button
+                        type="button"
+                        onClick={() => setGalleryCropTarget(img)}
+                        title="Ajustar encuadre de esta foto"
+                        style={{ position: 'absolute', bottom: 6, right: 6, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: '0.72rem', fontWeight: 600, background: activeVariant.imagesCrops?.[img]?.percentages ? '#16a34a' : 'rgba(0,0,0,0.65)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                      >
+                        <ImageIcon size={12} /> {activeVariant.imagesCrops?.[img]?.percentages ? 'Encuadrada' : 'Encuadrar'}
                       </button>
                       {idx === 0 && <span className={styles.hoverBadge}>Hover Image</span>}
                     </div>
@@ -1495,6 +1527,22 @@ const AdminProductoFormV2 = () => {
                     <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} disabled={uploading} hidden />
                   </label>
                 </div>
+
+                {/* Editor inline de encuadre para la imagen de galería seleccionada */}
+                {galleryCropTarget && (
+                  <div style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 600, margin: '0 0 0.5rem' }}>Encuadre de la foto de galería</p>
+                    <ThumbnailCropEditor
+                      imageUrl={galleryCropTarget}
+                      initialCrop={activeVariant.imagesCrops?.[galleryCropTarget]}
+                      onSave={(cropData) => {
+                        setGalleryImageCrop(galleryCropTarget, cropData);
+                        setGalleryCropTarget(null);
+                      }}
+                      onCancel={() => setGalleryCropTarget(null)}
+                    />
+                  </div>
+                )}
 
               </div>
             )}
