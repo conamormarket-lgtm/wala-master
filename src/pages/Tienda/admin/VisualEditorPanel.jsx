@@ -1021,6 +1021,58 @@ const VisualEditorPanel = () => {
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>
               Editando: Barra de Anuncios Superior
             </h4>
+
+            <p style={{fontSize: '0.8rem', color: '#a7a9ad', lineHeight: 1.5, margin: '0 0 1rem'}}>
+              Usa mensajes breves y accionables. El estilo suave se integra mejor con el encabezado de Walá.
+            </p>
+
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px'}}>
+              <div>
+                <label>Estilo visual</label>
+                <select
+                  value={s.variant || 'soft'}
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.variant = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '8px'}}
+                >
+                  <option value="soft">Suave</option>
+                  <option value="solid">Color sólido</option>
+                  <option value="dark">Oscuro</option>
+                </select>
+              </div>
+              <div>
+                <label>Altura</label>
+                <select
+                  value={s.density || 'compact'}
+                  onChange={e => {
+                    const newSections = [...storeConfigDraft.sections];
+                    newSections[dynamicSectionIndex].settings.density = e.target.value;
+                    updateSectionsDraft(newSections);
+                  }}
+                  style={{width: '100%', padding: '8px'}}
+                >
+                  <option value="compact">Compacta</option>
+                  <option value="comfortable">Cómoda</option>
+                </select>
+              </div>
+            </div>
+
+            <label style={{display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 15px', cursor: 'pointer'}}>
+              <input
+                type="checkbox"
+                checked={s.showAccent !== false}
+                onChange={e => {
+                  const newSections = [...storeConfigDraft.sections];
+                  newSections[dynamicSectionIndex].settings.showAccent = e.target.checked;
+                  updateSectionsDraft(newSections);
+                }}
+                style={{margin: 0}}
+              />
+              Mostrar punto decorativo junto al mensaje
+            </label>
             
             <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
               <div style={{flex: 1}}>

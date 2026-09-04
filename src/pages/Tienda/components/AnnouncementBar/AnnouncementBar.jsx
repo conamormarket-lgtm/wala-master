@@ -8,6 +8,7 @@ import styles from './AnnouncementBar.module.css';
  * Evita remount + removeChild (conflicto con Google Translate / extensiones).
  */
 const AnnouncementBar = ({
+  config = {},
   messages = [],
   speed = 3000,
   bgColor = '#000000',
@@ -16,6 +17,9 @@ const AnnouncementBar = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const list = Array.isArray(messages) ? messages.filter((m) => m && m.text) : [];
+  const variant = config.variant || 'soft';
+  const density = config.density || 'compact';
+  const showAccent = config.showAccent !== false;
 
   useEffect(() => {
     if (list.length <= 1 || animationType === 'scroll') return undefined;
@@ -57,8 +61,9 @@ const AnnouncementBar = ({
       <div className={styles.messageContent} style={textStyle}>
         {msg.imageUrl ? (
           <img src={msg.imageUrl} alt="" className={styles.messageIcon} decoding="async" />
-        ) : null}
+        ) : showAccent ? <span className={styles.accentDot} aria-hidden="true" /> : null}
         <span style={Object.keys(spanStyle).length ? spanStyle : undefined}>{msg.text}</span>
+        {msg.link ? <span className={styles.linkArrow} aria-hidden="true">→</span> : null}
       </div>
     );
 
@@ -91,8 +96,8 @@ const AnnouncementBar = ({
 
     return (
       <div
-        className={styles.announcementBar}
-        style={{ backgroundColor: bgColor, color: textColor }}
+        className={`${styles.announcementBar} ${styles[variant]} ${styles[density]}`}
+        style={{ '--announcement-accent': bgColor, '--announcement-text': textColor }}
         translate="no"
       >
         <div className={styles.scrollTrack} style={{ animationDuration }}>
@@ -109,8 +114,8 @@ const AnnouncementBar = ({
   // Fade: todos los mensajes viven en el DOM; solo uno es visible.
   return (
     <div
-      className={styles.announcementBar}
-      style={{ backgroundColor: bgColor, color: textColor }}
+      className={`${styles.announcementBar} ${styles[variant]} ${styles[density]}`}
+      style={{ '--announcement-accent': bgColor, '--announcement-text': textColor }}
       translate="no"
     >
       <div className={styles.fadeStack}>

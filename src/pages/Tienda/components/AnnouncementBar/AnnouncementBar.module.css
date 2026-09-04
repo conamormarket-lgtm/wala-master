@@ -1,16 +1,49 @@
 .announcementBar {
+  --announcement-accent: #7c3aed;
+  --announcement-text: #ffffff;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 15px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 6px 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
   text-align: center;
   z-index: 100;
   overflow: hidden;
   position: relative;
-  min-height: 36px;
+  min-height: 34px;
+  box-sizing: border-box;
+  letter-spacing: 0.01em;
+}
+
+.soft {
+  color: color-mix(in srgb, var(--announcement-accent) 72%, #111827);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--announcement-accent) 7%, #ffffff),
+    color-mix(in srgb, var(--announcement-accent) 15%, #ffffff) 50%,
+    color-mix(in srgb, var(--announcement-accent) 7%, #ffffff)
+  );
+  border-top: 1px solid color-mix(in srgb, var(--announcement-accent) 16%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--announcement-accent) 20%, transparent);
+}
+
+.solid {
+  color: var(--announcement-text);
+  background: var(--announcement-accent);
+}
+
+.dark {
+  color: #ffffff;
+  background: linear-gradient(90deg, #17131f, #241a38 50%, #17131f);
+  border-bottom: 1px solid color-mix(in srgb, var(--announcement-accent) 55%, transparent);
+}
+
+.comfortable {
+  min-height: 40px;
+  padding-top: 9px;
+  padding-bottom: 9px;
 }
 
 .announcementText {
@@ -24,6 +57,7 @@
 .fadeStack {
   position: relative;
   width: 100%;
+  max-width: 1180px;
   min-height: 1.2em;
 }
 
@@ -45,22 +79,52 @@
 
 .announcementLink {
   color: inherit;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
+  text-decoration: none;
+  border-radius: 999px;
+  transition: opacity 0.2s ease;
+}
+
+.announcementLink:hover {
+  opacity: 0.72;
 }
 
 .messageContent {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .messageIcon {
-  height: 20px;
+  height: 16px;
+  max-width: 22px;
   width: auto;
   object-fit: contain;
+}
+
+.accentDot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--announcement-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--announcement-accent) 12%, transparent);
+}
+
+.solid .accentDot,
+.dark .accentDot {
+  background: currentColor;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14);
+}
+
+.linkArrow {
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.announcementLink:hover .linkArrow {
+  transform: translateX(2px);
 }
 
 /* Scroll Animation Styles */
@@ -70,6 +134,7 @@
   animation: scrollTrack linear infinite;
   gap: 3rem;
   padding-left: 3rem;
+  max-width: none;
 }
 
 .scrollTrack:hover {
@@ -98,5 +163,28 @@
   }
   100% {
     transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 640px) {
+  .announcementBar {
+    min-height: 32px;
+    padding: 6px 12px;
+    font-size: 0.72rem;
+  }
+
+  .messageContent {
+    gap: 6px;
+  }
+
+  .messageIcon {
+    height: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fadeActive,
+  .scrollTrack {
+    animation: none;
   }
 }

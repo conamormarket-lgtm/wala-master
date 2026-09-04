@@ -168,7 +168,16 @@ export function getDefaultSettings(type) {
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'announcement_bar':
       // Por mensaje: text/link ya existían; se añaden estilo por mensaje (aditivo, retrocompatible)
-      return { messages: [{ text: 'Envío gratis a Lima', link: '', textAlign: '', underline: false, textBg: '' }], speed: 3000, bgColor: '#000000', textColor: '#ffffff' };
+      return {
+        messages: [{ text: 'Envíos a todo el Perú', link: '', textAlign: '', underline: false, textBg: '' }],
+        speed: 4000,
+        bgColor: '#7c3aed',
+        textColor: '#ffffff',
+        variant: 'soft',
+        density: 'compact',
+        showAccent: true,
+        animationType: 'fade'
+      };
     case 'hero_carousel':
       return {
         slides: [{
