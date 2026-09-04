@@ -56,7 +56,9 @@
     top: 112px; /* Debajo del header y de la barra de administración */
     max-height: none;
     overflow-y: auto;
-    overscroll-behavior: contain;
+    /* Al llegar al inicio o al final del panel, la rueda continúa desplazando
+       la página en lugar de quedar atrapada sobre la columna de filtros. */
+    overscroll-behavior-y: auto;
     scrollbar-gutter: stable;
     padding: 0.75rem;
     background-color: color-mix(in srgb, var(--blanco, #fff) 92%, transparent);
@@ -291,7 +293,8 @@
   margin-top: 0.25rem;
   padding-right: 0.25rem;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  /* Encadena el gesto: lista interna -> panel -> página. */
+  overscroll-behavior-y: auto;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--gris-texto-secundario, #64748b) 30%, transparent) transparent;
