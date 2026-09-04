@@ -58,22 +58,22 @@
   max-width: none;
 }
 
+/*
+ * Diseno plano/minimalista: sin tarjeta contenedora (borde + radio + fondo
+ * blanco distinto de la pagina). Solo lineas finas entre preguntas, el
+ * mismo criterio que el resto del rediseno del home (menos "cajitas",
+ * mas tipografia y espacio). El primer separador (border-top de .list)
+ * marca donde empieza la lista sin necesidad de encerrarla en una caja.
+ */
 .list {
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid var(--gris-borde, #e5e7eb);
-  border-radius: var(--radio-mediano, 16px);
-  overflow: hidden;
-  background: #fff;
+  border-top: 1px solid var(--gris-borde, #e5e7eb);
 }
 
 .item {
-  border-bottom: 1px solid #eef2f7;
-}
-
-.item:last-child {
-  border-bottom: none;
+  border-bottom: 1px solid var(--gris-borde, #eef2f7);
 }
 
 .question {
@@ -82,46 +82,48 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.95rem 1rem;
-  background: #fff;
+  padding: 1rem 0.1rem;
+  background: transparent;
   border: none;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
   font-size: 0.9rem;
   font-weight: 650;
-  color: #0f172a;
+  color: var(--gris-texto-principal, #0f172a);
   line-height: 1.35;
   letter-spacing: -0.01em;
   -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s ease;
 }
 
-.question:active {
-  background: #f8fafc;
+.question:hover,
+.question:focus-visible {
+  color: var(--primary-color, #7c3aed);
 }
 
-.question:hover {
-  background: #fafbff;
+.question:focus-visible {
+  outline: 2px solid var(--primary-color, #7c3aed);
+  outline-offset: 2px;
 }
 
 .chevron {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--primary-color, #7c3aed) 10%, white);
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: var(--primary-color, #7c3aed);
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--gris-texto-secundario, #94a3b8);
+  transition: transform 0.25s var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)), color 0.2s ease;
 }
 
 .chevronOpen {
   transform: rotate(45deg);
-  background: color-mix(in srgb, var(--primary-color, #7c3aed) 16%, white);
+  color: var(--primary-color, #7c3aed);
 }
 
 /*
@@ -146,7 +148,7 @@
 }
 
 .answer {
-  padding: 0 1rem 1rem;
+  padding: 0 0.1rem 1.1rem;
   font-size: 0.86rem;
   color: #64748b;
   line-height: 1.45;
@@ -186,10 +188,12 @@
   color: var(--color-text-muted);
 }
 
-[data-theme="dark"] .list,
-[data-theme="dark"] .question {
-  background: var(--color-surface);
-  border-color: var(--color-border);
+[data-theme="dark"] .list {
+  border-top-color: var(--color-border);
+}
+
+[data-theme="dark"] .item {
+  border-bottom-color: var(--color-border);
 }
 
 .answerInner {
