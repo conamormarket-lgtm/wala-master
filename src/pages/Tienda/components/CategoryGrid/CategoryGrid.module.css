@@ -1,15 +1,16 @@
 .wrapper {
   width: 100%;
-  max-width: 1400px;
-  margin: 0.5rem auto;
+  max-width: var(--content-max, 1280px);
+  margin: clamp(1.5rem, 4vw, 2.5rem) auto;
   padding: 0 4vw;
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--section-title-size, clamp(1.35rem, 2.6vw, 1.85rem));
+  font-weight: var(--section-title-weight, 800);
+  letter-spacing: var(--section-title-tracking, -0.02em);
   color: var(--color-text, #333);
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.85rem;
 }
 
 .grid {
@@ -24,10 +25,10 @@
 .tile {
   display: block;
   border: 1px solid rgba(15, 23, 42, 0.07);
-  border-radius: 18px;
+  border-radius: var(--radio-mediano, 16px);
   overflow: hidden;
   text-decoration: none;
-  box-shadow: 0 7px 22px rgba(15, 23, 42, 0.1);
+  box-shadow: var(--sombra-profunda, 0 7px 22px rgba(15, 23, 42, 0.1));
   isolation: isolate;
   transform: translateZ(0);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
@@ -36,7 +37,7 @@
 .tile:hover {
   transform: translateY(-3px) translateZ(0);
   border-color: color-mix(in srgb, var(--primary-color, #7c3aed) 34%, transparent);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.13);
+  box-shadow: var(--sombra-hover, 0 10px 26px rgba(15, 23, 42, 0.13));
 }
 
 .tile:focus-visible {

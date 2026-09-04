@@ -167,6 +167,24 @@
 
   /* Duracion del drift de la aurora (respiracion lenta) */
   --dur-aurora: 22s;
+
+  /* ---------------------------------------------------------------------
+     SISTEMA DE TITULO DE SECCION (home / page-builder)
+     Una sola escala tipografica para el h2/h3 de cada modulo del builder
+     (categorias, carruseles, testimonios, FAQ...). Antes cada componente
+     traia su propio peso/tamano/tracking y el home se sentia "disparejo"
+     al pasar de una seccion a otra. Usar estas 3 variables en el `.title`
+     de cada modulo en vez de valores sueltos.
+     --------------------------------------------------------------------- */
+  --section-title-size: clamp(1.35rem, 2.6vw, 1.85rem);
+  --section-title-weight: 800;
+  --section-title-tracking: -0.02em;
+
+  /* Ancho de contenido canonico para las filas del home (categorias,
+     carruseles, testimonios, FAQ). Antes variaba entre 1100/1400/sin tope
+     y esa inconsistencia es lo que hacia que unas filas se vieran "full
+     width" y otras "encajonadas" al bajar por la pagina. */
+  --content-max: 1280px;
 }
 
 /* ═════════════════════════════════════════════════════════════════════════

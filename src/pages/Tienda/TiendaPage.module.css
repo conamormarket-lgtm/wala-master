@@ -45,24 +45,13 @@
 }
 
 .featuredTitle {
-  font-size: clamp(1.8rem, 4vw, 2.5rem);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.03em;
-  margin-bottom: 3rem;
-  color: #111;
-  text-align: center;
+  font-size: var(--section-title-size, clamp(1.35rem, 2.6vw, 1.85rem));
+  font-weight: var(--section-title-weight, 800);
+  letter-spacing: var(--section-title-tracking, -0.02em);
+  margin-bottom: 0.85rem;
+  color: var(--gris-texto-principal, #111);
+  text-align: left;
   position: relative;
-}
-
-.featuredTitle::after {
-  content: '';
-  display: block;
-  width: 50px;
-  height: 4px;
-  background: var(--rojo-principal, #d9232d);
-  margin: 1rem auto 0;
-  border-radius: 2px;
 }
 
 /* Module Inserter Styles */

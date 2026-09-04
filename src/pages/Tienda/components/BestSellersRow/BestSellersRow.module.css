@@ -23,9 +23,9 @@
   padding: 0 !important;
   height: 100%;
   display: block;
-  border-radius: 16px !important;
-  box-shadow: 0 8px 22px rgba(15, 17, 21, 0.08) !important;
-  border: 1px solid rgba(229, 231, 235, 0.9) !important;
+  border-radius: var(--radio-mediano, 16px) !important;
+  box-shadow: var(--sombra-profunda, 0 8px 22px rgba(15, 17, 21, 0.08)) !important;
+  border: 1px solid var(--gris-borde, rgba(229, 231, 235, 0.9)) !important;
   background: #fff !important;
 }
 

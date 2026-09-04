@@ -161,7 +161,7 @@
 }
 
 .navItem:hover .imageBubble {
-  border-color: #cbd5e1;
+  border-color: color-mix(in srgb, var(--primary-color, #7c3aed) 34%, transparent);
   box-shadow: 0 5px 14px rgba(15, 23, 42, 0.12);
 }
 
@@ -169,7 +169,7 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background-color: #111;
+  background-color: var(--primary-color, #111);
   color: white;
   display: flex;
   align-items: center;
@@ -202,16 +202,16 @@
 }
 
 .navItem:hover .label {
-  color: #000;
+  color: var(--primary-color, #000);
 }
 
 /* Active State */
 .active .imageBubble {
-  border-color: #000;
+  border-color: var(--primary-color, #000);
 }
 
 .active .label {
-  color: #000;
+  color: var(--primary-color, #000);
   font-weight: 600;
 }
 
