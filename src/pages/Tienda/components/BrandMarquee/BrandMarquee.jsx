@@ -16,10 +16,16 @@ const BrandMarquee = ({ items = [], speed = 25, title = 'Empresas con las que tr
   const rawSpeed = Number(speed) || 25;
   const durationSec = Math.max(3, rawSpeed > 200 ? rawSpeed / 1000 : rawSpeed);
 
-  // Duplicamos la lista una vez para lograr el loop continuo.
-  // El keyframe usa translateX(-50%), por lo que la pista debe contener
-  // exactamente dos copias de la lista para un desplazamiento sin saltos.
-  const loopItems = [...items, ...items];
+  // Cada mitad debe ser más ancha que una pantalla grande; con pocas marcas,
+  // duplicar la lista solo una vez dejaba un hueco visible antes del reinicio.
+  // Construimos dos mitades idénticas y suficientemente largas para conservar
+  // el translateX(-50%) sin saltos ni espacios vacíos.
+  const repetitionsPerHalf = Math.max(2, Math.ceil(18 / items.length));
+  const marqueeHalf = Array.from(
+    { length: repetitionsPerHalf },
+    () => items
+  ).flat();
+  const loopItems = [...marqueeHalf, ...marqueeHalf];
 
   // Mapa de forma del marco → clase CSS (clip-path). Retrocompatible:
   // si el item no trae shape (items viejos), usamos 'circle' por defecto.
