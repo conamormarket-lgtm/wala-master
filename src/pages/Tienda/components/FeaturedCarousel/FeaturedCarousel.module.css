@@ -52,6 +52,10 @@
   display: none;
 }
 
+.carouselCentered {
+  justify-content: center;
+}
+
 /*
  * Cada tarjeta. En móvil mostramos 2 (mobile-first); el número en desktop lo
  * controla la variable --visible-items que inyecta el componente vía prop.

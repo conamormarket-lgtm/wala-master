@@ -22,6 +22,7 @@ const CategoryGrid = ({ title, config, items = [], columns = 4 }) => {
   if (valid.length === 0) return null;
 
   const cols = Math.min(6, Math.max(1, Number(columns) || 4));
+  const renderedCols = Math.min(cols, valid.length);
 
   return (
     <div className={styles.wrapper}>
@@ -29,7 +30,7 @@ const CategoryGrid = ({ title, config, items = [], columns = 4 }) => {
         {title}
       </TextoSeccion>
 
-      <div className={styles.grid} style={{ '--cols': cols }}>
+      <div className={styles.grid} style={{ '--cols': renderedCols }}>
         {valid.map((it, i) => {
           const img = it.imageUrl ? toThumbnailImageUrl(it.imageUrl) : '';
           const to = `${location.pathname}?categoria=${encodeURIComponent(it.categoryId)}`;

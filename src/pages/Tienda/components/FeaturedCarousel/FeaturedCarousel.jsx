@@ -40,6 +40,12 @@ const FeaturedCarousel = ({
     products && Array.isArray(products)
       ? products.filter((p) => p.visible !== false)
       : [];
+  const configuredVisibleItems = Math.max(1, Number(visibleItems) || 5);
+  const renderedVisibleItems = Math.min(
+    configuredVisibleItems,
+    Math.max(validProducts.length, 2)
+  );
+  const isUnderfilled = validProducts.length < configuredVisibleItems;
 
   // Actualiza el estado de las flechas según la posición del scroll
   const updateArrows = useCallback(() => {
@@ -116,7 +122,7 @@ const FeaturedCarousel = ({
   return (
     <div
       className={styles.carouselContainer}
-      style={{ '--visible-items': Math.max(1, Number(visibleItems) || 5) }}
+      style={{ '--visible-items': renderedVisibleItems }}
     >
       <div className={styles.carouselHeader}>
         {/* Título con estilo editable (align/underline/bg/link del campo `title`).
@@ -146,7 +152,7 @@ const FeaturedCarousel = ({
           <ChevronLeft size={20} strokeWidth={1.5} />
         </button>
 
-        <div className={styles.carouselScrollArea} ref={scrollRef}>
+        <div className={`${styles.carouselScrollArea} ${isUnderfilled ? styles.carouselCentered : ''}`} ref={scrollRef}>
           {validProducts.map((product) => (
             <div key={product.id} className={styles.carouselItem}>
               <PremiumProductCard product={product} categories={categories} />

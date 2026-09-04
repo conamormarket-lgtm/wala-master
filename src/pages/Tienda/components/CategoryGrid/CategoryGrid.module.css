@@ -24,14 +24,14 @@
   border-radius: 16px;
   overflow: hidden;
   text-decoration: none;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .tile:hover {
   transform: translateY(-5px);
   border-color: color-mix(in srgb, var(--primary-color, #7c3aed) 34%, transparent);
-  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.13);
 }
 
 .tile:focus-visible {
@@ -43,7 +43,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  background-size: contain;
+  background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
   background-color: var(--color-surface-2, #f1f1f1);
