@@ -33,11 +33,22 @@ const CategoryGrid = ({ title, config, items = [], columns = 4 }) => {
         {valid.map((it, i) => {
           const img = it.imageUrl ? toThumbnailImageUrl(it.imageUrl) : '';
           const to = `${location.pathname}?categoria=${encodeURIComponent(it.categoryId)}`;
+          const tileBackgroundColor = it.backgroundColor || config?.tileBackgroundColor || '';
+          const tileStyle = {
+            ...(img ? { backgroundImage: `url(${img}), url(${toDirectImageUrl(it.imageUrl)})` } : {}),
+            ...(tileBackgroundColor ? { backgroundColor: tileBackgroundColor } : {})
+          };
           return (
-            <Link key={it.categoryId || i} to={to} className={styles.tile} aria-label={it.name || 'Categoría'}>
+            <Link
+              key={it.categoryId || i}
+              to={to}
+              className={styles.tile}
+              aria-label={it.name || 'Categoría'}
+              style={tileBackgroundColor ? { backgroundColor: tileBackgroundColor } : undefined}
+            >
               <div
                 className={styles.tileImage}
-                style={img ? { backgroundImage: `url(${img}), url(${toDirectImageUrl(it.imageUrl)})` } : undefined}
+                style={tileStyle}
               >
                 {!img && <span className={styles.noImg} aria-hidden="true" />}
                 <span className={styles.overlay} />

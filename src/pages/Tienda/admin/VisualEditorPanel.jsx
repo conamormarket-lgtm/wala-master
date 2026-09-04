@@ -2546,6 +2546,33 @@ const VisualEditorPanel = () => {
             <label>Columnas (escritorio)</label>
             <input type="number" min="2" max="6" value={s.columns || 4} onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.columns=Number(e.target.value); updateSectionsDraft(ns); }} style={{width:'100%', padding:'8px', marginBottom:'15px'}} />
 
+            <div style={{background:'rgba(124,58,237,0.06)', border:'1px solid #e5d9fb', borderRadius:8, padding:10, marginBottom:15}}>
+              <label style={{fontWeight:600}}>Color general de los cuadros</label>
+              <p style={{fontSize:'0.75rem', color:'#777', margin:'2px 0 8px'}}>
+                Se aplica a todas las categorías, salvo las que tengan un color individual.
+              </p>
+              <div style={{display:'flex', alignItems:'center', gap:8}}>
+                <input
+                  type="color"
+                  value={s.tileBackgroundColor || '#f1f1f1'}
+                  onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.tileBackgroundColor=e.target.value; updateSectionsDraft(ns); }}
+                  style={{height:34, width:46, padding:0, cursor:'pointer'}}
+                />
+                <input
+                  type="text"
+                  placeholder="#f1f1f1"
+                  value={s.tileBackgroundColor || ''}
+                  onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.tileBackgroundColor=e.target.value; updateSectionsDraft(ns); }}
+                  style={{flex:1, padding:'7px'}}
+                />
+                <button
+                  type="button"
+                  onClick={() => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.tileBackgroundColor=''; updateSectionsDraft(ns); }}
+                  style={{padding:'7px 9px', border:'1px solid #ddd', borderRadius:6, background:'#fff', cursor:'pointer'}}
+                >Restablecer</button>
+              </div>
+            </div>
+
             {/* Importar categorías existentes */}
             {(selectableCategories || []).length > 0 && (
               <div style={{ background:'rgba(124,58,237,0.06)', border:'1px solid #e5d9fb', borderRadius:8, padding:10, marginBottom:15 }}>
@@ -2575,7 +2602,28 @@ const VisualEditorPanel = () => {
                 <label style={{fontSize:'0.78rem'}}>Nombre a mostrar</label>
                 <input type="text" value={it.name||''} onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, name:e.target.value}:x))} style={{width:'100%', padding:'6px', marginBottom:'6px'}} />
                 <label style={{fontSize:'0.78rem'}}>URL de imagen</label>
-                <input type="text" placeholder="https://..." value={it.imageUrl||''} onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, imageUrl:e.target.value}:x))} style={{width:'100%', padding:'6px'}} />
+                <input type="text" placeholder="https://..." value={it.imageUrl||''} onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, imageUrl:e.target.value}:x))} style={{width:'100%', padding:'6px', marginBottom:'8px'}} />
+                <label style={{fontSize:'0.78rem'}}>Color individual del cuadro (opcional)</label>
+                <div style={{display:'flex', alignItems:'center', gap:8}}>
+                  <input
+                    type="color"
+                    value={it.backgroundColor || s.tileBackgroundColor || '#f1f1f1'}
+                    onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, backgroundColor:e.target.value}:x))}
+                    style={{height:32, width:42, padding:0, cursor:'pointer'}}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Usar color general"
+                    value={it.backgroundColor || ''}
+                    onChange={e => setItems(items.map((x,idx)=>idx===i?{...x, backgroundColor:e.target.value}:x))}
+                    style={{flex:1, padding:'6px'}}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setItems(items.map((x,idx)=>idx===i?{...x, backgroundColor:''}:x))}
+                    style={{padding:'6px 8px', border:'1px solid #ddd', borderRadius:6, background:'#fff', cursor:'pointer'}}
+                  >General</button>
+                </div>
               </div>
             ))}
             {items.length === 0 && <p style={{fontSize:'0.85rem', color:'#888', fontStyle:'italic'}}>Aún no agregaste categorías.</p>}

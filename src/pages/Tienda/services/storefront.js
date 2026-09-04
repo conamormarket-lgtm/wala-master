@@ -140,7 +140,7 @@ export function getDefaultSettings(type) {
       return { title: '', categoryId: '', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'category_grid':
-      return { title: 'Categorías', items: [], columns: 4, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
+      return { title: 'Categorías', items: [], columns: 4, tileBackgroundColor: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '' };
     case 'banner_grid':
       return { items: [{ imageUrl: '', link: '', alt: '' }], columns: 3, gap: '1rem', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
