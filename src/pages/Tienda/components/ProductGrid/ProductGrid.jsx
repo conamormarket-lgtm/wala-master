@@ -224,15 +224,8 @@ const ProductGrid = React.memo(({
 
       {/* Fin de lista: solo cuando ya hay productos y no queda nada por cargar */}
       {!showLoadTrigger && !(serverPaginated && isFetchingMore) && total > 0 && (
-        <p
-          style={{
-            textAlign: 'center',
-            marginTop: '1.5rem',
-            color: 'var(--gris-texto-secundario, #888)',
-            fontSize: '0.9rem'
-          }}
-        >
-          {t('grid.finLista', 'No hay más productos')}
+        <p className={styles.endMessage}>
+          {t('grid.finLista', 'Has visto todos los productos')}
         </p>
       )}
     </>

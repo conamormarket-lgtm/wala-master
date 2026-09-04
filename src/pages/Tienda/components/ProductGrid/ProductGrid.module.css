@@ -6,7 +6,8 @@
   display: grid;
   /* Usamos auto-fill para que los productos mantengan un tamaño razonable y no se estiren al infinito si hay pocos */
   grid-template-columns: repeat(var(--grid-cols-desktop, auto-fill), minmax(320px, 1fr));
-  gap: 2px;
+  column-gap: 1.25rem;
+  row-gap: 2rem;
   padding: 1rem 0;
   max-width: 1400px; /* Limita a ~4 columnas máximo en pantallas gigantes */
   margin: 0 auto; /* Centra la cuadrícula */
@@ -218,6 +219,24 @@
   cursor: default;
 }
 
+.endMessage {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2.5rem auto 0;
+  color: var(--gris-texto-secundario, #6b7280);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.endMessage::before,
+.endMessage::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gris-borde, #e5e7eb);
+}
+
 /* ═══════════════════════════════════════════
    MODO NOCHE — Product Grid
    La mayoria ya usa tokens de tema (--gris-* --glass-*) que se oscurecen solos.
@@ -236,7 +255,7 @@
 @media (max-width: 992px) {
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 2px;
+    gap: 1.25rem;
   }
 }
 
