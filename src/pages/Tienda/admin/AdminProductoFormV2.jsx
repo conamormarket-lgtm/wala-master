@@ -176,6 +176,18 @@ const AdminProductoFormV2 = () => {
   const { data: nicheOptions } = useQuery({ queryKey: ['admin-niches'], queryFn: async () => (await getNiches()).data });
   const { data: vendorOptions } = useQuery({ queryKey: ['admin-vendors'], queryFn: async () => (await getVendors()).data });
 
+  // La categoría maestra puede compartirse entre marcas mediante brandIds.
+  // Al elegir una marca, el producto solo ve las categorías de esa empresa.
+  const categoriesForBrand = useMemo(() => (categories || []).filter((category) => {
+    const categoryBrandIds = Array.isArray(category.brandIds) ? category.brandIds : [];
+    return !form.brandId || categoryBrandIds.includes(form.brandId);
+  }), [categories, form.brandId]);
+
+  const tagsForBrand = useMemo(() => (tags || []).filter((tag) => {
+    const tagBrandIds = Array.isArray(tag.brandIds) ? tag.brandIds : [];
+    return !form.brandId || tagBrandIds.includes(form.brandId);
+  }), [tags, form.brandId]);
+
   // Si editamos un producto existente en DB
   const { data: productData, isLoading: loadingProduct } = useQuery({
     queryKey: ['admin-product', id],
@@ -1026,11 +1038,11 @@ const AdminProductoFormV2 = () => {
                   placeholder="Seleccionar o escribir..."
                   onChange={(val) => setForm(f => ({ ...f, category: val ? val.value : '' }))}
                   onCreateOption={async (inputValue) => {
-                    const res = await createCategory({ name: inputValue });
+                    const res = await createCategory({ name: inputValue, brandIds: form.brandId ? [form.brandId] : [] });
                     queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
                     setForm(f => ({ ...f, category: res.id }));
                   }}
-                  options={categories?.map(c => ({ label: c.name, value: c.id })) || []}
+                  options={categoriesForBrand.map(c => ({ label: c.name, value: c.id }))}
                   value={categories?.find(c => c.id === form.category) ? { label: categories.find(c => c.id === form.category).name, value: form.category } : null}
                 />
               </div>
@@ -1080,11 +1092,11 @@ const AdminProductoFormV2 = () => {
                   placeholder="Seleccionar o escribir..."
                   onChange={(val) => setForm(f => ({ ...f, tags: val.map(v => v.value) }))}
                   onCreateOption={async (inputValue) => {
-                    const res = await createTag({ name: inputValue });
+                    const res = await createTag({ name: inputValue, brandIds: form.brandId ? [form.brandId] : [] });
                     queryClient.invalidateQueries({ queryKey: ['admin-tags'] });
                     setForm(f => ({ ...f, tags: [...(f.tags || []), res.id] }));
                   }}
-                  options={tags?.map(c => ({ label: c.name, value: c.id })) || []}
+                  options={tagsForBrand.map(c => ({ label: c.name, value: c.id }))}
                   value={(form.tags || []).map(id => {
                     const tag = tags?.find(c => c.id === id);
                     return tag ? { label: tag.name, value: id } : { label: id, value: id };

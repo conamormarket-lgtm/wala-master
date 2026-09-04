@@ -33,7 +33,10 @@ export const createCategory = async (data) => {
   return await createDocument(COLLECTION, {
     name: data.name || '',
     imageUrl: data.imageUrl || '',
-    order: typeof data.order === 'number' ? data.order : 0
+    order: typeof data.order === 'number' ? data.order : 0,
+    // Una categoría puede ser compartida por varias marcas (p. ej. "Ropa")
+    // sin duplicar documentos ni romper los filtros por categoryId.
+    brandIds: Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : []
   });
 };
 
@@ -47,6 +50,9 @@ export const updateCategory = async (id, data) => {
   if (data.name !== undefined) payload.name = data.name;
   if (data.imageUrl !== undefined) payload.imageUrl = data.imageUrl;
   if (data.order !== undefined) payload.order = data.order;
+  if (data.brandIds !== undefined) {
+    payload.brandIds = Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : [];
+  }
   return await updateDocument(COLLECTION, id, payload);
 };
 

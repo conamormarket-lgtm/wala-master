@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../../services/categories';
+import { getBrands } from '../../services/brands';
 import { uploadFile } from '../../services/firebase/storage';
 import { Edit2, Trash2, ImagePlus, Loader2 } from 'lucide-react';
 import Button from '../../components/common/Button';
@@ -10,7 +11,8 @@ import styles from './AdminCategorias.module.css';
 const AdminCategorias = () => {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: '', order: 0, imageUrl: '' });
+  const [selectedBrandId, setSelectedBrandId] = useState('');
+  const [form, setForm] = useState({ name: '', order: 0, imageUrl: '', brandIds: [] });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
@@ -25,12 +27,21 @@ const AdminCategorias = () => {
     }
   });
 
+  const { data: brandsData = [] } = useQuery({
+    queryKey: ['admin-brands'],
+    queryFn: async () => {
+      const { data, error: err } = await getBrands();
+      if (err) throw new Error(err);
+      return data || [];
+    }
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => createCategory(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      setForm({ name: '', order: (categoriesData?.length ?? 0), imageUrl: '' });
+      setForm({ name: '', order: (categoriesData?.length ?? 0), imageUrl: '', brandIds: selectedBrandId ? [selectedBrandId] : [] });
     }
   });
 
@@ -40,7 +51,7 @@ const AdminCategorias = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setEditingId(null);
-      setForm({ name: '', order: 0, imageUrl: '' });
+      setForm({ name: '', order: 0, imageUrl: '', brandIds: selectedBrandId ? [selectedBrandId] : [] });
     }
   });
 
@@ -53,7 +64,11 @@ const AdminCategorias = () => {
     }
   });
 
-  const categories = categoriesData ?? [];
+  const categories = (categoriesData ?? []).filter((cat) => (
+    !selectedBrandId || (Array.isArray(cat.brandIds) && cat.brandIds.includes(selectedBrandId))
+  ));
+
+  const brandNameById = new Map(brandsData.map((brand) => [brand.id, brand.name]));
 
   const handleImageUpload = async (e) => {
     const file = e?.target?.files?.[0];
@@ -89,7 +104,8 @@ const AdminCategorias = () => {
     const payload = { 
       name: form.name.trim(), 
       order: Number(form.order),
-      imageUrl: form.imageUrl
+      imageUrl: form.imageUrl,
+      brandIds: form.brandIds
     };
 
     if (editingId) {
@@ -105,14 +121,15 @@ const AdminCategorias = () => {
     setForm({ 
       name: cat.name, 
       order: cat.order ?? 0,
-      imageUrl: cat.imageUrl || ''
+      imageUrl: cat.imageUrl || '',
+      brandIds: Array.isArray(cat.brandIds) ? cat.brandIds : []
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm({ name: '', order: categories.length, imageUrl: '' });
+    setForm({ name: '', order: categories.length, imageUrl: '', brandIds: selectedBrandId ? [selectedBrandId] : [] });
   };
 
   return (
@@ -122,6 +139,24 @@ const AdminCategorias = () => {
           <h1 className={styles.title}>Categorías</h1>
           <p className={styles.subtitle}>Organiza tu catálogo y define la imagen para la navegación</p>
         </div>
+      </div>
+
+      <div className={styles.card} style={{ marginBottom: '1.5rem', padding: '1rem 1.25rem' }}>
+        <label className={styles.label} htmlFor="category-brand-filter">Mostrar categorías de</label>
+        <select
+          id="category-brand-filter"
+          className={styles.input}
+          value={selectedBrandId}
+          onChange={(e) => {
+            const brandId = e.target.value;
+            setSelectedBrandId(brandId);
+            if (!editingId) setForm((current) => ({ ...current, brandIds: brandId ? [brandId] : [] }));
+          }}
+          style={{ width: '100%', marginTop: '0.5rem' }}
+        >
+          <option value="">Todas las marcas</option>
+          {brandsData.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+        </select>
       </div>
 
       <div className={styles.contentGrid}>
@@ -155,6 +190,28 @@ const AdminCategorias = () => {
                     className={styles.input}
                   />
                 </div>
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>Marcas que usan esta categoría</span>
+                <div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+                  {brandsData.map((brand) => (
+                    <label key={brand.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={form.brandIds.includes(brand.id)}
+                        onChange={(e) => setForm((current) => ({
+                          ...current,
+                          brandIds: e.target.checked
+                            ? [...new Set([...current.brandIds, brand.id])]
+                            : current.brandIds.filter((id) => id !== brand.id)
+                        }))}
+                      />
+                      {brand.name}
+                    </label>
+                  ))}
+                </div>
+                <p className={styles.helpText}>Puede compartirse entre varias marcas sin duplicarla.</p>
               </div>
 
               <div className={styles.field}>
@@ -214,6 +271,9 @@ const AdminCategorias = () => {
                   <div className={styles.categoryInfo}>
                     <h3 className={styles.categoryName}>{cat.name}</h3>
                     <span className={styles.categoryBadge}>Orden: {cat.order ?? 0}</span>
+                    <p className={styles.helpText} style={{ marginTop: '0.5rem' }}>
+                      {(cat.brandIds || []).map((id) => brandNameById.get(id)).filter(Boolean).join(', ') || 'Sin marca asignada'}
+                    </p>
                   </div>
                   <div className={styles.categoryActions}>
                     <button type="button" className={styles.actionBtn} onClick={() => handleEdit(cat)} title="Editar">

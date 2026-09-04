@@ -12,13 +12,17 @@ export const getTag = async (id) => {
 
 export const createTag = async (data) => {
   return await createDocument(COLLECTION, {
-    name: data.name || ''
+    name: data.name || '',
+    brandIds: Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : []
   });
 };
 
 export const updateTag = async (id, data) => {
   const payload = {};
   if (data.name !== undefined) payload.name = data.name;
+  if (data.brandIds !== undefined) {
+    payload.brandIds = Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : [];
+  }
   return await updateDocument(COLLECTION, id, payload);
 };
 

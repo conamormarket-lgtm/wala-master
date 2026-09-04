@@ -200,8 +200,11 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
   // Categorías que todavía NO están en el nav (para el selector de "agregar").
   const availableCategories = useMemo(() => {
     const used = new Set(items.map((it) => it.categoryId).filter(Boolean));
-    return (categories || []).filter((c) => !used.has(c.id));
-  }, [categories, items]);
+    return (categories || []).filter((c) => {
+      const categoryBrandIds = Array.isArray(c.brandIds) ? c.brandIds : [];
+      return !used.has(c.id) && categoryBrandIds.includes(brandId);
+    });
+  }, [categories, items, brandId]);
 
   // ── Acciones sobre las burbujas ──────────────────────────────────────────
 
