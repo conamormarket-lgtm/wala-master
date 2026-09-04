@@ -73,9 +73,15 @@ const SidebarCatalogLayout = ({
 
   // ── Grupos desplegables (acordeón) del sidebar ─────────────────────────
   // Guarda qué grupos están colapsados por id. Solo afecta la PRESENTACIÓN:
-  // el filtrado de productos no cambia. Los grupos largos ('etiquetas',
-  // 'personajes') arrancan colapsados para limpiar el sidebar; el resto abierto.
+  // el filtrado de productos no cambia. Todos arrancan colapsados, como en un
+  // catálogo grande, y cada selección activa fuerza visible solo su grupo.
   const [gruposColapsados, setGruposColapsados] = useState({
+    categorias: true,
+    temporadas: true,
+    colecciones: true,
+    marcas: true,
+    tipoProducto: true,
+    precio: true,
     etiquetas: true,
     personajes: true,
   });
@@ -332,7 +338,11 @@ const SidebarCatalogLayout = ({
           <span>{titulo}</span>
           <span className={styles.grupoChevron} aria-hidden="true">{abierto ? '▾' : '▸'}</span>
         </h3>
-        {abierto && children}
+        {abierto && (
+          <div className={styles.grupoContent}>
+            {children}
+          </div>
+        )}
       </div>
     );
   };
@@ -368,8 +378,20 @@ const SidebarCatalogLayout = ({
             </button>
           </div>
 
+          <div className={styles.desktopFilterHeader}>
+            <span className={styles.desktopFilterTitle}>
+              <Filter size={17} aria-hidden="true" />
+              {t('cat.filtros', 'Filtros')}
+            </span>
+            {hasActiveFilters && (
+              <button type="button" className={styles.clearAllLink} onClick={clearAllFilters}>
+                {t('cat.limpiar', 'Limpiar')}
+              </button>
+            )}
+          </div>
+
           {hasActiveFilters && (
-            <div className={styles.sidebarSection} style={{ marginBottom: '1.5rem' }}>
+            <div className={styles.mobileClearFilters}>
               <button
                 type="button"
                 className={styles.mobileFilterBtn}
@@ -380,7 +402,11 @@ const SidebarCatalogLayout = ({
             </div>
           )}
 
-          <GrupoSidebar id="categorias" titulo={t('cat.categorias', 'Categorías')}>
+          <GrupoSidebar
+            id="categorias"
+            titulo={t('cat.categorias', 'Categorías')}
+            forzarAbierto={!!activeCategory}
+          >
             <ul className={styles.categoryList}>
               <li
                 className={activeCategory === null ? styles.activeItem : ''}
