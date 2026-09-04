@@ -143,7 +143,19 @@ export function getDefaultSettings(type) {
       return { title: 'Categorías', items: [], columns: 4, tileBackgroundColor: '', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '' };
     case 'banner_grid':
-      return { items: [{ imageUrl: '', link: '', alt: '' }], columns: 3, gap: '1rem', backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
+      return {
+        dataSource: 'brands',
+        title: 'Explora nuestros mundos',
+        subtitle: 'Encuentra productos de tus marcas favoritas',
+        showBrandName: true,
+        brandCardStyle: 'soft',
+        items: [{ imageUrl: '', link: '', alt: '' }],
+        columns: 3,
+        gap: '1rem',
+        backgroundColor: 'transparent',
+        paddingTop: '2rem',
+        paddingBottom: '2rem'
+      };
     case 'categories_nav':
       // brandId: marca cuyo `categoryNav` (burbujas con miniatura) se mostrará.
       // Vacío = retrocompat (sin marca, el nav queda vacío o cae al modo global).

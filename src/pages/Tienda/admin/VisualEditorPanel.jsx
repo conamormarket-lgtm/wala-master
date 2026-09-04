@@ -2592,9 +2592,24 @@ const VisualEditorPanel = () => {
       if (section.type === 'banner_grid') {
         const s = section.settings || {};
         const items = s.items || [];
+        const dataSource = s.dataSource || 'manual';
+        const automaticBrands = (brands || []).filter(
+          (brand) => brand?.name && brand.active !== false && brand.visible !== false
+        );
+        const setSetting = (key, value) => {
+          const newSections = [...storeConfigDraft.sections];
+          newSections[dynamicSectionIndex] = {
+            ...newSections[dynamicSectionIndex],
+            settings: { ...newSections[dynamicSectionIndex].settings, [key]: value }
+          };
+          updateSectionsDraft(newSections);
+        };
         const setItems = (next) => {
           const newSections = [...storeConfigDraft.sections];
-          newSections[dynamicSectionIndex].settings.items = next;
+          newSections[dynamicSectionIndex] = {
+            ...newSections[dynamicSectionIndex],
+            settings: { ...newSections[dynamicSectionIndex].settings, items: next }
+          };
           updateSectionsDraft(newSections);
         };
         return (
@@ -2603,14 +2618,67 @@ const VisualEditorPanel = () => {
               <ArrowLeft size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Volver a los Módulos
             </button>
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>Editando: Mosaico de Banners</h4>
-            <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '1rem'}}>
-              Imágenes promocionales en fila, cada una con su enlace (interno /categorias o externo https://).
+            <p style={{fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem'}}>
+              Crea banners manuales o genera automáticamente una tarjeta por cada marca administrada.
             </p>
 
-            <label>Columnas (escritorio)</label>
-            <input type="number" min="1" max="4" value={s.columns || 3} onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.columns=Number(e.target.value); updateSectionsDraft(ns); }} style={{width:'100%', padding:'8px', marginBottom:'15px'}} />
+            <label>Contenido del mosaico</label>
+            <select
+              value={dataSource}
+              onChange={(e) => {
+                const value = e.target.value;
+                const newSections = [...storeConfigDraft.sections];
+                const current = newSections[dynamicSectionIndex];
+                newSections[dynamicSectionIndex] = {
+                  ...current,
+                  settings: {
+                    ...current.settings,
+                    dataSource: value,
+                    title: value === 'brands' && !current.settings.title ? 'Explora nuestros mundos' : current.settings.title,
+                    subtitle: value === 'brands' && !current.settings.subtitle ? 'Encuentra productos de tus marcas favoritas' : current.settings.subtitle,
+                  }
+                };
+                updateSectionsDraft(newSections);
+              }}
+              style={{width:'100%', padding:'8px', marginBottom:'15px'}}
+            >
+              <option value="brands">Marcas automáticas</option>
+              <option value="manual">Banners manuales</option>
+            </select>
 
-            {items.map((it, i) => (
+            {dataSource === 'brands' && (
+              <>
+                <div style={{background:'rgba(124,58,237,0.12)', border:'1px solid rgba(167,139,250,0.35)', borderRadius:8, padding:10, marginBottom:15}}>
+                  <strong style={{display:'block', fontSize:'0.82rem', marginBottom:4}}>
+                    {automaticBrands.length} marca{automaticBrands.length === 1 ? '' : 's'} sincronizada{automaticBrands.length === 1 ? '' : 's'}
+                  </strong>
+                  <span style={{fontSize:'0.75rem', color:'#bbb', lineHeight:1.4}}>
+                    Usa automáticamente su logo, nombre, enlace y orden de Administración de Marcas. Los cambios futuros aparecerán aquí sin duplicar información.
+                  </span>
+                </div>
+
+                <label>Título de la sección</label>
+                <input type="text" value={s.title || ''} onChange={e => setSetting('title', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'10px'}} />
+                <label>Subtítulo</label>
+                <input type="text" value={s.subtitle || ''} onChange={e => setSetting('subtitle', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'12px'}} />
+
+                <label>Estilo de las tarjetas</label>
+                <select value={s.brandCardStyle || 'soft'} onChange={e => setSetting('brandCardStyle', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'12px'}}>
+                  <option value="soft">Fondo de marca y sombra suave</option>
+                  <option value="outline">Blanco con borde limpio</option>
+                </select>
+
+                <label style={{display:'flex', alignItems:'center', gap:8, marginBottom:15, cursor:'pointer'}}>
+                  <input type="checkbox" checked={s.showBrandName !== false} onChange={e => setSetting('showBrandName', e.target.checked)} />
+                  Mostrar nombre de la marca
+                </label>
+              </>
+            )}
+
+            <label>Columnas (escritorio)</label>
+            <input type="number" min="1" max="4" value={s.columns || 3} onChange={e => setSetting('columns', Number(e.target.value))} style={{width:'100%', padding:'8px', marginBottom:'15px'}} />
+
+            {dataSource === 'manual' && items.map((it, i) => (
               <div key={i} style={{border:'1px solid #eee', borderRadius:8, padding:10, marginBottom:10}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6}}>
                   <strong style={{fontSize:'0.85rem'}}>Banner {i+1}</strong>
@@ -2626,9 +2694,11 @@ const VisualEditorPanel = () => {
               </div>
             ))}
 
-            <button type="button" onClick={() => setItems([...(items), { imageUrl:'', link:'', alt:'' }])} style={{width:'100%', border:'1px dashed #ccc', background:'transparent', padding:'10px', borderRadius:6, cursor:'pointer', marginBottom:'15px'}}>
-              <Plus size={16} strokeWidth={1.5} style={{marginRight:6}} /> Añadir Banner
-            </button>
+            {dataSource === 'manual' && (
+              <button type="button" onClick={() => setItems([...(items), { imageUrl:'', link:'', alt:'' }])} style={{width:'100%', border:'1px dashed #ccc', background:'transparent', padding:'10px', borderRadius:6, cursor:'pointer', marginBottom:'15px'}}>
+                <Plus size={16} strokeWidth={1.5} style={{marginRight:6}} /> Añadir Banner
+              </button>
+            )}
 
             <BackgroundStylesControl settings={s} onChange={(key, value) => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings[key]=value; updateSectionsDraft(ns); }} />
           </div>

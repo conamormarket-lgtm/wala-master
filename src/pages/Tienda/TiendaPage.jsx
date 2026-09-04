@@ -42,7 +42,7 @@ import {
 import { getMessage } from '../../services/messages';
 import { getStorefrontConfig, SECTION_TYPES, getDefaultSettings } from './services/storefront';
 import { getDocument } from '../../services/firebase/firestore';
-import { getBrand } from '../../services/brands';
+import { getBrand, getBrands } from '../../services/brands';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import OptimizedImage from '../../components/common/OptimizedImage/OptimizedImage';
 import HeroBanner from './components/HeroBanner';
@@ -307,6 +307,26 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     },
     staleTime: isPreview ? 0 : 10 * 60 * 1000,
     refetchOnMount: isPreview ? 'always' : false,
+  });
+
+  // El mosaico automático lee la misma colección que Administración de Marcas.
+  // Solo hacemos esta consulta cuando la página realmente usa ese modo.
+  const usesAutomaticBrandGrid = useMemo(() => {
+    const sections = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+    return sections.some(
+      (section) => section?.type === 'banner_grid' && section?.settings?.dataSource === 'brands'
+    );
+  }, [storeConfigDraft, storefrontConfig]);
+
+  const { data: automaticGridBrands = [] } = useQuery({
+    queryKey: ['storefront-banner-grid-brands'],
+    queryFn: async () => {
+      const { data, error } = await getBrands();
+      if (error) throw new Error(error);
+      return data || [];
+    },
+    enabled: usesAutomaticBrandGrid,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: storeMessages } = useQuery({
@@ -1178,7 +1198,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
-            <BannerGrid items={s.items} columns={s.columns} gap={s.gap} />
+            <BannerGrid config={s} items={s.items} brands={automaticGridBrands} columns={s.columns} gap={s.gap} />
           </section>
         );
       case 'featured_carousel':

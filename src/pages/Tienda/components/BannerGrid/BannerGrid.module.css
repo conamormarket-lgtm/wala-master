@@ -1,9 +1,33 @@
+.section {
+  margin: 2rem 0;
+  padding: 0 4vw;
+}
+
+.header {
+  max-width: 720px;
+  margin: 0 auto 1.75rem;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(1.55rem, 2.3vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.subtitle {
+  margin: 0.55rem 0 0;
+  color: #667085;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--cols, 3), 1fr);
   gap: 1rem;
-  margin: 2rem 0;
-  padding: 0 4vw;
 }
 
 .cell {
@@ -28,6 +52,90 @@
   object-fit: cover;
 }
 
+.brandCell {
+  min-width: 0;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #111827;
+  text-decoration: none;
+  background-color: var(--brand-color, #f4f0ff);
+  background-position: center;
+  background-size: cover;
+  border: 1px solid rgba(17, 24, 39, 0.07);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.07);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.brandCell:hover {
+  transform: translateY(-4px);
+  border-color: rgba(124, 58, 237, 0.24);
+  box-shadow: 0 16px 36px rgba(17, 24, 39, 0.13);
+}
+
+.brandOutline {
+  background-color: #ffffff;
+  box-shadow: none;
+}
+
+.brandVisual {
+  min-height: 160px;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 1.6rem;
+}
+
+.brandLogo {
+  width: 100%;
+  height: 120px;
+  display: block;
+  object-fit: contain;
+  transition: transform 0.25s ease;
+}
+
+.brandCell:hover .brandLogo {
+  transform: scale(1.06);
+}
+
+.brandFallback {
+  width: 92px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.brandFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1.1rem;
+  background: rgba(255, 255, 255, 0.86);
+  border-top: 1px solid rgba(17, 24, 39, 0.06);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.brandArrow {
+  color: #7c3aed;
+  font-size: 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.brandCell:hover .brandArrow {
+  transform: translateX(3px);
+}
+
 /* Tablet: máx 2 columnas */
 @media (max-width: 900px) {
   .grid {
@@ -37,8 +145,25 @@
 
 /* Móvil: 1 columna */
 @media (max-width: 560px) {
+  .section {
+    margin: 1.5rem 0;
+    padding: 0 1rem;
+  }
+
+  .header {
+    margin-bottom: 1.15rem;
+  }
+
   .grid {
     grid-template-columns: 1fr;
     gap: 0.75rem;
+  }
+
+  .brandCell {
+    min-height: 180px;
+  }
+
+  .brandVisual {
+    min-height: 135px;
   }
 }
