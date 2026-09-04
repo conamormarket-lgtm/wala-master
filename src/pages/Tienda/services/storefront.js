@@ -148,7 +148,7 @@ export function getDefaultSettings(type) {
         title: 'Explora nuestros mundos',
         subtitle: 'Encuentra productos de tus marcas favoritas',
         showBrandName: true,
-        brandCardStyle: 'soft',
+        brandCardStyle: 'editorial',
         items: [{ imageUrl: '', link: '', alt: '' }],
         columns: 3,
         gap: '1rem',

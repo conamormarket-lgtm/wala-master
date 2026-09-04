@@ -20,6 +20,15 @@ const initials = (name) => String(name || '')
   .join('')
   .toUpperCase();
 
+const BRAND_PALETTES = [
+  ['#5b21b6', '#8b5cf6', '#ddd6fe'],
+  ['#9f1239', '#f43f5e', '#ffe4e6'],
+  ['#075985', '#0ea5e9', '#e0f2fe'],
+  ['#065f46', '#10b981', '#d1fae5'],
+  ['#9a3412', '#f97316', '#ffedd5'],
+  ['#1e3a8a', '#4f46e5', '#e0e7ff'],
+];
+
 /**
  * Mosaico promocional con dos fuentes:
  * - manual: conserva el comportamiento histórico de banners con imagen.
@@ -76,14 +85,20 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
             return renderLink(item, renderManualImage(item), styles.cell, item.id || index);
           }
 
+          const palette = BRAND_PALETTES[index % BRAND_PALETTES.length];
           const brandStyle = {
-            '--brand-color': item.backgroundColor || '#f4f0ff',
+            '--brand-start': item.backgroundColor || palette[0],
+            '--brand-end': palette[1],
+            '--brand-soft': palette[2],
             backgroundImage: item.backgroundImage
-              ? `linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.82)), url(${toDirectImageUrl(item.backgroundImage)})`
+              ? `linear-gradient(120deg, rgba(15,23,42,.86), rgba(15,23,42,.34)), url(${toDirectImageUrl(item.backgroundImage)})`
               : undefined,
           };
           const content = (
             <>
+              <span className={styles.worldNumber} aria-hidden="true">
+                {String(index + 1).padStart(2, '0')}
+              </span>
               <div className={styles.brandVisual}>
                 {item.imageUrl ? (
                   <img src={toDirectImageUrl(item.imageUrl)} alt={item.alt} className={styles.brandLogo} loading="lazy" decoding="async" />
@@ -92,9 +107,12 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
                 )}
               </div>
               {config.showBrandName !== false && (
-                <div className={styles.brandFooter}>
-                  <span>{item.name}</span>
-                  <span className={styles.brandArrow} aria-hidden="true">→</span>
+                <div className={styles.brandCopy}>
+                  <span className={styles.brandEyebrow}>Universo Walá</span>
+                  <h3 className={styles.brandName}>{item.name}</h3>
+                  <span className={styles.brandCta}>
+                    Explorar colección <span className={styles.brandArrow} aria-hidden="true">→</span>
+                  </span>
                 </div>
               )}
             </>
@@ -102,7 +120,13 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
           return renderLink(
             item,
             content,
-            `${styles.brandCell} ${config.brandCardStyle === 'outline' ? styles.brandOutline : ''}`,
+            `${styles.brandCell} ${index % 3 === 0 ? styles.brandFeatured : ''} ${
+              config.brandCardStyle === 'outline'
+                ? styles.brandOutline
+                : config.brandCardStyle === 'uniform'
+                  ? styles.brandUniform
+                  : styles.brandEditorial
+            }`,
             item.id || index,
             brandStyle
           );

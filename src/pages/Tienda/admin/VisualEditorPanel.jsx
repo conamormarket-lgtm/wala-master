@@ -2663,9 +2663,10 @@ const VisualEditorPanel = () => {
                 <input type="text" value={s.subtitle || ''} onChange={e => setSetting('subtitle', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'12px'}} />
 
                 <label>Estilo de las tarjetas</label>
-                <select value={s.brandCardStyle || 'soft'} onChange={e => setSetting('brandCardStyle', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'12px'}}>
-                  <option value="soft">Fondo de marca y sombra suave</option>
-                  <option value="outline">Blanco con borde limpio</option>
+                <select value={s.brandCardStyle || 'editorial'} onChange={e => setSetting('brandCardStyle', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'12px'}}>
+                  <option value="editorial">Mosaico editorial (recomendado)</option>
+                  <option value="uniform">Tarjetas de color uniformes</option>
+                  <option value="outline">Tarjetas blancas con borde</option>
                 </select>
 
                 <label style={{display:'flex', alignItems:'center', gap:8, marginBottom:15, cursor:'pointer'}}>
