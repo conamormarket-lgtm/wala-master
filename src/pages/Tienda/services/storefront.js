@@ -209,7 +209,7 @@ export function getDefaultSettings(type) {
       return { title: 'Ofertas Relámpago', collection: '', endTime: new Date(Date.now() + 86400000).toISOString(), backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'testimonials':
-      return { title: 'Lo que dicen nuestros clientes', testimonials: [{ text: 'Me encantó mi polera, el diseño súper nítido!', author: 'María P.', rating: 5 }],
+      return { title: 'Lo que dicen nuestros clientes', testimonials: [{ topic: 'Calidad del producto', text: 'Me encantó mi polera, el diseño súper nítido!', author: 'Cliente de Walá', city: '', avatar: '', rating: 5, verified: false }],
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'marquee':
       return { items: [{ imageUrl: '', alt: 'Marca 1' }], speed: 20000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',

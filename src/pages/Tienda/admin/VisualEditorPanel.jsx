@@ -12,6 +12,7 @@ import { getDocument } from '../../../services/firebase/firestore';
 // eslint-disable-next-line no-unused-vars
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { SECTION_TYPES, getDefaultSettings } from '../services/storefront';
+import { normalizeTestimonial } from '../components/Testimonials/Testimonials';
 import styles from '../../../components/admin/VisualEditorPanel.module.css';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
@@ -1275,6 +1276,15 @@ const VisualEditorPanel = () => {
 
       if (section.type === 'testimonials') {
         const s = section.settings || {};
+        const testimonials = (s.testimonials || []).map(normalizeTestimonial);
+        const updateTestimonial = (index, patch) => {
+          const newSections = [...storeConfigDraft.sections];
+          const current = normalizeTestimonial(newSections[dynamicSectionIndex].settings.testimonials?.[index]);
+          const next = [...(newSections[dynamicSectionIndex].settings.testimonials || [])];
+          next[index] = { ...current, ...patch };
+          newSections[dynamicSectionIndex].settings.testimonials = next;
+          updateSectionsDraft(newSections);
+        };
         return (
           <div className={styles.formGroup}>
             <button className={styles.backBtn} onClick={() => closeEditor()}>
@@ -1301,7 +1311,7 @@ const VisualEditorPanel = () => {
             <ButtonFieldsControl settings={s} onChange={(key, val) => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings[key] = val; updateSectionsDraft(newSections); }} />
 
             <h5 style={{marginBottom: '10px'}}>Testimonios</h5>
-            {(s.testimonials || []).map((testim, index) => (
+            {testimonials.map((testim, index) => (
               <div key={index} style={{background: '#f9f9f9', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #eee'}}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
                   <strong>Testimonio {index + 1}</strong>
@@ -1315,26 +1325,45 @@ const VisualEditorPanel = () => {
                   ><Trash2 size={16} strokeWidth={1.5} /></button>
                 </div>
 
-                <label>Nombre del Autor</label>
+                <label>Tema de la opinión</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Calidad de impresión"
+                  value={testim.topic || ''}
+                  onChange={e => updateTestimonial(index, { topic: e.target.value })}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                />
+
+                <label>Nombre del cliente</label>
                 <input 
                   type="text" 
                   value={testim.author || ''} 
-                  onChange={e => {
-                    const newSections = [...storeConfigDraft.sections];
-                    newSections[dynamicSectionIndex].settings.testimonials[index].author = e.target.value;
-                    updateSectionsDraft(newSections);
-                  }}
+                  onChange={e => updateTestimonial(index, { author: e.target.value })}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                />
+
+                <label>Ciudad (opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Lima"
+                  value={testim.city || ''}
+                  onChange={e => updateTestimonial(index, { city: e.target.value })}
+                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
+                />
+
+                <label>Foto del cliente (URL opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Sin foto se mostrarán sus iniciales"
+                  value={testim.avatar || ''}
+                  onChange={e => updateTestimonial(index, { avatar: e.target.value })}
                   style={{width: '100%', padding: '6px', marginBottom: '10px'}}
                 />
 
                 <label>Texto / Opinión</label>
                 <textarea 
                   value={testim.text || ''} 
-                  onChange={e => {
-                    const newSections = [...storeConfigDraft.sections];
-                    newSections[dynamicSectionIndex].settings.testimonials[index].text = e.target.value;
-                    updateSectionsDraft(newSections);
-                  }}
+                  onChange={e => updateTestimonial(index, { text: e.target.value })}
                   style={{width: '100%', padding: '6px', marginBottom: '10px', minHeight: '60px', fontFamily: 'inherit'}}
                 />
 
@@ -1344,13 +1373,18 @@ const VisualEditorPanel = () => {
                   min="1" 
                   max="5" 
                   value={testim.rating || 5} 
-                  onChange={e => {
-                    const newSections = [...storeConfigDraft.sections];
-                    newSections[dynamicSectionIndex].settings.testimonials[index].rating = Number(e.target.value);
-                    updateSectionsDraft(newSections);
-                  }}
+                  onChange={e => updateTestimonial(index, { rating: Number(e.target.value) })}
                   style={{width: '100%', padding: '6px', marginBottom: '10px'}}
                 />
+
+                <label style={{display:'flex', alignItems:'center', gap:8, cursor:'pointer', marginBottom:2}}>
+                  <input
+                    type="checkbox"
+                    checked={testim.verified === true}
+                    onChange={e => updateTestimonial(index, { verified: e.target.checked })}
+                  />
+                  Compra verificada
+                </label>
               </div>
             ))}
 
@@ -1360,11 +1394,20 @@ const VisualEditorPanel = () => {
                 if (!newSections[dynamicSectionIndex].settings.testimonials) {
                   newSections[dynamicSectionIndex].settings.testimonials = [];
                 }
-                newSections[dynamicSectionIndex].settings.testimonials.push({ author: 'Nuevo Autor', text: 'Me encantó este producto.', rating: 5 });
+                newSections[dynamicSectionIndex].settings.testimonials.push({ topic: '', author: 'Cliente de Walá', city: '', avatar: '', text: 'Escribe aquí una opinión real.', rating: 5, verified: false });
                 updateSectionsDraft(newSections);
               }}
               style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer'}}
             ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Testimonio</button>
+
+            <BackgroundStylesControl
+              settings={s}
+              onChange={(key, value) => {
+                const newSections = [...storeConfigDraft.sections];
+                newSections[dynamicSectionIndex].settings[key] = value;
+                updateSectionsDraft(newSections);
+              }}
+            />
           </div>
         );
       }

@@ -1,5 +1,5 @@
 .container {
-  padding: 1.35rem 0 1.55rem;
+  padding: 1.35rem 0 1.45rem;
   margin: 0 auto;
   max-width: 100%;
   background: #f8fafc;
@@ -7,21 +7,31 @@
   -webkit-font-smoothing: antialiased;
 }
 
+.headingRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto 0.85rem;
+  padding: 0 1.05rem;
+}
+
 .title {
-  text-align: center;
+  text-align: left;
   font-size: clamp(1.05rem, 4.2vw, 1.3rem);
   color: #0f1115;
-  margin: 0 1.1rem 0.25rem;
+  margin: 0 0 0.25rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.25;
 }
 
 .subtitle {
-  text-align: center;
+  text-align: left;
   font-size: 0.78rem;
   color: #6b7280;
-  margin: 0 1.1rem 0.9rem;
+  margin: 0;
   font-weight: 450;
   line-height: 1.4;
 }
@@ -37,6 +47,31 @@
   touch-action: pan-x;
   padding: 0.15rem 1.05rem 0.5rem;
   scrollbar-width: none;
+}
+
+.controls {
+  display: flex;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.controls button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dbe1ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.controls button:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary-color, #7c3aed);
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.1);
 }
 
 .track::-webkit-scrollbar {
@@ -72,6 +107,20 @@
   background: #e5e7eb;
   border: 2px solid #fff;
   box-shadow: 0 0 0 1px #e5e7eb;
+}
+
+.avatarFallback {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-color, #7c3aed), #4c1d95);
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, #7c3aed) 12%, transparent);
 }
 
 .meta {
@@ -132,16 +181,30 @@
   }
 
   .track {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    overflow: visible;
+    display: flex;
+    overflow-x: auto;
     gap: 1rem;
+    padding: 0.15rem 0.1rem 0.6rem;
+  }
+
+  .headingRow {
     padding: 0;
   }
 
   .card {
-    flex: none;
-    max-width: none;
+    flex: 0 0 calc((100% - 2rem) / 3);
+    max-width: calc((100% - 2rem) / 3);
+  }
+}
+
+@media (max-width: 768px) {
+  .headingRow {
+    align-items: center;
+    margin-bottom: 0.65rem;
+  }
+
+  .controls {
+    display: none;
   }
 }
 
