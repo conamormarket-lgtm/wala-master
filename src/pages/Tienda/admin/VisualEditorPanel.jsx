@@ -241,6 +241,120 @@ const MarqueeBrandItem = ({ item, itemIndex, onUpdate, onRemove }) => {
   );
 };
 
+/** Editor aislado de un slide del Carrusel Principal. Mantiene su propio estado
+ * de subida para que el resto del panel siga siendo editable mientras Storage
+ * procesa una imagen de escritorio o móvil. */
+const HeroCarouselSlideEditor = ({ slide, index, total, onUpdate, onRemove, onMove }) => {
+  const [uploading, setUploading] = React.useState('');
+  const [uploadError, setUploadError] = React.useState('');
+
+  const uploadImage = async (file, field) => {
+    if (!file) return;
+    setUploading(field);
+    setUploadError('');
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const { url, error } = await uploadFile(file, `storefront/hero-carousel/${Date.now()}_${safeName}`);
+      if (error || !url) throw new Error(error || 'No se pudo subir la imagen.');
+      onUpdate({ [field]: url });
+    } catch (error) {
+      setUploadError(error.message || 'No se pudo subir la imagen.');
+    } finally {
+      setUploading('');
+    }
+  };
+
+  const fieldStyle = { width: '100%', padding: '7px', marginBottom: '10px' };
+  const colorRow = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' };
+
+  return (
+    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', marginBottom: '12px', border: '1px solid #dbe3ee' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <strong>Slide {index + 1}</strong>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button type="button" onClick={() => onMove(-1)} disabled={index === 0} title="Mover arriba"><ChevronUp size={16} /></button>
+          <button type="button" onClick={() => onMove(1)} disabled={index === total - 1} title="Mover abajo"><ChevronDown size={16} /></button>
+          <button type="button" onClick={onRemove} title="Eliminar slide" style={{ color: '#dc2626' }}><Trash2 size={16} /></button>
+        </div>
+      </div>
+
+      <div style={{ height: '120px', borderRadius: '8px', overflow: 'hidden', background: '#e2e8f0', marginBottom: '12px', position: 'relative' }}>
+        {slide.imageUrl ? (
+          <img src={slide.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: slide.imagePosition || 'center center' }} />
+        ) : (
+          <div style={{ height: '100%', display: 'grid', placeItems: 'center', color: '#64748b', fontSize: '0.8rem' }}>Sin imagen de escritorio</div>
+        )}
+        {(slide.title || slide.subtitle) && (
+          <div style={{ position: 'absolute', inset: 0, padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: slide.contentPosition === 'right' ? 'flex-end' : slide.contentPosition === 'center' ? 'center' : 'flex-start', background: `rgba(15, 23, 42, ${(slide.overlayOpacity ?? 20) / 100})`, textAlign: slide.contentPosition || 'left' }}>
+            {slide.title && <strong style={{ color: slide.titleColor || '#fff', fontSize: '1rem' }}>{slide.title}</strong>}
+            {slide.subtitle && <span style={{ color: slide.subtitleColor || '#fff', fontSize: '0.7rem' }}>{slide.subtitle}</span>}
+          </div>
+        )}
+      </div>
+
+      <label>Imagen de escritorio</label>
+      <input type="file" accept="image/*" disabled={Boolean(uploading)} onChange={e => { uploadImage(e.target.files?.[0], 'imageUrl'); e.target.value = ''; }} style={{ ...fieldStyle, padding: 0 }} />
+      <input type="text" placeholder="O pega una URL de imagen" value={slide.imageUrl || ''} onChange={e => onUpdate({ imageUrl: e.target.value })} style={fieldStyle} />
+
+      <label>Imagen para celular (opcional)</label>
+      <input type="file" accept="image/*" disabled={Boolean(uploading)} onChange={e => { uploadImage(e.target.files?.[0], 'mobileImageUrl'); e.target.value = ''; }} style={{ ...fieldStyle, padding: 0 }} />
+      <input type="text" placeholder="Si está vacío se usará la imagen de escritorio" value={slide.mobileImageUrl || ''} onChange={e => onUpdate({ mobileImageUrl: e.target.value })} style={fieldStyle} />
+      {uploading && <p style={{ color: '#7c3aed', fontSize: '0.78rem', margin: '-4px 0 10px' }}>Subiendo imagen…</p>}
+      {uploadError && <p style={{ color: '#dc2626', fontSize: '0.78rem', margin: '-4px 0 10px' }}>{uploadError}</p>}
+
+      <label>Título</label>
+      <input type="text" value={slide.title || ''} onChange={e => onUpdate({ title: e.target.value })} style={fieldStyle} />
+      <label>Subtítulo</label>
+      <textarea value={slide.subtitle || ''} onChange={e => onUpdate({ subtitle: e.target.value })} style={{ ...fieldStyle, minHeight: '58px', resize: 'vertical' }} />
+
+      <div style={colorRow}>
+        <div>
+          <label>Posición del contenido</label>
+          <select value={slide.contentPosition || 'left'} onChange={e => onUpdate({ contentPosition: e.target.value })} style={fieldStyle}>
+            <option value="left">Izquierda</option><option value="center">Centro</option><option value="right">Derecha</option>
+          </select>
+        </div>
+        <div>
+          <label>Posición vertical</label>
+          <select value={slide.verticalPosition || 'center'} onChange={e => onUpdate({ verticalPosition: e.target.value })} style={fieldStyle}>
+            <option value="top">Arriba</option><option value="center">Centro</option><option value="bottom">Abajo</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Encuadre de la imagen</label>
+      <select value={slide.imagePosition || 'center center'} onChange={e => onUpdate({ imagePosition: e.target.value })} style={fieldStyle}>
+        <option value="left center">Izquierda</option><option value="center center">Centro</option><option value="right center">Derecha</option>
+        <option value="center top">Arriba</option><option value="center bottom">Abajo</option>
+      </select>
+
+      <div style={colorRow}>
+        <div><label>Color del título</label><input type="color" value={slide.titleColor || '#ffffff'} onChange={e => onUpdate({ titleColor: e.target.value })} style={{ width: '100%', height: '34px' }} /></div>
+        <div><label>Color del subtítulo</label><input type="color" value={slide.subtitleColor || '#ffffff'} onChange={e => onUpdate({ subtitleColor: e.target.value })} style={{ width: '100%', height: '34px' }} /></div>
+      </div>
+
+      <div style={colorRow}>
+        <div><label>Color de la capa</label><input type="color" value={slide.overlayColor || '#111827'} onChange={e => onUpdate({ overlayColor: e.target.value })} style={{ width: '100%', height: '34px' }} /></div>
+        <div><label>Opacidad ({slide.overlayOpacity ?? 20}%)</label><input type="range" min="0" max="80" value={slide.overlayOpacity ?? 20} onChange={e => onUpdate({ overlayOpacity: Number(e.target.value) })} style={{ width: '100%' }} /></div>
+      </div>
+
+      <label>Texto del botón</label>
+      <input type="text" placeholder="Ej: Explorar Walá" value={slide.buttonText || ''} onChange={e => onUpdate({ buttonText: e.target.value })} style={fieldStyle} />
+      <label>Enlace del botón</label>
+      <input type="text" placeholder="Ej: /tienda" value={slide.buttonLink || ''} onChange={e => onUpdate({ buttonLink: e.target.value })} style={fieldStyle} />
+      <div style={colorRow}>
+        <div><label>Fondo del botón</label><input type="color" value={slide.buttonBgColor || '#ffffff'} onChange={e => onUpdate({ buttonBgColor: e.target.value })} style={{ width: '100%', height: '34px' }} /></div>
+        <div><label>Texto del botón</label><input type="color" value={slide.buttonTextColor || '#111827'} onChange={e => onUpdate({ buttonTextColor: e.target.value })} style={{ width: '100%', height: '34px' }} /></div>
+      </div>
+
+      <label>Enlace de toda la imagen (opcional)</label>
+      <input type="text" placeholder="Ej: /Categorias" value={slide.link || ''} onChange={e => onUpdate({ link: e.target.value })} style={fieldStyle} />
+      <label>Texto alternativo (accesibilidad)</label>
+      <input type="text" value={slide.alt || ''} onChange={e => onUpdate({ alt: e.target.value })} style={{ ...fieldStyle, marginBottom: 0 }} />
+    </div>
+  );
+};
+
 const LandingPageSettingsBox = ({ slug }) => {
   const [lp, setLp] = React.useState(null);
   const { data: themes } = useQuery({
@@ -2635,6 +2749,16 @@ const VisualEditorPanel = () => {
 
       if (section.type === 'hero_carousel') {
         const s = section.settings || {};
+        const slides = s.slides || [];
+        const updateCarouselSetting = (key, value) => {
+          const newSections = [...storeConfigDraft.sections];
+          newSections[dynamicSectionIndex] = {
+            ...newSections[dynamicSectionIndex],
+            settings: { ...newSections[dynamicSectionIndex].settings, [key]: value }
+          };
+          updateSectionsDraft(newSections);
+        };
+        const updateSlides = (nextSlides) => updateCarouselSetting('slides', nextSlides);
         return (
           <div className={styles.formGroup}>
             <button className={styles.backBtn} onClick={() => closeEditor()}>
@@ -2644,83 +2768,74 @@ const VisualEditorPanel = () => {
               Editando: Carrusel Principal (Slider)
             </h4>
 
-            <label>Velocidad de Autoplay (ms)</label>
-            <input 
-              type="number" 
-              value={s.autoPlaySpeed || 5000} 
-              onChange={e => {
-                const newSections = [...storeConfigDraft.sections];
-                newSections[dynamicSectionIndex].settings.autoPlaySpeed = Number(e.target.value);
-                updateSectionsDraft(newSections);
-              }}
-              min="1000"
-              step="500"
-              style={{width: '100%', padding: '8px', marginBottom: '15px'}}
-            />
+            <p style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5, marginBottom: '15px' }}>
+              Usa este módulo cuando tengas varias campañas. Para una sola imagen con texto y botón, el módulo <strong>Banner Principal (Hero)</strong> es más sencillo.
+            </p>
 
-            <h5 style={{marginBottom: '10px', marginTop: '10px'}}>Slides</h5>
-            {(s.slides || []).map((slide, slideIndex) => (
-              <div key={slideIndex} style={{background: '#f9f9f9', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #eee'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
-                  <strong>Slide {slideIndex + 1}</strong>
-                  <button 
-                    onClick={() => {
-                      const newSections = [...storeConfigDraft.sections];
-                      newSections[dynamicSectionIndex].settings.slides.splice(slideIndex, 1);
-                      updateSectionsDraft(newSections);
-                    }}
-                    style={{background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '1.2rem'}}
-                  ><Trash2 size={16} strokeWidth={1.5} /></button>
-                </div>
-
-                <label>URL de la Imagen</label>
-                <input 
-                  type="text" 
-                  placeholder="https://..."
-                  value={slide.imageUrl || ''} 
-                  onChange={e => {
-                    const newSections = [...storeConfigDraft.sections];
-                    newSections[dynamicSectionIndex].settings.slides[slideIndex].imageUrl = e.target.value;
-                    updateSectionsDraft(newSections);
-                  }}
-                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
-                />
-
-                <label>Enlace de Destino (Opcional)</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej: /tienda"
-                  value={slide.link || ''} 
-                  onChange={e => {
-                    const newSections = [...storeConfigDraft.sections];
-                    newSections[dynamicSectionIndex].settings.slides[slideIndex].link = e.target.value;
-                    updateSectionsDraft(newSections);
-                  }}
-                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
-                />
-                
-                <label>Texto Alternativo (Alt)</label>
-                <input 
-                  type="text" 
-                  value={slide.alt || ''} 
-                  onChange={e => {
-                    const newSections = [...storeConfigDraft.sections];
-                    newSections[dynamicSectionIndex].settings.slides[slideIndex].alt = e.target.value;
-                    updateSectionsDraft(newSections);
-                  }}
-                  style={{width: '100%', padding: '6px', marginBottom: '10px'}}
-                />
+            <div style={{ padding: '12px', background: '#f1f5f9', border: '1px solid #dbe3ee', borderRadius: '10px', marginBottom: '16px' }}>
+              <h5 style={{ margin: '0 0 12px' }}>Comportamiento</h5>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <input type="checkbox" checked={s.autoPlay !== false} onChange={e => updateCarouselSetting('autoPlay', e.target.checked)} />
+                Reproducción automática
+              </label>
+              {s.autoPlay !== false && (
+                <>
+                  <label>Tiempo por slide (milisegundos)</label>
+                  <input type="number" value={s.autoPlaySpeed || 5000} onChange={e => updateCarouselSetting('autoPlaySpeed', Number(e.target.value))} min="2000" step="500" style={{width: '100%', padding: '8px', marginBottom: '10px'}} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <input type="checkbox" checked={s.pauseOnHover !== false} onChange={e => updateCarouselSetting('pauseOnHover', e.target.checked)} />
+                    Pausar al pasar el mouse
+                  </label>
+                </>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><input type="checkbox" checked={s.showArrows !== false} onChange={e => updateCarouselSetting('showArrows', e.target.checked)} /> Flechas</label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><input type="checkbox" checked={s.showDots !== false} onChange={e => updateCarouselSetting('showDots', e.target.checked)} /> Indicadores</label>
               </div>
+            </div>
+
+            <div style={{ padding: '12px', background: '#f1f5f9', border: '1px solid #dbe3ee', borderRadius: '10px', marginBottom: '16px' }}>
+              <h5 style={{ margin: '0 0 12px' }}>Tamaño y presentación</h5>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div><label>Altura escritorio</label><input type="text" value={s.heightDesktop || '450px'} onChange={e => updateCarouselSetting('heightDesktop', e.target.value)} placeholder="450px" style={{ width: '100%', padding: '7px', marginBottom: '10px' }} /></div>
+                <div><label>Altura celular</label><input type="text" value={s.heightMobile || '350px'} onChange={e => updateCarouselSetting('heightMobile', e.target.value)} placeholder="350px" style={{ width: '100%', padding: '7px', marginBottom: '10px' }} /></div>
+              </div>
+              <label>Redondeado</label>
+              <input type="text" value={s.borderRadius ?? '16px'} onChange={e => updateCarouselSetting('borderRadius', e.target.value)} placeholder="16px o 0" style={{ width: '100%', padding: '7px', marginBottom: '10px' }} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <input type="checkbox" checked={s.fullWidth === true} onChange={e => updateCarouselSetting('fullWidth', e.target.checked)} />
+                Ocupar todo el ancho de la ventana
+              </label>
+            </div>
+
+            <h5 style={{marginBottom: '10px', marginTop: '10px'}}>Contenido de los slides</h5>
+            {slides.map((slide, slideIndex) => (
+              <HeroCarouselSlideEditor
+                key={slide.id || slideIndex}
+                slide={slide}
+                index={slideIndex}
+                total={slides.length}
+                onUpdate={(updates) => updateSlides(slides.map((item, itemIndex) => itemIndex === slideIndex ? { ...item, ...updates } : item))}
+                onRemove={() => updateSlides(slides.filter((_, itemIndex) => itemIndex !== slideIndex))}
+                onMove={(direction) => {
+                  const target = slideIndex + direction;
+                  if (target < 0 || target >= slides.length) return;
+                  const next = [...slides];
+                  [next[slideIndex], next[target]] = [next[target], next[slideIndex]];
+                  updateSlides(next);
+                }}
+              />
             ))}
 
             <button 
               onClick={() => {
-                const newSections = [...storeConfigDraft.sections];
-                if (!newSections[dynamicSectionIndex].settings.slides) {
-                  newSections[dynamicSectionIndex].settings.slides = [];
-                }
-                newSections[dynamicSectionIndex].settings.slides.push({ imageUrl: '', link: '', alt: '' });
-                updateSectionsDraft(newSections);
+                updateSlides([...slides, {
+                  id: `slide_${Date.now()}`,
+                  imageUrl: '', mobileImageUrl: '', link: '', alt: '', title: '', subtitle: '',
+                  buttonText: '', buttonLink: '', contentPosition: 'left', verticalPosition: 'center',
+                  imagePosition: 'center center', titleColor: '#ffffff', subtitleColor: '#ffffff',
+                  buttonBgColor: '#ffffff', buttonTextColor: '#111827', overlayColor: '#111827', overlayOpacity: 20
+                }]);
               }}
               style={{width: '100%', border: '1px dashed #ccc', background: 'transparent', padding: '10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '15px'}}
             ><Plus size={16} strokeWidth={1.5} style={{marginRight: 6}} /> Añadir Slide</button>
@@ -2728,22 +2843,9 @@ const VisualEditorPanel = () => {
             <BackgroundStylesControl 
               settings={s} 
               onChange={(key, value) => {
-                const newSections = [...storeConfigDraft.sections];
-                newSections[dynamicSectionIndex].settings[key] = value;
-                updateSectionsDraft(newSections);
+                updateCarouselSetting(key, value);
               }} 
             />
-
-            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
-              <div style={{flex: 1}}>
-                <label>Padding Superior</label>
-                <input type="text" placeholder="Ej: 0rem" value={s.paddingTop || '0rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingTop = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
-              </div>
-              <div style={{flex: 1}}>
-                <label>Padding Inferior</label>
-                <input type="text" placeholder="Ej: 0rem" value={s.paddingBottom || '0rem'} onChange={e => { const newSections = [...storeConfigDraft.sections]; newSections[dynamicSectionIndex].settings.paddingBottom = e.target.value; updateSectionsDraft(newSections); }} style={{width: '100%', padding: '6px'}} />
-              </div>
-            </div>
           </div>
         );
       }

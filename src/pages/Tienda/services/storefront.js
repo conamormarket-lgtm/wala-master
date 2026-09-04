@@ -158,7 +158,39 @@ export function getDefaultSettings(type) {
       // Por mensaje: text/link ya existían; se añaden estilo por mensaje (aditivo, retrocompatible)
       return { messages: [{ text: 'Envío gratis a Lima', link: '', textAlign: '', underline: false, textBg: '' }], speed: 3000, bgColor: '#000000', textColor: '#ffffff' };
     case 'hero_carousel':
-      return { slides: [{ imageUrl: '', link: '', alt: '' }], autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '0rem', paddingBottom: '0rem' };
+      return {
+        slides: [{
+          imageUrl: '',
+          mobileImageUrl: '',
+          link: '',
+          alt: '',
+          title: '',
+          subtitle: '',
+          buttonText: '',
+          buttonLink: '',
+          contentPosition: 'left',
+          verticalPosition: 'center',
+          imagePosition: 'center center',
+          titleColor: '#ffffff',
+          subtitleColor: '#ffffff',
+          buttonBgColor: '#ffffff',
+          buttonTextColor: '#111827',
+          overlayColor: '#111827',
+          overlayOpacity: 20,
+        }],
+        autoPlay: true,
+        autoPlaySpeed: 5000,
+        pauseOnHover: true,
+        showArrows: true,
+        showDots: true,
+        heightDesktop: '450px',
+        heightMobile: '350px',
+        fullWidth: false,
+        borderRadius: '16px',
+        backgroundColor: 'transparent',
+        paddingTop: '0rem',
+        paddingBottom: '0rem'
+      };
     case 'trust_badges':
       return { badges: [{ icon: 'truck', text: 'Envío Rápido' }, { icon: 'shield', text: 'Pago Seguro' }], backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem' };
     case 'flash_sales':

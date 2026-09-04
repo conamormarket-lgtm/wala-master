@@ -981,9 +981,9 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         );
       case 'hero_carousel':
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
+          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', paddingLeft: s.fullWidth ? 0 : '4vw', paddingRight: s.fullWidth ? 0 : '4vw', overflow: 'hidden' }}>
              <SectionBackground config={s} />
-             <HeroCarousel slides={s.slides} autoPlaySpeed={s.autoPlaySpeed} />
+             <HeroCarousel config={s} slides={s.slides} autoPlaySpeed={s.autoPlaySpeed} />
           </section>
         );
       case 'flash_sales':
