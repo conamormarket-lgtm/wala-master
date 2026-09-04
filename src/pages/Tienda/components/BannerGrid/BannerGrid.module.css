@@ -118,6 +118,7 @@
 }
 
 .brandOutline {
+  min-height: 220px;
   color: #111827;
   background-color: #ffffff;
   background-image: none !important;
@@ -224,6 +225,16 @@
 
 .brandOutline .brandEyebrow {
   color: #7c3aed;
+}
+
+.brandOutline .brandVisual {
+  padding-top: 1.65rem;
+  padding-bottom: 1.45rem;
+}
+
+.brandOutline .brandCopy {
+  padding-top: 3.1rem;
+  padding-bottom: 1.1rem;
 }
 
 .brandOutline .brandCta {

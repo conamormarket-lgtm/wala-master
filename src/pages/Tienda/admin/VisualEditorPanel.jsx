@@ -2709,6 +2709,12 @@ const VisualEditorPanel = () => {
       if (section.type === 'category_grid') {
         const s = section.settings || {};
         const items = s.items || [];
+        const dataSource = s.dataSource || 'manual';
+        const setSetting = (key, value) => {
+          const newSections = [...storeConfigDraft.sections];
+          newSections[dynamicSectionIndex].settings[key] = value;
+          updateSectionsDraft(newSections);
+        };
         const setItems = (next) => {
           const newSections = [...storeConfigDraft.sections];
           newSections[dynamicSectionIndex].settings.items = next;
@@ -2721,8 +2727,27 @@ const VisualEditorPanel = () => {
             </button>
             <h4 style={{marginTop: '1rem', marginBottom: '1rem'}}>Editando: Cuadrícula de Categorías</h4>
             <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '1rem'}}>
-              Tiles con imagen + nombre que enlazan a cada categoría (filtra el catálogo de esta página).
+              Accesos visuales que filtran el catálogo de esta página. El modo automático solo muestra categorías con productos visibles.
             </p>
+
+            <label>Contenido</label>
+            <select
+              value={dataSource}
+              onChange={(event) => setSetting('dataSource', event.target.value)}
+              style={{width:'100%', padding:'8px', marginBottom:'12px'}}
+            >
+              <option value="products">Automático desde productos</option>
+              <option value="manual">Elegir categorías manualmente</option>
+            </select>
+
+            {dataSource === 'products' && (
+              <div style={{background:'rgba(124,58,237,0.08)', border:'1px solid #e5d9fb', borderRadius:8, padding:10, marginBottom:15}}>
+                <strong style={{display:'block', fontSize:'0.84rem', marginBottom:4}}>Sin mantenimiento manual</strong>
+                <span style={{fontSize:'0.76rem', color:'#64748b', lineHeight:1.45}}>
+                  Toma nombre, imagen y orden de Administración de Categorías. Si una categoría se queda sin productos visibles, se oculta sola.
+                </span>
+              </div>
+            )}
 
             <label>Título de la Sección</label>
             <input type="text" value={s.title || ''} onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.title=e.target.value; updateSectionsDraft(ns); }} style={{width:'100%', padding:'6px', marginBottom:'12px'}} />
@@ -2730,6 +2755,31 @@ const VisualEditorPanel = () => {
 
             <label>Columnas (escritorio)</label>
             <input type="number" min="2" max="6" value={s.columns || 4} onChange={e => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings.columns=Number(e.target.value); updateSectionsDraft(ns); }} style={{width:'100%', padding:'8px', marginBottom:'15px'}} />
+
+            {dataSource === 'products' && (
+              <>
+                <label>Máximo de categorías</label>
+                <input type="number" min="2" max="12" value={s.limit || 6} onChange={e => setSetting('limit', Number(e.target.value))} style={{width:'100%', padding:'8px', marginBottom:'12px'}} />
+
+                <label>Orden</label>
+                <select value={s.sortMode || 'admin'} onChange={e => setSetting('sortMode', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'12px'}}>
+                  <option value="admin">Orden de Administración</option>
+                  <option value="products">Más productos primero</option>
+                  <option value="alphabetical">Alfabético</option>
+                </select>
+
+                <label>Forma de las tarjetas</label>
+                <select value={s.cardStyle || 'compact'} onChange={e => setSetting('cardStyle', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'12px'}}>
+                  <option value="compact">Compactas (recomendado)</option>
+                  <option value="round">Circulares</option>
+                </select>
+
+                <label style={{display:'flex', alignItems:'center', gap:8, marginBottom:15, cursor:'pointer'}}>
+                  <input type="checkbox" checked={!!s.showProductCount} onChange={e => setSetting('showProductCount', e.target.checked)} />
+                  Mostrar cantidad de productos
+                </label>
+              </>
+            )}
 
             <div style={{background:'rgba(124,58,237,0.06)', border:'1px solid #e5d9fb', borderRadius:8, padding:10, marginBottom:15}}>
               <label style={{fontWeight:600}}>Color general de los cuadros</label>
@@ -2759,7 +2809,7 @@ const VisualEditorPanel = () => {
             </div>
 
             {/* Importar categorías existentes */}
-            {(selectableCategories || []).length > 0 && (
+            {dataSource === 'manual' && (selectableCategories || []).length > 0 && (
               <div style={{ background:'rgba(124,58,237,0.06)', border:'1px solid #e5d9fb', borderRadius:8, padding:10, marginBottom:15 }}>
                 <label style={{fontWeight:600}}>Añadir una categoría {pageBrandId ? '(de esta marca)' : ''}</label>
                 <select value="" onChange={e => {
@@ -2778,7 +2828,7 @@ const VisualEditorPanel = () => {
             )}
 
             {/* Lista de tiles */}
-            {items.map((it, i) => (
+            {dataSource === 'manual' && items.map((it, i) => (
               <div key={i} style={{border:'1px solid #eee', borderRadius:8, padding:10, marginBottom:10}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6}}>
                   <strong style={{fontSize:'0.85rem'}}>{it.name || 'Categoría'}</strong>
@@ -2811,7 +2861,7 @@ const VisualEditorPanel = () => {
                 </div>
               </div>
             ))}
-            {items.length === 0 && <p style={{fontSize:'0.85rem', color:'#888', fontStyle:'italic'}}>Aún no agregaste categorías.</p>}
+            {dataSource === 'manual' && items.length === 0 && <p style={{fontSize:'0.85rem', color:'#888', fontStyle:'italic'}}>Aún no agregaste categorías.</p>}
 
             <BackgroundStylesControl settings={s} onChange={(key, value) => { const ns=[...storeConfigDraft.sections]; ns[dynamicSectionIndex].settings[key]=value; updateSectionsDraft(ns); }} />
           </div>

@@ -318,6 +318,13 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     );
   }, [storeConfigDraft, storefrontConfig]);
 
+  const usesAutomaticCategoryGrid = useMemo(() => {
+    const sections = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+    return sections.some(
+      (section) => section?.type === 'category_grid' && section?.settings?.dataSource === 'products'
+    );
+  }, [storeConfigDraft, storefrontConfig]);
+
   const { data: automaticGridBrands = [] } = useQuery({
     queryKey: ['storefront-banner-grid-brands'],
     queryFn: async () => {
@@ -398,6 +405,21 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     const nav = secs.find((sec) => sec?.type === 'categories_nav' && conMarca(sec));
     return nav ? nav.settings.brandId.trim() : null;
   }, [storeConfigDraft, storefrontConfig, pageBrandIdOverride]);
+
+  // Fuente canónica de la cuadrícula automática. Se consulta aparte del catálogo
+  // paginado para que las categorías no desaparezcan al navegar o filtrar.
+  const { data: automaticCategoryProducts = [] } = useQuery({
+    queryKey: ['storefront-category-grid-products', pageBrandId || 'global'],
+    queryFn: async () => {
+      const result = pageBrandId
+        ? await getProductsByBrand(pageBrandId)
+        : await getProducts([], null, null);
+      if (result.error) throw new Error(result.error);
+      return result.data || [];
+    },
+    enabled: usesAutomaticCategoryGrid,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // ── IDENTIDAD DE MARCA (mensajes de tienda + indicador) ────────────
   // Doc completo de la marca de esta página (mismo pageBrandId de arriba). Se usa
@@ -1191,7 +1213,14 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'hidden' }}>
             <SectionBackground config={s} />
-            <CategoryGrid config={s} title={s.title} items={s.items} columns={s.columns} />
+            <CategoryGrid
+              config={s}
+              title={s.title}
+              items={s.items}
+              categories={categoriesData}
+              products={automaticCategoryProducts}
+              columns={s.columns}
+            />
           </section>
         );
       case 'banner_grid':

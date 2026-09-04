@@ -49,12 +49,12 @@
   .sidebar {
     width: 270px;
     max-width: none;
-    /* Columna de filtros completa: llega hasta el borde inferior útil de la
-       ventana y su contenido se recorre sin mover el catálogo. */
-    height: calc(100vh - 128px);
+    /* La columna crece solo lo que necesita. Si se abren muchos grupos, alcanza
+       el límite de la ventana y recién entonces activa su propio scroll. */
+    height: fit-content;
     position: sticky;
     top: 112px; /* Debajo del header y de la barra de administración */
-    max-height: none;
+    max-height: calc(100vh - 128px);
     overflow-y: auto;
     /* Al llegar al inicio o al final del panel, la rueda continúa desplazando
        la página en lugar de quedar atrapada sobre la columna de filtros. */
