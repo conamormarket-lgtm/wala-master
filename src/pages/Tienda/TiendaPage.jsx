@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
@@ -276,6 +276,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // página: al pulsar una burbuja se fija aquí y el sidebar filtra su catálogo
   // en CLIENTE por esa categoría (la marca sigue server-side). null = sin filtro.
   const [navCategoryId, setNavCategoryId] = useState(null);
+  const catalogSectionRef = useRef(null);
   const categoryId = searchParams.get('categoria');
   const isPreview = searchParams.has('t');
 
@@ -483,6 +484,18 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // cliente del sidebar (p.categories.map(idOf) / p.categoryId / p.category).
   const idOf = (c) => (c && typeof c === 'object') ? (c.id || c.slug || c.name || '') : c;
 
+  // Todas las burbujas comparten el mismo comportamiento: aplicar el filtro y
+  // llevar al usuario al catálogo. El scroll ocurre después de actualizar el
+  // estado para que el resultado filtrado ya esté listo al llegar.
+  const handleNavCategorySelect = useCallback((nextCategoryId) => {
+    setNavCategoryId(nextCategoryId || null);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        catalogSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }, []);
+
   // Mapa { brandId: categoryNav[] } para las marcas referenciadas por el nav.
   //
   // DOS FUENTES (override manual > AUTO-derivado):
@@ -518,6 +531,24 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           const style = styleOf(data);
           const manual = Array.isArray(data?.categoryNav) ? data.categoryNav : [];
 
+          // La navegación solo debe ofrecer destinos que realmente tengan al
+          // menos un producto visible en esta marca. getProductsByBrand ya
+          // excluye los productos ocultos.
+          const { data: products, error } = await getProductsByBrand(bid);
+          const visibleProducts = !error && Array.isArray(products) ? products : [];
+          const categoryIdsInUse = new Set();
+          visibleProducts.forEach((p) => {
+            const ids = [
+              ...(Array.isArray(p.categories) ? p.categories.map(idOf) : []),
+              p.categoryId,
+              p.category,
+            ];
+            ids.forEach((cid) => {
+              const clean = idOf(cid);
+              if (clean) categoryIdsInUse.add(clean);
+            });
+          });
+
           // (1) Override manual: si hay items, se usa con su orden del admin.
           if (manual.length > 0) {
             const sorted = [...manual]
@@ -531,28 +562,18 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
                   name: item?.name || category?.name || '',
                   imageUrl: item?.imageUrl || category?.imageUrl || '',
                 };
-              });
+              })
+              .filter((item) => item.categoryId && categoryIdsInUse.has(item.categoryId));
             return [bid, { items: sorted, style }];
           }
 
           // (2) AUTO-derivar desde los productos de la marca.
-          const { data: products, error } = await getProductsByBrand(bid);
           if (error || !Array.isArray(products)) return [bid, { items: [], style }];
 
           // Recolecta los ids de categoría DISTINTOS de los productos, con la misma
           // extracción que el filtro del sidebar (categories[] + legacy single).
           const seen = new Set();
-          products.forEach((p) => {
-            const ids = [
-              ...(Array.isArray(p.categories) ? p.categories.map(idOf) : []),
-              p.categoryId,
-              p.category,
-            ];
-            ids.forEach((cid) => {
-              const clean = idOf(cid);
-              if (clean) seen.add(clean);
-            });
-          });
+          categoryIdsInUse.forEach((cid) => seen.add(cid));
 
           // Mapea cada id a su categoría global (nombre + imagen). Descarta ids que
           // no existan en tienda_categories (categoría borrada o id huérfano).
@@ -838,7 +859,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             <VisualCategoryNav
               categories={navCategorias}
               activeCategory={navCategoryId}
-              onSelectCategory={setNavCategoryId}
+              onSelectCategory={handleNavCategorySelect}
               align={navStyle.align}
               animation={navStyle.animation}
             />
@@ -1220,7 +1241,17 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           emptyMessageShown = true;
         }
         return (
-          <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '0rem', paddingBottom: s.paddingBottom || '0rem', overflow: 'visible' }}>
+          <section
+            key={section.id}
+            ref={catalogSectionRef}
+            className={styles.sectionBlock}
+            style={{
+              paddingTop: s.paddingTop || '0rem',
+              paddingBottom: s.paddingBottom || '0rem',
+              overflow: 'visible',
+              scrollMarginTop: '7rem',
+            }}
+          >
             <SectionBackground config={s} />
             <SidebarCatalogLayout
               productsData={catalogProducts}
