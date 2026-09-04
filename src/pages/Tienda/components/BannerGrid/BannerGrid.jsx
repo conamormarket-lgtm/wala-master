@@ -106,15 +106,15 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
                   <span className={styles.brandFallback} aria-hidden="true">{initials(item.name)}</span>
                 )}
               </div>
-              {config.showBrandName !== false && (
-                <div className={styles.brandCopy}>
-                  <span className={styles.brandEyebrow}>Universo Walá</span>
+              <div className={styles.brandCopy}>
+                <span className={styles.brandEyebrow}>Universo Walá</span>
+                {config.showBrandName !== false && (
                   <h3 className={styles.brandName}>{item.name}</h3>
-                  <span className={styles.brandCta}>
-                    Explorar colección <span className={styles.brandArrow} aria-hidden="true">→</span>
-                  </span>
-                </div>
-              )}
+                )}
+                <span className={styles.brandCta}>
+                  Explorar colección <span className={styles.brandArrow} aria-hidden="true">→</span>
+                </span>
+              </div>
             </>
           );
           return renderLink(

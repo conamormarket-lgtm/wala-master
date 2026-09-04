@@ -118,7 +118,6 @@
 }
 
 .brandOutline {
-  grid-column: span 1;
   color: #111827;
   background-color: #ffffff;
   background-image: none !important;
