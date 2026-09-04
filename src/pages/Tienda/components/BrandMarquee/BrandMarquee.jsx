@@ -16,6 +16,18 @@ const BrandMarquee = ({ items = [], speed = 25, title = 'Empresas con las que tr
   const rawSpeed = Number(speed) || 25;
   const durationSec = Math.max(3, rawSpeed > 200 ? rawSpeed / 1000 : rawSpeed);
 
+  // Respeta el texto configurado, pero evita que configuraciones antiguas en
+  // MAYÚSCULAS se vean como un rótulo ajeno al sistema visual de la tienda.
+  const displayTitle = (() => {
+    const value = String(title || '').trim();
+    if (!value) return '';
+    if (value === value.toLocaleUpperCase('es-PE')) {
+      const lower = value.toLocaleLowerCase('es-PE');
+      return lower.charAt(0).toLocaleUpperCase('es-PE') + lower.slice(1);
+    }
+    return value;
+  })();
+
   // Cada mitad debe ser más ancha que una pantalla grande; con pocas marcas,
   // duplicar la lista solo una vez dejaba un hueco visible antes del reinicio.
   // Construimos dos mitades idénticas y suficientemente largas para conservar
@@ -84,10 +96,10 @@ const BrandMarquee = ({ items = [], speed = 25, title = 'Empresas con las que tr
       <AuroraBackground variant="subtle" className={styles.aurora} intensity={0.3} />
 
       {/* Título Estilo Píldora Gris (oculto si title es '' o null) */}
-      {title && (
+      {displayTitle && (
         <div className={styles.brandsTitle}>
           <span className={styles.brandsTitleSpan}>
-            {title}
+            {displayTitle}
           </span>
         </div>
       )}

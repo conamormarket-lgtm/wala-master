@@ -67,6 +67,8 @@ const SidebarCatalogLayout = ({
   const [activeTag, setActiveTag] = useState(null);
   const [activeCharacter, setActiveCharacter] = useState(null);
   const [activeType, setActiveType] = useState(null);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // ── Grupos desplegables (acordeón) del sidebar ─────────────────────────
@@ -151,7 +153,7 @@ const SidebarCatalogLayout = ({
   // ¿Hay algún filtro activo? (categoría, colección/temporada, marca, tipo, etiqueta, personaje)
   const hasActiveFilters = !!(
     activeCategory || activeCollection || activeBrand ||
-    activeType || activeTag || activeCharacter
+    activeType || activeTag || activeCharacter || minPrice !== '' || maxPrice !== ''
   );
 
   // Resetea TODOS los filtros a su estado inicial.
@@ -162,6 +164,8 @@ const SidebarCatalogLayout = ({
     setActiveType(null);
     setActiveTag(null);
     setActiveCharacter(null);
+    setMinPrice('');
+    setMaxPrice('');
     setIsMobileDrawerOpen(false);
   };
 
@@ -269,6 +273,27 @@ const SidebarCatalogLayout = ({
     ? allCollections.filter(c => !isSeasonCollection(c))
     : allCollections;
 
+  const getEffectivePrice = (product) => {
+    const regular = Number(product?.price) || 0;
+    const sale = Number(product?.salePrice) || 0;
+    return sale > 0 && (!regular || sale < regular) ? sale : regular;
+  };
+
+  const priceBounds = useMemo(() => {
+    const source = brandId && (brandProducts || []).length > 0
+      ? brandProducts
+      : (productsData || []);
+    const prices = source.map(getEffectivePrice).filter(price => price >= 0);
+    if (prices.length === 0) return { min: 0, max: 0 };
+    return {
+      min: Math.floor(Math.min(...prices)),
+      max: Math.ceil(Math.max(...prices)),
+    };
+  }, [brandId, brandProducts, productsData]);
+
+  const parsedMinPrice = minPrice === '' ? null : Number(minPrice);
+  const parsedMaxPrice = maxPrice === '' ? null : Number(maxPrice);
+
   const filteredProducts = (productsData || []).filter(p => {
     if (activeCategory && p.categoryId !== activeCategory && p.category !== activeCategory && !(p.categories || []).map(idOf).includes(activeCategory)) return false;
     if (activeCollection && !(p.collections || []).map(idOf).includes(activeCollection)) return false;
@@ -276,6 +301,9 @@ const SidebarCatalogLayout = ({
     if (activeTag && !(p.tags || []).map(idOf).includes(activeTag)) return false;
     if (activeCharacter && !(p.characters || []).map(idOf).includes(activeCharacter)) return false;
     if (activeType && idOf(p.productType) !== activeType) return false;
+    const effectivePrice = getEffectivePrice(p);
+    if (parsedMinPrice !== null && Number.isFinite(parsedMinPrice) && effectivePrice < parsedMinPrice) return false;
+    if (parsedMaxPrice !== null && Number.isFinite(parsedMaxPrice) && effectivePrice > parsedMaxPrice) return false;
     return true;
   });
 
@@ -406,6 +434,59 @@ const SidebarCatalogLayout = ({
               </ul>
             </GrupoSidebar>
           )}
+
+          <GrupoSidebar
+            id="precio"
+            titulo={t('cat.precio', 'Precio')}
+            forzarAbierto={minPrice !== '' || maxPrice !== ''}
+          >
+            <div className={styles.priceFilter}>
+              <div className={styles.priceInputs}>
+                <label className={styles.priceField}>
+                  <span>{t('cat.desde', 'Desde')}</span>
+                  <span className={styles.priceInputWrap}>
+                    <span aria-hidden="true">S/</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="1"
+                      value={minPrice}
+                      placeholder={String(priceBounds.min)}
+                      aria-label={t('cat.precioMinimo', 'Precio mínimo')}
+                      onChange={(e) => setMinPrice(e.target.value)}
+                    />
+                  </span>
+                </label>
+                <span className={styles.priceSeparator} aria-hidden="true">—</span>
+                <label className={styles.priceField}>
+                  <span>{t('cat.hasta', 'Hasta')}</span>
+                  <span className={styles.priceInputWrap}>
+                    <span aria-hidden="true">S/</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="1"
+                      value={maxPrice}
+                      placeholder={String(priceBounds.max)}
+                      aria-label={t('cat.precioMaximo', 'Precio máximo')}
+                      onChange={(e) => setMaxPrice(e.target.value)}
+                    />
+                  </span>
+                </label>
+              </div>
+              {(minPrice !== '' || maxPrice !== '') && (
+                <button
+                  type="button"
+                  className={styles.clearPriceBtn}
+                  onClick={() => { setMinPrice(''); setMaxPrice(''); }}
+                >
+                  {t('cat.quitarPrecio', 'Quitar rango')}
+                </button>
+              )}
+            </div>
+          </GrupoSidebar>
           
           {/* El filtro "Marcas" NO se muestra dentro de la tienda de UNA marca
               (brandId): ahí la página ya está fijada a esa marca. Solo aparece en
