@@ -49,11 +49,15 @@
   .sidebar {
     width: 270px;
     max-width: none;
-    height: auto;
+    /* Columna de filtros completa: llega hasta el borde inferior útil de la
+       ventana y su contenido se recorre sin mover el catálogo. */
+    height: calc(100vh - 128px);
     position: sticky;
     top: 112px; /* Debajo del header y de la barra de administración */
-    max-height: calc(100vh - 136px);
+    max-height: none;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     padding: 0.75rem;
     background-color: color-mix(in srgb, var(--blanco, #fff) 92%, transparent);
     border: 1px solid var(--gris-borde, #e5e7eb);
