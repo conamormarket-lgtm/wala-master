@@ -20,9 +20,11 @@
 /*
  * Variante por defecto: pensada como tira previa al hero (primera seccion de
  * la pagina), no como un aviso perdido a mitad de scroll. Un solo degradado
- * suave que nace del blanco del header y entrega al hero, sin marco propio
- * (por eso se quito el border-top: se veia como una "estampilla" flotando
- * entre el header y el hero en vez de sentirse parte continua de la pagina).
+ * suave que nace del blanco del header y entrega al hero, sin marco propio:
+ * ni border-top (se veia como una "estampilla" flotando entre el header y
+ * el hero) NI border-bottom (con el header fundiendose arriba sin linea,
+ * una raya solo abajo se veia coja/asimetrica). La transicion la hace el
+ * color solo, sin ninguna raya en ningun extremo.
  */
 .soft {
   color: color-mix(in srgb, var(--announcement-accent) 82%, #1e1b2e);
@@ -32,7 +34,6 @@
     color-mix(in srgb, var(--announcement-accent) 24%, #ffffff) 50%,
     color-mix(in srgb, var(--announcement-accent) 10%, #ffffff)
   );
-  border-bottom: 1px solid color-mix(in srgb, var(--announcement-accent) 22%, transparent);
 }
 
 .solid {
@@ -70,7 +71,6 @@
     color-mix(in srgb, var(--announcement-accent) 36%, var(--color-bg, #14121c)) 50%,
     color-mix(in srgb, var(--announcement-accent) 20%, var(--color-bg, #14121c))
   );
-  border-bottom-color: color-mix(in srgb, var(--announcement-accent) 32%, transparent);
 }
 
 [data-theme="dark"] .solid {
