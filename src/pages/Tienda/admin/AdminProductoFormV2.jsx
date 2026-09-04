@@ -188,6 +188,11 @@ const AdminProductoFormV2 = () => {
     return !form.brandId || tagBrandIds.includes(form.brandId);
   }), [tags, form.brandId]);
 
+  const charactersForBrand = useMemo(() => (characters || []).filter((character) => {
+    const characterBrandIds = Array.isArray(character.brandIds) ? character.brandIds : [];
+    return !form.brandId || characterBrandIds.includes(form.brandId);
+  }), [characters, form.brandId]);
+
   // Si editamos un producto existente en DB
   const { data: productData, isLoading: loadingProduct } = useQuery({
     queryKey: ['admin-product', id],
@@ -1074,11 +1079,11 @@ const AdminProductoFormV2 = () => {
                   placeholder="Seleccionar o escribir..."
                   onChange={(val) => setForm(f => ({ ...f, characters: val.map(v => v.value) }))}
                   onCreateOption={async (inputValue) => {
-                    const res = await createCharacter({ name: inputValue });
+                    const res = await createCharacter({ name: inputValue, brandIds: form.brandId ? [form.brandId] : [] });
                     queryClient.invalidateQueries({ queryKey: ['admin-characters'] });
                     setForm(f => ({ ...f, characters: [...(f.characters || []), res.id] }));
                   }}
-                  options={characters?.map(c => ({ label: c.name, value: c.id })) || []}
+                  options={charactersForBrand.map(c => ({ label: c.name, value: c.id }))}
                   value={(form.characters || []).map(id => {
                     const char = characters?.find(c => c.id === id);
                     return char ? { label: char.name, value: id } : { label: id, value: id };
