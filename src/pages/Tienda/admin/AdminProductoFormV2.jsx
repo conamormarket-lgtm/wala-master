@@ -183,6 +183,11 @@ const AdminProductoFormV2 = () => {
     return !form.brandId || categoryBrandIds.includes(form.brandId);
   }), [categories, form.brandId]);
 
+  const collectionsForBrand = useMemo(() => (collections || []).filter((collection) => {
+    const collectionBrandIds = Array.isArray(collection.brandIds) ? collection.brandIds : [];
+    return !form.brandId || collectionBrandIds.includes(form.brandId);
+  }), [collections, form.brandId]);
+
   const tagsForBrand = useMemo(() => (tags || []).filter((tag) => {
     const tagBrandIds = Array.isArray(tag.brandIds) ? tag.brandIds : [];
     return !form.brandId || tagBrandIds.includes(form.brandId);
@@ -1058,11 +1063,11 @@ const AdminProductoFormV2 = () => {
                   placeholder="Seleccionar o escribir..."
                   onChange={(val) => setForm(f => ({ ...f, collections: (val || []).map(v => v.value) }))}
                   onCreateOption={async (inputValue) => {
-                    const res = await createCollection({ name: inputValue });
+                    const res = await createCollection({ name: inputValue, brandIds: form.brandId ? [form.brandId] : [] });
                     queryClient.invalidateQueries({ queryKey: ['admin-collections'] });
                     setForm(f => ({ ...f, collections: [...(f.collections || []), res.id] }));
                   }}
-                  options={collections?.map(c => ({ label: c.name, value: c.id })) || []}
+                  options={collectionsForBrand.map(c => ({ label: c.name, value: c.id }))}
                   value={(form.collections || []).map(id => {
                     const col = collections?.find(c => c.id === id);
                     return col ? { label: col.name, value: id } : { label: id, value: id };

@@ -24,7 +24,8 @@ export const createCollection = async (data) => {
   return await createDocument(COLLECTION, {
     name: data.name || '',
     imageUrl: data.imageUrl || '',
-    order: typeof data.order === 'number' ? data.order : 0
+    order: typeof data.order === 'number' ? data.order : 0,
+    brandIds: Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : []
   });
 };
 
@@ -38,6 +39,9 @@ export const updateCollection = async (id, data) => {
   if (data.name !== undefined) payload.name = data.name;
   if (data.imageUrl !== undefined) payload.imageUrl = data.imageUrl;
   if (data.order !== undefined) payload.order = data.order;
+  if (data.brandIds !== undefined) {
+    payload.brandIds = Array.isArray(data.brandIds) ? data.brandIds.filter(Boolean) : [];
+  }
   return await updateDocument(COLLECTION, id, payload);
 };
 
