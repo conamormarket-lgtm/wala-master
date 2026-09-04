@@ -470,7 +470,10 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // categoriesData llega/cambia, el nav AUTO-derivado se recalcula y mapea ids a
   // nombre/imagen. Sin esto el queryFn capturaría un mapa vacío en el primer render.
   const categoriesSignature = useMemo(
-    () => Array.from(categoriesById.keys()).sort().join(','),
+    () => Array.from(categoriesById.values())
+      .map((cat) => `${cat.id}:${cat.name || ''}:${cat.imageUrl || ''}:${cat.order ?? 0}`)
+      .sort()
+      .join('|'),
     [categoriesById]
   );
 
@@ -517,7 +520,18 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
 
           // (1) Override manual: si hay items, se usa con su orden del admin.
           if (manual.length > 0) {
-            const sorted = [...manual].sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
+            const sorted = [...manual]
+              .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
+              .map((item) => {
+                const categoryId = idOf(item?.categoryId);
+                const category = categoriesById.get(categoryId);
+                return {
+                  ...item,
+                  categoryId,
+                  name: item?.name || category?.name || '',
+                  imageUrl: item?.imageUrl || category?.imageUrl || '',
+                };
+              });
             return [bid, { items: sorted, style }];
           }
 

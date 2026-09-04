@@ -5,6 +5,8 @@
 
 .editor {
   width: 100%;
+  min-width: 0;
+  container-type: inline-size;
 }
 
 .btnInline {
@@ -350,6 +352,12 @@
   color: #111;
 }
 
+.inheritBtn:disabled {
+  opacity: 0.62;
+  cursor: default;
+  background: #f8f9fa;
+}
+
 .navRemoveBtn {
   display: inline-flex;
   align-items: center;
@@ -458,6 +466,78 @@
   .navFields {
     flex-basis: 100%;
     order: 3;
+  }
+}
+
+/* El editor también vive en el panel lateral del builder. Ahí el viewport sigue
+   siendo de escritorio, por eso la adaptación debe responder al contenedor. */
+@container (max-width: 520px) {
+  .toolbar,
+  .sectionHead {
+    gap: 0.7rem;
+  }
+
+  .toolbarBtns {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .toolbarBtns > *,
+  .ghostBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .section {
+    padding: 0.9rem;
+    border-radius: 14px;
+    margin-bottom: 1rem;
+  }
+
+  .segmented {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .segBtn {
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 0.55rem;
+  }
+
+  .segText {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .navRow {
+    display: grid;
+    grid-template-columns: 28px 56px minmax(0, 1fr) 38px;
+    gap: 0.65rem;
+    padding: 0.75rem;
+  }
+
+  .navFields {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .navRemoveBtn {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .inheritBtn,
+  .catAddBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .addRow .select {
+    min-width: 0;
+    flex-basis: 100%;
   }
 }
 

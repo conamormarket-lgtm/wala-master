@@ -73,6 +73,17 @@ const ALIGN_OPTIONS = [
   { value: 'justify', label: 'Justificado', Icon: AlignJustify },
 ];
 
+const categoryIdOf = (value) => {
+  if (!value) return '';
+  if (typeof value === 'object') {
+    return value.id || value.categoryId || value.slug || value.name || '';
+  }
+  return value;
+};
+
+const categoryImageOf = (category) =>
+  category?.imageUrl || category?.thumbnailUrl || category?.image || category?.thumbnail || '';
+
 const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
   const queryClient = useQueryClient();
 
@@ -128,14 +139,20 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
 
   // Hidrata el estado editable cuando llega el nav guardado de la marca.
   useEffect(() => {
+    if (!brandDoc || loadingCats) return;
+
     if (brandDoc && Array.isArray(brandDoc.categoryNav)) {
       const ordered = [...brandDoc.categoryNav]
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((it) => ({
-          categoryId: it.categoryId || '',
-          name: it.name || '',
-          imageUrl: it.imageUrl || '',
-        }));
+        .map((it) => {
+          const categoryId = categoryIdOf(it.categoryId);
+          const category = catById.get(categoryId);
+          return {
+            categoryId,
+            name: it.name || category?.name || '',
+            imageUrl: it.imageUrl || categoryImageOf(category),
+          };
+        });
       setItems(ordered);
     } else if (brandDoc) {
       setItems([]);
@@ -152,7 +169,7 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
           : DEFAULT_NAV_STYLE.animation,
       });
     }
-  }, [brandDoc]);
+  }, [brandDoc, loadingCats, catById]);
 
   // Feedback efímero con auto-limpieza.
   const flash = (type, text) => {
@@ -216,7 +233,7 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
         if (i !== index) return it;
         const cat = catById.get(categoryId);
         const inheritedName = it.name || cat?.name || '';
-        const inheritedImg = it.imageUrl || cat?.imageUrl || '';
+        const inheritedImg = it.imageUrl || categoryImageOf(cat);
         return { ...it, categoryId, name: inheritedName, imageUrl: inheritedImg };
       })
     );
@@ -229,13 +246,17 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
 
   // (c) MINIATURA · heredar la imagen de la categoría vinculada.
   const inheritThumb = (index) => {
+    const item = items[index];
+    const cat = catById.get(item?.categoryId);
+    const inheritedImage = categoryImageOf(cat);
+    if (!inheritedImage) {
+      flash('error', 'Esta categoría aún no tiene una imagen configurada en Categorías.');
+      return;
+    }
     setItems((prev) =>
-      prev.map((it, i) => {
-        if (i !== index) return it;
-        const cat = catById.get(it.categoryId);
-        return { ...it, imageUrl: cat?.imageUrl || '' };
-      })
+      prev.map((it, i) => (i === index ? { ...it, imageUrl: inheritedImage } : it))
     );
+    flash('ok', 'Imagen heredada. Pulsa “Guardar nav” para conservar el cambio.');
   };
 
   // Agrega una burbuja desde una categoría disponible (hereda nombre + imagen).
@@ -244,7 +265,7 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
     if (!cat) return;
     setItems((prev) => [
       ...prev,
-      { categoryId: cat.id, name: cat.name || '', imageUrl: cat.imageUrl || '' },
+      { categoryId: cat.id, name: cat.name || '', imageUrl: categoryImageOf(cat) },
     ]);
     setPickToAdd('');
   };
@@ -276,12 +297,18 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
       return data || [];
     },
     onSuccess: (products) => {
-      // Categorías distintas presentes en los productos de la marca, en orden de
-      // aparición. `categories` ya viene normalizado como array de IDs string.
+      // Categorías distintas presentes en los productos de la marca. Admite tanto
+      // el array actual como los campos legacy usados por productos antiguos.
       const seen = new Set();
       const orderedIds = [];
       (products || []).forEach((p) => {
-        (Array.isArray(p.categories) ? p.categories : []).forEach((cid) => {
+        const productCategories = [
+          ...(Array.isArray(p.categories) ? p.categories : []),
+          p.categoryId,
+          p.category,
+        ];
+        productCategories.forEach((rawCategory) => {
+          const cid = categoryIdOf(rawCategory);
           if (cid && !seen.has(cid)) {
             seen.add(cid);
             orderedIds.push(cid);
@@ -294,7 +321,7 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
         .filter((cid) => catById.has(cid))
         .map((cid) => {
           const cat = catById.get(cid);
-          return { categoryId: cid, name: cat?.name || '', imageUrl: cat?.imageUrl || '' };
+          return { categoryId: cid, name: cat?.name || '', imageUrl: categoryImageOf(cat) };
         });
 
       setItems(generated);
@@ -505,7 +532,10 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
           <ul className={styles.navList}>
             {items.map((it, index) => {
               const cat = catById.get(it.categoryId);
-              const canInherit = Boolean(cat?.imageUrl) && it.imageUrl !== cat.imageUrl;
+              const categoryImage = categoryImageOf(cat);
+              const displayImage = it.imageUrl || categoryImage;
+              const hasCategoryImage = Boolean(categoryImage);
+              const canInherit = hasCategoryImage && it.imageUrl !== categoryImage;
               return (
                 <li key={`${it.categoryId || 'free'}-${index}`} className={styles.navRow}>
                   {/* Orden */}
@@ -532,8 +562,8 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
 
                   {/* (c) MINIATURA: subir/cambiar (recorte 1:1) */}
                   <label className={styles.navThumbWrap} title="Subir o cambiar miniatura">
-                    {it.imageUrl ? (
-                      <img src={it.imageUrl} alt={it.name} className={styles.navThumb} />
+                    {displayImage ? (
+                      <img src={displayImage} alt={it.name} className={styles.navThumb} />
                     ) : (
                       <div className={styles.navThumbEmpty}>
                         <ImagePlus size={20} opacity={0.5} />
@@ -584,14 +614,26 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
                     </label>
 
                     {/* (c) heredar imagen de la categoría */}
-                    {canInherit && (
+                    {cat && (
                       <button
                         type="button"
                         className={styles.inheritBtn}
                         onClick={() => inheritThumb(index)}
-                        title="Usar la miniatura de la categoría"
+                        disabled={!hasCategoryImage || !canInherit}
+                        title={
+                          hasCategoryImage
+                            ? canInherit
+                              ? 'Usar la miniatura de la categoría'
+                              : 'Esta burbuja ya usa la imagen de la categoría'
+                            : 'Primero agrega una imagen a esta categoría en el administrador'
+                        }
                       >
-                        <RefreshCw size={13} /> Heredar imagen de la categoría
+                        <RefreshCw size={13} />
+                        {hasCategoryImage
+                          ? canInherit
+                            ? 'Heredar imagen de la categoría'
+                            : 'Imagen de categoría aplicada'
+                          : 'Categoría sin imagen'}
                       </button>
                     )}
                   </div>
