@@ -124,6 +124,27 @@
   background: color-mix(in srgb, var(--primary-color, #7c3aed) 16%, white);
 }
 
+/*
+ * Antes la respuesta se montaba/desmontaba de golpe (isOpen && <div>...),
+ * sin transicion: el acordeon se sentia rigido y el contenido de abajo
+ * (footer incluido) saltaba de un frame a otro. Con el truco de
+ * grid-template-rows (0fr -> 1fr) la fila anima su alto sin medir nada por
+ * JS; .answerClip recorta el contenido mientras la fila crece/encoge.
+ */
+.answerWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.answerWrap.open {
+  grid-template-rows: 1fr;
+}
+
+.answerClip {
+  overflow: hidden;
+}
+
 .answer {
   padding: 0 1rem 1rem;
   font-size: 0.86rem;
@@ -173,4 +194,10 @@
 
 .answerInner {
   margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .answerWrap {
+    transition: none;
+  }
 }

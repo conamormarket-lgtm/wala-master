@@ -14,8 +14,13 @@ const FaqAccordion = ({ config = {} }) => {
       className={`${styles.root} ${config.layout === 'top' ? styles.topLayout : ''}`}
       style={{
         backgroundColor: config.backgroundColor || 'transparent',
-        paddingTop: config.paddingTop || '1rem',
-        paddingBottom: config.paddingBottom || '1rem'
+        // Solo se fija inline si el admin lo configuro explicitamente: un
+        // estilo inline SIEMPRE gana sobre la clase CSS, asi que forzar aqui
+        // un '1rem' por defecto tapaba el padding-top/bottom de .root
+        // (--section-gap) y la seccion quedaba pegada al footer sin que se
+        // notara por que. Sin valor configurado, manda el CSS del componente.
+        ...(config.paddingTop ? { paddingTop: config.paddingTop } : {}),
+        ...(config.paddingBottom ? { paddingBottom: config.paddingBottom } : {}),
       }}
     >
       <div className={styles.layout}>
@@ -43,9 +48,17 @@ const FaqAccordion = ({ config = {} }) => {
                   <span>{item.question}</span>
                   <span className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} aria-hidden="true">+</span>
                 </button>
-                {isOpen && item.answer && (
-                  <div id={answerId} className={styles.answer}>
-                    <p className={styles.answerInner}>{item.answer}</p>
+                {item.answer && (
+                  <div
+                    id={answerId}
+                    className={`${styles.answerWrap} ${isOpen ? styles.open : ''}`}
+                    aria-hidden={!isOpen}
+                  >
+                    <div className={styles.answerClip}>
+                      <div className={styles.answer}>
+                        <p className={styles.answerInner}>{item.answer}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
