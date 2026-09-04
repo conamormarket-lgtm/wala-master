@@ -2761,6 +2761,12 @@ const VisualEditorPanel = () => {
                 <label>Máximo de categorías</label>
                 <input type="number" min="2" max="12" value={s.limit || 6} onChange={e => setSetting('limit', Number(e.target.value))} style={{width:'100%', padding:'8px', marginBottom:'12px'}} />
 
+                <label>Imagen automática</label>
+                <select value={s.imageSource || 'product'} onChange={e => setSetting('imageSource', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'12px'}}>
+                  <option value="product">Producto activo (mejor calidad)</option>
+                  <option value="category">Imagen de la categoría</option>
+                </select>
+
                 <label>Orden</label>
                 <select value={s.sortMode || 'admin'} onChange={e => setSetting('sortMode', e.target.value)} style={{width:'100%', padding:'8px', marginBottom:'12px'}}>
                   <option value="admin">Orden de Administración</option>

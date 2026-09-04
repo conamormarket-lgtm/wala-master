@@ -140,7 +140,7 @@ export function getDefaultSettings(type) {
       return { title: '', categoryId: '', visibleItems: 5, autoPlay: false, autoPlaySpeed: 5000, backgroundColor: 'transparent', paddingTop: '2rem', paddingBottom: '2rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: '' };
     case 'category_grid':
-      return { title: '¿Qué estás buscando?', dataSource: 'products', items: [], columns: 6, limit: 6, sortMode: 'admin', cardStyle: 'compact', showProductCount: false, tileBackgroundColor: '', backgroundColor: 'transparent', paddingTop: '0.75rem', paddingBottom: '0.75rem',
+      return { title: '¿Qué estás buscando?', dataSource: 'products', imageSource: 'product', items: [], columns: 6, limit: 6, sortMode: 'admin', cardStyle: 'compact', showProductCount: false, tileBackgroundColor: '', backgroundColor: 'transparent', paddingTop: '0.75rem', paddingBottom: '0.75rem',
         titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '' };
     case 'banner_grid':
       return {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { TextoSeccion } from '../textStyleUtils.jsx';
-import { toThumbnailImageUrl, toDirectImageUrl } from '../../../../utils/imageUrl';
+import { ensureSingleImageUrl, toDirectImageUrl } from '../../../../utils/imageUrl';
 import styles from './CategoryGrid.module.css';
 
 /**
@@ -20,11 +20,20 @@ const idOf = (value) => {
   return value || '';
 };
 
+const productImageOf = (product) => ensureSingleImageUrl(
+  product?.mainImage
+  || product?.imageUrl
+  || product?.images?.[0]
+  || product?.variants?.find((variant) => variant?.imageUrl)?.imageUrl
+  || ''
+);
+
 const CategoryGrid = ({ title, config = {}, items = [], categories = [], products = [], columns = 4 }) => {
   const location = useLocation();
 
   const dataSource = config.dataSource || 'manual';
   const productCounts = new Map();
+  const productImages = new Map();
 
   if (dataSource === 'products') {
     (products || []).forEach((product) => {
@@ -37,6 +46,10 @@ const CategoryGrid = ({ title, config = {}, items = [], categories = [], product
 
       productCategories.forEach((categoryId) => {
         productCounts.set(categoryId, (productCounts.get(categoryId) || 0) + 1);
+        if (!productImages.has(categoryId)) {
+          const productImage = productImageOf(product);
+          if (productImage) productImages.set(categoryId, productImage);
+        }
       });
     });
   }
@@ -47,7 +60,9 @@ const CategoryGrid = ({ title, config = {}, items = [], categories = [], product
       .map((category) => ({
         categoryId: idOf(category),
         name: category.name || category.title || 'Categoría',
-        imageUrl: category.imageUrl || category.image || '',
+        imageUrl: (config.imageSource || 'product') === 'category'
+          ? category.imageUrl || category.image || productImages.get(idOf(category)) || ''
+          : productImages.get(idOf(category)) || category.imageUrl || category.image || '',
         order: Number(category.order) || 0,
         productCount: productCounts.get(idOf(category)) || 0,
       }))
@@ -75,13 +90,19 @@ const CategoryGrid = ({ title, config = {}, items = [], categories = [], product
         {title}
       </TextoSeccion>
 
-      <div className={styles.grid} style={{ '--cols': renderedCols }}>
+      <div
+        className={styles.grid}
+        style={{
+          '--cols': renderedCols,
+          '--grid-max': `${renderedCols * (config.cardStyle === 'round' ? 170 : 230) + Math.max(0, renderedCols - 1) * 14.4}px`
+        }}
+      >
         {valid.map((it, i) => {
-          const img = it.imageUrl ? toThumbnailImageUrl(it.imageUrl) : '';
+          const img = it.imageUrl ? toDirectImageUrl(it.imageUrl) : '';
           const to = `${location.pathname}?categoria=${encodeURIComponent(it.categoryId)}`;
           const tileBackgroundColor = it.backgroundColor || config?.tileBackgroundColor || '';
           const tileStyle = {
-            ...(img ? { backgroundImage: `url(${img}), url(${toDirectImageUrl(it.imageUrl)})` } : {}),
+            ...(img ? { backgroundImage: `url(${img})` } : {}),
             ...(tileBackgroundColor ? { backgroundColor: tileBackgroundColor } : {})
           };
           return (

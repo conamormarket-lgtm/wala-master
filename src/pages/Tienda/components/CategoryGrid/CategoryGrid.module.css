@@ -14,23 +14,27 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(var(--cols, 4), minmax(0, 190px));
+  width: 100%;
+  max-width: var(--grid-max, 980px);
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   justify-content: start;
   gap: 0.9rem;
 }
 
 .tile {
   display: block;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 18px;
   overflow: hidden;
   text-decoration: none;
-  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.07);
+  box-shadow: 0 7px 22px rgba(15, 23, 42, 0.1);
+  isolation: isolate;
+  transform: translateZ(0);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .tile:hover {
-  transform: translateY(-5px);
+  transform: translateY(-3px) translateZ(0);
   border-color: color-mix(in srgb, var(--primary-color, #7c3aed) 34%, transparent);
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.13);
 }
@@ -92,7 +96,7 @@
 }
 
 .roundStyle .grid {
-  grid-template-columns: repeat(var(--cols, 4), minmax(0, 150px));
+  max-width: var(--grid-max, 740px);
 }
 
 .roundStyle .tile {
