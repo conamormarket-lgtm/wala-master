@@ -3188,11 +3188,12 @@ const VisualEditorPanel = () => {
       ];
 
       const updateSettings = (patch) => {
-        setSections((prev) => prev.map((candidate) => (
+        const nextSections = storeConfigDraft.sections.map((candidate) => (
           candidate.id === section.id
             ? { ...candidate, settings: { ...(candidate.settings || {}), ...patch } }
             : candidate
-        )));
+        ));
+        updateSectionsDraft(nextSections);
       };
 
       const updateItem = (index, patch) => {
@@ -3213,7 +3214,7 @@ const VisualEditorPanel = () => {
 
       return (
         <div className={styles.editorForm}>
-          <button className={styles.backButton} onClick={() => setEditingId(null)}>
+          <button className={styles.backButton} onClick={() => closeEditor()}>
             <ArrowLeft size={16} /> Volver a los módulos
           </button>
           <h3>Editando: Preguntas frecuentes</h3>
