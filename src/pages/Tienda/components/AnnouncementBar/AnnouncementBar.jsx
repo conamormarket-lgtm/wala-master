@@ -1,12 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Truck, Sparkles, ShieldCheck, Heart } from 'lucide-react';
 import styles from './AnnouncementBar.module.css';
 
 /**
- * Barra de anuncios.
- * Mantiene TODOS los mensajes montados y solo oculta/muestra con CSS.
- * Evita remount + removeChild (conflicto con Google Translate / extensiones).
+ * Mensajes existentes (y los que un admin siga escribiendo así) llevan el
+ * emoji tecleado al inicio del texto, p.ej. "🚚 Envíos a todo el Perú". Un
+ * emoji dentro del texto se renderiza distinto según el sistema operativo del
+ * visitante y no puede tomar el color de marca — desentona con el resto del
+ * sitio, que usa íconos SVG (lucide) coloreados a mano.
+ *
+ * En vez de pedir reescribir el contenido, detectamos el emoji líder y lo
+ * reemplazamos por su ícono lucide equivalente (mismo color que el punto de
+ * acento). Un mensaje sin emoji reconocido sigue mostrando el punto de
+ * siempre: retrocompatible con cualquier mensaje nuevo o no mapeado.
  */
+const EMOJI_ICON_MAP = {
+  '🚚': Truck,
+  '✨': Sparkles,
+  '🔒': ShieldCheck,
+  '💜': Heart,
+};
+
+// Emoji (+ variation selector opcional) al inicio del texto, seguido de espacio(s).
+const LEADING_EMOJI_RE = /^(\p{Extended_Pictographic})️?\s+/u;
+
+const splitLeadingIcon = (text) => {
+  const match = LEADING_EMOJI_RE.exec(text || '');
+  const Icon = match ? EMOJI_ICON_MAP[match[1]] : null;
+  if (!Icon) return { Icon: null, rest: text };
+  return { Icon, rest: text.slice(match[0].length) };
+};
 const AnnouncementBar = ({
   config = {},
   messages = [],
@@ -57,12 +81,16 @@ const AnnouncementBar = ({
         : {}),
     };
 
+    const { Icon, rest } = splitLeadingIcon(msg.text);
+
     const content = (
       <div className={styles.messageContent} style={textStyle}>
         {msg.imageUrl ? (
           <img src={msg.imageUrl} alt="" className={styles.messageIcon} decoding="async" />
+        ) : Icon ? (
+          <Icon className={styles.messageLucideIcon} aria-hidden="true" size={14} strokeWidth={2.25} />
         ) : showAccent ? <span className={styles.accentDot} aria-hidden="true" /> : null}
-        <span style={Object.keys(spanStyle).length ? spanStyle : undefined}>{msg.text}</span>
+        <span style={Object.keys(spanStyle).length ? spanStyle : undefined}>{Icon ? rest : msg.text}</span>
         {msg.link ? <span className={styles.linkArrow} aria-hidden="true">→</span> : null}
       </div>
     );

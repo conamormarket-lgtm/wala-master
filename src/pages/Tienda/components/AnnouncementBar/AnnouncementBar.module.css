@@ -111,6 +111,16 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--announcement-accent) 12%, transparent);
 }
 
+.messageLucideIcon {
+  flex: 0 0 auto;
+  color: var(--announcement-accent);
+}
+
+.solid .messageLucideIcon,
+.dark .messageLucideIcon {
+  color: currentColor;
+}
+
 .solid .accentDot,
 .dark .accentDot {
   background: currentColor;

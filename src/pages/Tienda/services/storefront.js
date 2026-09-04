@@ -169,7 +169,7 @@ export function getDefaultSettings(type) {
     case 'announcement_bar':
       // Por mensaje: text/link ya existían; se añaden estilo por mensaje (aditivo, retrocompatible)
       return {
-        messages: [{ text: 'Envíos a todo el Perú', link: '', textAlign: '', underline: false, textBg: '' }],
+        messages: [{ text: '🚚 Envíos a todo el Perú', link: '', textAlign: '', underline: false, textBg: '' }],
         speed: 4000,
         bgColor: '#7c3aed',
         textColor: '#ffffff',
