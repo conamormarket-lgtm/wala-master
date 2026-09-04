@@ -71,12 +71,14 @@ const BrandMarquee = ({ items = [], speed = 25, title = 'Empresas con las que tr
       <>
         {/* Marco: la clase de forma aplica el clip-path correspondiente */}
         <div className={`${styles.logoCircle} ${shapeClass}`}>
+          {/* Los duplicados forman el bucle visible: deben estar listos antes
+              de entrar por cualquiera de los dos bordes de la ventana. */}
           <img
             src={item.imageUrl}
             alt={item.name}
             className={styles.brandImage}
             style={imageStyle}
-            loading="lazy"
+            loading="eager"
             decoding="async"
           />
         </div>

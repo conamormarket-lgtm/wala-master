@@ -21,7 +21,8 @@
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  /* Mantiene el recorte lateral sin romper los descendientes position:sticky. */
+  overflow-x: clip;
   font-size: 15px;
   line-height: 1.45;
   font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
