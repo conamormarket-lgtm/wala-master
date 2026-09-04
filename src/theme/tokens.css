@@ -185,6 +185,13 @@
      y esa inconsistencia es lo que hacia que unas filas se vieran "full
      width" y otras "encajonadas" al bajar por la pagina. */
   --content-max: 1280px;
+
+  /* Aire vertical ENTRE secciones del home. Los carruseles de producto y
+     categorias ya traian su propio margen; badges/testimonios/FAQ no traian
+     ninguno (dependian de un paddingTop/Bottom que el admin nunca configuro
+     y caia en 0), por eso se veian "pegados" unos a otros. Un solo valor
+     para que el respiro entre secciones sea el mismo en toda la pagina. */
+  --section-gap: clamp(1.5rem, 4vw, 2.5rem);
 }
 
 /* ═════════════════════════════════════════════════════════════════════════

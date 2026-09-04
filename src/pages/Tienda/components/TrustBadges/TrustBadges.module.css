@@ -5,6 +5,9 @@
   align-items: center;
   gap: 2rem;
   width: 100%;
+  /* padding-block (no margin): asi el propio bloque respira arriba/abajo sin
+     depender del paddingTop/Bottom de la seccion (que hoy nadie configura). */
+  padding-block: var(--section-gap, clamp(1.5rem, 4vw, 2.5rem));
 }
 
 .badge {
@@ -35,7 +38,7 @@
 @media (max-width: 768px) {
   .container {
     gap: 1rem;
-    padding: 0 0.5rem;
+    padding-inline: 0.5rem;
   }
   .badge {
     flex-basis: calc(50% - 0.5rem);

@@ -4,6 +4,12 @@
   margin: 0 auto;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
+  /* La seccion que envuelve este modulo fuerza padding:0 (ver 'faq_accordion'
+     en TiendaPage.jsx) para que el respiro lo controle el propio componente,
+     no el paddingTop/Bottom de la seccion (que hoy nadie configura y caia
+     en 0, pegando la FAQ contra los testimonios de arriba). */
+  padding-top: var(--section-gap, clamp(1.5rem, 4vw, 2.5rem));
+  padding-bottom: var(--section-gap, clamp(1.5rem, 4vw, 2.5rem));
   box-sizing: border-box;
 }
 
