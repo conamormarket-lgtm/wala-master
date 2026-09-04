@@ -347,6 +347,48 @@ export function getDefaultSettings(type) {
  * Obtener la configuración del storefront (secciones ordenadas).
  * Acepta un pageId. Si es 'home', busca también en 'storefront/config' por retrocompatibilidad.
  */
+const HOME_CATEGORY_GRID_MIGRATION = 1;
+
+function migrateHomeCategoryGrid(sections, pageId) {
+  const sorted = [...sections]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((section) => ({
+      ...section,
+      settings: { ...(section.settings || {}) }
+    }));
+
+  if (pageId !== 'home' || sorted.some((section) => section.type === 'category_grid')) {
+    return sorted;
+  }
+
+  const catalogIndex = sorted.findIndex((section) => section.type === 'sidebar_catalog');
+  if (catalogIndex < 0) return sorted;
+
+  const catalog = sorted[catalogIndex];
+  if (catalog.settings.homeCategoryGridMigration === HOME_CATEGORY_GRID_MIGRATION) {
+    return sorted;
+  }
+
+  // Esta marca viaja con el borrador. Si el usuario elimina después la cuadrícula
+  // y guarda, no se vuelve a crear en la siguiente carga del builder.
+  sorted[catalogIndex] = {
+    ...catalog,
+    settings: {
+      ...catalog.settings,
+      homeCategoryGridMigration: HOME_CATEGORY_GRID_MIGRATION
+    }
+  };
+
+  sorted.splice(catalogIndex, 0, {
+    id: 'section_home_auto_categories_v1',
+    type: 'category_grid',
+    order: catalogIndex,
+    settings: getDefaultSettings('category_grid')
+  });
+
+  return sorted.map((section, order) => ({ ...section, order }));
+}
+
 // eslint-disable-next-line no-unused-vars
 export async function getStorefrontConfig(pageId = 'home') {
   const collection = 'pages';
@@ -354,7 +396,7 @@ export async function getStorefrontConfig(pageId = 'home') {
   const { data, error } = await getDocument(collection, pageId);
   
   if (data?.sections && Array.isArray(data.sections)) {
-    return { sections: [...data.sections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)), error: null };
+    return { sections: migrateHomeCategoryGrid(data.sections, pageId), error: null };
   }
 
 // eslint-disable-next-line no-unused-vars
@@ -364,12 +406,12 @@ export async function getStorefrontConfig(pageId = 'home') {
     // eslint-disable-next-line no-unused-vars
     const { data: legacyData, error: legacyError } = await getDocument('storefront', 'config');
     if (legacyData?.sections && Array.isArray(legacyData.sections)) {
-      return { sections: [...legacyData.sections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)), error: null };
+      return { sections: migrateHomeCategoryGrid(legacyData.sections, pageId), error: null };
     }
   }
 
   // Si no hay nada, devuelve el default para esa página
-  return { sections: getDefaultSections(pageId), error: null };
+  return { sections: migrateHomeCategoryGrid(getDefaultSections(pageId), pageId), error: null };
 }
 
 /**
