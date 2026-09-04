@@ -1332,17 +1332,22 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           quedando EXACTO como hoy. */}
       {pageBrandId && pageBrandData?.name && (
         <div className={styles.brandActiveBar}>
-          {pageBrandData.logoUrl && (
-            <img
-              src={pageBrandData.logoUrl}
-              alt=""
-              aria-hidden="true"
-              className={styles.brandActiveBarLogo}
-            />
-          )}
-          <span className={styles.brandActiveBarLabel}>
-            <span className={styles.brandActiveBarName}>{pageBrandData.name}</span>
-          </span>
+          <div className={styles.brandActiveBarContent}>
+            {pageBrandData.logoUrl && (
+              <span className={styles.brandActiveBarLogoFrame}>
+                <img
+                  src={pageBrandData.logoUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className={styles.brandActiveBarLogo}
+                />
+              </span>
+            )}
+            <span className={styles.brandActiveBarLabel}>
+              <span className={styles.brandActiveBarEyebrow}>Estás en</span>
+              <span className={styles.brandActiveBarName}>{pageBrandData.name}</span>
+            </span>
+          </div>
         </div>
       )}
       {!isLandingPage && !categoryId && !searchTerm && <AppDownloadBanner />}
