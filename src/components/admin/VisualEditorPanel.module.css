@@ -166,6 +166,157 @@
   border-color: #e60278 !important;
 }
 
+/* Editor de preguntas frecuentes */
+.editorForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.editorForm h3 {
+  margin: 0.15rem 0 0;
+  font-size: 1rem;
+}
+
+.backButton {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  color: #a7a9ad !important;
+  cursor: pointer;
+}
+
+.backButton:hover {
+  color: #fff !important;
+}
+
+.fieldLabel {
+  margin: 0.2rem 0 -0.45rem;
+  color: #a7a9ad !important;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fieldHelp {
+  margin: -0.25rem 0 0;
+  color: #a7a9ad !important;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.textInput,
+.selectInput,
+.textArea {
+  width: 100%;
+}
+
+.textArea {
+  min-height: 92px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.twoCol > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.editorSectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.45rem;
+  padding-top: 1rem;
+  border-top: 1px solid #3e3f43 !important;
+}
+
+.editorSectionHeader > div {
+  min-width: 0;
+}
+
+.secondaryButton {
+  flex: 0 0 auto;
+  max-width: 150px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #55575e !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: #d9dadd !important;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.secondaryButton:hover {
+  border-color: #8b5cf6 !important;
+  color: #fff !important;
+}
+
+.repeaterList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.repeaterItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid #3e3f43 !important;
+  border-radius: 8px;
+  background: #282a2e;
+}
+
+.repeaterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.repeaterActions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.repeaterActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #4a4c51 !important;
+  border-radius: 4px !important;
+  background: #323337 !important;
+  color: #d9dadd !important;
+  cursor: pointer;
+}
+
+.repeaterActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.repeaterActions .deleteButton {
+  color: #fb7185 !important;
+}
+
 .footer {
   padding: 1rem 1.5rem;
   border-top: 1px solid #3e3f43 !important;

@@ -3161,7 +3161,194 @@ const VisualEditorPanel = () => {
         );
       }
 
-      if (section.type === 'trust_badges') {
+    if (section.type === 'faq_accordion') {
+      const settings = section.settings || {};
+      const items = Array.isArray(settings.items) ? settings.items : [];
+      const recommendedItems = [
+        {
+          id: 'faq_shipping',
+          question: '¿Realizan envíos a todo el Perú?',
+          answer: 'Sí. Atendemos pedidos para Lima y provincias. El costo y el plazo estimado se confirman según el destino antes de completar el pedido.',
+        },
+        {
+          id: 'faq_production',
+          question: '¿Cuánto demora la preparación de un producto personalizado?',
+          answer: 'El tiempo depende del producto, la cantidad y el diseño solicitado. Te confirmaremos el plazo de producción antes de comenzar tu pedido.',
+        },
+        {
+          id: 'faq_customization',
+          question: '¿Cómo puedo personalizar mi producto?',
+          answer: 'Puedes crear tu diseño desde Walá o comunicarte con nosotros para recibir orientación sobre imágenes, textos, colores y acabados.',
+        },
+        {
+          id: 'faq_changes',
+          question: '¿Puedo solicitar un cambio o una devolución?',
+          answer: 'Si tu pedido presenta un error o daño, comunícate con nosotros indicando tu número de pedido y adjuntando fotografías. Revisaremos el caso según nuestras políticas vigentes.',
+        },
+      ];
+
+      const updateSettings = (patch) => {
+        setSections((prev) => prev.map((candidate) => (
+          candidate.id === section.id
+            ? { ...candidate, settings: { ...(candidate.settings || {}), ...patch } }
+            : candidate
+        )));
+      };
+
+      const updateItem = (index, patch) => {
+        updateSettings({
+          items: items.map((item, itemIndex) => (
+            itemIndex === index ? { ...item, ...patch } : item
+          )),
+        });
+      };
+
+      const moveItem = (index, direction) => {
+        const destination = index + direction;
+        if (destination < 0 || destination >= items.length) return;
+        const nextItems = [...items];
+        [nextItems[index], nextItems[destination]] = [nextItems[destination], nextItems[index]];
+        updateSettings({ items: nextItems });
+      };
+
+      return (
+        <div className={styles.editorForm}>
+          <button className={styles.backButton} onClick={() => setEditingId(null)}>
+            <ArrowLeft size={16} /> Volver a los módulos
+          </button>
+          <h3>Editando: Preguntas frecuentes</h3>
+          <p className={styles.fieldHelp}>
+            Responde las dudas que suelen frenar una compra. Mantén entre 4 y 6 preguntas breves.
+          </p>
+
+          <label className={styles.fieldLabel}>Título de la sección</label>
+          <input
+            className={styles.textInput}
+            value={settings.title || ''}
+            onChange={(event) => updateSettings({ title: event.target.value })}
+            placeholder="Preguntas frecuentes"
+          />
+
+          <label className={styles.fieldLabel}>Texto de apoyo</label>
+          <input
+            className={styles.textInput}
+            value={settings.subtitle || ''}
+            onChange={(event) => updateSettings({ subtitle: event.target.value })}
+            placeholder="Resolvemos las dudas más comunes antes de tu compra."
+          />
+
+          <TextStyleControl
+            label="Estilo del título"
+            settings={settings}
+            prefix="title"
+            onChange={(key, value) => updateSettings({ [key]: value })}
+          />
+
+          <div className={styles.twoCol}>
+            <div>
+              <label className={styles.fieldLabel}>Distribución en escritorio</label>
+              <select
+                className={styles.selectInput}
+                value={settings.layout || 'split'}
+                onChange={(event) => updateSettings({ layout: event.target.value })}
+              >
+                <option value="split">Título al lado</option>
+                <option value="top">Título arriba</option>
+              </select>
+            </div>
+            <div>
+              <label className={styles.fieldLabel}>Estado inicial</label>
+              <select
+                className={styles.selectInput}
+                value={settings.defaultOpen ? 'first' : 'closed'}
+                onChange={(event) => updateSettings({ defaultOpen: event.target.value === 'first' })}
+              >
+                <option value="closed">Todo cerrado</option>
+                <option value="first">Primera abierta</option>
+              </select>
+            </div>
+          </div>
+
+          <div className={styles.editorSectionHeader}>
+            <div>
+              <strong>Preguntas ({items.length})</strong>
+              <p className={styles.fieldHelp}>Puedes editar, ordenar o eliminar cada respuesta.</p>
+            </div>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => {
+                if (items.length > 0 && !window.confirm('Esto reemplazará las preguntas actuales. ¿Deseas continuar?')) return;
+                updateSettings({ items: recommendedItems.map((item) => ({ ...item })) });
+              }}
+            >
+              Usar plantilla recomendada
+            </button>
+          </div>
+
+          <div className={styles.repeaterList}>
+            {items.map((item, index) => (
+              <div className={styles.repeaterItem} key={item.id || index}>
+                <div className={styles.repeaterHeader}>
+                  <strong>Pregunta {index + 1}</strong>
+                  <div className={styles.repeaterActions}>
+                    <button type="button" onClick={() => moveItem(index, -1)} disabled={index === 0} title="Subir">
+                      <ChevronUp size={16} />
+                    </button>
+                    <button type="button" onClick={() => moveItem(index, 1)} disabled={index === items.length - 1} title="Bajar">
+                      <ChevronDown size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.deleteButton}
+                      onClick={() => updateSettings({ items: items.filter((_, itemIndex) => itemIndex !== index) })}
+                      title="Eliminar"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+                <label className={styles.fieldLabel}>Pregunta</label>
+                <input
+                  className={styles.textInput}
+                  value={item.question || ''}
+                  onChange={(event) => updateItem(index, { question: event.target.value })}
+                  placeholder="Escribe la pregunta"
+                />
+                <label className={styles.fieldLabel}>Respuesta</label>
+                <textarea
+                  className={styles.textArea}
+                  rows={4}
+                  value={item.answer || ''}
+                  onChange={(event) => updateItem(index, { answer: event.target.value })}
+                  placeholder="Escribe una respuesta breve y clara"
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className={styles.addButton}
+            onClick={() => updateSettings({
+              items: [
+                ...items,
+                { id: `faq_${Date.now()}`, question: 'Nueva pregunta', answer: '' },
+              ],
+            })}
+          >
+            <Plus size={16} /> Añadir pregunta
+          </button>
+
+          <BackgroundStylesControl
+            settings={settings}
+            onChange={(key, value) => updateSettings({ [key]: value })}
+          />
+        </div>
+      );
+    }
+
+    if (section.type === 'trust_badges') {
         const s = section.settings || {};
         const availableIcons = ['truck', 'shield', 'clock', 'credit_card', 'return', 'heart', 'star', 'check'];
         return (

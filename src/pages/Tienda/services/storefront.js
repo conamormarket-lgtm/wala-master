@@ -252,14 +252,19 @@ export function getDefaultSettings(type) {
     case 'faq_accordion':
       return {
         title: 'Preguntas frecuentes',
+        subtitle: 'Resolvemos las dudas más comunes antes de tu compra.',
         items: [
-          { question: '¿De verdad pago al recibir?', answer: 'Sí. En Lima pagas cuando el courier te lo entrega.' },
-          { question: '¿Cuánto demora el envío?', answer: 'Lima: 24-48h · Provincia: 3-5 días hábiles.' },
+          { id: 'faq_shipping', question: '¿Realizan envíos a todo el Perú?', answer: 'Sí. Atendemos pedidos para Lima y provincias. El costo y el plazo estimado se confirman según el destino antes de completar el pedido.' },
+          { id: 'faq_production', question: '¿Cuánto demora la preparación de un producto personalizado?', answer: 'El tiempo depende del producto, la cantidad y el diseño solicitado. Te confirmaremos el plazo de producción antes de comenzar tu pedido.' },
+          { id: 'faq_customization', question: '¿Cómo puedo personalizar mi producto?', answer: 'Puedes crear tu diseño desde Walá o comunicarte con nosotros para recibir orientación sobre imágenes, textos, colores y acabados.' },
+          { id: 'faq_changes', question: '¿Puedo solicitar un cambio o una devolución?', answer: 'Si tu pedido presenta un error o daño, comunícate con nosotros indicando tu número de pedido y adjuntando fotografías. Revisaremos el caso según nuestras políticas vigentes.' },
         ],
-        defaultOpen: true,
-        backgroundColor: '#ffffff',
-        paddingTop: '0.5rem',
-        paddingBottom: '0.5rem',
+        defaultOpen: false,
+        layout: 'split',
+        backgroundColor: 'transparent',
+        paddingTop: '1rem',
+        paddingBottom: '1rem',
+        titleAlign: '', titleUnderline: false, titleBg: '', titleLink: ''
       };
     case 'feature_list':
       return {
