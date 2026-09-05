@@ -9,7 +9,16 @@
   font-size: 0.78rem;
   font-weight: 600;
   text-align: center;
-  z-index: 100;
+  /* Antes tenia el MISMO z-index (100) que el header sticky (Header.module.css).
+     .App/<main>/la <section> que envuelve esta barra no crean su propio
+     stacking context, asi que ambos competian en el mismo nivel — con
+     z-index empatado, gana el que va despues en el DOM (esta barra), asi
+     que al hacer scroll la barra podia pintarse ENCIMA del header pegado
+     arriba (tapando el logo/menu) durante la ventana en que ambos se
+     superponen geometricamente. Un z-index bajo, propio de esta seccion
+     (no necesita competir con nada global), resuelve la superposicion.
+     */
+  z-index: 1;
   overflow: hidden;
   position: relative;
   min-height: 34px;

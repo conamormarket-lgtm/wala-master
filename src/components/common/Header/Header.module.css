@@ -130,18 +130,32 @@
 .megaMenu {
   position: absolute;
   top: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(10px);
+  /*
+   * Antes: left:50% + translateX(-50%) centraba el panel bajo el CENTRO del
+   * link. Un panel de 250px+ centrado bajo una palabra de ~80-120px sobra
+   * por ambos lados — para "Tienda" (pegado al logo) eso hacia que el panel
+   * se corriera visualmente hacia el logo, sintiendose despegado/flotando
+   * en vez de "perteneciente" al link. Alineado a la izquierda del link
+   * (comportamiento estandar de dropdown) queda anclado de forma predecible
+   * sin importar donde esté el link en el nav.
+   */
+  left: 0;
   background-color: var(--blanco);
   min-width: 250px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  border-radius: 8px;
+  box-shadow: var(--sombra-media, 0 10px 25px rgba(0, 0, 0, 0.1));
+  border-radius: var(--radio-mediano, 16px);
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Antes margin-top:10px + translateY(10px->0) alejaba el panel del header
+     y lo animaba "cayendo" desde mas lejos — sumado al centrado, se veia
+     como una caja suelta flotando debajo. Ahora nace pegado (sin margen) y
+     solo se desliza unos px, sensacion de "abrirse desde el link" en vez
+     de aparecer separado. */
+  transform: translateY(4px);
+  transition: opacity 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.2s;
   border: 1px solid var(--gris-borde);
   z-index: 102;
-  margin-top: 10px; /* Un poco de separación del header */
+  margin-top: 2px;
 }
 
 /* Pseudo-elemento para cubrir el gap y evitar que el hover se pierda */
@@ -158,7 +172,7 @@
   .navItemWithDropdown:hover .megaMenu {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
 }
 
