@@ -203,6 +203,20 @@
   }
 }
 
+/* Abre con click/touch/teclado (activeDropdown en Header.jsx) ademas del
+   hover de arriba — el trigger ya no navega a ningun lado por si solo
+   (ver Header.jsx), asi que sin esto un dispositivo sin hover real
+   (tablet, teclado) no tendria ninguna forma de abrir el menu. */
+.navItemWithDropdown.navDropdownOpen .megaMenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.navItemWithDropdown.navDropdownOpen .navChevron {
+  transform: rotate(180deg);
+}
+
 .megaMenuContent {
   padding: 1.5rem;
 }

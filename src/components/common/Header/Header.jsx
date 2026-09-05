@@ -262,8 +262,12 @@ const Header = () => {
       if (mobileWalletRef.current && !mobileWalletRef.current.contains(e.target)) {
         setMobileWalletOpen(false);
       }
-      // Cerrar el dropdown activo en móviles/escritorio si se da clic afuera de un contenedor de dropdown
-      const isDropdownContainer = e.target.closest('.' + styles.accountDropdownContainer);
+      // Cerrar el dropdown activo (popups de cuenta/carrito O menus de nav
+      // tipo Tienda/Marcas, que ahora tambien usan activeDropdown) si el
+      // clic cae afuera de cualquiera de los dos contenedores.
+      const isDropdownContainer =
+        e.target.closest('.' + styles.accountDropdownContainer) ||
+        e.target.closest('.' + styles.navItemWithDropdown);
       if (!isDropdownContainer) {
         setActiveDropdown(null);
       }
@@ -376,25 +380,30 @@ const Header = () => {
               }
 
               if (link.type === 'dropdown') {
+                // Antes el trigger era un <NavLink> real: un clic directo (no solo
+                // pasar el mouse) navegaba de una al `url` de respaldo, saltandose
+                // el menu. Si esto es un MENU y no una pagina, no deberia llevar a
+                // ningun lado por si solo — solo "Ver Todo el Catálogo"/"Ver todas
+                // las marcas" (adentro del menu) navega de verdad. Se cambia a
+                // <button>: abre/cierra el menu (reutilizando activeDropdown, igual
+                // que los popups de cuenta/carrito), sin navegar. Sigue abriendose
+                // con hover en desktop (CSS) Y ahora TAMBIEN con click/touch/teclado
+                // (antes, sin hover real —tablet, teclado—, no habia forma de
+                // abrirlo: quedaba "escondido" detras de una navegacion directa).
+                const navKey = `nav-${link.id}`;
+                const isNavOpen = activeDropdown === navKey;
                 return (
-                  <div key={link.id} className={styles.navItemWithDropdown}>
-                    {/*
-                      * Sin isActive aqui (ni la clase .navLinkActive ni el color
-                      * violeta): un dropdown representa un MENU, no una pagina —
-                      * su `url` es solo el destino de respaldo si alguien le hace
-                      * clic directo (no un lugar que "estas viendo ahora"). Con
-                      * isActive, cualquier link cuyo url de respaldo coincidiera
-                      * con la pagina actual (p.ej. "Marcas" -> "/", que es el
-                      * inicio) se veia con la pildora blanca + texto violeta de
-                      * "seleccionado" con solo estar en el home — igual de
-                      * ambiguo que el color/negrita a mano que ya se habia
-                      * quitado antes. La flechita ya es señal suficiente de
-                      * "esto es un menu".
-                      */}
-                    <NavLink to={link.url || '#'} className={styles.navLink} end style={linkStyle}>
+                  <div key={link.id} className={`${styles.navItemWithDropdown} ${isNavOpen ? styles.navDropdownOpen : ''}`}>
+                    <button
+                      type="button"
+                      className={styles.navLink}
+                      style={linkStyle}
+                      onClick={() => setActiveDropdown((prev) => (prev === navKey ? null : navKey))}
+                      aria-expanded={isNavOpen}
+                    >
                       {translateNav(link.text)}
                       <ChevronDown size={14} strokeWidth={2} className={styles.navChevron} aria-hidden="true" />
-                    </NavLink>
+                    </button>
                     <div className={styles.megaMenu}>
                       <div className={styles.megaMenuContent}>
                         <h4>{translateNav(link.text)}</h4>
