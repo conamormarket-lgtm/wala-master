@@ -59,6 +59,70 @@ const getBrandClipPath = (shape) => BRAND_CLIP_PATHS[shape] || BRAND_CLIP_PATHS.
  * @param {(updates:object)=>void} props.onUpdate  Aplica cambios parciales al item
  * @param {()=>void} props.onRemove  Elimina esta marca
  */
+/**
+ * Campo de medio (imagen/gif/video) del Hero Banner con subida rápida a
+ * Storage + el input de URL de siempre como opción avanzada (no se borra:
+ * pegar un enlace externo sigue funcionando igual que antes). Es su propio
+ * componente (no un bloque inline en el `if (section.type === 'hero_banner')`)
+ * porque ese `if` es condicional dentro de la función de render — un
+ * useState ahí violaría las reglas de hooks. Mismo patrón que ya usan
+ * MarqueeBrandItem y HeroCarouselSlideEditor en este archivo.
+ *
+ * @param {string} mediaUrl URL actual guardada en el draft
+ * @param {(url:string)=>void} onChange Aplica la nueva URL (subida o pegada)
+ */
+const HeroBannerMediaUploader = ({ mediaUrl, onChange }) => {
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState('');
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // permite volver a elegir el mismo archivo despues
+    if (!file) return;
+    setIsUploading(true);
+    setUploadError('');
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `storefront/hero-banner/${Date.now()}_${safeName}`;
+      const { url, error } = await uploadFile(file, path);
+      if (error || !url) throw new Error(error || 'No se pudo subir el archivo.');
+      onChange(url);
+    } catch (err) {
+      setUploadError(err.message || 'No se pudo subir el archivo.');
+      console.error('[Hero Banner] Error subiendo medio:', err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <>
+      <label>Subir archivo (recomendado)</label>
+      <input
+        type="file"
+        accept="image/*,video/*"
+        disabled={isUploading}
+        onChange={handleFileChange}
+        style={{ width: '100%', marginBottom: '6px' }}
+      />
+      {isUploading && (
+        <div style={{ fontSize: '0.8rem', color: '#7c3aed', marginBottom: '8px' }}>Subiendo...</div>
+      )}
+      {uploadError && (
+        <div style={{ fontSize: '0.8rem', color: '#ff4444', marginBottom: '8px' }}>Error: {uploadError}</div>
+      )}
+
+      <label>URL del Medio (opción avanzada: pega un enlace)</label>
+      <input
+        type="text"
+        value={mediaUrl || ''}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ width: '100%', padding: '6px', marginBottom: '10px' }}
+      />
+    </>
+  );
+};
+
 const MarqueeBrandItem = ({ item, itemIndex, onUpdate, onRemove }) => {
   // Estado de subida propio de ESTA marca (no afecta a las demás)
   const [isUploading, setIsUploading] = React.useState(false);
@@ -2189,16 +2253,13 @@ const VisualEditorPanel = () => {
               <option value="video">Video (Autoplay)</option>
             </select>
             
-            <label>URL del Medio</label>
-            <input 
-              type="text" 
-              value={draft.mediaUrl || ''} 
-              onChange={e => {
+            <HeroBannerMediaUploader
+              mediaUrl={draft.mediaUrl}
+              onChange={(url) => {
                 const newSections = [...storeConfigDraft.sections];
-                newSections[dynamicSectionIndex].settings.mediaUrl = e.target.value;
+                newSections[dynamicSectionIndex].settings.mediaUrl = url;
                 updateSectionsDraft(newSections);
               }}
-              style={{width: '100%', padding: '6px', marginBottom: '10px'}}
             />
 
             <h5 style={{marginBottom: '5px'}}>Posicionamiento del Texto</h5>
@@ -3531,9 +3592,11 @@ const VisualEditorPanel = () => {
             <option value="video">Video (Autoplay)</option>
           </select>
           
-          <label>URL del Medio</label>
-          <input type="text" value={draft.mediaUrl || ''} onChange={e => updateDraft('heroBanner', { mediaUrl: e.target.value })} />
-          
+          <HeroBannerMediaUploader
+            mediaUrl={draft.mediaUrl}
+            onChange={(url) => updateDraft('heroBanner', { mediaUrl: url })}
+          />
+
           <label>Título</label>
           <input type="text" value={draft.title || ''} onChange={e => updateDraft('heroBanner', { title: e.target.value })} />
           
