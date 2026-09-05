@@ -418,8 +418,27 @@ const Header = () => {
                             </li>
                           ))}
 
+                          {/* Desplegable Automático: Marcas ("Universo Walá"). Mismo
+                              patron que isCategoryAuto pero para tienda_brands — el
+                              Header ya trae `brandsData` (lo usa para detectar
+                              brandActual), asi que no hace falta una query nueva.
+                              Sin filtro de brandActual: a diferencia de las categorias
+                              (que cruzan mercados via query param), un link a /<slug>
+                              es una pagina propia, navegar entre marcas es siempre valido. */}
+                          {link.isBrandAuto && brandsData?.filter(b => b?.name && b.active !== false && b.visible !== false).map(b => {
+                            const slug = String(b.slug || '').trim() || slugify(b.name);
+                            if (!slug) return null;
+                            return (
+                              <li key={`brand-${b.id || slug}`}>
+                                <Link to={`/${slug}`} onClick={() => setMobileMenuOpen(false)}>
+                                  {b.name}
+                                </Link>
+                              </li>
+                            );
+                          })}
+
                           {/* Enlaces Manuales */}
-                          {(!link.isCategoryAuto && !link.autoCollectionId) && link.dropdownLinks?.map(subLink => (
+                          {(!link.isCategoryAuto && !link.autoCollectionId && !link.isBrandAuto) && link.dropdownLinks?.map(subLink => (
                             <li key={subLink.id}>
                               <Link to={subLink.url || '#'} onClick={() => setMobileMenuOpen(false)}>
                                 {subLink.text}
@@ -433,6 +452,14 @@ const Header = () => {
                                   marca); fuera de marca, a /tienda (Con Amor) como hoy. */}
                               <Link to={brandActual ? `/${brandSlug}` : '/tienda'} onClick={() => setMobileMenuOpen(false)} style={{fontWeight: 'bold', color: 'var(--rojo-principal)'}}>
                                 Ver Todo el Catálogo →
+                              </Link>
+                            </li>
+                          )}
+
+                          {link.isBrandAuto && (
+                            <li>
+                              <Link to="/" onClick={() => setMobileMenuOpen(false)} style={{fontWeight: 'bold', color: 'var(--rojo-principal)'}}>
+                                Ver todas las marcas →
                               </Link>
                             </li>
                           )}
