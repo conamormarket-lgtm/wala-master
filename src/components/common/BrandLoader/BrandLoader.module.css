@@ -5,6 +5,8 @@
    tokens.css), asi que si el splash estatico de index.html (mismo
    degradado, ver ese archivo) sigue visible un instante mas mientras
    React monta, la transicion es invisible en vez de un salto de color.
+   La animacion (halo + flote del icono) vive en BrandLoader.jsx via
+   framer-motion; aqui solo el layout/tamaño/sombra estaticos.
    ═══════════════════════════════════════════════════════════════════════ */
 .loader {
   display: flex;
@@ -23,27 +25,29 @@
   min-height: 320px;
 }
 
+.markWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+}
+
+/* Halo que "respira" detras del icono (framer-motion anima scale/opacity).
+   Radial en vez de un circulo solido: se difumina en los bordes en vez de
+   cortar en seco, mas cerca de un resplandor que de un anillo duro. */
+.halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+}
+
 .mark {
+  position: relative;
   width: 64px;
   height: auto;
   filter: drop-shadow(0 8px 24px rgba(76, 29, 149, 0.35));
-  animation: brandLoaderPulse 1.8s var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)) infinite;
-}
-
-@keyframes brandLoaderPulse {
-  0%, 100% {
-    transform: scale(0.94);
-    opacity: 0.85;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mark {
-    animation: none;
-    opacity: 1;
-  }
 }
