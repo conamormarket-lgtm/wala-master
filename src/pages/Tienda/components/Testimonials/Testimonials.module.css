@@ -41,7 +41,11 @@
   gap: 0.7rem;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-snap-type: x mandatory;
+  /* proximity en vez de mandatory: "mandatory" fuerza el ajuste al punto de
+     snap incluso en medio de un arrastre lento (mouse/trackpad), lo que se
+     siente pegajoso/atascado. "proximity" solo ajusta cuando ya estas cerca
+     de una tarjeta, dejando el arrastre libre el resto del recorrido. */
+  scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   touch-action: pan-x;

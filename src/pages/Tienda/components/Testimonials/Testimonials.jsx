@@ -52,8 +52,21 @@ const Testimonials = ({ config, title, testimonials = [] }) => {
   const items = testimonials.map(normalizeTestimonial);
   const tituloEfectivo = s.title != null && s.title !== '' ? s.title : title;
   const bg = s.backgroundColor || undefined;
+  // Antes se desplazaba un valor fijo (340px) que no coincidia con el ancho
+  // REAL de una tarjeta (varia por breakpoint: 78% en movil, 1/3 o 1/4 del
+  // track en desktop). scroll-snap-align:center igual "correge" el destino
+  // al centro de la tarjeta mas cercana, pero si el salto pedido no era
+  // multiplo del ancho real, la flecha se sentia atascada/inconsistente
+  // (a veces avanzaba menos de una tarjeta, a veces mas de una). Medimos el
+  // ancho real de la primera tarjeta + el gap del track para avanzar
+  // SIEMPRE exactamente una tarjeta, sea cual sea el breakpoint activo.
   const scroll = (direction) => {
-    trackRef.current?.scrollBy({ left: direction * 340, behavior: 'smooth' });
+    const track = trackRef.current;
+    if (!track) return;
+    const firstCard = track.querySelector(`.${styles.card}`);
+    const gap = parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap) || 0;
+    const step = firstCard ? firstCard.getBoundingClientRect().width + gap : 340;
+    track.scrollBy({ left: direction * step, behavior: 'smooth' });
   };
 
   return (
