@@ -73,13 +73,23 @@ const AdminBar = () => {
         </div>
         <div className={styles.adminActions}>
           {isStorefront ? (
-            <button 
-              onClick={toggleEditMode} 
-              className={`${styles.editButton} ${isEditModeActive ? styles.activeEdit : ''}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              {isEditModeActive ? <><Save size={16} strokeWidth={1.5} /> Guardar / Salir</> : <><Eye size={16} strokeWidth={1.5} /> Activar Editor Visual</>}
-            </button>
+            <>
+              {/* Antes "Administración" vivia como link de texto en el nav
+                  publico del Header (visible para todos, aunque solo se
+                  renderizaba si isAdmin) — se quito de ahi para destrancar
+                  esa barra, y el acceso al panel completo vive aqui, en la
+                  franja que YA es exclusiva de admins. */}
+              <Link to="/admin" className={styles.dashboardLink}>
+                Panel
+              </Link>
+              <button
+                onClick={toggleEditMode}
+                className={`${styles.editButton} ${isEditModeActive ? styles.activeEdit : ''}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                {isEditModeActive ? <><Save size={16} strokeWidth={1.5} /> Guardar / Salir</> : <><Eye size={16} strokeWidth={1.5} /> Activar Editor Visual</>}
+              </button>
+            </>
           ) : (
             <Link to={editLink} className={styles.editButton} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Edit2 size={16} strokeWidth={1.5} /> {editText}

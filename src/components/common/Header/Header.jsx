@@ -44,7 +44,7 @@ const LANG_NAMES = { es: 'Español', en: 'English', pt: 'Português (Brasil)' };
 
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
-  const { user, userProfile, isAdmin, updateUserProfile, activeMainCoins } = useAuth();
+  const { user, userProfile, updateUserProfile, activeMainCoins } = useAuth();
   const navigate = useNavigate();
   const { wishlistItems } = useWishlist();
   const { lang, setLang, available, t } = useLanguage();
@@ -439,13 +439,12 @@ const Header = () => {
 
             <NavLink to="/minijuegos" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`} end>{t('nav.minijuegos', 'Minijuegos')}</NavLink>
 
-            {user && (
-              <NavLink to="/cuenta" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`}>{t('nav.cuenta', 'Mi cuenta')}</NavLink>
-            )}
-
-            {isAdmin && (
-              <NavLink to="/admin" className={navLinkClass} end>{t('nav.admin', 'Administración')}</NavLink>
-            )}
+            {/* "Mi cuenta" y "Administración" se quitan de aqui: son
+                redundantes con el icono de usuario (que ya lleva a /cuenta
+                con un popup de perfil) y con el acceso al panel que ahora
+                vive en la propia AdminBar (unicamente visible para admins,
+                en vez de mezclado con el nav publico). Menos texto repetido
+                en la barra, mismo destino a un clic de distancia. */}
           </nav>
         </EditableSection>
 
@@ -521,26 +520,55 @@ const Header = () => {
               comparte el contenedor .actions, que el CSS ya hace responsive. */}
           <ThemeToggle />
 
-          {/* Toggle de idioma: SOLO banderas SVG (España / EEUU / Brasil). Marca el activo. */}
-          <div className={styles.langToggle} role="group" aria-label="Idioma">
-            {available.map((code) => {
-              const name = LANG_NAMES[code] || code.toUpperCase();
-              return (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => setLang(code)}
-                  className={`${styles.langOption} ${lang === code ? styles.langOptionActive : ''}`}
-                  aria-pressed={lang === code}
-                  // El idioma se anuncia vía aria-label/title (la bandera es decorativa).
-                  aria-label={name}
-                  title={name}
-                >
-                  <FlagIcon code={code} size={22} />
-                </button>
-              );
-            })}
+          {/* Idioma: antes 3 banderas SIEMPRE visibles (España/EEUU/Brasil) —
+              con billeteras + tema + busqueda + cuenta + carrito ya en la
+              misma barra, sumaba a la sensacion de "relleno". Un solo boton
+              con la bandera ACTIVA que despliega las demas al abrir, mismo
+              patron hover/click (accountDropdownContainer + accountPopup)
+              que ya usan favoritos/cuenta/carrito — nada nuevo que aprender,
+              solo consistente con el resto de la barra. */}
+          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'idioma' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'idioma' ? styles.forceHideHover : ''}`}>
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={(e) => handleMobileDropdownClick(e, 'idioma')}
+              aria-label={`Idioma: ${LANG_NAMES[lang] || lang}`}
+            >
+              <FlagIcon code={lang} size={22} />
+            </button>
+
+            <div className={`${styles.accountPopup} ${styles.langPopupWidth} ${styles.mobileCenteredPopup}`}>
+              <div className={styles.accountPopupContent} style={{ padding: '0.6rem', textAlign: 'left' }}>
+                <ul className={styles.langMenu} role="listbox" aria-label="Elegir idioma">
+                  {available.map((code) => {
+                    const name = LANG_NAMES[code] || code.toUpperCase();
+                    return (
+                      <li key={code} role="presentation">
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={lang === code}
+                          onClick={() => { setLang(code); closeDropdowns(); }}
+                          className={`${styles.langMenuOption} ${lang === code ? styles.langMenuOptionActive : ''}`}
+                        >
+                          <FlagIcon code={code} size={20} />
+                          <span>{name}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
           </div>
+
+          {/* Separador entre "preferencias" (billeteras/tema/idioma) y
+              "cuenta" (buscar/favoritos/notificaciones/perfil/carrito) — la
+              fila de iconos se leia como un bloque continuo sin agrupar;
+              esta linea sola ya da una lectura de "seccion". Decorativo:
+              oculto a lectores de pantalla y en movil (ahi el espacio ya
+              esta ajustado). */}
+          <span className={styles.actionsDivider} aria-hidden="true" />
 
           {/* Búsqueda consciente de marca (multimarca): en página de marca (brandActual)
               se agrega ?brand=<id de tienda_brands> para que SearchPage acote los
