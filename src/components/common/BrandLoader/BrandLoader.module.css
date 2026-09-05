@@ -5,15 +5,31 @@
    tokens.css), asi que si el splash estatico de index.html (mismo
    degradado, ver ese archivo) sigue visible un instante mas mientras
    React monta, la transicion es invisible en vez de un salto de color.
-   La animacion (halo + flote del icono) vive en BrandLoader.jsx via
-   framer-motion; aqui solo el layout/tamaño/sombra estaticos.
-   ═══════════════════════════════════════════════════════════════════════ */
+   Se le suman dos glows radiales suaves (mismo lenguaje que
+   --gradient-aurora) para que el fondo tenga algo de profundidad en vez
+   de leerse como un color plano — antes el icono quedaba "flotando solo"
+   en un rectangulo liso y se sentia vacio.
+   La animacion (halo + respiracion del icono/wordmark/barra) vive en
+   BrandLoader.jsx via framer-motion; aqui solo el layout/tamaño/sombra
+   estaticos. ═══════════════════════════════════════════════════════════ */
 .loader {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  background: var(--gradient-brand, linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%));
+  background:
+    radial-gradient(60% 55% at 18% 12%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 60%),
+    radial-gradient(55% 50% at 88% 92%, rgba(76, 29, 149, 0.35) 0%, rgba(76, 29, 149, 0) 60%),
+    var(--gradient-brand, linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%));
+  /* El contenedor real (#main-content-area) puede quedar momentaneamente mas
+     bajo que el alto natural del lockup — p.ej. a mitad de una transicion de
+     ruta, mientras el flex de App.css todavia no termina de expandirlo. Sin
+     esto el wordmark/barra quedaban cortados en ese instante. container-type
+     habilita la @container de abajo para ocultarlos si no entran, en vez de
+     recortarlos a la mitad. */
+  container-type: size;
+  container-name: brandLoader;
+  overflow: hidden;
 }
 
 /* Ocupa exactamente el alto de su contenedor (#main-content-area, ya
@@ -31,13 +47,27 @@
   min-height: 320px;
 }
 
+/* Lockup vertical: icono + wordmark + barra, todo centrado y con el
+   mismo aire entre piezas sin importar el tamaño del contenedor. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
 .markWrap {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 120px;
-  height: 120px;
+  width: 148px;
+  height: 148px;
+}
+
+.inline .markWrap {
+  width: 104px;
+  height: 104px;
 }
 
 /* Halo que "respira" detras del icono (framer-motion anima scale/opacity).
@@ -51,9 +81,78 @@
   pointer-events: none;
 }
 
+/* El icono ya no rota (se veia tembloroso, como un logo "juguete" en vez
+   de una marca calma) — solo respira en escala junto con el halo. Mas
+   grande que antes (88px vs 64px): a pantalla completa 64px se perdia. */
 .mark {
   position: relative;
-  width: 64px;
+  width: 88px;
   height: auto;
   filter: drop-shadow(0 8px 24px rgba(76, 29, 149, 0.35));
+}
+
+.inline .mark {
+  width: 60px;
+}
+
+/* Wordmark: mismo tratamiento del logotipo real del Header (mayusculas,
+   tracking ancho, muy bold) pero en blanco solido — negativo del texto
+   en degradado violeta que usa el logo sobre pagina clara. */
+.wordmark {
+  font-family: 'Poppins', 'Montserrat', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.1rem, 2.4vw, 1.4rem);
+  letter-spacing: 0.16em;
+  color: #ffffff;
+  text-transform: uppercase;
+  text-shadow: 0 2px 12px rgba(76, 29, 149, 0.35);
+}
+
+.inline .wordmark {
+  font-size: 1rem;
+  letter-spacing: 0.14em;
+}
+
+/* Pista de la barra de progreso indeterminada: un trazo fino, no un
+   spinner ni un porcentaje real (no hay progreso medible que mostrar),
+   solo la señal de "algo esta pasando" que el icono solo no comunicaba. */
+.progressTrack {
+  position: relative;
+  width: 132px;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.inline .progressTrack {
+  width: 96px;
+}
+
+.progressBar {
+  position: absolute;
+  inset: 0;
+  width: 36%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Reduced motion: sin barrido, un trazo estatico a medio llenar en vez de
+   una barra vacia (comunica "cargando" sin depender de movimiento). */
+.progressStatic {
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* Contenedor bajo (ver comentario en .loader): el wordmark y la barra se
+   ocultan y el icono solo queda perfectamente centrado, en vez de
+   recortarse a la mitad contra el borde del contenedor. */
+@container brandLoader (max-height: 200px) {
+  .wordmark,
+  .progressTrack {
+    display: none;
+  }
 }

@@ -76,24 +76,44 @@
     <noscript>Necesitas habilitar JavaScript para ejecutar esta aplicación.</noscript>
     <div id="root">
       <!-- Pantalla de carga mientras React carga — mismo diseño que BrandLoader.jsx
-           (isotipo del logo en blanco/violeta + el mismo degradado de marca), asi
+           (icono + halo + wordmark "WALA" + barra de progreso indeterminada,
+           sobre el mismo degradado de marca con un par de glows suaves), asi
            que cuando React monta y toma el relevo con su propio BrandLoader, la
-           transicion es invisible en vez de un salto de "fondo plano" a "con logo".
+           transicion es invisible en vez de un salto de un layout a otro.
            Inline (sin CSS module: esto pinta ANTES de que cargue ningun bundle). -->
-      <div id="app-loading" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#8B5CF6 0%,#5B21B6 100%);">
-        <svg viewBox="12 0 94 109" width="64" style="animation:appLoadingPulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite;filter:drop-shadow(0 8px 24px rgba(76,29,149,.35));" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z" fill="#FFFFFF" />
-          <circle cx="67" cy="23" r="6.5" fill="#4C1D95" />
-          <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#4C1D95" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+      <div id="app-loading" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(60% 55% at 18% 12%,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 60%),radial-gradient(55% 50% at 88% 92%,rgba(76,29,149,.35) 0%,rgba(76,29,149,0) 60%),linear-gradient(135deg,#8B5CF6 0%,#5B21B6 100%);">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:18px;">
+          <div style="position:relative;width:148px;height:148px;display:flex;align-items:center;justify-content:center;">
+            <span id="app-loading-halo" style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 70%);animation:appLoadingHalo 1.8s cubic-bezier(0.16,1,0.3,1) infinite;"></span>
+            <svg viewBox="12 0 94 109" width="88" style="position:relative;animation:appLoadingPulse 1.8s cubic-bezier(0.16,1,0.3,1) infinite;filter:drop-shadow(0 8px 24px rgba(76,29,149,.35));" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z" fill="#FFFFFF" />
+              <circle cx="67" cy="23" r="6.5" fill="#4C1D95" />
+              <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#4C1D95" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <span style="font-family:'Poppins','Montserrat',system-ui,sans-serif;font-weight:700;font-size:1.2rem;letter-spacing:.16em;color:#fff;text-transform:uppercase;text-shadow:0 2px 12px rgba(76,29,149,.35);">Walá</span>
+          <div style="position:relative;width:132px;height:4px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.22);">
+            <span id="app-loading-bar" style="position:absolute;inset:0;width:36%;border-radius:inherit;background:rgba(255,255,255,.95);animation:appLoadingSweep 1.3s ease-in-out infinite;"></span>
+          </div>
+        </div>
       </div>
       <style>
         @keyframes appLoadingPulse {
-          0%, 100% { transform: scale(0.94); opacity: 0.85; }
-          50% { transform: scale(1.05); opacity: 1; }
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        @keyframes appLoadingHalo {
+          0% { transform: scale(0.85); opacity: 0.55; }
+          100% { transform: scale(1.45); opacity: 0; }
+        }
+        @keyframes appLoadingSweep {
+          0% { transform: translateX(-120%); }
+          100% { transform: translateX(320%); }
         }
         @media (prefers-reduced-motion: reduce) {
-          #app-loading svg { animation: none !important; opacity: 1 !important; }
+          #app-loading svg, #app-loading-halo, #app-loading-bar { animation: none !important; }
+          #app-loading-halo { display: none; }
+          #app-loading-bar { width: 45%; opacity: .8; }
         }
       </style>
     </div>
