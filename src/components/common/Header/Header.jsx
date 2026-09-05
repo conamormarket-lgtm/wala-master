@@ -520,7 +520,7 @@ const Header = () => {
 
                   {/* Billetera Diaria (Kapi Coins) */}
                   <div className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer}`}>
-                    <div className={`${styles.coinsDisplay} ${isKapiBouncing ? styles.bounce : ''}`} style={{ backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' }}>
+                    <div className={`${styles.coinsDisplay} ${styles.coinsDisplayKapi} ${isKapiBouncing ? styles.bounce : ''}`}>
                       🍖 {displayKapiCoins}
                     </div>
                     <div className={styles.tooltipText}>

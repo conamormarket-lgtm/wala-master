@@ -657,6 +657,23 @@
   transform: scale(1.05);
 }
 
+/* Kapi Coins: antes un estilo inline (backgroundColor #fff3cd + border
+   #ffeeba) con MENOS contraste entre fondo/borde que Wala Coins (aca
+   arriba, rgba mismo tono a 0.1/0.3 — border claramente mas oscuro que el
+   fondo). Ese fondo casi blanco + borde solo un poco mas oscuro hacia que
+   ESTE si se notara y el de Wala Coins no — mismo tono, distinta "receta"
+   de contraste. Misma formula (0.1 fondo / 0.3 borde), tono dorado en vez
+   de naranja para diferenciarlos sin que uno se vea "mas marcado". */
+.coinsDisplayKapi {
+  background-color: rgba(217, 119, 6, 0.1);
+  color: var(--gold-700, #b45309);
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+.coinsDisplayKapi:hover {
+  background-color: rgba(217, 119, 6, 0.2);
+}
+
 .bounce {
   transform: scale(1.2);
   background-color: rgba(243, 156, 18, 0.3);
