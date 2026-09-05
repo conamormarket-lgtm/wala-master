@@ -110,6 +110,28 @@
   padding: 0.5rem 1rem;
   border-radius: var(--radio-grande);
   white-space: nowrap;
+  /* inline-flex: alinea prolijo el texto con el chevron de los links con
+     submenu (ChevronDown en Header.jsx); un link sin chevron se ve igual
+     que antes. */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Flecha de "tiene submenu". Color heredado (currentColor): sigue al link
+   en reposo/hover/activo sin logica propia, y gira al abrir el mega menu —
+   señal estandar e inequivoca, en vez de un color/negrita ambiguo con el
+   de "pagina activa". */
+.navChevron {
+  color: currentColor;
+  opacity: 0.6;
+  transition: transform 0.2s ease;
+}
+
+@media (hover: hover) {
+  .navItemWithDropdown:hover .navChevron {
+    transform: rotate(180deg);
+  }
 }
 
 .navLink:hover {

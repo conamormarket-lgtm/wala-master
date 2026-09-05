@@ -12,7 +12,7 @@ import { getDocument } from '../../../services/firebase/firestore';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
-import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
 import styles from './Header.module.css';
@@ -378,7 +378,15 @@ const Header = () => {
               if (link.type === 'dropdown') {
                 return (
                   <div key={link.id} className={styles.navItemWithDropdown}>
-                    <NavLink to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => getActiveStyle(isActive)}>{translateNav(link.text)}</NavLink>
+                    <NavLink to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => getActiveStyle(isActive)}>
+                      {translateNav(link.text)}
+                      {/* Antes la unica pista de "esto abre un submenu" era un
+                          color/negrita que el admin guardaba a mano por link —
+                          ambiguo con el color de "pagina activa" (mismo violeta),
+                          se leia como si estuviera seleccionado sin estarlo. Una
+                          flechita es la señal estandar e inequivoca de dropdown. */}
+                      <ChevronDown size={14} strokeWidth={2} className={styles.navChevron} aria-hidden="true" />
+                    </NavLink>
                     <div className={styles.megaMenu}>
                       <div className={styles.megaMenuContent}>
                         <h4>{translateNav(link.text)}</h4>
