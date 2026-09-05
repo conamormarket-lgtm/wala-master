@@ -7,6 +7,7 @@ import { useVisualEditor } from './contexts/VisualEditorContext';
 import TiendaPage from './TiendaPage';
 import { useAuth } from '../../contexts/AuthContext';
 import { KCHERO_SLUG, KCHERO_SLUG_LEGACY } from '../../constants/landingSlugs';
+import BrandLoader from '../../components/common/BrandLoader/BrandLoader';
 import './landing-mobile.css';
 
 const DynamicLandingPage = () => {
@@ -70,12 +71,12 @@ const DynamicLandingPage = () => {
   }
 
   // Mientras carga la landing NO mostramos el esqueleto del catálogo (PageLoading
-  // dibuja tarjetas de producto y parece la tienda). Un fondo oscuro neutro hace
-  // que la landing "aparezca de frente".
-  if (loading) return <div className="landing-page-boot" aria-busy="true" aria-label="Cargando" />;
+  // dibuja tarjetas de producto y parece la tienda). BrandLoader (mismo look que
+  // el resto del sistema) hace que la landing "aparezca de frente".
+  if (loading) return <BrandLoader />;
 
   if (!landingPage) {
-    if (authLoading) return <div className="landing-page-boot" aria-busy="true" />;
+    if (authLoading) return <BrandLoader />;
     // Landing pública no encontrada: a home si hay sesión; si no, home también
     // (no mandar a /login: las LP deben ser visibles sin cuenta).
     return <Navigate to="/" replace />;

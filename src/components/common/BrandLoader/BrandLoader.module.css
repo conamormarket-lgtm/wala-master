@@ -1,0 +1,49 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   BrandLoader — pantalla de carga estilizada (reemplaza los textos
+   sueltos "Cargando..." y el fondo oscuro/rojo de .landing-page-boot).
+   Mismo degradado de marca que el logo real (--gradient-brand en
+   tokens.css), asi que si el splash estatico de index.html (mismo
+   degradado, ver ese archivo) sigue visible un instante mas mientras
+   React monta, la transicion es invisible en vez de un salto de color.
+   ═══════════════════════════════════════════════════════════════════════ */
+.loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: var(--gradient-brand, linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%));
+}
+
+.fill {
+  min-height: 100dvh;
+  min-height: 100vh;
+}
+
+.inline {
+  min-height: 320px;
+}
+
+.mark {
+  width: 64px;
+  height: auto;
+  filter: drop-shadow(0 8px 24px rgba(76, 29, 149, 0.35));
+  animation: brandLoaderPulse 1.8s var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)) infinite;
+}
+
+@keyframes brandLoaderPulse {
+  0%, 100% {
+    transform: scale(0.94);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mark {
+    animation: none;
+    opacity: 1;
+  }
+}

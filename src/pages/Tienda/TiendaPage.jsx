@@ -50,6 +50,7 @@ import EditableSection from '../../components/admin/EditableSection';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 import AppDownloadBanner from './components/AppDownloadBanner';
 import { isKcheroLanding } from '../../constants/landingSlugs';
+import BrandLoader from '../../components/common/BrandLoader/BrandLoader';
 import styles from './TiendaPage.module.css';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
@@ -325,8 +326,15 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     );
   }, [storeConfigDraft, storefrontConfig]);
 
+  // queryKey ['brands']: MISMA clave que usa Header.jsx (menu "Marcas"),
+  // PremiumProductCard y SidebarCatalogLayout — antes esta seccion tenia su
+  // propia clave ('storefront-banner-grid-brands') para la MISMA consulta
+  // (getBrands() sin filtros), asi que React Query la trataba como una
+  // peticion aparte en vez de reusar el cache que el Header ya trae (se
+  // monta antes, en cuanto carga la pagina). Con la misma clave, "Explora
+  // nuestros mundos" reusa ese cache y no espera su propio round-trip.
   const { data: automaticGridBrands = [] } = useQuery({
-    queryKey: ['storefront-banner-grid-brands'],
+    queryKey: ['brands'],
     queryFn: async () => {
       const { data, error } = await getBrands();
       if (error) throw new Error(error);
@@ -1392,19 +1400,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const sorted = [...displaySections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   
   if (isConfigLoading && !storefrontConfig) {
-    // En una landing NO mostramos texto de sistema ("Cargando configuración…"):
-    // se ve roto y rompe la continuidad. Reusamos el mismo fondo oscuro del
-    // arranque (.landing-page-boot) para que la transición sea invisible.
-    if (isLandingPage) {
-      return <div className="landing-page-boot" aria-busy="true" aria-label="Cargando" />;
-    }
-    return (
-      <div className={styles.container}>
-        <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--gris-texto-secundario)' }}>
-          Cargando configuración...
-        </div>
-      </div>
-    );
+    // Antes: la landing mostraba el fondo oscuro/rojo de .landing-page-boot
+    // y el resto de paginas un texto de sistema suelto ("Cargando
+    // configuración...") — dos looks distintos, ninguno con marca. Un solo
+    // BrandLoader para ambos casos: mismo degradado de marca que el splash
+    // estatico de index.html, transicion invisible en vez de un salto.
+    return <BrandLoader />;
   }
 
   return (
