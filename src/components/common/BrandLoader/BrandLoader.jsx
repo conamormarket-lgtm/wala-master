@@ -22,9 +22,10 @@ import styles from './BrandLoader.module.css';
  * useReducedMotionSafe (mismo hook que ya usan las tarjetas de producto):
  * con menos movimiento, el icono queda quieto y el halo no se monta.
  *
- * @param {'fill'|'inline'} variant  'fill' = pantalla completa (100dvh),
- *   'inline' = ocupa el alto de su contenedor (para usar dentro de un
- *   layout que ya tiene su propio header/chrome alrededor).
+ * @param {'fill'|'inline'} variant  'fill' = llena el alto de su contenedor
+ *   (#main-content-area, que ya via flex ocupa desde el navbar hasta abajo
+ *   — ver App.css), 'inline' = alto fijo mas chico para usar suelto dentro
+ *   de un layout con su propio chrome alrededor.
  */
 const BrandLoader = ({ variant = 'fill' }) => {
   const reducedMotion = useReducedMotionSafe();
@@ -45,7 +46,7 @@ const BrandLoader = ({ variant = 'fill' }) => {
           />
         )}
         <motion.svg
-          viewBox="10 5 90 95"
+          viewBox="12 0 94 109"
           className={styles.mark}
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"

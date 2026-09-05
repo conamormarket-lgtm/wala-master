@@ -16,9 +16,15 @@
   background: var(--gradient-brand, linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%));
 }
 
+/* Ocupa exactamente el alto de su contenedor (#main-content-area, ya
+   dimensionado por flex para llenar desde el navbar hasta abajo — ver
+   App.css). Usar 100vh aqui sumaba el alto del header/admin-bar de mas
+   y la pagina quedaba mas alta que la pantalla (habia que hacer scroll
+   para ver el final del degradado). height:100% hace que siempre calce
+   justo, sin importar si el admin bar esta presente o no. */
 .fill {
-  min-height: 100dvh;
-  min-height: 100vh;
+  min-height: 100%;
+  height: 100%;
 }
 
 .inline {
