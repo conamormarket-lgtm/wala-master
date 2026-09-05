@@ -67,7 +67,10 @@
 @media (hover: hover) {
   .card:hover .imageWrapper {
     transform: scale(1.05);
-    filter: brightness(1.06) saturate(1.1);
+    /* brightness bajado de 1.06 a 1.02: sobre fotos de fondo/prenda blanca,
+       aclarar de mas empuja los blancos casi al maximo y se pierde el
+       detalle/silueta de la prenda contra el fondo. */
+    filter: brightness(1.02) saturate(1.1);
   }
 }
 
