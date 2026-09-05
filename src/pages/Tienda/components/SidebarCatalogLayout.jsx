@@ -51,10 +51,26 @@ const SidebarCatalogLayout = ({
   // sidebar usa su estado interno EXACTAMENTE como antes (retrocompatible).
   controlledCategory,
   onCategoryChange,
+  // ── Categoría inicial desde la URL (?categoria=ID) ─────────────────────
+  // Antes, llegar a /tienda?categoria=ID (p.ej. desde el link de una
+  // categoría en el mega menu "Tienda") filtraba el catalogo (via
+  // getProductsByCategory en TiendaPage) pero el checkbox de "CATEGORÍAS"
+  // en este sidebar NO se marcaba — quedaba en "Todas las categorías"
+  // porque activeCategory nunca se enteraba del `categoria` de la URL (solo
+  // cambia por click, ver setActiveCategory). Solo aplica cuando el sidebar
+  // NO esta controlado por el padre (sin categories_nav): ahi el padre ya
+  // maneja su propia categoria (navCategoryId), esto no interfiere.
+  initialCategory,
 }) => {
   const { t } = useLanguage();
   const isCategoryControlled = controlledCategory !== undefined && typeof onCategoryChange === 'function';
-  const [internalCategory, setInternalCategory] = useState(null);
+  const [internalCategory, setInternalCategory] = useState(initialCategory ?? null);
+
+  useEffect(() => {
+    if (isCategoryControlled) return; // el padre ya maneja la categoria (nav bubbles)
+    setInternalCategory(initialCategory ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCategory]);
   // Categoría efectiva: la controlada por el padre o, si no, el estado interno.
   const activeCategory = isCategoryControlled ? (controlledCategory ?? null) : internalCategory;
   // Setter unificado: escribe arriba (controlado) o en el estado interno (no controlado).

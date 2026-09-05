@@ -1321,6 +1321,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
               paginationProps={catalogPaginationProps}
               onServerFacetChange={usePaginatedCatalog ? handleServerFacetChange : undefined}
               serverFacet={usePaginatedCatalog ? catalogFacet : null}
+              initialCategory={categoryId}
               {...(hasCategoriesNav
                 ? { controlledCategory: navCategoryId, onCategoryChange: setNavCategoryId }
                 : {})}
