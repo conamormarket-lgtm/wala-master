@@ -1,12 +1,60 @@
-import React, { useId, useState } from 'react';
+import React, { useId, useState, useRef, useLayoutEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import styles from './FaqAccordion.module.css';
 import { TextoSeccion } from '../textStyleUtils.jsx';
+
+// Debe coincidir con el `gap` de .list en FaqAccordion.module.css (0.75rem
+// sobre una raiz de 16px). Se usa para calcular el alto reservado de la lista.
+const LIST_GAP_PX = 12;
 
 const FaqAccordion = ({ config = {} }) => {
   const items = Array.isArray(config.items) ? config.items : [];
   const [openIdx, setOpenIdx] = useState(config.defaultOpen === true ? 0 : -1);
   const accordionId = useId();
+
+  // ── Alto reservado para que el footer (y todo lo de abajo) NUNCA se mueva ──
+  // Sin esto, abrir una tarjeta la hace crecer "en el sitio" y empuja todo lo
+  // que viene despues, footer global incluido. En vez de eso, reservamos de
+  // entrada el alto MAXIMO posible: todas las preguntas cerradas + la
+  // respuesta mas larga de todas abierta. .list nunca cambia de alto total;
+  // abrir una pregunta solo "rellena" el espacio que ya estaba reservado.
+  // Con todo cerrado queda un poco de aire constante antes del footer (no
+  // una raya en blanco que aparece/desaparece).
+  const questionRefs = useRef([]);
+  const answerRefs = useRef([]);
+  const [listMinHeight, setListMinHeight] = useState(undefined);
+  questionRefs.current = [];
+  answerRefs.current = [];
+
+  // Firma de contenido: si el admin edita una pregunta/respuesta en vivo
+  // (visual editor), el alto natural de las tarjetas puede cambiar.
+  const itemsSignature = items.map((it) => `${it.question || ''}::${it.answer || ''}`).join('|');
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const qEls = questionRefs.current.filter(Boolean);
+      const aEls = answerRefs.current.filter(Boolean);
+      if (qEls.length === 0) return;
+
+      const questionsTotal = qEls.reduce((sum, el) => sum + el.offsetHeight, 0);
+      // .answerClip tiene overflow:hidden y su alto lo fija la fila de grid
+      // (0fr cuando esta cerrado), pero scrollHeight siempre reporta el alto
+      // NATURAL del contenido, este visible o no — por eso funciona aunque
+      // TODAS las respuestas esten cerradas al medir.
+      const maxAnswer = aEls.reduce((max, el) => Math.max(max, el.scrollHeight), 0);
+      const gapsTotal = LIST_GAP_PX * Math.max(0, qEls.length - 1);
+
+      setListMinHeight(questionsTotal + gapsTotal + maxAnswer);
+    };
+
+    measure();
+
+    // El alto de una respuesta puede cambiar si el texto reflowea al
+    // redimensionar la ventana (el layout pasa a una sola columna en mobile).
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsSignature]);
 
   if (items.length === 0) return null;
 
@@ -33,13 +81,14 @@ const FaqAccordion = ({ config = {} }) => {
           )}
           {config.subtitle && <p className={styles.subtitle}>{config.subtitle}</p>}
         </div>
-        <div className={styles.list}>
+        <div className={styles.list} style={{ minHeight: listMinHeight }}>
           {items.map((item, idx) => {
             const isOpen = openIdx === idx;
             const answerId = `${accordionId}-answer-${idx}`;
             return (
               <div key={item.id || idx} className={styles.item}>
                 <button
+                  ref={(el) => { questionRefs.current[idx] = el; }}
                   type="button"
                   className={styles.question}
                   onClick={() => setOpenIdx(isOpen ? -1 : idx)}
@@ -60,7 +109,7 @@ const FaqAccordion = ({ config = {} }) => {
                     className={`${styles.answerWrap} ${isOpen ? styles.open : ''}`}
                     aria-hidden={!isOpen}
                   >
-                    <div className={styles.answerClip}>
+                    <div ref={(el) => { answerRefs.current[idx] = el; }} className={styles.answerClip}>
                       <div className={styles.answer}>
                         <p className={styles.answerInner}>{item.answer}</p>
                       </div>
