@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
@@ -32,8 +32,19 @@ const FeaturedCarousel = ({
   autoPlaySpeed = 5000,
 }) => {
   const scrollRef = useRef(null);
+  const viewportRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  // Alto (en px) al que centrar las flechas: el de la FOTO del producto, no
+  // el de la tarjeta completa (foto + titulo + precio). Con top:50% del
+  // alto total, las flechas quedaban centradas mas abajo del centro real de
+  // la foto (el bloque de texto debajo la corre hacia arriba visualmente),
+  // y como cada foto llena su marco 3:4 de forma distinta (una persona
+  // modelando de borde a borde vs. una prenda sola con margen blanco), el
+  // desface se notaba mas en unas tarjetas que en otras — se veian
+  // "descuadradas" aunque matematicamente las dos flechas esten a la misma
+  // altura entre si. Medimos la foto REAL de la primera tarjeta.
+  const [navButtonTop, setNavButtonTop] = useState(null);
 
   // Solo productos visibles (igual que CollectionCarousel)
   const validProducts =
@@ -68,6 +79,28 @@ const FeaturedCarousel = ({
       window.removeEventListener('resize', updateArrows);
     };
   }, [updateArrows, validProducts.length]);
+
+  useLayoutEffect(() => {
+    const measureNavButtonTop = () => {
+      const viewport = viewportRef.current;
+      const firstImg = viewport?.querySelector('img');
+      if (!viewport || !firstImg) return;
+      const viewportTop = viewport.getBoundingClientRect().top;
+      const imgRect = firstImg.getBoundingClientRect();
+      setNavButtonTop(imgRect.top - viewportTop + imgRect.height / 2);
+    };
+
+    measureNavButtonTop();
+    // La foto puede tardar en cargar (aun no tiene alto real al primer
+    // render) y el ancho de tarjeta cambia con la ventana o --visible-items.
+    const firstImg = viewportRef.current?.querySelector('img');
+    firstImg?.addEventListener('load', measureNavButtonTop);
+    window.addEventListener('resize', measureNavButtonTop);
+    return () => {
+      firstImg?.removeEventListener('load', measureNavButtonTop);
+      window.removeEventListener('resize', measureNavButtonTop);
+    };
+  }, [validProducts.length, renderedVisibleItems]);
 
   // Desplaza el carrusel ~el ancho de una tarjeta en la dirección indicada
   const scrollByCard = useCallback((direction) => {
@@ -140,7 +173,11 @@ const FeaturedCarousel = ({
         <BotonSeccion settings={config} style={{ marginTop: '0.75rem' }} />
       </div>
 
-      <div className={styles.carouselViewport}>
+      <div
+        className={styles.carouselViewport}
+        ref={viewportRef}
+        style={navButtonTop != null ? { '--nav-btn-top': `${navButtonTop}px` } : undefined}
+      >
         {/* Flecha izquierda (desktop) */}
         <button
           type="button"

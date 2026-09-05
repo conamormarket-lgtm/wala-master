@@ -85,13 +85,24 @@
       (100% / var(--visible-items, 4)) -
       (1.5rem * (var(--visible-items, 4) - 1) / var(--visible-items, 4))
     );
+    /*
+     * Con pocos productos, FeaturedCarousel.jsx sube --visible-items hasta
+     * un minimo de 2 para no dejar la tarjeta a un 100% gigante — pero con
+     * UN solo producto eso igual la deja a ~50% del ancho del carrusel,
+     * mucho mas grande que una tarjeta normal. Un tope fijo evita que crezca
+     * mas alla del tamaño habitual, este centrada sola o no.
+     */
+    max-width: 320px;
   }
 }
 
 /* --- Flechas de navegación --- */
 .navButton {
   position: absolute;
-  top: 50%;
+  /* Centrado sobre la FOTO real (medida por JS), no sobre la tarjeta
+     completa — ver useLayoutEffect en FeaturedCarousel.jsx. --nav-btn-top
+     sin definir (imagen aun sin medir) cae de vuelta a 50% del total. */
+  top: var(--nav-btn-top, 50%);
   transform: translateY(-50%);
   z-index: 2;
   width: 44px;
