@@ -524,59 +524,9 @@ const Header = () => {
             )}
           </div>
 
-          {/* Interruptor Modo Noche (luna/sol). Visible en desktop y móvil:
-              comparte el contenedor .actions, que el CSS ya hace responsive. */}
-          <ThemeToggle />
-
-          {/* Idioma: antes 3 banderas SIEMPRE visibles (España/EEUU/Brasil) —
-              con billeteras + tema + busqueda + cuenta + carrito ya en la
-              misma barra, sumaba a la sensacion de "relleno". Un solo boton
-              con la bandera ACTIVA que despliega las demas al abrir, mismo
-              patron hover/click (accountDropdownContainer + accountPopup)
-              que ya usan favoritos/cuenta/carrito — nada nuevo que aprender,
-              solo consistente con el resto de la barra. */}
-          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'idioma' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'idioma' ? styles.forceHideHover : ''}`}>
-            <button
-              type="button"
-              className={styles.iconButton}
-              onClick={(e) => handleMobileDropdownClick(e, 'idioma')}
-              aria-label={`Idioma: ${LANG_NAMES[lang] || lang}`}
-            >
-              <FlagIcon code={lang} size={22} />
-            </button>
-
-            <div className={`${styles.accountPopup} ${styles.langPopupWidth} ${styles.mobileCenteredPopup}`}>
-              <div className={styles.accountPopupContent} style={{ padding: '0.6rem', textAlign: 'left' }}>
-                <ul className={styles.langMenu} role="listbox" aria-label="Elegir idioma">
-                  {available.map((code) => {
-                    const name = LANG_NAMES[code] || code.toUpperCase();
-                    return (
-                      <li key={code} role="presentation">
-                        <button
-                          type="button"
-                          role="option"
-                          aria-selected={lang === code}
-                          onClick={() => { setLang(code); closeDropdowns(); }}
-                          className={`${styles.langMenuOption} ${lang === code ? styles.langMenuOptionActive : ''}`}
-                        >
-                          <FlagIcon code={code} size={20} />
-                          <span>{name}</span>
-                          {lang === code && <Check size={15} strokeWidth={2.5} className={styles.langMenuCheck} aria-hidden="true" />}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Separador entre "preferencias" (billeteras/tema/idioma) y
-              "cuenta" (buscar/favoritos/notificaciones/perfil/carrito) — la
-              fila de iconos se leia como un bloque continuo sin agrupar;
-              esta linea sola ya da una lectura de "seccion". Decorativo:
-              oculto a lectores de pantalla y en movil (ahi el espacio ya
-              esta ajustado). */}
+          {/* Tema (oscuro/claro) e idioma se mudan al popup de "Mi cuenta"
+              (a pedido): ahi viven junto al resto de preferencias de la
+              cuenta, en vez de sumar 2 iconos mas a esta barra. */}
           <span className={styles.actionsDivider} aria-hidden="true" />
 
           {/* Búsqueda consciente de marca (multimarca): en página de marca (brandActual)
@@ -750,18 +700,34 @@ const Header = () => {
                     </>
                   )}
                   
-                  {accountPopup.brands && accountPopup.brands.length > 0 && (
-                    <div className={styles.brandsSection}>
-                      <h4>NUESTRAS MARCAS</h4>
-                      <div className={styles.brandsList}>
-                        {accountPopup.brands.map(brand => (
-                          <a key={brand.id} href={brand.url || '#'} className={styles.brandLink} title={brand.name}>
-                            <img src={brand.imageUrl || '/images/placeholder.svg'} alt={brand.name} className={styles.brandLogo} />
-                          </a>
-                        ))}
-                      </div>
+                  {/* Preferencias: tema e idioma, mudados aqui desde la barra
+                      superior (antes 2 iconos sueltos ahi) — viven mejor
+                      junto al resto de ajustes de la cuenta. */}
+                  <div className={styles.prefsSection}>
+                    <h4>Preferencias</h4>
+                    <div className={styles.prefsRow}>
+                      <span className={styles.prefsLabel}>Modo oscuro</span>
+                      <ThemeToggle />
                     </div>
-                  )}
+                    <div className={styles.langMenu}>
+                      {available.map((code) => {
+                        const name = LANG_NAMES[code] || code.toUpperCase();
+                        return (
+                          <button
+                            key={code}
+                            type="button"
+                            aria-pressed={lang === code}
+                            onClick={() => setLang(code)}
+                            className={`${styles.langMenuOption} ${lang === code ? styles.langMenuOptionActive : ''}`}
+                          >
+                            <FlagIcon code={code} size={18} />
+                            <span>{name}</span>
+                            {lang === code && <Check size={14} strokeWidth={2.5} className={styles.langMenuCheck} aria-hidden="true" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </EditableSection>
             </div>

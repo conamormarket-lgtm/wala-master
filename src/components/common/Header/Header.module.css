@@ -567,6 +567,37 @@
   transition: border-color 0.2s;
 }
 
+/* Preferencias (tema + idioma) dentro del popup de "Mi cuenta" — antes 2
+   iconos sueltos en la barra superior, mudados aqui a pedido. Mismo
+   tratamiento que .brandsSection (linea divisoria arriba) para que se
+   sienta parte del mismo popup, no un bloque pegado aparte. */
+.prefsSection {
+  border-top: 1px solid var(--gris-borde, #eee);
+  padding-top: 1.1rem;
+  margin-top: 1.1rem;
+  text-align: left;
+}
+
+.prefsSection h4 {
+  font-size: 0.75rem;
+  color: var(--gris-texto-secundario, #999);
+  letter-spacing: 0.05em;
+  margin: 0 0 0.6rem 0;
+}
+
+.prefsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.4rem;
+}
+
+.prefsLabel {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gris-texto-principal, #1f2937);
+}
+
 .brandLink:hover .brandLogo {
   border-color: #8b5cf6;
 }
@@ -1433,11 +1464,17 @@
 }
 
 :global([data-theme='dark']) .moreItemsText,
-:global([data-theme='dark']) .brandsSection h4 {
+:global([data-theme='dark']) .brandsSection h4,
+:global([data-theme='dark']) .prefsSection h4 {
   color: var(--color-text-muted);
 }
 
 :global([data-theme='dark']) .cartPreviewFooter,
-:global([data-theme='dark']) .brandsSection {
+:global([data-theme='dark']) .brandsSection,
+:global([data-theme='dark']) .prefsSection {
   border-top-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .prefsLabel {
+  color: var(--color-text);
 }
