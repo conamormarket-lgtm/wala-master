@@ -78,8 +78,14 @@
 }
 
 .dashboardLink:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.45);
+  /* Sin esto, el color en hover lo decidia la regla global "a:hover" de
+     globals.css (mas especifica que .dashboardLink sola: a:hover son dos
+     seletores, .dashboardLink es uno) y pintaba el texto con el color de
+     marca en vez de blanco — sobre el fondo casi negro de esta barra se
+     veia apagado/dificil de leer. Fijado explicito para que siempre gane. */
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 @media (max-width: 768px) {
