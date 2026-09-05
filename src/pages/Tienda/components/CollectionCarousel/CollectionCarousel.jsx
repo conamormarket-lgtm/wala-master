@@ -94,7 +94,7 @@ const CollectionCarousel = ({ title, config, collectionName, categories, brandId
       <div className={styles.carouselScrollArea}>
         {validProducts.map((product) => (
           <div key={product.id} className={styles.carouselItem}>
-            <PremiumProductCard product={product} categories={categories} />
+            <PremiumProductCard product={product} categories={categories} currentBrandId={brandId} />
           </div>
         ))}
       </div>

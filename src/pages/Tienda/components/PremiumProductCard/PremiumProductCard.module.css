@@ -138,6 +138,36 @@
   color: #333;
 }
 
+/* Insignia de marca (logo pequeño) — solo en listados mixtos, ver
+   showBrandBadge en PremiumProductCard.jsx. Esquina opuesta a los badges de
+   estado (arriba-izquierda) y al favorito (arriba-derecha): abajo-izquierda,
+   donde no compite con nada mas del reposo de la tarjeta. */
+.brandBadge {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 9;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--glass-bg-strong, rgba(255, 255, 255, 0.95));
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.6));
+  box-shadow: var(--glass-shadow, 0 4px 12px rgba(15, 23, 42, 0.16));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.brandBadge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
 /* Favorite Button — acabado glass */
 .favoriteBtn {
   position: absolute;

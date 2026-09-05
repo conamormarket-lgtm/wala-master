@@ -33,7 +33,7 @@ const hexToRgba = (hex, alpha) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold = false }) => {
+const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold = false, currentBrandId = null }) => {
   const { addToCart } = useCart();
   const queryClient = useQueryClient();
   const { thumbnailImageUrl, recordImpression, variantIndex } = useProductThumbnailVariant(product);
@@ -58,6 +58,12 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   });
 
   const productBrand = brandsData?.find(b => b.id === product.brandId);
+  // Insignia con el logo de la marca del producto: solo tiene sentido en
+  // listados MIXTOS (home, "Ofertas para ti", etc.) donde conviven productos
+  // de varias marcas de Walá. Dentro de la propia página de esa marca
+  // (currentBrandId) es redundante — ya es obvio en qué marca estás — así
+  // que ahí se omite aunque el producto tenga logo.
+  const showBrandBadge = !currentBrandId && !!productBrand?.logoUrl;
   const brandBgColor = productBrand?.bgColor;
   const brandBgImage = productBrand?.bgImage;
   const brandBgOpacity = productBrand?.bgOpacity ?? 100;
@@ -222,12 +228,19 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
           {(typeof product.inStock === 'number' && product.inStock > 0) && (
             <span className={styles.badgeSold}>{product.inStock} {t('card.disponibles', 'disponibles')}</span>
           )}
-          {isNew && <span className={styles.badgeNew}>{t('card.nuevo', 'NEW IN')}</span>}
+          {isNew && <span className={styles.badgeNew}>{t('card.nuevo', 'NUEVO')}</span>}
           {product.salePrice && (
-            <Badge tone="danger" variant="solid" size="sm">{t('card.oferta', 'SALE')}</Badge>
+            <Badge tone="danger" variant="solid" size="sm">{t('card.oferta', 'OFERTA')}</Badge>
           )}
           {!product.inStock && <span className={styles.badgeOut}>{t('card.agotado', 'Agotado')}</span>}
         </div>
+
+        {/* Insignia de marca: solo en listados mixtos (ver showBrandBadge) */}
+        {showBrandBadge && (
+          <span className={styles.brandBadge} title={productBrand.name}>
+            <img src={productBrand.logoUrl} alt={productBrand.name || ''} loading="lazy" />
+          </span>
+        )}
 
         {/* Favorite Icon */}
         <button
@@ -274,7 +287,7 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
         <div className={styles.subtitle}>
           {categories.length > 0
             ? <T>{categories[0].name}</T>
-            : (product.customizable ? t('card.personalizable', 'Personalizable') : t('card.essential', 'Essential'))}
+            : (product.customizable ? t('card.personalizable', 'Personalizable') : t('card.essential', 'Esencial'))}
         </div>
       </div>
     </MotionLink>

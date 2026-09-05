@@ -1168,7 +1168,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
                 </div>
               ) : null;
             })()}
-            <ProductGrid products={featuredProducts} loading={false} error={null} categories={categoriesData} emptyMessage={emptyMessage} />
+            <ProductGrid products={featuredProducts} loading={false} error={null} categories={categoriesData} emptyMessage={emptyMessage} brandId={pageBrandId} />
           </section>
         );
       }
@@ -1245,6 +1245,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
               visibleItems={s.visibleItems}
               autoPlay={s.autoPlay}
               autoPlaySpeed={s.autoPlaySpeed}
+              brandId={pageBrandId}
             />
           </section>
         );
@@ -1278,6 +1279,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
               emptyMessage={emptyMessage}
               categories={categoriesData}
               layoutConfig={storeConfig?.layout}
+              brandId={pageBrandId}
               {...catalogPaginationProps}
             />
           </section>

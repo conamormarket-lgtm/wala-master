@@ -596,6 +596,7 @@ const SidebarCatalogLayout = ({
             emptyMessage={emptyMessage}
             categories={categories}
             layoutConfig={layoutConfig}
+            brandId={brandId}
             {...paginationProps}
           />
         </main>

@@ -109,7 +109,7 @@ const FlashSales = ({ title = "Ofertas Relámpago", config, collectionName, endT
       <BotonSeccion settings={config} style={{ marginTop: '0.75rem' }} />
       <div className={styles.flashSalesProducts}>
          {validProducts.slice(0, 4).map((product) => ( // Máximo 4 productos por fila para urgencia
-          <PremiumProductCard key={product.id} product={product} categories={categories} />
+          <PremiumProductCard key={product.id} product={product} categories={categories} currentBrandId={brandId} />
         ))}
       </div>
     </div>

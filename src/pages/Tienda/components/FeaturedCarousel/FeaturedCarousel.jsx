@@ -30,6 +30,7 @@ const FeaturedCarousel = ({
   visibleItems = 5,
   autoPlay = false,
   autoPlaySpeed = 5000,
+  brandId = null,
 }) => {
   const scrollRef = useRef(null);
   const viewportRef = useRef(null);
@@ -192,7 +193,7 @@ const FeaturedCarousel = ({
         <div className={`${styles.carouselScrollArea} ${isUnderfilled ? styles.carouselCentered : ''}`} ref={scrollRef}>
           {validProducts.map((product) => (
             <div key={product.id} className={styles.carouselItem}>
-              <PremiumProductCard product={product} categories={categories} />
+              <PremiumProductCard product={product} categories={categories} currentBrandId={brandId} />
             </div>
           ))}
         </div>

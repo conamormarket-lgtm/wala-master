@@ -63,6 +63,7 @@ const ProductQueryCarousel = ({
       visibleItems={visibleItems}
       autoPlay={autoPlay}
       autoPlaySpeed={autoPlaySpeed}
+      brandId={brandId}
     />
   );
 };

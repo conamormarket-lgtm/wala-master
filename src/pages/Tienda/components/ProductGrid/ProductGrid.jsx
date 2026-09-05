@@ -55,7 +55,8 @@ const ProductGrid = React.memo(({
   layoutConfig,
   hasMore,
   onLoadMore,
-  isFetchingMore
+  isFetchingMore,
+  brandId = null
 }) => {
 
   // Función de traducción para textos estáticos del grid.
@@ -113,7 +114,13 @@ const ProductGrid = React.memo(({
   const gridStyle = useMemo(() => {
     // Si layoutConfig especifica 'auto', mapearlo a 'auto-fit'
     const desktopCols = layoutConfig?.productGridColumnsDesktop;
-    const desktopVal = desktopCols === 'auto' || !desktopCols ? 'auto-fit' : desktopCols;
+    // auto-fill (no auto-fit): con pocos productos, auto-fit colapsa las
+    // columnas vacias y ESTIRA las tarjetas existentes para llenar el ancho
+    // (con 1 producto, ocupa el 100% — se ve enorme). auto-fill mantiene las
+    // columnas vacias reservadas (aunque invisibles), asi la tarjeta se queda
+    // en su tamaño normal (minmax 320px) con espacio vacio al lado, que es
+    // la intencion original del comentario de .grid en el CSS.
+    const desktopVal = desktopCols === 'auto' || !desktopCols ? 'auto-fill' : desktopCols;
 
     return {
       '--grid-cols-desktop': desktopVal,
@@ -188,6 +195,7 @@ const ProductGrid = React.memo(({
             categories={categories}
             isAboveFold={index < 4}
             showHoverSecondaryMedia={layoutConfig?.showHoverSecondaryMedia ?? true}
+            currentBrandId={brandId}
           />
         ))}
       </div>
