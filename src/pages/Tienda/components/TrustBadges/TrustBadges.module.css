@@ -11,30 +11,20 @@
 }
 
 /*
- * Antes eran solo icono+texto flotando sueltos sobre el fondo de la
- * pagina, sin ningun ancla visual — la seccion con menos "peso" del home
- * frente a las tarjetas de FAQ/testimonios. Se les da el mismo lenguaje de
- * tarjeta (radio, sombra suave -> media en hover, leve elevacion).
+ * Se probo la tarjeta con borde+sombra (mismo lenguaje que FAQ/testimonios)
+ * pero con tan poco contenido (un icono + una linea) la caja quedaba con
+ * mucho espacio muerto — se veia como un recuadro vacio, no como una
+ * tarjeta. Vuelve a ser icono+texto sueltos, sin caja; el circulo con
+ * degradado (que si funciono bien) es suficiente ancla visual por si solo.
  */
 .badge {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 0.65rem;
-  flex: 1 1 180px;
-  max-width: 220px;
-  padding: 1.35rem 1rem;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--gris-borde, #e5e7eb);
-  border-radius: var(--radio-mediano, 16px);
-  box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.06));
-  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
-}
-
-.badge:hover {
-  box-shadow: var(--sombra-media, 0 4px 6px -1px rgba(15, 23, 42, 0.08));
-  transform: translateY(-2px);
+  gap: 0.55rem;
+  flex: 1 1 160px;
+  max-width: 200px;
 }
 
 .icon {
@@ -65,7 +55,6 @@
   .badge {
     flex: 1 1 calc(50% - 0.5rem);
     max-width: none;
-    padding: 1.1rem 0.75rem;
   }
   .icon {
     width: 40px;
@@ -85,9 +74,4 @@
    ═══════════════════════════════════════════ */
 [data-theme="dark"] .text {
   color: var(--color-text); /* #333 -> texto claro legible */
-}
-
-[data-theme="dark"] .badge {
-  background: var(--color-surface);
-  border-color: var(--color-border);
 }
