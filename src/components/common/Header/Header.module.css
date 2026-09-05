@@ -8,7 +8,12 @@
   background-color: var(--glass-bg-strong, rgba(255, 255, 255, 0.72));
   box-shadow: var(--sombra-suave);
   position: sticky;
-  top: 0;
+  /* --admin-bar-height la publica AdminBar.jsx (measurado, no un numero fijo)
+     SOLO mientras esa barra esta montada (admin logueado). Sin admin, la
+     variable no existe y cae al fallback 0px de siempre. Antes ambas barras
+     eran sticky;top:0 y competian por el mismo lugar al hacer scroll — como
+     AdminBar tiene z-index 9999, tapaba al header en vez de apilarse arriba. */
+  top: var(--admin-bar-height, 0px);
   z-index: 100;
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);

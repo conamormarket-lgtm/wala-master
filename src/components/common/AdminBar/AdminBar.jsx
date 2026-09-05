@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -10,6 +10,36 @@ const AdminBar = () => {
   const { isAdmin } = useAuth();
   const location = useLocation();
   const { isEditModeActive, toggleEditMode } = useVisualEditor();
+  const barRef = useRef(null);
+
+  // Esta barra y el <Header/> (App.jsx los renderiza uno tras otro) son
+  // AMBOS position:sticky; top:0 — al hacer scroll, los dos "quieren"
+  // pegarse al mismo y=0 del viewport. Como esta barra tiene un z-index
+  // mucho mayor (9999 vs el del header), termina tapando al header en vez
+  // de apilarse arriba de el. Medimos el alto REAL de esta barra (no un
+  // numero fijo: cambia un poco segun idioma/tamaño de fuente) y lo
+  // publicamos como variable global; Header.module.css la usa como su
+  // propio `top`, así que el header se pega justo DEBAJO de esta barra en
+  // vez de competir por el mismo lugar. Sin admin (barra desmontada), la
+  // variable se limpia y el header vuelve a pegarse a top:0 como siempre.
+  useLayoutEffect(() => {
+    if (!isAdmin) {
+      document.documentElement.style.removeProperty('--admin-bar-height');
+      return undefined;
+    }
+    const el = barRef.current;
+    if (!el) return undefined;
+    const setHeight = () => {
+      document.documentElement.style.setProperty('--admin-bar-height', `${el.offsetHeight}px`);
+    };
+    setHeight();
+    const ro = new ResizeObserver(setHeight);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty('--admin-bar-height');
+    };
+  }, [isAdmin]);
 
   if (!isAdmin) return null;
 
@@ -35,7 +65,7 @@ const AdminBar = () => {
   }
 
   return (
-    <div className={styles.adminBar}>
+    <div className={styles.adminBar} ref={barRef}>
       <div className={styles.adminBarContainer}>
         <div className={styles.adminInfo}>
           <span className={styles.icon} style={{ display: 'flex', alignItems: 'center' }}><Settings size={16} strokeWidth={1.5} /></span>
