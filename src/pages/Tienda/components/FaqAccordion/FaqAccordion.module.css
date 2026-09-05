@@ -59,21 +59,28 @@
 }
 
 /*
- * Diseno plano/minimalista: sin tarjeta contenedora (borde + radio + fondo
- * blanco distinto de la pagina). Solo lineas finas entre preguntas, el
- * mismo criterio que el resto del rediseno del home (menos "cajitas",
- * mas tipografia y espacio). El primer separador (border-top de .list)
- * marca donde empieza la lista sin necesidad de encerrarla en una caja.
+ * Tarjetas sueltas con sombra suave (a pedido, referencia tipo "FAQ cards"):
+ * cada pregunta es su propia tarjeta redondeada, separadas por aire en vez
+ * de lineas divisorias. overflow:hidden en .item recorta el crecimiento de
+ * .answerWrap dentro del radio de la tarjeta.
  */
 .list {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  border-top: 1px solid var(--gris-borde, #e5e7eb);
+  gap: 0.75rem;
 }
 
 .item {
-  border-bottom: 1px solid var(--gris-borde, #eef2f7);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--gris-borde, #e5e7eb);
+  border-radius: var(--radio-mediano, 16px);
+  box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.06));
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.item:hover {
+  box-shadow: var(--sombra-media, 0 4px 6px -1px rgba(15, 23, 42, 0.08));
 }
 
 .question {
@@ -82,7 +89,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 1rem 0.1rem;
+  padding: 1rem 1.1rem;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -104,25 +111,19 @@
 
 .question:focus-visible {
   outline: 2px solid var(--primary-color, #7c3aed);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .chevron {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.35rem;
-  font-weight: 400;
-  line-height: 1;
+  width: 18px;
+  height: 18px;
   color: var(--gris-texto-secundario, #94a3b8);
   transition: transform 0.25s var(--ease-signature, cubic-bezier(0.16, 1, 0.3, 1)), color 0.2s ease;
 }
 
 .chevronOpen {
-  transform: rotate(45deg);
+  transform: rotate(180deg);
   color: var(--primary-color, #7c3aed);
 }
 
@@ -148,7 +149,7 @@
 }
 
 .answer {
-  padding: 0 0.1rem 1.1rem;
+  padding: 0 1.1rem 1.1rem;
   font-size: 0.86rem;
   color: #64748b;
   line-height: 1.45;
@@ -188,12 +189,9 @@
   color: var(--color-text-muted);
 }
 
-[data-theme="dark"] .list {
-  border-top-color: var(--color-border);
-}
-
 [data-theme="dark"] .item {
-  border-bottom-color: var(--color-border);
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .answerInner {

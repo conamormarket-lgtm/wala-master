@@ -1,4 +1,5 @@
 import React, { useId, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import styles from './FaqAccordion.module.css';
 import { TextoSeccion } from '../textStyleUtils.jsx';
 
@@ -46,7 +47,12 @@ const FaqAccordion = ({ config = {} }) => {
                   aria-controls={answerId}
                 >
                   <span>{item.question}</span>
-                  <span className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} aria-hidden="true">+</span>
+                  <ChevronDown
+                    className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
+                    aria-hidden="true"
+                    size={18}
+                    strokeWidth={2.25}
+                  />
                 </button>
                 {item.answer && (
                   <div
