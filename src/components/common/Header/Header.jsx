@@ -378,13 +378,21 @@ const Header = () => {
               if (link.type === 'dropdown') {
                 return (
                   <div key={link.id} className={styles.navItemWithDropdown}>
-                    <NavLink to={link.url || '#'} className={navLinkClass} end style={({ isActive }) => getActiveStyle(isActive)}>
+                    {/*
+                      * Sin isActive aqui (ni la clase .navLinkActive ni el color
+                      * violeta): un dropdown representa un MENU, no una pagina —
+                      * su `url` es solo el destino de respaldo si alguien le hace
+                      * clic directo (no un lugar que "estas viendo ahora"). Con
+                      * isActive, cualquier link cuyo url de respaldo coincidiera
+                      * con la pagina actual (p.ej. "Marcas" -> "/", que es el
+                      * inicio) se veia con la pildora blanca + texto violeta de
+                      * "seleccionado" con solo estar en el home — igual de
+                      * ambiguo que el color/negrita a mano que ya se habia
+                      * quitado antes. La flechita ya es señal suficiente de
+                      * "esto es un menu".
+                      */}
+                    <NavLink to={link.url || '#'} className={styles.navLink} end style={linkStyle}>
                       {translateNav(link.text)}
-                      {/* Antes la unica pista de "esto abre un submenu" era un
-                          color/negrita que el admin guardaba a mano por link —
-                          ambiguo con el color de "pagina activa" (mismo violeta),
-                          se leia como si estuviera seleccionado sin estarlo. Una
-                          flechita es la señal estandar e inequivoca de dropdown. */}
                       <ChevronDown size={14} strokeWidth={2} className={styles.navChevron} aria-hidden="true" />
                     </NavLink>
                     <div className={styles.megaMenu}>
