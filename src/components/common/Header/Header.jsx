@@ -12,7 +12,7 @@ import { getDocument } from '../../../services/firebase/firestore';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
-import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, Check } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
 import styles from './Header.module.css';
@@ -561,6 +561,7 @@ const Header = () => {
                         >
                           <FlagIcon code={code} size={20} />
                           <span>{name}</span>
+                          {lang === code && <Check size={15} strokeWidth={2.5} className={styles.langMenuCheck} aria-hidden="true" />}
                         </button>
                       </li>
                     );

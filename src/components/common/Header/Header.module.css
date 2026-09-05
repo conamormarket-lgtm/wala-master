@@ -1241,7 +1241,8 @@
    click en movil) sin sumar una interaccion nueva a aprender.
    ═══════════════════════════════════════════ */
 .langPopupWidth {
-  width: 170px;
+  /* 170px hacia partir "Português (Brasil)" en dos lineas */
+  width: 200px;
 }
 
 .langMenu {
@@ -1250,35 +1251,46 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
+/*
+ * Antes el idioma activo llevaba una caja con fondo violeta translucido —
+ * un recuadro suelto que no combina con el resto del sitio, donde el
+ * estado "seleccionado" se marca solo con color/peso de texto, sin cajas
+ * (mismo criterio que .question:hover en FaqAccordion). Se aplana: sin
+ * fondo ni borde, solo texto + un check para el idioma activo.
+ */
 .langMenuOption {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
   appearance: none;
   border: none;
   background: transparent;
   cursor: pointer;
   font-family: inherit;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--gris-texto-secundario, #6b7280);
-  padding: 0.45rem 0.6rem;
-  border-radius: var(--radio-pequeno, 8px);
-  transition: var(--transicion-rapida, all 0.15s ease);
+  font-weight: 500;
+  color: var(--gris-texto-principal, #1f2937);
+  padding: 0.5rem 0.4rem;
+  white-space: nowrap;
+  transition: color 0.15s ease;
 }
 
 .langMenuOption:hover {
-  background-color: var(--gris-hover, rgba(0, 0, 0, 0.04));
-  color: var(--gris-texto-principal, #1f2937);
+  color: var(--primary-color, #7c3aed);
 }
 
 .langMenuOptionActive {
-  color: var(--rojo-principal, #8b5cf6);
-  background-color: color-mix(in srgb, var(--rojo-principal, #8b5cf6) 8%, transparent);
+  font-weight: 700;
+  color: var(--primary-color, #7c3aed);
+}
+
+.langMenuCheck {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--primary-color, #7c3aed);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
