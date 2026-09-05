@@ -273,6 +273,15 @@
   min-width: 44px;
   min-height: 44px;
   justify-content: center;
+  /* Reset de <button> nativo (el de idioma es <button>, no <Link> como el
+     resto): sin esto hereda el borde/fondo gris por defecto del navegador,
+     que se ve como una cajita ajena al resto de iconos de la barra. No
+     afecta a los <a> (nunca tuvieron ese borde). */
+  border: none;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
 }
 
 .iconButton:hover {
