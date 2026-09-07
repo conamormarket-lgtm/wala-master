@@ -5,7 +5,8 @@ import { getLandingPages } from '../Tienda/services/landingPages';
 import Button from '../../components/common/Button';
 import styles from './AdminConfiguracion.module.css';
 import { useAuth } from '../../contexts/AuthContext';
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock, ImageDown } from 'lucide-react';
+import { reconvertirImagenesAWebp, contarImagenesPorConvertir } from '../../services/imagenesWebp';
 
 const AVAILABLE_PERMISSIONS = [
   { id: 'superadmin', label: 'Super Admin (Control Total)', desc: 'Tiene acceso a todo, incluyendo añadir otros administradores.' },
@@ -26,9 +27,48 @@ const AdminConfiguracion = () => {
   const [editName, setEditName] = useState('');
   const [selectedPerms, setSelectedPerms] = useState([]);
 
-  const [activeTab, setActiveTab] = useState('admins'); // 'admins' o 'locks'
+  const [activeTab, setActiveTab] = useState('admins'); // 'admins' | 'locks' | 'imagenes'
   const [lockedPages, setLockedPages] = useState([]);
   const [landingPages, setLandingPages] = useState([]);
+
+  // ── Reconversion de imagenes a WebP ────────────────────────────────────
+  const [imgConteo, setImgConteo] = useState(null);
+  const [imgProgreso, setImgProgreso] = useState(null);
+  const [imgResultado, setImgResultado] = useState(null);
+  const [imgTrabajando, setImgTrabajando] = useState(false);
+
+  const revisarImagenes = async () => {
+    setImgConteo('cargando');
+    try {
+      setImgConteo(await contarImagenesPorConvertir());
+    } catch (e) {
+      setImgConteo({ error: e?.message || String(e) });
+    }
+  };
+
+  const convertirImagenes = async () => {
+    if (!imgConteo || !imgConteo.imagenes) return;
+    const ok = window.confirm(
+      `Se van a reconvertir ${imgConteo.imagenes} imagen(es) a WebP.\n\n`
+      + 'Cada una se vuelve a subir convertida y se actualiza el enlace en su documento. '
+      + 'Los archivos originales NO se borran, asi que si algo saliera mal siguen ahi.\n\n'
+      + 'Puede tardar un rato. No cierres esta pestana mientras corre.'
+    );
+    if (!ok) return;
+    setImgTrabajando(true);
+    setImgResultado(null);
+    setImgProgreso({ hechas: 0, total: imgConteo.imagenes, actual: '' });
+    try {
+      const res = await reconvertirImagenesAWebp({ onProgreso: setImgProgreso });
+      setImgResultado(res);
+      await revisarImagenes();
+    } catch (e) {
+      setImgResultado({ convertidas: 0, documentos: 0, saltadas: 0, errores: [e?.message || String(e)] });
+    } finally {
+      setImgTrabajando(false);
+      setImgProgreso(null);
+    }
+  };
 
   const isSuperAdmin = adminPermissions?.includes('superadmin');
 
@@ -162,6 +202,12 @@ const AdminConfiguracion = () => {
           onClick={() => { setActiveTab('locks'); setIsAdding(false); }}
         >
           Administración de páginas fijas
+        </button>
+        <button
+          className={`${styles.tabBtn} ${activeTab === 'imagenes' ? styles.activeTab : ''}`}
+          onClick={() => { setActiveTab('imagenes'); setIsAdding(false); if (imgConteo === null) revisarImagenes(); }}
+        >
+          Optimización de imágenes
         </button>
       </div>
 
@@ -338,6 +384,86 @@ const AdminConfiguracion = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'imagenes' && (
+        <div className={styles.formCard}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ImageDown size={18} /> Convertir imágenes antiguas a WebP
+          </h3>
+          <p style={{ color: '#888', fontSize: '0.9rem', lineHeight: 1.6, marginTop: 4 }}>
+            Todo lo que subas de ahora en adelante ya se guarda en WebP automáticamente. Esto es para las
+            imágenes que se subieron antes: revisa los banners, los slides del hero y los logos y fondos de
+            marca, vuelve a subir en WebP las que sigan en PNG o JPG y actualiza el enlace en cada página.
+            <br /><br />
+            Los archivos originales <strong>no se borran</strong>: si algo saliera mal, siguen en su sitio.
+            Las imágenes externas (Google Drive y demás), los SVG y los GIF se dejan como están. Los productos
+            no entran aquí, son muchos más y conviene tratarlos aparte.
+          </p>
+
+          {imgConteo === 'cargando' && <p style={{ color: '#888' }}>Revisando…</p>}
+
+          {imgConteo && imgConteo.error && (
+            <p style={{ color: '#e03131' }}>No se pudo revisar: {imgConteo.error}</p>
+          )}
+
+          {imgConteo && typeof imgConteo.imagenes === 'number' && (
+            <p style={{ fontSize: '0.95rem' }}>
+              {imgConteo.imagenes === 0
+                ? 'No queda ninguna imagen por convertir.'
+                : `Quedan ${imgConteo.imagenes} imagen(es) por convertir, repartidas en ${imgConteo.documentos} documento(s).`}
+            </p>
+          )}
+
+          {imgProgreso && (
+            <div style={{ margin: '1rem 0' }}>
+              <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${imgProgreso.total ? Math.round((imgProgreso.hechas / imgProgreso.total) * 100) : 0}%`,
+                  background: 'var(--primary-color, #7c3aed)',
+                  transition: 'width 0.2s ease',
+                }} />
+              </div>
+              <p style={{ fontSize: '0.82rem', color: '#888', marginTop: 6 }}>
+                {imgProgreso.hechas} de {imgProgreso.total}
+                {imgProgreso.actual ? ` · ${imgProgreso.actual}` : ''}
+              </p>
+            </div>
+          )}
+
+          {imgResultado && (
+            <div style={{ margin: '1rem 0', fontSize: '0.9rem' }}>
+              <p style={{ color: '#16a34a' }}>
+                Listo: {imgResultado.convertidas} imagen(es) convertida(s) en {imgResultado.documentos} documento(s)
+                {imgResultado.saltadas ? ` · ${imgResultado.saltadas} se dejaron como estaban porque el WebP no las mejoraba` : ''}.
+              </p>
+              {imgResultado.errores.length > 0 && (
+                <details style={{ marginTop: 8 }}>
+                  <summary style={{ color: '#e03131', cursor: 'pointer' }}>
+                    {imgResultado.errores.length} no se pudo(ieron) convertir
+                  </summary>
+                  <ul style={{ color: '#e03131', fontSize: '0.82rem', marginTop: 6 }}>
+                    {imgResultado.errores.map((e, i) => <li key={i}>{e}</li>)}
+                  </ul>
+                </details>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 10, marginTop: '1rem' }}>
+            <Button variant="secondary" onClick={revisarImagenes} disabled={imgTrabajando}>
+              Volver a revisar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={convertirImagenes}
+              disabled={imgTrabajando || !imgConteo || !imgConteo.imagenes}
+            >
+              {imgTrabajando ? 'Convirtiendo…' : 'Convertir a WebP'}
+            </Button>
           </div>
         </div>
       )}
