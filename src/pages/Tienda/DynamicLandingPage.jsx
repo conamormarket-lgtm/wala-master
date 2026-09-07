@@ -7,7 +7,7 @@ import { useVisualEditor } from './contexts/VisualEditorContext';
 import TiendaPage from './TiendaPage';
 import { useAuth } from '../../contexts/AuthContext';
 import { KCHERO_SLUG, KCHERO_SLUG_LEGACY } from '../../constants/landingSlugs';
-import BrandLoader from '../../components/common/BrandLoader/BrandLoader';
+import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderOverlay';
 import './landing-mobile.css';
 
 const DynamicLandingPage = () => {
@@ -76,12 +76,19 @@ const DynamicLandingPage = () => {
   }
 
   // Mientras carga la landing NO mostramos el esqueleto del catálogo (PageLoading
-  // dibuja tarjetas de producto y parece la tienda). BrandLoader (mismo look que
-  // el resto del sistema) hace que la landing "aparezca de frente".
-  if (loading) return <BrandLoader />;
+  // dibuja tarjetas de producto y parece la tienda).
+  //
+  // Va el OVERLAY y no <BrandLoader/> suelto: el loader se dimensiona con
+  // height:100%, y aqui el area de ruta no tiene alto definido, asi que
+  // colapsaba a 0 y se veia la PANTALLA EN BLANCO — primero el vacio y solo
+  // despues, ya montada TiendaPage, aparecia el logo de su propio overlay.
+  // El overlay va por portal a document.body con position:fixed inset:0, no
+  // depende de ningun ancestro, y ademas es el MISMO que usa TiendaPage: el
+  // relevo entre los dos es invisible.
+  if (loading) return <BrandLoaderOverlay show />;
 
   if (!landingPage) {
-    if (authLoading) return <BrandLoader />;
+    if (authLoading) return <BrandLoaderOverlay show />;
     // Landing pública no encontrada: a home si hay sesión; si no, home también
     // (no mandar a /login: las LP deben ser visibles sin cuenta).
     return <Navigate to="/" replace />;
