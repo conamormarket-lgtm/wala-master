@@ -333,14 +333,18 @@ const Header = () => {
               <path id="tagBase" d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z" />
             </defs>
 
-            {/* ISOTIPO (Left) — un poco mas grande (scale 1.1 vs 0.95) y
-                reposicionado para dejar ~20u de aire antes de la 'W' (antes se
-                tocaban). translate/scale calculados sobre el bbox real del
-                grupo para centrarlo vertical y fijar el borde derecho en ~93. */}
+            {/* ISOTIPO (Left) — mismo look que el de la CARGA (BrandLoader):
+                bolsa BLANCA + W en degradado de marca con aire dentro (scale
+                0.8 sobre su centro 55,58), punto morado y asa. Antes estaba en
+                negativo (bolsa degradada + W blanca apretada contra los bordes)
+                y no coincidia con la referencia. Mas grande (scale 1.1 vs 0.95)
+                y reposicionado para dejar ~20u de aire antes de la 'W' del
+                logotipo (antes se tocaban); translate/scale calculados sobre el
+                bbox real del grupo para centrarlo vertical. */}
             <g transform="translate(-5.3, 5.9) scale(1.1)">
-               <use href="#tagBase" fill="url(#walaGradient)" />
-               <circle cx="67" cy="23" r="6.5" fill="#FFFFFF" />
-               <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#FFFFFF" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
+               <use href="#tagBase" fill="#FFFFFF" />
+               <circle cx="67" cy="23" r="6.5" fill="url(#walaGradient)" />
+               <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="url(#walaGradient)" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" transform="translate(55 58) scale(0.8) translate(-55 -58)" />
                <path d="M 68 20 C 72 -2, 98 0, 85 28" stroke="url(#walaGradient)" strokeWidth="6" strokeLinecap="round" fill="none" />
             </g>
 
