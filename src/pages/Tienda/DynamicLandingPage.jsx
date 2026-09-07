@@ -85,10 +85,10 @@ const DynamicLandingPage = () => {
   // El overlay va por portal a document.body con position:fixed inset:0, no
   // depende de ningun ancestro, y ademas es el MISMO que usa TiendaPage: el
   // relevo entre los dos es invisible.
-  if (loading) return <BrandLoaderOverlay show />;
+  if (loading) return <BrandLoaderOverlay show relevo />;
 
   if (!landingPage) {
-    if (authLoading) return <BrandLoaderOverlay show />;
+    if (authLoading) return <BrandLoaderOverlay show relevo />;
     // Landing pública no encontrada: a home si hay sesión; si no, home también
     // (no mandar a /login: las LP deben ser visibles sin cuenta).
     return <Navigate to="/" replace />;

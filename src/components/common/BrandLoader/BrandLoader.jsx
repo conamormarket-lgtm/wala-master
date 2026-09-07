@@ -1,30 +1,20 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef } from 'react';
 import { useReducedMotionSafe } from '../../../theme/motion';
 import styles from './BrandLoader.module.css';
 
-/**
- * Transicion compartida por el icono y los dos halos: ciclo continuo, sin
- * pausa, con la misma curva y duracion para que la luz respire EXACTAMENTE al
- * compas del icono. Debe coincidir con los @keyframes del splash estatico de
- * index.html (appLoadingBreathe / appLoadingHalo*) para que el relevo sea
- * invisible.
- */
-const BREATHE_TRANSITION = {
-  duration: 3.2,
-  ease: 'easeInOut',
-  repeat: Infinity,
-};
+/** Duraciones de las animaciones, en ms. Deben coincidir con el CSS. */
+const CICLO_RESPIRACION = 3200;
+const CICLO_BARRA = 1400;
 
 /**
  * Pantalla de carga estilizada del sistema (isotipo del logo en "negativo"
  * — bolsa blanca + W violeta — sobre el degradado de marca).
  *
- * Animación (framer-motion). El icono respira y la luz respira CON el.
+ * Animación (CSS, ver BrandLoader.module.css). El icono respira y la luz
+ * respira CON el.
  *  - El icono flota en un ciclo continuo y calmado (~3.2s, ease-in-out, sin
  *    pausa): sube unos px y escala apenas al 1.05, luego vuelve. Solo escala
- *    + traslada (no deforma ni recolorea). Reemplaza al viejo "click" seco por
- *    algo mas premium/relajado.
+ *    + traslada (no deforma ni recolorea).
  *  - Los dos halos detras del icono pulsan EN SINCRONIA con esa respiracion
  *    (mismo 3.2s / mismo ease): mas brillo y algo mas grandes justo cuando el
  *    icono llega arriba, de modo que la luz "acompaña" el gesto en vez de
@@ -33,19 +23,48 @@ const BREATHE_TRANSITION = {
  *  - Una barra de progreso indeterminada con brillo suave: comunica "algo
  *    esta pasando" sin fingir un porcentaje real.
  *
+ * POR QUE EN CSS Y NO EN framer-motion: este loader se muestra JUSTO mientras
+ * React monta la tienda entera. framer-motion recalcula los estilos en cada
+ * fotograma desde el hilo principal, que en ese momento esta saturado, asi
+ * que la animacion se congelaba un rato y al liberarse pegaba un salto — se
+ * veia como si la carga se trabara y volviera a empezar. En CSS, transform y
+ * opacity los anima el compositor en su propio hilo y siguen fluidas por muy
+ * ocupado que este React.
+ *
  * Los elementos NO tienen animacion de ENTRADA (aparecen ya en su estado
  * final): asi el relevo desde el splash estatico de index.html — que muestra
- * el MISMO lockup — es invisible. La animacion de SALIDA (al terminar la
- * carga) vive en BrandLoaderOverlay.jsx.
+ * el MISMO lockup con los MISMOS numeros — es invisible. La animacion de
+ * SALIDA (al terminar la carga) vive en BrandLoaderOverlay.jsx.
  *
- * Respeta prefers-reduced-motion (useReducedMotionSafe): sin movimiento,
- * icono quieto y la barra como un trazo estatico a medio llenar.
+ * Respeta prefers-reduced-motion: las animaciones se apagan en el propio CSS
+ * y aqui solo se usa el hook para cambiar la barra por un trazo estatico.
  *
  * @param {'fill'|'inline'} variant  'fill' = llena el alto de su contenedor,
  *   'inline' = alto fijo mas chico para usar suelto dentro de un layout.
+ *   OJO: 'fill' se dimensiona con height:100%, asi que necesita un contenedor
+ *   con alto definido. Para pantalla completa usa BrandLoaderOverlay, que lo
+ *   monta dentro de un position:fixed inset:0.
  */
 const BrandLoader = ({ variant = 'fill' }) => {
   const reducedMotion = useReducedMotionSafe();
+
+  // FASE COMPARTIDA. Durante una carga se muestran DOS loaders seguidos: el de
+  // la landing y, en cuanto monta, el de la tienda. Son instancias distintas,
+  // asi que el segundo arrancaba su ciclo desde cero y el icono pegaba un salto
+  // — se veia como si la carga volviera a empezar.
+  // Con un animation-delay NEGATIVO calculado desde el reloj de la pagina, cada
+  // instancia entra en el punto del ciclo en el que ya iba la anterior, y el
+  // relevo no se nota. Se calcula una sola vez por montaje (useRef), no en cada
+  // render, o el icono saltaria en cada re-render.
+  const faseRef = useRef(null);
+  if (faseRef.current === null) {
+    const ahora = typeof performance !== 'undefined' ? performance.now() : 0;
+    faseRef.current = {
+      respiracion: `-${Math.round(ahora % CICLO_RESPIRACION)}ms`,
+      barra: `-${Math.round(ahora % CICLO_BARRA)}ms`,
+    };
+  }
+  const fase = faseRef.current;
 
   return (
     <div
@@ -56,35 +75,18 @@ const BrandLoader = ({ variant = 'fill' }) => {
       <div className={styles.stack}>
         <div className={styles.markWrap}>
           {/* Resplandor detras del icono (dos capas radiales para dar
-              profundidad). Ahora PULSAN en sincronia con la respiracion del
-              icono (mismo BREATHE_TRANSITION): mas brillo y algo mas grandes
-              cuando el icono llega arriba. Tenue a proposito: es luz que
-              respira, no destellos. transform-origin al centro (default) para
-              que el crecido sea simetrico. */}
-          <motion.span
-            className={styles.haloWide}
-            aria-hidden="true"
-            animate={reducedMotion ? undefined : { opacity: [0.7, 1, 0.7], scale: [1, 1.1, 1] }}
-            transition={reducedMotion ? undefined : BREATHE_TRANSITION}
-          />
-          <motion.span
-            className={styles.halo}
-            aria-hidden="true"
-            animate={reducedMotion ? undefined : { opacity: [0.8, 1, 0.8], scale: [1, 1.12, 1] }}
-            transition={reducedMotion ? undefined : BREATHE_TRANSITION}
-          />
-          {/* El icono respira: ciclo continuo y calmado (~3.2s) en el que sube
-              unos px y escala apenas al 1.05, luego vuelve. Solo escala +
-              traslada: no deforma el logo ni cambia colores. transform-origin
-              al centro para que la escala sea simetrica. */}
-          <motion.svg
+              profundidad). Pulsan en sincronia con la respiracion del icono:
+              mas brillo y algo mas grandes cuando el icono llega arriba.
+              Tenue a proposito: es luz que respira, no destellos. */}
+          <span className={styles.haloWide} aria-hidden="true" style={{ animationDelay: fase.respiracion }} />
+          <span className={styles.halo} aria-hidden="true" style={{ animationDelay: fase.respiracion }} />
+
+          <svg
             viewBox="12 0 94 109"
             className={styles.mark}
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
-            style={{ transformOrigin: 'center center' }}
-            animate={reducedMotion ? undefined : { scale: [1, 1.05, 1], y: [0, -6, 0] }}
-            transition={reducedMotion ? undefined : BREATHE_TRANSITION}
+            style={{ animationDelay: fase.respiracion }}
           >
             <defs>
               {/* Mismo degradado de marca que el logo real del Header
@@ -101,10 +103,9 @@ const BrandLoader = ({ variant = 'fill' }) => {
               fill="#FFFFFF"
             />
             <circle cx="67" cy="23" r="6.5" fill="#8B5CF6" />
-            {/* La W en el degradado de marca (antes un violeta plano oscuro),
-                para que combine con el logo real de la tienda. Se escala al
-                0.8 sobre su centro (55,58) para dejar aire con el borde
-                blanco de la bolsa. */}
+            {/* La W en el degradado de marca, para que combine con el logo
+                real de la tienda. Se escala al 0.8 sobre su centro (55,58)
+                para dejar aire con el borde blanco de la bolsa. */}
             <path
               d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38"
               fill="none"
@@ -114,7 +115,7 @@ const BrandLoader = ({ variant = 'fill' }) => {
               strokeLinejoin="round"
               transform="translate(55 58) scale(0.8) translate(-55 -58)"
             />
-          </motion.svg>
+          </svg>
         </div>
 
         <span className={styles.wordmark}>Walá</span>
@@ -123,11 +124,7 @@ const BrandLoader = ({ variant = 'fill' }) => {
           {reducedMotion ? (
             <span className={styles.progressStatic} />
           ) : (
-            <motion.span
-              className={styles.progressBar}
-              animate={{ x: ['-140%', '340%'] }}
-              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-            />
+            <span className={styles.progressBar} style={{ animationDelay: fase.barra }} />
           )}
         </div>
       </div>

@@ -175,3 +175,68 @@
     display: none;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   ANIMACIONES DEL LOADER — EN CSS, NO EN JS
+   Antes las movia framer-motion, que recalcula estilos en cada fotograma
+   DESDE EL HILO PRINCIPAL. Justo mientras el loader esta en pantalla, ese
+   hilo esta ocupado montando la tienda entera (decenas de secciones), asi
+   que la animacion se congelaba un rato y al liberarse pegaba un salto: se
+   veia como si la carga se trabara y volviera a empezar.
+
+   En CSS, transform y opacity los anima el compositor, en su propio hilo:
+   siguen fluidas por muy ocupado que este React.
+
+   Mismos numeros que el splash estatico de index.html (appLoadingBreathe /
+   appLoadingHalo*), para que el relevo splash -> React siga siendo invisible.
+   ═════════════════════════════════════════════════════════════════════════ */
+@keyframes brandLoaderBreathe {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50%      { transform: scale(1.05) translateY(-6px); }
+}
+
+@keyframes brandLoaderHalo {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.12); }
+}
+
+@keyframes brandLoaderHaloWide {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.1); }
+}
+
+@keyframes brandLoaderSweep {
+  0%   { transform: translateX(-140%); }
+  100% { transform: translateX(340%); }
+}
+
+.mark {
+  transform-origin: center center;
+  animation: brandLoaderBreathe 3.2s ease-in-out infinite;
+}
+
+.halo {
+  transform-origin: center;
+  animation: brandLoaderHalo 3.2s ease-in-out infinite;
+}
+
+.haloWide {
+  transform-origin: center;
+  animation: brandLoaderHaloWide 3.2s ease-in-out infinite;
+}
+
+.progressBar {
+  animation: brandLoaderSweep 1.4s ease-in-out infinite;
+}
+
+/* Respeta a quien pidio menos movimiento: el icono queda quieto y la barra
+   se convierte en un trazo estatico a medio llenar (ver .progressStatic).
+   Se resuelve aqui y no en JS para que sea una sola fuente de verdad. */
+@media (prefers-reduced-motion: reduce) {
+  .mark,
+  .halo,
+  .haloWide,
+  .progressBar {
+    animation: none;
+  }
+}

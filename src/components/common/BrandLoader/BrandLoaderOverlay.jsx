@@ -26,8 +26,15 @@ import BrandLoader from './BrandLoader';
  *
  * @param {boolean} show  true = cargando (overlay visible); false = listo
  *   (dispara la transicion de salida y luego desmonta).
+ * @param {boolean} [relevo]  true = este overlay NO es el ultimo: al ocultarse
+ *   hay OTRO loader identico detras que sigue la carga (es el caso de la
+ *   landing, que releva a la tienda). Entonces se desmonta en seco, sin la
+ *   animacion de salida: si se fundiera con zoom, se veria un loader
+ *   desvaneciendose ENCIMA de otro loader igual — el "parpadeo" de la carga.
+ *   La animacion de salida se reserva para el ultimo, que es el que de verdad
+ *   abre hacia la tienda.
  */
-const BrandLoaderOverlay = ({ show }) => {
+const BrandLoaderOverlay = ({ show, relevo = false }) => {
   const reducedMotion = useReducedMotionSafe();
 
   // Bloquea el scroll del documento mientras el loader esta presente. Sin
@@ -85,12 +92,14 @@ const BrandLoaderOverlay = ({ show }) => {
           style={{ position: 'fixed', inset: 0, zIndex: 99999, transformOrigin: 'center' }}
           initial={false}
           exit={
-            reducedMotion
-              ? { opacity: 0 }
-              : { opacity: 0, scale: 1.06 }
+            relevo
+              ? {}
+              : reducedMotion
+                ? { opacity: 0 }
+                : { opacity: 0, scale: 1.06 }
           }
           transition={{
-            duration: reducedMotion ? 0.3 : 0.6,
+            duration: relevo ? 0 : (reducedMotion ? 0.3 : 0.6),
             ease: EASE_SIGNATURE,
           }}
         >
