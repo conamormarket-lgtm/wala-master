@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { AuroraBackground, Reveal } from '../../../../components/ui';
 import styles from './BrandMarquee.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const BrandMarquee = ({ items = [], speed = 25, title = 'Empresas con las que trabajamos' }) => {
   // Si no hay items, no renderizamos nada.
@@ -101,7 +102,7 @@ const BrandMarquee = ({ items = [], speed = 25, title = 'Empresas con las que tr
       {displayTitle && (
         <div className={styles.brandsTitle}>
           <span className={styles.brandsTitleSpan}>
-            {displayTitle}
+            <T>{displayTitle}</T>
           </span>
         </div>
       )}

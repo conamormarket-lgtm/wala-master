@@ -7,6 +7,7 @@ import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { Capacitor } from '@capacitor/core';
 import { empresa } from '../../../config/empresa';
 import styles from './Footer.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 // Importamos algunos de los bloques que pueden renderizarse en el footer
 // Para simplificar, implementaremos el renderizado directamente o reutilizaremos componentes
@@ -91,8 +92,8 @@ const Footer = () => {
           <div className={styles.content}>
             {(s.columns || []).map((col, i) => (
               <div key={col.id || i} className={styles.section}>
-                {col.title && <h4>{col.title}</h4>}
-                {col.type === 'text' && <p>{col.content}</p>}
+                {col.title && <h4><T>{col.title}</T></h4>}
+                {col.type === 'text' && <p><T>{col.content}</T></p>}
                 {col.type === 'links' && (
                   <ul>
                     {(col.links || []).map((link, j) => {
@@ -104,9 +105,9 @@ const Footer = () => {
                       return (
                       <li key={j}>
                         {link.url?.startsWith('http') ? (
-                          <a href={link.url} target="_blank" rel="noopener noreferrer" style={linkStyle}>{link.text}</a>
+                          <a href={link.url} target="_blank" rel="noopener noreferrer" style={linkStyle}><T>{link.text}</T></a>
                         ) : (
-                          <Link to={link.url || '#'} style={linkStyle}>{link.text}</Link>
+                          <Link to={link.url || '#'} style={linkStyle}><T>{link.text}</T></Link>
                         )}
                       </li>
                       );
@@ -245,16 +246,16 @@ const Footer = () => {
             )}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 18px', marginBottom: '1rem', fontSize: '0.85rem' }}>
-            <Link to="/terminos-y-condiciones" style={{ color: 'inherit', textDecoration: 'none', opacity: 0.85 }}>Términos y Condiciones</Link>
-            <Link to="/politicas-privacidad" style={{ color: 'inherit', textDecoration: 'none', opacity: 0.85 }}>Políticas de Privacidad</Link>
+            <Link to="/terminos-y-condiciones" style={{ color: 'inherit', textDecoration: 'none', opacity: 0.85 }}><T>Términos y Condiciones</T></Link>
+            <Link to="/politicas-privacidad" style={{ color: 'inherit', textDecoration: 'none', opacity: 0.85 }}><T>Políticas de Privacidad</T></Link>
             <Link
               to="/libro-de-reclamaciones"
               style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.35)', borderRadius: '6px', padding: '4px 10px' }}
             >
-              📕 Libro de Reclamaciones
+              📕 <T>Libro de Reclamaciones</T>
             </Link>
           </div>
-          <p>&copy; {new Date().getFullYear()} Walá. Todos los derechos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} Walá. <T>Todos los derechos reservados.</T></p>
         </div>
       </div>
     </footer>

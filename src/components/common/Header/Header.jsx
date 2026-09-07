@@ -20,6 +20,7 @@ import NotificationTray from './NotificationTray';
 import OptimizedImage from '../OptimizedImage/OptimizedImage';
 import FlagIcon from '../../i18n/FlagIcon';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
+import { T } from '../../../i18n/useTranslatedText';
 
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
@@ -530,7 +531,7 @@ const Header = () => {
                                 className={categoriaActual === c.id ? styles.subActivo : undefined}
                                 aria-current={categoriaActual === c.id ? 'page' : undefined}
                               >
-                                {c.name}
+                                <T>{c.name}</T>
                               </Link>
                             </li>
                           ))}
@@ -539,7 +540,7 @@ const Header = () => {
                           {link.autoCollectionId && categoriesData?.slice(0, 10).map(c => (
                             <li key={`colcat-${c.id}`}>
                               <Link to={`/tienda?coleccion=${link.autoCollectionId}&categoria=${c.id}`} onClick={() => setMobileMenuOpen(false)}>
-                                {c.name}
+                                <T>{c.name}</T>
                               </Link>
                             </li>
                           ))}
@@ -562,7 +563,7 @@ const Header = () => {
                                   className={brandActual?.id === b.id ? styles.subActivo : undefined}
                                   aria-current={brandActual?.id === b.id ? 'page' : undefined}
                                 >
-                                  {b.name}
+                                  <T>{b.name}</T>
                                 </Link>
                               </li>
                             );
@@ -572,7 +573,7 @@ const Header = () => {
                           {(!link.isCategoryAuto && !link.autoCollectionId && !link.isBrandAuto) && link.dropdownLinks?.map(subLink => (
                             <li key={subLink.id}>
                               <Link to={subLink.url || '#'} onClick={() => setMobileMenuOpen(false)}>
-                                {subLink.text}
+                                <T>{subLink.text}</T>
                               </Link>
                             </li>
                           ))}
@@ -582,7 +583,7 @@ const Header = () => {
                               {/* "Ver Todo": en página de marca va a /<slugMarca> (la propia
                                   marca); fuera de marca, a /tienda (Con Amor) como hoy. */}
                               <Link to={brandActual ? `/${brandSlug}` : '/tienda'} onClick={() => setMobileMenuOpen(false)} style={{fontWeight: 'bold', color: 'var(--rojo-principal)'}}>
-                                Ver Todo el Catálogo →
+                                <T>Ver Todo el Catálogo</T> →
                               </Link>
                             </li>
                           )}
@@ -590,7 +591,7 @@ const Header = () => {
                           {link.isBrandAuto && (
                             <li>
                               <Link to="/" onClick={() => setMobileMenuOpen(false)} style={{fontWeight: 'bold', color: 'var(--rojo-principal)'}}>
-                                Ver todas las marcas →
+                                <T>Ver todas las marcas</T> →
                               </Link>
                             </li>
                           )}

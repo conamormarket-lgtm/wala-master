@@ -2,6 +2,7 @@ import React from 'react';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import styles from './FeatureList.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const FeatureList = ({ config = {} }) => {
   const items = Array.isArray(config.items) ? config.items : [];
@@ -14,8 +15,8 @@ const FeatureList = ({ config = {} }) => {
     >
       {(config.title || config.subtitle) && (
         <div className={styles.header}>
-          {config.title && <h2 className={styles.title}>{config.title}</h2>}
-          {config.subtitle && <p className={styles.subtitle}>{config.subtitle}</p>}
+          {config.title && <h2 className={styles.title}><T>{config.title}</T></h2>}
+          {config.subtitle && <p className={styles.subtitle}><T>{config.subtitle}</T></p>}
         </div>
       )}
 
@@ -34,7 +35,7 @@ const FeatureList = ({ config = {} }) => {
           {items.map((item, idx) => (
             <li key={idx} className={styles.item}>
               {item.icon && <span className={styles.icon}>{item.icon}</span>}
-              <span>{item.text}</span>
+              <span><T>{item.text}</T></span>
             </li>
           ))}
         </ul>
@@ -42,7 +43,7 @@ const FeatureList = ({ config = {} }) => {
 
       {config.quote && (
         <blockquote className={styles.quote}>
-          {config.quote}
+          <T>{config.quote}</T>
           {config.quoteAuthor && (
             <span className={styles.quoteAuthor}>— {config.quoteAuthor}</span>
           )}

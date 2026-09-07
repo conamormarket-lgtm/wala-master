@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
 import { GlassCard } from '../../../../components/ui';
 import styles from './BestSellersRow.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 /**
  * Fila / carrusel horizontal de productos.
@@ -27,8 +28,8 @@ const BestSellersRow = ({ cards = [] }) => {
         )}
       </div>
       <div className={styles.content}>
-        {card.title && <h3 className={styles.title}>{card.title}</h3>}
-        {card.subtitle && <p className={styles.subtitle}>{card.subtitle}</p>}
+        {card.title && <h3 className={styles.title}><T>{card.title}</T></h3>}
+        {card.subtitle && <p className={styles.subtitle}><T>{card.subtitle}</T></p>}
       </div>
     </>
   );
