@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../../../services/firebase/config';
 import styles from './FirebaseWarning.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 const FirebaseWarning = () => {
   const [showWarning, setShowWarning] = useState(false);
@@ -48,17 +49,17 @@ const FirebaseWarning = () => {
           <ol className={styles.steps}>
             {typeof window !== 'undefined' && /vercel\.app$/i.test(window.location.hostname) ? (
               <>
-                <li>Entra en <a href="https://vercel.com" target="_blank" rel="noopener noreferrer">vercel.com</a> → tu proyecto → <strong>Settings</strong> → <strong>Environment Variables</strong></li>
-                <li>Añade cada variable (mismo nombre y valor que en tu <code>.env</code> local): <code>REACT_APP_FIREBASE_API_KEY</code>, <code>REACT_APP_FIREBASE_PROJECT_ID</code>, <code>REACT_APP_FIREBASE_AUTH_DOMAIN</code>, <code>REACT_APP_FIREBASE_STORAGE_BUCKET</code>, <code>REACT_APP_FIREBASE_MESSAGING_SENDER_ID</code>, <code>REACT_APP_FIREBASE_APP_ID</code></li>
-                <li>Guarda y en <strong>Deployments</strong> haz clic en ⋮ del último deploy → <strong>Redeploy</strong> (sin las variables el build no las incluye)</li>
-                <li>En <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer">Firebase Console</a> → Authentication → Dominios autorizados, añade <code>portal-clientes-regala-con-amor.vercel.app</code></li>
+                <li><T>Entra en</T> <a href="https://vercel.com" target="_blank" rel="noopener noreferrer">vercel.com</a> <T>→ tu proyecto →</T> <strong>Settings</strong> → <strong>Environment Variables</strong></li>
+                <li><T>Añade cada variable (mismo nombre y valor que en tu</T> <code>.env</code> local): <code>REACT_APP_FIREBASE_API_KEY</code>, <code>REACT_APP_FIREBASE_PROJECT_ID</code>, <code>REACT_APP_FIREBASE_AUTH_DOMAIN</code>, <code>REACT_APP_FIREBASE_STORAGE_BUCKET</code>, <code>REACT_APP_FIREBASE_MESSAGING_SENDER_ID</code>, <code>REACT_APP_FIREBASE_APP_ID</code></li>
+                <li><T>Guarda y en</T> <strong>Deployments</strong> <T>haz clic en ⋮ del último deploy →</T> <strong>Redeploy</strong> <T>(sin las variables el build no las incluye)</T></li>
+                <li>En <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer">Firebase Console</a> <T>→ Authentication → Dominios autorizados, añade</T> <code><T>portal-clientes-regala-con-amor.vercel.app</T></code></li>
               </>
             ) : (
               <>
-                <li>Abre <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer">Firebase Console</a> y elige tu proyecto</li>
-                <li>Entra en <strong>Authentication</strong> y haz clic en <strong>Comenzar</strong> (o en la pestaña Proveedores y activa Email/Google)</li>
-                <li>En Authentication → <strong>Configuración</strong> → <strong>Dominios autorizados</strong>, añade <code>localhost</code> si no está</li>
-                <li>Guarda y recarga esta página</li>
+                <li>Abre <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer">Firebase Console</a> <T>y elige tu proyecto</T></li>
+                <li><T>Entra en</T> <strong>Authentication</strong> <T>y haz clic en</T> <strong>Comenzar</strong> <T>(o en la pestaña Proveedores y activa Email/Google)</T></li>
+                <li><T>En Authentication →</T> <strong><T>Configuración</T></strong> → <strong>Dominios autorizados</strong><T>, añade</T> <code>localhost</code> <T>si no está</T></li>
+                <li><T>Guarda y recarga esta página</T></li>
               </>
             )}
           </ol>

@@ -700,7 +700,7 @@ const NuevosUsuariosPage = () => {
               <span style={{ fontFamily: 'Arial, sans-serif', textShadow: '2px 2px 6px rgba(0, 0, 0, 0.8)' }}>
                 Por que hay fechas que merecen más que un <strong style={{ color: '#292929', textShadow: 'none' }}>regalo</strong> <br />
                 de último minuto. Un detalle <strong style={{ color: '#292929', textShadow: 'none' }}>personalizado</strong> se usa, <br />
-                se abraza y <strong style={{ color: '#292929', textShadow: 'none' }}>se guarda para siempre.</strong>
+                se abraza y <strong style={{ color: '#292929', textShadow: 'none' }}><T>se guarda para siempre.</T></strong>
               </span>
             </p>
           </div>

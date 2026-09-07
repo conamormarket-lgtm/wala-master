@@ -18,6 +18,7 @@ import {
 import { getMessage } from '../../services/messages';
 
 import styles from './LegacyTiendaPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
@@ -119,7 +120,7 @@ const LegacyTiendaPage = () => {
         {!isNativeApp && (
           <aside className={styles.sidebar}>
             <div className={styles.sidebarSection}>
-              <h3 className={styles.sidebarTitle}>Categorías</h3>
+              <h3 className={styles.sidebarTitle}><T>Categorías</T></h3>
               <ul className={styles.categoryList}>
                 <li>
                   <Link to="/tienda" className={!categoryId ? styles.activeCat : ''}>
@@ -145,10 +146,10 @@ const LegacyTiendaPage = () => {
             </span>
             <div className={styles.sortWrap}>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={styles.sortSelect}>
-                <option value="newest">Más recientes</option>
+                <option value="newest"><T>Más recientes</T></option>
                 <option value="name">Ordenar: A-Z</option>
-                <option value="price">Menor precio</option>
-                <option value="price-desc">Mayor precio</option>
+                <option value="price"><T>Menor precio</T></option>
+                <option value="price-desc"><T>Mayor precio</T></option>
               </select>
             </div>
           </div>

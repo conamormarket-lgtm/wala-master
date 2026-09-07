@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { getHeatmapByPage } from '../../services/heatmapData';
 import { AnimatedNumber, Badge } from '../ui';
 import styles from './HeatmapViewer.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 /**
  * VISOR DE MAPA DE CALOR (HeatmapViewer)
@@ -400,7 +401,7 @@ export default function HeatmapViewer({
 
       <motion.header className={styles.header} variants={itemVariants}>
         <div>
-          <h2 className={styles.title}>Mapa de calor</h2>
+          <h2 className={styles.title}><T>Mapa de calor</T></h2>
           <p className={styles.subtitle}>
             Dónde hacen clic tus visitantes, página por página.
           </p>
@@ -567,7 +568,7 @@ export default function HeatmapViewer({
                 )}
 
                 {points.length === 0 && (
-                  <div className={styles.canvasEmpty}>Sin clics ubicables en esta página.</div>
+                  <div className={styles.canvasEmpty}><T>Sin clics ubicables en esta página.</T></div>
                 )}
               </div>
 
@@ -584,9 +585,9 @@ export default function HeatmapViewer({
             </div>
 
             <div className={styles.sideCard}>
-              <h3 className={styles.sideTitle}>Elementos más clicados</h3>
+              <h3 className={styles.sideTitle}><T>Elementos más clicados</T></h3>
               {topElements.length === 0 ? (
-                <p className={styles.sideEmpty}>Sin elementos registrados en esta página.</p>
+                <p className={styles.sideEmpty}><T>Sin elementos registrados en esta página.</T></p>
               ) : (
                 <ul className={styles.rankList}>
                   {topElements.map((el, idx) => {

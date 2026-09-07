@@ -349,7 +349,7 @@ const ProductReviews = ({ productId }) => {
               </form>
             ) : (
               <div className={styles.loginPrompt}>
-                <p>Inicia sesión o regístrate para dejar una opinión sobre este producto.</p>
+                <p><T>Inicia sesión o regístrate para dejar una opinión sobre este producto.</T></p>
               </div>
             )
           )}

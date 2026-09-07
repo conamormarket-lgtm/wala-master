@@ -40,7 +40,7 @@ const ProductImageContainer = ({
           <strong><T>Resolución Recomendada:</T></strong><br/>
           Proporción 3:4 (Vertical).<br/>
           Ej: 900x1200px o superior.<br/>
-          <span style={{opacity: 0.8, fontSize: '0.7rem'}}>*PNG/SVG sin fondo no tendrán bordes blancos.</span>
+          <span style={{opacity: 0.8, fontSize: '0.7rem'}}><T>*PNG/SVG sin fondo no tendrán bordes blancos.</T></span>
         </div>
       </div>
 

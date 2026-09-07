@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getProducts } from '../services/products';
 import { db } from '../services/firebase/config';
 import { DEFAULT_VENDOR_ID } from '../constants/marketplace';
+import { T } from '../i18n/useTranslatedText';
 
 // Panel del VENDEDOR (scaffold Fase 1): lista los productos del vendedor logueado
 // (por userProfile.vendorId). El rol `vendor` por custom claims y el CRUD completo
@@ -56,9 +57,9 @@ const VendorPanel = () => {
   if (!user) {
     return (
       <div style={wrap}>
-        <h1 style={{ fontSize: 22 }}>Panel de vendedor</h1>
-        <p style={{ color: '#666' }}>Inicia sesión para acceder a tu área de vendedor.</p>
-        <Link to="/login" style={{ color: '#7C3AED' }}>Iniciar sesión</Link>
+        <h1 style={{ fontSize: 22 }}><T>Panel de vendedor</T></h1>
+        <p style={{ color: '#666' }}><T>Inicia sesión para acceder a tu área de vendedor.</T></p>
+        <Link to="/login" style={{ color: '#7C3AED' }}><T>Iniciar sesión</T></Link>
       </div>
     );
   }
@@ -66,12 +67,12 @@ const VendorPanel = () => {
   if (!vendorId) {
     return (
       <div style={wrap}>
-        <h1 style={{ fontSize: 22 }}>Panel de vendedor</h1>
+        <h1 style={{ fontSize: 22 }}><T>Panel de vendedor</T></h1>
         <p style={{ color: '#666' }}>
           Tu cuenta aún no está asociada a un vendedor. El alta de vendedores (rol <code>vendor</code>)
           se habilita en la Fase 3 del marketplace.
         </p>
-        <Link to="/" style={{ color: '#7C3AED' }}>← Volver a la tienda</Link>
+        <Link to="/" style={{ color: '#7C3AED' }}><T>← Volver a la tienda</T></Link>
       </div>
     );
   }
@@ -79,7 +80,7 @@ const VendorPanel = () => {
   return (
     <div style={wrap}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h1 style={{ fontSize: 22 }}>Panel de vendedor · <span style={{ color: '#7C3AED' }}>{vendorId}</span></h1>
+        <h1 style={{ fontSize: 22 }}><T>Panel de vendedor ·</T> <span style={{ color: '#7C3AED' }}>{vendorId}</span></h1>
         <Link to="/admin/productos/nuevo" style={{ padding: '8px 14px', background: '#7C3AED', color: '#fff', borderRadius: 8, textDecoration: 'none' }}>
           + Nuevo producto
         </Link>
@@ -98,10 +99,10 @@ const VendorPanel = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
-              <th style={{ padding: 8 }}>Producto</th>
+              <th style={{ padding: 8 }}><T>Producto</T></th>
               <th style={{ padding: 8 }}>Nicho</th>
               <th style={{ padding: 8 }}>Tipo</th>
-              <th style={{ padding: 8 }}>Precio</th>
+              <th style={{ padding: 8 }}><T>Precio</T></th>
               <th style={{ padding: 8 }}>Stock</th>
             </tr>
           </thead>
@@ -120,7 +121,7 @@ const VendorPanel = () => {
       )}
 
       <div style={{ marginTop: 36 }}>
-        <h2 style={{ fontSize: 18, marginBottom: 4 }}>Sub-órdenes</h2>
+        <h2 style={{ fontSize: 18, marginBottom: 4 }}><T>Sub-órdenes</T></h2>
         <p style={{ color: '#666', marginBottom: 16 }}>
           {loadingSubOrders ? 'Cargando…' : `${subOrders.length} sub-orden(es) de este vendedor`}
         </p>
@@ -135,11 +136,11 @@ const VendorPanel = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
-                <th style={{ padding: 8 }}>Pedido</th>
+                <th style={{ padding: 8 }}><T>Pedido</T></th>
                 <th style={{ padding: 8 }}>Subtotal</th>
-                <th style={{ padding: 8 }}>Comisión</th>
+                <th style={{ padding: 8 }}><T>Comisión</T></th>
                 <th style={{ padding: 8 }}>Payout</th>
-                <th style={{ padding: 8 }}>Estado</th>
+                <th style={{ padding: 8 }}><T>Estado</T></th>
               </tr>
             </thead>
             <tbody>
@@ -161,7 +162,7 @@ const VendorPanel = () => {
       </div>
 
       <div style={{ marginTop: 24 }}>
-        <Link to="/" style={{ color: '#7C3AED' }}>← Volver a la tienda</Link>
+        <Link to="/" style={{ color: '#7C3AED' }}><T>← Volver a la tienda</T></Link>
       </div>
     </div>
   );

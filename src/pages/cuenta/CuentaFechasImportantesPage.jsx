@@ -436,7 +436,7 @@ const CuentaFechasImportantesPage = () => {
 
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div className={styles.fieldGroup} style={{ flex: 2 }}>
-                  <label>Nombre de la persona *</label>
+                  <label><T>Nombre de la persona *</T></label>
                   <input 
                     type="text" 
                     className={styles.input} 
@@ -446,7 +446,7 @@ const CuentaFechasImportantesPage = () => {
                   />
                 </div>
                 <div className={styles.fieldGroup} style={{ flex: 1 }}>
-                  <label>Género *</label>
+                  <label><T>Género *</T></label>
                   <select 
                     className={styles.input} 
                     value={tempRecipient.gender || ''} 
@@ -461,7 +461,7 @@ const CuentaFechasImportantesPage = () => {
               </div>
 
               <div className={styles.fieldGroup}>
-                <label>Relación / Parentesco *</label>
+                <label><T>Relación / Parentesco *</T></label>
                 <select 
                   className={styles.input} 
                   value={tempRecipient.roleKey || 'otros'} 

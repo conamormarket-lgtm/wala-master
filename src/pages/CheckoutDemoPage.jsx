@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { createCheckoutPreference, confirmPayment } from '../services/payments';
+import { T } from '../i18n/useTranslatedText';
 
 // ── Página demo de checkout con split de pago (Fase 3) ──────────────────────
 // Ruta pública: /checkout-demo  (y /pago-demo/:orderId como destino del init_point
@@ -130,7 +131,7 @@ const CheckoutDemoPage = () => {
 
   return (
     <div style={box}>
-      <h1 style={{ fontSize: 24, marginBottom: 4 }}>Checkout demo — Split de pago</h1>
+      <h1 style={{ fontSize: 24, marginBottom: 4 }}><T>Checkout demo — Split de pago</T></h1>
       <p style={{ color: '#6b7280', marginTop: 0 }}>
         Crea una orden con sub-pedidos por vendedor y simula el pago aprobado (Mercado Pago marketplace).
         Los precios se recalculan en el servidor; aquí solo se envían productId y cantidad.
@@ -138,7 +139,7 @@ const CheckoutDemoPage = () => {
 
       {/* ── Carrito de ejemplo (editable) ─────────────────────────────── */}
       <div style={card}>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>Carrito</h2>
+        <h2 style={{ fontSize: 16, marginTop: 0 }}><T>Carrito</T></h2>
         {items.map((it, idx) => (
           <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
             <div style={{ flex: 3 }}>
@@ -211,7 +212,7 @@ const CheckoutDemoPage = () => {
             <>
               <p style={{ color: '#6b7280' }}>
                 No hay token de Mercado Pago en el entorno. Puedes simular el pago aprobado: marcará la orden
-                como <strong>paid</strong> y creará los <strong>payouts</strong> a cada vendedor.
+                como <strong>paid</strong> <T>y creará los</T> <strong>payouts</strong> a cada vendedor.
               </p>
               <button type="button" onClick={handleConfirmPayment} style={btnSecondary} disabled={confirming}>
                 {confirming ? 'Procesando…' : 'Simular pago aprobado'}
