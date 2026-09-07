@@ -55,13 +55,13 @@ const BrandLoader = ({ variant = 'fill' }) => {
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
             style={{ transformOrigin: 'center center' }}
-            animate={reducedMotion ? undefined : { scale: [1, 0.88, 1.06, 1], y: [0, 7, -3, 0] }}
+            animate={reducedMotion ? undefined : { scale: [1, 0.93, 1.02, 1], y: [0, 5, -1.5, 0] }}
             transition={reducedMotion ? undefined : {
-              duration: 0.7,
-              times: [0, 0.15, 0.5, 1],
+              duration: 1.1,
+              times: [0, 0.28, 0.62, 1],
               ease: ['easeOut', 'easeOut', 'easeInOut'],
               repeat: Infinity,
-              repeatDelay: 0.6,
+              repeatDelay: 1.1,
             }}
           >
             <defs>

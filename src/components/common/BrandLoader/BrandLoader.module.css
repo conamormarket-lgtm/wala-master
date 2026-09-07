@@ -70,36 +70,35 @@
   height: 104px;
 }
 
-/* Halo que "respira" detras del icono (framer-motion anima scale/opacity).
-   Radial en vez de un circulo solido: se difumina en los bordes en vez de
-   cortar en seco, mas cerca de un resplandor que de un anillo duro. */
+/* Resplandor ESTATICO detras del icono (radial difuso, no un anillo duro).
+   Tenue a proposito: con mas alpha "brillaba" demasiado y con el icono
+   moviendose se leia como destellos de luz. */
 .halo {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 70%);
   pointer-events: none;
 }
 
-/* Halo amplio y lento detras del anterior: mas grande y difuso, aporta
-   profundidad (un resplandor de fondo que late suave) sin competir con el
-   pulso principal. */
+/* Capa amplia y mas difusa detras de la anterior: aporta profundidad suave
+   sin competir. Tambien estatica y tenue. */
 .haloWide {
   position: absolute;
   inset: -28%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 68%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 68%);
   pointer-events: none;
 }
 
-/* El icono ya no rota (se veia tembloroso, como un logo "juguete" en vez
-   de una marca calma) — solo respira en escala junto con el halo. Mas
-   grande que antes (88px vs 64px): a pantalla completa 64px se perdia. */
+/* El icono es lo unico que se mueve (gesto de "click"). Sombra violeta
+   suave y contenida: con mas blur/alpha, al moverse el halo de sombra se
+   notaba como un exceso de luz/brillo alrededor. */
 .mark {
   position: relative;
   width: 96px;
   height: auto;
-  filter: drop-shadow(0 8px 24px rgba(76, 29, 149, 0.35));
+  filter: drop-shadow(0 5px 14px rgba(76, 29, 149, 0.28));
 }
 
 .inline .mark {
