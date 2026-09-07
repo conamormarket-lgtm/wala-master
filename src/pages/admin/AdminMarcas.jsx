@@ -719,7 +719,9 @@ const AdminMarcas = () => {
               <h3>¿Eliminar "{deleteConfirm.name}"?</h3>
             </div>
             <p className={styles.modalBody}>
-              Al eliminar esta marca, los productos que la tengan asignada volverán a tener el fondo predeterminado (transparent/blanco). Esta acción no se puede deshacer.
+              Se elimina la marca y también su página: <strong>wala.pe/{deleteConfirm.slug || ''}</strong> dejará de existir y redirigirá al inicio.
+              Los productos que la tengan asignada no se borran, pero volverán a tener el fondo predeterminado (transparent/blanco).
+              Esta acción no se puede deshacer.
             </p>
             <div className={styles.modalFooter}>
               <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>

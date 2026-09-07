@@ -476,8 +476,45 @@ export const updateBrand = async (id, data) => {
 };
 
 /**
- * Eliminar marca
+ * Eliminar marca Y su página.
+ *
+ * Antes solo borraba el doc de `tienda_brands`, y la página de la marca quedaba
+ * huérfana: WALA.PE/<slug> seguía abriendo (la landing existía) pero con un
+ * brandId muerto, o sea el hero con el nombre de una marca que ya no está y el
+ * catálogo vacío. Ahora se limpia todo el rastro:
+ *   - landingPages/{id}: el eslabón URL → marca. Sin él, /<slug> deja de
+ *     resolver y DynamicLandingPage redirige al inicio.
+ *   - pages/{id}: el layout de esa página.
+ *
+ * Se buscan las landings por `brandId` y no por slug: así se limpian también las
+ * que quedaron bajo otro slug (p.ej. uno capitalizado) y no hace falta que el
+ * campo `slug` de la marca esté al día.
+ *
+ * La marca se borra AUNQUE falle la limpieza — es lo que el admin pidió —, pero
+ * el error se devuelve en `paginasError` para poder avisarlo.
+ *
+ * NO toca los productos: conservan su `brandId` (igual que antes) y solo pierden
+ * el fondo propio de la marca.
+ *
+ * @returns {{ error:(string|null), paginasEliminadas:number, paginasError:(string|null) }}
  */
 export const deleteBrand = async (id) => {
-  return await deleteDocument(COLLECTION, id);
+  let paginasEliminadas = 0;
+  let paginasError = null;
+  try {
+    const { data: landings, error } = await getCollection('landingPages', [
+      { field: 'brandId', operator: '==', value: id }
+    ]);
+    if (error) throw new Error(error);
+    for (const lp of (landings || [])) {
+      await deleteDocument('landingPages', lp.id);
+      await deleteDocument('pages', lp.id);
+      paginasEliminadas++;
+    }
+  } catch (e) {
+    paginasError = e?.message || String(e);
+    console.warn('[brands] deleteBrand (limpieza de páginas):', paginasError);
+  }
+  const { error } = await deleteDocument(COLLECTION, id);
+  return { error: error || null, paginasEliminadas, paginasError };
 };
