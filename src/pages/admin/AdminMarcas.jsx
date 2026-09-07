@@ -266,7 +266,7 @@ const AdminMarcas = () => {
   };
 
   const handleGenerarLandings = () => {
-    if (!window.confirm('¿Aplicar la plantilla de página a las marcas que lo necesiten?\n\nCada marca queda con hero, navegación por categorías, destacados, ofertas, catálogo y marquee.\n\nNo modifica marcas ni productos. Las páginas a las que ya les agregaste o quitaste secciones en el Editor Visual se conservan tal cual.')) return;
+    if (!window.confirm('¿Aplicar la plantilla de página a las marcas que lo necesiten?\n\nCada marca queda con hero, navegación por categorías, destacados, ofertas, catálogo y marquee.\n\nNo modifica marcas ni productos. Se actualizan las páginas que solo tienen encabezado / categorías / catálogo; las que ya tienen contenido propio (hero, carruseles, banners…) se conservan tal cual.')) return;
     aplicarPlantilla(false);
   };
 
@@ -291,7 +291,7 @@ const AdminMarcas = () => {
               variant="secondary"
               onClick={handleGenerarLandings}
               disabled={backfilling}
-              title="Deja a cada marca con la misma página (hero, categorías, destacados, ofertas, catálogo y marquee). No pisa las páginas ya editadas a mano."
+              title="Deja a cada marca con la misma página (hero, categorías, destacados, ofertas, catálogo y marquee). No pisa las páginas que ya tienen contenido propio."
             >
               {backfilling ? 'Procesando…' : 'Aplicar plantilla de página'}
             </Button>
