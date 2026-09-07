@@ -5,6 +5,7 @@ import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { getCategories, getProducts, getProductsByBrand, categoriasConProductos } from '../../../services/products';
 import { getCollections } from '../../../services/collections';
 import { getBrands } from '../../../services/brands';
@@ -61,6 +62,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { wishlistItems } = useWishlist();
   const { lang, setLang, available, t } = useLanguage();
+  const { theme } = useTheme();
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
   const location = useLocation();
@@ -769,7 +771,14 @@ const Header = () => {
                   <div className={styles.prefsSection}>
                     <h4><T>Preferencias</T></h4>
                     <div className={styles.prefsRow}>
-                      <span className={styles.prefsLabel}><T>Modo oscuro</T></span>
+                      {/* El rotulo dice A DONDE se cambia, no en que modo
+                          estas: estando en oscuro decia "Modo oscuro" al lado
+                          de un sol que significa "pasar a claro", y las dos
+                          cosas se contradecian. Ahora coincide con el icono y
+                          con el title del propio interruptor. */}
+                      <span className={styles.prefsLabel}>
+                        <T>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</T>
+                      </span>
                       <ThemeToggle />
                     </div>
                     <div className={styles.langMenu}>
