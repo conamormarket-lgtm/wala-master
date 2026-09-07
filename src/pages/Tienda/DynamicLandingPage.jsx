@@ -30,6 +30,11 @@ const DynamicLandingPage = () => {
 
   useEffect(() => {
     let mounted = true;
+    // Al saltar de una marca a otra este efecto se re-ejecuta pero `loading`
+    // ya estaba en false, asi que se seguia viendo la landing ANTERIOR hasta
+    // que llegaba la nueva. Volviendo a poner loading se muestra el
+    // BrandLoader durante el salto, en vez de contenido de otra marca.
+    setLoading(true);
     const fetchLandingPage = async () => {
       const page = await getLandingPageBySlug(slug);
       if (mounted) {

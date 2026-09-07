@@ -1417,6 +1417,18 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const queryClient = useQueryClient();
   const [pageReady, setPageReady] = useState(false);
 
+  // Al cambiar de pagina (p. ej. saltar de una marca a otra) TiendaPage NO se
+  // vuelve a montar: React Router reutiliza el mismo componente. Sin esto,
+  // pageReady se quedaba en true del pase anterior y la marca nueva aparecia
+  // de golpe, con el contenido viejo todavia debajo. Se vuelve a "cargando"
+  // para que el overlay tape la transicion.
+  const paginaAnteriorRef = useRef(pageId);
+  useEffect(() => {
+    if (paginaAnteriorRef.current === pageId) return;
+    paginaAnteriorRef.current = pageId;
+    setPageReady(false);
+  }, [pageId]);
+
   // Tope absoluto desde el MONTAJE (no depende de que la config resuelva):
   // si algo cuelga — una query que reintenta sin fin, o incluso la propia
   // config que nunca llega (Firestore caido) — no dejamos al usuario
@@ -1446,6 +1458,44 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     return () => clearTimeout(t);
   }, [pageReady, contenidoRenderizando, queriesEnVuelo, queryClient]);
 
+  // ── LA IMAGEN DEL HERO TAMBIEN CUENTA COMO "CARGANDO" ─────────────
+  // pageReady mira solo las queries de Firestore. Pero el hero es una imagen
+  // grande servida desde Storage: las queries terminaban, el overlay se iba y
+  // quedaba el hero en NEGRO (su capa de oscurecido sobre nada) hasta que la
+  // imagen bajaba. Al cambiar de marca eso se veia como un pantallazo negro.
+  // Se precarga la imagen del hero y no se revela la pagina hasta tenerla.
+  const heroImagenUrl = useMemo(() => {
+    for (const sec of sorted) {
+      const st = sec?.settings || {};
+      if (sec?.type === 'hero_banner' && st.mediaType !== 'video' && st.mediaUrl) return st.mediaUrl;
+      if (sec?.type === 'hero_carousel') {
+        const primera = Array.isArray(st.slides) ? st.slides[0] : null;
+        if (primera?.imageUrl) return primera.imageUrl;
+      }
+    }
+    return '';
+  }, [sorted]);
+
+  const [heroListo, setHeroListo] = useState(false);
+
+  useEffect(() => {
+    // Sin hero con imagen no hay nada que esperar.
+    if (!heroImagenUrl) { setHeroListo(true); return undefined; }
+    setHeroListo(false);
+    let vivo = true;
+    const marcarListo = () => { if (vivo) setHeroListo(true); };
+    const img = new Image();
+    img.onload = marcarListo;
+    // Si la imagen falla (borrada, sin permisos) se revela igual: mejor la
+    // pagina sin hero que un loader eterno.
+    img.onerror = marcarListo;
+    img.src = toDirectImageUrl(heroImagenUrl);
+    // Tope propio, mas corto que el general de 10 s: una imagen pesada o un
+    // CDN lento no deben dejar al usuario mirando el loader.
+    const tope = setTimeout(marcarListo, 5000);
+    return () => { vivo = false; clearTimeout(tope); };
+  }, [heroImagenUrl]);
+
   // NOTA: ya NO hay un `return <BrandLoader/>` aparte para el estado
   // "config cargando". Antes ese gate tapaba SOLO el area de contenido
   // (#main-content-area), dejando ver el header, y luego el overlay de abajo
@@ -1466,7 +1516,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           (fade + leve zoom) revelando la tienda ya pintada — ver
           BrandLoaderOverlay. La logica de pageReady (useIsFetching + latch +
           tope de 8s) esta definida arriba. */}
-      <BrandLoaderOverlay show={!pageReady} />
+      <BrandLoaderOverlay show={!pageReady || !heroListo} />
       {!isLandingPage && !categoryId && !searchTerm && <AppDownloadBanner />}
       {sorted.map((section, index) => {
         const rendered = renderSection(section);
