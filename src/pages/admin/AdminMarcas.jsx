@@ -265,6 +265,27 @@ const AdminMarcas = () => {
     }
   };
 
+  // Elimina landings duplicadas por marca (conserva la canónica). No toca marcas ni productos.
+  const handleEliminarDuplicadas = async () => {
+    if (!window.confirm('¿Eliminar las landings DUPLICADAS de cada marca?\n\nSe conserva una por marca (la que coincide con su slug). No modifica marcas ni productos.')) return;
+    setBackfilling(true);
+    setBackfillMsg('');
+    try {
+      const res = await dedupeBrandLandings();
+      if (res.error) {
+        setBackfillMsg('❌ Error: ' + res.error);
+      } else {
+        setBackfillMsg(res.eliminadas > 0
+          ? `✅ Se eliminaron ${res.eliminadas} landing(s) duplicada(s).`
+          : '✅ No había landings duplicadas.');
+      }
+    } catch (e) {
+      setBackfillMsg('❌ Error: ' + (e?.message || e));
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
   const handleGenerarLandings = () => {
     if (!window.confirm('¿Aplicar la plantilla de página a las marcas que lo necesiten?\n\nCada marca queda con hero, navegación por categorías, destacados, ofertas, catálogo y marquee.\n\nNo modifica marcas ni productos. Se actualizan las páginas que solo tienen encabezado / categorías / catálogo; las que ya tienen contenido propio (hero, carruseles, banners…) se conservan tal cual.')) return;
     aplicarPlantilla(false);
