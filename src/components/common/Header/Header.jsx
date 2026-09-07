@@ -44,7 +44,7 @@ const LANG_NAMES = { es: 'Español', en: 'English', pt: 'Português (Brasil)' };
 
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
-  const { user, userProfile, updateUserProfile, activeMainCoins, isAdmin } = useAuth();
+  const { user, userProfile, updateUserProfile, activeMainCoins } = useAuth();
   const navigate = useNavigate();
   const { wishlistItems } = useWishlist();
   const { lang, setLang, available, t } = useLanguage();
@@ -499,11 +499,6 @@ const Header = () => {
 
             <NavLink to="/minijuegos" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`} end>{t('nav.minijuegos', 'Minijuegos')}</NavLink>
 
-            {user && isAdmin && (
-              <NavLink to="/admin" className={navLinkClass} onClick={closeDropdowns}>
-                Admin
-              </NavLink>
-            )}
           </nav>
         </EditableSection>
 
