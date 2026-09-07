@@ -239,8 +239,10 @@ const AdminMarcas = () => {
 
   // Aplica a TODAS las marcas la misma plantilla de página (hero, nav de
   // categorías, destacados, ofertas, catálogo y marquee), con la sesión del
-  // admin. Idempotente. Sin `force` NO pisa las páginas editadas a mano en el
-  // Editor Visual; con `force` se reescriben todas.
+  // admin. Idempotente y no destructivo: las páginas con contenido propio se
+  // conservan. `force` (reescribir todo, incluidas esas) sigue existiendo en
+  // ensureAllBrandLandings pero YA NO se expone como botón: la plantilla ya
+  // está aplicada y un clic de más borraba el diseño de todas las marcas.
   const aplicarPlantilla = async (force) => {
     setBackfilling(true);
     setBackfillMsg('');
@@ -291,11 +293,6 @@ const AdminMarcas = () => {
     aplicarPlantilla(false);
   };
 
-  const handleRegenerarTodas = () => {
-    if (!window.confirm('⚠️ REESCRIBIR la página de TODAS las marcas con la plantilla.\n\nEsto SÍ descarta los cambios hechos a mano en el Editor Visual de cada página de marca (no toca marcas, productos ni el resto del sitio).\n\n¿Continuar?')) return;
-    aplicarPlantilla(true);
-  };
-
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
@@ -315,15 +312,6 @@ const AdminMarcas = () => {
               title="Deja a cada marca con la misma página (hero, categorías, destacados, ofertas, catálogo y marquee). No pisa las páginas que ya tienen contenido propio."
             >
               {backfilling ? 'Procesando…' : 'Aplicar plantilla de página'}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleRegenerarTodas}
-              disabled={backfilling}
-              title="Reescribe la página de TODAS las marcas con la plantilla, descartando los cambios hechos a mano."
-            >
-              Regenerar todas (pisa ediciones)
             </Button>
             <Button
               type="button"
