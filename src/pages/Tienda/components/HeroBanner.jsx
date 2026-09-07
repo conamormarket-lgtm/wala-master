@@ -5,6 +5,7 @@ import { AuroraBackground, GlassButton, Reveal } from '../../../components/ui';
 import { trackBannerClick } from '../../../services/analytics/tracker';
 import { useAuth } from '../../../contexts/AuthContext';
 import styles from './HeroBanner.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 const HeroBanner = ({ config }) => {
   const { user } = useAuth();
@@ -156,7 +157,7 @@ const HeroBanner = ({ config }) => {
                   borderColor: buttonBgColor
                 }}
               >
-                {buttonText}
+                <T>{buttonText}</T>
               </GlassButton>
             </Link>
           )}

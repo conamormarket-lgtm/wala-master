@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Truck, Sparkles, ShieldCheck, Heart } from 'lucide-react';
 import styles from './AnnouncementBar.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 /**
  * Mensajes existentes (y los que un admin siga escribiendo así) llevan el
@@ -90,7 +91,7 @@ const AnnouncementBar = ({
         ) : Icon ? (
           <Icon className={styles.messageLucideIcon} aria-hidden="true" size={14} strokeWidth={2.25} />
         ) : showAccent ? <span className={styles.accentDot} aria-hidden="true" /> : null}
-        <span style={Object.keys(spanStyle).length ? spanStyle : undefined}>{Icon ? rest : msg.text}</span>
+        <span style={Object.keys(spanStyle).length ? spanStyle : undefined}><T>{Icon ? rest : msg.text}</T></span>
         {msg.link ? <span className={styles.linkArrow} aria-hidden="true">→</span> : null}
       </div>
     );

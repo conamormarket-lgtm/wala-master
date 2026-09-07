@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './Testimonials.module.css';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
+import { T } from '../../../../i18n/useTranslatedText';
 
 // filled=false dibuja la MISMA estrella en contorno (sin relleno) para el
 // resto hasta 5: una calificacion de 4 se ve como 4 llenas + 1 vacia, en vez
@@ -100,7 +101,7 @@ const Testimonials = ({ config, title, testimonials = [] }) => {
                 )}
                 <div className={styles.meta}>
                   <p className={styles.author}>{item.author}</p>
-                  {(item.topic || city) && <p className={styles.city}>{[item.topic, city].filter(Boolean).join(' · ')}</p>}
+                  {(item.topic || city) && <p className={styles.city}><T>{[item.topic, city].filter(Boolean).join(' · ')}</T></p>}
                   <div className={styles.stars} aria-label={`${item.rating || 5} de 5 estrellas`}>
                     {(() => {
                       const rating = Math.min(5, Math.max(1, Math.round(Number(item.rating) || 5)));
@@ -109,7 +110,7 @@ const Testimonials = ({ config, title, testimonials = [] }) => {
                   </div>
                 </div>
               </div>
-              <p className={styles.text}>“{item.text}”</p>
+              <p className={styles.text}>“<T>{item.text}</T>”</p>
               {item.verified && <span className={styles.verified}>✓ Compra verificada</span>}
             </article>
           );

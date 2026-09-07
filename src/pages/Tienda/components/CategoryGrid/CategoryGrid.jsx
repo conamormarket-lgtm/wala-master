@@ -4,6 +4,7 @@ import { TextoSeccion } from '../textStyleUtils.jsx';
 import { ensureSingleImageUrl, toDirectImageUrl } from '../../../../utils/imageUrl';
 import { idsDeCategoriaDe } from '../../../../services/products';
 import styles from './CategoryGrid.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 /**
  * Cuadrícula de Categorías: tiles grandes (imagen + nombre) que enlazan a la
@@ -121,9 +122,9 @@ const CategoryGrid = ({ title, config = {}, items = [], categories = [], product
                 {!img && <span className={styles.noImg} aria-hidden="true" />}
                 <span className={styles.overlay} />
                 <span className={styles.copy}>
-                  <span className={styles.name}>{it.name || 'Categoría'}</span>
+                  <span className={styles.name}><T>{it.name || 'Categoría'}</T></span>
                   {config.showProductCount && Number(it.productCount) > 0 && (
-                    <span className={styles.count}>{it.productCount} productos</span>
+                    <span className={styles.count}>{it.productCount} <T>productos</T></span>
                   )}
                 </span>
               </div>

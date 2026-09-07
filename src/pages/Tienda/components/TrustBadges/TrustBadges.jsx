@@ -1,6 +1,7 @@
 import React from 'react';
 import { Truck, ShieldCheck, Clock, CreditCard, RotateCcw, Heart, Star, CheckCircle } from 'lucide-react';
 import styles from './TrustBadges.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const ICON_MAP = {
   truck: Truck,
@@ -25,7 +26,7 @@ const TrustBadges = ({ badges = [] }) => {
             <div className={styles.icon}>
               <IconComponent size={24} strokeWidth={1.5} />
             </div>
-            <span className={styles.text}>{badge.text}</span>
+            <span className={styles.text}><T>{badge.text}</T></span>
           </div>
         );
       })}

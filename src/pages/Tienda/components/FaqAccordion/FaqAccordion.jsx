@@ -2,6 +2,7 @@ import React, { useId, useState, useRef, useLayoutEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import styles from './FaqAccordion.module.css';
 import { TextoSeccion } from '../textStyleUtils.jsx';
+import { T } from '../../../../i18n/useTranslatedText';
 
 // Debe coincidir con el `gap` de .list en FaqAccordion.module.css (0.75rem
 // sobre una raiz de 16px). Se usa para calcular el alto reservado de la lista.
@@ -95,7 +96,7 @@ const FaqAccordion = ({ config = {} }) => {
                   aria-expanded={isOpen}
                   aria-controls={answerId}
                 >
-                  <span>{item.question}</span>
+                  <span><T>{item.question}</T></span>
                   <ChevronDown
                     className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
                     aria-hidden="true"
@@ -111,7 +112,7 @@ const FaqAccordion = ({ config = {} }) => {
                   >
                     <div ref={(el) => { answerRefs.current[idx] = el; }} className={styles.answerClip}>
                       <div className={styles.answer}>
-                        <p className={styles.answerInner}>{item.answer}</p>
+                        <p className={styles.answerInner}><T>{item.answer}</T></p>
                       </div>
                     </div>
                   </div>

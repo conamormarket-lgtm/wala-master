@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import styles from './BannerGrid.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const brandSlug = (brand) => {
   if (brand?.slug) return String(brand.slug).replace(/^\/+|\/+$/g, '');
@@ -197,12 +198,12 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
           )}
         </div>
         <div className={styles.brandCopy}>
-          <span className={styles.brandEyebrow}>Universo Walá</span>
+          <span className={styles.brandEyebrow}><T>Universo Walá</T></span>
           {config.showBrandName !== false && (
             <h3 className={styles.brandName}>{item.name}</h3>
           )}
           <span className={styles.brandCta}>
-            Explorar colección <span className={styles.brandArrow} aria-hidden="true">→</span>
+            <T>Explorar colección</T> <span className={styles.brandArrow} aria-hidden="true">→</span>
           </span>
         </div>
       </>
@@ -226,8 +227,8 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
 
   const encabezado = (config.title || config.subtitle) && (
     <header className={styles.header}>
-      {config.title && <h2 className={styles.title} style={{ color: config.titleColor || undefined }}>{config.title}</h2>}
-      {config.subtitle && <p className={styles.subtitle} style={{ color: config.subtitleColor || undefined }}>{config.subtitle}</p>}
+      {config.title && <h2 className={styles.title} style={{ color: config.titleColor || undefined }}><T>{config.title}</T></h2>}
+      {config.subtitle && <p className={styles.subtitle} style={{ color: config.subtitleColor || undefined }}><T>{config.subtitle}</T></p>}
     </header>
   );
 

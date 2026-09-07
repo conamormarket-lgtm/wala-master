@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import styles from './HeroCarousel.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const hexToRgba = (color, opacity) => {
   if (!color || color === 'transparent') return 'transparent';
@@ -113,8 +114,8 @@ const HeroCarousel = ({ slides = [], autoPlaySpeed = 5000, config = {} }) => {
                  }}
                >
                  <div className={styles.slideContent}>
-                   {slide.title && <h1 style={{ color: slide.titleColor || '#ffffff' }}>{slide.title}</h1>}
-                   {slide.subtitle && <p style={{ color: slide.subtitleColor || '#ffffff' }}>{slide.subtitle}</p>}
+                   {slide.title && <h1 style={{ color: slide.titleColor || '#ffffff' }}><T>{slide.title}</T></h1>}
+                   {slide.subtitle && <p style={{ color: slide.subtitleColor || '#ffffff' }}><T>{slide.subtitle}</T></p>}
                    {slide.buttonText && (slide.buttonLink || slide.link) && (
                      (slide.buttonLink || slide.link).startsWith('http') ? (
                        <a
@@ -124,14 +125,14 @@ const HeroCarousel = ({ slides = [], autoPlaySpeed = 5000, config = {} }) => {
                          className={styles.slideButton}
                          style={{ backgroundColor: slide.buttonBgColor || '#ffffff', color: slide.buttonTextColor || '#111827' }}
                          tabIndex={isActive ? 0 : -1}
-                       >{slide.buttonText}</a>
+                       ><T>{slide.buttonText}</T></a>
                      ) : (
                        <Link
                          to={slide.buttonLink || slide.link}
                          className={styles.slideButton}
                          style={{ backgroundColor: slide.buttonBgColor || '#ffffff', color: slide.buttonTextColor || '#111827' }}
                          tabIndex={isActive ? 0 : -1}
-                       >{slide.buttonText}</Link>
+                       ><T>{slide.buttonText}</T></Link>
                      )
                    )}
                  </div>
