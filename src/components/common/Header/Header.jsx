@@ -628,7 +628,7 @@ const Header = () => {
                       🪙 {Math.floor(displayCoins)}
                     </div>
                     <div className={styles.tooltipText}>
-                      Billetera Principal - ¡Canjea tus monedas en el catálogo o checkout!
+                      <T>Billetera Principal - ¡Canjea tus monedas en el catálogo o checkout!</T>
                     </div>
                   </div>
 
@@ -638,7 +638,7 @@ const Header = () => {
                       🍖 {displayKapiCoins}
                     </div>
                     <div className={styles.tooltipText}>
-                      Billetera Diaria - Kapi Coins (Vencen a fin de mes)
+                      <T>Billetera Diaria</T> - Kapi Coins (<T>Vencen a fin de mes</T>)
                     </div>
                   </div>
                 </div>
@@ -712,8 +712,8 @@ const Header = () => {
                 <div className={styles.accountPopupContent}>
                   {user ? (
                     <>
-                      <h3>Hola, {userProfile?.displayName || userProfile?.nombre || user.email?.split('@')[0]}</h3>
-                      <p>Bienvenido a tu cuenta</p>
+                      <h3><T>Hola</T>, {userProfile?.displayName || userProfile?.nombre || user.email?.split('@')[0]}</h3>
+                      <p><T>Bienvenido a tu cuenta</T></p>
                       
                       {!userProfile?.hasCompletedSurvey && (
                         <div style={{ background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', border: '1px solid #e2e8f0', textAlign: 'left' }}>
@@ -731,24 +731,24 @@ const Header = () => {
 
                       <div className={styles.accountButtons}>
                         <Link to="/cuenta" className={styles.primaryButton} onClick={closeDropdowns}>
-                          Mi Perfil
+                          <T>Mi Perfil</T>
                         </Link>
                         <button onClick={() => { logout(); closeDropdowns(); }} className={styles.secondaryButton} style={{ width: '100%', cursor: 'pointer', border: '1px solid #ccc' }}>
-                          Cerrar sesión
+                          <T>Cerrar sesión</T>
                         </button>
                       </div>
                     </>
                   ) : (
                     <>
-                      <h3>{accountPopup.title}</h3>
-                      <p>{accountPopup.description}</p>
+                      <h3><T>{accountPopup.title}</T></h3>
+                      <p><T>{accountPopup.description}</T></p>
                       
                       <div className={styles.accountButtons}>
                         <Link to={accountPopup.loginButtonUrl || '/login'} className={styles.primaryButton} onClick={closeDropdowns}>
-                          {accountPopup.loginButtonText || 'Iniciar sesión'}
+                          <T>{accountPopup.loginButtonText || 'Iniciar sesión'}</T>
                         </Link>
                         <Link to={accountPopup.registerButtonUrl || '/registro'} className={styles.secondaryButton} onClick={closeDropdowns}>
-                          {accountPopup.registerButtonText || 'Crear cuenta'}
+                          <T>{accountPopup.registerButtonText || 'Crear cuenta'}</T>
                         </Link>
                       </div>
                     </>
@@ -758,9 +758,9 @@ const Header = () => {
                       superior (antes 2 iconos sueltos ahi) — viven mejor
                       junto al resto de ajustes de la cuenta. */}
                   <div className={styles.prefsSection}>
-                    <h4>Preferencias</h4>
+                    <h4><T>Preferencias</T></h4>
                     <div className={styles.prefsRow}>
-                      <span className={styles.prefsLabel}>Modo oscuro</span>
+                      <span className={styles.prefsLabel}><T>Modo oscuro</T></span>
                       <ThemeToggle />
                     </div>
                     <div className={styles.langMenu}>
@@ -830,7 +830,7 @@ const Header = () => {
                     if (wishlistItems.length > 0) {
                       return (
                         <>
-                          <h3>Tu Lista de Deseos</h3>
+                          <h3><T>Tu Lista de Deseos</T></h3>
                           <p style={textStyle}>Tienes {wishlistItems.length} producto{wishlistItems.length !== 1 ? 's' : ''} guardado{wishlistItems.length !== 1 ? 's' : ''} en tu lista.</p>
                           <div className={styles.wishlistPreviewStrip}>
                             {wishlistItems.slice(0, 4).map((item) => (
@@ -854,7 +854,7 @@ const Header = () => {
                           </div>
                           <div className={styles.accountButtons}>
                             <Link to="/cuenta/wishlist" className={styles.primaryButton} onClick={closeDropdowns}>
-                              Ver mi lista
+                              <T>Ver mi lista</T>
                             </Link>
                           </div>
                         </>
@@ -875,14 +875,14 @@ const Header = () => {
 
                   return (
                     <>
-                      <h3>{favConfig.loggedOutTitle || 'Tus Favoritos'}</h3>
-                      <p style={textStyle}>{favConfig.loggedOutText || 'Aún no tienes artículos guardados. Inicia sesión para crear tu lista de deseos.'}</p>
+                      <h3><T>{favConfig.loggedOutTitle || 'Tus Favoritos'}</T></h3>
+                      <p style={textStyle}><T>{favConfig.loggedOutText || 'Aún no tienes artículos guardados. Inicia sesión para crear tu lista de deseos.'}</T></p>
                       <div className={styles.accountButtons}>
                         <Link to="/login" className={styles.primaryButton} onClick={closeDropdowns}>
-                          Iniciar sesión
+                          <T>Iniciar sesión</T>
                         </Link>
                         <Link to="/tienda" className={styles.secondaryButton} onClick={closeDropdowns}>
-                          Explorar tienda
+                          <T>Explorar tienda</T>
                         </Link>
                       </div>
                     </>
@@ -902,12 +902,12 @@ const Header = () => {
 
             <div className={`${styles.accountPopup} ${styles.cartPopupWidth} ${styles.mobileCenteredPopup}`}>
               <div className={styles.accountPopupContent}>
-                <h3 style={{textAlign: 'left', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem', marginBottom: '0.75rem'}}>Mi Carrito</h3>
+                <h3 style={{textAlign: 'left', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem', marginBottom: '0.75rem'}}><T>Mi Carrito</T></h3>
                 {cartItems.length === 0 ? (
                   <>
-                    <p>Tu carrito está vacío en este momento.</p>
+                    <p><T>Tu carrito está vacío en este momento.</T></p>
                     <div className={styles.accountButtons}>
-                      <Link to="/tienda" className={styles.primaryButton} onClick={closeDropdowns}>Explorar tienda</Link>
+                      <Link to="/tienda" className={styles.primaryButton} onClick={closeDropdowns}><T>Explorar tienda</T></Link>
                     </div>
                   </>
                 ) : (

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotifications } from '../../../hooks/useNotifications';
 import styles from './Header.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 const NotificationTray = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, requestPermission } = useNotifications();
@@ -26,7 +27,7 @@ const NotificationTray = () => {
           {/* Separador del tema: --color-border se oscurece en modo noche. */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
             {/* Título legible en oscuro (antes heredaba; lo fijamos al texto del tema). */}
-            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-text)' }}>Notificaciones</h3>
+            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-text)' }}><T>Notificaciones</T></h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
@@ -38,7 +39,7 @@ const NotificationTray = () => {
           </div>
 
           {notifications.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '1rem 0' }}>No tienes notificaciones recientes.</p>
+            <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '1rem 0' }}><T>No tienes notificaciones recientes.</T></p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {notifications.slice(0, 10).map((notif) => (
