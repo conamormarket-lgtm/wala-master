@@ -8,7 +8,7 @@ const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.link} ${styles.linkActive}` : styles.link;
 
 const BottomNav = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const location = useLocation();
   const { isFooterVisible } = useLayoutContext();
 
@@ -62,6 +62,19 @@ const BottomNav = () => {
         </span>
         <span className={styles.label}>Mi cuenta</span>
       </NavLink>
+      {user && isAdmin && (
+        <NavLink to="/admin" className={navLinkClass} aria-label="Admin">
+          <span className={styles.icon} aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          </span>
+          <span className={styles.label}>Admin</span>
+        </NavLink>
+      )}
     </nav>
   );
 };

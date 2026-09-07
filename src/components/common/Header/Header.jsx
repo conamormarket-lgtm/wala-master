@@ -44,7 +44,7 @@ const LANG_NAMES = { es: 'Español', en: 'English', pt: 'Português (Brasil)' };
 
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
-  const { user, userProfile, updateUserProfile, activeMainCoins } = useAuth();
+  const { user, userProfile, updateUserProfile, activeMainCoins, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { wishlistItems } = useWishlist();
   const { lang, setLang, available, t } = useLanguage();
@@ -491,12 +491,11 @@ const Header = () => {
 
             <NavLink to="/minijuegos" className={(props) => `${navLinkClass(props)} ${styles.desktopOnlyItem}`} end>{t('nav.minijuegos', 'Minijuegos')}</NavLink>
 
-            {/* "Mi cuenta" y "Administración" se quitan de aqui: son
-                redundantes con el icono de usuario (que ya lleva a /cuenta
-                con un popup de perfil) y con el acceso al panel que ahora
-                vive en la propia AdminBar (unicamente visible para admins,
-                en vez de mezclado con el nav publico). Menos texto repetido
-                en la barra, mismo destino a un clic de distancia. */}
+            {user && isAdmin && (
+              <NavLink to="/admin" className={navLinkClass} onClick={closeDropdowns}>
+                Admin
+              </NavLink>
+            )}
           </nav>
         </EditableSection>
 

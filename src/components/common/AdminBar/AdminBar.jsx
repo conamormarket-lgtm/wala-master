@@ -74,11 +74,7 @@ const AdminBar = () => {
         <div className={styles.adminActions}>
           {isStorefront ? (
             <>
-              {/* Antes "Administración" vivia como link de texto en el nav
-                  publico del Header (visible para todos, aunque solo se
-                  renderizaba si isAdmin) — se quito de ahi para destrancar
-                  esa barra, y el acceso al panel completo vive aqui, en la
-                  franja que YA es exclusiva de admins. */}
+              {/* Acceso al panel junto a las acciones de edición visual. */}
               <Link to="/admin" className={styles.dashboardLink}>
                 Panel
               </Link>
