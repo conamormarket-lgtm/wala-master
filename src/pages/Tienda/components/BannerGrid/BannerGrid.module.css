@@ -310,3 +310,130 @@
     font-size: 0.7rem;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   RIEL HORIZONTAL DE MARCAS (modo dataSource: 'brands')
+   Antes el mosaico crecía hacia abajo: con 6 marcas iba bien, con 20 la home
+   se volvía interminable. Ahora se acota a DOS FILAS y lo demás se alcanza
+   desplazándose de lado. Las TARJETAS no cambian — es el contenedor el que
+   pasa de rejilla vertical a riel.
+   ═════════════════════════════════════════════════════════════════════════ */
+.carousel {
+  position: relative;
+}
+
+.scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  /* Aire para que la sombra y el hover (que sube 3px) no queden cortados. */
+  padding: 6px 4px 12px;
+  margin: -6px -4px -12px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* Foco visible al llegar con el teclado: el riel es tabbable para poder
+   recorrerlo con las flechas del teclado. */
+.scroller:focus-visible {
+  outline: 2px solid var(--primary-color, #7c3aed);
+  outline-offset: 4px;
+  border-radius: 22px;
+}
+
+.rail {
+  display: grid;
+  /* DOS filas fijas; las columnas se generan solas hacia la derecha. */
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column dense;
+  /* Ancho de una tarjeta "normal". La destacada ocupa dos de estas columnas
+     (regla .brandFeatured de abajo), que es lo que conserva el ritmo del
+     mosaico: ancha, angosta, angosta, ancha… */
+  grid-auto-columns: clamp(230px, 24vw, 330px);
+  width: max-content;
+}
+
+/* Dentro del riel, "span 2" deja de significar dos columnas de una rejilla
+   vertical y pasa a significar el doble de ancho en el riel: mismo efecto
+   visual, misma alternancia. */
+.rail .brandFeatured {
+  grid-column: span 2;
+  grid-template-columns: minmax(200px, 1.2fr) minmax(150px, 0.8fr);
+}
+
+.rail .brandCell {
+  scroll-snap-align: start;
+}
+
+/* Flechas: mismo lenguaje que los carruseles de producto. Se ocultan solas
+   (atributo hidden desde el componente) cuando no hay nada que desplazar. */
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 50%;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #111827);
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.14);
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+}
+
+.navButton:hover:not(:disabled) {
+  background: var(--color-surface-2, #f3f4f6);
+}
+
+.navButton:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Media flecha por fuera del riel: montada sobre el borde, sin taparle la
+   esquina a la primera/ultima tarjeta. Cabe siempre dentro del padding 4vw
+   de .section (21px < 36px, el minimo antes de que las flechas se oculten). */
+.navPrev {
+  left: -21px;
+}
+
+.navNext {
+  right: -21px;
+}
+
+@media (max-width: 900px) {
+  .rail {
+    grid-auto-columns: clamp(215px, 62vw, 300px);
+  }
+
+  /* En pantallas angostas la tarjeta destacada al doble de ancho obliga a
+     desplazar demasiado para leer una sola marca: todas van iguales. */
+  .rail .brandFeatured {
+    grid-column: span 1;
+    grid-template-columns: minmax(0, 1fr) minmax(110px, 42%);
+  }
+
+  .navButton {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .rail {
+    grid-auto-columns: min(78vw, 300px);
+  }
+
+  .rail .brandFeatured {
+    grid-template-columns: minmax(0, 1fr) minmax(105px, 40%);
+  }
+}
