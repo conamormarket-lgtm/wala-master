@@ -21,6 +21,7 @@ import OptimizedImage from '../OptimizedImage/OptimizedImage';
 import FlagIcon from '../../i18n/FlagIcon';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import { T } from '../../../i18n/useTranslatedText';
+import { registrarTextosSinTraducir } from '../../../services/translate';
 
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
@@ -113,6 +114,14 @@ const Header = () => {
     },
     staleTime: 15 * 60 * 1000,
   });
+
+  // Los nombres de marca NO se traducen en ningun sitio. El Header es quien ya
+  // tiene la lista cargada, asi que se registra aqui y el traductor la respeta
+  // venga por donde venga el texto — incluido el titulo del hero de la pagina
+  // de marca, que ES el nombre de la marca escrito como texto del builder.
+  useEffect(() => {
+    registrarTextosSinTraducir((brandsData || []).map((b) => b?.name));
+  }, [brandsData]);
 
   // Primer segmento del pathname (sin la barra inicial). Ej: "/MUSSA?x=1" → "mussa".
   const firstSegment = (location.pathname.split('/')[1] || '').trim().toLowerCase();
