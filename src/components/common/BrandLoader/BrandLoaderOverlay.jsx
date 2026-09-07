@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EASE_SIGNATURE, useReducedMotionSafe } from '../../../theme/motion';
@@ -29,6 +29,26 @@ import BrandLoader from './BrandLoader';
  */
 const BrandLoaderOverlay = ({ show }) => {
   const reducedMotion = useReducedMotionSafe();
+
+  // Bloquea el scroll del documento mientras el loader esta visible: sin
+  // esto, el contenido de la tienda (ya renderizado debajo del overlay) hace
+  // que la pagina sea alta y aparece una barra de scroll SOBRE la pantalla
+  // de carga — se veia raro (una barra que aparecia y desaparecia durante la
+  // carga). Se compensa el ancho de la barra con padding-right para que al
+  // soltar el bloqueo el contenido no "salte" de lado.
+  useEffect(() => {
+    if (!show) return undefined;
+    const html = document.documentElement;
+    const prevOverflow = html.style.overflow;
+    const prevPadding = html.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - html.clientWidth;
+    html.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) html.style.paddingRight = `${scrollbarWidth}px`;
+    return () => {
+      html.style.overflow = prevOverflow;
+      html.style.paddingRight = prevPadding;
+    };
+  }, [show]);
 
   return createPortal(
     <AnimatePresence initial={false}>

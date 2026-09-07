@@ -67,17 +67,29 @@ const BrandLoader = ({ variant = 'fill' }) => {
             animate={reducedMotion ? undefined : { scale: [1, 1.045, 1] }}
             transition={reducedMotion ? undefined : { duration: BREATHE, repeat: Infinity, ease: 'easeInOut' }}
           >
+            <defs>
+              {/* Mismo degradado de marca que el logo real del Header
+                  (walaGradient: #8B5CF6 -> #5B21B6 en diagonal). Id propio
+                  ('walaLoaderGrad') para no colisionar con el id del Header,
+                  que puede estar en el DOM a la vez detras del overlay. */}
+              <linearGradient id="walaLoaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#8B5CF6" />
+                <stop offset="100%" stopColor="#5B21B6" />
+              </linearGradient>
+            </defs>
             <path
               d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z"
               fill="#FFFFFF"
             />
-            <circle cx="67" cy="23" r="6.5" fill="#4C1D95" />
-            {/* La W se escala al 0.8 sobre su propio centro (55,58) para
-                dejar aire entre el trazo y el borde blanco de la bolsa. */}
+            <circle cx="67" cy="23" r="6.5" fill="#5B21B6" />
+            {/* La W en el degradado de marca (antes un violeta plano oscuro),
+                para que combine con el logo real de la tienda. Se escala al
+                0.8 sobre su centro (55,58) para dejar aire con el borde
+                blanco de la bolsa. */}
             <path
               d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38"
               fill="none"
-              stroke="#4C1D95"
+              stroke="url(#walaLoaderGrad)"
               strokeWidth="15"
               strokeLinecap="round"
               strokeLinejoin="round"
