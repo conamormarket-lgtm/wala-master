@@ -81,6 +81,17 @@
   pointer-events: none;
 }
 
+/* Halo amplio y lento detras del anterior: mas grande y difuso, aporta
+   profundidad (un resplandor de fondo que late suave) sin competir con el
+   pulso principal. */
+.haloWide {
+  position: absolute;
+  inset: -28%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 68%);
+  pointer-events: none;
+}
+
 /* El icono ya no rota (se veia tembloroso, como un logo "juguete" en vez
    de una marca calma) — solo respira en escala junto con el halo. Mas
    grande que antes (88px vs 64px): a pantalla completa 64px se perdia. */
@@ -134,7 +145,15 @@
   inset: 0;
   width: 36%;
   border-radius: inherit;
-  background: rgba(255, 255, 255, 0.95);
+  /* Pastilla con nucleo blanco y bordes que se difuminan (no un bloque duro)
+     + un halo suave, para que el barrido se lea premium y no plano. */
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.55);
 }
 
 /* Reduced motion: sin barrido, un trazo estatico a medio llenar en vez de

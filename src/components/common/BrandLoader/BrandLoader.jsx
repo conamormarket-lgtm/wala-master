@@ -4,40 +4,32 @@ import { EASE_SIGNATURE, useReducedMotionSafe } from '../../../theme/motion';
 import styles from './BrandLoader.module.css';
 
 /**
- * Pantalla de carga estilizada del sistema — reemplaza los textos sueltos
- * ("Cargando configuración...") y el fondo generico (.landing-page-boot)
- * que existian antes en TiendaPage.jsx, cada uno con su propio look.
+ * Pantalla de carga estilizada del sistema (isotipo del logo en "negativo"
+ * — bolsa blanca + W violeta — sobre el degradado de marca).
  *
- * Mismo isotipo del logo del Header (Header.jsx), en "negativo": el tag
- * queda blanco solido y el trazo de la W en violeta profundo, para que se
- * lea con contraste sobre el degradado de marca de fondo (el logo real
- * hace lo opuesto: tag en degradado violeta, W en blanco, sobre pagina
- * clara).
+ * Animación (framer-motion, misma curva firma EASE_SIGNATURE que el resto
+ * del sistema de movimiento):
+ *  - Un doble halo que "respira" detrás del icono (uno rápido que pulsa y
+ *    se difumina, otro lento y amplio que da profundidad), sincronizado con
+ *    la respiración en escala del icono. Un solo gesto calmo y coherente,
+ *    nada juguetón — tono ecommerce premium.
+ *  - Una barra de progreso indeterminada con brillo suave: comunica "algo
+ *    esta pasando" sin fingir un porcentaje real.
  *
- * v2: el icono solo, flotando en un degradado plano, se veia perdido y
- * "vacio" en pantalla completa (sin contexto de marca ni de que algo esta
- * pasando). Ahora es un lockup icono + wordmark ("WALA", mismo tratamiento
- * tipografico del logo real: Poppins/Montserrat, mayusculas, tracking
- * ancho) + una barra de progreso indeterminada debajo, sobre un fondo con
- * un par de glows suaves (mismo lenguaje que --gradient-aurora) en vez del
- * degradado liso. El icono ya no rota (se veia tembloroso/juguete); ahora
- * solo respira en escala junto con el halo, un solo gesto coherente.
+ * Los elementos NO tienen animacion de ENTRADA (aparecen ya en su estado
+ * final y solo hacen sus loops): asi el relevo desde el splash estatico de
+ * index.html — que muestra el MISMO lockup — es invisible, sin un
+ * re-"fade-in" del logo que se leeria como un parpadeo. La animacion de
+ * SALIDA (cuando termina la carga) vive en BrandLoaderOverlay.jsx.
  *
- * Animacion con framer-motion (ya es dependencia del proyecto — ver
- * theme/motion.js, PremiumProductCard.jsx) en vez de un keyframe CSS
- * suelto: halo + icono respirando en escala + wordmark entrando con fade,
- * misma curva firma (EASE_SIGNATURE) que el resto del sistema de
- * movimiento (la barra de progreso usa easeInOut propio: es un barrido en
- * loop, no una entrada, y la curva firma "expo-out" se ve rara repetida).
- * Respeta prefers-reduced-motion vía useReducedMotionSafe (mismo hook que
- * ya usan las tarjetas de producto): sin movimiento, el icono y el halo
- * quedan quietos y la barra se ve como un trazo estatico a medio llenar.
+ * Respeta prefers-reduced-motion (useReducedMotionSafe): sin movimiento,
+ * icono y halos quietos y la barra como un trazo estatico a medio llenar.
  *
- * @param {'fill'|'inline'} variant  'fill' = llena el alto de su contenedor
- *   (#main-content-area, que ya via flex ocupa desde el navbar hasta abajo
- *   — ver App.css), 'inline' = alto fijo mas chico para usar suelto dentro
- *   de un layout con su propio chrome alrededor.
+ * @param {'fill'|'inline'} variant  'fill' = llena el alto de su contenedor,
+ *   'inline' = alto fijo mas chico para usar suelto dentro de un layout.
  */
+const BREATHE = 2.4; // s — respiración del icono + halos (todo sincronizado)
+
 const BrandLoader = ({ variant = 'fill' }) => {
   const reducedMotion = useReducedMotionSafe();
 
@@ -50,20 +42,30 @@ const BrandLoader = ({ variant = 'fill' }) => {
       <div className={styles.stack}>
         <div className={styles.markWrap}>
           {!reducedMotion && (
-            <motion.span
-              className={styles.halo}
-              aria-hidden="true"
-              animate={{ scale: [0.85, 1.45], opacity: [0.55, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: EASE_SIGNATURE }}
-            />
+            <>
+              {/* Halo amplio y lento: da profundidad detrás del icono. */}
+              <motion.span
+                className={styles.haloWide}
+                aria-hidden="true"
+                animate={{ scale: [0.9, 1.15, 0.9], opacity: [0.35, 0.6, 0.35] }}
+                transition={{ duration: BREATHE, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              {/* Halo que pulsa y se difumina hacia afuera. */}
+              <motion.span
+                className={styles.halo}
+                aria-hidden="true"
+                animate={{ scale: [0.85, 1.5], opacity: [0.55, 0] }}
+                transition={{ duration: BREATHE, repeat: Infinity, ease: EASE_SIGNATURE }}
+              />
+            </>
           )}
           <motion.svg
             viewBox="12 0 94 109"
             className={styles.mark}
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
-            animate={reducedMotion ? undefined : { scale: [1, 1.05, 1] }}
-            transition={reducedMotion ? undefined : { duration: 1.8, repeat: Infinity, ease: EASE_SIGNATURE }}
+            animate={reducedMotion ? undefined : { scale: [1, 1.045, 1] }}
+            transition={reducedMotion ? undefined : { duration: BREATHE, repeat: Infinity, ease: 'easeInOut' }}
           >
             <path
               d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z"
@@ -71,9 +73,7 @@ const BrandLoader = ({ variant = 'fill' }) => {
             />
             <circle cx="67" cy="23" r="6.5" fill="#4C1D95" />
             {/* La W se escala al 0.8 sobre su propio centro (55,58) para
-                dejar mas aire entre el trazo y el borde blanco de la bolsa:
-                antes quedaba muy pegada a los bordes. El transform tambien
-                afina el trazo (15 * 0.8 = 12 visual), aligerando el conjunto. */}
+                dejar aire entre el trazo y el borde blanco de la bolsa. */}
             <path
               d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38"
               fill="none"
@@ -86,14 +86,7 @@ const BrandLoader = ({ variant = 'fill' }) => {
           </motion.svg>
         </div>
 
-        <motion.span
-          className={styles.wordmark}
-          initial={{ opacity: 0, y: reducedMotion ? 0 : 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: EASE_SIGNATURE, delay: 0.1 }}
-        >
-          Walá
-        </motion.span>
+        <span className={styles.wordmark}>Walá</span>
 
         <div className={styles.progressTrack} aria-hidden="true">
           {reducedMotion ? (
@@ -101,8 +94,8 @@ const BrandLoader = ({ variant = 'fill' }) => {
           ) : (
             <motion.span
               className={styles.progressBar}
-              animate={{ x: ['-120%', '320%'] }}
-              transition={{ duration: 1.3, repeat: Infinity, ease: 'easeInOut' }}
+              animate={{ x: ['-140%', '340%'] }}
+              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
             />
           )}
         </div>

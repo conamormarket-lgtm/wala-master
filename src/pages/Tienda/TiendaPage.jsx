@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
@@ -51,7 +50,7 @@ import EditableSection from '../../components/admin/EditableSection';
 import { useVisualEditor } from './contexts/VisualEditorContext';
 import AppDownloadBanner from './components/AppDownloadBanner';
 import { isKcheroLanding } from '../../constants/landingSlugs';
-import BrandLoader from '../../components/common/BrandLoader/BrandLoader';
+import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderOverlay';
 import styles from './TiendaPage.module.css';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
@@ -1418,15 +1417,18 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const queryClient = useQueryClient();
   const [pageReady, setPageReady] = useState(false);
 
-  // Tope absoluto: si alguna query cuelga o reintenta sin fin, no dejamos al
-  // usuario atrapado en el loader — pasada esta cota mostramos la pagina
-  // igual (lo que falte sigue con su ProductCardSkeleton). Arranca cuando hay
-  // contenido y NO se reinicia con cada cambio de queriesEnVuelo.
+  // Tope absoluto desde el MONTAJE (no depende de que la config resuelva):
+  // si algo cuelga — una query que reintenta sin fin, o incluso la propia
+  // config que nunca llega (Firestore caido) — no dejamos al usuario
+  // atrapado en el loader. Pasada esta cota se revela la pagina igual (lo
+  // que falte sigue con su ProductCardSkeleton, o vacia si ni la config
+  // cargo). Es la red de seguridad; en una carga normal quien dispara
+  // pageReady es la deteccion de "idle" de abajo, mucho antes.
   useEffect(() => {
-    if (!contenidoRenderizando || pageReady) return undefined;
-    const tope = setTimeout(() => setPageReady(true), 8000);
+    if (pageReady) return undefined;
+    const tope = setTimeout(() => setPageReady(true), 10000);
     return () => clearTimeout(tope);
-  }, [contenidoRenderizando, pageReady]);
+  }, [pageReady]);
 
   // Deteccion de "ya no queda nada cargando": cuando queriesEnVuelo llega a 0
   // con la config lista, esperamos un instante y re-chequeamos de forma
@@ -1459,19 +1461,16 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       {/* LOADER DE PÁGINA COMPLETA (Walá) HASTA QUE TODO CARGUE
           El contenido se renderiza SIEMPRE debajo (para que cada seccion
           monte y dispare sus fetches), pero mientras `pageReady` sea false
-          lo tapa este overlay a pantalla completa con el BrandLoader. Asi el
-          usuario ve la carga de marca hasta que la pagina esta realmente
-          lista, en vez de una pagina a medio llenar. La logica de pageReady
-          (useIsFetching + latch + tope de 8s) esta definida arriba.
-          Via portal a document.body: lo saca del .container (overflow-x:clip)
-          y de #main-content-area (anima opacidad) para que el position:fixed
-          se ancle al viewport y nada lo recorte. */}
-      {!pageReady && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 99999 }}>
-          <BrandLoader />
-        </div>,
-        document.body
-      )}
+          lo tapa este overlay a pantalla completa con el BrandLoader. Cuando
+          pageReady pasa a true, el overlay hace su transicion de SALIDA
+          (fade + leve zoom) revelando la tienda ya pintada — ver
+          BrandLoaderOverlay. La logica de pageReady (useIsFetching + latch +
+          tope de 8s) esta definida arriba. */}
+      <BrandLoaderOverlay show={!pageReady} />
+      {/* INDICADOR DE MARCA ACTIVA: solo en páginas de marca (pageBrandId). No
+          intrusivo, arriba del contenido, para que el cliente sepa en qué tienda
+          está. Sin marca (Con Amor / páginas globales) no se renderiza nada,
+          quedando EXACTO como hoy. */}
       {/* INDICADOR DE MARCA ACTIVA: solo en páginas de marca (pageBrandId). No
           intrusivo, arriba del contenido, para que el cliente sepa en qué tienda
           está. Sin marca (Con Amor / páginas globales) no se renderiza nada,
