@@ -30,7 +30,7 @@
 .subtitle {
   text-align: left;
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--color-text-muted, #6b7280);
   margin: 0;
   font-weight: 450;
   line-height: 1.4;
@@ -62,10 +62,10 @@
 .controls button {
   width: 34px;
   height: 34px;
-  border: 1px solid #dbe1ea;
+  border: 1px solid var(--color-border, #dbe1ea);
   border-radius: 999px;
-  background: #fff;
-  color: #0f172a;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -86,7 +86,9 @@
   flex: 0 0 78%;
   max-width: 300px;
   scroll-snap-align: center;
-  background: #ffffff;
+  /* La tarjeta era blanca fija: en modo oscuro quedaba un cuadro luminoso
+     sobre la pagina oscura. La variable ya trae la superficie de cada tema. */
+  background: var(--color-surface, #ffffff);
   padding: 0.95rem 1rem;
   border-radius: var(--radio-mediano, 16px);
   border: 1px solid var(--gris-borde, #e5e7eb);
@@ -116,9 +118,9 @@
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  background: #e5e7eb;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px #e5e7eb;
+  background: var(--color-border, #e5e7eb);
+  border: 2px solid var(--color-surface, #fff);
+  box-shadow: 0 0 0 1px var(--color-border, #e5e7eb);
 }
 
 .avatarFallback {
@@ -143,7 +145,7 @@
 .author {
   margin: 0;
   font-weight: 750;
-  color: #0f1115;
+  color: var(--color-text, #0f1115);
   font-size: 0.86rem;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -152,7 +154,7 @@
 .city {
   margin: 0.1rem 0 0;
   font-size: 0.68rem;
-  color: #9ca3af;
+  color: var(--color-text-muted, #9ca3af);
   font-weight: 500;
 }
 
@@ -171,7 +173,7 @@
 .text {
   margin: 0;
   font-size: 0.82rem;
-  color: #374151;
+  color: var(--color-text-muted, #374151);
   line-height: 1.45;
   font-style: normal;
   font-weight: 450;

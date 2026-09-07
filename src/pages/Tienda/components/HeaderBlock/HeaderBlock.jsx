@@ -23,8 +23,12 @@ const HeaderBlock = ({ config }) => {
     backgroundColor = 'transparent',
     // Colores POR DEFECTO referidos a tokens del tema: legibles en claro y en
     // oscuro. Si el admin fija titleColor/subtitleColor, su valor sigue mandando.
-    titleColor = 'var(--color-text)',
-    subtitleColor = 'var(--color-text-muted)',
+    // OJO: el valor por defecto de un parametro solo entra si viene `undefined`.
+    // Una seccion guardada con el campo VACIO ('') lo esquivaba y acababa en
+    // color:'' (heredado). Se normaliza abajo para que vacio tambien caiga al
+    // token del tema.
+    titleColor,
+    subtitleColor,
     textAlign = 'center',
     compact = false,
     paddingTop,
@@ -38,6 +42,9 @@ const HeaderBlock = ({ config }) => {
     subtitleFontWeight,
     subtitleTextTransform
   } = config || {};
+
+  const colorTitulo = titleColor || 'var(--color-text)';
+  const colorSubtitulo = subtitleColor || 'var(--color-text-muted)';
 
   const padTop = paddingTop ?? (compact ? '1rem' : '3rem');
   const padBottom = paddingBottom ?? (compact ? '0.75rem' : '2rem');
@@ -72,7 +79,7 @@ const HeaderBlock = ({ config }) => {
           prefix="title"
           as="h1"
           style={{
-            color: titleColor,
+            color: colorTitulo,
             marginBottom: subtitle ? '0.5rem' : '0',
             fontSize: titleFontSize || (compact ? '1.05rem' : 'clamp(2rem, 5vw, 3rem)'),
             fontWeight: titleFontWeight || (compact ? '800' : '800'),
@@ -90,7 +97,7 @@ const HeaderBlock = ({ config }) => {
           prefix="subtitle"
           as="p"
           style={{
-            color: subtitleColor,
+            color: colorSubtitulo,
             fontSize: subtitleFontSize || (compact ? '0.78rem' : 'clamp(1rem, 2vw, 1.25rem)'),
             fontWeight: subtitleFontWeight || 'normal',
             fontFamily: subtitleFontFamily || 'inherit',

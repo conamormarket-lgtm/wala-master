@@ -78,8 +78,13 @@ export function getDefaultSettings(type) {
         title: 'Nuestra Tienda',
         subtitle: 'Explora nuestros productos.',
         backgroundColor: 'transparent',
-        titleColor: '#000000',
-        subtitleColor: '#666666',
+        // SIN color fijo a proposito. Antes nacian en #000000 / #666666, que en
+        // modo oscuro es texto casi negro sobre fondo casi negro: la seccion se
+        // volvia invisible. Vacio = manda el tema (HeaderBlock cae a
+        // --color-text / --color-text-muted). El admin puede fijar un color si
+        // lo quiere, y entonces manda el suyo.
+        titleColor: '',
+        subtitleColor: '',
         textAlign: 'center',
         paddingTop: '3rem',
         paddingBottom: '2rem',

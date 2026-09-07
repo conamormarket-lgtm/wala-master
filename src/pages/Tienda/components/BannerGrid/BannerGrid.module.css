@@ -11,7 +11,10 @@
 
 .title {
   margin: 0;
-  color: #111827;
+  /* Sobre el fondo de la PAGINA: con #111827 fijo el titulo se perdia en modo
+     oscuro (casi negro sobre casi negro). La variable ya trae el valor bueno
+     en cada tema; el hex queda solo de respaldo. */
+  color: var(--color-text, #111827);
   font-size: clamp(1.55rem, 2.3vw, 2.2rem);
   line-height: 1.15;
   letter-spacing: -0.025em;
@@ -19,7 +22,7 @@
 
 .subtitle {
   margin: 0.55rem 0 0;
-  color: #667085;
+  color: var(--color-text-muted, #667085);
   font-size: 1rem;
   line-height: 1.55;
 }
@@ -117,12 +120,15 @@
   grid-column: span 1;
 }
 
+/* Variante de tarjeta "blanca con borde". El blanco fijo dejaba unos cuadros
+   luminosos flotando en la pagina oscura; con las variables la tarjeta pasa a
+   ser una superficie elevada del tema y el texto acompana. */
 .brandOutline {
   min-height: 220px;
-  color: #111827;
-  background-color: #ffffff;
+  color: var(--color-text, #111827);
+  background-color: var(--color-surface-2, #ffffff);
   background-image: none !important;
-  border-color: #e5e7eb;
+  border-color: var(--color-border, #e5e7eb);
   box-shadow: none;
 }
 
@@ -224,7 +230,7 @@
 }
 
 .brandOutline .brandEyebrow {
-  color: #7c3aed;
+  color: var(--primary-color, #7c3aed);
 }
 
 .brandOutline .brandVisual {
@@ -238,12 +244,14 @@
 }
 
 .brandOutline .brandCta {
-  color: #ffffff;
-  background: #111827;
+  /* Invertido respecto a la tarjeta: en claro pastilla oscura con texto
+     blanco, en oscuro pastilla clara con texto oscuro. */
+  color: var(--color-surface, #ffffff);
+  background: var(--color-text, #111827);
 }
 
 .brandOutline .worldNumber {
-  color: #98a2b3;
+  color: var(--color-text-muted, #98a2b3);
 }
 
 .brandArrow {
