@@ -327,7 +327,11 @@ const Header = () => {
           <svg viewBox="0 0 410 120" className={styles.logoImage} style={{ height: '44px', width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="walaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                 <stop offset="0%" stopColor="#8B5CF6" />
+                 {/* Tope un punto mas saturado (#7C3AED en vez de #8B5CF6): en modo
+                     claro el morado claro superior se lavaba contra el header glass
+                     y "se perdia" la silueta de la bolsa. Sigue siendo el mismo
+                     violeta de marca, solo mas firme arriba; en oscuro no cambia. */}
+                 <stop offset="0%" stopColor="#7C3AED" />
                  <stop offset="100%" stopColor="#5B21B6" />
               </linearGradient>
               <path id="tagBase" d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z" />
@@ -336,11 +340,11 @@ const Header = () => {
             {/* ISOTIPO (Left) — COLORES ORIGINALES (bolsa en degradado + W
                 blanca + punto blanco + asa en degradado que se mezcla con la
                 bolsa, por eso "no se ve"). Lo unico que se cambio respecto al
-                original: mas grande (scale 1.1 vs 0.95) y corrido a la izquierda
-                para dejar ~26u de aire antes de la 'W' del logotipo (antes se
-                tocaban). translate calculado sobre el bbox real del grupo:
-                borde derecho ~88, centrado vertical. */}
-            <g transform="translate(-10.8, 5.9) scale(1.1)">
+                original: re-centrado en su espacio con un poco mas de aire
+                alrededor (scale 1.08) para que no se vea "apretado" en su hueco,
+                y bajado unas unidades para quedar centrado vertical exacto en el
+                viewBox de 120. translate calculado sobre el bbox real del grupo. */}
+            <g transform="translate(-12, 9) scale(1.08)">
                <use href="#tagBase" fill="url(#walaGradient)" />
                <circle cx="67" cy="23" r="6.5" fill="#FFFFFF" />
                <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#FFFFFF" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
