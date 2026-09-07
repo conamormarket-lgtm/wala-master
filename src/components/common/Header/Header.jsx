@@ -324,7 +324,7 @@ const Header = () => {
           </Link>
         ) : (
         <Link to="/" className={styles.logo}>
-          <svg viewBox="0 0 352 120" className={styles.logoImage} style={{ height: '44px', width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 358 120" className={styles.logoImage} style={{ height: '44px', width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
             <defs>
               {/* Degradado de marca del header: violeta -> morado profundo.
                   Tope en #7C3AED (firme, no se lava en modo claro). */}
@@ -342,22 +342,23 @@ const Header = () => {
                 Colores INVERTIDOS respecto al loader porque aqui va sobre
                 fondo claro: bolsa en el degradado de marca + 'W' blanca +
                 punto blanco.
-                Encaje: scale(0.95) (antes 0.87 — se pidio mas grande) y
-                translate para que el contenido caiga en x 6..67 y y 21..100,
-                o sea apoyado en la linea base del logotipo y pegado a el. */}
-            <g transform="translate(-19.65, 10.7) scale(0.95)">
+                Encaje: scale(1.05) (0.87 -> 0.95 -> 1.05, se pidio agrandar solo
+                el isotipo, no el logotipo) y translate para que el contenido
+                caiga en x 7..72 y y 15..100, o sea apoyado en la linea base
+                del logotipo y pegado a el. */}
+            <g transform="translate(-22.4, 2) scale(1.05)">
                <path d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z" fill="url(#walaGradient)" />
                <circle cx="67" cy="23" r="6.5" fill="#FFFFFF" />
                <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#FFFFFF" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" transform="translate(55 58) scale(0.8) translate(-55 -58)" />
             </g>
 
-            {/* LOGOTIPO (Right) — anclado a la derecha (x=343) para que quede
-                pegado al isotipo (~15u de aire). La tilde ya NO se dibuja a
+            {/* LOGOTIPO (Right) — anclado a la derecha (x=349) para que quede
+                pegado al isotipo (~16u de aire). La tilde ya NO se dibuja a
                 mano: antes era un trazo suelto que caia descolocado sobre la
                 'A'; ahora se usa el glifo real 'Á' de la fuente, asi el acento
                 tiene la forma, el peso y la posicion correctos — y sigue bien
                 puesto aunque caiga la fuente de respaldo. */}
-            <text x="343" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALÁ</text>
+            <text x="349" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALÁ</text>
           </svg>
         </Link>
         )}
