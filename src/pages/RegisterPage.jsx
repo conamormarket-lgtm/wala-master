@@ -17,6 +17,7 @@ import { detectCountry } from '../services/geo';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 import styles from './RegisterPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const PASSWORD_SPECIAL = '!#%&@*';
 
@@ -172,8 +173,8 @@ const RegisterPage = () => {
       <div className={styles.wrapper}>
         <div className={styles.branding}>
           <img src={LOGO_URL} alt="Logo" />
-          <h2>Crear cuenta</h2>
-          <p>Regístrate para hacer pedidos y rastrear tus compras.</p>
+          <h2><T>Crear cuenta</T></h2>
+          <p><T>Regístrate para hacer pedidos y rastrear tus compras.</T></p>
         </div>
         <div className={styles.formContainer}>
           <img src={LOGO_URL} alt="Logo" className={styles.logoMovil} />
@@ -188,7 +189,7 @@ const RegisterPage = () => {
           {step === 1 && (
             <form onSubmit={handleStep1} className={styles.form}>
               <div className={styles.formGroup}>
-                <label htmlFor="email">Correo electrónico</label>
+                <label htmlFor="email"><T>Correo electrónico</T></label>
                 <input
                   type="email"
                   id="email"
@@ -200,7 +201,7 @@ const RegisterPage = () => {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label htmlFor="password">Contraseña</label>
+                <label htmlFor="password"><T>Contraseña</T></label>
                 <input
                   type="password"
                   id="password"
@@ -212,7 +213,7 @@ const RegisterPage = () => {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label htmlFor="confirmPassword">Confirmar contraseña</label>
+                <label htmlFor="confirmPassword"><T>Confirmar contraseña</T></label>
                 <input
                   type="password"
                   id="confirmPassword"
@@ -223,16 +224,16 @@ const RegisterPage = () => {
                   placeholder="••••••••"
                 />
                 {confirmPassword && !passwordsMatch && (
-                  <span className={styles.fieldError}>Las contraseñas no coinciden</span>
+                  <span className={styles.fieldError}><T>Las contraseñas no coinciden</T></span>
                 )}
               </div>
               <div className={styles.passwordReqs}>
-                <span className={styles.passwordReqsTitle}>Requisitos de contraseña</span>
+                <span className={styles.passwordReqsTitle}><T>Requisitos de contraseña</T></span>
                 <ul>
-                  <li className={passwordReqs.length ? styles.met : ''}>Al menos 8 caracteres</li>
-                  <li className={passwordReqs.uppercase ? styles.met : ''}>Al menos 1 mayúscula</li>
-                  <li className={passwordReqs.lowercase ? styles.met : ''}>Al menos 1 minúscula</li>
-                  <li className={passwordReqs.number ? styles.met : ''}>Al menos 1 número</li>
+                  <li className={passwordReqs.length ? styles.met : ''}><T>Al menos 8 caracteres</T></li>
+                  <li className={passwordReqs.uppercase ? styles.met : ''}><T>Al menos 1 mayúscula</T></li>
+                  <li className={passwordReqs.lowercase ? styles.met : ''}><T>Al menos 1 minúscula</T></li>
+                  <li className={passwordReqs.number ? styles.met : ''}><T>Al menos 1 número</T></li>
                   <li className={passwordReqs.special ? styles.met : ''}>Al menos 1 carácter especial ({PASSWORD_SPECIAL})</li>
                 </ul>
               </div>
@@ -258,7 +259,7 @@ const RegisterPage = () => {
                 <>
                   {/* Perú: tipo de documento (DNI/CE/Pasaporte) + número. */}
                   <div className={styles.formGroup}>
-                    <label htmlFor="tipoDoc">Tipo de documento</label>
+                    <label htmlFor="tipoDoc"><T>Tipo de documento</T></label>
                     <select
                       id="tipoDoc"
                       className={styles.select}
@@ -306,12 +307,12 @@ const RegisterPage = () => {
                     placeholder="Pasaporte, ID o documento"
                   />
                   {documento && !docValid && (
-                    <span className={styles.fieldError}>Ingresa un documento válido (mín. 3 caracteres)</span>
+                    <span className={styles.fieldError}><T>Ingresa un documento válido (mín. 3 caracteres)</T></span>
                   )}
                 </div>
               )}
               <div className={styles.formGroup}>
-                <label htmlFor="fullName">Nombre completo</label>
+                <label htmlFor="fullName"><T>Nombre completo</T></label>
                 <input
                   type="text"
                   id="fullName"
@@ -323,7 +324,7 @@ const RegisterPage = () => {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label htmlFor="phone">Teléfono</label>
+                <label htmlFor="phone"><T>Teléfono</T></label>
                 <input
                   type="tel"
                   id="phone"
@@ -334,7 +335,7 @@ const RegisterPage = () => {
                   placeholder="9 dígitos (ej. 987654321)"
                 />
                 {phone && !validatePhone(phone) && (
-                  <span className={styles.fieldError}>Teléfono debe ser 9 dígitos y empezar por 9</span>
+                  <span className={styles.fieldError}><T>Teléfono debe ser 9 dígitos y empezar por 9</T></span>
                 )}
               </div>
               {error && (
@@ -358,7 +359,7 @@ const RegisterPage = () => {
           {step === 1 && (
             <>
               <div className={styles.divider}>
-                <span>o continúa con</span>
+                <span><T>o continúa con</T></span>
               </div>
               <Button
                 onClick={handleGoogle}
@@ -380,7 +381,7 @@ const RegisterPage = () => {
 
           <div className={styles.footer}>
             <p>
-              ¿Ya tienes cuenta? <Link to="/login" className={styles.link}>Iniciar sesión</Link>
+              ¿Ya tienes cuenta? <Link to="/login" className={styles.link}><T>Iniciar sesión</T></Link>
             </p>
           </div>
         </div>

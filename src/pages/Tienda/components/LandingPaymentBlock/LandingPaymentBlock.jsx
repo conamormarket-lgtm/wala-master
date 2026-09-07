@@ -15,6 +15,7 @@ import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../../../../co
 import { DEPARTAMENTOS, getProvincias, getDistritos, esEnvioLocal } from '../../../../constants/peruUbigeo';
 import { isKcheroLanding } from '../../../../constants/landingSlugs';
 import styles from './LandingPaymentBlock.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const LANDING_ACABADO_KEY = 'landing_matador_acabado';
 const LANDING_BILLETERA_KEY = 'landing_combo_billetera';
@@ -669,7 +670,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
   if (loadingProduct) {
     return (
       <div className={styles.wrapper}>
-        <p style={{ textAlign: 'center', color: '#64748b', padding: '2rem 1rem' }}>Cargando checkout...</p>
+        <p style={{ textAlign: 'center', color: '#64748b', padding: '2rem 1rem' }}><T>Cargando checkout...</T></p>
       </div>
     );
   }
@@ -743,7 +744,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
             <>
               {!hideHeader && (
                 <div className={styles.header}>
-                  <h3 className={styles.title}>Finaliza tu compra</h3>
+                  <h3 className={styles.title}><T>Finaliza tu compra</T></h3>
                   <p className={styles.subtitle}>
                     {peruOnly ? 'Tarjeta o Yape — pago en soles' : 'Tarjeta, Yape o PayPal — 100% seguro'}
                   </p>
@@ -751,7 +752,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
               )}
 
               <div className={styles.summary}>
-                <p className={styles.conceptLabel}>Tu pedido</p>
+                <p className={styles.conceptLabel}><T>Tu pedido</T></p>
                 <div className={styles.productRow}>
                   {acabadoImg && (
                     <img
@@ -782,12 +783,12 @@ const LandingPaymentBlock = ({ config = {} }) => {
                     )}
                     <div className={styles.productInfo}>
                       <p className={styles.concept}>Billetera {billeteraSel}</p>
-                      <p className={styles.conceptHint}>Incluida en el combo</p>
+                      <p className={styles.conceptHint}><T>Incluida en el combo</T></p>
                     </div>
                   </div>
                 )}
                 <div className={styles.totalRow}>
-                  <span className={styles.totalLabel}>Total</span>
+                  <span className={styles.totalLabel}><T>Total</T></span>
                   <span className={styles.totalAmount}>
                     S/ {montoPEN.toFixed(2)}
                     <span className={styles.totalCurrency}> PEN</span>
@@ -809,7 +810,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
                 autoComplete="on"
                 onSubmit={(e) => e.preventDefault()}
               >
-                <p className={styles.formLabel}>Datos de entrega</p>
+                <p className={styles.formLabel}><T>Datos de entrega</T></p>
                 <p className={styles.stepHint}>
                   {checkoutStep === 'datos'
                     ? 'Completa todos los campos para continuar al pago.'
@@ -818,7 +819,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
 
                 <label className={styles.fieldLabel} htmlFor="landing-country">País *</label>
                 {peruOnly ? (
-                  <div className={styles.peruBadge}>🇵🇪 Perú — envío nacional</div>
+                  <div className={styles.peruBadge}><T>🇵🇪 Perú — envío nacional</T></div>
                 ) : (
                   <CountrySelect
                     value={customer.country}
@@ -827,7 +828,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
                   />
                 )}
 
-                <label className={styles.fieldLabel} htmlFor="landing-name">Nombre completo *</label>
+                <label className={styles.fieldLabel} htmlFor="landing-name"><T>Nombre completo *</T></label>
                 <input
                   id="landing-name"
                   name="name"
@@ -898,7 +899,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
                     )}
                   </div>
                   <div>
-                    <label className={styles.fieldLabel}>Teléfono *</label>
+                    <label className={styles.fieldLabel}><T>Teléfono *</T></label>
                     <PhoneIntlInput
                       countryCode={customer.country}
                       value={customer.phone}
@@ -969,13 +970,13 @@ const LandingPaymentBlock = ({ config = {} }) => {
                   disabled={formLocked}
                   onChange={(e) => updateField('distrito', e.target.value)}
                 >
-                  <option value="">Selecciona tu distrito…</option>
+                  <option value=""><T>Selecciona tu distrito…</T></option>
                   {distritosOpts.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
 
-                <label className={styles.fieldLabel} htmlFor="landing-address">Dirección exacta *</label>
+                <label className={styles.fieldLabel} htmlFor="landing-address"><T>Dirección exacta *</T></label>
                 <input
                   id="landing-address"
                   name="address"
@@ -990,7 +991,7 @@ const LandingPaymentBlock = ({ config = {} }) => {
 
                 {checkoutStep === 'datos' && (
                   <div className={styles.payChannels}>
-                    <label className={styles.fieldLabel}>¿Cómo quieres pagar? *</label>
+                    <label className={styles.fieldLabel}><T>¿Cómo quieres pagar? *</T></label>
 
                     {/* ── Botón principal 1: Tarjeta o Yape (contiene pago completo/adelanto) ── */}
                     <button
@@ -1110,12 +1111,12 @@ const LandingPaymentBlock = ({ config = {} }) => {
                         </span>
                       </button>
                     )}
-                    <p className={styles.note}>Encriptado por Culqi · PCI compliant</p>
+                    <p className={styles.note}><T>Encriptado por Culqi · PCI compliant</T></p>
                   </>
                 )}
 
                 {showCulqi && showPayPal && (
-                  <div className={styles.divider}>o paga en dólares</div>
+                  <div className={styles.divider}><T>o paga en dólares</T></div>
                 )}
 
                 {showPayPal && (

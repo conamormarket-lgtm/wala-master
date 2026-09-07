@@ -14,6 +14,7 @@ import { showFlyingCoins } from '../../utils/animations';
 import { ChevronDown, ChevronUp, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { listFilesInFolder } from '../../services/firebase/storage';
 import styles from './PedidoCard.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const DEUDA_IMPRESION_MENSAJE = 'STOP... TIENES UNA DEUDA PENDIENTE, POR FAVOR REALIZA TU PAGO PARA QUE TU PEDIDO PUEDA CONTINUAR AVANZANDO';
 
@@ -310,11 +311,11 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
       {/* 2. Body (Desplegable) */}
       <div className={`${styles.cardBody} ${isExpanded ? styles.expanded : ''}`}>
         {/* SECCIÓN A: INFORMACIÓN */}
-        <div className={styles.sectionTitle}>INFORMACIÓN</div>
+        <div className={styles.sectionTitle}><T>INFORMACIÓN</T></div>
 
         <div className={styles.legacyInfoGrid}>
           <div className={styles.infoPanel}>
-            <h3>Datos del cliente</h3>
+            <h3><T>Datos del cliente</T></h3>
 
             <dl className={styles.infoList}>
               <div>
@@ -335,7 +336,7 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
           </div>
 
           <div className={styles.infoPanel}>
-            <h3>Datos de envío</h3>
+            <h3><T>Datos de envío</T></h3>
 
             <dl className={styles.infoList}>
               <div>
@@ -356,7 +357,7 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
           </div>
 
           <div className={styles.infoPanel}>
-            <h3>Datos de la agencia</h3>
+            <h3><T>Datos de la agencia</T></h3>
 
             <dl className={styles.infoList}>
               <div>
@@ -367,11 +368,11 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
           </div>
 
           <div className={styles.infoPanel}>
-            <h3>Montos y resumen</h3>
+            <h3><T>Montos y resumen</T></h3>
 
             <dl className={styles.infoList}>
               <div>
-                <dt>Fecha de Compra</dt>
+                <dt><T>Fecha de Compra</T></dt>
                 <dd>{pedido.fechaCompra || 'N/A'}</dd>
               </div>
 
@@ -386,7 +387,7 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
               </div>
 
               <div>
-                <dt>Total</dt>
+                <dt><T>Total</T></dt>
                 <dd>S/ {pedido.montoTotal || '0.00'}</dd>
               </div>
 
@@ -464,7 +465,7 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
 
         {/* SECCIÓN C: GALERÍA */}
         <div className={styles.sectionDivider} />
-        <div className={styles.sectionTitle}>GALERÍA DE DISEÑOS</div>
+        <div className={styles.sectionTitle}><T>GALERÍA DE DISEÑOS</T></div>
 
         <ImageGallery
           images={pedido.imageURLs}
@@ -473,7 +474,7 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
 
         {/* SECCIÓN D: TIMELINE */}
         <div className={styles.sectionDivider} />
-        <div className={styles.sectionTitle}>LÍNEA DE TIEMPO</div>
+        <div className={styles.sectionTitle}><T>LÍNEA DE TIEMPO</T></div>
 
         <Timeline
           fechas={pedido.fechas}
@@ -484,18 +485,18 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
 
         {/* SECCIÓN E: BOLETAS DE ENVÍO */}
         <div className={styles.sectionDivider} />
-        <div className={styles.sectionTitle}>FOTO DE BOLETAS DE ENVÍO</div>
+        <div className={styles.sectionTitle}><T>FOTO DE BOLETAS DE ENVÍO</T></div>
 
         <div className={styles.boletasEnvioBox}>
           {loadingBoletasEnvio ? (
-            <p>Buscando fotos de boletas...</p>
+            <p><T>Buscando fotos de boletas...</T></p>
           ) : boletasEnvio && boletasEnvio.length > 0 ? (
             <ImageGallery
               images={boletasEnvio}
               onImageClick={(index) => onImageClick(boletasEnvio, index)}
             />
           ) : (
-            <p>Aún no hay boletas adjuntas.</p>
+            <p><T>Aún no hay boletas adjuntas.</T></p>
           )}
         </div>
 
@@ -662,14 +663,14 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
           {loadingBoletas ? (
             <p style={{ color: '#666' }}>Buscando boletas...</p>
           ) : boletaError ? (
-            <p style={{ color: '#ef4444' }}>Error al cargar boletas.</p>
+            <p style={{ color: '#ef4444' }}><T>Error al cargar boletas.</T></p>
           ) : boletas.length === 0 ? (
             <div style={{ color: '#666', padding: '2rem 0' }}>
               <span style={{ fontSize: '3rem', opacity: 0.2, margin: '0 auto 1rem', display: 'block' }}>
                 📄
               </span>
 
-              <p>Aún no hay boletas adjuntas a este pedido.</p>
+              <p><T>Aún no hay boletas adjuntas a este pedido.</T></p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

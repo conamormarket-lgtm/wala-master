@@ -25,6 +25,7 @@ import { getOrderByIdAnyCollection } from '../../services/erp/firebase';
 import ProductGrid from '../Tienda/components/ProductGrid/ProductGrid';
 
 import styles from './CuentaCompraDetallePage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 /* ──────────────────────────────────────────────────────────────────────────
  * Helpers locales (presentación / lectura defensiva)
@@ -262,7 +263,7 @@ const CuentaCompraDetallePage = () => {
     return (
       <div className={styles.page}>
         <Reveal className={`${styles.glass} ${styles.noEncontrado}`}>
-          <h2 className={styles.noEncontradoTitulo}>No encontramos esta compra</h2>
+          <h2 className={styles.noEncontradoTitulo}><T>No encontramos esta compra</T></h2>
           <p className={styles.noEncontradoTexto}>
             Es posible que el pedido ya no esté disponible o que no pertenezca a tu
             cuenta.
@@ -381,7 +382,7 @@ const CuentaCompraDetallePage = () => {
         <span className={styles.breadcrumbSep} aria-hidden="true">
           ›
         </span>
-        <span className={styles.breadcrumbCurrent}>Estado de la compra</span>
+        <span className={styles.breadcrumbCurrent}><T>Estado de la compra</T></span>
       </nav>
 
       <div className={styles.layout}>
@@ -485,7 +486,7 @@ const CuentaCompraDetallePage = () => {
           {/* Dirección de entrega */}
           {(direccion || partesDireccionSecundaria.length > 0) && (
             <Reveal className={styles.glass}>
-              <h2 className={styles.cardTitle}>Dirección de entrega</h2>
+              <h2 className={styles.cardTitle}><T>Dirección de entrega</T></h2>
               {direccion && <p className={styles.direccionTexto}>{direccion}</p>}
               {partesDireccionSecundaria.length > 0 && (
                 <p className={styles.direccionSecundaria}>
@@ -499,7 +500,7 @@ const CuentaCompraDetallePage = () => {
         {/* ── Columna lateral: detalle de la compra + WhatsApp ───────────── */}
         <div className={styles.sideCol}>
           <Reveal className={styles.glass}>
-            <h2 className={styles.cardTitle}>Detalle de la compra</h2>
+            <h2 className={styles.cardTitle}><T>Detalle de la compra</T></h2>
 
             <div className={styles.resumenRow}>
               <span className={styles.resumenLabel}>
@@ -522,7 +523,7 @@ const CuentaCompraDetallePage = () => {
                 "Gratis"/"S/0.00" ahí confundiría (el envío puede ir incluido en el total). */}
             {tieneSubtotalesReales && (
               <div className={styles.resumenRow}>
-                <span className={styles.resumenLabel}>Envío</span>
+                <span className={styles.resumenLabel}><T>Envío</T></span>
                 {envioMonto > 0 ? (
                   <span>{formatCurrency(envioMonto)}</span>
                 ) : (
@@ -534,7 +535,7 @@ const CuentaCompraDetallePage = () => {
             <hr className={styles.resumenDivider} />
 
             <div className={styles.resumenTotal}>
-              <span>Total</span>
+              <span><T>Total</T></span>
               <span>{formatCurrency(total)}</span>
             </div>
 
@@ -543,7 +544,7 @@ const CuentaCompraDetallePage = () => {
 
           {/* WhatsApp al asesor de la marca (o general) */}
           <Reveal className={`${styles.glass} ${styles.waBlock}`}>
-            <p className={styles.waHint}>¿Dudas con tu pedido?</p>
+            <p className={styles.waHint}><T>¿Dudas con tu pedido?</T></p>
             {brandsConNumero.length > 1 ? (
               brandsConNumero.map((b) => (
                 <GlassButton
@@ -580,7 +581,7 @@ const CuentaCompraDetallePage = () => {
       {/* También te puede interesar */}
       {relacionados.length > 0 && (
         <Reveal className={styles.relacionados}>
-          <h2 className={styles.relacionadosTitulo}>También te puede interesar</h2>
+          <h2 className={styles.relacionadosTitulo}><T>También te puede interesar</T></h2>
           <ProductGrid products={relacionados} categories={[]} />
         </Reveal>
       )}

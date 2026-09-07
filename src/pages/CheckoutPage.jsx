@@ -38,6 +38,7 @@ import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/d
 // Uso SOLO presentacional (aditivo); no altera lógica de compra/pago/totales.
 import { GlassCard, GlassButton, Badge, AuroraBackground } from '../components/ui';
 import styles from './CheckoutPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 // Reutilizamos el mini componente de la moneda KapiSol para darle branding
 const KapiSolCoinMini = () => (
@@ -243,7 +244,8 @@ const CheckoutPage = () => {
 
         let num = tiendaNum.data?.trim() || fallbackNum.data?.trim() || '';
         let cleanText = textTienda.data || 'Solicitud de Pedido\n\nHola! Vengo de la tienda virtual y quiero confirmar mi pedido con código {id}.';
-// eslint-disable-next-line no-useless-escape
+
+// eslint-disable-next-line no-useless-escape
 
         // eslint-disable-next-line no-useless-escape
         let clean = num.replace(/[\s\-\(\)\+]/g, '');
@@ -1224,8 +1226,8 @@ const CheckoutPage = () => {
   if (items.length === 0) {
     return (
       <div className={styles.empty}>
-        <h2>Tu carrito está vacío</h2>
-        <Button onClick={() => navigate('/tienda')}>Ir a la Tienda</Button>
+        <h2><T>Tu carrito está vacío</T></h2>
+        <Button onClick={() => navigate('/tienda')}><T>Ir a la Tienda</T></Button>
       </div>
     );
   }
@@ -1240,7 +1242,7 @@ const CheckoutPage = () => {
         <div className={styles.formContainer}>
           {paymentStepData ? (
             <GlassCard variant="solid" padding="lg" className={styles.payCard}>
-              <h2 className={styles.payTitle} style={{ marginBottom: '1rem', textAlign: 'center' }}>Selecciona tu método de pago</h2>
+              <h2 className={styles.payTitle} style={{ marginBottom: '1rem', textAlign: 'center' }}><T>Selecciona tu método de pago</T></h2>
               <p className={styles.paySubtitle} style={{ textAlign: 'center', marginBottom: '2rem' }}>
                 Tu pedido se ha generado correctamente. Para confirmarlo, realiza el pago.
               </p>
@@ -1249,7 +1251,7 @@ const CheckoutPage = () => {
               {!paymentStepData.esPeru && (
                 <div className={styles.intlNotice}>
                   <span className={styles.intlNoticeIcon} aria-hidden="true">✈️</span>
-                  <span>Envíos internacionales: la entrega demora de <strong>7 a 30 días hábiles</strong>.</span>
+                  <span><T>Envíos internacionales: la entrega demora de</T> <strong><T>7 a 30 días hábiles</T></strong>.</span>
                 </div>
               )}
 
@@ -1270,7 +1272,7 @@ const CheckoutPage = () => {
                         <div className={styles.recoveryCard}>
                           <div className={styles.recoveryIcon} aria-hidden="true">💬</div>
                           <div className={styles.recoveryBody}>
-                            <h4 className={styles.recoveryTitle}>¿Cerraste el pago? Termínalo por WhatsApp</h4>
+                            <h4 className={styles.recoveryTitle}><T>¿Cerraste el pago? Termínalo por WhatsApp</T></h4>
                             <p className={styles.recoveryText}>
                               Tu pedido ya quedó guardado. Un asesor recibe tu lista completa
                               (qué quieres y para cuándo), te dice el costo final y coordinas el
@@ -1392,7 +1394,7 @@ const CheckoutPage = () => {
             }}
             className={styles.form}
           >
-            <h2>Detalles de Envío</h2>
+            <h2><T>Detalles de Envío</T></h2>
 
             <div className={styles.field}>
               <label>País *</label>
@@ -1409,7 +1411,7 @@ const CheckoutPage = () => {
             </div>
 
             <div className={styles.field}>
-              <label>Nombre Completo *</label>
+              <label><T>Nombre Completo *</T></label>
               <input
                 type="text"
                 name="customerName"
@@ -1471,7 +1473,7 @@ const CheckoutPage = () => {
                 )}
               </div>
               <div className={styles.field}>
-                <label>Teléfono *</label>
+                <label><T>Teléfono *</T></label>
                 <PhoneIntlInput
                   countryCode={formik.values.country}
                   value={formik.values.phone}
@@ -1503,7 +1505,7 @@ const CheckoutPage = () => {
 
             <div className={styles.row}>
               <div className={styles.field}>
-                <label>Ciudad / Región *</label>
+                <label><T>Ciudad / Región *</T></label>
                 <select
                   name="city"
                   value={formik.values.city}
@@ -1537,7 +1539,7 @@ const CheckoutPage = () => {
             </div>
 
             <div className={styles.field}>
-              <label>Dirección exacta *</label>
+              <label><T>Dirección exacta *</T></label>
               <input
                 type="text"
                 name="address"
@@ -1562,7 +1564,7 @@ const CheckoutPage = () => {
                   />
                   🎁 Activar Modo Regalo (Gratis)
                 </label>
-                <p>Incluye una experiencia digital inmersiva para el destinatario.</p>
+                <p><T>Incluye una experiencia digital inmersiva para el destinatario.</T></p>
               </div>
 
               {formik.values.isGiftMode && (
@@ -1603,7 +1605,7 @@ const CheckoutPage = () => {
                   )}
 
                   <div className={styles.field}>
-                    <label>Nombre del destinatario *</label>
+                    <label><T>Nombre del destinatario *</T></label>
                     <input
                       type="text"
                       name="giftRecipientName"
@@ -1618,7 +1620,7 @@ const CheckoutPage = () => {
                   </div>
 
                   <div className={styles.field}>
-                    <label>Mensaje (Máx 200 caracteres) *</label>
+                    <label><T>Mensaje (Máx 200 caracteres) *</T></label>
                     <textarea
                       name="giftMessage"
                       value={formik.values.giftMessage}
@@ -1634,7 +1636,7 @@ const CheckoutPage = () => {
                   </div>
 
                   <div className={styles.field}>
-                    <label>Sticker de Kapi</label>
+                    <label><T>Sticker de Kapi</T></label>
                     <div className={styles.stickerSelection}>
                       <label className={formik.values.giftSticker === 'kapi-love' ? styles.stickerSelected : ''}>
                         <input type="radio" name="giftSticker" value="kapi-love" checked={formik.values.giftSticker === 'kapi-love'} onChange={formik.handleChange} />
@@ -1674,7 +1676,7 @@ const CheckoutPage = () => {
 
         <div className={`${styles.summary} ${styles.summaryGlass}`}>
           <GlassCard variant="solid" padding="lg" animate={false} bodyClassName={styles.summaryBody}>
-          <h2>Resumen del Pedido</h2>
+          <h2><T>Resumen del Pedido</T></h2>
           <div className={styles.items}>
             {items.map(item => (
               <div key={item.id} className={styles.summaryItem}>
@@ -1699,7 +1701,7 @@ const CheckoutPage = () => {
                         </label>
                       </div>
                       <div className={styles.coinsNoticeToggle}>
-                        <Badge tone="warning" variant="soft" size="sm">¿Aplicar?</Badge>
+                        <Badge tone="warning" variant="soft" size="sm"><T>¿Aplicar?</T></Badge>
                         <input
                           type="checkbox"
                           checked={useCoinsToggle}
@@ -1723,11 +1725,11 @@ const CheckoutPage = () => {
                 </div>
               )}
               <div className={styles.totalRow}>
-                <span>Envío:</span>
+                <span><T>Envío:</T></span>
               <span>{shipping === 0 ? 'Gratis' : `S/ ${shipping.toFixed(2)}`}</span>
             </div>
             <div className={styles.totalRow + ' ' + styles.finalTotal}>
-              <span>Total a Pagar:</span>
+              <span><T>Total a Pagar:</T></span>
               {/* Perú: 'S/ total' (como hoy). El total real SIEMPRE se procesa en PEN. */}
               <span>S/ {total.toFixed(2)}</span>
             </div>
@@ -1744,7 +1746,7 @@ const CheckoutPage = () => {
                   </div>
                 )}
                 <div className={`${styles.totalRow} ${styles.intlPayRow}`} style={{ fontWeight: 600 }}>
-                  <span>Pagarás por PayPal:</span>
+                  <span><T>Pagarás por PayPal:</T></span>
                   <span>{summaryAmountUsd.toFixed(2)} USD</span>
                 </div>
                 <p className={styles.intlPriceNote} style={{ margin: '0.15rem 0 0', fontSize: '0.8rem' }}>

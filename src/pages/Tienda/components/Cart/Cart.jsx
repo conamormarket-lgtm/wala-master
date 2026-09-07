@@ -5,6 +5,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import CartItem from '../CartItem/CartItem';
 import Button from '../../../../components/common/Button';
 import styles from './Cart.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const Cart = () => {
   const { items, getTotalPrice, clearCart } = useCart();
@@ -44,9 +45,9 @@ const Cart = () => {
     return (
       <div className={styles.emptyCart}>
         <div className={styles.emptyIcon}>🛍️</div>
-        <h2>Tu carrito está vacío</h2>
-        <p>Parece que aún no has agregado productos.</p>
-        <Button onClick={() => navigate('/tienda')}>Ir a la Tienda</Button>
+        <h2><T>Tu carrito está vacío</T></h2>
+        <p><T>Parece que aún no has agregado productos.</T></p>
+        <Button onClick={() => navigate('/tienda')}><T>Ir a la Tienda</T></Button>
       </div>
     );
   }
@@ -66,9 +67,11 @@ const Cart = () => {
         <div className={styles.pendingNotice}>
           <div className={styles.pendingNoticeIcon}>🕒</div>
           <div className={styles.pendingNoticeText}>
-            <h3>Pedido en Solicitud</h3>
-            <p>Tienes una solicitud de pedido activa (Código: <strong>{pendingOrderId}</strong>). Estamos esperando la confirmación del pago por WhatsApp.</p>
-            <p style={{ fontSize: '0.8125rem', marginTop: '0.5rem' }}>Este carrito se limpiará automáticamente una vez confirmado el pago final en nuestras oficinas.</p>
+            <h3><T>Pedido en Solicitud</T></h3>
+            {/* Se corta en frases COMPLETAS, no a los lados del codigo: un trozo
+                suelto como "(Codigo:" no se puede traducir bien. */}
+            <p><T>Tienes una solicitud de pedido activa</T> (<T>Código</T>: <strong>{pendingOrderId}</strong>). <T>Estamos esperando la confirmación del pago por WhatsApp.</T></p>
+            <p style={{ fontSize: '0.8125rem', marginTop: '0.5rem' }}><T>Este carrito se limpiará automáticamente una vez confirmado el pago final en nuestras oficinas.</T></p>
           </div>
         </div>
       )}
@@ -95,7 +98,7 @@ const Cart = () => {
         {monedasCount > 0 && (
           <div style={{ marginBottom: '1rem', background: '#fef3c7', color: '#92400e', padding: '0.75rem', borderRadius: '8px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span>🪙</span>
-            <span>¡Tienes monedas disponibles! Podrás aplicarlas en el siguiente paso (Checkout) para obtener un descuento.</span>
+            <span><T>¡Tienes monedas disponibles! Podrás aplicarlas en el siguiente paso (Checkout) para obtener un descuento.</T></span>
           </div>
         )}
         <div className={styles.row}>
@@ -103,11 +106,11 @@ const Cart = () => {
           <span>S/ {total.toFixed(2)}</span>
         </div>
         <div className={styles.row}>
-          <span>Envío estimado</span>
+          <span><T>Envío estimado</T></span>
           <span>{envioPrice === 0 ? 'Gratis' : `S/ ${envioPrice.toFixed(2)}`}</span>
         </div>
         <div className={`${styles.row} ${styles.total}`}>
-          <span>Total</span>
+          <span><T>Total</T></span>
           <span>S/ {theFinalTotal.toFixed(2)}</span>
         </div>
         <Button

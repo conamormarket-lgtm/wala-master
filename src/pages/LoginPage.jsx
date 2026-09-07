@@ -8,6 +8,7 @@ import { LOGO_URL } from '../utils/constants';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import styles from './LoginPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -78,31 +79,31 @@ const LoginPage = () => {
       <div className={styles.wrapper}>
         <div className={styles.branding}>
           <img src={LOGO_URL} alt="Logo de la Empresa" />
-          <h2>Bienvenido de vuelta</h2>
-          <p>Inicia sesión para acceder a tu cuenta y gestionar tus pedidos personalizados.</p>
+          <h2><T>Bienvenido de vuelta</T></h2>
+          <p><T>Inicia sesión para acceder a tu cuenta y gestionar tus pedidos personalizados.</T></p>
           <div className={styles.brandingFeatures}>
             <div className={styles.feature}>
               <span className={styles.featureIcon}>✓</span>
-              <span>Gestiona tus pedidos</span>
+              <span><T>Gestiona tus pedidos</T></span>
             </div>
             <div className={styles.feature}>
               <span className={styles.featureIcon}>✓</span>
-              <span>Personaliza tus prendas</span>
+              <span><T>Personaliza tus prendas</T></span>
             </div>
             <div className={styles.feature}>
               <span className={styles.featureIcon}>✓</span>
-              <span>Acceso rápido y seguro</span>
+              <span><T>Acceso rápido y seguro</T></span>
             </div>
           </div>
         </div>
         <div className={styles.formContainer}>
           <img src={LOGO_URL} alt="Logo de la Empresa" className={styles.logoMovil} />
-          <h1>Iniciar Sesión</h1>
-          <p>Ingresa tus credenciales para acceder a tu cuenta.</p>
+          <h1><T>Iniciar Sesión</T></h1>
+          <p><T>Ingresa tus credenciales para acceder a tu cuenta.</T></p>
           
           <form onSubmit={handleEmailLogin} className={styles.form}>
             <div className={styles.formGroup}>
-              <label htmlFor="email">Correo Electrónico</label>
+              <label htmlFor="email"><T>Correo Electrónico</T></label>
               <input
                 type="text"
                 id="email"
@@ -116,7 +117,7 @@ const LoginPage = () => {
             </div>
             
             <div className={styles.formGroup}>
-              <label htmlFor="password">Contraseña</label>
+              <label htmlFor="password"><T>Contraseña</T></label>
               <input
                 type="password"
                 id="password"
@@ -153,7 +154,7 @@ const LoginPage = () => {
           </form>
           
           <div className={styles.divider}>
-            <span>o continúa con</span>
+            <span><T>o continúa con</T></span>
           </div>
           
           <Button

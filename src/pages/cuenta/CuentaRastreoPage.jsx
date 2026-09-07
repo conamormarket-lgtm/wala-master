@@ -25,6 +25,7 @@ import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from '../PedidosPage.module.css';
 // CSS Module propio de esta vista (aditivo, glass) para las tarjetas de rastreo.
 import glass from './CuentaRastreoPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 /**
  * Paleta de color de fase reutilizando ESTADOS_COLORS (misma fuente que el resto
@@ -174,7 +175,7 @@ function StepperCoarse({ coarse }) {
   if (coarse.paso === -1) {
     return (
       <div className={glass.coarseStepper}>
-        <span className={glass.coarseCancel} style={{ color: coarse.color }}>Pedido cancelado</span>
+        <span className={glass.coarseCancel} style={{ color: coarse.color }}><T>Pedido cancelado</T></span>
       </div>
     );
   }
@@ -272,8 +273,8 @@ const CuentaRastreoPage = () => {
       <div className={styles.content}>
         <Cabecera />
         <Reveal className={`${styles.profileCard} ${glass.card}`}>
-          <h2>Completa tu perfil para rastrear</h2>
-          <p>Para ubicar y rastrear tus pedidos necesitamos tu DNI o CE en tu perfil.</p>
+          <h2><T>Completa tu perfil para rastrear</T></h2>
+          <p><T>Para ubicar y rastrear tus pedidos necesitamos tu DNI o CE en tu perfil.</T></p>
           <GlassButton as={Link} to="/completar-perfil" variant="primary">Completar perfil</GlassButton>
         </Reveal>
       </div>
@@ -286,7 +287,7 @@ const CuentaRastreoPage = () => {
       <div className={styles.content}>
         <Cabecera />
         <Reveal className={`${styles.profileCard} ${glass.card}`}>
-          <h2>Error al cargar el rastreo</h2>
+          <h2><T>Error al cargar el rastreo</T></h2>
           <p className={styles.errorText}>{error}</p>
           <GlassButton variant="primary" onClick={() => setHasFetched(false)}>
             Reintentar
@@ -305,9 +306,9 @@ const CuentaRastreoPage = () => {
       <div className={styles.content}>
         <Cabecera />
         <Reveal className={`${styles.profileCard} ${glass.card}`}>
-          <h2>Aún no tienes pedidos para rastrear</h2>
-          <p>Cuando hagas un pedido, aquí podrás seguir su fase de producción paso a paso.</p>
-          <GlassButton as={Link} to="/tienda" variant="primary">Ir a la tienda</GlassButton>
+          <h2><T>Aún no tienes pedidos para rastrear</T></h2>
+          <p><T>Cuando hagas un pedido, aquí podrás seguir su fase de producción paso a paso.</T></p>
+          <GlassButton as={Link} to="/tienda" variant="primary"><T>Ir a la tienda</T></GlassButton>
         </Reveal>
       </div>
     );
@@ -334,7 +335,7 @@ const CuentaRastreoPage = () => {
                 {/* Cabecera de la tarjeta: nº de pedido + badge de fase. */}
                 <div className={glass.cardTop}>
                   <div className={glass.pedidoIdWrap}>
-                    <span className={glass.pedidoIdLabel}>Pedido</span>
+                    <span className={glass.pedidoIdLabel}><T>Pedido</T></span>
                     <span className={glass.pedidoId}>#{r.codigo}</span>
                   </div>
                   <span

@@ -6,6 +6,7 @@ import { usePedidos } from '../hooks/usePedidos';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
 import styles from './PedidosPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const PedidosPage = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -50,8 +51,8 @@ const PedidosPage = () => {
       <div className={styles.container}>
         <div className={styles.content}>
           <div className={styles.profileCard}>
-            <h2>Completa tu perfil</h2>
-            <p>Para ver tus pedidos necesitamos tu DNI o CE en tu perfil.</p>
+            <h2><T>Completa tu perfil</T></h2>
+            <p><T>Para ver tus pedidos necesitamos tu DNI o CE en tu perfil.</T></p>
             <Link to="/completar-perfil">
               <Button variant="primary">Completar perfil</Button>
             </Link>
@@ -67,7 +68,7 @@ const PedidosPage = () => {
         <div className={styles.content}>
           <div className={styles.loadingInline}>
             <span className={styles.loadingDot} />
-            <span>Buscando tus pedidos...</span>
+            <span><T>Buscando tus pedidos...</T></span>
           </div>
         </div>
       </div>
@@ -97,10 +98,10 @@ const PedidosPage = () => {
       <div className={styles.container}>
         <div className={styles.content}>
           <div className={styles.profileCard}>
-            <h2>No hay pedidos</h2>
-            <p>Aún no tienes pedidos asociados a tu cuenta. Cuando hagas un pedido, aparecerá aquí.</p>
+            <h2><T>No hay pedidos</T></h2>
+            <p><T>Aún no tienes pedidos asociados a tu cuenta. Cuando hagas un pedido, aparecerá aquí.</T></p>
             <Link to="/tienda">
-              <Button variant="primary">Ir a la tienda</Button>
+              <Button variant="primary"><T>Ir a la tienda</T></Button>
             </Link>
           </div>
         </div>
@@ -113,7 +114,7 @@ const PedidosPage = () => {
       <div className={styles.container}>
         <div className={styles.content}>
           <div className={styles.profileCard}>
-            <h2>Error al cargar pedidos</h2>
+            <h2><T>Error al cargar pedidos</T></h2>
             <p className={styles.errorText}>{error}</p>
             <Button variant="primary" onClick={() => { setHasFetched(false); }}>
               Reintentar
@@ -129,7 +130,7 @@ const PedidosPage = () => {
       <div className={styles.content}>
         <div className={styles.loadingInline}>
           <span className={styles.loadingDot} />
-          <span>Cargando...</span>
+          <span><T>Cargando...</T></span>
         </div>
       </div>
     </div>

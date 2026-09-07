@@ -13,6 +13,7 @@ import { detectCountry } from '../services/geo';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 import styles from './CompleteProfilePage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const CompleteProfilePage = () => {
   const navigate = useNavigate();
@@ -167,13 +168,13 @@ const CompleteProfilePage = () => {
       <div className={styles.wrapper}>
         <div className={styles.branding}>
           <img src={LOGO_URL} alt="Logo" />
-          <h2>Completa tu perfil</h2>
-          <p>Necesitamos tu DNI y teléfono para tus pedidos.</p>
+          <h2><T>Completa tu perfil</T></h2>
+          <p><T>Necesitamos tu DNI y teléfono para tus pedidos.</T></p>
         </div>
         <div className={styles.formContainer}>
           <img src={LOGO_URL} alt="Logo" className={styles.logoMovil} />
-          <h1>Completa tu perfil</h1>
-          <p>Indica tu documento y teléfono para continuar.</p>
+          <h1><T>Completa tu perfil</T></h1>
+          <p><T>Indica tu documento y teléfono para continuar.</T></p>
 
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.formGroup}>
@@ -184,7 +185,7 @@ const CompleteProfilePage = () => {
               <>
                 {/* Perú: tipo de documento (DNI/CE/Pasaporte) + número. */}
                 <div className={styles.formGroup}>
-                  <label htmlFor="tipoDoc">Tipo de documento</label>
+                  <label htmlFor="tipoDoc"><T>Tipo de documento</T></label>
                   <select
                     id="tipoDoc"
                     className={styles.select}
@@ -231,12 +232,12 @@ const CompleteProfilePage = () => {
                   placeholder="Pasaporte, ID o documento"
                 />
                 {documento && !docValid && (
-                  <span className={styles.fieldError}>Ingresa un documento válido (mín. 3 caracteres)</span>
+                  <span className={styles.fieldError}><T>Ingresa un documento válido (mín. 3 caracteres)</T></span>
                 )}
               </div>
             )}
             <div className={styles.formGroup}>
-              <label htmlFor="fullName">Nombre completo</label>
+              <label htmlFor="fullName"><T>Nombre completo</T></label>
               <input
                 type="text"
                 id="fullName"
@@ -249,7 +250,7 @@ const CompleteProfilePage = () => {
             </div>
             {isPE ? (
               <div className={styles.formGroup}>
-                <label htmlFor="phone">Teléfono</label>
+                <label htmlFor="phone"><T>Teléfono</T></label>
                 <input
                   type="tel"
                   id="phone"
@@ -260,25 +261,25 @@ const CompleteProfilePage = () => {
                   placeholder="9 dígitos (ej. 987654321)"
                 />
                 {phone && !validatePhone(phone) && (
-                  <span className={styles.fieldError}>Teléfono debe ser 9 dígitos y empezar por 9</span>
+                  <span className={styles.fieldError}><T>Teléfono debe ser 9 dígitos y empezar por 9</T></span>
                 )}
               </div>
             ) : (
               <div className={styles.formGroup}>
-                <label htmlFor="phone">Teléfono</label>
+                <label htmlFor="phone"><T>Teléfono</T></label>
                 <PhoneIntlInput
                   countryCode={country}
                   value={phone}
                   onChange={({ localNumber }) => setPhone(localNumber)}
                 />
                 {phone && !phoneValid && (
-                  <span className={styles.fieldError}>Ingresa un número de teléfono válido</span>
+                  <span className={styles.fieldError}><T>Ingresa un número de teléfono válido</T></span>
                 )}
               </div>
             )}
             {/* Cumpleaños propio: OPCIONAL, no bloquea el registro. */}
             <div className={styles.formGroup}>
-              <label htmlFor="birthDate">Tu cumpleaños 🎂 (para sorprenderte con regalos)</label>
+              <label htmlFor="birthDate"><T>Tu cumpleaños 🎂 (para sorprenderte con regalos)</T></label>
               <input
                 type="date"
                 id="birthDate"

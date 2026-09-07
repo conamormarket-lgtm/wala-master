@@ -13,6 +13,7 @@ import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../../constant
 // entrada. SOLO presentación/animación; no alteran la lógica del formulario.
 import { GlassCard, GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
 import styles from './PerfilPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const Icons = {
   Gift: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12" /><rect x="2" y="7" width="20" height="5" /><line x1="12" y1="22" x2="12" y2="7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" /></svg>,
@@ -185,8 +186,8 @@ const PerfilPage = () => {
   return (
     <div className={styles.container}>
       <Reveal as="header" className={styles.pageHeader}>
-        <h1>Mi Perfil</h1>
-        <p>Personaliza tus datos, tu avatar y revisa tus recompensas KapiSol.</p>
+        <h1><T>Mi Perfil</T></h1>
+        <p><T>Personaliza tus datos, tu avatar y revisa tus recompensas KapiSol.</T></p>
       </Reveal>
 
       <Stagger className={styles.grid}>
@@ -220,7 +221,7 @@ const PerfilPage = () => {
             {editing ? (
               <form onSubmit={handleSaveInfo} className={styles.form}>
                 <div className={styles.formGroup}>
-                  <label>Nombre completo</label>
+                  <label><T>Nombre completo</T></label>
                   <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={loading} />
                 </div>
                 <div className={styles.formGroup}>
@@ -231,7 +232,7 @@ const PerfilPage = () => {
                   <>
                     {/* Perú: tipo de documento (DNI/CE/Pasaporte) + número. */}
                     <div className={styles.formGroup}>
-                      <label>Tipo de documento</label>
+                      <label><T>Tipo de documento</T></label>
                       <select className={styles.select} value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)} disabled={loading}>
                         {docTypes.map((t) => (
                           <option key={t.value} value={t.value}>{t.label}</option>
@@ -243,7 +244,7 @@ const PerfilPage = () => {
                       <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\s/g, ''))} disabled={loading} maxLength={tipoDoc === 'DNI' ? 8 : 12} />
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Teléfono</label>
+                      <label><T>Teléfono</T></label>
                       <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} disabled={loading} />
                     </div>
                   </>
@@ -254,7 +255,7 @@ const PerfilPage = () => {
                       <input type="text" value={documento} onChange={(e) => setDocumento(e.target.value)} disabled={loading} placeholder="Pasaporte, ID o documento" />
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Teléfono</label>
+                      <label><T>Teléfono</T></label>
                       <PhoneIntlInput
                         countryCode={country}
                         value={phone}
@@ -264,7 +265,7 @@ const PerfilPage = () => {
                   </>
                 )}
                 <div className={styles.formGroup}>
-                  <label>Fecha de Nacimiento</label>
+                  <label><T>Fecha de Nacimiento</T></label>
                   <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} disabled={loading} />
                 </div>
                 {error && <div className={styles.errorMessage}>{error}</div>}
@@ -276,18 +277,18 @@ const PerfilPage = () => {
               </form>
             ) : (
               <div>
-                <div className={styles.infoRow}><span className={styles.infoLabel}>Nombre</span><span className={styles.infoValue}>{userProfile.displayName || user.displayName || '—'}</span></div>
+                <div className={styles.infoRow}><span className={styles.infoLabel}><T>Nombre</T></span><span className={styles.infoValue}>{userProfile.displayName || user.displayName || '—'}</span></div>
                 <div className={styles.infoRow}><span className={styles.infoLabel}>Email</span><span className={styles.infoValue}>{email || '—'}</span></div>
                 <div className={styles.infoRow}><span className={styles.infoLabel}>DNI</span><span className={styles.infoValue}>{userProfile.dni || '—'}</span></div>
-                <div className={styles.infoRow}><span className={styles.infoLabel}>Teléfono</span><span className={styles.infoValue}>{userProfile.phone || '—'}</span></div>
-                <div className={styles.infoRow}><span className={styles.infoLabel}>Cumpleaños</span><span className={styles.infoValue}>{userProfile.birthDate || '—'}</span></div>
+                <div className={styles.infoRow}><span className={styles.infoLabel}><T>Teléfono</T></span><span className={styles.infoValue}>{userProfile.phone || '—'}</span></div>
+                <div className={styles.infoRow}><span className={styles.infoLabel}><T>Cumpleaños</T></span><span className={styles.infoValue}>{userProfile.birthDate || '—'}</span></div>
 
                 {!hasCompleteProfile && (
-                  <div className={styles.errorMessage}>Para ver tus pedidos necesitamos tu DNI y número de teléfono.</div>
+                  <div className={styles.errorMessage}><T>Para ver tus pedidos necesitamos tu DNI y número de teléfono.</T></div>
                 )}
                 <div className={styles.actionsGroup}>
                   <GlassButton variant="primary" fullWidth onClick={() => setEditing(true)}>Editar</GlassButton>
-                  <GlassButton variant="danger" fullWidth onClick={async () => { await logout(); navigate('/'); }}>Cerrar sesión</GlassButton>
+                  <GlassButton variant="danger" fullWidth onClick={async () => { await logout(); navigate('/'); }}><T>Cerrar sesión</T></GlassButton>
                 </div>
               </div>
             )}
@@ -299,7 +300,7 @@ const PerfilPage = () => {
           <GlassCard variant="solid" animate={false} padding="lg" hover>
             <div className={styles.cardHeader}>
               <div className={styles.headerIcon}><Icons.User /></div>
-              <h3>Foto de Perfil</h3>
+              <h3><T>Foto de Perfil</T></h3>
             </div>
             <AvatarStudio
               config={avatarConfig}
