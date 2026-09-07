@@ -12,6 +12,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { dictionaries } from '../i18n/dictionaries';
+import { prepararTraductorDelNavegador } from '../services/translate';
 
 // Idiomas disponibles (deben existir como claves en `dictionaries`).
 const AVAILABLE = ['es', 'en', 'pt'];
@@ -84,6 +85,13 @@ export const LanguageProvider = ({ children }) => {
     if (typeof document !== 'undefined') {
       document.documentElement.lang = next;
     }
+
+    // El traductor integrado de Chrome necesita descargar su modelo la primera
+    // vez, y el navegador SOLO deja iniciar esa descarga desde un gesto del
+    // usuario. setLang siempre se llama desde un clic (menu de idioma o popup),
+    // asi que este es el unico momento valido para prepararlo. Sin await: si
+    // tarda o falla, la traduccion cae al motor de respaldo y nada se bloquea.
+    prepararTraductorDelNavegador(next);
   }, []);
 
   // Traducción: idioma actual -> español (fallback) -> fallback explícito -> clave.

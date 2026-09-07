@@ -5,8 +5,9 @@ import { getLandingPages } from '../Tienda/services/landingPages';
 import Button from '../../components/common/Button';
 import styles from './AdminConfiguracion.module.css';
 import { useAuth } from '../../contexts/AuthContext';
-import { Lock, Unlock, ImageDown } from 'lucide-react';
+import { Lock, Unlock, ImageDown, Languages } from 'lucide-react';
 import { reconvertirImagenesAWebp, contarImagenesPorConvertir } from '../../services/imagenesWebp';
+import { guardarTraduccionesEnNube, traduccionesPendientes } from '../../services/translate';
 
 const AVAILABLE_PERMISSIONS = [
   { id: 'superadmin', label: 'Super Admin (Control Total)', desc: 'Tiene acceso a todo, incluyendo añadir otros administradores.' },
@@ -43,6 +44,34 @@ const AdminConfiguracion = () => {
       setImgConteo(await contarImagenesPorConvertir());
     } catch (e) {
       setImgConteo({ error: e?.message || String(e) });
+    }
+  };
+
+  // ── Traducciones del contenido ─────────────────────────────────────────
+  // Al navegar la tienda en ingles o portugues, el traductor va resolviendo los
+  // textos y los deja anotados en memoria. Aqui se publican en Firestore para
+  // que TODOS los visitantes los reciban ya traducidos, sin volver a traducir.
+  const [tradPendientes, setTradPendientes] = useState({});
+  const [tradMsg, setTradMsg] = useState('');
+  const [tradGuardando, setTradGuardando] = useState(false);
+
+  const revisarTraducciones = () => setTradPendientes(traduccionesPendientes());
+
+  const publicarTraducciones = async () => {
+    setTradGuardando(true);
+    setTradMsg('');
+    try {
+      const res = await guardarTraduccionesEnNube();
+      setTradMsg(res.error
+        ? '❌ No se pudieron publicar: ' + res.error
+        : (res.guardadas > 0
+          ? `✅ Se publicaron ${res.guardadas} traduccion(es).`
+          : '✅ No habia traducciones nuevas que publicar.'));
+      revisarTraducciones();
+    } catch (e) {
+      setTradMsg('❌ Error: ' + (e?.message || e));
+    } finally {
+      setTradGuardando(false);
     }
   };
 
@@ -205,7 +234,7 @@ const AdminConfiguracion = () => {
         </button>
         <button
           className={`${styles.tabBtn} ${activeTab === 'imagenes' ? styles.activeTab : ''}`}
-          onClick={() => { setActiveTab('imagenes'); setIsAdding(false); if (imgConteo === null) revisarImagenes(); }}
+          onClick={() => { setActiveTab('imagenes'); setIsAdding(false); if (imgConteo === null) revisarImagenes(); revisarTraducciones(); }}
         >
           Optimización de imágenes
         </button>
@@ -463,6 +492,46 @@ const AdminConfiguracion = () => {
               disabled={imgTrabajando || !imgConteo || !imgConteo.imagenes}
             >
               {imgTrabajando ? 'Convirtiendo…' : 'Convertir a WebP'}
+            </Button>
+          </div>
+
+          <hr style={{ border: 0, borderTop: '1px solid rgba(255,255,255,0.08)', margin: '1.75rem 0 1.25rem' }} />
+
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Languages size={18} /> Publicar traducciones del contenido
+          </h3>
+          <p style={{ color: '#888', fontSize: '0.9rem', lineHeight: 1.6, marginTop: 4 }}>
+            Los nombres de producto y los textos que escribes en el builder se traducen sobre la marcha
+            cuando alguien navega en inglés o portugués. Al publicarlas, quedan guardadas y el resto de
+            visitantes las recibe ya hechas, sin esperar ni volver a traducir.
+            <br /><br />
+            Para llenar la lista, cambia el idioma y recorre la tienda; luego vuelve aquí y publícalas.
+            Solo un administrador puede publicar, así que nadie de fuera puede inyectar textos.
+          </p>
+
+          {Object.keys(tradPendientes).length === 0 ? (
+            <p style={{ fontSize: '0.95rem' }}>No hay traducciones nuevas sin publicar.</p>
+          ) : (
+            <p style={{ fontSize: '0.95rem' }}>
+              Sin publicar:{' '}
+              {Object.entries(tradPendientes).map(([idioma, n]) => `${n} en ${idioma.toUpperCase()}`).join(' · ')}.
+            </p>
+          )}
+
+          {tradMsg && (
+            <p style={{ fontSize: '0.9rem', color: tradMsg.startsWith('❌') ? '#e03131' : '#16a34a' }}>{tradMsg}</p>
+          )}
+
+          <div style={{ display: 'flex', gap: 10, marginTop: '0.75rem' }}>
+            <Button variant="secondary" onClick={revisarTraducciones} disabled={tradGuardando}>
+              Volver a revisar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={publicarTraducciones}
+              disabled={tradGuardando || Object.keys(tradPendientes).length === 0}
+            >
+              {tradGuardando ? 'Publicando…' : 'Publicar traducciones'}
             </Button>
           </div>
         </div>

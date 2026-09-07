@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { T } from '../../../i18n/useTranslatedText';
 
 /**
  * Utilidades REUTILIZABLES para aplicar en el RENDER el estilo de texto por campo
@@ -134,9 +135,19 @@ export const TextoSeccion = ({
   const spanStyle = estiloTexto(s, prefix);
 
   // El span solo necesita estilo cuando hay subrayado o fondo; si no, va "pelado".
+  //
+  // TRADUCCION: por aqui pasan los textos que el admin escribe en el builder
+  // (titulos, subtitulos, parrafos de cada bloque). Antes no se traducian: el
+  // traductor de contenido dinamico solo estaba en las tarjetas de producto y
+  // el catalogo, asi que al cambiar de idioma el builder se quedaba en espanol.
+  // Envolviendo aqui se cubren todos los bloques de una vez.
+  // Solo si el contenido es TEXTO PLANO: algunos bloques pasan JSX ya armado
+  // (p. ej. un titulo con una palabra resaltada) y <T> no debe tocarlo.
+  const contenidoFinal = typeof contenido === 'string' ? <T>{contenido}</T> : contenido;
+
   const span = (
     <span style={Object.keys(spanStyle).length ? spanStyle : undefined}>
-      {contenido}
+      {contenidoFinal}
     </span>
   );
 
