@@ -19,7 +19,13 @@ const MinijuegosPage = () => {
   const hasClaimedToday = userProfile?.lastKapiClaimDate === todayStr;
   const hasClaimedBallSort = userProfile?.lastBallSortReward === todayStr;
 
-  const { isUnlocked: isRuletaUnlocked, days: ruletaDays, hasLost, hasSpun } = getRuletaEligibility(userProfile);
+  const {
+    isUnlocked: isRuletaUnlocked,
+    days: ruletaDays,
+    hasLost,
+    hasSpun,
+    esPendienteAnterior,
+  } = getRuletaEligibility(userProfile);
 
   const handleProtectedPlay = (e) => {
     if (!user) {
@@ -93,6 +99,15 @@ const MinijuegosPage = () => {
                 <div className={styles.progressFill} style={{ width: `${(ruletaDays / 7) * 100}%` }}></div>
               </div>
             </div>
+
+            {/* El giro ganado la semana pasada sigue disponible durante esta.
+                Sin este aviso, la barra de progreso (que va de la semana en
+                curso) haría pensar que la ruleta está bloqueada. */}
+            {esPendienteAnterior && (
+              <p className={styles.pendingNote}>
+                <T>¡Tienes un giro pendiente de la semana pasada!</T>
+              </p>
+            )}
 
             {isRuletaUnlocked ? (
               <Link to="/ruleta" className={styles.playButton} onClick={handleProtectedPlay}><T>Girar Ruleta</T></Link>

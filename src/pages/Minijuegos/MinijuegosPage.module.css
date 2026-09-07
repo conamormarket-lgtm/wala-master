@@ -193,3 +193,14 @@
   .gridContainer { grid-template-columns: 1fr; }
   .pageContainer { padding: 1rem; }
 }
+
+/* Aviso de giro pendiente de la semana anterior (semana de gracia de la ruleta).
+   Va sobre el botón, porque la barra de progreso muestra la semana en curso y
+   por sí sola daría a entender que la ruleta sigue bloqueada. */
+.pendingNote {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #22c55e;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}

@@ -44,7 +44,7 @@ const RuletaPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { isUnlocked, hasLost, hasSpun } = getRuletaEligibility(userProfile);
+  const { isUnlocked, hasLost, hasSpun, esPendienteAnterior } = getRuletaEligibility(userProfile);
 
   const handleSpin = async () => {
     if (!isUnlocked || spinning || result) return;
@@ -189,21 +189,30 @@ const RuletaPage = () => {
             <Link to="/minijuegos" className={styles.secondaryBtn}><T>Volver al Hub</T></Link>
           </div>
         ) : (
-          <button 
-            className={`${styles.spinBtn} ${(!isUnlocked || spinning) ? styles.disabled : ''}`}
-            onClick={handleSpin}
-            disabled={!isUnlocked || spinning}
-          >
-            <T>
-              {spinning
-                ? 'Girando...'
-                : (isUnlocked
-                  ? '¡GIRAR RULETA!'
-                  : (hasSpun
-                    ? 'Ya giraste esta semana ✅'
-                    : (hasLost ? 'Semana Perdida ❌' : 'Ruleta Bloqueada 🔒')))}
-            </T>
-          </button>
+          <>
+            {/* Giro heredado de la semana pasada: se avisa para que no parezca
+                un error que la ruleta esté abierta con el contador a cero. */}
+            {esPendienteAnterior && (
+              <p className={styles.pendingNote}>
+                <T>Este giro es el que ganaste la semana pasada. ¡Aprovéchalo!</T>
+              </p>
+            )}
+            <button
+              className={`${styles.spinBtn} ${(!isUnlocked || spinning) ? styles.disabled : ''}`}
+              onClick={handleSpin}
+              disabled={!isUnlocked || spinning}
+            >
+              <T>
+                {spinning
+                  ? 'Girando...'
+                  : (isUnlocked
+                    ? '¡GIRAR RULETA!'
+                    : (hasSpun
+                      ? 'Ya giraste esta semana ✅'
+                      : (hasLost ? 'Semana Perdida ❌' : 'Ruleta Bloqueada 🔒')))}
+              </T>
+            </button>
+          </>
         )}
       </div>
 

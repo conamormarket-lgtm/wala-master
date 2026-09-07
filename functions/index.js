@@ -1421,6 +1421,12 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
         kapiHappiness: Math.min(100, (u.kapiHappiness || 0) + 10),
         weeklyClaimsData: weekly,
       };
+      // Al completar los 7 dias se "abre" el giro de esa semana. Se guarda aparte
+      // porque weeklyClaimsData se reinicia cada lunes: sin esto, la constancia de
+      // haber completado la semana se perdia y solo se podia girar el domingo.
+      if ((weekly.daysClaimed || []).length >= 7) {
+        updates.ruletaDisponibleDe = weekly.weekStart;
+      }
       t.update(userRef, updates);
       // Ledger: feedKapi otorga kapiCoins (no monedas). Se registra el evento con el
       // monto de kapiCoins; balanceAfter refleja el saldo de monedas sin cambios.
@@ -1477,6 +1483,9 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
   const weekStart = limaWeekStartStr();
+  // Semana de gracia: el giro que se gana completando los 7 dias sigue disponible
+  // durante la semana siguiente. Antes caducaba el domingo a medianoche.
+  const weekStartAnterior = limaWeekStartStr(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const prizesSnap = await db.collection("ruletaPrizes").orderBy("probability", "desc").get();
   if (prizesSnap.empty) {
@@ -1492,13 +1501,16 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
       const u = snap.data();
       const weekly = u.weeklyClaimsData || { weekStart: "", daysClaimed: [] };
       const daysCount = weekly.weekStart === weekStart ? (weekly.daysClaimed || []).length : 0;
-      if (daysCount < 7) {
+      // Semana cuyo premio se reclama: la actual si ya tiene los 7 dias, o la que
+      // quedo marcada como completa (que puede ser la anterior, por la gracia).
+      const semanaPremio = daysCount >= 7 ? weekStart : u.ruletaDisponibleDe;
+      if (!semanaPremio || (semanaPremio !== weekStart && semanaPremio !== weekStartAnterior)) {
         throw new functions.https.HttpsError("failed-precondition", "Ruleta no desbloqueada.");
       }
-      if (u.lastRuletaSpinWeek === weekStart) {
-        throw new functions.https.HttpsError("already-exists", "Ya giraste la ruleta esta semana.");
+      if (u.lastRuletaSpinWeek === semanaPremio) {
+        throw new functions.https.HttpsError("already-exists", "Ya giraste la ruleta de esa semana.");
       }
-      const updates = { lastRuletaSpinWeek: weekStart };
+      const updates = { lastRuletaSpinWeek: semanaPremio };
       let ruletaEarn = 0;
       if (selected.type === "Monedas") {
         ruletaEarn = Number(selected.amount || 0);
@@ -1515,7 +1527,7 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
         name: selected.name || "",
         type: selected.type || "",
         amount: Number(selected.amount || 0),
-        weekStart,
+        weekStart: semanaPremio,
         wonAt: new Date().toISOString(),
         entregado: esAutoAcreditado,
       };

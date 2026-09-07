@@ -198,3 +198,12 @@
   50% { transform: translateY(-50px) rotate(180deg); }
   100% { transform: translateY(0) rotate(360deg); }
 }
+
+/* Aviso de que el giro disponible viene de la semana anterior (semana de gracia). */
+.pendingNote {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #22c55e;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}

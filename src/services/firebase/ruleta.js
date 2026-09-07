@@ -27,24 +27,40 @@ export const isSameWeek = (date1, date2) => {
 };
 
 export const getRuletaEligibility = (userProfile) => {
-  if (!userProfile) return { isUnlocked: false, days: 0, hasLost: false, hasSpun: false };
+  if (!userProfile) {
+    return { isUnlocked: false, days: 0, hasLost: false, hasSpun: false, esPendienteAnterior: false };
+  }
 
   const currentWeekStart = limaWeekStartStr();
+  // Semana de gracia: el giro ganado completando los 7 días sigue disponible
+  // durante la semana siguiente (antes caducaba el domingo a medianoche).
+  const semanaAnterior = limaWeekStartStr(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   // Analizamos los claims guardados en userProfile.weeklyClaimsData
   // Estructura: { weekStart: '2026-05-18', daysClaimed: ['2026-05-18', '2026-05-19'] }
   const data = userProfile.weeklyClaimsData || { weekStart: currentWeekStart, daysClaimed: [] };
 
-  // El servidor marca lastRuletaSpinWeek al girar: un giro por semana.
-  const hasSpun = userProfile.lastRuletaSpinWeek === currentWeekStart;
+  // daysClaimed puede faltar en perfiles antiguos; no debe reventar el hub.
+  // Solo cuenta si el registro es de la semana en curso.
+  const daysCount = (data.weekStart === currentWeekStart && Array.isArray(data.daysClaimed))
+    ? data.daysClaimed.length
+    : 0;
+
+  // Semana cuyo premio está en juego: la actual si ya tiene los 7 días, o la que
+  // el servidor marcó como completa (ruletaDisponibleDe), que puede ser la anterior.
+  const semanaPremio = daysCount >= 7 ? currentWeekStart : userProfile.ruletaDisponibleDe;
+  const premioVigente = !!semanaPremio &&
+    (semanaPremio === currentWeekStart || semanaPremio === semanaAnterior);
+  // El servidor marca lastRuletaSpinWeek con la semana cuyo premio se reclamó.
+  const hasSpun = premioVigente && userProfile.lastRuletaSpinWeek === semanaPremio;
+  const isUnlocked = premioVigente && !hasSpun;
+  const esPendienteAnterior = isUnlocked && semanaPremio === semanaAnterior;
 
   if (data.weekStart !== currentWeekStart) {
-    // Si la semana guardada no es la actual, entonces tiene 0 días esta semana
-    return { isUnlocked: false, days: 0, hasLost: false, hasSpun };
+    // La semana guardada no es la actual: 0 días esta semana, pero puede quedar
+    // pendiente el giro de la semana pasada.
+    return { isUnlocked, days: 0, hasLost: false, hasSpun, esPendienteAnterior };
   }
-
-  // daysClaimed puede faltar en perfiles antiguos; no debe reventar el hub.
-  const daysCount = Array.isArray(data.daysClaimed) ? data.daysClaimed.length : 0;
   const currentDayOfWeek = limaDayOfWeek(); // 0 (Domingo) - 6 (Sábado)
 
   // Para perder, debe haber pasado al menos un día en la semana sin que lo haya reclamado
@@ -56,9 +72,7 @@ export const getRuletaEligibility = (userProfile) => {
   // Si la diferencia entre el día actual de la semana y los reclamados es >= 2, seguro perdió.
   const hasLost = (adjustedDay > daysCount + 1);
 
-  const isUnlocked = daysCount >= 7 && !hasSpun;
-
-  return { isUnlocked, days: daysCount, hasLost, hasSpun };
+  return { isUnlocked, days: daysCount, hasLost, hasSpun, esPendienteAnterior };
 };
 
 // --- PREMIOS ---
