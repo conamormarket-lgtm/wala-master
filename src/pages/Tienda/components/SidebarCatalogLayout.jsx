@@ -543,7 +543,8 @@ const SidebarCatalogLayout = ({
                 <li className={activeBrand === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveBrand, null)}>{t('cat.todas', 'Todas')}</li>
                 {(brands || []).map(b => (
                   <li key={b.id} className={activeBrand === b.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveBrand, b.id)}>
-                    <T>{b.name}</T>
+                    {/* SIN <T>: nombre propio de marca (ver ProductDetail). */}
+                    {b.name}
                   </li>
                 ))}
               </ul>

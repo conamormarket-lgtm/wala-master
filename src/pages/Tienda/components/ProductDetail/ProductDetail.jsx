@@ -476,10 +476,11 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             )}
           </div>
 
-          {/* Brand — nombre de marca dinámico (BD) con <T>. */}
+          {/* Brand — SIN <T>: el nombre de una marca es un nombre propio y
+              traducirlo lo estropea ("Nova" salia como "New"). */}
           {brand?.name && (
             <span className={styles.brandBadge} style={brand.bgColor ? { background: brand.bgColor } : {}}>
-              <T>{brand.name}</T>
+              {brand.name}
             </span>
           )}
 

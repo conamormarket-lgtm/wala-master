@@ -34,6 +34,7 @@ const NAV_LABEL_KEYS = {
   'crear': 'nav.crear',
   'categorias': 'nav.categorias',
   'categorías': 'nav.categorias',
+  'marcas': 'nav.marcas',
   'minijuegos': 'nav.minijuegos',
   'cuenta': 'nav.cuenta',
   'mi cuenta': 'nav.cuenta',
@@ -563,7 +564,11 @@ const Header = () => {
                                   className={brandActual?.id === b.id ? styles.subActivo : undefined}
                                   aria-current={brandActual?.id === b.id ? 'page' : undefined}
                                 >
-                                  <T>{b.name}</T>
+                                  {/* SIN <T>: el nombre de una marca es un
+                                      nombre propio. Al traducirlo salian
+                                      "With Love Geeks", "New" por Nova o
+                                      "Tastings" por Catas. */}
+                                  {b.name}
                                 </Link>
                               </li>
                             );
