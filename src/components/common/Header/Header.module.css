@@ -816,17 +816,21 @@
     font-size: 0.875rem;
   }
 
+  /* El logo es un SVG apaisado (ratio ~3.4:1). Antes se forzaba a un cuadrado
+     46×46 que lo dejaba diminuto y con la bolsa pegada a la 'W'. Se conserva la
+     altura pero se deja el ancho automático para que respire igual que en
+     desktop. */
   .logoImage {
-    width: 46px !important;
+    width: auto !important;
     height: 46px !important;
-    max-width: 46px !important;
+    max-width: 210px !important;
     max-height: 46px !important;
   }
 
   .logo>div {
-    width: 46px !important;
+    width: auto !important;
     height: 46px !important;
-    max-width: 46px !important;
+    max-width: 210px !important;
     max-height: 46px !important;
   }
 
@@ -1194,17 +1198,17 @@
   }
 
   .logoImage {
-    width: 36px !important;
-    height: 36px !important;
-    max-width: 36px !important;
-    max-height: 36px !important;
+    width: auto !important;
+    height: 34px !important;
+    max-width: 150px !important;
+    max-height: 34px !important;
   }
 
   .logo>div {
-    width: 36px !important;
-    height: 36px !important;
-    max-width: 36px !important;
-    max-height: 36px !important;
+    width: auto !important;
+    height: 34px !important;
+    max-width: 150px !important;
+    max-height: 34px !important;
   }
 }
 

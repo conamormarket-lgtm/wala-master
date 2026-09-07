@@ -324,7 +324,7 @@ const Header = () => {
           </Link>
         ) : (
         <Link to="/" className={styles.logo}>
-          <svg viewBox="0 0 390 120" className={styles.logoImage} style={{ height: '44px', width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 410 120" className={styles.logoImage} style={{ height: '44px', width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="walaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                  <stop offset="0%" stopColor="#8B5CF6" />
@@ -348,13 +348,13 @@ const Header = () => {
             </g>
 
             {/* LOGOTIPO (Right) - Anchored right, giving 'A' a strict known position */}
-            <text x="375" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALA</text>
+            <text x="395" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALA</text>
 
             {/* ACENTO AGUDO sobre la ultima 'A' (Walá). Antes era una mini-bolsa
                 escalada+rotada que se leia "rara"; ahora es un trazo agudo
                 limpio en el degradado de marca, centrado sobre la A (cx≈344)
                 y flotando arriba de su cap-height (y≈17). */}
-            <path d="M 337 15 L 353 3" stroke="url(#walaGradient)" strokeWidth="13" strokeLinecap="round" fill="none" />
+            <path d="M 357 15 L 373 3" stroke="url(#walaGradient)" strokeWidth="13" strokeLinecap="round" fill="none" />
           </svg>
         </Link>
         )}
