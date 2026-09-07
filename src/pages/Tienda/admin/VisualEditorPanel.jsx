@@ -2829,6 +2829,34 @@ const VisualEditorPanel = () => {
                   <input type="checkbox" checked={s.showBrandName !== false} onChange={e => setSetting('showBrandName', e.target.checked)} />
                   Mostrar nombre de la marca
                 </label>
+
+                {/* Paginado: con muchas marcas el mosaico estiraba la home sin
+                    fin. Ahora van en paginas de DOS FILAS (columnas x 2) y se
+                    pasa sola. Aqui se decide si se mueve y cada cuanto. */}
+                <label style={{display:'flex', alignItems:'center', gap:8, marginBottom:10, cursor:'pointer'}}>
+                  <input type="checkbox" checked={s.autoPlay !== false} onChange={e => setSetting('autoPlay', e.target.checked)} />
+                  Pasar de pagina automaticamente
+                </label>
+
+                {s.autoPlay !== false && (
+                  <>
+                    <label>Cambiar cada (segundos)</label>
+                    <input
+                      type="number"
+                      min="2"
+                      max="30"
+                      step="1"
+                      value={Math.round((Number(s.autoPlaySpeed) || 6000) / 1000)}
+                      onChange={e => setSetting('autoPlaySpeed', Math.max(2, Math.min(30, Number(e.target.value) || 6)) * 1000)}
+                      style={{width:'100%', padding:'8px', marginBottom:'6px'}}
+                    />
+                  </>
+                )}
+                <p style={{fontSize:'0.75rem', color:'#bbb', lineHeight:1.4, marginTop:0, marginBottom:15}}>
+                  Se muestran dos filas por pagina: {Math.min(4, Math.max(1, Number(s.columns) || 3)) * 2} marcas
+                  {automaticBrands.length > 0 && ` (${Math.ceil(automaticBrands.length / (Math.min(4, Math.max(1, Number(s.columns) || 3)) * 2))} pagina(s) con las ${automaticBrands.length} de ahora)`}.
+                  Se pausa al pasar el mouse, y respeta a quien pidio menos animaciones en su sistema.
+                </p>
               </>
             )}
 

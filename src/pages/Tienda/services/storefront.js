@@ -151,6 +151,11 @@ export function getDefaultSettings(type) {
         brandCardStyle: 'editorial',
         items: [{ imageUrl: '', link: '', alt: '' }],
         columns: 3,
+        // Paginado del mosaico de marcas: las marcas se reparten en paginas de
+        // dos filas y se pasa sola cada autoPlaySpeed ms. autoPlay:false deja
+        // el bloque quieto (se navega con flechas y puntos).
+        autoPlay: true,
+        autoPlaySpeed: 6000,
         gap: '1rem',
         backgroundColor: 'transparent',
         paddingTop: '2rem',

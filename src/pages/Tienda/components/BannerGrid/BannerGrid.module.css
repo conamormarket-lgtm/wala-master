@@ -312,65 +312,49 @@
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   RIEL HORIZONTAL DE MARCAS (modo dataSource: 'brands')
-   Antes el mosaico crecía hacia abajo: con 6 marcas iba bien, con 20 la home
-   se volvía interminable. Ahora se acota a DOS FILAS y lo demás se alcanza
-   desplazándose de lado. Las TARJETAS no cambian — es el contenedor el que
-   pasa de rejilla vertical a riel.
+   PAGINADO DE MARCAS (modo dataSource: 'brands')
+   Antes la rejilla crecía hacia abajo sin tope. Ahora las marcas van en
+   PÁGINAS de dos filas: cada página mide EXACTAMENTE el ancho del contenedor,
+   que es lo que garantiza que nunca se vea media tarjeta asomando por el
+   borde. Se pasa de página sola (autoPlay/autoPlaySpeed del builder), con las
+   flechas o con los puntos. Las TARJETAS no cambian: siguen usando .grid con
+   su patrón ancho/angosto, solo que acotado a lo que entra en una página.
    ═════════════════════════════════════════════════════════════════════════ */
 .carousel {
   position: relative;
 }
 
-.scroller {
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x proximity;
-  /* Aire para que la sombra y el hover (que sube 3px) no queden cortados. */
-  padding: 6px 4px 12px;
-  margin: -6px -4px -12px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+.viewport {
+  overflow: hidden;
+  /* Aire ARRIBA y ABAJO para que la sombra y el hover (que sube 3px) no queden
+     cortados. En horizontal el recorte va justo en el borde: con aunque sea
+     unos px de padding lateral se colaba una franja de la pagina siguiente. */
+  padding: 8px 0;
+  margin: -8px 0;
 }
 
-.scroller::-webkit-scrollbar {
-  display: none;
+.track {
+  display: flex;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
-/* Foco visible al llegar con el teclado: el riel es tabbable para poder
-   recorrerlo con las flechas del teclado. */
-.scroller:focus-visible {
-  outline: 2px solid var(--primary-color, #7c3aed);
-  outline-offset: 4px;
-  border-radius: 22px;
+.page {
+  flex: 0 0 auto;
+  /* Cada página trae su propia .grid; el ancho lo fija el componente en
+     función de cuántas páginas hay. */
+  min-width: 0;
 }
 
-.rail {
-  display: grid;
-  /* DOS filas fijas; las columnas se generan solas hacia la derecha. */
-  grid-template-rows: repeat(2, auto);
-  grid-auto-flow: column dense;
-  /* Ancho de una tarjeta "normal". La destacada ocupa dos de estas columnas
-     (regla .brandFeatured de abajo), que es lo que conserva el ritmo del
-     mosaico: ancha, angosta, angosta, ancha… */
-  grid-auto-columns: clamp(230px, 24vw, 330px);
-  width: max-content;
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    transition: none;
+  }
 }
 
-/* Dentro del riel, "span 2" deja de significar dos columnas de una rejilla
-   vertical y pasa a significar el doble de ancho en el riel: mismo efecto
-   visual, misma alternancia. */
-.rail .brandFeatured {
-  grid-column: span 2;
-  grid-template-columns: minmax(200px, 1.2fr) minmax(150px, 0.8fr);
-}
-
-.rail .brandCell {
-  scroll-snap-align: start;
-}
-
-/* Flechas: mismo lenguaje que los carruseles de producto. Se ocultan solas
-   (atributo hidden desde el componente) cuando no hay nada que desplazar. */
+/* Flechas: media flecha por fuera, montada sobre el borde, sin taparle la
+   esquina a la primera/última tarjeta. Cabe dentro del padding 4vw de
+   .section (21px < 36px, el mínimo antes de que se oculten). */
 .navButton {
   position: absolute;
   top: 50%;
@@ -386,23 +370,14 @@
   border-radius: 50%;
   background: var(--color-surface, #fff);
   color: var(--color-text, #111827);
-  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.14);
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
-.navButton:hover:not(:disabled) {
+.navButton:hover {
   background: var(--color-surface-2, #f3f4f6);
 }
 
-.navButton:disabled {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Media flecha por fuera del riel: montada sobre el borde, sin taparle la
-   esquina a la primera/ultima tarjeta. Cabe siempre dentro del padding 4vw
-   de .section (21px < 36px, el minimo antes de que las flechas se oculten). */
 .navPrev {
   left: -21px;
 }
@@ -411,29 +386,40 @@
   right: -21px;
 }
 
-@media (max-width: 900px) {
-  .rail {
-    grid-auto-columns: clamp(215px, 62vw, 300px);
-  }
-
-  /* En pantallas angostas la tarjeta destacada al doble de ancho obliga a
-     desplazar demasiado para leer una sola marca: todas van iguales. */
-  .rail .brandFeatured {
-    grid-column: span 1;
-    grid-template-columns: minmax(0, 1fr) minmax(110px, 42%);
-  }
-
-  .navButton {
-    display: none;
-  }
+/* Puntos: además de navegar, dicen cuántas marcas hay en total — con el
+   mosaico suelto no había forma de saberlo. */
+.dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1.15rem;
 }
 
-@media (max-width: 560px) {
-  .rail {
-    grid-auto-columns: min(78vw, 300px);
-  }
+.dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-border, #d1d5db);
+  cursor: pointer;
+  transition: background-color 0.2s ease, width 0.2s ease;
+}
 
-  .rail .brandFeatured {
-    grid-template-columns: minmax(0, 1fr) minmax(105px, 40%);
+.dot:hover {
+  background: var(--color-text-muted, #9ca3af);
+}
+
+.dotActive {
+  width: 22px;
+  border-radius: 999px;
+  background: var(--primary-color, #7c3aed);
+}
+
+@media (max-width: 900px) {
+  /* Sin espacio para flechas a los lados: manda el gesto táctil y los puntos. */
+  .navButton {
+    display: none;
   }
 }
