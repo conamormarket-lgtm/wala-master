@@ -40,12 +40,13 @@ import {
 } from '../services/sorteos';
 import { createCulqi, destroyCulqi } from '../components/CulqiCustomCheckout/culqiSingleton';
 import styles from './SorteosPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 // Imagen de reemplazo si falla la carga del hero/premio.
 const PLACEHOLDER_IMG =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#2A2640"/><text x="50%" y="50%" fill="#C7C1D8" font-family="sans-serif" font-size="20" text-anchor="middle" dominant-baseline="middle">Sorteo Walá</text></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#2A2640"/><text x="50%" y="50%" fill="#C7C1D8" font-family="sans-serif" font-size="20" text-anchor="middle" dominant-baseline="middle"><T>Sorteo Walá</T></text></svg>',
   );
 
 // Convierte un Timestamp de Firestore (o Date/número) a milisegundos.
@@ -379,7 +380,7 @@ function PaypalTicketButtons({ sorteoId, ticketId, onPaid, onError }) {
       {isProcessing ? (
         <div className={styles.payProcessing}>
           <strong>Procesando pago…</strong>
-          <p>Verificando de forma segura. Por favor, no cierres esta ventana.</p>
+          <p><T>Verificando de forma segura. Por favor, no cierres esta ventana.</T></p>
         </div>
       ) : (
         <PayPalScriptProvider options={initialOptions}>
@@ -438,7 +439,7 @@ function FormularioDatosSorteo({ esPagado, precioTicket, moneda, initial, envian
   return (
     <div className={styles.modalBackdrop} onClick={enviando ? undefined : onCancel}>
       <div className={styles.modalForm} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-        <h2 className={styles.modalFormTitle}>Completa tus datos para participar</h2>
+        <h2 className={styles.modalFormTitle}><T>Completa tus datos para participar</T></h2>
         <p className={styles.modalFormSub}>
           {esPagado
             ? 'Con estos datos generamos tu ticket y te contactamos si ganas.'
@@ -457,23 +458,23 @@ function FormularioDatosSorteo({ esPagado, precioTicket, moneda, initial, envian
           </div>
           <div className={styles.formRow2}>
             <label className={styles.formField}>
-              <span>Tipo de documento</span>
+              <span><T>Tipo de documento</T></span>
               <select className={styles.formInput} value={f.tipoDocumento} onChange={set('tipoDocumento')}>
                 {TIPOS_DOC.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </label>
             <label className={styles.formField}>
-              <span>N.º de documento *</span>
+              <span><T>N.º de documento *</T></span>
               <input className={styles.formInput} value={f.numeroDocumento} onChange={set('numeroDocumento')} required />
             </label>
           </div>
           <div className={styles.formRow2}>
             <label className={styles.formField}>
-              <span>Teléfono / celular *</span>
+              <span><T>Teléfono / celular *</T></span>
               <input className={styles.formInput} value={f.telefono} onChange={set('telefono')} inputMode="tel" required />
             </label>
             <label className={styles.formField}>
-              <span>Correo</span>
+              <span><T>Correo</T></span>
               <input className={styles.formInput} type="email" value={f.correo} onChange={set('correo')} />
             </label>
           </div>
@@ -483,7 +484,7 @@ function FormularioDatosSorteo({ esPagado, precioTicket, moneda, initial, envian
               <input className={styles.formInput} value={f.pais} onChange={set('pais')} />
             </label>
             <label className={styles.formField}>
-              <span>Fecha de nacimiento</span>
+              <span><T>Fecha de nacimiento</T></span>
               <input className={styles.formInput} type="date" value={f.fechaNacimiento} onChange={set('fechaNacimiento')} />
             </label>
           </div>
@@ -491,7 +492,7 @@ function FormularioDatosSorteo({ esPagado, precioTicket, moneda, initial, envian
           {esPagado && (
             <div className={styles.formPago}>
               <div className={styles.cantidadRow}>
-                <span className={styles.cantidadLabel}>Cantidad de tickets</span>
+                <span className={styles.cantidadLabel}><T>Cantidad de tickets</T></span>
                 <div className={styles.stepper}>
                   <button
                     type="button"
@@ -515,7 +516,7 @@ function FormularioDatosSorteo({ esPagado, precioTicket, moneda, initial, envian
                 </div>
               </div>
               <div className={styles.totalRow}>
-                <span>Total</span>
+                <span><T>Total</T></span>
                 <strong className={styles.totalValue}>{moneda} {total}</strong>
               </div>
             </div>
@@ -856,7 +857,7 @@ const SorteosPage = () => {
   if (cargandoSorteo) {
     return (
       <div className={styles.page}>
-        <div className={styles.stateBox}>Cargando sorteos…</div>
+        <div className={styles.stateBox}><T>Cargando sorteos…</T></div>
       </div>
     );
   }
@@ -865,7 +866,7 @@ const SorteosPage = () => {
     return (
       <div className={styles.page}>
         <GlassCard variant="soft" padding="lg" className={styles.stateBox}>
-          <p className={styles.stateText}>No pudimos cargar los sorteos ahora.</p>
+          <p className={styles.stateText}><T>No pudimos cargar los sorteos ahora.</T></p>
         </GlassCard>
       </div>
     );
@@ -876,7 +877,7 @@ const SorteosPage = () => {
       <div className={styles.page}>
         <GlassCard variant="soft" padding="lg" className={styles.stateBox}>
           <div className={styles.emptyEmoji} aria-hidden="true">🎁</div>
-          <h1 className={styles.emptyTitle}>Pronto habrá sorteos</h1>
+          <h1 className={styles.emptyTitle}><T>Pronto habrá sorteos</T></h1>
           <p className={styles.stateText}>
             Aún no hay un sorteo activo. ¡Vuelve pronto para participar y ganar!
           </p>
@@ -937,7 +938,7 @@ const SorteosPage = () => {
           {/* Countdown a fechaFin */}
           {!cerrado && countdown && (
             <div className={styles.countdown}>
-              <span className={styles.countdownLabel}>Termina en</span>
+              <span className={styles.countdownLabel}><T>Termina en</T></span>
               <span className={styles.countdownValue}>{countdown}</span>
             </div>
           )}
@@ -1032,23 +1033,28 @@ const SorteosPage = () => {
         title="Cómo ganar más chances"
         className={styles.reglas}
       >
+        {/* Cada regla es UNA frase completa dentro de <T>. Antes el <strong>
+            del medio la partia en trozos ("Entrar desde el" + "app de Wala" +
+            "te da 1 chance extra") y asi ningun traductor puede armarla bien
+            en otro idioma, donde el orden de las palabras cambia. Se prefiere
+            la frase correcta a la negrita, que era decorativa. */}
         <ul className={styles.reglasList}>
           {esPagado ? (
-            <li>Cada ticket pagado suma 1 chance para el sorteo.</li>
+            <li><T>Cada ticket pagado suma 1 chance para el sorteo.</T></li>
           ) : (
-            <li>Participar te da 1 chance base.</li>
+            <li><T>Participar te da 1 chance base.</T></li>
           )}
           {sorteo.requisitoApp === 'chanceExtra' && (
-            <li>Entrar desde el <strong>app de Walá</strong> te da 1 chance extra.</li>
+            <li><T>Entrar desde el app de Walá te da 1 chance extra.</T></li>
           )}
           {sorteo.chanceExtraCompartir && (
-            <li>Compartir el sorteo te suma <strong>+1 chance</strong> (una vez).</li>
+            <li><T>Compartir el sorteo te suma +1 chance (una vez).</T></li>
           )}
           {sorteo.chanceExtraReferido && (
-            <li>Ganas <strong>+1 chance</strong> por cada amigo que participe con tu enlace.</li>
+            <li><T>Ganas +1 chance por cada amigo que participe con tu enlace.</T></li>
           )}
           {requiereApp && (
-            <li>Este sorteo requiere participar <strong>desde el app</strong>.</li>
+            <li><T>Este sorteo requiere participar desde el app.</T></li>
           )}
         </ul>
       </GlassCard>
@@ -1068,8 +1074,8 @@ const SorteosPage = () => {
           {soyGanador && (
             <div className={styles.yoGaneBanner}>
               <span className={styles.yoGaneEmoji} aria-hidden="true">🎉</span>
-              <strong>¡FELICIDADES, GANASTE!</strong>
-              <span className={styles.yoGaneSub}>Pronto nos contactaremos contigo para tu premio.</span>
+              <strong><T>¡FELICIDADES, GANASTE!</T></strong>
+              <span className={styles.yoGaneSub}><T>Pronto nos contactaremos contigo para tu premio.</T></span>
             </div>
           )}
 
@@ -1097,7 +1103,7 @@ const SorteosPage = () => {
         {/* Gate de login: si no hay usuario, invitar a iniciar sesión. */}
         {!user ? (
           <GlassCard variant="soft" padding="md" className={styles.loginGate}>
-            <p className={styles.loginPrompt}>Inicia sesión en Walá para participar</p>
+            <p className={styles.loginPrompt}><T>Inicia sesión en Walá para participar</T></p>
             <GlassButton
               as={Link}
               to="/login"
@@ -1116,7 +1122,7 @@ const SorteosPage = () => {
         ) : bloqueadoPorApp ? (
           // requisitoApp == 'obligatorio' y no venimos del app.
           <>
-            <p className={styles.appHint}>Este sorteo solo está disponible desde el app.</p>
+            <p className={styles.appHint}><T>Este sorteo solo está disponible desde el app.</T></p>
             <GlassButton as={Link} to="/descargar" variant="primary" size="lg" fullWidth>
               Descargar app
             </GlassButton>

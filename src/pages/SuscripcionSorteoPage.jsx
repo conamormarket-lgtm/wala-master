@@ -41,6 +41,7 @@ import {
 } from '../services/suscripcionSorteos';
 import { CulqiSuscripcionButton, PaypalSuscripcionButtons } from './suscripcion/PagoSuscripcion';
 import styles from './SuscripcionSorteoPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 // Slug por defecto de la campaña "principal" si la ruta no trae uno.
 const SLUG_DEFECTO = 'suscrito-sorteo';
@@ -57,7 +58,7 @@ const COLORES_DEFECTO = {
 const PLACEHOLDER_IMG =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="100%" height="100%" fill="#e9e3f5"/><text x="50%" y="50%" fill="#9b8bc4" font-family="sans-serif" font-size="18" text-anchor="middle" dominant-baseline="middle">Walá</text></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="100%" height="100%" fill="#e9e3f5"/><text x="50%" y="50%" fill="#9b8bc4" font-family="sans-serif" font-size="18" text-anchor="middle" dominant-baseline="middle"><T>Walá</T></text></svg>',
   );
 
 // Imagen con fallback a placeholder si el src falla o falta.
@@ -237,7 +238,7 @@ const SuscripcionSorteoPage = () => {
     return (
       <div className={styles.page} style={themeVars}>
         <div className={styles.stateWrap}>
-          <div className={styles.stateBox}>Cargando…</div>
+          <div className={styles.stateBox}><T>Cargando…</T></div>
         </div>
       </div>
     );
@@ -249,7 +250,7 @@ const SuscripcionSorteoPage = () => {
         <div className={styles.stateWrap}>
           <div className={styles.stateBox}>
             <div className={styles.stateEmoji} aria-hidden="true">🎁</div>
-            <h1 className={styles.stateTitle}>No disponible</h1>
+            <h1 className={styles.stateTitle}><T>No disponible</T></h1>
             <p className={styles.stateText}>
               Este sorteo por suscripción no está disponible por ahora. ¡Vuelve pronto!
             </p>
@@ -272,7 +273,7 @@ const SuscripcionSorteoPage = () => {
         <a className={styles.navLink} href="#premios">Premios</a>
         <a className={styles.navLink} href="#ganadores">Ganadores</a>
         <a className={styles.navLink} href="#beneficios">Beneficios</a>
-        {user && <a className={styles.navLink} href="#mi-cuenta">Mi cuenta</a>}
+        {user && <a className={styles.navLink} href="#mi-cuenta"><T>Mi cuenta</T></a>}
       </nav>
 
       <div className={styles.contenido}>
@@ -311,7 +312,7 @@ const SuscripcionSorteoPage = () => {
 
         {/* PLANES --------------------------------------------------------- */}
         <section id="planes" className={styles.seccion}>
-          <h2 className={styles.seccionTitulo}>Elige tu plan</h2>
+          <h2 className={styles.seccionTitulo}><T>Elige tu plan</T></h2>
           <p className={styles.seccionSub}>
             Suscríbete con cobro automático y participa en cada sorteo. Mientras más
             tiempo suscrito, más chances de ganar.
@@ -365,7 +366,7 @@ const SuscripcionSorteoPage = () => {
               );
             })}
             {planes.length === 0 && (
-              <p className={styles.stateText}>Aún no hay planes configurados.</p>
+              <p className={styles.stateText}><T>Aún no hay planes configurados.</T></p>
             )}
           </div>
         </section>
@@ -374,7 +375,7 @@ const SuscripcionSorteoPage = () => {
         {premios.length > 0 && (
           <section id="premios" className={styles.seccion}>
             <h2 className={styles.seccionTitulo}>Premios</h2>
-            <p className={styles.seccionSub}>Esto es lo que puedes ganar siendo suscriptor.</p>
+            <p className={styles.seccionSub}><T>Esto es lo que puedes ganar siendo suscriptor.</T></p>
             <div className={styles.premios}>
               {premios.map((p, i) => (
                 <div key={i} className={styles.premioCard}>
@@ -389,7 +390,7 @@ const SuscripcionSorteoPage = () => {
         {/* GANADORES ------------------------------------------------------ */}
         <section id="ganadores" className={styles.seccion}>
           <h2 className={styles.seccionTitulo}>Ganadores</h2>
-          <p className={styles.seccionSub}>Ellos ya ganaron. El próximo puedes ser tú.</p>
+          <p className={styles.seccionSub}><T>Ellos ya ganaron. El próximo puedes ser tú.</T></p>
           {ganadores.length > 0 ? (
             <div className={styles.ganadores}>
               {ganadores.map((g) => (
@@ -404,15 +405,15 @@ const SuscripcionSorteoPage = () => {
               ))}
             </div>
           ) : (
-            <p className={styles.stateText}>Pronto anunciaremos a los primeros ganadores.</p>
+            <p className={styles.stateText}><T>Pronto anunciaremos a los primeros ganadores.</T></p>
           )}
         </section>
 
         {/* BENEFICIOS ----------------------------------------------------- */}
         {beneficios.length > 0 && (
           <section id="beneficios" className={styles.seccion}>
-            <h2 className={styles.seccionTitulo}>Beneficios para suscriptores</h2>
-            <p className={styles.seccionSub}>Descuentos exclusivos en marcas aliadas.</p>
+            <h2 className={styles.seccionTitulo}><T>Beneficios para suscriptores</T></h2>
+            <p className={styles.seccionSub}><T>Descuentos exclusivos en marcas aliadas.</T></p>
             {categorias.length > 1 && (
               <div className={styles.filtros}>
                 {categorias.map((c) => (
@@ -452,7 +453,7 @@ const SuscripcionSorteoPage = () => {
         {/* MI CUENTA (solo logueado) -------------------------------------- */}
         {user && (
           <section id="mi-cuenta" className={styles.seccion}>
-            <h2 className={styles.seccionTitulo}>Mi cuenta</h2>
+            <h2 className={styles.seccionTitulo}><T>Mi cuenta</T></h2>
             <div className={styles.tabs} role="tablist">
               <button
                 type="button"
@@ -560,7 +561,7 @@ function TabMiSuscripcion({ campaignId, miSuscripcion, onCancelado, onIrAPlanes 
     <GlassCard variant="soft" padding="md">
       <div className={styles.miSuscKV}>
         <div className={styles.kvRow}>
-          <span className={styles.kvLabel}>Estado</span>
+          <span className={styles.kvLabel}><T>Estado</T></span>
           <span className={styles.kvValor}>
             <Badge tone={est.tone} variant="soft" dot>{est.label}</Badge>
           </span>
@@ -573,7 +574,7 @@ function TabMiSuscripcion({ campaignId, miSuscripcion, onCancelado, onIrAPlanes 
           </span>
         </div>
         <div className={styles.kvRow}>
-          <span className={styles.kvLabel}>Método de pago</span>
+          <span className={styles.kvLabel}><T>Método de pago</T></span>
           <span className={styles.kvValor}>{miSuscripcion.metodoPago || '—'}</span>
         </div>
         <div className={styles.kvRow}>
@@ -581,7 +582,7 @@ function TabMiSuscripcion({ campaignId, miSuscripcion, onCancelado, onIrAPlanes 
           <span className={styles.kvValor}>{fechaLegible(miSuscripcion.vigenciaHasta)}</span>
         </div>
         <div className={styles.kvRow}>
-          <span className={styles.kvLabel}>Próximo cobro</span>
+          <span className={styles.kvLabel}><T>Próximo cobro</T></span>
           <span className={styles.kvValor}>{fechaLegible(miSuscripcion.proximoCobro)}</span>
         </div>
       </div>
@@ -621,7 +622,7 @@ function TabMisChances({ miSuscripcion }) {
     <GlassCard variant="soft" padding="md">
       <div className={styles.chancesBig}>
         <div className={styles.chancesNum}>{chances}</div>
-        <div className={styles.chancesLabel}>chances acumuladas para el sorteo</div>
+        <div className={styles.chancesLabel}><T>chances acumuladas para el sorteo</T></div>
       </div>
       <p className={styles.stateText}>
         Cada ciclo pagado te suma chances según tu plan. Mientras más tiempo sigas
@@ -645,10 +646,10 @@ function TabMisRecibos({ campaignId, uid }) {
   });
 
   if (isLoading) {
-    return <GlassCard variant="soft" padding="md"><p className={styles.miCuentaVacia}>Cargando recibos…</p></GlassCard>;
+    return <GlassCard variant="soft" padding="md"><p className={styles.miCuentaVacia}><T>Cargando recibos…</T></p></GlassCard>;
   }
   if (recibos.length === 0) {
-    return <GlassCard variant="soft" padding="md"><p className={styles.miCuentaVacia}>Aún no tienes recibos de cobro.</p></GlassCard>;
+    return <GlassCard variant="soft" padding="md"><p className={styles.miCuentaVacia}><T>Aún no tienes recibos de cobro.</T></p></GlassCard>;
   }
   return (
     <GlassCard variant="soft" padding="md">
@@ -791,7 +792,7 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
       {pendiente ? (
         <div className={styles.exitoBox}>
           <div className={styles.exitoEmoji} aria-hidden="true">⏳</div>
-          <h3>Tu suscripción se está activando</h3>
+          <h3><T>Tu suscripción se está activando</T></h3>
           <p className={styles.stateText}>
             Se activará automáticamente cuando se confirme tu primer cobro. Te avisaremos
             por correo. ¡Gracias por suscribirte!
@@ -821,12 +822,12 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
                 <input className={styles.formInput} value={datos.nombres} onChange={set('nombres')} required />
               </label>
               <label className={styles.formField}>
-                <span>Fecha de nacimiento (opcional)</span>
+                <span><T>Fecha de nacimiento (opcional)</T></span>
                 <input className={styles.formInput} type="date" value={datos.fechaNacimiento} onChange={set('fechaNacimiento')} />
               </label>
             </div>
             <label className={styles.formField}>
-              <span>Correo</span>
+              <span><T>Correo</T></span>
               <input className={styles.formInput} type="email" value={correo} readOnly />
             </label>
           </div>
@@ -872,7 +873,7 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
               onOk={onOkPago}
               onError={onErrorPago}
             />
-            <div className={styles.divisor}>o paga desde el extranjero</div>
+            <div className={styles.divisor}><T>o paga desde el extranjero</T></div>
             <PaypalSuscripcionButtons
               campaignId={campaign.id}
               plan={plan}

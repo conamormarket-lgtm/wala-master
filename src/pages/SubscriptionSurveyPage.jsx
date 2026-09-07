@@ -7,6 +7,7 @@ import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Plus, Trash2, Ar
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
 import { showFlyingCoins } from '../utils/animations';
 import styles from './SubscriptionSurveyPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const EVENT_TYPES = [
   { id: 'cumpleanos', label: 'Cumpleaños', needsDate: true },
@@ -379,7 +380,7 @@ const SubscriptionSurveyPage = () => {
     }
   };
 
-  if (authLoading || configLoading) return <div className={styles.surveyLayout}>Cargando...</div>;
+  if (authLoading || configLoading) return <div className={styles.surveyLayout}><T>Cargando...</T></div>;
 
   let progressPercent = 0;
   if (currentStep <= 2) {
@@ -455,7 +456,7 @@ const SubscriptionSurveyPage = () => {
                 ))}
                 {/* Cumpleaños PROPIO del usuario (opcional). No bloquea el avance. */}
                 <div className={styles.fieldGroup}>
-                  <label>Tu cumpleaños 🎂</label>
+                  <label><T>Tu cumpleaños 🎂</T></label>
                   <input
                     type="date"
                     className={styles.input}
@@ -465,8 +466,8 @@ const SubscriptionSurveyPage = () => {
                 </div>
               </div>
               <div className={styles.actions}>
-                <button type="button" onClick={goBack} className={styles.skipBtn}>Atrás</button>
-                <button type="button" onClick={goToNextStep} className={styles.saveBtn}>Continuar</button>
+                <button type="button" onClick={goBack} className={styles.skipBtn}><T>Atrás</T></button>
+                <button type="button" onClick={goToNextStep} className={styles.saveBtn}><T>Continuar</T></button>
               </div>
             </>
           )}
@@ -474,8 +475,8 @@ const SubscriptionSurveyPage = () => {
           {currentStep === 2 && (
             <>
               <div className={styles.headerIcon}><Users size={40} color={config.design.primaryColor} /></div>
-              <h1 className={styles.title}>¿A quiénes sueles regalar?</h1>
-              <p className={styles.description}>Selecciona todos los perfiles a los que sueles hacer regalos (puedes elegir varios).</p>
+              <h1 className={styles.title}><T>¿A quiénes sueles regalar?</T></h1>
+              <p className={styles.description}><T>Selecciona todos los perfiles a los que sueles hacer regalos (puedes elegir varios).</T></p>
               
               <div className={styles.groupsContainer}>
                 <button 
@@ -496,8 +497,8 @@ const SubscriptionSurveyPage = () => {
               </div>
 
               <div className={styles.actions}>
-                <button type="button" onClick={goBack} className={styles.skipBtn}>Atrás</button>
-                <button type="button" onClick={goToNextStep} className={styles.saveBtn}>Continuar</button>
+                <button type="button" onClick={goBack} className={styles.skipBtn}><T>Atrás</T></button>
+                <button type="button" onClick={goToNextStep} className={styles.saveBtn}><T>Continuar</T></button>
               </div>
             </>
           )}
@@ -508,7 +509,7 @@ const SubscriptionSurveyPage = () => {
                 <>
                   <div className={styles.headerIcon}>{currentRoleObj.icon}</div>
                   <h1 className={styles.title}>{rolesList[currentRoleIndex] === 'pareja' ? 'Tu Pareja' : `Tus ${currentRoleObj.label}`}</h1>
-                  <p className={styles.description}>Completa los datos de estas personas para poder guardarlas.</p>
+                  <p className={styles.description}><T>Completa los datos de estas personas para poder guardarlas.</T></p>
                   
                   <div className={styles.form}>
                     <div className={styles.recipientsList}>
@@ -546,7 +547,7 @@ const SubscriptionSurveyPage = () => {
 
                   <div className={styles.actions}>
                     {currentRoleIndex === 0 ? (
-                      <button type="button" onClick={() => setCurrentStep(2)} className={styles.skipBtn}>Atrás</button>
+                      <button type="button" onClick={() => setCurrentStep(2)} className={styles.skipBtn}><T>Atrás</T></button>
                     ) : (
                       <button type="button" onClick={() => {
                         setAnimationDir('Left');
@@ -571,11 +572,11 @@ const SubscriptionSurveyPage = () => {
                   <div className={styles.form}>
                     <div style={{ display: 'flex', gap: '1rem' }}>
                       <div className={styles.fieldGroup} style={{ flex: 2 }}>
-                        <label>Nombre de la persona *</label>
+                        <label><T>Nombre de la persona *</T></label>
                         <input type="text" className={styles.input} placeholder="Ej. Carlos" value={tempRecipient.name} onChange={e => handleTempChange('name', e.target.value)} />
                       </div>
                       <div className={styles.fieldGroup} style={{ flex: 1 }}>
-                        <label>Género *</label>
+                        <label><T>Género *</T></label>
                         <select className={styles.input} value={tempRecipient.gender || ''} onChange={e => handleTempChange('gender', e.target.value)} required>
                           <option value="">Seleccionar...</option>
                           <option value="Masculino">Masculino</option>
@@ -774,7 +775,7 @@ const SubscriptionSurveyPage = () => {
               
               <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '1rem', textAlign: 'left' }}>
                 <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569' }}>
-                  <strong>💡 Tip:</strong> A partir de ahora puedes gestionar a tus personas importantes y agregar nuevas fechas yendo a tu Perfil y dándole a la pestaña <strong>"Fechas Importantes"</strong>.
+                  <strong>💡 Tip:</strong> <T>A partir de ahora puedes gestionar a tus personas importantes y agregar nuevas fechas yendo a tu Perfil y dándole a la pestaña</T> <strong>"Fechas Importantes"</strong>.
                 </p>
               </div>
 
