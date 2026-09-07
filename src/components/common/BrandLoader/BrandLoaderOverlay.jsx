@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EASE_SIGNATURE, useReducedMotionSafe } from '../../../theme/motion';
@@ -30,28 +30,55 @@ import BrandLoader from './BrandLoader';
 const BrandLoaderOverlay = ({ show }) => {
   const reducedMotion = useReducedMotionSafe();
 
-  // Bloquea el scroll del documento mientras el loader esta visible: sin
+  // Bloquea el scroll del documento mientras el loader esta presente. Sin
   // esto, el contenido de la tienda (ya renderizado debajo del overlay) hace
-  // que la pagina sea alta y aparece una barra de scroll SOBRE la pantalla
-  // de carga — se veia raro (una barra que aparecia y desaparecia durante la
-  // carga). Se compensa el ancho de la barra con padding-right para que al
+  // que la pagina sea alta y aparece una barra de scroll SOBRE la pantalla de
+  // carga. Se compensa el ancho de la barra con padding-right para que al
   // soltar el bloqueo el contenido no "salte" de lado.
-  useEffect(() => {
-    if (!show) return undefined;
+  //
+  // CLAVE: el bloqueo se mantiene durante TODA la animacion de SALIDA y se
+  // suelta recien en onExitComplete (no cuando `show` pasa a false). El overlay
+  // sale con scale:1.06 (zoom hacia afuera); al ser position:fixed inset:0, ese
+  // 106% se sale del viewport por los 4 lados y, con el scroll ya libre,
+  // disparaba una barra de scroll durante ~0.6s justo al terminar de cargar.
+  // Con overflow:hidden vigente hasta que el zoom termina, queda recortado.
+  const savedRef = useRef(null);
+
+  const lockScroll = () => {
+    if (savedRef.current) return; // ya bloqueado (idempotente)
     const html = document.documentElement;
-    const prevOverflow = html.style.overflow;
-    const prevPadding = html.style.paddingRight;
     const scrollbarWidth = window.innerWidth - html.clientWidth;
+    savedRef.current = {
+      overflow: html.style.overflow,
+      paddingRight: html.style.paddingRight,
+    };
     html.style.overflow = 'hidden';
     if (scrollbarWidth > 0) html.style.paddingRight = `${scrollbarWidth}px`;
-    return () => {
-      html.style.overflow = prevOverflow;
-      html.style.paddingRight = prevPadding;
-    };
+  };
+
+  const unlockScroll = () => {
+    if (!savedRef.current) return;
+    const html = document.documentElement;
+    html.style.overflow = savedRef.current.overflow;
+    html.style.paddingRight = savedRef.current.paddingRight;
+    savedRef.current = null;
+  };
+
+  useEffect(() => {
+    if (show) lockScroll();
+    // Ojo: NO desbloqueamos cuando show pasa a false — eso lo hace
+    // onExitComplete, cuando el zoom de salida ya termino (ver comentario
+    // arriba). Aqui solo bloqueamos al entrar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
 
+  // Seguridad: si el overlay se desmonta por completo estando bloqueado
+  // (p.ej. cambio de ruta a mitad de la salida), restauramos el scroll.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => unlockScroll(), []);
+
   return createPortal(
-    <AnimatePresence initial={false}>
+    <AnimatePresence initial={false} onExitComplete={unlockScroll}>
       {show && (
         <motion.div
           key="brand-loader-overlay"
