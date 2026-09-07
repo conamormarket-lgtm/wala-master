@@ -7,29 +7,25 @@ import styles from './BrandLoader.module.css';
  * Pantalla de carga estilizada del sistema (isotipo del logo en "negativo"
  * — bolsa blanca + W violeta — sobre el degradado de marca).
  *
- * Animación (framer-motion, easeInOut para que todo respire en fase, ida y
- * vuelta suave — sin curvas que reinicien de golpe):
- *  - Un doble halo que "respira" EN SINCRONIA con el icono (mismo ciclo de
- *    2.4s): el resplandor se intensifica cuando el icono crece y se atenua
- *    cuando encoge. El amplio da profundidad; el interno, brillo. Un solo
- *    gesto calmo y coherente, nada juguetón — tono ecommerce premium.
+ * Animación (framer-motion). Se mueve UNICAMENTE el icono; el fondo y el
+ * resplandor detras quedan estaticos.
+ *  - El icono hace un "click" tipo boton en loop: se encoge y baja unos px
+ *    (press), rebota con un leve overshoot (el impulso) y vuelve exacto a su
+ *    tamaño/posicion. Solo escala + traslada (no deforma ni recolorea).
  *  - Una barra de progreso indeterminada con brillo suave: comunica "algo
  *    esta pasando" sin fingir un porcentaje real.
  *
  * Los elementos NO tienen animacion de ENTRADA (aparecen ya en su estado
- * final y solo hacen sus loops): asi el relevo desde el splash estatico de
- * index.html — que muestra el MISMO lockup — es invisible, sin un
- * re-"fade-in" del logo que se leeria como un parpadeo. La animacion de
- * SALIDA (cuando termina la carga) vive en BrandLoaderOverlay.jsx.
+ * final): asi el relevo desde el splash estatico de index.html — que muestra
+ * el MISMO lockup — es invisible. La animacion de SALIDA (al terminar la
+ * carga) vive en BrandLoaderOverlay.jsx.
  *
  * Respeta prefers-reduced-motion (useReducedMotionSafe): sin movimiento,
- * icono y halos quietos y la barra como un trazo estatico a medio llenar.
+ * icono quieto y la barra como un trazo estatico a medio llenar.
  *
  * @param {'fill'|'inline'} variant  'fill' = llena el alto de su contenedor,
  *   'inline' = alto fijo mas chico para usar suelto dentro de un layout.
  */
-const BREATHE = 2.4; // s — respiración del icono + halos (todo sincronizado)
-
 const BrandLoader = ({ variant = 'fill' }) => {
   const reducedMotion = useReducedMotionSafe();
 
@@ -41,34 +37,32 @@ const BrandLoader = ({ variant = 'fill' }) => {
     >
       <div className={styles.stack}>
         <div className={styles.markWrap}>
-          {!reducedMotion && (
-            <>
-              {/* Dos halos que RESPIRAN en sincronia con el icono (mismo
-                  ciclo de 2.4s, ida y vuelta suave), no un "ripple" que se
-                  expande y reinicia de golpe: el resplandor se intensifica
-                  cuando el icono crece y se atenua cuando encoge, un solo
-                  gesto coherente. El amplio da profundidad; el interno, brillo. */}
-              <motion.span
-                className={styles.haloWide}
-                aria-hidden="true"
-                animate={{ scale: [0.9, 1.12, 0.9], opacity: [0.3, 0.55, 0.3] }}
-                transition={{ duration: BREATHE, repeat: Infinity, ease: 'easeInOut' }}
-              />
-              <motion.span
-                className={styles.halo}
-                aria-hidden="true"
-                animate={{ scale: [0.95, 1.1, 0.95], opacity: [0.4, 0.7, 0.4] }}
-                transition={{ duration: BREATHE, repeat: Infinity, ease: 'easeInOut' }}
-              />
-            </>
-          )}
+          {/* Resplandor ESTATICO detras del icono (dos capas radiales para
+              dar profundidad). No se anima: el usuario pidio que se mueva
+              UNICAMENTE el icono y el fondo quede quieto. */}
+          <span className={styles.haloWide} aria-hidden="true" />
+          <span className={styles.halo} aria-hidden="true" />
+          {/* El icono hace un gesto de "click" tipo boton de interfaz, en
+              loop: se encoge y baja unos px (como si lo presionaran), luego
+              rebota con un leve overshoot (el "impulso") y vuelve exacto a su
+              tamaño y posicion. Rapido y natural (~0.7s), con una pausa entre
+              clicks (repeatDelay). Solo escala + traslada: no deforma el logo
+              ni cambia colores. transform-origin al centro para que el
+              encogido sea simetrico. */}
           <motion.svg
             viewBox="12 0 94 109"
             className={styles.mark}
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
-            animate={reducedMotion ? undefined : { scale: [1, 1.045, 1] }}
-            transition={reducedMotion ? undefined : { duration: BREATHE, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ transformOrigin: 'center center' }}
+            animate={reducedMotion ? undefined : { scale: [1, 0.88, 1.06, 1], y: [0, 7, -3, 0] }}
+            transition={reducedMotion ? undefined : {
+              duration: 0.7,
+              times: [0, 0.15, 0.5, 1],
+              ease: ['easeOut', 'easeOut', 'easeInOut'],
+              repeat: Infinity,
+              repeatDelay: 0.6,
+            }}
           >
             <defs>
               {/* Mismo degradado de marca que el logo real del Header

@@ -84,9 +84,9 @@
       <div id="app-loading" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(60% 55% at 18% 12%,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 60%),radial-gradient(55% 50% at 88% 92%,rgba(76,29,149,.35) 0%,rgba(76,29,149,0) 60%),linear-gradient(135deg,#8B5CF6 0%,#5B21B6 100%);">
         <div style="display:flex;flex-direction:column;align-items:center;gap:18px;">
           <div style="position:relative;width:148px;height:148px;display:flex;align-items:center;justify-content:center;">
-            <span id="app-loading-halo-wide" style="position:absolute;inset:-28%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.28) 0%,rgba(255,255,255,0) 68%);animation:appLoadingHaloWide 2.4s ease-in-out infinite;"></span>
-            <span id="app-loading-halo" style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 70%);animation:appLoadingHalo 2.4s ease-in-out infinite;"></span>
-            <svg viewBox="12 0 94 109" width="96" style="position:relative;animation:appLoadingPulse 2.4s ease-in-out infinite;filter:drop-shadow(0 8px 24px rgba(76,29,149,.35));" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <span id="app-loading-halo-wide" style="position:absolute;inset:-28%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.28) 0%,rgba(255,255,255,0) 68%);"></span>
+            <span id="app-loading-halo" style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.5) 0%,rgba(255,255,255,0) 70%);"></span>
+            <svg viewBox="12 0 94 109" width="96" style="position:relative;transform-origin:center;animation:appLoadingClick 1.3s infinite;filter:drop-shadow(0 8px 24px rgba(76,29,149,.35));" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <defs>
                 <linearGradient id="walaSplashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stop-color="#8B5CF6" />
@@ -105,25 +105,23 @@
         </div>
       </div>
       <style>
-        @keyframes appLoadingPulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.045); }
-        }
-        @keyframes appLoadingHalo {
-          0%, 100% { transform: scale(0.95); opacity: 0.4; }
-          50% { transform: scale(1.1); opacity: 0.7; }
-        }
-        @keyframes appLoadingHaloWide {
-          0%, 100% { transform: scale(0.9); opacity: 0.3; }
-          50% { transform: scale(1.12); opacity: 0.55; }
+        /* Click tipo boton: press (encoge + baja), rebote con overshoot
+           (impulso) y vuelta exacta, luego una pausa hasta cerrar el ciclo
+           de 1.3s. Solo el icono se mueve; los halos son estaticos. Mismo
+           gesto que el BrandLoader de React para que el relevo sea invisible. */
+        @keyframes appLoadingClick {
+          0%   { transform: scale(1) translateY(0);          animation-timing-function: ease-out; }
+          8%   { transform: scale(0.88) translateY(7px);      animation-timing-function: ease-out; }
+          27%  { transform: scale(1.06) translateY(-3px);     animation-timing-function: ease-in-out; }
+          54%  { transform: scale(1) translateY(0);           animation-timing-function: linear; }
+          100% { transform: scale(1) translateY(0); }
         }
         @keyframes appLoadingSweep {
           0% { transform: translateX(-140%); }
           100% { transform: translateX(340%); }
         }
         @media (prefers-reduced-motion: reduce) {
-          #app-loading svg, #app-loading-halo, #app-loading-halo-wide, #app-loading-bar { animation: none !important; }
-          #app-loading-halo, #app-loading-halo-wide { display: none; }
+          #app-loading svg, #app-loading-bar { animation: none !important; }
           #app-loading-bar { width: 45%; opacity: .8; }
         }
       </style>
