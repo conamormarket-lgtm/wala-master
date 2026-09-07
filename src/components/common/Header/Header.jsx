@@ -334,18 +334,20 @@ const Header = () => {
               </linearGradient>
             </defs>
 
-            {/* ISOTIPO (Left) — Bolsa de compras VERTICAL con la 'W' y el punto,
-                al estilo del icono de la app (referencia del usuario): silueta
-                redondeada con dos picos suaves arriba (la "boca" de la bolsa),
-                relleno en el degradado de marca -> bolsa morada + W blanca +
-                punto blanco (los colores del header). Se dibuja en un espacio
-                local ~100x108 y se ubica con translate(12,10) scale(0.92) para
-                centrarlo vertical en el viewBox de 120 y dejar aire antes de la
-                'W' del logotipo. */}
-            <g transform="translate(12, 10) scale(0.92)">
-               <path d="M 16 40 C 16 34 18 30 23 28 L 27 21 C 28 19 31 19 32 22 L 35 31 C 42 35 46 36 50 36 C 54 36 58 35 65 31 L 68 22 C 69 19 72 19 73 21 L 77 28 C 82 30 84 34 84 40 L 84 82 C 84 92 78 96 70 96 L 30 96 C 22 96 16 92 16 82 Z" fill="url(#walaGradient)" />
-               <circle cx="39" cy="42" r="6" fill="#FFFFFF" />
-               <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#FFFFFF" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" transform="translate(55 64) scale(1.02) translate(-55 -58)" />
+            {/* ISOTIPO (Left) — MISMO isotipo que la pantalla de carga
+                (BrandLoader / splash de index.html): la bolsa inclinada con la
+                'W' y el punto. Usa las MISMAS coordenadas del loader (espacio
+                local del viewBox "12 0 94 109") para que sea exactamente la
+                misma silueta, y se coloca con translate(0.5,18) scale(0.87)
+                para centrarlo vertical en el viewBox de 120 y dejar aire antes
+                del logotipo.
+                Colores INVERTIDOS respecto al loader porque aqui va sobre
+                fondo claro: bolsa en el degradado de marca + 'W' blanca +
+                punto blanco. */}
+            <g transform="translate(0.5, 18) scale(0.87)">
+               <path d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z" fill="url(#walaGradient)" />
+               <circle cx="67" cy="23" r="6.5" fill="#FFFFFF" />
+               <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#FFFFFF" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" transform="translate(55 58) scale(0.8) translate(-55 -58)" />
             </g>
 
             {/* LOGOTIPO (Right) - Anchored right, giving 'A' a strict known position */}
