@@ -42,6 +42,16 @@ const NAV_LABEL_KEYS = {
 // Las banderas las dibuja <FlagIcon> (SVG real; los emoji no se ven en Windows).
 const LANG_NAMES = { es: 'Español', en: 'English', pt: 'Português (Brasil)' };
 
+/**
+ * true solo donde hay un puntero real (mouse/trackpad). Se usa para no
+ * aplicar comportamiento de hover en pantallas tactiles, donde el menu se
+ * abre/cierra unicamente con tap.
+ */
+const hasRealHover = () =>
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(hover: hover)').matches;
+
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
   const { user, userProfile, updateUserProfile, activeMainCoins } = useAuth();
@@ -400,8 +410,22 @@ const Header = () => {
                 // abrirlo: quedaba "escondido" detras de una navegacion directa).
                 const navKey = `nav-${link.id}`;
                 const isNavOpen = activeDropdown === navKey;
+                // Con OTRO menu abierto (el otro nav, o un popup de cuenta/
+                // carrito) este queda bloqueado: si no, el hover seguia
+                // abriendolo y se veian dos desplegables a la vez.
+                const isNavBlocked = Boolean(activeDropdown) && !isNavOpen;
                 return (
-                  <div key={link.id} className={`${styles.navItemWithDropdown} ${isNavOpen ? styles.navDropdownOpen : ''}`}>
+                  <div
+                    key={link.id}
+                    className={`${styles.navItemWithDropdown} ${isNavOpen ? styles.navDropdownOpen : ''} ${isNavBlocked ? styles.hoverBlocked : ''}`}
+                    // Al hacer click el menu queda FIJADO (hace falta para
+                    // touch/teclado). En desktop eso lo dejaba "pegado"
+                    // abierto aunque te fueras con el mouse: al salir se
+                    // suelta y vuelve a mandar el hover.
+                    onMouseLeave={() => {
+                      if (isNavOpen && hasRealHover()) setActiveDropdown(null);
+                    }}
+                  >
                     <button
                       type="button"
                       className={styles.navLink}

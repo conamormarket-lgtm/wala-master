@@ -217,6 +217,25 @@
   transform: rotate(180deg);
 }
 
+/* Exclusion mutua entre desplegables del header (Tienda / Marcas / popups de
+   cuenta, favoritos, carrito). El menu se abre por hover Y queda fijado por
+   click; sin esta regla, con uno fijado el hover seguia abriendo el otro y se
+   veian los dos desplegados a la vez.
+   Solo en desktop con puntero real: en <=768px el nav movil muestra los
+   submenus en linea y siempre visibles, ocultarlos romperia ese menu. */
+@media (min-width: 769px) and (hover: hover) {
+  .navItemWithDropdown.hoverBlocked .megaMenu {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translateY(4px) !important;
+  }
+
+  .navItemWithDropdown.hoverBlocked .navChevron {
+    transform: none !important;
+  }
+}
+
 .megaMenuContent {
   padding: 1.5rem;
 }
