@@ -5,6 +5,7 @@ import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { addReview, getProductReviews, toggleHelpfulVote } from '../../../../services/reviews';
 import Button from '../../../../components/common/Button';
 import styles from './ProductReviews.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const ProductReviews = ({ productId }) => {
   const { user } = useAuth();
@@ -223,7 +224,7 @@ const ProductReviews = ({ productId }) => {
         
         {/* Columna Izquierda */}
         <div className={styles.leftColumn}>
-          <h2 className={styles.title}>Opiniones de Clientes</h2>
+          <h2 className={styles.title}><T>Opiniones de Clientes</T></h2>
           
           <div className={styles.ratingSummary}>
             <div className={styles.averageHeader}>
@@ -237,14 +238,14 @@ const ProductReviews = ({ productId }) => {
                   />
                 ))}
               </div>
-              <span>{averageRating} de 5</span>
+              <span><T>{`${averageRating} de 5`}</T></span>
             </div>
-            <p className={styles.totalReviews}>{totalReviews} calificaciones globales</p>
+            <p className={styles.totalReviews}><T>{`${totalReviews} calificaciones globales`}</T></p>
             
             <div className={styles.ratingBars}>
               {[5, 4, 3, 2, 1].map(star => (
                 <div key={star} className={styles.ratingRow}>
-                  <span className={styles.starLabel}>{star} estrella{star === 1 ? '' : 's'}</span>
+                  <span className={styles.starLabel}><T>{star === 1 ? '1 estrella' : `${star} estrellas`}</T></span>
                   <div className={styles.barContainer}>
                     <div className={styles.barFill} style={{ width: `${ratingPercentages[star]}%` }}></div>
                   </div>
@@ -257,10 +258,10 @@ const ProductReviews = ({ productId }) => {
           <hr className={styles.divider} />
 
           <div className={styles.writeReviewSection}>
-            <h3>Revisa este producto</h3>
-            <p>Comparte tus pensamientos con otros clientes</p>
+            <h3><T>Revisa este producto</T></h3>
+            <p><T>Comparte tus pensamientos con otros clientes</T></p>
             <button className={styles.writeReviewBtn} onClick={() => setShowForm(!showForm)}>
-              Escribir una opinión
+              <T>Escribir una opinión</T>
             </button>
           </div>
 
@@ -374,14 +375,14 @@ const ProductReviews = ({ productId }) => {
             </>
           )}
 
-          <h3 className={styles.rightTitle}>Todas las reseñas</h3>
+          <h3 className={styles.rightTitle}><T>Todas las reseñas</T></h3>
           <div className={styles.reviewsList}>
             {loading ? (
               <p>Cargando reseñas...</p>
             ) : reviews.length > 0 ? (
               reviews.filter(r => r.id !== featuredReview?.id).map(review => renderReviewItem(review))
             ) : (
-              <p className={styles.emptyState}>No hay reseñas aún. ¡Sé el primero en opinar!</p>
+              <p className={styles.emptyState}><T>No hay reseñas aún. ¡Sé el primero en opinar!</T></p>
             )}
             
             {/* Si solo existía la reseña destacada */}

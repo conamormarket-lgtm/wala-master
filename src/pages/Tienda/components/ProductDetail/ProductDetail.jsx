@@ -5,7 +5,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useCart } from '../../../../contexts/CartContext';
 import { useLanguage } from '../../../../contexts/LanguageContext';
-import { T } from '../../../../i18n/useTranslatedText';
+import { T, useTranslatedHtml } from '../../../../i18n/useTranslatedText';
 import { createReferralShare } from '../../../../services/referrals';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
@@ -137,7 +137,7 @@ const Gallery = ({ images, activeIdx, setActiveIdx, showCombo, comboEl }) => {
             loading="eager"
           />
         )}
-        {!zoom && !showCombo && <span className={styles.zoomHint}>🔍 Hover para zoom</span>}
+        {!zoom && !showCombo && <span className={styles.zoomHint}>🔍 <T>Hover para zoom</T></span>}
       </div>
     </div>
   );
@@ -162,6 +162,11 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const { user, userProfile } = useAuth();
   const toast = useGlobalToast();
   const { t } = useLanguage();
+
+  // La descripcion es HTML: se traducen sus nodos de TEXTO y las etiquetas
+  // quedan intactas (ver useTranslatedHtml). Mientras resuelve se muestra el
+  // original, asi que la ficha nunca aparece vacia.
+  const descripcionTraducida = useTranslatedHtml(product?.description || '');
 
   const [variantIdx, setVariantIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
@@ -591,7 +596,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
               <summary className={styles.accordionSummary}>{t('card.descripcion', 'Descripción')}</summary>
               <div
                 className={styles.richText}
-                dangerouslySetInnerHTML={{ __html: product.description }}
+                dangerouslySetInnerHTML={{ __html: descripcionTraducida }}
                 onClick={handleDescClick}
               />
             </details>
