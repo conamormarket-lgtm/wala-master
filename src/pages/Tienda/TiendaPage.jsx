@@ -429,11 +429,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     staleTime: 5 * 60 * 1000,
   });
 
-  // ── IDENTIDAD DE MARCA (mensajes de tienda + indicador) ────────────
+  // ── IDENTIDAD DE MARCA (mensajes de tienda) ────────────────────────
   // Doc completo de la marca de esta página (mismo pageBrandId de arriba). Se usa
-  // para: (1) mensajes de tienda propios (storeTitle/storeSubtitle/storeEmpty) con
-  // fallback al global, y (2) el indicador "Estás en: <Marca>". Sin pageBrandId
-  // (Con Amor / páginas globales) NO se lanza la query y todo queda EXACTO como hoy.
+  // para los mensajes de tienda propios (storeTitle/storeSubtitle/storeEmpty) con
+  // fallback al global. Sin pageBrandId (Con Amor / páginas globales) NO se lanza
+  // la query y todo queda EXACTO como hoy.
   const { data: pageBrandData } = useQuery({
     queryKey: ['tienda-page-brand', pageBrandId || null],
     queryFn: async () => {
@@ -1467,31 +1467,6 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           BrandLoaderOverlay. La logica de pageReady (useIsFetching + latch +
           tope de 8s) esta definida arriba. */}
       <BrandLoaderOverlay show={!pageReady} />
-      {/* INDICADOR DE MARCA ACTIVA: solo en páginas de marca (pageBrandId).
-          Deliberadamente discreto: el hero de la marca ya muestra el nombre en
-          grande, asi que esto es solo una linea de ubicacion ("estas dentro de
-          esta tienda, no en Walá global"), no un titulo. Sin marca (Con Amor /
-          páginas globales) no se renderiza nada. */}
-      {pageBrandId && pageBrandData?.name && (
-        <div className={styles.brandActiveBar}>
-          <div className={styles.brandActiveBarContent}>
-            {pageBrandData.logoUrl && (
-              <span className={styles.brandActiveBarLogoFrame}>
-                <img
-                  src={pageBrandData.logoUrl}
-                  alt=""
-                  aria-hidden="true"
-                  className={styles.brandActiveBarLogo}
-                />
-              </span>
-            )}
-            <span className={styles.brandActiveBarLabel}>
-              <span className={styles.brandActiveBarEyebrow}>Estás en</span>
-              <span className={styles.brandActiveBarName}>{pageBrandData.name}</span>
-            </span>
-          </div>
-        </div>
-      )}
       {!isLandingPage && !categoryId && !searchTerm && <AppDownloadBanner />}
       {sorted.map((section, index) => {
         const rendered = renderSection(section);
