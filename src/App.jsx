@@ -24,6 +24,7 @@ import NavProgressBar from './components/common/NavProgressBar/NavProgressBar';
 import CustomFontsInjector from './components/common/CustomFontsInjector/CustomFontsInjector';
 import { useHeatmapTracker } from './hooks/useHeatmapTracker';
 import ScrollTracker from './components/analytics/ScrollTracker';
+import ScrollToTop from './components/common/ScrollToTop/ScrollToTop';
 
 import './App.css';
 
@@ -308,6 +309,7 @@ function App() {
                       <LayoutProvider>
                         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                           <DeepLinkHandler />
+                          <ScrollToTop />
 
                           <GlobalLayout>
                             <ErrorBoundary>

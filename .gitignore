@@ -125,3 +125,5 @@ credentials.json
 *-firebase-adminsdk-*.json
 
 functions/.env.*
+
+.claude/
