@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styles from './VisualCategoryNav.module.css';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
+import { T } from '../../../../i18n/useTranslatedText';
 
 /**
  * Navegación visual de categorías (burbujas con miniatura).
@@ -134,7 +135,7 @@ const VisualCategoryNav = ({
           onClick={() => onSelectCategory(null)}
         >
           <div className={styles.imageBubble}>{allIcon}</div>
-          <span className={styles.label}>Todos</span>
+          <span className={styles.label}><T>Todos</T></span>
         </button>
       ) : (
         // Modo enlace: link a la tienda global sin categoría.
@@ -144,7 +145,7 @@ const VisualCategoryNav = ({
           className={`${styles.navItem} ${location.pathname === '/tienda' && !location.search ? styles.active : ''}`}
         >
           <div className={styles.imageBubble}>{allIcon}</div>
-          <span className={styles.label}>Todos</span>
+          <span className={styles.label}><T>Todos</T></span>
         </Link>
       )}
 
@@ -174,7 +175,7 @@ const VisualCategoryNav = ({
                 </div>
               )}
             </div>
-            <span className={styles.label}>{category.name}</span>
+            <span className={styles.label}><T>{category.name}</T></span>
           </>
         );
 
