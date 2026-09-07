@@ -139,8 +139,12 @@
   background-color: var(--gris-hover);
 }
 
+/* PAGINA ACTIVA. El color vive SOLO aqui, a proposito: los links configurables
+   lo pintaban en linea (violeta) y los fijos como Minijuegos se quedaban con el
+   de esta clase (casi negro), asi que en la misma barra convivian dos estados
+   "activo" distintos. Ahora manda siempre la clase y todos se ven igual. */
 .navLinkActive {
-  color: var(--gris-texto-principal);
+  color: var(--primary-color);
   font-weight: 600;
   background-color: var(--blanco);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 0 0 1px var(--gris-borde);
@@ -270,6 +274,28 @@
 
 .megaMenuContent li a:hover {
   color: var(--rojo-principal);
+}
+
+/* Item del desplegable en el que YA estas: la marca de la pagina abierta o la
+   categoria filtrada. Antes nada lo senalaba y el menu se leia igual estuvieras
+   donde estuvieras. Se marca con color de marca, algo mas de peso y un punto a
+   la izquierda: el color solo no basta para quien no lo distingue. */
+.subActivo {
+  color: var(--primary-color) !important;
+  font-weight: 600;
+  position: relative;
+}
+
+.subActivo::before {
+  content: '';
+  position: absolute;
+  left: -0.7rem;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* ── Acciones (carrito, cuenta) ── */
@@ -1428,7 +1454,9 @@
 }
 
 :global([data-theme='dark']) .navLinkActive {
-  color: var(--color-text);
+  /* Mismo criterio que en claro: la pagina activa se marca con el color de
+     marca (en oscuro --primary-color es violet-400, legible sobre la pastilla). */
+  color: var(--primary-color);
   /* La pastilla activa usaba var(--blanco) -> superficie oscura; la elevamos. */
   background-color: var(--color-surface-2);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 0 0 1px var(--color-border);

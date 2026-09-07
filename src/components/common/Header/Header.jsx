@@ -149,12 +149,43 @@ const Header = () => {
   // Slug real de la marca (tal cual guardado) para construir los enlaces /<slug>.
   const brandSlug = brandActual ? (brandActual.slug || '').trim() : '';
 
-  // NOTA: el storefront de marca (TiendaPage) filtra las categorías EN PÁGINA via
-  // estado local (navCategoryId), NO por query param `?categoria=` (ese param dispara
-  // la query GLOBAL por categoría, sin acotar por marca → cruzaría mercados). Por eso
-  // en página de marca NO derivamos ni enlazamos categorías desde el Header: aplicamos
-  // la opción segura del plan — ocultar el dropdown auto de categorías globales y
-  // mandar "Ver Todo" a /<slug>. Así no se saca al usuario hacia /tienda (Con Amor).
+  // Categoria abierta ahora mismo (?categoria=ID). Sirve para marcarla en el
+  // desplegable: sin esto no habia forma de saber donde estabas parado.
+  const categoriaActual = new URLSearchParams(location.search).get('categoria') || '';
+
+  // Categorias que se listan en el desplegable "Tienda".
+  //  - EN PAGINA DE MARCA: las de ESA marca (su categoryNav, las mismas burbujas
+  //    que ya se ven en su portada), enlazando a /<slug>?categoria=ID.
+  //  - FUERA DE MARCA: las globales, como siempre.
+  const categoriasDelMenu = useMemo(() => {
+    if (brandActual) {
+      const nav = Array.isArray(brandActual.categoryNav) ? brandActual.categoryNav : [];
+      return nav
+        .filter((it) => it && it.categoryId)
+        .slice()
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((it) => ({
+          id: it.categoryId,
+          // El nombre puede venir vacio en la burbuja; se cae al de la categoria.
+          name: it.name || categoriesData?.find((c) => c.id === it.categoryId)?.name || 'Categoria',
+          url: `/${brandSlug}?categoria=${it.categoryId}`,
+        }))
+        .slice(0, 10);
+    }
+    return (categoriesData || []).slice(0, 10).map((c) => ({
+      id: c.id,
+      name: c.name,
+      url: `/tienda?categoria=${c.id}`,
+    }));
+  }, [brandActual, brandSlug, categoriesData]);
+
+  // NOTA (corregida): antes se decia aqui que `?categoria=` disparaba la query
+  // GLOBAL y cruzaba marcas, y por eso el menu no listaba categorias en pagina de
+  // marca. Eso ya no es cierto: TiendaPage llama a getProductsByCategory(id,
+  // pageBrandId) y el resultado SI queda acotado a la marca de la pagina. Por eso
+  // ahora el desplegable si enlaza /<slug>?categoria=ID.
+  // Lo que si se mantiene: "Ver Todo" va a /<slug> y no a /tienda, para no sacar
+  // al usuario de la marca hacia el catalogo de Con Amor.
 
   const { data: storeConfig, isFetching: storeConfigFetching } = useQuery({
     queryKey: ['store-config-custom'],
@@ -384,10 +415,14 @@ const Header = () => {
                 fontStyle: link.italic ? 'italic' : 'normal',
               };
 
-              const getActiveStyle = (isActive) => ({
-                ...linkStyle,
-                ...(isActive ? { color: 'var(--rojo-principal)' } : {})
-              });
+              // Al estar activo NO se pinta color en linea: lo pone .navLinkActive.
+              // Antes el color activo venia de aqui, pero los links fijos del nav
+              // (Minijuegos) no pasan por esta rama y se quedaban con el color de
+              // la clase: dos "pagina activa" de colores distintos en la misma
+              // barra. Dejando que mande siempre la clase, todos se ven igual.
+              const getActiveStyle = (isActive) => (isActive
+                ? { ...linkStyle, color: undefined }
+                : linkStyle);
 
               if (link.type === 'link') {
                 return (
@@ -450,9 +485,14 @@ const Header = () => {
                                 acotar por marca). Para no cruzar mercados, en marca solo
                                 queda "Ver Todo el Catálogo" → /<slug> (abajo).
                               · FUERA DE MARCA: comportamiento EXACTO actual (global). */}
-                          {link.isCategoryAuto && !brandActual && categoriesData?.slice(0, 10).map(c => (
+                          {link.isCategoryAuto && categoriasDelMenu.map(c => (
                             <li key={`cat-${c.id}`}>
-                              <Link to={`/tienda?categoria=${c.id}`} onClick={() => setMobileMenuOpen(false)}>
+                              <Link
+                                to={c.url}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={categoriaActual === c.id ? styles.subActivo : undefined}
+                                aria-current={categoriaActual === c.id ? 'page' : undefined}
+                              >
                                 {c.name}
                               </Link>
                             </li>
@@ -479,7 +519,12 @@ const Header = () => {
                             if (!slug) return null;
                             return (
                               <li key={`brand-${b.id || slug}`}>
-                                <Link to={`/${slug}`} onClick={() => setMobileMenuOpen(false)}>
+                                <Link
+                                  to={`/${slug}`}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className={brandActual?.id === b.id ? styles.subActivo : undefined}
+                                  aria-current={brandActual?.id === b.id ? 'page' : undefined}
+                                >
                                   {b.name}
                                 </Link>
                               </li>
