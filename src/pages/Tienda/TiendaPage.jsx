@@ -1444,12 +1444,15 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     return () => clearTimeout(t);
   }, [pageReady, contenidoRenderizando, queriesEnVuelo, queryClient]);
 
-  if (isConfigLoading && !storefrontConfig) {
-    // Todavia no sabemos ni QUE secciones van (la config no llego): no hay
-    // nada que renderizar. BrandLoader a pantalla completa — mismo degradado
-    // de marca que el splash estatico de index.html, transicion invisible.
-    return <BrandLoader />;
-  }
+  // NOTA: ya NO hay un `return <BrandLoader/>` aparte para el estado
+  // "config cargando". Antes ese gate tapaba SOLO el area de contenido
+  // (#main-content-area), dejando ver el header, y luego el overlay de abajo
+  // tapaba TODO — ese salto "header visible -> header tapado" se percibia
+  // como un parpadeo. Ahora el MISMO overlay a pantalla completa cubre desde
+  // el primer render (config cargando -> container vacio debajo) hasta que
+  // pageReady, sin transicion intermedia. Mientras la config no llega,
+  // `sorted` es un array vacio, asi que el container se renderiza vacio
+  // (tapado por el overlay) y no hay nada que pintar mal.
 
   return (
     <div className={styles.container}>
