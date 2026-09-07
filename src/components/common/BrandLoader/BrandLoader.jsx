@@ -4,14 +4,32 @@ import { useReducedMotionSafe } from '../../../theme/motion';
 import styles from './BrandLoader.module.css';
 
 /**
+ * Transicion compartida por el icono y los dos halos: ciclo continuo, sin
+ * pausa, con la misma curva y duracion para que la luz respire EXACTAMENTE al
+ * compas del icono. Debe coincidir con los @keyframes del splash estatico de
+ * index.html (appLoadingBreathe / appLoadingHalo*) para que el relevo sea
+ * invisible.
+ */
+const BREATHE_TRANSITION = {
+  duration: 3.2,
+  ease: 'easeInOut',
+  repeat: Infinity,
+};
+
+/**
  * Pantalla de carga estilizada del sistema (isotipo del logo en "negativo"
  * — bolsa blanca + W violeta — sobre el degradado de marca).
  *
- * Animación (framer-motion). Se mueve UNICAMENTE el icono; el fondo y el
- * resplandor detras quedan estaticos.
- *  - El icono hace un "click" tipo boton en loop: se encoge y baja unos px
- *    (press), rebota con un leve overshoot (el impulso) y vuelve exacto a su
- *    tamaño/posicion. Solo escala + traslada (no deforma ni recolorea).
+ * Animación (framer-motion). El icono respira y la luz respira CON el.
+ *  - El icono flota en un ciclo continuo y calmado (~3.2s, ease-in-out, sin
+ *    pausa): sube unos px y escala apenas al 1.05, luego vuelve. Solo escala
+ *    + traslada (no deforma ni recolorea). Reemplaza al viejo "click" seco por
+ *    algo mas premium/relajado.
+ *  - Los dos halos detras del icono pulsan EN SINCRONIA con esa respiracion
+ *    (mismo 3.2s / mismo ease): mas brillo y algo mas grandes justo cuando el
+ *    icono llega arriba, de modo que la luz "acompaña" el gesto en vez de
+ *    quedarse quieta. Tenue a proposito para que se lea como luz que respira y
+ *    no como destellos.
  *  - Una barra de progreso indeterminada con brillo suave: comunica "algo
  *    esta pasando" sin fingir un porcentaje real.
  *
@@ -37,32 +55,36 @@ const BrandLoader = ({ variant = 'fill' }) => {
     >
       <div className={styles.stack}>
         <div className={styles.markWrap}>
-          {/* Resplandor ESTATICO detras del icono (dos capas radiales para
-              dar profundidad). No se anima: el usuario pidio que se mueva
-              UNICAMENTE el icono y el fondo quede quieto. */}
-          <span className={styles.haloWide} aria-hidden="true" />
-          <span className={styles.halo} aria-hidden="true" />
-          {/* El icono hace un gesto de "click" tipo boton de interfaz, en
-              loop: se encoge y baja unos px (como si lo presionaran), luego
-              rebota con un leve overshoot (el "impulso") y vuelve exacto a su
-              tamaño y posicion. Rapido y natural (~0.7s), con una pausa entre
-              clicks (repeatDelay). Solo escala + traslada: no deforma el logo
-              ni cambia colores. transform-origin al centro para que el
-              encogido sea simetrico. */}
+          {/* Resplandor detras del icono (dos capas radiales para dar
+              profundidad). Ahora PULSAN en sincronia con la respiracion del
+              icono (mismo BREATHE_TRANSITION): mas brillo y algo mas grandes
+              cuando el icono llega arriba. Tenue a proposito: es luz que
+              respira, no destellos. transform-origin al centro (default) para
+              que el crecido sea simetrico. */}
+          <motion.span
+            className={styles.haloWide}
+            aria-hidden="true"
+            animate={reducedMotion ? undefined : { opacity: [0.7, 1, 0.7], scale: [1, 1.1, 1] }}
+            transition={reducedMotion ? undefined : BREATHE_TRANSITION}
+          />
+          <motion.span
+            className={styles.halo}
+            aria-hidden="true"
+            animate={reducedMotion ? undefined : { opacity: [0.8, 1, 0.8], scale: [1, 1.12, 1] }}
+            transition={reducedMotion ? undefined : BREATHE_TRANSITION}
+          />
+          {/* El icono respira: ciclo continuo y calmado (~3.2s) en el que sube
+              unos px y escala apenas al 1.05, luego vuelve. Solo escala +
+              traslada: no deforma el logo ni cambia colores. transform-origin
+              al centro para que la escala sea simetrica. */}
           <motion.svg
             viewBox="12 0 94 109"
             className={styles.mark}
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
             style={{ transformOrigin: 'center center' }}
-            animate={reducedMotion ? undefined : { scale: [1, 0.93, 1.02, 1], y: [0, 5, -1.5, 0] }}
-            transition={reducedMotion ? undefined : {
-              duration: 1.1,
-              times: [0, 0.28, 0.62, 1],
-              ease: ['easeOut', 'easeOut', 'easeInOut'],
-              repeat: Infinity,
-              repeatDelay: 1.1,
-            }}
+            animate={reducedMotion ? undefined : { scale: [1, 1.05, 1], y: [0, -6, 0] }}
+            transition={reducedMotion ? undefined : BREATHE_TRANSITION}
           >
             <defs>
               {/* Mismo degradado de marca que el logo real del Header

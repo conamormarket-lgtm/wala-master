@@ -70,9 +70,10 @@
   height: 104px;
 }
 
-/* Resplandor ESTATICO detras del icono (radial difuso, no un anillo duro).
-   Tenue a proposito: con mas alpha "brillaba" demasiado y con el icono
-   moviendose se leia como destellos de luz. */
+/* Resplandor detras del icono (radial difuso, no un anillo duro). Tenue a
+   proposito: con mas alpha "brillaba" demasiado. El PULSO (opacity + scale en
+   sincronia con la respiracion del icono) lo aplica BrandLoader.jsx via
+   framer-motion; aqui solo el aspecto en reposo. */
 .halo {
   position: absolute;
   inset: 0;
@@ -82,7 +83,7 @@
 }
 
 /* Capa amplia y mas difusa detras de la anterior: aporta profundidad suave
-   sin competir. Tambien estatica y tenue. */
+   sin competir. Tenue, y pulsa junto con la otra (ver .halo). */
 .haloWide {
   position: absolute;
   inset: -28%;
@@ -91,9 +92,9 @@
   pointer-events: none;
 }
 
-/* El icono es lo unico que se mueve (gesto de "click"). Sombra violeta
-   suave y contenida: con mas blur/alpha, al moverse el halo de sombra se
-   notaba como un exceso de luz/brillo alrededor. */
+/* El icono respira (ver BrandLoader.jsx). Sombra violeta suave y contenida:
+   con mas blur/alpha, al moverse el halo de sombra se notaba como un exceso
+   de luz/brillo alrededor. */
 .mark {
   position: relative;
   width: 96px;
