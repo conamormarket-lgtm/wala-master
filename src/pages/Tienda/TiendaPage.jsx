@@ -1467,14 +1467,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           BrandLoaderOverlay. La logica de pageReady (useIsFetching + latch +
           tope de 8s) esta definida arriba. */}
       <BrandLoaderOverlay show={!pageReady} />
-      {/* INDICADOR DE MARCA ACTIVA: solo en páginas de marca (pageBrandId). No
-          intrusivo, arriba del contenido, para que el cliente sepa en qué tienda
-          está. Sin marca (Con Amor / páginas globales) no se renderiza nada,
-          quedando EXACTO como hoy. */}
-      {/* INDICADOR DE MARCA ACTIVA: solo en páginas de marca (pageBrandId). No
-          intrusivo, arriba del contenido, para que el cliente sepa en qué tienda
-          está. Sin marca (Con Amor / páginas globales) no se renderiza nada,
-          quedando EXACTO como hoy. */}
+      {/* INDICADOR DE MARCA ACTIVA: solo en páginas de marca (pageBrandId).
+          Deliberadamente discreto: el hero de la marca ya muestra el nombre en
+          grande, asi que esto es solo una linea de ubicacion ("estas dentro de
+          esta tienda, no en Walá global"), no un titulo. Sin marca (Con Amor /
+          páginas globales) no se renderiza nada. */}
       {pageBrandId && pageBrandData?.name && (
         <div className={styles.brandActiveBar}>
           <div className={styles.brandActiveBarContent}>

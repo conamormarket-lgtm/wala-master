@@ -159,17 +159,16 @@
 .brandActiveBar {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.6rem clamp(1rem, 4vw, 5rem);
+  padding: 0.3rem clamp(1rem, 4vw, 5rem);
   color: var(--color-text, #111827);
   background-color: var(--color-surface, #fff);
   border-bottom: 1px solid var(--color-border, #e5e7eb);
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
 }
 
 .brandActiveBarContent {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.5rem;
   width: 100%;
   max-width: 1760px;
   margin: 0 auto;
@@ -179,12 +178,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   flex-shrink: 0;
   overflow: hidden;
-  padding: 3px;
+  padding: 2px;
   box-sizing: border-box;
   background: var(--color-surface-2, #f3f4f6);
   border: 1px solid var(--color-border, #e5e7eb);
@@ -200,24 +199,22 @@
 
 .brandActiveBarLabel {
   display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
+  align-items: baseline;
+  gap: 0.4rem;
   min-width: 0;
 }
 
 .brandActiveBarEyebrow {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  background: #f3efff;
-  font-size: 0.68rem;
-  font-weight: 800;
+  /* Antes era una pastilla morada con fondo: sumada al logo de 38px hacia
+     que la franja pesara mas que el propio hero, que ya dice la marca. Ahora
+     es solo un rotulo chico y apagado — se lee como "ubicacion", no como un
+     titulo que compite. */
+  font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: var(--primary-color, #7c3aed);
+  color: var(--color-text-muted, #6b7280);
 }
 
 .brandActiveBarName {
@@ -225,8 +222,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 750;
-  font-size: 1.05rem;
+  font-weight: 700;
+  font-size: 0.85rem;
   line-height: 1.2;
   letter-spacing: -0.015em;
   color: var(--primary-color, #7C3AED);
@@ -234,33 +231,27 @@
 
 @media (max-width: 768px) {
   .brandActiveBar {
-    padding: 0.5rem 1rem;
+    padding: 0.28rem 1rem;
   }
 
   .brandActiveBarContent {
-    gap: 0.55rem;
+    gap: 0.45rem;
   }
 
   .brandActiveBarLogoFrame {
-    width: 34px;
-    height: 34px;
+    width: 20px;
+    height: 20px;
   }
 
   .brandActiveBarLabel {
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .brandActiveBarEyebrow {
-    min-height: 22px;
-    padding-inline: 0.42rem;
-    font-size: 0.61rem;
+    font-size: 0.58rem;
   }
 
   .brandActiveBarName {
-    font-size: 0.98rem;
+    font-size: 0.8rem;
   }
-}
-
-[data-theme="dark"] .brandActiveBarEyebrow {
-  background: color-mix(in srgb, var(--primary-color) 16%, var(--color-surface));
 }
