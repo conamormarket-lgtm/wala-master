@@ -5,9 +5,15 @@ import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { addReview, getProductReviews, toggleHelpfulVote } from '../../../../services/reviews';
 import Button from '../../../../components/common/Button';
 import styles from './ProductReviews.module.css';
-import { T } from '../../../../i18n/useTranslatedText';
+import { T, useTranslatedText } from '../../../../i18n/useTranslatedText';
 
 const ProductReviews = ({ productId }) => {
+  // El placeholder del textarea es un ATRIBUTO, no contenido: <T> no puede
+  // envolverlo. El hook devuelve el string ya traducido (o el original
+  // mientras resuelve), que es lo que se le pasa al input.
+  const placeholderOpinion = useTranslatedText('¿Qué te pareció este producto?');
+  // `title` se ve como globo al pasar el mouse: tambien se traduce.
+  const tituloCerrar = useTranslatedText('Cerrar');
   const { user } = useAuth();
   const toast = useGlobalToast();
 
@@ -269,8 +275,8 @@ const ProductReviews = ({ productId }) => {
             user ? (
               <form className={styles.formContainer} onSubmit={handleSubmit}>
                 <div className={styles.formTitle}>
-                  Escribe una reseña
-                  <button type="button" className={styles.closeFormBtn} onClick={() => setShowForm(false)} title="Cerrar">
+                  <T>Escribe una reseña</T>
+                  <button type="button" className={styles.closeFormBtn} onClick={() => setShowForm(false)} title={tituloCerrar}>
                     <X size={18} />
                   </button>
                 </div>
@@ -290,7 +296,7 @@ const ProductReviews = ({ productId }) => {
 
                 <textarea
                   className={styles.textarea}
-                  placeholder="¿Qué te pareció este producto?"
+                  placeholder={placeholderOpinion}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   disabled={isSubmitting}
@@ -299,7 +305,7 @@ const ProductReviews = ({ productId }) => {
                 <div className={styles.uploadSection}>
                   <label className={styles.uploadLabel}>
                     <Upload size={18} />
-                    Adjuntar Fotos
+                    <T>Adjuntar Fotos</T>
                     <input
                       type="file"
                       accept="image/*"
@@ -310,7 +316,7 @@ const ProductReviews = ({ productId }) => {
                     />
                   </label>
                   <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: '10px' }}>
-                    (Max. 5 fotos)
+                    (<T>Max. 5 fotos</T>)
                   </span>
 
                   {imagePreviews.length > 0 && (
@@ -338,7 +344,7 @@ const ProductReviews = ({ productId }) => {
                   className={styles.submitBtn}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Enviando...' : 'Publicar Reseña'}
+                  <T>{isSubmitting ? 'Enviando...' : 'Publicar Reseña'}</T>
                 </Button>
               </form>
             ) : (

@@ -5,7 +5,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useCart } from '../../../../contexts/CartContext';
 import { useLanguage } from '../../../../contexts/LanguageContext';
-import { T, useTranslatedHtml } from '../../../../i18n/useTranslatedText';
+import { T, useTranslatedHtml, useTranslatedText } from '../../../../i18n/useTranslatedText';
 import { createReferralShare } from '../../../../services/referrals';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
@@ -167,6 +167,8 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   // quedan intactas (ver useTranslatedHtml). Mientras resuelve se muestra el
   // original, asi que la ficha nunca aparece vacia.
   const descripcionTraducida = useTranslatedHtml(product?.description || '');
+  // `title` se ve como globo al pasar el mouse.
+  const tituloTambienTeGusta = useTranslatedText('También te puede gustar');
 
   const [variantIdx, setVariantIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
@@ -613,7 +615,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
       {relatedProducts && relatedProducts.length > 0 && (
         <div style={{ maxWidth: 1400, margin: '2rem auto 0', padding: '0 4vw', width: '100%' }}>
           <FeaturedCarousel
-            title="También te puede gustar"
+            title={tituloTambienTeGusta}
             products={relatedProducts}
             categories={categories}
           />
