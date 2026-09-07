@@ -326,11 +326,16 @@
 
 .viewport {
   overflow: hidden;
-  /* Aire ARRIBA y ABAJO para que la sombra y el hover (que sube 3px) no queden
-     cortados. En horizontal el recorte va justo en el borde: con aunque sea
-     unos px de padding lateral se colaba una franja de la pagina siguiente. */
-  padding: 8px 0;
-  margin: -8px 0;
+  /* AIRE PARA LA SOMBRA.
+     La sombra de la tarjeta es 0 12px 34px (y 0 20px 44px en hover), o sea que
+     se sale ~8px por arriba, ~42px por abajo y ~22px por los lados. Como aqui
+     se recorta, todo ese margen tiene que estar DENTRO del recorte o la sombra
+     se ve cortada en seco contra el borde.
+     Arriba y abajo lo resuelve este padding. A los lados NO puede ir aqui:
+     el recorte ocurre en el borde del padding, asi que unos px laterales
+     dejaban asomar una franja de la pagina siguiente. Ese aire va en .page,
+     que si queda por dentro del recorte. */
+  padding: 14px 0 46px;
 }
 
 .track {
@@ -344,6 +349,11 @@
   /* Cada página trae su propia .grid; el ancho lo fija el componente en
      función de cuántas páginas hay. */
   min-width: 0;
+  box-sizing: border-box;
+  /* Aire lateral para la sombra, POR DENTRO de la página: la tarjeta termina
+     24px antes del borde, así la sombra respira y la página siguiente arranca
+     24px después del recorte — no asoma. */
+  padding: 0 24px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -393,7 +403,9 @@
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: 1.15rem;
+  /* El padding inferior del viewport (el aire de la sombra) ya separa: con el
+     1.15rem de antes los puntos quedaban demasiado lejos de las tarjetas. */
+  margin-top: 0.15rem;
 }
 
 .dot {
@@ -421,5 +433,15 @@
   /* Sin espacio para flechas a los lados: manda el gesto táctil y los puntos. */
   .navButton {
     display: none;
+  }
+
+  /* La pantalla ya es angosta: 24px de aire a cada lado se comen la tarjeta.
+     Se recorta el margen de la sombra, que ahi tambien es mas chica. */
+  .page {
+    padding: 0 12px;
+  }
+
+  .viewport {
+    padding: 10px 0 32px;
   }
 }
