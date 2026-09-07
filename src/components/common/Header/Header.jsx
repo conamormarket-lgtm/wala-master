@@ -831,7 +831,15 @@ const Header = () => {
                       return (
                         <>
                           <h3><T>Tu Lista de Deseos</T></h3>
-                          <p style={textStyle}>Tienes {wishlistItems.length} producto{wishlistItems.length !== 1 ? 's' : ''} guardado{wishlistItems.length !== 1 ? 's' : ''} en tu lista.</p>
+                          {/* La frase se arma ENTERA y en UNA sola expresion
+                              antes de traducir. <T> solo traduce cuando recibe
+                              un string puro: escrita como texto + {numero} +
+                              texto, los children eran varios trozos y se los
+                              saltaba en silencio — el resto del popup cambiaba
+                              de idioma y esta linea no. Con la frase completa,
+                              ademas, el traductor acierta la concordancia del
+                              plural en cada idioma. */}
+                          <p style={textStyle}><T>{wishlistItems.length === 1 ? 'Tienes 1 producto guardado en tu lista.' : `Tienes ${wishlistItems.length} productos guardados en tu lista.`}</T></p>
                           <div className={styles.wishlistPreviewStrip}>
                             {wishlistItems.slice(0, 4).map((item) => (
                               <Link
@@ -923,7 +931,7 @@ const Header = () => {
                         </div>
                       ))}
                       {cartItems.filter((i) => i.selected !== false).length > 3 && (
-                        <p className={styles.moreItemsText}>+ {cartItems.filter((i) => i.selected !== false).length - 3} artículos más...</p>
+                        <p className={styles.moreItemsText}><T>{`+ ${cartItems.filter((i) => i.selected !== false).length - 3} artículos más...`}</T></p>
                       )}
                     </div>
                     <div className={styles.cartPreviewFooter}>
