@@ -1,18 +1,18 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { EASE_SIGNATURE, useReducedMotionSafe } from '../../../theme/motion';
+import { useReducedMotionSafe } from '../../../theme/motion';
 import styles from './BrandLoader.module.css';
 
 /**
  * Pantalla de carga estilizada del sistema (isotipo del logo en "negativo"
  * — bolsa blanca + W violeta — sobre el degradado de marca).
  *
- * Animación (framer-motion, misma curva firma EASE_SIGNATURE que el resto
- * del sistema de movimiento):
- *  - Un doble halo que "respira" detrás del icono (uno rápido que pulsa y
- *    se difumina, otro lento y amplio que da profundidad), sincronizado con
- *    la respiración en escala del icono. Un solo gesto calmo y coherente,
- *    nada juguetón — tono ecommerce premium.
+ * Animación (framer-motion, easeInOut para que todo respire en fase, ida y
+ * vuelta suave — sin curvas que reinicien de golpe):
+ *  - Un doble halo que "respira" EN SINCRONIA con el icono (mismo ciclo de
+ *    2.4s): el resplandor se intensifica cuando el icono crece y se atenua
+ *    cuando encoge. El amplio da profundidad; el interno, brillo. Un solo
+ *    gesto calmo y coherente, nada juguetón — tono ecommerce premium.
  *  - Una barra de progreso indeterminada con brillo suave: comunica "algo
  *    esta pasando" sin fingir un porcentaje real.
  *
@@ -43,19 +43,22 @@ const BrandLoader = ({ variant = 'fill' }) => {
         <div className={styles.markWrap}>
           {!reducedMotion && (
             <>
-              {/* Halo amplio y lento: da profundidad detrás del icono. */}
+              {/* Dos halos que RESPIRAN en sincronia con el icono (mismo
+                  ciclo de 2.4s, ida y vuelta suave), no un "ripple" que se
+                  expande y reinicia de golpe: el resplandor se intensifica
+                  cuando el icono crece y se atenua cuando encoge, un solo
+                  gesto coherente. El amplio da profundidad; el interno, brillo. */}
               <motion.span
                 className={styles.haloWide}
                 aria-hidden="true"
-                animate={{ scale: [0.9, 1.15, 0.9], opacity: [0.35, 0.6, 0.35] }}
+                animate={{ scale: [0.9, 1.12, 0.9], opacity: [0.3, 0.55, 0.3] }}
                 transition={{ duration: BREATHE, repeat: Infinity, ease: 'easeInOut' }}
               />
-              {/* Halo que pulsa y se difumina hacia afuera. */}
               <motion.span
                 className={styles.halo}
                 aria-hidden="true"
-                animate={{ scale: [0.85, 1.5], opacity: [0.55, 0] }}
-                transition={{ duration: BREATHE, repeat: Infinity, ease: EASE_SIGNATURE }}
+                animate={{ scale: [0.95, 1.1, 0.95], opacity: [0.4, 0.7, 0.4] }}
+                transition={{ duration: BREATHE, repeat: Infinity, ease: 'easeInOut' }}
               />
             </>
           )}
@@ -81,7 +84,7 @@ const BrandLoader = ({ variant = 'fill' }) => {
               d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z"
               fill="#FFFFFF"
             />
-            <circle cx="67" cy="23" r="6.5" fill="#5B21B6" />
+            <circle cx="67" cy="23" r="6.5" fill="#8B5CF6" />
             {/* La W en el degradado de marca (antes un violeta plano oscuro),
                 para que combine con el logo real de la tienda. Se escala al
                 0.8 sobre su centro (55,58) para dejar aire con el borde
