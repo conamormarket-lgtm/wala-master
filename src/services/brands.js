@@ -1,4 +1,8 @@
 import { getCollection, getDocument, createDocument, updateDocument, deleteDocument, setDocument } from './firebase/firestore';
+// Defaults canónicos de cada tipo de sección (los mismos que usa el Editor
+// Visual). Se importan para que la plantilla de página de marca no duplique
+// decenas de campos ni se quede desfasada cuando cambien esos defaults.
+import { getDefaultSettings } from '../pages/Tienda/services/storefront';
 
 const COLLECTION = 'tienda_brands';
 
@@ -68,71 +72,220 @@ const normalizeCategoryNavStyle = (style) => {
 };
 
 /**
- * Secciones por defecto de la PÁGINA de una marca: un encabezado con el nombre
- * de la marca + el catálogo (sidebar_catalog) filtrado a su brandId. Es lo mínimo
- * para que WALA.PE/<slug> muestre solo los productos de esa marca.
+ * PLANTILLA DE PÁGINA DE MARCA
+ * ────────────────────────────
+ * Estructura calcada de la página de Con Amor Geeks (la que se tomó como
+ * referencia), para que TODAS las marcas tengan la misma página y no una
+ * "hoja suelta" con solo el catálogo:
+ *
+ *   0. hero_banner       → portada con el nombre de la marca
+ *   1. categories_nav    → burbujas de categorías de ESA marca (categoryNav)
+ *   2. featured_carousel → "Productos Destacados"
+ *   3. sale_carousel     → "Ofertas"
+ *   4. sidebar_catalog   → catálogo con filtros, acotado a la marca
+ *   5. marquee           → las demás marcas de Walá (solo si hay logos)
+ *
+ * Los carruseles NO necesitan brandId: TiendaPage deriva `pageBrandId` del
+ * catálogo/nav y con eso acota destacados, ofertas y categorías. Por eso el
+ * catálogo y el nav sí lo llevan.
+ *
+ * Todo lo que no es propio de la marca sale de getDefaultSettings(type), para
+ * que la plantilla no se quede vieja si cambian los defaults del editor.
  */
-const buildBrandCatalogSections = (brandId, name) => ([
-  {
-    id: 'sec_header',
-    type: 'header',
-    order: 0,
-    settings: {
-      title: name || 'Nuestra Tienda',
-      subtitle: name ? `Productos de ${name}` : 'Explora nuestros productos.',
-      backgroundColor: 'transparent',
-      titleColor: '#000000',
-      subtitleColor: '#666666',
-      textAlign: 'center',
-      paddingTop: '3rem',
-      paddingBottom: '2rem',
-      titleAlign: '', titleUnderline: false, titleBg: '', titleLink: ''
+const buildBrandLandingSections = (brandId, name, opts = {}) => {
+  const { slug = '', heroImageUrl = '', marqueeItems = [] } = opts;
+  const brandName = String(name || '').trim();
+  const tiendaLink = slug ? `/${slug}` : '/tienda';
+
+  const sections = [
+    {
+      id: 'sec_hero',
+      type: 'hero_banner',
+      order: 0,
+      settings: {
+        ...getDefaultSettings('hero_banner'),
+        // Imagen de fondo de la marca si la tiene; si no, la de por defecto
+        // (mejor un hero genérico que uno vacío en negro).
+        mediaUrl: heroImageUrl || getDefaultSettings('hero_banner').mediaUrl,
+        title: (brandName || 'Nuestra Tienda').toLocaleUpperCase('es-PE'),
+        subtitle: brandName ? `Productos de ${brandName}` : 'Explora nuestros productos.',
+        buttonText: 'COMPRAR AHORA',
+        buttonLink: tiendaLink
+      }
+    },
+    {
+      id: 'sec_nav',
+      type: 'categories_nav',
+      order: 1,
+      settings: { ...getDefaultSettings('categories_nav'), brandId }
+    },
+    {
+      id: 'sec_destacados',
+      type: 'featured_carousel',
+      order: 2,
+      settings: { ...getDefaultSettings('featured_carousel'), title: 'Productos Destacados' }
+    },
+    {
+      id: 'sec_ofertas',
+      type: 'sale_carousel',
+      order: 3,
+      settings: { ...getDefaultSettings('sale_carousel'), title: 'Ofertas' }
+    },
+    {
+      id: 'sec_catalog',
+      type: 'sidebar_catalog',
+      order: 4,
+      settings: {
+        ...getDefaultSettings('sidebar_catalog'),
+        title: brandName ? `Productos ${brandName}` : 'Catálogo',
+        brandId
+      }
     }
-  },
-  {
-    id: 'sec_catalog',
-    type: 'sidebar_catalog',
-    order: 1,
-    settings: {
-      title: name ? `Productos ${name}` : 'Catálogo',
-      brandId,
-      backgroundColor: 'transparent',
-      paddingTop: '2rem',
-      paddingBottom: '2rem',
-      titleAlign: '', titleUnderline: false, titleBg: '', titleLink: '', buttonText: '', buttonLink: ''
-    }
+  ];
+
+  // El marquee solo se agrega si hay otras marcas CON logo: BrandMarquee no
+  // pinta nada sin items, y una sección vacía guardada solo estorba al editar.
+  if (marqueeItems.length > 0) {
+    sections.push({
+      id: 'sec_marcas',
+      type: 'marquee',
+      order: 5,
+      settings: { ...getDefaultSettings('marquee'), items: marqueeItems }
+    });
   }
-]);
+
+  return sections;
+};
+
+/**
+ * Items del marquee "Empresas con las que trabajamos": el resto de marcas de
+ * Walá (con logo), enlazando cada una a su propia página /<slug>. Se excluye la
+ * marca dueña de la página — no tiene sentido que se enlace a sí misma.
+ */
+const buildBrandMarqueeItems = (brands, excludeBrandId) =>
+  (Array.isArray(brands) ? brands : [])
+    .filter((b) => b && b.id !== excludeBrandId && b.logoUrl && b.active !== false && b.visible !== false)
+    .map((b) => {
+      const s = b.slug ? slugify(b.slug) : slugify(b.name);
+      return { imageUrl: b.logoUrl, name: b.name || '', link: s ? `/${s}` : '' };
+    });
+
+/**
+ * ¿El layout guardado es una plantilla AUTOMÁTICA (no una página trabajada a
+ * mano)? Solo en ese caso se regenera sin pedir permiso.
+ * Se reconoce porque TODAS sus secciones son pares id→tipo que genera este
+ * mismo archivo: el layout viejo (sec_header + sec_catalog) o el de esta
+ * plantilla. En cuanto hay una sección agregada, quitada o de otro tipo, la
+ * página se considera editada a mano y no se toca.
+ *
+ * OJO: detecta cambios de ESTRUCTURA, no de contenido. Si alguien solo cambió
+ * textos/colores de las secciones autogeneradas, sigue contando como
+ * automática y la plantilla la reescribirá.
+ */
+const AUTO_LAYOUT_TYPES = {
+  // layout viejo (encabezado + catálogo)
+  sec_header: 'header',
+  // layout de esta plantilla
+  sec_hero: 'hero_banner',
+  sec_nav: 'categories_nav',
+  sec_destacados: 'featured_carousel',
+  sec_ofertas: 'sale_carousel',
+  sec_catalog: 'sidebar_catalog',
+  sec_marcas: 'marquee'
+};
+
+const isAutoGeneratedLayout = (sections) =>
+  Array.isArray(sections) &&
+  sections.length > 0 &&
+  sections.every((sec) => sec && AUTO_LAYOUT_TYPES[sec.id] === sec.type);
 
 /**
  * Garantiza que exista la PÁGINA DE MARCA (landing + layout) para que
- * WALA.PE/<slug> muestre solo los productos de esa marca. Idempotente:
- *  - landingPages/{slug}: crea/actualiza { slug, brandId } (conecta URL ↔ marca).
- *  - pages/{slug}: crea el layout con el catálogo SOLO si aún no existe uno
- *    (así no pisa una página ya editada a mano en el Editor Visual).
+ * WALA.PE/<slug> muestre la marca con la MISMA estructura que las demás
+ * (hero, nav de categorías, destacados, ofertas, catálogo y marquee —
+ * ver buildBrandLandingSections). Idempotente:
+ *  - landingPages/{slug}: crea { slug, brandId } si la marca aún no tiene
+ *    landing. Si ya tiene una (bajo cualquier slug, p.ej. uno capitalizado
+ *    como 'ConAmor') se reutiliza ESA y no se crea otra.
+ *  - pages/{slug}: escribe la plantilla si la página no existe, si está
+ *    vacía, o si lo que hay es una plantilla automática anterior (el layout
+ *    viejo de "encabezado + catálogo"). Una página EDITADA A MANO en el
+ *    Editor Visual NO se toca salvo que se pida `force`.
  * No lanza: ante un error solo lo registra (crear la marca no debe fallar por esto).
+ *
+ * @param {string} brandId
+ * @param {string} slug
+ * @param {string} name
+ * @param {{ force?: boolean, brand?: object, allBrands?: Array }} [opts]
+ *   force    → reescribe el layout aunque esté editado a mano.
+ *   brand    → doc de la marca ya cargado (evita releerlo); de ahí sale la
+ *              imagen del hero (bgImage).
+ *   allBrands→ lista de marcas ya cargada, para armar el marquee sin releer
+ *              la colección en cada marca del backfill.
+ * @returns {{ error:(string|null), landingCreada:boolean, layout:('creado'|'actualizado'|'al-dia'|'conservado') }}
  */
-export const ensureBrandLanding = async (brandId, slug, name) => {
+export const ensureBrandLanding = async (brandId, slug, name, opts = {}) => {
   try {
     if (!brandId || !slug) return { error: 'brandId y slug son requeridos' };
-    // Anti-DUPLICADOS: si la marca YA tiene una landing (bajo cualquier slug, p.ej.
-    // uno capitalizado como 'ConAmor'), no se crea otra. Se busca por brandId, que
-    // es único por marca — así no importa la capitalización del slug existente.
+    const { force = false, brand = null, allBrands = null } = opts;
+
+    // Anti-DUPLICADOS: si la marca YA tiene una landing (bajo cualquier slug),
+    // se trabaja sobre ESA — no se crea una segunda. brandId es único por marca,
+    // así que la capitalización del slug existente da igual.
     const { data: existentes } = await getCollection('landingPages', [
       { field: 'brandId', operator: '==', value: brandId }
     ]);
-    if (Array.isArray(existentes) && existentes.length > 0) {
-      return { error: null, skipped: true };
+    const landingPrevia = Array.isArray(existentes) && existentes.length > 0 ? existentes[0] : null;
+    // El layout vive en pages/{id de la landing}: si la landing ya existía con
+    // otro slug, hay que escribir la página de ESE slug y no la de uno nuevo.
+    const pageId = landingPrevia ? (landingPrevia.id || landingPrevia.slug || slug) : slug;
+
+    if (!landingPrevia) {
+      // Landing: el eslabón que resuelve /<slug> → marca (vía DynamicLandingPage).
+      await setDocument('landingPages', slug, { slug, brandId, title: name || slug });
     }
-    // 1) Landing: el eslabón que resuelve /<slug> → marca (vía DynamicLandingPage).
-    await setDocument('landingPages', slug, { slug, brandId, title: name || slug });
-    // 2) Layout de la página. Solo si no hay secciones previas (no pisar ediciones).
-    const existing = await getDocument('pages', slug);
-    const hasSections = Array.isArray(existing?.data?.sections) && existing.data.sections.length > 0;
-    if (!hasSections) {
-      await setDocument('pages', slug, { sections: buildBrandCatalogSections(brandId, name) });
+
+    // Layout. Se respeta lo editado a mano salvo force.
+    const existing = await getDocument('pages', pageId);
+    const previas = existing?.data?.sections;
+    const tieneSecciones = Array.isArray(previas) && previas.length > 0;
+    const esAuto = isAutoGeneratedLayout(previas);
+
+    if (tieneSecciones && !esAuto && !force) {
+      return { error: null, landingCreada: !landingPrevia, layout: 'conservado' };
     }
-    return { error: null };
+
+    // Datos de marca para personalizar la plantilla. Solo se leen si hacen falta.
+    let brandDoc = brand;
+    if (!brandDoc) {
+      const { data } = await getDocument(COLLECTION, brandId);
+      brandDoc = data || null;
+    }
+    let marcas = allBrands;
+    if (!marcas) {
+      const { data } = await getBrands();
+      marcas = data || [];
+    }
+
+    const nuevas = buildBrandLandingSections(brandId, name, {
+      slug: pageId,
+      heroImageUrl: brandDoc?.bgImage || '',
+      marqueeItems: buildBrandMarqueeItems(marcas, brandId)
+    });
+
+    // Si la página ya es exactamente esta plantilla, no se reescribe: repetir el
+    // backfill no debe gastar escrituras ni reportar cambios que no ocurrieron.
+    if (tieneSecciones && JSON.stringify(previas) === JSON.stringify(nuevas)) {
+      return { error: null, landingCreada: !landingPrevia, layout: 'al-dia' };
+    }
+
+    await setDocument('pages', pageId, { sections: nuevas });
+
+    return {
+      error: null,
+      landingCreada: !landingPrevia,
+      layout: tieneSecciones ? 'actualizado' : 'creado'
+    };
   } catch (error) {
     console.warn('[brands] ensureBrandLanding:', error?.message || error);
     return { error: error?.message || String(error) };
@@ -140,25 +293,41 @@ export const ensureBrandLanding = async (brandId, slug, name) => {
 };
 
 /**
- * Backfill: garantiza la página de marca (landing + catálogo) para TODAS las
- * marcas existentes que aún no la tengan. Pensado para un botón en el admin
- * (usa la sesión del administrador; no requiere Cloud Shell ni credenciales).
- * Idempotente: las marcas que ya tienen landing simplemente se re-aseguran.
- * @returns {{ total:number, procesadas:number, sinSlug:number, error:(string|null) }}
+ * Backfill: aplica la plantilla de página de marca (hero + nav + destacados +
+ * ofertas + catálogo + marquee) a TODAS las marcas, para que ninguna quede con
+ * una página distinta a las demás. Pensado para un botón en el admin (usa la
+ * sesión del administrador; no requiere Cloud Shell ni credenciales).
+ *
+ * Idempotente y no destructivo por defecto: las páginas EDITADAS A MANO en el
+ * Editor Visual se conservan y se informan aparte, para que el admin decida.
+ * Con `force` se reescriben también esas.
+ *
+ * @param {{ force?: boolean }} [opts]
+ * @returns {{ total:number, creadas:number, actualizadas:number, alDia:number, conservadas:number, sinSlug:number, conservadasNombres:string[], error:(string|null) }}
  */
-export const ensureAllBrandLandings = async () => {
+export const ensureAllBrandLandings = async (opts = {}) => {
+  const { force = false } = opts;
   const { data: brands, error } = await getBrands();
-  if (error) return { total: 0, creadas: 0, yaTenian: 0, sinSlug: 0, error };
+  if (error) return { total: 0, creadas: 0, actualizadas: 0, alDia: 0, conservadas: 0, sinSlug: 0, conservadasNombres: [], error };
+  const marcas = brands || [];
   let creadas = 0;
-  let yaTenian = 0;
+  let actualizadas = 0;
+  let alDia = 0;
+  let conservadas = 0;
   let sinSlug = 0;
-  for (const b of (brands || [])) {
+  const conservadasNombres = [];
+  for (const b of marcas) {
     const slug = b.slug ? slugify(b.slug) : slugify(b.name);
     if (!slug) { sinSlug++; continue; }
-    const res = await ensureBrandLanding(b.id, slug, b.name || '');
-    if (res?.skipped) yaTenian++; else creadas++;
+    // Se pasan `brand` y `allBrands` ya cargados: si no, cada marca releería
+    // su doc y la colección entera solo para armar el hero y el marquee.
+    const res = await ensureBrandLanding(b.id, slug, b.name || '', { force, brand: b, allBrands: marcas });
+    if (res?.layout === 'creado') creadas++;
+    else if (res?.layout === 'actualizado') actualizadas++;
+    else if (res?.layout === 'al-dia') alDia++;
+    else if (res?.layout === 'conservado') { conservadas++; conservadasNombres.push(b.name || slug); }
   }
-  return { total: (brands || []).length, creadas, yaTenian, sinSlug, error: null };
+  return { total: marcas.length, creadas, actualizadas, alDia, conservadas, sinSlug, conservadasNombres, error: null };
 };
 
 /**
@@ -237,10 +406,15 @@ export const createBrand = async (data) => {
     storeEmpty: data.storeEmpty || ''
   });
 
-  // Auto-crear su página de marca (landing + catálogo) para que WALA.PE/<slug>
-  // funcione sin pasos manuales. Si falla, la marca igual queda creada.
+  // Auto-crear su página de marca con la plantilla COMPLETA (hero, nav de
+  // categorías, destacados, ofertas, catálogo y marquee) para que WALA.PE/<slug>
+  // nazca igual que las demás marcas, sin pasos manuales. Se le pasa el doc de
+  // la marca recién creada para que el hero use su imagen de fondo.
+  // Si falla, la marca igual queda creada.
   if (result?.id && slug) {
-    await ensureBrandLanding(result.id, slug, data.name || '');
+    await ensureBrandLanding(result.id, slug, data.name || '', {
+      brand: { bgImage: data.bgImage || '', logoUrl: data.logoUrl || '' }
+    });
   }
 
   return result;

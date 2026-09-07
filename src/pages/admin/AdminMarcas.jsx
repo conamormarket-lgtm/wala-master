@@ -237,18 +237,25 @@ const AdminMarcas = () => {
     );
   }
 
-  // Genera las páginas de marca (landing + catálogo) que falten, con la sesión
-  // del admin. Idempotente y no destructivo (no pisa páginas ya editadas).
-  const handleGenerarLandings = async () => {
-    if (!window.confirm('¿Generar las páginas de marca (landing + catálogo) que falten para todas las marcas?\n\nNo modifica marcas ni productos, y no pisa páginas ya editadas.')) return;
+  // Aplica a TODAS las marcas la misma plantilla de página (hero, nav de
+  // categorías, destacados, ofertas, catálogo y marquee), con la sesión del
+  // admin. Idempotente. Sin `force` NO pisa las páginas editadas a mano en el
+  // Editor Visual; con `force` se reescriben todas.
+  const aplicarPlantilla = async (force) => {
     setBackfilling(true);
     setBackfillMsg('');
     try {
-      const res = await ensureAllBrandLandings();
+      const res = await ensureAllBrandLandings({ force });
       if (res.error) {
         setBackfillMsg('❌ Error: ' + res.error);
       } else {
-        setBackfillMsg(`✅ Listo: ${res.creadas} landing(s) creada(s), ${res.yaTenian} ya existían${res.sinSlug ? ` · ${res.sinSlug} sin slug` : ''}. Míralas en Admin → Landing Pages.`);
+        const partes = [];
+        if (res.creadas) partes.push(`${res.creadas} creada(s)`);
+        if (res.actualizadas) partes.push(`${res.actualizadas} actualizada(s)`);
+        if (res.conservadas) partes.push(`${res.conservadas} conservada(s) por estar editada(s) a mano: ${res.conservadasNombres.join(', ')}`);
+        if (res.alDia) partes.push(`${res.alDia} ya estaba(n) al día`);
+        if (res.sinSlug) partes.push(`${res.sinSlug} sin slug`);
+        setBackfillMsg(`✅ ${res.total} marca(s). ` + (partes.join(' · ') || 'Todo ya estaba al día.'));
         queryClient.invalidateQueries({ queryKey: ['admin-brands'] });
       }
     } catch (e) {
@@ -258,25 +265,14 @@ const AdminMarcas = () => {
     }
   };
 
-  // Elimina landings duplicadas por marca (conserva la canónica). No toca marcas ni productos.
-  const handleEliminarDuplicadas = async () => {
-    if (!window.confirm('¿Eliminar las landings DUPLICADAS de cada marca?\n\nSe conserva una por marca (la que coincide con su slug). No modifica marcas ni productos.')) return;
-    setBackfilling(true);
-    setBackfillMsg('');
-    try {
-      const res = await dedupeBrandLandings();
-      if (res.error) {
-        setBackfillMsg('❌ Error: ' + res.error);
-      } else {
-        setBackfillMsg(res.eliminadas > 0
-          ? `✅ Se eliminaron ${res.eliminadas} landing(s) duplicada(s).`
-          : '✅ No había landings duplicadas.');
-      }
-    } catch (e) {
-      setBackfillMsg('❌ Error: ' + (e?.message || e));
-    } finally {
-      setBackfilling(false);
-    }
+  const handleGenerarLandings = () => {
+    if (!window.confirm('¿Aplicar la plantilla de página a las marcas que lo necesiten?\n\nCada marca queda con hero, navegación por categorías, destacados, ofertas, catálogo y marquee.\n\nNo modifica marcas ni productos. Las páginas a las que ya les agregaste o quitaste secciones en el Editor Visual se conservan tal cual.')) return;
+    aplicarPlantilla(false);
+  };
+
+  const handleRegenerarTodas = () => {
+    if (!window.confirm('⚠️ REESCRIBIR la página de TODAS las marcas con la plantilla.\n\nEsto SÍ descarta los cambios hechos a mano en el Editor Visual de cada página de marca (no toca marcas, productos ni el resto del sitio).\n\n¿Continuar?')) return;
+    aplicarPlantilla(true);
   };
 
   return (
@@ -295,9 +291,18 @@ const AdminMarcas = () => {
               variant="secondary"
               onClick={handleGenerarLandings}
               disabled={backfilling}
-              title="Crea la landing y el catálogo de cada marca que aún no lo tenga, para que WALA.PE/<marca> funcione."
+              title="Deja a cada marca con la misma página (hero, categorías, destacados, ofertas, catálogo y marquee). No pisa las páginas ya editadas a mano."
             >
-              {backfilling ? 'Procesando…' : 'Generar landings faltantes'}
+              {backfilling ? 'Procesando…' : 'Aplicar plantilla de página'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleRegenerarTodas}
+              disabled={backfilling}
+              title="Reescribe la página de TODAS las marcas con la plantilla, descartando los cambios hechos a mano."
+            >
+              Regenerar todas (pisa ediciones)
             </Button>
             <Button
               type="button"
