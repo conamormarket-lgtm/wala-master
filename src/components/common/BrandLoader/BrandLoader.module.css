@@ -86,7 +86,7 @@
    grande que antes (88px vs 64px): a pantalla completa 64px se perdia. */
 .mark {
   position: relative;
-  width: 88px;
+  width: 96px;
   height: auto;
   filter: drop-shadow(0 8px 24px rgba(76, 29, 149, 0.35));
 }

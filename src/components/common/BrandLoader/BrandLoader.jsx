@@ -70,6 +70,10 @@ const BrandLoader = ({ variant = 'fill' }) => {
               fill="#FFFFFF"
             />
             <circle cx="67" cy="23" r="6.5" fill="#4C1D95" />
+            {/* La W se escala al 0.8 sobre su propio centro (55,58) para
+                dejar mas aire entre el trazo y el borde blanco de la bolsa:
+                antes quedaba muy pegada a los bordes. El transform tambien
+                afina el trazo (15 * 0.8 = 12 visual), aligerando el conjunto. */}
             <path
               d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38"
               fill="none"
@@ -77,6 +81,7 @@ const BrandLoader = ({ variant = 'fill' }) => {
               strokeWidth="15"
               strokeLinecap="round"
               strokeLinejoin="round"
+              transform="translate(55 58) scale(0.8) translate(-55 -58)"
             />
           </motion.svg>
         </div>
