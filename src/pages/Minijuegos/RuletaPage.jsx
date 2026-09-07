@@ -7,7 +7,7 @@ import styles from './RuletaPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
 const RuletaPage = () => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, reloadProfile } = useAuth();
   // eslint-disable-next-line no-unused-vars
   // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ const RuletaPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { isUnlocked, hasLost } = getRuletaEligibility(userProfile);
+  const { isUnlocked, hasLost, hasSpun } = getRuletaEligibility(userProfile);
 
   const handleSpin = async () => {
     if (!isUnlocked || spinning || result) return;
@@ -60,10 +60,28 @@ const RuletaPage = () => {
     }
 
     const winningPrize = res.prize;
-    const prizeIndex = prizes.findIndex(p => p.id === winningPrize.id);
-    
+    // Si el premio no está en la lista que cargó el cliente (un admin editó los
+    // premios entre la carga y el giro), findIndex devuelve -1 y la rueda pararía
+    // en una casilla que no corresponde. Recargamos la lista antes de animar y
+    // calculamos el ángulo sobre esa misma lista (el estado aún no se ha aplicado).
+    let listaPremios = prizes;
+    let prizeIndex = listaPremios.findIndex(p => p.id === winningPrize.id);
+    if (prizeIndex === -1) {
+      const frescos = await getRuletaPrizes();
+      if (frescos.length > 0) {
+        listaPremios = frescos;
+        setPrizes(frescos);
+        prizeIndex = frescos.findIndex(p => p.id === winningPrize.id);
+      }
+      if (prizeIndex === -1) prizeIndex = 0; // último recurso: no dejar la rueda en un ángulo absurdo
+    }
+
+    // El servidor ya marcó el giro de esta semana: refrescar el perfil para que
+    // el hub y el botón no sigan ofreciendo un giro que ya no existe.
+    reloadProfile();
+
     // Calcular ángulo de parada
-    const sliceAngle = 360 / prizes.length;
+    const sliceAngle = 360 / listaPremios.length;
     // Se le suma 5 o 10 vueltas completas (360 * 5)
     const spins = 360 * 5; 
     // Calcular el ángulo del premio ganador (restando para que quede arriba)
@@ -149,7 +167,15 @@ const RuletaPage = () => {
             onClick={handleSpin}
             disabled={!isUnlocked || spinning}
           >
-            {spinning ? 'Girando...' : (isUnlocked ? '¡GIRAR RULETA!' : (hasLost ? 'Semana Perdida ❌' : 'Ruleta Bloqueada 🔒'))}
+            <T>
+              {spinning
+                ? 'Girando...'
+                : (isUnlocked
+                  ? '¡GIRAR RULETA!'
+                  : (hasSpun
+                    ? 'Ya giraste esta semana ✅'
+                    : (hasLost ? 'Semana Perdida ❌' : 'Ruleta Bloqueada 🔒')))}
+            </T>
           </button>
         )}
       </div>

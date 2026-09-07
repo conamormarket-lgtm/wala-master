@@ -1,11 +1,19 @@
-import { collection, doc, getDoc, setDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { getCurrentUser } from './firebase/auth';
 import { DAILY_WORDS } from '../data/wordleDictionary';
+import { limaTodayStr, limaYesterdayStr } from '../utils/fechaLima';
 
 const DAILY_WORDS_COLLECTION = 'wordle_daily_words';
 const USERS_COLLECTION = 'portal_clientes_users';
 const WORDLE_COLLECTION = 'wordle';
+
+// Id del documento de estadísticas acumuladas dentro de la colección pública
+// `wordle`. Va en la misma colección (y no en portal_clientes_users) porque el
+// perfil de usuario solo lo puede leer su dueño: el ranking global necesita
+// datos públicos. Los documentos de partida diaria no llevan `maxStreak`, así
+// que un orderBy('maxStreak') devuelve únicamente estos docs de estadísticas.
+const statsDocId = (uid) => `${uid}_stats`;
 
 // Si el diccionario aún no se generó, usamos un fallback básico de 5 letras
 const FALLBACK_WORDS = DAILY_WORDS.length > 5 ? DAILY_WORDS : [
@@ -79,6 +87,25 @@ export const deleteDailyWord = async (dateStr) => {
   }
 };
 
+// Publica las estadísticas acumuladas del jugador para el ranking global.
+// Es best-effort: si falla, la partida ya quedó guardada igual.
+const publishWordleStats = async (user, stats) => {
+  try {
+    await setDoc(doc(db, WORDLE_COLLECTION, statsDocId(user.uid)), {
+      userId: user.uid,
+      displayName: user.displayName || stats.displayName || 'Anónimo',
+      maxStreak: stats.wordleMaxStreak || 0,
+      currentStreak: stats.wordleCurrentStreak || 0,
+      wins: stats.wordleWins || 0,
+      played: stats.wordlePlayed || 0,
+      totalAttempts: stats.wordleTotalAttempts || 0,
+      lastPlayed: stats.lastWordleDate || null
+    }, { merge: true });
+  } catch (error) {
+    console.error("Error publishing wordle stats:", error);
+  }
+};
+
 /**
  * Actualiza o registra las estadísticas del jugador cuando termina una partida.
  */
@@ -89,7 +116,10 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
   try {
     const userRef = doc(db, USERS_COLLECTION, user.uid);
     const userSnap = await getDoc(userRef);
-    const today = new Date().toISOString().split('T')[0];
+    // Día en hora de Lima, igual que el resto de la app: antes esto era UTC y a
+    // partir de las 19:00 la partida se guardaba con la fecha de mañana, lo que
+    // hacía que la partida del día siguiente se descartara por "ya jugada".
+    const today = limaTodayStr();
 
     if (!userSnap.exists()) {
       // Rarísimo que llegue aquí sin un perfil en portal_clientes_users, pero por si acaso.
@@ -104,6 +134,7 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
         email: user.email
       };
       await setDoc(userRef, initialData, { merge: true });
+      await publishWordleStats(user, initialData);
       return { success: true, stats: initialData };
     }
 
@@ -117,10 +148,8 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
     // Calcular racha
     let newStreak = userData.wordleCurrentStreak || 0;
     
-    // Validar si perdió un día
-    const yesterdayDate = new Date();
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
+    // Validar si perdió un día (ayer en hora de Lima, coherente con `today`)
+    const yesterdayStr = limaYesterdayStr();
 
     // Si la última vez que jugó NO fue ayer y NO fue hoy, la racha se rompió
     if (userData.lastWordleDate !== yesterdayStr && userData.lastWordleDate !== today) {
@@ -165,6 +194,9 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
     };
     await setDoc(wordleRecordRef, wordleRecordData);
 
+    // Publicar estadísticas acumuladas para el ranking global (colección pública).
+    await publishWordleStats(user, { ...userData, ...newData });
+
     return { success: true, stats: { ...userData, ...newData } };
 
   } catch (error) {
@@ -178,26 +210,34 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
  */
 export const getWordleRanking = async () => {
   try {
+    // Antes esto consultaba portal_clientes_users, pero las reglas solo permiten
+    // que cada usuario lea su propio perfil: la consulta siempre fallaba con
+    // permission-denied y el ranking global salía vacío. Ahora se lee de la
+    // colección pública `wordle` (docs `<uid>_stats`). Un solo orderBy usa el
+    // índice automático de campo simple: no hace falta índice compuesto, y los
+    // documentos de partida diaria quedan fuera porque no tienen `maxStreak`.
     const q = query(
-      collection(db, USERS_COLLECTION),
-      orderBy('wordleMaxStreak', 'desc'),
-      orderBy('wordleWins', 'desc'),
+      collection(db, WORDLE_COLLECTION),
+      orderBy('maxStreak', 'desc'),
       limit(50)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => {
-      const data = d.data();
-      return {
-        id: d.id,
-        displayName: data.displayName || data.nombres || 'Anónimo',
-        maxStreak: data.wordleMaxStreak || 0,
-        currentStreak: data.wordleCurrentStreak || 0,
-        wins: data.wordleWins || 0,
-        played: data.wordlePlayed || 0,
-        totalAttempts: data.wordleTotalAttempts || 0,
-        lastWordleDate: data.lastWordleDate || ''
-      };
-    });
+    return snapshot.docs
+      .map(d => {
+        const data = d.data();
+        return {
+          id: data.userId || d.id,
+          displayName: data.displayName || 'Anónimo',
+          maxStreak: data.maxStreak || 0,
+          currentStreak: data.currentStreak || 0,
+          wins: data.wins || 0,
+          played: data.played || 0,
+          totalAttempts: data.totalAttempts || 0,
+          lastWordleDate: data.lastPlayed || ''
+        };
+      })
+      // Desempate por victorias totales (el orderBy compuesto exigiría índice).
+      .sort((a, b) => (b.maxStreak - a.maxStreak) || (b.wins - a.wins));
   } catch (error) {
     console.error("Error fetching wordle ranking:", error);
     return [];
@@ -210,20 +250,21 @@ export const getWordleRanking = async () => {
  * Firestore no soporta este filtro compuesto directamente, se filtra en cliente.
  */
 export const getWordleRankingToday = async () => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = limaTodayStr();
   try {
-    // Buscar en la nueva colección 'wordle'
-    // Como no podemos asegurar que hay índices complejos creados,
-    // traemos los registros recientes o filtramos en memoria.
+    // Filtramos por fecha en el servidor (igualdad de un solo campo: usa el
+    // índice automático, sin índice compuesto). Antes se descargaba la colección
+    // entera y se filtraba en memoria, lo que crecía sin límite con el tiempo.
     const q = query(
-      collection(db, WORDLE_COLLECTION)
+      collection(db, WORDLE_COLLECTION),
+      where('date', '==', today)
     );
     const snapshot = await getDocs(q);
 
     const todayWinners = snapshot.docs
       .map(d => d.data())
-      // Solo quienes jugaron HOY y además GANARON
-      .filter(p => p.date === today && p.won === true)
+      // Solo quienes GANARON hoy
+      .filter(p => p.won === true)
       // El que lo resolvió en menos intentos va primero
       // En caso de empate, el que lo resolvió en menos tiempo
       .sort((a, b) => {

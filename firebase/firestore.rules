@@ -123,6 +123,9 @@ service cloud.firestore {
     match /globals/{id}            { allow read: if true;  allow write: if isAdmin(); } // activeChallenge
     match /weeklyChallenges/{id}   { allow read: if true;  allow write: if isAdmin(); }
     match /ruletaPrizes/{id}       { allow read: if true;  allow write: if isAdmin(); }
+    // Premios ganados en la ruleta: los escribe spinRuletaSecure (Admin SDK, evade
+    // reglas). Solo el admin los lee, para poder entregar los que no son monedas.
+    match /ruletaWins/{id}         { allow read: if isAdmin(); allow write: if false; }
     match /wordle_daily_words/{id} { allow read: if true;  allow write: if isAdmin(); }
 
     // ── Fase 2: misiones diarias y libro mayor de fidelización ───────────────────

@@ -1504,7 +1504,32 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
         ruletaEarn = Number(selected.amount || 0);
         updates.monedas = (u.monedas || 0) + ruletaEarn;
       }
+
+      // Los premios que NO son monedas no se acreditan solos: hay que entregarlos
+      // a mano. Antes no quedaba constancia de ellos en ninguna parte (ni ledger,
+      // ni colección), así que el premio se perdía. Ahora se guarda tanto en el
+      // perfil (para que el usuario lo vea) como en `ruletaWins` (para el admin).
+      const esAutoAcreditado = selected.type === "Monedas";
+      const premio = {
+        id: selected.id,
+        name: selected.name || "",
+        type: selected.type || "",
+        amount: Number(selected.amount || 0),
+        weekStart,
+        wonAt: new Date().toISOString(),
+        entregado: esAutoAcreditado,
+      };
+      updates.lastRuletaPrize = premio;
       t.update(userRef, updates);
+
+      t.set(db.collection("ruletaWins").doc(), {
+        uid,
+        email: u.email || null,
+        displayName: u.displayName || u.nombres || null,
+        ...premio,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
       if (ruletaEarn > 0) {
         writeLedger(t, uid, {
           type: "earn",

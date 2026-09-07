@@ -3,18 +3,23 @@ import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRuletaEligibility } from '../../services/firebase/ruleta';
+import { limaTodayStr } from '../../utils/fechaLima';
 import styles from './MinijuegosPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
 const MinijuegosPage = () => {
   // eslint-disable-next-line no-unused-vars
   const { user, userProfile } = useAuth();
-  
-  const todayStr = new Date().toISOString().split('T')[0];
-  const hasClaimedToday = userProfile?.lastDailyReward === todayStr;
+
+  // El día lo decide el servidor en hora de Lima. Antes aquí se usaba UTC, así
+  // que de 19:00 a 23:59 el hub ofrecía premios ya reclamados y el servidor los
+  // rechazaba.
+  const todayStr = limaTodayStr();
+  // La moneda diaria la acredita feedKapiSecure, que marca lastKapiClaimDate.
+  const hasClaimedToday = userProfile?.lastKapiClaimDate === todayStr;
   const hasClaimedBallSort = userProfile?.lastBallSortReward === todayStr;
 
-  const { isUnlocked: isRuletaUnlocked, days: ruletaDays, hasLost } = getRuletaEligibility(userProfile);
+  const { isUnlocked: isRuletaUnlocked, days: ruletaDays, hasLost, hasSpun } = getRuletaEligibility(userProfile);
 
   const handleProtectedPlay = (e) => {
     if (!user) {
@@ -90,16 +95,26 @@ const MinijuegosPage = () => {
             </div>
 
             {isRuletaUnlocked ? (
-              <Link to="/ruleta" className={styles.playButton} onClick={handleProtectedPlay}>Girar Ruleta</Link>
+              <Link to="/ruleta" className={styles.playButton} onClick={handleProtectedPlay}><T>Girar Ruleta</T></Link>
             ) : (
-              <button className={`${styles.playButton} ${styles.lockedBtn}`} disabled><T>Bloqueado</T></button>
+              <button className={`${styles.playButton} ${styles.lockedBtn}`} disabled>
+                <T>{hasSpun ? 'Ya giraste esta semana' : 'Bloqueado'}</T>
+              </button>
             )}
           </div>
           {/* Overlay si está bloqueado */}
           {!isRuletaUnlocked && (
             <div className={styles.lockedOverlay}>
-              <div className={styles.lockIcon}>{hasLost ? '❌' : '🔒'}</div>
-              <p><T>{hasLost ? 'Perdiste un día esta semana. ¡La próxima no falles!' : 'Reclama 7 días seguidos para desbloquear'}</T></p>
+              <div className={styles.lockIcon}>{hasSpun ? '✅' : (hasLost ? '❌' : '🔒')}</div>
+              <p>
+                <T>
+                  {hasSpun
+                    ? '¡Ya giraste la ruleta esta semana! Vuelve el próximo lunes.'
+                    : (hasLost
+                      ? 'Perdiste un día esta semana. ¡La próxima no falles!'
+                      : 'Reclama 7 días seguidos para desbloquear')}
+                </T>
+              </p>
             </div>
           )}
           <div className={styles.cardBg}></div>
@@ -113,7 +128,7 @@ const MinijuegosPage = () => {
             <p className={styles.gameDesc}><T>Ordena los colores en los tubos para ganar 2 Wala Coins diarios.</T></p>
             {hasClaimedBallSort ? (
               <button className={`${styles.playButton} ${styles.disabledBtn}`} disabled>
-                Completado hoy ✓
+                <T>Completado hoy ✓</T>
               </button>
             ) : (
               <Link to="/ball-sort" className={styles.playButton} style={{ background: '#3b82f6', color: 'white', textDecoration: 'none' }} onClick={handleProtectedPlay}><T>Jugar Ahora</T></Link>

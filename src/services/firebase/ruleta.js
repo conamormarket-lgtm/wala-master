@@ -3,8 +3,14 @@ import { doc, getDoc, updateDoc, setDoc, collection, getDocs, addDoc, deleteDoc,
 import { getFunctions, httpsCallable } from 'firebase/functions';
 // eslint-disable-next-line no-unused-vars
 import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
+import { limaWeekStartStr, limaDayOfWeek } from '../../utils/fechaLima';
 
 // --- UTILIDADES DE FECHA ---
+// El servidor (functions/economyLogic.js) trabaja siempre en hora de Lima. Estos
+// helpers se mantienen exportados por compatibilidad, pero la elegibilidad usa
+// los de utils/fechaLima para no desalinearse con el backend: con la hora local
+// del navegador, un usuario en Europa nunca coincidía con el weekStart del
+// servidor y la ruleta le quedaba bloqueada para siempre.
 export const getStartOfWeek = (date = new Date()) => {
   const d = new Date(date);
   const day = d.getDay();
@@ -21,38 +27,38 @@ export const isSameWeek = (date1, date2) => {
 };
 
 export const getRuletaEligibility = (userProfile) => {
-  if (!userProfile) return { isUnlocked: false, days: 0, hasLost: false };
+  if (!userProfile) return { isUnlocked: false, days: 0, hasLost: false, hasSpun: false };
 
-  const currentWeekStart = getStartOfWeek();
-  
+  const currentWeekStart = limaWeekStartStr();
+
   // Analizamos los claims guardados en userProfile.weeklyClaimsData
   // Estructura: { weekStart: '2026-05-18', daysClaimed: ['2026-05-18', '2026-05-19'] }
-  const data = userProfile.weeklyClaimsData || { weekStart: formatIsoDate(currentWeekStart), daysClaimed: [] };
-  
-  if (data.weekStart !== formatIsoDate(currentWeekStart)) {
+  const data = userProfile.weeklyClaimsData || { weekStart: currentWeekStart, daysClaimed: [] };
+
+  // El servidor marca lastRuletaSpinWeek al girar: un giro por semana.
+  const hasSpun = userProfile.lastRuletaSpinWeek === currentWeekStart;
+
+  if (data.weekStart !== currentWeekStart) {
     // Si la semana guardada no es la actual, entonces tiene 0 días esta semana
-    return { isUnlocked: false, days: 0, hasLost: false };
+    return { isUnlocked: false, days: 0, hasLost: false, hasSpun };
   }
 
-  const daysCount = data.daysClaimed.length;
-  const today = new Date();
-  const currentDayOfWeek = today.getDay(); // 0 (Domingo) - 6 (Sábado)
-  
+  // daysClaimed puede faltar en perfiles antiguos; no debe reventar el hub.
+  const daysCount = Array.isArray(data.daysClaimed) ? data.daysClaimed.length : 0;
+  const currentDayOfWeek = limaDayOfWeek(); // 0 (Domingo) - 6 (Sábado)
+
   // Para perder, debe haber pasado al menos un día en la semana sin que lo haya reclamado
   // Ej: Es miércoles (3). Debería tener 3 daysClaimed. Si tiene menos de 2, ya perdió la semana.
   // Lógica exacta de pérdida:
   let adjustedDay = currentDayOfWeek === 0 ? 7 : currentDayOfWeek;
-  const missedDays = adjustedDay - daysCount;
-  
-  // Si hoy no ha reclamado, missedDays puede ser 1, pero aún puede reclamar hoy.
+
+  // Si hoy no ha reclamado, la diferencia puede ser 1, pero aún puede reclamar hoy.
   // Si la diferencia entre el día actual de la semana y los reclamados es >= 2, seguro perdió.
-  // O si ya terminó el día ayer y le faltaba 1.
-  // Simplificación de pérdida: Si estamos a Domingo (7) y tiene < 6 reclamados, ya perdió seguro.
   const hasLost = (adjustedDay > daysCount + 1);
 
-  const isUnlocked = daysCount >= 7;
+  const isUnlocked = daysCount >= 7 && !hasSpun;
 
-  return { isUnlocked, days: daysCount, hasLost };
+  return { isUnlocked, days: daysCount, hasLost, hasSpun };
 };
 
 // --- PREMIOS ---

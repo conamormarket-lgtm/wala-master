@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday } from '../../services/wordle';
 import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { useAuth } from '../../contexts/AuthContext';
-import { format } from 'date-fns';
+import { limaTodayStr } from '../../utils/fechaLima';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import styles from './WordlePage.module.css';
@@ -32,7 +32,9 @@ const formatTime = (seconds) => {
 const WordlePage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  // Misma fecha (hora Lima) que usa el servidor y que guarda el resultado: si no,
+  // jugar de noche registraba la partida con la fecha del día siguiente.
+  const todayStr = limaTodayStr();
   const storageKey = `wala_wordle_${todayStr}`;
 
   // Estado del juego

@@ -3,6 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { showFlyingCoins } from '../../../utils/animations';
 import { scheduleKapiNotifications } from '../../../services/kapiNotifications';
+import { limaTodayStr } from '../../../utils/fechaLima';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -109,8 +110,8 @@ const KapiPet = () => {
   if (onLandingPage) return null; // Kapi no aparece en landings (protege la conversión del checkout)
   if (!user || !userProfile) return null;
 
-  const _d2 = new Date();
-  const todayStr = `${_d2.getFullYear()}-${String(_d2.getMonth()+1).padStart(2, '0')}-${String(_d2.getDate()).padStart(2, '0')}`;
+  // Mismo criterio de día que feedKapiSecure (hora de Lima).
+  const todayStr = limaTodayStr();
   const lastClaim = userProfile.lastKapiClaimDate;
   const hasClaimedToday = lastClaim === todayStr;
 

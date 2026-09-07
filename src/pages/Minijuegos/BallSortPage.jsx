@@ -4,6 +4,7 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { claimBallSortReward } from '../../services/firebase/ballSort';
 import { trackMinigame } from '../../services/analytics/tracker';
+import { limaTodayStr } from '../../utils/fechaLima';
 import styles from './BallSortPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -92,18 +93,19 @@ const TubeConfetti = ({ color }) => {
 };
 
 const BallSortPage = () => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, reloadProfile } = useAuth();
   const [tubes, setTubes] = useState([]);
   const [selectedTubeIndex, setSelectedTubeIndex] = useState(null);
   const [hasWon, setHasWon] = useState(false);
   const [error, setError] = useState('');
-  const [claiming, setClaiming] = useState(false);
+  // Estado del premio de esta partida: 'idle' | 'claiming' | 'claimed' | 'already'
+  const [claimState, setClaimState] = useState('idle');
   const [isAnimating, setIsAnimating] = useState(false);
   const [completedTubes, setCompletedTubes] = useState(new Set());
-  
-  const _dbs = new Date();
-  const todayStr = `${_dbs.getFullYear()}-${String(_dbs.getMonth()+1).padStart(2, '0')}-${String(_dbs.getDate()).padStart(2, '0')}`;
-  const hasClaimedToday = userProfile?.lastBallSortReward === todayStr;
+
+  // El servidor decide el día en hora de Lima; el cliente debe usar el mismo
+  // criterio o de 19:00 a 23:59 creería que ya es mañana.
+  const hasClaimedToday = userProfile?.lastBallSortReward === limaTodayStr();
 
   useEffect(() => {
     // Inicializar juego
@@ -125,19 +127,27 @@ const BallSortPage = () => {
         { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
     } catch {}
 
-    // Disparar confeti básico si hay alguna librería o simplemente monedas
-    window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: 2 } }));
+    if (!user) return;
+    if (hasClaimedToday) {
+      setClaimState('already');
+      return;
+    }
 
-    if (!user || hasClaimedToday) return;
-
-    setClaiming(true);
+    setClaimState('claiming');
     const result = await claimBallSortReward(user.uid, userProfile);
-    setClaiming(false);
 
-    if (!result.success) {
+    if (result.success) {
+      setClaimState('claimed');
+      // Las monedas solo "vuelan" al header si de verdad se acreditaron.
+      window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: 2 } }));
+      // Refrescar el perfil: si no, el saldo del header y el estado del hub
+      // quedan desactualizados y una segunda partida vuelve a intentar cobrar.
+      await reloadProfile();
+    } else {
+      setClaimState('error');
       setError(result.error);
     }
-  }, [user, userProfile, hasClaimedToday]);
+  }, [user, userProfile, hasClaimedToday, reloadProfile]);
 
   const handleTubeClick = (index) => {
     if (hasWon || isAnimating) return;
@@ -156,6 +166,7 @@ const BallSortPage = () => {
       }
 
       // Intentar mover la bolita
+      const sourceIndex = selectedTubeIndex;
       const sourceTube = tubes[selectedTubeIndex];
       const destTube = tubes[index];
       const ballToMove = sourceTube[sourceTube.length - 1];
@@ -181,10 +192,17 @@ const BallSortPage = () => {
         setTimeout(() => {
           setIsAnimating(false);
 
-          // Detectar si el tubo destino se acaba de completar
-          if (isTubeComplete(newTubes[index]) && !completedTubes.has(index)) {
-            setCompletedTubes(prev => new Set([...prev, index]));
-          }
+          // Recalcular qué tubos están completos. Antes solo se añadían: si el
+          // jugador vaciaba un tubo ya completo, seguía marcado como tal y el
+          // render reventaba al leer el color de un tubo sin bolitas.
+          setCompletedTubes(prev => {
+            const next = new Set(prev);
+            if (isTubeComplete(newTubes[index])) next.add(index);
+            else next.delete(index);
+            if (isTubeComplete(newTubes[sourceIndex])) next.add(sourceIndex);
+            else next.delete(sourceIndex);
+            return next;
+          });
 
           // Chequear victoria
           if (checkWinCondition(newTubes)) {
@@ -208,6 +226,7 @@ const BallSortPage = () => {
     setSelectedTubeIndex(null);
     setHasWon(false);
     setError('');
+    setClaimState('idle');
     setIsAnimating(false);
     setCompletedTubes(new Set());
   };
@@ -227,13 +246,14 @@ const BallSortPage = () => {
 
       <div className={styles.gameArea}>
         <p style={{marginBottom: '2rem', textAlign: 'center', color: 'var(--gris-texto-secundario)'}}>
-          Ordena los colores para que cada tubo contenga un solo color.
+          <T>Ordena los colores para que cada tubo contenga un solo color.</T>
         </p>
         
         <LayoutGroup>
           <div className={styles.tubesContainer}>
             {tubes.map((tube, index) => {
-              const isComplete = completedTubes.has(index);
+              // Doble red de seguridad: nunca leer el color de un tubo vacío.
+              const isComplete = completedTubes.has(index) && tube.length === TUBE_CAPACITY;
               const tubeColor = isComplete ? tube[0].color : null;
               return (
                 <div 
@@ -275,7 +295,7 @@ const BallSortPage = () => {
 
         <div className={styles.controls}>
           <button className={`${styles.btn} ${styles.resetBtn}`} onClick={restartGame}>
-            Reiniciar Nivel
+            <T>Reiniciar Nivel</T>
           </button>
         </div>
       </div>
@@ -289,13 +309,16 @@ const BallSortPage = () => {
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           >
             <h2><T>¡Nivel Completado! 🎉</T></h2>
-            {hasClaimedToday ? (
+            {claimState === 'claiming' && <p><T>Reclamando premio...</T></p>}
+            {claimState === 'claimed' && <p><T>¡Has ganado 2 Wala Coins!</T></p>}
+            {claimState === 'already' && (
               <p><T>¡Bien hecho! Ya reclamaste tus Wala Coins hoy, vuelve mañana para ganar más.</T></p>
-            ) : (
-              <p>{claiming ? 'Reclamando premio...' : '¡Has ganado 2 Wala Coins!'}</p>
+            )}
+            {claimState === 'error' && (
+              <p><T>No pudimos acreditar tu premio. Inténtalo de nuevo más tarde.</T></p>
             )}
             <Link to="/minijuegos" className={styles.actionBtn}>
-              Volver al Hub
+              <T>Volver al Hub</T>
             </Link>
           </motion.div>
         )}
