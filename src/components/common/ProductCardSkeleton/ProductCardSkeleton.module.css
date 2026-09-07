@@ -1,0 +1,61 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   ProductCardSkeleton — mismo shimmer que PageLoading.module.css (base
+   violeta translúcida + barrido diagonal de luz), en el mismo shape 3:4
+   que PremiumProductCard.module.css (foto + 2 líneas de texto). Se
+   duplica la técnica en vez de importar PageLoading.module.css porque los
+   CSS Modules no comparten clases entre sí; los valores (colores, timing)
+   sí deben mantenerse iguales a los de PageLoading si ese cambia.
+   ═══════════════════════════════════════════════════════════════════════ */
+.card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.image,
+.line {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radio-mediano, 8px);
+  background-color: rgba(196, 181, 253, 0.22); /* violet-300 translúcido */
+  background-image: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  background-position: 180% 0;
+  animation: skeletonShimmer 1.4s var(--ease-entrance, cubic-bezier(0.22, 1, 0.36, 1)) infinite;
+}
+
+.image {
+  width: 100%;
+  aspect-ratio: 3 / 4; /* mismo marco que PremiumProductCard */
+}
+
+.line {
+  height: 12px;
+  border-radius: 6px;
+}
+
+@keyframes skeletonShimmer {
+  from {
+    background-position: 180% 0;
+  }
+
+  to {
+    background-position: -80% 0;
+  }
+}
+
+/* Reduced-motion: sin barrido, solo el bloque base translúcido y legible. */
+@media (prefers-reduced-motion: reduce) {
+  .image,
+  .line {
+    animation: none;
+    background-image: none;
+  }
+}

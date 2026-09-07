@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getProductsByCollection } from '../../../../services/products';
 import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+import ProductCardSkeleton from '../../../../components/common/ProductCardSkeleton/ProductCardSkeleton';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './FlashSales.module.css';
 
@@ -82,7 +83,14 @@ const FlashSales = ({ title = "Ofertas Relámpago", config, collectionName, endT
              {`⚡ ${title}`}
            </TextoSeccion>
         </div>
-        <div className={styles.loadingText}>Cargando ofertas...</div>
+        {/* Skeleton del tamaño real (misma grilla .flashSalesProducts que las
+            tarjetas ya renderizadas) en vez del texto "Cargando ofertas..."
+            de una sola línea — ver ProductCardSkeleton para el detalle. */}
+        <div className={styles.flashSalesProducts}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }

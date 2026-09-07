@@ -333,7 +333,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // peticion aparte en vez de reusar el cache que el Header ya trae (se
   // monta antes, en cuanto carga la pagina). Con la misma clave, "Explora
   // nuestros mundos" reusa ese cache y no espera su propio round-trip.
-  const { data: automaticGridBrands = [] } = useQuery({
+  const { data: automaticGridBrands = [], isLoading: isAutomaticGridBrandsLoading } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
       const { data, error } = await getBrands();
@@ -416,7 +416,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
 
   // Fuente canónica de la cuadrícula automática. Se consulta aparte del catálogo
   // paginado para que las categorías no desaparezcan al navegar o filtrar.
-  const { data: automaticCategoryProducts = [] } = useQuery({
+  const { data: automaticCategoryProducts = [], isLoading: isAutomaticCategoryProductsLoading } = useQuery({
     queryKey: ['storefront-category-grid-products', pageBrandId || 'global'],
     queryFn: async () => {
       const result = pageBrandId
@@ -1398,13 +1398,32 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   };
 
   const sorted = [...displaySections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  
-  if (isConfigLoading && !storefrontConfig) {
+
+  // category_grid/banner_grid en modo automático ("Explora nuestros mundos",
+  // etc.) hacen su propio fetch (automaticGridBrands/automaticCategoryProducts,
+  // mas arriba) y ANTES de tener datos directamente no se pintaban (`return
+  // null` en esos componentes) — la sección aparecia de la nada apenas
+  // resolvia esa query, ya con el resto de la pagina visible (efecto
+  // "popcorn"). Esas dos queries son baratas (ya viven en TiendaPage, no en
+  // el componente hijo) y solo corren cuando la pagina de verdad usa ese
+  // modo (`enabled: usesAutomaticX`), asi que sumarlas al gate del
+  // BrandLoader no alarga la espera de paginas que no las usan.
+  const automaticSectionsStillLoading =
+    (usesAutomaticBrandGrid && isAutomaticGridBrandsLoading) ||
+    (usesAutomaticCategoryGrid && isAutomaticCategoryProductsLoading);
+
+  if ((isConfigLoading && !storefrontConfig) || automaticSectionsStillLoading) {
     // Antes: la landing mostraba el fondo oscuro/rojo de .landing-page-boot
     // y el resto de paginas un texto de sistema suelto ("Cargando
     // configuración...") — dos looks distintos, ninguno con marca. Un solo
     // BrandLoader para ambos casos: mismo degradado de marca que el splash
     // estatico de index.html, transicion invisible en vez de un salto.
+    //
+    // El resto de las secciones (colecciones, ofertas, carruseles de
+    // productos) siguen sin bloquear aca a proposito: esperar CADA query de
+    // la pagina alargaria el loader al ritmo de la seccion mas lenta. Esas
+    // muestran su propio ProductCardSkeleton (ver CollectionCarousel.jsx,
+    // FlashSales.jsx, FeaturedCarousel.jsx) mientras resuelven.
     return <BrandLoader />;
   }
 

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getProductsByCollection } from '../../../../services/products';
 import { getCollectionById } from '../../../../services/collections';
 import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+import ProductCardSkeleton from '../../../../components/common/ProductCardSkeleton/ProductCardSkeleton';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './CollectionCarousel.module.css';
 
@@ -53,7 +54,18 @@ const CollectionCarousel = ({ title, config, collectionName, categories, brandId
           className={styles.carouselTitle}
           text={displayTitle}
         />
-        <div className={styles.loadingText}>Cargando colección...</div>
+        {/* Skeleton del tamaño real (mismas clases .carouselScrollArea/
+            .carouselItem que la fila de productos ya renderizada) en vez del
+            texto "Cargando colección..." de una sola línea: antes la sección
+            "saltaba" de una línea a una fila completa cuando llegaban los
+            datos — ver ProductCardSkeleton para el detalle. */}
+        <div className={styles.carouselScrollArea}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className={styles.carouselItem}>
+              <ProductCardSkeleton />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

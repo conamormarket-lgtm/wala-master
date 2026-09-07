@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
+import ProductCardSkeleton from '../../../../components/common/ProductCardSkeleton/ProductCardSkeleton';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './FeaturedCarousel.module.css';
 
@@ -133,7 +134,7 @@ const FeaturedCarousel = ({
   // Estado de carga: products undefined/null aún no resuelto
   if (products == null) {
     return (
-      <div className={styles.carouselContainer}>
+      <div className={styles.carouselContainer} style={{ '--visible-items': configuredVisibleItems }}>
         {/* Título con estilo editable; si no hay título, TextoSeccion devuelve null */}
         <TextoSeccion
           settings={config}
@@ -143,7 +144,18 @@ const FeaturedCarousel = ({
         >
           {title}
         </TextoSeccion>
-        <div className={styles.loadingText}>Cargando productos...</div>
+        {/* Skeleton del tamaño real (mismas clases .carouselScrollArea/
+            .carouselItem que la fila de productos ya renderizada, con el
+            mismo --visible-items para que el ancho de tarjeta en desktop
+            coincida) en vez del texto "Cargando productos..." de una sola
+            línea — ver ProductCardSkeleton para el detalle. */}
+        <div className={styles.carouselScrollArea}>
+          {Array.from({ length: configuredVisibleItems }).map((_, i) => (
+            <div key={i} className={styles.carouselItem}>
+              <ProductCardSkeleton />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
