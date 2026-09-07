@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
-import { useQuery, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
 import ProductGrid from './components/ProductGrid';
 import VisualCategoryNav from './components/VisualCategoryNav/VisualCategoryNav';
 import ProductSearch from './components/ProductSearch';
@@ -333,7 +334,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // peticion aparte en vez de reusar el cache que el Header ya trae (se
   // monta antes, en cuanto carga la pagina). Con la misma clave, "Explora
   // nuestros mundos" reusa ese cache y no espera su propio round-trip.
-  const { data: automaticGridBrands = [], isLoading: isAutomaticGridBrandsLoading } = useQuery({
+  const { data: automaticGridBrands = [] } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
       const { data, error } = await getBrands();
@@ -416,7 +417,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
 
   // Fuente canónica de la cuadrícula automática. Se consulta aparte del catálogo
   // paginado para que las categorías no desaparezcan al navegar o filtrar.
-  const { data: automaticCategoryProducts = [], isLoading: isAutomaticCategoryProductsLoading } = useQuery({
+  const { data: automaticCategoryProducts = [] } = useQuery({
     queryKey: ['storefront-category-grid-products', pageBrandId || 'global'],
     queryFn: async () => {
       const result = pageBrandId
@@ -1399,36 +1400,75 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
 
   const sorted = [...displaySections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-  // category_grid/banner_grid en modo automático ("Explora nuestros mundos",
-  // etc.) hacen su propio fetch (automaticGridBrands/automaticCategoryProducts,
-  // mas arriba) y ANTES de tener datos directamente no se pintaban (`return
-  // null` en esos componentes) — la sección aparecia de la nada apenas
-  // resolvia esa query, ya con el resto de la pagina visible (efecto
-  // "popcorn"). Esas dos queries son baratas (ya viven en TiendaPage, no en
-  // el componente hijo) y solo corren cuando la pagina de verdad usa ese
-  // modo (`enabled: usesAutomaticX`), asi que sumarlas al gate del
-  // BrandLoader no alarga la espera de paginas que no las usan.
-  const automaticSectionsStillLoading =
-    (usesAutomaticBrandGrid && isAutomaticGridBrandsLoading) ||
-    (usesAutomaticCategoryGrid && isAutomaticCategoryProductsLoading);
+  // ── LOADER DE PÁGINA COMPLETA (Walá) HASTA QUE TODO CARGUE ──────────
+  // El usuario pidio que la pantalla de carga de Walá se mantenga hasta que
+  // la pagina este realmente cargada, no a medio llenar mientras cada
+  // seccion resuelve su fetch. useIsFetching() cuenta TODAS las queries de
+  // react-query en vuelo (config, categorias, destacados, colecciones,
+  // ofertas, carruseles, grillas automaticas, header...): cuando llega a 0
+  // con la config ya presente, la pagina esta lista.
+  // "Ya hay contenido para renderizar debajo del overlay": pasamos el gate
+  // inicial. Basado en NO estar en el estado de config-cargando-sin-datos, no
+  // en tener `storefrontConfig` — asi el editor visual (secciones desde el
+  // borrador storeConfigDraft, sin storefrontConfig) y el caso de config con
+  // error tambien activan la deteccion de "listo" y el tope, en vez de dejar
+  // el overlay colgado para siempre.
+  const contenidoRenderizando = !(isConfigLoading && !storefrontConfig);
+  const queriesEnVuelo = useIsFetching();
+  const queryClient = useQueryClient();
+  const [pageReady, setPageReady] = useState(false);
 
-  if ((isConfigLoading && !storefrontConfig) || automaticSectionsStillLoading) {
-    // Antes: la landing mostraba el fondo oscuro/rojo de .landing-page-boot
-    // y el resto de paginas un texto de sistema suelto ("Cargando
-    // configuración...") — dos looks distintos, ninguno con marca. Un solo
-    // BrandLoader para ambos casos: mismo degradado de marca que el splash
-    // estatico de index.html, transicion invisible en vez de un salto.
-    //
-    // El resto de las secciones (colecciones, ofertas, carruseles de
-    // productos) siguen sin bloquear aca a proposito: esperar CADA query de
-    // la pagina alargaria el loader al ritmo de la seccion mas lenta. Esas
-    // muestran su propio ProductCardSkeleton (ver CollectionCarousel.jsx,
-    // FlashSales.jsx, FeaturedCarousel.jsx) mientras resuelven.
+  // Tope absoluto: si alguna query cuelga o reintenta sin fin, no dejamos al
+  // usuario atrapado en el loader — pasada esta cota mostramos la pagina
+  // igual (lo que falte sigue con su ProductCardSkeleton). Arranca cuando hay
+  // contenido y NO se reinicia con cada cambio de queriesEnVuelo.
+  useEffect(() => {
+    if (!contenidoRenderizando || pageReady) return undefined;
+    const tope = setTimeout(() => setPageReady(true), 8000);
+    return () => clearTimeout(tope);
+  }, [contenidoRenderizando, pageReady]);
+
+  // Deteccion de "ya no queda nada cargando": cuando queriesEnVuelo llega a 0
+  // con la config lista, esperamos un instante y re-chequeamos de forma
+  // imperativa (queryClient.isFetching()). Ese pequeño respiro evita el "0
+  // prematuro": las secciones recien montadas disparan sus fetches en un
+  // effect posterior a este render, asi que un 0 puede ser "todavia no
+  // arrancaron" y no "ya terminaron". Si en ese lapso arrancan, queriesEnVuelo
+  // pasa a >0, este effect se re-ejecuta y espera; si sigue en 0, la pagina
+  // esta genuinamente ociosa -> lista.
+  useEffect(() => {
+    if (pageReady || !contenidoRenderizando || queriesEnVuelo > 0) return undefined;
+    const t = setTimeout(() => {
+      if (queryClient.isFetching() === 0) setPageReady(true);
+    }, 180);
+    return () => clearTimeout(t);
+  }, [pageReady, contenidoRenderizando, queriesEnVuelo, queryClient]);
+
+  if (isConfigLoading && !storefrontConfig) {
+    // Todavia no sabemos ni QUE secciones van (la config no llego): no hay
+    // nada que renderizar. BrandLoader a pantalla completa — mismo degradado
+    // de marca que el splash estatico de index.html, transicion invisible.
     return <BrandLoader />;
   }
 
   return (
     <div className={styles.container}>
+      {/* LOADER DE PÁGINA COMPLETA (Walá) HASTA QUE TODO CARGUE
+          El contenido se renderiza SIEMPRE debajo (para que cada seccion
+          monte y dispare sus fetches), pero mientras `pageReady` sea false
+          lo tapa este overlay a pantalla completa con el BrandLoader. Asi el
+          usuario ve la carga de marca hasta que la pagina esta realmente
+          lista, en vez de una pagina a medio llenar. La logica de pageReady
+          (useIsFetching + latch + tope de 8s) esta definida arriba.
+          Via portal a document.body: lo saca del .container (overflow-x:clip)
+          y de #main-content-area (anima opacidad) para que el position:fixed
+          se ancle al viewport y nada lo recorte. */}
+      {!pageReady && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999 }}>
+          <BrandLoader />
+        </div>,
+        document.body
+      )}
       {/* INDICADOR DE MARCA ACTIVA: solo en páginas de marca (pageBrandId). No
           intrusivo, arriba del contenido, para que el cliente sepa en qué tienda
           está. Sin marca (Con Amor / páginas globales) no se renderiza nada,
