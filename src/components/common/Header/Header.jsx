@@ -333,8 +333,11 @@ const Header = () => {
               <path id="tagBase" d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z" />
             </defs>
 
-            {/* ISOTIPO (Left) */}
-            <g transform="translate(15, 12) scale(0.95)">
+            {/* ISOTIPO (Left) — un poco mas grande (scale 1.1 vs 0.95) y
+                reposicionado para dejar ~20u de aire antes de la 'W' (antes se
+                tocaban). translate/scale calculados sobre el bbox real del
+                grupo para centrarlo vertical y fijar el borde derecho en ~93. */}
+            <g transform="translate(-5.3, 5.9) scale(1.1)">
                <use href="#tagBase" fill="url(#walaGradient)" />
                <circle cx="67" cy="23" r="6.5" fill="#FFFFFF" />
                <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#FFFFFF" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
@@ -344,13 +347,11 @@ const Header = () => {
             {/* LOGOTIPO (Right) - Anchored right, giving 'A' a strict known position */}
             <text x="375" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALA</text>
 
-            {/* THE TILDE ACCENT OVER 'A' - Pinned specifically at x=353 (perfect center of A) and y=12 (floating above) */}
-            <g transform="translate(353, 12) scale(0.3) rotate(5)">
-               <use href="#tagBase" fill="url(#walaGradient)" />
-               <circle cx="67" cy="23" r="6.5" fill="#FFFFFF" />
-               <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#FFFFFF" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" />
-               <path d="M 68 20 C 72 45, 95 35, 85 15" stroke="url(#walaGradient)" strokeWidth="6" strokeLinecap="round" fill="none" />
-            </g>
+            {/* ACENTO AGUDO sobre la ultima 'A' (Walá). Antes era una mini-bolsa
+                escalada+rotada que se leia "rara"; ahora es un trazo agudo
+                limpio en el degradado de marca, centrado sobre la A (cx≈344)
+                y flotando arriba de su cap-height (y≈17). */}
+            <path d="M 337 15 L 353 3" stroke="url(#walaGradient)" strokeWidth="13" strokeLinecap="round" fill="none" />
           </svg>
         </Link>
         )}
