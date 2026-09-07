@@ -1,6 +1,7 @@
 import React from 'react';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import styles from './PairProductImageComposer.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 /**
  * Componente que compone dos imágenes lado a lado pegadas (sin espacio visible)
@@ -13,7 +14,7 @@ const PairProductImageComposer = ({ image1Url, image2Url, gap = 0, alt = 'Produc
   if (!image1 && !image2) {
     return (
       <div className={`${styles.container} ${className}`}>
-        <div className={styles.placeholder}>No hay imágenes disponibles</div>
+        <div className={styles.placeholder}><T>No hay imágenes disponibles</T></div>
       </div>
     );
   }

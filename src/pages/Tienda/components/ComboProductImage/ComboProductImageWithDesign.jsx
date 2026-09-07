@@ -6,6 +6,7 @@ import { generateThumbnailWithDesign } from '../../../../utils/thumbnailWithDesi
 import { getCloudinaryOptimized } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import { getFonts } from '../../../../services/fonts';
 import styles from './ComboProductImage.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 function getBestImageUrl(product, item, variantSelection = {}, comboCustom = null) {
     if (!product) return '';
@@ -401,7 +402,8 @@ const ComboProductImageWithDesign = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
         }
     });
-// eslint-disable-next-line react-hooks/exhaustive-deps
+
+// eslint-disable-next-line react-hooks/exhaustive-deps
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const comboItems = comboProduct?.comboItems || [];
@@ -497,7 +499,7 @@ const ComboProductImageWithDesign = ({
                 }
 
                 if (!data) {
-                    return <div key={index} className={styles.comboRowItem}>Error loading item</div>;
+                    return <div key={index} className={styles.comboRowItem}><T>Error loading item</T></div>;
                 }
 
                 return (

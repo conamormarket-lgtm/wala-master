@@ -59,6 +59,7 @@ import GlassCard from '../../components/ui/GlassCard';
 import GlassButton from '../../components/ui/GlassButton';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './GiftRegistryPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 // Formatea 'YYYY-MM-DD' a 'DD/MM/YYYY' de forma segura (sin Date para evitar
 // corrimientos por zona horaria). Si no matchea, devuelve el valor crudo.
@@ -359,7 +360,7 @@ const GiftProductCard = ({ cardProduct, item, yaRegalado, sinFecha, noDisponible
         <div className={styles.giftPriceRow}>
           {noDisponible ? (
             // Sin precio confiable (o producto retirado): nada de "S/ 0.00".
-            <span className={styles.giftUnavailable}>No disponible</span>
+            <span className={styles.giftUnavailable}><T>No disponible</T></span>
           ) : descuento > 0 ? (
             <>
               <span className={styles.giftSalePrice}>S/ {Number(precio).toFixed(2)}</span>
@@ -620,7 +621,7 @@ const GiftRegistryPage = () => {
         <div className={styles.container}>
           <GlassCard variant="soft" padding="lg" className={styles.stateCard}>
             <div className={styles.spinner} aria-hidden="true" />
-            <p>Cargando el registro de regalos…</p>
+            <p><T>Cargando el registro de regalos…</T></p>
           </GlassCard>
         </div>
       </div>
@@ -635,7 +636,7 @@ const GiftRegistryPage = () => {
         <div className={styles.container}>
           <GlassCard variant="solid" padding="lg" className={styles.stateCard}>
             <div className={styles.stateEmoji} aria-hidden="true">🔍</div>
-            <h2 className={styles.stateTitle}>Registro no encontrado</h2>
+            <h2 className={styles.stateTitle}><T>Registro no encontrado</T></h2>
             <p className={styles.stateText}>
               El enlace que seguiste no es válido o el registro ya no está disponible.
             </p>
@@ -827,13 +828,13 @@ const GiftRegistryPage = () => {
         >
           {items.length > 0 && (
             <p className={styles.dragHint}>
-              💡 <strong>Arrastra</strong> un producto (desde su imagen) sobre una fecha de arriba para asignarlo, o elige una fecha y pulsa “Regalar este”. Toca el <strong>nombre</strong> para ver el producto.
+              💡 <T>Arrastra un producto (desde su imagen) sobre una fecha de arriba para asignarlo, o elige una fecha y pulsa “Regalar este”. Toca el nombre para ver el producto.</T>
             </p>
           )}
           {items.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.stateEmoji} aria-hidden="true">📭</div>
-              <p>Esta lista está vacía por ahora. Vuelve más tarde.</p>
+              <p><T>Esta lista está vacía por ahora. Vuelve más tarde.</T></p>
             </div>
           ) : (
             <div className={styles.grid}>
@@ -883,7 +884,7 @@ const GiftRegistryPage = () => {
                     className={`${styles.cardWrapper} ${enArrastre ? styles.dragging : ''}`}
                   >
                     {yaRegalado && (
-                      <div className={styles.giftedOverlay}>¡Ya regalado! 🎉</div>
+                      <div className={styles.giftedOverlay}><T>¡Ya regalado! 🎉</T></div>
                     )}
 
                     <GiftProductCard

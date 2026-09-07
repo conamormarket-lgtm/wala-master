@@ -16,6 +16,7 @@ import GlassCard from './GlassCard';
 import KpiCard from './KpiCard';
 import { getTopSellingWala } from '../../services/salesAnalytics';
 import styles from './MasVendidosSection.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const PRIMARY = '#6D28D9';
 const GREEN = '#10B981';
@@ -101,7 +102,7 @@ function EmptyState({ message }) {
   return (
     <div className={styles.empty}>
       <span className={styles.emptyIcon} aria-hidden="true">🛒</span>
-      <p className={styles.emptyTitle}>Sin ventas en este periodo</p>
+      <p className={styles.emptyTitle}><T>Sin ventas en este periodo</T></p>
       <p className={styles.emptyText}>
         {message ||
           'Cuando se registren compras en WALA aparecerán aquí los productos y líneas más vendidos.'}
@@ -343,7 +344,7 @@ export default function MasVendidosSection({ rangeDays = 30 }) {
                 <thead>
                   <tr>
                     <th style={{ width: 48 }}>#</th>
-                    <th>Producto</th>
+                    <th><T>Producto</T></th>
                     <th className={styles.alignRight}>Unidades</th>
                     <th className={styles.alignRight}>Monto</th>
                   </tr>

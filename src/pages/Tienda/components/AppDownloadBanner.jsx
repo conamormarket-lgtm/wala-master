@@ -3,6 +3,7 @@ import { X, Smartphone } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import useIsMobile from '../../../hooks/useIsMobile';
 import styles from './AppDownloadBanner.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 const AppDownloadBanner = () => {
   const { isMobileDevice } = useIsMobile();
@@ -29,7 +30,7 @@ const AppDownloadBanner = () => {
         </div>
         <div className={styles.textGroup}>
           <p className={styles.title}>Wala App</p>
-          <p className={styles.subtitle}>Para una mejor experiencia</p>
+          <p className={styles.subtitle}><T>Para una mejor experiencia</T></p>
         </div>
       </div>
       <div className={styles.rightContent}>

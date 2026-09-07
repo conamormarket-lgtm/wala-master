@@ -34,6 +34,7 @@ import { construirFondoStyle, sombraBotonCss, hexToRgba } from '../services/link
 import { useAuth } from '../contexts/AuthContext';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import styles from './LinkInBioPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 // Íconos de texto por tipo de red (fallback si la red no trae iconUrl propio).
 // Sin librerías nuevas: usamos emojis/letras, ligeros y universales.
@@ -178,11 +179,11 @@ const LinkInBioPage = () => {
   if (status === 'notfound' || !page) {
     return (
       <div className={styles.stateWrap}>
-        <h1 className={styles.stateTitle}>Página no disponible</h1>
+        <h1 className={styles.stateTitle}><T>Página no disponible</T></h1>
         <p className={styles.stateText}>
           El enlace que seguiste no existe o aún no está publicado.
         </p>
-        <a className={styles.stateHomeLink} href="/">Ir al inicio</a>
+        <a className={styles.stateHomeLink} href="/"><T>Ir al inicio</T></a>
       </div>
     );
   }
@@ -314,7 +315,7 @@ const LinkInBioPage = () => {
 
         {/* Marca discreta del portal */}
         <footer className={styles.footer}>
-          <a className={styles.footerLink} href="/">Creado con Wala</a>
+          <a className={styles.footerLink} href="/"><T>Creado con Wala</T></a>
         </footer>
       </div>
     </div>

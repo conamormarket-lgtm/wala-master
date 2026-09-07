@@ -7,6 +7,7 @@ import EditableSection from '../admin/EditableSection';
 import { LOGO_URL } from '../../utils/constants';
 import Button from '../common/Button';
 import styles from './CuentaLoginPrompt.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 /**
  * Vista "Mi cuenta" cuando no hay sesión: logo, frase y opciones Iniciar sesión / Crear cuenta.
@@ -43,8 +44,8 @@ const CuentaLoginPrompt = () => {
       <div className={styles.wrapper}>
         <div className={styles.branding}>
           <img src={LOGO_URL} alt="Walá" />
-          <h2>El seguimiento de tus pedidos, más fácil que nunca.</h2>
-          <p>Walá</p>
+          <h2><T>El seguimiento de tus pedidos, más fácil que nunca.</T></h2>
+          <p><T>Walá</T></p>
           
           <div className={styles.partnerContainer} title="Nuestras marcas">
             <p className={styles.partnerTitle}>Nuestras marcas</p>

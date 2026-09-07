@@ -5,6 +5,7 @@ import AdminViewEditor from '../YoryoPersonalizado/WALA_Editor_Export/components
 import { EditorProvider } from '../YoryoPersonalizado/WALA_Editor_Export/contexts/EditorContext';
 import { createCustomerCustomProduct } from '../../services/customerCustomProducts';
 import styles from './YoryoPersonalizadoCliente.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const YoryoPersonalizadoClienteContent = ({ productData, existingDesignData, userId, onSaved }) => {
   const [isSaving, setIsSaving] = useState(false);
@@ -108,7 +109,7 @@ const YoryoPersonalizadoClienteContent = ({ productData, existingDesignData, use
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2>Personaliza tu producto</h2>
+        <h2><T>Personaliza tu producto</T></h2>
         <button 
           className={styles.saveButton} 
           onClick={handleSave} 
@@ -135,7 +136,7 @@ const YoryoPersonalizadoClienteContent = ({ productData, existingDesignData, use
 
       {!productData.isComboProduct && (
         <div style={{ marginTop: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#374151' }}>Usar una imagen desde URL</h4>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#374151' }}><T>Usar una imagen desde URL</T></h4>
           <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 10px 0' }}>
             Puedes pegar el link de una imagen externa. Esta imagen se cargará en el diseño y podrás trabajar tus ediciones sobre ella.
           </p>

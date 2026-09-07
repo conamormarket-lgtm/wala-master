@@ -6,6 +6,7 @@ import Cart from './Tienda/components/Cart';
 // Uso SOLO presentacional (aditivo); no toca la lógica del carrito (vive en <Cart/>).
 import { GlassButton, AuroraBackground } from '../components/ui';
 import styles from './CartPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const CartPage = () => {
       {/* Fondo de marca MUY suave detrás del contenido (decorativo, no interactivo). */}
       <AuroraBackground variant="subtle" intensity={0.16} />
       <div className={styles.header}>
-        <h1>Carrito de Compras</h1>
+        <h1><T>Carrito de Compras</T></h1>
         {!isEmpty && (
           <GlassButton variant="ghost" onClick={() => navigate('/tienda')}>
             Continuar Comprando

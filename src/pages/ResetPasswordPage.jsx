@@ -6,6 +6,7 @@ import { LOGO_URL } from '../utils/constants';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import styles from './ResetPasswordPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const ResetPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -33,7 +34,7 @@ const ResetPasswordPage = () => {
         <div className={styles.wrapper}>
           <div className={styles.formContainer}>
             <img src={LOGO_URL} alt="Logo" className={styles.logo} />
-            <h1 className={styles.title}>Correo enviado</h1>
+            <h1 className={styles.title}><T>Correo enviado</T></h1>
             <p className={styles.message}>
               Si existe una cuenta con ese correo, recibirá un enlace para restablecer la contraseña. Revise su bandeja de entrada y la carpeta de spam.
             </p>
@@ -55,13 +56,13 @@ const ResetPasswordPage = () => {
       <div className={styles.wrapper}>
         <div className={styles.formContainer}>
           <img src={LOGO_URL} alt="Logo" className={styles.logo} />
-          <h1 className={styles.title}>Recuperar contraseña</h1>
+          <h1 className={styles.title}><T>Recuperar contraseña</T></h1>
           <p className={styles.subtitle}>
             Ingrese su correo y le enviaremos un enlace para restablecer su contraseña.
           </p>
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.formGroup}>
-              <label htmlFor="email">Correo electrónico</label>
+              <label htmlFor="email"><T>Correo electrónico</T></label>
               <input
                 type="email"
                 id="email"

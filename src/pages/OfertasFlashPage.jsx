@@ -7,6 +7,7 @@ import { openDailyChest } from '../services/chest';
 import { Gift, Zap, Loader2 } from 'lucide-react';
 import Button from '../components/common/Button';
 import styles from './OfertasFlashPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const OfertasFlashPage = () => {
   const { isAuthenticated, reloadProfile } = useAuth();
@@ -123,7 +124,7 @@ const OfertasFlashPage = () => {
       {/* Lista de ofertas */}
       <section className={styles.offersSection}>
         {isLoading ? (
-          <div className={styles.loading}>Cargando ofertas…</div>
+          <div className={styles.loading}><T>Cargando ofertas…</T></div>
         ) : error ? (
           <div className={styles.errorBox}>{error.message}</div>
         ) : offers.length === 0 ? (

@@ -7,6 +7,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import styles from './KapiPet.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 const KapiPet = () => {
   const { user, userProfile, feedKapi, activeWeeklyChallenge } = useAuth();
@@ -211,7 +212,7 @@ const KapiPet = () => {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <button className={styles.closeBtn} onClick={() => setIsOpen(false)}>✕</button>
             
-            <h2 className={styles.title}>Tu Mascota Kapi</h2>
+            <h2 className={styles.title}><T>Tu Mascota Kapi</T></h2>
             <p className={styles.subtitle}>
               Alimenta a Kapi todos los días para ganar Kapi Coins.
             </p>

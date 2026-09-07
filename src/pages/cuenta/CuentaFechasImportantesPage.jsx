@@ -9,6 +9,7 @@ import { Gift, Calendar, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package, C
 // Helper de subida YA existente en el repo (mismo que usan AvatarStudio / CategoryNavEditor).
 import { uploadFile } from '../../services/firebase/storage';
 import styles from './CuentaFechasImportantesPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const EVENT_TYPES = [
   { id: 'cumpleanos', label: 'Cumpleaños', needsDate: true },
@@ -97,7 +98,7 @@ const CuentaFechasImportantesPage = () => {
       <div className={styles.container}>
         <div className={styles.emptyState}>
           <Gift size={64} className={styles.emptyStateIcon} />
-          <h2>¡Gana recompensas diciéndonos qué te gusta!</h2>
+          <h2><T>¡Gana recompensas diciéndonos qué te gusta!</T></h2>
           <p>
             Al completar nuestro perfil de regalos, ganarás Kapicoins que puedes canjear
             por descuentos, y te recordaremos las fechas más importantes de tus seres queridos.
@@ -265,7 +266,7 @@ const CuentaFechasImportantesPage = () => {
 
       <div className={styles.grid}>
         {recipients.length === 0 ? (
-          <p style={{ color: '#64748b' }}>Aún no has agregado personas a tu lista.</p>
+          <p style={{ color: '#64748b' }}><T>Aún no has agregado personas a tu lista.</T></p>
         ) : (
           recipients.map(rec => {
             const recPackages = getPackagesForRecipient(rec);
@@ -328,7 +329,7 @@ const CuentaFechasImportantesPage = () => {
                   <div className={styles.suggestedSection}>
                     <div className={styles.suggestedHeader}>
                       <Package size={16} />
-                      <span>Paquete sugerido para ti</span>
+                      <span><T>Paquete sugerido para ti</T></span>
                     </div>
                     {recPackages.map(pkg => {
                       const isAdded = addedPackageIds.has(pkg.id);

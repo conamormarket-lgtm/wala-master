@@ -7,6 +7,7 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { getReferralsByReferrer, createReferralShare, claimReferralCoins, updateReferralCode } from '../../services/referrals';
 import ReferralRanking from '../../components/analytics/ReferralRanking';
 import styles from './CuentaReferidosPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const STAGES = {
   sent: 1,
@@ -140,7 +141,7 @@ const CuentaReferidosPage = () => {
   };
 
   if (isLoading) {
-    return <div className={styles.loading}>Cargando panel de referidos...</div>;
+    return <div className={styles.loading}><T>Cargando panel de referidos...</T></div>;
   }
 
   // Cálculos de estadísticas
@@ -231,7 +232,7 @@ const CuentaReferidosPage = () => {
         </div>
       </div>
 
-      <h3 className={styles.listTitle}>Historial de Referidos</h3>
+      <h3 className={styles.listTitle}><T>Historial de Referidos</T></h3>
       
       {!referrals || referrals.length === 0 ? (
         <div className={styles.empty}>

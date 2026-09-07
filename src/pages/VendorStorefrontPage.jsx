@@ -4,6 +4,7 @@ import { searchCatalog } from '../services/search';
 import { getVendors } from '../services/vendors';
 import { getCategories } from '../services/products';
 import ProductCard from './Tienda/components/ProductCard/ProductCard';
+import { T } from '../i18n/useTranslatedText';
 
 // TIENDA PÚBLICA DE UN VENDEDOR (Fase 1): /tienda-vendedor/:slug.
 // Busca el vendedor por slug (getVendors) y muestra su displayName/logoUrl. Lista sus
@@ -75,7 +76,7 @@ const VendorStorefrontPage = () => {
           Este vendedor aún no tiene productos publicados.
           {result.total === 0 && ' (Conecta Firebase para cargar el catálogo.)'}
           <div style={{ marginTop: 12 }}>
-            <Link to="/buscar" style={{ color: '#7C3AED' }}>Explorar otros productos</Link>
+            <Link to="/buscar" style={{ color: '#7C3AED' }}><T>Explorar otros productos</T></Link>
           </div>
         </div>
       )}
@@ -95,8 +96,8 @@ const VendorStorefrontPage = () => {
       )}
 
       <div style={{ marginTop: 24 }}>
-        <Link to="/buscar" style={{ color: '#7C3AED', marginRight: 16 }}>Buscar productos</Link>
-        <Link to="/" style={{ color: '#7C3AED' }}>← Volver a la tienda</Link>
+        <Link to="/buscar" style={{ color: '#7C3AED', marginRight: 16 }}><T>Buscar productos</T></Link>
+        <Link to="/" style={{ color: '#7C3AED' }}><T>← Volver a la tienda</T></Link>
       </div>
     </div>
   );

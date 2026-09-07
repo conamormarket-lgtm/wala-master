@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getTopReferrersOfMonth } from '../../services/referrals';
 import styles from './ReferralRanking.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const ReferralRanking = () => {
   const { data: top10, isLoading } = useQuery({
@@ -14,14 +15,14 @@ const ReferralRanking = () => {
   });
 
   if (isLoading) {
-    return <div className={styles.loading}>Cargando ranking de regaleros...</div>;
+    return <div className={styles.loading}><T>Cargando ranking de regaleros...</T></div>;
   }
 
   if (!top10 || top10.length === 0) {
     return (
       <div className={styles.container}>
-        <h3 className={styles.title}>🏆 Top Regaleros del Mes</h3>
-        <p className={styles.empty}>Aún no hay compras de referidos este mes. ¡Sé el primero!</p>
+        <h3 className={styles.title}><T>🏆 Top Regaleros del Mes</T></h3>
+        <p className={styles.empty}><T>Aún no hay compras de referidos este mes. ¡Sé el primero!</T></p>
       </div>
     );
   }
@@ -30,16 +31,16 @@ const ReferralRanking = () => {
 
   return (
     <div className={styles.container}>
-      <h3 className={styles.title}>🏆 Top Regaleros del Mes</h3>
-      <p className={styles.subtitle}>Los usuarios con más referidos que completaron compras este mes.</p>
+      <h3 className={styles.title}><T>🏆 Top Regaleros del Mes</T></h3>
+      <p className={styles.subtitle}><T>Los usuarios con más referidos que completaron compras este mes.</T></p>
       
       {top1 && (
         <div className={styles.top1Banner}>
           <div className={styles.prizeIcon}>🎁</div>
           <div className={styles.prizeInfo}>
-            <h4>Premio al 1er Lugar: ¡Wala Box Gratis!</h4>
+            <h4><T>Premio al 1er Lugar: ¡Wala Box Gratis!</T></h4>
             <p><strong>{top1.referrerCode}</strong> está liderando con {top1.count} referidos completados este mes.</p>
-            <span className={styles.prizeDisclaimer}>El premio se asignará manualmente por el administrador al finalizar el mes.</span>
+            <span className={styles.prizeDisclaimer}><T>El premio se asignará manualmente por el administrador al finalizar el mes.</T></span>
           </div>
         </div>
       )}

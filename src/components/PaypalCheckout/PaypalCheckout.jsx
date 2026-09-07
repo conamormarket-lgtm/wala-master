@@ -3,6 +3,7 @@ import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { updateOrderInERP, erpDb } from '../../services/erp/firebase';
+import { T } from '../../i18n/useTranslatedText';
 
 // Flag de build (default OFF). Cuando es 'true', el cobro de PayPal se delega a
 // las Cloud Functions seguras (createPaypalOrderSecure / capturePaypalOrderSecure):
@@ -277,7 +278,7 @@ const PaypalCheckout = ({
       {isProcessing && (
         <div style={{ textAlign: 'center', color: '#3b82f6', padding: '1.5rem', background: '#eff6ff', borderRadius: '8px' }}>
           <strong>Procesando pago...</strong>
-          <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem' }}>Actualizando el pedido de forma segura. Por favor, no cierres esta ventana.</p>
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem' }}><T>Actualizando el pedido de forma segura. Por favor, no cierres esta ventana.</T></p>
         </div>
       )}
     </div>

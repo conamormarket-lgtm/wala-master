@@ -6,6 +6,7 @@ import ImageCarousel from '../ImageCarousel';
 import NuevoPedidoButton from '../NuevoPedidoButton';
 import Button from '../common/Button';
 import styles from './Results.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const Results = ({ pedidos, onNewSearch, dataSource }) => {
   const [carouselImages, setCarouselImages] = useState([]);
@@ -73,7 +74,7 @@ const Results = ({ pedidos, onNewSearch, dataSource }) => {
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
-        <h1>Tus pedidos</h1>
+        <h1><T>Tus pedidos</T></h1>
         <p>Hola, {nombreCliente}. Aquí puedes revisar el estado, avances y detalles de tus pedidos.</p>
       </div>
 

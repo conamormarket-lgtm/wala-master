@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { uploadFile } from '../../services/firebase/storage';
 import styles from './AvatarStudio.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 // Subidor simple de foto de perfil.
 // Reemplaza al antiguo flujo de avatar 3D (Ready Player Me, ya descontinuado).
@@ -61,7 +62,7 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving }) {
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                     <circle cx="12" cy="7" r="4" />
                                 </svg>
-                                <p>Sin foto de perfil</p>
+                                <p><T>Sin foto de perfil</T></p>
                             </div>
                         )}
                     </div>
@@ -69,8 +70,8 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving }) {
 
                 <div className={styles.controlsArea}>
                     <div className={styles.infoBox}>
-                        <h3>Foto de Perfil</h3>
-                        <p>Sube una foto para personalizar tu perfil. Se mostrará como tu avatar en Walá.</p>
+                        <h3><T>Foto de Perfil</T></h3>
+                        <p><T>Sube una foto para personalizar tu perfil. Se mostrará como tu avatar en Walá.</T></p>
                     </div>
 
                     {/* Input de archivo oculto; se dispara con el botón "Subir foto de perfil". */}

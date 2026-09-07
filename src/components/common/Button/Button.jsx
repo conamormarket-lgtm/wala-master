@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './Button.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 const Button = ({
   children,
@@ -30,7 +31,7 @@ const Button = ({
       type={type}
       {...props}
     >
-      {loading ? <span key="loading">Cargando...</span> : <span key="content">{children}</span>}
+      {loading ? <span key="loading"><T>Cargando...</T></span> : <span key="content">{children}</span>}
     </button>
   );
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { Info, ImageOff } from 'lucide-react';
 import styles from './ProductImageContainer.module.css';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const ProductImageContainer = ({
   imageUrl,
@@ -36,7 +37,7 @@ const ProductImageContainer = ({
         <Info size={14} />
         <span>3:4</span>
         <div className={styles.tooltip}>
-          <strong>Resolución Recomendada:</strong><br/>
+          <strong><T>Resolución Recomendada:</T></strong><br/>
           Proporción 3:4 (Vertical).<br/>
           Ej: 900x1200px o superior.<br/>
           <span style={{opacity: 0.8, fontSize: '0.7rem'}}>*PNG/SVG sin fondo no tendrán bordes blancos.</span>

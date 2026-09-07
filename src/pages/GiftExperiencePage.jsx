@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getOrderGiftDetails } from '../services/erp/firebase';
 import styles from './GiftExperiencePage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const GiftExperiencePage = () => {
   const { orderId } = useParams();
@@ -50,7 +51,7 @@ const GiftExperiencePage = () => {
   if (loading) {
     return (
       <div className={styles.pageContainer}>
-        <div className={styles.loading}>Preparando tu sorpresa...</div>
+        <div className={styles.loading}><T>Preparando tu sorpresa...</T></div>
       </div>
     );
   }
@@ -92,7 +93,7 @@ const GiftExperiencePage = () => {
         <div className={styles.envelopeWrapper} onClick={handleOpenGift}>
           <div className={styles.envelopeFlap}></div>
           <div className={styles.envelopeFront}></div>
-          <div className={styles.instruction}>¡Toca para abrir!</div>
+          <div className={styles.instruction}><T>¡Toca para abrir!</T></div>
           
           <div className={styles.card}>
             <div className={styles.recipientName}>

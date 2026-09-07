@@ -5,6 +5,7 @@ import OptimizedImage from '../../../../components/common/OptimizedImage/Optimiz
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { empresa } from '../../../../config/empresa';
 import styles from './ConversionFold.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const DEFAULT_MOOD = {
   accent: '#e10600',
@@ -608,7 +609,7 @@ const ConversionFold = ({ config = {} }) => {
 
           {commentSlides.length > 0 && (
             <section className={styles.commentsSection} aria-label="Comentarios de clientes">
-              <h3 className={styles.commentsTitle}>Lo que dicen nuestros clientes</h3>
+              <h3 className={styles.commentsTitle}><T>Lo que dicen nuestros clientes</T></h3>
               <div
                 className={styles.commentsCarousel}
                 aria-live="polite"

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getNiches } from '../services/niches';
+import { T } from '../i18n/useTranslatedText';
 
 // Directorio público de NICHOS: /nichos. Lista todos los nichos en un grid de
 // tarjetas; cada tarjeta enlaza a /nicho/<slug> (o /nicho/<id> si no hay slug).
@@ -42,7 +43,7 @@ const NichesPage = () => {
 
   return (
     <div style={wrap}>
-      <h1 style={{ fontSize: 24, marginBottom: 4 }}>Explora por nicho</h1>
+      <h1 style={{ fontSize: 24, marginBottom: 4 }}><T>Explora por nicho</T></h1>
       <p style={{ color: '#666', marginBottom: 16 }}>
         {loading ? 'Cargando…' : `${niches.length} nicho(s) disponibles`}
       </p>
@@ -104,8 +105,8 @@ const NichesPage = () => {
       </div>
 
       <div style={{ marginTop: 24 }}>
-        <Link to="/buscar" style={{ color: '#7C3AED', marginRight: 16 }}>Buscar productos</Link>
-        <Link to="/" style={{ color: '#7C3AED' }}>← Volver a la tienda</Link>
+        <Link to="/buscar" style={{ color: '#7C3AED', marginRight: 16 }}><T>Buscar productos</T></Link>
+        <Link to="/" style={{ color: '#7C3AED' }}><T>← Volver a la tienda</T></Link>
       </div>
     </div>
   );

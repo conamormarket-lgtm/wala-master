@@ -11,6 +11,7 @@ import { useProducts } from '../../hooks/useProducts';
 import ProductCard from '../Tienda/components/ProductCard/ProductCard';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './WishlistPublic.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 /**
  * ¿El producto del catálogo sigue disponible para regalarse?
@@ -110,15 +111,15 @@ const WishlistPublic = () => {
   };
 
   if (loading || productsLoading) {
-    return <div className={styles.container}><p>Cargando lista de deseos...</p></div>;
+    return <div className={styles.container}><p><T>Cargando lista de deseos...</T></p></div>;
   }
 
   if (error || !wishlist) {
     return (
       <div className={styles.container}>
-        <h2>Lista no encontrada</h2>
-        <p>El enlace que seguiste no es válido o la lista ya no existe.</p>
-        <Link to="/tienda" className={styles.primaryBtn}>Ir a la tienda</Link>
+        <h2><T>Lista no encontrada</T></h2>
+        <p><T>El enlace que seguiste no es válido o la lista ya no existe.</T></p>
+        <Link to="/tienda" className={styles.primaryBtn}><T>Ir a la tienda</T></Link>
       </div>
     );
   }
@@ -127,12 +128,12 @@ const WishlistPublic = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Lista de deseos de {ownerName} 🎁</h1>
-        <p>Elige un regalo de esta lista y sorpréndele.</p>
+        <p><T>Elige un regalo de esta lista y sorpréndele.</T></p>
       </div>
 
       {wishlist.items?.length === 0 ? (
         <div className={styles.emptyState}>
-          <p>Esta lista está vacía actualmente.</p>
+          <p><T>Esta lista está vacía actualmente.</T></p>
         </div>
       ) : (
         <div className={styles.grid}>
@@ -166,7 +167,7 @@ const WishlistPublic = () => {
                         }
                       }}
                     />
-                    <span className={styles.unavailableBadge}>Ya no disponible</span>
+                    <span className={styles.unavailableBadge}><T>Ya no disponible</T></span>
                   </div>
                   <div className={styles.unavailableInfo}>
                     <h3 className={styles.unavailableName}>{nombre}</h3>

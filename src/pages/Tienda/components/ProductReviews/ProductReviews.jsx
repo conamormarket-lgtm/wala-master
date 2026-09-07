@@ -384,7 +384,7 @@ const ProductReviews = ({ productId }) => {
           <h3 className={styles.rightTitle}><T>Todas las reseñas</T></h3>
           <div className={styles.reviewsList}>
             {loading ? (
-              <p>Cargando reseñas...</p>
+              <p><T>Cargando reseñas...</T></p>
             ) : reviews.length > 0 ? (
               reviews.filter(r => r.id !== featuredReview?.id).map(review => renderReviewItem(review))
             ) : (
@@ -393,7 +393,7 @@ const ProductReviews = ({ productId }) => {
             
             {/* Si solo existía la reseña destacada */}
             {!loading && reviews.length > 0 && reviews.filter(r => r.id !== featuredReview?.id).length === 0 && (
-               <p className={styles.emptyState} style={{padding: '0'}}>No hay más reseñas para mostrar.</p>
+               <p className={styles.emptyState} style={{padding: '0'}}><T>No hay más reseñas para mostrar.</T></p>
             )}
           </div>
         </div>

@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import styles from './WordlePage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 // Constantes
 const MAX_ATTEMPTS = 6;
@@ -239,14 +240,14 @@ const WordlePage = () => {
 
 
   if (isLoadingWord) {
-    return <div className={styles.loading}>Cargando El Juego del Día...</div>;
+    return <div className={styles.loading}><T>Cargando El Juego del Día...</T></div>;
   }
 
   return (
     <div className={styles.pageContainer}>
       <header className={styles.header}>
         <div className={styles.headerLeft}></div>
-        <h1 className={styles.title}>La Palabra del Día</h1>
+        <h1 className={styles.title}><T>La Palabra del Día</T></h1>
         <div className={styles.headerRight}>
           <button className={styles.iconBtn} onClick={() => setShowRanking(!showRanking)}>
             Ranking
@@ -275,13 +276,13 @@ const WordlePage = () => {
           </div>
 
           {rankingTab === 'today' ? (
-            <p className={styles.rankingDesc}>Jugadores que completaron el wordle de hoy, ordenados por intentos usados.</p>
+            <p className={styles.rankingDesc}><T>Jugadores que completaron el wordle de hoy, ordenados por intentos usados.</T></p>
           ) : (
-            <p className={styles.rankingDesc}>Ordenado por la mayor racha de victorias seguidas (histórico).</p>
+            <p className={styles.rankingDesc}><T>Ordenado por la mayor racha de victorias seguidas (histórico).</T></p>
           )}
           
           {isLoadingRanking ? (
-            <p>Cargando ranking...</p>
+            <p><T>Cargando ranking...</T></p>
           ) : rankingData?.length === 0 ? (
             <p className={styles.rankingEmpty}>
               {rankingTab === 'today'
@@ -332,7 +333,7 @@ const WordlePage = () => {
               </tbody>
             </table>
           )}
-          <button className={styles.primaryBtn} onClick={() => setShowRanking(false)}>Volver al Juego</button>
+          <button className={styles.primaryBtn} onClick={() => setShowRanking(false)}><T>Volver al Juego</T></button>
         </div>
       ) : (
         <main className={styles.gameContainer}>
@@ -387,9 +388,9 @@ const WordlePage = () => {
                 <button className={styles.closeModalBtn} onClick={() => setShowResultModal(false)}>×</button>
                 <h2>{gameStatus === 'won' ? '¡Felicidades!' : 'Fin del Juego'}</h2>
                 {gameStatus === 'won' ? (
-                  <p>Adivinaste la palabra en <strong>{guesses.length}</strong> intento{guesses.length !== 1 ? 's' : ''}.</p>
+                  <p><T>Adivinaste la palabra en</T> <strong>{guesses.length}</strong> intento{guesses.length !== 1 ? 's' : ''}.</p>
                 ) : (
-                  <p>La palabra era: <strong>{targetWord}</strong></p>
+                  <p><T>La palabra era:</T> <strong>{targetWord}</strong></p>
                 )}
                 
                 {user ? (
@@ -412,10 +413,10 @@ const WordlePage = () => {
                     </div>
                   </div>
                 ) : (
-                  <p className={styles.loginPrompt}>Inicia sesión para guardar tus rachas y aparecer en el ranking.</p>
+                  <p className={styles.loginPrompt}><T>Inicia sesión para guardar tus rachas y aparecer en el ranking.</T></p>
                 )}
                 
-                <p style={{marginTop: '1.5rem', color: '#666'}}>Vuelve mañana para jugar una nueva palabra.</p>
+                <p style={{marginTop: '1.5rem', color: '#666'}}><T>Vuelve mañana para jugar una nueva palabra.</T></p>
               </div>
             </div>
           )}

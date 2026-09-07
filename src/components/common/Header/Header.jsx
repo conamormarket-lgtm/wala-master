@@ -449,7 +449,7 @@ const Header = () => {
                 'A'; ahora se usa el glifo real 'Á' de la fuente, asi el acento
                 tiene la forma, el peso y la posicion correctos — y sigue bien
                 puesto aunque caiga la fuente de respaldo. */}
-            <text x="349" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4">WALÁ</text>
+            <text x="349" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4"><T>WALÁ</T></text>
           </svg>
         </Link>
         )}
@@ -669,7 +669,7 @@ const Header = () => {
                   <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
                     <div className={styles.accountPopupContent} style={{ padding: '12px' }}>
                       {/* Texto y fondos del tema: se oscurecen/aclaran en modo noche. */}
-                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--color-text)' }}>Mis Billeteras</h4>
+                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--color-text)' }}><T>Mis Billeteras</T></h4>
                       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-2)', padding: '10px', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -954,7 +954,7 @@ const Header = () => {
                     </div>
                     <div className={styles.cartPreviewFooter}>
                       <div className={styles.cartPreviewTotal}>
-                        <span>Total:</span>
+                        <span><T>Total:</T></span>
                         <strong>S/ {getTotalPrice().toFixed(2)}</strong>
                       </div>
                       <Link to="/carrito" className={styles.primaryButton} onClick={closeDropdowns} style={{width: '100%', boxSizing: 'border-box'}}>

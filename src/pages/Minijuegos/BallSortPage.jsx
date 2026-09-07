@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { claimBallSortReward } from '../../services/firebase/ballSort';
 import { trackMinigame } from '../../services/analytics/tracker';
 import styles from './BallSortPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 // Colores disponibles
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']; // Red, Blue, Green, Yellow
@@ -218,8 +219,8 @@ const BallSortPage = () => {
   return (
     <div className={styles.pageContainer}>
       <header className={styles.header}>
-        <Link to="/minijuegos" className={styles.backBtn}>← Volver</Link>
-        <h1>Las Bolitas de Kapi</h1>
+        <Link to="/minijuegos" className={styles.backBtn}><T>← Volver</T></Link>
+        <h1><T>Las Bolitas de Kapi</T></h1>
       </header>
 
       {error && <div className={styles.errorBanner}>{error}</div>}
@@ -287,9 +288,9 @@ const BallSortPage = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           >
-            <h2>¡Nivel Completado! 🎉</h2>
+            <h2><T>¡Nivel Completado! 🎉</T></h2>
             {hasClaimedToday ? (
-              <p>¡Bien hecho! Ya reclamaste tus Wala Coins hoy, vuelve mañana para ganar más.</p>
+              <p><T>¡Bien hecho! Ya reclamaste tus Wala Coins hoy, vuelve mañana para ganar más.</T></p>
             ) : (
               <p>{claiming ? 'Reclamando premio...' : '¡Has ganado 2 Wala Coins!'}</p>
             )}

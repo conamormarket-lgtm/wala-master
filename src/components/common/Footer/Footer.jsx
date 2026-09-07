@@ -71,7 +71,7 @@ const Footer = () => {
             >+</button>
             {isOpen && (
               <div style={{ display: 'block', position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', padding: '10px', width: 'max-content', marginTop: '10px', border: '1px solid #eee' }}>
-                <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#666', fontWeight: 600, textAlign: 'center' }}>Insertar módulo:</p>
+                <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#666', fontWeight: 600, textAlign: 'center' }}><T>Insertar módulo:</T></p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <button onClick={() => handleInsert('footer_columns')} style={{ padding: '8px', cursor: 'pointer' }}>Columnas (Enlaces)</button>
                   <button onClick={() => handleInsert('text')} style={{ padding: '8px', cursor: 'pointer' }}>Texto</button>

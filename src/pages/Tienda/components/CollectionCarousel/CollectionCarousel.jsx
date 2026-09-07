@@ -6,6 +6,7 @@ import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
 import ProductCardSkeleton from '../../../../components/common/ProductCardSkeleton/ProductCardSkeleton';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './CollectionCarousel.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 // `config` = settings completos de la sección (estilo de texto del título + botón).
 // `brandId` (multimarca, OPCIONAL): si viene, la colección se acota a esa marca.
@@ -80,7 +81,7 @@ const CollectionCarousel = ({ title, config, collectionName, categories, brandId
           className={styles.carouselTitle}
           text={displayTitle}
         />
-        <div className={styles.errorText}>No se pudo cargar la colección</div>
+        <div className={styles.errorText}><T>No se pudo cargar la colección</T></div>
       </div>
     );
   }

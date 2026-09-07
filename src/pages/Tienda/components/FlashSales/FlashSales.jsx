@@ -5,6 +5,7 @@ import PremiumProductCard from '../PremiumProductCard/PremiumProductCard';
 import ProductCardSkeleton from '../../../../components/common/ProductCardSkeleton/ProductCardSkeleton';
 import { TextoSeccion, BotonSeccion } from '../textStyleUtils.jsx';
 import styles from './FlashSales.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 const Countdown = ({ targetDate }) => {
   const [timeLeft, setTimeLeft] = useState(null);
@@ -34,7 +35,7 @@ const Countdown = ({ targetDate }) => {
 
   if (!timeLeft) return null;
   if (timeLeft.h === '00' && timeLeft.m === '00' && timeLeft.s === '00') {
-    return <span className={styles.countdownTimer}>¡Terminó!</span>;
+    return <span className={styles.countdownTimer}><T>¡Terminó!</T></span>;
   }
 
   return (

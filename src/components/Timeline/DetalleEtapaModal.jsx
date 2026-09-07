@@ -3,6 +3,7 @@ import React from 'react';
 import { ETAPAS_TIMELINE, getQueueStage } from '../../utils/constants';
 import { toDirectImageUrl, toThumbnailImageUrl } from '../../utils/imageUrl';
 import styles from './DetalleEtapaModal.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const TITULOS_ETAPA = Object.fromEntries(
   ETAPAS_TIMELINE.map((e) => [e.key, e.nombre])
@@ -198,14 +199,14 @@ export default function DetalleEtapaModal({ etapaKey, pedido }) {
         <Seccion titulo="Cierre">
           <Fila label="Fecha" value={d.fecha} />
         </Seccion>
-        <p className={styles.mensaje}>Pedido finalizado.</p>
+        <p className={styles.mensaje}><T>Pedido finalizado.</T></p>
       </div>
     );
   }
 
   return (
     <div className={styles.wrapper}>
-      <p className={styles.mensaje}>No hay detalles para esta etapa.</p>
+      <p className={styles.mensaje}><T>No hay detalles para esta etapa.</T></p>
     </div>
   );
 }

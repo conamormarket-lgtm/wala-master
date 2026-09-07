@@ -5,6 +5,7 @@ import { getCategories } from '../services/products';
 import { getBrand } from '../services/brands';
 import { FULFILLMENT_TYPES } from '../constants/marketplace';
 import ProductCard from './Tienda/components/ProductCard/ProductCard';
+import { T } from '../i18n/useTranslatedText';
 
 // Página de búsqueda/descubrimiento — usa el servicio de búsqueda por Firestore
 // (searchProductsFirestore) con paginación por cursor (limit + startAfter). Las
@@ -148,7 +149,7 @@ const SearchPage = () => {
 
   return (
     <div style={wrap}>
-      <h1 style={{ fontSize: 22, marginBottom: 12 }}>Buscar productos</h1>
+      <h1 style={{ fontSize: 22, marginBottom: 12 }}><T>Buscar productos</T></h1>
 
       {/* Indicador de búsqueda acotada a marca (?brand=). Sin brandFilter no se
           renderiza nada, quedando la página EXACTA a como estaba (búsqueda global). */}
@@ -189,10 +190,10 @@ const SearchPage = () => {
           {loading && items.length === 0 ? 'Buscando…' : `${visible.length} resultado(s)${hasMore ? '+' : ''}`}
         </span>
         <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: '6px 10px', borderRadius: 8 }}>
-          <option value="newest">Más nuevos</option>
-          <option value="price">Precio: menor a mayor</option>
-          <option value="price-desc">Precio: mayor a menor</option>
-          <option value="name">Nombre (A-Z)</option>
+          <option value="newest"><T>Más nuevos</T></option>
+          <option value="price"><T>Precio: menor a mayor</T></option>
+          <option value="price-desc"><T>Precio: mayor a menor</T></option>
+          <option value="name"><T>Nombre (A-Z)</T></option>
         </select>
       </div>
 
@@ -217,7 +218,7 @@ const SearchPage = () => {
       )}
 
       <div style={{ marginTop: 24 }}>
-        <Link to="/" style={{ color: '#7C3AED' }}>← Volver a la tienda</Link>
+        <Link to="/" style={{ color: '#7C3AED' }}><T>← Volver a la tienda</T></Link>
       </div>
     </div>
   );

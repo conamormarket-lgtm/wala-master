@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import styles from './BottomNav.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.link} ${styles.linkActive}` : styles.link;
@@ -60,7 +61,7 @@ const BottomNav = () => {
             <circle cx="12" cy="7" r="4" />
           </svg>
         </span>
-        <span className={styles.label}>Mi cuenta</span>
+        <span className={styles.label}><T>Mi cuenta</T></span>
       </NavLink>
       {user && isAdmin && (
         <NavLink to="/admin" className={navLinkClass} aria-label="Admin">

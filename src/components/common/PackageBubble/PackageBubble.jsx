@@ -6,6 +6,7 @@ import { useCart } from '../../../contexts/CartContext';
 import { onSnapshot, query, collection, where } from 'firebase/firestore';
 import { db } from '../../../services/firebase/config';
 import styles from './PackageBubble.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 export default function PackageBubble() {
   const { user, userProfile, updateUserProfile } = useAuth();
@@ -103,7 +104,7 @@ export default function PackageBubble() {
 
           {/* Header */}
           <div className={styles.header}>
-            <h2 className={styles.title}>Tenemos regalos pensados para ti</h2>
+            <h2 className={styles.title}><T>Tenemos regalos pensados para ti</T></h2>
           </div>
 
           {/* Body */}

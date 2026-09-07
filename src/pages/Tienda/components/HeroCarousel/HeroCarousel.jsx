@@ -43,7 +43,7 @@ const HeroCarousel = ({ slides = [], autoPlaySpeed = 5000, config = {} }) => {
       <div className={styles.heroContainer}>
          <div className={styles.slideEmpty}>
            <span>Banner Principal</span>
-           <small>No hay imágenes configuradas.</small>
+           <small><T>No hay imágenes configuradas.</T></small>
          </div>
       </div>
     );

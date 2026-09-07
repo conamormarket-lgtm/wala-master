@@ -17,6 +17,7 @@ import DraggableContainer from '../components/common/DraggableContainer/Draggabl
 import { useImagePreloader } from '../components/common/OptimizedImage/OptimizedImage';
 import { trackEditorOpen } from '../services/analytics/tracker';
 import styles from './EditorPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const DEFAULT_VIEW_ID = 'default';
 
@@ -612,8 +613,8 @@ const EditorPage = () => {
       return (
         <div className={styles.container}>
           <div className={styles.promptModal}>
-            <h3>Continuar diseño</h3>
-            <p>Hemos encontrado que previamente estabas personalizando este equipo. ¿Qué deseas hacer?</p>
+            <h3><T>Continuar diseño</T></h3>
+            <p><T>Hemos encontrado que previamente estabas personalizando este equipo. ¿Qué deseas hacer?</T></p>
             <div className={styles.promptActions}>
               <Button onClick={() => {
                 // Forzamos la recarga completa del navegador actuando como "otra página"
@@ -634,14 +635,14 @@ const EditorPage = () => {
       <div className={styles.container}>
         <div className={styles.loadingInline}>
           <span className={styles.loadingDot} />
-          <span>Cargando producto...</span>
+          <span><T>Cargando producto...</T></span>
         </div>
       </div>
     );
   }
 
   if (!product) {
-    return <div className={styles.container}>Producto no encontrado</div>;
+    return <div className={styles.container}><T>Producto no encontrado</T></div>;
   }
 
   // ── Guard de tombstone (soft-delete), réplica del de ProductPage ─────────
@@ -971,7 +972,7 @@ const EditorPage = () => {
       ) : editorMounted && !(isEditingBackSide ? backSideImage : productImage) ? (
         <div className={styles.loadingInline}>
           <span className={styles.loadingDot} />
-          <span>Cargando imagen del producto...</span>
+          <span><T>Cargando imagen del producto...</T></span>
         </div>
       ) : (
         <div className={styles.loadingInline}>

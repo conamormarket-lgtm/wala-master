@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './HistorialPagos.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const HistorialPagos = ({ pedido }) => {
   // 1. Array de pagos iterado de atrás hacia adelante (Mapeo Inverso)
@@ -18,7 +19,7 @@ const HistorialPagos = ({ pedido }) => {
     return (
       <div className={styles.emptyContainer}>
         <span className={styles.emptyIcon}>💳</span>
-        <p>Aún no tienes registros de pagos para este pedido.</p>
+        <p><T>Aún no tienes registros de pagos para este pedido.</T></p>
       </div>
     );
   }
@@ -28,11 +29,11 @@ const HistorialPagos = ({ pedido }) => {
     <div className={styles.container}>
       <div className={styles.resumenWrap}>
         <div className={styles.resumenItem}>
-          <span className={styles.resumenLabel}>Total Comprado</span>
+          <span className={styles.resumenLabel}><T>Total Comprado</T></span>
           <strong className={styles.resumenValor}>S/ {totalComprado.toFixed(2)}</strong>
         </div>
         <div className={styles.resumenItem}>
-          <span className={styles.resumenLabel}>Total Abonado</span>
+          <span className={styles.resumenLabel}><T>Total Abonado</T></span>
           <strong className={`${styles.resumenValor} ${styles.textGreen}`}>S/ {totalAbonado.toFixed(2)}</strong>
         </div>
         <div className={`${styles.resumenItem} ${styles.resumenHighlight}`}>
@@ -43,7 +44,7 @@ const HistorialPagos = ({ pedido }) => {
         </div>
       </div>
 
-      <h5 className={styles.listaTitulo}>Desglose de Movimientos</h5>
+      <h5 className={styles.listaTitulo}><T>Desglose de Movimientos</T></h5>
       <div className={styles.listaPagos}>
         {historial.map((pago, index) => (
           <div key={index} className={styles.pagoFila}>

@@ -8,6 +8,7 @@ import { useCart } from '../../contexts/CartContext';
 import ProductCard from '../Tienda/components/ProductCard/ProductCard';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './WishlistPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 /**
  * ¿El producto del catálogo sigue disponible para comprarse?
@@ -105,7 +106,7 @@ const WishlistPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.headerRow}>
-        <h1 className={styles.title}>Mi Lista de Deseos</h1>
+        <h1 className={styles.title}><T>Mi Lista de Deseos</T></h1>
         {wishlistItems.length > 0 && (
           <div className={styles.headerActions}>
             <button
@@ -143,17 +144,17 @@ const WishlistPage = () => {
           <p style={{ margin: 0 }}>
             <strong>💡 Tip:</strong> Registra tu fecha de cumpleaños en tu perfil para que te recordemos compartir esta lista con tus amigos antes de tu gran día.
           </p>
-          <Link to="/cuenta/perfil" style={{ color: '#8b5cf6', fontWeight: 'bold', marginTop: '0.5rem', display: 'inline-block' }}>Ir a mi perfil</Link>
+          <Link to="/cuenta/perfil" style={{ color: '#8b5cf6', fontWeight: 'bold', marginTop: '0.5rem', display: 'inline-block' }}><T>Ir a mi perfil</T></Link>
         </div>
       )}
 
       {wishlistLoading || productsLoading ? (
-        <div className={styles.loading}>Cargando tu lista de deseos...</div>
+        <div className={styles.loading}><T>Cargando tu lista de deseos...</T></div>
       ) : wishlistItems.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>💝</div>
-          <h3>Tu lista de deseos está vacía</h3>
-          <p>Explora la tienda y guarda los productos que te encantaría recibir o comprar después.</p>
+          <h3><T>Tu lista de deseos está vacía</T></h3>
+          <p><T>Explora la tienda y guarda los productos que te encantaría recibir o comprar después.</T></p>
           <Link to="/tienda" className={styles.primaryBtn}>
             Explorar Tienda
           </Link>
@@ -187,7 +188,7 @@ const WishlistPage = () => {
                         }
                       }}
                     />
-                    <span className={styles.unavailableBadge}>Ya no disponible</span>
+                    <span className={styles.unavailableBadge}><T>Ya no disponible</T></span>
                   </div>
                   <div className={styles.info}>
                     <h3 className={styles.name}>{nombre}</h3>

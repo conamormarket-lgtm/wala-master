@@ -1,6 +1,7 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import './NuevosUsuariosPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 const NuevosUsuariosPage = () => {
   const [vsSlideIndex, setVsSlideIndex] = React.useState(0);
@@ -623,7 +624,7 @@ const NuevosUsuariosPage = () => {
             {/* Label estilo botón (Responsivo) */}
             <div className="hero-btn">
               {renderMedia(`${process.env.PUBLIC_URL}/diseno/corazón.png`, 'Corazón', {}, 'hero-btn-icon')}
-              <span>ten a tu familia feliz con nuestra app</span>
+              <span><T>ten a tu familia feliz con nuestra app</T></span>
             </div>
 
           </div>
@@ -1204,7 +1205,7 @@ const NuevosUsuariosPage = () => {
 
           {/* UNDÉCIMO BLOQUE: TÉRMINOS Y CONDICIONES */}
           <div className="terms-container" style={{ fontFamily: 'Arial, sans-serif' }}>
-            <h4 className="terms-title">Términos, Condiciones y Privacidad</h4>
+            <h4 className="terms-title"><T>Términos, Condiciones y Privacidad</T></h4>
             <p className="terms-text">
               La descarga y el uso de la aplicación Wala están sujetos a nuestros Términos y Condiciones y Política de Privacidad. Al acceder a nuestros servicios, el usuario acepta el tratamiento de sus datos de acuerdo con las leyes aplicables. La bonificación de S/15 en KapiCoins es una promoción exclusiva para nuevos usuarios que descarguen la app y completen su perfil de fechas importantes, sujeta a disponibilidad y posibles modificaciones sin previo aviso. Google Play y el logotipo de Google Play son marcas comerciales de Google LLC. Las imágenes, mockups e interfaces aquí presentadas son estrictamente referenciales.
             </p>

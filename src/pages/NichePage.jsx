@@ -6,6 +6,7 @@ import { getCategories } from '../services/products';
 import ProductCard from './Tienda/components/ProductCard/ProductCard';
 import { useAuth } from '../contexts/AuthContext';
 import { trackCollectionView } from '../services/analytics/tracker';
+import { T } from '../i18n/useTranslatedText';
 
 // Página de NICHO (Fase 1): /nicho/:slug. Filtra el catálogo por nicheId usando
 // searchCatalog. El slug se usa como nicheId; si existe un doc en 'niches' con ese
@@ -95,8 +96,8 @@ const NichePage = () => {
       )}
 
       <div style={{ marginTop: 24 }}>
-        <Link to="/buscar" style={{ color: '#7C3AED', marginRight: 16 }}>Buscar productos</Link>
-        <Link to="/" style={{ color: '#7C3AED' }}>← Volver a la tienda</Link>
+        <Link to="/buscar" style={{ color: '#7C3AED', marginRight: 16 }}><T>Buscar productos</T></Link>
+        <Link to="/" style={{ color: '#7C3AED' }}><T>← Volver a la tienda</T></Link>
       </div>
     </div>
   );

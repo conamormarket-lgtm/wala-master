@@ -1,12 +1,13 @@
 import React from 'react';
 import styles from './HistorialPersonalizacionesModal.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 export default function HistorialPersonalizacionesModal({ pastDesigns, onSelectDesign, onCreateNew, onClose }) {
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2>Tus Diseños Anteriores</h2>
+          <h2><T>Tus Diseños Anteriores</T></h2>
           <button className={styles.closeBtn} onClick={onClose}>&times;</button>
         </div>
 
@@ -20,7 +21,7 @@ export default function HistorialPersonalizacionesModal({ pastDesigns, onSelectD
           </button>
 
           <div className={styles.divider}>
-            <span>O elige uno de tus diseños anteriores</span>
+            <span><T>O elige uno de tus diseños anteriores</T></span>
           </div>
 
           <div className={styles.grid}>

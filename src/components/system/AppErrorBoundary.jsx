@@ -1,6 +1,7 @@
 import React from 'react';
 import { reportClientError } from '../../services/observability/errorReporter';
 import styles from './AppErrorBoundary.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 // ── Observabilidad (Fase 4): ErrorBoundary GLOBAL ─────────────────────────────
 // Captura errores de render en TODO el árbol principal, muestra un fallback
@@ -78,7 +79,7 @@ class AppErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className={styles.container} role="alert">
-          <h2 className={styles.title}>Algo salió mal</h2>
+          <h2 className={styles.title}><T>Algo salió mal</T></h2>
           <p className={styles.message}>
             Ocurrió un problema inesperado. Por favor, recarga la página para continuar.
           </p>

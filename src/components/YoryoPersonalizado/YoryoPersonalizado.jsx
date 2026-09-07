@@ -4,6 +4,7 @@ import { uploadFile } from '../../services/firebase/storage';
 import { getProduct, updateProductField } from '../../services/products';
 import AdminViewEditor from './WALA_Editor_Export/components/admin/AdminViewEditor/AdminViewEditor';
 import { toCanvasImageUrl } from '../../utils/imageUrl';
+import { T } from '../../i18n/useTranslatedText';
 
 const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, comboItems, onComboItemsChange, onCapture }, ref) => {
   const [isCapturing, setIsCapturing] = useState(false);
@@ -353,7 +354,7 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
   }, [customItems, N, onComboItemsChange]);
 
   if (isLoading) {
-    return <div style={{ padding: '20px', textAlign: 'center' }}>Cargando editor personalizado...</div>;
+    return <div style={{ padding: '20px', textAlign: 'center' }}><T>Cargando editor personalizado...</T></div>;
   }
 
   return (
@@ -415,7 +416,7 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
             </div>
           ) : (
             <div style={{ padding: '20px', textAlign: 'center', background: '#f8f9fa', border: '1px dashed #ccc', borderRadius: '8px' }}>
-              <p style={{ margin: 0, color: '#666' }}>Ninguno de los productos agregados a este combo tiene opciones de personalización (YoryoPersonalizado).</p>
+              <p style={{ margin: 0, color: '#666' }}><T>Ninguno de los productos agregados a este combo tiene opciones de personalización (YoryoPersonalizado).</T></p>
             </div>
           )}
         </div>
@@ -440,7 +441,7 @@ const YoryoPersonalizado = forwardRef(({ productImage, draftId, isComboProduct, 
               <img src={data.capturaPersonalizadoDefinido} alt="Captura generada" style={{ width: '100px', height: 'auto', borderRadius: '4px', border: '1px solid #eee', objectFit: 'contain' }} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', overflow: 'hidden' }}>
                 <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#333' }}>✅ Captura guardada exitosamente</span>
-                <span style={{ fontSize: '0.8rem', color: '#666' }}>URL de la imagen:</span>
+                <span style={{ fontSize: '0.8rem', color: '#666' }}><T>URL de la imagen:</T></span>
                 <a href={data.capturaPersonalizadoDefinido} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: '#0066cc', wordBreak: 'break-all', textDecoration: 'underline' }}>
                   {data.capturaPersonalizadoDefinido}
                 </a>

@@ -22,6 +22,7 @@ import {
 } from '../../services/suscripcionSorteos';
 import { createCulqi, destroyCulqi } from '../../components/CulqiCustomCheckout/culqiSingleton';
 import styles from '../SuscripcionSorteoPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 // ── Botón Culqi (Perú) — tokeniza y crea la suscripción con auto-débito ──────
 // Reusa el patrón de CulqiTicketButton (SorteosPage.jsx:155): carga perezosa del
@@ -219,7 +220,7 @@ function PaypalSuscripcionButtons({ campaignId, plan, datos, onOk, onError, onPe
   return (
     <div className={styles.paypalWrap}>
       {isProcessing ? (
-        <p>Confirmando tu suscripción… no cierres esta ventana.</p>
+        <p><T>Confirmando tu suscripción… no cierres esta ventana.</T></p>
       ) : (
         <PayPalScriptProvider options={initialOptions}>
           <PayPalButtons

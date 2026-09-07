@@ -52,6 +52,7 @@ import AppDownloadBanner from './components/AppDownloadBanner';
 import { isKcheroLanding } from '../../constants/landingSlugs';
 import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderOverlay';
 import styles from './TiendaPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
@@ -1377,7 +1378,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
           </button>
           {isOpen && (
             <div className={styles.inserterMenuVisible}>
-              <p style={{fontSize: '0.8rem', color: '#64748b', margin: '0 0 10px 0', fontWeight: '600'}}>Añadir módulo nuevo:</p>
+              <p style={{fontSize: '0.8rem', color: '#64748b', margin: '0 0 10px 0', fontWeight: '600'}}><T>Añadir módulo nuevo:</T></p>
               <div className={styles.inserterOptions}>
                 <button onClick={() => handleInsert('header')}>Encabezado (Título)</button>
                 <button onClick={() => handleInsert('hero_banner')}>Banner Principal</button>

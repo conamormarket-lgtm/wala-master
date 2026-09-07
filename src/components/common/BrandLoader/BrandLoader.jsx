@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useReducedMotionSafe } from '../../../theme/motion';
 import styles from './BrandLoader.module.css';
+import { T } from '../../../i18n/useTranslatedText';
 
 /** Duraciones de las animaciones, en ms. Deben coincidir con el CSS. */
 const CICLO_RESPIRACION = 3200;
@@ -118,7 +119,7 @@ const BrandLoader = ({ variant = 'fill' }) => {
           </svg>
         </div>
 
-        <span className={styles.wordmark}>Walá</span>
+        <span className={styles.wordmark}><T>Walá</T></span>
 
         <div className={styles.progressTrack} aria-hidden="true">
           {reducedMotion ? (

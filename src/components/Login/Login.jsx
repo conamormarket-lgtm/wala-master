@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LOGO_URL } from '../../utils/constants';
 import PartnerBrands from '../PartnerBrands/PartnerBrands';
 import styles from './Login.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const Login = ({ onSearch, loading, error }) => {
   const [telefono, setTelefono] = useState('');
@@ -18,17 +19,17 @@ const Login = ({ onSearch, loading, error }) => {
     <div className={styles.wrapper}>
       <div className={styles.branding}>
         <img src={LOGO_URL} alt="Logo de la Empresa" />
-        <h2>El seguimiento de tus pedidos, más fácil que nunca.</h2>
-        <p>Walá</p>
+        <h2><T>El seguimiento de tus pedidos, más fácil que nunca.</T></h2>
+        <p><T>Walá</T></p>
         <PartnerBrands />
       </div>
       <div className={styles.formContainer}>
         <img src={LOGO_URL} alt="Logo de la Empresa" className={styles.logoMovil} />
-        <h1>Consulta de Pedido</h1>
-        <p>Ingresa tus datos para ver el estado de tus pedidos.</p>
+        <h1><T>Consulta de Pedido</T></h1>
+        <p><T>Ingresa tus datos para ver el estado de tus pedidos.</T></p>
         <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
-            <label htmlFor="telefono">Número de Teléfono</label>
+            <label htmlFor="telefono"><T>Número de Teléfono</T></label>
             <input
               type="tel"
               id="telefono"
@@ -40,7 +41,7 @@ const Login = ({ onSearch, loading, error }) => {
             />
           </div>
           <div className={styles.formGroup}>
-            <label htmlFor="dni">Número de DNI</label>
+            <label htmlFor="dni"><T>Número de DNI</T></label>
             <input
               type="text"
               id="dni"

@@ -5,6 +5,7 @@ import { getDesignsByUser } from '../../services/designs';
 import { usePedidos } from '../../hooks/usePedidos';
 import MiCreacionCard from './components/MiCreacionCard';
 import styles from './MisCreacionesPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
@@ -72,7 +73,7 @@ const MisCreacionesPage = () => {
   if (loading) {
     return (
       <div className={styles.wrapper}>
-        <h2 className={styles.title}>Mis Creaciones</h2>
+        <h2 className={styles.title}><T>Mis Creaciones</T></h2>
         <ul className={styles.grid}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <li key={i} className={`${styles.cardItem} ${styles.skeletonCard}`}>
@@ -91,7 +92,7 @@ const MisCreacionesPage = () => {
   if (error) {
     return (
       <div className={styles.wrapper}>
-        <h2 className={styles.title}>Mis Creaciones</h2>
+        <h2 className={styles.title}><T>Mis Creaciones</T></h2>
         <div className={styles.card}>
           <p className={styles.error}>Error al cargar: {error}</p>
         </div>
@@ -101,10 +102,10 @@ const MisCreacionesPage = () => {
 
   return (
     <div className={styles.wrapper}>
-      <h2 className={styles.title}>Mis Creaciones</h2>
+      <h2 className={styles.title}><T>Mis Creaciones</T></h2>
       {designs.length === 0 ? (
         <div className={styles.card}>
-          <p>Aún no tienes diseños guardados. Crea uno en el editor y guárdalo para verlo aquí.</p>
+          <p><T>Aún no tienes diseños guardados. Crea uno en el editor y guárdalo para verlo aquí.</T></p>
           <Link to="/personalizar" className={styles.link}>
             Ir a personalizar
           </Link>

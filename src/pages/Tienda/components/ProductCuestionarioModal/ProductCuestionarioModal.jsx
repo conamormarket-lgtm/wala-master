@@ -8,6 +8,7 @@ import { createWebOrder } from '../../../../services/erp/firebase';
 import { getMessage } from '../../../../services/messages';
 import Button from '../../../../components/common/Button';
 import styles from './ProductCuestionarioModal.module.css';
+import { T } from '../../../../i18n/useTranslatedText';
 
 function ProductCuestionarioModal({
   isOpen,
@@ -237,12 +238,12 @@ function ProductCuestionarioModal({
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h3 className={styles.title}>Completa tu pedido</h3>
+          <h3 className={styles.title}><T>Completa tu pedido</T></h3>
           <button type="button" className={styles.closeBtn} onClick={onClose}>&times;</button>
         </div>
 
         {loading ? (
-          <div className={styles.loading}>Cargando cuestionario...</div>
+          <div className={styles.loading}><T>Cargando cuestionario...</T></div>
         ) : (
           <form onSubmit={handleSubmit} className={styles.formContainer}>
             {template && template.fields && template.fields.length > 0 ? (
@@ -270,7 +271,7 @@ function ProductCuestionarioModal({
               </div>
             ) : (
               <div className={styles.section}>
-                <p>No se encontraron campos para este cuestionario.</p>
+                <p><T>No se encontraron campos para este cuestionario.</T></p>
               </div>
             )}
 

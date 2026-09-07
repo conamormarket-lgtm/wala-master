@@ -1,6 +1,7 @@
 import React from 'react';
 import SafeImage from '../common/SafeImage/SafeImage';
 import styles from './ImageGallery.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const ImageGallery = ({ images, onImageClick }) => {
   const validUrls = (images || [])
@@ -8,7 +9,7 @@ const ImageGallery = ({ images, onImageClick }) => {
     .filter((u) => u.length > 0);
 
   if (validUrls.length === 0) {
-    return <p>No hay diseños adjuntos.</p>;
+    return <p><T>No hay diseños adjuntos.</T></p>;
   }
 
   return (

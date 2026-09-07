@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getRuletaPrizes, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
 import { trackMinigame } from '../../services/analytics/tracker';
 import styles from './RuletaPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const RuletaPage = () => {
   const { user, userProfile } = useAuth();
@@ -93,13 +94,13 @@ const RuletaPage = () => {
     }, 4100);
   };
 
-  if (!user) return <div className={styles.loading}>Inicia sesión para jugar.</div>;
-  if (loading) return <div className={styles.loading}>Cargando ruleta...</div>;
+  if (!user) return <div className={styles.loading}><T>Inicia sesión para jugar.</T></div>;
+  if (loading) return <div className={styles.loading}><T>Cargando ruleta...</T></div>;
 
   return (
     <div className={styles.pageContainer}>
       <header className={styles.header}>
-        <Link to="/minijuegos" className={styles.backBtn}>← Volver</Link>
+        <Link to="/minijuegos" className={styles.backBtn}><T>← Volver</T></Link>
         <h1>Ruleta Semanal</h1>
       </header>
 
@@ -135,12 +136,12 @@ const RuletaPage = () => {
       <div className={styles.controls}>
         {result ? (
           <div className={styles.resultBox}>
-            <h2>¡Felicidades!</h2>
+            <h2><T>¡Felicidades!</T></h2>
             <p>Has ganado: <strong>{result.name}</strong></p>
             <button className={styles.shareBtn} onClick={() => alert("Compartiendo... (Feature en desarrollo)")}>
               Compartir Resultado 🎉
             </button>
-            <Link to="/minijuegos" className={styles.secondaryBtn}>Volver al Hub</Link>
+            <Link to="/minijuegos" className={styles.secondaryBtn}><T>Volver al Hub</T></Link>
           </div>
         ) : (
           <button 

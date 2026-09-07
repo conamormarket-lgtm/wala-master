@@ -8,6 +8,7 @@ import {
 import { tierForXp } from '../../constants/tiers';
 import { trackMissionComplete } from '../../services/analytics/tracker';
 import styles from './MisionesPage.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const MisionesPage = () => {
   const { user, userProfile, reloadProfile } = useAuth();
@@ -132,7 +133,7 @@ const MisionesPage = () => {
               Faltan {tier.xpRemaining} XP para {tier.next.name}
             </span>
           ) : (
-            <span className={styles.tierNext}>¡Nivel máximo alcanzado!</span>
+            <span className={styles.tierNext}><T>¡Nivel máximo alcanzado!</T></span>
           )}
         </div>
         <div
@@ -178,7 +179,7 @@ const MisionesPage = () => {
 
       {/* Lista de misiones */}
       {loading ? (
-        <div className={styles.loading}>Cargando misiones…</div>
+        <div className={styles.loading}><T>Cargando misiones…</T></div>
       ) : missions.length === 0 ? (
         <div className={styles.empty}>
           No hay misiones disponibles hoy. ¡Vuelve mañana!

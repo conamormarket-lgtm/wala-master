@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { updateDocument } from '../../services/firebase/firestore';
+import { T } from '../../i18n/useTranslatedText';
 
 const INTERNATIONAL_ADVANCE_TYPE = 'tiktok_live_international_advance';
 
@@ -115,7 +116,7 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
       {isProcessing && (
         <div style={{ textAlign: 'center', color: '#3b82f6', padding: '1.5rem', background: '#eff6ff', borderRadius: '8px' }}>
           <strong>Procesando pago...</strong>
-          <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem' }}>Asegurando la transacción. Por favor, no cierres esta ventana.</p>
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem' }}><T>Asegurando la transacción. Por favor, no cierres esta ventana.</T></p>
         </div>
       )}
     </div>

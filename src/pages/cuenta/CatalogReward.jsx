@@ -3,6 +3,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCollection } from '../../services/firebase/firestore';
 import styles from './CatalogReward.module.css';
+import { T } from '../../i18n/useTranslatedText';
 
 const CatalogReward = () => {
   const { userProfile, activeMainCoins, reloadProfile } = useAuth();
@@ -64,7 +65,7 @@ const CatalogReward = () => {
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.title}>Catálogo de Recompensas</h2>
+      <h2 className={styles.title}><T>Catálogo de Recompensas</T></h2>
       <p className={styles.subtitle}>
         Canjea tus monedas por beneficios exclusivos.
       </p>
@@ -73,7 +74,7 @@ const CatalogReward = () => {
       {error && <div className={styles.errorBox}>{error}</div>}
 
       {loading ? (
-        <div className={styles.stateBox}>Cargando recompensas…</div>
+        <div className={styles.stateBox}><T>Cargando recompensas…</T></div>
       ) : rewards.length === 0 ? (
         <div className={styles.stateBox}>
           No hay recompensas disponibles por ahora. ¡Vuelve pronto!
