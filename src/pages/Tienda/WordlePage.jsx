@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday } from '../../services/wordle';
 import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { useAuth } from '../../contexts/AuthContext';
 import { limaTodayStr } from '../../utils/fechaLima';
+import { trackMinigame } from '../../services/analytics/tracker';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import styles from './WordlePage.module.css';
@@ -20,6 +21,32 @@ const KEYS_ROWS = [
 
 const removeAccents = (str) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+};
+
+// Evalúa un intento completo contra la palabra objetivo (verde / amarillo / gris).
+// Hay que hacerlo por fila entera, no letra a letra: cada letra de la palabra solo
+// puede "gastarse" una vez. Primero se marcan los aciertos en su sitio y solo las
+// letras que sobran quedan disponibles para los amarillos. Evaluándolo letra a
+// letra, con CASAS/SALSA la última A salía gris en lugar de amarilla.
+const evaluateGuess = (guess, target) => {
+  const result = Array(guess.length).fill('absent');
+  const disponibles = {};
+
+  for (let i = 0; i < guess.length; i++) {
+    if (guess[i] === target[i]) result[i] = 'correct';
+    else disponibles[target[i]] = (disponibles[target[i]] || 0) + 1;
+  }
+
+  for (let i = 0; i < guess.length; i++) {
+    if (result[i] === 'correct') continue;
+    const letra = guess[i];
+    if (disponibles[letra] > 0) {
+      result[i] = 'present';
+      disponibles[letra] -= 1;
+    }
+  }
+
+  return result;
 };
 
 const formatTime = (seconds) => {
@@ -123,28 +150,38 @@ const WordlePage = () => {
     }
   }, [guesses, gameStatus, userStats, startTime, storageKey, targetWord]);
 
-  // Evaluar letra
-  const getLetterStatus = (letter, index, guessStr) => {
-    if (targetWord[index] === letter) return 'correct';
-    if (targetWord.includes(letter)) {
-      // Manejar letras repetidas
-      const targetCharCount = targetWord.split('').filter(c => c === letter).length;
-      const currentGuessedCorrectCount = guessStr.split('').filter((c, i) => c === letter && targetWord[i] === letter).length;
-      const previousOccurrencesInGuess = guessStr.substring(0, index).split('').filter(c => c === letter).length;
-      
-      if (previousOccurrencesInGuess < (targetCharCount - currentGuessedCorrectCount)) {
-        return 'present';
-      }
-    }
-    return 'absent';
-  };
+  // Analytics aditivo (fire-and-forget): inicio de la partida, igual que hacen
+  // las Bolitas y la Ruleta. Sin esto el Wordle no aparecía en las analíticas.
+  useEffect(() => {
+    try {
+      trackMinigame('start', { gameId: 'wordle', gameName: 'La Palabra del Día' },
+        { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fin de partida (ganada o perdida). Nunca debe romper el juego: va envuelto.
+  const trackFin = useCallback((won, attempts, timeSeconds) => {
+    try {
+      trackMinigame('complete',
+        { gameId: 'wordle', gameName: 'La Palabra del Día', won, attempts, timeSeconds },
+        { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
+    } catch {}
+  }, [user]);
+
+  // Cada intento se evalúa una sola vez, por fila completa.
+  const evaluaciones = useMemo(
+    () => (targetWord ? guesses.map(g => evaluateGuess(g, targetWord)) : []),
+    [guesses, targetWord]
+  );
 
   const getKeyboardKeyStatus = (key) => {
     let status = 'default';
-    for (const guess of guesses) {
+    for (let fila = 0; fila < guesses.length; fila++) {
+      const guess = guesses[fila];
       for (let i = 0; i < guess.length; i++) {
         if (guess[i] === key) {
-          const charStatus = getLetterStatus(key, i, guess);
+          const charStatus = evaluaciones[fila]?.[i];
           if (charStatus === 'correct') return 'correct';
           if (charStatus === 'present' && status !== 'correct') status = 'present';
           if (charStatus === 'absent' && status === 'default') status = 'absent';
@@ -199,11 +236,13 @@ const WordlePage = () => {
         setShowResultModal(true);
         const timeSeconds = Math.floor((Date.now() - (startTime || Date.now())) / 1000);
         if (user) saveResultMutation.mutate({ won: true, attempts: newGuesses.length, timeSeconds, word: targetWord, length: wordLength });
+        trackFin(true, newGuesses.length, timeSeconds);
       } else if (newGuesses.length >= MAX_ATTEMPTS) {
         setGameStatus('lost');
         setShowResultModal(true);
         const timeSeconds = Math.floor((Date.now() - (startTime || Date.now())) / 1000);
         if (user) saveResultMutation.mutate({ won: false, attempts: newGuesses.length, timeSeconds, word: targetWord, length: wordLength });
+        trackFin(false, newGuesses.length, timeSeconds);
       }
       return;
     }
@@ -218,7 +257,7 @@ const WordlePage = () => {
         setActiveIndex(activeIndex + 1);
       }
     }
-  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, user, saveResultMutation, activeIndex, startTime]);
+  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, user, saveResultMutation, activeIndex, startTime, trackFin]);
 
   // Escuchar teclado físico
   useEffect(() => {
@@ -252,14 +291,14 @@ const WordlePage = () => {
         <h1 className={styles.title}><T>La Palabra del Día</T></h1>
         <div className={styles.headerRight}>
           <button className={styles.iconBtn} onClick={() => setShowRanking(!showRanking)}>
-            Ranking
+            <T>Ranking</T>
           </button>
         </div>
       </header>
 
       {showRanking ? (
         <div className={styles.rankingContainer}>
-          <h2>Ranking</h2>
+          <h2><T>Ranking</T></h2>
 
           {/* Tabs */}
           <div className={styles.rankingTabs}>
@@ -267,13 +306,13 @@ const WordlePage = () => {
               className={`${styles.rankingTab} ${rankingTab === 'today' ? styles.rankingTabActive : ''}`}
               onClick={() => setRankingTab('today')}
             >
-              Hoy
+              <T>Hoy</T>
             </button>
             <button
               className={`${styles.rankingTab} ${rankingTab === 'global' ? styles.rankingTabActive : ''}`}
               onClick={() => setRankingTab('global')}
             >
-              Global
+              <T>Global</T>
             </button>
           </div>
 
@@ -287,27 +326,29 @@ const WordlePage = () => {
             <p><T>Cargando ranking...</T></p>
           ) : rankingData?.length === 0 ? (
             <p className={styles.rankingEmpty}>
-              {rankingTab === 'today'
-                ? 'Nadie ha completado el wordle de hoy todavía. ¡Sé el primero!'
-                : 'No hay datos de ranking aún.'}
+              <T>
+                {rankingTab === 'today'
+                  ? 'Nadie ha completado el wordle de hoy todavía. ¡Sé el primero!'
+                  : 'No hay datos de ranking aún.'}
+              </T>
             </p>
           ) : (
             <table className={styles.rankingTable}>
               <thead>
                 <tr>
-                  <th>Pos</th>
-                  <th>Jugador</th>
+                  <th><T>Pos</T></th>
+                  <th><T>Jugador</T></th>
                   {rankingTab === 'today' ? (
                     <>
-                      <th>Intentos</th>
-                      <th>Tiempo</th>
-                      <th>Racha Actual</th>
+                      <th><T>Intentos</T></th>
+                      <th><T>Tiempo</T></th>
+                      <th><T>Racha Actual</T></th>
                     </>
                   ) : (
                     <>
-                      <th>Mejor Racha</th>
-                      <th>Victorias Totales</th>
-                      <th>Intentos Acum.</th>
+                      <th><T>Mejor Racha</T></th>
+                      <th><T>Victorias Totales</T></th>
+                      <th><T>Intentos Acum.</T></th>
                     </>
                   )}
                 </tr>
@@ -352,7 +393,7 @@ const WordlePage = () => {
                     let statusClass = styles.emptyCell;
                     
                     if (isPastRow) {
-                      const status = getLetterStatus(letter, colIndex, guesses[rowIndex]);
+                      const status = evaluaciones[rowIndex]?.[colIndex] || 'absent';
                       statusClass = styles[status];
                     } else if (letter) {
                       statusClass = styles.filledCell;
@@ -379,7 +420,7 @@ const WordlePage = () => {
 
           {gameStatus !== 'playing' && !showResultModal && (
             <button className={styles.showResultBtn} onClick={() => setShowResultModal(true)}>
-              Ver Resultados
+              <T>Ver Resultados</T>
             </button>
           )}
 
@@ -388,7 +429,7 @@ const WordlePage = () => {
             <div className={styles.resultOverlay} onClick={() => setShowResultModal(false)}>
               <div className={styles.resultCard} onClick={e => e.stopPropagation()}>
                 <button className={styles.closeModalBtn} onClick={() => setShowResultModal(false)}>×</button>
-                <h2>{gameStatus === 'won' ? '¡Felicidades!' : 'Fin del Juego'}</h2>
+                <h2><T>{gameStatus === 'won' ? '¡Felicidades!' : 'Fin del Juego'}</T></h2>
                 {gameStatus === 'won' ? (
                   <p><T>Adivinaste la palabra en</T> <strong>{guesses.length}</strong> intento{guesses.length !== 1 ? 's' : ''}.</p>
                 ) : (
@@ -399,19 +440,19 @@ const WordlePage = () => {
                   <div className={styles.stats}>
                     <div className={styles.statBox}>
                       <span className={styles.statNumber}>{userStats?.wordlePlayed || 0}</span>
-                      <span className={styles.statLabel}>Jugadas</span>
+                      <span className={styles.statLabel}><T>Jugadas</T></span>
                     </div>
                     <div className={styles.statBox}>
                       <span className={styles.statNumber}>{userStats?.wordleWins || 0}</span>
-                      <span className={styles.statLabel}>Victorias</span>
+                      <span className={styles.statLabel}><T>Victorias</T></span>
                     </div>
                     <div className={styles.statBox}>
                       <span className={styles.statNumber}>{userStats?.wordleCurrentStreak || 0}</span>
-                      <span className={styles.statLabel}>Racha Actual</span>
+                      <span className={styles.statLabel}><T>Racha Actual</T></span>
                     </div>
                     <div className={styles.statBox}>
                       <span className={styles.statNumber}>{userStats?.wordleMaxStreak || 0}</span>
-                      <span className={styles.statLabel}>Mejor Racha</span>
+                      <span className={styles.statLabel}><T>Mejor Racha</T></span>
                     </div>
                   </div>
                 ) : (

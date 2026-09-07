@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useGlobalToast } from '../../contexts/ToastContext';
 import { getRuletaPrizes, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
 import { trackMinigame } from '../../services/analytics/tracker';
 import styles from './RuletaPage.module.css';
@@ -8,6 +9,7 @@ import { T } from '../../i18n/useTranslatedText';
 
 const RuletaPage = () => {
   const { user, userProfile, reloadProfile } = useAuth();
+  const { addToast } = useGlobalToast();
   // eslint-disable-next-line no-unused-vars
   // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
@@ -112,6 +114,31 @@ const RuletaPage = () => {
     }, 4100);
   };
 
+  // Compartir el premio: en móvil abre el diálogo nativo del sistema; en escritorio
+  // (donde navigator.share no existe) copia el texto al portapapeles.
+  const handleShare = async () => {
+    if (!result) return;
+    const texto = `¡Gané ${result.name} en la Ruleta Semanal de Walá! 🎰`;
+    const url = window.location.origin;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Ruleta Semanal de Walá', text: texto, url });
+        return;
+      } catch (e) {
+        // El usuario canceló el diálogo: no es un error que haya que avisar.
+        if (e?.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${texto} ${url}`);
+      addToast('Resultado copiado al portapapeles', 'success');
+    } catch {
+      addToast('No pudimos compartir el resultado', 'error');
+    }
+  };
+
   if (!user) return <div className={styles.loading}><T>Inicia sesión para jugar.</T></div>;
   if (loading) return <div className={styles.loading}><T>Cargando ruleta...</T></div>;
 
@@ -119,10 +146,10 @@ const RuletaPage = () => {
     <div className={styles.pageContainer}>
       <header className={styles.header}>
         <Link to="/minijuegos" className={styles.backBtn}><T>← Volver</T></Link>
-        <h1>Ruleta Semanal</h1>
+        <h1><T>Ruleta Semanal</T></h1>
       </header>
 
-      {error && <div className={styles.errorBanner}>{error}</div>}
+      {error && <div className={styles.errorBanner}><T>{error}</T></div>}
 
       <div className={styles.ruletaContainer}>
         <div className={styles.pointer}>▼</div>
@@ -155,9 +182,9 @@ const RuletaPage = () => {
         {result ? (
           <div className={styles.resultBox}>
             <h2><T>¡Felicidades!</T></h2>
-            <p>Has ganado: <strong>{result.name}</strong></p>
-            <button className={styles.shareBtn} onClick={() => alert("Compartiendo... (Feature en desarrollo)")}>
-              Compartir Resultado 🎉
+            <p><T>Has ganado:</T> <strong>{result.name}</strong></p>
+            <button className={styles.shareBtn} onClick={handleShare}>
+              <T>Compartir Resultado 🎉</T>
             </button>
             <Link to="/minijuegos" className={styles.secondaryBtn}><T>Volver al Hub</T></Link>
           </div>
@@ -182,7 +209,7 @@ const RuletaPage = () => {
 
       {/* Kapi Mascot Animation Container */}
       <div className={`${styles.kapiMascot} ${spinning ? styles.kapiCheering : ''} ${result ? styles.kapiCelebrating : ''}`}>
-        <img src="/assets/kapi_happy.png" alt="Kapi Mascot" onError={(e) => e.target.style.display = 'none'} />
+        <img src="/assets/kapi/kapi-happy.png" alt="Kapi Mascot" onError={(e) => e.target.style.display = 'none'} />
         {/* Fallback emoji si no hay imagen */}
         {!spinning && !result && <div className={styles.kapiEmoji}>🐶</div>}
         {spinning && <div className={styles.kapiEmoji}>🤩</div>}
