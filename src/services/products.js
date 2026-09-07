@@ -63,6 +63,42 @@ const toId = (c) => {
   return s === '[object Object]' ? '' : s;
 };
 
+/**
+ * Ids de categoría a los que pertenece un producto.
+ *
+ * Hay TRES sitios donde puede estar guardada la categoría según la edad del
+ * documento: `categories` (array, el modelo actual), `categoryId` y `category`
+ * (campos sueltos de docs viejos). Mirar solo uno deja productos fuera, y de
+ * eso depende que una categoría se considere "con productos".
+ *
+ * Vive aquí, y no en cada pantalla, para que el menú del Header y la cuadrícula
+ * de categorías coincidan en qué categorías existen de verdad.
+ */
+export const idsDeCategoriaDe = (product) => {
+  if (!product) return [];
+  const ids = [
+    ...(Array.isArray(product.categories) ? product.categories.map(toId) : []),
+    toId(product.categoryId),
+    toId(product.category),
+  ].filter(Boolean);
+  return [...new Set(ids)];
+};
+
+/**
+ * Ids de las categorías que tienen al menos un producto visible.
+ * @param {Array} products lista ya filtrada (o no) de productos
+ * @param {string|null} brandId si viene, solo cuentan los productos de esa marca
+ */
+export const categoriasConProductos = (products, brandId = null) => {
+  const set = new Set();
+  for (const p of (products || [])) {
+    if (!p || p.visible === false || p.active === false) continue;
+    if (brandId && p.brandId !== brandId) continue;
+    idsDeCategoriaDe(p).forEach((id) => set.add(id));
+  }
+  return set;
+};
+
 // Limpiar cachés antiguas para liberar espacio
 try {
   localStorage.removeItem('conamor_products_cache');

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { TextoSeccion } from '../textStyleUtils.jsx';
 import { ensureSingleImageUrl, toDirectImageUrl } from '../../../../utils/imageUrl';
+import { idsDeCategoriaDe } from '../../../../services/products';
 import styles from './CategoryGrid.module.css';
 
 /**
@@ -38,11 +39,11 @@ const CategoryGrid = ({ title, config = {}, items = [], categories = [], product
   if (dataSource === 'products') {
     (products || []).forEach((product) => {
       if (!product || product.visible === false || product.active === false) return;
-      const productCategories = new Set([
-        ...(Array.isArray(product.categories) ? product.categories.map(idOf) : []),
-        idOf(product.categoryId),
-        idOf(product.category),
-      ].filter(Boolean));
+      // Misma regla que usa el menu del Header para decidir que categorias
+      // tienen productos (services/products.js). Compartida a proposito: si
+      // cada uno mirara sus campos, el menu y esta cuadricula mostrarian
+      // categorias distintas.
+      const productCategories = new Set(idsDeCategoriaDe(product));
 
       productCategories.forEach((categoryId) => {
         productCounts.set(categoryId, (productCounts.get(categoryId) || 0) + 1);

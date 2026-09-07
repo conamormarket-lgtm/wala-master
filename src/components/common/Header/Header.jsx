@@ -5,7 +5,7 @@ import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { getCategories } from '../../../services/products';
+import { getCategories, getProducts, getProductsByBrand, categoriasConProductos } from '../../../services/products';
 import { getCollections } from '../../../services/collections';
 import { getBrands } from '../../../services/brands';
 import { getDocument } from '../../../services/firebase/firestore';
@@ -153,31 +153,6 @@ const Header = () => {
   // desplegable: sin esto no habia forma de saber donde estabas parado.
   const categoriaActual = new URLSearchParams(location.search).get('categoria') || '';
 
-  // Categorias que se listan en el desplegable "Tienda".
-  //  - EN PAGINA DE MARCA: las de ESA marca (su categoryNav, las mismas burbujas
-  //    que ya se ven en su portada), enlazando a /<slug>?categoria=ID.
-  //  - FUERA DE MARCA: las globales, como siempre.
-  const categoriasDelMenu = useMemo(() => {
-    if (brandActual) {
-      const nav = Array.isArray(brandActual.categoryNav) ? brandActual.categoryNav : [];
-      return nav
-        .filter((it) => it && it.categoryId)
-        .slice()
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((it) => ({
-          id: it.categoryId,
-          // El nombre puede venir vacio en la burbuja; se cae al de la categoria.
-          name: it.name || categoriesData?.find((c) => c.id === it.categoryId)?.name || 'Categoria',
-          url: `/${brandSlug}?categoria=${it.categoryId}`,
-        }))
-        .slice(0, 10);
-    }
-    return (categoriesData || []).slice(0, 10).map((c) => ({
-      id: c.id,
-      name: c.name,
-      url: `/tienda?categoria=${c.id}`,
-    }));
-  }, [brandActual, brandSlug, categoriesData]);
 
   // NOTA (corregida): antes se decia aqui que `?categoria=` disparaba la query
   // GLOBAL y cruzaba marcas, y por eso el menu no listaba categorias en pagina de
@@ -231,6 +206,68 @@ const Header = () => {
           { id: '3', text: 'Crear', type: 'link', url: '/personalizar' }
         ];
   }
+
+  // ¿Hay algún desplegable automático de categorías en el menú? Si no lo hay,
+  // pedir el catálogo entero solo para filtrarlas seria tirar la lectura.
+  const hayMenuDeCategorias = navLinks.some((l) => l?.isCategoryAuto);
+
+  // Productos para saber qué categorías tienen algo dentro. Comparte queryKey y
+  // queryFn con la cuadrícula de categorías de TiendaPage, así que en una página
+  // de tienda no se pide dos veces: React Query reparte el mismo resultado.
+  const { data: productosParaCategorias } = useQuery({
+    queryKey: ['storefront-category-grid-products', brandActual?.id || 'global'],
+    queryFn: async () => {
+      const result = brandActual?.id
+        ? await getProductsByBrand(brandActual.id)
+        : await getProducts([], null, null);
+      if (result.error) throw new Error(result.error);
+      return result.data || [];
+    },
+    enabled: hayMenuDeCategorias,
+    staleTime: 15 * 60 * 1000,
+  });
+
+  // Ids de categorías con al menos un producto visible. `undefined` mientras no
+  // se sabe todavía: eso NO es lo mismo que "ninguna", y se distingue abajo.
+  const idsConProductos = useMemo(
+    () => (productosParaCategorias
+      ? categoriasConProductos(productosParaCategorias, brandActual?.id || null)
+      : undefined),
+    [productosParaCategorias, brandActual],
+  );
+
+  // Categorias que se listan en el desplegable "Tienda".
+  //  - EN PAGINA DE MARCA: las de ESA marca (su categoryNav, las mismas burbujas
+  //    que ya se ven en su portada), enlazando a /<slug>?categoria=ID.
+  //  - FUERA DE MARCA: las globales, como siempre.
+  // En ambos casos se dejan fuera las que no tienen ningun producto: una
+  // categoria vacia lleva a una pagina sin nada. Segun se les vayan asignando
+  // productos van apareciendo solas.
+  const categoriasDelMenu = useMemo(() => {
+    const conProducto = (id) => !idsConProductos || idsConProductos.has(id);
+    if (brandActual) {
+      const nav = Array.isArray(brandActual.categoryNav) ? brandActual.categoryNav : [];
+      return nav
+        .filter((it) => it && it.categoryId && conProducto(it.categoryId))
+        .slice()
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((it) => ({
+          id: it.categoryId,
+          // El nombre puede venir vacio en la burbuja; se cae al de la categoria.
+          name: it.name || categoriesData?.find((c) => c.id === it.categoryId)?.name || 'Categoria',
+          url: `/${brandSlug}?categoria=${it.categoryId}`,
+        }))
+        .slice(0, 10);
+    }
+    return (categoriesData || [])
+      .filter((c) => conProducto(c.id))
+      .slice(0, 10)
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        url: `/tienda?categoria=${c.id}`,
+      }));
+  }, [brandActual, brandSlug, categoriesData, idsConProductos]);
 
   const accountPopup = activeConfig?.accountPopup || {
     title: 'Mi cuenta',
