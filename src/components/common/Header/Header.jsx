@@ -332,12 +332,15 @@ const Header = () => {
   }, [activeMainCoins]);
 
 
+  // Alimentar a Kapi acredita monedas normales, así que su animación tiene que
+  // mover el contador único. (Este efecto seguía llamando a setDisplayKapiCoins,
+  // que dejó de existir al unificar las dos billeteras: al alimentar reventaba.)
   useEffect(() => {
     const handleKapiStart = (e) => {
       const inc = e.detail?.amount || 1;
-      setDisplayKapiCoins(prev => prev + inc);
-      setIsKapiBouncing(true);
-      setTimeout(() => setIsKapiBouncing(false), 200);
+      setDisplayCoins((prev) => prev + inc);
+      setIsCoinBouncing(true);
+      setTimeout(() => setIsCoinBouncing(false), 200);
     };
     window.addEventListener('kapi-coins-animation-start', handleKapiStart);
     return () => window.removeEventListener('kapi-coins-animation-start', handleKapiStart);
@@ -627,7 +630,7 @@ const Header = () => {
               <>
                 {/* --- DESKTOP VIEW --- */}
                 <div className={styles.desktopWalletsOnly}>
-                  {/* Billetera Principal (Wala Coins) */}
+                  {/* Monedas: la única billetera. */}
                   <div
                     className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`}
                   >
@@ -661,7 +664,7 @@ const Header = () => {
                         <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-2)', padding: '10px', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '18px' }}>🪙</span>
-                            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>Wala Coins</span>
+                            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>Monedas</span>
                           </div>
                           <strong style={{ color: 'var(--rojo-principal)', fontSize: '15px' }}>{Math.floor(displayCoins)}</strong>
                         </li>

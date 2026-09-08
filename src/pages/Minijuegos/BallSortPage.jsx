@@ -412,7 +412,7 @@ const BallSortPage = () => {
               <T>Ya ganaste tus monedas hoy. Puedes seguir jugando por gusto.</T>
             ) : (
               <>
-                <strong><T>+2 Wala Coins</T></strong>{' '}
+                <strong><T>+2 monedas</T></strong>{' '}
                 <T>al ordenar todos los tubos.</T>
               </>
             )}
@@ -498,7 +498,7 @@ const BallSortPage = () => {
               <T>Mientras tienes una bolita levantada, los tubos donde sí puedes soltarla se marcan en verde.</T>
               {' '}
               <T>Si te atascas, «Reiniciar nivel» reparte las bolitas otra vez y no te cuesta el premio: los</T>{' '}
-              <strong><T>+2 Wala Coins</T></strong> <T>se ganan una vez al día y siguen en juego.</T>
+              <strong><T>+2 monedas</T></strong> <T>se ganan una vez al día y siguen en juego.</T>
             </p>
 
             <button type="button" className={styles.ayudaBtn} onClick={cerrarAyuda}>
@@ -559,7 +559,7 @@ const BallSortPage = () => {
                 {claimState === 'claimed' && (
                   <>
                     <Coins size={16} aria-hidden="true" />
-                    <span><strong><T>+2 Wala Coins</T></strong> <T>acreditadas.</T></span>
+                    <span><strong><T>+2 monedas</T></strong> <T>acreditadas.</T></span>
                   </>
                 )}
                 {claimState === 'already' && (
@@ -572,7 +572,7 @@ const BallSortPage = () => {
                   <T>No pudimos acreditar tu premio. Inténtalo de nuevo más tarde.</T>
                 )}
                 {claimState === 'idle' && (
-                  <T>Inicia sesión para ganar Wala Coins con este juego.</T>
+                  <T>Inicia sesión para ganar monedas con este juego.</T>
                 )}
               </div>
 

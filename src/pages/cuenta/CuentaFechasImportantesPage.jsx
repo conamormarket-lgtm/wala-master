@@ -100,7 +100,7 @@ const CuentaFechasImportantesPage = () => {
           <Gift size={64} className={styles.emptyStateIcon} />
           <h2><T>¡Gana recompensas diciéndonos qué te gusta!</T></h2>
           <p>
-            Al completar nuestro perfil de regalos, ganarás Kapicoins que puedes canjear
+            Al completar nuestro perfil de regalos, ganarás monedas que puedes canjear
             por descuentos, y te recordaremos las fechas más importantes de tus seres queridos.
           </p>
           <Link to="/encuesta-suscripcion" className={styles.primaryButton}>

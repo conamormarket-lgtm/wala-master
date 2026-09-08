@@ -349,7 +349,7 @@ const MinijuegosPage = () => {
           acento={styles.bolitas}
           icono={<FlaskConical size={26} />}
           titulo="Las Bolitas de Kapi"
-          descripcion="Ordena los colores en los tubos para ganar 2 Wala Coins diarios."
+          descripcion="Ordena los colores en los tubos para ganar 2 monedas al día."
           estado={
             hasClaimedBallSort ? (
               <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
@@ -357,7 +357,7 @@ const MinijuegosPage = () => {
               <Badge tone="violet" variant="soft" dot><T>Disponible hoy</T></Badge>
             )
           }
-          recompensa={<><span aria-hidden="true">🪙</span><T>+2 Wala Coins al día</T></>}
+          recompensa={<><span aria-hidden="true">🪙</span><T>+2 monedas al día</T></>}
           atenuada={hasClaimedBallSort}
           accion={
             !haySesion ? (

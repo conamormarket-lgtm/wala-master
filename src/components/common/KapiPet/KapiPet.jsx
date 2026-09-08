@@ -100,7 +100,7 @@ const KapiPet = () => {
             steps: [
               { element: '#kapi-pet-container', popover: { title: 'Conoce a Kapi', description: '¡Esta es tu mascota virtual! Crecerá contigo mientras usas la app.', side: "top" } },
               { element: '#kapi-stats', popover: { title: 'Felicidad de Kapi', description: 'Kapi necesita atención. Si olvidas alimentarlo, se pondrá triste y su barra de felicidad bajará.', side: "bottom" } },
-              { element: '#kapi-feed-btn', popover: { title: '¡A comer!', description: 'Aliméntalo todos los días aquí. A cambio, él te premiará con KapiCoins que puedes canjear por recompensas reales.', side: "top" } }
+              { element: '#kapi-feed-btn', popover: { title: '¡A comer!', description: 'Aliméntalo todos los días aquí. A cambio, él te premiará con monedas que puedes canjear por recompensas reales.', side: "top" } }
             ],
             onDestroyed: () => {
               localStorage.setItem('kapiTutorialCompleted', 'true');
@@ -162,9 +162,8 @@ const KapiPet = () => {
       setIsFeeding(false);
       if (res?.error) {
         // Antes esto se tragaba el error: el usuario pulsaba, esperaba 1,5 s y no
-        // pasaba nada (p. ej. al tocar el tope mensual de Kapi Coins).
-        // callFn devuelve el error como string ya legible ("Ya alimentaste a Kapi hoy.",
-        // "Límite mensual de Kapi Coins alcanzado."), no como objeto Error.
+        // pasaba nada. callFn devuelve el error como string ya legible
+        // ("Ya alimentaste a Kapi hoy."), no como objeto Error.
         addToast(res.error || 'No pudimos alimentar a Kapi. Inténtalo de nuevo.', 'error');
       } else {
         // Obtener posición del botón para la animación
@@ -282,7 +281,7 @@ const KapiPet = () => {
             
             <h2 className={styles.title}><T>Tu Mascota Kapi</T></h2>
             <p className={styles.subtitle}>
-              Alimenta a Kapi todos los días para ganar Kapi Coins.
+              Alimenta a Kapi todos los días para ganar monedas.
             </p>
 
             <div className={styles.petContainer} id="kapi-pet-container">
@@ -310,7 +309,7 @@ const KapiPet = () => {
                   <div style={{flex: 1}}>
                     <h4 className={styles.challengeTitle}>Reto Semanal: {activeWeeklyChallenge.title}</h4>
                     <span className={styles.challengeReward}>
-                      Recompensa: {activeWeeklyChallenge.rewardType === 'main' ? `${activeWeeklyChallenge.rewardCoins} WalaCoins` : 'Doble KapiCoins'}
+                      Recompensa: {activeWeeklyChallenge.rewardType === 'main' ? `${activeWeeklyChallenge.rewardCoins} monedas` : 'Doble monedas al alimentar'}
                     </span>
                   </div>
                 </div>

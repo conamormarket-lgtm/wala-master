@@ -351,7 +351,7 @@ const AdminRuletaPage = () => {
                     className={styles.input}
                     value={form.nombre}
                     onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                    placeholder="10 Kapicoins"
+                    placeholder="10 monedas"
                     required
                   />
                 </label>

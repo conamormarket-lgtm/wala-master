@@ -123,8 +123,8 @@ const AdminRetos = () => {
                 <div className={styles.inputGroup}>
                   <label>Tipo de Recompensa</label>
                   <select value={formData.rewardType} onChange={e => setFormData({...formData, rewardType: e.target.value})}>
-                    <option value="main">Wala Coins (Principal)</option>
-                    <option value="kapi_double_3d">Doble KapiCoins x 3 días</option>
+                    <option value="main">Monedas</option>
+                    <option value="kapi_double_3d">Doble monedas al alimentar x 3 días</option>
                   </select>
                 </div>
                 <div className={styles.inputGroup}>
@@ -159,7 +159,7 @@ const AdminRetos = () => {
                       <td>{c.title}</td>
                       <td>{c.actionType}</td>
                       <td>{c.goal}</td>
-                      <td>{c.rewardType === 'main' ? `${c.rewardCoins} WalaCoins` : 'Doble KapiCoins'}</td>
+                      <td>{c.rewardType === 'main' ? `${c.rewardCoins} monedas` : 'Doble monedas al alimentar'}</td>
                       <td>
                         <button className={styles.actionBtn} onClick={() => handleEdit(c)}>✏️</button>
                         <button className={styles.actionBtn} onClick={() => handleDelete(c.id)}>🗑️</button>
@@ -229,7 +229,7 @@ const AdminRetos = () => {
               <p><strong>Título:</strong> {activeGlobalChallenge.title}</p>
               <p><strong>Descripción:</strong> {activeGlobalChallenge.description}</p>
               <p><strong>Acción:</strong> {activeGlobalChallenge.actionType} (Meta: {activeGlobalChallenge.goal})</p>
-              <p><strong>Recompensa:</strong> {activeGlobalChallenge.rewardType === 'main' ? `${activeGlobalChallenge.rewardCoins} WalaCoins` : 'Doble KapiCoins'}</p>
+              <p><strong>Recompensa:</strong> {activeGlobalChallenge.rewardType === 'main' ? `${activeGlobalChallenge.rewardCoins} monedas` : 'Doble monedas al alimentar'}</p>
               <p><strong>Inició:</strong> {new Date(activeGlobalChallenge.startedAt).toLocaleString()}</p>
               <p><strong>Expira:</strong> {new Date(activeGlobalChallenge.expiresAt).toLocaleString()}</p>
               <button className={styles.btnPrimary} style={{marginTop: 16}} onClick={() => setActiveTab('catalog')}>Cambiar Reto (Desde Catálogo)</button>

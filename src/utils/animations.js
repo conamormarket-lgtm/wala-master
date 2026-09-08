@@ -26,7 +26,7 @@ export const playCoinSound = () => {
 };
 
 export const showFlyingCoins = (startX, startY, amount = 10) => {
-  // Aseguramos que la cantidad de monedas visuales sea razonable (10 representará a las 10 Kapicoins)
+  // Aseguramos que la cantidad de monedas visuales sea razonable (10 representara a las 10 monedas)
   const numCoins = Math.min(amount, 10);
   const amoutPerCoin = amount / numCoins;
   

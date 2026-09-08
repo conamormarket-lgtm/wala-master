@@ -940,7 +940,7 @@ const NuevosUsuariosPage = () => {
                 Descarga la app de Wala y empieza<br />
                 a crear regalos con verdadero significado.<br />
                 Al completar tus fechas importantes,<br />
-                recibirás S/.15 en KapiCoins como<br />
+                recibirás S/.15 en monedas como<br />
                 regalo de Bienvenida.
               </p>
             </div>
@@ -1207,7 +1207,7 @@ const NuevosUsuariosPage = () => {
           <div className="terms-container" style={{ fontFamily: 'Arial, sans-serif' }}>
             <h4 className="terms-title"><T>Términos, Condiciones y Privacidad</T></h4>
             <p className="terms-text">
-              La descarga y el uso de la aplicación Wala están sujetos a nuestros Términos y Condiciones y Política de Privacidad. Al acceder a nuestros servicios, el usuario acepta el tratamiento de sus datos de acuerdo con las leyes aplicables. La bonificación de S/15 en KapiCoins es una promoción exclusiva para nuevos usuarios que descarguen la app y completen su perfil de fechas importantes, sujeta a disponibilidad y posibles modificaciones sin previo aviso. Google Play y el logotipo de Google Play son marcas comerciales de Google LLC. Las imágenes, mockups e interfaces aquí presentadas son estrictamente referenciales.
+              La descarga y el uso de la aplicación Wala están sujetos a nuestros Términos y Condiciones y Política de Privacidad. Al acceder a nuestros servicios, el usuario acepta el tratamiento de sus datos de acuerdo con las leyes aplicables. La bonificación de S/15 en monedas es una promoción exclusiva para nuevos usuarios que descarguen la app y completen su perfil de fechas importantes, sujeta a disponibilidad y posibles modificaciones sin previo aviso. Google Play y el logotipo de Google Play son marcas comerciales de Google LLC. Las imágenes, mockups e interfaces aquí presentadas son estrictamente referenciales.
             </p>
             <p className="terms-copy">
               &copy; {new Date().getFullYear()} Wala. Todos los derechos reservados.
