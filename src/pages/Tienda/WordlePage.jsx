@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday } from '../../services/wordle';
 import { VALID_GUESSES } from '../../data/wordleDictionary';
@@ -569,11 +570,22 @@ const WordlePage = () => {
           porque <main> lleva opacity<1 por la transicion de pagina, y eso
           encierra el apilado por debajo del Header. */}
       {createPortal(
-      <>
+      <AnimatePresence>
       {ayudaAbierta && !showResultModal && (
-        <div className={styles.resultOverlay} onClick={cerrarAyuda} role="presentation">
-          <div
+        <motion.div
+          className={styles.resultOverlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={cerrarAyuda}
+          role="presentation"
+        >
+          <motion.div
             className={`${styles.resultCard} ${styles.ayudaCard}`}
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -619,14 +631,30 @@ const WordlePage = () => {
             <button type="button" className={styles.ayudaBtn} onClick={cerrarAyuda}>
               <T>Entendido, a jugar</T>
             </button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* ── Modal de resultado ─────────────────────────────────────────── */}
       {showResultModal && (
-        <div className={styles.resultOverlay} onClick={() => setShowResultModal(false)}>
-          <div className={styles.resultCard} onClick={e => e.stopPropagation()}>
+        <motion.div
+          className={styles.resultOverlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setShowResultModal(false)}
+          role="presentation"
+        >
+          <motion.div
+            className={styles.resultCard}
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
             <button className={styles.closeModalBtn} onClick={() => setShowResultModal(false)}>×</button>
             <h2><T>{gameStatus === 'won' ? '¡Felicidades!' : 'Fin del Juego'}</T></h2>
             {gameStatus === 'won' ? (
@@ -659,10 +687,10 @@ const WordlePage = () => {
             )}
 
             <p className={styles.resultPie}><T>Vuelve mañana para jugar una nueva palabra.</T></p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
-      </>,
+      </AnimatePresence>,
       document.body)}
     </ArcadeShell>
   );

@@ -214,7 +214,8 @@
   max-width: 400px;
   width: 90%;
   box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  animation: slideUp 0.3s ease-out;
+  /* La entrada la anima framer-motion desde el JSX (y ademas la salida). Dejar
+     aqui la animacion CSS haria que las dos escribieran el mismo transform. */
   position: relative;
 }
 
@@ -316,11 +317,6 @@
 
 .ayudaBtn:hover {
   background: var(--violet-600);
-}
-
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
 }
 
 .stats {
