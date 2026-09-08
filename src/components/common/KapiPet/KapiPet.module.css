@@ -37,7 +37,22 @@
   justify-content: center;
 }
 
+/* Transición de entrada, en CSS a propósito.
+   No se usa framer-motion aquí: KapiPet vive en el bundle principal (se monta
+   en todas las páginas), y meterle la librería fue parte del cambio que dejó la
+   web en blanco. Con keyframes se consigue lo mismo sin tocar el árbol. */
+@keyframes kapiFondo {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes kapiTarjeta {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .overlay {
+  animation: kapiFondo 0.18s ease-out;
   position: fixed;
   top: 0;
   left: 0;
@@ -52,6 +67,7 @@
 }
 
 .modal {
+  animation: kapiTarjeta 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   background: #fff;
   border-radius: 20px;
   width: 100%;
@@ -142,8 +158,11 @@
   transition: width 0.3s ease;
 }
 
+/* Mismo violeta que el .primaryButton del Header, fijo en los dos temas.
+   --rojo-principal apunta a --primary-color, que en modo noche se aclara a
+   #A78BFA: como relleno con letra blanca se lavaba. */
 .feedBtn {
-  background: var(--rojo-principal, #e11d48);
+  background: var(--violet-500, #8b5cf6);
   color: #fff;
   border: none;
   padding: 14px 24px;
@@ -156,7 +175,8 @@
 }
 
 .feedBtn:hover {
-  opacity: 0.9;
+  background: var(--violet-600, #7c3aed);
+  color: #fff;
 }
 
 .feedingBtn {
@@ -261,7 +281,7 @@
 }
 
 .evidenceBtn {
-  background: #3b82f6;
+  background: var(--violet-500, #8b5cf6);
   color: white;
   border: none;
   padding: 8px;
@@ -274,6 +294,13 @@
 .evidenceBtn:disabled {
   background: #94a3b8;
   cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .modal {
+    animation: none;
+  }
 }
 
 @media (max-width: 768px) {

@@ -110,6 +110,20 @@ const KapiPet = () => {
     }
   }, [isOpen]);
 
+  // Escape cierra el panel, como el resto de modales de la app.
+  //
+  // OJO al sitio: este efecto va ANTES de los dos `return null` de abajo. La
+  // primera vez lo colgué después y tumbó la web: con sesión el componente
+  // ejecutaba un hook más que sin ella, y React tira el árbol entero cuando el
+  // número de hooks cambia entre renders. Como el perfil llega asíncrono, el
+  // salto ocurría en cada carga de un usuario logueado.
+  useEffect(() => {
+    if (!isOpen) return;
+    const alPulsar = (e) => { if (e.key === 'Escape') setIsOpen(false); };
+    window.addEventListener('keydown', alPulsar);
+    return () => window.removeEventListener('keydown', alPulsar);
+  }, [isOpen]);
+
   if (onLandingPage) return null; // Kapi no aparece en landings (protege la conversión del checkout)
   if (!user || !userProfile) return null;
 
@@ -215,9 +229,15 @@ const KapiPet = () => {
       )}
 
       {isOpen && (
-        <div className={styles.overlay} onClick={() => setIsOpen(false)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <button className={styles.closeBtn} onClick={() => setIsOpen(false)}>✕</button>
+        <div className={styles.overlay} onClick={() => setIsOpen(false)} role="presentation">
+          <div
+            className={styles.modal}
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tu mascota Kapi"
+          >
+            <button className={styles.closeBtn} onClick={() => setIsOpen(false)} aria-label="Cerrar">✕</button>
             
             <h2 className={styles.title}><T>Tu Mascota Kapi</T></h2>
             <p className={styles.subtitle}>
