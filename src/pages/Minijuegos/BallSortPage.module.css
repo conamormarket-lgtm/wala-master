@@ -212,52 +212,142 @@
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 12px;
-  transition: var(--transicion-rapida);
+  padding: 0.5rem 0.4rem 0.75rem;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  transition: transform 0.2s var(--ease-signature, ease-out),
+    background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.tubeWrapper:hover {
-  background: var(--color-hover);
+@media (hover: hover) and (pointer: fine) {
+  .tubeWrapper:hover {
+    background: var(--color-hover);
+    transform: translateY(-3px);
+  }
 }
 
+/* Tubo del que estas moviendo: anillo de marca. */
 .tubeWrapper.selected {
   background: var(--primary-light);
-  box-shadow: inset 0 0 0 1px var(--primary-color);
+  border-color: var(--primary-color);
 }
 
+/* Destino valido: se marca en verde mientras tienes una bolita levantada. No
+   cambia ninguna regla, solo hace visible la que ya existia — antes habia que
+   adivinarla probando y viendo que no pasaba nada. */
+.tubeDestino {
+  border-color: var(--verde-exito);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.tubeDestino .tube {
+  border-color: rgba(16, 185, 129, 0.55);
+}
+
+/* -------------------------------------------------------------------------
+   EL TUBO
+   Cristal de verdad: cuerpo translucido, brillo vertical a un lado, sombra
+   interior en el fondo y una base apoyada. Antes era una caja con un borde de
+   3px y nada mas.
+   ------------------------------------------------------------------------- */
 .tube {
-  width: 50px;
-  height: 200px;
-  /* El cristal del tubo se dibuja con el borde del tema: con rgba negra fija
-     desaparecía en modo noche. */
-  border: 3px solid var(--color-border);
-  border-top: none;
-  border-bottom-left-radius: 25px;
-  border-bottom-right-radius: 25px;
+  position: relative;
+  width: 52px;
+  height: 208px;
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
-  padding-bottom: 5px;
-  position: relative;
-  background: var(--color-hover);
-  box-shadow: inset 0 -5px 10px rgba(15, 23, 42, 0.06);
+  padding-bottom: 6px;
+  box-sizing: border-box;
+  border: 2px solid var(--color-border);
+  border-top: none;
+  border-radius: 6px 6px 26px 26px;
+  background:
+    /* brillo vertical del cristal, pegado a la izquierda */
+    linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0) 12%,
+      rgba(255, 255, 255, 0.55) 20%,
+      rgba(255, 255, 255, 0) 34%
+    ),
+    var(--color-hover);
+  box-shadow:
+    inset 0 -10px 14px -8px rgba(15, 23, 42, 0.18),
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.5);
 }
 
+[data-theme='dark'] .tube {
+  background:
+    linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0) 12%,
+      rgba(255, 255, 255, 0.12) 20%,
+      rgba(255, 255, 255, 0) 34%
+    ),
+    var(--color-hover);
+  box-shadow:
+    inset 0 -10px 14px -8px rgba(0, 0, 0, 0.5),
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Sombra de apoyo bajo el tubo: lo asienta en vez de dejarlo flotando. */
+.tube::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 70%;
+  height: 8px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.14);
+  filter: blur(3px);
+  pointer-events: none;
+}
+
+[data-theme='dark'] .tube::after {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* -------------------------------------------------------------------------
+   LAS BOLITAS
+   Antes: radial-gradient hacia #000, que ensuciaba el color y las dejaba
+   apagadas. Ahora el color entra por --bola y se monta encima un brillo
+   especular y un borde inferior mas oscuro: volumen sin embarrar el tono.
+   ------------------------------------------------------------------------- */
 .ball {
+  position: relative;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  margin-bottom: 4px;
-  box-shadow: inset -5px -5px 10px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
-  /* Sin animación CSS: framer-motion controla todo el movimiento posicional. */
+  margin-bottom: 5px;
+  background:
+    /* brillo especular */
+    radial-gradient(circle at 33% 27%, rgba(255, 255, 255, 0.85) 0 8%, rgba(255, 255, 255, 0) 42%),
+    /* volumen: el color propio, aclarado arriba y recogido abajo */
+    radial-gradient(circle at 38% 32%, color-mix(in srgb, var(--bola) 78%, #fff) 0%, var(--bola) 52%, color-mix(in srgb, var(--bola) 72%, #000) 100%);
+  box-shadow:
+    inset 0 -3px 6px rgba(0, 0, 0, 0.28),
+    0 2px 4px rgba(15, 23, 42, 0.25);
 }
 
+/* WebView antiguo sin color-mix: el color plano con el brillo encima. */
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  .ball {
+    background:
+      radial-gradient(circle at 33% 27%, rgba(255, 255, 255, 0.85) 0 8%, rgba(255, 255, 255, 0) 42%),
+      var(--bola);
+  }
+}
+
+/* La bolita levantada sale del tubo y flota. */
 .selectedBall {
-  transform: translateY(-20px);
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3), inset -5px -5px 10px rgba(0, 0, 0, 0.3);
+  transform: translateY(-26px) scale(1.06);
+  box-shadow:
+    inset 0 -3px 6px rgba(0, 0, 0, 0.28),
+    0 10px 14px rgba(15, 23, 42, 0.3);
   z-index: 10;
-  transition: transform 0.2s cubic-bezier(0.17, 0.67, 0.12, 1.5), box-shadow 0.2s ease;
+  transition: transform 0.22s cubic-bezier(0.17, 0.67, 0.12, 1.5), box-shadow 0.2s ease;
 }
 
 /* =========================================================================
@@ -379,6 +469,82 @@
   font-size: 0.9rem;
   line-height: 1.5;
   color: var(--color-text-muted);
+}
+
+/* ── Leyenda visual de la regla ──────────────────────────────────────────── */
+.ayudaObjetivo {
+  margin: 0 0 0.9rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.ayudaObjetivo strong,
+.ayudaPasos strong {
+  color: var(--color-text);
+}
+
+.ayudaSubtitulo {
+  margin: 0 0 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.leyenda {
+  margin: 0 0 0.25rem;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.87rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.leyenda strong {
+  color: var(--color-text);
+}
+
+/* Tubo en miniatura: mismo lenguaje que el del tablero, a escala. */
+.miniTubo {
+  flex-shrink: 0;
+  width: 30px;
+  height: 54px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  padding-bottom: 3px;
+  box-sizing: border-box;
+  border: 2px solid var(--color-border);
+  border-top: none;
+  border-radius: 4px 4px 15px 15px;
+  background: var(--color-hover);
+}
+
+.miniTuboOk {
+  border-color: var(--verde-exito);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.miniTuboNo {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+/* Hereda el degradado de .ball; solo cambia el tamaño. */
+.miniBola {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 2px;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.28);
 }
 
 .ayudaPie {
@@ -515,7 +681,7 @@
   background: var(--violet-600);
 }
 
-/* Volver al hub es secundaria: neutra, como el "Cerrar sesion" del Header. */
+/* La accion secundaria del cartel: neutra, como el "Cerrar sesion" del Header. */
 .winSecundario,
 .winSecundario:hover {
   background-color: transparent;
@@ -544,8 +710,11 @@
 }
 
 .tubeComplete .tube {
-  border-color: rgba(16, 185, 129, 0.6);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35), inset 0 -5px 10px rgba(15, 23, 42, 0.06);
+  border-color: var(--verde-exito);
+  box-shadow:
+    0 0 0 1px rgba(16, 185, 129, 0.35),
+    inset 0 -10px 14px -8px rgba(15, 23, 42, 0.18),
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.5);
 }
 
 .confettiContainer {

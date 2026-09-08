@@ -204,7 +204,7 @@ const RuletaPage = () => {
             <button className={styles.shareBtn} onClick={handleShare}>
               <T>Compartir Resultado 🎉</T>
             </button>
-            <Link to="/minijuegos" className={styles.secondaryBtn}><T>Volver al Hub</T></Link>
+            <Link to="/minijuegos" className={styles.secondaryBtn}><T>Ver otros juegos</T></Link>
           </div>
         ) : (
           <>

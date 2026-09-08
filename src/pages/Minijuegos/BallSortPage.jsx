@@ -95,6 +95,16 @@ const TubeConfetti = ({ color }) => {
   return <div className={styles.confettiContainer}>{particles}</div>;
 };
 
+// Tubo en miniatura para la leyenda de la ayuda. Usa la MISMA clase de bolita
+// que el tablero: si cambia el aspecto del juego, la ayuda cambia con el.
+const MiniTubo = ({ colores = [], estado }) => (
+  <span className={`${styles.miniTubo} ${estado === 'ok' ? styles.miniTuboOk : styles.miniTuboNo}`}>
+    {colores.map((color, i) => (
+      <span key={i} className={`${styles.ball} ${styles.miniBola}`} style={{ '--bola': color }} />
+    ))}
+  </span>
+);
+
 const BallSortPage = () => {
   const { user, userProfile, reloadProfile } = useAuth();
   const [tubes, setTubes] = useState([]);
@@ -261,6 +271,18 @@ const BallSortPage = () => {
     }
   };
 
+  // Misma condicion que aplica handleTubeClick al mover. Solo sirve para
+  // pintar: hace visible una regla que antes habia que adivinar probando.
+  const puedeSoltarEn = (destIndex) => {
+    if (selectedTubeIndex === null || destIndex === selectedTubeIndex) return false;
+    const origen = tubes[selectedTubeIndex];
+    const destino = tubes[destIndex];
+    if (!origen?.length) return false;
+    const bola = origen[origen.length - 1];
+    return destino.length < TUBE_CAPACITY
+      && (destino.length === 0 || destino[destino.length - 1].color === bola.color);
+  };
+
   const restartGame = () => {
     setTubes(generateLevel());
     setSelectedTubeIndex(null);
@@ -308,7 +330,7 @@ const BallSortPage = () => {
               return (
                 <div 
                   key={index} 
-                  className={`${styles.tubeWrapper} ${selectedTubeIndex === index ? styles.selected : ''} ${isComplete ? styles.tubeComplete : ''}`}
+                  className={`${styles.tubeWrapper} ${selectedTubeIndex === index ? styles.selected : ''} ${isComplete ? styles.tubeComplete : ''} ${puedeSoltarEn(index) ? styles.tubeDestino : ''}`}
                   onClick={() => handleTubeClick(index)}
                 >
                   <div className={styles.tube}>
@@ -323,7 +345,7 @@ const BallSortPage = () => {
                           key={ball.id}
                           layoutId={ball.id}
                           className={`${styles.ball} ${isSelectedTube && isTopBall ? styles.selectedBall : ''}`} 
-                          style={{ background: `radial-gradient(circle at 30% 30%, ${ball.color} 0%, #000 150%)` }}
+                          style={{ '--bola': ball.color }}
                           layout="position"
                           transition={{
                             layout: {
@@ -412,15 +434,42 @@ const BallSortPage = () => {
 
             <h2 className={styles.ayudaTitulo}><T>Cómo se juega</T></h2>
 
+            <p className={styles.ayudaObjetivo}>
+              <T>Hay</T> <strong>{COLORS.length}</strong> <T>colores repartidos en</T>{' '}
+              <strong>{NUM_TUBES}</strong> <T>tubos. Los dos tubos vacíos son tu espacio para maniobrar.</T>
+            </p>
+
             <ol className={styles.ayudaPasos}>
               <li><T>Toca un tubo para levantar su bolita de arriba.</T></li>
               <li><T>Toca otro tubo para soltarla ahí.</T></li>
-              <li><T>Solo puedes soltarla si ese tubo está vacío o si su bolita de arriba es del mismo color.</T></li>
-              <li><T>Ganas cuando cada tubo tenga un único color.</T></li>
+              <li>
+                <T>Un tubo está listo cuando tiene sus</T> <strong>{TUBE_CAPACITY}</strong>{' '}
+                <T>bolitas del mismo color. Ganas cuando lo están todos.</T>
+              </li>
             </ol>
 
+            <p className={styles.ayudaSubtitulo}><T>¿Dónde puedes soltar una bolita roja?</T></p>
+
+            <ul className={styles.leyenda}>
+              <li>
+                <MiniTubo colores={[]} estado="ok" />
+                <span><strong><T>Sí</T></strong> — <T>el tubo está vacío.</T></span>
+              </li>
+              <li>
+                <MiniTubo colores={[COLORS[0], COLORS[0]]} estado="ok" />
+                <span><strong><T>Sí</T></strong> — <T>arriba hay otra roja.</T></span>
+              </li>
+              <li>
+                <MiniTubo colores={[COLORS[0], COLORS[1]]} estado="no" />
+                <span><strong><T>No</T></strong> — <T>arriba hay otro color.</T></span>
+              </li>
+            </ul>
+
             <p className={styles.ayudaPie}>
-              <T>Si te atascas, «Reiniciar nivel» te reparte las bolitas otra vez. No gastas nada: el premio se puede ganar una vez al día y sigue en juego.</T>
+              <T>Mientras tienes una bolita levantada, los tubos donde sí puedes soltarla se marcan en verde.</T>
+              {' '}
+              <T>Si te atascas, «Reiniciar nivel» reparte las bolitas otra vez y no te cuesta el premio: los</T>{' '}
+              <strong><T>+2 Wala Coins</T></strong> <T>se ganan una vez al día y siguen en juego.</T>
             </p>
 
             <button type="button" className={styles.ayudaBtn} onClick={cerrarAyuda}>
@@ -500,7 +549,7 @@ const BallSortPage = () => {
                   <T>Jugar otra vez</T>
                 </button>
                 <Link to="/minijuegos" className={styles.winSecundario}>
-                  <T>Volver al hub</T>
+                  <T>Ver otros juegos</T>
                 </Link>
               </div>
             </motion.div>
