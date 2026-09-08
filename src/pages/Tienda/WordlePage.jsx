@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday } from '../../services/wordle';
+import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday, getMiPartidaDeHoy } from '../../services/wordle';
 import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { useAuth } from '../../contexts/AuthContext';
 import { limaTodayStr } from '../../utils/fechaLima';
@@ -145,31 +145,56 @@ const WordlePage = () => {
     }
   });
 
-  // Inicializar estado desde LocalStorage o nueva partida
+  // Inicializar estado desde LocalStorage o nueva partida.
+  //
+  // Quien manda sobre "ya jugaste hoy" es el SERVIDOR, no el navegador. El
+  // estado local se guarda para no perder una partida a medias al recargar,
+  // pero si dice que la partida está terminada y el servidor no tiene registro
+  // de hoy, ese estado es basura (lo típico: alguien reinició el juego desde el
+  // panel) y bloqueaba al usuario para siempre, sin forma de salir salvo
+  // borrando localStorage a mano.
   useEffect(() => {
-    if (dailyWord) {
-      const cleanTarget = removeAccents(dailyWord);
-      setTargetWord(cleanTarget);
-      setWordLength(cleanTarget.length);
-      setCurrentGuess(Array(cleanTarget.length).fill(''));
+    if (!dailyWord) return;
+    let vivo = true;
 
+    const cleanTarget = removeAccents(dailyWord);
+    setTargetWord(cleanTarget);
+    setWordLength(cleanTarget.length);
+    setCurrentGuess(Array(cleanTarget.length).fill(''));
+
+    (async () => {
+      let parsed = null;
       const savedState = localStorage.getItem(storageKey);
       if (savedState) {
         try {
-          const parsed = JSON.parse(savedState);
-          setGuesses(parsed.guesses || []);
-          setGameStatus(parsed.gameStatus || 'playing');
-          if (parsed.gameStatus && parsed.gameStatus !== 'playing') {
-            setShowResultModal(true);
-          }
-          if (parsed.userStats) setUserStats(parsed.userStats);
-          if (parsed.startTime) setStartTime(parsed.startTime);
+          parsed = JSON.parse(savedState);
         } catch (e) {
-          console.error("Error parsing localstorage", e);
+          console.error('Error parsing localstorage', e);
         }
       }
-    }
-  }, [dailyWord, storageKey]);
+      if (!parsed) return;
+
+      const terminada = parsed.gameStatus && parsed.gameStatus !== 'playing';
+      if (terminada && user) {
+        const enServidor = await getMiPartidaDeHoy();
+        if (!vivo) return;
+        if (!enServidor) {
+          // El servidor no la tiene: se descarta y se empieza de cero.
+          try { localStorage.removeItem(storageKey); } catch { /* modo privado */ }
+          return;
+        }
+      }
+
+      if (!vivo) return;
+      setGuesses(parsed.guesses || []);
+      setGameStatus(parsed.gameStatus || 'playing');
+      if (terminada) setShowResultModal(true);
+      if (parsed.userStats) setUserStats(parsed.userStats);
+      if (parsed.startTime) setStartTime(parsed.startTime);
+    })();
+
+    return () => { vivo = false; };
+  }, [dailyWord, storageKey, user]);
 
   // Apertura automática de la ayuda: solo la primera visita Y solo si la partida
   // de hoy sigue abierta. Si el día ya está jugado, el cartel de resultado se

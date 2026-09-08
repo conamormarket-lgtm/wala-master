@@ -109,6 +109,30 @@ const publishWordleStats = async (user, stats) => {
 /**
  * Actualiza o registra las estadísticas del jugador cuando termina una partida.
  */
+/**
+ * ¿Este usuario ya TERMINÓ la partida de hoy, según el servidor?
+ *
+ * La marca de "ya jugaste hoy" vivía solo en localStorage, es decir por
+ * navegador: en otro equipo (o de incógnito) la partida volvía a estar abierta,
+ * y si un admin borraba el registro del servidor el navegador seguía enseñando
+ * "Fin del Juego" para siempre. El documento wordle/{uid}_{fecha} solo se
+ * escribe al acabar, así que es la respuesta fiable.
+ *
+ * Devuelve null si no hay sesión o si la consulta falla: ante la duda, se deja
+ * jugar (mejor eso que bloquear a alguien por un fallo de red).
+ */
+export const getMiPartidaDeHoy = async () => {
+  try {
+    const user = getCurrentUser();
+    if (!user) return null;
+    const snap = await getDoc(doc(db, WORDLE_COLLECTION, `${user.uid}_${limaTodayStr()}`));
+    return snap.exists() ? snap.data() : null;
+  } catch (e) {
+    console.warn('No se pudo comprobar la partida de hoy:', e?.message);
+    return null;
+  }
+};
+
 export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, length) => {
   const user = getCurrentUser();
   if (!user) return { error: "No user authenticated" };
