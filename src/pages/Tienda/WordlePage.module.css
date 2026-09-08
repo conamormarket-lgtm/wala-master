@@ -200,7 +200,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  /* Por encima del Header y de sus desplegables (100 / 102 / 105 / 999): con
+     z-index 100 el menu "Marcas" se pintaba sobre el modal. */
+  z-index: 1100;
   backdrop-filter: blur(2px);
 }
 
@@ -237,6 +239,39 @@
 
 .closeModalBtn:hover {
   color: #0f172a;
+}
+
+/* Ocupa el hueco del teclado cuando ya no se puede escribir. */
+.finPartida {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.finTexto {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  color: var(--color-text, #0f172a);
+}
+
+.finTexto strong {
+  font-weight: 800;
+}
+
+.finSub {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+[data-theme="dark"] .finPartida {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
 /* Accion principal cuando la partida termina: violeta de marca, como el
@@ -533,27 +568,31 @@
   margin: 0 0 1.25rem;
 }
 
-/* Botones de la barra superior (ArcadeShell). */
+/* Botones de la barra superior (ArcadeShell). Mismo tratamiento que el
+   .secondaryButton del Header (el de "Cerrar sesion"): neutro con borde fino y
+   un gris al pasar el cursor. El violeta se reserva para las acciones
+   primarias; en un boton secundario cantaba. */
 .iconBtn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   min-height: var(--touch-target, 44px);
-  padding: 0.5rem 0.8rem;
-  border-radius: var(--radio-pequeno, 10px);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  color: var(--color-text, #0f172a);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  background-color: transparent;
+  border: 1px solid var(--gris-borde, #ddd);
+  color: var(--gris-texto-principal, #333);
   font-family: inherit;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .iconBtn:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+  background-color: var(--gris-hover, #f5f5f5);
+  border-color: var(--gris-texto-secundario, #ccc);
+  color: var(--gris-texto-principal, #333);
 }
 
 /* En pantallas estrechas los botones se quedan en el icono, para que quepan

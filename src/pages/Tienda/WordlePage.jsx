@@ -508,13 +508,29 @@ const WordlePage = () => {
             })}
           </div>
 
-          {gameStatus !== 'playing' && !showResultModal && (
-            <button className={styles.showResultBtn} onClick={() => setShowResultModal(true)}>
-              <T>Ver Resultados</T>
-            </button>
-          )}
-
-          {/* ── Teclado ─────────────────────────────────────────────────── */}
+          {/* ── Cierre de la partida ────────────────────────────────────
+              Con el juego terminado el teclado no sirve para nada: no se puede
+              escribir mas. En su sitio va el resumen y el boton de resultados,
+              que antes quedaba encajado entre el tablero y un teclado muerto. */}
+          {gameStatus !== 'playing' ? (
+            <div className={styles.finPartida}>
+              <p className={styles.finTexto}>
+                {gameStatus === 'won' ? (
+                  <>
+                    <T>Lo lograste en</T> <strong>{guesses.length}</strong>{' '}
+                    <T>{guesses.length === 1 ? 'intento' : 'intentos'}</T>.
+                  </>
+                ) : (
+                  <><T>La palabra era</T> <strong>{targetWord}</strong>.</>
+                )}
+              </p>
+              <p className={styles.finSub}><T>Vuelve mañana para una palabra nueva.</T></p>
+              <button className={styles.showResultBtn} onClick={() => setShowResultModal(true)}>
+                <T>Ver mis estadísticas</T>
+              </button>
+            </div>
+          ) : (
+          /* ── Teclado ───────────────────────────────────────────────── */
           <div className={styles.keyboard}>
             {KEYS_ROWS.map((row, rIdx) => (
               <div key={rIdx} className={styles.keyboardRow}>
@@ -536,6 +552,7 @@ const WordlePage = () => {
               </div>
             ))}
           </div>
+          )}
         </main>
 
         <aside
