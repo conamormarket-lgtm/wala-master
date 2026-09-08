@@ -24,7 +24,7 @@
 // =========================================================================
 
 // eslint-disable-next-line no-unused-vars
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   SpellCheck,
@@ -42,6 +42,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getRuletaEligibility } from '../../services/firebase/ruleta';
 import { limaTodayStr } from '../../utils/fechaLima';
+import { getMiPartidaDeHoy } from '../../services/wordle';
 import { diseno, disenoNum, hayModoDiseno } from '../../utils/modoDiseno';
 import { Badge, Stagger, StaggerItem } from '../../components/ui';
 import ArcadeShell from './ArcadeShell';
@@ -115,6 +116,20 @@ const MinijuegosPage = () => {
 
   // Modo diseño (solo fuera de producción): permite ver cualquier estado de las
   // tarjetas sin esperar a mañana. No concede nada; solo cambia lo que se pinta.
+  // La tarjeta del Wordle estaba fija en "Nuevo reto cada día": no sabía si ya
+  // habías jugado, así que seguía invitando a jugar una palabra ya resuelta y
+  // contaba como juego pendiente. Lo dice el servidor (wordle/{uid}_{fecha}),
+  // que es lo mismo que mira la propia pantalla del juego.
+  const [wordleHecho, setWordleHecho] = useState(false);
+  const forzarPalabra = diseno('palabra');
+  useEffect(() => {
+    if (forzarPalabra) { setWordleHecho(forzarPalabra === 'jugada'); return; }
+    if (!user) { setWordleHecho(false); return; }
+    let vivo = true;
+    getMiPartidaDeHoy().then((partida) => { if (vivo) setWordleHecho(!!partida); });
+    return () => { vivo = false; };
+  }, [user, forzarPalabra]);
+
   const forzarRuleta = diseno('ruleta');
   const isRuletaUnlocked = forzarRuleta
     ? forzarRuleta === 'desbloqueada' || forzarRuleta === 'pendiente'
@@ -129,7 +144,8 @@ const MinijuegosPage = () => {
   // Cuántas cosas puede hacer HOY: da un motivo concreto para entrar al hub sin
   // obligar a leer las cuatro tarjetas para descubrirlo.
   const listosHoy = haySesion
-    ? 1 + (hasClaimedToday ? 0 : 1) + (isRuletaUnlocked ? 1 : 0) + (hasClaimedBallSort ? 0 : 1)
+    ? (wordleHecho ? 0 : 1) + (hasClaimedToday ? 0 : 1) + (isRuletaUnlocked ? 1 : 0)
+      + (hasClaimedBallSort ? 0 : 1)
     : 0;
 
   const handleOpenDailyReward = () => {
@@ -204,7 +220,10 @@ const MinijuegosPage = () => {
           icono={<SpellCheck size={26} />}
           titulo="Palabra del Día"
           descripcion="Adivina la palabra oculta en 6 intentos y compite en el ranking global."
-          estado={<Badge tone="success" variant="soft"><T>Nuevo reto cada día</T></Badge>}
+          estado={wordleHecho
+            ? <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
+            : <Badge tone="success" variant="soft"><T>Nuevo reto cada día</T></Badge>}
+          atenuada={wordleHecho}
           recompensa={
             <>
               <Trophy size={14} aria-hidden="true" />
@@ -212,13 +231,20 @@ const MinijuegosPage = () => {
             </>
           }
           accion={
-            haySesion ? (
+            !haySesion ? (
+              botonLogin
+            ) : wordleHecho ? (
+              // Una vez jugada, la palabra del día no se repite. El enlace sigue
+              // sirviendo para ver el resultado y el ranking.
+              <Link to="/palabra-del-dia" className={`${styles.accion} ${styles.accionHecha}`}>
+                <Check size={17} aria-hidden="true" />
+                <T>Ver mi resultado</T>
+              </Link>
+            ) : (
               <Link to="/palabra-del-dia" className={styles.accion}>
                 <T>Jugar ahora</T>
                 <ArrowRight size={16} className={styles.flecha} aria-hidden="true" />
               </Link>
-            ) : (
-              botonLogin
             )
           }
         />

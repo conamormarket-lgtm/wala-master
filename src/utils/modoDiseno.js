@@ -30,6 +30,7 @@
 //   sesion    = invitado | activa        (pinta la pantalla como si hubiera sesion)
 //   premios   = demo                     (rueda de muestra, para repasar colores)
 //   resultado = premio | cupon | nada    (abre el modal del premio sin girar)
+//   palabra   = jugada | disponible      (estado de La Palabra del Dia en el hub)
 // ──────────────────────────────────────────────────────────────────────────────
 
 export const DISENO_ACTIVO = process.env.NODE_ENV !== 'production';
@@ -64,5 +65,5 @@ export const hayModoDiseno = () => {
   const p = parametros();
   if (!p) return false;
   return ['kapi', 'felicidad', 'ruleta', 'dias', 'bolitas', 'moneda', 'sesion', 'premios',
-    'resultado'].some((k) => p.has(k));
+    'resultado', 'palabra'].some((k) => p.has(k));
 };
