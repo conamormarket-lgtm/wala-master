@@ -81,13 +81,26 @@ const sieteDiasDe = (lunes) => {
 };
 
 // ── Firebase Admin ───────────────────────────────────────────────────────────
+// firebase-admin no está en la raíz del repo, pero sí dentro de functions/. Se
+// intenta primero la resolución normal y se cae a esa copia, para no obligar a
+// instalar una dependencia nueva solo para lanzar un script de pruebas.
 let initializeApp, applicationDefault, getFirestore, FieldValue;
+const cargarAdmin = (base) => {
+  ({ initializeApp, applicationDefault } = require(base + 'app'));
+  ({ getFirestore, FieldValue } = require(base + 'firestore'));
+};
 try {
-  ({ initializeApp, applicationDefault } = require('firebase-admin/app'));
-  ({ getFirestore, FieldValue } = require('firebase-admin/firestore'));
+  cargarAdmin('firebase-admin/');
 } catch (e) {
-  console.error('\nNo encuentro firebase-admin. Instálalo con:  npm i firebase-admin\n');
-  process.exit(1);
+  try {
+    // Por ruta absoluta hay que apuntar a lib/: los subcaminos "firebase-admin/app"
+    // solo los resuelve el campo "exports" del package, que aquí no se aplica.
+    cargarAdmin(require('path').join(__dirname, '..', 'functions', 'node_modules', 'firebase-admin', 'lib') + require('path').sep);
+  } catch (e2) {
+    console.error('\nNo encuentro firebase-admin ni en la raíz ni en functions/node_modules.');
+    console.error('Instálalo con:  npm i firebase-admin\n');
+    process.exit(1);
+  }
 }
 
 initializeApp({ credential: applicationDefault(), projectId: project });
