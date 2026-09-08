@@ -23,15 +23,16 @@ const RuletaPage = () => {
   
   const wheelRef = useRef(null);
   const [currentRotation, setCurrentRotation] = useState(0);
+  // El emoji es el respaldo de la imagen de Kapi; solo debe salir si la imagen
+  // no carga. Antes se pintaban los dos a la vez (capibara + perrito).
+  const [falloImagenKapi, setFalloImagenKapi] = useState(false);
 
   useEffect(() => {
     const fetchPrizes = async () => {
       const p = await getRuletaPrizes();
-      if (p.length > 0) {
-        setPrizes(p);
-      } else {
-        setError('No hay premios configurados en este momento.');
-      }
+      // Sin premios NO es un error: es que el admin aun no los ha cargado en
+      // /admin/ruleta. Se trata como estado vacio, no como fallo rojo.
+      setPrizes(p);
       setLoading(false);
     };
     fetchPrizes();
@@ -165,6 +166,24 @@ const RuletaPage = () => {
     );
   }
 
+  // Sin premios cargados no hay ruleta que girar. Antes se pintaba igual: un
+  // disco negro y un boton "¡GIRAR RULETA!" activo que, al pulsarlo, se iba al
+  // servidor a fallar. Mejor decirlo y no ofrecer una accion que no existe.
+  if (prizes.length === 0) {
+    return (
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" width="md" className={styles.pageContainer}>
+        <div className={styles.vacio}>
+          <span className={styles.vacioIcono} aria-hidden="true">🎡</span>
+          <h2 className={styles.vacioTitulo}><T>La ruleta está en preparación</T></h2>
+          <p className={styles.vacioTexto}>
+            <T>Todavía no hay premios cargados. Tu progreso de los 7 días no se pierde: cuando la abramos, tu giro seguirá aquí esperándote.</T>
+          </p>
+          <Link to="/minijuegos" className={styles.vacioBtn}><T>Ver otros juegos</T></Link>
+        </div>
+      </ArcadeShell>
+    );
+  }
+
   return (
     <ArcadeShell back="/minijuegos" title="Ruleta Semanal" width="md" className={styles.pageContainer}>
       {error && <div className={styles.errorBanner}><T>{error}</T></div>}
@@ -236,11 +255,19 @@ const RuletaPage = () => {
 
       {/* Kapi Mascot Animation Container */}
       <div className={`${styles.kapiMascot} ${spinning ? styles.kapiCheering : ''} ${result ? styles.kapiCelebrating : ''}`}>
-        <img src="/assets/kapi/kapi-happy.png" alt="Kapi Mascot" onError={(e) => e.target.style.display = 'none'} />
-        {/* Fallback emoji si no hay imagen */}
-        {!spinning && !result && <div className={styles.kapiEmoji}>🐶</div>}
-        {spinning && <div className={styles.kapiEmoji}>🤩</div>}
-        {result && <div className={styles.kapiEmoji}>🥳</div>}
+        {!falloImagenKapi && (
+          <img
+            src="/assets/kapi/kapi-happy.png"
+            alt="Kapi"
+            onError={() => setFalloImagenKapi(true)}
+          />
+        )}
+        {/* Respaldo: solo si la imagen no cargo. */}
+        {falloImagenKapi && (
+          <div className={styles.kapiEmoji}>
+            {spinning ? '🤩' : (result ? '🥳' : '🐶')}
+          </div>
+        )}
       </div>
     </ArcadeShell>
   );
