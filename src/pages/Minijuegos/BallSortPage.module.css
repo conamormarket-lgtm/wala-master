@@ -220,7 +220,7 @@
   min-height: var(--touch-target, 44px);
   padding: 0.75rem 1.5rem;
   border-radius: var(--radio-pequeno, 10px);
-  background: var(--primary-color);
+  background: var(--violet-500); /* igual que el .primaryButton del Header */
   color: #ffffff;
   font-weight: 700;
   text-decoration: none;
@@ -228,7 +228,7 @@
 }
 
 .actionBtn:hover {
-  background: var(--primary-hover);
+  background: var(--violet-600);
   /* Repetimos el blanco: el `a:hover` global de globals.css (0-1-1) gana a
      `.actionBtn` (0-1-0) y teñía la letra del mismo violeta que el fondo. */
   color: #ffffff;

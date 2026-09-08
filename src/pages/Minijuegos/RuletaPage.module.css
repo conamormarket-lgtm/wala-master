@@ -121,7 +121,7 @@
   padding: 1rem 2rem;
   border: 1px solid transparent;
   border-radius: var(--radio-pequeno, 10px);
-  background: var(--primary-color);
+  background: var(--violet-500); /* igual que el .primaryButton del Header */
   color: #ffffff;
   font-family: inherit;
   font-size: 1.05rem;
@@ -133,7 +133,7 @@
 }
 
 .spinBtn:hover:not(.disabled) {
-  background: var(--primary-hover);
+  background: var(--violet-600);
 }
 
 .spinBtn:active:not(.disabled) {
@@ -189,7 +189,7 @@
   padding: 0.85rem 1.5rem;
   border: none;
   border-radius: var(--radio-pequeno, 10px);
-  background: var(--primary-color);
+  background: var(--violet-500);
   color: #ffffff;
   font-family: inherit;
   font-size: 0.95rem;
@@ -199,7 +199,8 @@
 }
 
 .shareBtn:hover {
-  background: var(--primary-hover);
+  background: var(--violet-600);
+  color: #ffffff;
 }
 
 /* Antes: #94a3b8 subrayado, casi invisible sobre fondo claro. */

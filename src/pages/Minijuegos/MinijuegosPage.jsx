@@ -64,23 +64,27 @@ const JuegoCard = ({
   accion,
   atenuada = false,
 }) => (
-  <StaggerItem
-    as="article"
-    className={`${styles.card} ${acento} ${atenuada ? styles.cardAtenuada : ''}`}
-  >
-    <div className={styles.cardTop}>
-      <span className={styles.icono} aria-hidden="true">{icono}</span>
-      {estado}
-    </div>
+  // Dos elementos a propósito: framer-motion escribe el transform de la entrada
+  // como estilo INLINE, y un inline gana a cualquier regla CSS. Cuando la propia
+  // tarjeta era el StaggerItem, su `:hover { transform }` no llegaba a aplicarse
+  // nunca (el icono sí crecía, porque es un span normal). Así el envoltorio se
+  // queda con la animación de entrada y la tarjeta con la del cursor.
+  <StaggerItem className={styles.cardWrap}>
+    <article className={`${styles.card} ${acento} ${atenuada ? styles.cardAtenuada : ''}`}>
+      <div className={styles.cardTop}>
+        <span className={styles.icono} aria-hidden="true">{icono}</span>
+        {estado}
+      </div>
 
-    <h2 className={styles.cardTitulo}><T>{titulo}</T></h2>
-    <p className={styles.cardDesc}><T>{descripcion}</T></p>
+      <h2 className={styles.cardTitulo}><T>{titulo}</T></h2>
+      <p className={styles.cardDesc}><T>{descripcion}</T></p>
 
-    {recompensa && <span className={styles.recompensa}>{recompensa}</span>}
+      {recompensa && <span className={styles.recompensa}>{recompensa}</span>}
 
-    {extras && <div className={styles.cardExtras}>{extras}</div>}
+      {extras && <div className={styles.cardExtras}>{extras}</div>}
 
-    <div className={styles.cardAccion}>{accion}</div>
+      <div className={styles.cardAccion}>{accion}</div>
+    </article>
   </StaggerItem>
 );
 

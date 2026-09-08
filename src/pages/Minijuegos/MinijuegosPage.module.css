@@ -110,7 +110,7 @@
   min-height: var(--touch-target, 44px);
   padding: 0.7rem 1.4rem;
   border-radius: var(--radio-pequeno, 10px);
-  background: var(--primary-color);
+  background: var(--violet-500); /* igual que el .primaryButton del Header */
   color: #ffffff;
   font-size: 0.95rem;
   font-weight: 700;
@@ -119,7 +119,7 @@
 }
 
 .loginBtn:hover {
-  background: var(--primary-hover);
+  background: var(--violet-600);
   color: #ffffff; /* ver la nota de .accion:hover sobre el a:hover global */
 }
 
@@ -170,8 +170,15 @@
 /* Mismos valores que la tarjeta "Universo Walá" de la portada
    (BannerGrid .brandCell/.brandOutline): radio 22, borde de 1px, una sombra
    corta en reposo y el peso reservado al hover. */
+/* El StaggerItem (framer-motion) es este envoltorio, no la tarjeta: así su
+   transform inline de entrada no pisa el :hover de .card. Solo estira. */
+.cardWrap {
+  display: flex;
+}
+
 .card {
   position: relative;
+  flex: 1;
   display: flex;
   flex-direction: column;
   padding: 1.25rem;
@@ -361,7 +368,11 @@
   padding: 0.7rem 1.2rem;
   border: 1px solid transparent;
   border-radius: var(--radio-pequeno, 10px);
-  background: var(--primary-color);
+  /* Mismo violeta que el botón relleno del Header (.primaryButton: #8b5cf6 ->
+     #7c3aed). Es fijo en los dos temas a propósito: --primary-color se vuelve
+     #A78BFA en oscuro, un violeta claro pensado para TEXTO sobre fondo oscuro,
+     y como relleno con letra blanca se lavaba. */
+  background: var(--violet-500);
   color: #ffffff;
   font-family: inherit;
   font-size: 0.95rem;
@@ -378,7 +389,7 @@
    letra de los botones que son <a> se volvía #5B21B6, el mismo violeta que el
    fondo en hover, y desaparecía. `.accion:hover` es 0-2-0 y lo recupera. */
 .accion:hover {
-  background: var(--primary-hover);
+  background: var(--violet-600);
   color: #ffffff;
 }
 
