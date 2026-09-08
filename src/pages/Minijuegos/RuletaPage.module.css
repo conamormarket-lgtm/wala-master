@@ -44,6 +44,134 @@
 }
 
 /* =========================================================================
+   BOTÓN DE LA BARRA Y MODAL DE AYUDA
+   Mismos valores que en las bolitas y en La Palabra del Día.
+   ========================================================================= */
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: var(--touch-target, 44px);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  background-color: transparent;
+  border: 1px solid var(--gris-borde, #ddd);
+  color: var(--gris-texto-principal, #333);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.iconBtn:hover {
+  background-color: var(--gris-hover, #f5f5f5);
+  border-color: var(--gris-texto-secundario, #ccc);
+}
+
+@media (max-width: 560px) {
+  .iconBtnTexto {
+    display: none;
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.ayudaCard {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 1.75rem 1.5rem;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
+  box-sizing: border-box;
+}
+
+.cerrarModal {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.cerrarModal:hover {
+  color: var(--color-text);
+}
+
+.ayudaTitulo {
+  margin: 0 0 0.9rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.ayudaObjetivo {
+  margin: 0 0 0.9rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.ayudaPasos {
+  margin: 0 0 1rem;
+  padding-left: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.ayudaPie {
+  margin: 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.ayudaBtn {
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  margin-top: 1.25rem;
+  padding: 0.7rem 1.4rem;
+  border: none;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--violet-500);
+  color: #ffffff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.ayudaBtn:hover {
+  background: var(--violet-600);
+}
+
+/* =========================================================================
    ESTADO VACÍO (aún no hay premios cargados en /admin/ruleta)
    ========================================================================= */
 

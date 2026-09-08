@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HelpCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { diseno } from '../../utils/modoDiseno';
@@ -26,6 +29,16 @@ const RuletaPage = () => {
   // El emoji es el respaldo de la imagen de Kapi; solo debe salir si la imagen
   // no carga. Antes se pintaban los dos a la vez (capibara + perrito).
   const [falloImagenKapi, setFalloImagenKapi] = useState(false);
+  // La ayuda se abre sola la primera visita y luego se recuerda cerrada.
+  const [ayudaAbierta, setAyudaAbierta] = useState(() => {
+    try { return localStorage.getItem('wala_ruleta_ayuda_vista') !== '1'; }
+    catch { return true; }
+  });
+
+  const cerrarAyuda = () => {
+    setAyudaAbierta(false);
+    try { localStorage.setItem('wala_ruleta_ayuda_vista', '1'); } catch { /* modo privado */ }
+  };
 
   useEffect(() => {
     const fetchPrizes = async () => {
@@ -46,6 +59,13 @@ const RuletaPage = () => {
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!ayudaAbierta) return;
+    const alPulsar = (e) => { if (e.key === 'Escape') cerrarAyuda(); };
+    window.addEventListener('keydown', alPulsar);
+    return () => window.removeEventListener('keydown', alPulsar);
+  }, [ayudaAbierta]);
 
   const elegibilidad = getRuletaEligibility(userProfile);
   // Modo diseño (solo en local): ?ruleta=desbloqueada|girada|pendiente|perdida
@@ -150,18 +170,83 @@ const RuletaPage = () => {
 
   // Los estados de espera también viven dentro del shell: antes eran texto
   // suelto sobre el fondo gris y parecían un error de carga de la página.
+  const botonAyuda = (
+    <button
+      type="button"
+      className={styles.iconBtn}
+      onClick={() => (ayudaAbierta ? cerrarAyuda() : setAyudaAbierta(true))}
+      aria-expanded={ayudaAbierta}
+    >
+      <HelpCircle size={16} aria-hidden="true" />
+      <span className={styles.iconBtnTexto}><T>Cómo jugar</T></span>
+    </button>
+  );
+
+  const modalAyuda = createPortal(
+    <AnimatePresence>
+      {ayudaAbierta && (
+        <motion.div
+          className={styles.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={cerrarAyuda}
+          role="presentation"
+        >
+          <motion.div
+            className={styles.ayudaCard}
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Cómo se juega"
+          >
+            <button className={styles.cerrarModal} onClick={cerrarAyuda} aria-label="Cerrar">×</button>
+
+            <h2 className={styles.ayudaTitulo}><T>Cómo se juega</T></h2>
+
+            <p className={styles.ayudaObjetivo}>
+              <T>La ruleta no se juega: se gana. Es el premio de mantener tu racha con Kapi toda la semana.</T>
+            </p>
+
+            <ol className={styles.ayudaPasos}>
+              <li><T>Alimenta a Kapi todos los días, de lunes a domingo.</T></li>
+              <li><T>Si te saltas un día, la semana se pierde y el contador vuelve a empezar el lunes.</T></li>
+              <li><T>Al completar los 7 días ganas un giro.</T></li>
+              <li><T>Un giro por semana: al girar, se acaba hasta la siguiente.</T></li>
+            </ol>
+
+            <p className={styles.ayudaPie}>
+              <T>Si ganas el giro y no lo usas, no lo pierdes: sigue disponible durante la semana siguiente. El premio lo decide el servidor y se acredita solo en tu cuenta.</T>
+            </p>
+
+            <button type="button" className={styles.ayudaBtn} onClick={cerrarAyuda}>
+              <T>Entendido</T>
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+
   if (!user) {
     return (
-      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" width="md">
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" acciones={botonAyuda}>
         <p className={styles.estado}><T>Inicia sesión para jugar.</T></p>
+        {modalAyuda}
       </ArcadeShell>
     );
   }
 
   if (loading) {
     return (
-      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" width="md">
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" acciones={botonAyuda}>
         <p className={styles.estado}><T>Cargando ruleta...</T></p>
+        {modalAyuda}
       </ArcadeShell>
     );
   }
@@ -171,7 +256,7 @@ const RuletaPage = () => {
   // servidor a fallar. Mejor decirlo y no ofrecer una accion que no existe.
   if (prizes.length === 0) {
     return (
-      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" width="md" className={styles.pageContainer}>
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
         <div className={styles.vacio}>
           <span className={styles.vacioIcono} aria-hidden="true">🎡</span>
           <h2 className={styles.vacioTitulo}><T>La ruleta está en preparación</T></h2>
@@ -180,12 +265,13 @@ const RuletaPage = () => {
           </p>
           <Link to="/minijuegos" className={styles.vacioBtn}><T>Ver otros juegos</T></Link>
         </div>
+        {modalAyuda}
       </ArcadeShell>
     );
   }
 
   return (
-    <ArcadeShell back="/minijuegos" title="Ruleta Semanal" width="md" className={styles.pageContainer}>
+    <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
       {error && <div className={styles.errorBanner}><T>{error}</T></div>}
 
       <div className={styles.ruletaContainer}>
@@ -269,6 +355,8 @@ const RuletaPage = () => {
           </div>
         )}
       </div>
+
+      {modalAyuda}
     </ArcadeShell>
   );
 };
