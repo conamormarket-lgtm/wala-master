@@ -93,11 +93,14 @@ const RuedaRuleta = ({
 
   return (
     <div className={`${styles.contenedor} ${className}`.trim()}>
-      {/* El puntero vive fuera del SVG que gira: es lo único fijo de la rueda. */}
+      {/* El puntero vive fuera del SVG que gira: es lo único fijo de la rueda.
+          La cabeza es un semicírculo de radio 11 centrado en (12, 11), así que
+          llega justo a y=0. Antes estaba centrada en (12, 6) y el arco subía
+          hasta y=-5, fuera del viewBox: la punta se veía cortada por arriba. */}
       <div className={styles.puntero} style={{ color: colorPuntero }} aria-hidden="true">
-        <svg viewBox="0 0 24 28" width="30" height="35">
-          <path d="M12 28 L1 6 A 11 11 0 1 1 23 6 Z" fill="currentColor" />
-          <circle cx="12" cy="9" r="4.5" fill="rgba(255,255,255,0.9)" />
+        <svg viewBox="0 0 24 30" width="28" height="35">
+          <path d="M12 30 L1 11 A 11 11 0 1 1 23 11 Z" fill="currentColor" />
+          <circle cx="12" cy="11" r="4.5" fill="rgba(255,255,255,0.9)" />
         </svg>
       </div>
 
