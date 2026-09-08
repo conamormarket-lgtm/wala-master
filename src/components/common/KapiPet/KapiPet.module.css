@@ -79,8 +79,14 @@
   cursor: pointer;
 }
 
-.closeBtn:hover {
+.closeBtn:hover:not(:disabled) {
   color: var(--color-text, #0f172a);
+}
+
+/* Mientras Kapi come, cerrar no esta disponible. */
+.closeBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .title {

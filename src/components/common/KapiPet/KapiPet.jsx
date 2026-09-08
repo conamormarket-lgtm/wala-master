@@ -121,10 +121,10 @@ const KapiPet = () => {
   // salto ocurría en cada carga de un usuario logueado.
   useEffect(() => {
     if (!isOpen) return;
-    const alPulsar = (e) => { if (e.key === 'Escape') setIsOpen(false); };
+    const alPulsar = (e) => { if (e.key === 'Escape' && !isFeeding) setIsOpen(false); };
     window.addEventListener('keydown', alPulsar);
     return () => window.removeEventListener('keydown', alPulsar);
-  }, [isOpen]);
+  }, [isOpen, isFeeding]);
 
   if (onLandingPage) return null; // Kapi no aparece en landings (protege la conversión del checkout)
   if (!user || !userProfile) return null;
@@ -205,6 +205,15 @@ const KapiPet = () => {
 
   const handleToggle = () => setIsOpen(!isOpen);
 
+  // Mientras Kapi come no se cierra. La animación de comer, el toast de error y
+  // las monedas que vuelan al header salen de DENTRO del modal: si desaparece a
+  // mitad, el usuario pulsa, no ve nada y se queda sin saber si se le acreditó.
+  // Son 1,5 s de animación más lo que tarde el servidor.
+  const cerrarPanel = () => {
+    if (isFeeding) return;
+    setIsOpen(false);
+  };
+
   // Determinar progreso del reto actual
   const progressData = userProfile?.weeklyChallengeProgress || {};
   const isChallengeCompleted = progressData.challengeId === activeWeeklyChallenge?.challengeId && progressData.completed;
@@ -244,7 +253,7 @@ const KapiPet = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => setIsOpen(false)}
+          onClick={cerrarPanel}
           role="presentation"
         >
           <motion.div
@@ -258,7 +267,16 @@ const KapiPet = () => {
             aria-modal="true"
             aria-label="Tu mascota Kapi"
           >
-            <button className={styles.closeBtn} onClick={() => setIsOpen(false)} aria-label="Cerrar">✕</button>
+            {/* Se deshabilita mientras come, en vez de dejar un clic muerto:
+                así se ve por qué no cierra. */}
+            <button
+              className={styles.closeBtn}
+              onClick={cerrarPanel}
+              disabled={isFeeding}
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
             
             <h2 className={styles.title}><T>Tu Mascota Kapi</T></h2>
             <p className={styles.subtitle}>
