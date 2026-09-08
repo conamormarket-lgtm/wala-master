@@ -27,6 +27,76 @@ const PREMIOS_DEMO = [
   { id: 'd7', nombre: '5 monedas', etiqueta: '5 monedas', tipo: 'monedas', icono: '🪙', texto: '5 monedas' },
 ];
 
+// Icono por tipo de premio, para la lista del panel.
+const ICONO_TIPO = {
+  monedas: '🪙',
+  descuento: '🏷️',
+  producto_descuento: '🏷️',
+  producto_gratis: '🎁',
+  envio_gratis: '📦',
+  manual: '🎀',
+  nada: '🍀',
+};
+
+// '2026-09-08T...' -> '8 sep'. Sin librería: es la única fecha de la pantalla.
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const fechaCorta = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : `${d.getDate()} ${MESES[d.getMonth()]}`;
+};
+
+// Panel lateral: lo que este usuario ya ha ganado. En escritorio va junto a la
+// rueda (que dejaba media pantalla vacía a los lados) y en móvil, debajo.
+const PanelPremios = ({ historial }) => (
+  <aside className={styles.panel}>
+    <div className={styles.panelCabecera}>
+      <h2 className={styles.panelTitulo}><T>Tus premios</T></h2>
+      {historial.length > 0 && (
+        <span className={styles.panelContador}>
+          {historial.length} {historial.length === 1 ? 'giro' : 'giros'}
+        </span>
+      )}
+    </div>
+
+    {historial.length === 0 ? (
+      <p className={styles.panelVacio}>
+        <T>Todavía no has girado. Lo que ganes aparecerá aquí.</T>
+      </p>
+    ) : (
+      <ul className={styles.panelLista}>
+        {historial.map((h) => (
+          <li key={h.id} className={styles.panelItem}>
+            <span className={styles.panelIcono} aria-hidden="true">
+              {ICONO_TIPO[h.tipo] || '🎡'}
+            </span>
+            <span className={styles.panelTexto}>
+              <span className={styles.panelPremio}>{h.texto}</span>
+              {h.cuponCode && <code className={styles.panelCodigo}>{h.cuponCode}</code>}
+            </span>
+            <span className={styles.panelFecha}>{fechaCorta(h.wonAt)}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {historial.some((h) => h.cuponCode) && (
+      <Link to="/cuenta/cupones" className={styles.panelEnlace}>
+        <T>Ver mis cupones</T>
+      </Link>
+    )}
+  </aside>
+);
+
+// Historial de muestra para el modo diseño, para poder repasar el panel de
+// premios sin haber girado nunca (que es justo cuando esta vacio).
+const HISTORIAL_DEMO = [
+  { id: 'h1', texto: '15% de descuento', tipo: 'descuento', cuponCode: 'WALA-K7M2QP', wonAt: '2026-09-08T12:00:00Z' },
+  { id: 'h2', texto: 'Envío gratis', tipo: 'envio_gratis', cuponCode: 'WALA-XWF9JE', wonAt: '2026-09-01T12:00:00Z' },
+  { id: 'h3', texto: '10 monedas', tipo: 'monedas', cuponCode: null, wonAt: '2026-08-25T12:00:00Z' },
+  { id: 'h4', texto: 'Inténtalo de nuevo', tipo: 'nada', cuponCode: null, wonAt: '2026-08-18T12:00:00Z' },
+];
+
 // Quien pide menos movimiento no debería tragarse cuatro segundos de disco
 // girando: se le da el resultado casi al instante, sin quitarle el premio.
 const prefiereMenosMovimiento = () => {
@@ -48,6 +118,10 @@ const RuletaPage = () => {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState(null);
   const [cupon, setCupon] = useState(null);
+  // Premios que ya ganó este usuario. Vienen del tablero: ruletaWins es de
+  // lectura solo para admin, así que el cliente no puede consultarlos por su
+  // cuenta ni siquiera los suyos.
+  const [historial, setHistorial] = useState([]);
   const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState('');
 
@@ -71,6 +145,10 @@ const RuletaPage = () => {
   // giro lo sigue decidiendo el servidor, que ignora estos parámetros.
   const sesionForzada = diseno('sesion') === 'activa';
   const premiosDemo = diseno('premios') === 'demo';
+  // ?resultado=premio|cupon|nada abre el modal del resultado sin girar. Sin esto
+  // la única forma de revisarlo era gastar el giro semanal de una cuenta y
+  // esperar a que tocara justo ese tipo de premio.
+  const resultadoDemo = diseno('resultado');
 
   const cerrarAyuda = () => {
     setAyudaAbierta(false);
@@ -91,6 +169,7 @@ const RuletaPage = () => {
       if (!board.success) setError(board.error);
       setConfig(board.config);
       setPremios(premiosDemo ? PREMIOS_DEMO : board.premios);
+      setHistorial(premiosDemo ? HISTORIAL_DEMO : (board.historial || []));
       setLoading(false);
     })();
     return () => { vivo = false; };
@@ -106,6 +185,20 @@ const RuletaPage = () => {
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Modo diseño: abre el modal del resultado al montar.
+  useEffect(() => {
+    if (!resultadoDemo) return;
+    setResult({
+      id: 'demo',
+      nombre: resultadoDemo === 'nada' ? 'Inténtalo de nuevo' : '15% de descuento',
+      texto: resultadoDemo === 'nada' ? 'Inténtalo de nuevo' : '15% de descuento (hasta S/ 20.00)',
+      tipo: resultadoDemo === 'nada' ? 'nada' : 'descuento',
+    });
+    if (resultadoDemo === 'cupon') {
+      setCupon({ code: 'WALA-EJEMPLO', expiraEn: '2026-10-08' });
+    }
+  }, [resultadoDemo]);
 
   useEffect(() => {
     if (!ayudaAbierta) return;
@@ -174,6 +267,13 @@ const RuletaPage = () => {
       setSpinning(false);
       setResult(premioGanado);
       setCupon(res.cupon || null);
+      setHistorial((previos) => [{
+        id: 'nuevo-' + Date.now(),
+        texto: premioGanado.texto || premioGanado.nombre,
+        tipo: premioGanado.tipo,
+        cuponCode: res.cupon?.code || null,
+        wonAt: new Date().toISOString(),
+      }, ...previos]);
       // Analytics aditivo (fire-and-forget): fin del minijuego con el premio obtenido.
       try {
         trackMinigame('complete',
@@ -298,70 +398,46 @@ const RuletaPage = () => {
     document.body
   );
 
-  if (!user && !sesionForzada) {
-    return (
-      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" acciones={botonAyuda}>
-        <p className={styles.estado}><T>Inicia sesión para jugar.</T></p>
-        {modalAyuda}
-      </ArcadeShell>
-    );
-  }
-
-  if (loading) {
-    return (
-      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
-        <div className={styles.esqueletoRueda} aria-hidden="true" />
-        <p className={styles.estado}><T>Cargando ruleta...</T></p>
-        {modalAyuda}
-      </ArcadeShell>
-    );
-  }
-
-  // Sin premios no hay ruleta que girar. Antes se pintaba igual: un disco negro
-  // y un botón "¡GIRAR RULETA!" activo que, al pulsarlo, se iba al servidor a
-  // fallar. Mejor decirlo y no ofrecer una acción que no existe.
-  if (premios.length === 0 || !config.activa) {
-    return (
-      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
-        <div className={styles.vacio}>
-          <span className={styles.vacioIcono} aria-hidden="true">🎡</span>
-          <h2 className={styles.vacioTitulo}>
-            {config.activa ? <T>La ruleta está en preparación</T> : <T>La ruleta está cerrada por ahora</T>}
-          </h2>
-          <p className={styles.vacioTexto}>
-            <T>Tu progreso no se pierde: cuando la abramos, tu giro seguirá aquí esperándote.</T>
-          </p>
-          <Link to="/minijuegos" className={styles.vacioBtn}><T>Ver otros juegos</T></Link>
-        </div>
-        {modalAyuda}
-      </ArcadeShell>
-    );
-  }
-
-  return (
-    <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
-      {error && <div className={styles.errorBanner}><T>{error}</T></div>}
-
-      <RuedaRuleta
-        premios={premios}
-        colores={config.tema.colores}
-        colorAro={config.tema.colorAro}
-        colorPuntero={config.tema.colorPuntero}
-        imagenCentro={config.tema.imagenCentro}
-        rotacion={rotacion}
-        duracionMs={duracionGiro}
-      />
-
-      <div className={styles.controls}>
-        {result ? (
+  // El resultado sale en modal y no como una tarjeta debajo de la rueda: ahí
+  // quedaba fuera de la pantalla y había que bajar a buscarlo justo después de
+  // la animación, que es el momento en el que uno quiere ver qué le tocó.
+  const modalResultado = createPortal(
+    <AnimatePresence>
+      {result && (
+        <motion.div
+          className={styles.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setResult(null)}
+          role="presentation"
+        >
           <motion.div
-            className={styles.resultBox}
-            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            className={styles.resultadoCard}
+            initial={{ opacity: 0, y: 20, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Resultado de la ruleta"
           >
-            <h2><T>¡Felicidades!</T></h2>
-            <p className={styles.resultPremio}>{result.texto || result.nombre}</p>
+            <button
+              className={styles.cerrarModal}
+              onClick={() => setResult(null)}
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+
+            <span className={styles.resultadoIcono} aria-hidden="true">
+              {result.tipo === 'nada' ? '🍀' : '🎉'}
+            </span>
+            <h2 className={styles.resultadoTitulo}>
+              {result.tipo === 'nada' ? <T>¡Casi!</T> : <T>¡Felicidades!</T>}
+            </h2>
+            <p className={styles.resultadoPremio}>{result.texto || result.nombre}</p>
 
             {cupon && (
               <div className={styles.cuponCaja}>
@@ -392,39 +468,118 @@ const RuletaPage = () => {
               </p>
             )}
 
-            <button className={styles.shareBtn} onClick={handleShare}>
-              <T>Compartir Resultado 🎉</T>
+            {/* Compartir "Sigue intentando" no tiene ninguna gracia. */}
+            {result.tipo !== 'nada' && (
+              <button className={styles.shareBtn} onClick={handleShare}>
+                <T>Compartir Resultado 🎉</T>
+              </button>
+            )}
+            <button
+              type="button"
+              className={styles.ayudaBtn}
+              onClick={() => setResult(null)}
+            >
+              <T>Entendido</T>
             </button>
-            <Link to="/minijuegos" className={styles.secondaryBtn}><T>Ver otros juegos</T></Link>
           </motion.div>
-        ) : (
-          <>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+
+  if (!user && !sesionForzada) {
+    return (
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" acciones={botonAyuda}>
+        <p className={styles.estado}><T>Inicia sesión para jugar.</T></p>
+        {modalAyuda}
+      </ArcadeShell>
+    );
+  }
+
+  if (loading) {
+    return (
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
+        {/* Mismo armazón que la pantalla cargada: si el hueco no ocupa lo mismo
+            que la rueda, al llegar los premios la página pega un salto. */}
+        <div className={styles.layout}>
+          <div className={styles.zonaRueda}>
+            <div className={styles.esqueletoRueda} aria-hidden="true" />
+            <p className={styles.cargando}><T>Cargando ruleta...</T></p>
+          </div>
+        </div>
+        {modalAyuda}
+      </ArcadeShell>
+    );
+  }
+
+  // Sin premios no hay ruleta que girar. Antes se pintaba igual: un disco negro
+  // y un botón "¡GIRAR RULETA!" activo que, al pulsarlo, se iba al servidor a
+  // fallar. Mejor decirlo y no ofrecer una acción que no existe.
+  if (premios.length === 0 || !config.activa) {
+    return (
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
+        <div className={styles.vacio}>
+          <span className={styles.vacioIcono} aria-hidden="true">🎡</span>
+          <h2 className={styles.vacioTitulo}>
+            {config.activa ? <T>La ruleta está en preparación</T> : <T>La ruleta está cerrada por ahora</T>}
+          </h2>
+          <p className={styles.vacioTexto}>
+            <T>Tu progreso no se pierde: cuando la abramos, tu giro seguirá aquí esperándote.</T>
+          </p>
+          <Link to="/minijuegos" className={styles.vacioBtn}><T>Ver otros juegos</T></Link>
+        </div>
+        {modalAyuda}
+      </ArcadeShell>
+    );
+  }
+
+  return (
+    <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
+      {error && <div className={styles.errorBanner}><T>{error}</T></div>}
+
+      <div className={styles.layout}>
+        <div className={styles.zonaRueda}>
+          <RuedaRuleta
+            premios={premios}
+            colores={config.tema.colores}
+            colorAro={config.tema.colorAro}
+            colorPuntero={config.tema.colorPuntero}
+            imagenCentro={config.tema.imagenCentro}
+            rotacion={rotacion}
+            duracionMs={duracionGiro}
+          />
+
+          <div className={styles.controls}>
             {/* Giro heredado de la semana pasada: se avisa para que no parezca
                 un error que la ruleta esté abierta con el contador a cero. */}
-            {esPendienteAnterior && (
+            {esPendienteAnterior && !result && (
               <p className={styles.pendingNote}>
                 <T>Este giro es el que ganaste la semana pasada. ¡Aprovéchalo!</T>
               </p>
             )}
             <button
-              className={`${styles.spinBtn} ${(!isUnlocked || spinning) ? styles.disabled : ''}`}
+              className={`${styles.spinBtn} ${(!isUnlocked || spinning || result) ? styles.disabled : ''}`}
               onClick={handleSpin}
-              disabled={!isUnlocked || spinning}
+              disabled={!isUnlocked || spinning || !!result}
             >
               <T>
                 {spinning
                   ? 'Girando...'
-                  : (isUnlocked
-                    ? '¡GIRAR RULETA!'
-                    : (hasSpun
-                      ? 'Ya giraste esta semana ✅'
+                  : (result || hasSpun
+                    ? 'Ya giraste esta semana ✅'
+                    : (isUnlocked
+                      ? '¡GIRAR RULETA!'
                       : (hasLost ? 'Semana Perdida ❌' : 'Ruleta Bloqueada 🔒')))}
               </T>
             </button>
-          </>
-        )}
+          </div>
+        </div>
+
+        <PanelPremios historial={historial} />
       </div>
 
+      {modalResultado}
       {modalAyuda}
     </ArcadeShell>
   );

@@ -12,11 +12,40 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* La rueda se quedaba arriba del todo con un hueco muerto debajo de media
-     pantalla. Se reserva el alto que deja el shell (menos cabecera, sus propios
-     márgenes y la barra de "volver") y se reparte el sobrante arriba y abajo. */
-  justify-content: center;
-  min-height: calc(100vh - var(--header-height, 72px) - 7rem);
+  min-height: calc(100vh - var(--header-height, 72px) - 9rem);
+}
+
+/* El contenido se centra con márgenes automáticos y NO con justify-content en
+   .pageContainer: eso arrastraba también la barra de "Volver" y el título, que
+   tienen que quedarse arriba como en el resto de minijuegos. Mismo patrón que
+   Las Bolitas de Kapi.
+
+   En escritorio la rueda convive con el panel de premios: antes tenía media
+   pantalla vacía a los lados. Por debajo de 900px se apilan. */
+.layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  margin-block: auto;
+}
+
+.zonaRueda {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+    gap: 2rem;
+    align-items: center;
+    max-width: 980px;
+  }
 }
 
 /* Estados de espera ("cargando", "inicia sesión"): antes eran texto suelto
@@ -246,6 +275,15 @@
    página no dé el salto de layout al aparecer el disco.
    ========================================================================= */
 
+/* El "Cargando ruleta..." no puede usar .estado: sus 3rem de margen empujaban
+   el texto hasta media pantalla por debajo del hueco del disco. */
+.cargando {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
 .esqueletoRueda {
   /* Mismo tamano que .contenedor de RuedaRuleta: si no coinciden, la pagina da
      un salto al cambiar el hueco por el disco. */
@@ -315,48 +353,117 @@
 }
 
 /* =========================================================================
-   RESULTADO
+   RESULTADO (modal)
+   -------------------------------------------------------------------------
+   Antes era una tarjeta debajo de la rueda: en escritorio caía fuera de la
+   pantalla y había que bajar a buscarla justo después de la animación, que es
+   cuando uno quiere ver qué le tocó. Comparte el overlay con la ayuda.
    ========================================================================= */
 
-.resultBox {
-  padding: 2rem 1.5rem;
+.resultadoCard {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem 1.5rem 1.5rem;
   border-radius: 22px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
+  text-align: center;
+  box-sizing: border-box;
 }
 
-.resultBox h2 {
-  margin: 0 0 0.5rem;
+.resultadoIcono {
+  display: block;
+  font-size: 2.75rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.resultadoTitulo {
+  margin: 0 0 0.35rem;
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--primary-color);
 }
 
-.resultBox p {
+.resultadoPremio {
   margin: 0;
-  color: var(--color-text);
-  font-size: 1.05rem;
-}
-
-/* Lo que se ha ganado, en una línea y con peso: es lo único que el usuario
-   busca al parar la rueda. */
-.resultPremio {
-  font-size: 1.15rem !important;
+  font-size: 1.15rem;
   font-weight: 700;
+  color: var(--color-text);
 }
 
 /* Nota de los premios que se entregan a mano (antes no se avisaba de nada y el
    usuario se quedaba esperando algo que nunca aparecía en su cuenta). */
 .resultNota {
-  margin-top: 0.75rem !important;
-  font-size: 0.9rem !important;
-  color: var(--color-text-muted) !important;
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.shareBtn {
+  display: block;
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  margin: 1.25rem 0 0.75rem;
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--violet-500);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transicion-rapida);
+}
+
+.shareBtn:hover {
+  background: var(--violet-600);
+  color: #ffffff;
+}
+
+/* Antes: #94a3b8 subrayado, casi invisible sobre fondo claro. */
+.secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target, 44px);
+  padding: 0.5rem 1rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.secondaryBtn:hover {
+  color: var(--primary-color);
+}
+
+/* Aviso de que el giro disponible viene de la semana anterior (semana de gracia). */
+.pendingNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0 0 0.9rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+[data-theme='dark'] .pendingNote {
+  color: #6ee7b7;
 }
 
 /* =========================================================================
-   CUPÓN GANADO
+   CUPÓN GANADO (dentro del modal de resultado)
    ========================================================================= */
 
 .cuponCaja {
@@ -428,63 +535,126 @@
   text-underline-offset: 3px;
 }
 
-.shareBtn {
-  display: block;
+/* =========================================================================
+   PANEL DE PREMIOS GANADOS
+   -------------------------------------------------------------------------
+   `ruletaWins` es de lectura solo para admin, así que esta lista llega por el
+   callable del tablero, ya filtrada a este usuario.
+   ========================================================================= */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
   width: 100%;
-  min-height: var(--touch-target, 44px);
-  margin: 1.25rem 0 0.75rem;
-  padding: 0.85rem 1.5rem;
-  border: none;
-  border-radius: var(--radio-pequeno, 10px);
-  background: var(--violet-500);
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: var(--transicion-rapida);
+  max-width: 420px;
+  padding: 1.25rem;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
 }
 
-.shareBtn:hover {
-  background: var(--violet-600);
-  color: #ffffff;
+[data-theme='dark'] .panel {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
-/* Antes: #94a3b8 subrayado, casi invisible sobre fondo claro. */
-.secondaryBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--touch-target, 44px);
-  padding: 0.5rem 1rem;
-  color: var(--color-text-muted);
+@media (min-width: 900px) {
+  .panel {
+    max-width: none;
+  }
+}
+
+.panelCabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.panelTitulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.panelContador {
+  font-size: 0.78rem;
   font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  color: var(--color-text-muted);
 }
 
-.secondaryBtn:hover {
+.panelVacio {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.panelLista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* Con muchos giros la lista no debe estirar la página por debajo de la rueda. */
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.panelItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-bg);
+}
+
+.panelIcono {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.panelTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.panelPremio {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.panelCodigo {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   color: var(--primary-color);
 }
 
-/* Aviso de que el giro disponible viene de la semana anterior (semana de gracia). */
-.pendingNote {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  margin: 0 0 0.9rem;
-  padding: 0.6rem 0.9rem;
-  border-radius: var(--radio-pequeno, 10px);
-  background: rgba(16, 185, 129, 0.1);
-  color: #047857;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-align: center;
+.panelFecha {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }
 
-[data-theme='dark'] .pendingNote {
-  color: #6ee7b7;
+.panelEnlace {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* =========================================================================

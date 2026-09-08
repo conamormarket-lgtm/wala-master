@@ -261,6 +261,10 @@ export const getRuletaBoard = async () => {
       config: normalizarConfig(res.data?.config),
       premios: res.data?.premios || [],
       semanaPendiente: res.data?.semanaPendiente || null,
+      // Premios que ya ganó este usuario. Solo llegan por aquí: ruletaWins es de
+      // lectura exclusiva de admin porque lleva los datos de todo el mundo.
+      historial: res.data?.historial || [],
+      giros: res.data?.giros || 0,
     };
   } catch (error) {
     // Respaldo: el callable puede fallar por un arranque en frío o por estar sin
@@ -298,6 +302,10 @@ const tableroDeRespaldo = async (errorOriginal) => {
         texto: textoPremio(p),
       })),
       semanaPendiente: null,
+      // Sin el callable no hay historial: las reglas no dejan al cliente leer
+      // ruletaWins, y es correcto que asi sea.
+      historial: [],
+      giros: 0,
     };
   } catch {
     return {
@@ -306,6 +314,8 @@ const tableroDeRespaldo = async (errorOriginal) => {
       config: normalizarConfig(null),
       premios: [],
       semanaPendiente: null,
+      historial: [],
+      giros: 0,
     };
   }
 };

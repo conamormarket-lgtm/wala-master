@@ -1570,11 +1570,41 @@ exports.getRuletaBoard = functions.https.onCall(async (data, context) => {
       texto: textoPremio(p),
     }));
 
+    // Historial propio. `ruletaWins` es de lectura solo para admin (y debe
+    // seguir siéndolo: lleva el uid y el correo de todo el mundo), así que el
+    // usuario no puede consultar ni sus propios premios desde el cliente. Se le
+    // devuelven aquí ya filtrados y sin los datos de nadie más.
+    let historial = [];
+    try {
+      const wins = await db.collection("ruletaWins")
+        .where("uid", "==", uid)
+        .orderBy("createdAt", "desc")
+        .limit(12)
+        .get();
+      historial = wins.docs.map((d) => {
+        const w = d.data();
+        return {
+          id: d.id,
+          texto: w.texto || w.name || "",
+          tipo: w.tipo || w.type || "",
+          cuponCode: w.cuponCode || null,
+          weekStart: w.weekStart || null,
+          wonAt: w.wonAt || null,
+        };
+      });
+    } catch (e) {
+      // Si falta el índice compuesto, el tablero NO debe caerse: la ruleta es lo
+      // importante y el historial es un extra.
+      console.warn("getRuletaBoard: no se pudo leer el historial:", e.message);
+    }
+
     return {
       success: true,
       config,
       premios,
       semanaPendiente: semanaDeGiroPendiente(u, config.reglas),
+      historial,
+      giros: historial.length,
     };
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
