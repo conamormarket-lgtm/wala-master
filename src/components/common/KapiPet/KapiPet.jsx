@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { showFlyingCoins } from '../../../utils/animations';
@@ -191,14 +189,6 @@ const KapiPet = () => {
 
   const handleToggle = () => setIsOpen(!isOpen);
 
-  // Escape cierra el panel, como en el resto de modales de la app.
-  useEffect(() => {
-    if (!isOpen) return;
-    const alPulsar = (e) => { if (e.key === 'Escape') setIsOpen(false); };
-    window.addEventListener('keydown', alPulsar);
-    return () => window.removeEventListener('keydown', alPulsar);
-  }, [isOpen]);
-
   // Determinar progreso del reto actual
   const progressData = userProfile?.weeklyChallengeProgress || {};
   const isChallengeCompleted = progressData.challengeId === activeWeeklyChallenge?.challengeId && progressData.completed;
@@ -224,33 +214,10 @@ const KapiPet = () => {
         </div>
       )}
 
-      {/* En <body> y con transición, igual que los modales de la Zona Arcade.
-          El portal además lo saca de .floating-action-stack, que es una pila de
-          botones pequeños con pointer-events:none y contexto de apilado propio:
-          no es sitio para un modal a pantalla completa. */}
-      {createPortal(
-      <AnimatePresence>
       {isOpen && (
-        <motion.div
-          className={styles.overlay}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setIsOpen(false)}
-          role="presentation"
-        >
-          <motion.div
-            className={styles.modal}
-            initial={{ opacity: 0, y: 16, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-            onClick={e => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Tu mascota Kapi"
-          >
-            <button className={styles.closeBtn} onClick={() => setIsOpen(false)} aria-label="Cerrar">✕</button>
+        <div className={styles.overlay} onClick={() => setIsOpen(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <button className={styles.closeBtn} onClick={() => setIsOpen(false)}>✕</button>
             
             <h2 className={styles.title}><T>Tu Mascota Kapi</T></h2>
             <p className={styles.subtitle}>
@@ -336,11 +303,9 @@ const KapiPet = () => {
                 </button>
               )}
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
-      </AnimatePresence>,
-      document.body)}
     </>
   );
 };

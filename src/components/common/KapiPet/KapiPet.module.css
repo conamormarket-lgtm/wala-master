@@ -142,11 +142,8 @@
   transition: width 0.3s ease;
 }
 
-/* Mismo violeta que el .primaryButton del Header, fijo en los dos temas.
-   --rojo-principal apunta a --primary-color, que en modo noche se aclara a
-   #A78BFA y como relleno con letra blanca se lavaba. */
 .feedBtn {
-  background: var(--violet-500, #8b5cf6);
+  background: var(--rojo-principal, #e11d48);
   color: #fff;
   border: none;
   padding: 14px 24px;
@@ -159,8 +156,7 @@
 }
 
 .feedBtn:hover {
-  background: var(--violet-600, #7c3aed);
-  color: #fff;
+  opacity: 0.9;
 }
 
 .feedingBtn {
@@ -265,7 +261,7 @@
 }
 
 .evidenceBtn {
-  background: var(--violet-500, #8b5cf6);
+  background: #3b82f6;
   color: white;
   border: none;
   padding: 8px;
