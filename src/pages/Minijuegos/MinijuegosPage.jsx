@@ -85,7 +85,7 @@ const JuegoCard = ({
 );
 
 const MinijuegosPage = () => {
-  const { user, userProfile, activeMainCoins } = useAuth();
+  const { user, userProfile } = useAuth();
   const { addToast } = useGlobalToast();
 
   // Modo diseño: ?sesion=activa pinta el hub como si hubiera sesión iniciada,
@@ -156,23 +156,20 @@ const MinijuegosPage = () => {
         </p>
 
         {haySesion ? (
-          <div className={styles.stats}>
-            <div className={styles.stat}>
-              <span className={styles.statValor}>🪙 {Math.floor(activeMainCoins || 0)}</span>
-              <span className={styles.statEtiqueta}><T>Wala Coins</T></span>
-            </div>
-            <div className={styles.stat}>
-              <span className={styles.statValor}>🍖 {userProfile?.kapiCoins || 0}</span>
-              <span className={styles.statEtiqueta}><T>Kapi Coins</T></span>
-            </div>
-            <div className={`${styles.stat} ${styles.statDestacado}`}>
-              <span className={styles.statValor}>
-                <Sparkles size={16} aria-hidden="true" />
-                {listosHoy}
-              </span>
-              <span className={styles.statEtiqueta}><T>Listos para jugar hoy</T></span>
-            </div>
-          </div>
+          /* El saldo de monedas NO se repite aquí: el Header ya lo muestra en
+             todas las páginas. Lo que este hub sabe y el Header no es cuántos
+             juegos quedan por hacer hoy. */
+          <p className={styles.listos}>
+            <Sparkles size={16} aria-hidden="true" />
+            {listosHoy === 0 ? (
+              <T>Ya hiciste todo por hoy. Vuelve mañana.</T>
+            ) : (
+              <>
+                <strong>{listosHoy}</strong>
+                <T>{listosHoy === 1 ? 'juego listo para hoy' : 'juegos listos para hoy'}</T>
+              </>
+            )}
+          </p>
         ) : (
           <div className={styles.loginCta}>
             <p className={styles.loginTexto}>

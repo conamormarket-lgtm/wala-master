@@ -54,51 +54,26 @@
   color: var(--color-text-muted);
 }
 
-/* --- Tira de estado (monedas + juegos listos hoy) ------------------------ */
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.stat {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding: 0.5rem 0.85rem;
-  border-radius: var(--radio-pequeno, 10px);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-}
-
-[data-theme='dark'] .stat {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-}
-
-.statValor {
+/* --- Indicador de lo que queda por jugar hoy -----------------------------
+   Antes aquí había tres chips: Wala Coins, Kapi Coins y este. Los dos saldos
+   ya viven en el Header en TODAS las páginas, así que repetirlos aquí solo
+   restaba peso al único dato que el hub aporta.
+   ------------------------------------------------------------------------- */
+.listos {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.statEtiqueta {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
-
-/* El contador de "listos hoy" es lo único que se tiñe de marca en la tira. */
-.statDestacado {
-  border-color: var(--primary-color);
-}
-
-.statDestacado .statValor {
+  gap: 0.4rem;
+  margin: 0.35rem 0 0;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: var(--primary-light);
   color: var(--primary-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.listos strong {
+  font-weight: 800;
 }
 
 /* --- CTA de sesión (sustituye al alert() al pulsar sin estar logueado) --- */
@@ -204,8 +179,12 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  /* Capa estable en reposo, igual que .tile de la Cuadrícula de Categorías:
+     evita que el texto se re-rasterice al empezar el movimiento. */
+  transform: translateZ(0);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
+
 
 [data-theme='dark'] .card {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
@@ -511,13 +490,10 @@
      significando una sola cosa (el juego), no dos. */
   .card:hover,
   .card:focus-within {
-    transform: translateY(-4px) scale(1.025);
-    box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
-  }
-
-  [data-theme='dark'] .card:hover,
-  [data-theme='dark'] .card:focus-within {
-    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5);
+    transform: translateY(-4px) scale(1.025) translateZ(0);
+    /* Token del sistema en vez de un valor suelto: ya viene reteñido a negro
+       en modo noche, así que sobra el override por tema. */
+    box-shadow: var(--sombra-hover);
   }
 
   /* El icono crece un poco más que la tarjeta: el gesto se nota sin animar
@@ -540,7 +516,7 @@
 
 @media (hover: none) and (pointer: coarse) {
   .card:hover {
-    transform: none;
+    transform: translateZ(0);
   }
 
   .accion:active {
@@ -557,7 +533,7 @@
 
   .card:hover,
   .card:focus-within {
-    transform: none;
+    transform: translateZ(0);
   }
 
   .accion:active {
