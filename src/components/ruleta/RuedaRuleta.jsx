@@ -111,8 +111,13 @@ const RuedaRuleta = ({
           transform: `rotate(${rotacion}deg)`,
           // Sin duración, sin transición: así el admin puede pintar la vista
           // previa sin que la rueda se ponga a girar sola al cambiar un color.
+          //
+          // La curva es easeOutCubic. La anterior, cubic-bezier(0.16, 0.9, 0.2, 1),
+          // completaba el 84% del giro en el primer 26% del tiempo y dejaba el
+          // resto arrastrándose: la rueda parecía haberse parado y seguía
+          // avanzando a rastras varios segundos. Ésta frena de forma pareja.
           transition: duracionMs > 0
-            ? `transform ${duracionMs}ms cubic-bezier(0.16, 0.9, 0.2, 1)`
+            ? `transform ${duracionMs}ms cubic-bezier(0.33, 1, 0.68, 1)`
             : 'none',
         }}
         role="img"

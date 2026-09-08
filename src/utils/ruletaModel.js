@@ -197,8 +197,11 @@ export const CONFIG_POR_DEFECTO = {
     // siempre -> un giro por semana sin condición (para campañas).
     modoDesbloqueo: "racha7",
     semanaDeGracia: true,
-    vueltas: 6,
-    duracionGiroMs: 4500,
+    // Una ruleta que gira casi cinco segundos se hace larga: para cuando el
+    // usuario ya ha visto el premio, sigue arrastrandose. 4 vueltas en 3,5 s dan
+    // sensacion de sorteo sin cansar. Ambos son ajustables desde el panel.
+    vueltas: 4,
+    duracionGiroMs: 3500,
   },
 };
 
