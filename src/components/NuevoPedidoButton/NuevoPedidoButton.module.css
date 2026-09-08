@@ -30,6 +30,10 @@
   background: linear-gradient(135deg, var(--primary-hover) 0%, #4C1D95 100%);
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(109, 40, 217, 0.3);
+  /* Repetir el color NO es redundante: el `a:hover { color: var(--rojo-hover) }`
+     global de globals.css tiene mas especificidad (0-1-1) que esta clase (0-1-0),
+     y sin esta linea tine la letra de violeta al pasar el cursor. */
+  color: var(--blanco);
 }
 
 .subtexto {

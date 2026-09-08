@@ -112,6 +112,10 @@
 .primaryBtn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(225, 29, 72, 0.4);
+  /* Repetir el color NO es redundante: el `a:hover { color: var(--rojo-hover) }`
+     global de globals.css tiene mas especificidad (0-1-1) que esta clase (0-1-0),
+     y sin esta linea tine la letra de violeta al pasar el cursor. */
+  color: white;
 }
 
 .primaryBtn:disabled {

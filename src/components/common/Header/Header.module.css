@@ -435,6 +435,12 @@
 
 .primaryButton:hover {
   background-color: #7c3aed;
+  /* Repetir el color NO es redundante: globals.css trae un
+     `a:hover { color: var(--rojo-hover) }` global cuya especificidad (0-1-1)
+     gana a la de esta clase (0-1-0). Sin esta linea, la letra de este boton
+     -que es un <a>- se tine de violeta al pasar el cursor y se pierde sobre
+     el fondo. */
+  color: white;
 }
 
 /* Estilos para el carrito popup */
@@ -584,6 +590,10 @@
 .secondaryButton:hover {
   background-color: var(--gris-hover, #f5f5f5);
   border-color: var(--gris-texto-secundario, #ccc);
+  /* Repetir el color NO es redundante: el `a:hover { color: var(--rojo-hover) }`
+     global de globals.css tiene mas especificidad (0-1-1) que esta clase (0-1-0),
+     y sin esta linea tine la letra de violeta al pasar el cursor. */
+  color: var(--gris-texto-principal, #333);
 }
 
 .brandsSection {

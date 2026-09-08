@@ -187,6 +187,10 @@
 .emptyLink:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+  /* Repetir el color NO es redundante: el `a:hover { color: var(--rojo-hover) }`
+     global de globals.css tiene mas especificidad (0-1-1) que esta clase (0-1-0),
+     y sin esta linea tine la letra de violeta al pasar el cursor. */
+  color: var(--blanco);
 }
 
 /* ──────────────────────────────
