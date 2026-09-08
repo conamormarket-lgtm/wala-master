@@ -77,7 +77,11 @@ export default function PackageBubble() {
   }, [navigate, closeModal]);
 
   // ── Guard: nothing to show ──
-  if (!user || unseenPackages.length === 0) return null;
+  // Se exige el perfil cargado: `lastSeen` sale de él y sin perfil cae a '',
+  // con lo que `pkgDate > ''` es true para TODOS los paquetes y la burbuja
+  // salía con el contador lleno aunque ya estuvieran vistos, para irse sola en
+  // cuanto llegaba `lastSeenPackagesAt`.
+  if (!user || !userProfile || unseenPackages.length === 0) return null;
 
   return (
     <>

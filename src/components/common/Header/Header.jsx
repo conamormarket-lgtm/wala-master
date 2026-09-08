@@ -971,7 +971,11 @@ const Header = () => {
       </div>
     </header>
 
-      {user && !userProfile?.hasCompletedSurvey && location.pathname !== '/encuesta-suscripcion' && (
+      {/* Se espera a que el perfil haya llegado. Con `!userProfile?.hasCompletedSurvey`
+          la condición era TRUE mientras cargaba (`!undefined` = true), así que el
+          botón aparecía a TODOS los usuarios logueados —incluidos los que ya
+          hicieron la encuesta— y se iba solo un segundo después. */}
+      {user && userProfile && !userProfile.hasCompletedSurvey && location.pathname !== '/encuesta-suscripcion' && (
         <Link to="/encuesta-suscripcion" className={styles.floatingSurveyBtn} onClick={closeDropdowns}>
           <span className={styles.floatingSurveyIcon}>🎁</span>
           <span className={styles.floatingSurveyLabel}>Completar Encuesta</span>
