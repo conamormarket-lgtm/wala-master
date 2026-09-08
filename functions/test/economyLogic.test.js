@@ -25,7 +25,6 @@ function run() {
   // Constantes exportadas
   // ────────────────────────────────────────────────────────────────────────
   check("constantes con valores esperados", () => {
-    assert.strictEqual(eco.KAPI_MONTHLY_CAP, 31);
     assert.strictEqual(eco.BALLSORT_REWARD, 2);
     assert.strictEqual(eco.STREAK_DATES_BONUS, 25);
     assert.strictEqual(eco.SURVEY_REWARD_MAX, 15);

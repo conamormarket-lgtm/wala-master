@@ -23,7 +23,10 @@ export const scheduleKapiNotifications = async (userProfile) => {
     const currentDay = now.getDate();
     const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
     
-    const kapiCoins = userProfile.kapiCoins || 0;
+    // Estos avisos prometen que las monedas se borran a fin de mes, y era verdad
+    // del campo equivocado: leían `monedas`, que no descontaba nada. El saldo
+    // que caduca (y que vale S/1 por moneda) es `monedas`.
+    const monedas = userProfile.monedas || 0;
     const toSchedule = [];
 
     // Helper to create date for current month
@@ -44,11 +47,11 @@ export const scheduleKapiNotifications = async (userProfile) => {
     };
 
     // 1. Día 15, 10:00
-    if (currentDay < 15 && kapiCoins < 10) {
+    if (currentDay < 15 && monedas < 10) {
       toSchedule.push({
         id: 11,
         title: "¡No pierdas tus monedas!",
-        body: `Llevas solo ${kapiCoins} monedas este mes. Cada día sin reclamar es una moneda perdida`,
+        body: `Llevas solo ${monedas} monedas este mes. Cada día sin reclamar es una moneda perdida`,
         schedule: { at: createDate(15), allowWhileIdle: true }
       });
     }
@@ -66,21 +69,21 @@ export const scheduleKapiNotifications = async (userProfile) => {
 
     // 3. Último día - 3, 10:00
     const dayMinus3 = lastDayOfMonth - 3;
-    if (currentDay < dayMinus3 && kapiCoins > 5) {
+    if (currentDay < dayMinus3 && monedas > 5) {
       toSchedule.push({
         id: 13,
         title: "¡Monedas a punto de expirar!",
-        body: `Tienes ${kapiCoins} monedas diarias que se borran en 3 días. ¿Ya las gastaste?`,
+        body: `Tienes ${monedas} monedas que se borran en 3 días. ¿Ya las gastaste?`,
         schedule: { at: createDate(dayMinus3), allowWhileIdle: true }
       });
     }
 
     // 4. Último día, 10:00
-    if (currentDay < lastDayOfMonth && kapiCoins > 0) {
+    if (currentDay < lastDayOfMonth && monedas > 0) {
       toSchedule.push({
         id: 14,
         title: "¡Última Oportunidad!",
-        body: `HOY a medianoche se borran tus ${kapiCoins} monedas. Última oportunidad`,
+        body: `HOY a medianoche se borran tus ${monedas} monedas. Última oportunidad`,
         schedule: { at: createDate(lastDayOfMonth), allowWhileIdle: true }
       });
     }
@@ -91,9 +94,9 @@ export const scheduleKapiNotifications = async (userProfile) => {
     let nextMonthTitle = "¡Nuevo Mes!";
     let nextMonthBody = "Nuevo mes, nuevas monedas. Reclama la primera del mes 🌟";
     
-    if (kapiCoins > 0) {
-      nextMonthBody = `Se fueron ${kapiCoins} monedas que no usaste. Este mes no las dejes escapar`;
-    } else if (kapiCoins === 0 && userProfile.kapiHappiness > 0) { // If they had some interaction but spent it all
+    if (monedas > 0) {
+      nextMonthBody = `Se fueron ${monedas} monedas que no usaste. Este mes no las dejes escapar`;
+    } else if (monedas === 0 && userProfile.kapiHappiness > 0) { // If they had some interaction but spent it all
       nextMonthBody = "¡Gastaste todas! Eres un pro. Nuevo mes, nueva oportunidad 🎉";
     }
 

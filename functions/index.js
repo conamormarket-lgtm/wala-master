@@ -19,7 +19,7 @@ const {
 } = require("./internationalAdvanceLogic");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const {
-  KAPI_MONTHLY_CAP, BALLSORT_REWARD, STREAK_DATES_BONUS, SURVEY_REWARD_MAX, REWARD_COINS_PER_ORDER,
+  BALLSORT_REWARD, STREAK_DATES_BONUS, SURVEY_REWARD_MAX, REWARD_COINS_PER_ORDER,
   limaTodayStr, limaWeekStartStr, applyDebit, randomPassword, pickWeightedPrize, verifyWebhookSignature,
   limaNow, felicidadKapiHoy, KAPI_HAPPINESS_STEP,
 } = require("./economyLogic");
@@ -764,8 +764,15 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
 
 
 /**
- * Cron Job mensual: Resetea kapiCoins a 0 el último día de cada mes a las 23:59.
- * Utiliza Firebase Scheduler (Cloud Scheduler).
+ * Cron Job mensual: pone las monedas a 0 el último día de cada mes a las 23:59.
+ *
+ * Antes vaciaba `kapiCoins`, que no descontaba nada en el checkout: lo que
+ * caducaba era el contador equivocado y las `monedas` de verdad (las que valen
+ * S/1 cada una) se acumulaban indefinidamente. Ahora caduca el saldo real.
+ *
+ * NO toca `monedasEnEspera`: esas ya están comprometidas en pedidos que aún no
+ * se han cobrado, y borrarlas dejaría pedidos con un descuento aplicado que el
+ * cliente ya no tiene.
  */
 // El cron corria en UTC (por defecto), asi que las 23:59 caian a las 18:59 de Lima:
 // las monedas se borraban 5 horas antes de lo que promete la notificacion ("HOY a
@@ -779,53 +786,57 @@ exports.resetKapiCoins = onSchedule(
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
   if (tomorrow.getUTCDate() !== 1) {
     // No es el último día del mes, ignorar
-    console.log("Not the last day of the month, skipping KapiCoins reset.");
+    console.log("Not the last day of the month, skipping coin reset.");
     return;
   }
 
-  console.log("Running monthly KapiCoins reset...");
+  console.log("Running monthly coin reset...");
 
   try {
     const usersSnapshot = await db.collection(PORTAL_USERS_COLLECTION)
-      .where("kapiCoins", ">", 0)
+      .where("monedas", ">", 0)
       .get();
 
     if (usersSnapshot.empty) {
-      console.log("No users with kapiCoins > 0 found.");
+      console.log("No users with monedas > 0 found.");
       return;
     }
 
-    const batch = db.batch();
-    const analyticsRef = db.collection("analytics_kapi");
     // 'today' ya viene desplazado a Lima: hay que leerlo en UTC para no volver
     // a introducir el huso del servidor en la clave del mes.
     const currentMonthStr = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}`;
 
     let totalUnspent = 0;
+    const docs = usersSnapshot.docs;
 
-    usersSnapshot.forEach(doc => {
-      const data = doc.data();
-      const unspent = data.kapiCoins || 0;
-      totalUnspent += unspent;
+    // Un batch admite 500 escrituras. Con la tienda creciendo, un solo batch
+    // reventaria en silencio y dejaria a media tienda con el saldo intacto.
+    const TAMANO_LOTE = 400;
+    for (let i = 0; i < docs.length; i += TAMANO_LOTE) {
+      const batch = db.batch();
+      for (const doc of docs.slice(i, i + TAMANO_LOTE)) {
+        totalUnspent += Number(doc.data().monedas) || 0;
+        batch.update(doc.ref, {
+          monedas: 0,
+          // Lotes con caducidad de un sistema que nunca llegó a leerse; se dejan
+          // vacíos para que no queden restos que confundan.
+          monedasActivas: [],
+        });
+      }
+      await batch.commit();
+    }
 
-      // Reset in user document
-      batch.update(doc.ref, { kapiCoins: 0 });
-    });
-
-    // Save analytics document for the month
-    const analyticsDocRef = analyticsRef.doc(currentMonthStr);
-    batch.set(analyticsDocRef, {
+    await db.collection("analytics_kapi").doc(currentMonthStr).set({
       month: currentMonthStr,
       totalUnspentCoins: totalUnspent,
-      usersAffected: usersSnapshot.size,
-      timestamp: FieldValue.serverTimestamp()
+      usersAffected: docs.length,
+      timestamp: FieldValue.serverTimestamp(),
     }, { merge: true });
 
-    await batch.commit();
-    console.log(`Successfully reset KapiCoins for ${usersSnapshot.size} users. Total unspent: ${totalUnspent}`);
+    console.log(`Successfully reset monedas for ${docs.length} users. Total unspent: ${totalUnspent}`);
 
   } catch (error) {
-    console.error("Error resetting KapiCoins:", error);
+    console.error("Error resetting monedas:", error);
   }
 });
 
@@ -1403,7 +1414,12 @@ function requireAuth(context) {
   return context.auth.uid;
 }
 
-// ── Alimentar a Kapi (kapiCoins + racha) ──────────────────────────────────────
+// ── Alimentar a Kapi (monedas + racha) ────────────────────────────────────────
+// Antes esto acreditaba `kapiCoins`, una segunda moneda que NO servía para
+// nada: el descuento del checkout siempre ha leído `monedas`. Encima el cron
+// mensual vaciaba `kapiCoins`, así que lo único que caducaba era el contador que
+// no descontaba, y las monedas de verdad se acumulaban para siempre. Ahora
+// alimentar da monedas directamente y son ellas las que caducan a fin de mes.
 exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
@@ -1416,10 +1432,6 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
       const u = snap.data();
       if (u.lastKapiClaimDate === today) {
         throw new functions.https.HttpsError("already-exists", "Ya alimentaste a Kapi hoy.");
-      }
-      const currentKapi = u.kapiCoins || 0;
-      if (currentKapi >= KAPI_MONTHLY_CAP) {
-        throw new functions.https.HttpsError("failed-precondition", "Límite mensual de Kapi Coins alcanzado.");
       }
       let weekly = u.weeklyClaimsData || { weekStart, daysClaimed: [] };
       if (weekly.weekStart !== weekStart) weekly = { weekStart, daysClaimed: [today] };
@@ -1434,8 +1446,11 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
       // solo subia: tras 10 comidas quedaba clavada en 100/100 para siempre, y el
       // propio tutorial promete que si dejas de alimentarlo la barra baja.
       const felicidadHoy = felicidadKapiHoy(u.kapiHappiness, u.lastKapiClaimDate, today);
+      // Ya no hay tope mensual: se alimenta una vez al día (lastKapiClaimDate lo
+      // garantiza), así que el máximo natural son los días que tenga el mes.
+      const nuevoSaldo = (u.monedas || 0) + add;
       const updates = {
-        kapiCoins: currentKapi + add,
+        monedas: nuevoSaldo,
         lastKapiClaimDate: today,
         kapiHappiness: Math.min(100, felicidadHoy + KAPI_HAPPINESS_STEP),
         weeklyClaimsData: weekly,
@@ -1447,13 +1462,11 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
         updates.ruletaDisponibleDe = weekly.weekStart;
       }
       t.update(userRef, updates);
-      // Ledger: feedKapi otorga kapiCoins (no monedas). Se registra el evento con el
-      // monto de kapiCoins; balanceAfter refleja el saldo de monedas sin cambios.
       writeLedger(t, uid, {
         type: "earn",
         amount: add,
         source: "feed_kapi",
-        balanceAfter: u.monedas || 0,
+        balanceAfter: nuevoSaldo,
       });
       return { success: true, ...updates };
     });

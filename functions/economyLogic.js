@@ -6,7 +6,6 @@
 const crypto = require("crypto");
 
 // Constantes de economía.
-const KAPI_MONTHLY_CAP = 31;
 const BALLSORT_REWARD = 2;
 const STREAK_DATES_BONUS = 25;
 const SURVEY_REWARD_MAX = 15; // máximo real de la encuesta (3 eventos x 5 monedas)
@@ -96,7 +95,6 @@ function verifyWebhookSignature(rawBody, providedSig, secret) {
 }
 
 module.exports = {
-  KAPI_MONTHLY_CAP,
   BALLSORT_REWARD,
   STREAK_DATES_BONUS,
   SURVEY_REWARD_MAX,

@@ -80,9 +80,8 @@ const Header = () => {
   const pendingCoinsRef = useRef(0);
   const [isCoinBouncing, setIsCoinBouncing] = useState(false);
 
-  const realKapiCoins = userProfile?.kapiCoins || 0;
-  const [displayKapiCoins, setDisplayKapiCoins] = useState(realKapiCoins);
-  const [isKapiBouncing, setIsKapiBouncing] = useState(false);
+  // Ya no hay segunda billetera: alimentar a Kapi acredita `monedas` como todo
+  // lo demás. `kapiCoins` era un contador que no descontaba nada en el checkout.
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
@@ -332,9 +331,6 @@ const Header = () => {
     };
   }, [activeMainCoins]);
 
-  useEffect(() => {
-    setDisplayKapiCoins(realKapiCoins);
-  }, [realKapiCoins]);
 
   useEffect(() => {
     const handleKapiStart = (e) => {
@@ -639,19 +635,10 @@ const Header = () => {
                       🪙 {Math.floor(displayCoins)}
                     </div>
                     <div className={styles.tooltipText}>
-                      <T>Billetera Principal - ¡Canjea tus monedas en el catálogo o checkout!</T>
+                      <T>Tus monedas - 1 moneda = S/1 de descuento (vencen a fin de mes)</T>
                     </div>
                   </div>
 
-                  {/* Billetera Diaria (Kapi Coins) */}
-                  <div className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer}`}>
-                    <div className={`${styles.coinsDisplay} ${styles.coinsDisplayKapi} ${isKapiBouncing ? styles.bounce : ''}`}>
-                      🍖 {displayKapiCoins}
-                    </div>
-                    <div className={styles.tooltipText}>
-                      <T>Billetera Diaria</T> - Kapi Coins (<T>Vencen a fin de mes</T>)
-                    </div>
-                  </div>
                 </div>
 
                 {/* --- MOBILE VIEW --- */}
@@ -661,15 +648,15 @@ const Header = () => {
                     onClick={(e) => handleMobileDropdownClick(e, 'billetera')}
                     style={{ background: 'transparent', border: 'none', display: 'flex', gap: '6px', padding: 0 }}
                   >
-                    <div className={`${styles.nativeCoinBadge} ${isCoinBouncing || isKapiBouncing ? styles.bounce : ''} global-coins-target`} style={{ color: 'var(--rojo-principal)', background: '#ffe4e6', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '12px' }}>
-                      <span style={{fontSize: '13px'}}>🪙</span> <strong>{Math.floor(displayCoins) + displayKapiCoins}</strong>
+                    <div className={`${styles.nativeCoinBadge} ${isCoinBouncing ? styles.bounce : ''} global-coins-target`} style={{ color: 'var(--rojo-principal)', background: '#ffe4e6', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '12px' }}>
+                      <span style={{fontSize: '13px'}}>🪙</span> <strong>{Math.floor(displayCoins)}</strong>
                     </div>
                   </button>
 
                   <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
                     <div className={styles.accountPopupContent} style={{ padding: '12px' }}>
                       {/* Texto y fondos del tema: se oscurecen/aclaran en modo noche. */}
-                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--color-text)' }}><T>Mis Billeteras</T></h4>
+                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--color-text)' }}><T>Mis Monedas</T></h4>
                       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-2)', padding: '10px', borderRadius: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -678,14 +665,10 @@ const Header = () => {
                           </div>
                           <strong style={{ color: 'var(--rojo-principal)', fontSize: '15px' }}>{Math.floor(displayCoins)}</strong>
                         </li>
-                        <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-2)', padding: '10px', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '18px' }}>🍖</span>
-                            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>Kapi Coins</span>
-                          </div>
-                          <strong style={{ color: '#b45309', fontSize: '15px' }}>{displayKapiCoins}</strong>
-                        </li>
                       </ul>
+                      <p style={{ margin: '10px 0 0', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                        <T>1 moneda = S/1 de descuento. Vencen a fin de mes.</T>
+                      </p>
                     </div>
                   </div>
                 </div>
