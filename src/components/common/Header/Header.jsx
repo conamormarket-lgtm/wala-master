@@ -332,19 +332,9 @@ const Header = () => {
   }, [activeMainCoins]);
 
 
-  // Alimentar a Kapi acredita monedas normales, así que su animación tiene que
-  // mover el contador único. (Este efecto seguía llamando a setDisplayKapiCoins,
-  // que dejó de existir al unificar las dos billeteras: al alimentar reventaba.)
-  useEffect(() => {
-    const handleKapiStart = (e) => {
-      const inc = e.detail?.amount || 1;
-      setDisplayCoins((prev) => prev + inc);
-      setIsCoinBouncing(true);
-      setTimeout(() => setIsCoinBouncing(false), 200);
-    };
-    window.addEventListener('kapi-coins-animation-start', handleKapiStart);
-    return () => window.removeEventListener('kapi-coins-animation-start', handleKapiStart);
-  }, []);
+  // Alimentar a Kapi ya no necesita su propio evento: acredita monedas normales
+  // y volarMonedasGanadas() se encarga, como en el resto de la app. Mantener el
+  // atajo sumaba la moneda dos veces (una al aterrizar y otra por este efecto).
 
   useEffect(() => {
     const handleClickOutside = (e) => {

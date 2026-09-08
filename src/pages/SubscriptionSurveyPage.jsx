@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 // eslint-disable-next-line no-unused-vars
 import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Plus, Trash2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
-import { showFlyingCoins } from '../utils/animations';
+import { showFlyingCoins, volarMonedasGanadas } from '../utils/animations';
 import styles from './SubscriptionSurveyPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -368,7 +368,7 @@ const SubscriptionSurveyPage = () => {
       if (coinsEarned > 0) {
         // H-06: el bono se acredita server-side (idempotente, con tope anti-abuso).
         await grantSurveyReward(coinsEarned);
-        window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: coinsEarned } }));
+        volarMonedasGanadas(null, coinsEarned);
       }
 
       setAnimationDir('Right');

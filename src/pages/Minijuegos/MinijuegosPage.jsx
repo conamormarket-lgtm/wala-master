@@ -228,7 +228,7 @@ const MinijuegosPage = () => {
           acento={styles.kapi}
           icono={<Bone size={26} />}
           titulo="Alimenta a Kapi"
-          descripcion="Reclama tu Kapicoin gratis cada día para ahorrar en tus compras."
+          descripcion="Reclama tu moneda gratis cada día para ahorrar en tus compras."
           estado={
             hasClaimedToday ? (
               <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
@@ -236,7 +236,7 @@ const MinijuegosPage = () => {
               <Badge tone="warning" variant="soft" dot><T>Disponible hoy</T></Badge>
             )
           }
-          recompensa={<><span aria-hidden="true">🍖</span><T>+1 Kapi Coin al día</T></>}
+          recompensa={<><span aria-hidden="true">🍖</span><T>+1 moneda al día</T></>}
           atenuada={hasClaimedToday}
           accion={
             !haySesion ? (

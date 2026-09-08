@@ -118,3 +118,41 @@ export const showFlyingCoins = (startX, startY, amount = 10) => {
     window.dispatchEvent(new CustomEvent('coins-animation-end'));
   }, totalDuration);
 };
+
+/**
+ * Anima las monedas ganadas volando hasta el contador de la cabecera.
+ *
+ * Es la ÚNICA forma correcta de avisar de que se han ganado monedas. Varias
+ * pantallas lanzaban a mano el evento 'coins-animation-start' sin hacer volar
+ * nada, y eso dejaba el contador roto: ese evento solo RESERVA monedas
+ * (pendingCoinsRef) y el número sube cuando cada moneda aterriza
+ * ('coin-reached-target'). Sin vuelo no hay aterrizaje ni cierre, así que la
+ * reserva se quedaba en pie para siempre y el header dejaba de sincronizarse
+ * con el saldo real hasta recargar la página.
+ *
+ * @param {Element|{currentTarget:Element}|null} origen Elemento (o evento) del
+ *   que salen las monedas: normalmente el botón que se acaba de pulsar. Si no
+ *   se puede ubicar, salen del centro de la pantalla.
+ * @param {number} cantidad Monedas ganadas.
+ */
+export const volarMonedasGanadas = (origen, cantidad = 1) => {
+  const n = Number(cantidad);
+  if (!Number.isFinite(n) || n <= 0) return;
+
+  const el = origen && origen.currentTarget ? origen.currentTarget : origen;
+  let x = window.innerWidth / 2;
+  let y = window.innerHeight / 2;
+  try {
+    if (el && typeof el.getBoundingClientRect === 'function') {
+      const r = el.getBoundingClientRect();
+      // Un elemento oculto o desmontado da un rectángulo de 0x0: ahí es mejor
+      // el centro de la pantalla que la esquina superior izquierda.
+      if (r.width > 0 || r.height > 0) {
+        x = r.left + r.width / 2;
+        y = r.top + r.height / 2;
+      }
+    }
+  } catch { /* elemento ya desmontado */ }
+
+  showFlyingCoins(x, y, n);
+};

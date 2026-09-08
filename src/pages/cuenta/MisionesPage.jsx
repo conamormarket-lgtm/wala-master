@@ -9,6 +9,7 @@ import { tierForXp } from '../../constants/tiers';
 import { trackMissionComplete } from '../../services/analytics/tracker';
 import styles from './MisionesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import { volarMonedasGanadas } from '../../utils/animations';
 
 const MisionesPage = () => {
   const { user, userProfile, reloadProfile } = useAuth();
@@ -47,6 +48,8 @@ const MisionesPage = () => {
       const { error: checkErr, data: checkData } = await dailyCheckIn();
       if (active && !checkErr && checkData) {
         setCheckInInfo(checkData);
+        // El check-in ocurre al entrar, sin botón: las monedas salen del centro.
+        volarMonedasGanadas(null, Number(checkData.reward) || 0);
       }
       await loadMissions();
       await refreshProfile();
@@ -69,6 +72,7 @@ const MisionesPage = () => {
       return;
     }
     if (data?.reward) {
+      volarMonedasGanadas(null, Number(data.reward) || 0);
       setMessage(`¡Misión completada! +${data.reward} monedas.`);
     } else {
       setMessage('¡Misión completada!');

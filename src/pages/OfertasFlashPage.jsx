@@ -8,6 +8,7 @@ import { Gift, Zap, Loader2 } from 'lucide-react';
 import Button from '../components/common/Button';
 import styles from './OfertasFlashPage.module.css';
 import { T } from '../i18n/useTranslatedText';
+import { volarMonedasGanadas } from '../utils/animations';
 
 const OfertasFlashPage = () => {
   const { isAuthenticated, reloadProfile } = useAuth();
@@ -32,7 +33,10 @@ const OfertasFlashPage = () => {
     if (typeof reloadProfile === 'function') await reloadProfile();
   }, [reloadProfile]);
 
-  const handleOpenChest = async () => {
+  const handleOpenChest = async (e) => {
+    // El elemento se guarda ANTES del await: React deja currentTarget a null en
+    // cuanto el manejador cede el control, y las monedas saldrían del origen.
+    const boton = e && e.currentTarget;
     setChestLoading(true);
     setChestError('');
     setChestResult(null);
@@ -50,6 +54,7 @@ const OfertasFlashPage = () => {
       return;
     }
     setChestResult(data);
+    volarMonedasGanadas(boton, Number(data?.reward) || 0);
     await refreshProfile();
   };
 

@@ -9,6 +9,7 @@ import { diseno } from '../../utils/modoDiseno';
 import { getRuletaBoard, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
 import { CONFIG_POR_DEFECTO, anguloDeParada } from '../../utils/ruletaModel';
 import { trackMinigame } from '../../services/analytics/tracker';
+import { volarMonedasGanadas } from '../../utils/animations';
 import RuedaRuleta from '../../components/ruleta/RuedaRuleta';
 import ArcadeShell from './ArcadeShell';
 import styles from './RuletaPage.module.css';
@@ -281,7 +282,7 @@ const RuletaPage = () => {
           { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
       } catch {}
       if (premioGanado.tipo === 'monedas') {
-        window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: Number(premioGanado.monedas) } }));
+        volarMonedasGanadas(null, Number(premioGanado.monedas));
       }
     }, duracion + 100);
   };

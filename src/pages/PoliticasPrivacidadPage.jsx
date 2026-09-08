@@ -46,7 +46,7 @@ const PoliticasPrivacidadPage = () => {
           <ul className={styles.list}>
             <li className={styles.listItem}><T>Gestionar su cuenta, procesar sus compras, pagos y entregar sus productos personalizados.</T></li>
             <li className={styles.listItem}><T>Brindar soporte técnico y atención al cliente.</T></li>
-            <li className={styles.listItem}><T>Gestionar el acceso a nuestro sistema de recompensas ("Walá Coins") y sistema de Referidos ("Mis Referidos").</T></li>
+            <li className={styles.listItem}><T>Gestionar el acceso a nuestro sistema de recompensas ("Monedas") y sistema de Referidos ("Mis Referidos").</T></li>
             <li className={styles.listItem}><T>Enviar notificaciones transaccionales sobre el estado de su pedido o avisos importantes de la aplicación.</T></li>
             <li className={styles.listItem}><T>Garantizar la seguridad de la plataforma y prevenir actividades fraudulentas.</T></li>
           </ul>

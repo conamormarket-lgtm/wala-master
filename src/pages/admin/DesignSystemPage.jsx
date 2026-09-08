@@ -77,7 +77,7 @@ const ESTADOS = [
   { nombre: '--verde-exito', hex: '#10B981', etiqueta: 'Éxito' },
   { nombre: '--warning', hex: '#F59E0B', etiqueta: 'Aviso' },
   { nombre: '--danger', hex: '#EF4444', etiqueta: 'Peligro' },
-  { nombre: '--gold-500', hex: '#F59E0B', etiqueta: 'Walá Coins' },
+  { nombre: '--gold-500', hex: '#F59E0B', etiqueta: 'Monedas' },
 ];
 
 // Gradientes de marca: nombre del token + la var CSS que pinta el fondo.
@@ -597,7 +597,7 @@ function DesignSystemPage() {
             </StaggerItem>
             <StaggerItem>
               <GlassCard variant="solid" animate={false} className={styles.statCard}>
-                <span className={styles.statLabel}>Walá Coins repartidas</span>
+                <span className={styles.statLabel}>Monedas repartidas</span>
                 <AnimatedNumber
                   value={92600}
                   format={formatoEntero}

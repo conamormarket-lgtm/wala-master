@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
-import { showFlyingCoins } from '../../../utils/animations';
+import { volarMonedasGanadas } from '../../../utils/animations';
 import { scheduleKapiNotifications } from '../../../services/kapiNotifications';
 import { limaTodayStr, felicidadKapiHoy } from '../../../utils/fechaLima';
 import { useGlobalToast } from '../../../contexts/ToastContext';
@@ -175,10 +175,8 @@ const KapiPet = () => {
           x = rect.left + rect.width / 2;
           y = rect.top;
         }
-        // Lanzar animación visual de monedas volando al header
-        showFlyingCoins(x, y, 1);
-        // También disparar el evento de kapi coins para el bounce del header
-        window.dispatchEvent(new CustomEvent('kapi-coins-animation-start', { detail: { amount: 1 } }));
+        // Monedas volando al contador de la cabecera.
+        volarMonedasGanadas(feedBtn, 1);
       }
     }, 1500);
   };
@@ -359,7 +357,7 @@ const KapiPet = () => {
                   onClick={handleFeed}
                   disabled={isFeeding}
                 >
-                  {isFeeding ? 'Alimentando...' : '🍖 Alimentar a Kapi (+1 Coin)'}
+                  {isFeeding ? 'Alimentando...' : '🍖 Alimentar a Kapi (+1 moneda)'}
                 </button>
               )}
             </div>

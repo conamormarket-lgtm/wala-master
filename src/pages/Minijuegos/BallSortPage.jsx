@@ -8,6 +8,7 @@ import { trackMinigame } from '../../services/analytics/tracker';
 import { limaTodayStr } from '../../utils/fechaLima';
 import { diseno } from '../../utils/modoDiseno';
 import { HelpCircle, Coins, Check } from 'lucide-react';
+import { volarMonedasGanadas } from '../../utils/animations';
 import ArcadeShell from './ArcadeShell';
 import styles from './BallSortPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -188,8 +189,10 @@ const BallSortPage = () => {
 
     if (result.success) {
       setClaimState('claimed');
-      // Las monedas solo "vuelan" al header si de verdad se acreditaron.
-      window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: 2 } }));
+      // Las monedas solo vuelan al header si de verdad se acreditaron. Antes
+      // esto lanzaba a mano 'coins-animation-start', que solo RESERVA: no volaba
+      // ninguna moneda, el contador nunca subía y la reserva se quedaba abierta.
+      volarMonedasGanadas(null, Number(result.reward) || 2);
       // Refrescar el perfil: si no, el saldo del header y el estado del hub
       // quedan desactualizados y una segunda partida vuelve a intentar cobrar.
       await reloadProfile();
