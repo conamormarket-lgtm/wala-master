@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday } from '../../services/wordle';
 import { VALID_GUESSES } from '../../data/wordleDictionary';
@@ -563,7 +564,12 @@ const WordlePage = () => {
         </aside>
       </div>
 
-      {/* ── Modal: cómo se juega ──────────────────────────────────────── */}
+      {/* ── Modal: cómo se juega ────────────────────────────────────────
+          Va en <body> con un portal: dentro de la pagina el z-index no bastaba
+          porque <main> lleva opacity<1 por la transicion de pagina, y eso
+          encierra el apilado por debajo del Header. */}
+      {createPortal(
+      <>
       {ayudaAbierta && !showResultModal && (
         <div className={styles.resultOverlay} onClick={cerrarAyuda} role="presentation">
           <div
@@ -656,6 +662,8 @@ const WordlePage = () => {
           </div>
         </div>
       )}
+      </>,
+      document.body)}
     </ArcadeShell>
   );
 };

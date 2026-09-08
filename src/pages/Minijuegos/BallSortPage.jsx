@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
@@ -341,19 +342,29 @@ const BallSortPage = () => {
                       const isTopBall = bIndex === tube.length - 1;
                       const isSelectedTube = selectedTubeIndex === index;
                       return (
-                        <motion.div 
+                        <motion.div
                           key={ball.id}
                           layoutId={ball.id}
-                          className={`${styles.ball} ${isSelectedTube && isTopBall ? styles.selectedBall : ''}`} 
+                          className={`${styles.ball} ${isSelectedTube && isTopBall ? styles.selectedBall : ''}`}
                           style={{ '--bola': ball.color }}
                           layout="position"
+                          // El levantado lo anima framer-motion, NO una clase CSS.
+                          // Con las dos cosas escribiendo `transform` sobre el
+                          // mismo elemento se pisaban: al soltar la bolita y
+                          // volver a tocar el mismo tubo, ya no subia.
+                          animate={{
+                            y: isSelectedTube && isTopBall ? -26 : 0,
+                            scale: isSelectedTube && isTopBall ? 1.06 : 1,
+                          }}
                           transition={{
                             layout: {
                               type: 'spring',
                               stiffness: 300,
                               damping: 25,
                               mass: 0.8,
-                            }
+                            },
+                            y: { type: 'spring', stiffness: 420, damping: 24 },
+                            scale: { duration: 0.18 },
                           }}
                         />
                       );
@@ -421,7 +432,12 @@ const BallSortPage = () => {
       </aside>
       </div>
 
-      {/* Misma entrada y salida que el cartel de victoria: aparecia de golpe. */}
+      {/* Los modales se montan en <body> con un portal. Dentro de la pagina, su
+          z-index no servia de nada: <main> lleva opacity<1 por la transicion de
+          pagina, y eso crea un contexto de apilado que encierra el 1100 por
+          debajo del Header. Se veia la capa oscura sobre el contenido, pero el
+          Header seguia encima y se podia usar con el modal abierto. */}
+      {createPortal(
       <AnimatePresence>
         {ayudaAbierta && (
         <motion.div
@@ -491,7 +507,8 @@ const BallSortPage = () => {
           </motion.div>
         </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body)}
 
       {/* ── Cartel de victoria ────────────────────────────────────────────
           Antes era una tarjeta suelta flotando sobre el tablero, sin fondo que
@@ -499,6 +516,7 @@ const BallSortPage = () => {
           juego. Ahora es un modal como los de La Palabra del Dia, con su capa
           oscura, se puede cerrar para mirar el nivel resuelto, y resume la
           partida y el estado del premio. */}
+      {createPortal(
       <AnimatePresence>
         {mostrarVictoria && (
           <motion.div
@@ -569,7 +587,8 @@ const BallSortPage = () => {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body)}
     </ArcadeShell>
   );
 };
