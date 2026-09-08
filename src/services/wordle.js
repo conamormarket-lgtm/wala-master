@@ -2,6 +2,7 @@ import { collection, doc, getDoc, setDoc, query, where, orderBy, limit, getDocs 
 import { db } from './firebase/config';
 import { getCurrentUser } from './firebase/auth';
 import { DAILY_WORDS } from '../data/wordleDictionary';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { limaTodayStr, limaYesterdayStr } from '../utils/fechaLima';
 
 const DAILY_WORDS_COLLECTION = 'wordle_daily_words';
@@ -121,6 +122,20 @@ const publishWordleStats = async (user, stats) => {
  * Devuelve null si no hay sesión o si la consulta falla: ante la duda, se deja
  * jugar (mejor eso que bloquear a alguien por un fallo de red).
  */
+/**
+ * Reclama la recompensa por haber acertado hoy. El importe lo decide el
+ * servidor leyendo la partida guardada: el navegador no propone cantidad.
+ * Idempotente por día, así que reintentar no duplica.
+ */
+export const claimWordleReward = async () => {
+  try {
+    const res = await httpsCallable(getFunctions(), 'claimWordleRewardSecure')();
+    return { reward: Number(res.data?.reward) || 0, rapido: !!res.data?.rapido, error: null };
+  } catch (e) {
+    return { reward: 0, rapido: false, error: e?.message || 'No se pudo reclamar la recompensa' };
+  }
+};
+
 export const getMiPartidaDeHoy = async () => {
   try {
     const user = getCurrentUser();

@@ -807,3 +807,24 @@
   background: rgba(220, 38, 38, 0.16); /* #fee2e2 -> tinte rojo */
   color: #f87171;
 }
+
+/* Monedas ganadas por acertar. Mismo tratamiento que el aviso de premio de Las
+   Bolitas: un bloque suave que no compite con el titulo del resultado. */
+.resultPremio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0.9rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--gold-soft, rgba(245, 158, 11, 0.12));
+  color: var(--gold-text, #92400e);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+[data-theme='dark'] .resultPremio {
+  color: #fcd34d;
+}

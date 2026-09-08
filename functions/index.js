@@ -27,6 +27,7 @@ const {
   normalizarPremio, normalizarConfig, premioDisponible, premiosDeHoy,
   sortearPremio, esCupon, textoPremio,
 } = require("./ruletaLogic");
+const { palabraDelDia } = require("./wordleWords");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -1804,6 +1805,85 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("spinRuletaSecure error:", e);
     throw new functions.https.HttpsError("internal", "Error al girar la ruleta.");
+  }
+});
+
+// ── Recompensa de La Palabra del Día ──────────────────────────────────────────
+// Era el único de los cuatro minijuegos que no daba nada: solo puesto en el
+// ranking. Las Bolitas dan 2 monedas por ordenar unos tubos y adivinar la
+// palabra, que cuesta bastante más, no daba ninguna.
+//
+// Idempotencia: la marca va en el PERFIL (lastWordleRewardDate), no en el
+// documento de la partida. Ese documento lo escribe el cliente, así que si el
+// "ya cobrado" viviera ahí bastaría con reescribirlo para volver a cobrar.
+const WORDLE_REWARD = 3;          // por acertar
+const WORDLE_BONUS_RAPIDO = 1;    // extra si se acierta en 3 intentos o menos
+const WORDLE_INTENTOS_RAPIDO = 3;
+const WORDLE_MAX_INTENTOS = 6;
+
+exports.claimWordleRewardSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const hoy = limaTodayStr();
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const partidaRef = db.collection("wordle").doc(uid + "_" + hoy);
+
+  try {
+    // La palabra oficial del día la escribe solo el admin: sirve para contrastar
+    // que la partida guardada es de la palabra de verdad y no de una inventada.
+    // Si el admin no configuró la palabra de hoy, el juego la saca de una lista
+    // estática con un hash de la fecha. El servidor hace el MISMO cálculo
+    // (functions/wordleWords.js es una copia generada de la lista del cliente),
+    // así que siempre hay contra qué contrastar. Sin esto, un día sin palabra
+    // configurada dejaba pasar cualquier partida inventada.
+    const palabraSnap = await db.collection("wordle_daily_words").doc(hoy).get();
+    const palabraOficial = String(
+      (palabraSnap.exists && palabraSnap.data().word) || palabraDelDia(hoy) || ""
+    ).trim().toUpperCase();
+
+    return await db.runTransaction(async (t) => {
+      const [userSnap, partidaSnap] = await Promise.all([t.get(userRef), t.get(partidaRef)]);
+      if (!userSnap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = userSnap.data();
+
+      if (u.lastWordleRewardDate === hoy) {
+        return { success: true, alreadyClaimed: true, reward: 0 };
+      }
+      if (!partidaSnap.exists) {
+        throw new functions.https.HttpsError("failed-precondition", "No hay partida de hoy.");
+      }
+
+      const partida = partidaSnap.data();
+      if (partida.won !== true) {
+        // Perder no se premia: el juego pierde la gracia si da igual acertar.
+        return { success: true, reward: 0, motivo: "no_ganada" };
+      }
+
+      const intentos = Number(partida.attempts);
+      if (!Number.isInteger(intentos) || intentos < 1 || intentos > WORDLE_MAX_INTENTOS) {
+        throw new functions.https.HttpsError("failed-precondition", "Partida inválida.");
+      }
+      const palabraPartida = String(partida.word || "").trim().toUpperCase();
+      if (!palabraOficial || palabraPartida !== palabraOficial) {
+        throw new functions.https.HttpsError("failed-precondition", "Esa no es la palabra de hoy.");
+      }
+
+      const reward = WORDLE_REWARD + (intentos <= WORDLE_INTENTOS_RAPIDO ? WORDLE_BONUS_RAPIDO : 0);
+      const nuevoSaldo = (u.monedas || 0) + reward;
+      t.update(userRef, { monedas: nuevoSaldo, lastWordleRewardDate: hoy });
+
+      writeLedger(t, uid, {
+        type: "earn",
+        amount: reward,
+        source: "wordle_diario",
+        balanceAfter: nuevoSaldo,
+      });
+
+      return { success: true, reward, rapido: intentos <= WORDLE_INTENTOS_RAPIDO };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("claimWordleRewardSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al reclamar la recompensa.");
   }
 });
 

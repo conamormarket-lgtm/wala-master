@@ -227,7 +227,7 @@ const MinijuegosPage = () => {
           recompensa={
             <>
               <Trophy size={14} aria-hidden="true" />
-              <T>Puesto en el ranking</T>
+              <T>+3 monedas al acertar</T>
             </>
           }
           accion={

@@ -34,6 +34,7 @@ service cloud.firestore {
         'monedasActivas', 'kapiCoins', 'kapiHappiness', 'lastKapiClaimDate', 'weeklyClaimsData',
         'activeMultiplier', 'multiplierExpiresAt', 'weeklyChallengeProgress',
         'lastBallSortReward', 'lastRuletaSpinWeek', 'streakBonusReceived', 'surveyRewardClaimed',
+        'lastWordleRewardDate',
         'referralOrdersClaimed',
         // Fase 2 (fidelización): los escribe SOLO el servidor (dailyCheckInSecure,
         // completeMissionSecure). El cliente nunca puede auto-modificar XP/racha/check-in.

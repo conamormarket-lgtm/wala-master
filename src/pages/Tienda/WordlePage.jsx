@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday, getMiPartidaDeHoy } from '../../services/wordle';
+import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday, getMiPartidaDeHoy, claimWordleReward } from '../../services/wordle';
+import { volarMonedasGanadas } from '../../utils/animations';
+import { useEntregaMonedas } from '../../hooks/useEntregaMonedas';
 import { VALID_GUESSES } from '../../data/wordleDictionary';
 import { useAuth } from '../../contexts/AuthContext';
 import { limaTodayStr } from '../../utils/fechaLima';
@@ -133,14 +135,30 @@ const WordlePage = () => {
   const rankingData = rankingTab === 'today' ? rankingToday : rankingGlobal;
   const isLoadingRanking = rankingTab === 'today' ? isLoadingToday : isLoadingGlobal;
 
+  // Monedas ganadas hoy por acertar. Las decide el servidor.
+  const [premio, setPremio] = useState(null);
+  const { entregando, empezarEntrega, terminarEntrega } = useEntregaMonedas();
+
   // Mutación para guardar el resultado
   const saveResultMutation = useMutation({
     mutationFn: ({ won, attempts, timeSeconds, word, length }) => saveWordleResult(won, attempts, timeSeconds, word, length),
-    onSuccess: (res) => {
+    onSuccess: async (res, variables) => {
       if (res.success && res.stats) {
         setUserStats(res.stats);
         queryClient.invalidateQueries({ queryKey: ['wordle-ranking-today', todayStr] });
         queryClient.invalidateQueries({ queryKey: ['wordle-ranking-global'] });
+      }
+      // La recompensa se pide DESPUÉS de guardar: el servidor valida leyendo la
+      // partida de hoy, así que antes de escribirla no habría nada que validar.
+      if (!variables?.won) return;
+      empezarEntrega();
+      const cobro = await claimWordleReward();
+      if (cobro.reward > 0) {
+        setPremio(cobro);
+        volarMonedasGanadas(null, cobro.reward);
+      } else {
+        // Sin monedas no hay vuelo, así que nadie soltaría el bloqueo del modal.
+        terminarEntrega();
       }
     }
   });
@@ -650,14 +668,34 @@ const WordlePage = () => {
 
       {/* ── Modal de resultado ─────────────────────────────────────────── */}
       {showResultModal && (
-        <div className={styles.resultOverlay} onClick={() => setShowResultModal(false)}>
+        <div
+          className={styles.resultOverlay}
+          onClick={() => { if (!entregando) setShowResultModal(false); }}
+        >
           <div className={styles.resultCard} onClick={e => e.stopPropagation()}>
-            <button className={styles.closeModalBtn} onClick={() => setShowResultModal(false)}>×</button>
+            {!entregando && (
+              <button className={styles.closeModalBtn} onClick={() => setShowResultModal(false)}>×</button>
+            )}
             <h2><T>{gameStatus === 'won' ? '¡Felicidades!' : 'Fin del Juego'}</T></h2>
             {gameStatus === 'won' ? (
               <p><T>Adivinaste la palabra en</T> <strong>{guesses.length}</strong> intento{guesses.length !== 1 ? 's' : ''}.</p>
             ) : (
               <p><T>La palabra era:</T> <strong>{targetWord}</strong></p>
+            )}
+
+            {/* Recompensa: solo al ganar y solo si el servidor la concedió. */}
+            {gameStatus === 'won' && user && (entregando || premio) && (
+              <p className={styles.resultPremio}>
+                {entregando
+                  ? <T>Acreditando tus monedas...</T>
+                  : (
+                    <>
+                      🪙 <strong>+{premio.reward} <T>monedas</T></strong>{' '}
+                      <T>acreditadas.</T>
+                      {premio.rapido && <> <T>¡Bonus por acertar rápido!</T></>}
+                    </>
+                  )}
+              </p>
             )}
 
             {user ? (
