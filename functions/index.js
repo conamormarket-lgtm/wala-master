@@ -2521,18 +2521,34 @@ async function calcularDescuentoCupon(cupon, datos) {
     }
     case "envio_gratis": {
       // Vale lo que costaría el envío de este pedido, que puede ser cero.
-      const envio = base > ENVIO_GRATIS_DESDE ? 0 : ENVIO_ESTANDAR;
+      //
+      // El umbral se mide sobre el subtotal QUE USA EL CHECKOUT (ya rebajado por
+      // las monedas), no sobre el de catálogo: el carrito calcula el envío con
+      // `subtotal - monedas > 100`, y si aquí se mirara el de catálogo, un
+      // pedido de S/105 con 6 monedas recibiría un "ya tienes envío gratis"
+      // mientras la pantalla le cobra los S/15. Lo que se puede ganar mintiendo
+      // está acotado al precio de un envío.
+      const envio = subtotalCliente > ENVIO_GRATIS_DESDE ? 0 : ENVIO_ESTANDAR;
       envioGratis = true;
       descuento = envio;
-      if (envio === 0) aviso = "Tu pedido ya tiene envío gratis, así que este cupón no resta nada.";
+      // Decirle que guarde el cupon, no solo que no sirve ahora: es un premio y
+      // gastarlo en un pedido que ya lleva el envio gratis seria tirarlo.
+      if (envio === 0) {
+        aviso = "Tu pedido ya tiene envío gratis. Guarda el cupón para otro pedido: " +
+          "si lo aplicas ahora lo gastas sin descontar nada.";
+      }
       break;
     }
     default:
       descuento = 0;
   }
 
-  // Nunca puede dejar el pedido en negativo.
-  descuento = Math.max(0, Math.min(descuento, base));
+  // Nunca puede dejar el pedido en negativo. El envío se queda fuera del tope:
+  // no sale del subtotal, así que un carrito de S/10 con envío gratis descuenta
+  // los S/15 del envío enteros.
+  descuento = envioGratis
+    ? Math.max(0, Math.min(descuento, ENVIO_ESTANDAR))
+    : Math.max(0, Math.min(descuento, base));
   return { descuento: +descuento.toFixed(2), envioGratis, base: +base.toFixed(2), exacta, aviso };
 }
 

@@ -237,10 +237,12 @@ const CheckoutPage = () => {
       setCuponAplicado(null);
       return;
     }
-    // Un cupón que no resta nada en este carrito (envío ya gratis, producto que
-    // no está dentro) se avisa y NO se aplica: consumirlo sería tirarlo.
-    if (!res.descuento && !res.envioGratis) {
-      setCuponError(res.aviso || 'Este cupón no aplica a tu carrito.');
+    // Un cupón que no resta nada en este carrito NO se aplica: se consumiría
+    // para nada. El caso típico es un cupón de envío gratis en un pedido que ya
+    // supera el mínimo de envío gratis; el servidor devuelve el ahorro real en
+    // `descuento` (que ahí es cero) y el motivo en `aviso`.
+    if (!res.descuento) {
+      setCuponError(res.aviso || 'Este cupón no descuenta nada en este carrito.');
       setCuponAplicado(null);
       return;
     }

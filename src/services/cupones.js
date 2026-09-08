@@ -61,7 +61,17 @@ export const validarCupon = async (code, { subtotal, envio, items }) => {
     const res = await httpsCallable(getFunctions(), 'validarCuponSecure')({
       code, subtotal, envio, items,
     });
-    return { success: true, cupon: res.data?.cupon, descuento: res.data?.descuento || 0 };
+    // `envioGratis` y `aviso` se devuelven tal cual: sin el primero el checkout
+    // no sabe que debe poner el envío a cero, y sin el segundo pierde el motivo
+    // exacto por el que un cupón no resta nada y acaba enseñando un mensaje
+    // genérico ("no aplica a tu carrito") que no ayuda a nadie.
+    return {
+      success: true,
+      cupon: res.data?.cupon,
+      descuento: res.data?.descuento || 0,
+      envioGratis: !!res.data?.envioGratis,
+      aviso: res.data?.aviso || '',
+    };
   } catch (error) {
     return { success: false, error: error?.message || 'No pudimos validar el cupón' };
   }
