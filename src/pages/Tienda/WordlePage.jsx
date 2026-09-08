@@ -78,13 +78,11 @@ const WordlePage = () => {
   const [showRanking, setShowRanking] = useState(false);
   const [rankingTab, setRankingTab] = useState('today'); // 'today' | 'global'
   const [showResultModal, setShowResultModal] = useState(false);
-  // La ayuda se abre sola la PRIMERA vez que alguien entra y luego se recuerda
-  // plegada. Un jugador nuevo veía una rejilla vacía y un teclado, sin saber
-  // qué significaban los colores ni cuántos intentos tenía.
-  const [ayudaAbierta, setAyudaAbierta] = useState(() => {
-    try { return localStorage.getItem('wala_wordle_ayuda_vista') !== '1'; }
-    catch { return true; }
-  });
+  // La ayuda se abre sola la PRIMERA vez que alguien entra: un jugador nuevo
+  // veía una rejilla vacía y un teclado, sin saber cuántos intentos tenía ni qué
+  // significaban los colores. Arranca cerrada y la abre el efecto de más abajo,
+  // que espera a saber si la partida de hoy sigue en juego.
+  const [ayudaAbierta, setAyudaAbierta] = useState(false);
 
   // En movil el ranking se despliega BAJO el teclado, asi que al abrirlo hay que
   // llevar la vista hasta el; si no, parece que el boton no hizo nada.
@@ -101,13 +99,14 @@ const WordlePage = () => {
     });
   };
 
+  const cerrarAyuda = () => {
+    setAyudaAbierta(false);
+    try { localStorage.setItem('wala_wordle_ayuda_vista', '1'); } catch { /* modo privado */ }
+  };
+
   const alternarAyuda = () => {
-    setAyudaAbierta((abierta) => {
-      if (abierta) {
-        try { localStorage.setItem('wala_wordle_ayuda_vista', '1'); } catch { /* modo privado */ }
-      }
-      return !abierta;
-    });
+    if (ayudaAbierta) cerrarAyuda();
+    else setAyudaAbierta(true);
   };
 
   // Obtener la palabra del día
@@ -170,6 +169,17 @@ const WordlePage = () => {
       }
     }
   }, [dailyWord, storageKey]);
+
+  // Apertura automática de la ayuda: solo la primera visita Y solo si la partida
+  // de hoy sigue abierta. Si el día ya está jugado, el cartel de resultado se
+  // muestra al entrar y los dos modales se apilaban uno encima del otro.
+  useEffect(() => {
+    if (!dailyWord || gameStatus !== 'playing') return;
+    try {
+      if (localStorage.getItem('wala_wordle_ayuda_vista') === '1') return;
+    } catch { return; /* modo privado: no insistimos */ }
+    setAyudaAbierta(true);
+  }, [dailyWord, gameStatus]);
 
   // Guardar estado en LocalStorage en cada cambio
   useEffect(() => {
@@ -297,6 +307,16 @@ const WordlePage = () => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const key = e.key.toUpperCase();
+
+      // Con un modal delante, el teclado cierra en vez de escribir: antes las
+      // letras seguían cayendo en el tablero por detrás del cartel.
+      if (ayudaAbierta || showResultModal) {
+        if (key === 'ESCAPE') {
+          if (ayudaAbierta) cerrarAyuda();
+          else setShowResultModal(false);
+        }
+        return;
+      }
       if (key === 'BACKSPACE') {
         e.preventDefault();
         onKeyPress('BACKSPACE');
@@ -310,7 +330,8 @@ const WordlePage = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onKeyPress]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onKeyPress, ayudaAbierta, showResultModal]);
 
 
   if (isLoadingWord) {
@@ -371,50 +392,49 @@ const WordlePage = () => {
           </T>
         </p>
       ) : (
-        <div className={styles.rankingScroll}>
-          <table className={styles.rankingTable}>
-            <thead>
-              <tr>
-                <th><T>Pos</T></th>
-                <th><T>Jugador</T></th>
-                {rankingTab === 'today' ? (
-                  <>
-                    <th><T>Intentos</T></th>
-                    <th><T>Tiempo</T></th>
-                    <th><T>Racha</T></th>
-                  </>
-                ) : (
-                  <>
-                    <th><T>Mejor racha</T></th>
-                    <th><T>Victorias</T></th>
-                    <th><T>Intentos</T></th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {rankingData?.map((p, index) => (
-                <tr key={p.id} className={user?.uid === p.id ? styles.currentUserRow : ''}>
-                  <td>#{index + 1}</td>
-                  <td>{p.displayName} {user?.uid === p.id && <strong>(Tú)</strong>}</td>
+        /* Lista, no tabla: cinco columnas no caben en una columna lateral y la
+           tabla salia con scroll horizontal, que es de lo peor que se puede
+           pedir en movil. Cada jugador ocupa una fila con su puesto y su
+           nombre arriba, y sus numeros debajo en texto corrido. */
+        <ol className={styles.rankingLista}>
+          {rankingData?.map((p, index) => (
+            <li
+              key={p.id}
+              className={`${styles.rankingItem} ${user?.uid === p.id ? styles.rankingItemTuyo : ''}`}
+            >
+              <span className={styles.rankingPuesto}>{index + 1}</span>
+
+              <div className={styles.rankingDatos}>
+                <span className={styles.rankingNombre}>
+                  {p.displayName}
+                  {user?.uid === p.id && <span className={styles.rankingTu}><T>Tú</T></span>}
+                </span>
+                <span className={styles.rankingMetricas}>
                   {rankingTab === 'today' ? (
                     <>
-                      <td>{p.todayAttempts} / 6</td>
-                      <td>{formatTime(p.timeSeconds)}</td>
-                      <td><span className={styles.streakBadge}>{p.currentStreak}</span></td>
+                      <strong>{p.todayAttempts}/6</strong> <T>intentos</T>
+                      <span aria-hidden="true"> · </span>
+                      {formatTime(p.timeSeconds)}
                     </>
                   ) : (
                     <>
-                      <td><span className={styles.streakBadge}>{p.maxStreak}</span></td>
-                      <td>{p.wins} / {p.played}</td>
-                      <td>{p.totalAttempts || 0}</td>
+                      <strong>{p.wins}</strong>/{p.played} <T>victorias</T>
+                      <span aria-hidden="true"> · </span>
+                      {p.totalAttempts || 0} <T>intentos</T>
                     </>
                   )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </span>
+              </div>
+
+              <span
+                className={styles.streakBadge}
+                title={rankingTab === 'today' ? 'Racha actual' : 'Mejor racha'}
+              >
+                {rankingTab === 'today' ? p.currentStreak : p.maxStreak}
+              </span>
+            </li>
+          ))}
+        </ol>
       )}
     </>
   );
@@ -450,55 +470,6 @@ const WordlePage = () => {
     >
       <div className={styles.layout}>
         <main className={styles.gameCol}>
-          {/* ── Cómo se juega ───────────────────────────────────────────── */}
-          {ayudaAbierta && (
-            <section className={styles.ayuda}>
-              <button
-                type="button"
-                className={styles.ayudaCerrar}
-                onClick={alternarAyuda}
-                aria-label="Cerrar las instrucciones"
-              >
-                <X size={16} aria-hidden="true" />
-              </button>
-
-              <h2 className={styles.ayudaTitulo}><T>Cómo se juega</T></h2>
-
-              <ol className={styles.ayudaPasos}>
-                <li>
-                  <T>Adivina la palabra oculta de</T>{' '}<strong>{wordLength}</strong>{' '}
-                  <T>letras. Tienes</T> <strong>6</strong> <T>intentos.</T>
-                </li>
-                <li><T>Escribe con el teclado de abajo (o con el de tu computadora) y pulsa ENTER.</T></li>
-                <li><T>Cada intento tiene que ser una palabra que exista.</T></li>
-              </ol>
-
-              <p className={styles.ayudaSubtitulo}>
-                <T>Después de cada intento, los colores te dicen qué tan cerca estuviste:</T>
-              </p>
-
-              <ul className={styles.leyenda}>
-                <li>
-                  <span className={`${styles.celdaEjemplo} ${styles.correct}`}>M</span>
-                  <span><T>La letra está en la palabra y en el sitio correcto.</T></span>
-                </li>
-                <li>
-                  <span className={`${styles.celdaEjemplo} ${styles.present}`}>A</span>
-                  <span><T>La letra está en la palabra, pero en otro sitio.</T></span>
-                </li>
-                <li>
-                  <span className={`${styles.celdaEjemplo} ${styles.absent}`}>R</span>
-                  <span><T>La letra no está en la palabra.</T></span>
-                </li>
-              </ul>
-
-              <p className={styles.ayudaPie}>
-                <T>Hay una palabra nueva cada día a la medianoche (hora de Perú).</T>
-                {!user && <> <T>Inicia sesión para guardar tu racha y aparecer en el ranking.</T></>}
-              </p>
-            </section>
-          )}
-
           {/* ── Rejilla ─────────────────────────────────────────────────── */}
           <div className={styles.board} style={{ gridTemplateRows: `repeat(${MAX_ATTEMPTS}, 1fr)` }}>
             {Array.from({ length: MAX_ATTEMPTS }).map((_, rowIndex) => {
@@ -574,6 +545,60 @@ const WordlePage = () => {
           {panelRanking}
         </aside>
       </div>
+
+      {/* ── Modal: cómo se juega ──────────────────────────────────────── */}
+      {ayudaAbierta && !showResultModal && (
+        <div className={styles.resultOverlay} onClick={cerrarAyuda} role="presentation">
+          <div
+            className={`${styles.resultCard} ${styles.ayudaCard}`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Cómo se juega"
+          >
+            <button className={styles.closeModalBtn} onClick={cerrarAyuda} aria-label="Cerrar">×</button>
+
+            <h2 className={styles.ayudaTitulo}><T>Cómo se juega</T></h2>
+
+            <ol className={styles.ayudaPasos}>
+              <li>
+                <T>Adivina la palabra oculta de</T>{' '}<strong>{wordLength}</strong>{' '}
+                <T>letras. Tienes</T> <strong>6</strong> <T>intentos.</T>
+              </li>
+              <li><T>Escribe con el teclado de abajo (o con el de tu computadora) y pulsa ENTER.</T></li>
+              <li><T>Cada intento tiene que ser una palabra que exista.</T></li>
+            </ol>
+
+            <p className={styles.ayudaSubtitulo}>
+              <T>Después de cada intento, los colores te dicen qué tan cerca estuviste:</T>
+            </p>
+
+            <ul className={styles.leyenda}>
+              <li>
+                <span className={`${styles.celdaEjemplo} ${styles.correct}`}>M</span>
+                <span><T>La letra está en la palabra y en el sitio correcto.</T></span>
+              </li>
+              <li>
+                <span className={`${styles.celdaEjemplo} ${styles.present}`}>A</span>
+                <span><T>La letra está en la palabra, pero en otro sitio.</T></span>
+              </li>
+              <li>
+                <span className={`${styles.celdaEjemplo} ${styles.absent}`}>R</span>
+                <span><T>La letra no está en la palabra.</T></span>
+              </li>
+            </ul>
+
+            <p className={styles.ayudaPie}>
+              <T>Hay una palabra nueva cada día a la medianoche (hora de Perú).</T>
+              {!user && <> <T>Inicia sesión para guardar tu racha y aparecer en el ranking.</T></>}
+            </p>
+
+            <button type="button" className={styles.ayudaBtn} onClick={cerrarAyuda}>
+              <T>Entendido, a jugar</T>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal de resultado ─────────────────────────────────────────── */}
       {showResultModal && (
