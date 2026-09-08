@@ -421,10 +421,23 @@ const BallSortPage = () => {
       </aside>
       </div>
 
-      {ayudaAbierta && (
-        <div className={styles.overlay} onClick={cerrarAyuda} role="presentation">
-          <div
+      {/* Misma entrada y salida que el cartel de victoria: aparecia de golpe. */}
+      <AnimatePresence>
+        {ayudaAbierta && (
+        <motion.div
+          className={styles.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={cerrarAyuda}
+          role="presentation"
+        >
+          <motion.div
             className={styles.ayudaCard}
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -475,9 +488,10 @@ const BallSortPage = () => {
             <button type="button" className={styles.ayudaBtn} onClick={cerrarAyuda}>
               <T>Entendido, a jugar</T>
             </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Cartel de victoria ────────────────────────────────────────────
           Antes era una tarjeta suelta flotando sobre el tablero, sin fondo que
