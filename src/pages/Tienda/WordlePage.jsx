@@ -135,9 +135,16 @@ const WordlePage = () => {
   const rankingData = rankingTab === 'today' ? rankingToday : rankingGlobal;
   const isLoadingRanking = rankingTab === 'today' ? isLoadingToday : isLoadingGlobal;
 
+  // Intentos segun el servidor. Se usa cuando la partida se recupera de alli sin
+  // tablero local (otro equipo): `guesses` esta vacio y sin esto se leeria
+  // "Lo lograste en 0 intentos".
+  const [intentosServidor, setIntentosServidor] = useState(0);
+
   // Monedas ganadas hoy por acertar. Las decide el servidor.
   const [premio, setPremio] = useState(null);
   const { entregando, empezarEntrega, terminarEntrega } = useEntregaMonedas();
+
+  const intentosUsados = guesses.length || intentosServidor;
 
   // Mutación para guardar el resultado
   const saveResultMutation = useMutation({
@@ -163,14 +170,20 @@ const WordlePage = () => {
     }
   });
 
-  // Inicializar estado desde LocalStorage o nueva partida.
+  // Inicializar estado desde el servidor y/o LocalStorage.
   //
-  // Quien manda sobre "ya jugaste hoy" es el SERVIDOR, no el navegador. El
-  // estado local se guarda para no perder una partida a medias al recargar,
-  // pero si dice que la partida está terminada y el servidor no tiene registro
-  // de hoy, ese estado es basura (lo típico: alguien reinició el juego desde el
-  // panel) y bloqueaba al usuario para siempre, sin forma de salir salvo
-  // borrando localStorage a mano.
+  // Quien manda sobre "ya jugaste hoy" es el SERVIDOR. El estado local solo
+  // sirve para no perder una partida a medias al recargar; como vive en el
+  // navegador, por sí solo no vale ni para permitir ni para impedir jugar:
+  //
+  //   · Servidor CON partida  -> el día está jugado, se bloquea. Aunque no haya
+  //     nada en localStorage (otro equipo, incógnito, caché borrada). Sin esto
+  //     el límite diario era en realidad "una partida por navegador".
+  //   · Servidor SIN partida y el local dice "terminada" -> ese estado es basura
+  //     (lo típico: se reinició el juego desde el panel) y bloqueaba al usuario
+  //     para siempre. Se descarta.
+  //   · Partida a medias -> se restaura tal cual; aún no tiene registro en el
+  //     servidor porque este solo se escribe al terminar.
   useEffect(() => {
     if (!dailyWord) return;
     let vivo = true;
@@ -181,34 +194,44 @@ const WordlePage = () => {
     setCurrentGuess(Array(cleanTarget.length).fill(''));
 
     (async () => {
-      let parsed = null;
-      const savedState = localStorage.getItem(storageKey);
-      if (savedState) {
-        try {
-          parsed = JSON.parse(savedState);
-        } catch (e) {
-          console.error('Error parsing localstorage', e);
-        }
+      let guardado = null;
+      try {
+        const bruto = localStorage.getItem(storageKey);
+        if (bruto) guardado = JSON.parse(bruto);
+      } catch (e) {
+        console.error('Error parsing localstorage', e);
       }
-      if (!parsed) return;
+      const terminadaEnLocal = !!guardado?.gameStatus && guardado.gameStatus !== 'playing';
 
-      const terminada = parsed.gameStatus && parsed.gameStatus !== 'playing';
-      if (terminada && user) {
-        const enServidor = await getMiPartidaDeHoy();
-        if (!vivo) return;
-        if (!enServidor) {
-          // El servidor no la tiene: se descarta y se empieza de cero.
-          try { localStorage.removeItem(storageKey); } catch { /* modo privado */ }
-          return;
-        }
-      }
-
+      const enServidor = user ? await getMiPartidaDeHoy() : null;
       if (!vivo) return;
-      setGuesses(parsed.guesses || []);
-      setGameStatus(parsed.gameStatus || 'playing');
-      if (terminada) setShowResultModal(true);
-      if (parsed.userStats) setUserStats(parsed.userStats);
-      if (parsed.startTime) setStartTime(parsed.startTime);
+
+      if (enServidor) {
+        // Día jugado. Si el navegador conserva el tablero se enseña; si no
+        // (otro equipo), al menos el resultado, con la entrada ya bloqueada
+        // porque gameStatus deja de ser 'playing'.
+        setGameStatus(enServidor.won ? 'won' : 'lost');
+        setIntentosServidor(Number(enServidor.attempts) || 0);
+        setShowResultModal(true);
+        if (terminadaEnLocal) {
+          setGuesses(guardado.guesses || []);
+          if (guardado.userStats) setUserStats(guardado.userStats);
+          if (guardado.startTime) setStartTime(guardado.startTime);
+        }
+        return;
+      }
+
+      if (terminadaEnLocal) {
+        try { localStorage.removeItem(storageKey); } catch { /* modo privado */ }
+        return;
+      }
+
+      if (guardado) {
+        setGuesses(guardado.guesses || []);
+        setGameStatus(guardado.gameStatus || 'playing');
+        if (guardado.userStats) setUserStats(guardado.userStats);
+        if (guardado.startTime) setStartTime(guardado.startTime);
+      }
     })();
 
     return () => { vivo = false; };
@@ -561,8 +584,8 @@ const WordlePage = () => {
               <p className={styles.finTexto}>
                 {gameStatus === 'won' ? (
                   <>
-                    <T>Lo lograste en</T> <strong>{guesses.length}</strong>{' '}
-                    <T>{guesses.length === 1 ? 'intento' : 'intentos'}</T>.
+                    <T>Lo lograste en</T> <strong>{intentosUsados}</strong>{' '}
+                    <T>{intentosUsados === 1 ? 'intento' : 'intentos'}</T>.
                   </>
                 ) : (
                   <><T>La palabra era</T> <strong>{targetWord}</strong>.</>
@@ -678,7 +701,7 @@ const WordlePage = () => {
             )}
             <h2><T>{gameStatus === 'won' ? '¡Felicidades!' : 'Fin del Juego'}</T></h2>
             {gameStatus === 'won' ? (
-              <p><T>Adivinaste la palabra en</T> <strong>{guesses.length}</strong> intento{guesses.length !== 1 ? 's' : ''}.</p>
+              <p><T>Adivinaste la palabra en</T> <strong>{intentosUsados}</strong> intento{intentosUsados !== 1 ? 's' : ''}.</p>
             ) : (
               <p><T>La palabra era:</T> <strong>{targetWord}</strong></p>
             )}
