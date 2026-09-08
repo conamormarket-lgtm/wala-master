@@ -302,76 +302,19 @@
   color: var(--gris-texto-principal, #333);
 }
 
-.resetBtn:active {
-  transform: scale(0.97);
-}
-
-/* =========================================================================
-   BANNER DE VICTORIA
-   -------------------------------------------------------------------------
-   Era position:absolute sin ancestro posicionado, así que el 50% se calculaba
-   sobre TODA la página: en pantallas largas aparecía fuera de la vista. Fixed
-   lo ancla al viewport, que es donde tiene que estar.
-
-   El centrado va con inset:0 + margin:auto, NO con translate(-50%,-50%):
-   framer-motion escribe su propio `transform` para la entrada (scale), así que
-   cualquier translate del CSS lo pisaba y el cartel quedaba descuadrado.
-   ========================================================================= */
-
-.winBanner {
-  position: fixed;
-  inset: 0;
-  margin: auto;
-  width: min(420px, calc(100vw - 2rem));
-  height: fit-content;
-  padding: 2rem 1.5rem;
-  border-radius: 22px;
-  text-align: center;
-  background: var(--color-surface);
-  border: 1px solid var(--verde-exito);
-  box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
-  /* Igual que el overlay de la ayuda: con z-index 100 los desplegables del
-     Header se pintaban encima del cartel. */
-  z-index: 1100;
-}
-
-.winBanner h2 {
-  margin: 0 0 0.75rem;
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--verde-exito);
-}
-
-.winBanner p {
-  margin: 0 0 1.5rem;
-  font-size: 1.05rem;
-  line-height: 1.5;
-  color: var(--color-text);
-}
-
-.actionBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--touch-target, 44px);
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radio-pequeno, 10px);
-  background: var(--violet-500); /* igual que el .primaryButton del Header */
+/* Con el nivel resuelto, "Jugar otra vez" pasa a ser la accion principal. */
+.btnPrimario {
+  background: var(--violet-500);
+  border-color: transparent;
   color: #ffffff;
-  font-weight: 700;
-  text-decoration: none;
-  transition: var(--transicion-rapida);
 }
 
-.actionBtn:hover {
+.btnPrimario:hover {
   background: var(--violet-600);
-  /* Repetimos el blanco: el `a:hover` global de globals.css (0-1-1) gana a
-     `.actionBtn` (0-1-0) y teñía la letra del mismo violeta que el fondo. */
   color: #ffffff;
 }
 
-.actionBtn:active {
+.resetBtn:active {
   transform: scale(0.97);
 }
 
@@ -467,6 +410,124 @@
   background: var(--violet-600);
 }
 
+/* ═══════════════════════════════════════════
+   CARTEL DE VICTORIA
+   Misma tarjeta que la ayuda; solo cambia el contenido.
+   ═══════════════════════════════════════════ */
+.winCard {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  padding: 1.75rem 1.5rem;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.winEmoji {
+  display: block;
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.winTitulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--verde-exito);
+}
+
+.winSub {
+  margin: 0 0 1.1rem;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.winSub strong {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+/* Estado del premio: dorado de fidelizacion, el mismo de las monedas. */
+.winPremio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--gold-soft);
+  color: var(--gold-text);
+  font-size: 0.87rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+[data-theme='dark'] .winPremio {
+  color: var(--gold-500);
+}
+
+.winPremioError {
+  background: var(--danger-soft);
+  color: var(--danger-hover);
+}
+
+[data-theme='dark'] .winPremioError {
+  color: #fca5a5;
+}
+
+.winAcciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.winPrimario,
+.winSecundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target, 44px);
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--radio-pequeno, 10px);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* Jugar otra vez es la accion primaria: el violeta del Header. */
+.winPrimario {
+  border: 1px solid transparent;
+  background: var(--violet-500);
+  color: #ffffff;
+}
+
+.winPrimario:hover {
+  background: var(--violet-600);
+}
+
+/* Volver al hub es secundaria: neutra, como el "Cerrar sesion" del Header. */
+.winSecundario,
+.winSecundario:hover {
+  background-color: transparent;
+  border: 1px solid var(--gris-borde, #ddd);
+  color: var(--gris-texto-principal, #333);
+}
+
+.winSecundario:hover {
+  background-color: var(--gris-hover, #f5f5f5);
+  border-color: var(--gris-texto-secundario, #ccc);
+}
+
 /* =========================================================================
    CONFETI DE TUBO COMPLETADO
    ========================================================================= */
@@ -528,7 +589,9 @@
 @media (prefers-reduced-motion: reduce) {
   .tubeWrapper,
   .btn,
-  .actionBtn,
+  .winPrimario,
+  .winSecundario,
+  .ayudaBtn,
   .selectedBall {
     transition: none;
   }
@@ -538,8 +601,7 @@
     animation: none;
   }
 
-  .resetBtn:active,
-  .actionBtn:active {
+  .resetBtn:active {
     transform: none;
   }
 }

@@ -108,6 +108,9 @@ const BallSortPage = () => {
   // Contador de movimientos: es la unica medida de "que tan bien lo estoy
   // haciendo" que tiene este juego, y la pantalla no daba ninguna.
   const [movimientos, setMovimientos] = useState(0);
+  // hasWon bloquea el tablero; esto solo controla si el cartel esta a la vista,
+  // para poder cerrarlo y mirar el nivel resuelto.
+  const [mostrarVictoria, setMostrarVictoria] = useState(false);
   // La ayuda se abre sola la primera visita y luego se recuerda cerrada.
   const [ayudaAbierta, setAyudaAbierta] = useState(() => {
     try { return localStorage.getItem('wala_bolitas_ayuda_vista') !== '1'; }
@@ -121,6 +124,11 @@ const BallSortPage = () => {
 
   // El servidor decide el día en hora de Lima; el cliente debe usar el mismo
   // criterio o de 19:00 a 23:59 creería que ya es mañana.
+  // Se calcula del tablero, NO de completedTubes: ese Set solo lo actualizan
+  // los dos tubos que toca cada movimiento (existe para disparar el confeti),
+  // asi que como contador se quedaba corto.
+  const tubosListos = tubes.filter((t) => isTubeComplete(t)).length;
+
   const hasClaimedToday = diseno('bolitas')
     ? diseno('bolitas') === 'completado' // modo diseño, solo en local
     : userProfile?.lastBallSortReward === limaTodayStr();
@@ -138,14 +146,19 @@ const BallSortPage = () => {
 
   // Escape cierra la ayuda, como en el resto de modales de la Zona Arcade.
   useEffect(() => {
-    if (!ayudaAbierta) return;
-    const alPulsar = (e) => { if (e.key === 'Escape') cerrarAyuda(); };
+    if (!ayudaAbierta && !mostrarVictoria) return;
+    const alPulsar = (e) => {
+      if (e.key !== 'Escape') return;
+      if (ayudaAbierta) cerrarAyuda();
+      else setMostrarVictoria(false);
+    };
     window.addEventListener('keydown', alPulsar);
     return () => window.removeEventListener('keydown', alPulsar);
-  }, [ayudaAbierta]);
+  }, [ayudaAbierta, mostrarVictoria]);
 
   const handleWin = useCallback(async () => {
     setHasWon(true);
+    setMostrarVictoria(true);
 
     // Analytics aditivo (fire-and-forget): fin del minijuego de bolitas.
     try {
@@ -253,6 +266,7 @@ const BallSortPage = () => {
     setSelectedTubeIndex(null);
     setMovimientos(0);
     setHasWon(false);
+    setMostrarVictoria(false);
     setError('');
     setClaimState('idle');
     setIsAnimating(false);
@@ -330,9 +344,25 @@ const BallSortPage = () => {
         </LayoutGroup>
 
         <div className={styles.controls}>
-          <button className={`${styles.btn} ${styles.resetBtn}`} onClick={restartGame}>
-            <T>Reiniciar Nivel</T>
-          </button>
+          {hasWon ? (
+            <>
+              <button className={`${styles.btn} ${styles.btnPrimario}`} onClick={restartGame}>
+                <T>Jugar otra vez</T>
+              </button>
+              {!mostrarVictoria && (
+                <button
+                  className={`${styles.btn} ${styles.resetBtn}`}
+                  onClick={() => setMostrarVictoria(true)}
+                >
+                  <T>Ver resultado</T>
+                </button>
+              )}
+            </>
+          ) : (
+            <button className={`${styles.btn} ${styles.resetBtn}`} onClick={restartGame}>
+              <T>Reiniciar Nivel</T>
+            </button>
+          )}
         </div>
       </div>
 
@@ -363,7 +393,7 @@ const BallSortPage = () => {
           </div>
           <div className={styles.panelDato}>
             <dt><T>Tubos listos</T></dt>
-            <dd>{completedTubes.size}<span className={styles.panelTotal}>/{COLORS.length}</span></dd>
+            <dd>{tubosListos}<span className={styles.panelTotal}>/{COLORS.length}</span></dd>
           </div>
         </dl>
       </aside>
@@ -400,26 +430,80 @@ const BallSortPage = () => {
         </div>
       )}
 
+      {/* ── Cartel de victoria ────────────────────────────────────────────
+          Antes era una tarjeta suelta flotando sobre el tablero, sin fondo que
+          la separase y sin forma de cerrarla: la unica salida era irse del
+          juego. Ahora es un modal como los de La Palabra del Dia, con su capa
+          oscura, se puede cerrar para mirar el nivel resuelto, y resume la
+          partida y el estado del premio. */}
       <AnimatePresence>
-        {hasWon && (
+        {mostrarVictoria && (
           <motion.div
-            className={styles.winBanner}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className={styles.overlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMostrarVictoria(false)}
+            role="presentation"
           >
-            <h2><T>¡Nivel Completado! 🎉</T></h2>
-            {claimState === 'claiming' && <p><T>Reclamando premio...</T></p>}
-            {claimState === 'claimed' && <p><T>¡Has ganado 2 Wala Coins!</T></p>}
-            {claimState === 'already' && (
-              <p><T>¡Bien hecho! Ya reclamaste tus Wala Coins hoy, vuelve mañana para ganar más.</T></p>
-            )}
-            {claimState === 'error' && (
-              <p><T>No pudimos acreditar tu premio. Inténtalo de nuevo más tarde.</T></p>
-            )}
-            <Link to="/minijuegos" className={styles.actionBtn}>
-              <T>Volver al Hub</T>
-            </Link>
+            <motion.div
+              className={styles.winCard}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+            >
+              <button
+                className={styles.cerrarModal}
+                onClick={() => setMostrarVictoria(false)}
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+
+              <span className={styles.winEmoji} aria-hidden="true">🎉</span>
+              <h2 className={styles.winTitulo}><T>¡Nivel completado!</T></h2>
+              <p className={styles.winSub}>
+                <T>Lo resolviste en</T> <strong>{movimientos}</strong>{' '}
+                <T>{movimientos === 1 ? 'movimiento' : 'movimientos'}</T>.
+              </p>
+
+              <div
+                className={`${styles.winPremio} ${claimState === 'error' ? styles.winPremioError : ''}`}
+              >
+                {claimState === 'claiming' && <T>Acreditando tus monedas...</T>}
+                {claimState === 'claimed' && (
+                  <>
+                    <Coins size={16} aria-hidden="true" />
+                    <span><strong><T>+2 Wala Coins</T></strong> <T>acreditadas.</T></span>
+                  </>
+                )}
+                {claimState === 'already' && (
+                  <>
+                    <Check size={16} aria-hidden="true" />
+                    <span><T>Ya ganaste tus monedas hoy. Vuelve mañana por las siguientes.</T></span>
+                  </>
+                )}
+                {claimState === 'error' && (
+                  <T>No pudimos acreditar tu premio. Inténtalo de nuevo más tarde.</T>
+                )}
+                {claimState === 'idle' && (
+                  <T>Inicia sesión para ganar Wala Coins con este juego.</T>
+                )}
+              </div>
+
+              <div className={styles.winAcciones}>
+                <button type="button" className={styles.winPrimario} onClick={restartGame}>
+                  <T>Jugar otra vez</T>
+                </button>
+                <Link to="/minijuegos" className={styles.winSecundario}>
+                  <T>Volver al hub</T>
+                </Link>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
