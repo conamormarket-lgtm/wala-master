@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
@@ -229,8 +230,13 @@ const KapiPet = () => {
         </div>
       )}
 
-      {/* Mismo AnimatePresence y los mismos valores que los modales de la Zona
-          Arcade, para que las cinco ventanas de la app entren y salgan igual. */}
+      {/* Se monta en <body>, como los modales de la Zona Arcade.
+          Motivo: .App lleva isolation:isolate, asi que el z-index 9999 de la
+          AdminBar solo compite DENTRO de .App. Un modal que viva ahi dentro
+          nunca la tapa: quedaba nitida y clicable por encima del dialogo, y se
+          podia pulsar "Activar Editor Visual" con la ventana abierta. Fuera de
+          .App, la capa cubre todo. */}
+      {createPortal(
       <AnimatePresence>
         {isOpen && (
         <motion.div
@@ -341,7 +347,8 @@ const KapiPet = () => {
           </motion.div>
         </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body)}
     </>
   );
 };
