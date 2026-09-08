@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { claimBallSortReward } from '../../services/firebase/ballSort';
 import { trackMinigame } from '../../services/analytics/tracker';
 import { limaTodayStr } from '../../utils/fechaLima';
+import { diseno } from '../../utils/modoDiseno';
 import styles from './BallSortPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -105,7 +106,9 @@ const BallSortPage = () => {
 
   // El servidor decide el día en hora de Lima; el cliente debe usar el mismo
   // criterio o de 19:00 a 23:59 creería que ya es mañana.
-  const hasClaimedToday = userProfile?.lastBallSortReward === limaTodayStr();
+  const hasClaimedToday = diseno('bolitas')
+    ? diseno('bolitas') === 'completado' // modo diseño, solo en local
+    : userProfile?.lastBallSortReward === limaTodayStr();
 
   useEffect(() => {
     // Inicializar juego

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
+import { diseno } from '../../utils/modoDiseno';
 import { getRuletaPrizes, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
 import { trackMinigame } from '../../services/analytics/tracker';
 import styles from './RuletaPage.module.css';
@@ -44,7 +45,13 @@ const RuletaPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { isUnlocked, hasLost, hasSpun, esPendienteAnterior } = getRuletaEligibility(userProfile);
+  const elegibilidad = getRuletaEligibility(userProfile);
+  // Modo diseño (solo en local): ?ruleta=desbloqueada|girada|pendiente|perdida
+  const forzar = diseno('ruleta');
+  const isUnlocked = forzar ? (forzar === 'desbloqueada' || forzar === 'pendiente') : elegibilidad.isUnlocked;
+  const hasLost = forzar ? forzar === 'perdida' : elegibilidad.hasLost;
+  const hasSpun = forzar ? forzar === 'girada' : elegibilidad.hasSpun;
+  const esPendienteAnterior = forzar ? forzar === 'pendiente' : elegibilidad.esPendienteAnterior;
 
   const handleSpin = async () => {
     if (!isUnlocked || spinning || result) return;

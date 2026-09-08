@@ -5,6 +5,7 @@ import { showFlyingCoins } from '../../../utils/animations';
 import { scheduleKapiNotifications } from '../../../services/kapiNotifications';
 import { limaTodayStr, felicidadKapiHoy } from '../../../utils/fechaLima';
 import { useGlobalToast } from '../../../contexts/ToastContext';
+import { diseno, disenoNum } from '../../../utils/modoDiseno';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -123,13 +124,17 @@ const KapiPet = () => {
   // Felicidad REAL de hoy: el valor guardado solo se actualiza al alimentarlo, así
   // que aquí se le aplica el mismo decaimiento que usará el servidor. Si no, la
   // barra se quedaba clavada en 100/100 aunque llevaras semanas sin darle de comer.
-  const felicidad = felicidadKapiHoy(userProfile.kapiHappiness, lastClaim, todayStr);
+  const felicidadReal = felicidadKapiHoy(userProfile.kapiHappiness, lastClaim, todayStr);
+  // Modo diseño (solo en local): ?felicidad=25&kapi=triste para verlo sin esperar.
+  const felicidad = disenoNum('felicidad', 0, 100) ?? felicidadReal;
 
   let kapiState = 'happy';
   if (!hasClaimedToday) {
     // Triste si además lleva días olvidado; con hambre si solo falta la de hoy.
     kapiState = felicidad < 40 ? 'sad' : 'hungry';
   }
+  const ESTADOS_DISENO = { feliz: 'happy', hambriento: 'hungry', triste: 'sad' };
+  kapiState = ESTADOS_DISENO[diseno('kapi')] || kapiState;
 
   const handleFeed = async () => {
     if (hasClaimedToday || isFeeding) return;

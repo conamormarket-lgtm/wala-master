@@ -204,3 +204,16 @@
   margin-bottom: 0.75rem;
   text-align: center;
 }
+
+/* Aviso del modo diseño (solo aparece en local, con parámetros en la URL). */
+.avisoDiseno {
+  max-width: 900px;
+  margin: 0 auto 1.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px dashed #f59e0b;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.08);
+  color: #b45309;
+  font-size: 0.85rem;
+  text-align: center;
+}

@@ -4,6 +4,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRuletaEligibility } from '../../services/firebase/ruleta';
 import { limaTodayStr } from '../../utils/fechaLima';
+import { diseno, disenoNum, hayModoDiseno } from '../../utils/modoDiseno';
 import styles from './MinijuegosPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -16,16 +17,27 @@ const MinijuegosPage = () => {
   // rechazaba.
   const todayStr = limaTodayStr();
   // La moneda diaria la acredita feedKapiSecure, que marca lastKapiClaimDate.
-  const hasClaimedToday = userProfile?.lastKapiClaimDate === todayStr;
-  const hasClaimedBallSort = userProfile?.lastBallSortReward === todayStr;
+  const hasClaimedToday = diseno('moneda')
+    ? diseno('moneda') === 'reclamada'
+    : userProfile?.lastKapiClaimDate === todayStr;
+  const hasClaimedBallSort = diseno('bolitas')
+    ? diseno('bolitas') === 'completado'
+    : userProfile?.lastBallSortReward === todayStr;
 
-  const {
-    isUnlocked: isRuletaUnlocked,
-    days: ruletaDays,
-    hasLost,
-    hasSpun,
-    esPendienteAnterior,
-  } = getRuletaEligibility(userProfile);
+  const elegibilidad = getRuletaEligibility(userProfile);
+
+  // Modo diseño (solo fuera de producción): permite ver cualquier estado de las
+  // tarjetas sin esperar a mañana. No concede nada; solo cambia lo que se pinta.
+  const forzarRuleta = diseno('ruleta');
+  const isRuletaUnlocked = forzarRuleta
+    ? forzarRuleta === 'desbloqueada' || forzarRuleta === 'pendiente'
+    : elegibilidad.isUnlocked;
+  const hasLost = forzarRuleta ? forzarRuleta === 'perdida' : elegibilidad.hasLost;
+  const hasSpun = forzarRuleta ? forzarRuleta === 'girada' : elegibilidad.hasSpun;
+  const esPendienteAnterior = forzarRuleta
+    ? forzarRuleta === 'pendiente'
+    : elegibilidad.esPendienteAnterior;
+  const ruletaDays = disenoNum('dias', 0, 7) ?? elegibilidad.days;
 
   const handleProtectedPlay = (e) => {
     if (!user) {
@@ -54,6 +66,13 @@ const MinijuegosPage = () => {
           <p className={styles.subtitle}><T>Juega, diviértete y gana recompensas exclusivas.</T></p>
         </div>
       </header>
+
+      {hayModoDiseno() && (
+        <p className={styles.avisoDiseno}>
+          Modo diseño activo (solo en local): lo que ves está forzado por la URL,
+          el servidor sigue aplicando sus reglas.
+        </p>
+      )}
 
       <div className={styles.gridContainer}>
         {/* Card 1: Wordle */}
