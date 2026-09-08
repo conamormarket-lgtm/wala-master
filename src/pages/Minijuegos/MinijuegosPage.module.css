@@ -1,219 +1,566 @@
-.pageContainer {
-  min-height: calc(100vh - 80px);
-  padding: 2rem 1rem;
-  background: var(--gris-fondo);
-  color: var(--gris-texto-principal);
-  font-family: 'Poppins', sans-serif;
-}
+/* =========================================================================
+   Zona Arcade — Hub de minijuegos
+   -------------------------------------------------------------------------
+   Criterio: esto es una sección de TIENDA, no una landing. La tarjeta de juego
+   toma los valores de la tarjeta "Universo Walá" de la portada (BannerGrid
+   .brandCell/.brandOutline): superficie sólida, radio 22, borde de 1px, una
+   sombra corta en reposo y el peso reservado al hover (sombra larga). Sin
+   vidrio, sin halos de color, sin barridos de luz y sin degradados.
 
-.header {
+   El movimiento es el de la portada, no uno inventado: la tarjeta se eleva y
+   escala un punto, el icono crece un poco más y la flecha del botón se
+   desplaza 3px, igual que el "Explorar colección →" de las tarjetas de marca.
+
+   Dónde vive el color:
+     - icono, badge de estado y píldora de recompensa -> acento del juego
+     - botón de acción -> SIEMPRE violeta de marca, en las cuatro tarjetas
+   Un solo color de CTA hace que el botón se reconozca sin leerlo; cuatro
+   botones de cuatro colores distintos obligan a leerlos todos.
+
+   El acento entra por dos variables y nunca como color suelto:
+     --acento-ink   tono legible sobre el fondo del tema (oscuro en claro,
+                    claro en noche). Es la corrección de "los colores claros
+                    se pierden".
+     --acento-tint  velo translúcido del mismo color, para fondos.
+   ========================================================================= */
+
+/* =========================================================================
+   HERO
+   ========================================================================= */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  margin-bottom: 3rem;
-  padding-top: 2rem;
+  gap: 0.6rem;
+  padding: clamp(0.5rem, 2vw, 1.5rem) 0 clamp(1.5rem, 3vw, 2rem);
 }
 
 .title {
-  font-size: 3rem;
-  font-weight: 900;
   margin: 0;
-  color: var(--primary-color);
-  letter-spacing: -1px;
+  font-size: clamp(1.75rem, 5vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
 }
 
 .subtitle {
-  font-size: 1.1rem;
-  color: var(--gris-texto-secundario);
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(0.92rem, 2vw, 1rem);
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+/* --- Tira de estado (monedas + juegos listos hoy) ------------------------ */
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-.gridContainer {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
-.gameCard {
-  position: relative;
-  background: var(--blanco);
-  border-radius: 24px;
-  padding: 2rem;
-  overflow: hidden;
-  border: 1px solid var(--gris-borde);
-  transition: var(--transicion-suave);
+.stat {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 340px;
-  box-shadow: var(--sombra-suave);
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
 }
 
-.gameCard:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--sombra-hover);
+[data-theme='dark'] .stat {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
-.cardContent {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.gameIcon {
-  width: 64px;
-  height: 64px;
-  background: var(--gris-fondo);
-  border-radius: 16px;
-  display: flex;
+.statValor {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  margin-bottom: 1.5rem;
-  font-weight: bold;
+  gap: 0.3rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
 }
 
-.gameTitle {
-  font-size: 1.5rem;
-  font-weight: 800;
-  margin: 0 0 0.5rem 0;
-  color: var(--gris-texto-principal);
+.statEtiqueta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
-.gameDesc {
-  color: var(--gris-texto-secundario);
-  font-size: 0.95rem;
+/* El contador de "listos hoy" es lo único que se tiñe de marca en la tira. */
+.statDestacado {
+  border-color: var(--primary-color);
+}
+
+.statDestacado .statValor {
+  color: var(--primary-color);
+}
+
+/* --- CTA de sesión (sustituye al alert() al pulsar sin estar logueado) --- */
+.loginCta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 460px;
+  margin-top: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .loginCta {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.loginTexto {
+  margin: 0;
+  font-size: 0.9rem;
   line-height: 1.5;
-  margin-bottom: 2rem;
-  flex-grow: 1;
+  color: var(--color-text-muted);
 }
 
-.playButton {
-  display: inline-block;
-  width: 100%;
-  text-align: center;
-  padding: 1rem;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: white;
-  text-decoration: none;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* Themes */
-.wordleCard .gameIcon { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-.wordleCard:hover { border-color: rgba(16, 185, 129, 0.5); box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2); }
-.wordleCard .playButton { background: #10b981; }
-.wordleCard .playButton:hover { background: #059669; transform: scale(1.02); }
-
-.dailyCard .gameIcon { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
-.dailyCard:hover { border-color: rgba(251, 191, 36, 0.5); box-shadow: 0 20px 40px rgba(251, 191, 36, 0.2); }
-.dailyCard .playButton { background: #fbbf24; color: #78350f; }
-.dailyCard .playButton:hover { background: #f59e0b; transform: scale(1.02); }
-.dailyCard .disabledBtn { background: #475569 !important; color: #94a3b8 !important; cursor: not-allowed; transform: none !important; box-shadow: none; }
-
-.rouletteCard .gameIcon { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
-.rouletteCard:hover { border-color: rgba(139, 92, 246, 0.5); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.2); }
-.rouletteCard .playButton { background: #8b5cf6; }
-.rouletteCard .playButton:hover:not(:disabled) { background: #7c3aed; transform: scale(1.02); }
-
-/* Progress bar for roulette */
-.progressSection {
-  margin-bottom: 1.5rem;
-}
-.progressText {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  color: var(--gris-texto-secundario);
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-.progressBar {
-  height: 8px;
-  background: var(--gris-borde);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.progressFill {
-  height: 100%;
-  background: linear-gradient(90deg, #c084fc, #a855f7);
-  border-radius: 4px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.lockedCard {
-  opacity: 0.9;
-}
-.lockedBtn {
-  background: #334155 !important;
-  color: #64748b !important;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.lockedOverlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(4px);
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
+.loginBtn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s;
-  color: var(--gris-texto-principal);
-  text-align: center;
-  padding: 2rem;
-}
-
-.lockedCard:hover .lockedOverlay {
-  opacity: 1;
-}
-
-.lockIcon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-@media (max-width: 768px) {
-  .title { font-size: 2.2rem; }
-  .gridContainer { grid-template-columns: 1fr; }
-  .pageContainer { padding: 1rem; }
-}
-
-/* Aviso de giro pendiente de la semana anterior (semana de gracia de la ruleta).
-   Va sobre el botón, porque la barra de progreso muestra la semana en curso y
-   por sí sola daría a entender que la ruleta sigue bloqueada. */
-.pendingNote {
-  font-size: 0.85rem;
+  gap: 0.4rem;
+  min-height: var(--touch-target, 44px);
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--primary-color);
+  color: #ffffff;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: #22c55e;
-  margin-bottom: 0.75rem;
-  text-align: center;
+  text-decoration: none;
+  transition: var(--transicion-rapida);
+}
+
+.loginBtn:hover {
+  background: var(--primary-hover);
+  color: #ffffff; /* ver la nota de .accion:hover sobre el a:hover global */
+}
+
+.loginBtn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
 }
 
 /* Aviso del modo diseño (solo aparece en local, con parámetros en la URL). */
 .avisoDiseno {
   max-width: 900px;
-  margin: 0 auto 1.5rem;
-  padding: 0.6rem 1rem;
-  border: 1px dashed #f59e0b;
-  border-radius: 8px;
-  background: rgba(245, 158, 11, 0.08);
-  color: #b45309;
-  font-size: 0.85rem;
+  margin: 0 auto 1.25rem;
+  padding: 0.55rem 1rem;
+  border: 1px dashed var(--warning);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--warning-soft);
+  color: var(--gold-text);
+  font-size: 0.82rem;
   text-align: center;
+}
+
+[data-theme='dark'] .avisoDiseno {
+  color: var(--gold-500);
+}
+
+/* =========================================================================
+   REJILLA
+   ========================================================================= */
+
+/* Dos columnas fijas en vez de auto-fit: con CUATRO juegos, el auto-fit dejaba
+   tres arriba y uno huérfano abajo. */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* =========================================================================
+   TARJETA DE JUEGO
+   ========================================================================= */
+
+/* Mismos valores que la tarjeta "Universo Walá" de la portada
+   (BannerGrid .brandCell/.brandOutline): radio 22, borde de 1px, una sombra
+   corta en reposo y el peso reservado al hover. */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+[data-theme='dark'] .card {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* --- Cabecera de la tarjeta: icono + estado ----------------------------- */
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+/* Cuadro de icono plano: fondo tenue del acento y trazo en el tono legible.
+   Antes era un degradado con sombra de color; sobraba. */
+.icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--acento-tint);
+  color: var(--acento-ink);
+  transition: transform 0.25s ease;
+}
+
+/* --- Textos -------------------------------------------------------------- */
+.cardTitulo {
+  margin: 0 0 0.3rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.cardDesc {
+  margin: 0 0 0.8rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* Píldora de recompensa: dice QUÉ se gana antes de pulsar nada. */
+.recompensa {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--acento-tint);
+  color: var(--acento-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Zona elástica: empuja la acción al pie aunque las tarjetas midan distinto. */
+.cardExtras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.cardAccion {
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+/* Estado "ya hecho / bloqueado": el icono pierde fuerza, nada más. Bajar la
+   opacidad de la tarjeta entera dejaba el texto por debajo del contraste. */
+.cardAtenuada .icono {
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+}
+
+/* =========================================================================
+   PROGRESO SEMANAL (ruleta)
+   ========================================================================= */
+
+.progreso {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.progresoTexto {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.progresoValor {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.pips {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.pip {
+  height: 6px;
+  border-radius: 999px;
+  /* El track antes era --gris-borde sobre tarjeta blanca: invisible. */
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+}
+
+.pipOn {
+  background: var(--acento-ink);
+  border-color: var(--acento-ink);
+}
+
+/* =========================================================================
+   NOTAS DE ESTADO (visibles siempre, también en móvil)
+   ========================================================================= */
+
+.notaBuena,
+.notaBloqueo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radio-pequeno, 10px);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.notaBuena {
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .notaBuena {
+  color: #6ee7b7;
+}
+
+.notaBloqueo {
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+}
+
+.notaBuena svg,
+.notaBloqueo svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* =========================================================================
+   ACCIÓN (botón / enlace de la tarjeta)
+   -------------------------------------------------------------------------
+   Un único color de CTA en las cuatro tarjetas: el violeta de marca, plano.
+   ========================================================================= */
+
+.accion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  padding: 0.7rem 1.2rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--primary-color);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* El :hover REPITE el color a propósito. globals.css trae un `a:hover { color:
+   var(--rojo-hover) }` global y, al ser 0-1-1, gana a `.accion` (0-1-0): la
+   letra de los botones que son <a> se volvía #5B21B6, el mismo violeta que el
+   fondo en hover, y desaparecía. `.accion:hover` es 0-2-0 y lo recupera. */
+.accion:hover {
+  background: var(--primary-hover);
+  color: #ffffff;
+}
+
+.accion:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}
+
+/* Flecha del botón: acompaña el hover de la tarjeta, no se mueve sola. */
+.flecha {
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+/* Variante "ya hecho": neutra con marca de verificado. Sustituye al gris slate
+   anterior (#475569 sobre tarjeta blanca), que parecía un bug. */
+.accionHecha,
+.accionHecha:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.accionHecha:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* Variante bloqueada: igual de neutra, pero sin invitar a pulsar. */
+.accionBloqueada,
+.accionBloqueada:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* Variante sin sesión: contorno, para que no compita con el CTA del hero. */
+.accionGhost,
+.accionGhost:hover {
+  background: transparent;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.accionGhost:hover {
+  background: var(--primary-light);
+}
+
+/* =========================================================================
+   ACENTOS POR JUEGO
+   -------------------------------------------------------------------------
+   Solo dos variables: el tono legible y su velo. --acento-ink es SIEMPRE
+   legible sobre el fondo del tema, oscuro en claro y claro en noche.
+   ========================================================================= */
+
+/* Palabra del Día — esmeralda */
+.wordle {
+  --acento-ink: #047857;
+  --acento-tint: rgba(16, 185, 129, 0.1);
+}
+
+/* Alimenta a Kapi — dorado de fidelización (el mismo de las monedas) */
+.kapi {
+  --acento-ink: #b45309;
+  --acento-tint: rgba(245, 158, 11, 0.12);
+}
+
+/* Ruleta Semanal — violeta de marca */
+.ruleta {
+  --acento-ink: #6d28d9;
+  --acento-tint: rgba(139, 92, 246, 0.12);
+}
+
+/* Las Bolitas de Kapi — cian (contrapunto frío al violeta) */
+.bolitas {
+  --acento-ink: #0e7490;
+  --acento-tint: rgba(6, 182, 212, 0.12);
+}
+
+/* --- Modo noche: la tinta sube para leerse sobre violeta profundo -------- */
+[data-theme='dark'] .wordle {
+  --acento-ink: #6ee7b7;
+  --acento-tint: rgba(16, 185, 129, 0.16);
+}
+
+[data-theme='dark'] .kapi {
+  --acento-ink: #fcd34d;
+  --acento-tint: rgba(245, 158, 11, 0.16);
+}
+
+[data-theme='dark'] .ruleta {
+  --acento-ink: #c4b5fd;
+  --acento-tint: rgba(139, 92, 246, 0.18);
+}
+
+[data-theme='dark'] .bolitas {
+  --acento-ink: #67e8f9;
+  --acento-tint: rgba(6, 182, 212, 0.16);
+}
+
+/* =========================================================================
+   HOVER (solo con puntero fino) — el mismo gesto que la tarjeta de producto
+   ========================================================================= */
+
+@media (hover: hover) and (pointer: fine) {
+  /* La tarjeta señalada se distingue porque CRECE, no porque se pinte el
+     borde: el tamaño y la sombra ya dicen "esta es", y así el color sigue
+     significando una sola cosa (el juego), no dos. */
+  .card:hover,
+  .card:focus-within {
+    transform: translateY(-4px) scale(1.025);
+    box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
+  }
+
+  [data-theme='dark'] .card:hover,
+  [data-theme='dark'] .card:focus-within {
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5);
+  }
+
+  /* El icono crece un poco más que la tarjeta: el gesto se nota sin animar
+     nada más. Mismo recurso que el zoom de la foto en la tarjeta de producto. */
+  .card:hover .icono,
+  .card:focus-within .icono {
+    transform: scale(1.08);
+  }
+
+  /* La flecha se desplaza como en "Explorar colección" de la portada. */
+  .card:hover .flecha,
+  .card:focus-within .flecha {
+    transform: translateX(3px);
+  }
+}
+
+/* =========================================================================
+   ROBUSTEZ
+   ========================================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+  .card:hover {
+    transform: none;
+  }
+
+  .accion:active {
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .accion,
+  .loginBtn {
+    transition: none;
+  }
+
+  .card:hover,
+  .card:focus-within {
+    transform: none;
+  }
+
+  .accion:active {
+    transform: none;
+  }
 }

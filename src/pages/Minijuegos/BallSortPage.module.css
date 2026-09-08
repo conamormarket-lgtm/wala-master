@@ -1,50 +1,60 @@
+/* =========================================================================
+   Las Bolitas de Kapi — estilos
+   -------------------------------------------------------------------------
+   El fondo, el ancho y la barra de "volver" los pone ArcadeShell. Aquí solo
+   vive el tablero: superficies planas y sombras del sistema (--sombra-*), sin
+   vidrio. El color fuerte es el de las bolitas, que es el juego.
+   ========================================================================= */
+
 .pageContainer {
-  min-height: calc(100vh - 80px);
-  background: var(--gris-fondo);
-  color: var(--gris-texto-principal);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 1rem;
-  overflow: hidden;
 }
 
-.header {
+.errorBanner {
   width: 100%;
-  max-width: 800px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  color: var(--danger-hover);
+  font-weight: 600;
+  text-align: center;
 }
 
-.backBtn {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: bold;
-  margin-right: auto;
+[data-theme='dark'] .errorBanner {
+  color: #fca5a5;
 }
 
-.header h1 {
-  margin: 0 auto;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--primary-color);
-  font-size: 1.8rem;
-  white-space: nowrap;
-}
+/* =========================================================================
+   TABLERO
+   ========================================================================= */
 
 .gameArea {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 600px;
-  background: var(--blanco);
-  border-radius: 24px;
-  padding: 2rem;
-  box-shadow: var(--sombra-media);
-  border: 1px solid var(--gris-borde);
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .gameArea {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* Antes iba en un style inline con --gris-texto-secundario. */
+.instruccion {
+  margin: 0 0 2rem;
+  text-align: center;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
 }
 
 .tubesContainer {
@@ -73,17 +83,20 @@
 }
 
 .tubeWrapper:hover {
-  background: var(--gris-hover);
+  background: var(--color-hover);
 }
 
 .tubeWrapper.selected {
   background: var(--primary-light);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
 }
 
 .tube {
   width: 50px;
   height: 200px;
-  border: 3px solid rgba(15, 23, 42, 0.2);
+  /* El cristal del tubo se dibuja con el borde del tema: con rgba negra fija
+     desaparecía en modo noche. */
+  border: 3px solid var(--color-border);
   border-top: none;
   border-bottom-left-radius: 25px;
   border-bottom-right-radius: 25px;
@@ -92,8 +105,8 @@
   align-items: center;
   padding-bottom: 5px;
   position: relative;
-  background: rgba(255,255,255,0.5);
-  box-shadow: inset 0 -5px 10px rgba(0,0,0,0.05);
+  background: var(--color-hover);
+  box-shadow: inset 0 -5px 10px rgba(15, 23, 42, 0.06);
 }
 
 .ball {
@@ -101,17 +114,20 @@
   height: 40px;
   border-radius: 50%;
   margin-bottom: 4px;
-  box-shadow: inset -5px -5px 10px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
-  /* No CSS animation — framer-motion handles all positional movement */
+  box-shadow: inset -5px -5px 10px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  /* Sin animación CSS: framer-motion controla todo el movimiento posicional. */
 }
 
 .selectedBall {
   transform: translateY(-20px);
-  box-shadow: 0 10px 15px rgba(0,0,0,0.3), inset -5px -5px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3), inset -5px -5px 10px rgba(0, 0, 0, 0.3);
   z-index: 10;
-  transition: transform 0.2s cubic-bezier(0.17, 0.67, 0.12, 1.5),
-              box-shadow 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.17, 0.67, 0.12, 1.5), box-shadow 0.2s ease;
 }
+
+/* =========================================================================
+   CONTROLES
+   ========================================================================= */
 
 .controls {
   display: flex;
@@ -120,85 +136,111 @@
 }
 
 .btn {
+  min-height: var(--touch-target, 44px);
   padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-weight: bold;
-  border: none;
-  cursor: pointer;
-  transition: var(--transicion-rapida);
+  border-radius: var(--radio-mediano, 16px);
+  font-family: inherit;
   font-size: 1rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: var(--transicion-rapida);
 }
 
+.btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}
+
+/* Antes el hover invertía a fondo gris oscuro + texto blanco, un salto de
+   contraste brusco. Ahora se tiñe de marca, como el resto de la app. */
 .resetBtn {
-  background: var(--gris-borde);
-  color: var(--gris-texto-principal);
+  background: var(--color-hover);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
 .resetBtn:hover {
-  background: var(--gris-texto-secundario);
-  color: white;
+  background: var(--primary-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
+.resetBtn:active {
+  transform: scale(0.97);
+}
+
+/* =========================================================================
+   BANNER DE VICTORIA
+   -------------------------------------------------------------------------
+   Era position:absolute sin ancestro posicionado, así que el 50% se calculaba
+   sobre TODA la página: en pantallas largas aparecía fuera de la vista. Fixed
+   lo ancla al viewport, que es donde tiene que estar.
+
+   El centrado va con inset:0 + margin:auto, NO con translate(-50%,-50%):
+   framer-motion escribe su propio `transform` para la entrada (scale), así que
+   cualquier translate del CSS lo pisaba y el cartel quedaba descuadrado.
+   ========================================================================= */
+
 .winBanner {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--blanco);
-  border: 2px solid var(--verde-exito);
-  padding: 2rem;
-  border-radius: 24px;
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(420px, calc(100vw - 2rem));
+  height: fit-content;
+  padding: 2rem 1.5rem;
+  border-radius: 22px;
   text-align: center;
-  box-shadow: var(--sombra-profunda);
+  background: var(--color-surface);
+  border: 1px solid var(--verde-exito);
+  box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
   z-index: 100;
-  animation: popIn 0.5s cubic-bezier(0.17, 0.67, 0.12, 1.5);
 }
 
 .winBanner h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--verde-exito);
-  margin-top: 0;
-  font-size: 2rem;
 }
 
 .winBanner p {
-  color: var(--gris-texto-principal);
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
+  margin: 0 0 1.5rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--color-text);
 }
 
 .actionBtn {
-  background: var(--primary-color);
-  color: white;
-  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target, 44px);
   padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-weight: bold;
-  display: inline-block;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--primary-color);
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
   transition: var(--transicion-rapida);
 }
 
 .actionBtn:hover {
   background: var(--primary-hover);
-  transform: scale(1.05);
+  /* Repetimos el blanco: el `a:hover` global de globals.css (0-1-1) gana a
+     `.actionBtn` (0-1-0) y teñía la letra del mismo violeta que el fondo. */
+  color: #ffffff;
 }
 
-.errorBanner {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  border: 1px solid #fca5a5;
-  width: 100%;
-  text-align: center;
+.actionBtn:active {
+  transform: scale(0.97);
 }
 
-@keyframes popIn {
-  from { transform: translate(-50%, -40%) scale(0.8); opacity: 0; }
-  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-}
-
-/* ── Confeti de tubo completado ── */
+/* =========================================================================
+   CONFETI DE TUBO COMPLETADO
+   ========================================================================= */
 
 .tubeComplete {
   animation: tubeGlow 0.6s ease forwards;
@@ -213,8 +255,7 @@
 
 .tubeComplete .tube {
   border-color: rgba(16, 185, 129, 0.6);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35),
-              inset 0 -5px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35), inset 0 -5px 10px rgba(15, 23, 42, 0.06);
 }
 
 .confettiContainer {
@@ -242,5 +283,34 @@
   100% {
     transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0);
     opacity: 0;
+  }
+}
+
+/* =========================================================================
+   ROBUSTEZ
+   ========================================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+  .tubeWrapper:hover {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tubeWrapper,
+  .btn,
+  .actionBtn,
+  .selectedBall {
+    transition: none;
+  }
+
+  .tubeComplete,
+  .confettiParticle {
+    animation: none;
+  }
+
+  .resetBtn:active,
+  .actionBtn:active {
+    transform: none;
   }
 }

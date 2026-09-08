@@ -6,6 +6,7 @@ import { claimBallSortReward } from '../../services/firebase/ballSort';
 import { trackMinigame } from '../../services/analytics/tracker';
 import { limaTodayStr } from '../../utils/fechaLima';
 import { diseno } from '../../utils/modoDiseno';
+import ArcadeShell from './ArcadeShell';
 import styles from './BallSortPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -239,16 +240,16 @@ const BallSortPage = () => {
   }
 
   return (
-    <div className={styles.pageContainer}>
-      <header className={styles.header}>
-        <Link to="/minijuegos" className={styles.backBtn}><T>← Volver</T></Link>
-        <h1><T>Las Bolitas de Kapi</T></h1>
-      </header>
-
+    <ArcadeShell
+      back="/minijuegos"
+      title="Las Bolitas de Kapi"
+      width="md"
+      className={styles.pageContainer}
+    >
       {error && <div className={styles.errorBanner}>{error}</div>}
 
       <div className={styles.gameArea}>
-        <p style={{marginBottom: '2rem', textAlign: 'center', color: 'var(--gris-texto-secundario)'}}>
+        <p className={styles.instruccion}>
           <T>Ordena los colores para que cada tubo contenga un solo color.</T>
         </p>
         
@@ -326,7 +327,7 @@ const BallSortPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </ArcadeShell>
   );
 };
 

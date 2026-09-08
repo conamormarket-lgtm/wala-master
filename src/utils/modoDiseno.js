@@ -27,6 +27,7 @@
 //   dias      = 0..7   (días reclamados que muestra la barra de progreso)
 //   bolitas   = disponible | completado
 //   moneda    = disponible | reclamada   (la moneda diaria de Kapi en el hub)
+//   sesion    = invitado | activa        (pinta el hub como si hubiera sesion)
 // ──────────────────────────────────────────────────────────────────────────────
 
 export const DISENO_ACTIVO = process.env.NODE_ENV !== 'production';
@@ -60,5 +61,5 @@ export const disenoNum = (clave, min = 0, max = 100) => {
 export const hayModoDiseno = () => {
   const p = parametros();
   if (!p) return false;
-  return ['kapi', 'felicidad', 'ruleta', 'dias', 'bolitas', 'moneda'].some((k) => p.has(k));
+  return ['kapi', 'felicidad', 'ruleta', 'dias', 'bolitas', 'moneda', 'sesion'].some((k) => p.has(k));
 };

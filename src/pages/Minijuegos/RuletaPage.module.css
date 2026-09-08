@@ -1,53 +1,57 @@
+/* =========================================================================
+   Ruleta Semanal — estilos
+   -------------------------------------------------------------------------
+   El fondo, el ancho y la barra de "volver" los pone ArcadeShell; aquí solo
+   vive la ruleta. Superficies planas y sombras del sistema (--sombra-*), sin
+   vidrio ni degradados de relleno: la única pieza con color fuerte es la rueda,
+   que es el juego. Todo sale de tokens para que claro y noche no dupliquen
+   reglas.
+   ========================================================================= */
+
 .pageContainer {
-  min-height: calc(100vh - 80px);
-  background: var(--gris-fondo);
-  color: var(--gris-texto-principal);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 1rem;
-  overflow: hidden;
+  /* Ancla para la mascota, que se posiciona en la esquina de la pantalla. */
   position: relative;
 }
 
-.header {
-  width: 100%;
-  max-width: 800px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.backBtn {
-  color: #a855f7;
-  text-decoration: none;
-  font-weight: bold;
-  margin-right: auto;
-}
-
-.header h1 {
-  margin: 0 auto;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--primary-color);
+/* Estados de espera ("cargando", "inicia sesión"): antes eran texto suelto
+   sobre el fondo y parecían un fallo de carga. */
+.estado {
+  margin: 3rem 0;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .errorBanner {
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid #ef4444;
-  color: #fca5a5;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  /* Antes era #fca5a5 (rosa claro) sobre fondo claro: ilegible. */
+  color: var(--danger-hover);
+  font-weight: 600;
   text-align: center;
 }
 
+[data-theme='dark'] .errorBanner {
+  color: #fca5a5;
+}
+
+/* =========================================================================
+   LA RUEDA
+   ========================================================================= */
+
 .ruletaContainer {
   position: relative;
-  width: 320px;
-  height: 320px;
-  margin: 2rem 0;
+  width: min(320px, 82vw);
+  aspect-ratio: 1;
+  margin: 1.5rem 0 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -55,11 +59,12 @@
 
 .pointer {
   position: absolute;
-  top: -20px;
+  top: -22px;
   font-size: 2.5rem;
-  color: var(--rojo-principal);
+  line-height: 1;
+  color: var(--primary-color);
   z-index: 10;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.25));
 }
 
 .wheel {
@@ -67,8 +72,12 @@
   height: 100%;
   border-radius: 50%;
   position: relative;
-  border: 8px solid var(--blanco);
-  box-shadow: var(--sombra-profunda);
+  /* Aro de la rueda: superficie del tema (blanco en claro, violeta profundo
+     en noche) con un canto fino y la sombra media del sistema. */
+  border: 8px solid var(--color-surface);
+  box-shadow:
+    0 0 0 1px var(--color-border),
+    0 12px 34px rgba(17, 24, 39, 0.12);
   overflow: hidden;
 }
 
@@ -86,88 +95,164 @@
   left: 50%;
   transform: translateX(-50%);
   transform-origin: bottom center;
-  color: white;
-  font-weight: bold;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
   white-space: nowrap;
   font-size: 0.85rem;
 }
 
+/* =========================================================================
+   CONTROLES
+   ========================================================================= */
+
 .controls {
-  margin-top: 2rem;
+  margin-top: 2.25rem;
+  width: 100%;
+  max-width: 420px;
   text-align: center;
   z-index: 5;
 }
 
 .spinBtn {
-  background: var(--rojo-principal);
-  color: white;
-  border: none;
-  padding: 1rem 3rem;
-  font-size: 1.25rem;
-  font-weight: 900;
-  border-radius: 30px;
+  position: relative;
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  padding: 1rem 2rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--primary-color);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow: 0 4px 6px rgba(225, 29, 72, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  -webkit-tap-highlight-color: transparent;
+  transition: var(--transicion-rapida);
 }
 
 .spinBtn:hover:not(.disabled) {
-  transform: scale(1.05);
-  box-shadow: 0 15px 35px rgba(236, 72, 153, 0.6);
+  background: var(--primary-hover);
 }
 
-.spinBtn.disabled {
-  background: #475569;
-  box-shadow: none;
-  cursor: not-allowed;
-  color: #94a3b8;
+.spinBtn:active:not(.disabled) {
+  transform: scale(0.98);
 }
+
+.spinBtn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}
+
+/* Deshabilitado: neutro del tema. Antes era slate #475569, que en modo claro
+   se veía como un bloque oscuro fuera de sitio. */
+.spinBtn.disabled {
+  background: var(--color-hover);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* =========================================================================
+   RESULTADO
+   ========================================================================= */
 
 .resultBox {
-  background: var(--blanco);
-  border: 1px solid var(--gris-borde);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: var(--sombra-profunda);
-  animation: popIn 0.5s cubic-bezier(0.17, 0.67, 0.12, 1.5);
+  padding: 2rem 1.5rem;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
+  animation: popIn 0.35s var(--ease-signature, ease-out);
 }
 
 .resultBox h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--primary-color);
-  margin-top: 0;
+}
+
+.resultBox p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.05rem;
 }
 
 .shareBtn {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
   display: block;
   width: 100%;
-  margin: 1rem 0;
+  min-height: var(--touch-target, 44px);
+  margin: 1.25rem 0 0.75rem;
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--primary-color);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transicion-rapida);
 }
 
-.secondaryBtn {
-  display: block;
-  color: #94a3b8;
-  text-decoration: underline;
+.shareBtn:hover {
+  background: var(--primary-hover);
 }
+
+/* Antes: #94a3b8 subrayado, casi invisible sobre fondo claro. */
+.secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target, 44px);
+  padding: 0.5rem 1rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.secondaryBtn:hover {
+  color: var(--primary-color);
+}
+
+/* Aviso de que el giro disponible viene de la semana anterior (semana de gracia). */
+.pendingNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0 0 0.9rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+[data-theme='dark'] .pendingNote {
+  color: #6ee7b7;
+}
+
+/* =========================================================================
+   MASCOTA
+   ========================================================================= */
 
 .kapiMascot {
   position: absolute;
-  bottom: 2rem;
-  right: 2rem;
+  bottom: 0;
+  right: 0;
   width: 100px;
   height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
   transition: transform 0.3s;
 }
 
@@ -181,6 +266,16 @@
 
 .kapiCelebrating {
   animation: jumpSpin 1s ease;
+}
+
+/* En pantallas estrechas la mascota se comía la esquina del botón. */
+@media (max-width: 560px) {
+  .kapiMascot {
+    position: static;
+    width: auto;
+    height: auto;
+    margin-top: 1.5rem;
+  }
 }
 
 @keyframes popIn {
@@ -199,11 +294,27 @@
   100% { transform: translateY(0) rotate(360deg); }
 }
 
-/* Aviso de que el giro disponible viene de la semana anterior (semana de gracia). */
-.pendingNote {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #22c55e;
-  margin-bottom: 0.75rem;
-  text-align: center;
+/* =========================================================================
+   ROBUSTEZ
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .spinBtn,
+  .shareBtn,
+  .kapiMascot {
+    transition: none;
+  }
+
+  .spinBtn:active:not(.disabled) {
+    transform: none;
+  }
+
+  .resultBox {
+    animation: none;
+  }
+
+  .kapiCheering,
+  .kapiCelebrating {
+    animation: none;
+  }
 }

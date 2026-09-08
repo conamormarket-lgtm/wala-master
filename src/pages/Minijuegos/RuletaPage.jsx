@@ -5,6 +5,7 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { diseno } from '../../utils/modoDiseno';
 import { getRuletaPrizes, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
 import { trackMinigame } from '../../services/analytics/tracker';
+import ArcadeShell from './ArcadeShell';
 import styles from './RuletaPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -146,16 +147,26 @@ const RuletaPage = () => {
     }
   };
 
-  if (!user) return <div className={styles.loading}><T>Inicia sesión para jugar.</T></div>;
-  if (loading) return <div className={styles.loading}><T>Cargando ruleta...</T></div>;
+  // Los estados de espera también viven dentro del shell: antes eran texto
+  // suelto sobre el fondo gris y parecían un error de carga de la página.
+  if (!user) {
+    return (
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" width="md">
+        <p className={styles.estado}><T>Inicia sesión para jugar.</T></p>
+      </ArcadeShell>
+    );
+  }
+
+  if (loading) {
+    return (
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" width="md">
+        <p className={styles.estado}><T>Cargando ruleta...</T></p>
+      </ArcadeShell>
+    );
+  }
 
   return (
-    <div className={styles.pageContainer}>
-      <header className={styles.header}>
-        <Link to="/minijuegos" className={styles.backBtn}><T>← Volver</T></Link>
-        <h1><T>Ruleta Semanal</T></h1>
-      </header>
-
+    <ArcadeShell back="/minijuegos" title="Ruleta Semanal" width="md" className={styles.pageContainer}>
       {error && <div className={styles.errorBanner}><T>{error}</T></div>}
 
       <div className={styles.ruletaContainer}>
@@ -231,7 +242,7 @@ const RuletaPage = () => {
         {spinning && <div className={styles.kapiEmoji}>🤩</div>}
         {result && <div className={styles.kapiEmoji}>🥳</div>}
       </div>
-    </div>
+    </ArcadeShell>
   );
 };
 

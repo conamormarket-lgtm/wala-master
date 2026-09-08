@@ -1,0 +1,111 @@
+/* =========================================================================
+   ArcadeShell — suelo común de la Zona Arcade
+   -------------------------------------------------------------------------
+   Sobrio a propósito: fondo de página del tema, sin degradados decorativos ni
+   vidrio. Solo tokens (--color-*), así que el modo noche sale gratis.
+   ========================================================================= */
+
+.shell {
+  min-height: calc(100vh - var(--header-height, 72px));
+  padding: clamp(1rem, 2.5vw, 1.75rem) var(--page-padding-movil, 1rem)
+    calc(4rem + var(--safe-bottom, 0px));
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.inner {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.widthLg {
+  max-width: 1100px;
+}
+
+.widthMd {
+  max-width: 760px;
+}
+
+/* -------------------------------------------------------------------------
+   Barra superior: volver + título centrado.
+   ------------------------------------------------------------------------- */
+.topBar {
+  /* width/align-self explícitos: las pantallas de juego ponen la columna en
+     flex con align-items:center y, sin esto, la barra se encogía al contenido
+     y el "volver" quedaba pegado al título en mitad de la pantalla. */
+  width: 100%;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  /* Área táctil accesible (antes era un enlace de texto de 20px de alto). */
+  min-height: var(--touch-target, 44px);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: var(--transicion-rapida);
+}
+
+.backBtn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.backBtn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.topTitle {
+  margin: 0;
+  font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  text-align: center;
+}
+
+/* Contrapeso del botón para que el título quede ópticamente centrado. */
+.topSpacer {
+  flex: 0 0 auto;
+  width: 92px;
+}
+
+@media (max-width: 480px) {
+  .topSpacer {
+    display: none;
+  }
+
+  .topTitle {
+    text-align: right;
+  }
+}
+
+/* =========================================================================
+   ROBUSTEZ
+   ========================================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+  .backBtn:active {
+    background: var(--color-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backBtn {
+    transition: none;
+  }
+}
