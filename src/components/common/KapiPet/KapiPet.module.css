@@ -37,52 +37,65 @@
   justify-content: center;
 }
 
+/* Capa y tarjeta con los MISMOS valores que los modales de la Zona Arcade
+   (BallSortPage .overlay/.ayudaCard). Antes esta ventana iba por libre: scrim
+   sin desenfoque, radio 20, sin borde, otra sombra y otro ancho, y por eso no
+   se veia igual que las de los juegos. */
 .overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.6);
+  inset: 0;
+  z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 20px;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
 }
 
 .modal {
-  background: #fff;
-  border-radius: 20px;
-  width: 100%;
-  max-width: 340px;
-  padding: 30px 20px;
   position: relative;
+  width: 100%;
+  max-width: 400px;
+  padding: 1.75rem 1.5rem;
+  border-radius: 22px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
+  box-sizing: border-box;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
 
 .closeBtn {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  top: 10px;
+  right: 14px;
   background: transparent;
   border: none;
-  font-size: 20px;
-  color: #666;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-text-muted, #64748b);
   cursor: pointer;
 }
 
+.closeBtn:hover {
+  color: var(--color-text, #0f172a);
+}
+
 .title {
-  margin: 0 0 10px 0;
-  font-size: 24px;
-  color: #333;
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--color-text, #0f172a);
 }
 
 .subtitle {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 25px;
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-muted, #64748b);
 }
 
 .petContainer {
@@ -149,13 +162,15 @@
   background: var(--violet-500, #8b5cf6);
   color: #fff;
   border: none;
-  padding: 14px 24px;
-  border-radius: 30px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
   width: 100%;
-  transition: opacity 0.2s;
+  min-height: var(--touch-target, 44px);
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--radio-pequeno, 10px);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .feedBtn:hover {
@@ -325,16 +340,9 @@
    fondo oscuro y se conservan. No se tocan tamaños ni layout.
    ═══════════════════════════════════════════════════════════════════════════ */
 [data-theme="dark"] .modal {
-  background: var(--color-surface, #1e1b2e);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5);
 }
 
-[data-theme="dark"] .title {
-  color: var(--color-text, #f1eef9);
-}
-
-[data-theme="dark"] .subtitle,
-[data-theme="dark"] .closeBtn,
 [data-theme="dark"] .stats,
 [data-theme="dark"] .challengeProgress {
   color: var(--color-text-muted, #b7b0c9);
