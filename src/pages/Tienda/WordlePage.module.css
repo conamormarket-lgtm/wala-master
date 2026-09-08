@@ -1,38 +1,5 @@
-.pageContainer {
-  min-height: 100vh;
-  background-color: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  font-family: 'Inter', system-ui, sans-serif;
-  color: #0f172a;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background: transparent;
-  border-bottom: none;
-}
-
-.headerLeft, .headerRight {
-  flex: 1;
-}
-
-.headerRight {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  margin: 0;
-  flex: 2;
-  text-align: center;
-  letter-spacing: -0.5px;
-}
+/* El fondo, el ancho, el "volver" y el titulo los pone ArcadeShell. Aqui solo
+   vive el juego. */
 
 .backLink {
   color: #64748b;
@@ -62,16 +29,40 @@
   background: #e2e8f0;
 }
 
-.gameContainer {
-  flex: 1;
+/* ═══════════════════════════════════════════
+   LAYOUT
+   -------------------------------------------
+   En escritorio el ranking convive con la partida: la pagina tenia columnas de
+   300px vacias a los lados y, al abrir el ranking, el tablero DESAPARECIA. En
+   movil sigue siendo un desplegable, porque ahi el tablero necesita el ancho.
+   ═══════════════════════════════════════════ */
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.gameCol {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 1rem;
-  max-width: 500px;
-  margin: 0 auto;
   width: 100%;
-  box-sizing: border-box;
+  max-width: 460px;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 460px) minmax(320px, 420px);
+    gap: 2.5rem;
+    align-items: start;
+    justify-content: center;
+  }
+
+  .gameCol {
+    max-width: none;
+  }
 }
 
 .board {
@@ -296,16 +287,203 @@
   border-radius: 6px;
 }
 
-.rankingContainer {
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: center;
+.rankingCol {
+  /* En movil esta plegado y lo abre el boton "Ranking" de la cabecera. */
+  display: none;
+  width: 100%;
+  padding: 1.25rem;
+  border-radius: 16px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+}
+
+.rankingVisible {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  /* A partir de aqui no se pliega nunca: hay sitio para los dos. */
+  .rankingCol {
+    display: block;
+    position: sticky;
+    top: calc(var(--header-height, 72px) + 1rem);
+  }
+}
+
+.rankingTitulo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text, #0f172a);
+}
+
+/* La tabla tiene 5 columnas; en movil se desplaza sola en vez de desbordar. */
+.rankingScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ═══════════════════════════════════════════
+   COMO SE JUEGA
+   ═══════════════════════════════════════════ */
+.ayuda {
+  position: relative;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 16px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+}
+
+.ayudaCerrar {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted, #64748b);
+  cursor: pointer;
+}
+
+.ayudaCerrar:hover {
+  background: var(--color-hover, #f1f5f9);
+  color: var(--color-text, #0f172a);
+}
+
+.ayudaTitulo {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-text, #0f172a);
+}
+
+.ayudaPasos {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-muted, #475569);
+}
+
+.ayudaPasos strong {
+  color: var(--color-text, #0f172a);
+}
+
+.ayudaSubtitulo {
+  margin: 0 0 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+}
+
+/* Leyenda con fichas de verdad: el color se explica ensenandolo, no
+   describiendolo. */
+.leyenda {
+  margin: 0 0 0.9rem;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--color-text-muted, #475569);
+}
+
+.celdaEjemplo {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.ayudaPie {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-text-muted, #64748b);
 }
 
 .rankingDesc {
-  color: #64748b;
-  margin-bottom: 2rem;
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  text-align: center;
+  margin: 0 0 1.25rem;
+}
+
+/* Botones de la barra superior (ArcadeShell). */
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: var(--touch-target, 44px);
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  color: var(--color-text, #0f172a);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.iconBtn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* En pantallas estrechas los botones se quedan en el icono, para que quepan
+   junto al titulo. */
+@media (max-width: 560px) {
+  .iconBtnTexto {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .soloMovil {
+    display: none;
+  }
+}
+
+.resultPie {
+  margin-top: 1.5rem;
+  color: var(--color-text-muted, #666);
+  font-size: 0.9rem;
 }
 
 .rankingTable {
@@ -402,37 +580,14 @@
   border: 1px dashed #cbd5e1;
 }
 
-.primaryBtn {
-  background: #0f172a;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 999px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.primaryBtn:hover {
-  opacity: 0.9;
-}
-
 .loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  font-size: 1.5rem;
-  color: #64748b;
+  text-align: center;
+  padding: 4rem 1rem;
+  font-size: 1.15rem;
+  color: var(--color-text-muted, #64748b);
 }
 
 @media (max-width: 600px) {
-  .header {
-    padding: 1rem;
-  }
-  .title {
-    font-size: 1.25rem;
-  }
   .cell {
     font-size: 1.5rem;
   }
@@ -446,25 +601,9 @@
    (presente) y gris-azulado (ausente) de las fichas y el teclado, que siguen
    teniendo buen contraste con su texto blanco sobre fondo oscuro.
    ═══════════════════════════════════════════ */
-[data-theme="dark"] .pageContainer {
-  background-color: var(--color-bg); /* #f8fafc -> fondo oscuro */
-  color: var(--color-text);          /* #0f172a -> texto claro */
-}
-
-[data-theme="dark"] .backLink {
-  color: var(--color-text-muted);
-}
-[data-theme="dark"] .backLink:hover {
-  color: var(--color-text);
-}
-
-[data-theme="dark"] .iconBtn {
-  background: var(--color-surface-2); /* #f1f5f9 -> superficie oscura */
-  color: var(--color-text);
-}
-[data-theme="dark"] .iconBtn:hover {
-  background: var(--color-hover);
-}
+/* La pagina y la barra superior ya son de ArcadeShell (tokens del tema), y el
+   panel de ayuda, la columna de ranking y los botones de cabecera se escribieron
+   directamente sobre --color-*, asi que no necesitan override aqui. */
 
 /* Celdas vacias/llenas del tablero (las reveladas conservan su color de juego). */
 [data-theme="dark"] .emptyCell {
@@ -515,8 +654,13 @@
 }
 
 [data-theme="dark"] .rankingEmpty {
-  background: var(--color-surface); /* #f8fafc -> superficie oscura */
+  background: var(--color-hover); /* #f8fafc -> superficie oscura */
   border-color: var(--color-border);
+}
+
+[data-theme="dark"] .ayuda,
+[data-theme="dark"] .rankingCol {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
 /* Aviso de login: amarillo sobre fondo crema muy claro -> tinte calido oscuro. */
@@ -567,10 +711,4 @@
 [data-theme="dark"] .lostBadge {
   background: rgba(220, 38, 38, 0.16); /* #fee2e2 -> tinte rojo */
   color: #f87171;
-}
-
-/* Boton primario: oscuro sobre claro -> claro sobre oscuro (inversion). */
-[data-theme="dark"] .primaryBtn {
-  background: var(--color-text); /* #0f172a -> superficie clara */
-  color: var(--color-bg);
 }

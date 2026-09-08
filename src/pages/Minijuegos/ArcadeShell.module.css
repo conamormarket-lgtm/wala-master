@@ -78,19 +78,38 @@
   text-align: center;
 }
 
+/* Acciones de la derecha (ranking, ayuda...). */
+.topAcciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+}
+
 /* Contrapeso del botón para que el título quede ópticamente centrado. */
 .topSpacer {
   flex: 0 0 auto;
   width: 92px;
 }
 
-@media (max-width: 480px) {
-  .topSpacer {
+/* En pantallas estrechas el "volver" se queda en la flecha: con el texto, el
+   titulo y las acciones no caben y el titulo partia en dos lineas. */
+@media (max-width: 560px) {
+  .backTexto {
     display: none;
   }
 
-  .topTitle {
-    text-align: right;
+  .backBtn {
+    padding: 0.5rem;
+    min-width: var(--touch-target, 44px);
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .topSpacer {
+    display: none;
   }
 }
 

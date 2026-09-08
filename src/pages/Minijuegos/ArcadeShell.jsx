@@ -25,6 +25,8 @@ import { T } from '../../i18n/useTranslatedText';
  * @param {string}  [back]       Ruta del enlace "volver" (si falta, no hay barra).
  * @param {string}  [backLabel]  Texto del enlace "volver" (por defecto "Volver").
  * @param {string}  [title]      Título centrado de la barra superior.
+ * @param {React.ReactNode} [acciones] Controles a la derecha de la barra. Si no
+ *   los hay se pinta un hueco del mismo ancho, para que el título quede centrado.
  * @param {'md'|'lg'} [width='lg'] Ancho del contenido (md = pantallas de juego).
  * @param {string}  [className]  Clases extra del contenedor interno (al final).
  */
@@ -32,6 +34,7 @@ const ArcadeShell = ({
   back,
   backLabel = 'Volver',
   title,
+  acciones,
   width = 'lg',
   className,
   children,
@@ -49,15 +52,20 @@ const ArcadeShell = ({
       <div className={clasesInner}>
         {back && (
           <div className={styles.topBar}>
-            <Link to={back} className={styles.backBtn}>
+            {/* El aria-label va siempre porque en movil el texto se oculta para
+                dejar sitio al titulo y a las acciones. */}
+            <Link to={back} className={styles.backBtn} aria-label={backLabel}>
               <ArrowLeft size={18} aria-hidden="true" />
-              <span><T>{backLabel}</T></span>
+              <span className={styles.backTexto}><T>{backLabel}</T></span>
             </Link>
             {title && <h1 className={styles.topTitle}><T>{title}</T></h1>}
-            {/* Fantasma del mismo ancho que el botón: mantiene el título
-                centrado sin recurrir a un position:absolute que se solapaba
+            {/* A la derecha van las acciones de la pantalla. Si no hay, queda un
+                fantasma del mismo ancho que el botón de volver, que mantiene el
+                título centrado sin el position:absolute que antes se solapaba
                 con el enlace en móvil. */}
-            <span className={styles.topSpacer} aria-hidden="true" />
+            {acciones
+              ? <div className={styles.topAcciones}>{acciones}</div>
+              : <span className={styles.topSpacer} aria-hidden="true" />}
           </div>
         )}
 
