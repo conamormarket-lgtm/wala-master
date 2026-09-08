@@ -6,6 +6,7 @@ import { claimBallSortReward } from '../../services/firebase/ballSort';
 import { trackMinigame } from '../../services/analytics/tracker';
 import { limaTodayStr } from '../../utils/fechaLima';
 import { diseno } from '../../utils/modoDiseno';
+import { HelpCircle, Coins, Check } from 'lucide-react';
 import ArcadeShell from './ArcadeShell';
 import styles from './BallSortPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -104,6 +105,19 @@ const BallSortPage = () => {
   const [claimState, setClaimState] = useState('idle');
   const [isAnimating, setIsAnimating] = useState(false);
   const [completedTubes, setCompletedTubes] = useState(new Set());
+  // Contador de movimientos: es la unica medida de "que tan bien lo estoy
+  // haciendo" que tiene este juego, y la pantalla no daba ninguna.
+  const [movimientos, setMovimientos] = useState(0);
+  // La ayuda se abre sola la primera visita y luego se recuerda cerrada.
+  const [ayudaAbierta, setAyudaAbierta] = useState(() => {
+    try { return localStorage.getItem('wala_bolitas_ayuda_vista') !== '1'; }
+    catch { return true; }
+  });
+
+  const cerrarAyuda = () => {
+    setAyudaAbierta(false);
+    try { localStorage.setItem('wala_bolitas_ayuda_vista', '1'); } catch { /* modo privado */ }
+  };
 
   // El servidor decide el día en hora de Lima; el cliente debe usar el mismo
   // criterio o de 19:00 a 23:59 creería que ya es mañana.
@@ -121,6 +135,14 @@ const BallSortPage = () => {
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Escape cierra la ayuda, como en el resto de modales de la Zona Arcade.
+  useEffect(() => {
+    if (!ayudaAbierta) return;
+    const alPulsar = (e) => { if (e.key === 'Escape') cerrarAyuda(); };
+    window.addEventListener('keydown', alPulsar);
+    return () => window.removeEventListener('keydown', alPulsar);
+  }, [ayudaAbierta]);
 
   const handleWin = useCallback(async () => {
     setHasWon(true);
@@ -191,6 +213,7 @@ const BallSortPage = () => {
         
         setTubes(newTubes);
         setSelectedTubeIndex(null);
+        setMovimientos((n) => n + 1);
 
         // Desbloquear después de la animación layout
         setTimeout(() => {
@@ -228,6 +251,7 @@ const BallSortPage = () => {
   const restartGame = () => {
     setTubes(generateLevel());
     setSelectedTubeIndex(null);
+    setMovimientos(0);
     setHasWon(false);
     setError('');
     setClaimState('idle');
@@ -243,15 +267,23 @@ const BallSortPage = () => {
     <ArcadeShell
       back="/minijuegos"
       title="Las Bolitas de Kapi"
-      width="md"
       className={styles.pageContainer}
+      acciones={
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={() => (ayudaAbierta ? cerrarAyuda() : setAyudaAbierta(true))}
+          aria-expanded={ayudaAbierta}
+        >
+          <HelpCircle size={16} aria-hidden="true" />
+          <span className={styles.iconBtnTexto}><T>Cómo jugar</T></span>
+        </button>
+      }
     >
       {error && <div className={styles.errorBanner}>{error}</div>}
 
+      <div className={styles.layout}>
       <div className={styles.gameArea}>
-        <p className={styles.instruccion}>
-          <T>Ordena los colores para que cada tubo contenga un solo color.</T>
-        </p>
         
         <LayoutGroup>
           <div className={styles.tubesContainer}>
@@ -303,6 +335,70 @@ const BallSortPage = () => {
           </button>
         </div>
       </div>
+
+      {/* ── Panel de estado ──────────────────────────────────────────────
+          La pantalla no decia por que se juega ni como va la partida: media
+          pagina estaba vacia y el premio solo se mencionaba en el hub. */}
+      <aside className={styles.panel}>
+        <div className={styles.panelPremio}>
+          <span className={styles.panelPremioIcono} aria-hidden="true">
+            {hasClaimedToday ? <Check size={18} /> : <Coins size={18} />}
+          </span>
+          <span className={styles.panelPremioTexto}>
+            {hasClaimedToday ? (
+              <T>Ya ganaste tus monedas hoy. Puedes seguir jugando por gusto.</T>
+            ) : (
+              <>
+                <strong><T>+2 Wala Coins</T></strong>{' '}
+                <T>al ordenar todos los tubos.</T>
+              </>
+            )}
+          </span>
+        </div>
+
+        <dl className={styles.panelDatos}>
+          <div className={styles.panelDato}>
+            <dt><T>Movimientos</T></dt>
+            <dd>{movimientos}</dd>
+          </div>
+          <div className={styles.panelDato}>
+            <dt><T>Tubos listos</T></dt>
+            <dd>{completedTubes.size}<span className={styles.panelTotal}>/{COLORS.length}</span></dd>
+          </div>
+        </dl>
+      </aside>
+      </div>
+
+      {ayudaAbierta && (
+        <div className={styles.overlay} onClick={cerrarAyuda} role="presentation">
+          <div
+            className={styles.ayudaCard}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Cómo se juega"
+          >
+            <button className={styles.cerrarModal} onClick={cerrarAyuda} aria-label="Cerrar">×</button>
+
+            <h2 className={styles.ayudaTitulo}><T>Cómo se juega</T></h2>
+
+            <ol className={styles.ayudaPasos}>
+              <li><T>Toca un tubo para levantar su bolita de arriba.</T></li>
+              <li><T>Toca otro tubo para soltarla ahí.</T></li>
+              <li><T>Solo puedes soltarla si ese tubo está vacío o si su bolita de arriba es del mismo color.</T></li>
+              <li><T>Ganas cuando cada tubo tenga un único color.</T></li>
+            </ol>
+
+            <p className={styles.ayudaPie}>
+              <T>Si te atascas, «Reiniciar nivel» te reparte las bolitas otra vez. No gastas nada: el premio se puede ganar una vez al día y sigue en juego.</T>
+            </p>
+
+            <button type="button" className={styles.ayudaBtn} onClick={cerrarAyuda}>
+              <T>Entendido, a jugar</T>
+            </button>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {hasWon && (

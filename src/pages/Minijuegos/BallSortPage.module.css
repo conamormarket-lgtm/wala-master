@@ -12,6 +12,150 @@
   align-items: center;
 }
 
+/* ═══════════════════════════════════════════
+   LAYOUT
+   En escritorio el tablero convive con el panel de estado: la pagina tenia
+   media pantalla vacia debajo del tablero. Por debajo de 900px se apilan.
+   ═══════════════════════════════════════════ */
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 620px;
+  align-items: stretch;
+}
+
+@media (min-width: 900px) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    gap: 1.5rem;
+    align-items: start;
+    max-width: 940px;
+  }
+}
+
+/* ── Boton de la barra superior: mismo trato que el "Cerrar sesion" del
+      Header (neutro con borde fino). El violeta se guarda para lo primario. ── */
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: var(--touch-target, 44px);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  background-color: transparent;
+  border: 1px solid var(--gris-borde, #ddd);
+  color: var(--gris-texto-principal, #333);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.iconBtn:hover {
+  background-color: var(--gris-hover, #f5f5f5);
+  border-color: var(--gris-texto-secundario, #ccc);
+}
+
+@media (max-width: 560px) {
+  .iconBtnTexto {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   PANEL DE ESTADO
+   ═══════════════════════════════════════════ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+}
+
+[data-theme='dark'] .panel {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.panelPremio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--gold-soft);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--gold-text);
+}
+
+[data-theme='dark'] .panelPremio {
+  color: var(--gold-500);
+}
+
+.panelPremioIcono {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.panelPremioTexto {
+  min-width: 0;
+}
+
+.panelPremioTexto strong {
+  font-weight: 800;
+}
+
+.panelDatos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.panelDato {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.7rem 0.5rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-hover);
+}
+
+.panelDato dt {
+  order: 2;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+.panelDato dd {
+  order: 1;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.panelTotal {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
 .errorBanner {
   width: 100%;
   margin-bottom: 1rem;
@@ -46,15 +190,6 @@
 
 [data-theme='dark'] .gameArea {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-}
-
-/* Antes iba en un style inline con --gris-texto-secundario. */
-.instruccion {
-  margin: 0 0 2rem;
-  text-align: center;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--color-text-muted);
 }
 
 .tubesContainer {
@@ -153,18 +288,18 @@
   outline-offset: 3px;
 }
 
-/* Antes el hover invertía a fondo gris oscuro + texto blanco, un salto de
-   contraste brusco. Ahora se tiñe de marca, como el resto de la app. */
+/* Reiniciar es una accion secundaria: mismo trato neutro que el "Cerrar sesion"
+   del Header. Antes el hover la tenia de violeta, que compite con el premio. */
 .resetBtn {
-  background: var(--color-hover);
-  border-color: var(--color-border);
-  color: var(--color-text);
+  background-color: transparent;
+  border-color: var(--gris-borde, #ddd);
+  color: var(--gris-texto-principal, #333);
 }
 
 .resetBtn:hover {
-  background: var(--primary-light);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+  background-color: var(--gris-hover, #f5f5f5);
+  border-color: var(--gris-texto-secundario, #ccc);
+  color: var(--gris-texto-principal, #333);
 }
 
 .resetBtn:active {
@@ -195,7 +330,9 @@
   background: var(--color-surface);
   border: 1px solid var(--verde-exito);
   box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
-  z-index: 100;
+  /* Igual que el overlay de la ayuda: con z-index 100 los desplegables del
+     Header se pintaban encima del cartel. */
+  z-index: 1100;
 }
 
 .winBanner h2 {
@@ -236,6 +373,98 @@
 
 .actionBtn:active {
   transform: scale(0.97);
+}
+
+/* ═══════════════════════════════════════════
+   MODAL "COMO SE JUEGA"
+   El overlay va por encima del Header y de sus desplegables (100/102/105/999).
+   ═══════════════════════════════════════════ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.ayudaCard {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 1.75rem 1.5rem;
+  border-radius: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
+  box-sizing: border-box;
+}
+
+.cerrarModal {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.cerrarModal:hover {
+  color: var(--color-text);
+}
+
+.ayudaTitulo {
+  margin: 0 0 0.9rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.ayudaPasos {
+  margin: 0 0 1rem;
+  padding-left: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.ayudaPie {
+  margin: 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.ayudaBtn {
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  margin-top: 1.25rem;
+  padding: 0.7rem 1.4rem;
+  border: none;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--violet-500);
+  color: #ffffff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.ayudaBtn:hover {
+  background: var(--violet-600);
 }
 
 /* =========================================================================
