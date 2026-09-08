@@ -249,6 +249,56 @@ function run() {
   });
 
   // ────────────────────────────────────────────────────────────────────────
+  // diasEntreFechasLima / felicidadKapiHoy (Kapi)
+  // ────────────────────────────────────────────────────────────────────────
+  check("diasEntreFechasLima: mismo día -> 0", () => {
+    assert.strictEqual(eco.diasEntreFechasLima("2026-09-08", "2026-09-08"), 0);
+  });
+
+  check("diasEntreFechasLima: días consecutivos -> 1", () => {
+    assert.strictEqual(eco.diasEntreFechasLima("2026-09-07", "2026-09-08"), 1);
+  });
+
+  check("diasEntreFechasLima: cruza fin de mes", () => {
+    assert.strictEqual(eco.diasEntreFechasLima("2026-08-30", "2026-09-02"), 3);
+  });
+
+  check("diasEntreFechasLima: cruza año", () => {
+    assert.strictEqual(eco.diasEntreFechasLima("2025-12-31", "2026-01-01"), 1);
+  });
+
+  check("diasEntreFechasLima: entradas vacías o basura -> 0", () => {
+    assert.strictEqual(eco.diasEntreFechasLima(null, "2026-09-08"), 0);
+    assert.strictEqual(eco.diasEntreFechasLima("2026-09-08", undefined), 0);
+    assert.strictEqual(eco.diasEntreFechasLima("no-es-fecha", "2026-09-08"), 0);
+  });
+
+  check("felicidadKapiHoy: comió hoy o ayer -> no decae", () => {
+    assert.strictEqual(eco.felicidadKapiHoy(100, "2026-09-08", "2026-09-08"), 100);
+    assert.strictEqual(eco.felicidadKapiHoy(100, "2026-09-07", "2026-09-08"), 100);
+  });
+
+  check("felicidadKapiHoy: baja 10 por día saltado", () => {
+    assert.strictEqual(eco.felicidadKapiHoy(100, "2026-09-06", "2026-09-08"), 90);
+    assert.strictEqual(eco.felicidadKapiHoy(100, "2026-09-05", "2026-09-08"), 80);
+  });
+
+  check("felicidadKapiHoy: nunca baja de 0", () => {
+    assert.strictEqual(eco.felicidadKapiHoy(100, "2026-06-01", "2026-09-08"), 0);
+    assert.strictEqual(eco.felicidadKapiHoy(0, "2026-06-01", "2026-09-08"), 0);
+  });
+
+  check("felicidadKapiHoy: nunca pasa de 100 ni acepta basura", () => {
+    assert.strictEqual(eco.felicidadKapiHoy(999, "2026-09-08", "2026-09-08"), 100);
+    assert.strictEqual(eco.felicidadKapiHoy(-50, "2026-09-08", "2026-09-08"), 0);
+    assert.strictEqual(eco.felicidadKapiHoy(undefined, null, "2026-09-08"), 0);
+  });
+
+  check("felicidadKapiHoy: sin última comida devuelve la guardada", () => {
+    assert.strictEqual(eco.felicidadKapiHoy(40, null, "2026-09-08"), 40);
+  });
+
+  // ────────────────────────────────────────────────────────────────────────
   // pickWeightedPrize
   // rand en [0,100), selección con rand <= acc; fallback = último.
   // ────────────────────────────────────────────────────────────────────────

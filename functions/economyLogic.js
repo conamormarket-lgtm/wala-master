@@ -20,6 +20,29 @@ function limaNow(now = Date.now()) {
 function limaTodayStr(now = Date.now()) {
   return limaNow(now).toISOString().split("T")[0];
 }
+// Dias completos entre dos fechas "YYYY-MM-DD" de Lima. Se parsean como UTC a
+// proposito: ambas cadenas YA son dias de Lima, asi que restarlas en UTC da la
+// diferencia exacta sin que el huso del servidor meta ruido.
+function diasEntreFechasLima(desde, hasta) {
+  if (!desde || !hasta) return 0;
+  const a = Date.parse(desde + "T00:00:00Z");
+  const b = Date.parse(hasta + "T00:00:00Z");
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+  return Math.round((b - a) / (24 * 60 * 60 * 1000));
+}
+
+// Felicidad de Kapi al dia de hoy: baja 10 por cada dia sin comer (sin contar el
+// primero) y nunca baja de 0. Antes solo subia, asi que se quedaba clavada en 100
+// y contradecia al propio tutorial ("si olvidas alimentarlo, su barra bajara").
+const KAPI_HAPPINESS_STEP = 10;
+function felicidadKapiHoy(felicidadGuardada, ultimaComida, hoy) {
+  const base = Math.max(0, Math.min(100, Number(felicidadGuardada) || 0));
+  if (!ultimaComida) return base;
+  const dias = diasEntreFechasLima(ultimaComida, hoy);
+  if (dias <= 1) return base; // comio hoy o ayer: no decae
+  return Math.max(0, base - KAPI_HAPPINESS_STEP * (dias - 1));
+}
+
 function limaWeekStartStr(now = Date.now()) {
   const lima = limaNow(now);
   const day = lima.getUTCDay();
@@ -81,6 +104,9 @@ module.exports = {
   limaNow,
   limaTodayStr,
   limaWeekStartStr,
+  diasEntreFechasLima,
+  felicidadKapiHoy,
+  KAPI_HAPPINESS_STEP,
   applyDebit,
   randomPassword,
   pickWeightedPrize,

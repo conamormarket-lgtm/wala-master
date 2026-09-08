@@ -3,7 +3,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { showFlyingCoins } from '../../../utils/animations';
 import { scheduleKapiNotifications } from '../../../services/kapiNotifications';
-import { limaTodayStr } from '../../../utils/fechaLima';
+import { limaTodayStr, felicidadKapiHoy } from '../../../utils/fechaLima';
+import { useGlobalToast } from '../../../contexts/ToastContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -12,6 +13,7 @@ import { T } from '../../../i18n/useTranslatedText';
 
 const KapiPet = () => {
   const { user, userProfile, feedKapi, activeWeeklyChallenge } = useAuth();
+  const { addToast } = useGlobalToast();
   // En landing pages el header se oculta (LayoutContext). Ahí NO mostramos ni
   // auto-abrimos a Kapi: el login anónimo del checkout dispararía el modal encima
   // del pago y espantaría la venta.
@@ -118,22 +120,15 @@ const KapiPet = () => {
   // Ya no retornamos null aquí, para que la mascota siempre esté visible (feliz si ya comió)
   // if (hasClaimedToday) return null;
 
+  // Felicidad REAL de hoy: el valor guardado solo se actualiza al alimentarlo, así
+  // que aquí se le aplica el mismo decaimiento que usará el servidor. Si no, la
+  // barra se quedaba clavada en 100/100 aunque llevaras semanas sin darle de comer.
+  const felicidad = felicidadKapiHoy(userProfile.kapiHappiness, lastClaim, todayStr);
+
   let kapiState = 'happy';
   if (!hasClaimedToday) {
-    if (!lastClaim) {
-      kapiState = 'hungry'; // Nunca reclamó
-    } else {
-      const todayDate = new Date();
-      todayDate.setHours(0,0,0,0);
-      const lastClaimDate = new Date(lastClaim);
-      lastClaimDate.setHours(0,0,0,0);
-      const diffTime = Math.abs(todayDate - lastClaimDate);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays >= 1) {
-        kapiState = 'hungry';
-      }
-    }
+    // Triste si además lleva días olvidado; con hambre si solo falta la de hoy.
+    kapiState = felicidad < 40 ? 'sad' : 'hungry';
   }
 
   const handleFeed = async () => {
@@ -144,7 +139,13 @@ const KapiPet = () => {
     setTimeout(async () => {
       const res = await feedKapi();
       setIsFeeding(false);
-      if (!res?.error) {
+      if (res?.error) {
+        // Antes esto se tragaba el error: el usuario pulsaba, esperaba 1,5 s y no
+        // pasaba nada (p. ej. al tocar el tope mensual de Kapi Coins).
+        // callFn devuelve el error como string ya legible ("Ya alimentaste a Kapi hoy.",
+        // "Límite mensual de Kapi Coins alcanzado."), no como objeto Error.
+        addToast(res.error || 'No pudimos alimentar a Kapi. Inténtalo de nuevo.', 'error');
+      } else {
         // Obtener posición del botón para la animación
         const feedBtn = document.getElementById('kapi-feed-btn');
         let x = window.innerWidth / 2;
@@ -228,9 +229,9 @@ const KapiPet = () => {
               </div>
               
               <div className={styles.stats} id="kapi-stats">
-                <span>Felicidad: {userProfile.kapiHappiness || 0}/100</span>
+                <span><T>Felicidad</T>: {felicidad}/100</span>
                 <div className={styles.happinessBar}>
-                  <div className={styles.happinessFill} style={{ width: `${Math.min(100, userProfile.kapiHappiness || 0)}%` }} />
+                  <div className={styles.happinessFill} style={{ width: `${felicidad}%` }} />
                 </div>
               </div>
             </div>

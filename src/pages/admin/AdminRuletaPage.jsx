@@ -89,7 +89,7 @@ const AdminRuletaPage = () => {
             <label>
               Tipo de premio
               <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} style={{width: '100%', padding: '0.5rem', marginTop: '0.25rem'}}>
-                <option value="Monedas">Monedas (Kapicoins)</option>
+                <option value="Monedas">Monedas (Wala Coins)</option>
                 <option value="Accesorio">Accesorio (Mascota)</option>
                 <option value="Descuento">Descuento (%)</option>
                 <option value="Beneficio">Beneficio (Ej. Envío gratis)</option>

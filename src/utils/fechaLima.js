@@ -28,3 +28,26 @@ export const limaWeekStartStr = (now = Date.now()) => {
   const monday = new Date(Date.UTC(lima.getUTCFullYear(), lima.getUTCMonth(), diff));
   return monday.toISOString().split('T')[0];
 };
+
+// Días completos entre dos fechas 'YYYY-MM-DD' de Lima. Se parsean como UTC a
+// propósito: ambas cadenas YA son días de Lima, así que restarlas en UTC da la
+// diferencia exacta sin que el huso del navegador meta ruido.
+export const diasEntreFechasLima = (desde, hasta) => {
+  if (!desde || !hasta) return 0;
+  const a = Date.parse(desde + 'T00:00:00Z');
+  const b = Date.parse(hasta + 'T00:00:00Z');
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+  return Math.round((b - a) / (24 * 60 * 60 * 1000));
+};
+
+// Felicidad de Kapi HOY: baja 10 por cada día sin comer (sin contar el primero).
+// Copia exacta de felicidadKapiHoy en functions/economyLogic.js — el servidor la
+// persiste al alimentarlo y el cliente la usa para pintar la barra mientras tanto.
+export const KAPI_HAPPINESS_STEP = 10;
+export const felicidadKapiHoy = (felicidadGuardada, ultimaComida, hoy) => {
+  const base = Math.max(0, Math.min(100, Number(felicidadGuardada) || 0));
+  if (!ultimaComida) return base;
+  const dias = diasEntreFechasLima(ultimaComida, hoy);
+  if (dias <= 1) return base; // comió hoy o ayer: no decae
+  return Math.max(0, base - KAPI_HAPPINESS_STEP * (dias - 1));
+};

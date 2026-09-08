@@ -21,6 +21,7 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const {
   KAPI_MONTHLY_CAP, BALLSORT_REWARD, STREAK_DATES_BONUS, SURVEY_REWARD_MAX, REWARD_COINS_PER_ORDER,
   limaTodayStr, limaWeekStartStr, applyDebit, randomPassword, pickWeightedPrize, verifyWebhookSignature,
+  limaNow, felicidadKapiHoy, KAPI_HAPPINESS_STEP,
 } = require("./economyLogic");
 
 admin.initializeApp();
@@ -758,13 +759,17 @@ exports.secureClaimMonedas = functions.https.onCall(async (data, context) => {
  * Cron Job mensual: Resetea kapiCoins a 0 el último día de cada mes a las 23:59.
  * Utiliza Firebase Scheduler (Cloud Scheduler).
  */
-exports.resetKapiCoins = onSchedule("59 23 28-31 * *", async (event) => {
+// El cron corria en UTC (por defecto), asi que las 23:59 caian a las 18:59 de Lima:
+// las monedas se borraban 5 horas antes de lo que promete la notificacion ("HOY a
+// medianoche"). Se fija la zona y TODA la aritmetica de fechas pasa a hora de Lima.
+exports.resetKapiCoins = onSchedule(
+  { schedule: "59 23 28-31 * *", timeZone: "America/Lima" },
+  async (event) => {
   // Asegurarnos de que hoy es realmente el último día del mes
   // (ya que el cron se corre del 28 al 31)
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  if (tomorrow.getDate() !== 1) {
+  const today = limaNow();
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  if (tomorrow.getUTCDate() !== 1) {
     // No es el último día del mes, ignorar
     console.log("Not the last day of the month, skipping KapiCoins reset.");
     return;
@@ -784,7 +789,9 @@ exports.resetKapiCoins = onSchedule("59 23 28-31 * *", async (event) => {
 
     const batch = db.batch();
     const analyticsRef = db.collection("analytics_kapi");
-    const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    // 'today' ya viene desplazado a Lima: hay que leerlo en UTC para no volver
+    // a introducir el huso del servidor en la clave del mes.
+    const currentMonthStr = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}`;
 
     let totalUnspent = 0;
 
@@ -1415,10 +1422,14 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
         new Date(u.multiplierExpiresAt) > new Date()) {
         add = 2;
       }
+      // La felicidad decae por los dias sin comer ANTES de sumar la de hoy. Antes
+      // solo subia: tras 10 comidas quedaba clavada en 100/100 para siempre, y el
+      // propio tutorial promete que si dejas de alimentarlo la barra baja.
+      const felicidadHoy = felicidadKapiHoy(u.kapiHappiness, u.lastKapiClaimDate, today);
       const updates = {
         kapiCoins: currentKapi + add,
         lastKapiClaimDate: today,
-        kapiHappiness: Math.min(100, (u.kapiHappiness || 0) + 10),
+        kapiHappiness: Math.min(100, felicidadHoy + KAPI_HAPPINESS_STEP),
         weeklyClaimsData: weekly,
       };
       // Al completar los 7 dias se "abre" el giro de esa semana. Se guarda aparte
