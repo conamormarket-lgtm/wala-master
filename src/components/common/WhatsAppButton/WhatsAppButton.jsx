@@ -4,13 +4,26 @@ import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../../../services/messages';
 import { getProduct } from '../../../services/products';
 import { getBrands } from '../../../services/brands';
+import { useLayoutContext } from '../../../contexts/LayoutContext';
 import styles from './WhatsAppButton.module.css';
 
 /**
  * Botón flotante de WhatsApp.
- * Aparece solo en: Tienda, Crear y Mi Cuenta.
- * No aparece en: Administración.
- * Usa números distintos según la sección.
+ *
+ * DÓNDE APARECE: en toda la web MENOS dos sitios, y a propósito:
+ *   - /admin/*  : es una herramienta interna, no un sitio donde pedir soporte.
+ *   - landings  : ahí el header se oculta (LayoutContext) para proteger la
+ *                 conversión del checkout; no metemos más distracciones.
+ *
+ * Antes era al revés: una lista blanca de rutas (tienda, crear, cuenta). Eso
+ * dejaba SIN soporte toda sección que naciera después y que nadie recordara
+ * añadir — la Zona Arcade entera, sorteos, suscripciones, búsqueda, nichos,
+ * wishlist pública... Con la regla invertida, una sección nueva tiene soporte
+ * por defecto y hay que excluirla a mano si no se quiere.
+ *
+ * QUÉ NÚMERO USA: sigue habiendo uno por sección (tienda / crear / cuenta),
+ * configurables en /admin/whatsapp. El resto de la web usa el número general
+ * (whatsapp_number), que esa misma pantalla mantiene.
  *
  * WHATSAPP POR MARCA: en páginas de marca (/<slug>), si la marca tiene
  * whatsappNumber propio (tienda_brands.whatsappNumber), el botón usa ESE
@@ -20,6 +33,10 @@ import styles from './WhatsAppButton.module.css';
 const WhatsAppButton = () => {
   const location = useLocation();
   const pathname = location.pathname;
+  // Mismo criterio que KapiPet: en landings el header se oculta y ahí no
+  // sacamos nada flotante encima del pago.
+  const layout = useLayoutContext();
+  const onLandingPage = layout && layout.isHeaderVisible === false;
 
   // ── MARCA DE LA RUTA ACTUAL (mismo patrón que Header.jsx) ──────────
   const { data: brandsData } = useQuery({
@@ -81,10 +98,14 @@ const WhatsAppButton = () => {
     // usando el número de contexto tienda como base (luego pisado por el
     // whatsappNumber propio de la marca si existe, ver más abajo).
     context = 'tienda';
+  } else {
+    // Todo lo demás (Zona Arcade, sorteos, suscripciones, búsqueda, nichos,
+    // wishlist pública, regalos...) usa el número general.
+    context = 'general';
   }
 
-  // 2. Si es admin o no se reconoce el contexto, no mostrar nada
-  const shouldShow = context && context !== 'admin';
+  // 2. Fuera del panel de administración y de las landings de conversión.
+  const shouldShow = context !== 'admin' && !onLandingPage;
 
   const { data: whatsappNumbers } = useQuery({
     queryKey: ['whatsapp-numbers-config'],
@@ -101,7 +122,9 @@ const WhatsAppButton = () => {
       return {
         tienda: tienda.data?.trim() || fallback.data?.trim() || null,
         crear: crear.data?.trim() || fallback.data?.trim() || null,
-        cuenta: cuenta.data?.trim() || fallback.data?.trim() || null
+        cuenta: cuenta.data?.trim() || fallback.data?.trim() || null,
+        // Resto de la web: el número general de /admin/whatsapp.
+        general: fallback.data?.trim() || tienda.data?.trim() || null
       };
     },
     staleTime: 5 * 60 * 1000,
