@@ -1,14 +1,16 @@
 .whatsappButton {
   position: relative;
-  width: 60px;
-  height: 60px;
+  /* Tamano comun de los flotantes (definido en App.css). */
+  width: var(--flotante-tam, 56px);
+  height: var(--flotante-tam, 56px);
   background-color: #25d366;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
-  z-index: 1000;
+  /* Sin z-index: dentro de la pila son hermanos en columna y no se solapan.
+     El 1000 que habia aqui no ordenaba nada y hacia pensar lo contrario. */
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   text-decoration: none;
   color: white;
@@ -30,6 +32,12 @@
 }
 
 /* Animación de pulso (opcional, estándar en la industria) */
+@media (prefers-reduced-motion: reduce) {
+  .whatsappButton {
+    animation: none;
+  }
+}
+
 @keyframes pulse {
   0% {
     box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
@@ -48,11 +56,6 @@
 
 /* Responsive: en móvil, ajustar posición si hay BottomNav */
 @media (max-width: 768px) {
-  .whatsappButton {
-    width: 56px;
-    height: 56px;
-  }
-  
   .icon {
     width: 26px;
     height: 26px;

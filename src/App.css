@@ -71,14 +71,33 @@ body.mobile-preview-active .App > footer {
   margin-top: 0 !important;
 }
 
-/* ── Pila de Botones Flotantes (WhatsApp, Kapi, etc.) ── */
+/* ── Pila de Botones Flotantes (WhatsApp, Kapi, paquetes) ──────────────────
+   Los cuatro flotantes de la app comparten linea de base y separacion. Las
+   medidas viven en estas variables para no repetirlas en cada componente: el
+   boton de encuesta (que va suelto a la izquierda) usa las mismas.
+   -------------------------------------------------------------------------- */
+:root {
+  --flotante-lado: 20px;
+  --flotante-abajo: 20px;
+  --flotante-tam: 56px;
+  --flotante-gap: 14px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    /* Deja libre el BottomNav (56px) y respeta el indicador del iPhone. */
+    --flotante-abajo: calc(72px + env(safe-area-inset-bottom, 0px));
+    --flotante-lado: 16px;
+  }
+}
+
 .floating-action-stack {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: calc(var(--flotante-abajo) + env(safe-area-inset-bottom, 0px));
+  right: calc(var(--flotante-lado) + env(safe-area-inset-right, 0px));
   display: flex;
   flex-direction: column-reverse;
-  gap: 16px;
+  gap: var(--flotante-gap);
   z-index: 1000;
   pointer-events: none; /* Permite clicks a través del contenedor */
   align-items: center;
@@ -88,10 +107,4 @@ body.mobile-preview-active .App > footer {
   pointer-events: auto; /* Reactiva los clicks en los botones individuales */
 }
 
-@media (max-width: 768px) {
-  .floating-action-stack {
-    bottom: 80px; /* Espacio para el BottomNav */
-    right: 16px;
-    gap: 12px;
-  }
-}
+

@@ -1,8 +1,8 @@
 /* ── Bubble Button ── */
 .bubble {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: var(--flotante-tam, 56px);
+  height: var(--flotante-tam, 56px);
   border-radius: 50%;
   border: none;
   cursor: pointer;
@@ -14,7 +14,12 @@
   box-shadow: 0 4px 18px rgba(228, 89, 110, 0.45);
   animation: bounce 2.4s ease-in-out infinite;
   transition: box-shadow 0.25s ease, transform 0.18s ease;
-  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    animation: none;
+  }
 }
 
 .bubble:hover {

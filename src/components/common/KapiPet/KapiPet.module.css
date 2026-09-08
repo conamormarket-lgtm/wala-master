@@ -1,7 +1,7 @@
 .fab {
   position: relative;
-  width: 60px;
-  height: 60px;
+  width: var(--flotante-tam, 56px);
+  height: var(--flotante-tam, 56px);
   background: var(--rojo-principal, #e11d48);
   border-radius: 50%;
   display: flex;
@@ -9,7 +9,6 @@
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   cursor: pointer;
-  z-index: 99;
   transition: transform 0.2s;
 }
 
@@ -301,12 +300,7 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .fab {
-    width: 56px;
-    height: 56px;
-  }
-}
+
 
 /* Driver.js Overrides para bordes suaves */
 :global(.driver-popover) {

@@ -1317,11 +1317,15 @@
 }
 
 /* ── Floating Survey Button (Native App Only) ── */
+/* Va suelto a la izquierda (es una pastilla ancha, no cabe en la columna de
+   circulos), pero comparte linea de base, separacion lateral y capa con la pila
+   de la derecha: antes estaba a 85px del borde mientras la pila estaba a 20, y
+   en un z-index distinto sin motivo. */
 .floatingSurveyBtn {
   position: fixed;
-  bottom: 85px;
-  left: 16px;
-  z-index: 999;
+  bottom: calc(var(--flotante-abajo, 20px) + env(safe-area-inset-bottom, 0px));
+  left: calc(var(--flotante-lado, 20px) + env(safe-area-inset-left, 0px));
+  z-index: 1000;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1337,6 +1341,12 @@
   text-decoration: none;
   animation: floatingSurveyPulse 2.5s ease-in-out infinite;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floatingSurveyBtn {
+    animation: none;
+  }
 }
 
 .floatingSurveyBtn:active {

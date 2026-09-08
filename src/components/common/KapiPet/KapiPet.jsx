@@ -226,8 +226,11 @@ const KapiPet = () => {
 
   return (
     <>
-      {!isOpen && (
-        <div className={styles.fab} onClick={handleToggle} title="¡Tu Kapi Pet!">
+      {/* El boton se pinta SIEMPRE, tambien con el panel abierto (donde queda
+          bajo la capa). Antes se desmontaba al abrir, y la burbuja rosada de
+          paquetes caia 76px para ocupar su hueco y volvia a subir al cerrar:
+          justo el salto que se veia como si desapareciera. */}
+      <div className={styles.fab} onClick={handleToggle} title="¡Tu Kapi Pet!">
           <div className={styles.fabIcon}>
             <img 
               src={IMAGES[kapiState]} 
@@ -235,9 +238,8 @@ const KapiPet = () => {
               style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
             />
           </div>
-          {!hasClaimedToday && <div className={styles.badge}>!</div>}
-        </div>
-      )}
+        {!hasClaimedToday && <div className={styles.badge}>!</div>}
+      </div>
 
       {/* Se monta en <body>, como los modales de la Zona Arcade.
           Motivo: .App lleva isolation:isolate, asi que el z-index 9999 de la
