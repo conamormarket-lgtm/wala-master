@@ -9,6 +9,7 @@ import { limaTodayStr } from '../../utils/fechaLima';
 import { diseno } from '../../utils/modoDiseno';
 import { HelpCircle, Coins, Check } from 'lucide-react';
 import { volarMonedasGanadas } from '../../utils/animations';
+import { useEntregaMonedas } from '../../hooks/useEntregaMonedas';
 import ArcadeShell from './ArcadeShell';
 import styles from './BallSortPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -123,6 +124,9 @@ const BallSortPage = () => {
   // hasWon bloquea el tablero; esto solo controla si el cartel esta a la vista,
   // para poder cerrarlo y mirar el nivel resuelto.
   const [mostrarVictoria, setMostrarVictoria] = useState(false);
+  // Mientras se acredita el premio y las monedas vuelan al contador, el modal no
+  // se puede cerrar: cerrarlo a media entrega deja al usuario sin saber si cobró.
+  const { entregando, empezarEntrega, terminarEntrega } = useEntregaMonedas();
   // La ayuda se abre sola la primera visita y luego se recuerda cerrada.
   const [ayudaAbierta, setAyudaAbierta] = useState(() => {
     try { return localStorage.getItem('wala_bolitas_ayuda_vista') !== '1'; }
@@ -156,17 +160,25 @@ const BallSortPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cerrado bloqueado: mientras el servidor confirma el premio (claiming) y
+  // mientras las monedas vuelan al contador.
+  const bloqueado = claimState === 'claiming' || entregando;
+
   // Escape cierra la ayuda, como en el resto de modales de la Zona Arcade.
   useEffect(() => {
     if (!ayudaAbierta && !mostrarVictoria) return;
     const alPulsar = (e) => {
       if (e.key !== 'Escape') return;
+      if (bloqueado) return;
       if (ayudaAbierta) cerrarAyuda();
       else setMostrarVictoria(false);
     };
     window.addEventListener('keydown', alPulsar);
     return () => window.removeEventListener('keydown', alPulsar);
-  }, [ayudaAbierta, mostrarVictoria]);
+    // `bloqueado` va en las dependencias a proposito: sin el, el manejador se
+    // queda con el valor del momento en que se abrio el modal (bloqueado) y
+    // Escape seguiria sin funcionar despues de acreditar el premio.
+  }, [ayudaAbierta, mostrarVictoria, bloqueado]);
 
   const handleWin = useCallback(async () => {
     setHasWon(true);
@@ -189,6 +201,7 @@ const BallSortPage = () => {
 
     if (result.success) {
       setClaimState('claimed');
+      empezarEntrega();
       // Las monedas solo vuelan al header si de verdad se acreditaron. Antes
       // esto lanzaba a mano 'coins-animation-start', que solo RESERVA: no volaba
       // ninguna moneda, el contador nunca subía y la reserva se quedaba abierta.
@@ -199,8 +212,10 @@ const BallSortPage = () => {
     } else {
       setClaimState('error');
       setError(result.error);
+      // Sin premio no hay vuelo, así que nadie va a soltar el bloqueo.
+      terminarEntrega();
     }
-  }, [user, userProfile, hasClaimedToday, reloadProfile]);
+  }, [user, userProfile, hasClaimedToday, reloadProfile, empezarEntrega, terminarEntrega]);
 
   const handleTubeClick = (index) => {
     if (hasWon || isAnimating) return;
@@ -527,7 +542,7 @@ const BallSortPage = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setMostrarVictoria(false)}
+            onClick={() => { if (!bloqueado) setMostrarVictoria(false); }}
             role="presentation"
           >
             <motion.div
@@ -540,13 +555,15 @@ const BallSortPage = () => {
               role="dialog"
               aria-modal="true"
             >
-              <button
-                className={styles.cerrarModal}
-                onClick={() => setMostrarVictoria(false)}
-                aria-label="Cerrar"
-              >
-                ×
-              </button>
+              {!bloqueado && (
+                <button
+                  className={styles.cerrarModal}
+                  onClick={() => setMostrarVictoria(false)}
+                  aria-label="Cerrar"
+                >
+                  ×
+                </button>
+              )}
 
               <span className={styles.winEmoji} aria-hidden="true">🎉</span>
               <h2 className={styles.winTitulo}><T>¡Nivel completado!</T></h2>

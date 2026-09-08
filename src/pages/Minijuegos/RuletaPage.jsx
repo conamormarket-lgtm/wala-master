@@ -10,6 +10,7 @@ import { getRuletaBoard, spinRuleta, getRuletaEligibility } from '../../services
 import { CONFIG_POR_DEFECTO, anguloDeParada } from '../../utils/ruletaModel';
 import { trackMinigame } from '../../services/analytics/tracker';
 import { volarMonedasGanadas } from '../../utils/animations';
+import { useEntregaMonedas } from '../../hooks/useEntregaMonedas';
 import RuedaRuleta from '../../components/ruleta/RuedaRuleta';
 import ArcadeShell from './ArcadeShell';
 import styles from './RuletaPage.module.css';
@@ -124,6 +125,9 @@ const RuletaPage = () => {
   // cuenta ni siquiera los suyos.
   const [historial, setHistorial] = useState([]);
   const [copiado, setCopiado] = useState(false);
+  // Igual que en Las Bolitas: el modal del premio no se cierra hasta que las
+  // monedas terminan de llegar al contador de la cabecera.
+  const { entregando, empezarEntrega } = useEntregaMonedas();
   const [error, setError] = useState('');
 
   // Aquí NO se pinta a Kapi: el componente KapiPet se monta en App.jsx y sale
@@ -190,15 +194,23 @@ const RuletaPage = () => {
   // Modo diseño: abre el modal del resultado al montar.
   useEffect(() => {
     if (!resultadoDemo) return;
-    setResult({
-      id: 'demo',
-      nombre: resultadoDemo === 'nada' ? 'Inténtalo de nuevo' : '15% de descuento',
-      texto: resultadoDemo === 'nada' ? 'Inténtalo de nuevo' : '15% de descuento (hasta S/ 20.00)',
-      tipo: resultadoDemo === 'nada' ? 'nada' : 'descuento',
-    });
+    const demos = {
+      nada: { nombre: 'Inténtalo de nuevo', texto: 'Inténtalo de nuevo', tipo: 'nada' },
+      premio: { nombre: '10 monedas', texto: '10 monedas', tipo: 'monedas', monedas: 10 },
+      cupon: { nombre: '15% de descuento', texto: '15% de descuento (hasta S/ 20.00)', tipo: 'descuento' },
+    };
+    setResult({ id: 'demo', ...(demos[resultadoDemo] || demos.cupon) });
     if (resultadoDemo === 'cupon') {
       setCupon({ code: 'WALA-EJEMPLO', expiraEn: '2026-10-08' });
     }
+    // 'premio' reproduce la entrega completa: monedas volando y modal bloqueado
+    // hasta que llegan. Es el estado que no se puede revisar de otro modo sin
+    // gastar el giro semanal de una cuenta.
+    if (resultadoDemo === 'premio') {
+      empezarEntrega();
+      volarMonedasGanadas(null, 10);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resultadoDemo]);
 
   useEffect(() => {
@@ -282,6 +294,7 @@ const RuletaPage = () => {
           { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
       } catch {}
       if (premioGanado.tipo === 'monedas') {
+        empezarEntrega();
         volarMonedasGanadas(null, Number(premioGanado.monedas));
       }
     }, duracion + 100);
@@ -410,7 +423,7 @@ const RuletaPage = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => setResult(null)}
+          onClick={() => { if (!entregando) setResult(null); }}
           role="presentation"
         >
           <motion.div
@@ -424,13 +437,15 @@ const RuletaPage = () => {
             aria-modal="true"
             aria-label="Resultado de la ruleta"
           >
-            <button
-              className={styles.cerrarModal}
-              onClick={() => setResult(null)}
-              aria-label="Cerrar"
-            >
-              ×
-            </button>
+            {!entregando && (
+              <button
+                className={styles.cerrarModal}
+                onClick={() => setResult(null)}
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            )}
 
             <span className={styles.resultadoIcono} aria-hidden="true">
               {result.tipo === 'nada' ? '🍀' : '🎉'}
@@ -479,8 +494,9 @@ const RuletaPage = () => {
               type="button"
               className={styles.ayudaBtn}
               onClick={() => setResult(null)}
+              disabled={entregando}
             >
-              <T>Entendido</T>
+              {entregando ? <T>Acreditando tus monedas...</T> : <T>Entendido</T>}
             </button>
           </motion.div>
         </motion.div>
