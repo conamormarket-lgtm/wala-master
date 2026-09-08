@@ -16,6 +16,10 @@ import { createWebOrder } from '../services/erp/firebase';
 // marcado de pedidos_web; markWalaOrderPagado nunca lanza (best-effort).
 import { markWalaOrderPagado } from '../services/walaOrders';
 import { markItemAsGifted } from '../services/wishlist';
+// Cupones: el valor lo decide el servidor (validarCuponSecure), igual que las
+// monedas. Aquí solo se pinta el descuento y se consume el cupón al crear el
+// pedido; el navegador nunca decide cuánto vale.
+import { validarCupon, canjearCupon } from '../services/cupones';
 import { validateDNI } from '../utils/helpers';
 import { detectCountry } from '../services/geo';
 import { trackCheckoutStart, trackPurchaseComplete } from '../services/analytics/tracker';
@@ -175,6 +179,10 @@ const CheckoutPage = () => {
 
   const [processing, setProcessing] = useState(false);
   const [useCoinsToggle, setUseCoinsToggle] = useState(false);
+  const [cuponTexto, setCuponTexto] = useState('');
+  const [cuponAplicado, setCuponAplicado] = useState(null);
+  const [cuponCargando, setCuponCargando] = useState(false);
+  const [cuponError, setCuponError] = useState('');
   const [paymentStepData, setPaymentStepData] = useState(null);
   // Teléfono internacional: guardamos el número en formato completo (dialCode + número local).
   const [phoneFull, setPhoneFull] = useState('');
@@ -193,8 +201,63 @@ const CheckoutPage = () => {
   const discount = (canUseCoins && useCoinsToggle) ? availableCoins : 0;
   
   const subtotalWithDiscount = Math.max(0, subtotal - discount);
-  const shipping = subtotalWithDiscount > 100 ? 0 : 15;
-  const total = subtotalWithDiscount + shipping;
+
+  // ── Cupón ──────────────────────────────────────────────────────────────────
+  // El umbral de envío gratis se sigue calculando sobre el subtotal con monedas
+  // (como siempre): si el cupón moviera ese umbral, un cupón de envío gratis se
+  // pagaría a sí mismo y el descuento saldría dos veces.
+  const cuponEnvioGratis = !!cuponAplicado?.envioGratis;
+  const descuentoCupon = cuponEnvioGratis ? 0 : (cuponAplicado?.descuento || 0);
+  const shippingBase = subtotalWithDiscount > 100 ? 0 : 15;
+  const shipping = cuponEnvioGratis ? 0 : shippingBase;
+  const total = Math.max(0, subtotalWithDiscount - descuentoCupon) + shipping;
+
+  // Lo que el servidor necesita para revalorar el carrito con los precios del
+  // catálogo en vez de fiarse del subtotal que calcula esta pantalla.
+  const itemsParaCupon = () => selectedItems.map((it) => ({
+    productId: it.productId || '',
+    qty: it.quantity || 1,
+    precio: it.customization?.finalPrice || it.price || 0,
+    personalizado: !!(it.customization?.finalPrice),
+  }));
+
+  const aplicarCupon = async () => {
+    const code = cuponTexto.trim().toUpperCase();
+    if (!code) return;
+    setCuponCargando(true);
+    setCuponError('');
+    const res = await validarCupon(code, {
+      subtotal: subtotalWithDiscount,
+      envio: shippingBase,
+      items: itemsParaCupon(),
+    });
+    setCuponCargando(false);
+    if (!res.success) {
+      setCuponError(res.error);
+      setCuponAplicado(null);
+      return;
+    }
+    // Un cupón que no resta nada en este carrito (envío ya gratis, producto que
+    // no está dentro) se avisa y NO se aplica: consumirlo sería tirarlo.
+    if (!res.descuento && !res.envioGratis) {
+      setCuponError(res.aviso || 'Este cupón no aplica a tu carrito.');
+      setCuponAplicado(null);
+      return;
+    }
+    setCuponAplicado({
+      code,
+      descuento: res.descuento,
+      envioGratis: res.envioGratis,
+      texto: res.cupon?.texto || res.cupon?.titulo || '',
+      aviso: res.aviso || '',
+    });
+  };
+
+  const quitarCupon = () => {
+    setCuponAplicado(null);
+    setCuponTexto('');
+    setCuponError('');
+  };
 
   // ── FX: tasa de cambio para mostrar moneda local y cobrar en USD ────────────
   // Se carga una vez al montar con getFx() (Firestore -> caché -> fallback).
@@ -677,6 +740,11 @@ const CheckoutPage = () => {
           montoPendiente: total,
           costoEnvio: shipping, // se persiste el envío para que el desglose del detalle cuadre
           ...(discount > 0 && { descuentoMonedas: discount }),
+          // Deja rastro del cupón en el pedido: sin esto, el desglose del detalle
+          // no cuadra con lo que se cobró y nadie sabe de dónde salió la rebaja.
+          ...(cuponAplicado?.code && { cuponCode: cuponAplicado.code }),
+          ...(descuentoCupon > 0 && { descuentoCupon }),
+          ...(cuponEnvioGratis && { cuponEnvioGratis: true }),
           ...(discount > 0 && { monedasEnEspera: discount }),
 
           // ─ Estado inicial ─
@@ -884,6 +952,11 @@ const CheckoutPage = () => {
         if (discount > 0) {
           message += `Descuento (Monedas): - S/ ${discount.toFixed(2)}\n`;
         }
+        if (cuponAplicado?.code) {
+          message += descuentoCupon > 0
+            ? `Cupón ${cuponAplicado.code}: - S/ ${descuentoCupon.toFixed(2)}\n`
+            : `Cupón ${cuponAplicado.code}: envío gratis\n`;
+        }
         message += `Envío: ${shipping === 0 ? 'Gratis' : `S/ ${shipping.toFixed(2)}`}\n`;
         message += `TOTAL A PAGAR: S/ ${total.toFixed(2)}\n\n`;
 
@@ -940,6 +1013,11 @@ const CheckoutPage = () => {
             m += `(Parte del pedido #${pseudoOrderId}; puede incluir productos de otras marcas con otros asesores.)\n`;
           } else {
             if (discount > 0) m += `Descuento (Monedas): - S/ ${discount.toFixed(2)}\n`;
+            if (cuponAplicado?.code) {
+              m += descuentoCupon > 0
+                ? `Cupón ${cuponAplicado.code}: - S/ ${descuentoCupon.toFixed(2)}\n`
+                : `Cupón ${cuponAplicado.code}: envío gratis\n`;
+            }
             m += `Envío: ${shipping === 0 ? 'Gratis' : `S/ ${shipping.toFixed(2)}`}\n`;
             m += `TOTAL A PAGAR: S/ ${total.toFixed(2)}\n`;
           }
@@ -1023,6 +1101,18 @@ const CheckoutPage = () => {
         if (discount > 0 && freezeMonedas) {
           // Congela de la cantidad "monedas" a "monedasEnEspera"
           await freezeMonedas(discount, pseudoOrderId);
+        }
+
+        // ── 5b. Consumir el cupón ─────────────────────────────────────────
+        // El pedido ya está creado con el descuento aplicado: si el canje falla
+        // NO se tira el pedido, se avisa y el cupón queda vivo para otra vez.
+        // Es idempotente por pedido, así que un reintento no descuenta dos veces.
+        if (cuponAplicado?.code) {
+          const canje = await canjearCupon(cuponAplicado.code, pseudoOrderId);
+          if (!canje.success) {
+            console.error('No se pudo canjear el cupón:', canje.error);
+            toast.error('El pedido se creó, pero el cupón no se pudo canjear. Escríbenos y lo revisamos.');
+          }
         }
 
         // ── 6. Auto-actualizar perfil del usuario ─────────────────────────
@@ -1724,6 +1814,57 @@ const CheckoutPage = () => {
                   <span>-S/ {discount.toFixed(2)}</span>
                 </div>
               )}
+              {/* ── Cupón ──────────────────────────────────────────────────
+                  Hasta ahora los cupones se creaban (ruleta, catálogo) pero el
+                  carrito no los miraba: el único descuento que entendía era el
+                  de monedas. El importe lo decide el servidor, no esta pantalla. */}
+              <div className={styles.cuponBloque}>
+                {cuponAplicado ? (
+                  <div className={styles.cuponAplicado}>
+                    <span className={styles.cuponAplicadoTexto}>
+                      <strong>{cuponAplicado.code}</strong>
+                      {cuponAplicado.texto ? ` · ${cuponAplicado.texto}` : ''}
+                    </span>
+                    <button type="button" className={styles.cuponQuitar} onClick={quitarCupon}>
+                      <T>Quitar</T>
+                    </button>
+                  </div>
+                ) : (
+                  <div className={styles.cuponFila}>
+                    <input
+                      type="text"
+                      className={styles.cuponInput}
+                      value={cuponTexto}
+                      onChange={(e) => { setCuponTexto(e.target.value); setCuponError(''); }}
+                      onKeyDown={(e) => {
+                        // Enter dentro de un formulario lo enviaría entero.
+                        if (e.key === 'Enter') { e.preventDefault(); aplicarCupon(); }
+                      }}
+                      placeholder="¿Tienes un cupón?"
+                      autoComplete="off"
+                      spellCheck="false"
+                    />
+                    <button
+                      type="button"
+                      className={styles.cuponBtn}
+                      onClick={aplicarCupon}
+                      disabled={cuponCargando || !cuponTexto.trim()}
+                    >
+                      {cuponCargando ? <T>Validando...</T> : <T>Aplicar</T>}
+                    </button>
+                  </div>
+                )}
+                {cuponError && <p className={styles.cuponError}>{cuponError}</p>}
+                {cuponAplicado?.aviso && <p className={styles.cuponAviso}>{cuponAplicado.aviso}</p>}
+              </div>
+
+              {descuentoCupon > 0 && (
+                <div className={`${styles.totalRow} ${styles.discountRow}`} style={{ fontWeight: 600 }}>
+                  <span><T>Descuento (Cupón):</T></span>
+                  <span>-S/ {descuentoCupon.toFixed(2)}</span>
+                </div>
+              )}
+
               <div className={styles.totalRow}>
                 <span><T>Envío:</T></span>
               <span>{shipping === 0 ? 'Gratis' : `S/ ${shipping.toFixed(2)}`}</span>

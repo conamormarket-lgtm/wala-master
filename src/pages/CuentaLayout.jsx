@@ -167,6 +167,15 @@ const CuentaLayout = () => {
             >
               {t('account.catalogo', 'Catálogo Recompensas')}
             </NavLink>
+
+            <NavLink
+              to="/cuenta/cupones"
+              className={({ isActive }) =>
+                isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab
+              }
+            >
+              {t('account.cupones', 'Mis Cupones')}
+            </NavLink>
           </nav>
 
           <NavLink

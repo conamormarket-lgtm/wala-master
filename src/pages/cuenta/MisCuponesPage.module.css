@@ -1,0 +1,219 @@
+/* =========================================================================
+   Mis cupones — estilos
+   -------------------------------------------------------------------------
+   Superficies y tokens del sistema (claro y noche salen del mismo juego de
+   variables). Cada cupón se lee como un ticket: borde discontinuo, estado
+   arriba y el código grande, que es lo único que el usuario va a copiar.
+   ========================================================================= */
+
+.pagina {
+  padding: 0.5rem 0 2rem;
+}
+
+.titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.subtitulo {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.estado {
+  margin: 3rem 0;
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.reintentar {
+  margin-top: 1rem;
+  min-height: var(--touch-target, 44px);
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── Estado vacío ──────────────────────────────────────────────────────── */
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 2.5rem auto;
+  padding: 2.5rem 1.5rem;
+  max-width: 460px;
+  text-align: center;
+  border-radius: var(--radio-grande, 24px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.vacioIcono {
+  color: var(--primary-color);
+}
+
+.vacioTitulo {
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.vacioTexto {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.vacioBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target, 44px);
+  margin-top: 0.75rem;
+  padding: 0.65rem 1.5rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--primary-color);
+  color: #ffffff;
+  font-weight: 700;
+  transition: var(--transicion-rapida);
+}
+
+.vacioBtn:hover {
+  background: var(--primary-hover);
+  color: #ffffff;
+}
+
+/* ── Lista ─────────────────────────────────────────────────────────────── */
+
+.lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cupon {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.15rem;
+  border-radius: var(--radio-mediano, 16px);
+  background: var(--color-surface);
+  border: 1px dashed var(--primary-color);
+  box-shadow: var(--sombra-suave);
+}
+
+/* Usado o vencido: sigue visible como historial, pero deja de competir por la
+   atención con los que aún sirven. */
+.cuponInactivo {
+  border-style: solid;
+  border-color: var(--color-border);
+  opacity: 0.65;
+}
+
+.cuponCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.estado_activo,
+.estado_usado,
+.estado_caducado {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.estado_activo {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+[data-theme='dark'] .estado_activo {
+  color: #6ee7b7;
+}
+
+.estado_usado {
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+}
+
+.estado_caducado {
+  background: var(--danger-soft, rgba(239, 68, 68, 0.12));
+  color: var(--danger-hover, #b91c1c);
+}
+
+[data-theme='dark'] .estado_caducado {
+  color: #fca5a5;
+}
+
+.origen {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.cuponTexto {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.codigoFila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.codigo {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--primary-color);
+}
+
+.copiar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: var(--transicion-rapida);
+}
+
+.copiar:hover {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.caduca,
+.nota {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

@@ -221,6 +221,7 @@ const MisCreacionesPage = lazy(() => import('./pages/cuenta/MisCreacionesPage'))
 const CuentaReferidosPage = lazy(() => import('./pages/cuenta/CuentaReferidosPage'));
 const CuentaFechasImportantesPage = lazy(() => import('./pages/cuenta/CuentaFechasImportantesPage'));
 const CatalogReward = lazy(() => import('./pages/cuenta/CatalogReward'));
+const MisCuponesPage = lazy(() => import('./pages/cuenta/MisCuponesPage'));
 const MisionesPage = lazy(() => import('./pages/cuenta/MisionesPage'));
 const WishlistPrivatePage = lazy(() => import('./pages/cuenta/WishlistPage'));
 const WishlistPublicPage = lazy(() => import('./pages/WishlistPublic/WishlistPublic'));
@@ -365,6 +366,7 @@ function App() {
                                     <Route path="fechas-importantes" element={<CuentaFechasImportantesPage />} />
                                     <Route path="misiones" element={<MisionesPage />} />
                                     <Route path="catalogo" element={<CatalogReward />} />
+                                    <Route path="cupones" element={<MisCuponesPage />} />
                                     <Route path="wishlist" element={<WishlistPrivatePage />} />
                                   </Route>
 

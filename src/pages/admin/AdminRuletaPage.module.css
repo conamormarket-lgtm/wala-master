@@ -1,0 +1,722 @@
+/* =========================================================================
+   Administrar la Ruleta Semanal — estilos
+   -------------------------------------------------------------------------
+   Antes esta pantalla no tenía hoja de estilos: todo iba en atributos `style`
+   dentro del JSX, con blancos y grises fijos que no seguían al tema. Aquí todo
+   sale de los tokens del sistema, así que claro y noche funcionan sin duplicar
+   reglas, igual que en el resto del panel.
+   ========================================================================= */
+
+.wrapper {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  margin: 0 0 0.35rem;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.estado {
+  margin: 3rem 0;
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* ── Pestañas ──────────────────────────────────────────────────────────── */
+
+.pestanas {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+}
+
+.pestana {
+  min-height: var(--touch-target, 44px);
+  padding: 0.65rem 1.15rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transicion-rapida);
+}
+
+.pestana:hover {
+  color: var(--color-text);
+}
+
+.pestanaActiva {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* ── Aviso de probabilidades ───────────────────────────────────────────── */
+
+.aviso {
+  margin-bottom: 1.5rem;
+  padding: 0.9rem 1.15rem;
+  border-radius: var(--radio-pequeno, 10px);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.avisoOk {
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+}
+
+[data-theme='dark'] .avisoOk {
+  color: #6ee7b7;
+}
+
+.avisoMal {
+  background: var(--danger-soft, rgba(239, 68, 68, 0.1));
+  color: var(--danger-hover, #b91c1c);
+}
+
+[data-theme='dark'] .avisoMal {
+  color: #fca5a5;
+}
+
+/* ── Estructura ────────────────────────────────────────────────────────── */
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  padding: 1.75rem;
+  border-radius: var(--radio-mediano, 16px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--sombra-suave);
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* El segundo título de una misma tarjeta (Reglas) necesita aire por arriba. */
+.card .cardTitle + * + .cardTitle,
+.card > .cardTitle ~ .cardTitle {
+  margin-top: 2rem;
+}
+
+.cardTitleNota {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+/* ── Formulario ────────────────────────────────────────────────────────── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ayuda {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.input {
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.btnPrimario,
+.btnSecundario {
+  min-height: var(--touch-target, 44px);
+  padding: 0.65rem 1.35rem;
+  border-radius: var(--radio-pequeno, 10px);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transicion-rapida);
+}
+
+.btnPrimario {
+  background: var(--primary-color);
+  color: #ffffff;
+}
+
+.btnPrimario:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btnPrimario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnSecundario {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.btnSecundario:hover {
+  color: var(--color-text);
+}
+
+.enlaceBoton {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--primary-color);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ── Días de la semana ─────────────────────────────────────────────────── */
+
+.dias {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.dia {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transicion-rapida);
+}
+
+.dia:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.diaOn {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+}
+
+/* ── Colores ───────────────────────────────────────────────────────────── */
+
+.colorFila {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.colorInput {
+  width: 52px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-bg);
+  cursor: pointer;
+}
+
+.colorLista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.colorItem {
+  position: relative;
+}
+
+.quitarColor {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.quitarColor:hover {
+  color: var(--danger, #ef4444);
+}
+
+.anadirColor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 40px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.anadirColor:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  padding: 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transicion-rapida);
+}
+
+.preset:hover {
+  border-color: var(--primary-color);
+}
+
+.presetActivo {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.presetMuestras {
+  display: flex;
+  gap: 3px;
+}
+
+.presetMuestra {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+/* ── Buscador de productos ─────────────────────────────────────────────── */
+
+.buscador {
+  position: relative;
+}
+
+.resultados {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-surface-2);
+  box-shadow: var(--sombra-media);
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.resultado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.resultado:hover {
+  background: var(--color-hover);
+}
+
+.resultadoPrecio {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.productoElegido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-bg);
+}
+
+.productoNombre {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ── Lista de premios ──────────────────────────────────────────────────── */
+
+.listaPremios {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.premio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-bg);
+}
+
+/* Los premios que hoy no pueden salir siguen visibles, pero apagados: es la
+   diferencia entre "está configurado" y "está saliendo ahora mismo". */
+.premioApagado {
+  opacity: 0.55;
+}
+
+.muestraColor {
+  flex-shrink: 0;
+  width: 10px;
+  align-self: stretch;
+  border-radius: 999px;
+}
+
+.premioInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.premioNombre {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.premioTexto {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.premioEtiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.chip {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chipMal {
+  background: var(--danger-soft, rgba(239, 68, 68, 0.12));
+  color: var(--danger-hover, #b91c1c);
+}
+
+[data-theme='dark'] .chipMal {
+  color: #fca5a5;
+}
+
+.premioAcciones {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: var(--transicion-rapida);
+}
+
+.iconBtn:hover {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.iconBtnBorrar:hover {
+  color: var(--danger, #ef4444);
+  border-color: var(--danger, #ef4444);
+}
+
+/* ── Vista previa ──────────────────────────────────────────────────────── */
+
+.previa {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0;
+}
+
+/* ── Entregas ──────────────────────────────────────────────────────────── */
+
+.filtro {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.tablaScroll {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.tabla th {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.celdaFuerte {
+  display: block;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.celdaSuave {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.codigo {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.btnPendiente,
+.btnEntregado {
+  min-height: 34px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transicion-rapida);
+}
+
+.btnPendiente {
+  border: 1px solid var(--primary-color);
+  background: var(--primary-color);
+  color: #ffffff;
+}
+
+.btnPendiente:hover {
+  background: var(--primary-hover);
+}
+
+.btnEntregado {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+/* ── Estado vacío ──────────────────────────────────────────────────────── */
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.vacio p {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pestana,
+  .btnPrimario,
+  .btnSecundario,
+  .dia,
+  .iconBtn,
+  .preset {
+    transition: none;
+  }
+}

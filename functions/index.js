@@ -23,12 +23,20 @@ const {
   limaTodayStr, limaWeekStartStr, applyDebit, randomPassword, pickWeightedPrize, verifyWebhookSignature,
   limaNow, felicidadKapiHoy, KAPI_HAPPINESS_STEP,
 } = require("./economyLogic");
+const {
+  normalizarPremio, normalizarConfig, premioDisponible, premiosDeHoy,
+  sortearPremio, esCupon, textoPremio,
+} = require("./ruletaLogic");
 
 admin.initializeApp();
 const auth = admin.auth();
 const db = admin.firestore();
 const PORTAL_USERS_COLLECTION = "portal_clientes_users";
 const ADMIN_USERS_COLLECTION = "adminUsers";
+
+// Configuración de la ruleta. El doc puede no existir: normalizarConfig() da los
+// valores de casa, así que la ruleta funciona sin que el admin lo haya tocado.
+const RULETA_CONFIG_DOC = "ruletaConfig/settings";
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -1489,69 +1497,254 @@ exports.claimBallSortRewardSecure = functions.https.onCall(async (data, context)
   }
 });
 
+// ── Ruleta: elegibilidad, tablero y giro ──────────────────────────────────────
+// El sorteo (RNG) y la acreditación son server-side. Desde la configuración por
+// días, el servidor además filtra QUÉ premios pueden salir hoy: si eso no
+// coincidiera con lo que pinta el cliente, la rueda pararía en un gajo que no es
+// el premio ganado. Por eso ambos lados usan ruletaLogic/ruletaModel (espejos).
+
+// Fecha 'YYYY-MM-DD' de Lima dentro de N días (caducidad de los cupones).
+function limaFechaEnDias(dias) {
+  return limaTodayStr(Date.now() + Number(dias || 0) * 24 * 60 * 60 * 1000);
+}
+
+// ¿De qué semana es el giro que le toca a este usuario? null si no tiene ninguno
+// pendiente. Centralizado porque lo usan el tablero y el giro.
+function semanaDeGiroPendiente(u, reglas) {
+  const weekStart = limaWeekStartStr();
+  const weekStartAnterior = limaWeekStartStr(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  let semanaPremio;
+  if (reglas.modoDesbloqueo === "siempre") {
+    // Modo campaña: un giro por semana, sin exigir la racha de 7 días.
+    semanaPremio = weekStart;
+  } else {
+    const weekly = u.weeklyClaimsData || { weekStart: "", daysClaimed: [] };
+    const daysCount = weekly.weekStart === weekStart ? (weekly.daysClaimed || []).length : 0;
+    semanaPremio = daysCount >= 7 ? weekStart : u.ruletaDisponibleDe;
+  }
+  if (!semanaPremio) return null;
+
+  // Semana de gracia: el giro ganado sigue disponible la semana siguiente.
+  const vigente = semanaPremio === weekStart ||
+    (reglas.semanaDeGracia && semanaPremio === weekStartAnterior);
+  if (!vigente) return null;
+  if (u.lastRuletaSpinWeek === semanaPremio) return null; // ya lo usó
+
+  return semanaPremio;
+}
+
+// Lee config + premios y arma el contexto de disponibilidad de HOY.
+async function cargarRuleta() {
+  const [configSnap, prizesSnap] = await Promise.all([
+    db.doc(RULETA_CONFIG_DOC).get(),
+    db.collection("ruletaPrizes").get(),
+  ]);
+  const config = normalizarConfig(configSnap.exists ? configSnap.data() : null);
+  const crudos = prizesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const ctxBase = { hoy: limaTodayStr(), diaSemana: limaNow().getUTCDay() };
+  return { config, crudos, ctxBase };
+}
+
+// ── Tablero de la ruleta (lo que el cliente debe pintar HOY) ──────────────────
+// Devuelve la configuración visual y los premios de hoy SIN las probabilidades
+// ni el stock: son datos de negocio que no tienen por qué viajar al navegador.
+// (ruletaPrizes sigue siendo de lectura pública en las reglas por compatibilidad
+// con el cliente ya desplegado; cuando todos usen este callable se puede cerrar
+// a isAdmin() y las probabilidades dejan de estar a la vista.)
+exports.getRuletaBoard = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  try {
+    const { config, crudos, ctxBase } = await cargarRuleta();
+    const userSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+    const u = userSnap.exists ? userSnap.data() : {};
+    const ctx = Object.assign({}, ctxBase, { ganados: u.ruletaPremiosGanados || {} });
+
+    const premios = premiosDeHoy(crudos, ctx).map((p) => ({
+      id: p.id,
+      nombre: p.nombre,
+      etiqueta: p.etiqueta,
+      tipo: p.tipo,
+      color: p.color,
+      icono: p.icono,
+      texto: textoPremio(p),
+    }));
+
+    return {
+      success: true,
+      config,
+      premios,
+      semanaPendiente: semanaDeGiroPendiente(u, config.reglas),
+    };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("getRuletaBoard error:", e);
+    throw new functions.https.HttpsError("internal", "Error al cargar la ruleta.");
+  }
+});
+
 // ── Girar la ruleta (RNG server-side) ─────────────────────────────────────────
+// La firma se mantiene por compatibilidad; el servidor usa el uid del token y su
+// propio estado, no los argumentos del cliente.
 exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
-  const weekStart = limaWeekStartStr();
-  // Semana de gracia: el giro que se gana completando los 7 dias sigue disponible
-  // durante la semana siguiente. Antes caducaba el domingo a medianoche.
-  const weekStartAnterior = limaWeekStartStr(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const prizesSnap = await db.collection("ruletaPrizes").orderBy("probability", "desc").get();
-  if (prizesSnap.empty) {
+  const { config, crudos, ctxBase } = await cargarRuleta();
+  if (!config.activa) {
+    throw new functions.https.HttpsError("failed-precondition", "La ruleta está cerrada por ahora.");
+  }
+  if (crudos.length === 0) {
     throw new functions.https.HttpsError("failed-precondition", "No hay premios configurados.");
   }
-  const prizes = prizesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  const selected = pickWeightedPrize(prizes, Math.random() * 100);
 
   try {
     return await db.runTransaction(async (t) => {
+      // ── Lecturas (todas antes de cualquier escritura) ──
       const snap = await t.get(userRef);
       if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = snap.data();
-      const weekly = u.weeklyClaimsData || { weekStart: "", daysClaimed: [] };
-      const daysCount = weekly.weekStart === weekStart ? (weekly.daysClaimed || []).length : 0;
-      // Semana cuyo premio se reclama: la actual si ya tiene los 7 dias, o la que
-      // quedo marcada como completa (que puede ser la anterior, por la gracia).
-      const semanaPremio = daysCount >= 7 ? weekStart : u.ruletaDisponibleDe;
-      if (!semanaPremio || (semanaPremio !== weekStart && semanaPremio !== weekStartAnterior)) {
-        throw new functions.https.HttpsError("failed-precondition", "Ruleta no desbloqueada.");
+
+      const semanaPremio = semanaDeGiroPendiente(u, config.reglas);
+      if (!semanaPremio) {
+        // Se distingue "ya giraste" de "no desbloqueada" para que el cliente no
+        // tenga que adivinar cuál de las dos es.
+        const yaGiro = u.lastRuletaSpinWeek === limaWeekStartStr() ||
+          (config.reglas.semanaDeGracia && !!u.ruletaDisponibleDe &&
+            u.lastRuletaSpinWeek === u.ruletaDisponibleDe);
+        throw new functions.https.HttpsError(
+          yaGiro ? "already-exists" : "failed-precondition",
+          yaGiro ? "Ya giraste la ruleta de esa semana." : "Ruleta no desbloqueada.");
       }
-      if (u.lastRuletaSpinWeek === semanaPremio) {
-        throw new functions.https.HttpsError("already-exists", "Ya giraste la ruleta de esa semana.");
+
+      const ganados = u.ruletaPremiosGanados || {};
+      const ctx = Object.assign({}, ctxBase, { ganados });
+      let disponibles = premiosDeHoy(crudos, ctx);
+      if (disponibles.length === 0) {
+        throw new functions.https.HttpsError("failed-precondition", "Hoy no hay premios disponibles.");
       }
-      const updates = { lastRuletaSpinWeek: semanaPremio };
+
+      let elegido = sortearPremio(disponibles, Math.random());
+      // Relectura del premio elegido DENTRO de la transacción: el catálogo se leyó
+      // fuera y entre medias pudo agotarse el stock o apagarlo el admin.
+      const prizeRef = db.collection("ruletaPrizes").doc(elegido.id);
+      const prizeSnap = await t.get(prizeRef);
+      const fresco = prizeSnap.exists
+        ? normalizarPremio(Object.assign({ id: elegido.id }, prizeSnap.data()))
+        : null;
+
+      let refPremio = prizeRef;
+      let premioReleido = true;
+      if (fresco && premioDisponible(fresco, ctx)) {
+        elegido = fresco;
+      } else {
+        premioReleido = false;
+        // Se agotó justo ahora: se vuelve a sortear sin él. El segundo sorteo ya
+        // no se re-verifica (sería una cadena infinita de lecturas); la carrera es
+        // rarísima en una ruleta de un giro por semana.
+        disponibles = disponibles.filter((p) => p.id !== elegido.id);
+        if (disponibles.length === 0) {
+          throw new functions.https.HttpsError("failed-precondition", "Hoy no hay premios disponibles.");
+        }
+        elegido = sortearPremio(disponibles, Math.random());
+        refPremio = db.collection("ruletaPrizes").doc(elegido.id);
+      }
+
+      // ── Escrituras ──
+      const texto = textoPremio(elegido);
+      const updates = {
+        lastRuletaSpinWeek: semanaPremio,
+        // Conteo por premio: sostiene el tope `maxPorUsuario` sin tener que
+        // consultar ruletaWins dentro de la transacción.
+        ruletaPremiosGanados: Object.assign({}, ganados, {
+          [elegido.id]: (Number(ganados[elegido.id]) || 0) + 1,
+        }),
+      };
+
       let ruletaEarn = 0;
-      if (selected.type === "Monedas") {
-        ruletaEarn = Number(selected.amount || 0);
+      if (elegido.tipo === "monedas") {
+        ruletaEarn = elegido.monedas;
         updates.monedas = (u.monedas || 0) + ruletaEarn;
       }
 
-      // Los premios que NO son monedas no se acreditan solos: hay que entregarlos
-      // a mano. Antes no quedaba constancia de ellos en ninguna parte (ni ledger,
-      // ni colección), así que el premio se perdía. Ahora se guarda tanto en el
-      // perfil (para que el usuario lo vea) como en `ruletaWins` (para el admin).
-      const esAutoAcreditado = selected.type === "Monedas";
+      // El cupón ES la entrega de los premios de descuento/producto/envío. Antes
+      // estos tipos existían en el admin pero no se acreditaban ni quedaban en
+      // ningún sitio que alguien mirase, así que el premio se perdía.
+      let cupon = null;
+      if (esCupon(elegido.tipo)) {
+        const cuponRef = db.collection("userCoupons").doc();
+        cupon = {
+          id: cuponRef.id,
+          code: generateCouponCode(),
+          tipo: elegido.tipo,
+          titulo: elegido.nombre,
+          texto,
+          descuentoPct: elegido.descuentoPct,
+          descuentoMonto: elegido.descuentoMonto,
+          topeDescuento: elegido.topeDescuento,
+          productId: elegido.productId,
+          productName: elegido.productName,
+          expiraEn: limaFechaEnDias(elegido.vigenciaDias),
+        };
+        t.set(cuponRef, {
+          uid,
+          origen: "ruleta",
+          prizeId: elegido.id,
+          code: cupon.code,
+          tipo: cupon.tipo,
+          titulo: cupon.titulo,
+          texto: cupon.texto,
+          descuentoPct: cupon.descuentoPct,
+          descuentoMonto: cupon.descuentoMonto,
+          topeDescuento: cupon.topeDescuento,
+          productId: cupon.productId,
+          productName: cupon.productName,
+          expiraEn: cupon.expiraEn,
+          status: "active",
+          orderId: null,
+          usadoAt: null,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Solo los premios manuales quedan pendientes de que alguien los entregue.
       const premio = {
-        id: selected.id,
-        name: selected.name || "",
-        type: selected.type || "",
-        amount: Number(selected.amount || 0),
+        id: elegido.id,
+        // `name`/`type` se mantienen con los nombres y el valor capitalizado de
+        // siempre para no romper al cliente ya desplegado, que compara
+        // type === 'Monedas' para lanzar la animación de monedas.
+        name: elegido.nombre,
+        nombre: elegido.nombre,
+        type: elegido.tipo === "monedas" ? "Monedas" : elegido.tipo,
+        tipo: elegido.tipo,
+        texto,
+        amount: elegido.monedas,
+        cuponCode: cupon ? cupon.code : null,
         weekStart: semanaPremio,
         wonAt: new Date().toISOString(),
-        entregado: esAutoAcreditado,
+        entregado: elegido.tipo !== "manual",
       };
       updates.lastRuletaPrize = premio;
       t.update(userRef, updates);
 
-      t.set(db.collection("ruletaWins").doc(), {
+      // Cuenta cuántas veces ha salido: sostiene `stockTotal` y, cuando no hay
+      // stock definido, le da al admin un contador de "veces ganado".
+      // Solo si el premio se releyó dentro de la transacción: en la rama del
+      // segundo sorteo no sabemos si su documento sigue existiendo, y un
+      // `update` sobre un documento borrado tumbaría la transacción entera,
+      // dejando al usuario sin premio por un contador.
+      if (premioReleido) {
+        t.update(refPremio, { stockUsado: FieldValue.increment(1) });
+      }
+
+      t.set(db.collection("ruletaWins").doc(), Object.assign({
         uid,
         email: u.email || null,
         displayName: u.displayName || u.nombres || null,
-        ...premio,
+      }, premio, {
+        cuponId: cupon ? cupon.id : null,
         createdAt: FieldValue.serverTimestamp(),
-      });
+      }));
 
       if (ruletaEarn > 0) {
         writeLedger(t, uid, {
@@ -1561,7 +1754,8 @@ exports.spinRuletaSecure = functions.https.onCall(async (data, context) => {
           balanceAfter: updates.monedas,
         });
       }
-      return { success: true, prize: selected };
+
+      return { success: true, prize: Object.assign({}, elegido, { texto }), cupon };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
@@ -2182,6 +2376,241 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("redeemRewardSecure error:", e);
     throw new functions.https.HttpsError("internal", "Error al canjear la recompensa.");
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// CUPONES EN EL CHECKOUT
+// ----------------------------------------------------------------------------
+// Un cupón sin forma de aplicarse no es un premio. Hasta ahora `userCoupons`
+// solo guardaba un código: el checkout no lo miraba y el único descuento que
+// entendía era el de monedas.
+//
+// Reparto de confianza (el mismo que ya tienen las monedas):
+//   - El VALOR del cupón sale del documento del cupón, nunca del cliente.
+//   - La BASE sobre la que se aplica se recalcula leyendo productos_wala cuando
+//     todos los ítems del carrito son de catálogo (el caso normal). Si el
+//     carrito trae productos personalizados —cuyo precio final no está en el
+//     catálogo— se usa el subtotal del cliente y el techo es `topeDescuento`.
+//   - El cupón es de un solo uso y se marca dentro de una transacción.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Regla de envío del checkout (espejo de CheckoutPage.jsx: gratis desde S/100).
+// Si allí cambia, aquí también: es lo que vale un cupón de envío gratis.
+const ENVIO_ESTANDAR = 15;
+const ENVIO_GRATIS_DESDE = 100;
+
+// Precio de catálogo server-authoritative (misma regla que buildOrderInTransaction).
+function precioDeCatalogo(p) {
+  const price = Number(p.price);
+  const salePrice = Number(p.salePrice);
+  if (Number.isFinite(salePrice) && salePrice < price) return salePrice;
+  return Number.isFinite(price) ? price : null;
+}
+
+// Busca el cupón por código para este usuario. Devuelve { ref, cupon } o null.
+async function buscarCupon(uid, code, lector) {
+  const codigo = String(code || "").trim().toUpperCase();
+  if (!codigo) return null;
+  const q = db.collection("userCoupons")
+    .where("uid", "==", uid)
+    .where("code", "==", codigo)
+    .limit(1);
+  const snap = await (lector ? lector.get(q) : q.get());
+  if (snap.empty) return null;
+  const doc = snap.docs[0];
+  return { ref: doc.ref, cupon: Object.assign({ id: doc.id }, doc.data()) };
+}
+
+// Motivo por el que un cupón no se puede usar, o null si está bien.
+function motivoRechazo(cupon) {
+  if (!cupon) return "Ese código no existe o no es tuyo.";
+  if (cupon.status === "used" || cupon.orderId) return "Ese cupón ya se usó.";
+  if (cupon.expiraEn && cupon.expiraEn < limaTodayStr()) return "Ese cupón ya venció.";
+  if (!cupon.tipo) {
+    // Los cupones del catálogo de recompensas se crearon sin tipo ni valor: son
+    // un comprobante de canje, no hay nada que descontar automáticamente.
+    return "Ese cupón se canjea con un asesor, no en el carrito.";
+  }
+  return null;
+}
+
+/**
+ * Calcula cuánto descuenta un cupón sobre este carrito.
+ * items = [{ productId, qty, precio, personalizado }]. `precio` y
+ * `personalizado` solo se usan si el ítem no se puede valorar con el catálogo.
+ * Devuelve { descuento, envioGratis, base, exacta, aviso }.
+ */
+async function calcularDescuentoCupon(cupon, datos) {
+  const items = Array.isArray(datos.items) ? datos.items : [];
+  const subtotalCliente = Math.max(0, Number(datos.subtotal) || 0);
+
+  // 1) Revalorar el carrito con los precios del catálogo.
+  const ids = [...new Set(items.map((it) => String(it.productId || "")).filter(Boolean))];
+  const snaps = ids.length > 0
+    ? await db.getAll(...ids.map((id) => db.collection("productos_wala").doc(id)))
+    : [];
+  const precioPorId = new Map();
+  snaps.forEach((snap) => {
+    if (!snap.exists) return;
+    const precio = precioDeCatalogo(snap.data());
+    if (precio !== null) precioPorId.set(snap.id, precio);
+  });
+
+  let subtotalCatalogo = 0;
+  let todosValorados = items.length > 0;
+  for (const it of items) {
+    const qty = Math.max(1, Number(it.qty) || 1);
+    const precio = precioPorId.get(String(it.productId || ""));
+    // Un producto personalizado cuesta más que el de catálogo (el diseño se cobra
+    // aparte), así que su precio real no se puede reconstruir aquí.
+    if (precio === undefined || it.personalizado) {
+      todosValorados = false;
+      continue;
+    }
+    subtotalCatalogo += precio * qty;
+  }
+
+  // 2) Base del descuento. Exacta si todo el carrito es de catálogo.
+  const exacta = todosValorados;
+  const base = exacta ? subtotalCatalogo : subtotalCliente;
+
+  let descuento = 0;
+  let envioGratis = false;
+  let aviso = null;
+
+  switch (cupon.tipo) {
+    case "descuento": {
+      const pct = Math.max(0, Math.min(100, Number(cupon.descuentoPct) || 0));
+      const monto = Math.max(0, Number(cupon.descuentoMonto) || 0);
+      descuento = pct > 0 ? (base * pct) / 100 : monto;
+      const tope = Math.max(0, Number(cupon.topeDescuento) || 0);
+      if (pct > 0 && tope > 0 && descuento > tope) {
+        descuento = tope;
+        aviso = "El descuento llega al máximo de S/ " + tope.toFixed(2) + ".";
+      }
+      break;
+    }
+    case "producto_descuento":
+    case "producto_gratis": {
+      const productId = String(cupon.productId || "");
+      const enCarrito = items.find((it) => String(it.productId || "") === productId);
+      if (!enCarrito) {
+        return {
+          descuento: 0,
+          envioGratis: false,
+          base,
+          exacta,
+          aviso: "Este cupón es para " + (cupon.productName || "un producto concreto") +
+            ": añádelo al carrito para poder usarlo.",
+        };
+      }
+      const precio = precioPorId.get(productId);
+      if (precio === undefined) {
+        return {
+          descuento: 0, envioGratis: false, base, exacta,
+          aviso: "Ese producto ya no está disponible.",
+        };
+      }
+      // Siempre sobre UNA unidad: si no, un cupón de producto gratis con 10
+      // unidades en el carrito se llevaría las diez.
+      descuento = cupon.tipo === "producto_gratis"
+        ? precio
+        : (precio * Math.max(0, Math.min(100, Number(cupon.descuentoPct) || 0))) / 100;
+      break;
+    }
+    case "envio_gratis": {
+      // Vale lo que costaría el envío de este pedido, que puede ser cero.
+      const envio = base > ENVIO_GRATIS_DESDE ? 0 : ENVIO_ESTANDAR;
+      envioGratis = true;
+      descuento = envio;
+      if (envio === 0) aviso = "Tu pedido ya tiene envío gratis, así que este cupón no resta nada.";
+      break;
+    }
+    default:
+      descuento = 0;
+  }
+
+  // Nunca puede dejar el pedido en negativo.
+  descuento = Math.max(0, Math.min(descuento, base));
+  return { descuento: +descuento.toFixed(2), envioGratis, base: +base.toFixed(2), exacta, aviso };
+}
+
+// ── Validar un cupón (no lo consume) ──────────────────────────────────────────
+exports.validarCuponSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  try {
+    const encontrado = await buscarCupon(uid, data && data.code);
+    const motivo = motivoRechazo(encontrado && encontrado.cupon);
+    if (motivo) throw new functions.https.HttpsError("failed-precondition", motivo);
+
+    const cupon = encontrado.cupon;
+    const calculo = await calcularDescuentoCupon(cupon, data || {});
+    return {
+      success: true,
+      descuento: calculo.descuento,
+      envioGratis: calculo.envioGratis,
+      aviso: calculo.aviso,
+      cupon: {
+        code: cupon.code,
+        tipo: cupon.tipo,
+        titulo: cupon.titulo || "",
+        texto: cupon.texto || "",
+        expiraEn: cupon.expiraEn || null,
+      },
+    };
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("validarCuponSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al validar el cupón.");
+  }
+});
+
+// ── Canjear un cupón (lo consume, de un solo uso) ─────────────────────────────
+// Idempotente por pedido: si se reintenta con el mismo orderId no falla ni
+// descuenta dos veces (el checkout puede reintentar tras un fallo de red).
+exports.canjearCuponSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const orderId = data && data.orderId ? String(data.orderId) : null;
+  if (!orderId) {
+    throw new functions.https.HttpsError("invalid-argument", "Falta el pedido.");
+  }
+
+  try {
+    // El cálculo lee productos y no puede ir dentro de la transacción después de
+    // escribir, así que se hace antes; el valor del cupón no cambia por ello.
+    const previo = await buscarCupon(uid, data && data.code);
+    const motivoPrevio = motivoRechazo(previo && previo.cupon);
+    if (motivoPrevio && !(previo && previo.cupon && previo.cupon.orderId === orderId)) {
+      throw new functions.https.HttpsError("failed-precondition", motivoPrevio);
+    }
+    const calculo = await calcularDescuentoCupon(previo.cupon, data || {});
+
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(previo.ref);
+      if (!snap.exists) {
+        throw new functions.https.HttpsError("not-found", "Ese cupón ya no existe.");
+      }
+      const cupon = snap.data();
+      // Reintento del mismo pedido: se devuelve lo ya aplicado sin tocar nada.
+      if (cupon.orderId === orderId) {
+        return { success: true, descuento: Number(cupon.descuentoAplicado) || 0, repetido: true };
+      }
+      const motivo = motivoRechazo(Object.assign({ id: previo.cupon.id }, cupon));
+      if (motivo) throw new functions.https.HttpsError("failed-precondition", motivo);
+
+      t.update(previo.ref, {
+        status: "used",
+        orderId,
+        descuentoAplicado: calculo.descuento,
+        usadoAt: FieldValue.serverTimestamp(),
+      });
+      return { success: true, descuento: calculo.descuento, repetido: false };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("canjearCuponSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al canjear el cupón.");
   }
 });
 

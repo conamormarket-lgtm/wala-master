@@ -122,10 +122,19 @@ service cloud.firestore {
     // ── Gamificación / fidelización ──────────────────────────────────────────────
     match /globals/{id}            { allow read: if true;  allow write: if isAdmin(); } // activeChallenge
     match /weeklyChallenges/{id}   { allow read: if true;  allow write: if isAdmin(); }
+    // Premios de la ruleta. La lectura sigue siendo pública por compatibilidad
+    // con el cliente ya desplegado, que los lee directo; el cliente nuevo usa el
+    // callable getRuletaBoard y, cuando ya no queden versiones viejas en
+    // circulación, esto puede cerrarse a isAdmin() para que las probabilidades
+    // dejen de estar a la vista de cualquiera.
     match /ruletaPrizes/{id}       { allow read: if true;  allow write: if isAdmin(); }
+    // Configuración de la ruleta (colores, reglas). Lectura pública: son datos de
+    // presentación y sirven de respaldo si el callable no responde.
+    match /ruletaConfig/{id}       { allow read: if true;  allow write: if isAdmin(); }
     // Premios ganados en la ruleta: los escribe spinRuletaSecure (Admin SDK, evade
-    // reglas). Solo el admin los lee, para poder entregar los que no son monedas.
-    match /ruletaWins/{id}         { allow read: if isAdmin(); allow write: if false; }
+    // reglas). Solo el admin los lee, para poder entregar los que no son monedas,
+    // y los marca como entregados desde el panel.
+    match /ruletaWins/{id}         { allow read: if isAdmin(); allow write: if isAdmin(); }
     match /wordle_daily_words/{id} { allow read: if true;  allow write: if isAdmin(); }
 
     // ── Fase 2: misiones diarias y libro mayor de fidelización ───────────────────

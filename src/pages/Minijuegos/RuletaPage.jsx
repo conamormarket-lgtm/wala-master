@@ -2,30 +2,61 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Copy, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { diseno } from '../../utils/modoDiseno';
-import { getRuletaPrizes, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
+import { getRuletaBoard, spinRuleta, getRuletaEligibility } from '../../services/firebase/ruleta';
+import { CONFIG_POR_DEFECTO, anguloDeParada } from '../../utils/ruletaModel';
 import { trackMinigame } from '../../services/analytics/tracker';
+import RuedaRuleta from '../../components/ruleta/RuedaRuleta';
 import ArcadeShell from './ArcadeShell';
 import styles from './RuletaPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
+
+// Rueda de muestra para el modo diseño (?premios=demo). Sirve para repasar
+// colores, contraste del texto y recortes sin tener que cargar premios de
+// verdad en la base de datos. Inerte en producción, como todo modoDiseno.
+const PREMIOS_DEMO = [
+  { id: 'd1', nombre: '10 monedas', etiqueta: '10 monedas', tipo: 'monedas', icono: '🪙', texto: '10 monedas' },
+  { id: 'd2', nombre: '15% de descuento', etiqueta: '15% dcto', tipo: 'descuento', icono: '🏷️', texto: '15% de descuento' },
+  { id: 'd3', nombre: 'Sigue intentando', etiqueta: 'Casi', tipo: 'nada', icono: '🍀', texto: 'Sigue intentando' },
+  { id: 'd4', nombre: 'Envío gratis', etiqueta: 'Envío gratis', tipo: 'envio_gratis', icono: '📦', texto: 'Envío gratis' },
+  { id: 'd5', nombre: '50 monedas', etiqueta: '50 monedas', tipo: 'monedas', icono: '💰', texto: '50 monedas' },
+  { id: 'd6', nombre: 'Taza Kapi gratis', etiqueta: 'Taza gratis', tipo: 'producto_gratis', icono: '🎁', texto: 'Taza Kapi gratis' },
+  { id: 'd7', nombre: '5 monedas', etiqueta: '5 monedas', tipo: 'monedas', icono: '🪙', texto: '5 monedas' },
+];
+
+// Quien pide menos movimiento no debería tragarse cuatro segundos de disco
+// girando: se le da el resultado casi al instante, sin quitarle el premio.
+const prefiereMenosMovimiento = () => {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+};
 
 const RuletaPage = () => {
   const { user, userProfile, reloadProfile } = useAuth();
   const { addToast } = useGlobalToast();
   // eslint-disable-next-line no-unused-vars
-  // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
-  const [prizes, setPrizes] = useState([]);
+  const [premios, setPremios] = useState([]);
+  const [config, setConfig] = useState(CONFIG_POR_DEFECTO);
   const [loading, setLoading] = useState(true);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState(null);
+  const [cupon, setCupon] = useState(null);
+  const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState('');
-  
-  const wheelRef = useRef(null);
-  const [currentRotation, setCurrentRotation] = useState(0);
+
+  const [rotacion, setRotacion] = useState(0);
+  const [duracionGiro, setDuracionGiro] = useState(0);
+  // El temporizador del giro se guarda para poder cancelarlo si el usuario se va
+  // de la pantalla a mitad de la animación (antes dejaba un setState huérfano).
+  const temporizador = useRef(null);
+
   // El emoji es el respaldo de la imagen de Kapi; solo debe salir si la imagen
   // no carga. Antes se pintaban los dos a la vez (capibara + perrito).
   const [falloImagenKapi, setFalloImagenKapi] = useState(false);
@@ -35,21 +66,37 @@ const RuletaPage = () => {
     catch { return true; }
   });
 
+  // ?sesion=activa pinta la pantalla sin haber iniciado sesión, para poder
+  // repasar el diseño de la rueda sin una cuenta delante. No concede nada: el
+  // giro lo sigue decidiendo el servidor, que ignora estos parámetros.
+  const sesionForzada = diseno('sesion') === 'activa';
+  const premiosDemo = diseno('premios') === 'demo';
+
   const cerrarAyuda = () => {
     setAyudaAbierta(false);
     try { localStorage.setItem('wala_ruleta_ayuda_vista', '1'); } catch { /* modo privado */ }
   };
 
+  // El tablero lo arma el servidor: config + premios que pueden salir HOY. El
+  // cliente NO filtra por su cuenta; si lo hiciera y el servidor filtrara
+  // distinto, la rueda pararía en un gajo que no es el premio ganado.
   useEffect(() => {
-    const fetchPrizes = async () => {
-      const p = await getRuletaPrizes();
-      // Sin premios NO es un error: es que el admin aun no los ha cargado en
-      // /admin/ruleta. Se trata como estado vacio, no como fallo rojo.
-      setPrizes(p);
+    if (!user && !sesionForzada) { setLoading(false); return; }
+    let vivo = true;
+    (async () => {
+      const board = await getRuletaBoard();
+      if (!vivo) return;
+      // Sin premios NO es un error: es que el admin aún no los ha cargado (o hoy
+      // no toca ninguno). Se trata como estado vacío, no como fallo rojo.
+      if (!board.success) setError(board.error);
+      setConfig(board.config);
+      setPremios(premiosDemo ? PREMIOS_DEMO : board.premios);
       setLoading(false);
-    };
-    fetchPrizes();
-  }, []);
+    })();
+    return () => { vivo = false; };
+  }, [user, sesionForzada, premiosDemo]);
+
+  useEffect(() => () => clearTimeout(temporizador.current), []);
 
   // Analytics aditivo (fire-and-forget): inicio del minijuego de ruleta al montar.
   useEffect(() => {
@@ -67,7 +114,7 @@ const RuletaPage = () => {
     return () => window.removeEventListener('keydown', alPulsar);
   }, [ayudaAbierta]);
 
-  const elegibilidad = getRuletaEligibility(userProfile);
+  const elegibilidad = getRuletaEligibility(userProfile, config.reglas);
   // Modo diseño (solo en local): ?ruleta=desbloqueada|girada|pendiente|perdida
   const forzar = diseno('ruleta');
   const isUnlocked = forzar ? (forzar === 'desbloqueada' || forzar === 'pendiente') : elegibilidad.isUnlocked;
@@ -80,74 +127,81 @@ const RuletaPage = () => {
 
     setSpinning(true);
     setError('');
-    
-    // Llamada al servidor para obtener el resultado
-    const res = await spinRuleta(user.uid, userProfile);
-    
+
+    // El resultado lo decide el servidor: aquí solo se anima hasta el gajo.
+    const res = await spinRuleta();
+
     if (!res.success) {
       setError(res.error || 'Ocurrió un error al girar la ruleta.');
       setSpinning(false);
       return;
     }
 
-    const winningPrize = res.prize;
+    const premioGanado = res.prize;
     // Si el premio no está en la lista que cargó el cliente (un admin editó los
     // premios entre la carga y el giro), findIndex devuelve -1 y la rueda pararía
-    // en una casilla que no corresponde. Recargamos la lista antes de animar y
+    // en una casilla que no corresponde. Recargamos el tablero antes de animar y
     // calculamos el ángulo sobre esa misma lista (el estado aún no se ha aplicado).
-    let listaPremios = prizes;
-    let prizeIndex = listaPremios.findIndex(p => p.id === winningPrize.id);
-    if (prizeIndex === -1) {
-      const frescos = await getRuletaPrizes();
-      if (frescos.length > 0) {
-        listaPremios = frescos;
-        setPrizes(frescos);
-        prizeIndex = frescos.findIndex(p => p.id === winningPrize.id);
+    let lista = premios;
+    let indice = lista.findIndex((p) => p.id === premioGanado.id);
+    if (indice === -1) {
+      const frescos = await getRuletaBoard();
+      if (frescos.premios.length > 0) {
+        lista = frescos.premios;
+        setPremios(frescos.premios);
+        setConfig(frescos.config);
+        indice = frescos.premios.findIndex((p) => p.id === premioGanado.id);
       }
-      if (prizeIndex === -1) prizeIndex = 0; // último recurso: no dejar la rueda en un ángulo absurdo
+      if (indice === -1) indice = 0; // último recurso: no dejar la rueda en un ángulo absurdo
     }
 
     // El servidor ya marcó el giro de esta semana: refrescar el perfil para que
     // el hub y el botón no sigan ofreciendo un giro que ya no existe.
     reloadProfile();
 
-    // Calcular ángulo de parada
-    const sliceAngle = 360 / listaPremios.length;
-    // Se le suma 5 o 10 vueltas completas (360 * 5)
-    const spins = 360 * 5; 
-    // Calcular el ángulo del premio ganador (restando para que quede arriba)
-    const stopAngle = spins + (360 - (prizeIndex * sliceAngle)) - (sliceAngle / 2);
-    
-    const finalRotation = currentRotation + stopAngle;
-    setCurrentRotation(finalRotation);
+    // El ángulo lo calcula anguloDeParada (lógica compartida y con tests): un
+    // error de medio gajo aquí haría parar la rueda en un premio distinto del
+    // que anuncia el servidor, y a ojo no se nota.
+    const reducido = prefiereMenosMovimiento();
+    const vueltas = reducido ? 1 : config.reglas.vueltas;
+    const duracion = reducido ? 600 : config.reglas.duracionGiroMs;
+    const destino = anguloDeParada(indice, lista.length, vueltas);
 
-    if (wheelRef.current) {
-      wheelRef.current.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
-      wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
-    }
+    setDuracionGiro(duracion);
+    setRotacion((actual) => actual + destino);
 
-    // Esperar que termine la animación
-    setTimeout(() => {
+    temporizador.current = setTimeout(() => {
       setSpinning(false);
-      setResult(winningPrize);
-      // Analytics aditivo (fire-and-forget): fin del minijuego de ruleta con el premio obtenido.
+      setResult(premioGanado);
+      setCupon(res.cupon || null);
+      // Analytics aditivo (fire-and-forget): fin del minijuego con el premio obtenido.
       try {
         trackMinigame('complete',
-          { gameId: 'ruleta', gameName: 'Ruleta Semanal', prizeId: winningPrize?.id, prizeName: winningPrize?.name },
+          { gameId: 'ruleta', gameName: 'Ruleta Semanal', prizeId: premioGanado?.id, prizeName: premioGanado?.nombre },
           { uid: user?.uid, email: user?.email, displayName: user?.displayName }).catch(() => {});
       } catch {}
-      // Disparar confeti/kapi-coins
-      if (winningPrize.type === 'Monedas') {
-        window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: Number(winningPrize.amount) } }));
+      if (premioGanado.tipo === 'monedas') {
+        window.dispatchEvent(new CustomEvent('coins-animation-start', { detail: { amount: Number(premioGanado.monedas) } }));
       }
-    }, 4100);
+    }, duracion + 100);
+  };
+
+  const copiarCodigo = async () => {
+    if (!cupon?.code) return;
+    try {
+      await navigator.clipboard.writeText(cupon.code);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      addToast('No pudimos copiar el código', 'error');
+    }
   };
 
   // Compartir el premio: en móvil abre el diálogo nativo del sistema; en escritorio
   // (donde navigator.share no existe) copia el texto al portapapeles.
   const handleShare = async () => {
     if (!result) return;
-    const texto = `¡Gané ${result.name} en la Ruleta Semanal de Walá! 🎰`;
+    const texto = `¡Gané ${result.texto || result.nombre} en la Ruleta Semanal de Walá! 🎰`;
     const url = window.location.origin;
 
     if (navigator.share) {
@@ -182,6 +236,18 @@ const RuletaPage = () => {
     </button>
   );
 
+  const pasosAyuda = config.reglas.modoDesbloqueo === 'siempre'
+    ? [
+      'Tienes un giro cada semana, sin condiciones.',
+      'Al girar, se acaba hasta la semana siguiente.',
+    ]
+    : [
+      'Alimenta a Kapi todos los días, de lunes a domingo.',
+      'Si te saltas un día, la semana se pierde y el contador vuelve a empezar el lunes.',
+      'Al completar los 7 días ganas un giro.',
+      'Un giro por semana: al girar, se acaba hasta la siguiente.',
+    ];
+
   const modalAyuda = createPortal(
     <AnimatePresence>
       {ayudaAbierta && (
@@ -209,14 +275,13 @@ const RuletaPage = () => {
             <h2 className={styles.ayudaTitulo}><T>Cómo se juega</T></h2>
 
             <p className={styles.ayudaObjetivo}>
-              <T>La ruleta no se juega: se gana. Es el premio de mantener tu racha con Kapi toda la semana.</T>
+              {config.reglas.modoDesbloqueo === 'siempre'
+                ? <T>Un giro por semana, cortesía de la casa. Los premios cambian según el día.</T>
+                : <T>La ruleta no se juega: se gana. Es el premio de mantener tu racha con Kapi toda la semana.</T>}
             </p>
 
             <ol className={styles.ayudaPasos}>
-              <li><T>Alimenta a Kapi todos los días, de lunes a domingo.</T></li>
-              <li><T>Si te saltas un día, la semana se pierde y el contador vuelve a empezar el lunes.</T></li>
-              <li><T>Al completar los 7 días ganas un giro.</T></li>
-              <li><T>Un giro por semana: al girar, se acaba hasta la siguiente.</T></li>
+              {pasosAyuda.map((paso) => <li key={paso}><T>{paso}</T></li>)}
             </ol>
 
             <p className={styles.ayudaPie}>
@@ -233,7 +298,7 @@ const RuletaPage = () => {
     document.body
   );
 
-  if (!user) {
+  if (!user && !sesionForzada) {
     return (
       <ArcadeShell back="/minijuegos" title="Ruleta Semanal" acciones={botonAyuda}>
         <p className={styles.estado}><T>Inicia sesión para jugar.</T></p>
@@ -244,24 +309,27 @@ const RuletaPage = () => {
 
   if (loading) {
     return (
-      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" acciones={botonAyuda}>
+      <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
+        <div className={styles.esqueletoRueda} aria-hidden="true" />
         <p className={styles.estado}><T>Cargando ruleta...</T></p>
         {modalAyuda}
       </ArcadeShell>
     );
   }
 
-  // Sin premios cargados no hay ruleta que girar. Antes se pintaba igual: un
-  // disco negro y un boton "¡GIRAR RULETA!" activo que, al pulsarlo, se iba al
-  // servidor a fallar. Mejor decirlo y no ofrecer una accion que no existe.
-  if (prizes.length === 0) {
+  // Sin premios no hay ruleta que girar. Antes se pintaba igual: un disco negro
+  // y un botón "¡GIRAR RULETA!" activo que, al pulsarlo, se iba al servidor a
+  // fallar. Mejor decirlo y no ofrecer una acción que no existe.
+  if (premios.length === 0 || !config.activa) {
     return (
       <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
         <div className={styles.vacio}>
           <span className={styles.vacioIcono} aria-hidden="true">🎡</span>
-          <h2 className={styles.vacioTitulo}><T>La ruleta está en preparación</T></h2>
+          <h2 className={styles.vacioTitulo}>
+            {config.activa ? <T>La ruleta está en preparación</T> : <T>La ruleta está cerrada por ahora</T>}
+          </h2>
           <p className={styles.vacioTexto}>
-            <T>Todavía no hay premios cargados. Tu progreso de los 7 días no se pierde: cuando la abramos, tu giro seguirá aquí esperándote.</T>
+            <T>Tu progreso no se pierde: cuando la abramos, tu giro seguirá aquí esperándote.</T>
           </p>
           <Link to="/minijuegos" className={styles.vacioBtn}><T>Ver otros juegos</T></Link>
         </div>
@@ -274,43 +342,61 @@ const RuletaPage = () => {
     <ArcadeShell back="/minijuegos" title="Ruleta Semanal" className={styles.pageContainer} acciones={botonAyuda}>
       {error && <div className={styles.errorBanner}><T>{error}</T></div>}
 
-      <div className={styles.ruletaContainer}>
-        <div className={styles.pointer}>▼</div>
-        
-        <div 
-          className={styles.wheel} 
-          ref={wheelRef}
-          style={{
-            background: prizes.length > 0 
-              ? `conic-gradient(${prizes.map((p, i) => `${i % 2 === 0 ? '#8b5cf6' : '#6d28d9'} ${(i * 360) / prizes.length}deg ${((i + 1) * 360) / prizes.length}deg`).join(', ')})`
-              : '#333'
-          }}
-        >
-          {prizes.map((prize, i) => {
-            const angle = (i * 360) / prizes.length + (360 / prizes.length) / 2;
-            return (
-              <div 
-                key={prize.id} 
-                className={styles.prizeSlice}
-                style={{ transform: `rotate(${angle}deg)` }}
-              >
-                <div className={styles.prizeText}>{prize.name}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <RuedaRuleta
+        premios={premios}
+        colores={config.tema.colores}
+        colorAro={config.tema.colorAro}
+        colorPuntero={config.tema.colorPuntero}
+        imagenCentro={config.tema.imagenCentro}
+        rotacion={rotacion}
+        duracionMs={duracionGiro}
+      />
 
       <div className={styles.controls}>
         {result ? (
-          <div className={styles.resultBox}>
+          <motion.div
+            className={styles.resultBox}
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+          >
             <h2><T>¡Felicidades!</T></h2>
-            <p><T>Has ganado:</T> <strong>{result.name}</strong></p>
+            <p className={styles.resultPremio}>{result.texto || result.nombre}</p>
+
+            {cupon && (
+              <div className={styles.cuponCaja}>
+                <span className={styles.cuponEtiqueta}><T>Tu código</T></span>
+                <div className={styles.cuponCodigoFila}>
+                  <code className={styles.cuponCodigo}>{cupon.code}</code>
+                  <button
+                    type="button"
+                    className={styles.cuponCopiar}
+                    onClick={copiarCodigo}
+                    aria-label="Copiar código"
+                  >
+                    {copiado ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                  </button>
+                </div>
+                <span className={styles.cuponCaduca}>
+                  <T>Válido hasta</T> {cupon.expiraEn}
+                </span>
+                <Link to="/cuenta/cupones" className={styles.cuponEnlace}>
+                  <T>Ver mis cupones</T>
+                </Link>
+              </div>
+            )}
+
+            {result.tipo === 'manual' && (
+              <p className={styles.resultNota}>
+                <T>Nos pondremos en contacto contigo para entregártelo.</T>
+              </p>
+            )}
+
             <button className={styles.shareBtn} onClick={handleShare}>
               <T>Compartir Resultado 🎉</T>
             </button>
             <Link to="/minijuegos" className={styles.secondaryBtn}><T>Ver otros juegos</T></Link>
-          </div>
+          </motion.div>
         ) : (
           <>
             {/* Giro heredado de la semana pasada: se avisa para que no parezca
@@ -348,7 +434,7 @@ const RuletaPage = () => {
             onError={() => setFalloImagenKapi(true)}
           />
         )}
-        {/* Respaldo: solo si la imagen no cargo. */}
+        {/* Respaldo: solo si la imagen no cargó. */}
         {falloImagenKapi && (
           <div className={styles.kapiEmoji}>
             {spinning ? '🤩' : (result ? '🥳' : '🐶')}

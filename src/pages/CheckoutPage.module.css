@@ -633,6 +633,117 @@
   color: #d97706;
 }
 
+/* ── Cupón ────────────────────────────────────────────────────────────────
+   Comparte la caja del resumen con el aviso de monedas, así que usa la misma
+   escala. El código va en monoespaciada: es lo que la gente copia y pega. */
+
+.cuponBloque {
+  margin: 0.75rem 0;
+}
+
+.cuponFila {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cuponInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text, #0f172a);
+  font-family: inherit;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.cuponInput::placeholder {
+  text-transform: none;
+  color: var(--color-text-muted, #64748b);
+}
+
+.cuponInput:focus {
+  outline: none;
+  border-color: var(--primary-color, #6d28d9);
+  box-shadow: 0 0 0 3px var(--primary-light, rgba(109, 40, 217, 0.08));
+}
+
+.cuponBtn {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0.55rem 1.15rem;
+  border: 1px solid var(--primary-color, #6d28d9);
+  border-radius: 10px;
+  background: var(--primary-color, #6d28d9);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cuponBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cuponAplicado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px dashed var(--primary-color, #6d28d9);
+  border-radius: 10px;
+  background: var(--primary-light, rgba(109, 40, 217, 0.08));
+}
+
+.cuponAplicadoTexto {
+  font-size: 0.88rem;
+  color: var(--color-text, #0f172a);
+}
+
+.cuponAplicadoTexto strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.06em;
+}
+
+.cuponQuitar {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-text-muted, #64748b);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.cuponError,
+.cuponAviso {
+  margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.cuponError {
+  color: #b91c1c;
+}
+
+.cuponAviso {
+  color: var(--color-text-muted, #64748b);
+}
+
+[data-theme='dark'] .cuponError {
+  color: #fca5a5;
+}
+
 /* Bloque informativo internacional (antes borde dashed #cbd5e1 y textos #0f172a/#64748b inline). */
 .intlPriceInfo {
   border-top: 1px dashed #cbd5e1;
