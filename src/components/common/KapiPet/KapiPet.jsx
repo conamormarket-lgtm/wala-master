@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { showFlyingCoins } from '../../../utils/animations';
@@ -228,10 +229,24 @@ const KapiPet = () => {
         </div>
       )}
 
-      {isOpen && (
-        <div className={styles.overlay} onClick={() => setIsOpen(false)} role="presentation">
-          <div
+      {/* Mismo AnimatePresence y los mismos valores que los modales de la Zona
+          Arcade, para que las cinco ventanas de la app entren y salgan igual. */}
+      <AnimatePresence>
+        {isOpen && (
+        <motion.div
+          className={styles.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setIsOpen(false)}
+          role="presentation"
+        >
+          <motion.div
             className={styles.modal}
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
             onClick={e => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -323,9 +338,10 @@ const KapiPet = () => {
                 </button>
               )}
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
