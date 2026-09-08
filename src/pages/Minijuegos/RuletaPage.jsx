@@ -51,15 +51,15 @@ const RuletaPage = () => {
   const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState('');
 
+  // Aquí NO se pinta a Kapi: el componente KapiPet se monta en App.jsx y sale
+  // en todas las páginas. Cuando esta pantalla ponía la suya, se veían dos.
+
   const [rotacion, setRotacion] = useState(0);
   const [duracionGiro, setDuracionGiro] = useState(0);
   // El temporizador del giro se guarda para poder cancelarlo si el usuario se va
   // de la pantalla a mitad de la animación (antes dejaba un setState huérfano).
   const temporizador = useRef(null);
 
-  // El emoji es el respaldo de la imagen de Kapi; solo debe salir si la imagen
-  // no carga. Antes se pintaban los dos a la vez (capibara + perrito).
-  const [falloImagenKapi, setFalloImagenKapi] = useState(false);
   // La ayuda se abre sola la primera visita y luego se recuerda cerrada.
   const [ayudaAbierta, setAyudaAbierta] = useState(() => {
     try { return localStorage.getItem('wala_ruleta_ayuda_vista') !== '1'; }
@@ -422,23 +422,6 @@ const RuletaPage = () => {
               </T>
             </button>
           </>
-        )}
-      </div>
-
-      {/* Kapi Mascot Animation Container */}
-      <div className={`${styles.kapiMascot} ${spinning ? styles.kapiCheering : ''} ${result ? styles.kapiCelebrating : ''}`}>
-        {!falloImagenKapi && (
-          <img
-            src="/assets/kapi/kapi-happy.png"
-            alt="Kapi"
-            onError={() => setFalloImagenKapi(true)}
-          />
-        )}
-        {/* Respaldo: solo si la imagen no cargó. */}
-        {falloImagenKapi && (
-          <div className={styles.kapiEmoji}>
-            {spinning ? '🤩' : (result ? '🥳' : '🐶')}
-          </div>
         )}
       </div>
 

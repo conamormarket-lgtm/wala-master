@@ -256,10 +256,13 @@ function normalizarConfig(raw) {
 function colorDeGajo(premio, indice, total, colores) {
   if (premio && premio.color) return premio.color;
   const paleta = Array.isArray(colores) && colores.length > 0 ? colores : PRESETS_TEMA.aurora.colores;
-  // Con un número de gajos que no es múltiplo de la paleta, el último gajo
-  // toca al primero con el mismo color. Se desplaza el índice para evitarlo.
+  // El primer y el último gajo son vecinos en la rueda. Chocan solo cuando al
+  // último le toca el color 0, es decir cuando (total - 1) es múltiplo de la
+  // paleta; entonces se le corre uno. La condición de antes era `total % n !== 0`,
+  // que se disparaba casi siempre: con 2 gajos y 4 colores saltaba del color 1 al
+  // 2 sin necesidad, y los dos gajos salían del mismo violeta oscuro.
   const n = paleta.length;
-  if (total % n !== 0 && indice === total - 1 && total > 1) {
+  if (total > 1 && indice === total - 1 && (total - 1) % n === 0) {
     return paleta[(indice + 1) % n];
   }
   return paleta[indice % n];

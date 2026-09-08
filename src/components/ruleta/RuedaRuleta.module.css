@@ -8,7 +8,9 @@
 
 .contenedor {
   position: relative;
-  width: min(340px, 84vw);
+  /* Crece con la ventana en vez de quedarse en un tamaño fijo: en escritorio se
+     veía un disco pequeño perdido en el centro de una página muy ancha. */
+  width: clamp(280px, min(84vw, 52vh), 480px);
   aspect-ratio: 1;
   display: flex;
   align-items: center;

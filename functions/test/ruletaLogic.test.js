@@ -248,6 +248,17 @@ function run() {
     assert.notStrictEqual(ultimo, r.colorDeGajo(null, 3, 5, paleta));
   });
 
+  check("colorDeGajo no desplaza cuando no hay choque", () => {
+    // Con 2 gajos y 4 colores no hay colisión posible, así que deben salir los
+    // dos primeros colores de la paleta. La regla anterior se saltaba el color 1
+    // y pintaba los dos gajos con violetas casi idénticos.
+    const paleta = ["#a", "#b", "#c", "#d"];
+    assert.strictEqual(r.colorDeGajo(null, 0, 2, paleta), "#a");
+    assert.strictEqual(r.colorDeGajo(null, 1, 2, paleta), "#b");
+    // 7 gajos: el último cae en el color 2, que no toca al primero. Sin cambios.
+    assert.strictEqual(r.colorDeGajo(null, 6, 7, paleta), "#c");
+  });
+
   check("colorDeGajo aguanta una paleta vacía", () => {
     assert.ok(r.colorDeGajo(null, 0, 3, []));
     assert.ok(r.colorDeGajo(null, 0, 3, null));

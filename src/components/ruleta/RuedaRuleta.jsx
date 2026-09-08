@@ -57,6 +57,18 @@ const recortar = (texto, max) => {
   return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
 };
 
+// Texto completo del premio, para el <title> del gajo: el navegador lo enseña al
+// dejar el ratón encima, que es la única forma de leer entero un nombre que en
+// el gajo sale recortado. Va en <title> y no en un tooltip propio a posta: la
+// rueda gira, y un tooltip anclado a un gajo tendría que seguir la rotación.
+// Además el lector de pantalla lo lee.
+const descripcionCompleta = (premio) => {
+  const nombre = String(premio?.nombre || premio?.etiqueta || '').trim();
+  const texto = String(premio?.texto || '').trim();
+  if (texto && texto !== nombre) return `${nombre} · ${texto}`;
+  return nombre;
+};
+
 const RuedaRuleta = ({
   premios = [],
   colores,
@@ -72,7 +84,11 @@ const RuedaRuleta = ({
 
   // Con muchos gajos el texto tiene que encoger o se pisa con el de al lado.
   const tamTexto = total <= 6 ? 8 : total <= 9 ? 6.8 : total <= 12 ? 5.8 : 5;
-  const maxCaracteres = total <= 6 ? 16 : total <= 9 ? 13 : 10;
+  // Cuántas letras caben. Con dos o tres premios el gajo es enorme y recortar a
+  // 16 dejaba nombres como "Inténtalo de nu…" sin motivo; con muchos, en cambio,
+  // hay que apretar o se pisan entre ellos. El resto lo cuenta el <title> del
+  // gajo, que enseña el nombre completo al pasar el ratón.
+  const maxCaracteres = total <= 3 ? 22 : total <= 6 ? 16 : total <= 9 ? 13 : 10;
   const hayIconos = premios.some((p) => p.icono);
 
   return (
@@ -108,9 +124,14 @@ const RuedaRuleta = ({
         {/* Un solo premio: el `path` de arco degenera (el punto inicial y el
             final coinciden), así que el gajo se pinta como círculo entero. */}
         {total === 1 && (
-          <circle cx={CENTRO} cy={CENTRO} r={RADIO} fill={colorDeGajo(premios[0], 0, 1, colores)} />
+          <circle cx={CENTRO} cy={CENTRO} r={RADIO} fill={colorDeGajo(premios[0], 0, 1, colores)}>
+            <title>{descripcionCompleta(premios[0])}</title>
+          </circle>
         )}
 
+        {/* El <title> va en el gajo entero, no solo en la etiqueta: así el nombre
+            completo sale dejando el ratón en cualquier punto del sector, y no
+            hay que apuntar a un texto de seis píxeles de alto. */}
         {total > 1 && premios.map((premio, i) => (
           <path
             key={premio.id || i}
@@ -118,7 +139,9 @@ const RuedaRuleta = ({
             fill={colorDeGajo(premio, i, total, colores)}
             stroke={colorAro}
             strokeWidth="0.6"
-          />
+          >
+            <title>{descripcionCompleta(premio)}</title>
+          </path>
         ))}
 
         {/* Textos: se rota el grupo hasta el centro del gajo y la etiqueta se
@@ -141,6 +164,10 @@ const RuedaRuleta = ({
               key={`t-${premio.id || i}`}
               transform={`rotate(${centroGajo} ${CENTRO} ${CENTRO})`}
             >
+              {/* La etiqueta se pinta encima del gajo y se traga el ratón, así
+                  que necesita su propio <title> o al pasar por encima del texto
+                  —justo donde uno apunta— no saldría nada. */}
+              <title>{descripcionCompleta(premio)}</title>
               {premio.icono && (
                 <text
                   x={CENTRO}

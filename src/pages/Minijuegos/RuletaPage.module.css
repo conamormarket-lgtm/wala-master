@@ -12,8 +12,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Ancla para la mascota, que se posiciona en la esquina de la pantalla. */
-  position: relative;
+  /* La rueda se quedaba arriba del todo con un hueco muerto debajo de media
+     pantalla. Se reserva el alto que deja el shell (menos cabecera, sus propios
+     márgenes y la barra de "volver") y se reparte el sobrante arriba y abajo. */
+  justify-content: center;
+  min-height: calc(100vh - var(--header-height, 72px) - 7rem);
 }
 
 /* Estados de espera ("cargando", "inicia sesión"): antes eran texto suelto
@@ -236,10 +239,6 @@
 }
 
 /* =========================================================================
-   LA RUEDA
-   ========================================================================= */
-
-/* =========================================================================
    RUEDA
    -------------------------------------------------------------------------
    La rueda vive en components/ruleta/RuedaRuleta (SVG) y se trae sus propios
@@ -248,9 +247,10 @@
    ========================================================================= */
 
 .esqueletoRueda {
-  width: min(340px, 84vw);
+  /* Mismo tamano que .contenedor de RuedaRuleta: si no coinciden, la pagina da
+     un salto al cambiar el hueco por el disco. */
+  width: clamp(280px, min(84vw, 52vh), 480px);
   aspect-ratio: 1;
-  margin-top: 1.5rem;
   border-radius: 50%;
   background: var(--color-hover);
   border: 1px solid var(--color-border);
@@ -488,72 +488,12 @@
 }
 
 /* =========================================================================
-   MASCOTA
-   ========================================================================= */
-
-.kapiMascot {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  transition: transform 0.3s;
-}
-
-.kapiEmoji {
-  font-size: 4rem;
-}
-
-.kapiCheering {
-  animation: bounce 0.5s infinite alternate;
-}
-
-.kapiCelebrating {
-  animation: jumpSpin 1s ease;
-}
-
-/* La imagen no tenía tope propio: dentro del cuadro de 100px se comportaba,
-   pero en móvil, donde el cuadro pasa a medida automática, se pintaba a tamaño
-   natural y Kapi ocupaba media pantalla. */
-.kapiMascot img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-/* En pantallas estrechas la mascota se comía la esquina del botón. */
-@media (max-width: 560px) {
-  .kapiMascot {
-    position: static;
-    width: 110px;
-    height: 110px;
-    margin: 1.5rem auto 0;
-  }
-}
-
-@keyframes bounce {
-  from { transform: translateY(0); }
-  to { transform: translateY(-20px); }
-}
-
-@keyframes jumpSpin {
-  0% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-50px) rotate(180deg); }
-  100% { transform: translateY(0) rotate(360deg); }
-}
-
-/* =========================================================================
    ROBUSTEZ
    ========================================================================= */
 
 @media (prefers-reduced-motion: reduce) {
   .spinBtn,
-  .shareBtn,
-  .kapiMascot {
+  .shareBtn {
     transition: none;
   }
 
@@ -565,8 +505,6 @@
     animation: none;
   }
 
-  .kapiCheering,
-  .kapiCelebrating,
   .esqueletoRueda {
     animation: none;
   }
