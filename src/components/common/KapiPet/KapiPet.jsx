@@ -27,12 +27,19 @@ const KapiPet = () => {
   const [evidenceUrl, setEvidenceUrl] = useState('');
   const [submittingEv, setSubmittingEv] = useState(false);
 
-  // Placeholders para las imágenes que luego proveerá el cliente
+  // OJO: los dos archivos de ánimo están al revés de lo que sugiere su nombre.
+  // 'kapi-hungry.png' es el que LLORA a lágrima viva y 'kapi_sad.png' el de la
+  // carita alicaída. Como salían tal cual, un solo día sin comer —con la
+  // felicidad todavía en 100— mostraba a Kapi llorando, y llevar días olvidado
+  // mostraba la cara más suave: justo al revés de lo que toca.
+  //
+  // Se corrige aquí y no renombrando los archivos porque son assets públicos:
+  // sus rutas pueden estar guardadas en configuración o en notificaciones.
   // eslint-disable-next-line no-unused-vars
   const IMAGES = {
     happy: process.env.PUBLIC_URL + '/assets/kapi/kapi-happy.png',
-    sad: process.env.PUBLIC_URL + '/assets/kapi/kapi_sad.png',
-    hungry: process.env.PUBLIC_URL + '/assets/kapi/kapi-hungry.png'
+    hungry: process.env.PUBLIC_URL + '/assets/kapi/kapi_sad.png',
+    sad: process.env.PUBLIC_URL + '/assets/kapi/kapi-hungry.png'
   };
 
   useEffect(() => {
