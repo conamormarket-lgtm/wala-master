@@ -156,6 +156,7 @@ const AdminReferidos = lazy(() => import('./pages/admin/AdminReferidos'));
 const AdminProductoFormV2 = lazy(() => import('./pages/Tienda/admin/AdminProductoFormV2'));
 const AdminCategorias = lazy(() => import('./pages/admin/AdminCategorias'));
 const AdminColecciones = lazy(() => import('./pages/admin/AdminColecciones'));
+const AdminCatalogAttributes = lazy(() => import('./pages/admin/AdminCatalogAttributes'));
 const AdminNichos = lazy(() => import('./pages/admin/AdminNichos'));
 const AdminVendors = lazy(() => import('./pages/admin/AdminVendors'));
 const AdminRecompensas = lazy(() => import('./pages/admin/AdminRecompensas'));
@@ -391,6 +392,7 @@ function App() {
                                       <Route path="productos/:id" element={<AdminProductoFormV2 />} />
                                       <Route path="categorias" element={<AdminCategorias />} />
                                       <Route path="colecciones" element={<AdminColecciones />} />
+                                      <Route path="atributos-catalogo" element={<AdminCatalogAttributes />} />
                                       <Route path="nichos" element={<AdminNichos />} />
                                       <Route path="vendedores" element={<AdminVendors />} />
                                       <Route path="recompensas" element={<AdminRecompensas />} />

@@ -1323,6 +1323,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             <SectionBackground config={s} />
             <SidebarCatalogLayout
               productsData={catalogProducts}
+              facetProducts={productsData || catalogProducts}
+              scopeFacetsToProducts
               productsLoading={catalogLoadingResolved}
               productsError={catalogErrorResolved}
               emptyMessage={emptyMessage}

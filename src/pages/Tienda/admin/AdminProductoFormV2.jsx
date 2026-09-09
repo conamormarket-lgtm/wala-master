@@ -10,6 +10,7 @@ import { getCategories, createCategory } from '../../../services/categories';
 import { getCollections, createCollection } from '../../../services/collections';
 import { getTags, createTag } from '../../../services/tags';
 import { getCharacters, createCharacter } from '../../../services/characters';
+import { getProductTypes, createProductType } from '../../../services/productTypes';
 import { uploadFile, deleteFile } from '../../../services/firebase/storage';
 import CreatableSelect from 'react-select/creatable';
 import { ImagePlus, Save, ArrowLeft, Loader2, Shirt, Image as ImageIcon, Trash2, Camera, Star, X, Edit2 } from 'lucide-react';
@@ -121,6 +122,7 @@ const AdminProductoFormV2 = () => {
     nicheId: '',
     vendorId: '',
     fulfillmentType: '',
+    productType: '',
     category: '',
     collections: [],
     defaultVariantId: '', // ID de la variante principal
@@ -173,6 +175,7 @@ const AdminProductoFormV2 = () => {
   const { data: collections } = useQuery({ queryKey: ['admin-collections'], queryFn: async () => (await getCollections()).data });
   const { data: tags } = useQuery({ queryKey: ['admin-tags'], queryFn: async () => (await getTags()).data });
   const { data: characters } = useQuery({ queryKey: ['admin-characters'], queryFn: async () => (await getCharacters()).data });
+  const { data: productTypes } = useQuery({ queryKey: ['admin-product-types'], queryFn: async () => (await getProductTypes()).data });
   const { data: nicheOptions } = useQuery({ queryKey: ['admin-niches'], queryFn: async () => (await getNiches()).data });
   const { data: vendorOptions } = useQuery({ queryKey: ['admin-vendors'], queryFn: async () => (await getVendors()).data });
 
@@ -190,12 +193,12 @@ const AdminProductoFormV2 = () => {
 
   const tagsForBrand = useMemo(() => (tags || []).filter((tag) => {
     const tagBrandIds = Array.isArray(tag.brandIds) ? tag.brandIds : [];
-    return !form.brandId || tagBrandIds.includes(form.brandId);
+    return !form.brandId || tagBrandIds.length === 0 || tagBrandIds.includes(form.brandId);
   }), [tags, form.brandId]);
 
   const charactersForBrand = useMemo(() => (characters || []).filter((character) => {
     const characterBrandIds = Array.isArray(character.brandIds) ? character.brandIds : [];
-    return !form.brandId || characterBrandIds.includes(form.brandId);
+    return !form.brandId || characterBrandIds.length === 0 || characterBrandIds.includes(form.brandId);
   }), [characters, form.brandId]);
 
   // Si editamos un producto existente en DB
@@ -253,6 +256,7 @@ const AdminProductoFormV2 = () => {
         nicheId: productData.nicheId || '',
         vendorId: productData.vendorId || '',
         fulfillmentType: productData.fulfillmentType || '',
+        productType: productData.productType || '',
         category: (() => {
           const raw = Array.isArray(productData.categories)
             ? (productData.categories[0]?.id || productData.categories[0] || '')
@@ -749,6 +753,7 @@ const AdminProductoFormV2 = () => {
         nicheId: form.nicheId || undefined,
         vendorId: form.vendorId || undefined,
         fulfillmentType: form.fulfillmentType || undefined,
+        productType: form.productType || '',
         categories: form.category ? [form.category] : [],
         collections: Array.isArray(form.collections) ? form.collections : [],
         mainImage: currentMainImage,
@@ -874,11 +879,11 @@ const AdminProductoFormV2 = () => {
 
       <form className={styles.contentGrid} onSubmit={handleSubmit}>
         
-        {/* Type Selector (Individual vs Combo) */}
+        {/* Formato de venta (distinto de la taxonomía productType del filtro) */}
         <div className={styles.card} style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>📦 Tipo de Producto</h2>
+              <h2 className={styles.cardTitle} style={{ margin: 0, padding: 0, borderBottom: 'none' }}>📦 Formato de venta</h2>
               <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem', marginBottom: 0 }}>¿Qué vas a vender?</p>
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
@@ -1077,6 +1082,29 @@ const AdminProductoFormV2 = () => {
             </div>
             
             <div className={styles.fieldRow}>
+              <div className={styles.field}>
+                <label className={styles.label}>Tipo de producto (filtro del catálogo)</label>
+                <CreatableSelect
+                  isClearable
+                  placeholder="Seleccionar o crear tipo..."
+                  onChange={(val) => setForm(f => ({ ...f, productType: val ? val.value : '' }))}
+                  onCreateOption={async (inputValue) => {
+                    const res = await createProductType({ name: inputValue.trim() });
+                    if (!res?.id) return;
+                    queryClient.invalidateQueries({ queryKey: ['admin-product-types'] });
+                    queryClient.invalidateQueries({ queryKey: ['productTypes'] });
+                    setForm(f => ({ ...f, productType: res.id }));
+                  }}
+                  options={(productTypes || []).map(type => ({ label: type.name, value: type.id }))}
+                  value={form.productType
+                    ? (() => {
+                        const type = (productTypes || []).find(item => item.id === form.productType);
+                        return { label: type?.name || form.productType, value: form.productType };
+                      })()
+                    : null}
+                />
+                <p className={styles.helpText}>Este valor alimenta el filtro “Tipo de producto” en la tienda.</p>
+              </div>
               <div className={styles.field}>
                 <label className={styles.label}>Personajes</label>
                 <CreatableSelect

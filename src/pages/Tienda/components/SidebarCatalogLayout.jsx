@@ -17,6 +17,10 @@ import { T } from '../../../i18n/useTranslatedText';
 
 const SidebarCatalogLayout = ({
   productsData,
+  // Fuente completa usada únicamente para construir las facetas. Permite que
+  // una grilla paginada muestre filtros de todo el catálogo, no solo de la
+  // primera página que ya llegó al navegador.
+  facetProducts,
   productsLoading,
   productsError,
   emptyMessage,
@@ -239,7 +243,7 @@ const SidebarCatalogLayout = ({
     const types = new Set();
     const brandIds = new Set();
     if (shouldScopeFacets) {
-      const source = brandId ? (brandProducts || []) : (productsData || []);
+      const source = brandId ? (brandProducts || []) : (facetProducts || productsData || []);
       source.forEach((p) => {
         // Categorías: array categories[] + fallback legacy (categoryId/category),
         // exactamente como el filtro de cliente de abajo y el nav.
@@ -258,7 +262,7 @@ const SidebarCatalogLayout = ({
     }
     return { cats, cols, tgs, chars, types, brandIds };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brandId, brandProducts, productsData, shouldScopeFacets]);
+  }, [brandId, brandProducts, facetProducts, productsData, shouldScopeFacets]);
 
   // Listas EFECTIVAS que consume el render. Con brandId: acotadas a la marca.
   // Sin brandId: las globales de hoy (categories=prop; resto de los servicios).
