@@ -8,12 +8,17 @@ import EditableSection from '../components/admin/EditableSection';
 import { getCategories } from '../services/products';
 import { getBrand } from '../services/brands';
 import { FULFILLMENT_TYPES } from '../constants/marketplace';
-// La MISMA tarjeta que la tienda (ProductGrid). El buscador usaba la anterior,
-// ProductCard, y por eso sus resultados salían "a medias" al lado del catálogo:
-// sin los distintivos de NUEVO ni de OFERTA, con otra caja y otro alto. Dos
-// componentes para lo mismo se separan solos con el tiempo; el catálogo es el
-// que se mantiene, así que manda ese.
-import PremiumProductCard from './Tienda/components/PremiumProductCard/PremiumProductCard';
+// Los resultados se pintan con el MISMO catálogo que la tienda: su barra de
+// filtros (categorías, temporadas, colecciones, precio, marcas, tipo, etiquetas
+// y personajes), su rejilla y sus tarjetas. No se monta una segunda maquinaria
+// de filtros para el buscador: cada filtro nuevo habría que hacerlo dos veces y
+// la segunda se olvidaría — ya pasó con la tarjeta de producto, que se quedó
+// atrás aquí mientras la tienda seguía adelante.
+//
+// Lo propio del buscador vive ARRIBA (el término, el contador, los filtros de
+// cumplimiento), que es lo que distingue "estoy buscando" de "estoy mirando el
+// catálogo".
+import SidebarCatalogLayout from './Tienda/components/SidebarCatalogLayout';
 import { Search, ArrowLeft } from 'lucide-react';
 import styles from './SearchPage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -190,6 +195,54 @@ const SearchPage = () => {
   const limpiarFiltros = () => setFacets({});
   const claseChip = (activo) => `${styles.chip} ${activo ? styles.chipActivo : ''}`;
 
+  // Filtros PROPIOS del buscador, que no son taxonomía del catálogo: cómo se
+  // hace el producto (personalizado o de stock) y el nicho. Se entregan a la
+  // barra de filtros del catálogo para que todo lo que filtra viva en el mismo
+  // sitio. Son <button aria-pressed>, no <span onClick>: antes no se podían
+  // enfocar con el teclado ni se anunciaban como controles.
+  const filtrosDeBusqueda = (
+    <div className={styles.grupoBusqueda}>
+      <h3 className={styles.grupoBusquedaTitulo}><T>Tipo de producto</T></h3>
+      <div className={styles.grupoBusquedaChips}>
+        <button
+          type="button"
+          className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
+          aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND}
+          onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
+        >
+          <T>Personalizado</T>
+        </button>
+
+        <button
+          type="button"
+          className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.STOCK)}
+          aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.STOCK}
+          onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.STOCK)}
+        >
+          <T>En stock</T>
+        </button>
+
+        {Object.keys(facetData.nicheId || {}).map((n) => (
+          <button
+            key={n}
+            type="button"
+            className={claseChip(facets.nicheId === n)}
+            aria-pressed={facets.nicheId === n}
+            onClick={() => toggleFacet('nicheId', n)}
+          >
+            {n} <span className={styles.chipCuenta}>({facetData.nicheId[n]})</span>
+          </button>
+        ))}
+      </div>
+
+      {hayFiltros && (
+        <button type="button" className={styles.limpiar} onClick={limpiarFiltros}>
+          <T>Quitar estos filtros</T>
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div className={styles.pagina}>
       {/* Lo editable es la PRESENTACIÓN de la búsqueda (títulos, marcador del
@@ -247,52 +300,15 @@ const SearchPage = () => {
           </button>
         </form>
 
-        {/* Facetas: tipo de cumplimiento (personalizado vs stock) y por nicho.
-            Son <button aria-pressed>, no <span onClick>: antes no se podían
-            enfocar con el teclado ni se anunciaban como controles. */}
-        <div className={styles.filtros}>
-          <span className={styles.filtrosTitulo}><T>Filtros</T></span>
-
-          <button
-            type="button"
-            className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
-            aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND}
-            onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
-          >
-            <T>Personalizado</T>
-          </button>
-
-          <button
-            type="button"
-            className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.STOCK)}
-            aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.STOCK}
-            onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.STOCK)}
-          >
-            <T>En stock</T>
-          </button>
-
-          {Object.keys(facetData.nicheId || {}).map((n) => (
-            <button
-              key={n}
-              type="button"
-              className={claseChip(facets.nicheId === n)}
-              aria-pressed={facets.nicheId === n}
-              onClick={() => toggleFacet('nicheId', n)}
-            >
-              {n} <span className={styles.chipCuenta}>({facetData.nicheId[n]})</span>
-            </button>
-          ))}
-
-          {hayFiltros && (
-            <button type="button" className={styles.limpiar} onClick={limpiarFiltros}>
-              <T>Limpiar filtros</T>
-            </button>
-          )}
-        </div>
       </section>
       </EditableSection>
 
-      {/* ── Barra de resultados ─────────────────────────────────────────── */}
+      {/* ── Barra de resultados ─────────────────────────────────────────
+          El filtrado por taxonomía lo lleva el catálogo de abajo. Aquí quedan
+          las dos cosas que son de la BÚSQUEDA y no del catálogo: cuántos hay y
+          en qué orden. El orden se queda aquí porque el catálogo de la tienda
+          no tiene: quitarlo de esta pantalla habría sido perder algo que ya
+          funcionaba. */}
       <div className={styles.barra}>
         <span className={styles.conteo}>
           {loading && items.length === 0 ? (
@@ -316,7 +332,7 @@ const SearchPage = () => {
         </label>
       </div>
 
-      {/* ── Resultados ──────────────────────────────────────────────────── */}
+      {/* ── Resultados: el catálogo de la tienda, con sus filtros ───────── */}
       {loading && items.length === 0 ? (
         <p className={styles.cargando}><T>Buscando…</T></p>
       ) : visible.length === 0 ? (
@@ -329,25 +345,14 @@ const SearchPage = () => {
           </p>
         </div>
       ) : (
-        <div className={styles.rejilla}>
-          {visible.map((p, index) => (
-            <PremiumProductCard
-              key={p.id}
-              product={p}
-              categories={categories}
-              isAboveFold={index < 4}
-              currentBrandId={brandFilter || null}
-            />
-          ))}
-        </div>
-      )}
-
-      {hasMore && (
-        <div className={styles.masEnvoltorio}>
-          <button type="button" className={styles.botonMas} disabled={loading} onClick={loadMore}>
-            {loading ? <T>Cargando…</T> : <T>Cargar más</T>}
-          </button>
-        </div>
+        <SidebarCatalogLayout
+          productsData={visible}
+          categories={categories}
+          brandId={brandFilter || null}
+          emptyMessage={txt.vacioConFiltros}
+          gruposExtra={filtrosDeBusqueda}
+          paginationProps={hasMore ? { hasMore, onLoadMore: loadMore, isFetchingMore: loading } : {}}
+        />
       )}
 
       <Link to="/" className={styles.volver}>

@@ -61,6 +61,14 @@ const SidebarCatalogLayout = ({
   // NO esta controlado por el padre (sin categories_nav): ahi el padre ya
   // maneja su propia categoria (navCategoryId), esto no interfiere.
   initialCategory,
+  // ── Grupos de filtro propios de quien usa el catálogo ──────────────────
+  // Se pintan ARRIBA del todo, antes de Categorías. Existe para que el
+  // buscador pueda añadir sus filtros (personalizado / en stock, que no son
+  // taxonomía del catálogo) SIN montar una segunda barra de filtros en otro
+  // sitio: dos sitios donde filtrar es peor que uno, aunque cada uno tenga
+  // menos cosas. Quien lo pasa se encarga de filtrar sus productos antes de
+  // entregarlos en `productsData`; aquí solo se pintan los controles.
+  gruposExtra = null,
 }) => {
   const { t } = useLanguage();
   const isCategoryControlled = controlledCategory !== undefined && typeof onCategoryChange === 'function';
@@ -417,6 +425,8 @@ const SidebarCatalogLayout = ({
               </button>
             </div>
           )}
+
+          {gruposExtra}
 
           <GrupoSidebar
             id="categorias"

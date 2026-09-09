@@ -159,25 +159,30 @@
   outline-offset: 3px;
 }
 
-/* --- Filtros ------------------------------------------------------------- */
+/* =========================================================================
+   FILTROS PROPIOS DEL BUSCADOR
+   -------------------------------------------------------------------------
+   Viven DENTRO de la barra de filtros del catálogo (hueco `gruposExtra`), no
+   en una segunda barra aparte: dos sitios donde filtrar es peor que uno.
+   ========================================================================= */
 
-.filtros {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.9rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--color-border);
+.grupoBusqueda {
+  padding-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.filtrosTitulo {
-  margin-right: 0.25rem;
-  font-size: 0.78rem;
+.grupoBusquedaTitulo {
+  margin: 0 0 0.65rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+.grupoBusquedaChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 /* Antes eran <span> con onClick: no se podían enfocar con el teclado ni se
@@ -223,8 +228,8 @@
 }
 
 .limpiar {
-  margin-left: auto;
-  padding: 0.4rem 0.6rem;
+  margin-top: 0.6rem;
+  padding: 0.4rem 0;
   border: none;
   background: none;
   color: var(--primary-color);
@@ -294,27 +299,10 @@
 /* =========================================================================
    RESULTADOS
    -------------------------------------------------------------------------
-   Misma receta que la rejilla del catálogo (ProductGrid), un punto más densa:
-   quien busca compara varios resultados a la vez. Antes eran columnas de
-   180px, tan estrechas que el nombre del producto se cortaba a dos líneas.
+   La rejilla, las tarjetas y el "cargar más" los pone el catálogo de la tienda
+   (SidebarCatalogLayout). Aquí solo quedan los dos estados que son de la
+   búsqueda: mientras busca y cuando no hay nada.
    ========================================================================= */
-
-.rejilla {
-  display: grid;
-  /* Mismos anchos y huecos que la rejilla del catálogo (ProductGrid): es la
-     misma tarjeta y está pensada para esta caja. Antes eran columnas de 180px,
-     tan estrechas que el nombre del producto se cortaba. */
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  column-gap: 1.25rem;
-  row-gap: 2rem;
-}
-
-@media (max-width: 992px) {
-  .rejilla {
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1.25rem;
-  }
-}
 
 .vacio {
   padding: clamp(2rem, 6vw, 3.5rem) 1.25rem;
@@ -341,42 +329,6 @@
   padding: clamp(2rem, 6vw, 3.5rem) 1.25rem;
   text-align: center;
   color: var(--color-text-muted);
-}
-
-/* --- Cargar más ---------------------------------------------------------- */
-
-.masEnvoltorio {
-  display: flex;
-  justify-content: center;
-  margin-top: 2rem;
-}
-
-.botonMas {
-  min-height: var(--touch-target, 44px);
-  padding: 0.7rem 1.6rem;
-  border-radius: var(--radio-pequeno, 10px);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--primary-color);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.botonMas:hover:not(:disabled) {
-  background: var(--color-hover);
-  border-color: var(--primary-color);
-}
-
-.botonMas:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.botonMas:focus-visible {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 3px;
 }
 
 /* --- Volver -------------------------------------------------------------- */
@@ -409,16 +361,6 @@
     width: 100%;
   }
 
-  .rejilla {
-    grid-template-columns: repeat(2, 1fr);
-    column-gap: 12px;
-    row-gap: 1.25rem;
-  }
-
-  .rejilla > * {
-    min-width: 0; /* que la tarjeta pueda encoger dentro de su columna */
-  }
-
   .barra {
     gap: 0.5rem;
   }
@@ -427,11 +369,5 @@
      acababa suelto en una esquina, lejos de lo que limpia. */
   .limpiar {
     margin-left: 0;
-  }
-}
-
-@media (max-width: 380px) {
-  .rejilla {
-    grid-template-columns: 1fr;
   }
 }
