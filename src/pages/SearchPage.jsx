@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { searchCatalog, searchProductsFirestore } from '../services/search';
+import { getDocument } from '../services/firebase/firestore';
+import { useVisualEditor } from './Tienda/contexts/VisualEditorContext';
+import EditableSection from '../components/admin/EditableSection';
 import { getCategories } from '../services/products';
 import { getBrand } from '../services/brands';
 import { FULFILLMENT_TYPES } from '../constants/marketplace';
@@ -16,6 +20,21 @@ import { T } from '../i18n/useTranslatedText';
 // término vacío), el servicio cae solo a la búsqueda en memoria: la página no se
 // entera y sigue funcionando.
 const PAGE_SIZE = 24;
+
+// Textos de la pantalla. Se pueden cambiar desde el Editor Visual (sección
+// "Buscador"), que los guarda en storeConfig/homePage.searchPage. Estos son los
+// de reserva: lo que se ve mientras no haya nada guardado, y lo que vuelve si
+// se borra un campo en el editor. NO se tocan los resultados ni los filtros:
+// eso lo decide el catálogo, no un texto.
+const TEXTOS_BUSCADOR = {
+  titulo: 'Buscar productos',
+  subtitulo: 'Escribe qué buscas y afina con los filtros.',
+  marcador: '¿Qué buscas? (polo, taza, gorro...)',
+  boton: 'Buscar',
+  vacioTitulo: 'Sin resultados',
+  vacioTexto: 'Prueba con otra palabra: una más corta o más general suele encontrar más.',
+  vacioConFiltros: 'Prueba a quitar algún filtro o a buscar otra palabra.',
+};
 
 const priceOf = (p) => (p.salePrice != null ? p.salePrice : p.price) || 0;
 
@@ -48,6 +67,22 @@ const facetCounts = (items, key) => {
 };
 
 const SearchPage = () => {
+  // Textos editables desde el Editor Visual. Mismo patrón que el pop-up de
+  // cuenta: si el editor está abierto manda su borrador (para ver los cambios
+  // al escribirlos) y, si no, lo guardado. Sin nada de eso, los de reserva.
+  const { storeConfigDraft } = useVisualEditor();
+  const { data: storeConfig } = useQuery({
+    queryKey: ['store-config-custom'],
+    queryFn: async () => {
+      const { data, error } = await getDocument('storeConfig', 'homePage');
+      if (error) return null;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const activeConfig = storeConfigDraft || storeConfig || {};
+  const txt = { ...TEXTOS_BUSCADOR, ...(activeConfig.searchPage || {}) };
+
   const [params, setParams] = useSearchParams();
   const term = params.get('q') || '';
   // Filtro OPCIONAL de marca (multimarca): ?brand=<id de tienda_brands>. Lo agrega
@@ -152,15 +187,20 @@ const SearchPage = () => {
 
   return (
     <div className={styles.pagina}>
+      {/* Lo editable es la PRESENTACIÓN de la búsqueda (títulos, marcador del
+          campo, texto del vacío), no los resultados: eso lo decide el catálogo.
+          En modo edición, este bloque se marca y al pulsarlo abre su formulario
+          en el panel. Fuera de modo edición, EditableSection no pinta nada. */}
+      <EditableSection sectionId="searchPage" currentConfig={activeConfig} label="Buscador">
       <header className={styles.cabecera}>
-        <h1 className={styles.titulo}><T>Buscar productos</T></h1>
+        <h1 className={styles.titulo}><T>{txt.titulo}</T></h1>
         {term ? (
           <p className={styles.consulta}>
             <T>Resultados para</T> <strong>«{term}»</strong>
           </p>
         ) : (
           <p className={styles.consulta}>
-            <T>Escribe qué buscas y afina con los filtros.</T>
+            <T>{txt.subtitulo}</T>
           </p>
         )}
 
@@ -193,12 +233,12 @@ const SearchPage = () => {
               className={styles.campo}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="¿Qué buscas? (polo, taza, gorro...)"
+              placeholder={txt.marcador}
               aria-label="Qué buscas"
             />
           </div>
           <button type="submit" className={styles.botonBuscar}>
-            <T>Buscar</T>
+            <T>{txt.boton}</T>
           </button>
         </form>
 
@@ -245,6 +285,7 @@ const SearchPage = () => {
           )}
         </div>
       </section>
+      </EditableSection>
 
       {/* ── Barra de resultados ─────────────────────────────────────────── */}
       <div className={styles.barra}>
@@ -277,11 +318,9 @@ const SearchPage = () => {
         /* El mensaje de antes ("si el catálogo está vacío, conecta Firebase")
            era una nota para quien programa, y la leía el cliente. */
         <div className={styles.vacio}>
-          <p className={styles.vacioTitulo}><T>Sin resultados</T></p>
+          <p className={styles.vacioTitulo}><T>{txt.vacioTitulo}</T></p>
           <p className={styles.vacioTexto}>
-            {hayFiltros
-              ? <T>Prueba a quitar algún filtro o a buscar otra palabra.</T>
-              : <T>Prueba con otra palabra: una más corta o más general suele encontrar más.</T>}
+            <T>{hayFiltros ? txt.vacioConFiltros : txt.vacioTexto}</T>
           </p>
         </div>
       ) : (

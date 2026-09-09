@@ -3707,6 +3707,25 @@ const VisualEditorPanel = () => {
       );
     }
 
+    if (activeSection === 'searchPage') {
+      const draft = storeConfigDraft?.searchPage || {
+        titulo: 'Buscar productos',
+        subtitulo: 'Escribe qué buscas y afina con los filtros.',
+        marcador: '¿Qué buscas? (polo, taza, gorro...)',
+        boton: 'Buscar',
+        vacioTitulo: 'Sin resultados',
+        vacioTexto: 'Prueba con otra palabra: una más corta o más general suele encontrar más.',
+        vacioConFiltros: 'Prueba a quitar algún filtro o a buscar otra palabra.',
+      };
+
+      return (
+        <SearchPageEditor
+          config={draft}
+          onChange={(newConfig) => updateDraft('searchPage', newConfig)}
+        />
+      );
+    }
+
     if (activeSection === 'favoritesPopup') {
       const draft = storeConfigDraft?.favoritesPopup || {
         loggedOutTitle: 'Tus Favoritos',
@@ -4162,6 +4181,46 @@ const HeaderEditor = ({ navLinks, onChange }) => {
 };
 
 // Componente auxiliar para editar el Account Popup
+// Formulario de la sección "Buscador" (/buscar). Solo textos: los resultados y
+// los filtros salen del catálogo, no de la configuración.
+const SearchPageEditor = ({ config, onChange }) => {
+  const updateField = (field, value) => onChange({ ...config, [field]: value });
+  const campo = { width: '100%', padding: '8px', marginBottom: '12px' };
+  const area = { ...campo, minHeight: '56px', fontFamily: 'inherit' };
+
+  return (
+    <div className={styles.headerEditor}>
+      <p style={{ margin: '0 0 14px 0', fontSize: '0.8rem', color: '#64748b', lineHeight: 1.4 }}>
+        Textos de la página de búsqueda. Los resultados y los filtros no se
+        editan aquí: los decide el catálogo.
+      </p>
+
+      <label>Título</label>
+      <input type="text" value={config.titulo || ''} onChange={e => updateField('titulo', e.target.value)} style={campo} />
+
+      <label>Frase de apoyo (cuando aún no se ha buscado nada)</label>
+      <input type="text" value={config.subtitulo || ''} onChange={e => updateField('subtitulo', e.target.value)} style={campo} />
+
+      <label>Texto guía dentro del campo</label>
+      <input type="text" value={config.marcador || ''} onChange={e => updateField('marcador', e.target.value)} style={campo} />
+
+      <label>Texto del botón</label>
+      <input type="text" value={config.boton || ''} onChange={e => updateField('boton', e.target.value)} style={campo} />
+
+      <h4 style={{ margin: '6px 0 10px 0', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>Cuando no hay resultados</h4>
+
+      <label>Título</label>
+      <input type="text" value={config.vacioTitulo || ''} onChange={e => updateField('vacioTitulo', e.target.value)} style={campo} />
+
+      <label>Mensaje</label>
+      <textarea value={config.vacioTexto || ''} onChange={e => updateField('vacioTexto', e.target.value)} style={area} />
+
+      <label>Mensaje si además hay filtros puestos</label>
+      <textarea value={config.vacioConFiltros || ''} onChange={e => updateField('vacioConFiltros', e.target.value)} style={area} />
+    </div>
+  );
+};
+
 const AccountPopupEditor = ({ config, onChange }) => {
   const updateField = (field, value) => {
     onChange({ ...config, [field]: value });
