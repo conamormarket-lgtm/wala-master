@@ -72,6 +72,9 @@ const SidebarCatalogLayout = ({
   // menos cosas. Quien lo pasa se encarga de filtrar sus productos antes de
   // entregarlos en `productsData`; aquí solo se pintan los controles.
   gruposExtra = null,
+  // En resultados de búsqueda las facetas deben salir SOLO de esos resultados,
+  // no de las taxonomías globales de toda la tienda.
+  scopeFacetsToProducts = false,
 }) => {
   const { t } = useLanguage();
   const isCategoryControlled = controlledCategory !== undefined && typeof onCategoryChange === 'function';
@@ -216,24 +219,28 @@ const SidebarCatalogLayout = ({
   //       que el render no cambia salvo por las entradas ocultas.
   // Cuando NO hay `brandId`: se devuelve la lista global TAL CUAL (idéntico a hoy).
   //
-  // Helper genérico: filtra `globalList` dejando solo los docs cuyo id esté en
-  // `presentIds`. Si `brandId` es null/ausente, devuelve la global sin tocar.
-  const filtrarPorMarca = (globalList, presentIds) => {
+  const shouldScopeFacets = Boolean(brandId || scopeFacetsToProducts);
+
+  // Helper genérico: filtra la lista canónica dejando solo valores usados por
+  // los productos del contexto (marca o resultados de búsqueda).
+  const filtrarPorContexto = (globalList, presentIds) => {
     const lista = globalList || [];
-    if (!brandId) return lista; // Retrocompatible: sin marca, lista global completa.
+    if (!shouldScopeFacets) return lista;
     return lista.filter((doc) => presentIds.has(idOf(doc)));
   };
 
   // Conjuntos de ids presentes en los productos de la marca, por taxonomía.
   // Solo se calculan cuando hay brandId (si no, quedan vacíos pero no se usan).
-  const idsPresentesMarca = useMemo(() => {
+  const idsPresentesContexto = useMemo(() => {
     const cats = new Set();
     const cols = new Set();
     const tgs = new Set();
     const chars = new Set();
     const types = new Set();
-    if (brandId) {
-      (brandProducts || []).forEach((p) => {
+    const brandIds = new Set();
+    if (shouldScopeFacets) {
+      const source = brandId ? (brandProducts || []) : (productsData || []);
+      source.forEach((p) => {
         // Categorías: array categories[] + fallback legacy (categoryId/category),
         // exactamente como el filtro de cliente de abajo y el nav.
         [
@@ -246,19 +253,21 @@ const SidebarCatalogLayout = ({
         (Array.isArray(p.characters) ? p.characters : []).forEach((c) => { const v = idOf(c); if (v) chars.add(v); });
         // productType es ESCALAR (products.js:269), no array.
         const pt = idOf(p.productType); if (pt) types.add(pt);
+        const bid = idOf(p.brandId); if (bid) brandIds.add(bid);
       });
     }
-    return { cats, cols, tgs, chars, types };
+    return { cats, cols, tgs, chars, types, brandIds };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brandId, brandProducts]);
+  }, [brandId, brandProducts, productsData, shouldScopeFacets]);
 
   // Listas EFECTIVAS que consume el render. Con brandId: acotadas a la marca.
   // Sin brandId: las globales de hoy (categories=prop; resto de los servicios).
-  const categoriesEffective = filtrarPorMarca(categories, idsPresentesMarca.cats);
-  const collectionsEffective = filtrarPorMarca(collections, idsPresentesMarca.cols);
-  const tagsEffective = filtrarPorMarca(tags, idsPresentesMarca.tgs);
-  const charactersEffective = filtrarPorMarca(characters, idsPresentesMarca.chars);
-  const productTypesEffective = filtrarPorMarca(productTypes, idsPresentesMarca.types);
+  const categoriesEffective = filtrarPorContexto(categories, idsPresentesContexto.cats);
+  const collectionsEffective = filtrarPorContexto(collections, idsPresentesContexto.cols);
+  const tagsEffective = filtrarPorContexto(tags, idsPresentesContexto.tgs);
+  const charactersEffective = filtrarPorContexto(characters, idsPresentesContexto.chars);
+  const productTypesEffective = filtrarPorContexto(productTypes, idsPresentesContexto.types);
+  const brandsEffective = filtrarPorContexto(brands, idsPresentesContexto.brandIds);
 
   // No existe un campo/colección propio de "temporadas" en el modelo de datos.
   // Las temporadas se modelan como colecciones (drops estacionales: Verano, Navidad, etc.),
@@ -546,7 +555,7 @@ const SidebarCatalogLayout = ({
           {/* El filtro "Marcas" NO se muestra dentro de la tienda de UNA marca
               (brandId): ahí la página ya está fijada a esa marca. Solo aparece en
               páginas globales (sin brandId), como hoy. */}
-          {!brandId && (brands || []).length > 0 && (
+          {!brandId && (brandsEffective || []).length > 0 && (
             <GrupoSidebar
               id="marcas"
               titulo={t('cat.marcas', 'Marcas')}
@@ -554,7 +563,7 @@ const SidebarCatalogLayout = ({
             >
               <ul className={styles.brandList}>
                 <li className={activeBrand === null ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveBrand, null)}>{t('cat.todas', 'Todas')}</li>
-                {(brands || []).map(b => (
+                {(brandsEffective || []).map(b => (
                   <li key={b.id} className={activeBrand === b.id ? styles.activeItem : ''} onClick={() => handleFilterClick(setActiveBrand, b.id)}>
                     {/* SIN <T>: nombre propio de marca (ver ProductDetail). */}
                     {b.name}

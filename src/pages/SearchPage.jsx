@@ -185,13 +185,13 @@ const SearchPage = () => {
   }, [items, facets, sort, brandFilter]);
 
   const facetData = useMemo(() => ({
-    nicheId: facetCounts(items, 'nicheId'),
+    fulfillmentType: facetCounts(items, 'fulfillmentType'),
   }), [items]);
 
   // ¿Hay algún filtro puesto? Decide si se ofrece "limpiar" y qué decir cuando
   // la búsqueda no devuelve nada (no es lo mismo no encontrar nada que haberlo
   // escondido tú con un filtro).
-  const hayFiltros = Boolean(facets.fulfillmentType || facets.nicheId);
+  const hayFiltros = Boolean(facets.fulfillmentType);
   const limpiarFiltros = () => setFacets({});
   const claseChip = (activo) => `${styles.chip} ${activo ? styles.chipActivo : ''}`;
 
@@ -200,39 +200,31 @@ const SearchPage = () => {
   // barra de filtros del catálogo para que todo lo que filtra viva en el mismo
   // sitio. Son <button aria-pressed>, no <span onClick>: antes no se podían
   // enfocar con el teclado ni se anunciaban como controles.
-  const filtrosDeBusqueda = (
+  const filtrosDeBusqueda = Object.keys(facetData.fulfillmentType || {}).length > 0 ? (
     <div className={styles.grupoBusqueda}>
-      <h3 className={styles.grupoBusquedaTitulo}><T>Tipo de producto</T></h3>
+      <h3 className={styles.grupoBusquedaTitulo}><T>Modalidad</T></h3>
       <div className={styles.grupoBusquedaChips}>
-        <button
-          type="button"
-          className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
-          aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND}
-          onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
-        >
-          <T>Personalizado</T>
-        </button>
-
-        <button
-          type="button"
-          className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.STOCK)}
-          aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.STOCK}
-          onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.STOCK)}
-        >
-          <T>En stock</T>
-        </button>
-
-        {Object.keys(facetData.nicheId || {}).map((n) => (
+        {facetData.fulfillmentType[FULFILLMENT_TYPES.PRINT_ON_DEMAND] > 0 && (
           <button
-            key={n}
             type="button"
-            className={claseChip(facets.nicheId === n)}
-            aria-pressed={facets.nicheId === n}
-            onClick={() => toggleFacet('nicheId', n)}
+            className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
+            aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND}
+            onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
           >
-            {n} <span className={styles.chipCuenta}>({facetData.nicheId[n]})</span>
+            <T>Personalizado</T> ({facetData.fulfillmentType[FULFILLMENT_TYPES.PRINT_ON_DEMAND]})
           </button>
-        ))}
+        )}
+
+        {facetData.fulfillmentType[FULFILLMENT_TYPES.STOCK] > 0 && (
+          <button
+            type="button"
+            className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.STOCK)}
+            aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.STOCK}
+            onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.STOCK)}
+          >
+            <T>En stock</T> ({facetData.fulfillmentType[FULFILLMENT_TYPES.STOCK]})
+          </button>
+        )}
       </div>
 
       {hayFiltros && (
@@ -241,7 +233,7 @@ const SearchPage = () => {
         </button>
       )}
     </div>
-  );
+  ) : null;
 
   return (
     <div className={styles.pagina}>
@@ -362,6 +354,7 @@ const SearchPage = () => {
         </div>
       ) : (
         <SidebarCatalogLayout
+          key={`${term}:${brandFilter}`}
           productsData={visible}
           categories={categories}
           brandId={brandFilter || null}
@@ -372,6 +365,7 @@ const SearchPage = () => {
              para eso están los dos botones de "Quitar filtros". */
           emptyHomeLink={false}
           gruposExtra={filtrosDeBusqueda}
+          scopeFacetsToProducts
           paginationProps={hasMore ? { hasMore, onLoadMore: loadMore, isFetchingMore: loading } : {}}
         />
       )}
