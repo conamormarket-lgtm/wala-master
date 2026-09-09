@@ -210,14 +210,16 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
     setRecientes([]);
   };
 
+  // Se recalcula en cada render, y `medir()` fuerza uno al redimensionar, así
+  // que al girar el móvil se pone al día solo.
+  const esMovil = typeof window !== 'undefined' && window.innerWidth <= ANCHO_MOVIL;
+
   const escribiendo = texto.trim().length >= 2;
   const hayAlgoQueEnsenar = useMemo(() => (
     escribiendo
       ? sugerencias.productos.length > 0
       : recientes.length > 0
   ), [escribiendo, sugerencias.productos.length, recientes.length]);
-
-  const esMovil = typeof window !== 'undefined' && window.innerWidth <= ANCHO_MOVIL;
 
   return (
     <>
@@ -280,7 +282,10 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
                 className={styles.campo}
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
-                placeholder="¿Qué buscas? (polo, taza, gorro...)"
+                /* En móvil, sin los ejemplos: a 375px la frase entera no
+                   cabe y se cortaba a media palabra ("...taza, gorr"), que se
+                   lee peor que una pregunta corta y completa. */
+                placeholder={esMovil ? '¿Qué buscas?' : '¿Qué buscas? (polo, taza, gorro...)'}
                 aria-label="Qué buscas"
               />
               {texto && (

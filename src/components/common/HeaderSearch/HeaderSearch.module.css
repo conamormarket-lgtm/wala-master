@@ -285,16 +285,47 @@
     left: 8px;
     right: 8px;
     width: auto;
-    max-height: calc(100vh - 84px);
+    padding: 0.85rem;
+    /* dvh y no vh: con el teclado en pantalla, vh sigue midiendo la ventana
+       completa y el panel se metía por debajo del teclado. */
+    max-height: calc(100dvh - 96px);
     overflow-y: auto;
+  }
+
+  /* Fuera el botón "Buscar": al lado del campo se comía 100px de los 359 que
+     hay, y el texto guía quedaba cortado a media frase ("¿Qué buscas? (po").
+     Buscar se hace con la tecla de intro del teclado —que en móvil pone "Ir" o
+     una lupa— y, en cuanto escribes, con la fila de "Ver todos los resultados",
+     que es el objetivo grande de abajo. El botón sigue en el DOM (oculto), así
+     que el formulario se sigue enviando con intro. */
+  .botonIr {
+    display: none;
+  }
+
+  .limpiarCampo {
+    right: 0.6rem;
+  }
+
+  .campo {
+    padding-right: 2.6rem;
   }
 
   .columnas {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 0.25rem;
   }
 
-  .limpiarCampo {
-    right: 5.8rem;
+  /* Los bloques se apilan, así que cada título necesita separarse del anterior
+     para que no parezcan una sola lista larga. */
+  .columna + .columna {
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Es la acción principal en cuanto hay algo escrito: se rellena para que se
+     vea como tal y se pueda pulsar sin apuntar. */
+  .verTodo {
+    background: var(--primary-light);
+    border-color: transparent;
   }
 }
