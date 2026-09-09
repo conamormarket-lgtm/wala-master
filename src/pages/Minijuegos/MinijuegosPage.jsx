@@ -159,6 +159,8 @@ const MinijuegosPage = () => {
     ? forzarRuleta === 'desbloqueada' || forzarRuleta === 'pendiente'
     : elegibilidad.isUnlocked;
   const hasLost = forzarRuleta ? forzarRuleta === 'perdida' : elegibilidad.hasLost;
+  // Quien nunca ha alimentado a Kapi no ha perdido la racha: no la ha empezado.
+  const haEmpezado = forzarRuleta ? forzarRuleta !== 'bloqueada' : elegibilidad.haEmpezado;
   const hasSpun = forzarRuleta ? forzarRuleta === 'girada' : elegibilidad.hasSpun;
   const esPendienteAnterior = forzarRuleta
     ? forzarRuleta === 'pendiente'
@@ -324,7 +326,11 @@ const MinijuegosPage = () => {
             // no es tiempo, son días de racha, y decir "vuelve el lunes" engañaría.
             hasSpun ? (faltaLunes ? `Vuelve el lunes, en ${faltaLunes}` : '')
               : (!isRuletaUnlocked && !hasLost && ruletaDays < 7
-                ? `Te falta${7 - ruletaDays === 1 ? '' : 'n'} ${7 - ruletaDays} ${7 - ruletaDays === 1 ? 'día' : 'días'} de racha`
+                ? (haEmpezado
+                  ? `Te falta${7 - ruletaDays === 1 ? '' : 'n'} ${7 - ruletaDays} ${7 - ruletaDays === 1 ? 'día' : 'días'} de racha`
+                  // Recién llegado: prometerle "te faltan 7 días" a mitad de
+                  // semana seria mentira, porque ya no caben siete.
+                  : 'Alimenta a Kapi cada día para desbloquearla')
                 : '')
           }
           titulo="Ruleta Semanal"

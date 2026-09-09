@@ -37,8 +37,15 @@ export const isSameWeek = (date1, date2) => {
  */
 export const getRuletaEligibility = (userProfile, reglas = CONFIG_POR_DEFECTO.reglas) => {
   if (!userProfile) {
-    return { isUnlocked: false, days: 0, hasLost: false, hasSpun: false, esPendienteAnterior: false };
+    return {
+      isUnlocked: false, days: 0, hasLost: false, hasSpun: false,
+      esPendienteAnterior: false, haEmpezado: false,
+    };
   }
+
+  // ¿Alguna vez le dio de comer a Kapi? Es lo único que separa a quien perdió la
+  // racha de quien todavía no la ha empezado.
+  const haEmpezado = !!userProfile.lastKapiClaimDate;
 
   const currentWeekStart = limaWeekStartStr();
   // Semana de gracia: el giro ganado completando los 7 días sigue disponible
@@ -72,7 +79,7 @@ export const getRuletaEligibility = (userProfile, reglas = CONFIG_POR_DEFECTO.re
   if (data.weekStart !== currentWeekStart) {
     // La semana guardada no es la actual: 0 días esta semana, pero puede quedar
     // pendiente el giro de la semana pasada.
-    return { isUnlocked, days: 0, hasLost: false, hasSpun, esPendienteAnterior };
+    return { isUnlocked, days: 0, hasLost: false, hasSpun, esPendienteAnterior, haEmpezado };
   }
   const currentDayOfWeek = limaDayOfWeek(); // 0 (Domingo) - 6 (Sábado)
 
@@ -84,9 +91,15 @@ export const getRuletaEligibility = (userProfile, reglas = CONFIG_POR_DEFECTO.re
   // Si hoy no ha reclamado, la diferencia puede ser 1, pero aún puede reclamar hoy.
   // Si la diferencia entre el día actual de la semana y los reclamados es >= 2, seguro perdió.
   // En modo campaña no hay racha que perder.
-  const hasLost = reglas?.modoDesbloqueo !== 'siempre' && (adjustedDay > daysCount + 1);
+  //
+  // `haEmpezado` es la clave: quien nunca ha alimentado a Kapi no ha perdido
+  // nada, simplemente acaba de llegar. Sin esto, una cuenta recién creada un
+  // miércoles era recibida con un "Semana perdida ❌", que es cierto en la
+  // aritmética y pésimo como primera impresión.
+  const hasLost = reglas?.modoDesbloqueo !== 'siempre' && haEmpezado
+    && (adjustedDay > daysCount + 1);
 
-  return { isUnlocked, days: daysCount, hasLost, hasSpun, esPendienteAnterior };
+  return { isUnlocked, days: daysCount, hasLost, hasSpun, esPendienteAnterior, haEmpezado };
 };
 
 // --- COLECCIONES ---
