@@ -1,13 +1,19 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import styles from './PoliticasPrivacidad.module.css';
 import { T } from '../i18n/useTranslatedText';
+
+// Fecha del último cambio REAL del texto (ver la nota en PoliticasPrivacidadPage).
+const ULTIMA_ACTUALIZACION = '7 de septiembre de 2026';
 
 const TerminosCondicionesPage = () => {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
+        <p className={styles.eyebrow}><T>Legal</T></p>
         <h1 className={styles.title}><T>Términos y Condiciones</T></h1>
-        <p className={styles.lastUpdated}>Última actualización: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        <p className={styles.lastUpdated}><T>Última actualización</T>: {ULTIMA_ACTUALIZACION}</p>
       </header>
 
       <main className={styles.content}>
@@ -87,6 +93,14 @@ const TerminosCondicionesPage = () => {
           </div>
         </section>
       </main>
+
+      <nav className={styles.pie}>
+        <span><T>¿Buscabas cómo tratamos tus datos?</T></span>
+        <Link to="/politicas-privacidad" className={styles.pieEnlace}>
+          <T>Política de Privacidad</T>
+          <ArrowRight size={16} aria-hidden="true" />
+        </Link>
+      </nav>
     </div>
   );
 };
