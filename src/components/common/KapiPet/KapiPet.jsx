@@ -316,12 +316,16 @@ const KapiPet = () => {
                   alt={`Kapi ${kapiState}`} 
                   className={styles.petImage} 
                 />
-                {/* Misma insignia que las tarjetas del hub, para que el
-                    modal se lea como parte de la misma familia. */}
-                <span className={styles.petBadge}>
-                  {hasClaimedToday
-                    ? <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
-                    : <Badge tone="warning" variant="soft" dot><T>Disponible hoy</T></Badge>}
+              </div>
+
+              {/* Estado y recompensa, en una fila propia debajo del retrato.
+                  Montada sobre el círculo se comía la carita de Kapi. */}
+              <div className={styles.petChips}>
+                {hasClaimedToday
+                  ? <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
+                  : <Badge tone="warning" variant="soft" dot><T>Disponible hoy</T></Badge>}
+                <span className={styles.recompensa}>
+                  <span aria-hidden="true">🪙</span><T>+1 moneda</T>
                 </span>
               </div>
               
@@ -405,7 +409,7 @@ const KapiPet = () => {
                   onClick={handleFeed}
                   disabled={isFeeding}
                 >
-                  {isFeeding ? 'Alimentando...' : '🍖 Alimentar a Kapi (+1 moneda)'}
+                  {isFeeding ? 'Alimentando...' : '🍖 Alimentar a Kapi'}
                 </button>
               )}
             </div>

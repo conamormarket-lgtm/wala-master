@@ -114,7 +114,7 @@
 .petImageWrapper {
   width: 148px;
   height: 148px;
-  margin: 0 auto 1.4rem;
+  margin: 0 auto 0.9rem;
   border-radius: 50%;
   background: var(--primary-light, rgba(109, 40, 217, 0.08));
   border: 4px solid var(--color-surface, #fff);
@@ -126,18 +126,33 @@
   position: relative;
 }
 
-/* La insignia se monta en el borde del círculo, como en los banners del hub. */
-.petBadge {
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
+/* Estado y recompensa en una fila propia, debajo del retrato. Antes la insignia
+   iba montada sobre el borde del círculo y quedaba pegada a la carita. */
+.petChips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
+}
+
+/* Misma píldora de recompensa que las tarjetas del hub. */
+.recompensa {
   display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 2px 8px;
   border-radius: var(--radio-pequeno, 10px);
-  overflow: hidden;
-  background: var(--color-surface, #fff);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+  background: var(--gold-soft, rgba(245, 158, 11, 0.12));
+  color: var(--gold-text, #92400e);
+  font-size: 0.75rem;
+  font-weight: 700;
   white-space: nowrap;
+}
+
+[data-theme='dark'] .recompensa {
+  color: #fcd34d;
 }
 
 .eating {
