@@ -96,11 +96,25 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
     return () => observer.disconnect();
   }, [product?.id, recordImpression]);
 
+  // ¿Hay algo que el cliente TENGA que elegir antes de comprar?
+  // El botón rápido llamaba a addToCart(product, {}, ...) con la variante vacía,
+  // así que metía la línea al carrito SIN color y SIN talla: el pedido salía sin
+  // saber qué despachar. Cuando hay colores, tallas o piezas de combo, el botón
+  // deja de añadir a ciegas y abre la ficha, que es donde se eligen.
+  const necesitaElegir = Boolean(
+    (product?.hasVariants && product?.variants?.length > 0) ||
+    product?.mainSizes?.length > 0 ||
+    (isComboProduct(product) && product?.comboItems?.length > 0)
+  );
+
   const handleAddToCart = useCallback((e) => {
+    // Sin preventDefault el clic sube al <Link> raíz de la tarjeta y navega a la
+    // ficha del producto; no hace falta useNavigate.
+    if (necesitaElegir) return;
     e.preventDefault();
     e.stopPropagation();
     addToCart(product, {}, null, 1);
-  }, [addToCart, product]);
+  }, [addToCart, product, necesitaElegir]);
 
   const isFav = isFavorite(product.id);
   
@@ -255,13 +269,17 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
 
         {/* Quick Add Overlay */}
         <div className={styles.quickAddOverlay}>
-          <button 
+          <button
             className={styles.quickAddBtn}
             onClick={handleAddToCart}
             disabled={!product.inStock}
           >
-            <span className={styles.quickAddIcon}>+</span>
-            <span className={styles.quickAddText}>{t('cta.addToCart', 'Al carrito')}</span>
+            {!necesitaElegir && <span className={styles.quickAddIcon}>+</span>}
+            <span className={styles.quickAddText}>
+              {necesitaElegir
+                ? t('cta.chooseOptions', 'Elegir color y talla')
+                : t('cta.addToCart', 'Al carrito')}
+            </span>
           </button>
         </div>
       </div>
