@@ -49,6 +49,12 @@
   .sidebar {
     width: 270px;
     max-width: none;
+    /* Que NO se encoja. Es una columna de flex y, sin esto, cede su sitio a la
+       rejilla en cuanto la ventana se estrecha: entre 1024px y ~1400px la barra
+       de filtros se quedaba en 26px de ancho —los títulos partidos letra a
+       letra— en vez de bajar debajo como hace en móvil. Se veía en la tienda
+       mucho antes de que el buscador usara este mismo catálogo. */
+    flex: 0 0 270px;
     /* La columna crece solo lo que necesita. Si se abren muchos grupos, alcanza
        el límite de la ventana y recién entonces activa su propio scroll. */
     height: fit-content;
@@ -457,6 +463,10 @@
 .mainContent {
   flex: 1;
   width: 100%;
+  /* La otra mitad del arreglo de arriba: por defecto un elemento de flex no
+     baja de su contenido mínimo, y el mínimo de la rejilla es el ancho de una
+     tarjeta (320px). Sin esto, la rejilla empuja y quien cede es el sidebar. */
+  min-width: 0;
 }
 
 /* Brand Miniviews */
