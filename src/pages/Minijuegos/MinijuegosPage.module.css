@@ -226,9 +226,16 @@
   position: absolute;
   top: 0.65rem;
   right: 0.65rem;
-  /* La insignia va sobre la ilustracion: necesita su propio fondo para leerse
-     encima de cualquier zona de la imagen. */
-  border-radius: 999px;
+  /* inline-flex para que el fondo mida EXACTAMENTE lo que la insignia: como
+     <span> normal era una caja en línea y el fondo no se ajustaba al contenido.
+     Y el mismo radio que el Badge (--radio-pequeno), que es un rectángulo
+     redondeado y no una píldora: con 999px el blanco asomaba por las esquinas.
+     El overflow remata cualquier resto. */
+  display: inline-flex;
+  border-radius: var(--radio-pequeno, 10px);
+  overflow: hidden;
+  /* Fondo propio: las insignias "soft" son translúcidas y sobre la ilustración
+     no se leerían. */
   background: var(--color-surface);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
 }
