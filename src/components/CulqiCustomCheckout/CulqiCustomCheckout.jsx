@@ -163,8 +163,10 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
             currency: currency,
             email: email,
             description: title,
+            checkoutIntentId: pedido?.checkoutIntentId || '',
             metadata: {
               pedidoId: pedido?.id || '',
+              checkoutIntentId: pedido?.checkoutIntentId || '',
               enlaceId: enlace?.id || ''
             }
           });

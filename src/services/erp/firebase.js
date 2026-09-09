@@ -6,6 +6,7 @@ import {
   getDoc,
   getDocs,
   addDoc,
+  setDoc,
   updateDoc,
   query,
   where,
@@ -473,7 +474,7 @@ export async function getPedidosForAccountSync(limitCount = 100, startAfterDoc =
  * @param {Object} orderData - Datos del pedido con la misma estructura de campos del ERP
  * @returns {Promise<{ id: string | null, error: string | null }>}
  */
-export async function createWebOrder(orderData) {
+export async function createWebOrder(orderData, requestedId = null) {
   if (!isErpFirestoreAvailable()) {
     return { id: null, error: 'Firestore del ERP no está disponible' };
   }
@@ -499,7 +500,15 @@ export async function createWebOrder(orderData) {
     }
     // Si el documento viene vacío no se fuerza: se deja como está.
 
-    const docRef = await addDoc(collection(erpDb, 'pedidos_web'), orderPayload);
+    // Si el checkout trae un código estable usamos setDoc para que un doble clic en
+    // WhatsApp sea idempotente. Los llamadores antiguos siguen usando addDoc.
+    const stableId = requestedId || orderData.portalPseudoOrderId || null;
+    const docRef = stableId
+      ? doc(erpDb, 'pedidos_web', String(stableId))
+      : await addDoc(collection(erpDb, 'pedidos_web'), orderPayload);
+    if (stableId) {
+      await setDoc(docRef, orderPayload, { merge: true });
+    }
 
     // ── WALA = FUENTE DE VERDAD: copia/espejo del pedido del lado WALA ─────────
     // Tras guardar OK en pedidos_web, escribimos el pedido en wala_pedidos, que es

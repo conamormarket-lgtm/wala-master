@@ -96,6 +96,103 @@ function getErpDb() {
   return erpApp.firestore();
 }
 
+// ── Checkout diferido ────────────────────────────────────────────────────────
+// Confirmar los datos del checkout NO debe crear un pedido visible en el ERP.
+// Se guarda una intención privada y el pedido se materializa únicamente después
+// de un pago aprobado. WhatsApp crea el pedido directamente desde el frontend al
+// pulsar su botón, por lo que nunca utiliza esta rutina de finalización pagada.
+const CHECKOUT_INTENTS_COLLECTION = "checkout_payment_intents";
+
+function checkoutOrderId(orderPayload) {
+  return String(orderPayload && (orderPayload.portalPseudoOrderId || orderPayload.numeroPedido) || "")
+    .trim()
+    .replace(/[/\\#?[\].]/g, "-");
+}
+
+async function readCheckoutIntent(intentId, context) {
+  const id = String(intentId || "").trim();
+  if (!id) throw new functions.https.HttpsError("invalid-argument", "Falta la intención de pago.");
+  const snap = await db.collection(CHECKOUT_INTENTS_COLLECTION).doc(id).get();
+  if (!snap.exists) throw new functions.https.HttpsError("not-found", "La intención de pago no existe.");
+  const intent = snap.data() || {};
+  if (context && context.auth && intent.uid && intent.uid !== context.auth.uid) {
+    throw new functions.https.HttpsError("permission-denied", "Esta intención pertenece a otro usuario.");
+  }
+  return { id, ref: snap.ref, intent, orderPayload: intent.orderPayload || {} };
+}
+
+exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) => {
+  const orderPayload = data && data.orderPayload;
+  if (!orderPayload || typeof orderPayload !== "object" || Array.isArray(orderPayload)) {
+    throw new functions.https.HttpsError("invalid-argument", "Faltan los datos del checkout.");
+  }
+  const intentId = checkoutOrderId(orderPayload);
+  const amountPen = Number(orderPayload.montoPendiente ?? orderPayload.montoTotal ?? orderPayload.montoDeuda);
+  if (!intentId || !Number.isFinite(amountPen) || amountPen <= 0) {
+    throw new functions.https.HttpsError("invalid-argument", "El checkout no tiene un código o monto válido.");
+  }
+  const ref = db.collection(CHECKOUT_INTENTS_COLLECTION).doc(intentId);
+  await db.runTransaction(async (t) => {
+    const current = await t.get(ref);
+    if (current.exists) {
+      const existing = current.data() || {};
+      if (existing.uid && (!context.auth || existing.uid !== context.auth.uid)) {
+        throw new functions.https.HttpsError("permission-denied", "La intención ya pertenece a otro usuario.");
+      }
+      return;
+    }
+    t.create(ref, {
+      uid: context.auth ? context.auth.uid : null,
+      status: "prepared",
+      amountPen,
+      orderPayload,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+  return { success: true, intentId, amountPen };
+});
+
+async function createPaidWebOrderFromIntent({ intentId, context, payment }) {
+  const checkout = await readCheckoutIntent(intentId, context);
+  const erpDb = getErpDb();
+  if (!erpDb) throw new Error("ERP no disponible después del cobro.");
+  const payload = checkout.orderPayload;
+  const orderId = checkoutOrderId(payload) || checkout.id;
+  const orderRef = erpDb.collection("pedidos_web").doc(orderId);
+  const docRaw = payload.clienteNumeroDocumento || payload.dni || "";
+  const docNorm = String(docRaw).trim().replace(/\s/g, "");
+  await erpDb.runTransaction(async (t) => {
+    const existing = await t.get(orderRef);
+    const normalized = docNorm ? {
+      dniRaw: docRaw,
+      clienteNumeroDocumento: docNorm,
+      dni: docNorm,
+    } : {};
+    t.set(orderRef, {
+      ...(existing.exists ? {} : payload),
+      ...normalized,
+      web: true,
+      estadoValidacion: "pendiente",
+      pagado: true,
+      estadoPago: "pagado",
+      conDeuda: false,
+      montoDeuda: 0,
+      montoPendiente: 0,
+      ...payment,
+      ...(existing.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
+      updatedAt: FieldValue.serverTimestamp(),
+      pagadoAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+  await checkout.ref.set({
+    status: "paid_order_created",
+    pedidoWebId: orderId,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  return orderId;
+}
+
 // ── wala_pedidos: marca de pago en la FUENTE DE VERDAD de WALA (best-effort) ───
 // wala_pedidos es la colección propia de WALA (espejo independiente del ERP) cuyo
 // `estadoWala` es la fuente de verdad mostrada en el Portal. Cuando un pago se
@@ -1079,11 +1176,25 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
   // en USD por su propio flujo y Culqi-USD usa enlaces de monto fijo ya validados.
   let chargeAmount = amount;
   const payCurrency = currency || "PEN";
-  const pedidoId = metadata && (metadata.pedidoId || metadata.orderId);
+  let pedidoId = metadata && (metadata.pedidoId || metadata.orderId);
+  const checkoutIntentId = data && (data.checkoutIntentId || (metadata && metadata.checkoutIntentId));
+  let checkoutIntent = null;
   // Se capturan en scope de función para reusarlos al marcar el pedido pagado tras el cobro.
   let erpDbForOrder = null;
   let orderColl = null;
-  if (payCurrency === "PEN" && pedidoId) {
+  if (payCurrency === "PEN" && checkoutIntentId) {
+    checkoutIntent = await readCheckoutIntent(checkoutIntentId, context);
+    pedidoId = checkoutIntent.id;
+    const penTotal = Number(
+      checkoutIntent.orderPayload.montoPendiente ??
+      checkoutIntent.orderPayload.montoTotal ??
+      checkoutIntent.orderPayload.montoDeuda
+    );
+    if (!Number.isFinite(penTotal) || penTotal <= 0) {
+      throw new functions.https.HttpsError("failed-precondition", "La intención no tiene un monto válido.");
+    }
+    chargeAmount = Math.round(penTotal * 100);
+  } else if (payCurrency === "PEN" && pedidoId) {
     try {
       const erpDb = getErpDb();
       if (erpDb) {
@@ -1195,12 +1306,29 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
     if (prev) {
       // Reintento detectado: NO se recobra.
       if (prev.status === "succeeded") {
+        let recoveredPedidoWebId = null;
+        if (checkoutIntent) {
+          try {
+            recoveredPedidoWebId = await createPaidWebOrderFromIntent({
+              intentId: checkoutIntent.id,
+              context,
+              payment: {
+                metodoPago: "culqi",
+                culqiChargeId: prev.charge_id ? String(prev.charge_id) : null,
+                montoPagado: prev.amount ?? chargeAmount,
+              },
+            });
+          } catch (e) {
+            console.error("processCulqiPayment: no se pudo recuperar el pedido de un cobro idempotente:", e);
+          }
+        }
         // Devuelve el resultado previo guardado (mismo shape que el éxito normal).
         return {
           success: true,
           charge_id: prev.charge_id || null,
           outcome: prev.outcome || null,
           amount: prev.amount ?? chargeAmount,
+          pedidoWebId: recoveredPedidoWebId,
           idempotent: true, // marca informativa: respuesta servida desde el lock
         };
       }
@@ -1284,7 +1412,22 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
     // EXACTAMENTE los mismos campos que el webhook (set merge → idempotente y sin
     // conflicto si el webhook también corriera). NUNCA debe hacer fallar la respuesta
     // al cliente: el cobro ya ocurrió, así que ante cualquier error solo se loguea.
-    if (pedidoId && erpDbForOrder && orderColl) {
+    let createdPedidoWebId = null;
+    if (checkoutIntent) {
+      try {
+        createdPedidoWebId = await createPaidWebOrderFromIntent({
+          intentId: checkoutIntent.id,
+          context,
+          payment: {
+            metodoPago: "culqi",
+            culqiChargeId: String(result.id),
+            montoPagado: chargeAmount,
+          },
+        });
+      } catch (e) {
+        console.error(`processCulqiPayment: cobro ${result.id} aprobado pero falló crear el pedido:`, e);
+      }
+    } else if (pedidoId && erpDbForOrder && orderColl) {
       try {
         await erpDbForOrder.collection(orderColl).doc(String(pedidoId)).set({
           pagado: true,
@@ -1341,6 +1484,7 @@ exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
       charge_id: result.id,
       outcome: result.outcome,
       amount: chargeAmount, // H-11: monto realmente cobrado (céntimos), por si difería del cliente
+      pedidoWebId: createdPedidoWebId,
     };
 
   } catch (err) {
@@ -4038,13 +4182,21 @@ async function getPaypalAccessToken() {
 // del pedido real (pedidos_web/pedidos en el ERP) y lo convierte a USD con config/fx
 // usando la misma fórmula del frontend: (penTotal / penPerUsd) * (1 + margin).
 // Devuelve { usd: "12.34", penTotal, penPerUsd, margin } o lanza HttpsError claro.
-async function computePaypalUsdForOrder(pedidoId) {
+async function computePaypalUsdForOrder(pedidoId, context) {
   const oid = pedidoId != null ? String(pedidoId) : null;
   if (!oid) {
     throw new functions.https.HttpsError("invalid-argument", "Se requiere pedidoId.");
   }
 
-  // 1) Total en PEN desde el pedido real (no se confía en el cliente).
+  // 1) Total en PEN desde la intención preparada (checkout nuevo) o, por
+  // compatibilidad, desde un pedido existente de los flujos antiguos.
+  let orderData = null;
+  try {
+    const checkout = await readCheckoutIntent(oid, context);
+    orderData = checkout.orderPayload;
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError && e.code === "permission-denied") throw e;
+  }
   const erpDb = getErpDb();
   if (!erpDb) {
     throw new functions.https.HttpsError(
@@ -4052,10 +4204,11 @@ async function computePaypalUsdForOrder(pedidoId) {
       "No se puede validar el pedido (ERP no disponible)."
     );
   }
-  let orderData = null;
-  for (const coll of ["pedidos_web", "pedidos"]) {
-    const snap = await erpDb.collection(coll).doc(oid).get();
-    if (snap.exists) { orderData = snap.data(); break; }
+  if (!orderData) {
+    for (const coll of ["pedidos_web", "pedidos"]) {
+      const snap = await erpDb.collection(coll).doc(oid).get();
+      if (snap.exists) { orderData = snap.data(); break; }
+    }
   }
   if (!orderData) {
     throw new functions.https.HttpsError("not-found", "Pedido no encontrado.");
@@ -4097,7 +4250,7 @@ exports.createPaypalOrderSecure = functions.https.onCall(async (data, context) =
   const pedidoId = data && (data.pedidoId || data.orderId);
 
   // Monto USD autoritativo (recalculado del pedido real; nunca del cliente).
-  const { usd } = await computePaypalUsdForOrder(pedidoId);
+  const { usd } = await computePaypalUsdForOrder(pedidoId, context);
 
   const accessToken = await getPaypalAccessToken();
   const resp = await fetch(`${paypalApiBase()}/v2/checkout/orders`, {
@@ -4144,7 +4297,7 @@ exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) 
   }
 
   // Monto USD esperado (recalculado server-side) para comparar contra lo capturado.
-  const { usd: expectedUsd } = await computePaypalUsdForOrder(pedidoId);
+  const { usd: expectedUsd } = await computePaypalUsdForOrder(pedidoId, context);
 
   const accessToken = await getPaypalAccessToken();
   const resp = await fetch(`${paypalApiBase()}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
@@ -4197,10 +4350,27 @@ exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) 
     throw new functions.https.HttpsError("failed-precondition", "La orden de PayPal no corresponde a este pedido.");
   }
 
-  // 3) Marcar el pedido como pagado en pedidos_web (ERP), idempotente por captureId.
+  // 3) Solo DESPUÉS de la captura aprobada se crea el pedido del checkout nuevo.
+  // Para pedidos antiguos conservamos el marcado compatible.
+  let createdPedidoWebId = null;
   try {
+    try {
+      await readCheckoutIntent(pedidoId, context);
+      createdPedidoWebId = await createPaidWebOrderFromIntent({
+        intentId: pedidoId,
+        context,
+        payment: {
+          metodoPago: "paypal",
+          paypalOrderId: String(orderID),
+          paypalCaptureId: captureId ? String(captureId) : null,
+          montoPagadoUsd: capturedValue,
+        },
+      });
+    } catch (intentErr) {
+      if (intentErr instanceof functions.https.HttpsError && intentErr.code === "permission-denied") throw intentErr;
+    }
     const erpDb = getErpDb();
-    if (erpDb && pedidoId) {
+    if (!createdPedidoWebId && erpDb && pedidoId) {
       const pedidoRef = erpDb.collection("pedidos_web").doc(String(pedidoId));
       await erpDb.runTransaction(async (t) => {
         const snap = await t.get(pedidoRef);
@@ -4226,7 +4396,7 @@ exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) 
           metodoPago: "paypal",
         }, { merge: true });
       });
-    } else {
+    } else if (!createdPedidoWebId) {
       console.warn("capturePaypalOrderSecure: ERP no disponible; no se pudo marcar el pedido (el cobro YA se capturó).");
     }
   } catch (e) {
@@ -4246,6 +4416,7 @@ exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) 
     captureId,
     amountUsd: capturedValue,
     pedidoId: String(pedidoId),
+    pedidoWebId: createdPedidoWebId,
   };
 });
 

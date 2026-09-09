@@ -12,11 +12,12 @@ import { getMessage } from '../services/messages';
 import { getBrands } from '../services/brands';
 import { linkPurchaseToReferral } from '../services/referrals';
 import { createWebOrder, markWebOrderWhatsapp } from '../services/erp/firebase';
+import { prepareCheckoutPayment } from '../services/checkoutPayment';
 // WALA = FUENTE DE VERDAD: al confirmarse el pago (Culqi/PayPal) marcamos el
 // pedido como pagado en SU propia base wala_pedidos. Es ADITIVO e IDEMPOTENTE:
 // no toca la lógica de pagos/totales (Culqi montoDeuda / PayPal amountUsd) ni el
 // marcado de pedidos_web; markWalaOrderPagado nunca lanza (best-effort).
-import { markWalaOrderPagado } from '../services/walaOrders';
+import { markWalaOrderPagado, mirrorWebOrder } from '../services/walaOrders';
 import { markItemAsGifted } from '../services/wishlist';
 // Cupones: el valor lo decide el servidor (validarCuponSecure), igual que las
 // monedas. Aquí solo se pinta el descuento y se consume el cupón al crear el
@@ -170,6 +171,8 @@ const CheckoutPage = () => {
   // (remonta el componente de Culqi y vuelve a auto-abrir el modal).
   const [culqiClosed, setCulqiClosed] = useState(false);
   const [culqiKey, setCulqiKey] = useState(0);
+  const whatsappOrderPromiseRef = useRef(null);
+  const postCreationDoneRef = useRef(false);
 
   // Render del/los botón(es) de "terminar por WhatsApp". Si el pedido tiene
   // productos de varias marcas con asesor propio (paymentStepData.waGroups),
@@ -194,10 +197,11 @@ const CheckoutPage = () => {
               key={i}
               variant="ghost"
               fullWidth
-              onClick={() => {
-                emitPurchaseComplete('whatsapp');
-                window.open(g.link, '_blank');
-                markWebOrderWhatsapp(paymentStepData.pedidoWebId || paymentStepData.id).catch(() => {});
+              onClick={async () => {
+                const popup = window.open('', '_blank');
+                const pedidoWebId = await ensureWhatsAppOrder();
+                if (!pedidoWebId) { if (popup) popup.close(); return; }
+                if (popup) popup.location.href = g.link; else window.open(g.link, '_blank');
               }}
             >
               💬 Enviar a {g.label} ({g.count})
@@ -206,7 +210,10 @@ const CheckoutPage = () => {
           {/* FIX analítica: este botón confirmaba el pedido SIN emitir purchase_complete
               si el cliente no tocaba ningún botón de marca. emitPurchaseComplete es
               idempotente (purchaseSentRef) y fire-and-forget: no toca pagos/montos. */}
-          <GlassButton variant="primary" fullWidth onClick={() => { emitPurchaseComplete('whatsapp'); finalize(); }}>
+          <GlassButton variant="primary" fullWidth onClick={async () => {
+            const pedidoWebId = await ensureWhatsAppOrder();
+            if (pedidoWebId) finalize();
+          }}>
             Listo, ya envié mis pedidos ✓
           </GlassButton>
         </div>
@@ -222,10 +229,11 @@ const CheckoutPage = () => {
         variant={asPrimary ? 'primary' : 'ghost'}
         size={asPrimary ? 'lg' : 'md'}
         fullWidth
-        onClick={() => {
-          emitPurchaseComplete('whatsapp');
-          window.open(link, '_blank');
-          markWebOrderWhatsapp(paymentStepData.pedidoWebId || paymentStepData.id).catch(() => {});
+        onClick={async () => {
+          const popup = window.open('', '_blank');
+          const pedidoWebId = await ensureWhatsAppOrder();
+          if (!pedidoWebId) { if (popup) popup.close(); return; }
+          if (popup) popup.location.href = link; else window.open(link, '_blank');
           finalize();
         }}
       >
@@ -945,46 +953,16 @@ const CheckoutPage = () => {
           }),
         };
 
-        // ── 1. Guardar en pedidos_web (colección separada, para validación previa) ──
-        // Esta escritura es OBLIGATORIA: si falla, el pedido NO queda registrado en
-        // pedidos_web y el cliente creería que compró sin que exista nada. Por eso
-        // marcamos webOrderOk y, si es false, abortamos ANTES de avanzar al paso de
-        // pago (no abrimos WhatsApp ni mostramos Culqi/PayPal fingiendo éxito).
-        let webOrderId = null;
-        let webOrderOk = false;
+        // Confirmar datos solo prepara una intención privada para las pasarelas.
+        // No crea pedidos_web ni aparece todavía en el ERP.
+        let checkoutIntentId = null;
         try {
-          const { id, error: webErr } = await createWebOrder(webOrderPayload);
-          if (webErr) {
-            console.warn('No se pudo guardar en pedidos_web:', webErr);
-          } else if (id) {
-            webOrderId = id;
-            webOrderOk = true;
-          } else {
-            // createWebOrder volvió sin error pero tampoco con id: lo tratamos como fallo.
-            console.warn('createWebOrder no devolvió id; se trata como fallo.');
-          }
-        } catch (erpErr) {
-          console.warn('Error al conectar con ERP Firebase:', erpErr);
-        }
-
-        // Si la escritura del pedido NO tuvo éxito, avisamos al usuario con el MISMO
-        // mecanismo de errores del checkout (toast.error) y NO avanzamos al paso de
-        // pago. Así no abrimos WhatsApp ni mostramos Culqi/PayPal como si todo OK.
-        if (!webOrderOk || !webOrderId) {
-          toast.error('No pudimos registrar tu pedido, intenta de nuevo o contáctanos.');
-          // El `finally` del try externo se encarga de setProcessing(false); aquí solo
-          // abortamos para NO avanzar al paso de pago cuando el pedido no se guardó.
+          const prepared = await prepareCheckoutPayment(webOrderPayload);
+          checkoutIntentId = prepared.intentId;
+        } catch (prepareErr) {
+          console.warn('No se pudo preparar el pago:', prepareErr);
+          toast.error('No pudimos preparar el pago. Intenta nuevamente.');
           return;
-        }
-
-        // ── 1.5 Procesar Regalos de Wishlist ──────────────────────────────
-        try {
-          const wishlistGifts = selectedItems.filter(item => item.isWishlistGift && item.wishlistUserCode);
-          for (const gift of wishlistGifts) {
-            await markItemAsGifted(gift.wishlistUserCode, gift.productId, values.customerName);
-          }
-        } catch (giftErr) {
-          console.warn('Error al marcar regalos de wishlist:', giftErr);
         }
 
         // ── 2. Procesar referidos ─────────────────────────────────────────
@@ -996,7 +974,6 @@ const CheckoutPage = () => {
             const now = Date.now();
             if (now - refData.timestamp < 36 * 60 * 60 * 1000) {
               referralTag = `\n_Referido por: ${refData.referrerCode}_`;
-              await linkPurchaseToReferral(refData.referralId, pseudoOrderId, subtotal);
             }
           }
         } catch (e) {
@@ -1175,18 +1152,6 @@ const CheckoutPage = () => {
           }
         }
 
-        // ── 4. Guardar en localStorage (pendiente de confirmación) ─────────
-        const currentCart = JSON.parse(localStorage.getItem('shopping_cart') || '[]');
-        const updatedCart = currentCart.map((item) => item.selected === false
-          ? item
-          : ({
-              ...item,
-              status: 'pending_confirmation',
-              pseudoOrderId,
-              ...(webOrderId && { webOrderId }),
-            }));
-        localStorage.setItem('shopping_cart', JSON.stringify(updatedCart));
-
         const savedInfo = {
           customerName: values.customerName,
           dni: values.dni,
@@ -1199,24 +1164,6 @@ const CheckoutPage = () => {
           email: values.email,
         };
         localStorage.setItem('checkout_customer_info', JSON.stringify(savedInfo));
-
-        // ── 5. Congelar monedas en estado de "espera" ─────────────────────
-        if (discount > 0 && freezeMonedas) {
-          // Congela de la cantidad "monedas" a "monedasEnEspera"
-          await freezeMonedas(discount, pseudoOrderId);
-        }
-
-        // ── 5b. Consumir el cupón ─────────────────────────────────────────
-        // El pedido ya está creado con el descuento aplicado: si el canje falla
-        // NO se tira el pedido, se avisa y el cupón queda vivo para otra vez.
-        // Es idempotente por pedido, así que un reintento no descuenta dos veces.
-        if (cuponAplicado?.code) {
-          const canje = await canjearCupon(cuponAplicado.code, pseudoOrderId);
-          if (!canje.success) {
-            console.error('No se pudo canjear el cupón:', canje.error);
-            toast.error('El pedido se creó, pero el cupón no se pudo canjear. Escríbenos y lo revisamos.');
-          }
-        }
 
         // ── 6. Auto-actualizar perfil del usuario ─────────────────────────
         if (user && updateUserProfile) {
@@ -1232,15 +1179,22 @@ const CheckoutPage = () => {
         }
 
         // ── 7. Pasar a Opciones de Pago ─────────────────────────────────────────────
-        toast.success('¡Pedido generado! Por favor, selecciona tu método de pago.');
+        toast.success('Datos confirmados. Selecciona cómo terminar tu compra.');
         setPaymentStepData({
-          id: webOrderId || pseudoOrderId,
+          id: checkoutIntentId || pseudoOrderId,
           // Claves de negocio para localizar el doc en wala_pedidos al confirmar el
           // pago (markWalaOrderPagado): numeroPedido = pseudoOrderId (clave estable
           // del espejo, doc id), pedidoWebId = id real en pedidos_web (query de
           // fallback). Aditivos: NO alteran montoDeuda ni el flujo de pago/totales.
           numeroPedido: pseudoOrderId,
-          pedidoWebId: webOrderId || null,
+          pedidoWebId: null,
+          checkoutIntentId,
+          webOrderPayload,
+          selectedItemsSnapshot: selectedItems,
+          customerName: values.customerName,
+          subtotal,
+          discount,
+          couponCode: cuponAplicado?.code || null,
           montoDeuda: total,
           waLink: waLink,
           waGroups: waGroups, // [] si no aplica; si no, un grupo (asesor) por marca
@@ -1367,6 +1321,118 @@ const CheckoutPage = () => {
     [paymentStepData, total, selectedItems, analyticsUserCtx]
   );
 
+  // Efectos que solo corresponden a una compra realmente creada. Se ejecutan una
+  // vez después de WhatsApp o de la confirmación de una pasarela, nunca al pulsar
+  // "Confirmar y seleccionar pago".
+  async function applyPostCreationEffects(pedidoWebId, method) {
+    if (postCreationDoneRef.current || !paymentStepData) return;
+    postCreationDoneRef.current = true;
+    const snapshot = paymentStepData.selectedItemsSnapshot || [];
+    try {
+      for (const gift of snapshot.filter((i) => i.isWishlistGift && i.wishlistUserCode)) {
+        await markItemAsGifted(gift.wishlistUserCode, gift.productId, paymentStepData.customerName);
+      }
+    } catch (e) {
+      console.warn('Error al marcar regalos de wishlist:', e);
+    }
+    try {
+      const rawRef = localStorage.getItem('wala_referral');
+      if (rawRef) {
+        const refData = JSON.parse(rawRef);
+        if (Date.now() - refData.timestamp < 36 * 60 * 60 * 1000) {
+          await linkPurchaseToReferral(refData.referralId, paymentStepData.numeroPedido, paymentStepData.subtotal);
+        }
+      }
+    } catch (e) {
+      console.warn('No se pudo procesar el referido:', e);
+    }
+    try {
+      const currentCart = JSON.parse(localStorage.getItem('shopping_cart') || '[]');
+      localStorage.setItem('shopping_cart', JSON.stringify(currentCart.map((item) => item.selected === false
+        ? item
+        : { ...item, status: 'pending_confirmation', pseudoOrderId: paymentStepData.numeroPedido, webOrderId: pedidoWebId })));
+    } catch (e) {
+      console.warn('No se pudo guardar el estado local del pedido:', e);
+    }
+    if (paymentStepData.discount > 0 && freezeMonedas) {
+      await freezeMonedas(paymentStepData.discount, paymentStepData.numeroPedido).catch((e) =>
+        console.warn('No se pudieron congelar las monedas:', e));
+    }
+    if (paymentStepData.couponCode) {
+      const canje = await canjearCupon(paymentStepData.couponCode, paymentStepData.numeroPedido);
+      if (!canje.success) {
+        console.error('No se pudo canjear el cupón:', canje.error);
+        toast.error('La compra se creó, pero el cupón no se pudo canjear. Escríbenos y lo revisamos.');
+      }
+    }
+    emitPurchaseComplete(method);
+  }
+
+  async function ensureWhatsAppOrder() {
+    if (!paymentStepData) return null;
+    if (paymentStepData.pedidoWebId) return paymentStepData.pedidoWebId;
+    if (!whatsappOrderPromiseRef.current) {
+      whatsappOrderPromiseRef.current = (async () => {
+        setProcessing(true);
+        try {
+          const { id, error } = await createWebOrder(
+            { ...paymentStepData.webOrderPayload, metodoPago: 'whatsapp', canalVenta: 'WhatsApp' },
+            paymentStepData.numeroPedido,
+          );
+          if (error || !id) throw new Error(error || 'No se recibió el id del pedido.');
+          await markWebOrderWhatsapp(id);
+          setPaymentStepData((prev) => prev ? { ...prev, pedidoWebId: id } : prev);
+          await applyPostCreationEffects(id, 'whatsapp');
+          return id;
+        } catch (e) {
+          console.error('No se pudo crear el pedido de WhatsApp:', e);
+          toast.error('No pudimos crear tu pedido. No se abrió WhatsApp; inténtalo nuevamente.');
+          whatsappOrderPromiseRef.current = null;
+          return null;
+        } finally {
+          setProcessing(false);
+        }
+      })();
+    }
+    return whatsappOrderPromiseRef.current;
+  }
+
+  async function finishGatewayOrder(method, gatewayResult = {}) {
+    if (!paymentStepData) return;
+    let pedidoWebId = gatewayResult.pedidoWebId || paymentStepData.numeroPedido;
+    // Respaldo posterior al pago: si la función cobró pero no logró persistir el
+    // pedido, setDoc con id estable lo crea sin riesgo de duplicarlo.
+    if (!gatewayResult.pedidoWebId) {
+      const paidPayload = {
+        ...paymentStepData.webOrderPayload,
+        pagado: true,
+        estadoPago: 'pagado',
+        conDeuda: false,
+        montoDeuda: 0,
+        montoPendiente: 0,
+        metodoPago: method,
+      };
+      const created = await createWebOrder(paidPayload, paymentStepData.numeroPedido);
+      if (created.error || !created.id) {
+        toast.error('El pago fue aprobado, pero no pudimos registrar el pedido. Contáctanos con tu comprobante.');
+        return;
+      }
+      pedidoWebId = created.id;
+    } else {
+      await mirrorWebOrder({ pedidoWebId, payload: paymentStepData.webOrderPayload });
+    }
+    await markWalaOrderPagado({
+      numeroPedido: paymentStepData.numeroPedido,
+      pedidoWebId,
+      metodoPago: method,
+      montoPagado: paymentStepData.montoDeuda,
+    });
+    setPaymentStepData((prev) => prev ? { ...prev, pedidoWebId } : prev);
+    await applyPostCreationEffects(pedidoWebId, method);
+    clearSelectedItems();
+    navigate('/cuenta/pedidos');
+  }
+
   // ── Autodetección de país (solo si el usuario NO ha tocado el selector y no hay país en perfil) ──
   // No pisa la elección manual del usuario ni un país ya cargado desde el perfil/invitado.
   //
@@ -1437,7 +1503,7 @@ const CheckoutPage = () => {
             <GlassCard variant="solid" padding="lg" className={styles.payCard}>
               <h2 className={styles.payTitle} style={{ marginBottom: '1rem', textAlign: 'center' }}><T>Selecciona tu método de pago</T></h2>
               <p className={styles.paySubtitle} style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                Tu pedido se ha generado correctamente. Para confirmarlo, realiza el pago.
+                Tus datos están listos. El pedido se creará cuando termines por WhatsApp o cuando el pago sea aprobado.
               </p>
 
               {/* Aviso de envío internacional (solo si NO es Perú) */}
@@ -1467,7 +1533,7 @@ const CheckoutPage = () => {
                           <div className={styles.recoveryBody}>
                             <h4 className={styles.recoveryTitle}><T>¿Cerraste el pago? Termínalo por WhatsApp</T></h4>
                             <p className={styles.recoveryText}>
-                              Tu pedido ya quedó guardado. Un asesor recibe tu lista completa
+                              Tu pedido se creará al pulsar WhatsApp. Un asesor recibirá tu lista completa
                               (qué quieres y para cuándo), te dice el costo final y coordinas el
                               pago por Yape, Plin o transferencia.
                             </p>
@@ -1498,22 +1564,7 @@ const CheckoutPage = () => {
                       reopenKey={culqiKey}
                       pedido={paymentStepData}
                       autoOpen={true}
-                      onSuccess={() => {
-                        emitPurchaseComplete('culqi');
-                        // WALA = FUENTE DE VERDAD: marca el pedido como pagado en
-                        // wala_pedidos (estadoWala:'pagado'). ADITIVO/IDEMPOTENTE y
-                        // best-effort (nunca lanza): NO bloquea la navegación ni toca
-                        // el monto cobrado. Localiza por numeroPedido o pedidoWebId.
-                        markWalaOrderPagado({
-                          numeroPedido: paymentStepData.numeroPedido,
-                          pedidoWebId: paymentStepData.pedidoWebId,
-                          metodoPago: 'culqi',
-                          montoPagado: paymentStepData.montoDeuda,
-                        }).catch(() => {});
-                        // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
-                        clearSelectedItems();
-                        navigate('/cuenta/pedidos');
-                      }}
+                      onSuccess={(result) => finishGatewayOrder('culqi', result)}
                       onClose={() => setCulqiClosed(true)}
                     />
 
@@ -1530,7 +1581,7 @@ const CheckoutPage = () => {
                     <PaypalCheckout
                       pedido={paymentStepData}
                       amountUsd={penToUsd(paymentStepData.montoDeuda, fx)}
-                      webOrderId={paymentStepData.id}
+                      webOrderId={paymentStepData.checkoutIntentId}
                       localLabel={(() => {
                         // Etiqueta local SOLO informativa (PayPal cobra en USD).
                         const localAmt = penToLocal(paymentStepData.montoDeuda, paymentStepData.country, fx);
@@ -1538,22 +1589,7 @@ const CheckoutPage = () => {
                           ? formatMoney(localAmt, getCurrency(paymentStepData.country))
                           : undefined;
                       })()}
-                      onSuccess={() => {
-                        emitPurchaseComplete('paypal');
-                        // WALA = FUENTE DE VERDAD: marca el pedido como pagado en
-                        // wala_pedidos (estadoWala:'pagado'). ADITIVO/IDEMPOTENTE y
-                        // best-effort (nunca lanza): NO bloquea la navegación ni toca
-                        // el USD cobrado (amountUsd). Localiza por numeroPedido/pedidoWebId.
-                        markWalaOrderPagado({
-                          numeroPedido: paymentStepData.numeroPedido,
-                          pedidoWebId: paymentStepData.pedidoWebId,
-                          metodoPago: 'paypal',
-                          montoPagado: paymentStepData.montoDeuda,
-                        }).catch(() => {});
-                        // Conserva en el carrito los "no comprar esta vez"; quita los pagados.
-                        clearSelectedItems();
-                        navigate('/cuenta/pedidos');
-                      }}
+                      onSuccess={(result) => finishGatewayOrder('paypal', result)}
                     />
 
                     <div className={styles.payDivider}>O</div>
