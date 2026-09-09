@@ -109,6 +109,7 @@ const uniqueImageUrls = (urls) => [...new Set(
 
 const getDesignReferences = (item) => {
   const refs = [item?.productImage, item?.customization?.imageURL];
+  (item?.productReferenceImages || []).forEach((reference) => refs.push(reference?.url || reference));
   const views = {};
   const addLayers = (layersByView) => {
     Object.entries(layersByView || {}).forEach(([viewId, layers]) => {
@@ -129,6 +130,21 @@ const getDesignReferences = (item) => {
   });
 
   return { images: uniqueImageUrls(refs), views };
+};
+
+const getWhatsAppReferenceLinks = (item) => {
+  const links = [];
+  const seen = new Set();
+  const push = (url, label) => {
+    if (typeof url !== 'string' || !/^https?:\/\//i.test(url) || seen.has(url)) return;
+    seen.add(url);
+    links.push({ url, label });
+  };
+  (item?.productReferenceImages || []).forEach((reference, index) => {
+    push(reference?.url || reference, reference?.lado || `Vista ${index + 1}`);
+  });
+  getDesignReferences(item).images.forEach((url) => push(url, 'Diseño'));
+  return links.slice(0, 6);
 };
 
 const CheckoutPage = () => {
@@ -726,6 +742,7 @@ const CheckoutPage = () => {
               urlImagen: item.productImage || '',
               imagenReferencial: item.productImage || '',
               imagenesReferencia: designReferences.images,
+              imagenesPorLado: item.productReferenceImages || [],
               cantidad: item.quantity || 1,
               precio: precioItem,
               subtotal: subtotalItem,
@@ -750,9 +767,11 @@ const CheckoutPage = () => {
               urlImagen: item.productImage || '',
               imagenReferencial: item.productImage || '',
               imagenesReferencia: designReferences.images,
+              imagenesPorLado: item.productReferenceImages || [],
               cantidad: item.quantity || 1,
               talla: item.variant?.size || '',
               color: item.variant?.color || '',
+              colorHex: item.variant?.colorHex || '',
               precio: precioItem,
               subtotal: subtotalItem,
               personalizado: !!(item.customization?.layersByView
@@ -1018,11 +1037,9 @@ const CheckoutPage = () => {
           }
           const price = item.customization?.finalPrice || item.price;
           message += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
-          const referenceLinks = getDesignReferences(item).images
-            .filter((url) => /^https?:\/\//i.test(url))
-            .slice(0, 4);
-          referenceLinks.forEach((url, imageIndex) => {
-            message += `   Imagen de referencia${referenceLinks.length > 1 ? ` ${imageIndex + 1}` : ''}: ${url}\n`;
+          const referenceLinks = getWhatsAppReferenceLinks(item);
+          referenceLinks.forEach(({ url, label }) => {
+            message += `   Imagen ${label}: ${url}\n`;
           });
           message += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
         });
@@ -1086,11 +1103,9 @@ const CheckoutPage = () => {
             const price = item.customization?.finalPrice || item.price;
             sub += price * item.quantity;
             m += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
-            getDesignReferences(item).images
-              .filter((url) => /^https?:\/\//i.test(url))
-              .slice(0, 4)
-              .forEach((url, imageIndex, links) => {
-                m += `   Imagen de referencia${links.length > 1 ? ` ${imageIndex + 1}` : ''}: ${url}\n`;
+            getWhatsAppReferenceLinks(item)
+              .forEach(({ url, label }) => {
+                m += `   Imagen ${label}: ${url}\n`;
               });
             m += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
           });

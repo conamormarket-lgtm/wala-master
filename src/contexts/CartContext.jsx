@@ -19,6 +19,45 @@ export const useCart = () => {
 
 const CART_STORAGE_KEY = 'shopping_cart';
 
+const snapshotProductReferences = (product, selectedVariant, colorName) => {
+  const references = [];
+  const seen = new Set();
+  const push = (url, lado) => {
+    if (typeof url !== 'string' || !url.trim() || seen.has(url.trim())) return;
+    seen.add(url.trim());
+    references.push({ url: url.trim(), lado, color: colorName || '' });
+  };
+  const normalizedColor = String(colorName || '').trim().toLowerCase();
+  const matchingVariant = selectedVariant || (product.variants || []).find(
+    (candidate) => String(candidate?.name || '').trim().toLowerCase() === normalizedColor
+  );
+
+  (product.customizationViews || []).forEach((view) => {
+    const frontKey = Object.keys(view?.imagesByColor || {}).find(
+      (key) => key.trim().toLowerCase() === normalizedColor
+    );
+    if (frontKey) push(view.imagesByColor[frontKey], view.name || 'Frente');
+    const backKey = Object.keys(view?.backSide?.imagesByColor || {}).find(
+      (key) => key.trim().toLowerCase() === normalizedColor
+    );
+    if (backKey) push(view.backSide.imagesByColor[backKey], view.backSide?.name || 'Espalda');
+  });
+
+  push(matchingVariant?.imageUrl, 'Frente');
+  const gallery = matchingVariant?.galleryImages?.length
+    ? matchingVariant.galleryImages
+    : matchingVariant?.images?.length
+      ? matchingVariant.images
+      : product.images || [];
+  gallery.forEach((url, index) => push(url, index === 0 ? 'Frente' : index === 1 ? 'Espalda' : `Vista ${index + 1}`));
+  if (references.length === 0) push(product.mainImage, 'Frente');
+
+  return {
+    colorHex: matchingVariant?.colorHex || '',
+    references,
+  };
+};
+
 export const CartProvider = ({ children }) => {
   const toast = useGlobalToast();
 
@@ -188,6 +227,8 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = React.useCallback((product, variant = {}, customization = null, quantity = 1, comboData = null, options = {}) => {
     const selectedVariant = variant.selectedVariant;
+    const selectedColorName = selectedVariant?.name ?? variant.color ?? '';
+    const productReferences = snapshotProductReferences(product, selectedVariant, selectedColorName);
 
     let productImage = '';
     if (product.isComboProduct) {
@@ -219,6 +260,7 @@ export const CartProvider = ({ children }) => {
       productId: product.id,
       productName: product.name,
       productImage,
+      productReferenceImages: productReferences.references,
       // Marca del producto: permite dividir el WhatsApp del checkout por marca
       // (cada asesor recibe solo sus productos). Aditivo; null si no tiene marca.
       brandId: product.brandId || null,
@@ -232,7 +274,8 @@ export const CartProvider = ({ children }) => {
       // conserva variant.color tal cual (sin duplicar ni romper la forma actual).
       variant: {
         ...variant,
-        color: selectedVariant?.name ?? variant.color ?? null,
+        color: selectedColorName || null,
+        colorHex: productReferences.colorHex || selectedVariant?.colorHex || variant.colorHex || '',
         selectedVariant: selectedVariant ?? null,
       },
       customization,
