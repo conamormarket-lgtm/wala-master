@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../services/messages';
 import { getBrands } from '../services/brands';
 import { linkPurchaseToReferral } from '../services/referrals';
-import { createWebOrder } from '../services/erp/firebase';
+import { createWebOrder, markWebOrderWhatsapp } from '../services/erp/firebase';
 // WALA = FUENTE DE VERDAD: al confirmarse el pago (Culqi/PayPal) marcamos el
 // pedido como pagado en SU propia base wala_pedidos. Es ADITIVO e IDEMPOTENTE:
 // no toca la lógica de pagos/totales (Culqi montoDeuda / PayPal amountUsd) ni el
@@ -101,6 +101,36 @@ const validationSchema = Yup.object({
   deliveryDate: Yup.string()
 });
 
+const uniqueImageUrls = (urls) => [...new Set(
+  (urls || [])
+    .filter((url) => typeof url === 'string' && url.trim() && !/^data:|^blob:/i.test(url.trim()))
+    .map((url) => url.trim())
+)];
+
+const getDesignReferences = (item) => {
+  const refs = [item?.productImage, item?.customization?.imageURL];
+  const views = {};
+  const addLayers = (layersByView) => {
+    Object.entries(layersByView || {}).forEach(([viewId, layers]) => {
+      if (!Array.isArray(layers) || layers.length === 0) return;
+      const images = uniqueImageUrls(layers.filter((layer) => layer?.type === 'image').map((layer) => layer.src));
+      const texts = layers.filter((layer) => layer?.type === 'text' && layer.text).map((layer) => layer.text);
+      refs.push(...images);
+      views[viewId] = { imagenes: images, textos: texts };
+    });
+  };
+
+  addLayers(item?.customization?.layersByView);
+  (item?.customization?.comboItemCustomization || []).forEach((customization) => {
+    addLayers(customization?.layersByView);
+  });
+  (item?.customization?.comboItemRenderedPreviews || []).forEach((preview) => {
+    refs.push(preview?.frente, preview?.espalda);
+  });
+
+  return { images: uniqueImageUrls(refs), views };
+};
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   // eslint-disable-next-line no-unused-vars
@@ -148,7 +178,11 @@ const CheckoutPage = () => {
               key={i}
               variant="ghost"
               fullWidth
-              onClick={() => { emitPurchaseComplete('whatsapp'); window.open(g.link, '_blank'); }}
+              onClick={() => {
+                emitPurchaseComplete('whatsapp');
+                window.open(g.link, '_blank');
+                markWebOrderWhatsapp(paymentStepData.pedidoWebId || paymentStepData.id).catch(() => {});
+              }}
             >
               💬 Enviar a {g.label} ({g.count})
             </GlassButton>
@@ -172,7 +206,12 @@ const CheckoutPage = () => {
         variant={asPrimary ? 'primary' : 'ghost'}
         size={asPrimary ? 'lg' : 'md'}
         fullWidth
-        onClick={() => { emitPurchaseComplete('whatsapp'); window.open(link, '_blank'); finalize(); }}
+        onClick={() => {
+          emitPurchaseComplete('whatsapp');
+          window.open(link, '_blank');
+          markWebOrderWhatsapp(paymentStepData.pedidoWebId || paymentStepData.id).catch(() => {});
+          finalize();
+        }}
       >
         {asPrimary ? '💬 Terminar mi compra por WhatsApp' : label}
       </GlassButton>
@@ -532,6 +571,7 @@ const CheckoutPage = () => {
         selectedItems.forEach((item, idx) => {
           const precioItem = item.customization?.finalPrice || item.price || 0;
           const subtotalItem = precioItem * (item.quantity || 1);
+          const designReferences = getDesignReferences(item);
 
           if (item.isComboProduct) {
             // ── Extraer datos por sub-producto del combo ──────────────────
@@ -684,6 +724,8 @@ const CheckoutPage = () => {
               // Snapshot de la imagen del producto AL COMPRAR (ya vive en el cartItem):
               // la miniatura de "Mis Compras" deja de depender del catálogo vivo.
               urlImagen: item.productImage || '',
+              imagenReferencial: item.productImage || '',
+              imagenesReferencia: designReferences.images,
               cantidad: item.quantity || 1,
               precio: precioItem,
               subtotal: subtotalItem,
@@ -692,6 +734,7 @@ const CheckoutPage = () => {
                 (c) => c?.layersByView && Object.values(c.layersByView).some((l) => l?.length > 0)
               )),
               urlImagenPersonalizada: item.customization?.imageURL || '',
+              disenoVistas: designReferences.views,
               designId: item.customization?.designId || '',
               subProductos,
             };
@@ -705,6 +748,8 @@ const CheckoutPage = () => {
               // Snapshot de la imagen del producto AL COMPRAR (ya vive en el cartItem):
               // la miniatura de "Mis Compras" deja de depender del catálogo vivo.
               urlImagen: item.productImage || '',
+              imagenReferencial: item.productImage || '',
+              imagenesReferencia: designReferences.images,
               cantidad: item.quantity || 1,
               talla: item.variant?.size || '',
               color: item.variant?.color || '',
@@ -715,6 +760,7 @@ const CheckoutPage = () => {
                 : item.customization?.imageURL),
               textoPersonalizado: item.customization?.text || '',
               urlImagenPersonalizada: item.customization?.imageURL || '',
+              disenoVistas: designReferences.views,
               designId: item.customization?.designId || '',
             };
           }
@@ -798,8 +844,7 @@ const CheckoutPage = () => {
           // ─ Imágenes de diseños personalizados (Mapeo completo galería) ─
           imageURLs: selectedItems
             .flatMap((i) => {
-              const urls = [];
-              if (i.customization?.imageURL) urls.push(i.customization.imageURL);
+              const urls = [...getDesignReferences(i).images];
               if (i.isComboProduct && productosMap) {
                 const itemMap = Object.values(productosMap).find((pm) => pm.productoId === i.productId);
                 if (itemMap?.subProductos) {
@@ -973,6 +1018,12 @@ const CheckoutPage = () => {
           }
           const price = item.customization?.finalPrice || item.price;
           message += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
+          const referenceLinks = getDesignReferences(item).images
+            .filter((url) => /^https?:\/\//i.test(url))
+            .slice(0, 4);
+          referenceLinks.forEach((url, imageIndex) => {
+            message += `   Imagen de referencia${referenceLinks.length > 1 ? ` ${imageIndex + 1}` : ''}: ${url}\n`;
+          });
           message += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
         });
 
@@ -1035,6 +1086,12 @@ const CheckoutPage = () => {
             const price = item.customization?.finalPrice || item.price;
             sub += price * item.quantity;
             m += `   Subtotal: S/ ${(price * item.quantity).toFixed(2)}\n`;
+            getDesignReferences(item).images
+              .filter((url) => /^https?:\/\//i.test(url))
+              .slice(0, 4)
+              .forEach((url, imageIndex, links) => {
+                m += `   Imagen de referencia${links.length > 1 ? ` ${imageIndex + 1}` : ''}: ${url}\n`;
+              });
             m += `   Link: ${window.location.origin}/producto/${item.productId}\n\n`;
           });
           m += `Subtotal${brandLabel ? ` de ${brandLabel}` : ''}: S/ ${sub.toFixed(2)}\n`;
@@ -1105,12 +1162,14 @@ const CheckoutPage = () => {
 
         // ── 4. Guardar en localStorage (pendiente de confirmación) ─────────
         const currentCart = JSON.parse(localStorage.getItem('shopping_cart') || '[]');
-        const updatedCart = currentCart.map((item) => ({
-          ...item,
-          status: 'pending_confirmation',
-          pseudoOrderId,
-          ...(webOrderId && { webOrderId }),
-        }));
+        const updatedCart = currentCart.map((item) => item.selected === false
+          ? item
+          : ({
+              ...item,
+              status: 'pending_confirmation',
+              pseudoOrderId,
+              ...(webOrderId && { webOrderId }),
+            }));
         localStorage.setItem('shopping_cart', JSON.stringify(updatedCart));
 
         const savedInfo = {
@@ -1797,7 +1856,7 @@ const CheckoutPage = () => {
           <GlassCard variant="solid" padding="lg" animate={false} bodyClassName={styles.summaryBody}>
           <h2><T>Resumen del Pedido</T></h2>
           <div className={styles.items}>
-            {items.map(item => (
+            {selectedItems.map(item => (
               <div key={item.id} className={styles.summaryItem}>
                 <span>{item.productName} x{item.quantity}</span>
                 <span>S/ {((item.customization?.finalPrice || item.price) * item.quantity).toFixed(2)}</span>

@@ -538,6 +538,31 @@ export async function createWebOrder(orderData) {
 }
 
 /**
+ * Registra que el cliente eligio continuar un pedido web por WhatsApp.
+ * El pedido ya existe en `pedidos_web`; esta marca permite al ERP distinguir
+ * una conversacion iniciada de un checkout abandonado en la pantalla de pago.
+ */
+export async function markWebOrderWhatsapp(orderId) {
+  if (!isErpFirestoreAvailable() || !orderId) {
+    return { success: false, error: 'Firestore del ERP no esta disponible' };
+  }
+
+  try {
+    await updateDoc(doc(erpDb, 'pedidos_web', String(orderId)), {
+      metodoPagoSeleccionado: 'whatsapp',
+      canalConfirmacion: 'whatsapp',
+      whatsappSolicitado: true,
+      whatsappSolicitadoAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return { success: true, error: null };
+  } catch (error) {
+    console.warn('No se pudo marcar el pedido como iniciado por WhatsApp:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Obtener detalles del regalo de un pedido (por pseudoOrderId o ID)
  * Solo devuelve los datos de giftDetails para mantener la privacidad
  */
