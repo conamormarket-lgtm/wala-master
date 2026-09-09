@@ -5,12 +5,15 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import { volarMonedasGanadas } from '../../../utils/animations';
 import { scheduleKapiNotifications } from '../../../services/kapiNotifications';
-import { limaTodayStr, felicidadKapiHoy } from '../../../utils/fechaLima';
+import {
+  limaTodayStr, felicidadKapiHoy, msHastaMananaLima, textoEspera,
+} from '../../../utils/fechaLima';
 import { useGlobalToast } from '../../../contexts/ToastContext';
 import { diseno, disenoNum } from '../../../utils/modoDiseno';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
+import { Badge } from '../../ui';
 import styles from './KapiPet.module.css';
 import { T } from '../../../i18n/useTranslatedText';
 
@@ -26,6 +29,19 @@ const KapiPet = () => {
   const [isFeeding, setIsFeeding] = useState(false);
   const [evidenceUrl, setEvidenceUrl] = useState('');
   const [submittingEv, setSubmittingEv] = useState(false);
+
+  // Los juegos diarios se reabren a medianoche de Lima.
+  const faltaComida = textoEspera(msHastaMananaLima());
+
+  // Lo que se le dice al usuario según cómo esté Kapi. Antes el subtítulo era
+  // siempre el mismo ("Alimenta a Kapi todos los días..."), así que la carita
+  // cambiaba y el texto no la acompañaba.
+  // eslint-disable-next-line no-unused-vars
+  const TEXTO_ESTADO = {
+    happy: 'Kapi está feliz. Vuelve mañana por su comida.',
+    hungry: 'Kapi tiene hambre. Dale de comer y te llevas una moneda.',
+    sad: 'Kapi te echa de menos. Llevas días sin darle de comer.',
+  };
 
   // Cada archivo se llama como la cara que tiene. Estuvieron intercambiados: el
   // que llora se llamaba 'hungry' y el de la carita alicaida 'sad', asi que un
@@ -130,11 +146,19 @@ const KapiPet = () => {
   }, [isOpen, isFeeding]);
 
   if (onLandingPage) return null; // Kapi no aparece en landings (protege la conversión del checkout)
-  if (!user || !userProfile) return null;
+  // ?sesion=activa pinta a Kapi sin cuenta, para poder repasar el modal sin una
+  // sesión delante. Inerte en producción, como todo modoDiseno: no concede nada,
+  // el servidor sigue decidiendo si se puede alimentar.
+  // Con ?kapi=feliz se simula ademas que ya comio hoy, que es el unico estado
+  // en el que aparecen la insignia de "Hecho hoy" y la cuenta atras.
+  const perfil = userProfile || (diseno('sesion') === 'activa'
+    ? { lastKapiClaimDate: diseno('kapi') === 'feliz' ? limaTodayStr() : undefined }
+    : null);
+  if (!perfil) return null;
 
   // Mismo criterio de día que feedKapiSecure (hora de Lima).
   const todayStr = limaTodayStr();
-  const lastClaim = userProfile.lastKapiClaimDate;
+  const lastClaim = perfil.lastKapiClaimDate;
   const hasClaimedToday = lastClaim === todayStr;
 
   // Ya no retornamos null aquí, para que la mascota siempre esté visible (feliz si ya comió)
@@ -143,7 +167,7 @@ const KapiPet = () => {
   // Felicidad REAL de hoy: el valor guardado solo se actualiza al alimentarlo, así
   // que aquí se le aplica el mismo decaimiento que usará el servidor. Si no, la
   // barra se quedaba clavada en 100/100 aunque llevaras semanas sin darle de comer.
-  const felicidadReal = felicidadKapiHoy(userProfile.kapiHappiness, lastClaim, todayStr);
+  const felicidadReal = felicidadKapiHoy(perfil.kapiHappiness, lastClaim, todayStr);
   // Modo diseño (solo en local): ?felicidad=25&kapi=triste para verlo sin esperar.
   const felicidad = disenoNum('felicidad', 0, 100) ?? felicidadReal;
 
@@ -282,7 +306,7 @@ const KapiPet = () => {
             
             <h2 className={styles.title}><T>Tu Mascota Kapi</T></h2>
             <p className={styles.subtitle}>
-              Alimenta a Kapi todos los días para ganar monedas.
+              <T>{TEXTO_ESTADO[kapiState]}</T>
             </p>
 
             <div className={styles.petContainer} id="kapi-pet-container">
@@ -292,10 +316,22 @@ const KapiPet = () => {
                   alt={`Kapi ${kapiState}`} 
                   className={styles.petImage} 
                 />
+                {/* Misma insignia que las tarjetas del hub, para que el
+                    modal se lea como parte de la misma familia. */}
+                <span className={styles.petBadge}>
+                  {hasClaimedToday
+                    ? <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
+                    : <Badge tone="warning" variant="soft" dot><T>Disponible hoy</T></Badge>}
+                </span>
               </div>
               
               <div className={styles.stats} id="kapi-stats">
-                <span><T>Felicidad</T>: {felicidad}/100</span>
+                {/* Etiqueta y valor a los lados, como "Días reclamados 7/7"
+                    en la tarjeta de la Ruleta. */}
+                <div className={styles.statsFila}>
+                  <span><T>Felicidad</T></span>
+                  <span className={styles.statsValor}>{felicidad}/100</span>
+                </div>
                 <div className={styles.happinessBar}>
                   <div className={styles.happinessFill} style={{ width: `${felicidad}%` }} />
                 </div>
@@ -350,8 +386,17 @@ const KapiPet = () => {
 
             <div className={styles.actionContainer}>
               {hasClaimedToday ? (
-                <div className={styles.claimedText}>
-                  ¡Kapi está lleno por hoy! Vuelve mañana.
+                <div>
+                  <span className={styles.claimedText}>
+                    <T>¡Kapi está lleno por hoy!</T>
+                  </span>
+                  {/* Cuánto falta de verdad, igual que en las tarjetas del hub:
+                      "vuelve mañana" no dice nada a las once de la noche. */}
+                  {faltaComida && (
+                    <span className={styles.claimedEspera}>
+                      <T>Podrás darle de comer en</T> {faltaComida}
+                    </span>
+                  )}
                 </div>
               ) : (
                 <button 
