@@ -13,6 +13,7 @@ import { getDocument } from '../../../services/firebase/firestore';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
+import HeaderSearch from '../HeaderSearch/HeaderSearch';
 import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, Check } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
@@ -676,17 +677,15 @@ const Header = () => {
               cuenta, en vez de sumar 2 iconos mas a esta barra. */}
           <span className={styles.actionsDivider} aria-hidden="true" />
 
-          {/* Búsqueda consciente de marca (multimarca): en página de marca (brandActual)
-              se agrega ?brand=<id de tienda_brands> para que SearchPage acote los
-              resultados y el usuario no sea expulsado al catálogo global. Sin marca
-              (Con Amor / páginas globales) el enlace queda EXACTO como hoy. */}
-          <Link
-            to={brandActual?.id ? `/buscar?brand=${encodeURIComponent(brandActual.id)}` : '/buscar'}
-            className={styles.iconButton}
-            aria-label={t('common.search', 'Buscar')}
-          >
-            <Search strokeWidth={1.5} className={styles.icon} />
-          </Link>
+          {/* Búsqueda consciente de marca (multimarca): en página de marca
+              (brandActual) se conserva ?brand=<id de tienda_brands> para que los
+              resultados se acoten a esa tienda y el usuario no sea expulsado al
+              catálogo global.
+
+              Antes esto era un enlace pelado a /buscar: llegabas a una página
+              con el campo vacío y tenías que empezar de nuevo allí. Ahora se
+              escribe donde se pulsa. */}
+          <HeaderSearch brandId={brandActual?.id || null} botonClassName={styles.iconButton} />
 
           {user && <NotificationTray />}
 

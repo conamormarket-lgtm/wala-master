@@ -1,0 +1,277 @@
+/* =========================================================================
+   Buscador de la cabecera
+   -------------------------------------------------------------------------
+   El panel vive en un PORTAL a <body> y se coloca MIDIENDO la cabecera desde
+   el componente (top/right en línea), no con una altura escrita a mano: la
+   cabecera cambia de alto con la barra de administrador y entre móvil y
+   escritorio. Y tiene que salir de la cabecera porque esta lleva
+   backdrop-filter, que atrapa dentro a todo lo que sea position:fixed — el
+   velo, que debía cubrir la pantalla, medía 44x44.
+
+   Colores: los tokens del tema, así que el panel se oscurece solo en modo
+   noche. El violeta de marca solo en el botón de buscar y en las cuentas.
+   ========================================================================= */
+
+.lupaBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.lupaIcono {
+  width: 22px;
+  height: 22px;
+}
+
+/* Vela de fondo: el panel es un desplegable, no una capa modal, así que
+   oscurece poco — lo justo para que la página de detrás deje de competir. */
+.velo {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 1090;
+}
+
+/* Fijo y colocado por medición desde el componente (top/right en línea): el
+   panel vive en <body>, así que no puede colgar del botón por CSS. */
+.panel {
+  position: fixed;
+  z-index: 1100;
+  width: min(880px, 92vw);
+  padding: clamp(0.9rem, 2vw, 1.15rem);
+  border-radius: var(--radio-grande, 24px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 18px 40px var(--color-shadow, rgba(15, 23, 42, 0.18));
+}
+
+/* =========================================================================
+   CAMPO
+   ========================================================================= */
+
+.formulario {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lupaCampo {
+  position: absolute;
+  left: 0.85rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.campo {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target, 44px);
+  padding: 0.7rem 2.4rem 0.7rem 2.6rem;
+  border-radius: var(--radio-pequeno, 10px);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.campo::placeholder {
+  color: var(--color-text-muted);
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.limpiarCampo {
+  position: absolute;
+  right: 6.5rem;
+  display: inline-flex;
+  padding: 0.2rem;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.limpiarCampo:hover {
+  color: var(--color-text);
+}
+
+.botonIr {
+  flex-shrink: 0;
+  min-height: var(--touch-target, 44px);
+  padding: 0.7rem 1.2rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-pequeno, 10px);
+  /* Violeta fijo en los dos temas: --primary-color se aclara en noche y como
+     relleno con letra blanca se lava. */
+  background: var(--violet-500, #8b5cf6);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.botonIr:hover {
+  background: var(--violet-600, #7c3aed);
+}
+
+/* =========================================================================
+   CONTENIDO
+   ========================================================================= */
+
+.bloque {
+  margin-top: 1rem;
+}
+
+.bloqueCabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.bloqueTitulo {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.limpiarEnlace {
+  border: none;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.columnas {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.columna {
+  min-width: 0;
+}
+
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Filas de ancho completo: el objetivo de pulsación es toda la línea, no solo
+   las letras. */
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 38px;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: var(--radio-pequeno, 10px);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fila:hover {
+  background: var(--color-hover);
+}
+
+.fila:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
+}
+
+.filaIcono {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.cuenta {
+  margin-left: auto;
+  padding-left: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.nada {
+  margin: 0.4rem 0 0;
+  padding: 0.4rem 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.verTodo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  margin-top: 1rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-surface);
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.verTodo:hover {
+  background: var(--color-hover);
+  border-color: var(--primary-color);
+}
+
+/* =========================================================================
+   MÓVIL
+   -------------------------------------------------------------------------
+   El panel deja de colgar de la lupa y se pega a los lados de la pantalla: a
+   360px, un desplegable anclado a la derecha se sale por el borde.
+   ========================================================================= */
+
+@media (max-width: 768px) {
+  /* A 360px un desplegable anclado a la derecha se sale por el borde: aquí se
+     pega a los dos lados. El `top` sigue viniendo medido del componente. */
+  .panel {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: calc(100vh - 84px);
+    overflow-y: auto;
+  }
+
+  .columnas {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .limpiarCampo {
+    right: 5.8rem;
+  }
+}

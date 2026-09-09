@@ -201,3 +201,105 @@ export async function searchProductsFirestore({ term = '', mode = 'prefix', curs
     return memoryFallback({ term, pageSize, cursor });
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUGERENCIAS PARA EL PANEL DEL BUSCADOR (cabecera)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Se calculan sobre el catálogo que ya está en memoria, sin pedir nada a la
+// red: el usuario escribe letra a letra y una consulta por pulsación sería un
+// derroche (y en Firestore, además, se paga).
+//
+// Con un catálogo pequeño se sugieren PRODUCTOS, no frases de búsqueda. Las
+// tiendas enormes sugieren frases ("dragon ball z", "dragon ball polo") porque
+// tienen millones de artículos y la frase es el único atajo posible; aquí, si
+// lo que buscas está a un clic, enseñarlo directamente es mejor que enseñarte
+// otra búsqueda que tendrás que hacer.
+//
+// Devuelve además las marcas y las categorías presentes EN LOS RESULTADOS (no
+// las del catálogo entero): son atajos para acotar, y solo valen si de verdad
+// hay algo detrás.
+
+// ¿Casa el producto con lo escrito? El nombre y la marca mandan; la descripción
+// NO entra: hace que salgan productos cuyo título no tiene nada que ver y las
+// sugerencias parecen aleatorias.
+const casaSugerencia = (p, q) => {
+  const nombre = normalizeSearchText(p.name);
+  if (nombre.includes(q)) return true;
+  if (normalizeSearchText(p.brandId).includes(q)) return true;
+  return (p.tags || []).some((t) => normalizeSearchText(t).includes(q));
+};
+
+// Ordena de más a menos pertinente: primero lo que EMPIEZA por lo escrito,
+// luego lo que lo contiene, y a igualdad, por nombre.
+const porPertinencia = (q) => (a, b) => {
+  const na = normalizeSearchText(a.name);
+  const nb = normalizeSearchText(b.name);
+  const ea = na.startsWith(q) ? 0 : 1;
+  const eb = nb.startsWith(q) ? 0 : 1;
+  if (ea !== eb) return ea - eb;
+  return na.localeCompare(nb);
+};
+
+const cuentaPorClave = (items, clave) => {
+  const cuenta = new Map();
+  for (const p of items) {
+    const v = p[clave];
+    if (v == null || v === '') continue;
+    cuenta.set(v, (cuenta.get(v) || 0) + 1);
+  }
+  return [...cuenta.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([id, total]) => ({ id, total }));
+};
+
+/**
+ * Sugerencias para el panel del buscador.
+ *
+ * @param {string} term lo que lleva escrito el usuario
+ * @param {{maxProductos?: number, maxMarcas?: number, maxCategorias?: number}} [opts]
+ * @returns {Promise<{productos: object[], marcas: {id,total}[], categorias: {id,total}[], total: number}>}
+ */
+export async function getSearchSuggestions(term, opts = {}) {
+  const { maxProductos = 6, maxMarcas = 5, maxCategorias = 6 } = opts;
+  const vacio = { productos: [], marcas: [], categorias: [], total: 0 };
+
+  const q = normalizeSearchText(term);
+  if (q.length < 2) return vacio;
+
+  let all;
+  try {
+    all = await fetchAll();
+  } catch (e) {
+    // El panel es un extra: si el catálogo no se puede leer, el buscador de
+    // toda la vida (Enter -> /buscar) sigue funcionando.
+    return vacio;
+  }
+
+  const casan = all
+    .filter((p) => p.visible !== false && casaSugerencia(p, q))
+    .sort(porPertinencia(q));
+
+  // Las categorías viven en `categories` (array); las marcas, en `brandId`.
+  const categorias = (() => {
+    const cuenta = new Map();
+    for (const p of casan) {
+      for (const c of p.categories || []) {
+        const id = typeof c === 'object' ? String(c?.id ?? '') : String(c ?? '');
+        if (!id || id === '[object Object]') continue;
+        cuenta.set(id, (cuenta.get(id) || 0) + 1);
+      }
+    }
+    return [...cuenta.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, total]) => ({ id, total }))
+      .slice(0, maxCategorias);
+  })();
+
+  return {
+    productos: casan.slice(0, maxProductos),
+    marcas: cuentaPorClave(casan, 'brandId').slice(0, maxMarcas),
+    categorias,
+    total: casan.length,
+  };
+}
