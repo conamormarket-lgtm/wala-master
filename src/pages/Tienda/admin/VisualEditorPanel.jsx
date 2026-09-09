@@ -754,6 +754,11 @@ const VisualEditorPanel = () => {
                 <button disabled={!isHeaderVisible} style={{flex: 1, minWidth: '70px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontWeight: 500, opacity: isHeaderVisible ? 1 : 0.5}} onClick={() => openEditorForSection('header', storeConfigDraft)} title="Editar Navegación">Navegación</button>
                 <button disabled={!isHeaderVisible} style={{flex: 1, minWidth: '60px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontWeight: 500, opacity: isHeaderVisible ? 1 : 0.5}} onClick={() => openEditorForSection('accountPopup', storeConfigDraft)} title="Editar Mi Cuenta">Cuenta</button>
                 <button disabled={!isHeaderVisible} style={{flex: 1, minWidth: '60px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontWeight: 500, opacity: isHeaderVisible ? 1 : 0.5}} onClick={() => openEditorForSection('favoritesPopup', storeConfigDraft)} title="Editar Favoritos">Favoritos</button>
+                {/* El buscador se marca en su propia página al pasar el ratón, pero
+                    ahí no hay forma de saber que se puede editar hasta que lo
+                    intentas. Desde aquí se abre directamente, como Cuenta y
+                    Favoritos. No depende del encabezado: la página existe igual. */}
+                <button style={{flex: 1, minWidth: '70px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontWeight: 500}} onClick={() => openEditorForSection('searchPage', storeConfigDraft)} title="Editar la página de búsqueda (/buscar)">Buscador</button>
               </div>
             </div>
           )}

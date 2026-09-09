@@ -301,9 +301,19 @@
 
 .rejilla {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* Mismos anchos y huecos que la rejilla del catálogo (ProductGrid): es la
+     misma tarjeta y está pensada para esta caja. Antes eran columnas de 180px,
+     tan estrechas que el nombre del producto se cortaba. */
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   column-gap: 1.25rem;
   row-gap: 2rem;
+}
+
+@media (max-width: 992px) {
+  .rejilla {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+  }
 }
 
 .vacio {
@@ -403,6 +413,10 @@
     grid-template-columns: repeat(2, 1fr);
     column-gap: 12px;
     row-gap: 1.25rem;
+  }
+
+  .rejilla > * {
+    min-width: 0; /* que la tarjeta pueda encoger dentro de su columna */
   }
 
   .barra {

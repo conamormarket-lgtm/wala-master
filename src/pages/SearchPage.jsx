@@ -8,7 +8,12 @@ import EditableSection from '../components/admin/EditableSection';
 import { getCategories } from '../services/products';
 import { getBrand } from '../services/brands';
 import { FULFILLMENT_TYPES } from '../constants/marketplace';
-import ProductCard from './Tienda/components/ProductCard/ProductCard';
+// La MISMA tarjeta que la tienda (ProductGrid). El buscador usaba la anterior,
+// ProductCard, y por eso sus resultados salían "a medias" al lado del catálogo:
+// sin los distintivos de NUEVO ni de OFERTA, con otra caja y otro alto. Dos
+// componentes para lo mismo se separan solos con el tiempo; el catálogo es el
+// que se mantiene, así que manda ese.
+import PremiumProductCard from './Tienda/components/PremiumProductCard/PremiumProductCard';
 import { Search, ArrowLeft } from 'lucide-react';
 import styles from './SearchPage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -325,8 +330,14 @@ const SearchPage = () => {
         </div>
       ) : (
         <div className={styles.rejilla}>
-          {visible.map((p) => (
-            <ProductCard key={p.id} product={p} categories={categories} />
+          {visible.map((p, index) => (
+            <PremiumProductCard
+              key={p.id}
+              product={p}
+              categories={categories}
+              isAboveFold={index < 4}
+              currentBrandId={brandFilter || null}
+            />
           ))}
         </div>
       )}
