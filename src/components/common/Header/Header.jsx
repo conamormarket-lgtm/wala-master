@@ -641,7 +641,9 @@ const Header = () => {
                     onClick={(e) => handleMobileDropdownClick(e, 'billetera')}
                     style={{ background: 'transparent', border: 'none', display: 'flex', gap: '6px', padding: 0 }}
                   >
-                    <div className={`${styles.nativeCoinBadge} ${isCoinBouncing ? styles.bounce : ''} global-coins-target`} style={{ color: 'var(--rojo-principal)', background: '#ffe4e6', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '12px' }}>
+                    {/* Colores en la hoja de estilos (.nativeCoinBadge): los mismos
+                        dorados que el contador de escritorio. */}
+                    <div className={`${styles.nativeCoinBadge} ${isCoinBouncing ? styles.bounce : ''} global-coins-target`}>
                       <span style={{fontSize: '13px'}}>🪙</span> <strong>{Math.floor(displayCoins)}</strong>
                     </div>
                   </button>
@@ -656,7 +658,7 @@ const Header = () => {
                             <span style={{ fontSize: '18px' }}>🪙</span>
                             <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>Monedas</span>
                           </div>
-                          <strong style={{ color: 'var(--rojo-principal)', fontSize: '15px' }}>{Math.floor(displayCoins)}</strong>
+                          <strong className={styles.mobileWalletCoins}>{Math.floor(displayCoins)}</strong>
                         </li>
                       </ul>
                       <p style={{ margin: '10px 0 0', fontSize: '12px', color: 'var(--color-text-muted)' }}>

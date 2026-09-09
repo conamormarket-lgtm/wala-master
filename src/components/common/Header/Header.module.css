@@ -712,6 +712,47 @@
   transform: scale(1.05);
 }
 
+/* Contador de monedas en MÓVIL. Es el mismo dato que .coinsDisplay de aquí
+   arriba, así que lleva los mismos colores: las monedas son doradas en toda la
+   app (la moneda del emoji, la insignia "+3 monedas al acertar" del arcade, el
+   vuelo de monedas al cobrar).
+   Antes esta clase no existía en la hoja de estilos — el JSX pedía
+   styles.nativeCoinBadge y recibía `undefined` — y el aspecto salía de un
+   `style` incrustado: texto en --rojo-principal (que hoy es el VIOLETA de la
+   marca) sobre un rosa #ffe4e6 fijo. Resultado: la misma cifra se veía dorada
+   en escritorio y rosa/violeta en el móvil, y el rosa, al ser un color fijo,
+   seguía siendo un parche claro en modo noche. */
+.nativeCoinBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  background-color: rgba(243, 156, 18, 0.1);
+  color: #db8a10;
+  border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+/* En noche el dorado medio se apaga sobre la superficie oscura del header. */
+:global([data-theme='dark']) .nativeCoinBadge,
+:global([data-theme='dark']) .coinsDisplay {
+  background-color: rgba(243, 156, 18, 0.16);
+  color: #fbbf24;
+  border-color: rgba(243, 156, 18, 0.4);
+}
+
+/* El importe dentro del desplegable que abre esa insignia. Iba en violeta,
+   así que al tocar la insignia dorada el número cambiaba de color. */
+.mobileWalletCoins {
+  font-size: 15px;
+  color: #db8a10;
+}
+
+:global([data-theme='dark']) .mobileWalletCoins {
+  color: #fbbf24;
+}
+
 /* Kapi Coins: antes un estilo inline (backgroundColor #fff3cd + border
    #ffeeba) con MENOS contraste entre fondo/borde que Wala Coins (aca
    arriba, rgba mismo tono a 0.1/0.3 — border claramente mas oscuro que el
