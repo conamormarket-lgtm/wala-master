@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { useCart } from '../../../../contexts/CartContext';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { T } from '../../../../i18n/useTranslatedText';
@@ -22,6 +23,15 @@ const CartItem = ({ item }) => {
   const isCombo = item.isComboProduct;
   // Un item sin la propiedad 'selected' se considera seleccionado (se comprará).
   const isSelected = item.selected !== false;
+
+  // Color elegido: el nombre vive en selectedVariant.name y, en los items que
+  // vienen del editor, en variant.color. El hex (si lo hay) pinta la bolita.
+  const colorName = item.variant?.selectedVariant?.name || item.variant?.color || null;
+  const colorHex = item.variant?.selectedVariant?.colorHex || null;
+
+  // A cantidad 1 el "-" llamaba a updateQuantity(0), que borra el artículo sin
+  // avisar. Para quitarlo está la papelera; aquí el "-" simplemente se apaga.
+  const canDecrease = item.quantity > 1;
 
   return (
     <div className={`${styles.item} ${!isSelected ? styles.itemDeselected : ''}`}>
@@ -56,14 +66,26 @@ const CartItem = ({ item }) => {
           </div>
         )}
         
-        {!isCombo && item.variant.selectedVariant?.name && (
-          <div className={styles.variant}>Variante: {item.variant.selectedVariant.name}</div>
-        )}
-        {!isCombo && !item.variant.selectedVariant?.name && item.variant.color && (
-          <div className={styles.variant}>Color: {item.variant.color}</div>
-        )}
-        {!isCombo && item.variant.size && (
-          <div className={styles.variant}>Talla: {item.variant.size}</div>
+        {!isCombo && (colorName || item.variant.size) && (
+          <dl className={styles.meta}>
+            {colorName && (
+              <div className={styles.metaRow}>
+                <dt><T>Color</T></dt>
+                <dd>
+                  {colorHex && (
+                    <span className={styles.swatch} style={{ background: colorHex }} aria-hidden="true" />
+                  )}
+                  <T>{colorName}</T>
+                </dd>
+              </div>
+            )}
+            {item.variant.size && (
+              <div className={styles.metaRow}>
+                <dt><T>Talla</T></dt>
+                <dd>{item.variant.size}</dd>
+              </div>
+            )}
+          </dl>
         )}
         
         {isCombo && item.comboVariantSelections && Object.keys(item.comboVariantSelections).length > 0 && (
@@ -76,7 +98,11 @@ const CartItem = ({ item }) => {
           </div>
         )}
         
-        <div className={styles.price}>S/ {itemPrice.toFixed(2)} c/u</div>
+        {/* El precio unitario solo aporta cuando hay más de una unidad; con
+            cantidad 1 repetía el mismo número que el total de la fila. */}
+        {item.quantity > 1 && (
+          <div className={styles.price}>S/ {itemPrice.toFixed(2)} c/u</div>
+        )}
 
         {/* Selección de compra: deja el item en el carrito pero lo excluye/incluye del pago. */}
         <button
@@ -90,15 +116,31 @@ const CartItem = ({ item }) => {
       </div>
 
       <div className={styles.quantity}>
-        <button onClick={() => handleQuantityChange(item.quantity - 1)}>-</button>
-        <span>{item.quantity}</span>
-        <button onClick={() => handleQuantityChange(item.quantity + 1)}>+</button>
+        <button
+          type="button"
+          onClick={() => handleQuantityChange(item.quantity - 1)}
+          disabled={!canDecrease}
+          aria-label="Quitar una unidad"
+          title={canDecrease ? 'Quitar una unidad' : 'Usa la papelera para eliminar el artículo'}
+        >-</button>
+        <span aria-live="polite">{item.quantity}</span>
+        <button
+          type="button"
+          onClick={() => handleQuantityChange(item.quantity + 1)}
+          aria-label="Añadir una unidad"
+        >+</button>
       </div>
 
       <div className={styles.total}>
         <div className={styles.totalPrice}>S/ {totalPrice.toFixed(2)}</div>
-        <button onClick={handleRemove} className={styles.removeButton}>
-          🗑️
+        <button
+          type="button"
+          onClick={handleRemove}
+          className={styles.removeButton}
+          aria-label={`Eliminar ${item.productName} del carrito`}
+          title="Eliminar del carrito"
+        >
+          <Trash2 size={17} aria-hidden="true" />
         </button>
       </div>
     </div>
