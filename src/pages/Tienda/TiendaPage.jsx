@@ -727,6 +727,14 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         })()
       : undefined,
     initialDataUpdatedAt: 0,
+    // El QueryClient global trae refetchOnMount:false (ver App.jsx), así que
+    // marcar la caché como obsoleta con initialDataUpdatedAt:0 NO bastaba: la
+    // "primera página" placeholder —que viene con hasMore:false y sin cursor—
+    // se quedaba fija y la paginación no arrancaba nunca. Mientras el catálogo
+    // cabía en una página no se notaba; al pasar de STORE_PAGE_SIZE productos,
+    // la tienda se quedaba mostrando solo los primeros 24 y pintando "Has visto
+    // todos los productos". Forzamos el refetch solo en esta query.
+    refetchOnMount: 'always',
   });
 
   // Aplana todas las páginas cargadas hasta ahora en un único array para el grid.
