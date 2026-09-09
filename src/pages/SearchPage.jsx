@@ -19,7 +19,7 @@ import { FULFILLMENT_TYPES } from '../constants/marketplace';
 // cumplimiento), que es lo que distingue "estoy buscando" de "estoy mirando el
 // catálogo".
 import SidebarCatalogLayout from './Tienda/components/SidebarCatalogLayout';
-import { Search, ArrowLeft } from 'lucide-react';
+import { Search } from 'lucide-react';
 import styles from './SearchPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -354,11 +354,6 @@ const SearchPage = () => {
           paginationProps={hasMore ? { hasMore, onLoadMore: loadMore, isFetchingMore: loading } : {}}
         />
       )}
-
-      <Link to="/" className={styles.volver}>
-        <ArrowLeft size={16} aria-hidden="true" />
-        <T>Volver a la tienda</T>
-      </Link>
     </div>
   );
 };
