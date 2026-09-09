@@ -323,9 +323,17 @@
   }
 
   /* Es la acción principal en cuanto hay algo escrito: se rellena para que se
-     vea como tal y se pueda pulsar sin apuntar. */
+     vea como tal y se pueda pulsar sin apuntar. Y se queda PEGADA abajo: con
+     seis productos, tres marcas y una categoría, la lista pasa de la altura de
+     la pantalla y la salida a los resultados quedaba fuera, obligando a
+     desplazarse para encontrar lo más importante del panel. */
   .verTodo {
+    position: sticky;
+    bottom: 0;
     background: var(--primary-light);
     border-color: transparent;
+    /* Sombra corta hacia arriba: deja claro que hay lista por debajo y que esto
+       flota encima, en vez de parecer el final del contenido. */
+    box-shadow: 0 -10px 12px -10px var(--color-shadow, rgba(15, 23, 42, 0.25));
   }
 }
