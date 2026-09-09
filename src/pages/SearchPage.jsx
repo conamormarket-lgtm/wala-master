@@ -19,7 +19,7 @@ import { FULFILLMENT_TYPES } from '../constants/marketplace';
 // cumplimiento), que es lo que distingue "estoy buscando" de "estoy mirando el
 // catálogo".
 import SidebarCatalogLayout from './Tienda/components/SidebarCatalogLayout';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import styles from './SearchPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -321,6 +321,16 @@ const SearchPage = () => {
           )}
         </span>
 
+        {/* Segunda salida, aparte de la de la barra de filtros: en móvil esa
+            barra es un cajón que hay que abrir, y con la lista vacía nadie
+            piensa en abrir los filtros para poder ver algo. */}
+        {hayFiltros && (
+          <button type="button" className={styles.quitarFiltros} onClick={limpiarFiltros}>
+            <X size={15} aria-hidden="true" />
+            <T>Quitar filtros</T>
+          </button>
+        )}
+
         <label className={styles.orden}>
           <T>Ordenar por</T>
           <select className={styles.select} value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -332,10 +342,16 @@ const SearchPage = () => {
         </label>
       </div>
 
-      {/* ── Resultados: el catálogo de la tienda, con sus filtros ───────── */}
+      {/* ── Resultados: el catálogo de la tienda, con sus filtros ─────────
+          El catálogo se pinta también cuando NO queda ningún resultado, siempre
+          que haya algún filtro puesto. Antes se sustituía por el cartel de "sin
+          resultados" y con él desaparecían los filtros: quien afinaba hasta
+          dejar la lista a cero se quedaba encerrado, sin manera de deshacerlo
+          salvo recargar. Sin resultados y sin filtros sí sale el cartel: ahí no
+          hay nada que deshacer. */}
       {loading && items.length === 0 ? (
         <p className={styles.cargando}><T>Buscando…</T></p>
-      ) : visible.length === 0 ? (
+      ) : (visible.length === 0 && !hayFiltros) ? (
         /* El mensaje de antes ("si el catálogo está vacío, conecta Firebase")
            era una nota para quien programa, y la leía el cliente. */
         <div className={styles.vacio}>

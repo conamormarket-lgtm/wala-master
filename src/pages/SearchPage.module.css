@@ -271,6 +271,35 @@
   font-weight: 700;
 }
 
+/* Salida rápida de los filtros, al lado del recuento. */
+.quitarFiltros {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: auto;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-rapida, 180ms) var(--ease-signature, ease),
+              border-color var(--dur-rapida, 180ms) var(--ease-signature, ease);
+}
+
+.quitarFiltros:hover {
+  background: var(--color-hover);
+  border-color: var(--primary-color);
+}
+
+.quitarFiltros:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
 .orden {
   display: inline-flex;
   align-items: center;
