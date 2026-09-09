@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-unused-vars
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { onAuthChange } from '../services/firebase/auth';
 // eslint-disable-next-line no-unused-vars
 import { getDocument, setDocument } from '../services/firebase/firestore';
@@ -8,6 +8,11 @@ import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/u
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../services/firebase/config';
+
+// Cuánto se espera a que Firebase diga quién entra antes de seguir sin sesión.
+// Generoso a propósito: en una red mala la comprobación del token tarda unos
+// segundos y no queremos tratar como invitado a quien sí tiene su cuenta.
+const TOPE_SESION_MS = 8000;
 
 const AuthContext = createContext();
 
@@ -25,6 +30,8 @@ export const AuthProvider = ({ children }) => {
   const [adminPermissions, setAdminPermissions] = useState(null);
   const [isAdminClaim, setIsAdminClaim] = useState(false);
   const [loading, setLoading] = useState(true);
+  // ¿Ha llegado ya la primera respuesta de Firebase sobre quién entra?
+  const sesionResuelta = useRef(false);
   const [activeWeeklyChallenge, setActiveWeeklyChallenge] = useState(null);
 
   useEffect(() => {
@@ -42,72 +49,102 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthChange(async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
+    // Reloj de seguridad: Firebase puede no contestar NUNCA quién entra. Pasa
+    // cuando el navegador tiene bloqueado (o colgado) IndexedDB, que es donde
+    // viven la sesión guardada y la caché de Firestore: entonces ni el aviso de
+    // sesión llega ni las lecturas terminan — se ven en consola como
+    // "[Firestore] getDocument ...: Firestore timeout" una detrás de otra.
+    //
+    // Sin este tope, `loading` se quedaba en true para siempre y con él toda
+    // pantalla que espere a saber quién entra. Al cumplirse el plazo se sigue
+    // con lo que haya (normalmente, sin sesión); si la sesión aparece más tarde,
+    // onAuthChange la coloca igual y la pantalla se actualiza sola.
+    const rendirse = setTimeout(() => {
+      if (sesionResuelta.current) return;
+      console.warn(
+        '[Auth] Firebase no ha dicho quién entra en ' + (TOPE_SESION_MS / 1000) + ' s. ' +
+        'Se sigue sin sesión. Suele ser IndexedDB bloqueado o ocupado por otra pestaña.'
+      );
+      setLoading(false);
+    }, TOPE_SESION_MS);
 
-        // Rol admin desde custom claims de Firebase Auth (fuente de verdad).
-        // Nunca desde localStorage ni emails hardcodeados (ver FASE-0-SEGURIDAD.md, H-01/H-09).
-        try {
-          const tokenResult = await firebaseUser.getIdTokenResult();
-          setIsAdminClaim(tokenResult.claims?.admin === true);
-        } catch (e) {
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      try {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+
+          // Rol admin desde custom claims de Firebase Auth (fuente de verdad).
+          // Nunca desde localStorage ni emails hardcodeados (ver FASE-0-SEGURIDAD.md, H-01/H-09).
+          try {
+            const tokenResult = await firebaseUser.getIdTokenResult();
+            setIsAdminClaim(tokenResult.claims?.admin === true);
+          } catch (e) {
+            setIsAdminClaim(false);
+          }
+
+          const { data: portalDoc } = await getDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid);
+
+          let profileData = null;
+
+          if (portalDoc) {
+            profileData = portalDoc;
+          } else {
+            // Intentar obtener de legacy users si no existe en portal
+            const { data: legacyDoc } = await getDocument(LEGACY_USERS_COLLECTION, firebaseUser.uid);
+            profileData = legacyDoc || {
+              email: firebaseUser.email,
+              role: 'client',
+            };
+          }
+
+          // Generar referralCode si no tiene
+          if (!profileData.referralCode) {
+            const newCode = 'KS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            profileData.referralCode = newCode;
+
+            // Guardar en Firestore asíncronamente
+            setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { referralCode: newCode });
+          }
+
+          // Permisos admin desde adminRoles (RBAC por email). El bootstrap por email
+          // hardcodeado fue eliminado (H-01); conceder admin se hace con custom claims
+          // vía la Cloud Function setAdminClaim / el script scripts/set-admin-claims.js.
+          if (firebaseUser.email) {
+            const roleData = await getAdminRoleByEmail(firebaseUser.email);
+            setAdminPermissions(roleData ? roleData.permissions || [] : []);
+          }
+
+          // Update lastAppOpen if not updated today
+          const _d1 = new Date();
+          const todayStr = `${_d1.getFullYear()}-${String(_d1.getMonth() + 1).padStart(2, '0')}-${String(_d1.getDate()).padStart(2, '0')}`;
+
+          if (profileData.lastAppOpen !== todayStr) {
+            profileData.lastAppOpen = todayStr;
+            setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { lastAppOpen: todayStr });
+          }
+
+          setUserProfile(profileData);
+        } else {
+          setUser(null);
+          setUserProfile(null);
+          setAdminPermissions(null);
           setIsAdminClaim(false);
         }
-
-        const { data: portalDoc } = await getDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid);
-
-        let profileData = null;
-
-        if (portalDoc) {
-          profileData = portalDoc;
-        } else {
-          // Intentar obtener de legacy users si no existe en portal
-          const { data: legacyDoc } = await getDocument(LEGACY_USERS_COLLECTION, firebaseUser.uid);
-          profileData = legacyDoc || {
-            email: firebaseUser.email,
-            role: 'client',
-          };
-        }
-
-        // Generar referralCode si no tiene
-        if (!profileData.referralCode) {
-          const newCode = 'KS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-          profileData.referralCode = newCode;
-
-          // Guardar en Firestore asíncronamente
-          setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { referralCode: newCode });
-        }
-
-        // Permisos admin desde adminRoles (RBAC por email). El bootstrap por email
-        // hardcodeado fue eliminado (H-01); conceder admin se hace con custom claims
-        // vía la Cloud Function setAdminClaim / el script scripts/set-admin-claims.js.
-        if (firebaseUser.email) {
-          const roleData = await getAdminRoleByEmail(firebaseUser.email);
-          setAdminPermissions(roleData ? roleData.permissions || [] : []);
-        }
-
-        // Update lastAppOpen if not updated today
-        const _d1 = new Date();
-        const todayStr = `${_d1.getFullYear()}-${String(_d1.getMonth() + 1).padStart(2, '0')}-${String(_d1.getDate()).padStart(2, '0')}`;
-
-        if (profileData.lastAppOpen !== todayStr) {
-          profileData.lastAppOpen = todayStr;
-          setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { lastAppOpen: todayStr });
-        }
-
-        setUserProfile(profileData);
-      } else {
-        setUser(null);
-        setUserProfile(null);
-        setAdminPermissions(null);
-        setIsAdminClaim(false);
+      } finally {
+        // En `finally` a propósito: entre medias hay lecturas de Firestore que
+        // pueden reventar (getAdminRoleByEmail, por ejemplo, no lleva tope de
+        // espera). Si una lanzaba, se salía de aquí sin apagar `loading` y la
+        // app se quedaba cargando para siempre CON la sesión ya puesta.
+        sesionResuelta.current = true;
+        clearTimeout(rendirse);
+        setLoading(false);
       }
-
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(rendirse);
+      unsubscribe();
+    };
   }, []);
 
   const updateUserProfile = React.useCallback(async (updates) => {
