@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   signInWithCredential,
+  browserPopupRedirectResolver,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
@@ -146,7 +147,10 @@ export const signInWithGoogle = async () => {
 
   // ── Navegador web ─────────────────────────────────────────────────────────
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    // El resolvedor va explícito porque la instancia de auth se crea sin él
+    // (ver arrancarAuth en firebase/config.js): así el iframe de Google se carga
+    // aquí, al pulsar el botón, y no en el arranque de cada visita.
+    const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
     // Best-effort: leer el cumpleaños desde la People API (gratis) y guardarlo
     // para precargarlo en "completar perfil". Nunca rompe el login.
     try {

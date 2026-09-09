@@ -2,7 +2,13 @@ import { initializeApp } from 'firebase/app';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import { initializeFirestore, persistentLocalCache, getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import {
+  getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  connectAuthEmulator,
+} from 'firebase/auth';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getMessaging, isSupported } from 'firebase/messaging';
@@ -15,6 +21,39 @@ const isFirebaseConfigured = () => {
     apiKey !== '' &&
     process.env.REACT_APP_FIREBASE_PROJECT_ID &&
     process.env.REACT_APP_FIREBASE_PROJECT_ID !== 'your-project-id';
+};
+
+/**
+ * Arranca Firebase Auth SIN el resolvedor de popup/redirect.
+ *
+ * getAuth() lo trae de serie, y ese resolvedor carga en el arranque el iframe
+ * de Google (https://apis.google.com/js/api.js) para comprobar si vuelves de un
+ * inicio de sesión por redirección. Si ese script no llega —lo bloquean
+ * extensiones de privacidad, la prevención de seguimiento del navegador o un
+ * filtro de red— Firebase se queda esperándolo y NUNCA avisa de quién ha
+ * entrado. Y como Firestore no envía nada hasta saber con qué credencial ir,
+ * detrás se cuelga TODA la app: la sesión no aparece y las lecturas se quedan
+ * colgadas hasta agotar su tope (se ven en consola como "Firestore timeout"
+ * once seguidas, que fue justo el síntoma).
+ *
+ * Sin resolvedor, la sesión se restaura solo de lo guardado en el navegador,
+ * que es lo único que hace falta para saber quién entra. La lista de
+ * persistencia es la MISMA que usa getAuth() (IndexedDB y, si no, el
+ * almacenamiento local), así que nadie pierde su sesión por este cambio.
+ *
+ * El resolvedor sigue haciendo falta para entrar con Google, pero ahí se pasa a
+ * mano en signInWithPopup (services/firebase/auth.js): así el iframe se carga
+ * cuando alguien pulsa el botón, no en cada visita.
+ */
+const arrancarAuth = (instancia) => {
+  try {
+    return initializeAuth(instancia, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+    });
+  } catch (e) {
+    // Ya inicializado (recarga en caliente, doble import): vale el de siempre.
+    return getAuth(instancia);
+  }
 };
 
 let app = null;
@@ -39,7 +78,7 @@ if (USE_EMULATORS) {
     } catch {
       db = getFirestore(app);
     }
-    auth = getAuth(app);
+    auth = arrancarAuth(app);
     storage = getStorage(app);
     connectFirestoreEmulator(db, 'localhost', 8080);
     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
@@ -92,7 +131,7 @@ if (USE_EMULATORS) {
     }
 
     try {
-      auth = getAuth(app);
+      auth = arrancarAuth(app);
     } catch (authError) {
       auth = null;
       console.warn('Firebase Auth no disponible:', authError?.message || authError);
