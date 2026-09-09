@@ -51,3 +51,40 @@ export const felicidadKapiHoy = (felicidadGuardada, ultimaComida, hoy) => {
   if (dias <= 1) return base; // comió hoy o ayer: no decae
   return Math.max(0, base - KAPI_HAPPINESS_STEP * (dias - 1));
 };
+
+// ── Cuánto falta ──────────────────────────────────────────────────────────
+// Los juegos se abren "mañana" o "el lunes", pero eso solo lo sabe quien tenga
+// en la cabeza que el día se corta a medianoche de Lima. Estos helpers lo
+// traducen a algo que se pueda leer.
+
+// Milisegundos hasta la próxima medianoche de Lima.
+export const msHastaMananaLima = (now = Date.now()) => {
+  const l = limaNow(now);
+  const finDeDia = Date.UTC(l.getUTCFullYear(), l.getUTCMonth(), l.getUTCDate() + 1);
+  return finDeDia - l.getTime();
+};
+
+// Milisegundos hasta el próximo lunes a las 00:00 de Lima (si hoy es lunes,
+// hasta el lunes que viene: la ruleta ya se giró esta semana).
+export const msHastaLunesLima = (now = Date.now()) => {
+  const l = limaNow(now);
+  const dia = l.getUTCDay(); // 0 domingo .. 6 sábado
+  const faltan = ((1 - dia + 7) % 7) || 7;
+  const lunes = Date.UTC(l.getUTCFullYear(), l.getUTCMonth(), l.getUTCDate() + faltan);
+  return lunes - l.getTime();
+};
+
+// Milisegundos -> '45 min', '5 h 20 min', '2 d 4 h'. Cadena vacía si ya pasó.
+export const textoEspera = (ms) => {
+  if (!Number.isFinite(ms) || ms <= 0) return '';
+  const minutos = Math.ceil(ms / 60000);
+  if (minutos < 60) return `${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) {
+    const resto = minutos % 60;
+    return resto ? `${horas} h ${resto} min` : `${horas} h`;
+  }
+  const dias = Math.floor(horas / 24);
+  const resto = horas % 24;
+  return resto ? `${dias} d ${resto} h` : `${dias} d`;
+};

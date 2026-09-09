@@ -41,7 +41,9 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getRuletaEligibility } from '../../services/firebase/ruleta';
-import { limaTodayStr } from '../../utils/fechaLima';
+import {
+  limaTodayStr, msHastaMananaLima, msHastaLunesLima, textoEspera,
+} from '../../utils/fechaLima';
 import { getMiPartidaDeHoy } from '../../services/wordle';
 import { diseno, disenoNum, hayModoDiseno } from '../../utils/modoDiseno';
 import { Badge, Stagger, StaggerItem } from '../../components/ui';
@@ -57,12 +59,14 @@ import { T } from '../../i18n/useTranslatedText';
 const JuegoCard = ({
   acento,
   icono,
+  banner,
   titulo,
   descripcion,
   recompensa,
   estado,
   extras,
   accion,
+  espera,
   atenuada = false,
 }) => (
   // Dos elementos a propósito: framer-motion escribe el transform de la entrada
@@ -72,10 +76,19 @@ const JuegoCard = ({
   // queda con la animación de entrada y la tarjeta con la del cursor.
   <StaggerItem className={styles.cardWrap}>
     <article className={`${styles.card} ${acento} ${atenuada ? styles.cardAtenuada : ''}`}>
-      <div className={styles.cardTop}>
-        <span className={styles.icono} aria-hidden="true">{icono}</span>
-        {estado}
-      </div>
+      {/* Con banner, el icono sobra: la ilustración ya dice de qué juego es, y
+          la insignia de estado se monta encima para no robar altura. */}
+      {banner ? (
+        <div className={styles.banner}>
+          <img src={banner} alt="" loading="lazy" decoding="async" />
+          <span className={styles.bannerEstado}>{estado}</span>
+        </div>
+      ) : (
+        <div className={styles.cardTop}>
+          <span className={styles.icono} aria-hidden="true">{icono}</span>
+          {estado}
+        </div>
+      )}
 
       <h2 className={styles.cardTitulo}><T>{titulo}</T></h2>
       <p className={styles.cardDesc}><T>{descripcion}</T></p>
@@ -85,6 +98,10 @@ const JuegoCard = ({
       {extras && <div className={styles.cardExtras}>{extras}</div>}
 
       <div className={styles.cardAccion}>{accion}</div>
+
+      {/* Cuánto falta para volver a jugar. "Vuelve mañana" no dice nada a las
+          once de la noche; la cuenta atrás sí. */}
+      {espera && <p className={styles.espera}>{espera}</p>}
     </article>
   </StaggerItem>
 );
@@ -120,6 +137,14 @@ const MinijuegosPage = () => {
   // habías jugado, así que seguía invitando a jugar una palabra ya resuelta y
   // contaba como juego pendiente. Lo dice el servidor (wordle/{uid}_{fecha}),
   // que es lo mismo que mira la propia pantalla del juego.
+  // Un tic por minuto para que la cuenta atrás no se quede congelada en la
+  // pantalla de alguien que deja el hub abierto.
+  const [, setTic] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTic((n) => n + 1), 60000);
+    return () => clearInterval(id);
+  }, []);
+
   const [wordleHecho, setWordleHecho] = useState(false);
   const forzarPalabra = diseno('palabra');
   useEffect(() => {
@@ -147,6 +172,12 @@ const MinijuegosPage = () => {
     ? (wordleHecho ? 0 : 1) + (hasClaimedToday ? 0 : 1) + (isRuletaUnlocked ? 1 : 0)
       + (hasClaimedBallSort ? 0 : 1)
     : 0;
+
+  // Textos de espera. Los juegos diarios se reabren a medianoche de Lima; la
+  // ruleta, el lunes.
+  const faltaManana = textoEspera(msHastaMananaLima());
+  const faltaLunes = textoEspera(msHastaLunesLima());
+  const esperaDiaria = faltaManana ? `Disponible de nuevo en ${faltaManana}` : '';
 
   const handleOpenDailyReward = () => {
     if (hasClaimedToday) {
@@ -218,6 +249,8 @@ const MinijuegosPage = () => {
         <JuegoCard
           acento={styles.wordle}
           icono={<SpellCheck size={26} />}
+          banner="/assets/kapi/banners/palabra.webp"
+          espera={wordleHecho ? esperaDiaria : ''}
           titulo="Palabra del Día"
           descripcion="Adivina la palabra oculta en 6 intentos y compite en el ranking global."
           estado={wordleHecho
@@ -253,6 +286,8 @@ const MinijuegosPage = () => {
         <JuegoCard
           acento={styles.kapi}
           icono={<Bone size={26} />}
+          banner="/assets/kapi/banners/alimenta.webp"
+          espera={hasClaimedToday ? esperaDiaria : ''}
           titulo="Alimenta a Kapi"
           descripcion="Reclama tu moneda gratis cada día para ahorrar en tus compras."
           estado={
@@ -289,6 +324,15 @@ const MinijuegosPage = () => {
         <JuegoCard
           acento={styles.ruleta}
           icono={<Dices size={26} />}
+          banner="/assets/kapi/banners/ruleta.webp"
+          espera={
+            // Girada: toca esperar al lunes. Bloqueada por la racha: lo que falta
+            // no es tiempo, son días de racha, y decir "vuelve el lunes" engañaría.
+            hasSpun ? (faltaLunes ? `Vuelve el lunes, en ${faltaLunes}` : '')
+              : (!isRuletaUnlocked && !hasLost && ruletaDays < 7
+                ? `Te falta${7 - ruletaDays === 1 ? '' : 'n'} ${7 - ruletaDays} ${7 - ruletaDays === 1 ? 'día' : 'días'} de racha`
+                : '')
+          }
           titulo="Ruleta Semanal"
           descripcion="Reclama tu moneda los 7 días para girar la ruleta y ganar premios increíbles."
           estado={
@@ -374,6 +418,8 @@ const MinijuegosPage = () => {
         <JuegoCard
           acento={styles.bolitas}
           icono={<FlaskConical size={26} />}
+          banner="/assets/kapi/banners/bolitas.webp"
+          espera={hasClaimedBallSort ? esperaDiaria : ''}
           titulo="Las Bolitas de Kapi"
           descripcion="Ordena los colores en los tubos para ganar 2 monedas al día."
           estado={
