@@ -4,6 +4,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useCart } from '../contexts/CartContext';
 import { idsDeItemsIncompletos } from '../utils/cartValidation';
+import { costoEnvio } from '../constants/envio';
 import { useAuth } from '../contexts/AuthContext';
 import { useGlobalToast } from '../contexts/ToastContext';
 import { useQuery } from '@tanstack/react-query';
@@ -204,12 +205,21 @@ const CheckoutPage = () => {
   const subtotalWithDiscount = Math.max(0, subtotal - discount);
 
   // ── Cupón ──────────────────────────────────────────────────────────────────
-  // El umbral de envío gratis se sigue calculando sobre el subtotal con monedas
-  // (como siempre): si el cupón moviera ese umbral, un cupón de envío gratis se
-  // pagaría a sí mismo y el descuento saldría dos veces.
+  // El umbral de envío gratis se mide sobre el SUBTOTAL DE LOS PRODUCTOS, no
+  // sobre lo que queda tras pagar con monedas o cupón.
+  //
+  // Antes se medía sobre `subtotalWithDiscount` y salía este contrasentido: un
+  // pedido de S/109 con 28 monedas bajaba a S/81, perdía el envío gratis y
+  // acababa costando S/96 — más caro que el mismo pedido SIN gastar las
+  // monedas. Además el carrito ya prometía "Envío: Gratis" (calcula sobre el
+  // subtotal), así que el checkout rompía esa promesa en la última pantalla.
+  //
+  // Las monedas y los cupones son formas de pagar, no rebajan lo comprado. El
+  // cupón sigue fuera del umbral por el motivo de siempre: si lo moviera, un
+  // cupón de envío gratis se pagaría a sí mismo y el descuento saldría dos veces.
   const cuponEnvioGratis = !!cuponAplicado?.envioGratis;
   const descuentoCupon = cuponEnvioGratis ? 0 : (cuponAplicado?.descuento || 0);
-  const shippingBase = subtotalWithDiscount > 100 ? 0 : 15;
+  const shippingBase = costoEnvio(subtotal);
   const shipping = cuponEnvioGratis ? 0 : shippingBase;
   const total = Math.max(0, subtotalWithDiscount - descuentoCupon) + shipping;
 

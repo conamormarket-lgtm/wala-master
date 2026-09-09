@@ -4,6 +4,7 @@ import { useCart } from '../../../../contexts/CartContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import CartItem from '../CartItem/CartItem';
 import { idsDeItemsIncompletos } from '../../../../utils/cartValidation';
+import { costoEnvio } from '../../../../constants/envio';
 import Button from '../../../../components/common/Button';
 import styles from './Cart.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
@@ -15,7 +16,8 @@ const Cart = () => {
 
   const total = getTotalPrice();
   const monedasCount = userProfile?.monedas || 0;
-  const envioPrice = total > 100 ? 0 : 15;
+  // El umbral se mide sobre el subtotal de los productos, igual que el checkout.
+  const envioPrice = costoEnvio(total);
   const theFinalTotal = total + envioPrice;
 
   // Si todos los items están en estado confirmación, mostramos un aviso
