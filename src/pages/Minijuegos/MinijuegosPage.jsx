@@ -109,7 +109,7 @@ const JuegoCard = ({
 );
 
 const MinijuegosPage = () => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, loading: cargandoSesion } = useAuth();
   const { addToast } = useGlobalToast();
 
   // Modo diseño: ?sesion=activa pinta el hub como si hubiera sesión iniciada,
@@ -118,6 +118,17 @@ const MinijuegosPage = () => {
   // servidor sigue exigiendo sesión.
   const forzarSesion = diseno('sesion');
   const haySesion = forzarSesion ? forzarSesion === 'activa' : Boolean(user);
+
+  // Firebase tarda un instante en restaurar la sesión guardada, y en ese hueco
+  // `user` todavía es null. Pintar ahí la versión de invitado enseñaba el cartel
+  // de "Inicia sesión" a quien SÍ tenía la sesión puesta —y el botón llevaba de
+  // verdad al login— para cambiar sola un segundo después. Se ve sobre todo en
+  // el móvil, que tarda más en resolverla.
+  //
+  // AuthContext apaga `loading` cuando ya tiene usuario Y perfil, así que
+  // esperar aquí evita de paso que un juego ya hecho hoy se anuncie como
+  // disponible durante ese mismo instante.
+  const resolviendoSesion = cargandoSesion && !forzarSesion;
 
   // El día lo decide el servidor en hora de Lima. Antes aquí se usaba UTC, así
   // que de 19:00 a 23:59 el hub ofrecía premios ya reclamados y el servidor los
@@ -191,6 +202,14 @@ const MinijuegosPage = () => {
     window.dispatchEvent(new CustomEvent('open-kapi-pet'));
   };
 
+  // Hueco mientras se resuelve la sesión: ocupa lo mismo que el botón que va a
+  // salir, para que la tarjeta no pegue un salto al saberlo.
+  const botonCargando = (
+    <span className={`${styles.accion} ${styles.accionCargando}`} aria-busy="true">
+      <T>Cargando...</T>
+    </span>
+  );
+
   // Sin sesión no bloqueamos con un alert: el propio botón lleva al login.
   const botonLogin = (
     <Link to="/login" className={`${styles.accion} ${styles.accionGhost}`}>
@@ -210,7 +229,12 @@ const MinijuegosPage = () => {
           <T>Cuatro juegos, una rutina diaria y premios que sí se canjean en tus compras.</T>
         </p>
 
-        {haySesion ? (
+        {resolviendoSesion ? (
+          <p className={styles.listos} aria-busy="true">
+            <Sparkles size={16} aria-hidden="true" />
+            <T>Cargando tu progreso...</T>
+          </p>
+        ) : haySesion ? (
           /* El saldo de monedas NO se repite aquí: el Header ya lo muestra en
              todas las páginas. Lo que este hub sabe y el Header no es cuántos
              juegos quedan por hacer hoy. */
@@ -263,7 +287,9 @@ const MinijuegosPage = () => {
           atenuada={wordleHecho}
           recompensa={<><span aria-hidden="true">🪙</span><T>+3 monedas al acertar</T></>}
           accion={
-            !haySesion ? (
+            resolviendoSesion ? (
+              botonCargando
+            ) : !haySesion ? (
               botonLogin
             ) : wordleHecho ? (
               // Una vez jugada, la palabra del día no se repite. El enlace sigue
@@ -299,7 +325,9 @@ const MinijuegosPage = () => {
           recompensa={<><span aria-hidden="true">🪙</span><T>+1 moneda al día</T></>}
           atenuada={hasClaimedToday}
           accion={
-            !haySesion ? (
+            resolviendoSesion ? (
+              botonCargando
+            ) : !haySesion ? (
               botonLogin
             ) : hasClaimedToday ? (
               <button
@@ -402,7 +430,9 @@ const MinijuegosPage = () => {
             </>
           }
           accion={
-            !haySesion ? (
+            resolviendoSesion ? (
+              botonCargando
+            ) : !haySesion ? (
               botonLogin
             ) : isRuletaUnlocked ? (
               <Link to="/ruleta" className={styles.accion}>
@@ -436,7 +466,9 @@ const MinijuegosPage = () => {
           recompensa={<><span aria-hidden="true">🪙</span><T>+2 monedas al día</T></>}
           atenuada={hasClaimedBallSort}
           accion={
-            !haySesion ? (
+            resolviendoSesion ? (
+              botonCargando
+            ) : !haySesion ? (
               botonLogin
             ) : hasClaimedBallSort ? (
               // Sigue siendo jugable por diversión, pero sin prometer premio.

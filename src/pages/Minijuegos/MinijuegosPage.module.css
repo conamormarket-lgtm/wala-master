@@ -466,6 +466,15 @@
   outline-offset: 3px;
 }
 
+/* Hueco mientras se resuelve la sesión: la misma caja que el botón real, en
+   gris apagado, para que no invite a pulsarlo ni mueva la tarjeta al cambiar. */
+.accionCargando {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  cursor: default;
+}
+
 /* Flecha del botón: acompaña el hover de la tarjeta, no se mueve sola. */
 .flecha {
   flex-shrink: 0;
