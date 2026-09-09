@@ -34,7 +34,6 @@ import {
   Lock,
   Check,
   ArrowRight,
-  Trophy,
   LogIn,
   Sparkles,
 } from 'lucide-react';
@@ -257,12 +256,7 @@ const MinijuegosPage = () => {
             ? <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
             : <Badge tone="success" variant="soft"><T>Nuevo reto cada día</T></Badge>}
           atenuada={wordleHecho}
-          recompensa={
-            <>
-              <Trophy size={14} aria-hidden="true" />
-              <T>+3 monedas al acertar</T>
-            </>
-          }
+          recompensa={<><span aria-hidden="true">🪙</span><T>+3 monedas al acertar</T></>}
           accion={
             !haySesion ? (
               botonLogin
@@ -297,7 +291,7 @@ const MinijuegosPage = () => {
               <Badge tone="warning" variant="soft" dot><T>Disponible hoy</T></Badge>
             )
           }
-          recompensa={<><span aria-hidden="true">🍖</span><T>+1 moneda al día</T></>}
+          recompensa={<><span aria-hidden="true">🪙</span><T>+1 moneda al día</T></>}
           atenuada={hasClaimedToday}
           accion={
             !haySesion ? (
