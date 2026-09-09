@@ -828,3 +828,18 @@
 [data-theme='dark'] .resultPremio {
   color: #fcd34d;
 }
+
+/* Aviso de que la partida no llego al servidor. */
+.resultAviso {
+  margin: 0.9rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--danger-soft, rgba(239, 68, 68, 0.1));
+  color: var(--danger-hover, #b91c1c);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+[data-theme='dark'] .resultAviso {
+  color: #fca5a5;
+}

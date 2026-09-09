@@ -140,6 +140,8 @@ const WordlePage = () => {
   // "Lo lograste en 0 intentos".
   const [intentosServidor, setIntentosServidor] = useState(0);
 
+  const [errorGuardado, setErrorGuardado] = useState(false);
+
   // Monedas ganadas hoy por acertar. Las decide el servidor.
   const [premio, setPremio] = useState(null);
   const { entregando, empezarEntrega, terminarEntrega } = useEntregaMonedas();
@@ -154,6 +156,11 @@ const WordlePage = () => {
         setUserStats(res.stats);
         queryClient.invalidateQueries({ queryKey: ['wordle-ranking-today', todayStr] });
         queryClient.invalidateQueries({ queryKey: ['wordle-ranking-global'] });
+      } else if (res.error) {
+        // Antes esto se tragaba el fallo: la partida no se guardaba, no entraba
+        // al ranking y no pagaba, y el usuario no se enteraba de nada.
+        setErrorGuardado(true);
+        return;
       }
       // La recompensa se pide DESPUÉS de guardar: el servidor valida leyendo la
       // partida de hoy, así que antes de escribirla no habría nada que validar.
@@ -704,6 +711,12 @@ const WordlePage = () => {
               <p><T>Adivinaste la palabra en</T> <strong>{intentosUsados}</strong> intento{intentosUsados !== 1 ? 's' : ''}.</p>
             ) : (
               <p><T>La palabra era:</T> <strong>{targetWord}</strong></p>
+            )}
+
+            {errorGuardado && (
+              <p className={styles.resultAviso}>
+                <T>No pudimos guardar esta partida. Revisa tu conexión: no entró al ranking ni se acreditaron monedas.</T>
+              </p>
             )}
 
             {/* Recompensa: solo al ganar y solo si el servidor la concedió. */}

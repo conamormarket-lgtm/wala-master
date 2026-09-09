@@ -24,6 +24,24 @@ const FALLBACK_WORDS = DAILY_WORDS.length > 5 ? DAILY_WORDS : [
 /**
  * Obtener la palabra del día según la fecha local (formato YYYY-MM-DD).
  */
+/**
+ * Espera a que Firebase termine de restaurar la sesión.
+ *
+ * getCurrentUser() devuelve null durante el primer instante de vida de la
+ * página, mientras el SDK lee la sesión guardada. Quien resolvía la palabra en
+ * ese hueco (facil si ya la sabe) perdía la partida entera: no se guardaba, no
+ * entraba al ranking y no cobraba las monedas, sin ningún aviso.
+ */
+const esperarSesion = async (msMax = 4000) => {
+  const inicio = Date.now();
+  while (Date.now() - inicio < msMax) {
+    const u = getCurrentUser();
+    if (u) return u;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  return getCurrentUser();
+};
+
 export const getDailyWord = async (dateStr) => {
   try {
     const docRef = doc(db, DAILY_WORDS_COLLECTION, dateStr);
@@ -138,7 +156,7 @@ export const claimWordleReward = async () => {
 
 export const getMiPartidaDeHoy = async () => {
   try {
-    const user = getCurrentUser();
+    const user = await esperarSesion();
     if (!user) return null;
     const snap = await getDoc(doc(db, WORDLE_COLLECTION, `${user.uid}_${limaTodayStr()}`));
     return snap.exists() ? snap.data() : null;
@@ -149,7 +167,7 @@ export const getMiPartidaDeHoy = async () => {
 };
 
 export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, length) => {
-  const user = getCurrentUser();
+  const user = await esperarSesion();
   if (!user) return { error: "No user authenticated" };
 
   try {
