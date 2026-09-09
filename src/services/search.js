@@ -14,11 +14,12 @@ const COLLECTION = 'productos_wala';
 // Algolia/Typesense/Meilisearch alimentado on-write por Cloud Functions. La firma de
 // `searchCatalog()` NO cambia, así que los consumidores no se tocan.
 
-async function fetchAll() {
+async function fetchAll({ fresh = false } = {}) {
   const cached = getCachedProducts();
-  if (cached && cached.length) return cached;
-  const { data } = await getProducts();
-  return data || [];
+  if (!fresh && cached && cached.length) return cached;
+  const { data, error } = await getProducts();
+  if (!error) return data || [];
+  return cached || [];
 }
 
 function priceOf(p) {
@@ -41,10 +42,17 @@ function matchesFacets(p, f = {}) {
 
 function matchesTerm(p, term) {
   if (!term) return true;
-  const t = String(term).toLowerCase();
-  return [p.name, p.description, ...(p.tags || []), ...(p.categories || [])]
-    .filter(Boolean)
-    .some((s) => String(s).toLowerCase().includes(t));
+  const words = normalizeSearchText(term).split(' ').filter(Boolean);
+  const searchable = normalizeSearchText([
+    p.name,
+    p.description,
+    p.brandId,
+    p.productType,
+    ...(p.tags || []),
+    ...(p.characters || []),
+    ...(p.categories || []),
+  ].filter(Boolean).join(' '));
+  return words.every((word) => searchable.includes(word));
 }
 
 const SORTERS = {
@@ -69,8 +77,8 @@ function facetCounts(items, key) {
  * @param {{ term?: string, facets?: object, sort?: string, page?: number, pageSize?: number }} opts
  * @returns {Promise<{ items: object[], total: number, page: number, pageSize: number, totalPages: number, facets: object }>}
  */
-export async function searchCatalog({ term = '', facets = {}, sort = 'newest', page = 1, pageSize = 24 } = {}) {
-  const all = (await fetchAll()).filter((p) => p.visible !== false);
+export async function searchCatalog({ term = '', facets = {}, sort = 'newest', page = 1, pageSize = 24, fresh = false } = {}) {
+  const all = (await fetchAll({ fresh })).filter((p) => p.visible !== false);
   let results = all.filter((p) => matchesTerm(p, term) && matchesFacets(p, facets));
   if (SORTERS[sort]) results = results.slice().sort(SORTERS[sort]);
 
@@ -122,7 +130,9 @@ const PREFIX_SENTINEL = '';
 // "cursor" que devolvemos es el índice de la siguiente página.
 async function memoryFallback({ term, pageSize, cursor }) {
   const page = (typeof cursor === 'number' && cursor > 0) ? cursor : 1;
-  const r = await searchCatalog({ term, sort: 'name', page, pageSize });
+  // El fallback debe consultar el catálogo actual. Usar aquí cualquier caché
+  // persistente podía devolver cero para productos recién publicados.
+  const r = await searchCatalog({ term, sort: 'name', page, pageSize, fresh: true });
   const hasMore = page < r.totalPages;
   return {
     items: r.items,
@@ -142,7 +152,7 @@ async function memoryFallback({ term, pageSize, cursor }) {
  * @param {number}  [params.pageSize] tamaño de página (def. 24)
  * @returns {Promise<{ items: object[], lastDoc: *, hasMore: boolean, source: string }>}
  */
-export async function searchProductsFirestore({ term = '', mode = 'prefix', cursor = null, pageSize = 24 } = {}) {
+export async function searchProductsFirestore({ term = '', mode = 'token', cursor = null, pageSize = 24 } = {}) {
   const q = normalizeSearchText(term);
 
   // Sin término, sin Firestore, o continuando una búsqueda que YA cayó a memoria
@@ -157,11 +167,16 @@ export async function searchProductsFirestore({ term = '', mode = 'prefix', curs
   try {
     let qry;
     if (mode === 'token') {
-      // array-contains sobre searchTokens; orden estable por nameLower para cursor.
+      // Firestore solo admite un array-contains. Para búsquedas de varias palabras
+      // usamos la más larga como candidata y verificamos TODAS en cliente. Así
+      // "dragon ball" encuentra "Casaca Dragon Ball" aunque el título no empiece
+      // por la frase completa. Sin orderBy evitamos exigir un índice compuesto.
+      const words = q.split(' ').filter((word) => word.length >= 2);
+      const queryToken = words.slice().sort((a, b) => b.length - a.length)[0];
+      if (!queryToken) return memoryFallback({ term, pageSize, cursor });
       qry = query(
         collection(db, COLLECTION),
-        where('searchTokens', 'array-contains', q),
-        orderBy('nameLower'),
+        where('searchTokens', 'array-contains', queryToken),
       );
     } else {
       // Prefijo sobre nameLower: [q, q+SENTINEL).
@@ -187,7 +202,7 @@ export async function searchProductsFirestore({ term = '', mode = 'prefix', curs
 
     const items = snap.docs
       .map((d) => normalizeProductForRead({ id: d.id, ...d.data() }))
-      .filter((p) => p.visible !== false);
+      .filter((p) => p.visible !== false && matchesTerm(p, q));
 
     const lastDoc = snap.docs[snap.docs.length - 1] || null;
     return {
