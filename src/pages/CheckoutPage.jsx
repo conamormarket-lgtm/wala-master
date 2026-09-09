@@ -239,6 +239,9 @@ const CheckoutPage = () => {
     setCuponError('');
     const res = await validarCupon(code, {
       subtotal: subtotalWithDiscount,
+      // El umbral de envío gratis se mide sobre los productos, no sobre lo que
+      // queda tras pagar con monedas (ver src/constants/envio.js).
+      subtotalProductos: subtotal,
       envio: shippingBase,
       items: itemsParaCupon(),
     });

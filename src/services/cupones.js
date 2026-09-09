@@ -56,10 +56,15 @@ export const getMisCupones = async (uid) => {
  * Valida un código en el checkout y devuelve el descuento que corresponde.
  * NO marca el cupón como usado: eso ocurre al confirmar el pedido (canjearCupon).
  */
-export const validarCupon = async (code, { subtotal, envio, items }) => {
+export const validarCupon = async (code, { subtotal, subtotalProductos, envio, items }) => {
   try {
     const res = await httpsCallable(getFunctions(), 'validarCuponSecure')({
-      code, subtotal, envio, items,
+      // `subtotal` va rebajado por las monedas (es la base del descuento).
+      // `subtotalProductos` es el subtotal SIN rebajar: es el que decide el
+      // envío gratis, igual que en el carrito y el checkout. Sin él, un cupón
+      // de envío se valoraba sobre el importe con monedas ya restadas y decía
+      // que valía S/15 en pedidos que ya tenían el envío gratis.
+      code, subtotal, subtotalProductos, envio, items,
     });
     // `envioGratis` y `aviso` se devuelven tal cual: sin el primero el checkout
     // no sabe que debe poner el envío a cero, y sin el segundo pierde el motivo

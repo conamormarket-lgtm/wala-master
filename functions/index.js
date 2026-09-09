@@ -2567,6 +2567,9 @@ function motivoRechazo(cupon) {
 async function calcularDescuentoCupon(cupon, datos) {
   const items = Array.isArray(datos.items) ? datos.items : [];
   const subtotalCliente = Math.max(0, Number(datos.subtotal) || 0);
+  // Subtotal de los productos SIN rebajar por monedas. Es el que decide el envío
+  // gratis. Si un cliente viejo no lo manda, se cae al de siempre.
+  const subtotalProductos = Math.max(0, Number(datos.subtotalProductos) || subtotalCliente);
 
   // 1) Revalorar el carrito con los precios del catálogo.
   const ids = [...new Set(items.map((it) => String(it.productId || "")).filter(Boolean))];
@@ -2645,13 +2648,18 @@ async function calcularDescuentoCupon(cupon, datos) {
     case "envio_gratis": {
       // Vale lo que costaría el envío de este pedido, que puede ser cero.
       //
-      // El umbral se mide sobre el subtotal QUE USA EL CHECKOUT (ya rebajado por
-      // las monedas), no sobre el de catálogo: el carrito calcula el envío con
-      // `subtotal - monedas > 100`, y si aquí se mirara el de catálogo, un
-      // pedido de S/105 con 6 monedas recibiría un "ya tienes envío gratis"
-      // mientras la pantalla le cobra los S/15. Lo que se puede ganar mintiendo
-      // está acotado al precio de un envío.
-      const envio = subtotalCliente > ENVIO_GRATIS_DESDE ? 0 : ENVIO_ESTANDAR;
+      // El umbral se mide sobre el SUBTOTAL DE LOS PRODUCTOS, igual que el
+      // carrito y el checkout (ver src/constants/envio.js). Antes se medía sobre
+      // el subtotal ya rebajado por las monedas, porque el checkout hacía lo
+      // mismo; eso hacía que gastar monedas quitara el envío gratis, así que se
+      // corrigieron los tres a la vez.
+      //
+      // Se prefiere el subtotal de catálogo cuando el carrito se pudo revalorar
+      // entero (no depende de lo que diga el cliente); si no, el que manda el
+      // checkout sin rebajar. Lo que se puede ganar mintiendo sigue acotado al
+      // precio de un envío.
+      const baseEnvio = exacta ? subtotalCatalogo : subtotalProductos;
+      const envio = baseEnvio > ENVIO_GRATIS_DESDE ? 0 : ENVIO_ESTANDAR;
       envioGratis = true;
       descuento = envio;
       // Decirle que guarde el cupon, no solo que no sirve ahora: es un premio y
