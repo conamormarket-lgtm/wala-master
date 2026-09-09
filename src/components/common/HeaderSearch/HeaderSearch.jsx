@@ -2,7 +2,17 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+// eslint-disable-next-line no-unused-vars
+import { AnimatePresence, motion } from 'framer-motion';
 import { Search, X, Clock, ArrowRight } from 'lucide-react';
+import {
+  fadeIn,
+  scaleIn,
+  fadeUpCustom,
+  staggerContainer,
+  neutralVariants,
+  useReducedMotionSafe,
+} from '../../../theme/motion';
 import { getSearchSuggestions } from '../../../services/search';
 import { getCategories } from '../../../services/products';
 import { getBrands } from '../../../services/brands';
@@ -52,9 +62,27 @@ const guardarReciente = (termino) => {
 
 const ANCHO_MOVIL = 768;
 
+// Movimiento: todo sale del sistema (src/theme/motion), no se redeclaran curvas
+// ni duraciones aquí. El panel es un popover, así que usa `scaleIn` —el preset
+// que el propio sistema reserva para tarjetas y popovers— y crece desde la
+// esquina de la lupa (transform-origin en el CSS).
+//
+// Las filas entran en cascada con un desplazamiento CORTO (8px): las listas de
+// un desplegable están a centímetros del ojo y los 24px del preset estándar,
+// pensados para secciones de página, aquí se ven como un salto.
+const filaVariants = fadeUpCustom({ y: 8, duration: 0.22 });
+const listaVariants = staggerContainer({ stagger: 0.035, delayChildren: 0.02 });
+
 const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Quien pide menos movimiento en su sistema recibe solo fundidos: sin
+  // desplazamientos ni escalados.
+  const sinMovimiento = useReducedMotionSafe();
+  const vPanel = sinMovimiento ? neutralVariants : scaleIn;
+  const vFila = sinMovimiento ? neutralVariants : filaVariants;
+  const vLista = sinMovimiento ? neutralVariants : listaVariants;
 
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState('');
@@ -209,18 +237,41 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
           backdrop-filter se convierte en el marco de referencia de todo lo que
           tenga position:fixed dentro. El velo, que debía cubrir la pantalla,
           medía 44x44 — exactamente el botón de la lupa. */}
-      {abierto && createPortal(
-        <>
-          {/* Velo: esto es un desplegable, no una ventana modal, así que
-              oscurece poco — lo justo para que la página deje de competir. */}
-          <div className={styles.velo} onClick={cerrar} role="presentation" />
+      {createPortal(
+        // AnimatePresence para que también se vaya con gracia: sin esto, al
+        // cerrar el panel desaparecía de golpe mientras el velo se quedaba un
+        // instante, y el corte se notaba más que la entrada.
+        // Los dos cuelgan de AnimatePresence como hijos DIRECTOS y con clave.
+        // Envueltos en un fragmento, AnimatePresence ve un solo hijo que no sabe
+        // animar y la salida no llega a ocurrir.
+        <AnimatePresence>
+          {abierto && (
+          /* Velo: esto es un desplegable, no una ventana modal, así que
+             oscurece poco — lo justo para que la página deje de competir. */
+          <motion.div
+            key="velo"
+            className={styles.velo}
+            onClick={cerrar}
+            role="presentation"
+            variants={fadeIn}
+            initial="hidden"
+            animate="show"
+            exit="hidden"
+          />
+          )}
 
-          <div
+          {abierto && (
+          <motion.div
+            key="panel"
             ref={panelRef}
             className={styles.panel}
             role="dialog"
             aria-label="Buscar productos"
             style={{ top: pos.top, ...(esMovil ? {} : { right: pos.right }) }}
+            variants={vPanel}
+            initial="hidden"
+            animate="show"
+            exit="hidden"
           >
             <form onSubmit={enviar} className={styles.formulario} role="search">
               <Search size={18} className={styles.lupaCampo} aria-hidden="true" />
@@ -254,16 +305,16 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
                     <T>Limpiar</T>
                   </button>
                 </div>
-                <ul className={styles.lista}>
+                <motion.ul className={styles.lista} variants={vLista} initial="hidden" animate="show">
                   {recientes.map((r) => (
-                    <li key={r}>
+                    <motion.li key={r} variants={vFila}>
                       <button type="button" className={styles.fila} onClick={() => irABuscar(r)}>
                         <Clock size={15} aria-hidden="true" className={styles.filaIcono} />
                         {r}
                       </button>
-                    </li>
+                    </motion.li>
                   ))}
-                </ul>
+                </motion.ul>
               </div>
             )}
 
@@ -275,9 +326,18 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
                   {sugerencias.productos.length === 0 ? (
                     <p className={styles.nada}><T>Nada con ese nombre.</T></p>
                   ) : (
-                    <ul className={styles.lista}>
+                    <motion.ul
+                      className={styles.lista}
+                      variants={vLista}
+                      initial="hidden"
+                      animate="show"
+                      /* La clave cambia con el término: así la cascada se repite
+                         al escribir y se ve que la lista es NUEVA, en vez de que
+                         las líneas se sustituyan en silencio. */
+                      key={texto.trim().toLowerCase()}
+                    >
                       {sugerencias.productos.map((p) => (
-                        <li key={p.id}>
+                        <motion.li key={p.id} variants={vFila}>
                           <button
                             type="button"
                             className={styles.fila}
@@ -285,18 +345,18 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
                           >
                             {p.name}
                           </button>
-                        </li>
+                        </motion.li>
                       ))}
-                    </ul>
+                    </motion.ul>
                   )}
                 </div>
 
                 {sugerencias.marcas.length > 0 && (
                   <div className={styles.columna}>
                     <h3 className={styles.bloqueTitulo}><T>Marcas relacionadas</T></h3>
-                    <ul className={styles.lista}>
+                    <motion.ul className={styles.lista} variants={vLista} initial="hidden" animate="show">
                       {sugerencias.marcas.map((m) => (
-                        <li key={m.id}>
+                        <motion.li key={m.id} variants={vFila}>
                           <button
                             type="button"
                             className={styles.fila}
@@ -312,18 +372,18 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
                             {nombreMarca(m.id)}
                             <span className={styles.cuenta}>{m.total}</span>
                           </button>
-                        </li>
+                        </motion.li>
                       ))}
-                    </ul>
+                    </motion.ul>
                   </div>
                 )}
 
                 {sugerencias.categorias.length > 0 && (
                   <div className={styles.columna}>
                     <h3 className={styles.bloqueTitulo}><T>Categorías relacionadas</T></h3>
-                    <ul className={styles.lista}>
+                    <motion.ul className={styles.lista} variants={vLista} initial="hidden" animate="show">
                       {sugerencias.categorias.map((c) => (
-                        <li key={c.id}>
+                        <motion.li key={c.id} variants={vFila}>
                           <button
                             type="button"
                             className={styles.fila}
@@ -336,9 +396,9 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
                             <T>{nombreCategoria(c.id)}</T>
                             <span className={styles.cuenta}>{c.total}</span>
                           </button>
-                        </li>
+                        </motion.li>
                       ))}
-                    </ul>
+                    </motion.ul>
                   </div>
                 )}
               </div>
@@ -356,8 +416,9 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
             {!escribiendo && !hayAlgoQueEnsenar && (
               <p className={styles.nada}><T>Escribe para ver productos, marcas y categorías.</T></p>
             )}
-          </div>
-        </>,
+          </motion.div>
+          )}
+        </AnimatePresence>,
         document.body
       )}
     </>

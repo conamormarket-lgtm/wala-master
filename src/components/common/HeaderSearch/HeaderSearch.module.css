@@ -42,6 +42,8 @@
 .panel {
   position: fixed;
   z-index: 1100;
+  /* El panel crece desde la esquina de la lupa, que es de donde "sale". */
+  transform-origin: top right;
   width: min(880px, 92vw);
   padding: clamp(0.9rem, 2vw, 1.15rem);
   border-radius: var(--radio-grande, 24px);
@@ -121,6 +123,10 @@
   cursor: pointer;
 }
 
+.botonIr {
+  transition: background-color var(--dur-rapida, 180ms) var(--ease-signature, ease);
+}
+
 .botonIr:hover {
   background: var(--violet-600, #7c3aed);
 }
@@ -195,10 +201,13 @@
   font-size: 0.92rem;
   text-align: left;
   cursor: pointer;
+  transition: background-color var(--dur-rapida, 180ms) var(--ease-signature, ease),
+              color var(--dur-rapida, 180ms) var(--ease-signature, ease);
 }
 
 .fila:hover {
   background: var(--color-hover);
+  color: var(--primary-color);
 }
 
 .fila:focus-visible {
@@ -243,9 +252,23 @@
   cursor: pointer;
 }
 
+.verTodo {
+  transition: background-color var(--dur-rapida, 180ms) var(--ease-signature, ease),
+              border-color var(--dur-rapida, 180ms) var(--ease-signature, ease);
+}
+
 .verTodo:hover {
   background: var(--color-hover);
   border-color: var(--primary-color);
+}
+
+/* Quien pide menos movimiento no recibe ni estas transiciones de color. */
+@media (prefers-reduced-motion: reduce) {
+  .fila,
+  .botonIr,
+  .verTodo {
+    transition: none;
+  }
 }
 
 /* =========================================================================
