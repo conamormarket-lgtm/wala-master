@@ -5,6 +5,8 @@ import { getCategories } from '../services/products';
 import { getBrand } from '../services/brands';
 import { FULFILLMENT_TYPES } from '../constants/marketplace';
 import ProductCard from './Tienda/components/ProductCard/ProductCard';
+import { Search, ArrowLeft } from 'lucide-react';
+import styles from './SearchPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
 // Página de búsqueda/descubrimiento — usa el servicio de búsqueda por Firestore
@@ -141,85 +143,167 @@ const SearchPage = () => {
     nicheId: facetCounts(items, 'nicheId'),
   }), [items]);
 
-  const wrap = { maxWidth: 1200, margin: '0 auto', padding: '16px' };
-  const chip = (active) => ({
-    padding: '4px 10px', borderRadius: 16, border: '1px solid #ddd', cursor: 'pointer',
-    background: active ? '#7C3AED' : '#fff', color: active ? '#fff' : '#333', fontSize: 13,
-  });
+  // ¿Hay algún filtro puesto? Decide si se ofrece "limpiar" y qué decir cuando
+  // la búsqueda no devuelve nada (no es lo mismo no encontrar nada que haberlo
+  // escondido tú con un filtro).
+  const hayFiltros = Boolean(facets.fulfillmentType || facets.nicheId);
+  const limpiarFiltros = () => setFacets({});
+  const claseChip = (activo) => `${styles.chip} ${activo ? styles.chipActivo : ''}`;
 
   return (
-    <div style={wrap}>
-      <h1 style={{ fontSize: 22, marginBottom: 12 }}><T>Buscar productos</T></h1>
+    <div className={styles.pagina}>
+      <header className={styles.cabecera}>
+        <h1 className={styles.titulo}><T>Buscar productos</T></h1>
+        {term ? (
+          <p className={styles.consulta}>
+            <T>Resultados para</T> <strong>«{term}»</strong>
+          </p>
+        ) : (
+          <p className={styles.consulta}>
+            <T>Escribe qué buscas y afina con los filtros.</T>
+          </p>
+        )}
 
-      {/* Indicador de búsqueda acotada a marca (?brand=). Sin brandFilter no se
-          renderiza nada, quedando la página EXACTA a como estaba (búsqueda global). */}
-      {brandFilter && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13, color: '#666' }}>
-          <span>
-            Buscando en: <strong style={{ color: '#7C3AED' }}>{brandInfo?.name || 'tu tienda'}</strong>
-          </span>
-          <Link to={term ? `/buscar?q=${encodeURIComponent(term)}` : '/buscar'} style={{ color: '#7C3AED' }}>
-            Buscar en todo el catálogo
-          </Link>
+        {/* Aviso de búsqueda acotada a una marca (?brand=). Sin ese parámetro no
+            se pinta nada: la búsqueda es global, como siempre. */}
+        {brandFilter && (
+          <div className={styles.avisoMarca}>
+            <span>
+              <T>Buscando solo en</T> <strong>{brandInfo?.name || 'tu tienda'}</strong>
+            </span>
+            <Link
+              to={term ? `/buscar?q=${encodeURIComponent(term)}` : '/buscar'}
+              className={styles.avisoEnlace}
+            >
+              <T>Buscar en todo el catálogo</T>
+            </Link>
+          </div>
+        )}
+      </header>
+
+      {/* ── Mandos: campo, botón y filtros, juntos en un panel ─────────────
+          Buscar es manejar una consulta. Agrupar los controles los separa de
+          los resultados; antes campo, filtros y contador iban sueltos uno
+          detrás de otro y todo pesaba lo mismo. */}
+      <section className={styles.panel}>
+        <form onSubmit={submit} className={styles.formulario} role="search">
+          <div className={styles.campoEnvoltorio}>
+            <Search size={18} className={styles.lupa} aria-hidden="true" />
+            <input
+              className={styles.campo}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="¿Qué buscas? (polo, taza, gorro...)"
+              aria-label="Qué buscas"
+            />
+          </div>
+          <button type="submit" className={styles.botonBuscar}>
+            <T>Buscar</T>
+          </button>
+        </form>
+
+        {/* Facetas: tipo de cumplimiento (personalizado vs stock) y por nicho.
+            Son <button aria-pressed>, no <span onClick>: antes no se podían
+            enfocar con el teclado ni se anunciaban como controles. */}
+        <div className={styles.filtros}>
+          <span className={styles.filtrosTitulo}><T>Filtros</T></span>
+
+          <button
+            type="button"
+            className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
+            aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND}
+            onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.PRINT_ON_DEMAND)}
+          >
+            <T>Personalizado</T>
+          </button>
+
+          <button
+            type="button"
+            className={claseChip(facets.fulfillmentType === FULFILLMENT_TYPES.STOCK)}
+            aria-pressed={facets.fulfillmentType === FULFILLMENT_TYPES.STOCK}
+            onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.STOCK)}
+          >
+            <T>En stock</T>
+          </button>
+
+          {Object.keys(facetData.nicheId || {}).map((n) => (
+            <button
+              key={n}
+              type="button"
+              className={claseChip(facets.nicheId === n)}
+              aria-pressed={facets.nicheId === n}
+              onClick={() => toggleFacet('nicheId', n)}
+            >
+              {n} <span className={styles.chipCuenta}>({facetData.nicheId[n]})</span>
+            </button>
+          ))}
+
+          {hayFiltros && (
+            <button type="button" className={styles.limpiar} onClick={limpiarFiltros}>
+              <T>Limpiar filtros</T>
+            </button>
+          )}
         </div>
-      )}
+      </section>
 
-      <form onSubmit={submit} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="¿Qué buscas? (polo, taza, gorro...)"
-          style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #ccc' }}
-        />
-        <button type="submit" style={{ padding: '10px 18px', borderRadius: 8, background: '#7C3AED', color: '#fff', border: 0 }}>
-          Buscar
-        </button>
-      </form>
-
-      {/* Facetas: tipo de cumplimiento (personalizado vs stock) y por nicho */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-        <span style={chip(facets.fulfillmentType === FULFILLMENT_TYPES.PRINT_ON_DEMAND)} onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.PRINT_ON_DEMAND)}>Personalizado</span>
-        <span style={chip(facets.fulfillmentType === FULFILLMENT_TYPES.STOCK)} onClick={() => toggleFacet('fulfillmentType', FULFILLMENT_TYPES.STOCK)}>En stock</span>
-        {Object.keys(facetData.nicheId || {}).map((n) => (
-          <span key={n} style={chip(facets.nicheId === n)} onClick={() => toggleFacet('nicheId', n)}>{n} ({facetData.nicheId[n]})</span>
-        ))}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '12px 0' }}>
-        <span style={{ color: '#666', fontSize: 14 }}>
-          {loading && items.length === 0 ? 'Buscando…' : `${visible.length} resultado(s)${hasMore ? '+' : ''}`}
+      {/* ── Barra de resultados ─────────────────────────────────────────── */}
+      <div className={styles.barra}>
+        <span className={styles.conteo}>
+          {loading && items.length === 0 ? (
+            <T>Buscando…</T>
+          ) : (
+            <>
+              <strong>{visible.length}{hasMore ? '+' : ''}</strong>{' '}
+              <T>{visible.length === 1 ? 'resultado' : 'resultados'}</T>
+            </>
+          )}
         </span>
-        <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ padding: '6px 10px', borderRadius: 8 }}>
-          <option value="newest"><T>Más nuevos</T></option>
-          <option value="price"><T>Precio: menor a mayor</T></option>
-          <option value="price-desc"><T>Precio: mayor a menor</T></option>
-          <option value="name"><T>Nombre (A-Z)</T></option>
-        </select>
+
+        <label className={styles.orden}>
+          <T>Ordenar por</T>
+          <select className={styles.select} value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="newest"><T>Más nuevos</T></option>
+            <option value="price"><T>Precio: menor a mayor</T></option>
+            <option value="price-desc"><T>Precio: mayor a menor</T></option>
+            <option value="name"><T>Nombre (A-Z)</T></option>
+          </select>
+        </label>
       </div>
 
-      {!loading && visible.length === 0 && (
-        <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>
-          Sin resultados. {items.length === 0 && '(Si el catálogo está vacío, conecta Firebase para cargar productos.)'}
+      {/* ── Resultados ──────────────────────────────────────────────────── */}
+      {loading && items.length === 0 ? (
+        <p className={styles.cargando}><T>Buscando…</T></p>
+      ) : visible.length === 0 ? (
+        /* El mensaje de antes ("si el catálogo está vacío, conecta Firebase")
+           era una nota para quien programa, y la leía el cliente. */
+        <div className={styles.vacio}>
+          <p className={styles.vacioTitulo}><T>Sin resultados</T></p>
+          <p className={styles.vacioTexto}>
+            {hayFiltros
+              ? <T>Prueba a quitar algún filtro o a buscar otra palabra.</T>
+              : <T>Prueba con otra palabra: una más corta o más general suele encontrar más.</T>}
+          </p>
+        </div>
+      ) : (
+        <div className={styles.rejilla}>
+          {visible.map((p) => (
+            <ProductCard key={p.id} product={p} categories={categories} />
+          ))}
         </div>
       )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
-        {visible.map((p) => (
-          <ProductCard key={p.id} product={p} categories={categories} />
-        ))}
-      </div>
 
       {hasMore && (
-        <div style={{ display: 'flex', justifyContent: 'center', margin: '24px 0' }}>
-          <button disabled={loading} onClick={loadMore} style={{ padding: '10px 22px', borderRadius: 8, background: '#fff', border: '1px solid #7C3AED', color: '#7C3AED', cursor: 'pointer' }}>
-            {loading ? 'Cargando…' : 'Cargar más'}
+        <div className={styles.masEnvoltorio}>
+          <button type="button" className={styles.botonMas} disabled={loading} onClick={loadMore}>
+            {loading ? <T>Cargando…</T> : <T>Cargar más</T>}
           </button>
         </div>
       )}
 
-      <div style={{ marginTop: 24 }}>
-        <Link to="/" style={{ color: '#7C3AED' }}><T>← Volver a la tienda</T></Link>
-      </div>
+      <Link to="/" className={styles.volver}>
+        <ArrowLeft size={16} aria-hidden="true" />
+        <T>Volver a la tienda</T>
+      </Link>
     </div>
   );
 };

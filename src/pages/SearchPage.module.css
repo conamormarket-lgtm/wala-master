@@ -1,0 +1,423 @@
+/* =========================================================================
+   Buscador — resultados de búsqueda
+   -------------------------------------------------------------------------
+   Esta pantalla se pintaba entera con estilos incrustados y colores escritos
+   a mano (#fff, #333, #ddd, #7C3AED, #666). Dos consecuencias: en modo noche
+   salían campos e insignias BLANCAS con letra oscura sobre el fondo oscuro, y
+   no compartía nada con el resto de la tienda.
+
+   El lenguaje es el mismo de la Zona Arcade y las tarjetas de la portada:
+   superficie sólida, radio grande, borde de 1px y sombra corta. Sin vidrio,
+   sin degradados y sin halos. El violeta de marca entra como acento y como
+   relleno del único botón principal (Buscar).
+
+   Cómo se diferencia de ver el catálogo por categorías: buscar es MANEJAR una
+   consulta, no pasear por una vitrina. Por eso los mandos —campo, botón y
+   filtros— viven juntos dentro de un panel, separados de los resultados por
+   una barra que dice cuántos hay y cómo se ordenan. Antes campo, filtros,
+   contador y rejilla iban sueltos uno detrás de otro y todo pesaba igual.
+   ========================================================================= */
+
+.pagina {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.75rem) clamp(0.75rem, 3vw, 1.25rem) 3rem;
+}
+
+/* =========================================================================
+   CABECERA
+   ========================================================================= */
+
+.cabecera {
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
+}
+
+.titulo {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+/* Resumen de la consulta: "Resultados para «gorro»". Deja claro QUÉ se buscó,
+   que en una pantalla de resultados es la primera pregunta del que llega. */
+.consulta {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.consulta strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Aviso de búsqueda acotada a una marca (?brand=). */
+.avisoMarca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--primary-light);
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.avisoMarca strong {
+  color: var(--primary-color);
+}
+
+.avisoEnlace {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* =========================================================================
+   PANEL DE MANDOS — campo, botón y filtros
+   ========================================================================= */
+
+.panel {
+  padding: clamp(0.9rem, 2.5vw, 1.25rem);
+  border-radius: var(--radio-grande, 24px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 10px var(--color-shadow, rgba(15, 23, 42, 0.08));
+}
+
+.formulario {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.campoEnvoltorio {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.lupa {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.campo {
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  padding: 0.7rem 0.9rem 0.7rem 2.6rem;
+  border-radius: var(--radio-pequeno, 10px);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.campo::placeholder {
+  color: var(--color-text-muted);
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Único botón relleno de la pantalla. Violeta fijo en los dos temas, igual que
+   el botón de las tarjetas del arcade: --primary-color se aclara en noche y
+   como relleno con letra blanca se lavaría. */
+.botonBuscar {
+  flex-shrink: 0;
+  min-height: var(--touch-target, 44px);
+  padding: 0.7rem 1.4rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--violet-500, #8b5cf6);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.botonBuscar:hover {
+  background: var(--violet-600, #7c3aed);
+}
+
+.botonBuscar:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}
+
+/* --- Filtros ------------------------------------------------------------- */
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.filtrosTitulo {
+  margin-right: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Antes eran <span> con onClick: no se podían enfocar con el teclado ni se
+   anunciaban como controles. Ahora son botones con aria-pressed. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.chip:hover {
+  border-color: var(--primary-color);
+  color: var(--color-text);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Activo: relleno violeta translúcido + texto violeta, no violeta sólido. Con
+   varios filtros puestos, tres pastillas macizas gritaban más que los propios
+   resultados. */
+.chipActivo {
+  background: var(--primary-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.chipCuenta {
+  opacity: 0.75;
+  font-weight: 500;
+}
+
+.limpiar {
+  margin-left: auto;
+  padding: 0.4rem 0.6rem;
+  border: none;
+  background: none;
+  color: var(--primary-color);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.limpiar:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   BARRA DE RESULTADOS — cuántos hay y cómo se ordenan
+   ========================================================================= */
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: clamp(1.25rem, 3vw, 1.75rem) 0 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.conteo {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.conteo strong {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.orden {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.select {
+  min-height: 40px;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radio-pequeno, 10px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   RESULTADOS
+   -------------------------------------------------------------------------
+   Misma receta que la rejilla del catálogo (ProductGrid), un punto más densa:
+   quien busca compara varios resultados a la vez. Antes eran columnas de
+   180px, tan estrechas que el nombre del producto se cortaba a dos líneas.
+   ========================================================================= */
+
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  column-gap: 1.25rem;
+  row-gap: 2rem;
+}
+
+.vacio {
+  padding: clamp(2rem, 6vw, 3.5rem) 1.25rem;
+  border-radius: var(--radio-grande, 24px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.vacioTitulo {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.vacioTexto {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.cargando {
+  padding: clamp(2rem, 6vw, 3.5rem) 1.25rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+/* --- Cargar más ---------------------------------------------------------- */
+
+.masEnvoltorio {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.botonMas {
+  min-height: var(--touch-target, 44px);
+  padding: 0.7rem 1.6rem;
+  border-radius: var(--radio-pequeno, 10px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.botonMas:hover:not(:disabled) {
+  background: var(--color-hover);
+  border-color: var(--primary-color);
+}
+
+.botonMas:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.botonMas:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}
+
+/* --- Volver -------------------------------------------------------------- */
+
+.volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 2rem;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.volver:hover {
+  color: var(--primary-color);
+}
+
+/* =========================================================================
+   MÓVIL
+   ========================================================================= */
+
+@media (max-width: 768px) {
+  .formulario {
+    flex-wrap: wrap;
+  }
+
+  .botonBuscar {
+    width: 100%;
+  }
+
+  .rejilla {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 12px;
+    row-gap: 1.25rem;
+  }
+
+  .barra {
+    gap: 0.5rem;
+  }
+
+  /* El "limpiar" deja de empujarse al extremo: en dos líneas de pastillas
+     acababa suelto en una esquina, lejos de lo que limpia. */
+  .limpiar {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .rejilla {
+    grid-template-columns: 1fr;
+  }
+}
