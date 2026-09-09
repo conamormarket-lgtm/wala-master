@@ -330,7 +330,11 @@
   .verTodo {
     position: sticky;
     bottom: 0;
-    background: var(--primary-light);
+    /* Dos capas: el tinte violeta SOBRE la superficie opaca del panel.
+       --primary-light es translúcido, así que a secas dejaba leerse la fila de
+       debajo a través del botón ("Poleras" cruzando el texto). */
+    background: linear-gradient(var(--primary-light), var(--primary-light)),
+                var(--color-surface);
     border-color: transparent;
     /* Sombra corta hacia arriba: deja claro que hay lista por debajo y que esto
        flota encima, en vez de parecer el final del contenido. */
