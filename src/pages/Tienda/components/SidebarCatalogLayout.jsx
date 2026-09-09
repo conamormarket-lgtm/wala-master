@@ -20,6 +20,9 @@ const SidebarCatalogLayout = ({
   productsLoading,
   productsError,
   emptyMessage,
+  // Se pasan tal cual al grid (ver allí por qué existen).
+  emptyTitle,
+  emptyHomeLink = true,
   categories,
   // ── Marca de la página (multimarca) ────────────────────────────────────
   // Si `brandId` está presente (página de marca tipo /MUSSA, /MUEBLERIA), el
@@ -621,6 +624,8 @@ const SidebarCatalogLayout = ({
             loading={productsLoading}
             error={productsError}
             emptyMessage={emptyMessage}
+            emptyTitle={emptyTitle}
+            emptyHomeLink={emptyHomeLink}
             categories={categories}
             layoutConfig={layoutConfig}
             brandId={brandId}

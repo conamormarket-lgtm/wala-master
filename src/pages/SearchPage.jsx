@@ -365,7 +365,12 @@ const SearchPage = () => {
           productsData={visible}
           categories={categories}
           brandId={brandFilter || null}
+          emptyTitle={txt.vacioTitulo}
           emptyMessage={txt.vacioConFiltros}
+          /* Sin "Volver al inicio": mandar a la portada a quien ha afinado de
+             más es tirar su búsqueda. Lo que necesita es quitar un filtro, y
+             para eso están los dos botones de "Quitar filtros". */
+          emptyHomeLink={false}
           gruposExtra={filtrosDeBusqueda}
           paginationProps={hasMore ? { hasMore, onLoadMore: loadMore, isFetchingMore: loading } : {}}
         />

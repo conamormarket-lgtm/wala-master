@@ -51,6 +51,12 @@ const ProductGrid = React.memo(({
   loading,
   error,
   emptyMessage,
+  // Vacío configurable, con los valores de siempre por defecto. Hace falta
+  // porque este mismo grid lo usa ahora el buscador, y allí "Próximamente más
+  // productos" con un enlace al inicio es engañoso: no es que falten productos,
+  // es que la búsqueda o los filtros no han casado con ninguno.
+  emptyTitle,
+  emptyHomeLink = true,
   categories,
   layoutConfig,
   hasMore,
@@ -176,11 +182,13 @@ const ProductGrid = React.memo(({
     return (
       <div className={styles.emptyContainer}>
         <div className={styles.emptyIcon}>◇</div>
-        <h3 className={styles.emptyTitle}>{t('grid.proximamente', 'Próximamente más productos')}</h3>
+        <h3 className={styles.emptyTitle}>
+          {emptyTitle || t('grid.proximamente', 'Próximamente más productos')}
+        </h3>
         <p className={styles.emptyText}>
           {emptyMessage || 'Estamos preparando novedades. Revisa de nuevo en unos días.'}
         </p>
-        <Link to="/" className={styles.emptyLink}>Volver al inicio</Link>
+        {emptyHomeLink && <Link to="/" className={styles.emptyLink}>Volver al inicio</Link>}
       </div>
     );
   }
