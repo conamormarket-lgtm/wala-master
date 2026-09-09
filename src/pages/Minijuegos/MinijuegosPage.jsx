@@ -67,6 +67,7 @@ const JuegoCard = ({
   accion,
   espera,
   atenuada = false,
+  bloqueada = false,
 }) => (
   // Dos elementos a propósito: framer-motion escribe el transform de la entrada
   // como estilo INLINE, y un inline gana a cualquier regla CSS. Cuando la propia
@@ -78,7 +79,9 @@ const JuegoCard = ({
       {/* Con banner, el icono sobra: la ilustración ya dice de qué juego es, y
           la insignia de estado se monta encima para no robar altura. */}
       {banner ? (
-        <div className={styles.banner}>
+        /* Bloqueada: la ilustración va en blanco y negro. Se ve de un vistazo,
+           desde lejos y sin leer nada, que ese juego todavía no es tuyo. */
+        <div className={`${styles.banner} ${bloqueada ? styles.bannerBloqueado : ''}`}>
           <img src={banner} alt="" loading="lazy" decoding="async" />
           <span className={styles.bannerEstado}>{estado}</span>
         </div>
@@ -348,6 +351,7 @@ const MinijuegosPage = () => {
           }
           recompensa={<><span aria-hidden="true">🎁</span><T>Premio semanal</T></>}
           atenuada={!isRuletaUnlocked}
+          bloqueada={!isRuletaUnlocked}
           extras={
             <>
               <div className={styles.progreso}>

@@ -222,6 +222,23 @@
   object-position: center 42%;
 }
 
+/* Juego bloqueado: la ilustración en blanco y negro. No al 100%: un pelín de
+   color restante evita que parezca una imagen rota, y la transición la devuelve
+   a color el día que se desbloquea. La insignia de estado queda fuera del
+   filtro a propósito, para que siga leyéndose. */
+.bannerBloqueado img {
+  filter: grayscale(0.92) contrast(0.95) brightness(1.02);
+  transition: filter 0.35s ease;
+}
+
+[data-theme='dark'] .bannerBloqueado img {
+  filter: grayscale(0.92) contrast(0.95) brightness(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bannerBloqueado img { transition: none; }
+}
+
 .bannerEstado {
   position: absolute;
   top: 0.65rem;
