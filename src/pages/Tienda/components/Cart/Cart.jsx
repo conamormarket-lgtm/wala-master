@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../../../contexts/CartContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import CartItem from '../CartItem/CartItem';
+import { idsDeItemsIncompletos } from '../../../../utils/cartValidation';
 import Button from '../../../../components/common/Button';
 import styles from './Cart.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
@@ -33,6 +34,15 @@ const Cart = () => {
   const deselectedCount = useMemo(
     () => items.filter(item => item.selected === false).length,
     [items]
+  );
+
+  // Artículos sin color o sin talla: los creaba el antiguo botón rápido de la
+  // tarjeta y no se pueden despachar. Solo cuentan los que SÍ se van a comprar:
+  // uno apartado con "no comprar esta vez" no debe bloquear el pago.
+  const incompletos = useMemo(() => idsDeItemsIncompletos(items), [items]);
+  const incompletosACobrar = useMemo(
+    () => items.filter(i => i.selected !== false && incompletos.has(i.id)),
+    [items, incompletos]
   );
 
   const handleClearCart = () => {
@@ -87,9 +97,20 @@ const Cart = () => {
         </div>
       )}
 
+      {incompletosACobrar.length > 0 && (
+        <div className={styles.incompletoNotice}>
+          <span aria-hidden="true">⚠</span>
+          <span>
+            {incompletosACobrar.length === 1
+              ? 'Un artículo no tiene color o talla elegidos. Ábrelo y elígelos para poder pagar.'
+              : `${incompletosACobrar.length} artículos no tienen color o talla elegidos. Ábrelos y elígelos para poder pagar.`}
+          </span>
+        </div>
+      )}
+
       <div className={styles.itemList}>
         {items.map(item => (
-          <CartItem key={item.id} item={item} />
+          <CartItem key={item.id} item={item} incompleto={incompletos.has(item.id)} />
         ))}
       </div>
 
@@ -117,9 +138,13 @@ const Cart = () => {
           variant="primary"
           fullWidth
           onClick={() => navigate('/checkout')}
-          disabled={isPendingConfirmation}
+          disabled={isPendingConfirmation || incompletosACobrar.length > 0}
         >
-          {isPendingConfirmation ? 'Esperando Confirmación...' : 'Proceder al Pago'}
+          {isPendingConfirmation
+            ? 'Esperando Confirmación...'
+            : incompletosACobrar.length > 0
+              ? 'Falta elegir color o talla'
+              : 'Proceder al Pago'}
         </Button>
       </div>
     </div>

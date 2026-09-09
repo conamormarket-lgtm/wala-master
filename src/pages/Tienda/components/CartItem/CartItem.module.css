@@ -229,6 +229,51 @@
   color: var(--rojo-principal);
 }
 
+/* ── Artículo incompleto (sin color o sin talla) ──
+   No se puede despachar, así que la fila se señala en el borde izquierdo y se
+   ofrece el atajo a la ficha para elegir lo que falta. */
+.itemIncompleto {
+  border-left: 3px solid #d92330;
+  background: rgba(217, 35, 45, 0.04);
+}
+
+.incompleto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.incompletoTexto {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.incompletoTexto::before {
+  content: '⚠ ';
+}
+
+.incompletoLink {
+  color: var(--rojo-principal);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.incompletoLink:hover {
+  text-decoration-thickness: 2px;
+}
+
+:global([data-theme='dark']) .itemIncompleto {
+  background: rgba(217, 35, 45, 0.12);
+}
+
+:global([data-theme='dark']) .incompletoTexto {
+  color: #fca5a5;
+}
+
 /* ── Selección de compra ("No comprar esta vez" / "Comprar esta vez") ── */
 /* Fila atenuada cuando el item NO se comprará: se nota que no se cobrará. */
 .itemDeselected {

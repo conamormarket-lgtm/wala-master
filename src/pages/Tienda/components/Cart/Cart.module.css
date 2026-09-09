@@ -102,6 +102,27 @@
   margin-bottom: 1.5rem;
 }
 
+/* Aviso de artículos sin color o talla: bloquea el pago, así que se ve más que
+   el de "no comprar esta vez" (que es una elección del cliente, no un error). */
+.incompletoNotice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: rgba(217, 35, 45, 0.07);
+  border: 1px solid rgba(217, 35, 45, 0.35);
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+:global([data-theme='dark']) .incompletoNotice {
+  background-color: rgba(217, 35, 45, 0.14);
+  color: #fca5a5;
+}
+
 .emptyCart {
   display: flex;
   flex-direction: column;

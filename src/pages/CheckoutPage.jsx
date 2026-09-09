@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useCart } from '../contexts/CartContext';
+import { idsDeItemsIncompletos } from '../utils/cartValidation';
 import { useAuth } from '../contexts/AuthContext';
 import { useGlobalToast } from '../contexts/ToastContext';
 import { useQuery } from '@tanstack/react-query';
@@ -451,6 +452,19 @@ const CheckoutPage = () => {
       // GUARD (dinero): no se puede generar un pedido sin items seleccionados.
       if (selectedItems.length === 0) {
         toast.error('Selecciona al menos un producto para pagar.');
+        return;
+      }
+
+      // GUARD (despacho): un artículo sin color o sin talla no se puede enviar.
+      // El pedido se armaba igual, con talla:'' (ver `talla:` más abajo). El
+      // carrito ya lo bloquea, pero aquí se puede llegar por URL directa.
+      const incompletos = idsDeItemsIncompletos(selectedItems);
+      if (incompletos.size > 0) {
+        const cuales = selectedItems
+          .filter((i) => incompletos.has(i.id))
+          .map((i) => i.productName)
+          .join(', ');
+        toast.error(`Falta elegir color o talla en: ${cuales}. Ábrelo desde el carrito y elígelos.`);
         return;
       }
 

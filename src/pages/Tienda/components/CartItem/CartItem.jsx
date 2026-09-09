@@ -5,9 +5,10 @@ import { useCart } from '../../../../contexts/CartContext';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { T } from '../../../../i18n/useTranslatedText';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
+import { queLeFalta } from '../../../../utils/cartValidation';
 import styles from './CartItem.module.css';
 
-const CartItem = ({ item }) => {
+const CartItem = ({ item, incompleto = false }) => {
   const { updateQuantity, removeFromCart, toggleItemSelected } = useCart();
 
   const handleQuantityChange = (newQuantity) => {
@@ -34,7 +35,7 @@ const CartItem = ({ item }) => {
   const canDecrease = item.quantity > 1;
 
   return (
-    <div className={`${styles.item} ${!isSelected ? styles.itemDeselected : ''}`}>
+    <div className={`${styles.item} ${!isSelected ? styles.itemDeselected : ''} ${incompleto ? styles.itemIncompleto : ''}`}>
       <Link to={`/producto/${item.productId}`} className={styles.imageLink}>
         {isCombo && item.comboItems ? (
           <ComboProductImage
@@ -86,6 +87,19 @@ const CartItem = ({ item }) => {
               </div>
             )}
           </dl>
+        )}
+
+        {/* Línea creada por el antiguo botón rápido: entró sin color ni talla y
+            no se puede despachar. Se marca y se manda a la ficha a elegirlos. */}
+        {incompleto && (
+          <div className={styles.incompleto}>
+            <span className={styles.incompletoTexto}>
+              <T>Falta elegir</T> {queLeFalta(item).join(' y ')}
+            </span>
+            <Link to={`/producto/${item.productId}`} className={styles.incompletoLink}>
+              <T>Elegir ahora</T>
+            </Link>
+          </div>
         )}
         
         {isCombo && item.comboVariantSelections && Object.keys(item.comboVariantSelections).length > 0 && (
