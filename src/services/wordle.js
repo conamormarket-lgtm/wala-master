@@ -154,21 +154,72 @@ export const claimWordleReward = async () => {
   }
 };
 
-export const getMiPartidaDeHoy = async () => {
+/**
+ * Estado de la partida de hoy SEGÚN EL SERVIDOR, sin respuestas ambiguas.
+ *
+ * Devolver `null` para todos ellos era el problema: quien recibía la respuesta
+ * no sabía si el servidor había dicho "hoy no jugaste" o si sencillamente no se
+ * le pudo preguntar (sin sesión, o la consulta falló). La pantalla del juego
+ * borra el tablero terminado cuando el servidor no tiene partida — porque eso
+ * significa que se reinició desde el panel — y con la respuesta ambigua lo
+ * borraba TAMBIÉN cuando nadie había preguntado: al recargar, la palabra ya
+ * acertada volvía a estar por jugar.
+ *
+ *   · 'jugada'      -> hay partida de hoy (viene en `partida`). El día está cerrado.
+ *   · 'sin-partida' -> el servidor respondió y hoy no hay partida.
+ *   · 'sin-sesion'  -> nadie ha iniciado sesión: no hay nada que preguntar.
+ *   · 'desconocido' -> la consulta falló. No se sabe.
+ */
+export const getEstadoPartidaDeHoy = async () => {
+  const user = await esperarSesion();
+  if (!user) return { estado: 'sin-sesion', partida: null };
   try {
-    const user = await esperarSesion();
-    if (!user) return null;
     const snap = await getDoc(doc(db, WORDLE_COLLECTION, `${user.uid}_${limaTodayStr()}`));
-    return snap.exists() ? snap.data() : null;
+    return snap.exists()
+      ? { estado: 'jugada', partida: snap.data() }
+      : { estado: 'sin-partida', partida: null };
   } catch (e) {
     console.warn('No se pudo comprobar la partida de hoy:', e?.message);
-    return null;
+    return { estado: 'desconocido', partida: null };
   }
 };
 
+export const getMiPartidaDeHoy = async () => (await getEstadoPartidaDeHoy()).partida;
+
+/**
+ * Guarda la partida de hoy. Es EL documento que cierra el juego: tanto la
+ * pantalla del Wordle como la tarjeta del hub preguntan por él, y es lo único
+ * que la Cloud Function puede leer para pagar la recompensa.
+ *
+ * Por eso se escribe siempre que termina una partida, incluso cuando las
+ * estadísticas acumuladas no se tocan. Nunca pisa una partida ya guardada: si
+ * ya existe, el día estaba cerrado y no había nada que jugar.
+ */
+const guardarPartidaDelDia = async (user, datos) => {
+  const ref = doc(db, WORDLE_COLLECTION, `${user.uid}_${datos.date}`);
+  const previa = await getDoc(ref);
+  if (previa.exists()) return;
+  await setDoc(ref, datos);
+};
+
+const partidaDelDia = (user, { date, word, length, attempts, timeSeconds, won, streak }) => ({
+  userId: user.uid,
+  displayName: user.displayName || 'Anónimo',
+  date,
+  word: word || '',
+  length: length || 0,
+  attempts,
+  timeSeconds: timeSeconds || 0,
+  won,
+  currentStreak: streak || 0
+});
+
 export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, length) => {
   const user = await esperarSesion();
-  if (!user) return { error: "No user authenticated" };
+  // Sin sesión no hay nada que guardar, pero tampoco es un fallo: es una
+  // partida de invitado. Marcarla como error pintaba un aviso de "no pudimos
+  // guardar, revisa tu conexión" a quien nunca inició sesión.
+  if (!user) return { guest: true };
 
   try {
     const userRef = doc(db, USERS_COLLECTION, user.uid);
@@ -191,14 +242,27 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
         email: user.email
       };
       await setDoc(userRef, initialData, { merge: true });
+      await guardarPartidaDelDia(user, partidaDelDia(user, {
+        date: today, word, length, attempts: attemptsUsed, timeSeconds, won,
+        streak: won ? 1 : 0
+      }));
       await publishWordleStats(user, initialData);
       return { success: true, stats: initialData };
     }
 
     const userData = userSnap.data();
     
-    // Evitar sumar dos veces el mismo día si hay recarga extraña
+    // Evitar sumar dos veces el mismo día si hay recarga extraña. Las
+    // estadísticas no se tocan, pero la partida de hoy SÍ se guarda: es lo que
+    // cierra el juego y lo que valida la recompensa. Antes se salía de aquí sin
+    // escribirla, así que quien llegaba por este camino (el reloj rebobinado
+    // desde el panel deja `lastWordleDate` en hoy sin partida guardada) acertaba
+    // la palabra, no cobraba y podía volver a jugarla una y otra vez.
     if (userData.lastWordleDate === today) {
+      await guardarPartidaDelDia(user, partidaDelDia(user, {
+        date: today, word, length, attempts: attemptsUsed, timeSeconds, won,
+        streak: userData.wordleCurrentStreak || 0
+      }));
       return { success: true, stats: userData, alreadyPlayed: true };
     }
 
@@ -236,20 +300,11 @@ export const saveWordleResult = async (won, attemptsUsed, timeSeconds, word, len
     // Guardar en portal_clientes_users
     await setDoc(userRef, newData, { merge: true });
 
-    // Guardar en la nueva colección wordle
-    const wordleRecordRef = doc(db, WORDLE_COLLECTION, `${user.uid}_${today}`);
-    const wordleRecordData = {
-      userId: user.uid,
-      displayName: user.displayName || 'Anónimo',
-      date: today,
-      word: word || '',
-      length: length || 0,
-      attempts: attemptsUsed,
-      timeSeconds: timeSeconds || 0,
-      won: won,
-      currentStreak: newStreak
-    };
-    await setDoc(wordleRecordRef, wordleRecordData);
+    // Guardar la partida de hoy (la que cierra el día y valida la recompensa).
+    await guardarPartidaDelDia(user, partidaDelDia(user, {
+      date: today, word, length, attempts: attemptsUsed, timeSeconds, won,
+      streak: newStreak
+    }));
 
     // Publicar estadísticas acumuladas para el ranking global (colección pública).
     await publishWordleStats(user, { ...userData, ...newData });

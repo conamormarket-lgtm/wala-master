@@ -128,7 +128,14 @@ function construirCambios(datos) {
 
   if (que.includes('wordle')) {
     cambios.lastWordleDate = haceNDias;
+    // Quien cierra el día NO es esta fecha, es el documento wordle/<uid>_<hoy>:
+    // es lo que miran la pantalla del juego y la tarjeta del hub. Rebobinando
+    // solo la fecha, el juego seguía apareciendo como jugado y no se podía
+    // volver a probar. Se borra aparte (no es un campo del usuario), junto con
+    // la marca de recompensa cobrada, o la partida nueva no pagaría monedas.
+    cambios.lastWordleRewardDate = FieldValue.delete();
     notas.push(`wordle   : última partida -> ${haceNDias}; hoy vuelve a contar para racha y ranking`);
+    notas.push(`           se borra la partida wordle/<uid>_${hoy} y la marca de recompensa cobrada`);
     notas.push(`           OJO: el tablero se guarda en el navegador. Borra también la clave`);
     notas.push(`           localStorage "wala_wordle_${hoy}" o no te dejará volver a jugar hoy.`);
   }
@@ -200,6 +207,12 @@ function construirCambios(datos) {
   }
 
   await ref.update(cambios);
+
+  // La partida del día vive en su propia colección, no en el doc del usuario.
+  if (que.includes('wordle')) {
+    await db.collection('wordle').doc(`${ref.id}_${hoy}`).delete();
+  }
+
   console.log('  Listo. Recarga la app con ese usuario y vuelve a jugar.\n');
 })().catch((e) => {
   console.error('\nError:', e.message);

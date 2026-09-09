@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday, getMiPartidaDeHoy, claimWordleReward } from '../../services/wordle';
+import { getDailyWord, saveWordleResult, getWordleRanking, getWordleRankingToday, getEstadoPartidaDeHoy, claimWordleReward } from '../../services/wordle';
 import { volarMonedasGanadas } from '../../utils/animations';
 import { useEntregaMonedas } from '../../hooks/useEntregaMonedas';
 import { VALID_GUESSES } from '../../data/wordleDictionary';
@@ -81,6 +81,16 @@ const WordlePage = () => {
   const [showRanking, setShowRanking] = useState(false);
   const [rankingTab, setRankingTab] = useState('today'); // 'today' | 'global'
   const [showResultModal, setShowResultModal] = useState(false);
+  // El cartel de resultado se abre solo UNA vez por visita. Si no, cada vez que
+  // el efecto de arranque vuelve a pasar (una sesión que termina de cargar, una
+  // recarga de la palabra) el cartel reaparecía encima de quien acababa de
+  // cerrarlo, y parecía que el juego no se dejaba cerrar.
+  const resultadoYaMostrado = useRef(false);
+  const abrirResultado = useCallback(() => {
+    if (resultadoYaMostrado.current) return;
+    resultadoYaMostrado.current = true;
+    setShowResultModal(true);
+  }, []);
   // La ayuda se abre sola la PRIMERA vez que alguien entra: un jugador nuevo
   // veía una rejilla vacía y un teclado, sin saber cuántos intentos tenía ni qué
   // significaban los colores. Arranca cerrada y la abre el efecto de más abajo,
@@ -152,6 +162,9 @@ const WordlePage = () => {
   const saveResultMutation = useMutation({
     mutationFn: ({ won, attempts, timeSeconds, word, length }) => saveWordleResult(won, attempts, timeSeconds, word, length),
     onSuccess: async (res, variables) => {
+      // Partida de invitado: no hay nada que guardar ni que cobrar, y tampoco
+      // hay ningún error del que avisar.
+      if (res.guest) return;
       if (res.success && res.stats) {
         setUserStats(res.stats);
         queryClient.invalidateQueries({ queryKey: ['wordle-ranking-today', todayStr] });
@@ -210,16 +223,20 @@ const WordlePage = () => {
       }
       const terminadaEnLocal = !!guardado?.gameStatus && guardado.gameStatus !== 'playing';
 
-      const enServidor = user ? await getMiPartidaDeHoy() : null;
+      // No se mira el `user` del contexto: tarda un instante en cargarse y
+      // preguntar en ese hueco daba siempre "hoy no hay partida".
+      // getEstadoPartidaDeHoy espera a la sesión y además dice si pudo
+      // preguntar al servidor o no.
+      const { estado, partida } = await getEstadoPartidaDeHoy();
       if (!vivo) return;
 
-      if (enServidor) {
+      if (estado === 'jugada') {
         // Día jugado. Si el navegador conserva el tablero se enseña; si no
         // (otro equipo), al menos el resultado, con la entrada ya bloqueada
         // porque gameStatus deja de ser 'playing'.
-        setGameStatus(enServidor.won ? 'won' : 'lost');
-        setIntentosServidor(Number(enServidor.attempts) || 0);
-        setShowResultModal(true);
+        setGameStatus(partida.won ? 'won' : 'lost');
+        setIntentosServidor(Number(partida.attempts) || 0);
+        abrirResultado();
         if (terminadaEnLocal) {
           setGuesses(guardado.guesses || []);
           if (guardado.userStats) setUserStats(guardado.userStats);
@@ -228,7 +245,15 @@ const WordlePage = () => {
         return;
       }
 
-      if (terminadaEnLocal) {
+      // El servidor ha respondido que hoy no hay partida y aquí queda una
+      // terminada: ese estado local es basura (lo típico: se reinició el juego
+      // desde el panel) y bloquearía al usuario para siempre. Se descarta.
+      //
+      // Ojo: SOLO cuando el servidor lo ha dicho de verdad. Sin sesión, o con la
+      // consulta caída, el navegador es lo único que sabe que la palabra de hoy
+      // ya está resuelta; tirarlo también ahí reabría una partida ya ganada en
+      // cada recarga, que es justo lo contrario de "una palabra al día".
+      if (terminadaEnLocal && estado === 'sin-partida') {
         try { localStorage.removeItem(storageKey); } catch { /* modo privado */ }
         return;
       }
@@ -238,11 +263,12 @@ const WordlePage = () => {
         setGameStatus(guardado.gameStatus || 'playing');
         if (guardado.userStats) setUserStats(guardado.userStats);
         if (guardado.startTime) setStartTime(guardado.startTime);
+        if (terminadaEnLocal) abrirResultado();
       }
     })();
 
     return () => { vivo = false; };
-  }, [dailyWord, storageKey, user]);
+  }, [dailyWord, storageKey, abrirResultado]);
 
   // Apertura automática de la ayuda: solo la primera visita Y solo si la partida
   // de hoy sigue abierta. Si el día ya está jugado, el cartel de resultado se
@@ -348,18 +374,24 @@ const WordlePage = () => {
       setCurrentGuess(Array(wordLength).fill(''));
       setActiveIndex(0);
 
+      const terminarPartida = (won) => {
+        setGameStatus(won ? 'won' : 'lost');
+        abrirResultado();
+        const timeSeconds = Math.floor((Date.now() - (startTime || Date.now())) / 1000);
+        // Se guarda SIEMPRE. Antes esto dependía del `user` del contexto, que
+        // llega con retraso: quien resolvía la palabra en ese hueco perdía la
+        // partida entera (no se guardaba, no cobraba y el día no quedaba
+        // cerrado, así que la palabra volvía a estar por jugar). Quién es el
+        // jugador lo resuelve el servicio, que sabe esperar a la sesión, y si no
+        // hay nadie conectado devuelve `guest` sin dar error.
+        saveResultMutation.mutate({ won, attempts: newGuesses.length, timeSeconds, word: targetWord, length: wordLength });
+        trackFin(won, newGuesses.length, timeSeconds);
+      };
+
       if (guessStr === targetWord) {
-        setGameStatus('won');
-        setShowResultModal(true);
-        const timeSeconds = Math.floor((Date.now() - (startTime || Date.now())) / 1000);
-        if (user) saveResultMutation.mutate({ won: true, attempts: newGuesses.length, timeSeconds, word: targetWord, length: wordLength });
-        trackFin(true, newGuesses.length, timeSeconds);
+        terminarPartida(true);
       } else if (newGuesses.length >= MAX_ATTEMPTS) {
-        setGameStatus('lost');
-        setShowResultModal(true);
-        const timeSeconds = Math.floor((Date.now() - (startTime || Date.now())) / 1000);
-        if (user) saveResultMutation.mutate({ won: false, attempts: newGuesses.length, timeSeconds, word: targetWord, length: wordLength });
-        trackFin(false, newGuesses.length, timeSeconds);
+        terminarPartida(false);
       }
       return;
     }
@@ -374,7 +406,7 @@ const WordlePage = () => {
         setActiveIndex(activeIndex + 1);
       }
     }
-  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, user, saveResultMutation, activeIndex, startTime, trackFin]);
+  }, [currentGuess, gameStatus, guesses, wordLength, targetWord, saveResultMutation, activeIndex, startTime, trackFin, abrirResultado]);
 
   // Escuchar teclado físico
   useEffect(() => {
