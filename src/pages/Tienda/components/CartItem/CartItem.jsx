@@ -36,6 +36,19 @@ const CartItem = ({ item, incompleto = false }) => {
 
   return (
     <div className={`${styles.item} ${!isSelected ? styles.itemDeselected : ''} ${incompleto ? styles.itemIncompleto : ''}`}>
+      {/* Casilla de selección, como en cualquier carrito: decide qué se paga
+          ahora sin sacar el artículo del carrito. */}
+      <label className={styles.selectBox}>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => toggleItemSelected(item.id)}
+        />
+        <span className={styles.srOnly}>
+          {isSelected ? 'Quitar de la compra' : 'Incluir en la compra'} {item.productName}
+        </span>
+      </label>
+
       <Link to={`/producto/${item.productId}`} className={styles.imageLink}>
         {isCombo && item.comboItems ? (
           <ComboProductImage
@@ -118,15 +131,11 @@ const CartItem = ({ item, incompleto = false }) => {
           <div className={styles.price}>S/ {itemPrice.toFixed(2)} c/u</div>
         )}
 
-        {/* Selección de compra: deja el item en el carrito pero lo excluye/incluye del pago. */}
-        <button
-          type="button"
-          onClick={() => toggleItemSelected(item.id)}
-          className={`${styles.selectToggle} ${!isSelected ? styles.selectToggleOff : ''}`}
-          aria-pressed={!isSelected}
-        >
-          {isSelected ? 'No comprar esta vez' : '✓ Comprar esta vez'}
-        </button>
+        {/* Al desmarcarlo se dice por qué sigue ahí: no se ha borrado, solo no
+            se paga en esta compra. */}
+        {!isSelected && (
+          <span className={styles.notaNoSeCobra}><T>No se cobrará en esta compra</T></span>
+        )}
       </div>
 
       <div className={styles.quantity}>

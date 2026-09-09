@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../../../contexts/CartContext';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -9,7 +9,7 @@ import styles from './Cart.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
 
 const Cart = () => {
-  const { items, getTotalPrice, clearCart } = useCart();
+  const { items, getTotalPrice, clearCart, setAllItemsSelected, removeSelectedItems } = useCart();
   const { userProfile } = useAuth();
   const navigate = useNavigate();
 
@@ -30,12 +30,6 @@ const Cart = () => {
     return null;
   }, [isPendingConfirmation, items]);
 
-  // Cantidad de items marcados como "no comprar esta vez" (quedan en el carrito).
-  const deselectedCount = useMemo(
-    () => items.filter(item => item.selected === false).length,
-    [items]
-  );
-
   // Artículos sin color o sin talla: los creaba el antiguo botón rápido de la
   // tarjeta y no se pueden despachar. Solo cuentan los que SÍ se van a comprar:
   // uno apartado con "no comprar esta vez" no debe bloquear el pago.
@@ -44,6 +38,29 @@ const Cart = () => {
     () => items.filter(i => i.selected !== false && incompletos.has(i.id)),
     [items, incompletos]
   );
+
+  // ── Selección ──
+  const selectedCount = useMemo(
+    () => items.filter(i => i.selected !== false).length,
+    [items]
+  );
+  const todosSeleccionados = items.length > 0 && selectedCount === items.length;
+  const algunoSeleccionado = selectedCount > 0 && !todosSeleccionados;
+
+  // El estado "indeterminado" (guion en vez de check) no existe como atributo en
+  // HTML: hay que ponerlo por DOM.
+  const selectAllRef = useRef(null);
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = algunoSeleccionado;
+  }, [algunoSeleccionado]);
+
+  const handleRemoveSelected = () => {
+    const n = selectedCount;
+    const mensaje = n === 1
+      ? '¿Quitar del carrito el artículo seleccionado?'
+      : `¿Quitar del carrito los ${n} artículos seleccionados?`;
+    if (window.confirm(mensaje)) removeSelectedItems();
+  };
 
   const handleClearCart = () => {
     if (window.confirm('¿Estás seguro de que quieres cancelar este pedido y vaciar tu carrito?')) {
@@ -66,11 +83,36 @@ const Cart = () => {
     <div className={styles.cartContainer}>
       <div className={styles.header}>
         <h2 className={styles.title}>
-          Tu Carrito {isPendingConfirmation && <span className={styles.pendingBadge}>Pendiente ⌛</span>}
+          Tu Carrito <span className={styles.itemCount}>({items.length})</span>
+          {isPendingConfirmation && <span className={styles.pendingBadge}>Pendiente ⌛</span>}
         </h2>
         <button className={styles.clearBtn} onClick={handleClearCart}>
           {isPendingConfirmation ? 'Cancelar Pedido Activo' : 'Vaciar carrito'}
         </button>
+      </div>
+
+      {/* Barra de selección, como en cualquier carrito: se decide qué se paga
+          ahora sin tener que sacar nada del carrito. */}
+      <div className={styles.selectionBar}>
+        <label className={styles.selectAll}>
+          <input
+            type="checkbox"
+            ref={selectAllRef}
+            checked={todosSeleccionados}
+            onChange={(e) => setAllItemsSelected(e.target.checked)}
+          />
+          <span>{todosSeleccionados ? 'Quitar todo de la compra' : 'Seleccionar todo'}</span>
+        </label>
+
+        <span className={styles.selectionCount}>
+          {selectedCount} de {items.length} seleccionado{items.length !== 1 ? 's' : ''}
+        </span>
+
+        {selectedCount > 0 && (
+          <button type="button" className={styles.bulkRemove} onClick={handleRemoveSelected}>
+            Eliminar seleccionados
+          </button>
+        )}
       </div>
 
       {isPendingConfirmation && (
@@ -86,16 +128,8 @@ const Cart = () => {
         </div>
       )}
 
-      {deselectedCount > 0 && (
-        <div className={styles.deselectedNotice}>
-          <span aria-hidden="true">🛇</span>
-          <span>
-            {deselectedCount} artículo{deselectedCount !== 1 ? 's' : ''} no se comprará
-            {deselectedCount !== 1 ? 'n' : ''} esta vez (quedará
-            {deselectedCount !== 1 ? 'n' : ''} en tu carrito).
-          </span>
-        </div>
-      )}
+      {/* El antiguo aviso de "N artículos no se comprarán" desaparece: la barra
+          de selección ya dice cuántos entran, y cada fila desmarcada lo indica. */}
 
       {incompletosACobrar.length > 0 && (
         <div className={styles.incompletoNotice}>
@@ -123,7 +157,12 @@ const Cart = () => {
           </div>
         )}
         <div className={styles.row}>
-          <span>Subtotal</span>
+          <span>
+            Subtotal{' '}
+            <span className={styles.rowHint}>
+              ({selectedCount} artículo{selectedCount !== 1 ? 's' : ''})
+            </span>
+          </span>
           <span>S/ {total.toFixed(2)}</span>
         </div>
         <div className={styles.row}>
@@ -138,13 +177,15 @@ const Cart = () => {
           variant="primary"
           fullWidth
           onClick={() => navigate('/checkout')}
-          disabled={isPendingConfirmation || incompletosACobrar.length > 0}
+          disabled={isPendingConfirmation || incompletosACobrar.length > 0 || selectedCount === 0}
         >
           {isPendingConfirmation
             ? 'Esperando Confirmación...'
-            : incompletosACobrar.length > 0
-              ? 'Falta elegir color o talla'
-              : 'Proceder al Pago'}
+            : selectedCount === 0
+              ? 'Selecciona algún artículo'
+              : incompletosACobrar.length > 0
+                ? 'Falta elegir color o talla'
+                : `Proceder al Pago (${selectedCount})`}
         </Button>
       </div>
     </div>

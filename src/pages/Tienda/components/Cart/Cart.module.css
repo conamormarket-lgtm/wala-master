@@ -102,8 +102,97 @@
   margin-bottom: 1.5rem;
 }
 
+/* ── Barra de selección ──
+   Decide qué se paga en esta compra sin sacar nada del carrito. */
+.selectionBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  padding: 0.625rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  background-color: var(--gris-fondo);
+  font-size: 0.875rem;
+}
+
+.selectAll {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--gris-texto-principal);
+  /* Área táctil cómoda, que la casilla del sistema es pequeña. */
+  min-height: 40px;
+}
+
+.selectAll input {
+  width: 19px;
+  height: 19px;
+  cursor: pointer;
+  accent-color: var(--rojo-principal);
+  margin: 0;
+}
+
+.selectAll input:focus-visible {
+  outline: 2px solid var(--rojo-principal);
+  outline-offset: 2px;
+}
+
+.selectionCount {
+  color: var(--gris-texto-secundario);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Acción destructiva en lote: se mantiene discreta hasta que hace falta. */
+.bulkRemove {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 0.375rem 0;
+  color: var(--gris-texto-secundario);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.bulkRemove:hover {
+  color: var(--rojo-principal);
+}
+
+.bulkRemove:focus-visible {
+  outline: 2px solid var(--rojo-principal);
+  outline-offset: 2px;
+}
+
+.itemCount {
+  font-weight: 500;
+  color: var(--gris-texto-secundario);
+}
+
+.rowHint {
+  color: var(--gris-texto-secundario);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+@media (max-width: 480px) {
+  .selectionBar {
+    gap: 0.5rem 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .bulkRemove {
+    margin-left: 0;
+  }
+}
+
 /* Aviso de artículos sin color o talla: bloquea el pago, así que se ve más que
-   el de "no comprar esta vez" (que es una elección del cliente, no un error). */
+   el resto (es un error, no una elección del cliente). */
 .incompletoNotice {
   display: flex;
   align-items: center;

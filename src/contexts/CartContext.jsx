@@ -380,6 +380,17 @@ export const CartProvider = ({ children }) => {
     setItems(prev => prev.map(i => (i.selected === false ? { ...i, selected: true } : i)));
   }, []);
 
+  // Marca o desmarca TODOS a la vez: lo usa la casilla "Seleccionar todo" del
+  // carrito, que necesita las dos direcciones (selectAllItems solo marca).
+  const setAllItemsSelected = React.useCallback((selected) => {
+    setItems(prev => prev.map(i => ({ ...i, selected: Boolean(selected) })));
+  }, []);
+
+  // Quita del carrito los items marcados (accion "Eliminar seleccionados").
+  const removeSelectedItems = React.useCallback(() => {
+    setItems(prev => prev.filter(i => i.selected === false));
+  }, []);
+
   // Tras pagar: conserva SOLO los items NO seleccionados ("no comprar esta vez").
   // Los items seleccionados (los que se pagaron) se quitan del carrito.
   // El efecto existente sincroniza localStorage/Firestore automáticamente.
@@ -409,11 +420,13 @@ export const CartProvider = ({ children }) => {
     clearCart,
     toggleItemSelected,
     selectAllItems,
+    setAllItemsSelected,
+    removeSelectedItems,
     clearSelectedItems,
     getTotalItems,
     getTotalPrice,
     isEmpty: items.length === 0
-  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, toggleItemSelected, selectAllItems, clearSelectedItems, getTotalItems, getTotalPrice]);
+  }), [items, addToCart, removeFromCart, updateQuantity, clearCart, toggleItemSelected, selectAllItems, setAllItemsSelected, removeSelectedItems, clearSelectedItems, getTotalItems, getTotalPrice]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
