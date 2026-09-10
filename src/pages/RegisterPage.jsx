@@ -205,7 +205,7 @@ const RegisterPage = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading}
-                  placeholder="tu@email.com"
+                  placeholder="Ingresa tu correo electrónico"
                 />
               </div>
               <div className={styles.formGroup}>
@@ -218,7 +218,7 @@ const RegisterPage = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={loading}
-                    placeholder="••••••••"
+                    placeholder="Crea tu contraseña"
                   />
                   <button
                     type="button"
@@ -242,7 +242,7 @@ const RegisterPage = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     disabled={loading}
-                    placeholder="••••••••"
+                    placeholder="Confirma tu contraseña"
                   />
                   <button
                     type="button"

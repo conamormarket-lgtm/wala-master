@@ -119,7 +119,7 @@ const LoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                placeholder="tu@email.com"
+                placeholder="Ingresa tu correo electrónico"
               />
             </div>
             
@@ -134,7 +134,7 @@ const LoginPage = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
-                  placeholder="••••••••"
+                  placeholder="Ingresa tu contraseña"
                 />
                 <button
                   type="button"

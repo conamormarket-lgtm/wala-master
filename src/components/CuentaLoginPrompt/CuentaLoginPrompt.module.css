@@ -4,17 +4,29 @@
   width: 100%;
   max-width: 1000px;
   margin: 0 auto;
-  background-color: var(--blanco);
+  /* Mismo vidrio que Login/Registro/Completar perfil (GlassCard recipe). */
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  border: var(--glass-border-strong);
   border-radius: var(--radio-grande);
-  box-shadow: var(--sombra-profunda);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inset-top);
   overflow: hidden;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .wrapper {
+    background: var(--color-surface, var(--blanco));
+  }
 }
 
 .branding {
   background: linear-gradient(135deg, #4c1d95, #7c3aed, #a855f7, #6d28d9);
   background-size: 300% 300%;
   animation: gradientFlow 12s ease infinite;
-  color: var(--blanco);
+  /* Blanco literal: --blanco se remapea al color de superficie oscura en modo
+     noche, no sirve como "texto blanco fijo" sobre esta franja de marca. */
+  color: #ffffff;
   padding: 3.5rem;
   display: flex;
   flex-direction: column;
@@ -122,6 +134,17 @@
   margin: 0 0 0.5rem 0;
   font-size: 1.75rem;
   font-weight: 700;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not (background-clip: text) {
+  .ctaContainer h1 {
+    -webkit-text-fill-color: initial;
+    color: var(--gris-texto-principal);
+  }
 }
 
 .ctaContainer > p {

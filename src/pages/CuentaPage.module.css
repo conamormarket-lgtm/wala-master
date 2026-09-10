@@ -12,6 +12,13 @@
   box-sizing: border-box;
 }
 
+/* Solo para el estado SIN sesión (CuentaLoginPrompt / PedidosLoginPrompt):
+   mismo lavado violeta que Login/Registro detrás de la tarjeta de vidrio.
+   El dashboard logueado se queda con el fondo plano de siempre. */
+.containerAuth {
+  background: var(--gradient-aurora-soft, var(--gris-fondo));
+}
+
 .content {
   width: 100%;
   max-width: 1000px;

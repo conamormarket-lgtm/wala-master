@@ -82,7 +82,7 @@ const CuentaLayout = () => {
       location.pathname.startsWith('/cuenta/pedidos/');
 
     return (
-      <div className={styles.container}>
+      <div className={`${styles.container} ${styles.containerAuth}`}>
         <div className={styles.content}>
           {isPedidosRoute ? <PedidosLoginPrompt /> : <CuentaLoginPrompt />}
         </div>
