@@ -144,6 +144,11 @@
   border-radius: 0 var(--radio-mediano, 12px) var(--radio-mediano, 12px) 0;
   box-shadow: var(--glass-shadow, 0 8px 20px rgba(15, 23, 42, 0.16));
   opacity: 0;
+  /* Red de seguridad: en una tarjeta MUY baja (o un combo con más piezas de
+     las esperadas) esto evita que el riel crezca más que la propia tarjeta
+     y termine encima de los badges/botón en vez de solo asomarse. */
+  max-height: 78%;
+  overflow: hidden;
   /* Reposo: fuera del borde izquierdo (invisible). Hover: se asoma hacia
      adentro. translate en vez de solo opacity para que se sienta como un
      cajón que se abre, no un simple fundido. */
@@ -175,10 +180,15 @@
   color: #111;
 }
 
+/* Fila, no columna: apiladas verticalmente (3 piezas + etiqueta) medían
+   ~211px de alto -81% del alto de una tarjeta angosta de carrusel/"Ofertas"
+   (260px)-, así que quedaba pegado contra los badges de arriba y el botón
+   de abajo. En fila mide ~90px sin importar el tamaño de la tarjeta: cabe
+   cómodo tanto en la grilla grande como en un carrusel angosto. */
 .comboRevealItems {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  flex-direction: row;
+  gap: 0.35rem;
 }
 
 .comboRevealItem {
@@ -186,12 +196,12 @@
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
-  width: 46px;
+  width: 40px;
 }
 
 .comboRevealThumb {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
