@@ -462,14 +462,20 @@
 }
 
 .googleButton {
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
   border: 2px solid var(--gris-borde) !important;
   background: var(--blanco) !important;
   color: var(--gris-texto-principal) !important;
   min-height: 48px;
+}
+
+/* Ver nota en LoginPage.module.css: el flex/gap tiene que ir en el <span>
+   interno que pone Button.jsx, no en el botón (que solo tiene ese span
+   como hijo) — si no, el ícono queda pegado al texto. */
+.googleButton > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
 }
 
 .googleButton:hover:not(:disabled) {

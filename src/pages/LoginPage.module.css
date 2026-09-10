@@ -343,15 +343,22 @@
 }
 
 .googleButton {
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
   border: 2px solid var(--gris-borde) !important;
   background-color: var(--blanco) !important;
   color: var(--gris-texto-principal) !important;
   transition: var(--transicion-suave);
   min-height: 48px;
+}
+
+/* Button.jsx mete todo el contenido (ícono + texto) en un único <span>, así
+   que el flex/gap tenía que ir de verdad ahí adentro — puesto en .googleButton
+   (el <button>) no hacía nada porque ese span es su único hijo: el ícono y el
+   texto quedaban pegados sin espacio entre ellos. */
+.googleButton > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
 }
 
 .googleButton:hover:not(:disabled) {
