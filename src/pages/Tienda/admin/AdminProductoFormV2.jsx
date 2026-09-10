@@ -693,6 +693,14 @@ const AdminProductoFormV2 = () => {
         // Sin refetch, al volver a editar se servirían los datos ANTIGUOS de la caché.
         !isNew && queryClient.refetchQueries({ queryKey: ['admin-product', id] }),
         queryClient.invalidateQueries({ queryKey: ['products'] }),
+        // 'products-infinite' es la query que de verdad alimenta el catálogo
+        // por defecto (home de marca sin ?categoria= ni búsqueda, ver
+        // TiendaPage.jsx). Se agregó en la paginación con cursor DESPUÉS de
+        // esta lista de invalidación y quedó afuera: sin esto, guardar un
+        // producto (p.ej. cambiar la portada de un combo) no se reflejaba
+        // en esa vista hasta que expiraba el staleTime de 5 min o se
+        // remontaba la página.
+        queryClient.invalidateQueries({ queryKey: ['products-infinite'] }),
         queryClient.invalidateQueries({ queryKey: ['product', id] }),
         queryClient.invalidateQueries({ queryKey: ['featured-products'] }),
         queryClient.invalidateQueries({ queryKey: ['collection-products'] })
