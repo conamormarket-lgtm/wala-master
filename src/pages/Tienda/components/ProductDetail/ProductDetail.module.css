@@ -16,8 +16,13 @@
   min-height: 80vh;
 }
 
+/* 68/32 en vez de 62/38: el panel de info de un combo es más liviano
+   (talla única + "incluye" + cantidad, sin bloques largos de texto), así
+   que le sobra espacio a la galería -que es la que de verdad lo necesita
+   para mostrar 3 tarjetas completas sin activar el scroll-x en anchos de
+   laptop comunes (ver .comboRowItemDetail más abajo). */
 .pdpCombo {
-  grid-template-columns: 62% 38%;
+  grid-template-columns: 68% 32%;
   max-width: 1480px;
 }
 
@@ -271,6 +276,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  /* Sin esto, dentro de una tarjeta de combo (que centra en vez de estirar,
+     ver .comboRowItem en ComboProductImage.module.css) este bloque se
+     encoge a su contenido: una fila de 5 swatches "explota" el ancho de la
+     tarjeta entera en vez de recortarse y hacer su propio scroll-x. */
+  width: 100%;
 }
 
 .selectorLabel {

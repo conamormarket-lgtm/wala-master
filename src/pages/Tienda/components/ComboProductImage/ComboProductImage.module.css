@@ -90,7 +90,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between; /* Perfect control alignment at top and bottom */
-  gap: 0.5rem;
+  gap: 0.65rem;
   flex: 1 1 0;
   min-width: 0;
   min-height: 0;
@@ -182,13 +182,17 @@
    que caben -> la fila arrastra/hace scroll en vez de aplastarlas. */
 .comboRowItemDetail {
   position: relative;
-  flex: 1 0 240px;
+  /* 220px (antes 240px): con 3 piezas -el caso más común- esto es lo que
+     evita que la fila desborde y active el scroll-x en anchos de laptop
+     típicos (~1366px), que es donde más se notaba "todo apretado". Sigue
+     siendo suficientemente grande para leer bien la prenda. */
+  flex: 1 0 220px;
   scroll-snap-align: start;
   background: var(--color-surface, #fff);
   border: 1px solid var(--color-border, #ebebeb);
   border-radius: var(--radio-mediano, 16px);
   box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.06));
-  padding: 0.9rem 0.75rem 1.1rem;
+  padding: 1rem 0.85rem 1.2rem;
   transition: var(--transicion-rapida, all 0.2s ease);
 }
 
