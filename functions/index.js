@@ -141,6 +141,55 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       }
       return;
     }
+
+    // ── Verificación de precio/stock reales contra el catálogo ────────────
+    // De aquí en adelante (processCulqiPayment / createPaypalOrderSecure) el
+    // monto queda BLOQUEADO tal cual llegó — bloqueado no es lo mismo que
+    // correcto: sin esto, un precio que cambió (o un producto que se agotó)
+    // después de agregarse al carrito se cobraba igual. Reusa precioDeCatalogo
+    // (misma regla que ya usa calcularDescuentoCupon, más abajo en este
+    // archivo) para no inventar una segunda fórmula de precio.
+    // Alcance: ítems simples (no combo). Precio solo se exige en los NO
+    // personalizados (el diseño tiene un costo aparte que no se puede
+    // reconstruir aquí); el stock se revisa en ambos. Los combos quedan fuera
+    // — su precio se compone de sub-productos + personalización por sub-ítem,
+    // es un chequeo aparte.
+    const productosCheckout = orderPayload.productos && typeof orderPayload.productos === "object"
+      ? Object.values(orderPayload.productos)
+      : [];
+    for (const item of productosCheckout) {
+      if (!item || item.esCombo) continue;
+      const productoId = String(item.productoId || "").trim();
+      if (!productoId) continue;
+      const nombreItem = item.producto || productoId;
+      const cantidad = Math.max(1, Number(item.cantidad) || 1);
+      const prodSnap = await t.get(db.collection("productos_wala").doc(productoId));
+      if (!prodSnap.exists) {
+        throw new functions.https.HttpsError(
+          "failed-precondition",
+          `"${nombreItem}" ya no está disponible. Actualiza tu carrito.`
+        );
+      }
+      const p = prodSnap.data() || {};
+      const inStock = Number(p.inStock);
+      if (Number.isFinite(inStock) && inStock < cantidad) {
+        throw new functions.https.HttpsError(
+          "failed-precondition",
+          `"${nombreItem}" ya no tiene stock suficiente (quedan ${Math.max(0, inStock)}). Actualiza tu carrito.`
+        );
+      }
+      if (!item.personalizado) {
+        const precioReal = precioDeCatalogo(p);
+        const precioCliente = Number(item.precio);
+        if (precioReal !== null && Number.isFinite(precioCliente) && Math.abs(precioReal - precioCliente) > 0.01) {
+          throw new functions.https.HttpsError(
+            "failed-precondition",
+            `El precio de "${nombreItem}" cambió a S/ ${precioReal.toFixed(2)}. Actualiza tu carrito.`
+          );
+        }
+      }
+    }
+
     t.create(ref, {
       uid: context.auth ? context.auth.uid : null,
       status: "prepared",

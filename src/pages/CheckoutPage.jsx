@@ -961,7 +961,16 @@ const CheckoutPage = () => {
           checkoutIntentId = prepared.intentId;
         } catch (prepareErr) {
           console.warn('No se pudo preparar el pago:', prepareErr);
-          toast.error('No pudimos preparar el pago. Intenta nuevamente.');
+          // Cuando el rechazo viene de la verificación de precio/stock real
+          // (functions/index.js: prepareCheckoutPayment), mostrar el motivo
+          // exacto en vez del genérico — el cliente necesita saber que un
+          // precio cambió o que algo se agotó, no solo que "algo falló".
+          const esValidacionCarrito = prepareErr?.code === 'functions/failed-precondition';
+          toast.error(
+            esValidacionCarrito && prepareErr?.message
+              ? prepareErr.message
+              : 'No pudimos preparar el pago. Intenta nuevamente.'
+          );
           return;
         }
 
