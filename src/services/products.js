@@ -13,6 +13,36 @@ const CACHE_KEYS = {
   categories: `wala_categories_cache_${CACHE_VERSION}`
 };
 
+// Antes esta caché no caducaba nunca: solo se limpiaba si el propio admin
+// editaba un producto EN SU MISMO navegador (clearProductCaches, más abajo).
+// Para cualquier otra persona, un snapshot de días o semanas de antigüedad
+// se seguía sirviendo tal cual — entre otras cosas, alimenta las sugerencias
+// de búsqueda del header (getSearchSuggestions), que podían mostrar productos
+// ya agotados o eliminados. 1h alcanza para el ahorro de lecturas sin quedarse
+// pegado tanto tiempo.
+const CACHE_TTL_MS = 60 * 60 * 1000;
+
+const writeCache = (key, data) => {
+  try {
+    localStorage.setItem(key, JSON.stringify({ data, cachedAt: Date.now() }));
+  } catch (e) { /* localStorage puede no estar disponible (modo privado, etc.) */ }
+};
+
+const readCache = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw);
+    // Formato viejo (array plano, sin cachedAt): se trata como vencido para
+    // que se vuelva a pedir una vez y quede re-guardado ya con TTL.
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
+    if (!Number.isFinite(parsed.cachedAt) || Date.now() - parsed.cachedAt > CACHE_TTL_MS) return undefined;
+    return parsed.data;
+  } catch (e) {
+    return undefined;
+  }
+};
+
 export const generateProductId = () => {
   return doc(collection(db, COLLECTION)).id;
 };
@@ -112,22 +142,14 @@ export const getProducts = async (filters = [], orderBy = null, limitCount = nul
   const raw = includeHidden ? result.data : result.data.filter((p) => p.visible !== false);
   const data = raw.map((doc) => normalizeProductForRead(doc));
 
-  try {
-    if (!includeHidden && (!filters || filters.length === 0) && !orderBy && !limitCount) {
-      localStorage.setItem(CACHE_KEYS.products, JSON.stringify(data));
-    }
-  } catch(e) {}
+  if (!includeHidden && (!filters || filters.length === 0) && !orderBy && !limitCount) {
+    writeCache(CACHE_KEYS.products, data);
+  }
 
   return { data, error: null };
 };
 
-export const getCachedProducts = () => {
-  try {
-    const cached = localStorage.getItem(CACHE_KEYS.products);
-    if (cached) return JSON.parse(cached);
-  } catch(e) {}
-  return undefined;
-};
+export const getCachedProducts = () => readCache(CACHE_KEYS.products);
 
 /**
  * Normaliza un item de variante (nuevo modelo)
@@ -606,20 +628,12 @@ export const getFeaturedProducts = async (brandId = null) => {
   if (result.error) return result;
   const data = result.data.filter((p) => p.visible !== false).map((doc) => normalizeProductForRead(doc));
 
-  try {
-    localStorage.setItem(CACHE_KEYS.featured, JSON.stringify(data));
-  } catch(e) {}
+  writeCache(CACHE_KEYS.featured, data);
 
   return { data, error: null };
 };
 
-export const getCachedFeaturedProducts = () => {
-  try {
-    const cached = localStorage.getItem(CACHE_KEYS.featured);
-    if (cached) return JSON.parse(cached);
-  } catch(e) {}
-  return undefined;
-};
+export const getCachedFeaturedProducts = () => readCache(CACHE_KEYS.featured);
 
 export const clearProductCaches = () => {
   try {
@@ -813,20 +827,12 @@ export const getCategories = async () => {
   const error = data.length ? null : (store.error || admin.error || null);
   const result = { data, error };
   if (!error && data.length) {
-    try {
-      localStorage.setItem(CACHE_KEYS.categories, JSON.stringify(data));
-    } catch(e) {}
+    writeCache(CACHE_KEYS.categories, data);
   }
   return result;
 };
 
-export const getCachedCategories = () => {
-  try {
-    const cached = localStorage.getItem(CACHE_KEYS.categories);
-    if (cached) return JSON.parse(cached);
-  } catch(e) {}
-  return undefined;
-};
+export const getCachedCategories = () => readCache(CACHE_KEYS.categories);
 
 /**
  * Normaliza una capa del editor.

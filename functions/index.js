@@ -121,6 +121,76 @@ async function readCheckoutIntent(intentId, context) {
   return { id, ref: snap.ref, intent, orderPayload: intent.orderPayload || {} };
 }
 
+// ── Verificación de precio/stock reales contra el catálogo ──────────────────
+// Recorre un mapa de productos (mismo formato que orderPayload.productos:
+// valores con productoId/cantidad/precio/personalizado/esCombo — el que arman
+// CheckoutPage.jsx y LandingPaymentBlock.jsx) y lanza HttpsError con un
+// mensaje claro en el primer problema real que encuentra. `lector` es
+// opcional: se pasa la transacción (t) para leer dentro de una (como hace
+// prepareCheckoutPayment) o se omite para leer suelto (validateCartPricingSecure,
+// para flujos que crean el pedido directo sin pasar por una intención).
+//
+// Por qué existe: de aquí en adelante (processCulqiPayment /
+// createPaypalOrderSecure) el monto queda BLOQUEADO tal cual llegó —
+// bloqueado no es lo mismo que correcto: sin esto, un precio que cambió (o un
+// producto que se agotó) después de agregarse al carrito se cobraba igual.
+// Reusa precioDeCatalogo (misma regla que ya usa calcularDescuentoCupon, más
+// abajo en este archivo) para no inventar una segunda fórmula de precio.
+// Alcance: ítems simples (no combo). Precio solo se exige en los NO
+// personalizados (el diseño tiene un costo aparte que no se puede
+// reconstruir aquí); el stock se revisa en ambos. Los combos quedan fuera —
+// su precio se compone de sub-productos + personalización por sub-ítem, es
+// un chequeo aparte.
+async function verificarPreciosYStock(productos, lector) {
+  const items = productos && typeof productos === "object" ? Object.values(productos) : [];
+  for (const item of items) {
+    if (!item || item.esCombo) continue;
+    const productoId = String(item.productoId || "").trim();
+    if (!productoId) continue;
+    const nombreItem = item.producto || productoId;
+    const cantidad = Math.max(1, Number(item.cantidad) || 1);
+    const ref = db.collection("productos_wala").doc(productoId);
+    const snap = lector ? await lector.get(ref) : await ref.get();
+    if (!snap.exists) {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        `"${nombreItem}" ya no está disponible. Actualiza tu carrito.`
+      );
+    }
+    const p = snap.data() || {};
+    const inStock = Number(p.inStock);
+    if (Number.isFinite(inStock) && inStock < cantidad) {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        `"${nombreItem}" ya no tiene stock suficiente (quedan ${Math.max(0, inStock)}). Actualiza tu carrito.`
+      );
+    }
+    if (!item.personalizado) {
+      const precioReal = precioDeCatalogo(p);
+      const precioCliente = Number(item.precio);
+      if (precioReal !== null && Number.isFinite(precioCliente) && Math.abs(precioReal - precioCliente) > 0.01) {
+        throw new functions.https.HttpsError(
+          "failed-precondition",
+          `El precio de "${nombreItem}" cambió a S/ ${precioReal.toFixed(2)}. Actualiza tu carrito.`
+        );
+      }
+    }
+  }
+}
+
+// Callable standalone para flujos que crean el pedido DIRECTO, sin pasar por
+// prepareCheckoutPayment (ej. LandingPaymentBlock.jsx, que llama createWebOrder
+// de una vez). Mismo criterio que prepareCheckoutPayment, vía la misma función
+// verificarPreciosYStock — no es una segunda validación distinta.
+exports.validateCartPricingSecure = functions.https.onCall(async (data) => {
+  const productos = data && data.productos;
+  if (!productos || typeof productos !== "object") {
+    throw new functions.https.HttpsError("invalid-argument", "Faltan los productos a verificar.");
+  }
+  await verificarPreciosYStock(productos, null);
+  return { ok: true };
+});
+
 exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) => {
   const orderPayload = data && data.orderPayload;
   if (!orderPayload || typeof orderPayload !== "object" || Array.isArray(orderPayload)) {
@@ -142,53 +212,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       return;
     }
 
-    // ── Verificación de precio/stock reales contra el catálogo ────────────
-    // De aquí en adelante (processCulqiPayment / createPaypalOrderSecure) el
-    // monto queda BLOQUEADO tal cual llegó — bloqueado no es lo mismo que
-    // correcto: sin esto, un precio que cambió (o un producto que se agotó)
-    // después de agregarse al carrito se cobraba igual. Reusa precioDeCatalogo
-    // (misma regla que ya usa calcularDescuentoCupon, más abajo en este
-    // archivo) para no inventar una segunda fórmula de precio.
-    // Alcance: ítems simples (no combo). Precio solo se exige en los NO
-    // personalizados (el diseño tiene un costo aparte que no se puede
-    // reconstruir aquí); el stock se revisa en ambos. Los combos quedan fuera
-    // — su precio se compone de sub-productos + personalización por sub-ítem,
-    // es un chequeo aparte.
-    const productosCheckout = orderPayload.productos && typeof orderPayload.productos === "object"
-      ? Object.values(orderPayload.productos)
-      : [];
-    for (const item of productosCheckout) {
-      if (!item || item.esCombo) continue;
-      const productoId = String(item.productoId || "").trim();
-      if (!productoId) continue;
-      const nombreItem = item.producto || productoId;
-      const cantidad = Math.max(1, Number(item.cantidad) || 1);
-      const prodSnap = await t.get(db.collection("productos_wala").doc(productoId));
-      if (!prodSnap.exists) {
-        throw new functions.https.HttpsError(
-          "failed-precondition",
-          `"${nombreItem}" ya no está disponible. Actualiza tu carrito.`
-        );
-      }
-      const p = prodSnap.data() || {};
-      const inStock = Number(p.inStock);
-      if (Number.isFinite(inStock) && inStock < cantidad) {
-        throw new functions.https.HttpsError(
-          "failed-precondition",
-          `"${nombreItem}" ya no tiene stock suficiente (quedan ${Math.max(0, inStock)}). Actualiza tu carrito.`
-        );
-      }
-      if (!item.personalizado) {
-        const precioReal = precioDeCatalogo(p);
-        const precioCliente = Number(item.precio);
-        if (precioReal !== null && Number.isFinite(precioCliente) && Math.abs(precioReal - precioCliente) > 0.01) {
-          throw new functions.https.HttpsError(
-            "failed-precondition",
-            `El precio de "${nombreItem}" cambió a S/ ${precioReal.toFixed(2)}. Actualiza tu carrito.`
-          );
-        }
-      }
-    }
+    await verificarPreciosYStock(orderPayload.productos, t);
 
     t.create(ref, {
       uid: context.auth ? context.auth.uid : null,

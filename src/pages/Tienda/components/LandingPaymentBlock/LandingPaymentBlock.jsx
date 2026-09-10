@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { signInAnonymously } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { auth } from '../../../../services/firebase/config';
 import { getProduct } from '../../../../services/products';
 import { createWebOrder } from '../../../../services/erp/firebase';
@@ -464,6 +465,18 @@ const LandingPaymentBlock = ({ config = {} }) => {
       portalPseudoOrderId: pseudoOrderId,
       ...(buyerUid && { userId: buyerUid }),
     };
+
+    // ── Verificación de precio/stock reales contra el catálogo ────────────
+    // Este checkout crea el pedido DIRECTO (createWebOrder), sin pasar por la
+    // intención previa que usa el checkout normal (prepareCheckoutPayment) —
+    // así que, a diferencia de ahí, aquí nada bloqueaba el monto server-side
+    // antes de cobrar. Mismo criterio (misma Cloud Function reusa
+    // precioDeCatalogo) que ya protege /checkout; solo cambia CUÁNDO se llama.
+    try {
+      await httpsCallable(getFunctions(), 'validateCartPricingSecure')({ productos: webOrderPayload.productos });
+    } catch (validationErr) {
+      throw new Error(validationErr?.message || 'No pudimos verificar tu pedido. Intenta de nuevo.');
+    }
 
     const { id, error: webErr } = await createWebOrder(webOrderPayload);
     if (webErr || !id) {
