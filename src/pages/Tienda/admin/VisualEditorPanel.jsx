@@ -725,14 +725,14 @@ const VisualEditorPanel = () => {
         <div className={styles.sectionList}>
           {/* HEADER (Global) */}
           {(activePageId === 'home' || activePageId === 'tienda') && activePageId !== 'footer' && (
-            <div className={styles.linkSummaryBox} style={{ borderLeft: '4px solid #8b5cf6', background: '#f8f5ff', marginBottom: '15px', flexDirection: 'column', alignItems: 'stretch', padding: '12px', opacity: !isHeaderVisible ? 0.6 : 1 }}>
+            <div className={styles.linkSummaryBox} style={{ borderLeft: '4px solid #8b5cf6', background: 'rgba(139, 92, 246, 0.12)', marginBottom: '15px', flexDirection: 'column', alignItems: 'stretch', padding: '12px', opacity: !isHeaderVisible ? 0.6 : 1 }}>
               <div style={{marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
                 <div>
                   <strong style={{display: 'block', fontSize: '0.95rem'}}>Encabezado Global (Header)</strong>
-                  <span style={{fontSize: '0.8rem', color: '#666'}}>Se muestra en todas las páginas</span>
+                  <span style={{fontSize: '0.8rem', color: '#a7a9ad'}}>Se muestra en todas las páginas</span>
                 </div>
                 {activePageId !== 'home' && activePageId !== 'tienda' && activePageId !== 'footer' && (
-                  <button 
+                  <button
                     onClick={async () => {
                       const newVis = !isHeaderVisible;
                       setHeaderVisible(newVis);
@@ -751,22 +751,22 @@ const VisualEditorPanel = () => {
                 )}
               </div>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                <button disabled={!isHeaderVisible} style={{flex: 1, minWidth: '70px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontWeight: 500, opacity: isHeaderVisible ? 1 : 0.5}} onClick={() => openEditorForSection('header', storeConfigDraft)} title="Editar Navegación">Navegación</button>
-                <button disabled={!isHeaderVisible} style={{flex: 1, minWidth: '60px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontWeight: 500, opacity: isHeaderVisible ? 1 : 0.5}} onClick={() => openEditorForSection('accountPopup', storeConfigDraft)} title="Editar Mi Cuenta">Cuenta</button>
-                <button disabled={!isHeaderVisible} style={{flex: 1, minWidth: '60px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontWeight: 500, opacity: isHeaderVisible ? 1 : 0.5}} onClick={() => openEditorForSection('favoritesPopup', storeConfigDraft)} title="Editar Favoritos">Favoritos</button>
+                <button disabled={!isHeaderVisible} style={{flex: 1, minWidth: '70px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #4a4c51', background: '#3b3c40', color: '#d9dadd', cursor: 'pointer', fontWeight: 500, opacity: isHeaderVisible ? 1 : 0.5}} onClick={() => openEditorForSection('header', storeConfigDraft)} title="Editar Navegación">Navegación</button>
+                <button disabled={!isHeaderVisible} style={{flex: 1, minWidth: '60px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #4a4c51', background: '#3b3c40', color: '#d9dadd', cursor: 'pointer', fontWeight: 500, opacity: isHeaderVisible ? 1 : 0.5}} onClick={() => openEditorForSection('accountPopup', storeConfigDraft)} title="Editar Mi Cuenta">Cuenta</button>
+                <button disabled={!isHeaderVisible} style={{flex: 1, minWidth: '60px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #4a4c51', background: '#3b3c40', color: '#d9dadd', cursor: 'pointer', fontWeight: 500, opacity: isHeaderVisible ? 1 : 0.5}} onClick={() => openEditorForSection('favoritesPopup', storeConfigDraft)} title="Editar Favoritos">Favoritos</button>
                 {/* El buscador se marca en su propia página al pasar el ratón, pero
                     ahí no hay forma de saber que se puede editar hasta que lo
                     intentas. Desde aquí se abre directamente, como Cuenta y
                     Favoritos. No depende del encabezado: la página existe igual. */}
-                <button style={{flex: 1, minWidth: '70px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontWeight: 500}} onClick={() => openEditorForSection('searchPage', storeConfigDraft)} title="Editar la página de búsqueda (/buscar)">Buscador</button>
+                <button style={{flex: 1, minWidth: '70px', padding: '6px 4px', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid #4a4c51', background: '#3b3c40', color: '#d9dadd', cursor: 'pointer', fontWeight: 500}} onClick={() => openEditorForSection('searchPage', storeConfigDraft)} title="Editar la página de búsqueda (/buscar)">Buscador</button>
               </div>
             </div>
           )}
 
           {/* DYNAMIC SECTIONS */}
           {sections.length === 0 && (
-            <div style={{textAlign: 'center', margin: '20px 0', padding: '20px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1'}}>
-              <p style={{color: '#64748b', marginBottom: '15px', fontSize: '0.9rem'}}>Crea tu página arrastrando módulos o inicia rápido con una base.</p>
+            <div style={{textAlign: 'center', margin: '20px 0', padding: '20px', background: '#25262a', borderRadius: '8px', border: '1px dashed #55575e'}}>
+              <p style={{color: '#a7a9ad', marginBottom: '15px', fontSize: '0.9rem'}}>Crea tu página arrastrando módulos o inicia rápido con una base.</p>
               <button 
                 onClick={() => {
                   const t = Date.now();
@@ -798,7 +798,7 @@ const VisualEditorPanel = () => {
                 <div style={{flex: 1}}>
                   <strong style={{display: 'block', fontSize: '0.95rem'}}>{typeLabel}</strong>
                   {section.settings?.title && (
-                    <span style={{fontSize: '0.8rem', color: '#666'}}>{section.settings.title}</span>
+                    <span style={{fontSize: '0.8rem', color: '#a7a9ad'}}>{section.settings.title}</span>
                   )}
                 </div>
                 <div className={styles.linkSummaryActions}>
@@ -813,12 +813,12 @@ const VisualEditorPanel = () => {
 
           {/* FOOTER (Global) */}
           {(activePageId === 'home' || activePageId === 'tienda') && activePageId !== 'footer' && (
-            <div className={styles.linkSummaryBox} style={{ borderLeft: '4px solid #8b5cf6', background: '#f8f5ff', marginTop: '15px', opacity: !isFooterVisible ? 0.6 : 1 }}>
+            <div className={styles.linkSummaryBox} style={{ borderLeft: '4px solid #8b5cf6', background: 'rgba(139, 92, 246, 0.12)', marginTop: '15px', opacity: !isFooterVisible ? 0.6 : 1 }}>
               <div style={{flex: 1}}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
                   <div>
                     <strong style={{display: 'block', fontSize: '0.95rem'}}>Pie de Página Global (Footer)</strong>
-                    <span style={{fontSize: '0.8rem', color: '#666'}}>Se muestra en todas las páginas</span>
+                    <span style={{fontSize: '0.8rem', color: '#a7a9ad'}}>Se muestra en todas las páginas</span>
                   </div>
                   {activePageId !== 'home' && activePageId !== 'tienda' && activePageId !== 'footer' && (
                     <button 
@@ -852,8 +852,8 @@ const VisualEditorPanel = () => {
           )}
         </div>
 
-        <div className={styles.formGroup} style={{marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', paddingBottom: '1rem'}}>
-          <label style={{ display: 'flex', alignItems: 'center', color: '#0f172a', fontWeight: '600', fontSize: '0.95rem', marginBottom: '0.5rem', marginTop: 0 }}>
+        <div className={styles.formGroup} style={{marginTop: '2rem', borderTop: '1px solid #3e3f43', paddingTop: '1.5rem', paddingBottom: '1rem'}}>
+          <label style={{ display: 'flex', alignItems: 'center', color: '#e5e5e5', fontWeight: '600', fontSize: '0.95rem', marginBottom: '0.5rem', marginTop: 0 }}>
             <Plus size={16} strokeWidth={2} style={{marginRight: 6, color: '#8b5cf6'}} /> Añadir Nuevo Módulo
           </label>
           <select
@@ -3827,7 +3827,7 @@ const VisualEditorPanel = () => {
           <button onClick={toggleMobilePreview} title={isPreviewMobile ? "Volver a vista de Escritorio" : "Previsualización Móvil"}>
             {isPreviewMobile ? <Monitor size={16} strokeWidth={1.5} color="#3b82f6" /> : <Smartphone size={16} strokeWidth={1.5} />}
           </button>
-          <div style={{width: '1px', background: '#cbd5e1', margin: '0 5px', height: '16px'}} />
+          <div style={{width: '1px', background: '#3e3f43', margin: '0 5px', height: '16px'}} />
           <button onClick={() => setEditorPosition('left')} title="Anclar a la Izquierda"><PanelLeft size={16} strokeWidth={1.5} /></button>
           <button onClick={() => setEditorPosition('floating')} title="Modo Flotante"><Monitor size={16} strokeWidth={1.5} /></button>
           <button onClick={() => setEditorPosition('right')} title="Anclar a la Derecha"><PanelRight size={16} strokeWidth={1.5} /></button>
@@ -3836,7 +3836,7 @@ const VisualEditorPanel = () => {
       
       {/* PESTAÑAS NAVEGACIÓN (Solo visible en el root) */}
       {!activeSection && (
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #3e3f43', background: '#1f2124' }}>
           <button 
             onClick={() => setActiveTab('modules')}
             style={{ 
@@ -3873,24 +3873,24 @@ const VisualEditorPanel = () => {
           <>
             {activeTab === 'modules' && (
               <div style={{ padding: '1.5rem', flexGrow: 1, overflowY: 'auto' }}>
-                <p style={{marginBottom: '1.5rem', fontSize: '0.85rem', color: '#64748b', background: '#f1f5f9', padding: '10px', borderRadius: '6px'}}>
+                <p style={{marginBottom: '1.5rem', fontSize: '0.85rem', color: '#a7a9ad', background: '#25262a', padding: '10px', borderRadius: '6px'}}>
                   Estás editando la página: <strong>{activePageId}</strong>. Arrastra los módulos para ordenarlos.
                 </p>
                 {renderPageBuilderOverview()}
               </div>
             )}
-            
+
             {activeTab === 'settings' && (
-              <div style={{ padding: '1.5rem', flexGrow: 1, overflowY: 'auto', background: '#f8fafc' }}>
-                
+              <div style={{ padding: '1.5rem', flexGrow: 1, overflowY: 'auto', background: '#1f2124' }}>
+
                 {/* TEMA VISUAL */}
                 {activePageId !== 'home' && activePageId !== 'tienda' && activePageId !== 'footer' && (
-                  <div style={{ marginBottom: '20px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '15px' }}>
-                    <h4 style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ marginBottom: '20px', background: '#25262a', border: '1px solid #3e3f43', borderRadius: '8px', padding: '15px' }}>
+                    <h4 style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#e5e5e5', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <LayoutTemplate size={18} color="#e60278" />
                       Tema Visual
                     </h4>
-                    <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '15px' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#a7a9ad', marginBottom: '15px' }}>
                       Sobrescribe los estilos globales de tu tienda aplicando un tema personalizado solo para esta Landing Page.
                     </p>
                     <LandingPageSettingsBox slug={activePageId} />
@@ -3898,25 +3898,25 @@ const VisualEditorPanel = () => {
                 )}
 
                 {/* ESTRUCTURA GLOBAL */}
-                <div style={{ marginBottom: '20px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '15px' }}>
-                  <h4 style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#0f172a' }}>Estructura de la Página</h4>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '15px' }}>
+                <div style={{ marginBottom: '20px', background: '#25262a', border: '1px solid #3e3f43', borderRadius: '8px', padding: '15px' }}>
+                  <h4 style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#e5e5e5' }}>Estructura de la Página</h4>
+                  <p style={{ fontSize: '0.85rem', color: '#a7a9ad', marginBottom: '15px' }}>
                     Oculta el menú o pie de página global si deseas crear un "Funnel" sin distracciones.
                   </p>
-                  <label style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', cursor: 'pointer', fontSize: '0.9rem', color: '#334155'}}>
-                    <input 
-                      type="checkbox" 
-                      checked={!isHeaderVisible} 
-                      onChange={e => setHeaderVisible(!e.target.checked)} 
+                  <label style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', cursor: 'pointer', fontSize: '0.9rem', color: '#d9dadd'}}>
+                    <input
+                      type="checkbox"
+                      checked={!isHeaderVisible}
+                      onChange={e => setHeaderVisible(!e.target.checked)}
                       style={{width: '18px', height: '18px'}}
                     />
                     Ocultar Menú Principal (Header Global)
                   </label>
-                  <label style={{display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: '#334155'}}>
-                    <input 
-                      type="checkbox" 
-                      checked={!isFooterVisible} 
-                      onChange={e => setFooterVisible(!e.target.checked)} 
+                  <label style={{display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: '#d9dadd'}}>
+                    <input
+                      type="checkbox"
+                      checked={!isFooterVisible}
+                      onChange={e => setFooterVisible(!e.target.checked)}
                       style={{width: '18px', height: '18px'}}
                     />
                     Ocultar Pie de Página (Footer Global)

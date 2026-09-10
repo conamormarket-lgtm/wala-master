@@ -606,7 +606,13 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             });
           });
 
-          // (1) Override manual: si hay items, se usa con su orden del admin.
+          // (1) Manual + auto-completado: las burbujas curadas a mano se
+          // respetan tal cual (nombre/imagen/orden elegidos en el admin), pero
+          // cualquier categoría NUEVA que la marca ya tenga en sus productos y
+          // que todavía no esté en esa lista manual se agrega sola al final.
+          // Antes, tener AUNQUE SEA una burbuja manual apagaba el auto-derivado
+          // por completo: crear una categoría nueva (p.ej. "Polos") no la hacía
+          // aparecer en ningún nav que ya tuviera curación manual, sin avisar.
           if (manual.length > 0) {
             const sorted = [...manual]
               .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
@@ -621,7 +627,24 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
                 };
               })
               .filter((item) => item.categoryId && categoryIdsInUse.has(item.categoryId));
-            return [bid, { items: sorted, style }];
+
+            const manualIds = new Set(sorted.map((item) => item.categoryId));
+            const autoExtras = Array.from(categoryIdsInUse)
+              .filter((cid) => !manualIds.has(cid))
+              .map((cid) => {
+                const cat = categoriesById.get(cid);
+                if (!cat) return null;
+                return {
+                  categoryId: cid,
+                  name: cat.name || '',
+                  imageUrl: cat.imageUrl || '',
+                  order: typeof cat.order === 'number' ? cat.order : 0,
+                };
+              })
+              .filter(Boolean)
+              .sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+
+            return [bid, { items: [...sorted, ...autoExtras], style }];
           }
 
           // (2) AUTO-derivar desde los productos de la marca.

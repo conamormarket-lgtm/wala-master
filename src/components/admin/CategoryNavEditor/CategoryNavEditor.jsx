@@ -36,9 +36,14 @@ import styles from './CategoryNavEditor.module.css';
  * marca por la categoría `categoryId`.
  *
  * Reglas del nav (ya implementadas en la tienda):
- *  - Si `categoryNav` está VACÍO → el nav es AUTOMÁTICO (se deriva de las
- *    categorías de los productos de la marca).
- *  - Si `categoryNav` tiene items → se usan esos (OVERRIDE manual).
+ *  - Si `categoryNav` está VACÍO → el nav es 100% AUTOMÁTICO (se deriva de
+ *    las categorías de los productos de la marca).
+ *  - Si `categoryNav` tiene items → esas burbujas se usan tal cual (su
+ *    nombre/imagen/orden curados a mano), Y ADEMÁS se agrega al final,
+ *    automáticamente, cualquier categoría que la marca ya tenga en sus
+ *    productos y que todavía no esté en esa lista manual. Así una categoría
+ *    nueva (p.ej. "Polos") siempre aparece sola, sin tener que acordarse de
+ *    agregarla a mano en cada marca que ya tenía burbujas curadas.
  *
  * Por cada burbuja se pueden editar los 3 campos:
  *  (a) QUÉ FILTRA  → <select> de tienda_categories que setea `categoryId`.
@@ -418,7 +423,7 @@ const CategoryNavEditor = ({ brandId, brandName, onSaved }) => {
           <span className={styles.toolbarHint}>
             {items.length === 0
               ? 'Vacío = nav AUTOMÁTICO (se deriva de los productos de la marca).'
-              : `${items.length} burbuja(s) manual(es). Esto reemplaza al nav automático.`}
+              : `${items.length} burbuja(s) manual(es). Las categorías nuevas de la marca se siguen agregando solas al final.`}
           </span>
         </div>
         <div className={styles.toolbarBtns}>
