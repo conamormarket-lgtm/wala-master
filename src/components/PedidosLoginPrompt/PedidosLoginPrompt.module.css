@@ -82,14 +82,11 @@
   width: 150px;
   height: 150px;
   margin-bottom: 2rem;
-  background: rgba(255, 255, 255, 0.08); /* Glassmorphism */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background-color: #ffffff;
   border-radius: 50%;
   padding: 12px;
   object-fit: contain;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
