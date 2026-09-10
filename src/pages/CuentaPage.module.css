@@ -16,7 +16,7 @@
    mismo lavado violeta que Login/Registro detrás de la tarjeta de vidrio.
    El dashboard logueado se queda con el fondo plano de siempre. */
 .containerAuth {
-  background: var(--gradient-aurora-soft, var(--gris-fondo));
+  background: var(--gradient-aurora, none), var(--gradient-aurora-soft, var(--gris-fondo));
 }
 
 .content {

@@ -11,7 +11,7 @@
   padding: 2rem 1rem;
   /* Lavado violeta-lavanda; en modo oscuro tokens.css lo remapea a un
      degradado violeta profundo (no un gris plano). */
-  background: var(--gradient-aurora-soft, var(--gris-fondo));
+  background: var(--gradient-aurora, none), var(--gradient-aurora-soft, var(--gris-fondo));
 }
 
 .wrapper {

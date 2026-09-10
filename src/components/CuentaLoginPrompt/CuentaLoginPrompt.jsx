@@ -34,9 +34,6 @@ const CuentaLoginPrompt = () => {
     loginButtonUrl: '/login',
     registerButtonText: 'Crear cuenta',
     registerButtonUrl: '/registro',
-    brands: [
-      { id: 'add-btn', name: 'Añadir Marca', imageUrl: 'https://cdn-icons-png.flaticon.com/512/1237/1237946.png', url: '#' }
-    ]
   };
 
   return (
@@ -46,21 +43,6 @@ const CuentaLoginPrompt = () => {
           <img src={LOGO_URL} alt="Walá" />
           <h2><T>El seguimiento de tus pedidos, más fácil que nunca.</T></h2>
           <p><T>Walá</T></p>
-          
-          <div className={styles.partnerContainer} title="Nuestras marcas">
-            <p className={styles.partnerTitle}>Nuestras marcas</p>
-            <div className={styles.partnerLogos} style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-              {(accountPopup.brands || []).map(brand => (
-                <a key={brand.id} href={brand.url || '#'} title={brand.name} style={{ display: 'block', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
-                  <img 
-                    src={brand.imageUrl || '/images/placeholder.svg'}
-                    alt={brand.name} 
-                    style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid transparent', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-                  />
-                </a>
-              ))}
-            </div>
-          </div>
         </div>
         <div className={styles.ctaContainer}>
           <img src={LOGO_URL} alt="Walá" className={styles.logoMovil} />

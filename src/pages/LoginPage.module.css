@@ -12,7 +12,7 @@
   /* Lavado violeta-lavanda (blanco casi puro) que en modo oscuro tokens.css
      remapea a un degradado violeta profundo — así el fondo respira detrás
      del panel de cristal en vez de ser un gris plano. */
-  background: var(--gradient-aurora-soft, var(--gris-fondo));
+  background: var(--gradient-aurora, none), var(--gradient-aurora-soft, var(--gris-fondo));
 }
 
 /* ── Layout de 2 columnas: branding + formulario ── */
