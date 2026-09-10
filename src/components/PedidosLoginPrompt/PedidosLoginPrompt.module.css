@@ -20,9 +20,8 @@
 }
 
 .branding {
-  background: linear-gradient(135deg, #4c1d95, #7c3aed, #a855f7, #6d28d9);
-  background-size: 300% 300%;
-  animation: gradientFlow 12s ease infinite;
+  /* Mismo gradiente de marca fijo que Login/Registro/Completar perfil. */
+  background: var(--gradient-brand-deep, linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%));
   color: #ffffff;
   padding: 3.5rem;
   display: flex;
@@ -34,43 +33,20 @@
   overflow: hidden;
 }
 
-@keyframes gradientFlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.branding::before, .branding::after {
+.branding::before {
   content: '';
   position: absolute;
-  border-radius: 50%;
-  filter: blur(45px);
-  z-index: 0;
-  opacity: 0.5;
-  pointer-events: none;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(196, 181, 253, 0.28) 0%, transparent 70%);
+  animation: pulse 15s ease-in-out infinite;
 }
 
-.branding::before {
-  width: 300px;
-  height: 300px;
-  background: #d8b4fe;
-  top: -100px;
-  left: -100px;
-  animation: floatOrb 8s infinite alternate ease-in-out;
-}
-
-.branding::after {
-  width: 250px;
-  height: 250px;
-  background: #3b0764;
-  bottom: -50px;
-  right: -50px;
-  animation: floatOrb 10s infinite alternate-reverse ease-in-out;
-}
-
-@keyframes floatOrb {
-  0% { transform: translateY(0) scale(1); }
-  100% { transform: translateY(30px) scale(1.1); }
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.3; }
 }
 
 .branding > * {
@@ -95,20 +71,17 @@
 }
 
 .branding h2 {
-  margin: 0 0 0.75rem 0;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1.2;
+  margin: 0 0 1rem 0;
+  font-size: 1.875rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.15);
 }
 
 .branding p {
   margin: 0;
-  font-size: 1.15rem;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 500;
-  letter-spacing: 0.5px;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  opacity: 0.95;
 }
 
 .ctaContainer {
@@ -171,28 +144,20 @@
   }
 
   .branding {
-    padding: 2.5rem 2rem;
-  }
-
-  .branding > img {
-    width: 140px;
-    height: 140px;
-  }
-
-  .branding h2 {
-    font-size: 1.5rem;
+    display: none;
   }
 
   .logoMovil {
     display: block;
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 1.5rem auto;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 1.75rem auto;
     border-radius: 50%;
-    background-color: var(--blanco);
+    background-color: #ffffff;
     border: 2px solid var(--gris-borde);
     padding: 8px;
     object-fit: contain;
+    box-shadow: var(--sombra-suave);
   }
 
   .ctaContainer {
