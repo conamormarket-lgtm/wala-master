@@ -674,8 +674,64 @@ export const updateProduct = async (id, data) => {
   const result = await updateDocument(COLLECTION, id, payload);
   if (result.error) throw new Error(result.error);
   clearProductCaches();
+
+  // Los combos guardan una COPIA del nombre/foto de cada pieza en
+  // comboItems[i] (se llena una sola vez al agregarla, ver AdminComboEditor
+  // "addProductToCombo") y nunca se vuelve a tocar sola. Sin esto, cambiar
+  // la foto o el nombre de un producto vendido suelto (p.ej. la Casaca)
+  // dejaba el combo mostrando datos viejos PARA SIEMPRE: ni el "Gestor de
+  // Productos Combo" del admin ni el hover-reveal del catálogo se enteraban.
+  // No bloquea el guardado si falla (ver catch en el caller sería ideal,
+  // pero se resuelve aquí mismo para no exigirle nada al caller).
+  if (!payload.isComboProduct) {
+    try {
+      await syncComboItemSnapshots(id, payload);
+    } catch (err) {
+      console.warn('[products] No se pudo sincronizar comboItems tras editar', id, err);
+    }
+  }
+
   return result;
 };
+
+/**
+ * Refresca, en TODOS los combos que referencian a `productId`, el nombre y
+ * la foto que tienen guardados de esa pieza (comboItems[i].name/imageUrl),
+ * para que coincidan con el producto recién guardado. Solo escribe en los
+ * combos donde algo realmente cambió.
+ */
+async function syncComboItemSnapshots(productId, payload) {
+  const newName = payload?.name || '';
+  const newImageUrl = payload?.images?.[0] || payload?.mainImage || '';
+  if (!newName && !newImageUrl) return;
+
+  const { data: combos } = await getCollection(COLLECTION, [
+    { field: 'isComboProduct', operator: '==', value: true },
+  ]);
+  if (!Array.isArray(combos) || !combos.length) return;
+
+  const writes = [];
+  combos.forEach((combo) => {
+    const items = Array.isArray(combo.comboItems) ? combo.comboItems : [];
+    if (!items.some((item) => item?.productId === productId)) return;
+
+    let changed = false;
+    const nextItems = items.map((item) => {
+      if (item?.productId !== productId) return item;
+      const nextName = newName || item.name || '';
+      const nextImageUrl = newImageUrl || item.imageUrl || '';
+      if (nextName === item.name && nextImageUrl === item.imageUrl) return item;
+      changed = true;
+      return { ...item, name: nextName, imageUrl: nextImageUrl };
+    });
+
+    if (changed) {
+      writes.push(updateDoc(doc(db, COLLECTION, combo.id), { comboItems: nextItems }));
+    }
+  });
+
+  if (writes.length) await Promise.all(writes);
+}
 
 /**
  * Actualizar producto parcialmente (sin normalizar todo el payload)
