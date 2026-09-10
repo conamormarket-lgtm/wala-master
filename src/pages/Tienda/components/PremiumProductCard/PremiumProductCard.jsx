@@ -136,7 +136,13 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   }, [queryClient, product.id, product]);
 
   const isCombo = isComboProduct(product);
-  
+  // Piezas a mostrar en el hover-reveal del combo (ver overlay más abajo).
+  // Se cortan a 3 + "+N" en vez de listarlas todas para que quepan sin
+  // amontonarse en una tarjeta de catálogo (mucho más chica que la ficha).
+  const comboAllItems = isCombo ? (product?.comboItems || []) : [];
+  const comboPreviewItems = comboAllItems.slice(0, 3);
+  const comboExtraCount = Math.max(0, comboAllItems.length - comboPreviewItems.length);
+
   // Determinar la variante principal
   const principalVariant = product?.variants?.find(v => String(v.id) === String(product.defaultVariantId)) || product?.variants?.[0];
 
@@ -235,6 +241,33 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
               />
             )}
           </>
+        )}
+
+        {/* Combo: antes el hover no hacía nada distinto a un producto suelto
+            -sin "dinamismo"-. Ahora, al pasar el mouse, se revela qué trae
+            el conjunto (miniatura + nombre de cada pieza), usando datos que
+            YA vienen en product.comboItems (sin fetch extra por tarjeta). */}
+        {isCombo && comboPreviewItems.length > 0 && (
+          <div className={styles.comboRevealOverlay}>
+            <span className={styles.comboRevealLabel}>{t('card.incluye', 'Incluye')}</span>
+            <div className={styles.comboRevealItems}>
+              {comboPreviewItems.map((item, i) => (
+                <div key={item.productId || i} className={styles.comboRevealItem}>
+                  <span className={styles.comboRevealThumb}>
+                    {item.imageUrl
+                      ? <img src={toThumbnailImageUrl(item.imageUrl)} alt="" loading="lazy" />
+                      : <span className={styles.comboRevealThumbFallback}>{(item.name || '?').charAt(0)}</span>}
+                  </span>
+                  <span className={styles.comboRevealName}><T>{item.name}</T></span>
+                </div>
+              ))}
+              {comboExtraCount > 0 && (
+                <div className={styles.comboRevealItem}>
+                  <span className={`${styles.comboRevealThumb} ${styles.comboRevealMore}`}>+{comboExtraCount}</span>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Badges - Nude Project / Gymshark style */}
