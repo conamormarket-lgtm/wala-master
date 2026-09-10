@@ -147,13 +147,41 @@
    se lea como una promoción de conjunto profesional y no como controles
    sueltos flotando sobre las fotos.
    ═══════════════════════════════════════════ */
+/* La fila NUNCA aplasta las tarjetas para que "quepan": cada una conserva un
+   ancho mínimo cómodo (ver .comboRowItemDetail) y, si el conjunto tiene más
+   piezas de las que entran en el ancho disponible, la FILA hace scroll-x en
+   vez de volverse ilegible o desbordar la galería hacia la columna de info.
+   min-width:0 es defensivo (evita que el contenido "explote" el track del
+   grid/flex ancestro); overflow-x:auto ya lo consigue por sí solo, porque
+   un contenedor con overflow != visible pasa a tener tamaño mínimo 0. */
 .comboRowDetail {
+  min-width: 0;
+  /* .container (heredado) trae justify-content:center: con la fila más
+     ancha que su caja, eso la centra y arranca mostrando la PIEZA DEL MEDIO
+     recortada por los dos lados -el usuario ve "Polo" a medias y cree que
+     no puede pasar al resto-. Al hacer scroll, empieza alineada a la
+     izquierda como cualquier carrusel: la pieza 1 entra completa primero. */
+  justify-content: flex-start;
   padding: 0.25rem 0.25rem 1.5rem;
   align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  cursor: grab;
 }
 
+.comboRowDetail:active {
+  cursor: grabbing;
+}
+
+/* Ancho mínimo fijo y SIN encogerse (flex-shrink:0): si sobra espacio la
+   tarjeta lo usa (flex-grow:1), pero nunca se aprieta por debajo de esto.
+   Menos piezas de las que caben -> se reparten el ancho. Más piezas de las
+   que caben -> la fila arrastra/hace scroll en vez de aplastarlas. */
 .comboRowItemDetail {
   position: relative;
+  flex: 1 0 240px;
   background: var(--color-surface, #fff);
   border: 1px solid var(--color-border, #ebebeb);
   border-radius: var(--radio-mediano, 16px);
@@ -217,21 +245,11 @@
 }
 
 @media (max-width: 640px) {
-  .comboRowDetail {
-    flex-wrap: wrap;
-  }
-
-  .comboRowDetail .comboRowItem {
-    flex: 1 1 240px;
-    min-width: 200px;
-  }
-
+  /* En vez de envolver en varias filas (cada tarjeta perdía su ancho legible),
+     se mantiene una sola fila más angosta que sigue haciendo scroll-x. */
   .comboRowItemDetail {
+    flex-basis: 200px;
     padding: 0.7rem 0.6rem 0.85rem;
-  }
-
-  .comboRowItemDetail::before {
-    display: none;
   }
 }
 

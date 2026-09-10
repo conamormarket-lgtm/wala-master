@@ -7,6 +7,7 @@ import { recordThumbnailImpression } from '../../../../utils/productVariantBehav
 import { useQueryClient } from '@tanstack/react-query';
 import OptimizedImage, { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import ComboProductImageWithDesign, { comboHasDesignLayers } from './ComboProductImageWithDesign';
+import useDragScroll from '../../../../hooks/useDragScroll';
 import styles from './ComboProductImage.module.css';
 
 function getBestImageUrl(product, item, variantSelection = {}) {
@@ -83,6 +84,10 @@ const ComboProductImage = ({
   const [designFailed, setDesignFailed] = useState(false);
   const containerRef = useRef(null);
   const comboImpressionRecorded = useRef(false);
+  // La fila de tarjetas (una por sub-producto) no se aplasta para caber:
+  // tiene ancho mínimo propio y, si no entran todas, la fila hace scroll-x.
+  // Este hook agrega arrastre con mouse; touch/trackpad ya funciona por CSS.
+  useDragScroll(containerRef, !isThumbnail);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps

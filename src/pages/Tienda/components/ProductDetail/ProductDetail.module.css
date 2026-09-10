@@ -80,6 +80,8 @@
 /* Main image frame */
 .mainFrame {
   flex: 1;
+  min-width: 0; /* si no, el contenido (p.ej. la fila del combo) puede
+                   forzar este item más ancho que su hueco en .gallery */
   position: relative;
   border-radius: 6px;
   background: #f0ede8;
@@ -112,6 +114,7 @@
 
 .comboWrap {
   width: 100%;
+  min-width: 0;
 }
 
 .zoomHint {
@@ -305,21 +308,21 @@
   color: #333;
 }
 
-.comboIncludesChipNum {
+/* Marca de "incluido", no de cantidad: un check, nunca un número (un
+   círculo con "1/2/3" junto al nombre se leía como "trae 2 de este"). */
+.comboIncludesChipCheck {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--primary-color, #6D28D9);
   color: #fff;
-  font-size: 0.65rem;
-  font-weight: 800;
 }
 
-/* ── Conjunto: cabecera por pieza dentro de la galería (badge + nombre) ── */
+/* ── Conjunto: cabecera por pieza dentro de la galería (nombre del sub-producto) ── */
 .comboItemHeader {
   display: flex;
   align-items: center;
@@ -328,20 +331,6 @@
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px dashed #e5e5e5;
-}
-
-.comboItemBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--primary-light, rgba(109, 40, 217, 0.08));
-  color: var(--primary-color, #6D28D9);
-  font-size: 0.68rem;
-  font-weight: 800;
 }
 
 .comboItemName {

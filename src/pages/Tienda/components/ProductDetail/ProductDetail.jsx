@@ -24,7 +24,7 @@ import YoryoPersonalizadoCliente from '../../../../components/YoryoPersonalizado
 import HistorialPersonalizacionesModal from '../../../../components/YoryoPersonalizadoCliente/HistorialPersonalizacionesModal';
 import { getCustomerCustomProductsByUser } from '../../../../services/customerCustomProducts';
 import ProductReviews from '../ProductReviews';
-import { Truck, RefreshCw, ShieldCheck, Share2 } from 'lucide-react';
+import { Truck, RefreshCw, ShieldCheck, Share2, Check } from 'lucide-react';
 import styles from './ProductDetail.module.css';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -391,9 +391,10 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     const selVar = hasColors ? (vars.find(v => v.name === sel.color) || vars[0]) : null;
     const cSizes = hasColors ? (selVar?.sizes || []) : (sub.mainSizes || sub.sizes || []);
 
+    // Sin número: un círculo con "1/2/3" junto al nombre se leía como
+    // "cantidad" (2 polos, 3 joggers...) y no como "pieza N de la caja".
     const itemLabel = (
       <div className={styles.comboItemHeader}>
-        <span className={styles.comboItemBadge}>{index + 1}</span>
         <span className={styles.comboItemName}><T>{sub.name}</T></span>
       </div>
     );
@@ -523,7 +524,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
               <div className={styles.comboIncludesChips}>
                 {product.comboItems.map((item, i) => (
                   <span key={item.productId || i} className={styles.comboIncludesChip}>
-                    <span className={styles.comboIncludesChipNum}>{i + 1}</span>
+                    <span className={styles.comboIncludesChipCheck}><Check size={10} strokeWidth={3} /></span>
                     {comboProd[i]?.name ? <T>{comboProd[i].name}</T> : <T>Producto</T>}
                   </span>
                 ))}

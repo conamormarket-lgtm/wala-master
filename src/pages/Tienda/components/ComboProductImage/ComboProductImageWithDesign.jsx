@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getProduct } from '../../../../services/products';
 import { ensureSingleImageUrl } from '../../../../utils/imageUrl';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { generateThumbnailWithDesign } from '../../../../utils/thumbnailWithDesign';
 import { getCloudinaryOptimized } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import { getFonts } from '../../../../services/fonts';
+import useDragScroll from '../../../../hooks/useDragScroll';
 import styles from './ComboProductImage.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
 
@@ -392,6 +393,10 @@ const ComboProductImageWithDesign = ({
     const queryClient = useQueryClient();
     // eslint-disable-next-line no-unused-vars
     const [itemsData, setItemsData] = useState([]);
+    const containerRef = useRef(null);
+    // Misma fila con ancho mínimo por tarjeta + scroll-x que ComboProductImage;
+    // este hook agrega arrastre con mouse cuando no entran todas las piezas.
+    useDragScroll(containerRef, !isThumbnail);
 
     // eslint-disable-next-line no-unused-vars
     const { data: customFonts, isLoading: loadingFonts } = useQuery({
@@ -477,6 +482,7 @@ const ComboProductImageWithDesign = ({
 
     return (
         <div
+            ref={containerRef}
             className={`${styles.container} ${styles.comboRow} ${!isThumbnail ? styles.comboRowDetail : ''} ${isHorizontal ? styles.comboRowHorizontal : styles.comboRowVertical} ${className}`}
             style={{
                 flexDirection: isHorizontal ? 'row' : 'column',
