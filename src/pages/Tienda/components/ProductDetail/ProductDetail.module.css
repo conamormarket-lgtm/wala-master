@@ -16,15 +16,11 @@
   min-height: 80vh;
 }
 
-/* 68/32 en vez de 62/38: el panel de info de un combo es más liviano
-   (talla única + "incluye" + cantidad, sin bloques largos de texto), así
-   que le sobra espacio a la galería -que es la que de verdad lo necesita
-   para mostrar 3 tarjetas completas sin activar el scroll-x en anchos de
-   laptop comunes (ver .comboRowItemDetail más abajo). */
-.pdpCombo {
-  grid-template-columns: 68% 32%;
-  max-width: 1480px;
-}
+/* La galería de un combo ya no es una fila de 3 tarjetas (necesitaba más
+   ancho que una foto normal) — es la misma galería portada+miniaturas que
+   cualquier producto, y el panel de info ahora tiene MÁS filas (un color
+   por pieza) que antes, así que usa el mismo reparto 58/42 que .pdp en vez
+   de uno ajustado para la fila que ya no existe. */
 
 /* ── Gallery column ───────────────────────────────── */
 .galleryCol {
@@ -43,19 +39,6 @@
   width: 100%;
   height: calc(100vh - 4rem);
   max-height: 820px;
-}
-
-/* La vista de conjunto (tarjetas, no una foto grande) no necesita ocupar
-   los 100vh que sí usa una imagen única: se dimensiona por su contenido y
-   sigue "sticky" (se queda pegada mientras el usuario lee la columna de
-   info), en vez de dejar una franja en blanco enorme debajo. */
-.galleryColCombo {
-  height: auto;
-}
-
-.galleryColCombo .gallery {
-  height: auto;
-  max-height: none;
 }
 
 /* Thumbnail strip — vertical left */
@@ -112,14 +95,6 @@
   justify-content: center;
 }
 
-.mainFrameCombo {
-  overflow: visible;
-  aspect-ratio: auto;
-  background: transparent;
-  align-items: flex-start;
-  cursor: default;
-}
-
 .mainImg {
   width: 100%;
   height: 100%;
@@ -128,11 +103,6 @@
   transition: transform 0.08s ease-out;
   pointer-events: none;
   will-change: transform;
-}
-
-.comboWrap {
-  width: 100%;
-  min-width: 0;
 }
 
 .zoomHint {
@@ -358,33 +328,6 @@
   border-radius: 50%;
   background: var(--primary-color, #6D28D9);
   color: #fff;
-}
-
-/* ── Conjunto: cabecera por pieza dentro de la galería (nombre del sub-producto) ── */
-.comboItemHeader {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  width: 100%;
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px dashed #e5e5e5;
-}
-
-.comboItemName {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #0a0a0a;
-  line-height: 1.3;
-  /* Antes truncaba con "..." y el nombre completo (p.ej. "100 Años Cañonero")
-     quedaba cortado y se veía roto; ahora envuelve hasta 2 líneas en vez de
-     desaparecer contenido. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 /* ── Color swatches ──────────────────────────────── */
@@ -914,11 +857,6 @@
   background: var(--color-surface-2);
 }
 
-/* En combo el marco principal es transparente: se respeta. */
-[data-theme="dark"] .mainFrameCombo {
-  background: transparent;
-}
-
 /* ── Bordes/divisores claros -> borde del tema ── */
 [data-theme="dark"] .divider,
 [data-theme="dark"] .trustRow,
@@ -1061,14 +999,6 @@
 [data-theme="dark"] .comboIncludesChip {
   background: var(--color-surface);
   border-color: var(--color-border);
-  color: var(--color-text);
-}
-
-[data-theme="dark"] .comboItemHeader {
-  border-bottom-color: var(--color-border);
-}
-
-[data-theme="dark"] .comboItemName {
   color: var(--color-text);
 }
 

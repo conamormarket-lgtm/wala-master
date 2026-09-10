@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useCart } from '../../../../contexts/CartContext';
@@ -13,11 +13,10 @@ import { recordProductClick, recordVariantViewTime } from '../../../../utils/pro
 import { trackProductView } from '../../../../services/analytics/tracker';
 import { getFallbackHex } from '../../../../utils/colors';
 import { getBrands } from '../../../../services/brands';
-import { getProductsByCategory } from '../../../../services/products';
+import { getProductsByCategory, getProduct } from '../../../../services/products';
 import FeaturedCarousel from '../FeaturedCarousel/FeaturedCarousel';
 import { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
-import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import DraggableContainer from '../../../../components/common/DraggableContainer/DraggableContainer';
 import ProductCuestionarioModal from '../ProductCuestionarioModal/ProductCuestionarioModal';
 import YoryoPersonalizadoCliente from '../../../../components/YoryoPersonalizadoCliente/YoryoPersonalizadoCliente';
@@ -43,7 +42,11 @@ const buildImages = (product, variant, isCombo, comboSels, comboProd) => {
   };
 
   if (isCombo) {
-    push(product?.comboPreviewImage || product?.mainImage || '', { isComboView: true });
+    // Antes esta portada solo se usaba como ÍCONO de la primera miniatura:
+    // al hacer clic mostraba la fila interactiva de 3 tarjetas (isComboView),
+    // nunca la foto en sí. Ahora es una imagen normal más -la primera-, así
+    // la portada real es lo que se ve grande al entrar a la página.
+    push(product?.comboPreviewImage || product?.mainImage || '');
     Object.keys(comboProd || {}).forEach(idx => {
       const sub = comboProd[idx];
       const sel = comboSels?.[idx];
@@ -87,7 +90,7 @@ const buildImages = (product, variant, isCombo, comboSels, comboProd) => {
       (product?.images || []).forEach(u => push(u));
     }
   }
-  if (!list.length) list.push({ url: '/images/placeholder.svg', isComboView: false });
+  if (!list.length) list.push({ url: '/images/placeholder.svg' });
   return list;
 };
 
@@ -106,7 +109,12 @@ const getComboVariantInfo = (sub, cfg, selColor) => {
 };
 
 // ─── Gallery ─────────────────────────────────────────────────────────────────
-const Gallery = ({ images, activeIdx, setActiveIdx, showCombo, comboEl }) => {
+// Un combo ahora usa exactamente esta misma galería que un producto normal
+// (portada + una foto por pieza, ver buildImages): ya no existe la fila
+// interactiva de 3 tarjetas con selectores adentro, así que no hace falta
+// ninguna rama especial aquí -de regalo, el combo gana el zoom al hover que
+// ya tenían los productos sueltos-.
+const Gallery = ({ images, activeIdx, setActiveIdx }) => {
   const [zoom, setZoom] = useState(false);
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const active = images[activeIdx] || images[0];
@@ -134,24 +142,20 @@ const Gallery = ({ images, activeIdx, setActiveIdx, showCombo, comboEl }) => {
       )}
 
       <div
-        className={`${styles.mainFrame} ${showCombo ? styles.mainFrameCombo : ''}`}
-        onMouseEnter={() => !showCombo && setZoom(true)}
+        className={styles.mainFrame}
+        onMouseEnter={() => setZoom(true)}
         onMouseLeave={() => setZoom(false)}
         onMouseMove={onMove}
       >
-        {showCombo ? (
-          <div className={styles.comboWrap}>{comboEl}</div>
-        ) : (
-          <img
-            src={active.url}
-            alt="Producto"
-            className={styles.mainImg}
-            style={zoom ? { transform: 'scale(2.4)', transformOrigin: `${pos.x}% ${pos.y}%` } : {}}
-            fetchpriority="high"
-            loading="eager"
-          />
-        )}
-        {!zoom && !showCombo && <span className={styles.zoomHint}>🔍 <T>Hover para zoom</T></span>}
+        <img
+          src={active.url}
+          alt="Producto"
+          className={styles.mainImg}
+          style={zoom ? { transform: 'scale(2.4)', transformOrigin: `${pos.x}% ${pos.y}%` } : {}}
+          fetchpriority="high"
+          loading="eager"
+        />
+        {!zoom && <span className={styles.zoomHint}>🔍 <T>Hover para zoom</T></span>}
       </div>
     </div>
   );
@@ -191,7 +195,8 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const [comboProd, setComboProd] = useState({});
   // Talla ÚNICA para todo el conjunto: el usuario la elige una sola vez y se
   // aplica a las 3 piezas (casaca/polo/jogger). El color sí varía por pieza
-  // y sigue viviendo en `comboSels` (ver renderComboSelector más abajo).
+  // y sigue viviendo en `comboSels` (ver las filas "Color" por pieza en el
+  // panel de info, más abajo).
   const [comboSize, setComboSize] = useState('');
   const [imgIdx, setImgIdx] = useState(0);
   const [cuestionario, setCuestionario] = useState(null);
@@ -234,6 +239,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
   const secsRef = useRef(0);
   const lastVariantRef = useRef(null);
+  const queryClient = useQueryClient();
 
   const isCombo = isComboProduct(product);
   const hasVariants = Boolean(product?.hasVariants);
@@ -288,6 +294,13 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   useImagePreloader(allUrls);
 
   useEffect(() => { setImgIdx(0); }, [selectedVariant?.id, selectedVariant?.name]);
+  // Cambiar el color de una pieza reordena/reemplaza las fotos de la
+  // galería (buildImages se recalcula con el nuevo color) — sin esto, la
+  // miniatura que quedaba "activa" podía terminar apuntando a una foto
+  // distinta a la que el cliente venía mirando. Vuelve a la portada, igual
+  // que hace un producto normal al cambiar de color.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (isCombo) setImgIdx(0); }, [isCombo, JSON.stringify(comboSels)]);
   useEffect(() => { 
     if (product?.id) {
       recordProductClick(product.id);
@@ -317,6 +330,41 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     const iv = setInterval(() => secsRef.current++, 1000);
     return () => { clearInterval(iv); flush(selectedVariant.id, secsRef.current); };
   }, [product?.id, selectedVariant?.id]);
+
+  // Datos de cada sub-producto del combo (nombre, variantes/colores, tallas).
+  // Antes esto llegaba como efecto secundario de montar <ComboProductImage>
+  // en la galería (onProductsFetched); al quitar esa fila interactiva de la
+  // página de producto (ver Gallery/buildImages más arriba), el fetch pasa a
+  // vivir directamente acá. Mismo orden de prioridad que usaba ese
+  // componente: caché de React Query primero, red solo si hace falta.
+  useEffect(() => {
+    if (!isCombo || !product?.comboItems?.length) { setComboProd({}); return; }
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.all(product.comboItems.map(async (item, i) => {
+        try {
+          let sub = queryClient.getQueryData(['product', item.productId]);
+          if (!sub) {
+            const cachedList = queryClient.getQueryData(['products', null, '', 'name']);
+            if (Array.isArray(cachedList)) sub = cachedList.find(p => p.id === item.productId);
+          }
+          if (!sub) {
+            const { data } = await getProduct(item.productId);
+            sub = data;
+          }
+          return sub ? { index: i, sub } : null;
+        } catch (err) {
+          console.warn('[ProductDetail] No se pudo cargar la pieza del combo', item.productId, err);
+          return null;
+        }
+      }));
+      if (cancelled) return;
+      const next = {};
+      results.forEach(r => { if (r) next[r.index] = r.sub; });
+      setComboProd(next);
+    })();
+    return () => { cancelled = true; };
+  }, [isCombo, product?.id, product?.comboItems, queryClient]);
 
   useEffect(() => {
     if (!isCombo || !product?.comboItems?.length) return;
@@ -434,82 +482,23 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     }
   };
 
-  // ── Combo selector renderer
-  // La talla ya NO se elige aquí: es única para las 3 piezas y vive en el
-  // panel de info (ver bloque "Talla" cerca del precio). Cada tarjeta del
-  // conjunto solo pide el color de ESA pieza, que sí puede variar.
-  const renderComboSelector = (index, sub, position = 'all') => {
-    if (!sub) return null;
-    const sel = comboSels[index] || {};
-    const cfg = product.comboItems?.[index] || {};
-    const { vars, hasColors } = getComboVariantInfo(sub, cfg, sel.color);
-
-    // Sin número: un círculo con "1/2/3" junto al nombre se leía como
-    // "cantidad" (2 polos, 3 joggers...) y no como "pieza N de la caja".
-    const itemLabel = (
-      <div className={styles.comboItemHeader}>
-        <span className={styles.comboItemName}><T>{sub.name}</T></span>
-      </div>
-    );
-
-    const colorUI = hasColors && (
-      <div className={styles.selectorGroup}>
-        <span className={styles.selectorLabel}>{t('card.color', 'Color')}: <em><T>{sel.color || vars[0]?.name}</T></em></span>
-        <DraggableContainer className={styles.swatchRow}>
-          {vars.map(v => {
-            const hex = v.colorHex || getFallbackHex(v.name);
-            return (
-              <button key={v.id || v.name}
-                className={`${styles.swatch} ${sel.color === v.name ? styles.swatchActive : ''}`}
-                onClick={() => setComboSels(p => ({ ...p, [index]: { ...p[index], color: v.name } }))}
-                title={v.name}>
-                {v.imageUrl
-                  ? <OptimizedImage src={toDirectImageUrl(v.imageUrl)} cropData={v.thumbnailCrop?.percentages} alt={v.name} className={styles.swatchImg} />
-                  : <span className={styles.swatchColor} style={{ background: hex }} />}
-              </button>
-            );
-          })}
-        </DraggableContainer>
-      </div>
-    );
-
-    if (position === 'top') return itemLabel;
-    if (position === 'bottom') return colorUI;
-    return <>{itemLabel}{colorUI}</>;
-  };
-
   // ── Render
   if (loading) return <Skeleton />;
   if (!product) return <div className={styles.notFound}>{t('card.noEncontrado', 'Producto no encontrado.')}</div>;
-
-  const activeImage = images[imgIdx] || images[0];
-  const showCombo = isCombo && Boolean(activeImage?.isComboView);
 
   return (
     <>
       <div className={`${styles.pdp} ${isCombo ? styles.pdpCombo : ''}`}>
 
         {/* ── Gallery ──
-            galleryColCombo: la vista de conjunto es mucho más baja que un
-            único producto en 100vh (son tarjetas, no una foto de página
-            completa) — sin este ajuste queda una franja blanca enorme sin
-            usar debajo de las tarjetas. */}
-        <div className={`${styles.galleryCol} ${showCombo ? styles.galleryColCombo : ''}`}>
+            Un combo usa la misma galería que un producto normal: portada +
+            una foto por pieza (buildImages). Los colores por pieza se eligen
+            en el panel de info (ver más abajo), no acá. */}
+        <div className={styles.galleryCol}>
           <Gallery
             images={images}
             activeIdx={imgIdx}
             setActiveIdx={setImgIdx}
-            showCombo={showCombo}
-            comboEl={
-              isCombo ? (
-                <ComboProductImage
-                  comboProduct={product}
-                  variantSelections={comboSels}
-                  renderSelector={renderComboSelector}
-                  onProductsFetched={setComboProd}
-                />
-              ) : null
-            }
           />
         </div>
 
@@ -556,9 +545,9 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
           <hr className={styles.divider} />
 
           {/* Conjunto: resumen de lo que incluye (casaca + polo + jogger...).
-              El color de cada pieza sí varía y se elige en su tarjeta dentro
-              de la galería (ver renderComboSelector); esto es solo el mapa
-              rápido de qué trae la caja, como en las páginas de bundle. */}
+              El color de cada pieza se elige más abajo, una fila por pieza;
+              esto es solo el mapa rápido de qué trae la caja, como en las
+              páginas de bundle. */}
           {isCombo && (product.comboItems?.length > 0) && (
             <div className={styles.comboIncludes}>
               <span className={styles.selectorLabel}>
@@ -574,6 +563,44 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
               </div>
             </div>
           )}
+
+          {/* Color por pieza — una fila "Color" separada por cada producto
+              del combo, mismo look que el selector de color de un producto
+              individual (línea 590 más abajo). Antes vivía adentro de la
+              galería, superpuesto a la foto de cada tarjeta; ahora está acá,
+              junto a la Talla, como las opciones de cualquier producto. La
+              foto de esa pieza en la galería (ver buildImages) sigue
+              actualizándose sola al elegir un color, igual que en un
+              producto individual. */}
+          {isCombo && product.comboItems?.map((cfg, i) => {
+            const sub = comboProd[i];
+            if (!sub) return null;
+            const sel = comboSels[i] || {};
+            const { vars, hasColors } = getComboVariantInfo(sub, cfg, sel.color);
+            if (!hasColors) return null;
+            return (
+              <div key={cfg.productId || i} className={styles.selectorGroup}>
+                <span className={styles.selectorLabel}>
+                  <T>{sub.name}</T> — {t('card.color', 'Color')}: <em><T>{sel.color || vars[0]?.name}</T></em>
+                </span>
+                <DraggableContainer className={styles.swatchRow}>
+                  {vars.map(v => {
+                    const hex = v.colorHex || getFallbackHex(v.name);
+                    return (
+                      <button key={v.id || v.name}
+                        className={`${styles.swatch} ${sel.color === v.name ? styles.swatchActive : ''}`}
+                        onClick={() => setComboSels(p => ({ ...p, [i]: { ...p[i], color: v.name } }))}
+                        title={v.name}>
+                        {v.imageUrl
+                          ? <OptimizedImage src={toDirectImageUrl(v.imageUrl)} cropData={v.thumbnailCrop?.percentages} alt={v.name} className={styles.swatchImg} />
+                          : <span className={styles.swatchColor} style={{ background: hex }} />}
+                      </button>
+                    );
+                  })}
+                </DraggableContainer>
+              </div>
+            );
+          })}
 
           {/* Talla del conjunto — UNA sola elección para las 3 piezas. Vive
               aquí (no repetida en cada tarjeta) precisamente para que se lea
