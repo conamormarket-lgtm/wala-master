@@ -63,18 +63,11 @@
   padding: 12px;
   object-fit: contain;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  animation: logoFloat 4s ease-in-out infinite;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes logoFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .branding > img {
-    animation: none;
-  }
+.branding > img:hover {
+  transform: scale(1.05) rotate(-2deg);
 }
 
 .branding h2 {
