@@ -373,6 +373,14 @@ const ComboProductImage = ({
                 src={toThumbnailImageUrl(c.url)}
                 alt={`${comboProduct?.name || 'Combo'} - producto ${c.index + 1}`}
                 className={styles.comboThumbImage}
+                // OptimizedImage por defecto usa objectFit="cover" (aplicado
+                // INLINE, gana por especificidad a cualquier CSS de aquí). Sin
+                // esto, cada prenda se recortaba distinto según su propia
+                // proporción -mangas y capuchas cortadas en ángulos raros,
+                // "rayitas"- en vez de verse completa como en el resto del
+                // collage. La ficha de producto (row) sí quiere ese recorte;
+                // esta miniatura no.
+                objectFit="contain"
                 loading={isAboveFold ? "eager" : "lazy"}
                 fetchPriority={isAboveFold ? "high" : "auto"}
                 showSkeleton={false}
