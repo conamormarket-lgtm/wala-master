@@ -1250,8 +1250,15 @@ function normalizeProductPayload(data) {
     isComboProduct,
     ...(isComboProduct && comboLayout && { comboLayout }),
     ...(isComboProduct && comboItems.length > 0 && { comboItems }),
-    ...(data.comboPreviewImage && { comboPreviewImage: String(data.comboPreviewImage) }),
-    ...(data.thumbnailWithDesignUrl && { thumbnailWithDesignUrl: String(data.thumbnailWithDesignUrl) }),
+    // ANTES: "...(data.comboPreviewImage && {...})" — con la portada vacía
+    // (el admin la quitó a propósito) esto no agregaba la llave al payload,
+    // así que updateDocument nunca se enteraba de que había que borrarla y
+    // el valor viejo se quedaba en Firestore para siempre. Estos dos campos
+    // sí necesitan viajar SIEMPRE (incluso vacíos) para que una limpieza
+    // intencional llegue a updateDocument y se traduzca en un deleteField()
+    // real (ver services/firebase/firestore.js updateDocument).
+    comboPreviewImage: String(data.comboPreviewImage || ''),
+    thumbnailWithDesignUrl: String(data.thumbnailWithDesignUrl || ''),
     ...(isComboProduct && Array.isArray(data.comboItemCustomization) && data.comboItemCustomization.length > 0 && {
       comboItemCustomization: data.comboItemCustomization.map((c) => ({
         productId: String(c.productId ?? ''),

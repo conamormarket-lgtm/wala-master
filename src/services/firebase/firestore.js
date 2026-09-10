@@ -7,6 +7,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   query,
   where,
   orderBy,
@@ -190,8 +191,21 @@ export const setDocument = async (collectionName, docId, data) => {
 
 /**
  * Actualizar un documento.
- * Limpia campos vacíos (string vacío, array vacío, objeto vacío) para cumplir con Firestore:
- * "Document fields must not be empty".
+ * Limpia campos vacíos ANIDADOS (string vacío, array vacío, objeto vacío) —
+ * ahí da igual quitar la llave, porque el campo padre (p.ej. un array de
+ * variantes) se reescribe completo, no se mezcla elemento por elemento.
+ *
+ * A NIVEL RAÍZ del documento es distinto: updateDoc() hace un merge PARCIAL,
+ * así que una llave que no viaja en el payload queda TAL CUAL estaba en
+ * Firestore. Antes, mandar `comboPreviewImage: ''` (o cualquier otro campo)
+ * para BORRARLO pasaba por esta misma limpieza, perdía la llave del objeto
+ * final, y el valor VIEJO se quedaba para siempre — sin importar cuántas
+ * veces se guardara. Bug real, reportado como "la foto se queda pegada a la
+ * anterior", y afectaba por igual a productos individuales y a combos
+ * (ambos guardan a través de esta función). Ahora, un campo raíz que llegó
+ * explícitamente vacío ('', null, [] o {}) se repone con deleteField() —la
+ * forma correcta de decirle a Firestore "borra este campo"— en vez de
+ * dejarlo afuera del payload.
  */
 export const updateDocument = async (collectionName, docId, data) => {
   if (!isFirestoreAvailable()) {
@@ -209,6 +223,24 @@ export const updateDocument = async (collectionName, docId, data) => {
       updatedAt: serverTimestamp()
     };
     const cleanData = removeUndefined(withTimestamps);
+
+    // deleteField() solo es válido a NIVEL RAÍZ de un updateDoc (usarlo
+    // dentro de un array/objeto anidado hace que Firestore rechace todo el
+    // write), por eso esto se aplica sobre `data` original —no recursivo— y
+    // se agrega DESPUÉS de removeUndefined, para no arriesgarse a que esa
+    // limpieza genérica desarme el sentinel tratándolo como objeto plano.
+    Object.keys(data || {}).forEach((key) => {
+      const original = data[key];
+      const wasExplicitlyCleared =
+        original === '' ||
+        original === null ||
+        (Array.isArray(original) && original.length === 0) ||
+        (original && typeof original === 'object' && !Array.isArray(original) && Object.keys(original).length === 0);
+      if (wasExplicitlyCleared) {
+        cleanData[key] = deleteField();
+      }
+    });
+
     await updateDoc(docRef, cleanData);
     return { error: null };
   } catch (error) {
