@@ -75,8 +75,12 @@ export const AuthProvider = ({ children }) => {
 
           // Rol admin desde custom claims de Firebase Auth (fuente de verdad).
           // Nunca desde localStorage ni emails hardcodeados (ver FASE-0-SEGURIDAD.md, H-01/H-09).
+          // forceRefresh=true: sin esto, revocar el claim admin a alguien no se reflejaba en
+          // la UI (AdminBar/AdminRoute) hasta que el token cacheado expirara (hasta ~1h).
+          // Las reglas de Firestore igual re-validan server-side con el token real en cada
+          // request, así que esto es solo para que la UI deje de mostrar acceso obsoleto.
           try {
-            const tokenResult = await firebaseUser.getIdTokenResult();
+            const tokenResult = await firebaseUser.getIdTokenResult(true);
             setIsAdminClaim(tokenResult.claims?.admin === true);
           } catch (e) {
             setIsAdminClaim(false);

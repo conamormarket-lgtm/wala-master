@@ -721,7 +721,7 @@ const Header = () => {
                         <Link to="/cuenta" className={styles.primaryButton} onClick={closeDropdowns}>
                           <T>Mi Perfil</T>
                         </Link>
-                        <button onClick={() => { logout(); closeDropdowns(); }} className={styles.secondaryButton} style={{ width: '100%', cursor: 'pointer', border: '1px solid #ccc' }}>
+                        <button onClick={async () => { closeDropdowns(); await logout(); navigate('/'); }} className={styles.secondaryButton} style={{ width: '100%', cursor: 'pointer', border: '1px solid #ccc' }}>
                           <T>Cerrar sesión</T>
                         </button>
                       </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
-import { getCollection } from '../services/firebase/firestore';
 import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
 import { validateDNI, validateCE, validatePhone, validateDocInternacional } from '../utils/helpers';
@@ -10,7 +10,6 @@ import CountrySelect from '../components/intl/CountrySelect';
 import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import { dialCodeByCountry } from '../constants/countries';
 import { detectCountry } from '../services/geo';
-import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 import styles from './CompleteProfilePage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -91,16 +90,17 @@ const CompleteProfilePage = () => {
     setError(null);
     if (!formValid || !user) return;
     const documentoNorm = isPE ? documento.trim().replace(/\s/g, '') : documento.trim();
-    const { data: usersWithDni, error: queryErr } = await getCollection(PORTAL_USERS_COLLECTION, [
-      { field: 'dni', operator: '==', value: documentoNorm }
-    ]);
-    if (queryErr) {
-      setError(queryErr);
-      return;
-    }
-    const otherUserWithDni = usersWithDni.some((doc) => doc.id !== user.uid);
-    if (otherUserWithDni) {
-      setError('Este documento ya está registrado en otra cuenta. Si es suyo, inicie sesión en esa cuenta o contacte soporte.');
+    // El chequeo de DNI duplicado se hace en una Cloud Function (checkDniAvailableSecure):
+    // las reglas de Firestore no permiten leer portal_clientes_users filtrando por `dni`
+    // (solo por dueño), así que una query directa del cliente siempre daba permission-denied.
+    try {
+      const { data: dniCheck } = await httpsCallable(getFunctions(), 'checkDniAvailableSecure')({ dni: documentoNorm });
+      if (!dniCheck?.available) {
+        setError('Este documento ya está registrado en otra cuenta. Si es suyo, inicie sesión en esa cuenta o contacte soporte.');
+        return;
+      }
+    } catch (err) {
+      setError(err?.message || 'No se pudo verificar el documento. Intente de nuevo.');
       return;
     }
     setLoading(true);

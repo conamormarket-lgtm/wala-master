@@ -7,6 +7,7 @@ import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
+import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
 import styles from './LoginPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -19,6 +20,7 @@ const LoginPage = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
 
@@ -42,10 +44,11 @@ const LoginPage = () => {
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setLoading(true);
 
-    const { error: err, errorCode } = await signInWithEmail(email, password);
+    const { error: err, errorCode } = await signInWithEmail(email.trim().toLowerCase(), password);
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
     }
@@ -55,6 +58,7 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = async () => {
+    if (loading) return;
     setError(null);
     setLoading(true);
 
@@ -118,16 +122,28 @@ const LoginPage = () => {
             
             <div className={styles.formGroup}>
               <label htmlFor="password"><T>Contraseña</T></label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-                placeholder="••••••••"
-              />
+              <div className={styles.passwordField}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  className={styles.passwordToggle}
+                  onClick={() => setShowPassword((v) => !v)}
+                  disabled={loading}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeIcon size={20} /> : <EyeOffIcon size={20} />}
+                </button>
+              </div>
               <div className={styles.forgotRow}>
                 <Link to="/recuperar-contrasena" className={styles.forgotLink}>
                   ¿Olvidó su contraseña?

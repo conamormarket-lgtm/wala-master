@@ -26,6 +26,12 @@ const AUTH_ERROR_MESSAGES = {
     'Credenciales incorrectas. Si se registró con Google, use el botón «Iniciar con Google».',
   'auth/invalid-login-credentials':
     'Correo o contraseña incorrectos. Si se registró con Google, use el botón «Iniciar con Google».',
+  'auth/network-request-failed':
+    'No se pudo conectar. Revise su conexión a internet e intente de nuevo.',
+  'auth/requires-recent-login':
+    'Por seguridad, debe volver a iniciar sesión para completar esta acción.',
+  'auth/user-token-expired':
+    'Su sesión expiró. Por favor, inicie sesión nuevamente.',
 };
 
 /**

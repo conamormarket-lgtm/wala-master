@@ -200,6 +200,64 @@
   color: var(--rojo-principal);
 }
 
+/* ── Campo de contraseña con botón mostrar/ocultar ── */
+.passwordField {
+  position: relative;
+}
+
+.passwordField input {
+  padding-right: 2.75rem;
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 50%;
+  right: 0.625rem;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--gris-texto-secundario);
+  border-radius: var(--radio-pequeno);
+}
+
+.passwordToggle:hover {
+  color: var(--gris-texto-principal);
+}
+
+.passwordToggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ── Checkbox de Términos y Políticas ── */
+.termsRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  margin-bottom: 1.25rem;
+}
+
+.termsRow input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--rojo-principal);
+}
+
+.termsLabel {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--gris-texto-secundario);
+  cursor: pointer;
+}
+
 .passwordReqs {
   margin-bottom: 1.25rem;
   padding: 0.875rem 1rem;

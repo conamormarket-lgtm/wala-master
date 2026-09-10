@@ -4,7 +4,9 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 /**
- * Ruta protegida: solo usuarios con rol admin (o email yorh001@gmail.com) pueden acceder.
+ * Ruta protegida: solo usuarios con rol admin pueden acceder (isAdmin viene de
+ * AuthContext: custom claim de Firebase Auth o permisos en adminRoles — nunca de
+ * localStorage ni de un email hardcodeado).
  * Si no hay usuario → redirige a login. Si no es admin → redirige a inicio.
  */
 const AdminRoute = () => {

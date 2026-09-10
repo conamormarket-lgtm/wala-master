@@ -19,7 +19,7 @@ const ResetPasswordPage = () => {
     setError(null);
     if (!email.trim()) return;
     setLoading(true);
-    const { error: err, errorCode } = await sendPasswordResetEmail(email.trim());
+    const { error: err, errorCode } = await sendPasswordResetEmail(email.trim().toLowerCase());
     setLoading(false);
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));

@@ -1544,6 +1544,33 @@ exports.setAdminClaim = functions.https.onCall(async (data, context) => {
   }
 });
 
+/**
+ * Callable: chequea si un número de documento (DNI/CE/pasaporte) ya está en uso por
+ * OTRA cuenta antes de guardarlo en el registro / completar perfil.
+ *
+ * Por qué existe: las reglas de portal_clientes_users solo permiten `read` a
+ * isOwner(userId) || isAdmin() (ver firestore.rules), así que una query filtrada por
+ * `dni` (no por el id del doc) nunca puede probarle a Firestore que cumple esa regla y
+ * el cliente recibía `permission-denied` para cualquier usuario no-admin — bloqueando
+ * el alta de cuentas nuevas. Aquí se usa el Admin SDK, que no pasa por las reglas.
+ */
+exports.checkDniAvailableSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const dniNorm = String(data?.dni || "").trim().replace(/\s/g, "");
+  if (!dniNorm) {
+    throw new functions.https.HttpsError("invalid-argument", "Se requiere el documento.");
+  }
+
+  try {
+    const snap = await db.collection(PORTAL_USERS_COLLECTION).where("dni", "==", dniNorm).get();
+    const usedByOther = snap.docs.some((d) => d.id !== uid);
+    return { available: !usedByOther };
+  } catch (err) {
+    console.error("checkDniAvailableSecure error:", err);
+    throw new functions.https.HttpsError("internal", err.message || "No se pudo verificar el documento.");
+  }
+});
+
 // ════════════════════════════════════════════════════════════════════════════
 // ECONOMÍA SERVER-AUTHORITATIVE (Fase 0, H-06)
 // Todo earn/spend de monedas/kapiCoins se hace aquí, transaccional e idempotente.

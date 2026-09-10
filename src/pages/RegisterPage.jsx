@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { signUpWithEmail, signInWithGoogle } from '../services/firebase/auth';
-import { setDocument, getCollection } from '../services/firebase/firestore';
+import { setDocument } from '../services/firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
 import { shouldPromptSurvey } from '../utils/surveyHelper';
@@ -10,6 +11,7 @@ import { validateDNI, validateCE, validatePhone, validateDocInternacional, getPa
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import Modal from '../components/common/Modal/Modal';
+import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
 import CountrySelect from '../components/intl/CountrySelect';
 import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import { dialCodeByCountry } from '../constants/countries';
@@ -31,6 +33,9 @@ const RegisterPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [country, setCountry] = useState('PE');
   const [tipoDoc, setTipoDoc] = useState('DNI');
@@ -55,7 +60,7 @@ const RegisterPage = () => {
 
   const passwordReqs = getPasswordRequirements(password);
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
-  const step1Valid = email && isPasswordValid(password) && passwordsMatch;
+  const step1Valid = email && isPasswordValid(password) && passwordsMatch && acceptedTerms;
 
   // Validación ESTRICTA peruana solo si es Perú. DNI usa su regla; CE y Pasaporte
   // comparten la validación alfanumérica (validateCE). Extranjero: documento libre.
@@ -80,10 +85,11 @@ const RegisterPage = () => {
 
   const handleStep1 = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     if (!step1Valid) return;
     setLoading(true);
-    const { error: err, errorCode } = await signUpWithEmail(email, password);
+    const { error: err, errorCode } = await signUpWithEmail(email.trim().toLowerCase(), password);
     setLoading(false);
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
@@ -104,16 +110,17 @@ const RegisterPage = () => {
     setError(null);
     if (!user || !step2Valid) return;
     const documentoNorm = isPE ? documento.trim().replace(/\s/g, '') : documento.trim();
-    const { data: usersWithDni, error: queryErr } = await getCollection(PORTAL_USERS_COLLECTION, [
-      { field: 'dni', operator: '==', value: documentoNorm }
-    ]);
-    if (queryErr) {
-      setError(queryErr);
-      return;
-    }
-    const otherUserWithDni = usersWithDni.some((doc) => doc.id !== user.uid);
-    if (otherUserWithDni) {
-      setError('Este documento ya está registrado en otra cuenta. Si es suyo, use "Iniciar sesión" o recupere su acceso.');
+    // El chequeo de DNI duplicado se hace en una Cloud Function (checkDniAvailableSecure):
+    // las reglas de Firestore no permiten leer portal_clientes_users filtrando por `dni`
+    // (solo por dueño), así que una query directa del cliente siempre daba permission-denied.
+    try {
+      const { data: dniCheck } = await httpsCallable(getFunctions(), 'checkDniAvailableSecure')({ dni: documentoNorm });
+      if (!dniCheck?.available) {
+        setError('Este documento ya está registrado en otra cuenta. Si es suyo, use "Iniciar sesión" o recupere su acceso.');
+        return;
+      }
+    } catch (err) {
+      setError(err?.message || 'No se pudo verificar el documento. Intente de nuevo.');
       return;
     }
     setLoading(true);
@@ -153,6 +160,7 @@ const RegisterPage = () => {
   };
 
   const handleGoogle = async () => {
+    if (loading) return;
     setError(null);
     setLoading(true);
     const { error: err, errorCode } = await signInWithGoogle();
@@ -202,27 +210,51 @@ const RegisterPage = () => {
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="password"><T>Contraseña</T></label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                  placeholder="••••••••"
-                />
+                <div className={styles.passwordField}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    className={styles.passwordToggle}
+                    onClick={() => setShowPassword((v) => !v)}
+                    disabled={loading}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeIcon size={20} /> : <EyeOffIcon size={20} />}
+                  </button>
+                </div>
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="confirmPassword"><T>Confirmar contraseña</T></label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                  placeholder="••••••••"
-                />
+                <div className={styles.passwordField}>
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    id="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    className={styles.passwordToggle}
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    disabled={loading}
+                    aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <EyeIcon size={20} /> : <EyeOffIcon size={20} />}
+                  </button>
+                </div>
                 {confirmPassword && !passwordsMatch && (
                   <span className={styles.fieldError}><T>Las contraseñas no coinciden</T></span>
                 )}
@@ -236,6 +268,25 @@ const RegisterPage = () => {
                   <li className={passwordReqs.number ? styles.met : ''}><T>Al menos 1 número</T></li>
                   <li className={passwordReqs.special ? styles.met : ''}>Al menos 1 carácter especial ({PASSWORD_SPECIAL})</li>
                 </ul>
+              </div>
+              <div className={styles.termsRow}>
+                <input
+                  type="checkbox"
+                  id="acceptedTerms"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  disabled={loading}
+                />
+                <label htmlFor="acceptedTerms" className={styles.termsLabel}>
+                  Acepto los{' '}
+                  <Link to="/terminos-condiciones" target="_blank" className={styles.link}>
+                    Términos y Condiciones
+                  </Link>{' '}
+                  y la{' '}
+                  <Link to="/politicas-privacidad" target="_blank" className={styles.link}>
+                    Política de Privacidad
+                  </Link>
+                </label>
               </div>
               {error && (
                 <div className={styles.errorMessage}>
