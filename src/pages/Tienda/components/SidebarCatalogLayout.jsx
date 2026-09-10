@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Filter, X } from 'lucide-react';
+import { Filter, X, Search } from 'lucide-react';
 import ProductGrid from './ProductGrid';
 import styles from './SidebarCatalogLayout.module.css';
 // eslint-disable-next-line no-unused-vars
@@ -103,6 +103,11 @@ const SidebarCatalogLayout = ({
   const [activeType, setActiveType] = useState(null);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  // Buscador propio de la página de marca (dentro del sidebar de Filtros).
+  // Solo tiene sentido cuando hay `brandId`: en /buscar el buscador YA vive
+  // arriba de este mismo sidebar (SearchPage.jsx), así que ahí no se pinta
+  // -dos buscadores en la misma pantalla sería peor que uno-.
+  const [nameQuery, setNameQuery] = useState('');
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // ── Grupos desplegables (acordeón) del sidebar ─────────────────────────
@@ -190,10 +195,10 @@ const SidebarCatalogLayout = ({
     setIsMobileDrawerOpen(false);
   };
 
-  // ¿Hay algún filtro activo? (categoría, colección/temporada, marca, tipo, etiqueta, personaje)
+  // ¿Hay algún filtro activo? (categoría, colección/temporada, marca, tipo, etiqueta, personaje, búsqueda)
   const hasActiveFilters = !!(
     activeCategory || activeCollection || activeBrand ||
-    activeType || activeTag || activeCharacter || minPrice !== '' || maxPrice !== ''
+    activeType || activeTag || activeCharacter || minPrice !== '' || maxPrice !== '' || nameQuery.trim() !== ''
   );
 
   // Resetea TODOS los filtros a su estado inicial.
@@ -206,6 +211,7 @@ const SidebarCatalogLayout = ({
     setActiveCharacter(null);
     setMinPrice('');
     setMaxPrice('');
+    setNameQuery('');
     setIsMobileDrawerOpen(false);
   };
 
@@ -340,7 +346,21 @@ const SidebarCatalogLayout = ({
   const parsedMinPrice = minPrice === '' ? null : Number(minPrice);
   const parsedMaxPrice = maxPrice === '' ? null : Number(maxPrice);
 
-  const filteredProducts = (productsData || []).filter(p => {
+  // Buscando por nombre: `productsData` puede ser solo la página YA CARGADA
+  // (paginación con cursor, "Cargar más") — buscar ahí adentro haría que el
+  // cliente no encuentre productos que existen pero aún no llegaron. Con
+  // brandId ya se pide el catálogo COMPLETO de la marca para las facetas
+  // (`brandProducts`); mientras hay texto en el buscador, se usa esa fuente
+  // completa en vez de la paginada (ver también paginationProps más abajo,
+  // que se apaga durante la búsqueda: ya no hay "más" que cargar).
+  const trimmedNameQuery = nameQuery.trim().toLowerCase();
+  const isSearchingByName = trimmedNameQuery !== '';
+  const searchBaseProducts = (isSearchingByName && brandId && Array.isArray(brandProducts))
+    ? brandProducts
+    : (productsData || []);
+
+  const filteredProducts = searchBaseProducts.filter(p => {
+    if (isSearchingByName && !String(p.name || '').toLowerCase().includes(trimmedNameQuery)) return false;
     if (activeCategory && p.categoryId !== activeCategory && p.category !== activeCategory && !(p.categories || []).map(idOf).includes(activeCategory)) return false;
     if (activeCollection && !(p.collections || []).map(idOf).includes(activeCollection)) return false;
     if (activeBrand && idOf(p.brandId) !== activeBrand) return false;
@@ -439,6 +459,34 @@ const SidebarCatalogLayout = ({
               >
                 <X size={18} /> {t('cat.limpiarFiltros', 'Limpiar filtros')}
               </button>
+            </div>
+          )}
+
+          {/* Buscador de la marca: solo en páginas de UNA marca (brandId). En
+              /buscar el buscador ya vive arriba de este sidebar, así que acá
+              no se duplica (ver comentario en el useState de nameQuery). */}
+          {brandId && (
+            <div className={styles.brandSearch}>
+              <span className={styles.brandSearchInputWrap}>
+                <Search size={16} aria-hidden="true" className={styles.brandSearchIcon} />
+                <input
+                  type="search"
+                  value={nameQuery}
+                  onChange={(e) => setNameQuery(e.target.value)}
+                  placeholder={t('cat.buscarEnMarca', 'Buscar en esta tienda...')}
+                  aria-label={t('cat.buscarEnMarca', 'Buscar en esta tienda')}
+                />
+                {nameQuery !== '' && (
+                  <button
+                    type="button"
+                    className={styles.brandSearchClear}
+                    onClick={() => setNameQuery('')}
+                    aria-label={t('cat.limpiarBusqueda', 'Limpiar búsqueda')}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </span>
             </div>
           )}
 
@@ -632,6 +680,10 @@ const SidebarCatalogLayout = ({
 
         {/* MAIN Content */}
         <main className={styles.mainContent}>
+          {/* Buscando por nombre ya se muestran TODOS los resultados de la
+              marca de una vez (ver searchBaseProducts) — no hay "cargar más"
+              que ofrecer, y dejarlo prendido paginaría un conjunto que ya
+              está completo. */}
           <ProductGrid
             products={filteredProducts || []}
             loading={productsLoading}
@@ -642,7 +694,7 @@ const SidebarCatalogLayout = ({
             categories={categories}
             layoutConfig={layoutConfig}
             brandId={brandId}
-            {...paginationProps}
+            {...(isSearchingByName ? {} : paginationProps)}
           />
         </main>
       </div>
