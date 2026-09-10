@@ -74,8 +74,11 @@ const LoginPage = () => {
     return <Loading message="Iniciando sesión..." />;
   }
 
-  if (user && !authLoading) {
-    return <Loading message="Redirigiendo..." />;
+  if (user) {
+    // Cubre también el instante en que `user` ya llegó pero el perfil (authLoading)
+    // todavía se está resolviendo: sin esto, entre medias se veía otra vez el
+    // formulario de login por un instante.
+    return <Loading message={authLoading ? 'Cargando tu perfil...' : 'Redirigiendo...'} />;
   }
 
   return (

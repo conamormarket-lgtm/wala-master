@@ -69,6 +69,17 @@ export const AuthProvider = ({ children }) => {
     }, TOPE_SESION_MS);
 
     const unsubscribe = onAuthChange(async (firebaseUser) => {
+      // Se reactiva `loading` en CADA transición, no solo en el montaje inicial.
+      // Sin esto: tras el montaje `loading` ya queda en `false`; si el usuario
+      // inicia sesión DESPUÉS (ej. clic en "Iniciar con Google" con la app ya
+      // cargada), `setUser(firebaseUser)` de abajo pone `user` al instante pero
+      // `userProfile` sigue siendo el viejo (null) hasta que terminan las lecturas
+      // de Firestore — con `loading` en `false` de por medio, cualquier pantalla
+      // que espere `!loading` para decidir a dónde mandar (Login/Register/
+      // CompleteProfilePage) actúa con ese perfil viejo y manda a "completar
+      // perfil" aunque el perfil real ya esté completo; un instante después llega
+      // el perfil de verdad y se autocorrige — se ve como un parpadeo molesto.
+      setLoading(true);
       try {
         if (firebaseUser) {
           setUser(firebaseUser);
