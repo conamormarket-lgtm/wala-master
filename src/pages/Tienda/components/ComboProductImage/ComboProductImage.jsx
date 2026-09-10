@@ -301,7 +301,7 @@ const ComboProductImage = ({
     return (
       <div
         ref={containerRef}
-        className={`${styles.container} ${styles.comboRow} ${className}`}
+        className={`${styles.container} ${styles.comboRow} ${!isThumbnail ? styles.comboRowDetail : ''} ${isHorizontal ? styles.comboRowHorizontal : styles.comboRowVertical} ${className}`}
         style={{
           flexDirection: isHorizontal ? 'row' : 'column',
           gap: `${comboLayout.spacing ?? 20}px`,
@@ -309,7 +309,7 @@ const ComboProductImage = ({
         }}
       >
         {comboItems.map((item, index) => (
-          <div key={`placeholder-${item.productId}-${index}`} className={styles.comboRowItem}>
+          <div key={`placeholder-${item.productId}-${index}`} className={`${styles.comboRowItem} ${!isThumbnail ? styles.comboRowItemDetail : ''}`}>
             <div className={styles.comboRowPlaceholder} />
           </div>
         ))}
@@ -340,7 +340,7 @@ const ComboProductImage = ({
   return (
     <div
       ref={containerRef}
-      className={`${styles.container} ${styles.comboRow} ${className}`}
+      className={`${styles.container} ${styles.comboRow} ${!isThumbnail ? styles.comboRowDetail : ''} ${isHorizontal ? styles.comboRowHorizontal : styles.comboRowVertical} ${className}`}
       style={{
         flexDirection: isHorizontal ? 'row' : 'column',
         gap: `${comboLayout.spacing ?? 20}px`,
@@ -354,13 +354,13 @@ const ComboProductImage = ({
         const p = itemProducts[index];
         if (!imageUrl) {
           return (
-            <div key={reactKey} className={styles.comboRowItem}>
+            <div key={reactKey} className={`${styles.comboRowItem} ${!isThumbnail ? styles.comboRowItemDetail : ''}`}>
               <div className={styles.comboRowPlaceholder} style={{ transform: `scale(${item.scale ?? 1})` }} />
             </div>
           );
         }
         return (
-          <div key={reactKey} className={styles.comboRowItem}>
+          <div key={reactKey} className={`${styles.comboRowItem} ${!isThumbnail ? styles.comboRowItemDetail : ''}`}>
             {renderSelector && !isThumbnail && renderSelector(index, p, 'top')}
             <div style={{
               width: '100%',

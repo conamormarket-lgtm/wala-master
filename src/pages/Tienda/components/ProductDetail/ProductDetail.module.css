@@ -279,6 +279,82 @@
   justify-content: space-between;
 }
 
+/* ── Conjunto: chips "Este conjunto incluye" ──────────────────────── */
+.comboIncludes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.comboIncludesChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.comboIncludesChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.85rem 0.4rem 0.45rem;
+  border: 1.5px solid #ddd;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.comboIncludesChipNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--primary-color, #6D28D9);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+/* ── Conjunto: cabecera por pieza dentro de la galería (badge + nombre) ── */
+.comboItemHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #e5e5e5;
+}
+
+.comboItemBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--primary-light, rgba(109, 40, 217, 0.08));
+  color: var(--primary-color, #6D28D9);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.comboItemName {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0a0a0a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Color swatches ──────────────────────────────── */
 .swatchRow {
   display: flex;
@@ -947,4 +1023,19 @@
     var(--color-border) 50%,
     var(--color-surface-2) 75%);
   background-size: 200% 100%;
+}
+
+/* ── Conjunto: chips "incluye" + cabecera por pieza ── */
+[data-theme="dark"] .comboIncludesChip {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .comboItemHeader {
+  border-bottom-color: var(--color-border);
+}
+
+[data-theme="dark"] .comboItemName {
+  color: var(--color-text);
 }

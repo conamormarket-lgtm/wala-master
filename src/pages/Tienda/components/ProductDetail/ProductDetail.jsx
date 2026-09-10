@@ -391,6 +391,13 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     const selVar = hasColors ? (vars.find(v => v.name === sel.color) || vars[0]) : null;
     const cSizes = hasColors ? (selVar?.sizes || []) : (sub.mainSizes || sub.sizes || []);
 
+    const itemLabel = (
+      <div className={styles.comboItemHeader}>
+        <span className={styles.comboItemBadge}>{index + 1}</span>
+        <span className={styles.comboItemName}><T>{sub.name}</T></span>
+      </div>
+    );
+
     const sizeUI = cSizes.length > 0 && (
       <div className={styles.selectorGroup}>
         <span className={styles.selectorLabel}>{hasColors && selVar?.sizeLabel ? <T>{selVar.sizeLabel}</T> : t('card.talla', 'Talla')}</span>
@@ -426,9 +433,9 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
       </div>
     );
 
-    if (position === 'top') return sizeUI;
+    if (position === 'top') return <>{itemLabel}{sizeUI}</>;
     if (position === 'bottom') return colorUI;
-    return <>{sizeUI}{colorUI}</>;
+    return <>{itemLabel}{sizeUI}{colorUI}</>;
   };
 
   // ── Render
@@ -503,6 +510,26 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
           </div>
 
           <hr className={styles.divider} />
+
+          {/* Conjunto: resumen de lo que incluye (casaca + polo + jogger...).
+              Los selectores de talla/color de cada pieza viven en la galería
+              (ver renderComboSelector); esto es solo el mapa rápido de qué
+              trae la caja, como en las páginas de bundle. */}
+          {isCombo && (product.comboItems?.length > 0) && (
+            <div className={styles.comboIncludes}>
+              <span className={styles.selectorLabel}>
+                <T>Este conjunto incluye</T> ({product.comboItems.length})
+              </span>
+              <div className={styles.comboIncludesChips}>
+                {product.comboItems.map((item, i) => (
+                  <span key={item.productId || i} className={styles.comboIncludesChip}>
+                    <span className={styles.comboIncludesChipNum}>{i + 1}</span>
+                    {comboProd[i]?.name ? <T>{comboProd[i].name}</T> : <T>Producto</T>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Color selector — etiqueta estática t(); nombre de color dinámico <T>. */}
           {hasVariants && variants.length > 0 && (

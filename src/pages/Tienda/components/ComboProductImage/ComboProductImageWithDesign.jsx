@@ -477,7 +477,7 @@ const ComboProductImageWithDesign = ({
 
     return (
         <div
-            className={`${styles.container} ${styles.comboRow} ${className}`}
+            className={`${styles.container} ${styles.comboRow} ${!isThumbnail ? styles.comboRowDetail : ''} ${isHorizontal ? styles.comboRowHorizontal : styles.comboRowVertical} ${className}`}
             style={{
                 flexDirection: isHorizontal ? 'row' : 'column',
                 gap: `${computedGap}px`,
@@ -489,21 +489,22 @@ const ComboProductImageWithDesign = ({
                 const data = itemsData[index];
                 const comboScale = comboItems[index]?.scale || 1;
                 const relativeScale = isThumbnail ? comboScale * 1.1 : Math.min(comboScale / Math.max(1, ...comboItems.map(i => i.scale || 1)), 1);
+                const itemCardClass = `${styles.comboRowItem} ${!isThumbnail ? styles.comboRowItemDetail : ''}`;
 
                 if (isLoading) {
                     return (
-                        <div key={`placeholder-${item.productId}-${index}`} className={styles.comboRowItem}>
+                        <div key={`placeholder-${item.productId}-${index}`} className={itemCardClass}>
                             <div className={styles.comboRowPlaceholder} />
                         </div>
                     );
                 }
 
                 if (!data) {
-                    return <div key={index} className={styles.comboRowItem}><T>Error loading item</T></div>;
+                    return <div key={index} className={itemCardClass}><T>Error loading item</T></div>;
                 }
 
                 return (
-                    <div key={index} className={styles.comboRowItem}>
+                    <div key={index} className={itemCardClass}>
                         {renderSelector && !isThumbnail && renderSelector(index, data.product, 'top')}
                         <div style={{
                             width: `${isThumbnail ? 100 : relativeScale * 100}%`,

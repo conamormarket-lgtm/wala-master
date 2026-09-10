@@ -137,6 +137,111 @@
 }
 
 /* ═══════════════════════════════════════════
+   VISTA DETALLE DE PRODUCTO — Conjunto/Combo
+   -------------------------------------------------------------------------
+   En el catálogo/carrito .comboRowItem se queda tal cual (miniatura plana,
+   sin selectores). En la ficha de producto (!isThumbnail) cada sub-producto
+   pasa a ser su propia tarjeta -mismo lenguaje que .card de Minijuegos y
+   .brandCell de la portada: superficie del tema, radio grande, borde de 1px
+   y una sombra corta que crece al hover- para que "Casaca + Polo + Jogger"
+   se lea como una promoción de conjunto profesional y no como controles
+   sueltos flotando sobre las fotos.
+   ═══════════════════════════════════════════ */
+.comboRowDetail {
+  padding: 0.25rem 0.25rem 1.5rem;
+  align-items: stretch;
+}
+
+.comboRowItemDetail {
+  position: relative;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #ebebeb);
+  border-radius: var(--radio-mediano, 16px);
+  box-shadow: var(--sombra-suave, 0 1px 3px rgba(15, 23, 42, 0.06));
+  padding: 0.9rem 0.75rem 1.1rem;
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .comboRowItemDetail:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--sombra-hover, 0 20px 25px -5px rgba(15, 23, 42, 0.08));
+    border-color: var(--primary-color, #6D28D9);
+  }
+}
+
+/* Conector "+" entre piezas: refuerza la lectura "esto es UN conjunto"
+   (casaca + polo + jogger), como en las páginas de bundle de e-commerces
+   grandes. Solo en horizontal y solo en desktop, donde las tarjetas quedan
+   una junto a otra de verdad. */
+.comboRowHorizontal.comboRowDetail .comboRowItemDetail:not(:first-child)::before {
+  content: '+';
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-surface, #fff);
+  border: 1.5px solid var(--color-border, #ebebeb);
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--color-text-muted, #64748b);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.comboRowVertical.comboRowDetail .comboRowItemDetail:not(:first-child)::before {
+  content: '+';
+  position: absolute;
+  left: 50%;
+  top: -15px;
+  transform: translate(-50%, 0);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-surface, #fff);
+  border: 1.5px solid var(--color-border, #ebebeb);
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--color-text-muted, #64748b);
+  z-index: 3;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .comboRowDetail {
+    flex-wrap: wrap;
+  }
+
+  .comboRowDetail .comboRowItem {
+    flex: 1 1 240px;
+    min-width: 200px;
+  }
+
+  .comboRowItemDetail {
+    padding: 0.7rem 0.6rem 0.85rem;
+  }
+
+  .comboRowItemDetail::before {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .comboRowItem {
+    padding: 0.1rem;
+  }
+}
+
+/* ═══════════════════════════════════════════
    MODO NOCHE — Combo Product Image
    Los textos ya usan tokens (--gris-texto-secundario) y el error/loading son
    acentos rojos legibles. Solo el placeholder estatico tiene grises
@@ -146,3 +251,7 @@
   background-color: var(--color-surface-2); /* #f5f5f5 -> superficie oscura */
   border-color: var(--color-border);        /* #ddd -> borde oscuro */
 }
+
+/* .comboRowItemDetail no necesita override: usa --sombra-suave/--sombra-hover
+   y --color-surface/--color-border, ya reteñidos automáticamente en oscuro
+   por variables.css. */
