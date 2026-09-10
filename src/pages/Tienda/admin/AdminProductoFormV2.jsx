@@ -713,6 +713,14 @@ const AdminProductoFormV2 = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || (!form.isComboProduct && form.variants.length === 0)) return;
+    // Antes esto no se validaba: se podía guardar un "combo" con 0 productos
+    // agregados y quedaba visible/comprable en la tienda sin mostrar nada al
+    // abrirlo (ver comboProductUtils.validateComboStructure, que existe pero
+    // nunca se llama desde ningún lado — este es el único chequeo real hoy).
+    if (form.isComboProduct && (!Array.isArray(form.comboItems) || form.comboItems.length === 0)) {
+      alert('Agrega al menos un producto al combo antes de guardar.');
+      return;
+    }
 
     // Validación de imagen eliminada para permitir productos sin foto
     setUploading(true);
@@ -1157,12 +1165,18 @@ const AdminProductoFormV2 = () => {
         <div className={styles.rightCol}>
           
           {form.isComboProduct ? (
-            <AdminComboEditor 
-              comboItems={form.comboItems} 
-              setComboItems={(items) => setForm(f => ({ ...f, comboItems: items }))} 
+            <AdminComboEditor
+              comboItems={form.comboItems}
+              setComboItems={(items) => setForm(f => ({ ...f, comboItems: items }))}
               comboPreviewImage={form.comboPreviewImage}
               setComboPreviewImage={(img) => setForm(f => ({ ...f, comboPreviewImage: img }))}
               draftId={draftId}
+              // Evita agregar el combo a sí mismo cuando se edita uno existente
+              // (id es undefined en "Crear Producto", ahí no aplica).
+              excludeProductId={id}
+              // Con "Personalizable" activo, handleSubmit pisa comboPreviewImage
+              // con la captura del lienzo de Yoryo — avisar ANTES de guardar.
+              comboWillOverridePreview={form.customizable}
             />
           ) : (
             <>

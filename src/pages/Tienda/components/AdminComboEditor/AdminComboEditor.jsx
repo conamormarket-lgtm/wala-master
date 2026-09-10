@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, ImagePlus, Loader2, Package } from 'lucide-react';
+import { Search, Plus, Trash2, ImagePlus, Loader2, Package, X } from 'lucide-react';
 import { searchProducts } from '../../../../services/products';
 import { uploadFile } from '../../../../services/firebase/storage';
 import ProductImageContainer from '../ProductImageContainer/ProductImageContainer';
 import styles from './AdminComboEditor.module.css';
 
-const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setComboPreviewImage, draftId }) => {
+const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setComboPreviewImage, draftId, excludeProductId, comboWillOverridePreview }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -21,16 +21,32 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
       setIsSearching(true);
       const res = await searchProducts(searchTerm);
       if (!res.error) {
-        const customizables = res.data.filter(p => p.customizable === true);
-        setSearchResults(customizables.slice(0, 5)); // Limit to 5 results
+        // Antes solo mostraba productos "Personalizable" (res.data.filter(p =>
+        // p.customizable === true)) — un producto normal (la mayoría del
+        // catálogo) nunca podía agregarse a un combo, ese flag no tiene nada
+        // que ver con poder formar parte de uno. Ahora se excluye lo que sí
+        // rompería el combo: otro combo (anidar combos no está soportado en
+        // ningún lado del renderizado) y el propio producto que se está
+        // editando (agregarse a sí mismo).
+        const eligible = res.data.filter(p =>
+          !p.isComboProduct &&
+          (!excludeProductId || p.id !== excludeProductId)
+        );
+        setSearchResults(eligible.slice(0, 5)); // Limit to 5 results
       }
       setIsSearching(false);
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, excludeProductId]);
 
   const addProductToCombo = (product) => {
+    // Sin este chequeo se podía agregar el mismo producto varias veces (cada
+    // click sumaba otra tarjeta idéntica en la tienda, sin ningún aviso).
+    if (comboItems.some(item => item.productId === product.id)) {
+      alert(`"${product.name}" ya está en este combo.`);
+      return;
+    }
     const newItem = {
       _uid: Math.random().toString(36).substring(2, 10), // Unique ID para React keys
       productId: product.id,
@@ -54,10 +70,17 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
     setUploading(true);
     try {
       const path = `productos_v2/${draftId}/combo_preview_${Date.now()}_${file.name}`;
-      const { url } = await uploadFile(file, path);
+      const { url, error } = await uploadFile(file, path);
       if (url) {
         setComboPreviewImage(url);
+      } else {
+        // Antes, si uploadFile fallaba (permisos, timeout, etc.), esto se
+        // quedaba callado: el botón volvía a su estado normal y parecía que
+        // no había pasado nada, sin decirle al admin que la foto NO se subió.
+        alert(error || 'No se pudo subir la foto. Intenta de nuevo.');
       }
+    } catch (err) {
+      alert(err?.message || 'No se pudo subir la foto. Intenta de nuevo.');
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -135,17 +158,30 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
       <div className={styles.previewSection}>
         <h3>Foto Principal del Combo</h3>
         <p className={styles.subtitle}>Sube una foto promocional de los productos juntos.</p>
+        {comboWillOverridePreview && (
+          <div className={styles.overrideWarning}>
+            ⚠️ Este combo tiene <strong>"Personalizable"</strong> activado: al guardar, esta foto se
+            va a <strong>reemplazar sola</strong> por una captura automática del editor de diseño.
+            Si quieres que se quede la que subiste aquí, desactiva "Personalizable".
+          </div>
+        )}
         <div className={styles.previewBox}>
-          <ProductImageContainer 
-            imageUrl={comboPreviewImage} 
+          <ProductImageContainer
+            imageUrl={comboPreviewImage}
             emptyMessage="Sin foto promocional"
           />
-          <div style={{ marginTop: '1rem' }}>
+          <div className={styles.uploadRow} style={{ marginTop: '1rem' }}>
             <label className={styles.uploadBtn}>
               {uploading ? <Loader2 className="animate-spin" size={18} /> : <ImagePlus size={18} />}
-              {uploading ? <span key="uploading">Subiendo...</span> : <span key="default">Subir Portada del Combo</span>}
+              {uploading ? <span key="uploading">Subiendo...</span> : <span key="default">{comboPreviewImage ? 'Reemplazar Portada' : 'Subir Portada del Combo'}</span>}
               <input type="file" accept="image/*" onChange={handleImageUpload} hidden disabled={uploading} />
             </label>
+            {/* Antes solo se podía REEMPLAZAR la foto, nunca quitarla del todo. */}
+            {comboPreviewImage && (
+              <button type="button" className={styles.removeImageBtn} onClick={() => setComboPreviewImage('')} disabled={uploading}>
+                <X size={16} /> Quitar foto
+              </button>
+            )}
           </div>
         </div>
       </div>
