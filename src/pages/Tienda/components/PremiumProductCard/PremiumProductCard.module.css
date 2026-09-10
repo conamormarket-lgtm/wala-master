@@ -26,6 +26,12 @@
   position: relative;
   width: 100%;
   aspect-ratio: 3 / 4; /* Gymshark/Nude Project tall aspect ratio */
+  /* Habilita @container más abajo: el riel "Incluye" necesita verse distinto
+     según el tamaño REAL de la tarjeta (grilla grande vs. carrusel angosto
+     de "Ofertas"), no según el ancho de la ventana -en la misma página
+     conviven ambos tamaños de tarjeta a la vez-. */
+  container-type: inline-size;
+  container-name: productCard;
   /* Vidrio sutil tras la imagen: fondo translúcido + canto de luz + sombra
      suave de reposo. El blur sólo aplica si el navegador lo soporta. */
   background-color: var(--glass-bg, #f7f7f7);
@@ -180,15 +186,17 @@
   color: #111;
 }
 
-/* Fila, no columna: apiladas verticalmente (3 piezas + etiqueta) medían
-   ~211px de alto -81% del alto de una tarjeta angosta de carrusel/"Ofertas"
-   (260px)-, así que quedaba pegado contra los badges de arriba y el botón
-   de abajo. En fila mide ~90px sin importar el tamaño de la tarjeta: cabe
-   cómodo tanto en la grilla grande como en un carrusel angosto. */
+/* Por defecto (tarjeta grande, la grilla completa del catálogo): columna,
+   con espacio de sobra -el riel usa ~46% del alto de una tarjeta de 460px-.
+   La misma tarjeta se ve más chica en otros lugares (carrusel "Ofertas",
+   ~195x260px) y ahí ~211px de alto son el 81%: se ve apretado contra los
+   badges y el botón. En vez de un solo tamaño fijo para ambos casos, la
+   @container de abajo cambia a fila -mucho más baja- cuando la tarjeta es
+   angosta de verdad, y esta columna se queda para cuando hay espacio. */
 .comboRevealItems {
   display: flex;
-  flex-direction: row;
-  gap: 0.35rem;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .comboRevealItem {
@@ -196,12 +204,12 @@
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
-  width: 40px;
+  width: 46px;
 }
 
 .comboRevealThumb {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
@@ -210,6 +218,26 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+/* Tarjeta angosta (carrusel "Ofertas" y similares, ~195px de ancho): fila
+   en vez de columna. Mismo contenido, ~90px de alto en vez de ~211px -cabe
+   cómodo sin chocar con badges/botón-. 260px de corte deja la grilla grande
+   (~345px+) intacta con la columna de arriba. */
+@container productCard (max-width: 260px) {
+  .comboRevealItems {
+    flex-direction: row;
+    gap: 0.3rem;
+  }
+
+  .comboRevealItem {
+    width: 34px;
+  }
+
+  .comboRevealThumb {
+    width: 30px;
+    height: 30px;
+  }
 }
 
 .comboRevealThumb img {
