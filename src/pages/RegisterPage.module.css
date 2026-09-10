@@ -9,7 +9,9 @@
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  background-color: var(--gris-fondo);
+  /* Lavado violeta-lavanda; en modo oscuro tokens.css lo remapea a un
+     degradado violeta profundo (no un gris plano). */
+  background: var(--gradient-aurora-soft, var(--gris-fondo));
 }
 
 .wrapper {
@@ -18,16 +20,28 @@
   width: 100%;
   max-width: 1060px;
   margin: 0 auto;
-  background-color: var(--blanco);
+  /* Vidrio: mismo recipe que GlassCard/Header. */
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  border: var(--glass-border-strong);
   border-radius: var(--radio-grande);
-  box-shadow: var(--sombra-profunda);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inset-top);
   overflow: hidden;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .wrapper {
+    background: var(--color-surface, var(--blanco));
+  }
 }
 
 /* ── Branding ── */
 .branding {
-  background: linear-gradient(135deg, var(--rojo-principal) 0%, #a11720 100%);
-  color: var(--blanco);
+  /* Gradiente de marca actual (violeta) — fijo en ambos temas a propósito,
+     ver LoginPage.module.css para la misma nota. */
+  background: var(--gradient-brand-deep, linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%));
+  color: #ffffff;
   padding: 3.5rem;
   display: flex;
   flex-direction: column;
@@ -45,7 +59,7 @@
   right: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(196, 181, 253, 0.28) 0%, transparent 70%);
   animation: pulse 15s ease-in-out infinite;
 }
 
@@ -67,7 +81,7 @@
   width: 160px;
   height: 160px;
   margin-bottom: 2rem;
-  background-color: var(--blanco);
+  background-color: #ffffff;
   border-radius: 50%;
   padding: 12px;
   object-fit: contain;
@@ -132,7 +146,7 @@
 .stepCircle.stepActive {
   background: var(--rojo-principal);
   border-color: var(--rojo-principal);
-  color: var(--blanco);
+  color: #ffffff;
 }
 
 .stepLine {
@@ -148,6 +162,17 @@
   font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not (background-clip: text) {
+  .formContainer h1 {
+    -webkit-text-fill-color: initial;
+    color: var(--gris-texto-principal);
+  }
 }
 
 .formContainer>p {
@@ -190,14 +215,14 @@
 .formGroup input:focus {
   outline: none;
   border-color: var(--rojo-principal);
-  box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
+  box-shadow: 0 0 0 4px var(--primary-light, rgba(109, 35, 217, 0.1));
 }
 
 .fieldError {
   display: block;
   margin-top: 0.35rem;
   font-size: 0.8125rem;
-  color: var(--rojo-principal);
+  color: var(--danger, #EF4444);
 }
 
 /* ── Campo de contraseña con botón mostrar/ocultar ── */
@@ -291,10 +316,10 @@
   gap: 0.5rem;
   padding: 1rem;
   margin-bottom: 1rem;
-  background: rgba(217, 35, 45, 0.08);
-  border: 1px solid rgba(217, 35, 45, 0.3);
+  background: var(--danger-soft, rgba(239, 68, 68, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: var(--radio-pequeno);
-  color: var(--rojo-principal);
+  color: var(--danger, #EF4444);
   font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.5;
@@ -335,7 +360,7 @@
   border: 2px solid var(--rojo-principal);
   border-radius: var(--radio-pequeno);
   background: var(--rojo-principal);
-  color: var(--blanco);
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.9375rem;
   cursor: pointer;
@@ -361,7 +386,7 @@
 .select:focus {
   outline: none;
   border-color: var(--rojo-principal);
-  box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
+  box-shadow: 0 0 0 4px var(--primary-light, rgba(109, 35, 217, 0.1));
 }
 
 .step2Actions {

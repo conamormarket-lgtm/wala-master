@@ -9,7 +9,7 @@
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  background-color: var(--gris-fondo);
+  background: var(--gradient-aurora-soft, var(--gris-fondo));
 }
 
 /* ── Wrapper con 2 columnas ── */
@@ -19,15 +19,24 @@
   width: 100%;
   max-width: 960px;
   margin: 0 auto;
-  background-color: var(--blanco);
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  border: var(--glass-border-strong);
   border-radius: var(--radio-grande);
-  box-shadow: var(--sombra-profunda);
+  box-shadow: var(--glass-shadow-lg), var(--glass-inset-top);
   overflow: hidden;
 }
 
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .wrapper {
+    background: var(--color-surface, var(--blanco));
+  }
+}
+
 .branding {
-  background: linear-gradient(135deg, var(--rojo-principal) 0%, #a11720 100%);
-  color: var(--blanco);
+  background: var(--gradient-brand-deep, linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%));
+  color: #ffffff;
   padding: 3rem;
   display: flex;
   flex-direction: column;
@@ -42,7 +51,7 @@
   content: '';
   position: absolute;
   inset: -50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(196, 181, 253, 0.22) 0%, transparent 65%);
   animation: brandingPulse 14s ease-in-out infinite;
 }
 
@@ -62,7 +71,7 @@
   width: 140px;
   height: 140px;
   margin-bottom: 1.5rem;
-  background-color: var(--blanco);
+  background-color: #ffffff;
   border-radius: 50%;
   padding: 10px;
   object-fit: contain;
@@ -105,6 +114,17 @@
   font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not (background-clip: text) {
+  .formContainer h1 {
+    -webkit-text-fill-color: initial;
+    color: var(--gris-texto-principal);
+  }
 }
 
 .formContainer>p {
@@ -148,7 +168,7 @@
   border: 2px solid var(--rojo-principal);
   border-radius: var(--radio-pequeno);
   background: var(--rojo-principal);
-  color: var(--blanco);
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.9375rem;
   cursor: pointer;
@@ -185,7 +205,7 @@
 .formGroup input:focus {
   outline: none;
   border-color: var(--rojo-principal);
-  box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
+  box-shadow: 0 0 0 4px var(--primary-light, rgba(109, 35, 217, 0.1));
 }
 
 /* Select de tipo de documento (mismo aspecto que los inputs del formulario). */
@@ -206,14 +226,14 @@
 .select:focus {
   outline: none;
   border-color: var(--rojo-principal);
-  box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
+  box-shadow: 0 0 0 4px var(--primary-light, rgba(109, 35, 217, 0.1));
 }
 
 .fieldError {
   display: block;
   margin-top: 0.35rem;
   font-size: 0.8125rem;
-  color: var(--rojo-principal);
+  color: var(--danger, #EF4444);
 }
 
 /* Pista neutra (p. ej. confirmar cumpleaños precargado), no es un error. */
@@ -221,7 +241,7 @@
   display: block;
   margin-top: 0.35rem;
   font-size: 0.8125rem;
-  color: #64748b;
+  color: var(--gris-texto-secundario);
 }
 
 .errorMessage {
@@ -230,10 +250,10 @@
   gap: 0.5rem;
   padding: 1rem;
   margin-bottom: 1rem;
-  background: rgba(217, 35, 45, 0.08);
-  border: 1px solid rgba(217, 35, 45, 0.3);
+  background: var(--danger-soft, rgba(239, 68, 68, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: var(--radio-pequeno);
-  color: var(--rojo-principal);
+  color: var(--danger, #EF4444);
   font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.5;
