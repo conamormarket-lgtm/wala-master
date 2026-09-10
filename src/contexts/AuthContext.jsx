@@ -10,11 +10,22 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../services/firebase/config';
 
-// Claves de localStorage que guardan datos personales del comprador (nombre,
-// DNI, teléfono, dirección) para autocompletar el checkout la próxima vez.
-// Si no se borran al cerrar sesión, en un dispositivo compartido la SIGUIENTE
-// persona que entra ve los datos de la anterior precargados en el formulario.
-const CHECKOUT_PII_KEYS = ['checkout_customer_info', 'landing_checkout_customer_info'];
+// Claves de localStorage que guardan datos personales o de comportamiento del
+// usuario (nombre/DNI/teléfono/dirección del checkout, historial de productos
+// vistos, búsquedas recientes). Si no se borran al cerrar sesión, en un
+// dispositivo compartido la SIGUIENTE persona que entra ve datos de la
+// anterior: el formulario de checkout precargado, notificaciones tipo "sigue
+// disponible" sobre productos que vio otra persona, o sus búsquedas.
+const PERSONAL_DATA_KEYS = [
+  'checkout_customer_info',
+  'landing_checkout_customer_info',
+  'product_views_history',
+  'wala_busquedas_recientes',
+];
+// `notified_behavior_${productId}` es una clave por producto (marca cuándo se
+// avisó "sigue disponible" de ESE producto) — no hay una lista fija de ids,
+// así que se limpian todas las que empiecen con este prefijo.
+const NOTIFIED_BEHAVIOR_PREFIX = 'notified_behavior_';
 
 // Cuánto se espera a que Firebase diga quién entra antes de seguir sin sesión.
 // Generoso a propósito: en una red mala la comprobación del token tarda unos
@@ -62,7 +73,10 @@ export const AuthProvider = ({ children }) => {
     if (huboLogout || cambioDeCuenta) {
       queryClient.clear();
       try {
-        CHECKOUT_PII_KEYS.forEach((k) => localStorage.removeItem(k));
+        PERSONAL_DATA_KEYS.forEach((k) => localStorage.removeItem(k));
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith(NOTIFIED_BEHAVIOR_PREFIX))
+          .forEach((k) => localStorage.removeItem(k));
       } catch (_) {
         // localStorage puede no estar disponible (modo privado, etc.) — no bloquea el logout.
       }

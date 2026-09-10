@@ -94,6 +94,14 @@ export const useProduct = (productId) => {
       return undefined;
     },
     staleTime: 0, // Always fetch newest data in background
+    // staleTime:0 no basta por sí solo: el default global es refetchOnMount:false
+    // (App.jsx), que suprime el refetch al montar siempre que ya haya datos —
+    // y `initialData` de arriba casi siempre los da (viene de la lista que el
+    // usuario ya vio). Sin esto, entrar al detalle de un producto desde el
+    // catálogo podía mostrar precio/stock de cuando se cargó esa lista, sin
+    // pedir nunca el dato fresco. Mismo fix que ya se aplicó al catálogo
+    // paginado por la misma razón (ver TiendaPage.jsx).
+    refetchOnMount: 'always',
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
     enabled: !!productId
   });

@@ -481,6 +481,12 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     },
     placeholderData: keepPreviousData,
     initialData: (!searchTerm && !categoryId && sortBy === 'newest') ? getCachedProducts() : undefined,
+    // Mismo motivo que en el catálogo paginado más abajo: con refetchOnMount:false
+    // global (App.jsx) y sin esto, volver a una categoría o búsqueda ya vista
+    // en la misma sesión podía quedarse mostrando hasta 1h de datos viejos
+    // (--staleTime global-- un producto ya sin stock o borrado seguía apareciendo)
+    // en vez de refrescar contra Firestore.
+    refetchOnMount: 'always',
   });
 
   // ── CATÁLOGO PAGINADO CON CURSOR (Fase 3 · C-1) ───────────────────
