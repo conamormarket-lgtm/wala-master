@@ -102,63 +102,80 @@
 }
 
 /* ── Combo: hover-reveal de qué piezas incluye ──────────────────────────
-   Antes, pasar el mouse sobre una tarjeta de combo no hacía nada distinto
-   a una tarjeta normal (ni el swap de imagen secundaria, que los combos no
-   tienen). Esto se superpone a la imagen -scrim oscuro solo para legibilidad
-   del texto blanco sobre CUALQUIER foto, por eso son colores fijos y no
-   tokens de tema- y no bloquea el botón de abajo (pointer-events:none). */
+   v2: en vez de un scrim que tapaba TODA la foto, es un riel lateral -mismo
+   lenguaje que el thumbStrip de la ficha de producto (miniaturas verticales
+   al costado)- que se desliza desde el borde izquierdo. La foto del combo
+   queda siempre visible; el riel solo se superpone a una tira angosta.
+   Glass claro (igual que favoriteBtn/quickAddBtn) en vez de dark scrim:
+   ya no hay foto arbitraria detrás que oscurecer, así que usa los mismos
+   tokens --glass-* del resto de la tarjeta. */
 .comboRevealOverlay {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-  padding: 1rem;
-  background: linear-gradient(180deg, rgba(10, 10, 15, 0) 0%, rgba(10, 10, 15, 0.45) 45%, rgba(10, 10, 15, 0.68) 100%);
+  gap: 0.4rem;
+  padding: 0.55rem 0.4rem;
+  background: var(--glass-bg-strong, rgba(255, 255, 255, 0.95));
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.6));
+  border-left: none;
+  border-radius: 0 var(--radio-mediano, 12px) var(--radio-mediano, 12px) 0;
+  box-shadow: var(--glass-shadow, 0 8px 20px rgba(15, 23, 42, 0.16));
   opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 6;
+  /* Reposo: fuera del borde izquierdo (invisible). Hover: se asoma hacia
+     adentro. translate en vez de solo opacity para que se sienta como un
+     cajón que se abre, no un simple fundido. */
+  transform: translate(-100%, -50%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  z-index: 7;
   pointer-events: none;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .comboRevealOverlay {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
 }
 
 @media (hover: hover) {
   .card:hover .comboRevealOverlay {
+    transform: translate(0, -50%);
     opacity: 1;
   }
 }
 
 .comboRevealLabel {
-  font-size: 0.62rem;
+  font-size: 0.55rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  letter-spacing: 0.08em;
+  color: #111;
 }
 
 .comboRevealItems {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .comboRevealItem {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
-  width: 62px;
+  gap: 0.2rem;
+  width: 46px;
 }
 
 .comboRevealThumb {
-  width: 52px;
-  height: 52px;
-  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   overflow: hidden;
   background: #fff;
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -172,40 +189,60 @@
 }
 
 .comboRevealThumbFallback {
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #999;
 }
 
 .comboRevealMore {
-  background: rgba(0, 0, 0, 0.55);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: #fff;
-  font-size: 0.85rem;
+  background: var(--color-surface-2, #f0f0f0);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #666;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
 .comboRevealName {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   font-weight: 600;
-  color: #fff;
+  color: #333;
   text-align: center;
-  line-height: 1.2;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  line-height: 1.15;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 /* Solo en desktop con hover real: en touch no hay ":hover" que lo dispare,
-   así que se queda oculto en vez de tapar la imagen a medias. Tocar la
+   así que se queda oculto en vez de sobrar como chrome fijo. Tocar la
    tarjeta ya lleva a la ficha, donde "Este conjunto incluye" está siempre
    visible. */
 @media (hover: none) {
   .comboRevealOverlay {
     display: none;
   }
+}
+
+/* ═══════════════════════════════════════════
+   MODO NOCHE — riel de "Incluye"
+   El glass ya se oscurece solo (--glass-bg-strong); solo retocamos los
+   textos y fondos hardcodeados en claro.
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] .comboRevealLabel,
+[data-theme="dark"] .comboRevealName {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .comboRevealThumb {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .comboRevealMore {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
 }
 
 /* Badges */
@@ -507,7 +544,8 @@
   .card,
   .imageWrapper,
   .favoriteBtn,
-  .quickAddBtn {
+  .quickAddBtn,
+  .comboRevealOverlay {
     transition: opacity var(--dur-rapida) ease;
   }
 
@@ -517,6 +555,15 @@
   .quickAddBtn:hover:not(:disabled) {
     transform: none;
     filter: none;
+  }
+
+  /* El riel de "incluye" no usa transform de adorno: ES su posición (fuera
+     de cuadro a la izquierda en reposo). Bajo menos-movimiento se queda
+     siempre en su lugar final (centrado verticalmente) y solo cambia la
+     opacidad al hover, en vez de deslizarse. */
+  .comboRevealOverlay,
+  .card:hover .comboRevealOverlay {
+    transform: translateY(-50%);
   }
 }
 
