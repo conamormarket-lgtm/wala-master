@@ -450,8 +450,12 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     <>
       <div className={`${styles.pdp} ${isCombo ? styles.pdpCombo : ''}`}>
 
-        {/* ── Gallery ── */}
-        <div className={styles.galleryCol}>
+        {/* ── Gallery ──
+            galleryColCombo: la vista de conjunto es mucho más baja que un
+            único producto en 100vh (son tarjetas, no una foto de página
+            completa) — sin este ajuste queda una franja blanca enorme sin
+            usar debajo de las tarjetas. */}
+        <div className={`${styles.galleryCol} ${showCombo ? styles.galleryColCombo : ''}`}>
           <Gallery
             images={images}
             activeIdx={imgIdx}

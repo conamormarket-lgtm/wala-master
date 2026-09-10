@@ -40,6 +40,19 @@
   max-height: 820px;
 }
 
+/* La vista de conjunto (tarjetas, no una foto grande) no necesita ocupar
+   los 100vh que sí usa una imagen única: se dimensiona por su contenido y
+   sigue "sticky" (se queda pegada mientras el usuario lee la columna de
+   info), en vez de dejar una franja en blanco enorme debajo. */
+.galleryColCombo {
+  height: auto;
+}
+
+.galleryColCombo .gallery {
+  height: auto;
+  max-height: none;
+}
+
 /* Thumbnail strip — vertical left */
 .thumbStrip {
   display: flex;
@@ -339,9 +352,14 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #0a0a0a;
+  line-height: 1.3;
+  /* Antes truncaba con "..." y el nombre completo (p.ej. "100 Años Cañonero")
+     quedaba cortado y se veía roto; ahora envuelve hasta 2 líneas en vez de
+     desaparecer contenido. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ── Color swatches ──────────────────────────────── */

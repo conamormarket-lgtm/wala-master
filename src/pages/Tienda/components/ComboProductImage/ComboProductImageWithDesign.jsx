@@ -6,6 +6,8 @@ import { generateThumbnailWithDesign } from '../../../../utils/thumbnailWithDesi
 import { getCloudinaryOptimized } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import { getFonts } from '../../../../services/fonts';
 import useDragScroll from '../../../../hooks/useDragScroll';
+import useComboCarousel from '../../../../hooks/useComboCarousel';
+import { ComboNavArrows, ComboNavDots } from './ComboCarouselNav';
 import styles from './ComboProductImage.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
 
@@ -416,6 +418,10 @@ const ComboProductImageWithDesign = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const comboItemCustomization = comboProduct?.comboItemCustomization || [];
 
+    const showCarouselNav = !isThumbnail && comboItems.length > 1;
+    const { index: navIndex, canScroll: navCanScroll, atStart: navAtStart, atEnd: navAtEnd, goTo: navGoTo } =
+        useComboCarousel(containerRef, comboItems.length, showCarouselNav);
+
     useEffect(() => {
         if (loadingFonts) return;
 
@@ -480,7 +486,7 @@ const ComboProductImageWithDesign = ({
 
     const isLoading = itemsData.length === 0 && comboItems.length > 0;
 
-    return (
+    const row = (
         <div
             ref={containerRef}
             className={`${styles.container} ${styles.comboRow} ${!isThumbnail ? styles.comboRowDetail : ''} ${isHorizontal ? styles.comboRowHorizontal : styles.comboRowVertical} ${className}`}
@@ -529,6 +535,27 @@ const ComboProductImageWithDesign = ({
                     </div>
                 );
             })}
+        </div>
+    );
+
+    if (isThumbnail) return row;
+
+    return (
+        <div className={styles.comboCarouselShell}>
+            <div className={styles.comboCarouselRowWrap}>
+                {row}
+                {showCarouselNav && navCanScroll && (
+                    <ComboNavArrows
+                        atStart={navAtStart}
+                        atEnd={navAtEnd}
+                        onPrev={() => navGoTo(navIndex - 1)}
+                        onNext={() => navGoTo(navIndex + 1)}
+                    />
+                )}
+            </div>
+            {showCarouselNav && navCanScroll && (
+                <ComboNavDots itemCount={comboItems.length} index={navIndex} onDot={navGoTo} />
+            )}
         </div>
     );
 };

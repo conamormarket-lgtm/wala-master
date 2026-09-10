@@ -7,7 +7,9 @@ import { recordThumbnailImpression } from '../../../../utils/productVariantBehav
 import { useQueryClient } from '@tanstack/react-query';
 import OptimizedImage, { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import ComboProductImageWithDesign, { comboHasDesignLayers } from './ComboProductImageWithDesign';
+import { ComboNavArrows, ComboNavDots } from './ComboCarouselNav';
 import useDragScroll from '../../../../hooks/useDragScroll';
+import useComboCarousel from '../../../../hooks/useComboCarousel';
 import styles from './ComboProductImage.module.css';
 
 function getBestImageUrl(product, item, variantSelection = {}) {
@@ -88,6 +90,10 @@ const ComboProductImage = ({
   // tiene ancho mínimo propio y, si no entran todas, la fila hace scroll-x.
   // Este hook agrega arrastre con mouse; touch/trackpad ya funciona por CSS.
   useDragScroll(containerRef, !isThumbnail);
+  const comboItemCount = comboProduct?.comboItems?.length || 0;
+  const showCarouselNav = !isThumbnail && comboItemCount > 1;
+  const { index: navIndex, canScroll: navCanScroll, atStart: navAtStart, atEnd: navAtEnd, goTo: navGoTo } =
+    useComboCarousel(containerRef, comboItemCount, showCarouselNav);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -342,7 +348,7 @@ const ComboProductImage = ({
     );
   }
 
-  return (
+  const row = (
     <div
       ref={containerRef}
       className={`${styles.container} ${styles.comboRow} ${!isThumbnail ? styles.comboRowDetail : ''} ${isHorizontal ? styles.comboRowHorizontal : styles.comboRowVertical} ${className}`}
@@ -394,6 +400,27 @@ const ComboProductImage = ({
           </div>
         );
       })}
+    </div>
+  );
+
+  if (isThumbnail) return row;
+
+  return (
+    <div className={styles.comboCarouselShell}>
+      <div className={styles.comboCarouselRowWrap}>
+        {row}
+        {showCarouselNav && navCanScroll && (
+          <ComboNavArrows
+            atStart={navAtStart}
+            atEnd={navAtEnd}
+            onPrev={() => navGoTo(navIndex - 1)}
+            onNext={() => navGoTo(navIndex + 1)}
+          />
+        )}
+      </div>
+      {showCarouselNav && navCanScroll && (
+        <ComboNavDots itemCount={comboItemCount} index={navIndex} onDot={navGoTo} />
+      )}
     </div>
   );
 };

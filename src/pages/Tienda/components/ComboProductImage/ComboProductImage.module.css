@@ -168,6 +168,7 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
   cursor: grab;
 }
 
@@ -182,6 +183,7 @@
 .comboRowItemDetail {
   position: relative;
   flex: 1 0 240px;
+  scroll-snap-align: start;
   background: var(--color-surface, #fff);
   border: 1px solid var(--color-border, #ebebeb);
   border-radius: var(--radio-mediano, 16px);
@@ -253,10 +255,110 @@
   }
 }
 
+/* En celular, cada tarjeta ocupa casi todo el ancho: se ve UNA pieza a la
+   vez, grande y legible (como cualquier carrusel de producto en mobile),
+   y se desliza con el dedo a la siguiente. snap-type:mandatory aquí sí
+   (a diferencia de desktop) porque en touch el gesto es "deslizar", no
+   "arrastrar libremente", y queda mejor que encaje siempre completa. */
+@media (max-width: 480px) {
+  .comboRowDetail {
+    scroll-snap-type: x mandatory;
+  }
+
+  .comboRowItemDetail {
+    flex-basis: calc(100% - 8px);
+  }
+}
+
 @media (max-width: 768px) {
   .comboRowItem {
     padding: 0.1rem;
   }
+}
+
+/* ═══════════════════════════════════════════
+   CARRUSEL — flechas + puntos de posición
+   -------------------------------------------------------------------------
+   Mismo lenguaje que el resto de la ficha: superficie del tema, violeta de
+   marca en el estado activo/hover. Solo aparecen cuando la fila realmente
+   desborda (navCanScroll), así que en desktop con conjuntos de 2 piezas que
+   entran enteras no se ve nav de sobra.
+   ═══════════════════════════════════════════ */
+.comboCarouselShell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.comboCarouselRowWrap {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.navArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #ebebeb);
+  box-shadow: var(--sombra-media, 0 4px 6px -1px rgba(15, 23, 42, 0.08));
+  color: var(--color-text, #0a0a0a);
+  cursor: pointer;
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.navArrow:hover {
+  background: var(--primary-color, #6D28D9);
+  border-color: var(--primary-color, #6D28D9);
+  color: #fff;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.navArrowLeft { left: -6px; }
+.navArrowRight { right: -6px; }
+
+@media (max-width: 640px) {
+  .navArrow { width: 30px; height: 30px; }
+  .navArrowLeft { left: -2px; }
+  .navArrowRight { right: -2px; }
+}
+
+.navDots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+}
+
+.navDot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-border, #ddd);
+  cursor: pointer;
+  transition: var(--transicion-rapida, all 0.2s ease);
+}
+
+.navDot:hover {
+  background: var(--color-text-muted, #999);
+}
+
+.navDotActive,
+.navDotActive:hover {
+  width: 20px;
+  background: var(--primary-color, #6D28D9);
 }
 
 /* ═══════════════════════════════════════════
