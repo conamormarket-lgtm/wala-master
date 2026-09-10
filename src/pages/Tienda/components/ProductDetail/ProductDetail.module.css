@@ -293,6 +293,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+}
+
+/* Aviso junto a la talla del conjunto: deja explícito, sin que haga falta
+   preguntar, que esa única talla se usa en las 3 prendas. */
+.comboSizeHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--primary-color, #6D28D9);
 }
 
 /* ── Conjunto: chips "Este conjunto incluye" ──────────────────────── */
@@ -1045,4 +1060,8 @@
 
 [data-theme="dark"] .comboItemName {
   color: var(--color-text);
+}
+
+[data-theme="dark"] .comboSizeHint {
+  color: var(--primary-color);
 }

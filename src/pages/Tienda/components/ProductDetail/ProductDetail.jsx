@@ -91,6 +91,20 @@ const buildImages = (product, variant, isCombo, comboSels, comboProd) => {
   return list;
 };
 
+// Info de variante de una pieza del combo (colores permitidos, si tiene
+// colores y qué tallas corresponden al color elegido). Se usa tanto para
+// pintar el selector de color de esa pieza como para calcular, fuera de
+// aquí, qué tallas son válidas para las 3 piezas a la vez.
+const getComboVariantInfo = (sub, cfg, selColor) => {
+  const allowed = cfg?.variantMapping?.allowedColors?.map(c => c.trim().toLowerCase()) || [];
+  const allVars = Array.isArray(sub?.variants) ? sub.variants : [];
+  const vars = allowed.length ? allVars.filter(v => allowed.includes(v.name?.trim().toLowerCase())) : allVars;
+  const hasColors = Boolean(sub?.hasVariants && vars.length > 0);
+  const selVar = hasColors ? (vars.find(v => v.name === selColor) || vars[0]) : null;
+  const itemSizes = hasColors ? (selVar?.sizes || []) : (sub?.mainSizes || sub?.sizes || []);
+  return { vars, hasColors, selVar, itemSizes };
+};
+
 // ─── Gallery ─────────────────────────────────────────────────────────────────
 const Gallery = ({ images, activeIdx, setActiveIdx, showCombo, comboEl }) => {
   const [zoom, setZoom] = useState(false);
@@ -175,6 +189,10 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   const [qty, setQty] = useState(1);
   const [comboSels, setComboSels] = useState({});
   const [comboProd, setComboProd] = useState({});
+  // Talla ÚNICA para todo el conjunto: el usuario la elige una sola vez y se
+  // aplica a las 3 piezas (casaca/polo/jogger). El color sí varía por pieza
+  // y sigue viviendo en `comboSels` (ver renderComboSelector más abajo).
+  const [comboSize, setComboSize] = useState('');
   const [imgIdx, setImgIdx] = useState(0);
   const [cuestionario, setCuestionario] = useState(null);
   const [sharing, setSharing] = useState(false);
@@ -313,6 +331,43 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setSelectedSize(sizes[0] || ''); }, [selectedVariant?.id, JSON.stringify(sizes)]);
 
+  // Tallas válidas para el conjunto completo: la intersección de las tallas
+  // de cada pieza (según su color elegido). Si por alguna razón no comparten
+  // ninguna talla exacta, se usa la unión para no dejar el selector vacío.
+  const comboSizeOptions = React.useMemo(() => {
+    if (!isCombo) return [];
+    const n = product?.comboItems?.length || 0;
+    if (!n) return [];
+    const lists = [];
+    for (let i = 0; i < n; i++) {
+      const sub = comboProd[i];
+      if (!sub) return []; // aún cargando los sub-productos
+      const { itemSizes } = getComboVariantInfo(sub, product.comboItems[i], (comboSels[i] || {}).color);
+      if (itemSizes.length) lists.push(itemSizes);
+    }
+    if (!lists.length) return [];
+    const [first, ...rest] = lists;
+    const intersection = first.filter(s => rest.every(l => l.includes(s)));
+    return intersection.length ? intersection : [...new Set(lists.flat())];
+  }, [isCombo, product?.comboItems, comboProd, comboSels]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isCombo || comboSizeOptions.length === 0) return;
+    if (!comboSizeOptions.includes(comboSize)) setComboSize(comboSizeOptions[0]);
+  }, [isCombo, comboSizeOptions]);
+
+  // Selecciones "listas para enviar": mismas que `comboSels` pero con la
+  // talla única inyectada en las 3 piezas. Carrito/checkout siguen leyendo
+  // `variant.size` por pieza tal cual lo hacían antes.
+  const comboSelsForSubmit = React.useMemo(() => {
+    if (!isCombo) return comboSels;
+    const n = product?.comboItems?.length || 0;
+    const out = {};
+    for (let i = 0; i < n; i++) out[i] = { ...comboSels[i], size: comboSize };
+    return out;
+  }, [isCombo, comboSels, comboSize, product?.comboItems?.length]);
+
   // ── Handlers
   const handleAddToCart = () => {
     addToCart(
@@ -320,7 +375,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
       { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
       null,
       qty,
-      isCombo ? { variantSelections: comboSels, customizations: {}, subProductsData: comboProd } : null
+      isCombo ? { variantSelections: comboSelsForSubmit, customizations: {}, subProductsData: comboProd } : null
     );
     toast.success('¡Agregado al carrito!');
   };
@@ -334,7 +389,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
       { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
       null,
       qty,
-      isCombo ? { variantSelections: comboSels, customizations: {}, subProductsData: comboProd } : null,
+      isCombo ? { variantSelections: comboSelsForSubmit, customizations: {}, subProductsData: comboProd } : null,
       { selectOnly: true, silent: true }
     );
     navigate('/checkout');
@@ -355,7 +410,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
     const p = new URLSearchParams();
     if (selectedSize) p.set('size', selectedSize);
     if (selectedVariant?.name) p.set('color', selectedVariant.name);
-    if (isCombo && Object.keys(comboSels).length) p.set('comboSelections', JSON.stringify(comboSels));
+    if (isCombo && product?.comboItems?.length) p.set('comboSelections', JSON.stringify(comboSelsForSubmit));
     navigate(`/editor/${product.id}${p.toString() ? `?${p}` : ''}`);
   };
 
@@ -380,36 +435,20 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
   };
 
   // ── Combo selector renderer
+  // La talla ya NO se elige aquí: es única para las 3 piezas y vive en el
+  // panel de info (ver bloque "Talla" cerca del precio). Cada tarjeta del
+  // conjunto solo pide el color de ESA pieza, que sí puede variar.
   const renderComboSelector = (index, sub, position = 'all') => {
     if (!sub) return null;
     const sel = comboSels[index] || {};
     const cfg = product.comboItems?.[index] || {};
-    const allowed = cfg.variantMapping?.allowedColors?.map(c => c.trim().toLowerCase()) || [];
-    const allVars = Array.isArray(sub.variants) ? sub.variants : [];
-    const vars = allowed.length ? allVars.filter(v => allowed.includes(v.name?.trim().toLowerCase())) : allVars;
-    const hasColors = sub.hasVariants && vars.length > 0;
-    const selVar = hasColors ? (vars.find(v => v.name === sel.color) || vars[0]) : null;
-    const cSizes = hasColors ? (selVar?.sizes || []) : (sub.mainSizes || sub.sizes || []);
+    const { vars, hasColors } = getComboVariantInfo(sub, cfg, sel.color);
 
     // Sin número: un círculo con "1/2/3" junto al nombre se leía como
     // "cantidad" (2 polos, 3 joggers...) y no como "pieza N de la caja".
     const itemLabel = (
       <div className={styles.comboItemHeader}>
         <span className={styles.comboItemName}><T>{sub.name}</T></span>
-      </div>
-    );
-
-    const sizeUI = cSizes.length > 0 && (
-      <div className={styles.selectorGroup}>
-        <span className={styles.selectorLabel}>{hasColors && selVar?.sizeLabel ? <T>{selVar.sizeLabel}</T> : t('card.talla', 'Talla')}</span>
-        <DraggableContainer className={styles.pillRow}>
-          {cSizes.map(s => (
-            <button key={s} className={`${styles.sizePill} ${sel.size === s ? styles.sizePillActive : ''}`}
-              onClick={() => setComboSels(p => ({ ...p, [index]: { ...p[index], size: s } }))}>
-              {s}
-            </button>
-          ))}
-        </DraggableContainer>
       </div>
     );
 
@@ -434,9 +473,9 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
       </div>
     );
 
-    if (position === 'top') return <>{itemLabel}{sizeUI}</>;
+    if (position === 'top') return itemLabel;
     if (position === 'bottom') return colorUI;
-    return <>{itemLabel}{sizeUI}{colorUI}</>;
+    return <>{itemLabel}{colorUI}</>;
   };
 
   // ── Render
@@ -517,9 +556,9 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
           <hr className={styles.divider} />
 
           {/* Conjunto: resumen de lo que incluye (casaca + polo + jogger...).
-              Los selectores de talla/color de cada pieza viven en la galería
-              (ver renderComboSelector); esto es solo el mapa rápido de qué
-              trae la caja, como en las páginas de bundle. */}
+              El color de cada pieza sí varía y se elige en su tarjeta dentro
+              de la galería (ver renderComboSelector); esto es solo el mapa
+              rápido de qué trae la caja, como en las páginas de bundle. */}
           {isCombo && (product.comboItems?.length > 0) && (
             <div className={styles.comboIncludes}>
               <span className={styles.selectorLabel}>
@@ -533,6 +572,30 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Talla del conjunto — UNA sola elección para las 3 piezas. Vive
+              aquí (no repetida en cada tarjeta) precisamente para que se lea
+              como "esto aplica a todo el conjunto" sin tener que explicarlo;
+              el aviso de al lado lo deja explícito para la primera visita. */}
+          {isCombo && comboSizeOptions.length > 0 && (
+            <div className={styles.selectorGroup}>
+              <span className={styles.selectorLabelRow}>
+                <span className={styles.selectorLabel}>{t('card.talla', 'Talla')}: <em>{comboSize}</em></span>
+                <span className={styles.comboSizeHint}>
+                  <T>{`Se aplica a las ${product.comboItems.length} prendas`}</T>
+                </span>
+              </span>
+              <DraggableContainer className={styles.pillRow}>
+                {comboSizeOptions.map(s => (
+                  <button key={s}
+                    className={`${styles.sizePill} ${comboSize === s ? styles.sizePillActive : ''}`}
+                    onClick={() => setComboSize(s)}>
+                    {s}
+                  </button>
+                ))}
+              </DraggableContainer>
             </div>
           )}
 
@@ -662,7 +725,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
         selectedVariant={selectedVariant}
         selectedSize={selectedSize}
         quantity={qty}
-        comboVariantSelections={comboSels}
+        comboVariantSelections={comboSelsForSubmit}
       />
 
       {showYoryoPersonalizado && (
@@ -685,7 +748,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
                   { size: selectedSize, selectedVariant: selectedVariant ?? undefined },
                   null,
                   qty,
-                  isCombo ? { variantSelections: comboSels, customizations: {}, subProductsData: comboProd } : null
+                  isCombo ? { variantSelections: comboSelsForSubmit, customizations: {}, subProductsData: comboProd } : null
                 );
                 toast.success('¡Diseño guardado y agregado al carrito!');
                 navigate('/carrito');
