@@ -136,15 +136,16 @@ async function readCheckoutIntent(intentId, context) {
 // producto que se agotó) después de agregarse al carrito se cobraba igual.
 // Reusa precioDeCatalogo (misma regla que ya usa calcularDescuentoCupon, más
 // abajo en este archivo) para no inventar una segunda fórmula de precio.
-// Alcance: ítems simples (no combo). Precio solo se exige en los NO
-// personalizados (el diseño tiene un costo aparte que no se puede
-// reconstruir aquí); el stock se revisa en ambos. Los combos quedan fuera —
-// su precio se compone de sub-productos + personalización por sub-ítem, es
-// un chequeo aparte.
+// Precio solo se exige en los NO personalizados (el diseño tiene un costo
+// aparte que no se puede reconstruir aquí); el stock se revisa en ambos.
+// Combos incluidos: un combo es un documento de productos_wala más, con su
+// propio price/salePrice/inStock de paquete (NO una suma de sus piezas —
+// comboItems solo define qué imagen mostrar, no precio ni stock propio), así
+// que se valida con el mismo criterio que un producto simple.
 async function verificarPreciosYStock(productos, lector) {
   const items = productos && typeof productos === "object" ? Object.values(productos) : [];
   for (const item of items) {
-    if (!item || item.esCombo) continue;
+    if (!item) continue;
     const productoId = String(item.productoId || "").trim();
     if (!productoId) continue;
     const nombreItem = item.producto || productoId;
