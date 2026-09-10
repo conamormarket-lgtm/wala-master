@@ -348,6 +348,45 @@ const ComboProductImage = ({
     );
   }
 
+  // Miniatura (tarjeta de catálogo/carrito/cuenta) SIN portada subida a mano
+  // ni diseño configurado: antes caía a la misma fila horizontal que usa la
+  // ficha de producto -pensada para un espacio ANCHO-, aplastada dentro de
+  // una tarjeta alta y angosta (aspect-ratio 3/4). Las fotos quedaban chicas
+  // y arrinconadas arriba, con un vacío enorme debajo. Este collage vertical
+  // (una pieza grande arriba + el resto abajo) sí está pensado para ese
+  // espacio, sin necesitar que el admin suba una foto de portada.
+  if (isThumbnail) {
+    const collageItems = comboItems
+      .map((item, index) => ({ item, index, url: itemImageUrls[index], crop: itemCropData[index] }))
+      .filter(c => c.url)
+      .slice(0, 3);
+
+    if (collageItems.length > 0) {
+      return (
+        <div ref={containerRef} className={`${styles.container} ${styles.comboThumbCollage} ${className}`}>
+          {collageItems.map((c, i) => (
+            <div
+              key={`${c.item.productId}-${c.index}`}
+              className={`${styles.comboThumbCell} ${(collageItems.length <= 2 || i === 0) ? styles.comboThumbHero : ''}`}
+            >
+              <OptimizedImage
+                src={toThumbnailImageUrl(c.url)}
+                alt={`${comboProduct?.name || 'Combo'} - producto ${c.index + 1}`}
+                className={styles.comboThumbImage}
+                loading={isAboveFold ? "eager" : "lazy"}
+                fetchPriority={isAboveFold ? "high" : "auto"}
+                showSkeleton={false}
+                seamless={true}
+                fadeInDuration={200}
+                cropData={c.crop}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    }
+  }
+
   const row = (
     <div
       ref={containerRef}
