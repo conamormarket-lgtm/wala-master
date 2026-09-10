@@ -51,22 +51,27 @@ const buildImages = (product, variant, isCombo, comboSels, comboProd) => {
       const sub = comboProd[idx];
       const sel = comboSels?.[idx];
       if (!sub) return;
+      // comboItemIndex: a qué pieza pertenece esta foto. Se usa para saltar
+      // directo a la foto de la pieza que el cliente acaba de recolorear
+      // (ver el useEffect de imgIdx más abajo) en vez de siempre volver a
+      // la portada -que es fija y no puede reflejar ese cambio-.
+      const tag = { comboItemIndex: Number(idx) };
       const cc = sel?.color?.trim().toLowerCase() || '';
       const mv = cc && sub.variants?.find(v => v.name?.trim().toLowerCase() === cc);
       if (mv) {
         (sub.customizationViews || []).forEach(view => {
           const k = Object.keys(view.imagesByColor || {}).find(k => k.trim().toLowerCase() === cc);
-          if (k) push(view.imagesByColor[k]);
+          if (k) push(view.imagesByColor[k], tag);
           if (view.hasBackSide) {
             const bk = Object.keys(view.backSide?.imagesByColor || {}).find(k => k.trim().toLowerCase() === cc);
-            if (bk) push(view.backSide.imagesByColor[bk]);
+            if (bk) push(view.backSide.imagesByColor[bk], tag);
           }
         });
-        (mv.galleryImages || []).forEach(u => push(u));
-        if (!mv.galleryImages?.length && mv.imageUrl) push(mv.imageUrl);
+        (mv.galleryImages || []).forEach(u => push(u, tag));
+        if (!mv.galleryImages?.length && mv.imageUrl) push(mv.imageUrl, tag);
       } else {
-        (sub.images || []).forEach(u => push(u));
-        if (sub.mainImage) push(sub.mainImage);
+        (sub.images || []).forEach(u => push(u, tag));
+        if (sub.mainImage) push(sub.mainImage, tag);
       }
     });
     (product?.images || []).forEach(u => push(u));
@@ -239,6 +244,11 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
   const secsRef = useRef(0);
   const lastVariantRef = useRef(null);
+  // Qué pieza del combo cambió de color por última vez (índice en
+  // product.comboItems), para saltar a SU foto en vez de siempre volver a
+  // la portada -fija, no puede reflejar el cambio- (ver el useEffect de
+  // imgIdx más abajo).
+  const lastChangedComboItemRef = useRef(null);
   const queryClient = useQueryClient();
 
   const isCombo = isComboProduct(product);
@@ -295,12 +305,19 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
   useEffect(() => { setImgIdx(0); }, [selectedVariant?.id, selectedVariant?.name]);
   // Cambiar el color de una pieza reordena/reemplaza las fotos de la
-  // galería (buildImages se recalcula con el nuevo color) — sin esto, la
-  // miniatura que quedaba "activa" podía terminar apuntando a una foto
-  // distinta a la que el cliente venía mirando. Vuelve a la portada, igual
-  // que hace un producto normal al cambiar de color.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (isCombo) setImgIdx(0); }, [isCombo, JSON.stringify(comboSels)]);
+  // galería (buildImages se recalcula con el nuevo color, ver `images` más
+  // abajo). Si el cliente acaba de tocar un swatch, salta directo a la foto
+  // de ESA pieza -igual que en un producto individual, donde cambiar de
+  // color muestra esa foto de inmediato-, en vez de quedarse en la portada
+  // (fija, no puede reflejar el cambio) o en un índice que ya no corresponde
+  // a nada. Sin cambio de color de por medio (carga inicial), vuelve a la
+  // portada.
+  useEffect(() => {
+    if (!isCombo) return;
+    const targetItem = lastChangedComboItemRef.current;
+    const foundIdx = targetItem != null ? images.findIndex(img => img.comboItemIndex === targetItem) : -1;
+    setImgIdx(foundIdx >= 0 ? foundIdx : 0);
+  }, [isCombo, images]);
   useEffect(() => { 
     if (product?.id) {
       recordProductClick(product.id);
@@ -589,7 +606,10 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
                     return (
                       <button key={v.id || v.name}
                         className={`${styles.swatch} ${sel.color === v.name ? styles.swatchActive : ''}`}
-                        onClick={() => setComboSels(p => ({ ...p, [i]: { ...p[i], color: v.name } }))}
+                        onClick={() => {
+                          lastChangedComboItemRef.current = i;
+                          setComboSels(p => ({ ...p, [i]: { ...p[i], color: v.name } }));
+                        }}
                         title={v.name}>
                         {v.imageUrl
                           ? <OptimizedImage src={toDirectImageUrl(v.imageUrl)} cropData={v.thumbnailCrop?.percentages} alt={v.name} className={styles.swatchImg} />
