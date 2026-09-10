@@ -36,7 +36,7 @@ const MisCuponesPage = () => {
   const [copiado, setCopiado] = useState(null);
 
   const cargar = useCallback(async () => {
-    if (!user?.uid) { setCargando(false); return; }
+    if (!user?.uid) { setCupones([]); setCargando(false); return; }
     setCargando(true);
     const { data, error: err } = await getMisCupones(user.uid);
     setCupones(data);

@@ -1,5 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { onAuthChange } from '../services/firebase/auth';
 // eslint-disable-next-line no-unused-vars
 import { getDocument, setDocument } from '../services/firebase/firestore';
@@ -8,6 +9,12 @@ import { LEGACY_USERS_COLLECTION, PORTAL_USERS_COLLECTION } from '../constants/u
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../services/firebase/config';
+
+// Claves de localStorage que guardan datos personales del comprador (nombre,
+// DNI, teléfono, dirección) para autocompletar el checkout la próxima vez.
+// Si no se borran al cerrar sesión, en un dispositivo compartido la SIGUIENTE
+// persona que entra ve los datos de la anterior precargados en el formulario.
+const CHECKOUT_PII_KEYS = ['checkout_customer_info', 'landing_checkout_customer_info'];
 
 // Cuánto se espera a que Firebase diga quién entra antes de seguir sin sesión.
 // Generoso a propósito: en una red mala la comprobación del token tarda unos
@@ -33,6 +40,34 @@ export const AuthProvider = ({ children }) => {
   // ¿Ha llegado ya la primera respuesta de Firebase sobre quién entra?
   const sesionResuelta = useRef(false);
   const [activeWeeklyChallenge, setActiveWeeklyChallenge] = useState(null);
+  const queryClient = useQueryClient();
+  const prevUidRef = useRef(undefined);
+
+  // Al cerrar sesión (o cambiar de cuenta en el mismo navegador): limpia el
+  // caché de React Query y los datos de checkout guardados en localStorage.
+  // Sin esto, con refetchOnMount/WindowFocus/Reconnect apagados (App.jsx) y
+  // staleTime de 1h, cualquier dato que React Query ya tenía en memoria (o
+  // el nombre/DNI/teléfono/dirección que el checkout guarda para autocompletar
+  // la próxima compra) se lo queda sirviendo tal cual a la SIGUIENTE persona
+  // que entre en ese mismo navegador — en un equipo compartido, eso es ver
+  // los datos personales de otro usuario. Mismo patrón de detección
+  // (comparar uid anterior vs. actual) que ya usan CartContext/WishlistContext.
+  useEffect(() => {
+    const uid = user?.uid;
+    const prevUid = prevUidRef.current;
+    prevUidRef.current = uid;
+    if (prevUid === undefined) return; // primer render: nada que limpiar
+    const huboLogout = !!prevUid && !uid;
+    const cambioDeCuenta = !!prevUid && !!uid && prevUid !== uid;
+    if (huboLogout || cambioDeCuenta) {
+      queryClient.clear();
+      try {
+        CHECKOUT_PII_KEYS.forEach((k) => localStorage.removeItem(k));
+      } catch (_) {
+        // localStorage puede no estar disponible (modo privado, etc.) — no bloquea el logout.
+      }
+    }
+  }, [user, queryClient]);
 
   useEffect(() => {
     if (!db) return;
