@@ -385,113 +385,6 @@
   border: 1px solid rgba(243, 156, 18, 0.3);
 }
 
-.mobileNotifToggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  margin-top: 0.75rem;
-  padding: 0.75rem 1rem;
-  background-color: var(--blanco);
-  border: 1px solid var(--gris-borde, #e5e7eb);
-  border-radius: var(--radio-grande, 16px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-  cursor: pointer;
-  text-align: left;
-}
-
-.mobileNotifToggle svg:first-child {
-  color: #9ca3af;
-  flex-shrink: 0;
-}
-
-.mobileNotifBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: #e74c3c;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.mobileNotifChevron {
-  margin-left: auto;
-  color: #9ca3af;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-}
-
-.mobileNotifChevronOpen {
-  transform: rotate(180deg);
-}
-
-.mobileNotifList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background-color: var(--blanco);
-  border: 1px solid var(--gris-borde, #e5e7eb);
-  border-radius: var(--radio-grande, 16px);
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.mobileNotifMarkAll {
-  align-self: flex-end;
-  border: none;
-  background: none;
-  color: var(--primary-color, #8b5cf6);
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0.25rem;
-}
-
-.mobileNotifEmpty {
-  text-align: center;
-  color: #6b7280;
-  padding: 1rem 0;
-  margin: 0;
-  font-size: 0.85rem;
-}
-
-.mobileNotifItem {
-  padding: 0.65rem 0.75rem;
-  background-color: var(--gris-fondo, #f8fafc);
-  border-radius: 10px;
-  border: 1px solid var(--gris-borde, #eee);
-}
-
-.mobileNotifItemUnread {
-  background-color: rgba(139, 92, 246, 0.06);
-  border-color: rgba(139, 92, 246, 0.25);
-  cursor: pointer;
-}
-
-.mobileNotifItem h4 {
-  margin: 0 0 0.2rem;
-  font-size: 0.85rem;
-  color: #111827;
-}
-
-.mobileNotifItem p {
-  margin: 0;
-  font-size: 0.78rem;
-  color: #6b7280;
-  line-height: 1.3;
-}
-
 /* ── Selector móvil (reemplaza al sidebar en pantallas chicas) ──
    Antes un <select> nativo: funcionaba, pero el popup de opciones lo pinta
    el sistema operativo (gris, sin radios ni tipografía del sitio) y
@@ -821,10 +714,8 @@
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
 }
 
-/* ── Resumen de cuenta en móvil (identidad + monedas + notificaciones) ── */
-:global([data-theme='dark']) .mobileSummaryIdentity,
-:global([data-theme='dark']) .mobileNotifToggle,
-:global([data-theme='dark']) .mobileNotifList {
+/* ── Resumen de cuenta en móvil (identidad + monedas) ── */
+:global([data-theme='dark']) .mobileSummaryIdentity {
   background-color: var(--color-surface);
   border-color: var(--color-border);
 }
@@ -833,15 +724,11 @@
   border-color: var(--color-border);
 }
 
-:global([data-theme='dark']) .mobileSummaryName,
-:global([data-theme='dark']) .mobileNotifToggle,
-:global([data-theme='dark']) .mobileNotifItem h4 {
+:global([data-theme='dark']) .mobileSummaryName {
   color: var(--color-text);
 }
 
-:global([data-theme='dark']) .mobileSummaryEmail,
-:global([data-theme='dark']) .mobileNotifEmpty,
-:global([data-theme='dark']) .mobileNotifItem p {
+:global([data-theme='dark']) .mobileSummaryEmail {
   color: var(--color-text-muted);
 }
 
@@ -849,18 +736,4 @@
   background-color: rgba(243, 156, 18, 0.16);
   color: #fbbf24;
   border-color: rgba(243, 156, 18, 0.4);
-}
-
-:global([data-theme='dark']) .mobileNotifChevron {
-  color: var(--color-text-muted);
-}
-
-:global([data-theme='dark']) .mobileNotifItem {
-  background-color: var(--color-surface-2);
-  border-color: var(--color-border);
-}
-
-:global([data-theme='dark']) .mobileNotifItemUnread {
-  background-color: var(--primary-light);
-  border-color: var(--primary-color);
 }

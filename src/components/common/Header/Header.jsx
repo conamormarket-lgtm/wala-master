@@ -678,10 +678,7 @@ const Header = () => {
 
         <div className={styles.actions}>
           <div className={styles.walletsContainer}>
-            {/* Monedas: lo único que queda en la fila de acciones del header
-                móvil (a pedido, estilo AliExpress) — cuenta, notificaciones,
-                favoritos y carrito se ven en desktop, pero en móvil viven en
-                "Mi cuenta" (o su propia pestaña del BottomNav, ver Carrito). */}
+            {/* Monedas: visibles en desktop Y en móvil (antes solo escritorio). */}
             {user && (
               <div className={styles.walletsDisplay}>
                 {/* Monedas: la única billetera. */}
@@ -714,13 +711,17 @@ const Header = () => {
 
           {user && (
             <NotificationTray
-              className={styles.mobileHiddenAction}
               isOpen={activeDropdown === 'notificaciones'}
               isBlocked={Boolean(activeDropdown) && activeDropdown !== 'notificaciones'}
               onToggle={(e) => handleMobilePopupClick(e, 'notificaciones')}
             />
           )}
 
+          {/* Cuenta es el único icono que sigue sin mostrarse en el header
+              móvil: ya tiene su propia pestaña en el BottomNav ("Mi
+              cuenta"), así que duplicarlo acá sería el mismo destino dos
+              veces. Notificaciones/favoritos/carrito sí volvieron: esos NO
+              tenían otro acceso igual de directo en móvil. */}
           {!isNativeApp && (
           <div className={`${styles.accountDropdownContainer} ${styles.mobileHiddenAction} ${activeDropdown === 'cuenta' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'cuenta' ? styles.forceHideHover : ''}`}>
             <Link to="/cuenta" className={styles.iconButton} onClick={closeDropdowns} aria-label="Mi cuenta">
@@ -872,7 +873,7 @@ const Header = () => {
           </div>
           )}
 
-          <div className={`${styles.accountDropdownContainer} ${styles.mobileHiddenAction} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`}>
+          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`}>
             <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} onClick={closeDropdowns} aria-label="Favoritos">
               <Heart strokeWidth={1.5} className={styles.icon} />
               {user && wishlistItems.length > 0 && (
@@ -984,7 +985,7 @@ const Header = () => {
             </div>
           </div>
 
-          <div className={`${styles.accountDropdownContainer} ${styles.mobileHiddenAction} ${activeDropdown === 'carrito' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'carrito' ? styles.forceHideHover : ''}`}>
+          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'carrito' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'carrito' ? styles.forceHideHover : ''}`}>
             <Link to="/carrito" className={styles.iconButton} onClick={closeDropdowns} aria-label="Carrito de compras">
               <ShoppingBag strokeWidth={1.5} className={styles.icon} />
               {cartItemsCount > 0 && (

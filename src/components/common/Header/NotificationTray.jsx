@@ -1,8 +1,23 @@
 import React, { useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Check } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { useNotifications } from '../../../contexts/NotificationsContext';
 import styles from './Header.module.css';
 import { T } from '../../../i18n/useTranslatedText';
+
+// `createdAt` llega como Timestamp de Firestore (server-generado): tiene
+// .toDate(). Se tolera también un Date/ISO por si algún día se escribe
+// desde otro lado, y cualquier cosa rara devuelve '' en vez de romper.
+const haceCuanto = (createdAt) => {
+  try {
+    const fecha = createdAt?.toDate ? createdAt.toDate() : (createdAt ? new Date(createdAt) : null);
+    if (!fecha || Number.isNaN(fecha.getTime())) return '';
+    return formatDistanceToNow(fecha, { addSuffix: true, locale: es });
+  } catch {
+    return '';
+  }
+};
 
 const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, className = '' }) => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, requestPermission } = useNotifications();
@@ -21,53 +36,50 @@ const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, classNa
         aria-label="Notificaciones"
         aria-expanded={isOpen}
         onClick={onToggle}
-        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
       >
         <Bell strokeWidth={1.5} className={styles.icon} />
         {unreadCount > 0 && (
-          <span className={styles.cartBadge} style={{ backgroundColor: '#e74c3c' }}>{unreadCount}</span>
+          <span className={styles.cartBadge}>{unreadCount > 9 ? '9+' : unreadCount}</span>
         )}
       </button>
 
       <div className={`${styles.accountPopup} ${styles.cartPopupWidth} ${styles.mobileCenteredPopup}`}>
-        <div className={styles.accountPopupContent} style={{ padding: '0.5rem', maxHeight: '400px', overflowY: 'auto' }}>
-          {/* Separador del tema: --color-border se oscurece en modo noche. */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
-            {/* Título legible en oscuro (antes heredaba; lo fijamos al texto del tema). */}
-            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-text)' }}><T>Notificaciones</T></h3>
+        <div className={styles.notifPanel}>
+          <div className={styles.notifHeader}>
+            <h3 className={styles.notifHeaderTitle}><T>Notificaciones</T></h3>
             {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                style={{ background: 'none', border: 'none', color: 'var(--primary-color, #8b5cf6)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                Marcar todas como leídas
+              <button type="button" className={styles.notifMarkAll} onClick={markAllAsRead}>
+                <Check size={13} strokeWidth={2.5} aria-hidden="true" />
+                <T>Marcar todas</T>
               </button>
             )}
           </div>
 
           {notifications.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '1rem 0' }}><T>No tienes notificaciones recientes.</T></p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {notifications.slice(0, 10).map((notif) => (
-                <div 
-                  key={notif.id} 
-                  onClick={() => { if (!notif.read) markAsRead(notif.id); }}
-                  style={{
-                    padding: '0.75rem',
-                    // Superficies del tema: leída = base, sin leer = elevada (se oscurecen en noche).
-                    backgroundColor: notif.read ? 'var(--color-surface)' : 'var(--color-surface-2)',
-                    borderRadius: '8px',
-                    border: '1px solid var(--color-border)',
-                    cursor: notif.read ? 'default' : 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                >
-                  <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', color: 'var(--color-text)' }}>{notif.title}</h4>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>{notif.body}</p>
-                </div>
-              ))}
+            <div className={styles.notifEmpty}>
+              <Bell size={28} strokeWidth={1.25} aria-hidden="true" />
+              <p><T>No tienes notificaciones recientes.</T></p>
             </div>
+          ) : (
+            <ul className={styles.notifList}>
+              {notifications.slice(0, 10).map((notif) => {
+                const cuando = haceCuanto(notif.createdAt);
+                return (
+                  <li
+                    key={notif.id}
+                    className={`${styles.notifItem} ${notif.read ? '' : styles.notifItemUnread}`}
+                    onClick={() => { if (!notif.read) markAsRead(notif.id); }}
+                  >
+                    {!notif.read && <span className={styles.notifDot} aria-hidden="true" />}
+                    <div className={styles.notifItemBody}>
+                      <h4 className={styles.notifItemTitle}>{notif.title}</h4>
+                      <p className={styles.notifItemText}>{notif.body}</p>
+                      {cuando && <span className={styles.notifItemTime}>{cuando}</span>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
       </div>

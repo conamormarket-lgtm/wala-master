@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useCart } from '../../../contexts/CartContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import styles from './BottomNav.module.css';
 import { T } from '../../../i18n/useTranslatedText';
@@ -11,8 +10,6 @@ const navLinkClass = ({ isActive }) =>
 
 const BottomNav = () => {
   const { user, isAdmin } = useAuth();
-  const { getTotalItems } = useCart();
-  const cartItemsCount = getTotalItems();
   const location = useLocation();
   const { isFooterVisible } = useLayoutContext();
 
@@ -56,23 +53,6 @@ const BottomNav = () => {
           </svg>
         </span>
         <span className={styles.label}>Juegos</span>
-      </NavLink>
-      {/* Carrito: antes solo vivía como icono en el header de escritorio. En
-          móvil el header se simplificó a logo + monedas (estilo AliExpress),
-          así que el carrito necesitaba su propio lugar — la pestaña "Cesta"
-          de ese mismo patrón. */}
-      <NavLink to="/carrito" className={navLinkClass} end>
-        <span className={styles.icon} aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-            <path d="M3 6h18" />
-            <path d="M16 10a4 4 0 0 1-8 0" />
-          </svg>
-          {cartItemsCount > 0 && (
-            <span className={styles.badge}>{cartItemsCount > 9 ? '9+' : cartItemsCount}</span>
-          )}
-        </span>
-        <span className={styles.label}><T>Carrito</T></span>
       </NavLink>
       <NavLink to="/cuenta" className={navLinkClass} end={false}>
         <span className={styles.icon} aria-hidden="true">

@@ -731,6 +731,145 @@
   color: var(--gris-texto-principal);
 }
 
+/* ── Panel de notificaciones (NotificationTray) ───────────────────────────
+   Antes todo era style={{}} en línea: funcionaba, pero no dejaba dar el
+   mismo pulido que el resto de popups del header (cart/favoritos/cuenta).
+   Se pasa a clases + se suma hora relativa y un punto de "no leída", en vez
+   de depender solo del tinte de fondo para distinguir estados. */
+.notifPanel {
+  padding: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notifHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--color-border, var(--gris-borde));
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.notifHeaderTitle {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-text, var(--gris-texto-principal));
+}
+
+.notifMarkAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--primary-color, #8b5cf6);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2rem;
+  white-space: nowrap;
+}
+
+.notifMarkAll:hover {
+  text-decoration: underline;
+}
+
+.notifEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  color: var(--color-text-muted, var(--gris-texto-secundario));
+}
+
+.notifEmpty svg {
+  opacity: 0.5;
+}
+
+.notifEmpty p {
+  margin: 0;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.notifList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notifItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.7rem 0.75rem;
+  background-color: var(--color-surface, #fff);
+  border-radius: 10px;
+  border: 1px solid var(--color-border, var(--gris-borde));
+  cursor: default;
+  transition: background-color 0.2s ease;
+}
+
+/* Sin leer: superficie elevada + punto violeta + título con más peso — tres
+   señales en vez de depender solo del tinte de fondo (poco notorio a
+   simple vista, sobre todo en modo noche). */
+.notifItemUnread {
+  background-color: var(--color-surface-2, #f8fafc);
+  cursor: pointer;
+}
+
+.notifItemUnread:hover {
+  background-color: var(--color-hover, var(--gris-hover));
+}
+
+.notifDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 0.35rem;
+  border-radius: 50%;
+  background: var(--primary-color, #8b5cf6);
+}
+
+.notifItemBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.notifItemTitle {
+  margin: 0 0 0.2rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--color-text, var(--gris-texto-principal));
+}
+
+.notifItemUnread .notifItemTitle {
+  font-weight: 700;
+}
+
+.notifItemText {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, var(--gris-texto-secundario));
+  line-height: 1.3;
+}
+
+.notifItemTime {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--color-text-muted, var(--gris-texto-secundario));
+  opacity: 0.8;
+}
+
 .secondaryButton {
   background-color: transparent;
   /* Texto y borde del tema: se aclaran/oscurecen en modo noche para no

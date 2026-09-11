@@ -12,12 +12,10 @@ import {
   Heart,
   Calendar,
   LogOut,
-  Bell,
   ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useNotifications } from '../contexts/NotificationsContext';
 import { logout } from '../services/firebase/auth';
 import CuentaLoginPrompt from '../components/CuentaLoginPrompt';
 import PedidosLoginPrompt from '../components/PedidosLoginPrompt/PedidosLoginPrompt';
@@ -37,12 +35,6 @@ const CuentaLayout = () => {
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
-  // Las monedas ya no tienen icono propio en el header móvil (ver
-  // Header.jsx): el resumen completo vive acá. El bloque de notificaciones
-  // empieza cerrado para no empujar el menú de cuenta hacia abajo apenas se
-  // entra a la página — la campana del header sigue siendo el acceso rápido.
-  const [notifsAbiertas, setNotifsAbiertas] = useState(false);
 
   // Selector de cuenta en móvil: antes era un <select> nativo — funcional,
   // pero el popup de opciones lo pinta el sistema operativo (gris, sin
@@ -180,12 +172,10 @@ const CuentaLayout = () => {
             </button>
           </aside>
 
-          {/* Resumen de cuenta en móvil: identidad + monedas + notificaciones.
-              Antes vivían como iconos sueltos en el header (avatar, campana,
-              billetera) — cinco piezas distintas amontonadas en ~110px de
-              ancho. Se mudan acá, a la página a la que esos iconos ya
-              llevaban, y el header móvil queda con solo Cuenta/Favoritos/
-              Carrito. */}
+          {/* Resumen de cuenta en móvil: identidad + monedas. Las
+              notificaciones volvieron a vivir solo en la campana del header
+              (ver NotificationTray) — tenerlas también acá era el mismo
+              dato duplicado en dos lugares. */}
           <div className={styles.mobileSummary}>
             <div className={styles.mobileSummaryIdentity}>
               {avatarUrl ? (
@@ -201,49 +191,6 @@ const CuentaLayout = () => {
                 <span aria-hidden="true">🪙</span> {Math.floor(activeMainCoins || 0)}
               </div>
             </div>
-
-            <button
-              type="button"
-              className={styles.mobileNotifToggle}
-              onClick={() => setNotifsAbiertas((v) => !v)}
-              aria-expanded={notifsAbiertas}
-            >
-              <Bell size={16} strokeWidth={1.75} aria-hidden="true" />
-              <span>{t('account.notificaciones', 'Notificaciones')}</span>
-              {unreadCount > 0 && (
-                <span className={styles.mobileNotifBadge}>{unreadCount}</span>
-              )}
-              <ChevronDown
-                size={16}
-                strokeWidth={2}
-                aria-hidden="true"
-                className={`${styles.mobileNotifChevron} ${notifsAbiertas ? styles.mobileNotifChevronOpen : ''}`}
-              />
-            </button>
-
-            {notifsAbiertas && (
-              <div className={styles.mobileNotifList}>
-                {unreadCount > 0 && (
-                  <button type="button" className={styles.mobileNotifMarkAll} onClick={markAllAsRead}>
-                    {t('account.marcarLeidas', 'Marcar todas como leídas')}
-                  </button>
-                )}
-                {notifications.length === 0 ? (
-                  <p className={styles.mobileNotifEmpty}>{t('account.sinNotificaciones', 'No tienes notificaciones recientes.')}</p>
-                ) : (
-                  notifications.slice(0, 10).map((notif) => (
-                    <div
-                      key={notif.id}
-                      className={`${styles.mobileNotifItem} ${notif.read ? '' : styles.mobileNotifItemUnread}`}
-                      onClick={() => { if (!notif.read) markAsRead(notif.id); }}
-                    >
-                      <h4>{notif.title}</h4>
-                      <p>{notif.body}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
           </div>
 
           {/* Móvil (<900px): el sidebar se reemplaza por este selector agrupado
