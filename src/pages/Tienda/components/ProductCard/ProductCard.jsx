@@ -130,6 +130,11 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient, product.id, product]);
 
+  // Long-press sobre la tarjeta (es un link con una foto adentro) dispara el
+  // menu contextual nativo del navegador y deja el tap-to-click colgado:
+  // ver el mismo fix en PremiumProductCard.jsx para el detalle completo.
+  const handleContextMenu = useCallback((e) => { e.preventDefault(); }, []);
+
   const calculateDiscount = (regular, sale) => {
     if (!regular || !sale || regular <= sale) return 0;
     return Math.round(((regular - sale) / regular) * 100);
@@ -193,6 +198,7 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
       className={styles.card}
       onMouseEnter={handlePrefetch}
       onTouchStart={handlePrefetch}
+      onContextMenu={handleContextMenu}
     >
       <div className={`${styles.imageContainer} ${isCombo ? styles.isCombo : styles.isNormal}`} ref={imageContainerRef} style={brandBgStyle}>
         {isCombo ? (

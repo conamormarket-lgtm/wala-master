@@ -144,6 +144,17 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient, product.id, product]);
 
+  // Mantener presionada la tarjeta (long-press) dispara el menu contextual
+  // nativo del navegador -"Abrir en pestaña nueva"/"Guardar imagen"- porque
+  // es un link con una foto adentro. En Chrome con emulacion tactil (y en
+  // Android real) ese gesto deja el tap-to-click "colgado": el navegador
+  // entra en modo "esto es un long-press, no un tap" y el click que
+  // normalmente navegaria nunca llega a dispararse, dejando la tarjeta -y a
+  // veces el resto de la fila- sin responder a nada que no sea scroll hasta
+  // refrescar. Se suprime el menu contextual en toda la tarjeta para que un
+  // long-press no tenga nada que abrir.
+  const handleContextMenu = useCallback((e) => { e.preventDefault(); }, []);
+
   const isCombo = isComboProduct(product);
   // Piezas a mostrar en el hover-reveal del combo (ver overlay más abajo).
   // Se cortan a 3 + "+N" en vez de listarlas todas para que quepan sin
@@ -240,6 +251,7 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
       className={styles.card}
       onMouseEnter={handlePrefetch}
       onTouchStart={handlePrefetch}
+      onContextMenu={handleContextMenu}
       variants={variantsEntrada}
       initial={reducido ? 'show' : 'hidden'}
       whileInView="show"
