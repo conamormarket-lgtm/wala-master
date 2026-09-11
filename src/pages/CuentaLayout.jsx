@@ -1,24 +1,12 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import {
-  User,
-  Package,
-  Truck,
-  Gift,
-  Ticket,
-  Trophy,
-  Users,
-  Sparkles,
-  Heart,
-  Calendar,
-  LogOut,
-  ChevronDown,
-} from 'lucide-react';
+import { LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { logout } from '../services/firebase/auth';
 import CuentaLoginPrompt from '../components/CuentaLoginPrompt';
 import PedidosLoginPrompt from '../components/PedidosLoginPrompt/PedidosLoginPrompt';
+import { useCuentaNavGroups } from './cuenta/useCuentaNavGroups';
 import styles from './CuentaPage.module.css';
 
 // Iniciales (1-2 letras) para el avatar del sidebar cuando no hay foto —
@@ -59,33 +47,16 @@ const CuentaLayout = () => {
   // píldora, sin jerarquía — "Mis Cupones" pesaba visualmente igual que
   // "Mis Pedidos"). Un sidebar agrupado es el patrón de un panel de cuenta
   // "serio" (Stripe/Notion/Linear) en vez de un segmented-control de app.
-  const navGroups = useMemo(() => ([
-    {
-      label: t('account.grupoCuenta', 'Cuenta'),
-      items: [
-        { to: '/cuenta/perfil', label: t('account.perfil', 'Mi Perfil'), icon: User },
-        { to: '/cuenta/pedidos', label: t('account.misPedidos', 'Mis Pedidos'), icon: Package },
-        { to: '/cuenta/rastreo', label: t('account.rastreo', 'Rastreo del Pedido'), icon: Truck },
-      ],
-    },
-    {
-      label: t('account.grupoRecompensas', 'Recompensas'),
-      items: [
-        { to: '/cuenta/catalogo', label: t('account.catalogo', 'Catálogo Recompensas'), icon: Gift },
-        { to: '/cuenta/cupones', label: t('account.cupones', 'Mis Cupones'), icon: Ticket },
-        { to: '/cuenta/misiones', label: t('account.misiones', 'Misiones'), icon: Trophy },
-        { to: '/cuenta/referidos', label: t('account.referidos', 'Mis Referidos'), icon: Users },
-      ],
-    },
-    {
-      label: t('account.grupoPersonalizacion', 'Personalización'),
-      items: [
-        { to: '/cuenta/creaciones', label: t('account.creaciones', 'Mis Creaciones'), icon: Sparkles },
-        { to: '/cuenta/wishlist', label: t('account.wishlist', 'Lista de Deseos'), icon: Heart },
-        { to: '/cuenta/fechas-importantes', label: t('account.fechas', 'Fechas Importantes'), icon: Calendar },
-      ],
-    },
-  ]), [t]);
+  // Datos compartidos con CuentaResumenPage (la grilla de accesos directos
+  // que ve el usuario apenas entra a /cuenta) — ver useCuentaNavGroups.
+  const rawNavGroups = useCuentaNavGroups();
+  const navGroups = useMemo(
+    () => rawNavGroups.map((group) => ({
+      label: t(group.label, group.labelFallback),
+      items: group.items.map((item) => ({ ...item, label: t(item.labelKey, item.label) })),
+    })),
+    [rawNavGroups, t]
+  );
 
   // Opción resaltada en el botón del selector móvil: la página actual.
   const itemActual = useMemo(

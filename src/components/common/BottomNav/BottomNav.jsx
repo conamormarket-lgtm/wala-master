@@ -8,10 +8,25 @@ import { T } from '../../../i18n/useTranslatedText';
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.link} ${styles.linkActive}` : styles.link;
 
+// Iniciales (1-2 letras) para el avatar cuando no hay foto — mismo criterio
+// que ya usan Header.jsx y CuentaLayout.jsx, para que se vea igual en toda
+// la app.
+const initialsOf = (name) => {
+  const clean = String(name || '').trim();
+  if (!clean) return '?';
+  return clean.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+};
+
 const BottomNav = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, userProfile, isAdmin } = useAuth();
   const location = useLocation();
   const { isFooterVisible } = useLayoutContext();
+
+  // Misma fuente de verdad que el avatar del header/cuenta: foto propia
+  // (avatarConfig, el editor de avatar) o, si no eligió una, la foto de
+  // Google/etc. con la que inició sesión.
+  const avatarUrl = userProfile?.avatarConfig?.avatarUrl || user?.photoURL || null;
+  const displayName = userProfile?.displayName || userProfile?.nombre || user?.displayName || user?.email?.split('@')[0] || '';
 
   if (!isFooterVisible) return null;
 
@@ -56,10 +71,18 @@ const BottomNav = () => {
       </NavLink>
       <NavLink to="/cuenta" className={navLinkClass} end={false}>
         <span className={styles.icon} aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
+          {user ? (
+            avatarUrl ? (
+              <img src={avatarUrl} alt="" className={styles.avatarImg} referrerPolicy="no-referrer" />
+            ) : (
+              <span className={styles.avatarFallback}>{initialsOf(displayName)}</span>
+            )
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          )}
         </span>
         <span className={styles.label}><T>Mi cuenta</T></span>
       </NavLink>

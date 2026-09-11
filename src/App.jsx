@@ -213,6 +213,7 @@ const PagoRapidoPage = lazy(() => import('./pages/PagoRapidoPage'));
 
 // ── Cuenta ────────────────────────────────────────────────────────────────────
 const CuentaLayout = lazy(() => import('./pages/CuentaLayout'));
+const CuentaResumenPage = lazy(() => import('./pages/cuenta/CuentaResumenPage'));
 const PerfilPage = lazy(() => import('./pages/cuenta/PerfilPage'));
 const CuentaPedidosPage = lazy(() => import('./pages/cuenta/CuentaPedidosPage'));
 const CuentaCompraDetallePage = lazy(() => import('./pages/cuenta/CuentaCompraDetallePage'));
@@ -368,7 +369,12 @@ function App() {
                                   <Route path="/pedidos" element={<Navigate to="/cuenta/pedidos" replace />} />
 
                                   <Route path="/cuenta" element={<CuentaLayout />}>
-                                    <Route index element={<Navigate to="/cuenta/pedidos" replace />} />
+                                    {/* Antes redirigía directo a /cuenta/pedidos, saltándose cualquier
+                                        vistazo general. Ahora es una grilla de accesos directos a TODAS
+                                        las secciones (perfil, pedidos, recompensas, etc.) — mismo patrón
+                                        que el "Cuenta" de AliExpress: al entrar ves todas las opciones,
+                                        y cada una te lleva de un toque a su página exacta. */}
+                                    <Route index element={<CuentaResumenPage />} />
                                     <Route path="perfil" element={<PerfilPage />} />
                                     <Route path="pedidos" element={<CuentaPedidosPage />} />
                                     <Route path="pedidos/:id" element={<CuentaCompraDetallePage />} />

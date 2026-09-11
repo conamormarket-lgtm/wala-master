@@ -1,0 +1,102 @@
+/* ═══════════════════════════════════════════
+   RESUMEN DE CUENTA — grilla de accesos directos
+   (landing de /cuenta, estilo "Cuenta" de AliExpress)
+   ═══════════════════════════════════════════ */
+
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.groupLabel {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, var(--gris-texto-secundario, #6b7280));
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 0.4rem;
+  border-radius: var(--radio-grande, 16px);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, var(--gris-borde, #e5e7eb));
+  text-decoration: none;
+  text-align: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.tile:hover {
+  background: var(--color-hover, var(--gris-hover, #f5f3ff));
+  border-color: var(--primary-color, #8b5cf6);
+}
+
+.tile:active {
+  transform: scale(0.97);
+}
+
+.tileIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-surface-2, #f3f0ff);
+  color: var(--primary-color, #8b5cf6);
+}
+
+.tileLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text, var(--gris-texto-principal, #1f2937));
+  /* Hasta 2 líneas, sin desbordar la tarjeta — algunas etiquetas
+     ("Catálogo Recompensas", "Rastreo del Pedido") no entran en una sola. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ≥600px: la grilla puede respirar más — más columnas, tiles más grandes. */
+@media (min-width: 600px) {
+  .grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+  }
+
+  .tileIcon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .tileLabel {
+    font-size: 0.78rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
