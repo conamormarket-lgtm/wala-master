@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 // eslint-disable-next-line no-unused-vars
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, X, Clock, ArrowRight } from 'lucide-react';
+import { Search, X, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
 import {
   fadeIn,
   scaleIn,
@@ -80,7 +80,6 @@ const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' })
   // Quien pide menos movimiento en su sistema recibe solo fundidos: sin
   // desplazamientos ni escalados.
   const sinMovimiento = useReducedMotionSafe();
-  const vPanel = sinMovimiento ? neutralVariants : scaleIn;
   const vFila = sinMovimiento ? neutralVariants : filaVariants;
   const vLista = sinMovimiento ? neutralVariants : listaVariants;
 
@@ -171,7 +170,11 @@ const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' })
   }, []);
 
   useEffect(() => {
-    if (!abierto) return;
+    if (!abierto) return undefined;
+    // En móvil el panel es pantalla completa (position:fixed; inset:0, ver
+    // .panelMobile): no cuelga de la lupa, así que medir su posición no hace
+    // falta — y evita un cálculo/listener de scroll que no se iba a usar.
+    if (typeof window !== 'undefined' && window.innerWidth <= ANCHO_MOVIL) return undefined;
     medir();
     window.addEventListener('resize', medir);
     // `true` = fase de captura: así también se entera del scroll de contenedores
@@ -182,6 +185,18 @@ const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' })
       window.removeEventListener('scroll', medir, true);
     };
   }, [abierto, medir]);
+
+  // Con el buscador de pantalla completa abierto, el fondo (la página detrás)
+  // no debe poder scrollear: se siente como si el buscador "flotara" sobre un
+  // contenido que sigue vivo debajo.
+  useEffect(() => {
+    if (!abierto || typeof window === 'undefined' || window.innerWidth > ANCHO_MOVIL) {
+      return undefined;
+    }
+    const overflowPrevio = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = overflowPrevio; };
+  }, [abierto]);
 
   // Ir a la página de resultados. Conserva la marca si la búsqueda sale de una
   // página de marca, para no expulsar al usuario de su tienda.
@@ -213,6 +228,12 @@ const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' })
   // Se recalcula en cada render, y `medir()` fuerza uno al redimensionar, así
   // que al girar el móvil se pone al día solo.
   const esMovil = typeof window !== 'undefined' && window.innerWidth <= ANCHO_MOVIL;
+
+  // En móvil el panel es pantalla completa: "crecer desde la lupa" (scaleIn)
+  // se siente como una ventana que se estira desde una esquina en vez de un
+  // modo de búsqueda propio. Un fundido simple (mismo preset que ya usa el
+  // velo) lee mejor para una vista que ocupa TODA la pantalla.
+  const vPanel = sinMovimiento ? neutralVariants : (esMovil ? fadeIn : scaleIn);
 
   const escribiendo = texto.trim().length >= 2;
   const hayAlgoQueEnsenar = useMemo(() => (
@@ -248,7 +269,10 @@ const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' })
         // Envueltos en un fragmento, AnimatePresence ve un solo hijo que no sabe
         // animar y la salida no llega a ocurrir.
         <AnimatePresence>
-          {abierto && (
+          {/* Velo: solo en escritorio. En móvil el panel YA es pantalla
+              completa (.panelMobile) y cubre todo por sí solo — un velo
+              debajo no se ve, y de paso evita animar dos capas de golpe. */}
+          {abierto && !esMovil && (
           /* Velo: esto es un desplegable, no una ventana modal, así que
              oscurece poco — lo justo para que la página deje de competir. */
           <motion.div
@@ -267,16 +291,31 @@ const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' })
           <motion.div
             key="panel"
             ref={panelRef}
-            className={styles.panel}
+            className={`${styles.panel} ${esMovil ? styles.panelMobile : ''}`}
             role="dialog"
             aria-label="Buscar productos"
-            style={{ top: pos.top, ...(esMovil ? {} : { right: pos.right }) }}
+            style={esMovil ? undefined : { top: pos.top, right: pos.right }}
             variants={vPanel}
             initial="hidden"
             animate="show"
             exit="hidden"
           >
-            <form onSubmit={enviar} className={styles.formulario} role="search">
+            {/* En móvil esto ES la barra superior del "modo búsqueda": flecha
+                para volver + campo, pegados arriba (sticky) mientras el resto
+                del contenido (recientes/sugerencias) scrollea debajo. En
+                escritorio es el mismo formulario de siempre, sin el botón. */}
+            <div className={esMovil ? styles.mobileSearchBar : undefined}>
+              {esMovil && (
+                <button
+                  type="button"
+                  className={styles.backBtn}
+                  onClick={cerrar}
+                  aria-label="Cerrar búsqueda"
+                >
+                  <ArrowLeft size={20} aria-hidden="true" />
+                </button>
+              )}
+              <form onSubmit={enviar} className={styles.formulario} role="search">
               <Search size={18} className={styles.lupaCampo} aria-hidden="true" />
               <input
                 ref={campoRef}
@@ -300,7 +339,8 @@ const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' })
                 </button>
               )}
               <button type="submit" className={styles.botonIr}><T>Buscar</T></button>
-            </form>
+              </form>
+            </div>
 
             {/* ── Sin escribir: lo que buscaste antes ───────────────────── */}
             {!escribiendo && recientes.length > 0 && (

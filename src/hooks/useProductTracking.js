@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNotifications } from './useNotifications';
+import { useNotifications } from '../contexts/NotificationsContext';
 
 const VIEWS_STORAGE_KEY = 'product_views_history';
 

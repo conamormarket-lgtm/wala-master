@@ -392,6 +392,34 @@
   line-height: 1;
 }
 
+/* Puntito de "hay algo nuevo" sobre el avatar — SOLO móvil (ver media query
+   ≤768px): en escritorio la campana de NotificationTray ya trae su propio
+   contador, así que duplicarlo aquí sería la misma info dos veces. */
+.accountUnreadDot {
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--rojo-principal) 0%, var(--rojo-hover) 100%);
+  border: 2px solid var(--color-surface, #fff);
+  pointer-events: none;
+}
+
+/* Punto de aterrizaje INVISIBLE para la animación de "monedas volando"
+   (utils/animations.js busca .global-coins-target): en móvil ya no hay un
+   icono de monedas propio en el header, así que apuntamos al avatar — ahí
+   es donde vive el saldo ahora (ver CuentaLayout). Solo móvil: en
+   escritorio el target real sigue siendo .coinsDisplayTarget. */
+.mobileCoinsLandingSpot {
+  display: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 /* ── Encabezado de identidad dentro del panel desplegable ────────────────
    Antes el panel solo repetía el nombre en texto centrado, sin nada que lo
    conectara visualmente con el círculo del header. Fila con el MISMO avatar
@@ -840,8 +868,11 @@
   align-items: center;
 }
 
-.mobileWalletsOnly {
-  display: none;
+/* Genérica para "esto solo tiene sentido en escritorio, en móvil vive en
+   /cuenta" — hoy la usa NotificationTray (className pasado por Header.jsx). */
+.desktopOnlyAction {
+  display: flex;
+  align-items: center;
 }
 
 .coinsDisplayTarget {
@@ -870,45 +901,11 @@
   transform: scale(1.05);
 }
 
-/* Contador de monedas en MÓVIL. Es el mismo dato que .coinsDisplay de aquí
-   arriba, así que lleva los mismos colores: las monedas son doradas en toda la
-   app (la moneda del emoji, la insignia "+3 monedas al acertar" del arcade, el
-   vuelo de monedas al cobrar).
-   Antes esta clase no existía en la hoja de estilos — el JSX pedía
-   styles.nativeCoinBadge y recibía `undefined` — y el aspecto salía de un
-   `style` incrustado: texto en --rojo-principal (que hoy es el VIOLETA de la
-   marca) sobre un rosa #ffe4e6 fijo. Resultado: la misma cifra se veía dorada
-   en escritorio y rosa/violeta en el móvil, y el rosa, al ser un color fijo,
-   seguía siendo un parche claro en modo noche. */
-.nativeCoinBadge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  background-color: rgba(243, 156, 18, 0.1);
-  color: #db8a10;
-  border: 1px solid rgba(243, 156, 18, 0.3);
-}
-
 /* En noche el dorado medio se apaga sobre la superficie oscura del header. */
-:global([data-theme='dark']) .nativeCoinBadge,
 :global([data-theme='dark']) .coinsDisplay {
   background-color: rgba(243, 156, 18, 0.16);
   color: #fbbf24;
   border-color: rgba(243, 156, 18, 0.4);
-}
-
-/* El importe dentro del desplegable que abre esa insignia. Iba en violeta,
-   así que al tocar la insignia dorada el número cambiaba de color. */
-.mobileWalletCoins {
-  font-size: 15px;
-  color: #db8a10;
-}
-
-:global([data-theme='dark']) .mobileWalletCoins {
-  color: #fbbf24;
 }
 
 /* Kapi Coins: antes un estilo inline (backgroundColor #fff3cd + border
@@ -1299,29 +1296,14 @@
     font-size: 0.58rem;
   }
 
-  .desktopWalletsOnly {
+  .accountUnreadDot,
+  .mobileCoinsLandingSpot {
+    display: block;
+  }
+
+  .desktopWalletsOnly,
+  .desktopOnlyAction {
     display: none;
-  }
-  
-  .mobileWalletsOnly {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    position: relative;
-  }
-
-  .mobileWalletsBtn {
-    min-width: 44px;
-    min-height: 40px;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-
-  .nativeCoinBadge {
-    min-height: 30px;
-    padding: 4px 8px;
-    border-radius: 999px;
   }
 
   .mobileWalletBtn {

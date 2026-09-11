@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider } from './contexts/AuthContext';
+import { NotificationsProvider } from './contexts/NotificationsContext';
 import { CartProvider } from './contexts/CartContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { VisualEditorProvider } from './pages/Tienda/contexts/VisualEditorContext';
@@ -305,6 +306,7 @@ function App() {
           <ThemeProvider>
             <LanguageProvider>
               <AuthProvider>
+                <NotificationsProvider>
                 <WishlistProvider>
                   <VisualEditorProvider>
                     <CartProvider>
@@ -506,6 +508,7 @@ function App() {
                     </CartProvider>
                   </VisualEditorProvider>
                 </WishlistProvider>
+                </NotificationsProvider>
               </AuthProvider>
             </LanguageProvider>
           </ThemeProvider>

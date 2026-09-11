@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   User,
@@ -12,9 +12,12 @@ import {
   Heart,
   Calendar,
   LogOut,
+  Bell,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useNotifications } from '../contexts/NotificationsContext';
 import { logout } from '../services/firebase/auth';
 import CuentaLoginPrompt from '../components/CuentaLoginPrompt';
 import PedidosLoginPrompt from '../components/PedidosLoginPrompt/PedidosLoginPrompt';
@@ -30,10 +33,15 @@ const initialsOf = (name) => {
 };
 
 const CuentaLayout = () => {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, activeMainCoins } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  // Notificaciones y monedas ya no tienen icono propio en el header móvil
+  // (se movieron acá, ver Header.jsx): el bloque empieza cerrado para no
+  // empujar el menú de cuenta hacia abajo apenas se entra a la página.
+  const [notifsAbiertas, setNotifsAbiertas] = useState(false);
 
   // Menú de cuenta agrupado por categoría (antes: una sola fila de 9 tabs en
   // píldora, sin jerarquía — "Mis Cupones" pesaba visualmente igual que
@@ -145,6 +153,72 @@ const CuentaLayout = () => {
               <span>{t('account.cerrarSesion', 'Cerrar sesión')}</span>
             </button>
           </aside>
+
+          {/* Resumen de cuenta en móvil: identidad + monedas + notificaciones.
+              Antes vivían como iconos sueltos en el header (avatar, campana,
+              billetera) — cinco piezas distintas amontonadas en ~110px de
+              ancho. Se mudan acá, a la página a la que esos iconos ya
+              llevaban, y el header móvil queda con solo Cuenta/Favoritos/
+              Carrito. */}
+          <div className={styles.mobileSummary}>
+            <div className={styles.mobileSummaryIdentity}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className={styles.mobileSummaryAvatar} referrerPolicy="no-referrer" />
+              ) : (
+                <span className={styles.mobileSummaryAvatarFallback} aria-hidden="true">{initialsOf(displayName)}</span>
+              )}
+              <div className={styles.mobileSummaryText}>
+                <p className={styles.mobileSummaryName}>{displayName}</p>
+                <p className={styles.mobileSummaryEmail}>{user.email}</p>
+              </div>
+              <div className={styles.mobileSummaryCoins} title={t('account.monedasInfo', 'Tus monedas — 1 moneda = S/1 de descuento')}>
+                <span aria-hidden="true">🪙</span> {Math.floor(activeMainCoins || 0)}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className={styles.mobileNotifToggle}
+              onClick={() => setNotifsAbiertas((v) => !v)}
+              aria-expanded={notifsAbiertas}
+            >
+              <Bell size={16} strokeWidth={1.75} aria-hidden="true" />
+              <span>{t('account.notificaciones', 'Notificaciones')}</span>
+              {unreadCount > 0 && (
+                <span className={styles.mobileNotifBadge}>{unreadCount}</span>
+              )}
+              <ChevronDown
+                size={16}
+                strokeWidth={2}
+                aria-hidden="true"
+                className={`${styles.mobileNotifChevron} ${notifsAbiertas ? styles.mobileNotifChevronOpen : ''}`}
+              />
+            </button>
+
+            {notifsAbiertas && (
+              <div className={styles.mobileNotifList}>
+                {unreadCount > 0 && (
+                  <button type="button" className={styles.mobileNotifMarkAll} onClick={markAllAsRead}>
+                    {t('account.marcarLeidas', 'Marcar todas como leídas')}
+                  </button>
+                )}
+                {notifications.length === 0 ? (
+                  <p className={styles.mobileNotifEmpty}>{t('account.sinNotificaciones', 'No tienes notificaciones recientes.')}</p>
+                ) : (
+                  notifications.slice(0, 10).map((notif) => (
+                    <div
+                      key={notif.id}
+                      className={`${styles.mobileNotifItem} ${notif.read ? '' : styles.mobileNotifItemUnread}`}
+                      onClick={() => { if (!notif.read) markAsRead(notif.id); }}
+                    >
+                      <h4>{notif.title}</h4>
+                      <p>{notif.body}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Móvil (<900px): el sidebar se reemplaza por un selector agrupado
               (optgroup por categoría) en vez de una fila de píldoras con

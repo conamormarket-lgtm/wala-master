@@ -12,6 +12,7 @@ import { getBrands } from '../../../services/brands';
 import { getDocument } from '../../../services/firebase/firestore';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
+import { useNotifications } from '../../../contexts/NotificationsContext';
 import EditableSection from '../../admin/EditableSection';
 import HeaderSearch from '../HeaderSearch/HeaderSearch';
 import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, Check, Package, Ticket, Gift, LogOut } from 'lucide-react';
@@ -74,6 +75,11 @@ const Header = () => {
   const { wishlistItems } = useWishlist();
   const { lang, setLang, available, t } = useLanguage();
   const { theme } = useTheme();
+  // Monedas y notificaciones dejaron de tener icono propio en la fila móvil
+  // (ver .mobileWalletsOnly / NotificationTray más abajo): en móvil solo
+  // queda Cuenta/Favoritos/Carrito, y este contador alimenta el puntito de
+  // aviso sobre el avatar — el resumen completo vive ahora en /cuenta.
+  const { unreadCount: unreadNotifications } = useNotifications();
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
   // Avatar del ícono de cuenta: foto propia (subida en "Mi Perfil") primero,
@@ -678,60 +684,25 @@ const Header = () => {
 
         <div className={styles.actions}>
           <div className={styles.walletsContainer}>
+            {/* Solo escritorio: en móvil el icono de monedas junto a campana +
+                avatar + favoritos + carrito amontonaba 5 piezas en una fila
+                de ~110px y se sentía saturado. El resumen de monedas (y de
+                notificaciones) se mudó a la cabecera de /cuenta — el avatar
+                de aquí abajo solo suma un puntito si hay algo nuevo. */}
             {user && (
-              <>
-                {/* --- DESKTOP VIEW --- */}
-                <div className={styles.desktopWalletsOnly}>
-                  {/* Monedas: la única billetera. */}
-                  <div
-                    className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`}
-                  >
-                    <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
-                      🪙 {Math.floor(displayCoins)}
-                    </div>
-                    <div className={styles.tooltipText}>
-                      <T>Tus monedas - 1 moneda = S/1 de descuento (vencen a fin de mes)</T>
-                    </div>
+              <div className={styles.desktopWalletsOnly}>
+                {/* Monedas: la única billetera. */}
+                <div
+                  className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`}
+                >
+                  <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
+                    🪙 {Math.floor(displayCoins)}
                   </div>
-
-                </div>
-
-                {/* --- MOBILE VIEW --- */}
-                <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'billetera' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'billetera' ? styles.forceHideHover : ''} ${styles.mobileWalletsOnly}`}>
-                  <button 
-                    className={styles.mobileWalletsBtn} 
-                    onClick={(e) => handleMobilePopupClick(e, 'billetera')}
-                    aria-expanded={activeDropdown === 'billetera'}
-                    aria-label="Mis monedas"
-                    style={{ background: 'transparent', border: 'none', display: 'flex', gap: '6px', padding: 0 }}
-                  >
-                    {/* Colores en la hoja de estilos (.nativeCoinBadge): los mismos
-                        dorados que el contador de escritorio. */}
-                    <div className={`${styles.nativeCoinBadge} ${isCoinBouncing ? styles.bounce : ''} global-coins-target`}>
-                      <span style={{fontSize: '13px'}}>🪙</span> <strong>{Math.floor(displayCoins)}</strong>
-                    </div>
-                  </button>
-
-                  <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
-                    <div className={styles.accountPopupContent} style={{ padding: '12px' }}>
-                      {/* Texto y fondos del tema: se oscurecen/aclaran en modo noche. */}
-                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--color-text)' }}><T>Mis Monedas</T></h4>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-2)', padding: '10px', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '18px' }}>🪙</span>
-                            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>Monedas</span>
-                          </div>
-                          <strong className={styles.mobileWalletCoins}>{Math.floor(displayCoins)}</strong>
-                        </li>
-                      </ul>
-                      <p style={{ margin: '10px 0 0', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                        <T>1 moneda = S/1 de descuento. Vencen a fin de mes.</T>
-                      </p>
-                    </div>
+                  <div className={styles.tooltipText}>
+                    <T>Tus monedas - 1 moneda = S/1 de descuento (vencen a fin de mes)</T>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
 
@@ -748,8 +719,11 @@ const Header = () => {
             botonClassName={`${styles.iconButton} ${styles.desktopSearchButton}`}
           />
 
+          {/* Solo escritorio: en móvil la campana se muda a /cuenta (ver
+              CuentaLayout) y el avatar de aquí abajo avisa con un puntito. */}
           {user && (
             <NotificationTray
+              className={styles.desktopOnlyAction}
               isOpen={activeDropdown === 'notificaciones'}
               isBlocked={Boolean(activeDropdown) && activeDropdown !== 'notificaciones'}
               onToggle={(e) => handleMobilePopupClick(e, 'notificaciones')}
@@ -768,8 +742,23 @@ const Header = () => {
               ) : (
                 <User strokeWidth={1.5} className={styles.icon} />
               )}
+              {/* Puntito de aviso: solo visible en móvil (CSS), reemplaza a la
+                  campana de notificaciones que ahí ya no tiene icono propio —
+                  "algo nuevo, andá a Mi cuenta a verlo" en vez de otro icono
+                  más en la fila. */}
+              {user && unreadNotifications > 0 && (
+                <span className={styles.accountUnreadDot} aria-hidden="true" />
+              )}
             </Link>
-            
+            {/* Blanco invisible del mismo tamaño del botón: en móvil ya no hay
+                un icono de monedas propio (ver walletsContainer), así que la
+                animación de "monedas volando" (utils/animations.js busca
+                .global-coins-target) apunta aquí — aterrizan en el avatar,
+                que es donde ahora vive el saldo. */}
+            {user && (
+              <span className={`${styles.mobileCoinsLandingSpot} global-coins-target`} aria-hidden="true" />
+            )}
+
             <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
               <EditableSection sectionId="accountPopup" currentConfig={activeConfig} label="Pop-up de Cuenta">
                 <div className={styles.accountPopupContent}>

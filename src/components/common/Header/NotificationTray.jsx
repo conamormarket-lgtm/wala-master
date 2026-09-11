@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { Bell } from 'lucide-react';
-import { useNotifications } from '../../../hooks/useNotifications';
+import { useNotifications } from '../../../contexts/NotificationsContext';
 import styles from './Header.module.css';
 import { T } from '../../../i18n/useTranslatedText';
 
-const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle }) => {
+const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, className = '' }) => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, requestPermission } = useNotifications();
 
   useEffect(() => {
@@ -14,7 +14,7 @@ const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle }) => {
   }, []);
 
   return (
-    <div className={`${styles.accountDropdownContainer} ${isOpen ? styles.activeDropdown : ''} ${isBlocked ? styles.forceHideHover : ''}`}>
+    <div className={`${styles.accountDropdownContainer} ${isOpen ? styles.activeDropdown : ''} ${isBlocked ? styles.forceHideHover : ''} ${className}`}>
       <button
         type="button"
         className={styles.iconButton}

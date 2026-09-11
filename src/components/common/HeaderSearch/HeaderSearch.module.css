@@ -65,6 +65,11 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  /* flex:1 solo importa dentro de .mobileSearchBar (que sí es flex); en
+     escritorio el padre (.panel) no es flex container, así que esto no
+     tiene efecto ahí. */
+  flex: 1;
+  min-width: 0;
 }
 
 .lupaCampo {
@@ -356,4 +361,69 @@
        flota encima, en vez de parecer el final del contenido. */
     box-shadow: 0 -10px 12px -10px var(--color-shadow, rgba(15, 23, 42, 0.25));
   }
+}
+
+/* =========================================================================
+   MODO BÚSQUEDA — pantalla completa (móvil)
+   -------------------------------------------------------------------------
+   Antes, en móvil, este panel era un desplegable flotante que caía bajo la
+   barra de búsqueda del header — la cual seguía ahí, visible, con su propio
+   ícono de lupa: al abrir, se veían dos "buscadores" apilados. Ahora, en
+   móvil, tocar la barra abre esto: una vista de pantalla completa con
+   flecha para volver + campo arriba (fijos) y resultados debajo — el patrón
+   de Amazon / Mercado Libre / Shein. Reglas FUERA de cualquier media query:
+   solo se aplican cuando React agrega la clase (JS ya decide "es móvil" con
+   el mismo umbral, ANCHO_MOVIL), y así ganan por orden de cascada sobre el
+   `.panel` de más arriba sin pelear con esa media query.
+   ========================================================================= */
+.panelMobile {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  overflow-y: auto;
+}
+
+/* Barra superior del modo búsqueda: flecha + campo, fija arriba mientras el
+   resto (recientes/sugerencias) scrollea debajo. Márgenes negativos = mismo
+   valor que el padding de .panel en móvil (0.85rem): así sangra hasta los
+   bordes de la pantalla en vez de quedar flotando con aire a los costados. */
+.mobileSearchBar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: -0.85rem -0.85rem 0.75rem;
+  padding: 0.85rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.backBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.backBtn:hover,
+.backBtn:active {
+  background: var(--color-hover);
 }
