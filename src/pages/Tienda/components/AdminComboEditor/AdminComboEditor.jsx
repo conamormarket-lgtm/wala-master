@@ -32,7 +32,11 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
           !p.isComboProduct &&
           (!excludeProductId || p.id !== excludeProductId)
         );
-        setSearchResults(eligible.slice(0, 5)); // Limit to 5 results
+        // Antes se cortaba a los primeros 5 sin avisar — con un término corto
+        // ("el", "casaca") eso escondía la mayoría de coincidencias. La lista
+        // ya es scrolleable (max-height + overflow-y en el CSS), así que se
+        // muestran todas.
+        setSearchResults(eligible);
       }
       setIsSearching(false);
     }, 500);
@@ -58,6 +62,10 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
     };
     setComboItems([...comboItems, newItem]);
     setSearchTerm('');
+  };
+
+  const renameItem = (idx, newName) => {
+    setComboItems(comboItems.map((item, i) => (i === idx ? { ...item, name: newName } : item)));
   };
 
   const removeProduct = (idx) => {
@@ -140,7 +148,18 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
               <div key={item._uid || `${item.productId}_${idx}`} className={styles.comboItem}>
                 <img src={item.imageUrl || '/images/placeholder.svg'} alt={item.name} />
                 <div className={styles.comboItemDetails}>
-                  <strong>{item.name}</strong>
+                  {/* Antes esto era texto fijo (<strong>{item.name}</strong>): el
+                      nombre quedaba pegado para siempre al que tenía el producto
+                      al momento de agregarlo ("Ella"/"Él", etc.), sin forma de
+                      corregirlo por diseño desde el combo. */}
+                  <input
+                    type="text"
+                    className={styles.comboItemNameInput}
+                    value={item.name}
+                    onChange={(e) => renameItem(idx, e.target.value)}
+                    placeholder="Nombre de esta pieza en el combo"
+                    aria-label={`Nombre de la pieza #${idx + 1} del combo`}
+                  />
                   <span>Producto #{idx + 1}</span>
                 </div>
                 <button type="button" onClick={() => removeProduct(idx)} className={styles.removeBtn}>
