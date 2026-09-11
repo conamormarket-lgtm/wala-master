@@ -13,6 +13,18 @@
     box-shadow var(--dur-media) var(--ease-signature),
     opacity var(--dur-rapida) var(--ease-signature);
   will-change: transform;
+  /* Mantener presionado el titulo/precio (no solo la foto) podia disparar
+     la seleccion de texto nativa del navegador -un long-press sobre texto
+     selecciona palabras por defecto-. Esa seleccion cancela el tap actual
+     y, encima, el SIGUIENTE tap normal se lo come el navegador para recien
+     cerrar la seleccion en vez de tocar la tarjeta: "mantengo presionado,
+     suelto, toco de nuevo y no entra". Ninguna parte de la tarjeta necesita
+     ser texto seleccionable, asi que se desactiva en toda la tarjeta, no
+     solo en la foto (que ya lo tenia via OptimizedImage).
+     Ver tambien el onContextMenu del componente. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 @media (hover: hover) {
