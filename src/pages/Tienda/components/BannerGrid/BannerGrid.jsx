@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
@@ -111,9 +111,25 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
   const [cols, setCols] = useState(() => columnasSegunAncho(colsDeseadas));
   const [pagina, setPagina] = useState(0);
   const [enPausa, setEnPausa] = useState(false);
+  // El viewport ahora ES el contenedor con scroll nativo (antes era un track
+  // movido con translateX por JS). Con overflow-x + scroll-snap el swipe en
+  // móvil sale gratis del navegador — con su propia física/momentum — y en
+  // desktop las flechas/puntos siguen mandando, solo que ahora "empujan" el
+  // scroll en vez de mover un transform.
+  const viewportRef = useRef(null);
+  const paginaRef = useRef(0);
+  const resumeTimerRef = useRef(null);
 
   useEffect(() => {
-    const recalcular = () => setCols(columnasSegunAncho(colsDeseadas));
+    const recalcular = () => {
+      setCols(columnasSegunAncho(colsDeseadas));
+      // El ancho de página cambió: reubicar el scroll sin animación o se ve
+      // media tarjeta de la página vecina asomando por el borde.
+      requestAnimationFrame(() => {
+        const el = viewportRef.current;
+        if (el) el.scrollLeft = paginaRef.current * (el.clientWidth || 1);
+      });
+    };
     recalcular();
     window.addEventListener('resize', recalcular);
     return () => window.removeEventListener('resize', recalcular);
@@ -130,10 +146,55 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
 
   const total = paginas.length;
 
+  const irA = useCallback((i, opts = {}) => {
+    if (total <= 0) return;
+    const destino = ((i % total) + total) % total;
+    setPagina(destino);
+    const el = viewportRef.current;
+    if (el) {
+      const ancho = el.clientWidth || 1;
+      el.scrollTo({ left: destino * ancho, behavior: opts.instant || prefiereSinMovimiento() ? 'auto' : 'smooth' });
+    }
+  }, [total]);
+
   // Si cambia el ancho (y con él cuántas caben), la página actual puede quedar
   // fuera de rango: se vería un hueco en blanco.
   useEffect(() => {
-    setPagina((p) => (p > total - 1 ? Math.max(0, total - 1) : p));
+    setPagina((p) => {
+      const acotada = total > 0 ? Math.min(p, total - 1) : 0;
+      requestAnimationFrame(() => {
+        const el = viewportRef.current;
+        if (el) el.scrollLeft = acotada * (el.clientWidth || 1);
+      });
+      return acotada;
+    });
+  }, [total]);
+
+  useEffect(() => {
+    paginaRef.current = pagina;
+  }, [pagina]);
+
+  // El usuario también puede pasar de página deslizando con el dedo (scroll
+  // nativo): esto mantiene el punto activo y el autoplay sincronizados con
+  // dónde quedó el swipe, sin que haga falta soltar nada por JS.
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el || total <= 0) return undefined;
+    let frame = null;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        const ancho = el.clientWidth || 1;
+        const cercana = Math.min(Math.max(Math.round(el.scrollLeft / ancho), 0), total - 1);
+        setPagina((p) => (p === cercana ? p : cercana));
+      });
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [total]);
 
   const autoPlay = config.autoPlay !== false;
@@ -141,14 +202,22 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
 
   useEffect(() => {
     if (!automatic || !autoPlay || total <= 1 || enPausa || prefiereSinMovimiento()) return undefined;
-    const id = setInterval(() => setPagina((p) => (p + 1) % total), velocidad);
+    const id = setInterval(() => irA(paginaRef.current + 1), velocidad);
     return () => clearInterval(id);
-  }, [automatic, autoPlay, total, enPausa, velocidad]);
+  }, [automatic, autoPlay, total, enPausa, velocidad, irA]);
 
-  const irA = useCallback((i) => {
-    if (total <= 0) return;
-    setPagina(((i % total) + total) % total);
-  }, [total]);
+  // Pausar mientras el dedo está sobre el carrusel, e igual un ratito después
+  // de soltar: si el autoplay dispara justo cuando el swipe está asentando,
+  // se siente como si el carrusel "peleara" con el gesto del usuario.
+  const pausarPorToque = useCallback(() => {
+    window.clearTimeout(resumeTimerRef.current);
+    setEnPausa(true);
+  }, []);
+  const reanudarPorToque = useCallback(() => {
+    window.clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = window.setTimeout(() => setEnPausa(false), 1500);
+  }, []);
+  useEffect(() => () => window.clearTimeout(resumeTimerRef.current), []);
 
   const renderManualImage = (it) => (
     <img
@@ -256,6 +325,9 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
         onMouseLeave={() => setEnPausa(false)}
         onFocusCapture={() => setEnPausa(true)}
         onBlurCapture={() => setEnPausa(false)}
+        onTouchStart={pausarPorToque}
+        onTouchEnd={reanudarPorToque}
+        onTouchCancel={reanudarPorToque}
       >
         {variasPaginas && (
           <button
@@ -268,24 +340,18 @@ const BannerGrid = ({ config = {}, items = [], brands = [], columns = 3, gap = '
           </button>
         )}
 
-        <div className={styles.viewport}>
-          <div
-            className={styles.track}
-            style={{ width: `${total * 100}%`, transform: `translateX(-${(100 / total) * pagina}%)` }}
-          >
-            {paginas.map((grupo, iPagina) => (
-              <div
-                className={styles.page}
-                key={`pagina-${iPagina}`}
-                style={{ width: `${100 / total}%` }}
-                aria-hidden={iPagina !== pagina}
-              >
-                <div className={styles.grid} style={{ '--cols': cols, gap }}>
-                  {grupo.map((item, iLocal) => renderCelda(item, iPagina * porPagina + iLocal, iLocal))}
-                </div>
+        <div className={styles.viewport} ref={viewportRef}>
+          {paginas.map((grupo, iPagina) => (
+            <div
+              className={styles.page}
+              key={`pagina-${iPagina}`}
+              aria-hidden={iPagina !== pagina}
+            >
+              <div className={styles.grid} style={{ '--cols': cols, gap }}>
+                {grupo.map((item, iLocal) => renderCelda(item, iPagina * porPagina + iLocal, iLocal))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
         {variasPaginas && (

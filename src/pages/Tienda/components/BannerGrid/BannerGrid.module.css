@@ -333,7 +333,19 @@
 }
 
 .viewport {
-  overflow: hidden;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Scroll nativo en vez de un track movido por JS: el swipe en móvil sale
+     gratis del navegador (con su propia física/momentum) y cada página queda
+     "enganchada" al borde del viewport, igual que el resto de carruseles del
+     sitio (FeaturedCarousel, BestSellersRow). */
+  scroll-snap-type: x mandatory;
+  scroll-snap-stop: always;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   /* AIRE PARA LA SOMBRA.
      La sombra de la tarjeta es 0 12px 34px (y 0 20px 44px en hover), o sea que
      se sale ~8px por arriba, ~42px por abajo y ~22px por los lados. Como aqui
@@ -346,17 +358,15 @@
   padding: 14px 0 46px;
 }
 
-.track {
-  display: flex;
-  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
+.viewport::-webkit-scrollbar {
+  display: none;
 }
 
 .page {
-  flex: 0 0 auto;
-  /* Cada página trae su propia .grid; el ancho lo fija el componente en
-     función de cuántas páginas hay. */
-  min-width: 0;
+  flex: 0 0 100%;
+  min-width: 100%;
+  scroll-snap-align: start;
+  /* Cada página trae su propia .grid. */
   box-sizing: border-box;
   /* Aire lateral para la sombra, POR DENTRO de la página: la tarjeta termina
      24px antes del borde, así la sombra respira y la página siguiente arranca
@@ -365,8 +375,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .track {
-    transition: none;
+  .viewport {
+    scroll-behavior: auto;
   }
 }
 
@@ -451,5 +461,16 @@
 
   .viewport {
     padding: 10px 0 32px;
+  }
+}
+
+/* Respuesta táctil al tocar una tarjeta (solo dispositivos de puntero
+   grueso/sin hover): un "press" sutil da la sensación de que la tarjeta
+   respondió al dedo, en vez de quedar inerte hasta soltar. */
+@media (hover: none) and (pointer: coarse) {
+  .brandCell:active,
+  .cell:active {
+    transform: scale(0.975);
+    transition: transform 120ms ease;
   }
 }
