@@ -11,9 +11,18 @@
 }
 
 .avatarCircle {
+    /* Solo posiciona: el recorte circular va en .avatarInner (ver abajo),
+       para que la insignia de cámara —posicionada fuera del borde— no
+       quede recortada por el overflow:hidden del círculo. */
     position: relative;
     width: 88px;
     height: 88px;
+    flex-shrink: 0;
+}
+
+.avatarInner {
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f3f4f6 100%);
     border: 3px solid white;
@@ -22,7 +31,6 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    flex-shrink: 0;
 }
 
 .avatarImg {
@@ -111,7 +119,7 @@
 /* ═════════════════════════════════════════════════════════════════════════
    MODO NOCHE — AvatarStudio compacto
    ═════════════════════════════════════════════════════════════════════════ */
-:global([data-theme='dark']) .avatarCircle {
+:global([data-theme='dark']) .avatarInner {
     border-color: var(--color-surface);
     background: radial-gradient(circle at 50% 50%, var(--color-surface-2) 0%, var(--color-surface) 100%);
 }

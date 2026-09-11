@@ -54,14 +54,21 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving }) {
     return (
         <div className={styles.compactWrap}>
             <div className={styles.avatarCircle}>
-                {avatarUrl ? (
-                    <img src={avatarUrl} alt="Foto de perfil" className={styles.avatarImg} />
-                ) : (
-                    <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={styles.avatarPlaceholderIcon}>
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                    </svg>
-                )}
+                {/* El recorte circular vive en este wrapper interno, NO en
+                    .avatarCircle: si el overflow:hidden estuviera en el
+                    mismo elemento que la insignia de cámara (posicionada
+                    fuera del borde con right/bottom negativos), el propio
+                    círculo se la recortaría y quedaba oculta. */}
+                <div className={styles.avatarInner}>
+                    {avatarUrl ? (
+                        <img src={avatarUrl} alt="Foto de perfil" className={styles.avatarImg} />
+                    ) : (
+                        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={styles.avatarPlaceholderIcon}>
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                    )}
+                </div>
 
                 <button
                     type="button"
