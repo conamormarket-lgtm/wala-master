@@ -101,6 +101,27 @@
     stroke: var(--rojo-principal);
   }
 
+  /* Insignia de cantidad del carrito — mismo criterio de color que el
+     .cartBadge del header (degradado rojo de marca). */
+  .badge {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--rojo-principal) 0%, var(--rojo-hover) 100%);
+    color: var(--blanco, #fff);
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 1;
+    border: 1.5px solid var(--color-surface, #fff);
+  }
+
   .label {
     white-space: nowrap;
     overflow: hidden;

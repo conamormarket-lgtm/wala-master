@@ -678,13 +678,12 @@ const Header = () => {
 
         <div className={styles.actions}>
           <div className={styles.walletsContainer}>
-            {/* Solo escritorio: en móvil el icono de monedas junto a campana +
-                avatar + favoritos + carrito amontonaba 5 piezas en una fila
-                de ~110px y se sentía saturado. El resumen de monedas (y de
-                notificaciones) se mudó a la cabecera de /cuenta — el avatar
-                de aquí abajo solo suma un puntito si hay algo nuevo. */}
+            {/* Monedas: lo único que queda en la fila de acciones del header
+                móvil (a pedido, estilo AliExpress) — cuenta, notificaciones,
+                favoritos y carrito se ven en desktop, pero en móvil viven en
+                "Mi cuenta" (o su propia pestaña del BottomNav, ver Carrito). */}
             {user && (
-              <div className={styles.desktopWalletsOnly}>
+              <div className={styles.walletsDisplay}>
                 {/* Monedas: la única billetera. */}
                 <div
                   className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`}
@@ -715,6 +714,7 @@ const Header = () => {
 
           {user && (
             <NotificationTray
+              className={styles.mobileHiddenAction}
               isOpen={activeDropdown === 'notificaciones'}
               isBlocked={Boolean(activeDropdown) && activeDropdown !== 'notificaciones'}
               onToggle={(e) => handleMobilePopupClick(e, 'notificaciones')}
@@ -722,7 +722,7 @@ const Header = () => {
           )}
 
           {!isNativeApp && (
-          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'cuenta' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'cuenta' ? styles.forceHideHover : ''}`}>
+          <div className={`${styles.accountDropdownContainer} ${styles.mobileHiddenAction} ${activeDropdown === 'cuenta' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'cuenta' ? styles.forceHideHover : ''}`}>
             <Link to="/cuenta" className={styles.iconButton} onClick={closeDropdowns} aria-label="Mi cuenta">
               {user ? (
                 accountAvatarUrl ? (
@@ -734,14 +734,6 @@ const Header = () => {
                 <User strokeWidth={1.5} className={styles.icon} />
               )}
             </Link>
-            {/* Blanco invisible del mismo tamaño del botón: en móvil ya no hay
-                un icono de monedas propio (ver walletsContainer), así que la
-                animación de "monedas volando" (utils/animations.js busca
-                .global-coins-target) apunta aquí — aterrizan en el avatar,
-                que es donde ahora vive el saldo. */}
-            {user && (
-              <span className={`${styles.mobileCoinsLandingSpot} global-coins-target`} aria-hidden="true" />
-            )}
 
             <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
               <EditableSection sectionId="accountPopup" currentConfig={activeConfig} label="Pop-up de Cuenta">
@@ -880,7 +872,7 @@ const Header = () => {
           </div>
           )}
 
-          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`}>
+          <div className={`${styles.accountDropdownContainer} ${styles.mobileHiddenAction} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`}>
             <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} onClick={closeDropdowns} aria-label="Favoritos">
               <Heart strokeWidth={1.5} className={styles.icon} />
               {user && wishlistItems.length > 0 && (
@@ -992,7 +984,7 @@ const Header = () => {
             </div>
           </div>
 
-          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'carrito' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'carrito' ? styles.forceHideHover : ''}`}>
+          <div className={`${styles.accountDropdownContainer} ${styles.mobileHiddenAction} ${activeDropdown === 'carrito' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'carrito' ? styles.forceHideHover : ''}`}>
             <Link to="/carrito" className={styles.iconButton} onClick={closeDropdowns} aria-label="Carrito de compras">
               <ShoppingBag strokeWidth={1.5} className={styles.icon} />
               {cartItemsCount > 0 && (
