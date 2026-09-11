@@ -4,7 +4,7 @@ import { useNotifications } from '../../../hooks/useNotifications';
 import styles from './Header.module.css';
 import { T } from '../../../i18n/useTranslatedText';
 
-const NotificationTray = () => {
+const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle }) => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, requestPermission } = useNotifications();
 
   useEffect(() => {
@@ -14,8 +14,15 @@ const NotificationTray = () => {
   }, []);
 
   return (
-    <div className={styles.accountDropdownContainer}>
-      <button className={styles.iconButton} aria-label="Notificaciones" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+    <div className={`${styles.accountDropdownContainer} ${isOpen ? styles.activeDropdown : ''} ${isBlocked ? styles.forceHideHover : ''}`}>
+      <button
+        type="button"
+        className={styles.iconButton}
+        aria-label="Notificaciones"
+        aria-expanded={isOpen}
+        onClick={onToggle}
+        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+      >
         <Bell strokeWidth={1.5} className={styles.icon} />
         {unreadCount > 0 && (
           <span className={styles.cartBadge} style={{ backgroundColor: '#e74c3c' }}>{unreadCount}</span>

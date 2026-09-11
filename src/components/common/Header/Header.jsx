@@ -392,17 +392,26 @@ const Header = () => {
     setMobileMenuOpen(false);
     setMobileWalletOpen(false);
     setActiveDropdown(null);
-    setForceHideDropdowns(true);
-    setTimeout(() => {
-      const handlePointerMove = () => {
-        setForceHideDropdowns(false);
-        window.removeEventListener('pointermove', handlePointerMove);
-      };
-      window.addEventListener('pointermove', handlePointerMove);
-    }, 100);
+
+    // El bloqueo temporal existe únicamente para evitar que el hover de
+    // escritorio reabra el menú que se acaba de cerrar. En móvil no hay hover
+    // real y esperar un pointermove podía dejar los popups bloqueados después
+    // de navegar o mantener presionado, porque ese evento puede no producirse.
+    if (hasRealHover()) {
+      setForceHideDropdowns(true);
+      setTimeout(() => {
+        const handlePointerMove = () => {
+          setForceHideDropdowns(false);
+          window.removeEventListener('pointermove', handlePointerMove);
+        };
+        window.addEventListener('pointermove', handlePointerMove);
+      }, 100);
+    } else {
+      setForceHideDropdowns(false);
+    }
   };
 
-  const handleMobileDropdownClick = (e, dropdownName) => {
+  const handleMobilePopupClick = (e, dropdownName) => {
     if (window.innerWidth <= 768 || Capacitor.isNativePlatform()) {
       e.preventDefault();
       setActiveDropdown(prev => prev === dropdownName ? null : dropdownName);
@@ -667,10 +676,6 @@ const Header = () => {
           </nav>
         </EditableSection>
 
-        <div className={styles.desktopHeaderSearch}>
-          <HeaderSearch brandId={brandActual?.id || null} botonClassName={styles.iconButton} />
-        </div>
-
         <div className={styles.actions}>
           <div className={styles.walletsContainer}>
             {user && (
@@ -695,7 +700,9 @@ const Header = () => {
                 <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'billetera' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'billetera' ? styles.forceHideHover : ''} ${styles.mobileWalletsOnly}`}>
                   <button 
                     className={styles.mobileWalletsBtn} 
-                    onClick={(e) => handleMobileDropdownClick(e, 'billetera')}
+                    onClick={(e) => handleMobilePopupClick(e, 'billetera')}
+                    aria-expanded={activeDropdown === 'billetera'}
+                    aria-label="Mis monedas"
                     style={{ background: 'transparent', border: 'none', display: 'flex', gap: '6px', padding: 0 }}
                   >
                     {/* Colores en la hoja de estilos (.nativeCoinBadge): los mismos
@@ -733,11 +740,25 @@ const Header = () => {
               cuenta, en vez de sumar 2 iconos mas a esta barra. */}
           <span className={styles.actionsDivider} aria-hidden="true" />
 
-          {user && <NotificationTray />}
+          {/* En escritorio conserva exactamente su posición original. En
+              móvil se oculta este botón y se muestra el buscador ancho de la
+              segunda fila. */}
+          <HeaderSearch
+            brandId={brandActual?.id || null}
+            botonClassName={`${styles.iconButton} ${styles.desktopSearchButton}`}
+          />
+
+          {user && (
+            <NotificationTray
+              isOpen={activeDropdown === 'notificaciones'}
+              isBlocked={Boolean(activeDropdown) && activeDropdown !== 'notificaciones'}
+              onToggle={(e) => handleMobilePopupClick(e, 'notificaciones')}
+            />
+          )}
 
           {!isNativeApp && (
           <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'cuenta' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'cuenta' ? styles.forceHideHover : ''}`}>
-            <Link to="/cuenta" className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'cuenta')} aria-label="Mi cuenta">
+            <Link to="/cuenta" className={styles.iconButton} onClick={closeDropdowns} aria-label="Mi cuenta">
               {user ? (
                 accountAvatarUrl ? (
                   <img src={accountAvatarUrl} alt="" className={styles.accountAvatar} referrerPolicy="no-referrer" />
@@ -887,7 +908,7 @@ const Header = () => {
           )}
 
           <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`}>
-            <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'favoritos')} aria-label="Favoritos">
+            <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} onClick={closeDropdowns} aria-label="Favoritos">
               <Heart strokeWidth={1.5} className={styles.icon} />
               {user && wishlistItems.length > 0 && (
                 <span className={styles.cartBadge} style={{ background: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)' }}>
@@ -999,7 +1020,7 @@ const Header = () => {
           </div>
 
           <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'carrito' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'carrito' ? styles.forceHideHover : ''}`}>
-            <Link to="/carrito" className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'carrito')} aria-label="Carrito de compras">
+            <Link to="/carrito" className={styles.iconButton} onClick={closeDropdowns} aria-label="Carrito de compras">
               <ShoppingBag strokeWidth={1.5} className={styles.icon} />
               {cartItemsCount > 0 && (
                 <span className={styles.cartBadge}>{cartItemsCount}</span>

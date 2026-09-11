@@ -305,11 +305,6 @@
   gap: 0.75rem;
 }
 
-.desktopHeaderSearch {
-  display: flex;
-  align-items: center;
-}
-
 .mobileHeaderSearch {
   display: none;
 }
@@ -1216,7 +1211,7 @@
     display: flex;
   }
 
-  .desktopHeaderSearch {
+  .desktopSearchButton {
     display: none;
   }
 
@@ -1270,6 +1265,10 @@
     min-width: 40px;
     min-height: 40px;
     border-radius: 50%;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
   }
 
   .iconButton:hover,
@@ -1475,6 +1474,17 @@
 
   .accountDropdownContainer:hover .mobileCenteredPopup {
     transform: translateX(-50%) translateY(0);
+  }
+
+  /* Cuenta, favoritos y carrito navegan directamente en móvil. Sus previews
+     siguen disponibles por hover en escritorio, pero no deben quedar como
+     capas invisibles capaces de capturar toques en pantallas táctiles. */
+  .accountDropdownContainer:not(.activeDropdown) .mobileCenteredPopup {
+    pointer-events: none;
+  }
+
+  .accountDropdownContainer.activeDropdown .mobileCenteredPopup {
+    pointer-events: auto;
   }
 }
 
