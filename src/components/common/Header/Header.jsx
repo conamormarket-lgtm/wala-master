@@ -14,7 +14,7 @@ import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorCont
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
 import HeaderSearch from '../HeaderSearch/HeaderSearch';
-import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, Check } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, Check, Package, Ticket, Gift, LogOut } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
 import styles from './Header.module.css';
@@ -758,14 +758,33 @@ const Header = () => {
                         </div>
                       )}
 
-                      <div className={styles.accountButtons}>
-                        <Link to="/cuenta" className={styles.primaryButton} onClick={closeDropdowns}>
-                          <T>Mi Perfil</T>
+                      {/* Lista limpia de accesos directos (antes: 2 botones
+                          grandes tipo pill) — mismo patrón que un menú de
+                          cuenta "serio", ícono + etiqueta, sin relleno de
+                          color. Refleja las secciones más usadas del sidebar
+                          de /cuenta (ver CuentaLayout.jsx). */}
+                      <nav className={styles.accountMenuList} aria-label="Accesos de cuenta">
+                        <Link to="/cuenta/perfil" className={styles.accountMenuItem} onClick={closeDropdowns}>
+                          <User size={18} strokeWidth={1.75} aria-hidden="true" />
+                          <span><T>Mi Perfil</T></span>
                         </Link>
-                        <button onClick={async () => { closeDropdowns(); await logout(); navigate('/'); }} className={styles.secondaryButton} style={{ width: '100%', cursor: 'pointer', border: '1px solid #ccc' }}>
-                          <T>Cerrar sesión</T>
-                        </button>
-                      </div>
+                        <Link to="/cuenta/pedidos" className={styles.accountMenuItem} onClick={closeDropdowns}>
+                          <Package size={18} strokeWidth={1.75} aria-hidden="true" />
+                          <span><T>Mis Pedidos</T></span>
+                        </Link>
+                        <Link to="/cuenta/catalogo" className={styles.accountMenuItem} onClick={closeDropdowns}>
+                          <Gift size={18} strokeWidth={1.75} aria-hidden="true" />
+                          <span><T>Catálogo Recompensas</T></span>
+                        </Link>
+                        <Link to="/cuenta/cupones" className={styles.accountMenuItem} onClick={closeDropdowns}>
+                          <Ticket size={18} strokeWidth={1.75} aria-hidden="true" />
+                          <span><T>Mis Cupones</T></span>
+                        </Link>
+                        <Link to="/cuenta/wishlist" className={styles.accountMenuItem} onClick={closeDropdowns}>
+                          <Heart size={18} strokeWidth={1.75} aria-hidden="true" />
+                          <span><T>Lista de Deseos</T></span>
+                        </Link>
+                      </nav>
                     </>
                   ) : (
                     <>
@@ -818,6 +837,20 @@ const Header = () => {
                       })}
                     </div>
                   </div>
+
+                  {/* Cerrar sesión: al final de la lista (mismo patrón que
+                      "Preferencias" arriba), no como botón grande — es la
+                      acción menos frecuente del panel. */}
+                  {user && (
+                    <button
+                      type="button"
+                      onClick={async () => { closeDropdowns(); await logout(); navigate('/'); }}
+                      className={styles.accountMenuLogout}
+                    >
+                      <LogOut size={18} strokeWidth={1.75} aria-hidden="true" />
+                      <span><T>Cerrar sesión</T></span>
+                    </button>
+                  )}
                 </div>
               </EditableSection>
             </div>

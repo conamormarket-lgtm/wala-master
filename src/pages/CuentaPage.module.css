@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   CUENTA LAYOUT — Responsive profesional
+   CUENTA LAYOUT — Sidebar agrupado (panel de cuenta)
    ═══════════════════════════════════════════ */
 
 .container {
@@ -65,49 +65,46 @@
 /* ── Layout cuando el usuario está logueado ── */
 .contentLoggedIn {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1280px;
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
 }
 
-/* ── Skeletons Layout ── */
+/* Sidebar fijo (260px) + contenido — el patrón de un panel de cuenta
+   "serio" (Stripe/Notion/Linear), reemplaza la fila de tabs en píldora. */
+.shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* ── Skeleton (carga) ── */
 .skeletonLayout {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
-.skeletonHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2.5rem;
-  padding-bottom: 1rem;
-  gap: 1rem;
+.skeletonShell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
 }
 
-.skeletonTabs {
-  height: 48px;
-  width: 300px;
-  background-color: rgba(229, 231, 235, 0.4);
-  border-radius: 100px;
-  position: relative;
-  overflow: hidden;
-}
-
-.skeletonProfileBtn {
-  height: 48px;
-  width: 120px;
+.skeletonSidebar {
+  height: 420px;
+  width: 100%;
   background-color: var(--blanco);
-  border: 1px solid #e5e7eb;
-  border-radius: 100px;
+  border: 1px solid var(--gris-borde, #e5e7eb);
+  border-radius: var(--radio-grande, 16px);
   position: relative;
   overflow: hidden;
 }
 
 .skeletonContentBox {
-  height: 300px;
+  height: 420px;
   width: 100%;
   background-color: var(--blanco);
   border-radius: var(--radio-grande);
@@ -115,8 +112,7 @@
   overflow: hidden;
 }
 
-.skeletonTabs::after,
-.skeletonProfileBtn::after,
+.skeletonSidebar::after,
 .skeletonContentBox::after {
   content: '';
   position: absolute;
@@ -138,15 +134,17 @@
   }
 }
 
-/* ── Tabs de navegación Premium ── */
-.header {
+/* ── Sidebar ── */
+.sidebar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2.5rem;
-  padding-bottom: 1rem;
-  position: relative;
-  gap: 1rem;
+  flex-direction: column;
+  background-color: var(--blanco);
+  border: 1px solid var(--gris-borde, #e5e7eb);
+  border-radius: var(--radio-grande, 16px);
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  position: sticky;
+  top: calc(var(--header-height, 72px) + 1.25rem);
   animation: fadeInDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -162,124 +160,175 @@
   }
 }
 
-.tabs {
-  /* DESKTOP: los tabs se reparten en DOS LÍNEAS (o las que hagan falta) para
-     que SIEMPRE se lean todos. Sin scroll horizontal ni max-content; el pill
-     de 100px se sustituye por un rounded-rect (26px) que luce bien apilado. */
+.sidebarIdentity {
   display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--gris-borde, #e5e7eb);
+}
+
+.sidebarAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid var(--gris-borde, #e5e7eb);
+}
+
+.sidebarAvatarFallback {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.375rem;
-  background-color: rgba(229, 231, 235, 0.4);
-  backdrop-filter: blur(10px);
-  border-radius: 26px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  flex: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #8b5cf6;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.sidebarIdentityText {
   min-width: 0;
 }
 
-.tabs::-webkit-scrollbar {
+.sidebarName {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebarEmail {
+  margin: 0.1rem 0 0;
+  font-size: 0.78rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navGroup {
+  margin-top: 1.25rem;
+}
+
+.navGroupLabel {
+  margin: 0 0 0.5rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  margin: 0 0 0.125rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.navItem svg {
+  flex-shrink: 0;
+  color: #9ca3af;
+  transition: color 0.2s;
+}
+
+.navItem:hover {
+  background-color: #f9fafb;
+  color: #111827;
+}
+
+.navItem:hover svg {
+  color: #6b7280;
+}
+
+.navItemActive {
+  background-color: var(--rojo-light, #fef2f2);
+  color: var(--rojo-principal);
+  border-left-color: var(--rojo-principal);
+}
+
+.navItemActive svg {
+  color: var(--rojo-principal);
+}
+
+.navItemActive:hover {
+  background-color: var(--rojo-light, #fef2f2);
+  color: var(--rojo-principal);
+}
+
+.navLogout {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border: none;
+  border-top: 1px solid var(--gris-borde, #e5e7eb);
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.2s;
+  text-align: left;
+}
+
+.navLogout:hover {
+  color: var(--rojo-principal);
+}
+
+/* ── Selector móvil (reemplaza al sidebar en pantallas chicas) ── */
+.sidebarMobile {
   display: none;
 }
 
-.tab {
-  padding: 0.5rem 1.5rem;
+.sidebarSelect {
+  width: 100%;
+  padding: 0.875rem 1rem;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #6b7280;
-  text-decoration: none;
-  border-radius: 100px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-}
-
-.tab:hover {
   color: #111827;
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: var(--blanco);
+  border: 1px solid var(--gris-borde, #e5e7eb);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  padding-right: 2.5rem;
 }
 
-.tab:focus-visible {
+.sidebarSelect:focus-visible {
   outline: 2px solid var(--rojo-principal);
   outline-offset: 2px;
 }
 
-.tabActive {
-  color: #111827;
-  background-color: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.tabActive::after {
-  display: none;
-}
-
-/* ── Botón Perfil ── */
-.profileBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.625rem;
-  padding: 0.625rem 1.25rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #374151;
-  background-color: var(--blanco);
-  border: 1px solid #e5e7eb;
-  border-radius: 100px;
-  text-decoration: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.profileBtn svg {
-  color: #9ca3af;
-  transition: var(--transicion-suave);
-}
-
-.profileBtn:hover {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.profileBtn:hover svg {
-  color: var(--rojo-principal);
-}
-
-.profileBtnActive {
-  color: var(--blanco);
-  border-color: var(--rojo-principal);
-  background-color: var(--rojo-principal);
-  box-shadow: 0 4px 14px rgba(227, 24, 55, 0.3);
-}
-
-.profileBtnActive:hover {
-  background-color: #c41828;
-  border-color: #c41828;
-  transform: translateY(-1px);
-  color: var(--blanco);
-}
-
-.profileBtnActive svg {
-  color: var(--blanco);
-}
-
-.profileBtnActive:hover svg {
-  color: var(--blanco);
-}
-
 .outlet {
   min-height: 200px;
+  min-width: 0;
   animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
 }
@@ -307,6 +356,26 @@
 }
 
 /* ══════════════════════════════
+   RESPONSIVE ≤ 860px — el sidebar cede el lugar al selector
+   ══════════════════════════════ */
+@media (max-width: 860px) {
+  .shell,
+  .skeletonShell {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .sidebar,
+  .skeletonSidebar {
+    display: none;
+  }
+
+  .sidebarMobile {
+    display: block;
+  }
+}
+
+/* ══════════════════════════════
    RESPONSIVE ≤ 768px
    ══════════════════════════════ */
 @media (max-width: 768px) {
@@ -315,26 +384,6 @@
     min-height: calc(100vh - var(--header-height, 60px));
     min-height: calc(100dvh - var(--header-height, 60px));
     padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 1rem);
-  }
-
-  .header {
-    margin-bottom: 1.5rem;
-  }
-
-  /* MÓVIL: volvemos a UNA sola línea con scroll horizontal y el pill de 100px.
-     El "asomo" animado (CuentaLayout) sugiere que hay más tabs a la derecha. */
-  .tabs {
-    gap: 0.125rem;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    border-radius: 100px;
-    overflow-x: auto;
-    max-width: max-content;
-  }
-
-  .tab {
-    padding: 0.625rem 1rem;
-    font-size: 0.875rem;
   }
 }
 
@@ -346,166 +395,98 @@
     padding: 0.875rem;
     padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 0.875rem);
   }
-
-  .header {
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    padding-bottom: 0;
-  }
-
-  .tabs {
-    margin-left: -0.875rem;
-    margin-right: -0.875rem;
-    padding-left: 0.875rem;
-    padding-right: 0.875rem;
-    border-radius: 0;
-    box-shadow: none;
-    border-bottom: 1px solid var(--gris-borde);
-    background-color: transparent;
-    order: 2;
-    flex: 1 1 100%;
-    max-width: 100%;
-    gap: 0.5rem;
-  }
-
-  .tab {
-    padding: 0.625rem 0.5rem;
-    font-size: 0.875rem;
-    min-height: 44px;
-    border-radius: 0;
-    background-color: transparent !important;
-    position: relative;
-    color: var(--gris-texto-secundario);
-  }
-
-  .tabActive {
-    color: var(--rojo-principal);
-    box-shadow: none;
-  }
-
-  .tabActive::after {
-    display: block;
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    height: 2px;
-    background: var(--rojo-principal);
-    border-radius: 2px 2px 0 0;
-  }
-
-  .profileBtn {
-    order: 1;
-    margin-left: auto;
-    font-size: 0.875rem;
-    padding: 0.5rem 0.875rem;
-  }
-}
-
-/* ══════════════════════════════
-   RESPONSIVE ≤ 380px
-   ══════════════════════════════ */
-@media (max-width: 380px) {
-  .container {
-    padding: 0.75rem;
-    padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 0.75rem);
-  }
-
-  .tab {
-    font-size: 0.75rem;
-    padding: 0.5rem 0.75rem;
-  }
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   MODO NOCHE — CuentaLayout (tabs + botón perfil + skeletons)
+   MODO NOCHE — CuentaLayout (sidebar + selector móvil + skeletons)
    ---------------------------------------------------------------------------
-   El .container usa --gris-fondo (se oscurece solo). Las tabs y el botón de
-   perfil tienen grises HARDCODEADOS (#6b7280, #111827, #ffffff, rgba blancos)
-   que en oscuro quedarían claro-sobre-oscuro o texto gris poco legible. Aquí
-   los pasamos a las variables de tema: pista de tabs translúcida oscura, tab
-   activo en superficie elevada con texto claro, y botón perfil de tema.
-   Solo color/contraste; sin tocar tamaños ni layout.
+   El .container usa --gris-fondo (se oscurece solo). El sidebar, sus items y
+   el selector móvil tienen grises HARDCODEADOS que en oscuro quedarían
+   claro-sobre-oscuro. Aquí los pasamos a las variables de tema. Solo
+   color/contraste; sin tocar tamaños ni layout.
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* Pista (track) de los tabs: gris claro translúcido -> oscuro translúcido */
-:global([data-theme='dark']) .tabs {
-  background-color: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
-}
-
-/* Tabs inactivos: texto atenuado legible */
-:global([data-theme='dark']) .tab {
-  color: var(--color-text-muted);
-}
-:global([data-theme='dark']) .tab:hover {
-  color: var(--color-text);
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-/* Tab activo: blanco -> superficie elevada con texto claro */
-:global([data-theme='dark']) .tabActive {
-  color: var(--color-text);
-  background-color: var(--color-surface-2);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
-}
-
-/* Botón "Mi Perfil" (no activo): superficie y borde de tema */
-:global([data-theme='dark']) .profileBtn {
-  color: var(--color-text);
+:global([data-theme='dark']) .sidebar {
   background-color: var(--color-surface);
   border-color: var(--color-border);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
-:global([data-theme='dark']) .profileBtn svg {
-  color: var(--color-text-muted);
+
+:global([data-theme='dark']) .sidebarIdentity {
+  border-bottom-color: var(--color-border);
 }
-:global([data-theme='dark']) .profileBtn:hover {
-  background-color: var(--color-hover);
+
+:global([data-theme='dark']) .sidebarAvatar {
   border-color: var(--color-border);
 }
-:global([data-theme='dark']) .profileBtn:hover svg {
+
+:global([data-theme='dark']) .sidebarName {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .sidebarEmail {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .navGroupLabel {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .navItem {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .navItem svg {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .navItem:hover {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .navItem:hover svg {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .navItemActive {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border-left-color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .navItemActive svg {
   color: var(--primary-color);
 }
-/* El botón de perfil ACTIVO usa --rojo-principal/--blanco (ya se aclaran),
-   solo aseguramos texto claro sobre el acento de marca. */
-:global([data-theme='dark']) .profileBtnActive {
-  color: #fff;
-}
-:global([data-theme='dark']) .profileBtnActive svg,
-:global([data-theme='dark']) .profileBtnActive:hover svg {
-  color: #fff;
+
+:global([data-theme='dark']) .navItemActive:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
 }
 
-/* ── Skeletons en oscuro ── */
-:global([data-theme='dark']) .skeletonTabs {
-  background-color: rgba(255, 255, 255, 0.05);
+:global([data-theme='dark']) .navLogout {
+  border-top-color: var(--color-border);
+  color: var(--color-text-muted);
 }
-:global([data-theme='dark']) .skeletonProfileBtn {
+
+:global([data-theme='dark']) .navLogout:hover {
+  color: var(--primary-color);
+}
+
+:global([data-theme='dark']) .sidebarSelect {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+:global([data-theme='dark']) .skeletonSidebar,
+:global([data-theme='dark']) .skeletonContentBox {
   background-color: var(--color-surface);
   border-color: var(--color-border);
 }
-:global([data-theme='dark']) .skeletonContentBox {
-  background-color: var(--color-surface);
-}
-/* El brillo del shimmer (blanco 0.6) es demasiado fuerte en oscuro: lo bajamos */
-:global([data-theme='dark']) .skeletonTabs::after,
-:global([data-theme='dark']) .skeletonProfileBtn::after,
+
+:global([data-theme='dark']) .skeletonSidebar::after,
 :global([data-theme='dark']) .skeletonContentBox::after {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-}
-
-/* En móvil (≤576px) las tabs pasan a línea con borde inferior: aseguramos
-   que el borde y el texto sean de tema (la regla base usa --gris-borde, que ya
-   se oscurece; reforzamos el color de tab activo por el !important del fondo). */
-@media (max-width: 576px) {
-  :global([data-theme='dark']) .tab {
-    color: var(--color-text-muted);
-  }
-  :global([data-theme='dark']) .tabActive {
-    color: var(--primary-color);
-    background-color: transparent;
-  }
 }

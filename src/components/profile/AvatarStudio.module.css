@@ -1,188 +1,134 @@
-.studioContainer {
+/* Avatar compacto con insignia de cámara — vive dentro del encabezado de
+   identidad de PerfilPage (ver PerfilPage.jsx). Antes era una card propia
+   con título, descripción y 2 botones apilados; ahora es solo el círculo +
+   una acción de guardar cuando corresponde. */
+.compactWrap {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    min-height: 400px;
-}
-
-.studioMain {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-@media (min-width: 768px) {
-    .studioMain {
-        flex-direction: row;
-        align-items: center;
-    }
-}
-
-.previewArea {
-    flex: 1;
-    display: flex;
-    justify-content: center;
     align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
 }
 
-.avatarStage {
-    width: 100%;
-    max-width: 300px;
-    aspect-ratio: 1;
+.avatarCircle {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
     background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f3f4f6 100%);
+    border: 3px solid white;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.avatarImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatarPlaceholderIcon {
+    color: var(--gris-texto-secundario, #9ca3af);
+}
+
+.editBadge {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
-    border: 4px solid white;
-}
-
-.avatarPlaceholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--gris-texto-secundario);
-    font-weight: 600;
-}
-
-.rpmAvatarImg {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    transform: scale(1.1) translateY(5%);
-    transition: transform 0.3s ease;
-}
-
-.controlsArea {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.infoBox {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    padding: 1.5rem;
-    border-radius: 12px;
-}
-
-.infoBox h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
-    color: #0f172a;
-    font-weight: 700;
-}
-
-.infoBox p {
-    margin: 0;
-    font-size: 0.95rem;
-    color: #475569;
-    line-height: 1.5;
-}
-
-.actionButtons {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.btnSecondary,
-.btnPrimary {
-    padding: 1rem;
-    border-radius: 12px;
-    font-weight: 700;
-    font-size: 1rem;
+    background: var(--rojo-principal, #d9232d);
+    color: #fff;
+    border: 2px solid #fff;
     cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s, background 0.15s;
 }
 
-.btnSecondary {
-    background: white;
-    color: #0f172a;
-    border: 2px solid #e2e8f0;
+.editBadge:hover {
+    background: #c41828;
+    transform: scale(1.06);
 }
 
-.btnSecondary:hover {
-    border-color: #cbd5e1;
-    background: #f1f5f9;
+.editBadge:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
-.btnPrimary {
-    background: linear-gradient(135deg, var(--rojo-principal) 0%, #ff4d4f 100%);
-    color: white;
+.spinner {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.saveLink {
+    padding: 0;
     border: none;
-    box-shadow: 0 8px 20px rgba(217, 35, 45, 0.25);
+    background: transparent;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--rojo-principal, #d9232d);
+    cursor: pointer;
 }
 
-.btnPrimary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 25px rgba(217, 35, 45, 0.35);
+.saveLink:hover:not(:disabled) {
+    text-decoration: underline;
 }
 
-.btnSecondary:disabled {
+.saveLink:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
 
-.btnPrimary:disabled {
-    background: #cbd5e1;
-    box-shadow: none;
-    cursor: not-allowed;
-    color: #94a3b8;
-}
-
-/* Mensaje de error cuando falla la subida de la foto. */
 .uploadError {
     margin: 0;
+    max-width: 140px;
     color: var(--rojo-principal, #d9232d);
-    font-size: 0.9rem;
+    font-size: 0.72rem;
     font-weight: 600;
+    text-align: center;
+    line-height: 1.3;
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   MODO NOCHE — AvatarStudio (estudio de avatar del perfil)
-   ---------------------------------------------------------------------------
-   La caja informativa y el botón secundario usan superficie blanca con texto
-   oscuro hardcodeado (#0f172a/#475569), ilegibles en oscuro. Los pasamos a los
-   tokens de tema. El "escenario" del avatar (gradiente claro) se conserva
-   porque es el lienzo donde se muestra la foto; solo bajamos su borde blanco.
-   Solo color/contraste.
+   MODO NOCHE — AvatarStudio compacto
    ═════════════════════════════════════════════════════════════════════════ */
-:global([data-theme='dark']) .infoBox {
-    background: var(--color-surface-2);
-    border-color: var(--color-border);
+:global([data-theme='dark']) .avatarCircle {
+    border-color: var(--color-surface);
+    background: radial-gradient(circle at 50% 50%, var(--color-surface-2) 0%, var(--color-surface) 100%);
 }
-:global([data-theme='dark']) .infoBox h3 {
-    color: var(--color-text);
-}
-:global([data-theme='dark']) .infoBox p {
+
+:global([data-theme='dark']) .avatarPlaceholderIcon {
     color: var(--color-text-muted);
 }
-/* Borde blanco del escenario del avatar -> borde del tema */
-:global([data-theme='dark']) .avatarStage {
-    border-color: var(--color-border);
+
+:global([data-theme='dark']) .editBadge {
+    border-color: var(--color-surface);
+    background: var(--primary-color);
 }
-/* Botón secundario: superficie blanca + texto oscuro -> superficie/texto tema */
-:global([data-theme='dark']) .btnSecondary {
-    background: var(--color-surface-2);
-    color: var(--color-text);
-    border-color: var(--color-border);
+
+:global([data-theme='dark']) .editBadge:hover {
+    background: var(--primary-hover);
 }
-:global([data-theme='dark']) .btnSecondary:hover {
-    border-color: var(--color-text-muted);
-    background: var(--color-hover);
-}
-/* Botón primario deshabilitado: gris claro + texto gris -> tonos del tema */
-:global([data-theme='dark']) .btnPrimary:disabled {
-    background: var(--color-border);
-    color: var(--color-text-muted);
+
+:global([data-theme='dark']) .saveLink {
+    color: var(--primary-color);
 }

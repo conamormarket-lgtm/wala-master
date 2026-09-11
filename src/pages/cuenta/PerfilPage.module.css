@@ -22,6 +22,62 @@
   margin: 0;
 }
 
+/* ── Encabezado de identidad ──
+   Avatar + nombre + email + estado, una sola vez, arriba de todo. Antes el
+   nombre/email se repetían dentro de "Datos Personales" sin conexión visual
+   con la foto (que era una card aparte, descompensada frente a Recompensas +
+   Datos Personales apiladas al lado). */
+.identityHeader {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(229, 231, 235, 0.7);
+  border-radius: 24px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+}
+
+.identityText {
+  min-width: 0;
+}
+
+.identityText h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #111827;
+  overflow-wrap: break-word;
+}
+
+.identityEmail {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 0.95rem;
+  color: #6b7280;
+  overflow-wrap: break-word;
+}
+
+.identityBadgeOk,
+.identityBadgeWarn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.identityBadgeOk {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.identityBadgeWarn {
+  background: #fffbeb;
+  color: #d97706;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -32,6 +88,15 @@
 @media (min-width: 1024px) {
   .grid {
     grid-template-columns: 380px 1fr;
+  }
+}
+
+/* Encabezado de identidad: apilado y centrado en pantallas chicas. */
+@media (max-width: 640px) {
+  .identityHeader {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
   }
 }
 
@@ -398,6 +463,27 @@
 }
 :global([data-theme='dark']) .pageHeader p {
   color: var(--color-text-muted);
+}
+
+/* Encabezado de identidad (avatar + nombre + email + estado) */
+:global([data-theme='dark']) .identityHeader {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.55);
+}
+:global([data-theme='dark']) .identityText h1 {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .identityEmail {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .identityBadgeOk {
+  background: rgba(5, 150, 105, 0.18);
+  color: #34d399;
+}
+:global([data-theme='dark']) .identityBadgeWarn {
+  background: rgba(217, 119, 6, 0.18);
+  color: #fbbf24;
 }
 
 /* Tarjeta de cristal -> superficie oscura, borde y sombra de tema */

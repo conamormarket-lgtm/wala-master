@@ -515,6 +515,67 @@
   margin-bottom: 1.5rem;
 }
 
+/* Lista limpia de accesos del panel de cuenta (usuario logueado) — ícono +
+   etiqueta, sin relleno de color, alineada a la izquierda. Reemplaza los 2
+   botones grandes tipo pill que había antes ("Mi Perfil" / "Cerrar sesión"). */
+.accountMenuList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.accountMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.5rem;
+  border-radius: 8px;
+  color: var(--gris-texto-principal, #1f2937);
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.accountMenuItem svg {
+  flex-shrink: 0;
+  color: var(--gris-texto-secundario, #9ca3af);
+}
+
+.accountMenuItem:hover {
+  background-color: var(--gris-hover, #f5f5f5);
+  color: var(--gris-texto-principal, #1f2937);
+}
+
+/* Fila de "Cerrar sesión": al final del panel, atenuada — es la acción
+   menos frecuente, no debería competir visualmente con los accesos de
+   arriba. */
+.accountMenuLogout {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 0.5rem;
+  margin-top: 0.6rem;
+  border: none;
+  border-top: 1px solid var(--gris-borde, #eee);
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gris-texto-secundario, #6b7280);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.accountMenuLogout:hover {
+  color: var(--rojo-principal);
+}
+
 .primaryButton {
   background-color: #8b5cf6;
   color: white;
@@ -1664,6 +1725,28 @@
   /* !important para vencer el color inline (textStyle) que el admin pudo guardar
      en oscuro; así el texto siempre queda legible sobre el popup oscuro. */
   color: var(--color-text-muted) !important;
+}
+
+/* Lista de accesos del panel de cuenta + fila "Cerrar sesión". */
+:global([data-theme='dark']) .accountMenuItem {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .accountMenuItem svg {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .accountMenuItem:hover {
+  background-color: var(--color-hover);
+}
+
+:global([data-theme='dark']) .accountMenuLogout {
+  border-top-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .accountMenuLogout:hover {
+  color: var(--primary-color);
 }
 
 /* Botón secundario (Explorar tienda / Cerrar sesión / Crear cuenta). */

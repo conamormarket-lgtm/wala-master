@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
-import { logout } from '../../services/firebase/auth';
 import { validateDNI, validateCE, validatePhone, validateDocInternacional } from '../../utils/helpers';
 import AvatarStudio from '../../components/profile/AvatarStudio';
 import CountrySelect from '../../components/intl/CountrySelect';
@@ -46,7 +44,6 @@ const KapiSolCoin = () => (
 );
 
 const PerfilPage = () => {
-  const navigate = useNavigate();
   const { user, userProfile, updateUserProfile } = useAuth();
   const toast = useGlobalToast();
 
@@ -185,15 +182,30 @@ const PerfilPage = () => {
 
   return (
     <div className={styles.container}>
-      <Reveal as="header" className={styles.pageHeader}>
-        <h1><T>Mi Perfil</T></h1>
-        <p><T>Personaliza tus datos, tu avatar y revisa tus recompensas KapiSol.</T></p>
+      {/* Encabezado de identidad: antes el nombre/email vivían repetidos
+          (una vez en "Datos Personales", sin conexión visual con la foto,
+          que a su vez era una card propia y desbalanceada). Ahora avatar +
+          nombre + email + estado del perfil van juntos, una sola vez,
+          arriba de todo — como la cabecera de cualquier panel de cuenta. */}
+      <Reveal as="header" className={styles.identityHeader}>
+        <AvatarStudio
+          config={avatarConfig}
+          setConfig={setAvatarConfig}
+          onSave={handleSaveAvatar}
+          isSaving={isAvatarSaving}
+        />
+        <div className={styles.identityText}>
+          <h1>{userProfile.displayName || user.displayName || <T>Mi Perfil</T>}</h1>
+          <p className={styles.identityEmail}>{email || '—'}</p>
+          <span className={hasCompleteProfile ? styles.identityBadgeOk : styles.identityBadgeWarn}>
+            {hasCompleteProfile ? <T>Perfil completo</T> : <T>Faltan datos por completar</T>}
+          </span>
+        </div>
       </Reveal>
 
       <Stagger className={styles.grid}>
-        {/* Left Column: Wallet + Info */}
+        {/* Left Column: Wallet (más angosta — solo recompensas y referido) */}
         <StaggerItem className={styles.leftColumn}>
-
           <div className={styles.walletBanner}>
             <div className={styles.walletTitle}><Icons.Gift /> Recompensas</div>
             <h4 className={styles.walletAmount}>
@@ -211,7 +223,13 @@ const PerfilPage = () => {
               </button>
             </div>
           </div>
+        </StaggerItem>
 
+        {/* Right Column: Datos Personales (más ancha — antes vivía a la
+            izquierda apilada bajo Recompensas, mientras la derecha solo
+            tenía la card de foto; ahora la foto está en el encabezado y
+            esta columna tiene el peso principal). */}
+        <StaggerItem as="div">
           <GlassCard variant="solid" animate={false} padding="lg" hover>
             <div className={styles.cardHeader}>
               <div className={styles.headerIcon}><Icons.User /></div>
@@ -277,8 +295,9 @@ const PerfilPage = () => {
               </form>
             ) : (
               <div>
-                <div className={styles.infoRow}><span className={styles.infoLabel}><T>Nombre</T></span><span className={styles.infoValue}>{userProfile.displayName || user.displayName || '—'}</span></div>
-                <div className={styles.infoRow}><span className={styles.infoLabel}>Email</span><span className={styles.infoValue}>{email || '—'}</span></div>
+                {/* Nombre y email ya viven en el encabezado de identidad de
+                    arriba — aquí solo los datos que ese encabezado no
+                    muestra. */}
                 <div className={styles.infoRow}><span className={styles.infoLabel}>DNI</span><span className={styles.infoValue}>{userProfile.dni || '—'}</span></div>
                 <div className={styles.infoRow}><span className={styles.infoLabel}><T>Teléfono</T></span><span className={styles.infoValue}>{userProfile.phone || '—'}</span></div>
                 <div className={styles.infoRow}><span className={styles.infoLabel}><T>Cumpleaños</T></span><span className={styles.infoValue}>{userProfile.birthDate || '—'}</span></div>
@@ -288,26 +307,9 @@ const PerfilPage = () => {
                 )}
                 <div className={styles.actionsGroup}>
                   <GlassButton variant="primary" fullWidth onClick={() => setEditing(true)}>Editar</GlassButton>
-                  <GlassButton variant="danger" fullWidth onClick={async () => { await logout(); navigate('/'); }}><T>Cerrar sesión</T></GlassButton>
                 </div>
               </div>
             )}
-          </GlassCard>
-        </StaggerItem>
-
-        {/* Right Column: Avatar Configurator */}
-        <StaggerItem as="div">
-          <GlassCard variant="solid" animate={false} padding="lg" hover>
-            <div className={styles.cardHeader}>
-              <div className={styles.headerIcon}><Icons.User /></div>
-              <h3><T>Foto de Perfil</T></h3>
-            </div>
-            <AvatarStudio
-              config={avatarConfig}
-              setConfig={setAvatarConfig}
-              onSave={handleSaveAvatar}
-              isSaving={isAvatarSaving}
-            />
           </GlassCard>
         </StaggerItem>
       </Stagger>
