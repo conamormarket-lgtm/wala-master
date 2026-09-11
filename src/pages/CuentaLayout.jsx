@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, ChevronDown } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { logout } from '../services/firebase/auth';
@@ -24,25 +24,6 @@ const CuentaLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Selector de cuenta en móvil: antes era un <select> nativo — funcional,
-  // pero el popup de opciones lo pinta el sistema operativo (gris, sin
-  // radios ni tipografía del sitio) y desentonaba con el resto, que usa
-  // desplegables propios en todos lados. Este es el mismo patrón que ya usan
-  // los menús del header: botón + panel absoluto que se cierra solo.
-  const [menuCuentaAbierto, setMenuCuentaAbierto] = useState(false);
-  const menuCuentaRef = useRef(null);
-
-  useEffect(() => {
-    if (!menuCuentaAbierto) return undefined;
-    const cerrarSiEsAfuera = (e) => {
-      if (menuCuentaRef.current && !menuCuentaRef.current.contains(e.target)) {
-        setMenuCuentaAbierto(false);
-      }
-    };
-    document.addEventListener('mousedown', cerrarSiEsAfuera);
-    return () => document.removeEventListener('mousedown', cerrarSiEsAfuera);
-  }, [menuCuentaAbierto]);
-
   // Menú de cuenta agrupado por categoría (antes: una sola fila de 9 tabs en
   // píldora, sin jerarquía — "Mis Cupones" pesaba visualmente igual que
   // "Mis Pedidos"). Un sidebar agrupado es el patrón de un panel de cuenta
@@ -57,19 +38,6 @@ const CuentaLayout = () => {
     })),
     [rawNavGroups, t]
   );
-
-  // Opción resaltada en el botón del selector móvil: la página actual.
-  const itemActual = useMemo(
-    () => navGroups.flatMap((g) => g.items).find((item) => item.to === location.pathname),
-    [navGroups, location.pathname]
-  );
-
-  // En /cuenta (el índice — CuentaResumenPage) el selector "Menú de cuenta"
-  // quedaba repetido: la propia grilla de abajo YA muestra, una por una,
-  // esas mismas opciones. En el resto de /cuenta/* (donde no hay grilla)
-  // sigue sirviendo: deja saltar a otra sección sin volver primero al
-  // resumen.
-  const isCuentaIndex = location.pathname === '/cuenta';
 
   if (loading) {
     return (
@@ -150,70 +118,15 @@ const CuentaLayout = () => {
             </button>
           </aside>
 
-          {/* Antes había acá una tarjeta de identidad (avatar/nombre/correo/
-              monedas) repetida en CADA página de /cuenta — el mismo dato que
-              ya está en "Mi Perfil" (nombre/foto/correo) y en las monedas
-              del header (arriba de toda la app). Se quita del todo: no
-              aporta nada que no esté ya visible en otro lado. */}
-
-          {/* Móvil (<900px): el sidebar se reemplaza por este selector agrupado
-              — mismo patrón que usan los desplegables del header (botón +
-              panel propio), en vez de un <select> nativo: ese delega el
-              popup de opciones al sistema operativo, que lo pinta gris y sin
-              nada del estilo del sitio (radios, tipografía, colores de
-              marca), y desentonaba con cualquier otro menú de la página.
-              Oculto en /cuenta: sería un selector con las mismas opciones que
-              ya están, una a una, en la grilla de abajo. */}
-          {!isCuentaIndex && (
-            <div className={styles.sidebarMobile} ref={menuCuentaRef}>
-              <button
-                type="button"
-                className={styles.sidebarSelectBtn}
-                onClick={() => setMenuCuentaAbierto((v) => !v)}
-                aria-haspopup="listbox"
-                aria-expanded={menuCuentaAbierto}
-              >
-                {itemActual && (
-                  <itemActual.icon size={18} strokeWidth={1.75} aria-hidden="true" />
-                )}
-                <span className={styles.sidebarSelectBtnLabel}>
-                  {itemActual?.label || t('account.menu', 'Menú de cuenta')}
-                </span>
-                <ChevronDown
-                  size={18}
-                  strokeWidth={2}
-                  aria-hidden="true"
-                  className={`${styles.sidebarSelectChevron} ${menuCuentaAbierto ? styles.sidebarSelectChevronOpen : ''}`}
-                />
-              </button>
-
-              {menuCuentaAbierto && (
-                <div className={styles.sidebarSelectMenu} role="listbox" aria-label={t('account.menu', 'Menú de cuenta')}>
-                  {navGroups.map((group) => (
-                    <div key={group.label} className={styles.sidebarSelectGroup}>
-                      <p className={styles.sidebarSelectGroupLabel}>{group.label}</p>
-                      {group.items.map((item) => {
-                        const activo = location.pathname === item.to;
-                        return (
-                          <button
-                            key={item.to}
-                            type="button"
-                            role="option"
-                            aria-selected={activo}
-                            className={`${styles.sidebarSelectOption} ${activo ? styles.sidebarSelectOptionActive : ''}`}
-                            onClick={() => { navigate(item.to); setMenuCuentaAbierto(false); }}
-                          >
-                            <item.icon size={16} strokeWidth={1.75} aria-hidden="true" />
-                            <span>{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          {/* Antes había acá, en móvil: una tarjeta de identidad (avatar/
+              nombre/correo/monedas) y un selector "Menú de cuenta" — ambos
+              repetidos en CADA página de /cuenta. La identidad ya está en
+              "Mi Perfil" y en las monedas del header; el selector, en la
+              grilla de accesos directos de CuentaResumenPage (que además es
+              justo a donde vuelve el tab "Mi cuenta" del BottomNav). Sin
+              ellos, cada sección de /cuenta se ve como una pantalla propia
+              en vez de una lista de tabs con la misma cabecera repetida
+              arriba de cada una. */}
 
           <div className={styles.outlet} key={location.pathname}>
             <Outlet />
