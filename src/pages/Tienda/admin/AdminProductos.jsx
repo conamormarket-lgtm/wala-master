@@ -268,13 +268,21 @@ const AdminProductos = () => {
   }, [productsData, comboItemProductIds, optimisticVisibility, searchQuery, statusFilter]);
 
   // Conteos por estado para las etiquetas del filtro (sobre el total, sin filtrar).
+  // "Pieza de combo" es una etiqueta transversal (como "Destacado"): un producto
+  // puede ser pieza de un combo y a la vez seguir visible/vendible por su cuenta
+  // (ej. las casacas de Universitario/Alianza Lima/Dragon Ball/Naruto/Black
+  // Clover, que están en un combo Y en el catálogo normal) — por eso "Activos"
+  // los sigue contando y "Piezas de combo" los cuenta también, sin importar
+  // si están ocultos o no. Antes "comboPiece" solo contaba los ocultos, así
+  // que estas 7 casacas visibles quedaban en la lista de la pestaña pero sin
+  // la etiqueta, una inconsistencia entre el filtro y el badge.
   const statusCounts = useMemo(() => {
     const base = (productsData || []).map((p) =>
       optimisticVisibility[p.id] !== undefined ? { ...p, visible: optimisticVisibility[p.id] } : p
     );
     const active = base.filter((p) => p.visible !== false).length;
-    const comboPiece = base.filter((p) => p.visible === false && comboItemProductIds.has(p.id)).length;
-    const hidden = base.length - active - comboPiece;
+    const comboPiece = base.filter((p) => comboItemProductIds.has(p.id)).length;
+    const hidden = base.filter((p) => p.visible === false && !comboItemProductIds.has(p.id)).length;
     return { all: base.length, active, hidden, comboPiece };
   }, [productsData, comboItemProductIds, optimisticVisibility]);
 
@@ -722,8 +730,14 @@ const AdminProductos = () => {
                   </p>
                   <div className={styles.badges}>
                     {p.featured && <span className={styles.badge}>Destacado</span>}
-                    {/* Soft-delete y piezas de combo se distinguen de los simplemente ocultos */}
-                    {!isVisible && p.isComboPiece && (
+                    {/* "Pieza de combo" es transversal a la visibilidad: hay piezas
+                        que SOLO existen para el combo (ocultas) y otras que además
+                        se venden sueltas (ej. las casacas de Universitario/Alianza
+                        Lima/Dragon Ball/Naruto/Black Clover, visibles). Antes esta
+                        etiqueta solo se pintaba si estaba oculta, así que las
+                        visibles aparecían en la pestaña "Piezas de combo" pero sin
+                        ninguna marca que lo explicara. */}
+                    {p.isComboPiece && (
                       <span className={styles.badgeCombo}>Pieza de combo</span>
                     )}
                     {!isVisible && !p.isComboPiece && (

@@ -246,12 +246,14 @@ const ProductTable = ({
                     <span className={styles.statusIcon}>
                       {isVisible ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
                     </span>
-                    {/* Soft-delete y piezas de combo se distinguen de los simplemente ocultos
-                        (mismo criterio que la vista de tarjetas en AdminProductos.jsx) */}
-                    {!isVisible && (
-                      <span className={p.isComboPiece ? styles.badgeCombo : styles.badgeOculto}>
-                        {p.isComboPiece ? 'Pieza de combo' : (p.deleted === true ? 'Archivado' : 'Oculto')}
-                      </span>
+                    {/* "Pieza de combo" es transversal a la visibilidad — hay piezas
+                        que además se venden sueltas y siguen visibles (mismo
+                        criterio que la vista de tarjetas en AdminProductos.jsx) */}
+                    {p.isComboPiece && (
+                      <span className={styles.badgeCombo}>Pieza de combo</span>
+                    )}
+                    {!isVisible && !p.isComboPiece && (
+                      <span className={styles.badgeOculto}>{p.deleted === true ? 'Archivado' : 'Oculto'}</span>
                     )}
                   </div>
                 </td>
