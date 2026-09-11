@@ -1605,7 +1605,17 @@
 
   .mobileCenteredPopup {
     position: fixed;
-    top: calc(var(--admin-bar-height, 0px) + var(--header-height, 104px) + 8px);
+    /* El backdrop-filter de .header (más arriba en el árbol) lo convierte en
+       el "containing block" real de este position:fixed — no el viewport,
+       aunque el navegador lo pinte pegado a la pantalla igual. Antes este
+       `top` sumaba --admin-bar-height + --header-height asumiendo que medía
+       desde el viewport: con el admin logueado (barra roja) y/o el banner
+       de "Wala App" (que ahora vive ANTES del Header) visibles, el header
+       ya no arranca en y=0 y esa suma quedaba contada de más, alejando el
+       popup del ícono que lo abre. Anclarlo a 100% (el propio borde
+       inferior del header, su containing block real) es correcto sin
+       importar qué haya renderizado arriba. */
+    top: calc(100% + 8px);
     left: 50%;
     right: auto;
     background: var(--blanco);
