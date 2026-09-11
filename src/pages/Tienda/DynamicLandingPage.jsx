@@ -36,22 +36,40 @@ const DynamicLandingPage = () => {
     // BrandLoader durante el salto, en vez de contenido de otra marca.
     setLoading(true);
     const fetchLandingPage = async () => {
-      const page = await getLandingPageBySlug(slug);
-      if (mounted) {
-        if (page) {
-          setLandingPage(page);
-          setActivePageId(page.id);
-          setHeaderVisible(!page.hideHeader);
-          setFooterVisible(!page.hideFooter);
-          
-          if (page.themeId) {
-            const theme = await getThemeById(page.themeId);
-            if (theme && theme.cssContent) {
-              setThemeContent(theme.cssContent);
+      try {
+        const page = await getLandingPageBySlug(slug);
+        if (mounted) {
+          if (page) {
+            setLandingPage(page);
+            setActivePageId(page.id);
+            setHeaderVisible(!page.hideHeader);
+            setFooterVisible(!page.hideFooter);
+
+            if (page.themeId) {
+              try {
+                const theme = await getThemeById(page.themeId);
+                if (theme && theme.cssContent) {
+                  setThemeContent(theme.cssContent);
+                }
+              } catch (themeErr) {
+                // El tema es cosmetico (CSS extra): si falla, la landing se
+                // ve sin ese tema en vez de quedarse cargando para siempre.
+                console.warn('No se pudo cargar el tema de la landing:', themeErr);
+              }
             }
           }
         }
-        setLoading(false);
+      } catch (err) {
+        // SIN este catch, un getLandingPageBySlug que rechaza (Firestore
+        // caido, query mal formada, slug invalido) nunca llegaba a
+        // `setLoading(false)`: el BrandLoaderOverlay (show relevo, sin
+        // animacion de salida) se quedaba tapando la pantalla PARA SIEMPRE
+        // -scroll bloqueado y cada click/tap tragado por el overlay invisible-.
+        // Se loguea y se trata como "landing no encontrada" (misma UX que
+        // hoy: redirige a home) en vez de dejar al usuario atrapado.
+        console.error('Error al cargar la landing page:', err);
+      } finally {
+        if (mounted) setLoading(false);
       }
     };
 
