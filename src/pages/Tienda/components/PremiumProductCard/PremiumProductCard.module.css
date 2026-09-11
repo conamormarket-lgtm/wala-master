@@ -25,12 +25,24 @@
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+  /* La tarjeta es un enlace, no una superficie de gestos propia. Dejamos el
+     pan/zoom nativo al navegador y eliminamos la ambiguedad de doble-tap sin
+     impedir el scroll vertical ni el swipe del carrusel padre. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
-
 @media (hover: hover) {
   .card:hover {
     opacity: 1;
     transform: translateY(-2px);
+  }
+}
+
+/* Feedback tactil controlado. Reemplaza el tap-highlight nativo (que podia
+   parecer una seleccion pegada) y desaparece al soltar el dedo. */
+@media (hover: none), (pointer: coarse) {
+  .card:active {
+    opacity: 0.96;
   }
 }
 

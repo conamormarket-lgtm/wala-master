@@ -18,13 +18,27 @@
   align-items: center;
   pointer-events: none; /* Dejamos que los clicks pasen por defecto */
   transition: all 0.2s;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 
-.editableWrapper:hover .overlay {
-  border-color: #e31837;
-  background-color: rgba(227, 24, 55, 0.05);
-  pointer-events: auto; /* Al hacer hover, capturamos el click */
-  cursor: pointer;
+/* El hover solo gobierna la seleccion del builder cuando hay mouse real.
+   En touch un :hover sintetico puede quedar persistente despues de un press
+   largo y cambiar quien recibe el siguiente tap. */
+@media (hover: hover) and (pointer: fine) {
+  .editableWrapper:hover .overlay {
+    border-color: #e31837;
+    background-color: rgba(227, 24, 55, 0.05);
+    pointer-events: auto; /* Al hacer hover, capturamos el click */
+    cursor: pointer;
+  }
+
+  .editableWrapper:hover .editButton {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .editableWrapper.active .overlay {
@@ -48,13 +62,25 @@
   transition: all 0.2s;
 }
 
-.editableWrapper:hover .editButton {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .editableWrapper.active .editButton {
   display: none;
+}
+
+/* En el builder tactil no existe hover fiable: una seccion no activa muestra
+   siempre su control explicito de edicion. Al activarla, las reglas .active
+   de arriba devuelven la interaccion al contenido real. */
+@media (hover: none), (pointer: coarse) {
+  .editableWrapper:not(.active) .overlay {
+    border-color: rgba(227, 24, 55, 0.7);
+    background-color: rgba(227, 24, 55, 0.035);
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .editableWrapper:not(.active) .editButton {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .emptyPlaceholder {
