@@ -212,14 +212,30 @@ const AdminProductos = () => {
     return ids.map((id) => categoriesData.find((c) => c.id === id)?.name || id).join(', ');
   };
 
+  // IDs de productos que alguna vez fueron usados como pieza de un combo
+  // (comboItems[].productId de cualquier producto combo). Estas piezas suelen
+  // guardarse con visible:false a propósito — no se venden sueltas, solo
+  // alimentan el combo — y antes se veían igual que un producto archivado en
+  // la pestaña "Ocultos", sin forma de distinguirlos sin abrir cada uno.
+  const comboItemProductIds = useMemo(() => {
+    const ids = new Set();
+    (productsData || []).forEach((p) => {
+      if (p.isComboProduct && Array.isArray(p.comboItems)) {
+        p.comboItems.forEach((item) => { if (item?.productId) ids.add(item.productId); });
+      }
+    });
+    return ids;
+  }, [productsData]);
+
   const products = useMemo(() => {
     if (!productsData) return [];
     let filtered = productsData.map((p) => {
+      const withComboFlag = { ...p, isComboPiece: comboItemProductIds.has(p.id) };
       // Aplicar estado optimista si existe
       if (optimisticVisibility[p.id] !== undefined) {
-        return { ...p, visible: optimisticVisibility[p.id] };
+        return { ...withComboFlag, visible: optimisticVisibility[p.id] };
       }
-      return p;
+      return withComboFlag;
     });
 
     // Filtrar por estado (activo = visible en la tienda)
@@ -243,7 +259,7 @@ const AdminProductos = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return filtered;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productsData, optimisticVisibility, searchQuery, statusFilter]);
+  }, [productsData, comboItemProductIds, optimisticVisibility, searchQuery, statusFilter]);
 
   // Conteos por estado para las etiquetas del filtro (sobre el total, sin filtrar).
   const statusCounts = useMemo(() => {
@@ -689,8 +705,11 @@ const AdminProductos = () => {
                   </p>
                   <div className={styles.badges}>
                     {p.featured && <span className={styles.badge}>Destacado</span>}
-                    {/* Soft-delete: los archivados se distinguen de los simplemente ocultos */}
-                    {!isVisible && (
+                    {/* Soft-delete y piezas de combo se distinguen de los simplemente ocultos */}
+                    {!isVisible && p.isComboPiece && (
+                      <span className={styles.badgeCombo}>Pieza de combo</span>
+                    )}
+                    {!isVisible && !p.isComboPiece && (
                       <span className={styles.badgeOculto}>{p.deleted === true ? 'Archivado' : 'Oculto'}</span>
                     )}
                   </div>

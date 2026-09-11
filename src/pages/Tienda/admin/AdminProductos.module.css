@@ -260,6 +260,17 @@
   text-transform: uppercase;
 }
 
+/* Oculto a propósito porque alimenta un combo (no es un archivado real) */
+.badgeCombo {
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
 .cardActions {
   display: flex;
   border-top: 1px solid #f0f0f0;

@@ -175,6 +175,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .statusIcon {
@@ -182,6 +183,31 @@
   align-items: center;
   color: var(--gris-texto-secundario, #666);
   opacity: 0.7;
+}
+
+/* Mismo criterio que AdminProductos.module.css: distinguen POR QUÉ un
+   producto está oculto (archivado por el admin vs. pieza que alimenta un
+   combo y nunca debe mostrarse suelta). */
+.badgeOculto {
+  background: #f1f3f5;
+  color: #495057;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badgeCombo {
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .tdActions {
