@@ -1,6 +1,6 @@
 import { getCollection, getDocument, getCollectionPaginated, createDocument, updateDocument, deleteDocument, setDocument } from './firebase/firestore';
 import { deleteFile } from './firebase/storage';
-import { collection, doc, updateDoc, deleteField } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteField, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '../constants/marketplace';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';
@@ -650,15 +650,23 @@ export const clearProductCaches = () => {
 export const createProduct = async (data, explicitId = null) => {
   const payload = normalizeProductPayload(data);
   let result;
-  
+
   if (explicitId) {
+    // createdAt como Timestamp del servidor (serverTimestamp), NO como string
+    // ISO: un createdAt string ordena en un "bloque" de tipo distinto al de
+    // los Timestamp en un orderBy('createdAt') de Firestore — el mismo
+    // problema, a nivel de tipo, que deja productos afuera de "Recién
+    // llegaron"/"Ofertas" (ver scripts/backfill-product-createdat.js).
+    // createdAtMs (epoch ms, numérico) es el campo de respaldo que ese mismo
+    // backfill introdujo para un orden a futuro que no dependa del tipo.
     result = await setDocument(COLLECTION, explicitId, {
       ...payload,
-      createdAt: new Date().toISOString()
+      createdAt: serverTimestamp(),
+      createdAtMs: Date.now()
     });
     if (!result.error) result.id = explicitId;
   } else {
-    result = await createDocument(COLLECTION, payload);
+    result = await createDocument(COLLECTION, { ...payload, createdAtMs: Date.now() });
   }
   
   if (result.error) throw new Error(result.error);
