@@ -238,11 +238,17 @@ const AdminProductos = () => {
       return withComboFlag;
     });
 
-    // Filtrar por estado (activo = visible en la tienda)
+    // Filtrar por estado (activo = visible en la tienda). "Ocultos" excluye
+    // las piezas de combo a propósito — antes se mezclaban en la misma lista
+    // que lo archivado/oculto manualmente, y se veían igual de "perdidas"
+    // aunque estar ocultas es su estado normal y esperado. Tienen su propia
+    // pestaña ("Piezas de combo") para revisarlas sin ese ruido.
     if (statusFilter === 'active') {
       filtered = filtered.filter((p) => p.visible !== false);
     } else if (statusFilter === 'hidden') {
-      filtered = filtered.filter((p) => p.visible === false);
+      filtered = filtered.filter((p) => p.visible === false && !p.isComboPiece);
+    } else if (statusFilter === 'comboPiece') {
+      filtered = filtered.filter((p) => p.isComboPiece);
     }
 
     // Filtrar por búsqueda
@@ -267,8 +273,10 @@ const AdminProductos = () => {
       optimisticVisibility[p.id] !== undefined ? { ...p, visible: optimisticVisibility[p.id] } : p
     );
     const active = base.filter((p) => p.visible !== false).length;
-    return { all: base.length, active, hidden: base.length - active };
-  }, [productsData, optimisticVisibility]);
+    const comboPiece = base.filter((p) => p.visible === false && comboItemProductIds.has(p.id)).length;
+    const hidden = base.length - active - comboPiece;
+    return { all: base.length, active, hidden, comboPiece };
+  }, [productsData, comboItemProductIds, optimisticVisibility]);
 
   const handleToggleVisibility = (product) => {
     const newVisible = !(product.visible !== false);
@@ -570,6 +578,15 @@ const AdminProductos = () => {
             aria-pressed={statusFilter === 'hidden'}
           >
             Ocultos ({statusCounts.hidden})
+          </button>
+          <button
+            type="button"
+            className={`${styles.statusBtn} ${statusFilter === 'comboPiece' ? styles.active : ''}`}
+            onClick={() => setStatusFilter('comboPiece')}
+            aria-pressed={statusFilter === 'comboPiece'}
+            title="Prendas ocultas a propósito porque alimentan un producto combo — no son archivados"
+          >
+            Piezas de combo ({statusCounts.comboPiece})
           </button>
           <button
             type="button"
