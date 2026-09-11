@@ -11,7 +11,7 @@ import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct } from '../../../../utils/comboProductUtils';
 import { recordProductClick, recordVariantViewTime } from '../../../../utils/productVariantBehavior';
 import { trackProductView } from '../../../../services/analytics/tracker';
-import { getFallbackHex } from '../../../../utils/colors';
+import { getFallbackHex, getContrastTextColor } from '../../../../utils/colors';
 import { getBrands } from '../../../../services/brands';
 import { getProductsByCategory, getProduct } from '../../../../services/products';
 import FeaturedCarousel from '../FeaturedCarousel/FeaturedCarousel';
@@ -541,9 +541,18 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
           </div>
 
           {/* Brand — SIN <T>: el nombre de una marca es un nombre propio y
-              traducirlo lo estropea ("Nova" salia como "New"). */}
+              traducirlo lo estropea ("Nova" salia como "New"). El texto de
+              esta insignia venía fijo en blanco (o var(--color-text) en modo
+              oscuro) mientras el fondo lo elige el admin (brand.bgColor):
+              con un fondo claro/pastel (p.ej. un lila suave) el texto se
+              volvía casi ilegible, igual en claro que en oscuro, porque el
+              fondo inline le gana en especificidad a la hoja de estilos del
+              tema. Se calcula el color de texto según el fondo real. */}
           {brand?.name && (
-            <span className={styles.brandBadge} style={brand.bgColor ? { background: brand.bgColor } : {}}>
+            <span
+              className={styles.brandBadge}
+              style={brand.bgColor ? { background: brand.bgColor, color: getContrastTextColor(brand.bgColor) } : {}}
+            >
               {brand.name}
             </span>
           )}
