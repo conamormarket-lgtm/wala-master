@@ -97,7 +97,7 @@
   object-fit: contain;
 }
 
-/* Hover swap effect */
+/* Hover swap effect (desktop, mouse real) */
 @media (hover: hover) {
   .card:hover .primaryImage.hasSecondary {
     opacity: 0;
@@ -105,6 +105,51 @@
   .card:hover .secondaryImageWrapper {
     opacity: 1;
   }
+}
+
+/* Swap equivalente para touch: no hay :hover, así que lo dispara un swipe
+   corto sobre la imagen (ver handleImageTouch* en PremiumProductCard.jsx),
+   que agrega/quita esta clase en .imageContainer. */
+@media (hover: none) {
+  .imageContainer.showSecondary .primaryImage.hasSecondary {
+    opacity: 0;
+  }
+  .imageContainer.showSecondary .secondaryImageWrapper {
+    opacity: 1;
+  }
+}
+
+/* Puntitos que indican "hay una segunda foto, deslizá" — solo touch: en
+   desktop ya existe la pista implícita del hover. */
+.imageDots {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  gap: 4px;
+  z-index: 6;
+  pointer-events: none;
+}
+
+@media (hover: none) {
+  .imageDots {
+    display: flex;
+  }
+}
+
+.imageDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.imageDotActive {
+  background: #fff;
+  transform: scale(1.35);
 }
 
 /* Combo: no tenía NINGUNA clase propia (className={styles.comboImage}
@@ -578,14 +623,45 @@
     display: none; /* Only show + icon on mobile */
   }
   
+  /* Título arriba a todo el ancho de la tarjeta y precio debajo, en vez de
+     compartir la misma fila: a los ~160px de una tarjeta de "Ofertas para
+     ti" el título quedaba aplastado a una columna angosta junto al precio
+     y se leía cortadísimo ("CASACA PARA..."). */
+  .titleRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
   .title {
+    width: 100%;
     font-size: 0.8rem;
   }
-  
+
+  .priceContainer {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.4rem;
+    align-self: flex-start;
+  }
+
   .price {
     font-size: 0.8rem;
   }
-  
+
+  .originalPrice {
+    margin-top: 0;
+  }
+
+  /* Menos "avisos" encima de la foto: el conteo de stock ("X disponibles")
+     es el de menor valor para decidir y el que más ocupaba -sumado a NUEVO
+     y OFERTA quedaban tres pastillas apiladas tapando media imagen-. Se
+     conserva en desktop, donde hay más aire alrededor de la tarjeta. */
+  .badgeSold {
+    display: none;
+  }
+
   .badgeNew, .badgeSale, .badgeOut {
     font-size: 0.55rem;
     padding: 3px 6px;

@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
@@ -39,6 +39,10 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   const { thumbnailImageUrl, recordImpression, variantIndex } = useProductThumbnailVariant(product);
   const imageContainerRef = useRef(null);
   const impressionRecorded = useRef(false);
+  // Mobile: qué foto se ve dentro de la tarjeta (false = principal, true =
+  // secundaria). En desktop el swap sigue siendo puramente CSS por :hover;
+  // esto solo entra en juego vía swipe (ver handleImageTouch*).
+  const [showSecondaryImage, setShowSecondaryImage] = useState(false);
 
   const { isFavorite, toggleFavorite } = useWishlist();
   const { addToast } = useGlobalToast();
@@ -156,6 +160,52 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   const secondaryImageUrl = principalVariant?.images?.[0] || principalVariant?.galleryImages?.[0] || product?.images?.[1] || null;
   // Encuadre propio de la imagen de hover (si el admin lo definió para esa foto).
   const secondaryCrop = secondaryImageUrl ? principalVariant?.imagesCrops?.[secondaryImageUrl]?.percentages : undefined;
+  // En desktop el swap a la segunda foto lo dispara el :hover del mouse. En
+  // touch no existe ese hover, así que sin esto la segunda foto (con la
+  // prenda puesta, otro ángulo, etc.) nunca se veía en mobile. Un swipe corto
+  // sobre la imagen la revela — sin navegar a la ficha, que es lo que hace un
+  // tap normal en el resto de la tarjeta.
+  const hasImageSwap = !isCombo && !!secondaryImageUrl;
+
+  const swipeStateRef = useRef(null);
+  const suppressClickRef = useRef(false);
+
+  const handleImageTouchStart = useCallback((e) => {
+    if (!hasImageSwap || e.touches.length !== 1) return;
+    swipeStateRef.current = { startX: e.touches[0].clientX, dx: 0, moved: false };
+  }, [hasImageSwap]);
+
+  const handleImageTouchMove = useCallback((e) => {
+    const st = swipeStateRef.current;
+    if (!st) return;
+    const dx = e.touches[0].clientX - st.startX;
+    st.dx = dx;
+    if (Math.abs(dx) > 8) st.moved = true;
+  }, []);
+
+  const handleImageTouchEnd = useCallback(() => {
+    const st = swipeStateRef.current;
+    swipeStateRef.current = null;
+    if (!st || !st.moved) return;
+    const UMBRAL = 24;
+    if (st.dx <= -UMBRAL) {
+      setShowSecondaryImage(true);
+      suppressClickRef.current = true;
+    } else if (st.dx >= UMBRAL) {
+      setShowSecondaryImage(false);
+      suppressClickRef.current = true;
+    }
+  }, []);
+
+  // El tap normal debe seguir llevando a la ficha; solo se bloquea el click
+  // que llega justo después de un swipe (para no navegar quien solo quería
+  // ver la otra foto).
+  const handleCardClick = useCallback((e) => {
+    if (suppressClickRef.current) {
+      e.preventDefault();
+      suppressClickRef.current = false;
+    }
+  }, []);
 
   const fallbackImageUrl = toThumbnailImageUrl(
     principalVariant?.imageUrl ||
@@ -199,12 +249,20 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
       className={styles.card}
       onMouseEnter={handlePrefetch}
       onTouchStart={handlePrefetch}
+      onClick={handleCardClick}
       variants={variantsEntrada}
       initial={reducido ? 'show' : 'hidden'}
       whileInView="show"
       viewport={{ once: true, margin: '-40px' }}
     >
-      <div className={styles.imageContainer} ref={imageContainerRef} style={brandBgStyle}>
+      <div
+        className={`${styles.imageContainer} ${showSecondaryImage ? styles.showSecondary : ''}`}
+        ref={imageContainerRef}
+        style={brandBgStyle}
+        onTouchStart={handleImageTouchStart}
+        onTouchMove={handleImageTouchMove}
+        onTouchEnd={handleImageTouchEnd}
+      >
         {isCombo ? (
           <ComboProductImage
             comboProduct={product}
@@ -241,6 +299,16 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
               />
             )}
           </>
+        )}
+
+        {/* Puntitos que avisan que hay una segunda foto para deslizar — sin
+            esto, en touch (sin :hover) nadie se entera de que se puede
+            deslizar la imagen. Solo se ven en dispositivos sin hover real. */}
+        {hasImageSwap && (
+          <div className={styles.imageDots} aria-hidden="true">
+            <span className={`${styles.imageDot} ${!showSecondaryImage ? styles.imageDotActive : ''}`} />
+            <span className={`${styles.imageDot} ${showSecondaryImage ? styles.imageDotActive : ''}`} />
+          </div>
         )}
 
         {/* Combo: antes el hover no hacía nada distinto a un producto suelto
