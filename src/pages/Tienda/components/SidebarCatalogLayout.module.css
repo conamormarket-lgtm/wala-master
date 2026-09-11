@@ -464,11 +464,14 @@
    Mismo lenguaje visual que .priceInputWrap (borde, radio, foco) para que
    se sienta parte del mismo panel en vez de un control aparte. */
 .brandSearch {
-  /* 0.85rem (igual que .sidebarSection) se sentía pegado ACÁ: a diferencia
-     de un encabezado de texto plano, el input tiene su propio recuadro con
+  /* padding-top: el buscador quedaba pegado contra "Filtros" arriba -en
+     desktop .desktopFilterHeader ya trae su propio padding-bottom, pero no
+     alcanzaba para separarlo del recuadro con borde del input-.
+     padding-bottom 1.35rem (más que los 0.85rem de .sidebarSection): a
+     diferencia de un encabezado de texto plano, el input tiene su propio
      borde, así que el ojo necesita más aire debajo para leer la línea como
-     un separador y no como el borde inferior del propio buscador. */
-  padding: 0 0 1.35rem;
+     separador y no como el borde inferior del propio buscador. */
+  padding: 0.75rem 0 1.35rem;
   border-bottom: 1px solid var(--gris-borde, #e5e7eb);
   margin-bottom: 0.9rem;
 }
