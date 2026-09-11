@@ -581,6 +581,52 @@ export const getProductsByBrand = async (brandId) => {
 };
 
 /**
+ * Productos EN OFERTA (salePrice > 0 — ya validado < price al guardar, ver
+ * normalizeProductPayload/finalSalePrice), más recientes primero.
+ *
+ * Antes "Ofertas para ti" (ProductQueryCarousel, source='sale') pedía la
+ * página de los 48 productos MÁS RECIENTES (sort:'newest') y de ESOS 48
+ * filtraba en cliente cuáles tenían oferta activa. Con un catálogo grande
+ * eso es fràgil: si las ofertas activas no están entre los 48 productos más
+ * nuevos, la sección queda vacía aunque SÍ haya ofertas — justo lo que pasó
+ * al corregir createdAt en los 287 productos (ver backfill-product-
+ * createdat.js): los 2 productos con oferta activa dejaron de estar entre
+ * esos 48 y la sección desapareció del home.
+ *
+ * Esta query filtra DIRECTO por salePrice en Firestore, así que encuentra
+ * cualquier oferta activa sin importar cuándo se creó el producto. Firestore
+ * exige que, al filtrar por desigualdad (salePrice > 0), el PRIMER orderBy
+ * sea ese mismo campo — por eso se ordena por salePrice ahí y se reordena
+ * por fecha EN MEMORIA después (el resultado esperado es chico: cuántos
+ * productos tengan oferta activa, no el catálogo entero).
+ */
+export const getOnSaleProducts = async (brandId = null) => {
+  const result = await getCollection(
+    COLLECTION,
+    [{ field: 'salePrice', operator: '>', value: 0 }],
+    { field: 'salePrice', direction: 'desc' }
+  );
+  if (result.error) return result;
+  let data = result.data
+    .filter((p) => p.visible !== false)
+    .filter((p) => Number(p.salePrice) > 0 && Number(p.salePrice) < Number(p.price));
+  if (brandId) data = data.filter((p) => p.brandId === brandId);
+
+  // Más recientes primero (mismo criterio que "Recién llegaron"): createdAtMs
+  // si ya está backfillado, si no se deriva del Timestamp de createdAt.
+  data.sort((a, b) => {
+    const msOf = (p) => {
+      if (typeof p.createdAtMs === 'number') return p.createdAtMs;
+      if (p.createdAt?.toMillis) return p.createdAt.toMillis();
+      return 0;
+    };
+    return msOf(b) - msOf(a);
+  });
+
+  return { data: data.slice(0, 24).map((doc) => normalizeProductForRead(doc)), error: null };
+};
+
+/**
  * Obtener productos por colecciÃ³n (solo visibles)
  *
  * brandId OPCIONAL (multimarca): si se pasa, se ACOTAN los resultados a esa marca

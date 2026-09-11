@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getStoreProductsPage, getProductsByCategory } from '../../../../services/products';
+import { getStoreProductsPage, getProductsByCategory, getOnSaleProducts } from '../../../../services/products';
 import FeaturedCarousel from '../FeaturedCarousel/FeaturedCarousel';
 
 /**
@@ -38,13 +38,13 @@ const ProductQueryCarousel = ({
         return (data || []).slice(0, 24);
       }
       if (source === 'sale') {
-        // No hay orden por descuento en el índice; traemos una página y filtramos
-        // los que tienen precio de oferta válido (salePrice > 0 y < price).
-        const res = await getStoreProductsPage({ facet, sort: 'newest', pageSize: 48 });
-        const items = res?.items || [];
-        return items
-          .filter((p) => Number(p.salePrice) > 0 && Number(p.salePrice) < Number(p.price))
-          .slice(0, 24);
+        // Query directa por salePrice (ver getOnSaleProducts): antes pedía
+        // los 48 productos más NUEVOS y filtraba esos por oferta, así que
+        // una oferta activa en un producto que no está entre los 48 más
+        // recientes simplemente no aparecía — con un catálogo grande, la
+        // sección podía quedar vacía aunque sí hubiera ofertas.
+        const { data } = await getOnSaleProducts(brandId || null);
+        return data || [];
       }
       // newest (por defecto): más recientes primero.
       const res = await getStoreProductsPage({ facet, sort: 'newest', pageSize: 12 });
