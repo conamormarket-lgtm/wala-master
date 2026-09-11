@@ -64,6 +64,16 @@ const CuentaLayout = () => {
     [navGroups, location.pathname]
   );
 
+  // En /cuenta (el índice — CuentaResumenPage) la tarjeta de identidad y el
+  // selector "Menú de cuenta" quedaban repetidos: la propia grilla de abajo
+  // YA muestra todas las opciones (incluida "Mi Perfil", donde está el
+  // nombre/foto/correo), así que mostrarlos arriba de esa misma grilla era
+  // la misma información/navegación duplicada dos veces en la misma
+  // pantalla. En el resto de /cuenta/* (donde no hay grilla) siguen
+  // sirviendo: dan contexto de la cuenta y dejan saltar a otra sección sin
+  // volver primero al resumen.
+  const isCuentaIndex = location.pathname === '/cuenta';
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -146,78 +156,85 @@ const CuentaLayout = () => {
           {/* Resumen de cuenta en móvil: identidad + monedas. Las
               notificaciones volvieron a vivir solo en la campana del header
               (ver NotificationTray) — tenerlas también acá era el mismo
-              dato duplicado en dos lugares. */}
-          <div className={styles.mobileSummary}>
-            <div className={styles.mobileSummaryIdentity}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className={styles.mobileSummaryAvatar} referrerPolicy="no-referrer" />
-              ) : (
-                <span className={styles.mobileSummaryAvatarFallback} aria-hidden="true">{initialsOf(displayName)}</span>
-              )}
-              <div className={styles.mobileSummaryText}>
-                <p className={styles.mobileSummaryName}>{displayName}</p>
-                <p className={styles.mobileSummaryEmail}>{user.email}</p>
-              </div>
-              <div className={styles.mobileSummaryCoins} title={t('account.monedasInfo', 'Tus monedas — 1 moneda = S/1 de descuento')}>
-                <span aria-hidden="true">🪙</span> {Math.floor(activeMainCoins || 0)}
+              dato duplicado en dos lugares. Oculto en /cuenta: la grilla de
+              CuentaResumenPage ya incluye "Mi Perfil" (nombre/foto/correo). */}
+          {!isCuentaIndex && (
+            <div className={styles.mobileSummary}>
+              <div className={styles.mobileSummaryIdentity}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className={styles.mobileSummaryAvatar} referrerPolicy="no-referrer" />
+                ) : (
+                  <span className={styles.mobileSummaryAvatarFallback} aria-hidden="true">{initialsOf(displayName)}</span>
+                )}
+                <div className={styles.mobileSummaryText}>
+                  <p className={styles.mobileSummaryName}>{displayName}</p>
+                  <p className={styles.mobileSummaryEmail}>{user.email}</p>
+                </div>
+                <div className={styles.mobileSummaryCoins} title={t('account.monedasInfo', 'Tus monedas — 1 moneda = S/1 de descuento')}>
+                  <span aria-hidden="true">🪙</span> {Math.floor(activeMainCoins || 0)}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Móvil (<900px): el sidebar se reemplaza por este selector agrupado
               — mismo patrón que usan los desplegables del header (botón +
               panel propio), en vez de un <select> nativo: ese delega el
               popup de opciones al sistema operativo, que lo pinta gris y sin
               nada del estilo del sitio (radios, tipografía, colores de
-              marca), y desentonaba con cualquier otro menú de la página. */}
-          <div className={styles.sidebarMobile} ref={menuCuentaRef}>
-            <button
-              type="button"
-              className={styles.sidebarSelectBtn}
-              onClick={() => setMenuCuentaAbierto((v) => !v)}
-              aria-haspopup="listbox"
-              aria-expanded={menuCuentaAbierto}
-            >
-              {itemActual && (
-                <itemActual.icon size={18} strokeWidth={1.75} aria-hidden="true" />
-              )}
-              <span className={styles.sidebarSelectBtnLabel}>
-                {itemActual?.label || t('account.menu', 'Menú de cuenta')}
-              </span>
-              <ChevronDown
-                size={18}
-                strokeWidth={2}
-                aria-hidden="true"
-                className={`${styles.sidebarSelectChevron} ${menuCuentaAbierto ? styles.sidebarSelectChevronOpen : ''}`}
-              />
-            </button>
+              marca), y desentonaba con cualquier otro menú de la página.
+              Oculto en /cuenta: sería un selector con las mismas opciones que
+              ya están, una a una, en la grilla de abajo. */}
+          {!isCuentaIndex && (
+            <div className={styles.sidebarMobile} ref={menuCuentaRef}>
+              <button
+                type="button"
+                className={styles.sidebarSelectBtn}
+                onClick={() => setMenuCuentaAbierto((v) => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={menuCuentaAbierto}
+              >
+                {itemActual && (
+                  <itemActual.icon size={18} strokeWidth={1.75} aria-hidden="true" />
+                )}
+                <span className={styles.sidebarSelectBtnLabel}>
+                  {itemActual?.label || t('account.menu', 'Menú de cuenta')}
+                </span>
+                <ChevronDown
+                  size={18}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                  className={`${styles.sidebarSelectChevron} ${menuCuentaAbierto ? styles.sidebarSelectChevronOpen : ''}`}
+                />
+              </button>
 
-            {menuCuentaAbierto && (
-              <div className={styles.sidebarSelectMenu} role="listbox" aria-label={t('account.menu', 'Menú de cuenta')}>
-                {navGroups.map((group) => (
-                  <div key={group.label} className={styles.sidebarSelectGroup}>
-                    <p className={styles.sidebarSelectGroupLabel}>{group.label}</p>
-                    {group.items.map((item) => {
-                      const activo = location.pathname === item.to;
-                      return (
-                        <button
-                          key={item.to}
-                          type="button"
-                          role="option"
-                          aria-selected={activo}
-                          className={`${styles.sidebarSelectOption} ${activo ? styles.sidebarSelectOptionActive : ''}`}
-                          onClick={() => { navigate(item.to); setMenuCuentaAbierto(false); }}
-                        >
-                          <item.icon size={16} strokeWidth={1.75} aria-hidden="true" />
-                          <span>{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+              {menuCuentaAbierto && (
+                <div className={styles.sidebarSelectMenu} role="listbox" aria-label={t('account.menu', 'Menú de cuenta')}>
+                  {navGroups.map((group) => (
+                    <div key={group.label} className={styles.sidebarSelectGroup}>
+                      <p className={styles.sidebarSelectGroupLabel}>{group.label}</p>
+                      {group.items.map((item) => {
+                        const activo = location.pathname === item.to;
+                        return (
+                          <button
+                            key={item.to}
+                            type="button"
+                            role="option"
+                            aria-selected={activo}
+                            className={`${styles.sidebarSelectOption} ${activo ? styles.sidebarSelectOptionActive : ''}`}
+                            onClick={() => { navigate(item.to); setMenuCuentaAbierto(false); }}
+                          >
+                            <item.icon size={16} strokeWidth={1.75} aria-hidden="true" />
+                            <span>{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className={styles.outlet} key={location.pathname}>
             <Outlet />
