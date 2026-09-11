@@ -725,9 +725,25 @@ const Header = () => {
                 <div className={styles.accountPopupContent}>
                   {user ? (
                     <>
-                      <h3><T>Hola</T>, {userProfile?.displayName || userProfile?.nombre || user.email?.split('@')[0]}</h3>
-                      <p><T>Bienvenido a tu cuenta</T></p>
-                      
+                      {/* Mismo avatar que el ícono del header, pero más grande:
+                          antes el panel solo repetía el nombre en texto plano,
+                          sin nada que lo conectara visualmente con el círculo
+                          que abriste para llegar acá. El correo (en vez del
+                          genérico "Bienvenido a tu cuenta") además confirma de
+                          un vistazo CUÁL cuenta es -útil en una tienda con
+                          varias cuentas de staff/admin-. */}
+                      <div className={styles.accountIdentity}>
+                        {accountAvatarUrl ? (
+                          <img src={accountAvatarUrl} alt="" className={styles.accountIdentityAvatar} referrerPolicy="no-referrer" />
+                        ) : (
+                          <span className={styles.accountIdentityAvatarFallback} aria-hidden="true">{initialsOf(accountDisplayName)}</span>
+                        )}
+                        <div className={styles.accountIdentityText}>
+                          <h3><T>Hola</T>, {accountDisplayName}</h3>
+                          <p className={styles.accountIdentityEmail}>{user.email || <T>Bienvenido a tu cuenta</T>}</p>
+                        </div>
+                      </div>
+
                       {!userProfile?.hasCompletedSurvey && (
                         <div style={{ background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', border: '1px solid #e2e8f0', textAlign: 'left' }}>
                           <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '0.9rem', color: '#111827', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
