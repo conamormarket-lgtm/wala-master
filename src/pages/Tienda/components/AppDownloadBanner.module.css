@@ -7,12 +7,14 @@
   justify-content: space-between;
   gap: 1rem;
   font-family: inherit;
-  z-index: 99999;
+  z-index: 1;
   width: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  /* Vive al inicio de TiendaPage, después del Header. Antes era fixed y,
+     como #main-content-area crea su propio stacking context, ni siquiera un
+     z-index enorme podía colocarlo por encima del Header/AdminBar: ambos
+     cubrían la parte superior del aviso. En flujo ocupa su espacio real y
+     nunca queda detrás de esas barras. */
+  position: relative;
   box-sizing: border-box;
 }
 
@@ -35,6 +37,7 @@
 .textGroup {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .title {
@@ -88,4 +91,49 @@
 
 .closeBtn:active {
   color: #fff;
+}
+
+@media (max-width: 420px) {
+  .banner {
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+  }
+
+  .leftContent {
+    gap: 0.625rem;
+    min-width: 0;
+  }
+
+  .iconWrapper {
+    flex-shrink: 0;
+    padding: 0.5rem;
+  }
+
+  .title {
+    font-size: 0.9rem;
+  }
+
+  .subtitle {
+    overflow: hidden;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rightContent {
+    flex-shrink: 0;
+    gap: 0.25rem;
+  }
+
+  .downloadBtn {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.75rem;
+  }
+
+  .closeBtn {
+    width: 32px;
+    height: 32px;
+    margin-right: -0.375rem;
+  }
 }
