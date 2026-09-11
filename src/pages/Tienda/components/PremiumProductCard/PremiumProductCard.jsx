@@ -40,9 +40,14 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   const imageContainerRef = useRef(null);
   const impressionRecorded = useRef(false);
   // Mobile: qué foto se ve dentro de la tarjeta (false = principal, true =
-  // secundaria). En desktop el swap sigue siendo puramente CSS por :hover;
-  // esto solo entra en juego vía swipe (ver handleImageTouch*).
+  // secundaria). En desktop el swap sigue siendo puramente CSS por :hover.
+  // En touch NO existe ese hover, y un swipe manual sobre la imagen (lo que
+  // había antes) terminaba peleando con el tap-para-entrar-a-la-ficha —
+  // llegó a bloquear la tarjeta entera—. Se cambia a que la propia tarjeta
+  // alterne sola mientras está en pantalla (ver el efecto de abajo): nadie
+  // tiene que gesticular nada, y el tap normal queda completamente libre.
   const [showSecondaryImage, setShowSecondaryImage] = useState(false);
+  const [isCardInView, setIsCardInView] = useState(false);
 
   const { isFavorite, toggleFavorite } = useWishlist();
   const { addToast } = useGlobalToast();
@@ -161,54 +166,37 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   // Encuadre propio de la imagen de hover (si el admin lo definió para esa foto).
   const secondaryCrop = secondaryImageUrl ? principalVariant?.imagesCrops?.[secondaryImageUrl]?.percentages : undefined;
   // En desktop el swap a la segunda foto lo dispara el :hover del mouse. En
-  // touch no existe ese hover, así que sin esto la segunda foto (con la
-  // prenda puesta, otro ángulo, etc.) nunca se veía en mobile. Un swipe corto
-  // sobre la imagen la revela — sin navegar a la ficha, que es lo que hace un
-  // tap normal en el resto de la tarjeta.
+  // touch no hay hover, así que sin esto la segunda foto nunca se veía en
+  // mobile.
   const hasImageSwap = !isCombo && !!secondaryImageUrl;
 
-  const swipeStateRef = useRef(null);
-  const suppressClickRef = useRef(false);
-
-  const handleImageTouchStart = useCallback((e) => {
-    if (!hasImageSwap || e.touches.length !== 1) return;
-    // Limpia cualquier bandera de un gesto anterior que el navegador no haya
-    // llegado a "cobrarse" con un click (p.ej. si lo trató como paneo y por
-    // eso nunca disparó el sintético): sin este reseteo, ese swipe viejo
-    // dejaba la bandera en true para siempre y el SIGUIENTE tap normal a esta
-    // misma tarjeta —sin mover el dedo un milímetro— se veía bloqueado.
-    suppressClickRef.current = false;
-    const t = e.touches[0];
-    swipeStateRef.current = { startX: t.clientX, startY: t.clientY };
+  // Detecta cuándo la tarjeta está realmente en pantalla, para alternar las
+  // fotos solo mientras el usuario la puede ver (y no gastar timers de
+  // decenas de tarjetas fuera de vista a la vez).
+  useEffect(() => {
+    if (!hasImageSwap) return undefined;
+    const el = imageContainerRef.current;
+    if (!el) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => setIsCardInView(entries[0]?.isIntersecting ?? false),
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [hasImageSwap]);
 
-  const handleImageTouchEnd = useCallback((e) => {
-    const st = swipeStateRef.current;
-    swipeStateRef.current = null;
-    if (!st) return;
-    const t = e.changedTouches?.[0];
-    if (!t) return;
-    const dx = t.clientX - st.startX;
-    const dy = t.clientY - st.startY;
-    // Umbral generoso (a propósito): un tap real casi siempre arrastra el
-    // dedo unos px al presionar/soltar, y contarlo como swipe es justo el bug
-    // que rompía la navegación. Además, si el movimiento fue más vertical que
-    // horizontal era scroll de la página, no el gesto de cambiar de foto.
-    const UMBRAL = 32;
-    if (Math.abs(dx) < UMBRAL || Math.abs(dx) < Math.abs(dy)) return;
-    setShowSecondaryImage(dx < 0);
-    suppressClickRef.current = true;
-  }, []);
-
-  // El tap normal debe seguir llevando a la ficha; solo se bloquea el click
-  // que llega justo después de un swipe (para no navegar quien solo quería
-  // ver la otra foto).
-  const handleCardClick = useCallback((e) => {
-    if (suppressClickRef.current) {
-      e.preventDefault();
-      suppressClickRef.current = false;
+  // La tarjeta alterna sola entre la foto principal y la secundaria mientras
+  // está visible — sin gestos que el usuario tenga que descubrir ni que
+  // puedan pelear con el tap-para-entrar-a-la-ficha (un swipe manual acá
+  // llegó a bloquear la tarjeta entera). Respeta "menos movimiento".
+  useEffect(() => {
+    if (!hasImageSwap || !isCardInView || reducido) {
+      setShowSecondaryImage(false);
+      return undefined;
     }
-  }, []);
+    const id = setInterval(() => setShowSecondaryImage((v) => !v), 2200);
+    return () => clearInterval(id);
+  }, [hasImageSwap, isCardInView, reducido]);
 
   const fallbackImageUrl = toThumbnailImageUrl(
     principalVariant?.imageUrl ||
@@ -252,7 +240,6 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
       className={styles.card}
       onMouseEnter={handlePrefetch}
       onTouchStart={handlePrefetch}
-      onClick={handleCardClick}
       variants={variantsEntrada}
       initial={reducido ? 'show' : 'hidden'}
       whileInView="show"
@@ -262,8 +249,6 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
         className={`${styles.imageContainer} ${showSecondaryImage ? styles.showSecondary : ''}`}
         ref={imageContainerRef}
         style={brandBgStyle}
-        onTouchStart={handleImageTouchStart}
-        onTouchEnd={handleImageTouchEnd}
       >
         {isCombo ? (
           <ComboProductImage
@@ -303,9 +288,10 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
           </>
         )}
 
-        {/* Puntitos que avisan que hay una segunda foto para deslizar — sin
-            esto, en touch (sin :hover) nadie se entera de que se puede
-            deslizar la imagen. Solo se ven en dispositivos sin hover real. */}
+        {/* Puntitos que marcan cuál de las dos fotos se ve mientras alternan
+            solas (ver el efecto de arriba). Solo en dispositivos sin hover
+            real: en desktop la pista de que hay una 2da foto ya es el propio
+            hover. */}
         {hasImageSwap && (
           <div className={styles.imageDots} aria-hidden="true">
             <span className={`${styles.imageDot} ${!showSecondaryImage ? styles.imageDotActive : ''}`} />
