@@ -33,6 +33,14 @@
     z-index: 2;
     transition-property: opacity, filter;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Sin esto, un dedo/mouse que se mueve un pixel al tocar la foto (algo
+       normal dentro de un carrusel horizontal, p.ej. "Ofertas para ti")
+       puede iniciar el drag NATIVO de la imagen en vez de un tap o un
+       scroll: el navegador cancela el click y la tarjeta queda "pegada"
+       -sin navegar y sin poder tocar otra- hasta soltar. */
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .imageLoading {

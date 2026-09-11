@@ -207,6 +207,7 @@ const OptimizedImage = ({
                         }}
                         loading={loading}
                         decoding="async"
+                        draggable={false}
                         {...(finalFetchPriority ? { fetchpriority: finalFetchPriority } : {})}
                         {...rest}
                     />
@@ -228,6 +229,7 @@ const OptimizedImage = ({
                     }}
                     loading={loading}
                     decoding="async"
+                    draggable={false}
                     {...(finalFetchPriority ? { fetchpriority: finalFetchPriority } : {})}
                     {...rest}
                 />
