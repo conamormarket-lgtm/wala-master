@@ -122,11 +122,36 @@ const getComboVariantInfo = (sub, cfg, selColor) => {
 const Gallery = ({ images, activeIdx, setActiveIdx }) => {
   const [zoom, setZoom] = useState(false);
   const [pos, setPos] = useState({ x: 50, y: 50 });
+  const touchStartX = useRef(null);
   const active = images[activeIdx] || images[0];
 
   const onMove = e => {
     const r = e.currentTarget.getBoundingClientRect();
     setPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
+  };
+
+  const onTouchStart = e => {
+    touchStartX.current = e.touches[0]?.clientX ?? null;
+    setZoom(false);
+  };
+
+  const onTouchEnd = e => {
+    if (touchStartX.current === null) return;
+    const startX = touchStartX.current;
+    touchStartX.current = null;
+    if (images.length < 2) return;
+
+    const endX = e.changedTouches[0]?.clientX;
+    if (typeof endX !== 'number') return;
+
+    const distance = endX - startX;
+    if (Math.abs(distance) < 44) return;
+
+    setActiveIdx(current => (
+      distance < 0
+        ? Math.min(current + 1, images.length - 1)
+        : Math.max(current - 1, 0)
+    ));
   };
 
   return (
@@ -151,6 +176,9 @@ const Gallery = ({ images, activeIdx, setActiveIdx }) => {
         onMouseEnter={() => setZoom(true)}
         onMouseLeave={() => setZoom(false)}
         onMouseMove={onMove}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={() => { touchStartX.current = null; }}
       >
         <img
           src={active.url}
@@ -505,7 +533,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
 
   return (
     <>
-      <div className={`${styles.pdp} ${isCombo ? styles.pdpCombo : ''}`}>
+      <div className={`${styles.pdp} product-detail-page ${isCombo ? styles.pdpCombo : ''}`}>
 
         {/* ── Gallery ──
             Un combo usa la misma galería que un producto normal: portada +

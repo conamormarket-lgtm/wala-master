@@ -107,4 +107,12 @@ body.mobile-preview-active .App > footer {
   pointer-events: auto; /* Reactiva los clicks en los botones individuales */
 }
 
+@media (max-width: 768px) {
+  /* La ficha ya tiene un CTA persistente y BottomNav. Una tercera capa de
+     acciones flotantes cubría título, precio y selectores en 375 px. */
+  .App:has(.product-detail-page) .floating-action-stack {
+    display: none;
+  }
+}
+
 
