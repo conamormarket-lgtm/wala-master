@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Bell, Check } from 'lucide-react';
+import { Bell, Check, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNotifications } from '../../../contexts/NotificationsContext';
@@ -43,22 +43,46 @@ const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, classNa
         )}
       </button>
 
+      {/* Fondo oscurecido solo en móvil: sin él, tocar "afuera" del panel para
+          cerrarlo no tenía ninguna señal visual — parecía una tarjeta suelta
+          flotando sobre el catálogo en vez de un panel modal. */}
+      <div
+        className={styles.notifBackdrop}
+        onClick={onToggle}
+        aria-hidden="true"
+      />
+
       <div className={`${styles.accountPopup} ${styles.cartPopupWidth} ${styles.mobileCenteredPopup}`}>
         <div className={styles.notifPanel}>
           <div className={styles.notifHeader}>
             <h3 className={styles.notifHeaderTitle}><T>Notificaciones</T></h3>
-            {unreadCount > 0 && (
-              <button type="button" className={styles.notifMarkAll} onClick={markAllAsRead}>
-                <Check size={13} strokeWidth={2.5} aria-hidden="true" />
-                <T>Marcar todas</T>
+            <div className={styles.notifHeaderActions}>
+              {unreadCount > 0 && (
+                <button type="button" className={styles.notifMarkAll} onClick={markAllAsRead}>
+                  <Check size={13} strokeWidth={2.5} aria-hidden="true" />
+                  <T>Marcar todas</T>
+                </button>
+              )}
+              <button
+                type="button"
+                className={styles.notifCloseBtn}
+                onClick={onToggle}
+                aria-label="Cerrar notificaciones"
+              >
+                <X size={16} strokeWidth={2} aria-hidden="true" />
               </button>
-            )}
+            </div>
           </div>
 
           {notifications.length === 0 ? (
             <div className={styles.notifEmpty}>
-              <Bell size={28} strokeWidth={1.25} aria-hidden="true" />
-              <p><T>No tienes notificaciones recientes.</T></p>
+              <span className={styles.notifEmptyIcon}>
+                <Bell size={22} strokeWidth={1.5} aria-hidden="true" />
+              </span>
+              <p className={styles.notifEmptyTitle}><T>Estás al día</T></p>
+              <p className={styles.notifEmptyText}>
+                <T>Cuando tengas ofertas, monedas o novedades de tus pedidos, aparecerán aquí.</T>
+              </p>
             </div>
           ) : (
             <ul className={styles.notifList}>
