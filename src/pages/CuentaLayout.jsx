@@ -19,7 +19,7 @@ const initialsOf = (name) => {
 };
 
 const CuentaLayout = () => {
-  const { user, userProfile, loading, activeMainCoins } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -64,14 +64,11 @@ const CuentaLayout = () => {
     [navGroups, location.pathname]
   );
 
-  // En /cuenta (el índice — CuentaResumenPage) la tarjeta de identidad y el
-  // selector "Menú de cuenta" quedaban repetidos: la propia grilla de abajo
-  // YA muestra todas las opciones (incluida "Mi Perfil", donde está el
-  // nombre/foto/correo), así que mostrarlos arriba de esa misma grilla era
-  // la misma información/navegación duplicada dos veces en la misma
-  // pantalla. En el resto de /cuenta/* (donde no hay grilla) siguen
-  // sirviendo: dan contexto de la cuenta y dejan saltar a otra sección sin
-  // volver primero al resumen.
+  // En /cuenta (el índice — CuentaResumenPage) el selector "Menú de cuenta"
+  // quedaba repetido: la propia grilla de abajo YA muestra, una por una,
+  // esas mismas opciones. En el resto de /cuenta/* (donde no hay grilla)
+  // sigue sirviendo: deja saltar a otra sección sin volver primero al
+  // resumen.
   const isCuentaIndex = location.pathname === '/cuenta';
 
   if (loading) {
@@ -153,29 +150,11 @@ const CuentaLayout = () => {
             </button>
           </aside>
 
-          {/* Resumen de cuenta en móvil: identidad + monedas. Las
-              notificaciones volvieron a vivir solo en la campana del header
-              (ver NotificationTray) — tenerlas también acá era el mismo
-              dato duplicado en dos lugares. Oculto en /cuenta: la grilla de
-              CuentaResumenPage ya incluye "Mi Perfil" (nombre/foto/correo). */}
-          {!isCuentaIndex && (
-            <div className={styles.mobileSummary}>
-              <div className={styles.mobileSummaryIdentity}>
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className={styles.mobileSummaryAvatar} referrerPolicy="no-referrer" />
-                ) : (
-                  <span className={styles.mobileSummaryAvatarFallback} aria-hidden="true">{initialsOf(displayName)}</span>
-                )}
-                <div className={styles.mobileSummaryText}>
-                  <p className={styles.mobileSummaryName}>{displayName}</p>
-                  <p className={styles.mobileSummaryEmail}>{user.email}</p>
-                </div>
-                <div className={styles.mobileSummaryCoins} title={t('account.monedasInfo', 'Tus monedas — 1 moneda = S/1 de descuento')}>
-                  <span aria-hidden="true">🪙</span> {Math.floor(activeMainCoins || 0)}
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Antes había acá una tarjeta de identidad (avatar/nombre/correo/
+              monedas) repetida en CADA página de /cuenta — el mismo dato que
+              ya está en "Mi Perfil" (nombre/foto/correo) y en las monedas
+              del header (arriba de toda la app). Se quita del todo: no
+              aporta nada que no esté ya visible en otro lado. */}
 
           {/* Móvil (<900px): el sidebar se reemplaza por este selector agrupado
               — mismo patrón que usan los desplegables del header (botón +

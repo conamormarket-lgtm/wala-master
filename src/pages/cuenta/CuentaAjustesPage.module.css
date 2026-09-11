@@ -1,0 +1,113 @@
+/* ═══════════════════════════════════════════
+   AJUSTES DE CUENTA — apariencia, idioma, sesión
+   ═══════════════════════════════════════════ */
+
+.ajustes {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 420px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radio-grande, 16px);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, var(--gris-borde, #e5e7eb));
+}
+
+.sectionLabel {
+  margin: 0 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, var(--gris-texto-secundario, #6b7280));
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.rowLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text, var(--gris-texto-principal, #1f2937));
+}
+
+.langList {
+  display: flex;
+  flex-direction: column;
+}
+
+.langOption {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text, var(--gris-texto-principal, #1f2937));
+  padding: 0.6rem 0.25rem;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.langOption:hover {
+  background: var(--color-hover, var(--gris-hover, #f5f3ff));
+}
+
+.langOptionActive {
+  font-weight: 700;
+  color: var(--primary-color, #8b5cf6);
+}
+
+.langCheck {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--primary-color, #8b5cf6);
+}
+
+/* "Cerrar sesión": mismo patrón que el logout del sidebar de escritorio —
+   atenuado, al final, sin competir con el resto de la página. Solo el
+   sidebar de escritorio (≥900px) tenía uno; en móvil no había ninguno. */
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: none;
+  border-top: 1px solid var(--color-border, var(--gris-borde, #eee));
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-muted, var(--gris-texto-secundario, #6b7280));
+  padding: 0.9rem 0.25rem 0.25rem;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s ease;
+}
+
+.logoutBtn:hover {
+  color: var(--rojo-principal);
+}
+
+/* En escritorio (>860px) el sidebar de CuentaLayout ya trae su propio
+   "Cerrar sesión" siempre visible — este botón solo existe para cubrir el
+   hueco que había en móvil (el sidebar, con su logout, se oculta ahí). En
+   escritorio sería el mismo botón dos veces en la misma pantalla. */
+@media (min-width: 861px) {
+  .logoutBtn {
+    display: none;
+  }
+}

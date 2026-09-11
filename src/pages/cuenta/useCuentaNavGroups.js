@@ -10,6 +10,7 @@ import {
   Sparkles,
   Heart,
   Calendar,
+  Settings,
 } from 'lucide-react';
 
 // Fuente única de "todas las opciones a donde se quiere dirigir" dentro de
@@ -27,6 +28,7 @@ export const useCuentaNavGroups = () => {
         { to: '/cuenta/perfil', labelKey: 'account.perfil', label: 'Mi Perfil', icon: User },
         { to: '/cuenta/pedidos', labelKey: 'account.misPedidos', label: 'Mis Pedidos', icon: Package },
         { to: '/cuenta/rastreo', labelKey: 'account.rastreo', label: 'Rastreo del Pedido', icon: Truck },
+        { to: '/cuenta/ajustes', labelKey: 'account.ajustes', label: 'Ajustes', icon: Settings },
       ],
     },
     {

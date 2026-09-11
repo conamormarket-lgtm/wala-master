@@ -214,6 +214,7 @@ const PagoRapidoPage = lazy(() => import('./pages/PagoRapidoPage'));
 // ── Cuenta ────────────────────────────────────────────────────────────────────
 const CuentaLayout = lazy(() => import('./pages/CuentaLayout'));
 const CuentaResumenPage = lazy(() => import('./pages/cuenta/CuentaResumenPage'));
+const CuentaAjustesPage = lazy(() => import('./pages/cuenta/CuentaAjustesPage'));
 const PerfilPage = lazy(() => import('./pages/cuenta/PerfilPage'));
 const CuentaPedidosPage = lazy(() => import('./pages/cuenta/CuentaPedidosPage'));
 const CuentaCompraDetallePage = lazy(() => import('./pages/cuenta/CuentaCompraDetallePage'));
@@ -375,6 +376,7 @@ function App() {
                                         que el "Cuenta" de AliExpress: al entrar ves todas las opciones,
                                         y cada una te lleva de un toque a su página exacta. */}
                                     <Route index element={<CuentaResumenPage />} />
+                                    <Route path="ajustes" element={<CuentaAjustesPage />} />
                                     <Route path="perfil" element={<PerfilPage />} />
                                     <Route path="pedidos" element={<CuentaPedidosPage />} />
                                     <Route path="pedidos/:id" element={<CuentaCompraDetallePage />} />
