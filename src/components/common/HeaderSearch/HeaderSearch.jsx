@@ -73,7 +73,7 @@ const ANCHO_MOVIL = 768;
 const filaVariants = fadeUpCustom({ y: 8, duration: 0.22 });
 const listaVariants = staggerContainer({ stagger: 0.035, delayChildren: 0.02 });
 
-const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
+const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -232,6 +232,7 @@ const HeaderSearch = ({ brandId = null, botonClassName = '' }) => {
         aria-label="Buscar"
       >
         <Search strokeWidth={1.5} className={styles.lupaIcono} />
+        {mobileLabel && <span className={styles.mobileTriggerLabel}><T>{mobileLabel}</T></span>}
       </button>
 
       {/* En un PORTAL a <body>, y no dentro de la cabecera, por una razón muy

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '../../../contexts/CartContext';
@@ -90,6 +90,7 @@ const Header = () => {
   const [forceHideDropdowns, setForceHideDropdowns] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
+  const headerRef = useRef(null);
   const mobileWalletRef = useRef(null);
   const cartItemsCount = getTotalItems();
   const realCoins = activeMainCoins || 0;
@@ -408,13 +409,37 @@ const Header = () => {
     }
   };
 
+  // El header móvil ahora tiene dos filas. Publicar su altura REAL evita que
+  // popups, menús y layouts sigan suponiendo los antiguos 60px y aparezcan
+  // encima del buscador. ResizeObserver también cubre giro y safe areas.
+  useLayoutEffect(() => {
+    if (!isHeaderVisible) {
+      document.documentElement.style.removeProperty('--header-height');
+      return undefined;
+    }
+
+    const el = headerRef.current;
+    if (!el) return undefined;
+    const publishHeight = () => {
+      document.documentElement.style.setProperty('--header-height', `${el.offsetHeight}px`);
+    };
+
+    publishHeight();
+    const observer = new ResizeObserver(publishHeight);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--header-height');
+    };
+  }, [isHeaderVisible]);
+
   if (!isHeaderVisible) return null;
 
   const isNativeApp = Capacitor.isNativePlatform();
 
   return (
     <>
-    <header className={`${styles.header} ${forceHideDropdowns ? styles.forceHideHover : ''}`}>
+    <header ref={headerRef} className={`${styles.header} ${forceHideDropdowns ? styles.forceHideHover : ''}`}>
       <div className={styles.container}>
         {isNativeApp ? (
           <Link to="/" className={styles.nativeBackBtn}>
@@ -632,6 +657,10 @@ const Header = () => {
           </nav>
         </EditableSection>
 
+        <div className={styles.desktopHeaderSearch}>
+          <HeaderSearch brandId={brandActual?.id || null} botonClassName={styles.iconButton} />
+        </div>
+
         <div className={styles.actions}>
           <div className={styles.walletsContainer}>
             {user && (
@@ -693,16 +722,6 @@ const Header = () => {
               (a pedido): ahi viven junto al resto de preferencias de la
               cuenta, en vez de sumar 2 iconos mas a esta barra. */}
           <span className={styles.actionsDivider} aria-hidden="true" />
-
-          {/* Búsqueda consciente de marca (multimarca): en página de marca
-              (brandActual) se conserva ?brand=<id de tienda_brands> para que los
-              resultados se acoten a esa tienda y el usuario no sea expulsado al
-              catálogo global.
-
-              Antes esto era un enlace pelado a /buscar: llegabas a una página
-              con el campo vacío y tenías que empezar de nuevo allí. Ahora se
-              escribe donde se pulsa. */}
-          <HeaderSearch brandId={brandActual?.id || null} botonClassName={styles.iconButton} />
 
           {user && <NotificationTray />}
 
@@ -1018,6 +1037,17 @@ const Header = () => {
             </div>
           </div>
 
+        </div>
+
+        {/* En móvil la búsqueda es una segunda fila visible y familiar, como
+            en un ecommerce: no obliga a descubrir qué hace una lupa entre
+            cinco iconos y deja más aire a cuenta, favoritos y carrito. */}
+        <div className={styles.mobileHeaderSearch}>
+          <HeaderSearch
+            brandId={brandActual?.id || null}
+            botonClassName={`${styles.iconButton} ${styles.mobileSearchButton}`}
+            mobileLabel="Buscar productos, marcas y categorías"
+          />
         </div>
       </div>
     </header>

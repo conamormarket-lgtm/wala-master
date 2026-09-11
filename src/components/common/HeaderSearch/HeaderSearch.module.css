@@ -28,6 +28,10 @@
   height: 22px;
 }
 
+.mobileTriggerLabel {
+  display: none;
+}
+
 /* Vela de fondo: el panel es un desplegable, no una capa modal, así que
    oscurece poco — lo justo para que la página de detrás deje de competir. */
 .velo {
@@ -279,6 +283,18 @@
    ========================================================================= */
 
 @media (max-width: 768px) {
+  .mobileTriggerLabel {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* A 360px un desplegable anclado a la derecha se sale por el borde: aquí se
      pega a los dos lados. El `top` sigue viniendo medido del componente. */
   .panel {
