@@ -57,6 +57,16 @@ const hasRealHover = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(hover: hover)').matches;
 
+// Iniciales (1-2 letras) para el círculo de avatar cuando no hay foto —
+// mismo criterio que ya usan Testimonials/reseñas/registro de regalos en el
+// resto de la app, para que el "avatar de iniciales" se vea igual en todos
+// lados. "?" si no hay ni nombre ni correo (no debería pasar con user logueado).
+const initialsOf = (name) => {
+  const clean = String(name || '').trim();
+  if (!clean) return '?';
+  return clean.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+};
+
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
   const { user, userProfile, updateUserProfile, activeMainCoins } = useAuth();
@@ -66,6 +76,13 @@ const Header = () => {
   const { theme } = useTheme();
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
+  // Avatar del ícono de cuenta: foto propia (subida en "Mi Perfil") primero,
+  // luego la de Google si inició sesión así; sin ninguna, iniciales. Antes
+  // el ícono de "Mi cuenta" era el mismo muñequito genérico estés logueado
+  // o no -no había forma de saberlo de un vistazo, como sí lo resuelve
+  // cualquier ecommerce con el avatar del usuario-.
+  const accountAvatarUrl = userProfile?.avatarConfig?.avatarUrl || user?.photoURL || null;
+  const accountDisplayName = userProfile?.displayName || userProfile?.nombre || user?.displayName || user?.email?.split('@')[0] || '';
   const location = useLocation();
   const isArcadeZone = location.pathname.startsWith('/minijuegos') || location.pathname.startsWith('/ruleta') || location.pathname.startsWith('/ball-sort');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -692,7 +709,15 @@ const Header = () => {
           {!isNativeApp && (
           <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'cuenta' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'cuenta' ? styles.forceHideHover : ''}`}>
             <Link to="/cuenta" className={styles.iconButton} onClick={(e) => handleMobileDropdownClick(e, 'cuenta')} aria-label="Mi cuenta">
-              <User strokeWidth={1.5} className={styles.icon} />
+              {user ? (
+                accountAvatarUrl ? (
+                  <img src={accountAvatarUrl} alt="" className={styles.accountAvatar} referrerPolicy="no-referrer" />
+                ) : (
+                  <span className={styles.accountAvatarFallback} aria-hidden="true">{initialsOf(accountDisplayName)}</span>
+                )
+              ) : (
+                <User strokeWidth={1.5} className={styles.icon} />
+              )}
             </Link>
             
             <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>

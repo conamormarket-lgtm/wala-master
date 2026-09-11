@@ -355,6 +355,38 @@
   color: currentColor;
 }
 
+/* ── Avatar de "Mi cuenta" (solo con sesión iniciada) ────────────────────
+   Antes el ícono de cuenta era el mismo muñequito genérico logueado o no.
+   Con foto (subida en "Mi Perfil", o la de Google al iniciar sesión así) se
+   ve la foto; sin foto, un círculo con las iniciales -mismo lenguaje visual
+   que ya usan las reseñas/testimonios y el registro de regalos en el resto
+   de la tienda (círculo, degradado violeta de marca, iniciales en blanco)-,
+   en vez de inventar un estilo nuevo solo para el header. Un poco más
+   grande que .icon (28px vs 24px): un círculo lleno se ve pequeño/perdido
+   al mismo tamaño que un ícono de líneas. */
+.accountAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--color-border, #e5e7eb);
+}
+
+.accountAvatarFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color, #7c3aed), #4c1d95);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
 /* Pop-up de Mi Cuenta */
 .accountDropdownContainer {
   position: relative;
@@ -1072,6 +1104,16 @@
   .icon {
     width: 18px;
     height: 18px;
+  }
+
+  .accountAvatar,
+  .accountAvatarFallback {
+    width: 22px;
+    height: 22px;
+  }
+
+  .accountAvatarFallback {
+    font-size: 0.58rem;
   }
 
   .desktopWalletsOnly {
