@@ -172,29 +172,32 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
 
   const handleImageTouchStart = useCallback((e) => {
     if (!hasImageSwap || e.touches.length !== 1) return;
-    swipeStateRef.current = { startX: e.touches[0].clientX, dx: 0, moved: false };
+    // Limpia cualquier bandera de un gesto anterior que el navegador no haya
+    // llegado a "cobrarse" con un click (p.ej. si lo trató como paneo y por
+    // eso nunca disparó el sintético): sin este reseteo, ese swipe viejo
+    // dejaba la bandera en true para siempre y el SIGUIENTE tap normal a esta
+    // misma tarjeta —sin mover el dedo un milímetro— se veía bloqueado.
+    suppressClickRef.current = false;
+    const t = e.touches[0];
+    swipeStateRef.current = { startX: t.clientX, startY: t.clientY };
   }, [hasImageSwap]);
 
-  const handleImageTouchMove = useCallback((e) => {
-    const st = swipeStateRef.current;
-    if (!st) return;
-    const dx = e.touches[0].clientX - st.startX;
-    st.dx = dx;
-    if (Math.abs(dx) > 8) st.moved = true;
-  }, []);
-
-  const handleImageTouchEnd = useCallback(() => {
+  const handleImageTouchEnd = useCallback((e) => {
     const st = swipeStateRef.current;
     swipeStateRef.current = null;
-    if (!st || !st.moved) return;
-    const UMBRAL = 24;
-    if (st.dx <= -UMBRAL) {
-      setShowSecondaryImage(true);
-      suppressClickRef.current = true;
-    } else if (st.dx >= UMBRAL) {
-      setShowSecondaryImage(false);
-      suppressClickRef.current = true;
-    }
+    if (!st) return;
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    const dx = t.clientX - st.startX;
+    const dy = t.clientY - st.startY;
+    // Umbral generoso (a propósito): un tap real casi siempre arrastra el
+    // dedo unos px al presionar/soltar, y contarlo como swipe es justo el bug
+    // que rompía la navegación. Además, si el movimiento fue más vertical que
+    // horizontal era scroll de la página, no el gesto de cambiar de foto.
+    const UMBRAL = 32;
+    if (Math.abs(dx) < UMBRAL || Math.abs(dx) < Math.abs(dy)) return;
+    setShowSecondaryImage(dx < 0);
+    suppressClickRef.current = true;
   }, []);
 
   // El tap normal debe seguir llevando a la ficha; solo se bloquea el click
@@ -260,7 +263,6 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
         ref={imageContainerRef}
         style={brandBgStyle}
         onTouchStart={handleImageTouchStart}
-        onTouchMove={handleImageTouchMove}
         onTouchEnd={handleImageTouchEnd}
       >
         {isCombo ? (
