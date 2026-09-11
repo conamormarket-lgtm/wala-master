@@ -270,6 +270,15 @@ const GlobalLayout = ({ children }) => {
       <ScrollTracker />
       <AdminBar />
       <VisualEditorPanel />
+
+      {/* Punto de anclaje para AppDownloadBanner (portal): vive fuera de
+          #main-content-area a propósito, para que el aviso de "Wala App"
+          quede ANTES del Header en el DOM (en vez de ser lo primero dentro
+          del contenido, después del Header). AppDownloadBanner sigue
+          montado donde siempre — dentro de TiendaPage, con su misma lógica
+          de visibilidad — solo que ahora hace portal hacia acá. */}
+      <div id="app-top-banner-slot" />
+
       <Header />
 
       <main id="main-content-area">

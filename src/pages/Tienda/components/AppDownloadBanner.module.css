@@ -9,11 +9,12 @@
   font-family: inherit;
   z-index: 1;
   width: 100%;
-  /* Vive al inicio de TiendaPage, después del Header. Antes era fixed y,
-     como #main-content-area crea su propio stacking context, ni siquiera un
-     z-index enorme podía colocarlo por encima del Header/AdminBar: ambos
-     cubrían la parte superior del aviso. En flujo ocupa su espacio real y
-     nunca queda detrás de esas barras. */
+  /* Se monta dentro de TiendaPage pero se PINTA antes del Header vía portal
+     (ver #app-top-banner-slot en App.jsx / AppDownloadBanner.jsx), fuera de
+     #main-content-area. Sigue en flujo normal (no fixed): antes se probó
+     fixed y, como #main-content-area crea su propio stacking context, ni un
+     z-index enorme lo ponía por encima del Header/AdminBar. Moverlo de lugar
+     en el DOM resuelve eso sin pelear con z-index. */
   position: relative;
   box-sizing: border-box;
 }

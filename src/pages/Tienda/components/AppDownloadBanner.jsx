@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Smartphone } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import useIsMobile from '../../../hooks/useIsMobile';
@@ -8,6 +9,12 @@ import { T } from '../../../i18n/useTranslatedText';
 const AppDownloadBanner = () => {
   const { isMobileDevice } = useIsMobile();
   const [isVisible, setIsVisible] = useState(false);
+  // El componente se monta dentro de TiendaPage (misma condición de siempre:
+  // !isLandingPage && !categoryId && !searchTerm), pero se pinta ANTES del
+  // Header vía portal — ver #app-top-banner-slot en App.jsx. useLayoutEffect
+  // (no useEffect) para engancharlo antes del paint y evitar un parpadeo
+  // sin banner en el primer frame.
+  const [portalTarget, setPortalTarget] = useState(null);
 
   useEffect(() => {
     // Solo mostrar si es un dispositivo móvil y NO estamos dentro de la app nativa
@@ -16,13 +23,17 @@ const AppDownloadBanner = () => {
     }
   }, [isMobileDevice]);
 
-  if (!isVisible) return null;
+  useLayoutEffect(() => {
+    setPortalTarget(document.getElementById('app-top-banner-slot'));
+  }, []);
+
+  if (!isVisible || !portalTarget) return null;
 
   const handleClose = () => {
     setIsVisible(false);
   };
 
-  return (
+  return createPortal((
     <div className={styles.banner}>
       <div className={styles.leftContent}>
         <div className={styles.iconWrapper}>
@@ -50,7 +61,7 @@ const AppDownloadBanner = () => {
         </button>
       </div>
     </div>
-  );
+  ), portalTarget);
 };
 
 export default AppDownloadBanner;
