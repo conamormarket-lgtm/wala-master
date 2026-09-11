@@ -411,7 +411,10 @@ const Header = () => {
 
   // El header móvil ahora tiene dos filas. Publicar su altura REAL evita que
   // popups, menús y layouts sigan suponiendo los antiguos 60px y aparezcan
-  // encima del buscador. ResizeObserver también cubre giro y safe areas.
+  // encima del buscador. SOLO se publica en móvil: en escritorio .container
+  // usa --header-height como min-height; medir el header y volver a inyectar
+  // esa medida ahí creaba una realimentación de +1px por el borde en cada
+  // vuelta del ResizeObserver y el header crecía sin límite.
   useLayoutEffect(() => {
     if (!isHeaderVisible) {
       document.documentElement.style.removeProperty('--header-height');
@@ -420,15 +423,22 @@ const Header = () => {
 
     const el = headerRef.current;
     if (!el) return undefined;
+    const mobileQuery = window.matchMedia('(max-width: 768px)');
     const publishHeight = () => {
-      document.documentElement.style.setProperty('--header-height', `${el.offsetHeight}px`);
+      if (mobileQuery.matches) {
+        document.documentElement.style.setProperty('--header-height', `${el.offsetHeight}px`);
+      } else {
+        document.documentElement.style.removeProperty('--header-height');
+      }
     };
 
     publishHeight();
     const observer = new ResizeObserver(publishHeight);
     observer.observe(el);
+    mobileQuery.addEventListener('change', publishHeight);
     return () => {
       observer.disconnect();
+      mobileQuery.removeEventListener('change', publishHeight);
       document.documentElement.style.removeProperty('--header-height');
     };
   }, [isHeaderVisible]);
