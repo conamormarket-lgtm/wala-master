@@ -12,7 +12,6 @@ import { getBrands } from '../../../services/brands';
 import { getDocument } from '../../../services/firebase/firestore';
 import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
-import { useNotifications } from '../../../contexts/NotificationsContext';
 import EditableSection from '../../admin/EditableSection';
 import HeaderSearch from '../HeaderSearch/HeaderSearch';
 import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, Check, Package, Ticket, Gift, LogOut } from 'lucide-react';
@@ -75,11 +74,6 @@ const Header = () => {
   const { wishlistItems } = useWishlist();
   const { lang, setLang, available, t } = useLanguage();
   const { theme } = useTheme();
-  // Monedas y notificaciones dejaron de tener icono propio en la fila móvil
-  // (ver .mobileWalletsOnly / NotificationTray más abajo): en móvil solo
-  // queda Cuenta/Favoritos/Carrito, y este contador alimenta el puntito de
-  // aviso sobre el avatar — el resumen completo vive ahora en /cuenta.
-  const { unreadCount: unreadNotifications } = useNotifications();
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
   // Avatar del ícono de cuenta: foto propia (subida en "Mi Perfil") primero,
@@ -719,11 +713,8 @@ const Header = () => {
             botonClassName={`${styles.iconButton} ${styles.desktopSearchButton}`}
           />
 
-          {/* Solo escritorio: en móvil la campana se muda a /cuenta (ver
-              CuentaLayout) y el avatar de aquí abajo avisa con un puntito. */}
           {user && (
             <NotificationTray
-              className={styles.desktopOnlyAction}
               isOpen={activeDropdown === 'notificaciones'}
               isBlocked={Boolean(activeDropdown) && activeDropdown !== 'notificaciones'}
               onToggle={(e) => handleMobilePopupClick(e, 'notificaciones')}
@@ -741,13 +732,6 @@ const Header = () => {
                 )
               ) : (
                 <User strokeWidth={1.5} className={styles.icon} />
-              )}
-              {/* Puntito de aviso: solo visible en móvil (CSS), reemplaza a la
-                  campana de notificaciones que ahí ya no tiene icono propio —
-                  "algo nuevo, andá a Mi cuenta a verlo" en vez de otro icono
-                  más en la fila. */}
-              {user && unreadNotifications > 0 && (
-                <span className={styles.accountUnreadDot} aria-hidden="true" />
               )}
             </Link>
             {/* Blanco invisible del mismo tamaño del botón: en móvil ya no hay

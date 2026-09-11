@@ -392,22 +392,6 @@
   line-height: 1;
 }
 
-/* Puntito de "hay algo nuevo" sobre el avatar — SOLO móvil (ver media query
-   ≤768px): en escritorio la campana de NotificationTray ya trae su propio
-   contador, así que duplicarlo aquí sería la misma info dos veces. */
-.accountUnreadDot {
-  display: none;
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--rojo-principal) 0%, var(--rojo-hover) 100%);
-  border: 2px solid var(--color-surface, #fff);
-  pointer-events: none;
-}
-
 /* Punto de aterrizaje INVISIBLE para la animación de "monedas volando"
    (utils/animations.js busca .global-coins-target): en móvil ya no hay un
    icono de monedas propio en el header, así que apuntamos al avatar — ahí
@@ -868,13 +852,6 @@
   align-items: center;
 }
 
-/* Genérica para "esto solo tiene sentido en escritorio, en móvil vive en
-   /cuenta" — hoy la usa NotificationTray (className pasado por Header.jsx). */
-.desktopOnlyAction {
-  display: flex;
-  align-items: center;
-}
-
 .coinsDisplayTarget {
   position: relative;
   display: flex;
@@ -1296,13 +1273,11 @@
     font-size: 0.58rem;
   }
 
-  .accountUnreadDot,
   .mobileCoinsLandingSpot {
     display: block;
   }
 
-  .desktopWalletsOnly,
-  .desktopOnlyAction {
+  .desktopWalletsOnly {
     display: none;
   }
 
