@@ -342,6 +342,17 @@
   .skeletonSidebar {
     display: none;
   }
+
+  /* Sin el sidebar, la vista logueada es solo la grilla de accesos + el
+     "Cerrar sesión": contenido corto. La altura mínima de pantalla completa
+     que trae .container (100dvh − header) la estiraba de más y dejaba un gran
+     hueco vacío antes del footer. Acá se suelta para que el contenido mande su
+     propia altura y el footer suba pegado. El estado SIN sesión
+     (.containerAuth) conserva la altura completa: su tarjeta de login se
+     centra en la pantalla. */
+  .container:not(.containerAuth) {
+    min-height: 0;
+  }
 }
 
 /* ══════════════════════════════
