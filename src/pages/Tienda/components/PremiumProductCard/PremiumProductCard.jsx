@@ -1,10 +1,11 @@
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { getBrands } from '../../../../services/brands';
+import { idsDeCategoriaDe } from '../../../../services/products';
 import { useCart } from '../../../../contexts/CartContext';
 import { useWishlist } from '../../../../contexts/WishlistContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
@@ -236,14 +237,36 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
 
   const mainVariantCrop = principalVariant?.thumbnailCrop?.percentages;
 
-  // New badge detection
+  // New badge detection. createdAt puede llegar como Timestamp de Firestore
+  // (tiene .toDate()) o como string/epoch legacy — new Date(Timestamp) sin
+  // convertir antes da "Invalid Date" y el badge simplemente no aparece.
   const isNew = (() => {
     if (!product.createdAt) return false;
-    const createdDate = new Date(product.createdAt);
+    const createdDate = product.createdAt?.toDate
+      ? product.createdAt.toDate()
+      : new Date(product.createdAt);
+    if (Number.isNaN(createdDate.getTime())) return false;
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     return createdDate > thirtyDaysAgo;
   })();
+
+  // Etiqueta de categoría de ESTE producto (la franja violeta debajo del
+  // nombre/precio) — antes tomaba `categories[0].name`, pero `categories` es
+  // la lista GLOBAL de categorías del sitio que recibe la tarjeta como prop
+  // (para resolver id -> nombre), no las categorías del producto. Con eso,
+  // TODAS las tarjetas mostraban la MISMA categoría (la primera de la lista
+  // global, "Casacas" en este catálogo) sin importar el producto real —
+  // un serum o un conjunto de pareja también decían "Casacas". Se resuelve
+  // con las categorías propias del producto (idsDeCategoriaDe, la misma
+  // regla que ya usan el menú del header y CategoryGrid) cruzadas contra la
+  // lista global para sacar el nombre.
+  const productCategoryName = useMemo(() => {
+    const ownIds = idsDeCategoriaDe(product);
+    if (ownIds.length === 0) return null;
+    const match = categories.find((c) => (c?.id || c?.slug) === ownIds[0]);
+    return match?.name || null;
+  }, [product, categories]);
 
   return (
     <MotionLink
@@ -404,8 +427,8 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
         {/* Optional: color swatches or subtle description could go here */}
         {/* Categoría dinámica (BD) -> <T>; fallbacks estáticos -> t(). */}
         <div className={styles.subtitle}>
-          {categories.length > 0
-            ? <T>{categories[0].name}</T>
+          {productCategoryName
+            ? <T>{productCategoryName}</T>
             : (product.customizable ? t('card.personalizable', 'Personalizable') : t('card.essential', 'Esencial'))}
         </div>
       </div>
