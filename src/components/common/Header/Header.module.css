@@ -1090,15 +1090,24 @@
   transition: all 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Tooltip custom para monedas */
+/* Tooltip custom para monedas — antes era una sola oración corrida ("Tus
+   monedas - 1 moneda = S/1 de descuento (vencen a fin de mes)") en un
+   bloque centrado: se leía apretado, sin ninguna pausa visual entre el
+   título, la equivalencia y el vencimiento. Ahora es una columna con 3
+   niveles de énfasis (ver .tooltipTitle/.tooltipBody/.tooltipMeta) —
+   alineada a la izquierda, que se lee mejor que centrada en texto
+   multilínea. */
 .tooltipContainer .tooltipText {
   visibility: hidden;
-  width: 220px;
+  width: 210px;
   background-color: #333;
   color: #fff;
-  text-align: center;
-  border-radius: 8px;
-  padding: 8px 12px;
+  text-align: left;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   position: absolute;
   z-index: 101;
   top: 130%;
@@ -1106,11 +1115,28 @@
   transform: translateX(-50%) translateY(10px);
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  font-size: 0.8rem;
-  font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.35;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   pointer-events: none;
+}
+
+.tooltipTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.tooltipBody {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tooltipMeta {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.58);
+  margin-top: 1px;
 }
 
 .tooltipContainer .tooltipText::after {

@@ -688,8 +688,16 @@ const Header = () => {
                   <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
                     🪙 {Math.floor(displayCoins)}
                   </div>
+                  {/* Antes era una sola oración corrida ("Tus monedas - 1
+                      moneda = S/1 de descuento (vencen a fin de mes)") — se
+                      leía como un bloque apretado de texto. Separada en 3
+                      líneas con jerarquía propia (título / equivalencia /
+                      vencimiento) se lee de un vistazo en vez de tener que
+                      desarmar la oración. */}
                   <div className={styles.tooltipText}>
-                    <T>Tus monedas - 1 moneda = S/1 de descuento (vencen a fin de mes)</T>
+                    <strong className={styles.tooltipTitle}><T>Tus monedas</T></strong>
+                    <span className={styles.tooltipBody}><T>1 moneda = S/1 de descuento</T></span>
+                    <span className={styles.tooltipMeta}><T>Vencen a fin de mes</T></span>
                   </div>
                 </div>
               </div>
