@@ -1,6 +1,9 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { logout } from '../../services/firebase/auth';
 import { useCuentaNavGroups } from './useCuentaNavGroups';
 import styles from './CuentaResumenPage.module.css';
 
@@ -17,7 +20,14 @@ import styles from './CuentaResumenPage.module.css';
  */
 const CuentaResumenPage = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const groups = useCuentaNavGroups();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   return (
     <div className={styles.resumen}>
@@ -36,6 +46,20 @@ const CuentaResumenPage = () => {
           </div>
         </section>
       ))}
+
+      {/* "Cerrar sesión" SOLO en móvil (≤860px): esta grilla es la pantalla que
+          abre el tab "Mi cuenta" del BottomNav, así que es donde el usuario
+          busca el logout. En escritorio (≥861px) el sidebar de CuentaLayout ya
+          trae su propio "Cerrar sesión" siempre visible junto a esta grilla —
+          por eso acá se oculta ahí (ver CuentaResumenPage.module.css), para no
+          mostrarlo dos veces en la misma pantalla. Antes el único logout de
+          móvil vivía enterrado dentro de /cuenta/ajustes y no "aparecía". */}
+      {user && (
+        <button type="button" className={styles.logoutBtn} onClick={handleLogout}>
+          <LogOut size={18} strokeWidth={1.75} aria-hidden="true" />
+          <span>{t('account.cerrarSesion', 'Cerrar sesión')}</span>
+        </button>
+      )}
     </div>
   );
 };

@@ -100,3 +100,36 @@
     grid-template-columns: repeat(6, 1fr);
   }
 }
+
+/* "Cerrar sesión" (solo móvil): mismo patrón atenuado que el logout del
+   sidebar de escritorio y el de Ajustes — al final, sin competir con las
+   tarjetas. */
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+  padding: 0.9rem 0.25rem 0.25rem;
+  border: none;
+  border-top: 1px solid var(--color-border, var(--gris-borde, #eee));
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-muted, var(--gris-texto-secundario, #6b7280));
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s ease;
+}
+
+.logoutBtn:hover {
+  color: var(--rojo-principal);
+}
+
+/* En escritorio (≥861px) el sidebar de CuentaLayout ya muestra su propio
+   "Cerrar sesión" junto a esta grilla — acá sería el mismo botón dos veces. */
+@media (min-width: 861px) {
+  .logoutBtn {
+    display: none;
+  }
+}
