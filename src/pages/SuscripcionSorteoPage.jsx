@@ -19,12 +19,12 @@
 //
 // THEMING: los colores de la campaña (campaign.colores) se inyectan como
 // variables CSS locales (--sus-*) en el contenedor raíz. Fallback morado.
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useGlobalToast } from '../contexts/ToastContext';
-import { signInWithGoogle } from '../services/firebase/auth';
+import { signInWithGoogle, consumeGoogleRedirectResult } from '../services/firebase/auth';
 import { getClientType } from '../services/analytics/tracker';
 import { GlassCard, GlassButton, GlassModal, Badge } from '../components/ui';
 import {
@@ -45,6 +45,15 @@ import { T } from '../i18n/useTranslatedText';
 
 // Slug por defecto de la campaña "principal" si la ruta no trae uno.
 const SLUG_DEFECTO = 'suscrito-sorteo';
+
+// Google (ModalSuscripcion) ahora usa signInWithRedirect (ver auth.js): la
+// pestaña navega a Google y vuelve, así que el modal (que solo existía en
+// memoria vía planElegido) se pierde en el viaje. Antes de redirigir se
+// guarda acá qué campaña/plan tenía elegidos, para reabrir el mismo modal al
+// volver — ver el useEffect de restauración más abajo en el componente de
+// página. Por campaignId (no slug): funciona igual entrando por slug o por
+// el fallback de campaña por defecto.
+const GOOGLE_REDIRECT_KEY = 'wala_google_redirect_suscripcion';
 
 // Colores morados por defecto (estilo Jorge Luna) si la campaña no define paleta.
 const COLORES_DEFECTO = {
@@ -212,11 +221,43 @@ const SuscripcionSorteoPage = () => {
 
   // ── Estado del modal de suscripción ──
   const [planElegido, setPlanElegido] = useState(null); // plan sobre el que se suscribe
+  // Error con el que reabrir el modal si volvimos de un redirect a Google
+  // fallido (ver el useEffect de restauración más abajo). Vacío en el resto
+  // de los casos (abrir el modal a mano nunca trae un error previo).
+  const [modalErrorInicial, setModalErrorInicial] = useState('');
 
   const abrirSuscripcion = useCallback((plan) => {
+    setModalErrorInicial('');
     setPlanElegido(plan);
   }, []);
-  const cerrarModal = useCallback(() => setPlanElegido(null), []);
+  const cerrarModal = useCallback(() => {
+    setPlanElegido(null);
+    setModalErrorInicial('');
+  }, []);
+
+  // Restaura el modal si volvimos de un redirect a Google iniciado desde acá
+  // (handleGoogle en ModalSuscripcion guarda campaignId+planId ANTES de
+  // redirigir, ver GOOGLE_REDIRECT_KEY): reabre el mismo plan, con el error
+  // de la vuelta si lo hubo. Corre una sola vez, apenas la campaña carga —
+  // antes de eso no hay con qué campaignId/planes comparar el marcador.
+  const redirectRestaurado = useRef(false);
+  useEffect(() => {
+    if (redirectRestaurado.current || !campaign) return;
+    redirectRestaurado.current = true;
+    let pending;
+    try { pending = sessionStorage.getItem(GOOGLE_REDIRECT_KEY); } catch (_) { pending = null; }
+    if (!pending) return;
+    try { sessionStorage.removeItem(GOOGLE_REDIRECT_KEY); } catch (_) { /* no-op */ }
+    let parsed;
+    try { parsed = JSON.parse(pending); } catch (_) { parsed = null; }
+    if (!parsed || parsed.campaignId !== campaign.id) return; // marcador de otra campaña
+    const planGuardado = (campaign.planes || []).find((p) => p.id === parsed.planId);
+    if (!planGuardado) return;
+    consumeGoogleRedirectResult().then(({ error: err }) => {
+      setModalErrorInicial(err || '');
+      setPlanElegido(planGuardado);
+    });
+  }, [campaign]);
 
   // ── Beneficios: filtro por categoría / ubicación ──
   const [filtro, setFiltro] = useState('todas');
@@ -511,6 +552,7 @@ const SuscripcionSorteoPage = () => {
           campaign={campaign}
           plan={planElegido}
           origenApp={origenApp}
+          initialError={modalErrorInicial}
           onClose={cerrarModal}
           onSuscrito={() => {
             cerrarModal();
@@ -678,11 +720,14 @@ function TabMisRecibos({ campaignId, uid }) {
 // Pasos: (1) gate de login (prioriza Google) → (2) datos mínimos + consentimiento
 // de cobro recurrente → (3) método de pago (Culqi Perú / PayPal internacional) →
 // (4) éxito. Reutiliza signInWithGoogle() (web + nativo) y los botones de pago.
-function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
+function ModalSuscripcion({ campaign, plan, origenApp, initialError = '', onClose, onSuscrito }) {
   const { user, userProfile } = useAuth();
   const toast = useGlobalToast();
 
-  const [error, setError] = useState('');
+  // initialError: con qué reabre el modal la página si volvimos de un
+  // redirect a Google fallido (ver GOOGLE_REDIRECT_KEY/consumeGoogleRedirectResult
+  // en el componente de página) — vacío en el resto de los casos.
+  const [error, setError] = useState(initialError);
   const [logueando, setLogueando] = useState(false);
   const [consentido, setConsentido] = useState(false);
   const [enPago, setEnPago] = useState(false); // avanzó del form al método de pago
@@ -711,15 +756,29 @@ function ModalSuscripcion({ campaign, plan, origenApp, onClose, onSuscrito }) {
   const correo = userProfile?.email || user?.email || '';
   const set = (campo) => (e) => setDatos((prev) => ({ ...prev, [campo]: e.target.value }));
 
-  // Login con Google (reusa signInWithGoogle: web popup + nativo Capacitor).
+  // Login con Google (reusa signInWithGoogle: web redirect, nativo selector de
+  // cuentas). En web, ANTES de redirigir se guarda qué campaña/plan estaba
+  // eligiendo (la pestaña entera navega a Google, así que este modal — solo
+  // en memoria vía planElegido en el componente de página — se pierde en el
+  // viaje); se reabre solo al volver, ver el useEffect de restauración en
+  // SuscripcionSorteoPage.
   const handleGoogle = useCallback(async () => {
     setError('');
     setLogueando(true);
+    try {
+      sessionStorage.setItem(GOOGLE_REDIRECT_KEY, JSON.stringify({ campaignId: campaign.id, planId: plan.id }));
+    } catch (_) { /* no-op */ }
     const { error: e, errorCode } = await signInWithGoogle();
     setLogueando(false);
+    // Si esto corrió es porque NO hubo redirect de página (web: falló antes
+    // de salir; nativo: signInWithGoogle() siempre resuelve acá, con o sin
+    // éxito) — el marcador ya no aplica en ningún caso, se limpia siempre.
+    // Con redirect exitoso la pestaña ya navegó a Google, este código no
+    // llega a correr y el marcador queda guardado a propósito.
+    try { sessionStorage.removeItem(GOOGLE_REDIRECT_KEY); } catch (_) { /* no-op */ }
     if (errorCode === 'auth/cancelled') return; // el usuario cerró el selector
     if (e) setError(e);
-  }, []);
+  }, [campaign.id, plan.id]);
 
   // Payload de datos para las callables (correo obligatorio del contrato).
   const datosPayload = useMemo(

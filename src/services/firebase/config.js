@@ -42,8 +42,9 @@ const isFirebaseConfigured = () => {
  * almacenamiento local), así que nadie pierde su sesión por este cambio.
  *
  * El resolvedor sigue haciendo falta para entrar con Google, pero ahí se pasa a
- * mano en signInWithPopup (services/firebase/auth.js): así el iframe se carga
- * cuando alguien pulsa el botón, no en cada visita.
+ * mano en signInWithRedirect / consumeGoogleRedirectResult (services/firebase/
+ * auth.js, antes signInWithPopup): así se carga cuando alguien pulsa el botón
+ * o vuelve de Google, no en cada visita.
  */
 const arrancarAuth = (instancia) => {
   try {

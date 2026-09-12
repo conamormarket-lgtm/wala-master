@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { signInWithEmail, signInWithGoogle } from '../services/firebase/auth';
+import { signInWithEmail, signInWithGoogle, consumeGoogleRedirectResult } from '../services/firebase/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
 import { shouldPromptSurvey } from '../utils/surveyHelper';
@@ -11,18 +11,51 @@ import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
 import styles from './LoginPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
+// Google ahora usa signInWithRedirect (ver auth.js): la pestaña entera navega
+// a Google y vuelve, así que `location.state` (donde viajaba `from`) se
+// pierde en el viaje — se guarda acá antes de redirigir y se recupera al
+// volver. La presencia de esta llave TAMBIÉN es la señal de "acabamos de
+// volver de Google" para disparar consumeGoogleRedirectResult() una vez.
+const GOOGLE_REDIRECT_KEY = 'wala_google_redirect_login';
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  // Ruta a la que volver tras iniciar sesión (p.ej. /sorteos manda state.from).
-  // Si no vino de ningún lado, el destino por defecto es la home / encuesta.
-  const from = location.state?.from || null;
   const { user, userProfile, loading: authLoading } = useAuth();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
+  // Ruta a la que volver tras iniciar sesión (p.ej. /sorteos manda state.from).
+  // Si no vino de ningún lado, el destino por defecto es la home / encuesta.
+  // Si SÍ vino de ningún lado (location.state) pero hay un `from` guardado del
+  // redirect a Google, se usa ese — es el mismo caso, solo que sobrevivió a
+  // una navegación de página completa en vez de una de React Router.
+  const [from] = React.useState(() => {
+    if (location.state?.from) return location.state.from;
+    try {
+      const saved = sessionStorage.getItem(GOOGLE_REDIRECT_KEY);
+      return saved ? (JSON.parse(saved).from || null) : null;
+    } catch (_) {
+      return null;
+    }
+  });
+
+  // Si hay un marcador guardado, volvimos de signInWithGoogle() por redirect:
+  // se recoge el resultado UNA vez (errores / cumpleaños best-effort) y se
+  // limpia el marcador. La navegación en sí NO se dispara acá — la sigue
+  // manejando el useEffect de abajo, que ya reacciona a `user` sin importar
+  // cómo se inició sesión (onAuthStateChanged lo pone solo).
+  React.useEffect(() => {
+    let pending;
+    try { pending = sessionStorage.getItem(GOOGLE_REDIRECT_KEY); } catch (_) { pending = null; }
+    if (!pending) return;
+    try { sessionStorage.removeItem(GOOGLE_REDIRECT_KEY); } catch (_) { /* no-op */ }
+    consumeGoogleRedirectResult().then(({ error: err, errorCode }) => {
+      if (err) setError(getAuthErrorMessage(errorCode, err));
+    });
+  }, []);
 
   React.useEffect(() => {
     if (authLoading || !user) return;
@@ -62,7 +95,17 @@ const LoginPage = () => {
     setError(null);
     setLoading(true);
 
+    // Se guarda ANTES de llamar a signInWithGoogle(): si tiene éxito, la
+    // pestaña navega a Google de inmediato y este código de acá abajo
+    // probablemente ni llega a correr.
+    try { sessionStorage.setItem(GOOGLE_REDIRECT_KEY, JSON.stringify({ from })); } catch (_) { /* no-op */ }
+
     const { error: err, errorCode } = await signInWithGoogle();
+    // Si esto corrió es porque NO hubo redirect de página (web: falló antes
+    // de salir; nativo/Capacitor: signInWithGoogle() siempre resuelve acá,
+    // con o sin éxito, sin navegar nunca) — el marcador ya no aplica en
+    // ningún caso, se limpia siempre para no confundir una próxima visita.
+    try { sessionStorage.removeItem(GOOGLE_REDIRECT_KEY); } catch (_) { /* no-op */ }
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
     }

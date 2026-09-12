@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { signUpWithEmail, signInWithGoogle } from '../services/firebase/auth';
+import { signUpWithEmail, signInWithGoogle, consumeGoogleRedirectResult } from '../services/firebase/auth';
 import { setDocument } from '../services/firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
@@ -23,12 +23,35 @@ import { T } from '../i18n/useTranslatedText';
 
 const PASSWORD_SPECIAL = '!#%&@*';
 
+// Google ahora usa signInWithRedirect (ver auth.js): la pestaña navega a
+// Google y vuelve, así que cualquier estado en memoria de esta página se
+// pierde. Acá no hace falta restaurar nada (el useEffect de abajo ya
+// reacciona a `user` solo, sin depender de nada que viajara en location.state)
+// — la llave solo marca "volvimos de Google" para poder recoger un posible
+// error del redirect una sola vez.
+const GOOGLE_REDIRECT_KEY = 'wala_google_redirect_register';
+
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { user, userProfile, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Si hay un marcador guardado, volvimos de signInWithGoogle() por redirect:
+  // se recoge el resultado UNA vez (errores / cumpleaños best-effort) y se
+  // limpia el marcador. La navegación/avance de paso NO se dispara acá — lo
+  // sigue manejando el useEffect de más abajo, que reacciona a `user` sin
+  // importar cómo se inició sesión.
+  React.useEffect(() => {
+    let pending;
+    try { pending = sessionStorage.getItem(GOOGLE_REDIRECT_KEY); } catch (_) { pending = null; }
+    if (!pending) return;
+    try { sessionStorage.removeItem(GOOGLE_REDIRECT_KEY); } catch (_) { /* no-op */ }
+    consumeGoogleRedirectResult().then(({ error: err, errorCode }) => {
+      if (err) setError(getAuthErrorMessage(errorCode, err));
+    });
+  }, []);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -163,13 +186,23 @@ const RegisterPage = () => {
     if (loading) return;
     setError(null);
     setLoading(true);
+    // Se guarda ANTES de llamar a signInWithGoogle(): si tiene éxito, la
+    // pestaña navega a Google de inmediato.
+    try { sessionStorage.setItem(GOOGLE_REDIRECT_KEY, '1'); } catch (_) { /* no-op */ }
     const { error: err, errorCode } = await signInWithGoogle();
     setLoading(false);
+    // Si esto corrió es porque NO hubo redirect de página (web: falló antes
+    // de salir; nativo/Capacitor: signInWithGoogle() siempre resuelve acá,
+    // con o sin éxito, sin navegar nunca) — el marcador ya no aplica en
+    // ningún caso, se limpia siempre.
+    try { sessionStorage.removeItem(GOOGLE_REDIRECT_KEY); } catch (_) { /* no-op */ }
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
       return;
     }
-    navigate('/completar-perfil');
+    // En éxito, el avance de paso lo maneja el useEffect que reacciona a
+    // `user` (arriba) — con signInWithRedirect la pestaña ya está navegando
+    // a Google, así que un navigate() de acá casi nunca llegaría a correr.
   };
 
   if (loading && step === 1 && !user) {
