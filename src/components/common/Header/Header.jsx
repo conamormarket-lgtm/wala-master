@@ -740,7 +740,27 @@ const Header = () => {
               tenían otro acceso igual de directo en móvil. */}
           {!isNativeApp && (
           <div className={`${styles.accountDropdownContainer} ${styles.mobileHiddenAction} ${activeDropdown === 'cuenta' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'cuenta' ? styles.forceHideHover : ''}`}>
-            <Link to="/cuenta" className={styles.iconButton} onClick={closeDropdowns} aria-label="Mi cuenta">
+            {/* El ícono de perfil ABRE el menú desplegable (con Mi Perfil,
+                Pedidos, Ajustes, Cerrar sesión, etc.) en vez de navegar a
+                /cuenta: al hacer click, el usuario espera elegir una opción,
+                no que se lo lleve directo a una página. Es un <button> (no un
+                <Link>) por eso — hace toggle de activeDropdown igual que los
+                menús de nav. El hover en escritorio ya lo abría; esto solo
+                evita que el click "escape" a /cuenta. */}
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={() => {
+                // Limpiar el bloqueo de hover (forceHideDropdowns): tras
+                // navegar, el header queda con .forceHideHover hasta el primer
+                // pointermove, y esa clase pone el popup en display:none — sin
+                // esto, un click antes de mover el mouse no abriría el menú.
+                setForceHideDropdowns(false);
+                setActiveDropdown((prev) => (prev === 'cuenta' ? null : 'cuenta'));
+              }}
+              aria-label="Mi cuenta"
+              aria-expanded={activeDropdown === 'cuenta'}
+            >
               {user ? (
                 accountAvatarUrl ? (
                   <img src={accountAvatarUrl} alt="" className={styles.accountAvatar} referrerPolicy="no-referrer" />
@@ -750,7 +770,7 @@ const Header = () => {
               ) : (
                 <User strokeWidth={1.5} className={styles.icon} />
               )}
-            </Link>
+            </button>
 
             <div className={`${styles.accountPopup} ${styles.mobileCenteredPopup}`}>
               <EditableSection sectionId="accountPopup" currentConfig={activeConfig} label="Pop-up de Cuenta">
