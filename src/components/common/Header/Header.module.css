@@ -1397,7 +1397,15 @@
     justify-content: flex-start;
     gap: 0.625rem;
     border: 1px solid var(--color-border, #e5e7eb);
-    border-radius: 999px;
+    /* !important: .iconButton (más abajo en este mismo media query) trae su
+       propio border-radius:50% pensado para sus botones circulares chicos
+       (corazón/carrito/campana, ~44x44). Misma especificidad que esta regla
+       (una clase cada una) y carga después en el archivo, así que sin
+       !important le ganaba acá — un 50% sobre una caja de 355x40 no da un
+       pill, da una ELIPSE (el radio se calcula por eje: 50% del ancho Y 50%
+       del alto en cada esquina). Mismo patrón que .desktopOnlyItem/
+       .mobileHiddenAction más arriba en este archivo. */
+    border-radius: 999px !important;
     background: var(--color-surface-2, #f6f7f9);
     color: var(--color-text-muted, #64748b);
   }
