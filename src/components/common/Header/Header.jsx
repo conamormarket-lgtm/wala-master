@@ -5,7 +5,6 @@ import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useWishlist } from '../../../contexts/WishlistContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { useTheme } from '../../../contexts/ThemeContext';
 import { getCategories, getProducts, getProductsByBrand, categoriasConProductos } from '../../../services/products';
 import { getCollections } from '../../../services/collections';
 import { getBrands } from '../../../services/brands';
@@ -73,7 +72,6 @@ const Header = () => {
   const navigate = useNavigate();
   const { wishlistItems } = useWishlist();
   const { lang, setLang, available, t } = useLanguage();
-  const { theme } = useTheme();
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
   // Avatar del ícono de cuenta: foto propia (subida en "Mi Perfil") primero,
@@ -704,9 +702,19 @@ const Header = () => {
             )}
           </div>
 
-          {/* Tema (oscuro/claro) e idioma se mudan al popup de "Mi cuenta"
-              (a pedido): ahi viven junto al resto de preferencias de la
-              cuenta, en vez de sumar 2 iconos mas a esta barra. */}
+          {/* Modo oscuro/claro: la mayoría nunca lo toca (el tema por
+              defecto sigue el del sistema operativo, ver ThemeContext) pero
+              para quien SÍ quiere forzar uno distinto, un ícono suelto acá
+              es un clic — antes exigía abrir el dropdown de "Mi cuenta" (o,
+              logueado, entrar a Ajustes). Solo en escritorio: el header
+              móvil ya se afinó varias veces para quedar minimalista, y acá
+              hay más aire para sumarlo sin apretar el resto de íconos.
+              Visible con y sin sesión (no es una preferencia DE LA CUENTA,
+              es del navegador) — por eso vive afuera del popup de cuenta,
+              no adentro. El idioma sigue solo ahí (se cambia una vez y
+              listo, no amerita el mismo acceso directo). */}
+          <ThemeToggle className={styles.mobileHiddenAction} />
+
           <span className={styles.actionsDivider} aria-hidden="true" />
 
           {/* En escritorio conserva exactamente su posición original. En
@@ -836,29 +844,20 @@ const Header = () => {
                     </>
                   )}
                   
-                  {/* Preferencias: tema e idioma. Antes vivían acá para
-                      TODOS (con y sin sesión) — ahora que un usuario logueado
-                      tiene su propia página (/cuenta/ajustes, link arriba en
-                      la lista), repetir los controles acá era la misma
-                      preferencia editable en dos lugares distintos del
-                      mismo sitio. Sin sesión, esta sigue siendo la ÚNICA
-                      forma de cambiarlas (Ajustes requiere estar logueado,
-                      vive dentro de /cuenta), así que se mantiene solo para
+                  {/* Idioma: antes vivía acá junto con el toggle de tema
+                      para TODOS (con y sin sesión). El tema ya tiene su
+                      propio ícono siempre visible en la barra del header
+                      (arriba, afuera de este popup) — repetirlo acá era el
+                      mismo control en dos lugares. El idioma se queda: es
+                      una preferencia que se fija una vez, no amerita un
+                      ícono propio en la barra, y logueado ya vive también en
+                      Ajustes (link arriba en la lista) — pero sin sesión
+                      esta sigue siendo la ÚNICA forma de cambiarlo (Ajustes
+                      exige estar logueado), así que se mantiene solo para
                       ese caso. */}
                   {!user && (
                     <div className={styles.prefsSection}>
-                      <h4><T>Preferencias</T></h4>
-                      <div className={styles.prefsRow}>
-                        {/* El rotulo dice A DONDE se cambia, no en que modo
-                            estas: estando en oscuro decia "Modo oscuro" al lado
-                            de un sol que significa "pasar a claro", y las dos
-                            cosas se contradecian. Ahora coincide con el icono y
-                            con el title del propio interruptor. */}
-                        <span className={styles.prefsLabel}>
-                          <T>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</T>
-                        </span>
-                        <ThemeToggle />
-                      </div>
+                      <h4><T>Idioma</T></h4>
                       <div className={styles.langMenu}>
                         {available.map((code) => {
                           const name = LANG_NAMES[code] || code.toUpperCase();

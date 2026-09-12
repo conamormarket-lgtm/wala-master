@@ -1005,19 +1005,6 @@
   margin: 0 0 0.6rem 0;
 }
 
-.prefsRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 0.4rem;
-}
-
-.prefsLabel {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--gris-texto-principal, #1f2937);
-}
-
 .brandLink:hover .brandLogo {
   border-color: #8b5cf6;
 }
@@ -1484,9 +1471,14 @@
      AliExpress) el header solo deja el logo + monedas. Cuenta y
      notificaciones viven en "Mi cuenta" (BottomNav), favoritos también
      (Lista de Deseos, dentro de Mi cuenta), y carrito pasa a su propia
-     pestaña del BottomNav (ver BottomNav.jsx). */
+     pestaña del BottomNav (ver BottomNav.jsx).
+     !important: el ThemeToggle del header (ver mas abajo) trae su propio
+     "display:inline-flex" sin media query (ThemeToggle.module.css) — misma
+     especificidad que esta regla (una clase cada una), asi que sin
+     !important gana quien cargue despues en el bundle, no el media query
+     que SI coincide. Mismo motivo/patron que .desktopOnlyItem mas arriba. */
   .mobileHiddenAction {
-    display: none;
+    display: none !important;
   }
 
   .mobileWalletBtn {
@@ -2101,8 +2093,4 @@
 :global([data-theme='dark']) .brandsSection,
 :global([data-theme='dark']) .prefsSection {
   border-top-color: var(--color-border);
-}
-
-:global([data-theme='dark']) .prefsLabel {
-  color: var(--color-text);
 }
