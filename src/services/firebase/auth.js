@@ -1,8 +1,7 @@
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signInWithCredential,
   browserPopupRedirectResolver,
   GoogleAuthProvider,
@@ -107,15 +106,7 @@ export const signInWithEmail = async (email, password) => {
  * Login con Google.
  * - En Android/iOS nativo (Capacitor): usa el plugin @codetrix-studio/capacitor-google-auth
  *   que abre el selector de cuentas nativo de Google (sin popup ni WebView en blanco).
- * - En navegador web: signInWithRedirect (antes signInWithPopup). El popup lo
- *   crea y posiciona internamente el SDK de Firebase — no hay forma de ajustar
- *   su posición/tamaño desde nuestro código, y en algunos navegadores/monitores
- *   aparecía chico en una esquina en vez de centrado. Redirect navega la
- *   pestaña entera a Google y vuelve — sin ventana emergente, no hay nada que
- *   "posicionar mal". El resultado se recoge al volver con
- *   consumeGoogleRedirectResult() (ver más abajo), no acá: esta función solo
- *   DISPARA la redirección, la página se descarga antes de que su propio
- *   return llegue a usarse.
+ * - En navegador web: usa signInWithPopup como siempre.
  */
 export const signInWithGoogle = async () => {
   if (!isAuthAvailable()) {
@@ -157,14 +148,16 @@ export const signInWithGoogle = async () => {
   // ── Navegador web ─────────────────────────────────────────────────────────
   try {
     // El resolvedor va explícito porque la instancia de auth se crea sin él
-    // (ver arrancarAuth en firebase/config.js): así el iframe/redirect de
-    // Google se prepara aquí, al pulsar el botón, y no en el arranque de cada
-    // visita. signInWithRedirect navega la pestaña — esta llamada casi nunca
-    // llega a resolver desde el punto de vista de quien la esperó (la página
-    // se descarga antes); solo puede rechazar si falla ANTES de redirigir
-    // (config inválida, red caída, etc.).
-    await signInWithRedirect(auth, googleProvider, browserPopupRedirectResolver);
-    return { user: null, error: null, errorCode: null, credential: null };
+    // (ver arrancarAuth en firebase/config.js): así el iframe de Google se carga
+    // aquí, al pulsar el botón, y no en el arranque de cada visita.
+    const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+    // Best-effort: leer el cumpleaños desde la People API (gratis) y guardarlo
+    // para precargarlo en "completar perfil". Nunca rompe el login.
+    try {
+      const accessToken = GoogleAuthProvider.credentialFromResult(result)?.accessToken;
+      await guardarCumpleGoogle(accessToken);
+    } catch (_) { /* el cumpleaños es opcional */ }
+    return { user: result.user, error: null, errorCode: null, credential: null };
   } catch (error) {
     const credential = error.credential || null;
     return {
@@ -173,39 +166,6 @@ export const signInWithGoogle = async () => {
       errorCode: error.code || null,
       credential
     };
-  }
-};
-
-/**
- * Recoge el resultado de un signInWithGoogle() (web) que redirigió a Google y
- * volvió. Se llama UNA vez al cargar la página que disparó el login (Login/
- * Registro/el modal de suscripción) — ver el patrón sessionStorage en cada
- * una: solo actúan si SU PROPIO marcador está guardado, así este mismo
- * `getRedirectResult()` (compartido, cualquiera puede llamarlo) no dispara la
- * navegación de una página distinta a la que inició el redirect.
- *
- * Sin resultado pendiente (visita normal, no volviendo de Google) devuelve
- * user:null sin error — no es un fallo, es el caso normal.
- */
-export const consumeGoogleRedirectResult = async () => {
-  if (!isAuthAvailable()) {
-    return { user: null, error: null, errorCode: null };
-  }
-  try {
-    const result = await getRedirectResult(auth, browserPopupRedirectResolver);
-    if (!result) {
-      return { user: null, error: null, errorCode: null };
-    }
-    // Best-effort: igual que en el popup, leer el cumpleaños desde la People
-    // API (gratis) y guardarlo para precargarlo en "completar perfil". Nunca
-    // rompe el login.
-    try {
-      const accessToken = GoogleAuthProvider.credentialFromResult(result)?.accessToken;
-      await guardarCumpleGoogle(accessToken);
-    } catch (_) { /* el cumpleaños es opcional */ }
-    return { user: result.user, error: null, errorCode: null };
-  } catch (error) {
-    return { user: null, error: error.message, errorCode: error.code || null };
   }
 };
 
