@@ -9,7 +9,7 @@ import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
 import { validateDNI, validateCE, validatePhone, validateDocInternacional, getPasswordRequirements, isPasswordValid } from '../utils/helpers';
 import Button from '../components/common/Button';
-import Loading from '../components/common/Loading';
+import BrandLoaderOverlay from '../components/common/BrandLoader/BrandLoaderOverlay';
 import Modal from '../components/common/Modal/Modal';
 import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
 import CountrySelect from '../components/intl/CountrySelect';
@@ -173,7 +173,7 @@ const RegisterPage = () => {
   };
 
   if (loading && step === 1 && !user) {
-    return <Loading fullScreen message="Creando cuenta..." />;
+    return <BrandLoaderOverlay show />;
   }
 
   return (
