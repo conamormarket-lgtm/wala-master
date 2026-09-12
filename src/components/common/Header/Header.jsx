@@ -14,7 +14,7 @@ import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorCont
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
 import HeaderSearch from '../HeaderSearch/HeaderSearch';
-import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, Check, Package, Ticket, Gift, LogOut } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, Check, Package, Ticket, Gift, LogOut, Settings } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
 import styles from './Header.module.css';
@@ -808,6 +808,16 @@ const Header = () => {
                           <Heart size={18} strokeWidth={1.75} aria-hidden="true" />
                           <span><T>Lista de Deseos</T></span>
                         </Link>
+                        {/* Reemplaza la sección "Preferencias" (tema/idioma)
+                            que vivía suelta acá abajo: ahora ese control
+                            vive en su propia página (/cuenta/ajustes, la
+                            misma que ve el usuario en móvil), así que este
+                            es solo el acceso directo — un link más de la
+                            lista, no controles duplicados. */}
+                        <Link to="/cuenta/ajustes" className={styles.accountMenuItem} onClick={closeDropdowns}>
+                          <Settings size={18} strokeWidth={1.75} aria-hidden="true" />
+                          <span><T>Ajustes</T></span>
+                        </Link>
                       </nav>
                     </>
                   ) : (
@@ -826,41 +836,49 @@ const Header = () => {
                     </>
                   )}
                   
-                  {/* Preferencias: tema e idioma, mudados aqui desde la barra
-                      superior (antes 2 iconos sueltos ahi) — viven mejor
-                      junto al resto de ajustes de la cuenta. */}
-                  <div className={styles.prefsSection}>
-                    <h4><T>Preferencias</T></h4>
-                    <div className={styles.prefsRow}>
-                      {/* El rotulo dice A DONDE se cambia, no en que modo
-                          estas: estando en oscuro decia "Modo oscuro" al lado
-                          de un sol que significa "pasar a claro", y las dos
-                          cosas se contradecian. Ahora coincide con el icono y
-                          con el title del propio interruptor. */}
-                      <span className={styles.prefsLabel}>
-                        <T>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</T>
-                      </span>
-                      <ThemeToggle />
+                  {/* Preferencias: tema e idioma. Antes vivían acá para
+                      TODOS (con y sin sesión) — ahora que un usuario logueado
+                      tiene su propia página (/cuenta/ajustes, link arriba en
+                      la lista), repetir los controles acá era la misma
+                      preferencia editable en dos lugares distintos del
+                      mismo sitio. Sin sesión, esta sigue siendo la ÚNICA
+                      forma de cambiarlas (Ajustes requiere estar logueado,
+                      vive dentro de /cuenta), así que se mantiene solo para
+                      ese caso. */}
+                  {!user && (
+                    <div className={styles.prefsSection}>
+                      <h4><T>Preferencias</T></h4>
+                      <div className={styles.prefsRow}>
+                        {/* El rotulo dice A DONDE se cambia, no en que modo
+                            estas: estando en oscuro decia "Modo oscuro" al lado
+                            de un sol que significa "pasar a claro", y las dos
+                            cosas se contradecian. Ahora coincide con el icono y
+                            con el title del propio interruptor. */}
+                        <span className={styles.prefsLabel}>
+                          <T>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</T>
+                        </span>
+                        <ThemeToggle />
+                      </div>
+                      <div className={styles.langMenu}>
+                        {available.map((code) => {
+                          const name = LANG_NAMES[code] || code.toUpperCase();
+                          return (
+                            <button
+                              key={code}
+                              type="button"
+                              aria-pressed={lang === code}
+                              onClick={() => setLang(code)}
+                              className={`${styles.langMenuOption} ${lang === code ? styles.langMenuOptionActive : ''}`}
+                            >
+                              <FlagIcon code={code} size={18} />
+                              <span>{name}</span>
+                              {lang === code && <Check size={14} strokeWidth={2.5} className={styles.langMenuCheck} aria-hidden="true" />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className={styles.langMenu}>
-                      {available.map((code) => {
-                        const name = LANG_NAMES[code] || code.toUpperCase();
-                        return (
-                          <button
-                            key={code}
-                            type="button"
-                            aria-pressed={lang === code}
-                            onClick={() => setLang(code)}
-                            className={`${styles.langMenuOption} ${lang === code ? styles.langMenuOptionActive : ''}`}
-                          >
-                            <FlagIcon code={code} size={18} />
-                            <span>{name}</span>
-                            {lang === code && <Check size={14} strokeWidth={2.5} className={styles.langMenuCheck} aria-hidden="true" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Cerrar sesión: al final de la lista (mismo patrón que
                       "Preferencias" arriba), no como botón grande — es la
