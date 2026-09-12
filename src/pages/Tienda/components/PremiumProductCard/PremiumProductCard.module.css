@@ -659,7 +659,17 @@
   .quickAddText {
     display: none; /* Only show + icon on mobile */
   }
-  
+
+  /* En móvil la barra de "+" (quickAddOverlay) está SIEMPRE visible, pegada
+     al borde inferior y ocupando ~48px de alto. La insignia de marca vivía en
+     bottom:10px, así que quedaba tapada casi entera por esa barra: solo asomaba
+     el borde superior del círculo (reporte: "el logo de la marca no se muestra
+     mucho"). Se sube por encima de la barra para que el logo se vea completo.
+     En escritorio no hace falta: ahí la barra solo aparece al hacer hover. */
+  .brandBadge {
+    bottom: 56px;
+  }
+
   /* Título arriba a todo el ancho de la tarjeta y precio debajo, en vez de
      compartir la misma fila: a los ~160px de una tarjeta de "Ofertas para
      ti" el título quedaba aplastado a una columna angosta junto al precio
