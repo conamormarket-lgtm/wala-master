@@ -1669,6 +1669,9 @@
 
   .accountDropdownContainer.activeDropdown .mobileCenteredPopup {
     pointer-events: auto;
+    /* En móvil el popup es position:fixed; left:50%, así que se centra con
+       translateX(-50%). (En escritorio la regla global usa solo translateY.) */
+    transform: translateX(-50%) translateY(0);
   }
 
   /* Fondo oscurecido detrás del panel de notificaciones en móvil: le da
@@ -1820,7 +1823,13 @@
 .accountDropdownContainer.activeDropdown .mobileCenteredPopup {
   visibility: visible;
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  /* En ESCRITORIO el popup es position:absolute; right:0 (anclado bajo el
+     ícono): solo baja con translateY(0). El translateX(-50%) —centrado del
+     popup fijo en móvil— se aplica únicamente dentro del media query móvil
+     (más abajo). Antes esta regla global lo ponía siempre, así que al abrir
+     "Mi cuenta" por click en escritorio el panel saltaba media anchura a la
+     izquierda respecto a su posición de hover. */
+  transform: translateY(0);
 }
 
 /* ── Floating Survey Button (Native App Only) ── */
