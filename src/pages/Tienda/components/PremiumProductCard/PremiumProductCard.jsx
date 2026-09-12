@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Plus, SlidersHorizontal } from 'lucide-react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { getBrands } from '../../../../services/brands';
 import { idsDeCategoriaDe } from '../../../../services/products';
@@ -391,14 +392,26 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
           </svg>
         </button>
 
-        {/* Quick Add Overlay */}
+        {/* Quick Add Overlay. En móvil el texto se oculta (.quickAddText
+            display:none) y solo queda el ícono — antes el botón "Elegir
+            color y talla" no tenía ícono propio (el "+" solo se pintaba
+            para el caso SIN variantes), así que en móvil quedaba en blanco:
+            ni + ni texto, sin ninguna pista de qué hacía. Ahora los dos
+            casos tienen un ícono distinto SIEMPRE (no solo en desktop con
+            texto al lado), para que se distingan de un vistazo sin
+            depender de leer la etiqueta: "+" = se agrega directo, el ícono
+            de controles = hay que elegir algo antes. */}
         <div className={styles.quickAddOverlay}>
           <button
             className={styles.quickAddBtn}
             onClick={handleAddToCart}
             disabled={!product.inStock}
           >
-            {!necesitaElegir && <span className={styles.quickAddIcon}>+</span>}
+            <span className={styles.quickAddIcon} aria-hidden="true">
+              {necesitaElegir
+                ? <SlidersHorizontal size={14} strokeWidth={2.25} />
+                : <Plus size={14} strokeWidth={2.5} />}
+            </span>
             <span className={styles.quickAddText}>
               {necesitaElegir
                 ? t('cta.chooseOptions', 'Elegir color y talla')

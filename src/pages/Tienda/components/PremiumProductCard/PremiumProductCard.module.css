@@ -549,6 +549,19 @@
   cursor: not-allowed;
 }
 
+/* Ícono del botón rápido: "+" (Plus) para agregar directo, "sliders"
+   (SlidersHorizontal) cuando hay que elegir color/talla antes — dos
+   glifos bien distintos entre sí para que se lean sin depender del
+   texto de al lado (oculto en móvil, ver .quickAddText más abajo). SVG
+   con stroke="currentColor": hereda el color del botón (negro / blanco
+   en hover) sin declararlo acá. */
+.quickAddIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 /* Product Info */
 .info {
   display: flex;
