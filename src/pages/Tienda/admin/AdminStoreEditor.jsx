@@ -78,7 +78,7 @@ const AdminStoreEditor = () => {
     setSaving(false);
   };
 
-  if (loading) return <Loading message="Cargando configuración..." />;
+  if (loading) return <Loading fullScreen message="Cargando configuración..." />;
 
   return (
     <div className={styles.container}>

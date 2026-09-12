@@ -29,7 +29,7 @@ const ResetPasswordPage = () => {
   };
 
   if (loading) {
-    return <Loading message="Enviando enlace..." />;
+    return <Loading fullScreen message="Enviando enlace..." />;
   }
 
   return (

@@ -173,7 +173,7 @@ const RegisterPage = () => {
   };
 
   if (loading && step === 1 && !user) {
-    return <Loading message="Creando cuenta..." />;
+    return <Loading fullScreen message="Creando cuenta..." />;
   }
 
   return (
