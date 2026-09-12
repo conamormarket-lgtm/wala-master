@@ -6,7 +6,7 @@ import { getAuthErrorMessage } from '../utils/authErrorMessages';
 import { shouldPromptSurvey } from '../utils/surveyHelper';
 import { LOGO_URL } from '../utils/constants';
 import Button from '../components/common/Button';
-import BrandLoaderOverlay from '../components/common/BrandLoader/BrandLoaderOverlay';
+import Loading from '../components/common/Loading';
 import { EyeIcon, EyeOffIcon } from '../components/common/Icons/Icons';
 import styles from './LoginPage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -70,17 +70,18 @@ const LoginPage = () => {
     setLoading(false);
   };
 
-  // Loader de marca a pantalla completa (el mismo splash que usa la tienda al
-  // cargar): cubre todo, por encima del header, en vez de un spinner suelto.
+  // Círculo de carga a pantalla completa (centrado). El splash de marca de
+  // Walá se reserva para la PRIMERA carga de la app; el resto —login incluido—
+  // usa el círculo.
   if (loading && !error) {
-    return <BrandLoaderOverlay show />;
+    return <Loading fullScreen message="Iniciando sesión..." />;
   }
 
   if (user) {
     // Cubre también el instante en que `user` ya llegó pero el perfil (authLoading)
     // todavía se está resolviendo: sin esto, entre medias se veía otra vez el
     // formulario de login por un instante.
-    return <BrandLoaderOverlay show />;
+    return <Loading fullScreen message={authLoading ? 'Cargando tu perfil...' : 'Redirigiendo...'} />;
   }
 
   return (

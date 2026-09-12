@@ -3,6 +3,28 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EASE_SIGNATURE, useReducedMotionSafe } from '../../../theme/motion';
 import BrandLoader from './BrandLoader';
+import Loading from '../Loading';
+
+// El splash de marca de Walá (la bolsa con la "W" sobre el degradado violeta)
+// se muestra UNA sola vez por navegador: la PRIMERA carga de la app. A partir
+// de ahí, cualquier estado de carga —el de la tienda incluido— usa el círculo
+// simple, más liviano y menos repetitivo. El mismo flag lo lee el splash
+// estático de index.html para no repetir la marca en recargas posteriores.
+export const BRAND_SEEN_KEY = 'wala_brand_seen';
+
+// Lee el flag UNA vez al importar el módulo. Es un `let` mutable: en cuanto el
+// primer splash de marca termina su carga se pone en true (y se persiste), así
+// que dentro de la misma sesión SPA las siguientes cargas ya usan el círculo,
+// sin esperar a una recarga completa.
+let brandConsumed = (() => {
+  try { return localStorage.getItem(BRAND_SEEN_KEY) === '1'; } catch (_) { return false; }
+})();
+
+const marcarMarcaVista = () => {
+  if (brandConsumed) return;
+  brandConsumed = true;
+  try { localStorage.setItem(BRAND_SEEN_KEY, '1'); } catch (_) { /* storage no disponible */ }
+};
 
 /**
  * BrandLoaderOverlay — el BrandLoader a pantalla completa (via portal a
@@ -46,6 +68,15 @@ const MAX_SHOW_MS = 15000;
 const BrandLoaderOverlay = ({ show, relevo = false }) => {
   const reducedMotion = useReducedMotionSafe();
 
+  // ¿Esta instancia muestra el splash de MARCA o el círculo? Se decide UNA vez
+  // al montar (useState con inicializador): si ya se consumió el splash de
+  // marca, va el círculo. Capturarlo al montar evita que cambie a mitad de
+  // vida si `brandConsumed` se marca durante esta misma carga.
+  const [useBrand] = useState(() => !brandConsumed);
+  // ¿Llegó a mostrarse de verdad? Solo entonces "gastamos" el splash único:
+  // si el overlay se monta con show:false (tienda ya cacheada) no marcaría nada.
+  const wasShownRef = useRef(false);
+
   // Ver MAX_SHOW_MS arriba: `effectiveShow` reemplaza a `show` en todo lo de
   // abajo (bloqueo de scroll, pointer-events, AnimatePresence) para que el
   // tope realmente libere la pagina, no solo dispare un efecto que nadie lee.
@@ -56,6 +87,18 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
     return () => clearTimeout(t);
   }, [show]);
   const effectiveShow = show && !forceHidden;
+
+  // Marca el splash de marca como "ya visto" cuando ESTA instancia (de marca,
+  // no relevo) termina su carga tras haberse mostrado. El relevo (la landing
+  // que cede a la tienda) NO lo marca: el splash único se consume recién cuando
+  // el overlay FINAL —el de la tienda— se abre hacia el contenido. Así el
+  // handoff landing→tienda de la primera carga se ve entero con la marca.
+  if (effectiveShow) wasShownRef.current = true;
+  useEffect(() => {
+    if (useBrand && !relevo && !effectiveShow && wasShownRef.current) {
+      marcarMarcaVista();
+    }
+  }, [effectiveShow, useBrand, relevo]);
 
   // Bloquea el scroll del documento mientras el loader esta presente. Sin
   // esto, el contenido de la tienda (ya renderizado debajo del overlay) hace
@@ -139,7 +182,9 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
           exit={
             relevo
               ? {}
-              : reducedMotion
+              // El zoom de salida (scale 1.06, "abrir hacia la tienda") es
+              // gesto de MARCA. El círculo solo se funde.
+              : (reducedMotion || !useBrand)
                 ? { opacity: 0 }
                 : { opacity: 0, scale: 1.06 }
           }
@@ -148,7 +193,7 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
             ease: EASE_SIGNATURE,
           }}
         >
-          <BrandLoader />
+          {useBrand ? <BrandLoader /> : <Loading fullScreen />}
         </motion.div>
       )}
     </AnimatePresence>,

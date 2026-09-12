@@ -126,12 +126,44 @@
           0% { transform: translateX(-140%); }
           100% { transform: translateX(340%); }
         }
+        /* Círculo simple para las cargas POSTERIORES a la primera (ver el
+           script de abajo): el splash de marca de Walá solo se muestra la
+           primera vez; después este spinner reemplaza su contenido, igual que
+           el <Loading> de React que toma el relevo. */
+        .app-loading-circle {
+          width: 40px; height: 40px; border-radius: 50%;
+          border: 3px solid #e5e7eb; border-top-color: #7C3AED;
+          border-right-color: transparent;
+          animation: appLoadingSpin .8s linear infinite;
+        }
+        @keyframes appLoadingSpin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) {
+          .app-loading-circle { animation: none !important; }
+        }
         @media (prefers-reduced-motion: reduce) {
           #app-loading svg, #app-loading-bar,
           #app-loading-halo, #app-loading-halo-wide { animation: none !important; }
           #app-loading-bar { width: 45%; opacity: .8; }
         }
       </style>
+      <script>
+        /* Si el splash de marca de Walá ya se mostró alguna vez (flag que pone
+           BrandLoaderOverlay tras la primera carga), en las recargas siguientes
+           NO repetimos la marca: se reemplaza el contenido del splash por un
+           círculo simple sobre fondo claro, en sintonía con el <Loading> que
+           React monta enseguida. Corre inline, antes de cualquier bundle. */
+        (function () {
+          try {
+            if (localStorage.getItem('wala_brand_seen') === '1') {
+              var el = document.getElementById('app-loading');
+              if (el) {
+                el.style.background = '#f8f9fa';
+                el.innerHTML = '<div class="app-loading-circle"></div>';
+              }
+            }
+          } catch (e) { /* localStorage no disponible: se deja el splash de marca */ }
+        })();
+      </script>
     </div>
     <script type="module" src="/src/index.jsx"></script>
   </body>
