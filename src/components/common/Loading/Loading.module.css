@@ -49,7 +49,10 @@
   justify-content: center;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.98) 100%);
   backdrop-filter: blur(8px);
-  z-index: 9999;
+  /* Por encima de TODO (header z-index:100, AdminBar 9999): con `portal` este
+     overlay va a document.body y debe tapar la pantalla entera, header
+     incluido. */
+  z-index: 100000;
   gap: 1rem;
 }
 

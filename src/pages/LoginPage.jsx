@@ -74,14 +74,14 @@ const LoginPage = () => {
   // Walá se reserva para la PRIMERA carga de la app; el resto —login incluido—
   // usa el círculo.
   if (loading && !error) {
-    return <Loading fullScreen message="Iniciando sesión..." />;
+    return <Loading fullScreen portal message="Iniciando sesión..." />;
   }
 
   if (user) {
     // Cubre también el instante en que `user` ya llegó pero el perfil (authLoading)
     // todavía se está resolviendo: sin esto, entre medias se veía otra vez el
     // formulario de login por un instante.
-    return <Loading fullScreen message={authLoading ? 'Cargando tu perfil...' : 'Redirigiendo...'} />;
+    return <Loading fullScreen portal message={authLoading ? 'Cargando tu perfil...' : 'Redirigiendo...'} />;
   }
 
   return (
