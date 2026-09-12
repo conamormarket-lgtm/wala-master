@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EASE_SIGNATURE, useReducedMotionSafe } from '../../../theme/motion';
@@ -76,6 +76,24 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
   // ¿Llegó a mostrarse de verdad? Solo entonces "gastamos" el splash único:
   // si el overlay se monta con show:false (tienda ya cacheada) no marcaría nada.
   const wasShownRef = useRef(false);
+
+  // Al mostrar el CÍRCULO (navegación DENTRO de la app, ya con el header
+  // pintado), el overlay arranca DEBAJO del header en vez de taparlo: uno ya
+  // está en la app, el header debe seguir visible mientras carga el hero. El
+  // splash de MARCA (primera carga en frío) sí cubre todo. `contentTop` es el
+  // borde superior del área de contenido (#main-content-area, justo debajo del
+  // header + barra admin si la hay); se mide al mostrarse y en cada resize.
+  const [contentTop, setContentTop] = useState(0);
+  useLayoutEffect(() => {
+    if (useBrand || !show) return undefined;
+    const medir = () => {
+      const main = document.getElementById('main-content-area');
+      setContentTop(main ? Math.max(0, Math.round(main.getBoundingClientRect().top)) : 0);
+    };
+    medir();
+    window.addEventListener('resize', medir);
+    return () => window.removeEventListener('resize', medir);
+  }, [useBrand, show]);
 
   // Ver MAX_SHOW_MS arriba: `effectiveShow` reemplaza a `show` en todo lo de
   // abajo (bloqueo de scroll, pointer-events, AnimatePresence) para que el
@@ -177,7 +195,23 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
           // / tap de la tienda para siempre: la pagina "se pega" y ninguna
           // tarjeta ni boton vuelve a responder. Con pointer-events:none deja
           // de interceptar clicks aunque el nodo nunca llegue a desmontarse.
-          style={{ position: 'fixed', inset: 0, zIndex: 99999, transformOrigin: 'center', pointerEvents: effectiveShow ? 'auto' : 'none' }}
+          style={
+            useBrand
+              // Splash de MARCA (primera carga en frío): cubre TODO.
+              ? { position: 'fixed', inset: 0, zIndex: 99999, transformOrigin: 'center', pointerEvents: effectiveShow ? 'auto' : 'none' }
+              // CÍRCULO (navegación dentro de la app): arranca debajo del
+              // header (contentTop) para dejarlo visible; centra el spinner
+              // sobre el fondo claro de siempre. Cubre solo el contenido
+              // mientras la tienda espera el hero (heroListo) — el header
+              // queda intacto y el hero luego entra con su propia transición.
+              : {
+                  position: 'fixed', top: contentTop, left: 0, right: 0, bottom: 0,
+                  zIndex: 99999, transformOrigin: 'center',
+                  pointerEvents: effectiveShow ? 'auto' : 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.98) 100%)',
+                }
+          }
           initial={false}
           exit={
             relevo
@@ -193,7 +227,7 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
             ease: EASE_SIGNATURE,
           }}
         >
-          {useBrand ? <BrandLoader /> : <Loading fullScreen />}
+          {useBrand ? <BrandLoader /> : <Loading />}
         </motion.div>
       )}
     </AnimatePresence>,
