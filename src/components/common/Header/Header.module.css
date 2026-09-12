@@ -1417,18 +1417,21 @@
     transform: none;
   }
 
-  /* Logo más compacto en móvil */
+  /* Logo en móvil: se agranda respecto al 36px anterior — quedaba diminuto
+     y perdía presencia de marca. La fila del logo tiene espacio de sobra
+     (logo a la izquierda, íconos a la derecha), así que sube a 44px sin
+     chocar con nada. */
   .logo {
-    height: 40px;
+    height: 50px;
     gap: 0.5rem;
     font-size: 1.0625rem;
   }
 
   .logoImage {
     width: auto !important;
-    height: 36px !important;
-    max-width: 118px !important;
-    max-height: 36px !important;
+    height: 44px !important;
+    max-width: 160px !important;
+    max-height: 44px !important;
   }
 
   .actions {
@@ -1709,14 +1712,14 @@
   }
 
   .logo {
-    height: 40px;
+    height: 48px;
   }
 
   .logoImage {
     width: auto !important;
-    height: 34px !important;
-    max-width: 112px !important;
-    max-height: 34px !important;
+    height: 42px !important;
+    max-width: 150px !important;
+    max-height: 42px !important;
   }
 
   .cartBadge {
@@ -1741,21 +1744,21 @@
   }
 
   .logo {
-    height: 40px;
+    height: 46px;
   }
 
   .logoImage {
     width: auto !important;
-    height: 32px !important;
-    max-width: 104px !important;
-    max-height: 32px !important;
+    height: 40px !important;
+    max-width: 140px !important;
+    max-height: 40px !important;
   }
 
   .logo>div {
     width: auto !important;
-    height: 32px !important;
-    max-width: 104px !important;
-    max-height: 32px !important;
+    height: 40px !important;
+    max-width: 140px !important;
+    max-height: 40px !important;
   }
 
   /* Antes gap:0 dejaba los 3 iconos LITERALMENTE pegados (0px entre ellos)
