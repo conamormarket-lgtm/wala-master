@@ -36,9 +36,12 @@
   gap: 0.5rem;
 }
 
-.title::before {
-  content: '💝';
-  font-size: 1.5em;
+/* Icono del título: el mismo violeta que el corazón de favoritos activo en
+   toda la tienda (ProductCard/PremiumProductCard usan --rojo-principal, que
+   pese al nombre heredado ES el violeta de marca) — antes era el emoji 💝. */
+.titleIcon {
+  color: var(--rojo-principal);
+  flex-shrink: 0;
 }
 
 .headerActions {
@@ -69,16 +72,17 @@
   display: inline-block;
 }
 
-/* ── Botones planos ──
-   Sólidos, sin degradado ni "levantamiento" al hover: el mismo lenguaje que
-   .primaryButton del Header (el botón que de verdad se repite en todo el
-   sitio — "Ver mi lista" del popup de wishlist, etc.), no el botón-píldora
-   con brillo. Cada acción tiene su propio color (violeta = ir al carrito /
-   explorar, ámbar = fechas de regalo, rosa = compartir) pero todas comparten
-   la misma forma: fondo sólido, esquinas de --radio-pequeno, hover = solo
-   oscurece el color, sin sombra ni transform. */
+/* ── Botones planos, todos en la familia violeta de marca ──
+   Antes cada botón tenía un color suelto (violeta claro, ÁMBAR, rosa/rojo)
+   que no tenía relación entre sí ni con el resto del sitio. Un solo acento
+   -violeta, como en TODA la app (Header, Cart, Checkout)- en dos
+   intensidades: sólido para la acción que de verdad importa (agregar al
+   carrito = venta), tinte suave para las acciones secundarias (fechas,
+   compartir). Sólidos y sin degradado ni "levantamiento" al hover: el mismo
+   lenguaje que .primaryButton del Header, no el botón-píldora con brillo. */
 .addAllBtn,
 .datesBtn,
+.shareBtn,
 .primaryBtn {
   padding: 0.75rem 1.4rem;
   border-radius: var(--radio-pequeno, 10px);
@@ -94,15 +98,15 @@
   transition: background-color 0.2s ease;
 }
 
-/* "Agregar todo al carrito": acción secundaria, tinte violeta tenue. */
+/* "Agregar todo al carrito": la acción que de verdad mueve una venta ->
+   MISMO violeta sólido que el resto de CTAs primarios del sitio. */
 .addAllBtn {
-  background: var(--violet-50, #f5f3ff);
-  color: var(--primary-color, #6d28d9);
-  border: 1px solid var(--violet-200, #ddd6fe);
+  background: #8b5cf6;
+  color: #ffffff;
 }
 
 .addAllBtn:hover {
-  background: var(--violet-100, #ede9fe);
+  background: #7c3aed;
 }
 
 .addAllBtn:disabled {
@@ -110,19 +114,39 @@
   cursor: not-allowed;
 }
 
-/* "Mis fechas especiales": registro de regalos (Feature B), acento ámbar
-   -distinto del violeta y del rosa- para diferenciarlo de un vistazo. */
+/* "Mis fechas especiales": acción secundaria (registro de regalos, Feature
+   B) -> tinte violeta tenue, mismo tratamiento para "Compartir mi lista". */
 .datesBtn {
-  background: var(--gold-600, #d97706);
-  color: #ffffff;
+  background: var(--violet-50, #f5f3ff);
+  color: var(--primary-color, #6d28d9);
+  border: 1px solid var(--violet-200, #ddd6fe);
 }
 
 .datesBtn:hover {
-  background: var(--gold-700, #b45309);
+  background: var(--violet-100, #ede9fe);
 }
 
-/* Acción principal (Compartir mi lista / Explorar Tienda en el vacío):
-   MISMO violeta sólido que el resto de CTAs primarios del sitio. */
+/* "Compartir mi lista": acción secundaria, mismo tinte violeta suave que
+   "Mis fechas especiales" -antes era rosa/rojo, un color sin relación con
+   el resto de la página-. */
+.shareBtn {
+  background: var(--violet-50, #f5f3ff);
+  color: var(--primary-color, #6d28d9);
+  border: 1px solid var(--violet-200, #ddd6fe);
+}
+
+.shareBtn:hover {
+  background: var(--violet-100, #ede9fe);
+}
+
+.shareBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* "Explorar Tienda" (única acción del estado vacío): MISMO violeta sólido
+   que "Agregar todo al carrito" -es el único CTA disponible, no puede quedar
+   con un tinte suave-. */
 .primaryBtn {
   background: #8b5cf6;
   color: #ffffff;
@@ -136,11 +160,6 @@
   color: #ffffff;
 }
 
-.primaryBtn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
 .emptyState {
   text-align: center;
   padding: 4rem 2rem;
@@ -149,8 +168,12 @@
   box-shadow: var(--sombra-media);
 }
 
+/* Antes un emoji 💝 a font-size 4rem; ahora envuelve el icono <Heart> (ver
+   WishlistPage.jsx) con el mismo violeta de marca del corazón de favoritos. */
 .emptyIcon {
-  font-size: 4rem;
+  display: flex;
+  justify-content: center;
+  color: var(--rojo-principal);
   margin-bottom: 1rem;
   animation: bounce 2s infinite ease-in-out;
 }
@@ -329,7 +352,8 @@
 
   .primaryBtn,
   .addAllBtn,
-  .datesBtn {
+  .datesBtn,
+  .shareBtn {
     width: 100%;
   }
 }
@@ -342,13 +366,17 @@
    NO usa esos tokens: los botones de color fijo y el badge "no disponible".
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* Botón violeta "agregar todo": tinte de marca translúcido + texto acento */
-:global([data-theme='dark']) .addAllBtn {
+/* Botones de tinte violeta suave (fechas / compartir): en oscuro el tinte
+   claro fijo (--violet-50) se vuelve translúcido de marca + texto acento,
+   igual que ya resuelve el resto del sitio para superficies "soft". */
+:global([data-theme='dark']) .datesBtn,
+:global([data-theme='dark']) .shareBtn {
   background: var(--primary-light);
   color: var(--primary-hover);
   border-color: var(--color-border);
 }
-:global([data-theme='dark']) .addAllBtn:hover {
+:global([data-theme='dark']) .datesBtn:hover,
+:global([data-theme='dark']) .shareBtn:hover {
   background: rgba(167, 139, 250, 0.22);
 }
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, CalendarHeart, Share2 } from 'lucide-react';
+import { Heart, ShoppingCart, CalendarHeart, Share2 } from 'lucide-react';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -118,7 +118,10 @@ const WishlistPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.headerRow}>
-        <h1 className={styles.title}><T>Mi Lista de Deseos</T></h1>
+        <h1 className={styles.title}>
+          <Heart className={styles.titleIcon} size={26} fill="currentColor" aria-hidden="true" />
+          <T>Mi Lista de Deseos</T>
+        </h1>
         {wishlistItems.length > 0 && (
           <div className={styles.headerActions}>
             <button
@@ -142,7 +145,7 @@ const WishlistPage = () => {
             )}
             {shareLink && (
               <button
-                className={styles.primaryBtn}
+                className={styles.shareBtn}
                 onClick={handleCopyLink}
                 disabled={copying}
               >
@@ -167,7 +170,9 @@ const WishlistPage = () => {
         <div className={styles.loading}><T>Cargando tu lista de deseos...</T></div>
       ) : wishlistItems.length === 0 ? (
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>💝</div>
+          <div className={styles.emptyIcon}>
+            <Heart size={56} fill="currentColor" aria-hidden="true" />
+          </div>
           <h3><T>Tu lista de deseos está vacía</T></h3>
           <p><T>Explora la tienda y guarda los productos que te encantaría recibir o comprar después.</T></p>
           <Link to="/tienda" className={styles.primaryBtn}>
