@@ -1,4 +1,5 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import Cropper from 'react-easy-crop';
 import styles from './AvatarCropModal.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -10,6 +11,14 @@ import { T } from '../../i18n/useTranslatedText';
 // (barra superior con cerrar/confirmar + imagen grande en el medio) en vez
 // de la card chica y centrada de Admin — con una foto real se ve mucho
 // mejor para recortar con precisión.
+//
+// Se monta con un portal a document.body (mismo patrón que
+// components/common/Modal) en vez de quedar anidado donde vive AvatarStudio
+// -dentro de <Reveal>/<Stagger>, wrappers de framer-motion que aplican un
+// transform inline-: un transform en cualquier ancestro convierte a ESE
+// ancestro en el "contenedor" de todo lo position:fixed adentro, así que la
+// pantalla completa quedaba encerrada en el ancho de la card de identidad en
+// vez de cubrir la ventana entera.
 const createImage = (url) =>
   new Promise((resolve, reject) => {
     const image = new Image();
@@ -64,7 +73,17 @@ export default function AvatarCropModal({ imageSrc, onConfirm, onCancel }) {
     }
   }, [imageSrc, croppedAreaPixels, processing, onConfirm, onCancel]);
 
-  return (
+  // Pantalla completa: bloquea el scroll del body mientras está abierto,
+  // mismo criterio que components/common/Modal.
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
+
+  const contenido = (
     <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Recortar foto de perfil">
       {/* Pantalla completa (patrón WhatsApp/Instagram) en vez de una card
           chica centrada: la imagen se ve mucho más grande para recortar con
@@ -123,4 +142,6 @@ export default function AvatarCropModal({ imageSrc, onConfirm, onCancel }) {
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(contenido, document.body);
 }
