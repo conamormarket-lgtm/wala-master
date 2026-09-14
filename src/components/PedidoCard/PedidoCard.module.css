@@ -1,36 +1,41 @@
-/* Contenedor Principal (Tarjeta Acordeón) */
+/* Contenedor Principal (Tarjeta Acordeón)
+   Antes en hex fijo (#fff/#e2e8f0 + sombras a mano): funcionaba en oscuro
+   solo porque el bloque MODO NOCHE de más abajo lo pisaba a mano, rule por
+   rule. Con tokens (--blanco/--gris-borde/--sombra-*, ya theme-aware) el
+   mismo resultado sale solo, así que esas reglas duplicadas se borraron. */
 .card {
-  background-color: #ffffff;
-  border-radius: 0.75rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgb(15 23 42 / 0.06), 0 2px 4px -2px rgb(15 23 42 / 0.06);
+  background-color: var(--blanco);
+  border-radius: var(--radio-mediano);
+  border: 1px solid var(--gris-borde);
+  box-shadow: var(--sombra-suave);
   overflow: hidden;
   margin-bottom: 1rem;
-  transition: all 0.2s ease-in-out;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .card:hover {
-  box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.08), 0 4px 6px -4px rgb(15 23 42 / 0.08);
+  box-shadow: var(--sombra-media);
+  transform: translateY(-1px);
 }
 
 /* Header */
 .cardHeader {
-  background-color: #ffffff;
-  color: #0f172a;
-  padding: 1.25rem 1.5rem;
+  background-color: var(--blanco);
+  color: var(--gris-texto-principal);
+  padding: 1.35rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: nowrap;
   gap: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease;
   min-width: 0;
   border-bottom: 1px solid transparent;
 }
 
 .cardHeader:hover {
-  background-color: #f8fafc;
+  background-color: var(--gris-fondo);
 }
 
 .headerLeft {
@@ -58,7 +63,7 @@
 .headerTitle {
   font-size: 1rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--gris-texto-principal);
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -75,27 +80,28 @@
 
 .badgesScrollable {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
   align-items: center;
   flex-wrap: wrap;
 }
 
-/* MARCA LOGO */
+/* MARCA LOGO — antes 38px; un poco más grande (42px) para que tenga más
+   presencia junto al número de pedido, que es lo primero que se lee. */
 .marcaBadgeContainer {
   flex-shrink: 0;
 }
 
 .marcaBadge {
-  width: 38px;
-  height: 38px;
-  background-color: #ffffff;
+  width: 42px;
+  height: 42px;
+  background-color: var(--blanco);
   border-radius: 50%;
   padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
-  border: 1px solid #e2e8f0;
+  box-shadow: var(--sombra-suave);
+  border: 1px solid var(--gris-borde);
   overflow: hidden;
 }
 
@@ -167,9 +173,9 @@
 }
 
 .canjeadoChip {
-  background: #f1f5f9;
-  border: 1px dashed #cbd5e1;
-  color: #64748b;
+  background: var(--gris-fondo);
+  border: 1px dashed var(--gris-borde);
+  color: var(--gris-texto-secundario);
   font-size: 0.75rem;
   font-weight: 900;
   padding: 0.4rem 0.85rem;
@@ -180,7 +186,7 @@
 
 .iconoChevron {
   transition: transform 0.3s ease;
-  color: #475569;
+  color: var(--gris-texto-secundario);
 }
 
 /* Body */
@@ -571,36 +577,12 @@
 
 /* ═════════════════════════════════════════════════════════════════════════
    MODO NOCHE — overrides de contraste (lista de pedidos · alto tráfico)
-   Vira las superficies blancas y el texto slate-900 a tokens de tema.
-   Solo color/fondo/borde; layout intacto.
+   La lista colapsada (.card/.cardHeader/.headerTitle/.marcaBadge/
+   .iconoChevron/.canjeadoChip) ya usa tokens --blanco/--gris-* arriba, así
+   que se voltea sola — las reglas que antes las pisaban acá se borraron.
+   Lo que queda es SOLO la vista expandida (paneles de info, botón de pago),
+   que sigue en hex fijo y sí necesita su override aparte.
    ═════════════════════════════════════════════════════════════════════════ */
-
-:global([data-theme='dark']) .card {
-  background-color: var(--color-surface);
-  border-color: var(--color-border);
-}
-
-:global([data-theme='dark']) .cardHeader {
-  background-color: var(--color-surface);
-  color: var(--color-text);
-}
-
-:global([data-theme='dark']) .cardHeader:hover {
-  background-color: var(--color-hover);
-}
-
-:global([data-theme='dark']) .headerTitle {
-  color: var(--color-text);
-}
-
-:global([data-theme='dark']) .marcaBadge {
-  background-color: var(--color-surface-2);
-  border-color: var(--color-border);
-}
-
-:global([data-theme='dark']) .iconoChevron {
-  color: var(--color-text-muted);
-}
 
 /* Cuerpo del acordeón */
 :global([data-theme='dark']) .cardBody {
@@ -641,10 +623,4 @@
 :global([data-theme='dark']) .metodoPago {
   background: var(--color-surface-2);
   border-color: var(--color-border);
-}
-
-:global([data-theme='dark']) .canjeadoChip {
-  background: var(--color-surface-2);
-  border-color: var(--color-border);
-  color: var(--color-text-muted);
 }
