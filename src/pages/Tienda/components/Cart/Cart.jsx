@@ -186,11 +186,13 @@ const Cart = () => {
             className={styles.summaryGlass}
             bodyClassName={styles.summaryBody}
           >
-            {/* Monedas Notice */}
+            {/* Aviso de monedas: antes decía "...en el siguiente paso (Checkout)...",
+                un anglicismo que el cliente no tiene por qué conocer. Se cambia por
+                "al pagar tu pedido", que dice lo mismo sin depender de esa palabra. */}
             {monedasCount > 0 && (
               <div className={styles.coinsNotice}>
                 <span>🪙</span>
-                <span><T>¡Tienes monedas disponibles! Podrás aplicarlas en el siguiente paso (Checkout) para obtener un descuento.</T></span>
+                <span><T>¡Tienes monedas disponibles! Podrás usarlas como descuento al pagar tu pedido.</T></span>
               </div>
             )}
             <div className={styles.row}>
