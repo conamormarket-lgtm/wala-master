@@ -21,6 +21,16 @@
   /* Hairline interno superior: el "labio de luz" del cristal. */
   box-shadow: var(--sombra-suave), var(--glass-inset-top, inset 0 1px 0 0 rgba(255, 255, 255, 0.6));
   padding-top: var(--safe-top, 0px);
+  /* Todo el header es "chrome" de la interfaz (logo, nav, iconos, dropdowns),
+     no contenido para leer/copiar: sin esto, un click sobre CUALQUIER texto
+     plano (el logo SVG, un link del nav, "Ver todas las marcas"...) coloca el
+     cursor de selección nativo del navegador ahí — la "raya" parpadeante que
+     se reportó en varios puntos del header. Se hereda a todos los
+     descendientes; NO afecta al texto tipeado dentro de <input>/<textarea>
+     (el buscador sigue seleccionable con normalidad: los navegadores
+     exceptúan los controles de formulario de esta regla). */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Fallback de contraste (WCAG): si el navegador no soporta backdrop-filter,
