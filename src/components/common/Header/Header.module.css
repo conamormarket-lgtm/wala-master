@@ -743,11 +743,19 @@
   flex-direction: column;
 }
 
+/* Envuelve la lista scrolleable + el degradado inferior (ver .previewListFade):
+   el degradado tiene que quedar FIJO sobre el borde inferior de la lista sin
+   importar cuánto se haya scrolleado, así que no puede vivir dentro del
+   propio elemento con overflow (se movería junto con el contenido). */
+.previewItemListWrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
 .previewItemList {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 0;
   max-height: 250px;
   overflow-y: auto;
 }
@@ -757,15 +765,35 @@
   align-items: center;
   gap: 1rem;
   text-align: left;
+  padding: 0.625rem 0;
+}
+
+.previewItem + .previewItem {
+  border-top: 1px solid var(--gris-borde, #f1f5f9);
 }
 
 .previewItemImg {
   width: 60px;
   height: 60px;
   object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #eee;
+  border-radius: var(--radio-pequeno, 8px);
+  border: 1px solid var(--gris-borde, #eee);
+  background: var(--gris-fondo, #f8fafc);
   flex-shrink: 0;
+}
+
+/* Insinúa que hay más productos debajo sin depender solo del texto "+N":
+   un degradado hacia el color REAL del popup (--blanco, que ya se voltea a
+   superficie oscura en modo noche) en vez de un corte seco del scroll. */
+.previewListFade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--blanco, #fff));
+  border-radius: 0 0 8px 8px;
 }
 
 /* Tira de miniaturas de la lista de deseos (popup del corazón). */

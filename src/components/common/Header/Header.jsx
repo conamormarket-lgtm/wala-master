@@ -1119,20 +1119,42 @@ const Header = () => {
                   </>
                 ) : (
                   <div className={styles.cartPreviewContainer}>
-                    <div className={styles.previewItemList}>
-                      {cartItems.filter((i) => i.selected !== false).slice(0, 3).map((item) => (
-                        <div key={item.id} className={styles.previewItem}>
-                          <img src={item.productImage} alt={item.productName} className={styles.previewItemImg} />
-                          <div className={styles.previewItemDetails}>
-                            <span className={styles.previewItemName}>{item.productName}</span>
-                            <span className={styles.previewItemPrice}>{item.quantity} x S/ {(item.price || 0).toFixed(2)}</span>
+                    {(() => {
+                      const seleccionados = cartItems.filter((i) => i.selected !== false);
+                      const restantes = seleccionados.length - 3;
+                      return (
+                        <>
+                          <div className={styles.previewItemListWrapper}>
+                            <div className={styles.previewItemList}>
+                              {seleccionados.slice(0, 3).map((item) => (
+                                <div key={item.id} className={styles.previewItem}>
+                                  <img
+                                    src={item.productImage || '/images/placeholder.svg'}
+                                    alt={item.productName || 'Producto'}
+                                    className={styles.previewItemImg}
+                                    onError={(e) => { e.currentTarget.src = '/images/placeholder.svg'; }}
+                                  />
+                                  <div className={styles.previewItemDetails}>
+                                    <span className={styles.previewItemName}>{item.productName || 'Producto'}</span>
+                                    <span className={styles.previewItemPrice}>{item.quantity} x S/ {(item.price || 0).toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Difumina el borde inferior de la lista SOLO cuando hay más
+                                productos de los que entran a la vista: sin esto, el corte
+                                del scroll se veía seco (una fila a la mitad) y encima
+                                dependía únicamente del texto "+N" para avisar que había
+                                más. Ahora el propio degradado ya insinúa que se puede
+                                seguir bajando. */}
+                            {restantes > 0 && <div className={styles.previewListFade} aria-hidden="true" />}
                           </div>
-                        </div>
-                      ))}
-                      {cartItems.filter((i) => i.selected !== false).length > 3 && (
-                        <p className={styles.moreItemsText}><T>{`+ ${cartItems.filter((i) => i.selected !== false).length - 3} artículos más...`}</T></p>
-                      )}
-                    </div>
+                          {restantes > 0 && (
+                            <p className={styles.moreItemsText}><T>{`+ ${restantes} artículos más...`}</T></p>
+                          )}
+                        </>
+                      );
+                    })()}
                     <div className={styles.cartPreviewFooter}>
                       <div className={styles.cartPreviewTotal}>
                         <span><T>Total:</T></span>
