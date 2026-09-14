@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useGlobalToast } from './ToastContext';
 import { useAuth } from './AuthContext';
-import { onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore';
 import { erpDb } from '../services/erp/firebase';
 import { db, auth } from '../services/firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
@@ -133,6 +133,50 @@ export const CartProvider = ({ children }) => {
       // y (solo si hay un usuario NUEVO logueado) su cart en Firestore se limpia.
       setItems([]);
     }
+  }, [uid]);
+
+  // ── Restaurar el carrito guardado en la nube al iniciar sesión ────────────
+  // El efecto de arriba (persistencia) YA escribía el carrito en
+  // portal_clientes_users/{uid}.cart, pero solo para el aviso de "Carrito
+  // Abandonado" -nadie lo volvía a LEER-. Si entrabas desde otro dispositivo
+  // (o el mismo, después de un logout que limpia el carrito local a propósito)
+  // no aparecía nada: el carrito de la nube existía, pero este dispositivo
+  // nunca lo pedía.
+  //
+  // Se restaura UNA vez por uid por sesión de pestaña (restoredUidRef), y se
+  // FUSIONA con lo que ya haya en este dispositivo (mismo criterio de "mismo
+  // item" que addToCart: productId + color + talla + personalización) en vez
+  // de reemplazar — así un invitado que agrega algo y LUEGO inicia sesión no
+  // pierde lo que acaba de agregar aquí.
+  const restoredUidRef = useRef(null);
+  useEffect(() => {
+    if (!uid || !db) return;
+    if (restoredUidRef.current === uid) return;
+    restoredUidRef.current = uid;
+
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, PORTAL_USERS_COLLECTION, uid));
+        const remoteItems = snap.exists() ? snap.data()?.cart?.items : null;
+        if (!Array.isArray(remoteItems) || remoteItems.length === 0) return;
+
+        setItems((prev) => {
+          const mismoItem = (a, b) =>
+            a.productId === b.productId &&
+            (a.variant?.selectedVariant?.name ?? a.variant?.color) === (b.variant?.selectedVariant?.name ?? b.variant?.color) &&
+            a.variant?.size === b.variant?.size &&
+            JSON.stringify(a.customization) === JSON.stringify(b.customization);
+
+          const nuevos = remoteItems.filter(
+            (remoto) => !prev.some((local) => mismoItem(local, remoto))
+          );
+          if (nuevos.length === 0) return prev;
+          return [...prev, ...nuevos];
+        });
+      } catch (err) {
+        console.warn('No se pudo restaurar el carrito guardado en la nube:', err);
+      }
+    })();
   }, [uid]);
 
   // ── Multi-pestaña: re-hidratar el carrito cuando OTRA pestaña lo cambie ────
