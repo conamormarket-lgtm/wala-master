@@ -16,8 +16,8 @@ export const empresa = {
 
   // Contacto público
   email: 'amorwala0@gmail.com',
-  telefono: '+51 912 881 722',
-  whatsapp: '51912881722', // sin "+", formato para wa.me
+  telefono: '+51 924 426 791',
+  whatsapp: '51924426791', // sin "+", formato para wa.me
 
   // Plazo legal de respuesta del Libro de Reclamaciones (días hábiles)
   plazoRespuestaDiasHabiles: 15,
