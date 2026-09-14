@@ -147,18 +147,24 @@ const PerfilPage = () => {
     }
   };
 
-  const handleSaveAvatar = async () => {
+  // AvatarStudio ahora guarda solo (al recortar una foto nueva o al
+  // quitarla) sin un botón "Guardar" aparte. Acepta un configOverride
+  // explícito en vez de leer únicamente el `avatarConfig` de este closure:
+  // AvatarStudio llama a setConfig (= setAvatarConfig) y a onSave casi en el
+  // mismo tick, y setState es async — sin el override, este guardado podría
+  // ejecutarse con el avatarConfig VIEJO (todavía sin la foto nueva/quitada)
+  // porque el closure de este render aún no vio el próximo. También
+  // necesita saber si el guardado tuvo éxito para recién ahí borrar el
+  // archivo viejo de Storage (ver AvatarStudio.jsx).
+  const handleSaveAvatar = async (configOverride) => {
     setIsAvatarSaving(true);
-    const { error } = await updateUserProfile({ avatarConfig });
+    const { error } = await updateUserProfile({ avatarConfig: configOverride || avatarConfig });
     setIsAvatarSaving(false);
     if (error) {
       toast.error('Ocurrió un error al guardar tu avatar');
     } else {
       toast.success('¡Avatar actualizado increíblemente bien! 😎');
     }
-    // AvatarStudio necesita saber si el guardado tuvo éxito: al quitar una
-    // foto, borra el archivo de Storage recién DESPUÉS de que este guardado
-    // confirme el cambio (ver handleSaveClick en AvatarStudio.jsx).
     return { error };
   };
 

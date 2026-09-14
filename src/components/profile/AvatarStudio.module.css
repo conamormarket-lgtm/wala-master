@@ -121,26 +121,6 @@
     }
 }
 
-.saveLink {
-    padding: 0;
-    border: none;
-    background: transparent;
-    font: inherit;
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #8b5cf6;
-    cursor: pointer;
-}
-
-.saveLink:hover:not(:disabled) {
-    text-decoration: underline;
-}
-
-.saveLink:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
 /* Mensaje de error: antes usaba --rojo-principal (hoy un alias del violeta de
    marca), así que un error de subida se leía en violeta, no como error. Usa
    el color semántico de peligro (rojo), consistente con .errorMessage en

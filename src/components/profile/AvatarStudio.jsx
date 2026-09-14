@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { uploadFile, deleteFile } from '../../services/firebase/storage';
+import AvatarCropModal from './AvatarCropModal';
 import styles from './AvatarStudio.module.css';
-import { T } from '../../i18n/useTranslatedText';
 
 // Subidor simple de foto de perfil.
 // Reemplaza al antiguo flujo de avatar 3D (Ready Player Me, ya descontinuado).
@@ -13,93 +13,113 @@ import { T } from '../../i18n/useTranslatedText';
 // identidad de PerfilPage, como un círculo pequeño con una insignia de
 // cámara superpuesta (patrón LinkedIn/WhatsApp) — sin título ni descripción
 // repetidos, porque el encabezado ya dice de quién es la foto.
+//
+// Elegir foto ya no sube el archivo tal cual: abre AvatarCropModal para que
+// el usuario elija qué parte de la imagen se ve (círculo fijo) ANTES de que
+// se suba nada. Tanto recortar como quitar guardan solos — no hay botón
+// "Guardar foto" aparte, para que el cambio quede confirmado de una.
 export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid }) {
     const fileInputRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isRemoving, setIsRemoving] = useState(false);
     const [uploadError, setUploadError] = useState(null);
-    // "Guardar foto" antes solo aparecía si HAY foto (avatarUrl truthy) —
-    // servía para subir, pero no había forma de persistir un QUITAR (volver a
-    // sin foto). dirty cubre ese caso: se prende también al quitar, para que
-    // el link de guardar siga visible y el usuario pueda confirmar el cambio.
-    const [dirty, setDirty] = useState(false);
-    // URL del archivo de Storage a borrar SOLO cuando el "Quitar foto" se
-    // confirme con éxito (ver handleSaveClick). Antes se borraba del Storage
-    // al instante al hacer clic en la X: si mientras tanto Firestore emitía
-    // cualquier otra actualización del perfil (el useEffect de PerfilPage
-    // resincroniza avatarConfig en cada cambio de userProfile), el avatarUrl
-    // local sin guardar se revertía al de antes — pero el archivo ya no
-    // existía, así que la foto quedaba rota. Difiriendo el borrado hasta el
-    // guardado exitoso, si se revierte antes de guardar el archivo sigue
-    // intacto.
-    const [pendingDeleteUrl, setPendingDeleteUrl] = useState(null);
+    // Object URL del archivo recién elegido, pendiente de recortar. null =
+    // el modal de recorte está cerrado.
+    const [imageToCrop, setImageToCrop] = useState(null);
 
     const avatarUrl = config?.avatarUrl || null;
+    const busy = isUploading || isRemoving || isSaving;
 
     // Abre el selector de archivos nativo.
     const handlePickFile = () => {
-        if (isUploading || isSaving) return;
+        if (busy) return;
         fileInputRef.current?.click();
     };
 
-    // Sube la imagen elegida a Firebase Storage y la guarda en el config.
-    const handleFileChange = async (e) => {
+    // En vez de subir el archivo elegido tal cual, abre el modal de recorte.
+    const handleFileChange = (e) => {
         const file = e.target.files?.[0];
         // Permite volver a elegir el mismo archivo en una nueva selección.
         e.target.value = '';
         if (!file) return;
 
         // Las reglas de Storage (firebase/storage.rules) exigen que la ruta sea
-        // users/{tu-propio-uid}/... para poder escribir ahí. Antes esta ruta era
-        // literalmente "users/avatars/..." -"avatars" como si fuera el uid-, así
-        // que SIEMPRE se rechazaba por permisos: la subida nunca funcionaba,
-        // para NINGÚN usuario. Sin uid no hay a dónde subir con permiso.
+        // users/{tu-propio-uid}/... para poder escribir ahí. Sin uid no hay a
+        // dónde subir con permiso.
         if (!uid) {
             setUploadError('No se pudo identificar tu cuenta. Refresca la página e inténtalo de nuevo.');
             return;
         }
 
         setUploadError(null);
+        setImageToCrop(URL.createObjectURL(file));
+    };
+
+    const handleCropCancel = () => {
+        if (imageToCrop) URL.revokeObjectURL(imageToCrop);
+        setImageToCrop(null);
+    };
+
+    // Recorte confirmado: sube la foto YA recortada y guarda el cambio de
+    // una. Le pasamos el config actualizado a onSave EN VEZ de confiar en que
+    // PerfilPage ya haya re-renderizado con el nuevo avatarUrl -setConfig es
+    // async: si onSave leyera su propio estado por clausura, en este mismo
+    // tick todavía tendría el valor viejo (ver handleSaveAvatar en
+    // PerfilPage.jsx, que ahora acepta ese override-.
+    const handleCropConfirm = async (blob) => {
+        const sourceUrl = imageToCrop;
+        setImageToCrop(null);
+        setUploadError(null);
         setIsUploading(true);
+        const oldAvatarUrl = avatarUrl;
         try {
-            const path = `users/${uid}/avatars/${Date.now()}_${file.name}`;
-            const { url, error } = await uploadFile(file, path);
+            const path = `users/${uid}/avatars/${Date.now()}_cropped.jpg`;
+            const { url, error } = await uploadFile(blob, path);
             if (error || !url) {
                 setUploadError(error || 'No se pudo subir la foto. Inténtalo de nuevo.');
                 return;
             }
             // Limpiamos los restos del antiguo avatar 3D: isRpm:false y glbUrl:null.
-            setConfig(prev => ({ ...prev, isRpm: false, avatarUrl: url, glbUrl: null }));
-            setDirty(true);
+            const nextConfig = { ...config, isRpm: false, avatarUrl: url, glbUrl: null };
+            setConfig(() => nextConfig);
+            const { error: saveError } = (await onSave(nextConfig)) || {};
+            if (saveError) {
+                setUploadError('La foto se subió pero no se pudo guardar. Inténtalo de nuevo.');
+            } else if (oldAvatarUrl) {
+                // La foto anterior ya no hace falta — se borra recién ahora
+                // que la nueva quedó confirmada en Firestore, no antes.
+                deleteFile(oldAvatarUrl).catch(() => {});
+            }
         } catch (err) {
             setUploadError('No se pudo subir la foto. Inténtalo de nuevo.');
         } finally {
             setIsUploading(false);
+            if (sourceUrl) URL.revokeObjectURL(sourceUrl);
         }
     };
 
-    // Quita la foto localmente (vuelve al placeholder) y guarda su URL para
-    // borrarla de Storage recién cuando se confirme el guardado — ver
-    // pendingDeleteUrl arriba y handleSaveClick abajo.
-    const handleRemovePhoto = () => {
-        if (!avatarUrl || isUploading || isSaving) return;
+    // Quita la foto y guarda al toque, mismo criterio que recortar. El
+    // archivo de Storage se borra SOLO si el guardado confirma bien, para no
+    // dejar una URL rota en Firestore si el guardado fallara (ver commit
+    // "Fix: quitar foto dejaba avatar roto...").
+    const handleRemovePhoto = async () => {
+        if (!avatarUrl || busy) return;
         if (!window.confirm('¿Quitar tu foto de perfil?')) return;
 
         setUploadError(null);
-        setPendingDeleteUrl(avatarUrl);
-        setConfig(prev => ({ ...prev, avatarUrl: null }));
-        setDirty(true);
-    };
-
-    // Confirma el guardado (nombre/avatar en Firestore) y, solo si salió
-    // bien, recién ahí borra de Storage la foto que se quitó (best-effort —
-    // si la URL no es de Storage o ya no existe, se ignora, como en
-    // AdminProductoFormV2/AdminProductos).
-    const handleSaveClick = async () => {
-        const result = await onSave();
-        if (!result?.error && pendingDeleteUrl) {
-            const toDelete = pendingDeleteUrl;
-            setPendingDeleteUrl(null);
-            deleteFile(toDelete).catch(() => {});
+        setIsRemoving(true);
+        const oldAvatarUrl = avatarUrl;
+        try {
+            const nextConfig = { ...config, avatarUrl: null };
+            setConfig(() => nextConfig);
+            const { error: saveError } = (await onSave(nextConfig)) || {};
+            if (saveError) {
+                setUploadError('No se pudo guardar el cambio. Inténtalo de nuevo.');
+            } else {
+                deleteFile(oldAvatarUrl).catch(() => {});
+            }
+        } finally {
+            setIsRemoving(false);
         }
     };
 
@@ -125,7 +145,7 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
                 <button
                     type="button"
                     onClick={handlePickFile}
-                    disabled={isUploading || isSaving}
+                    disabled={busy}
                     className={styles.editBadge}
                     aria-label="Cambiar foto de perfil"
                     title="Cambiar foto de perfil"
@@ -141,12 +161,16 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
                     <button
                         type="button"
                         onClick={handleRemovePhoto}
-                        disabled={isUploading || isSaving}
+                        disabled={busy}
                         className={styles.removeBadge}
                         aria-label="Quitar foto de perfil"
                         title="Quitar foto de perfil"
                     >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        {isRemoving ? (
+                            <span className={styles.spinner} aria-hidden="true" />
+                        ) : (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        )}
                     </button>
                 )}
             </div>
@@ -160,19 +184,16 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
                 style={{ display: 'none' }}
             />
 
-            {(avatarUrl || dirty) && (
-                <button
-                    type="button"
-                    onClick={handleSaveClick}
-                    disabled={isSaving || isUploading}
-                    className={styles.saveLink}
-                >
-                    {isSaving ? <T>Guardando...</T> : <T>Guardar foto</T>}
-                </button>
-            )}
-
             {uploadError && (
                 <p className={styles.uploadError}>{uploadError}</p>
+            )}
+
+            {imageToCrop && (
+                <AvatarCropModal
+                    imageSrc={imageToCrop}
+                    onConfirm={handleCropConfirm}
+                    onCancel={handleCropCancel}
+                />
             )}
         </div>
     );
