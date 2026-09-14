@@ -16,13 +16,22 @@ import { T } from '../../i18n/useTranslatedText';
 export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid }) {
     const fileInputRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [isRemoving, setIsRemoving] = useState(false);
     const [uploadError, setUploadError] = useState(null);
     // "Guardar foto" antes solo aparecía si HAY foto (avatarUrl truthy) —
     // servía para subir, pero no había forma de persistir un QUITAR (volver a
     // sin foto). dirty cubre ese caso: se prende también al quitar, para que
     // el link de guardar siga visible y el usuario pueda confirmar el cambio.
     const [dirty, setDirty] = useState(false);
+    // URL del archivo de Storage a borrar SOLO cuando el "Quitar foto" se
+    // confirme con éxito (ver handleSaveClick). Antes se borraba del Storage
+    // al instante al hacer clic en la X: si mientras tanto Firestore emitía
+    // cualquier otra actualización del perfil (el useEffect de PerfilPage
+    // resincroniza avatarConfig en cada cambio de userProfile), el avatarUrl
+    // local sin guardar se revertía al de antes — pero el archivo ya no
+    // existía, así que la foto quedaba rota. Difiriendo el borrado hasta el
+    // guardado exitoso, si se revierte antes de guardar el archivo sigue
+    // intacto.
+    const [pendingDeleteUrl, setPendingDeleteUrl] = useState(null);
 
     const avatarUrl = config?.avatarUrl || null;
 
@@ -68,24 +77,29 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
         }
     };
 
-    // Quita la foto actual: la borra de Storage (best-effort — si la URL no
-    // es de Storage o ya no existe, simplemente se ignora, como en
-    // AdminProductoFormV2/AdminProductos) y limpia el avatar localmente. El
-    // cambio recién queda guardado cuando el usuario confirma con "Guardar
-    // foto" (mismo flujo que subir una nueva), para no borrar en Firestore
-    // sin que el usuario lo pida explícitamente.
-    const handleRemovePhoto = async () => {
-        if (!avatarUrl || isUploading || isSaving || isRemoving) return;
+    // Quita la foto localmente (vuelve al placeholder) y guarda su URL para
+    // borrarla de Storage recién cuando se confirme el guardado — ver
+    // pendingDeleteUrl arriba y handleSaveClick abajo.
+    const handleRemovePhoto = () => {
+        if (!avatarUrl || isUploading || isSaving) return;
         if (!window.confirm('¿Quitar tu foto de perfil?')) return;
 
         setUploadError(null);
-        setIsRemoving(true);
-        try {
-            await deleteFile(avatarUrl).catch(() => {});
-            setConfig(prev => ({ ...prev, avatarUrl: null }));
-            setDirty(true);
-        } finally {
-            setIsRemoving(false);
+        setPendingDeleteUrl(avatarUrl);
+        setConfig(prev => ({ ...prev, avatarUrl: null }));
+        setDirty(true);
+    };
+
+    // Confirma el guardado (nombre/avatar en Firestore) y, solo si salió
+    // bien, recién ahí borra de Storage la foto que se quitó (best-effort —
+    // si la URL no es de Storage o ya no existe, se ignora, como en
+    // AdminProductoFormV2/AdminProductos).
+    const handleSaveClick = async () => {
+        const result = await onSave();
+        if (!result?.error && pendingDeleteUrl) {
+            const toDelete = pendingDeleteUrl;
+            setPendingDeleteUrl(null);
+            deleteFile(toDelete).catch(() => {});
         }
     };
 
@@ -111,7 +125,7 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
                 <button
                     type="button"
                     onClick={handlePickFile}
-                    disabled={isUploading || isSaving || isRemoving}
+                    disabled={isUploading || isSaving}
                     className={styles.editBadge}
                     aria-label="Cambiar foto de perfil"
                     title="Cambiar foto de perfil"
@@ -127,16 +141,12 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
                     <button
                         type="button"
                         onClick={handleRemovePhoto}
-                        disabled={isUploading || isSaving || isRemoving}
+                        disabled={isUploading || isSaving}
                         className={styles.removeBadge}
                         aria-label="Quitar foto de perfil"
                         title="Quitar foto de perfil"
                     >
-                        {isRemoving ? (
-                            <span className={styles.spinner} aria-hidden="true" />
-                        ) : (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                        )}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                     </button>
                 )}
             </div>
@@ -153,8 +163,8 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
             {(avatarUrl || dirty) && (
                 <button
                     type="button"
-                    onClick={onSave}
-                    disabled={isSaving || isUploading || isRemoving}
+                    onClick={handleSaveClick}
+                    disabled={isSaving || isUploading}
                     className={styles.saveLink}
                 >
                     {isSaving ? <T>Guardando...</T> : <T>Guardar foto</T>}

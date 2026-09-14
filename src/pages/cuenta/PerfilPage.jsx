@@ -156,6 +156,10 @@ const PerfilPage = () => {
     } else {
       toast.success('¡Avatar actualizado increíblemente bien! 😎');
     }
+    // AvatarStudio necesita saber si el guardado tuvo éxito: al quitar una
+    // foto, borra el archivo de Storage recién DESPUÉS de que este guardado
+    // confirme el cambio (ver handleSaveClick en AvatarStudio.jsx).
+    return { error };
   };
 
   const handleCopyReferral = () => {
