@@ -88,15 +88,6 @@ const Header = () => {
   const [forceHideDropdowns, setForceHideDropdowns] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  // Menú "Marcas": arranca compacto (solo las primeras 5 por `order`). Al tocar
-  // "Ver todas las marcas" se expande a un panel ancho con TODAS las marcas en
-  // columnas (estilo Falabella/Sodimac). Se resetea a compacto cada vez que
-  // cambia el dropdown activo, para que siempre abra en la vista corta.
-  const [showAllBrands, setShowAllBrands] = useState(false);
-  useEffect(() => {
-    setShowAllBrands(false);
-  }, [activeDropdown]);
-
   const headerRef = useRef(null);
   const mobileWalletRef = useRef(null);
   const cartItemsCount = getTotalItems();
@@ -579,7 +570,7 @@ const Header = () => {
                       {translateNav(link.text)}
                       <ChevronDown size={14} strokeWidth={2} className={styles.navChevron} aria-hidden="true" />
                     </button>
-                    <div className={`${styles.megaMenu} ${link.isBrandAuto && showAllBrands ? styles.megaMenuBrandsWide : ''}`}>
+                    <div className={styles.megaMenu}>
                       <div className={styles.megaMenuContent}>
                         <h4>{translateNav(link.text)}</h4>
                         <ul>
@@ -624,10 +615,11 @@ const Header = () => {
                               es una pagina propia, navegar entre marcas es siempre valido. */}
                           {link.isBrandAuto && (() => {
                             const marcasVisibles = (brandsData || []).filter(b => b?.name && b.active !== false && b.visible !== false);
-                            // Compacto: solo las primeras 5 (ya vienen ordenadas por
-                            // `order`). Expandido ("Ver todas"): todas.
-                            const marcasAMostrar = showAllBrands ? marcasVisibles : marcasVisibles.slice(0, 5);
-                            return marcasAMostrar.map(b => {
+                            // Panel principal: SOLO las primeras 5 (ya vienen
+                            // ordenadas por `order`). El resto vive en el flyout
+                            // lateral de "Ver todas las marcas" (abajo), sin
+                            // reacomodar ni agrandar este panel.
+                            return marcasVisibles.slice(0, 5).map(b => {
                             const slug = String(b.slug || '').trim() || slugify(b.name);
                             if (!slug) return null;
                             return (
@@ -668,28 +660,44 @@ const Header = () => {
                             </li>
                           )}
 
-                          {link.isBrandAuto && (
-                            <li className={styles.verTodasMarcasItem}>
-                              {/* Ya NO navega a "/": expande la vista compacta
-                                  (5 marcas) al panel ancho con TODAS las marcas
-                                  en columnas. Se expande al PASAR EL MOUSE (se
-                                  siente natural, sin el "salto" del click) y
-                                  queda fijado; "Ver menos" (o cerrar el menú)
-                                  vuelve a la vista compacta. El click también
-                                  alterna, para touch/teclado. */}
-                              <button
-                                type="button"
-                                className={styles.verTodasMarcasBtn}
-                                onMouseEnter={() => setShowAllBrands(true)}
-                                onClick={() => setShowAllBrands(v => !v)}
-                                aria-expanded={showAllBrands}
-                              >
-                                {showAllBrands
-                                  ? <><T>Ver menos</T> ←</>
-                                  : <><T>Ver todas las marcas</T> →</>}
-                              </button>
-                            </li>
-                          )}
+                          {link.isBrandAuto && (() => {
+                            const marcasVisibles = (brandsData || []).filter(b => b?.name && b.active !== false && b.visible !== false);
+                            const restantes = marcasVisibles.slice(5);
+                            if (restantes.length === 0) return null;
+                            return (
+                              // "Ver todas las marcas" NO navega ni agranda el
+                              // panel principal: al pasar el mouse abre un flyout
+                              // AL COSTADO (submenú automático, estilo Falabella)
+                              // con solo las marcas que faltan. En mobile el
+                              // flyout se muestra apilado debajo (ver CSS).
+                              <li className={styles.verTodasMarcasItem}>
+                                <span className={styles.verTodasMarcasBtn}>
+                                  <T>Ver todas las marcas</T> →
+                                </span>
+                                <div className={styles.brandsFlyout}>
+                                  <h4 className={styles.brandsFlyoutTitle}><T>Más marcas</T></h4>
+                                  <ul className={styles.brandsFlyoutList}>
+                                    {restantes.map(b => {
+                                      const slug = String(b.slug || '').trim() || slugify(b.name);
+                                      if (!slug) return null;
+                                      return (
+                                        <li key={`brand-more-${b.id || slug}`}>
+                                          <Link
+                                            to={`/${slug}`}
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className={brandActual?.id === b.id ? styles.subActivo : undefined}
+                                            aria-current={brandActual?.id === b.id ? 'page' : undefined}
+                                          >
+                                            {b.name}
+                                          </Link>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </div>
+                              </li>
+                            );
+                          })()}
                         </ul>
                       </div>
                     </div>

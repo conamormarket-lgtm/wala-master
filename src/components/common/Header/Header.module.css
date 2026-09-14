@@ -183,9 +183,7 @@
      solo se desliza unos px, sensacion de "abrirse desde el link" en vez
      de aparecer separado. */
   transform: translateY(4px);
-  /* Se anima también el ancho para que "Ver todas las marcas" expanda suave el
-     panel (de 5 marcas a todas en columnas) en vez de saltar de golpe. */
-  transition: opacity 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.2s, min-width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), max-width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.2s;
   border: 1px solid var(--gris-borde);
   z-index: 102;
   margin-top: 2px;
@@ -278,77 +276,113 @@
   color: var(--rojo-principal);
 }
 
-/* "Ver todas las marcas" / "Ver menos": es un <button> (expande/colapsa la
-   vista). Reset del <button> nativo + look de CTA con flechita animada. */
+/* "Ver todas las marcas": ya no es un CTA que navega, es el disparador del
+   flyout lateral. Se lee como el pie del panel + una flechita a la derecha. */
+.verTodasMarcasItem {
+  position: relative; /* ancla del flyout absoluto */
+  margin-top: 0.35rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--gris-borde);
+}
 .verTodasMarcasBtn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.4rem;
-  background: none;
-  border: none;
-  padding: 0.25rem 0;
-  font: inherit;
   font-weight: 700;
   color: var(--rojo-principal);
-  cursor: pointer;
-  text-align: left;
-}
-.verTodasMarcasBtn:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  padding: 0.35rem 0.1rem;
+  cursor: default;
 }
 
-/* Item que envuelve el botón: separado como pie del panel. */
-.verTodasMarcasItem {
-  margin-top: 0.35rem;
+/* Flyout lateral con las marcas que FALTAN (estilo Falabella: submenú que se
+   abre al costado sin tocar el panel principal). Oculto por defecto, aparece al
+   pasar el mouse por "Ver todas las marcas". */
+.brandsFlyout {
+  position: absolute;
+  top: -1px;              /* alinea el borde superior con el item */
+  left: calc(100% + 8px); /* al costado derecho del panel principal */
+  min-width: 220px;
+  max-width: 300px;
+  background-color: var(--blanco);
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio-mediano, 16px);
+  box-shadow: var(--sombra-media, 0 10px 25px rgba(0, 0, 0, 0.1));
+  padding: 1rem 1.1rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-6px);
+  transition: opacity 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.18s;
+  z-index: 103;
+}
+/* Puente invisible sobre el hueco de 8px entre el panel y el flyout: al ser
+   descendiente del item, mantener el mouse aquí conserva el :hover y el flyout
+   no parpadea al cruzar de un panel al otro. */
+.brandsFlyout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -10px;
+  width: 12px;
+  height: 100%;
+}
+.verTodasMarcasItem:hover .brandsFlyout {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+.brandsFlyoutTitle {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--gris-borde);
+  padding-bottom: 0.5rem;
+}
+.brandsFlyoutList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* dos columnas si hay varias */
+  gap: 0.15rem 1rem;
+}
+.brandsFlyoutList li a {
+  display: block;
+  text-decoration: none;
+  color: var(--gris-texto-principal);
+  font-size: 0.95rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 10px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.brandsFlyoutList li a:hover {
+  background-color: var(--gris-fondo, #f5f5f7);
+  color: var(--rojo-principal);
 }
 
-/* Panel ancho "Ver todas": TODAS las marcas repartidas en columnas (estilo
-   Falabella/Sodimac). Solo desktop; en mobile el menú ya se apila full-width. */
-@media (min-width: 769px) {
-  .megaMenuBrandsWide {
-    min-width: 580px;
-    max-width: 640px;
+/* En mobile (nav apilado) no hay hover ni espacio al costado: el flyout se
+   muestra SIEMPRE, apilado debajo de "Ver todas las marcas". */
+@media (max-width: 768px) {
+  .brandsFlyout {
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    min-width: 0;
+    max-width: none;
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    padding: 0.25rem 0 0 0;
   }
-  .megaMenuBrandsWide .megaMenuContent {
-    /* Aparición suave del contenido nuevo al ensancharse el panel. */
-    animation: brandsWideIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  .brandsFlyoutTitle {
+    display: none;
   }
-  .megaMenuBrandsWide .megaMenuContent ul {
-    /* column-count no funciona sobre flex: se pasa a block para las columnas.
-       Separadores sutiles entre columnas para que se lea como grilla. */
-    display: block;
-    column-count: 3;
-    column-gap: 2rem;
-    column-rule: 1px solid var(--gris-borde);
+  .brandsFlyoutList {
+    grid-template-columns: 1fr; /* una columna, como el resto del menú mobile */
   }
-  .megaMenuBrandsWide .megaMenuContent li {
-    break-inside: avoid;
-    margin-bottom: 0.15rem;
-  }
-  /* Cada marca como "pill" con hover: fondo suave + desplazamiento a la derecha,
-     en vez de solo cambiar de color el texto. Se ve como un menú diseñado. */
-  .megaMenuBrandsWide .megaMenuContent li a {
-    padding: 0.45rem 0.6rem;
-    border-radius: 10px;
-    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
-  }
-  .megaMenuBrandsWide .megaMenuContent li a:hover {
-    background-color: var(--gris-fondo, #f5f5f7);
-    transform: translateX(3px);
-  }
-  /* El toggle ocupa todo el ancho, separado como pie del panel. */
-  .megaMenuBrandsWide .verTodasMarcasItem {
-    column-span: all;
-    margin-top: 0.85rem;
-    padding-top: 0.7rem;
-    border-top: 1px solid var(--gris-borde);
-  }
-}
-
-@keyframes brandsWideIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 /* Item del desplegable en el que YA estas: la marca de la pagina abierta o la
@@ -2086,6 +2120,23 @@
 
 :global([data-theme='dark']) .megaMenuContent li a {
   color: var(--color-text);
+}
+
+/* Flyout lateral de "Ver todas las marcas" en modo noche: misma superficie
+   elevada que el mega menú + enlaces claros. */
+:global([data-theme='dark']) .brandsFlyout {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .brandsFlyoutTitle {
+  color: var(--color-text-muted);
+  border-bottom-color: var(--color-border);
+}
+:global([data-theme='dark']) .brandsFlyoutList li a {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .brandsFlyoutList li a:hover {
+  background-color: var(--color-hover);
 }
 
 /* Popups de cuenta / favoritos / carrito / notificaciones: superficie elevada. */
