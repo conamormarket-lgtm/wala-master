@@ -202,7 +202,7 @@
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--gris-texto-principal, #111827);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -211,7 +211,7 @@
 .sidebarEmail {
   margin: 0.1rem 0 0;
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--gris-texto-secundario, #6b7280);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -227,7 +227,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #9ca3af;
+  color: var(--gris-texto-secundario, #9ca3af);
 }
 
 .navItem {
@@ -239,7 +239,7 @@
   border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #4b5563;
+  color: var(--gris-texto-secundario, #4b5563);
   text-decoration: none;
   border-left: 3px solid transparent;
   transition: background-color 0.2s, color 0.2s, border-color 0.2s;
@@ -247,17 +247,22 @@
 
 .navItem svg {
   flex-shrink: 0;
-  color: #9ca3af;
+  color: var(--gris-texto-secundario, #9ca3af);
   transition: color 0.2s;
 }
 
 .navItem:hover {
-  background-color: #f9fafb;
-  color: #111827;
+  background-color: var(--gris-hover, #f9fafb);
+  color: var(--gris-texto-principal, #111827);
 }
 
 .navItem:hover svg {
-  color: #6b7280;
+  color: var(--gris-texto-secundario, #6b7280);
+}
+
+.navItem:focus-visible {
+  outline: 2px solid var(--rojo-principal);
+  outline-offset: 2px;
 }
 
 .navItemActive {
@@ -289,7 +294,7 @@
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--gris-texto-secundario, #6b7280);
   cursor: pointer;
   transition: color 0.2s;
   text-align: left;
@@ -297,6 +302,11 @@
 
 .navLogout:hover {
   color: var(--rojo-principal);
+}
+
+.navLogout:focus-visible {
+  outline: 2px solid var(--rojo-principal);
+  outline-offset: 2px;
 }
 
 .outlet {
@@ -386,77 +396,20 @@
    color/contraste; sin tocar tamaños ni layout.
    ═════════════════════════════════════════════════════════════════════════ */
 
+/* La mayoría de las reglas de abajo (fondo/borde/texto del sidebar, items,
+   grupo activo, cerrar sesión) YA se voltean solas en oscuro: pasaron a usar
+   --gris-*/--blanco/--rojo-* de arriba, que son alias de los --color-*/
+   --primary-* que este mismo archivo remapea para modo noche (variables.css).
+   Solo queda acá lo que SÍ necesita un valor propio en oscuro: sombras (un
+   negro a 4% casi no se ve sobre superficie oscura) y el ícono del item al
+   hover, que a propósito NO usa el mismo muted que el texto -en oscuro se
+   aclara del todo para seguir siendo legible sobre el fondo de hover-. */
 :global([data-theme='dark']) .sidebar {
-  background-color: var(--color-surface);
-  border-color: var(--color-border);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-:global([data-theme='dark']) .sidebarIdentity {
-  border-bottom-color: var(--color-border);
-}
-
-:global([data-theme='dark']) .sidebarAvatar {
-  border-color: var(--color-border);
-}
-
-:global([data-theme='dark']) .sidebarName {
-  color: var(--color-text);
-}
-
-:global([data-theme='dark']) .sidebarEmail {
-  color: var(--color-text-muted);
-}
-
-:global([data-theme='dark']) .navGroupLabel {
-  color: var(--color-text-muted);
-}
-
-:global([data-theme='dark']) .navItem {
-  color: var(--color-text-muted);
-}
-
-:global([data-theme='dark']) .navItem svg {
-  color: var(--color-text-muted);
-}
-
-:global([data-theme='dark']) .navItem:hover {
-  background-color: var(--color-hover);
-  color: var(--color-text);
 }
 
 :global([data-theme='dark']) .navItem:hover svg {
   color: var(--color-text);
-}
-
-:global([data-theme='dark']) .navItemActive {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
-  border-left-color: var(--primary-color);
-}
-
-:global([data-theme='dark']) .navItemActive svg {
-  color: var(--primary-color);
-}
-
-:global([data-theme='dark']) .navItemActive:hover {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
-}
-
-:global([data-theme='dark']) .navLogout {
-  border-top-color: var(--color-border);
-  color: var(--color-text-muted);
-}
-
-:global([data-theme='dark']) .navLogout:hover {
-  color: var(--primary-color);
-}
-
-:global([data-theme='dark']) .skeletonSidebar,
-:global([data-theme='dark']) .skeletonContentBox {
-  background-color: var(--color-surface);
-  border-color: var(--color-border);
 }
 
 :global([data-theme='dark']) .skeletonSidebar::after,
