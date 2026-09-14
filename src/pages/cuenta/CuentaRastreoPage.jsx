@@ -189,9 +189,16 @@ function StepperCoarse({ coarse }) {
             key={label}
             className={`${glass.coarseNode} ${done ? glass.coarseDone : ''} ${actual ? glass.coarseActual : ''}`}
           >
+            {/* El color de fase (coarse.color) es UN solo color para toda la
+                tarjeta (el de la fase actual), no uno distinto por paso. Antes
+                se aplicaba también a los pasos ya completados -todos los
+                "done" quedaban pintados del mismo color que el actual-; ahora
+                solo se lo lleva el paso ACTUAL. Los completados los pinta el
+                CSS en verde (.coarseDone .coarseDot), como "progreso
+                alcanzado" — mismo criterio que ya usaba la línea conectora. */}
             <span
               className={glass.coarseDot}
-              style={done || actual ? { backgroundColor: coarse.color, borderColor: coarse.color } : undefined}
+              style={actual ? { backgroundColor: coarse.color, borderColor: coarse.color } : undefined}
               aria-hidden="true"
             />
             <span className={glass.coarseLabel}>{label}</span>
