@@ -61,6 +61,12 @@
   flex-shrink: 0;
   /* CLAVE: limitar la altura del contenedor del logo */
   height: 52px;
+  /* El "WALÁ" del logo es un <text> de SVG: el navegador lo trata como texto
+     seleccionable igual que cualquier párrafo. Un click ahí colocaba el mismo
+     cursor de texto parpadeante que en "Ver todas las marcas" (ver
+     .verTodasMarcasBtn). Es un link, no texto para seleccionar. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .logo:hover {
