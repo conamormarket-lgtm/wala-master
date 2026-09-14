@@ -401,8 +401,11 @@ const AdminUsuariosAnalyticsPage = () => {
                 <div>
                   <h3 className={styles.sectionTitle}>Top rutas por visitas</h3>
                   <ul className={styles.list}>
+                    {/* r.views es {total,app,web} (aggregateRouteMetrics), no un
+                        número: fmtNumber(r.views) daba NaN. Mismo formato que
+                        Top Búsquedas/Productos/Banners, debajo. */}
                     {(globalQuery.data.topRoutesByViews || []).map((r) => (
-                      <li key={r.path}>{r.path}: {fmtNumber(r.views)}</li>
+                      <li key={r.path}>{r.path}: {fmtNumber(r.views?.total)} ({fmtNumber(r.views?.app)} APP / {fmtNumber(r.views?.web)} WEB)</li>
                     ))}
                   </ul>
                 </div>
@@ -608,8 +611,10 @@ const AdminUsuariosAnalyticsPage = () => {
                   <div>
                     <h3 className={styles.sectionTitle}>Top rutas por visitas</h3>
                     <ul className={styles.list}>
+                      {/* Mismo shape {total,app,web} que arriba: sin ?.total esto
+                          da NaN. */}
                       {(detailMetrics.topRoutesByViews || []).map((r) => (
-                        <li key={r.path}>{r.path}: {fmtNumber(r.views)}</li>
+                        <li key={r.path}>{r.path}: {fmtNumber(r.views?.total)} ({fmtNumber(r.views?.app)} APP / {fmtNumber(r.views?.web)} WEB)</li>
                       ))}
                     </ul>
                   </div>
@@ -617,7 +622,7 @@ const AdminUsuariosAnalyticsPage = () => {
                     <h3 className={styles.sectionTitle}>Top rutas por tiempo</h3>
                     <ul className={styles.list}>
                       {(detailMetrics.topRoutesByDwell || []).map((r) => (
-                        <li key={r.path}>{r.path}: {fmtDuration(r.dwellMs)}</li>
+                        <li key={r.path}>{r.path}: {fmtDuration(r.dwellMs?.total)} ({fmtDuration(r.dwellMs?.app)} APP / {fmtDuration(r.dwellMs?.web)} WEB)</li>
                       ))}
                     </ul>
                   </div>
