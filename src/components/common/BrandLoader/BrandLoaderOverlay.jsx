@@ -86,13 +86,46 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
   const [contentTop, setContentTop] = useState(0);
   useLayoutEffect(() => {
     if (useBrand || !show) return undefined;
+    // Anclamos el círculo al BORDE INFERIOR real del header, no al top de
+    // #main-content-area medido una sola vez. En el primer commit el header
+    // todavía puede estar creciendo (las categorías/marcas cargan async): una
+    // única medición temprana lo deja corto y el círculo termina tapando parte
+    // del header, que se ve "lavado". Medimos el header (que es lo que cambia
+    // de alto), re-medimos en los próximos frames y lo observamos con
+    // ResizeObserver para que el tope siga al header mientras crece.
     const medir = () => {
+      const header = document.querySelector('header');
       const main = document.getElementById('main-content-area');
-      setContentTop(main ? Math.max(0, Math.round(main.getBoundingClientRect().top)) : 0);
+      let top = 0;
+      if (header) top = header.getBoundingClientRect().bottom;
+      else if (main) top = main.getBoundingClientRect().top;
+      setContentTop(Math.max(0, Math.round(top)));
     };
     medir();
+    // Dos frames extra: el layout del header suele asentarse justo después del
+    // primer paint (fuentes, safe-area, altura de la barra admin).
+    let raf1;
+    let raf2;
+    raf1 = requestAnimationFrame(() => {
+      medir();
+      raf2 = requestAnimationFrame(medir);
+    });
+
+    let ro;
+    const header = document.querySelector('header');
+    if (header && typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(medir);
+      ro.observe(header);
+    }
     window.addEventListener('resize', medir);
-    return () => window.removeEventListener('resize', medir);
+    window.addEventListener('scroll', medir, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      if (ro) ro.disconnect();
+      window.removeEventListener('resize', medir);
+      window.removeEventListener('scroll', medir);
+    };
   }, [useBrand, show]);
 
   // Ver MAX_SHOW_MS arriba: `effectiveShow` reemplaza a `show` en todo lo de
