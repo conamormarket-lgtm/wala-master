@@ -13,9 +13,10 @@ import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorCont
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
 import HeaderSearch from '../HeaderSearch/HeaderSearch';
-import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, Check, Package, Ticket, Gift, LogOut, Settings } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, ChevronRight, Check, LogOut } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
+import { useCuentaNavGroups } from '../../../pages/cuenta/useCuentaNavGroups';
 import styles from './Header.module.css';
 import NotificationTray from './NotificationTray';
 import OptimizedImage from '../OptimizedImage/OptimizedImage';
@@ -26,6 +27,22 @@ import { registrarTextosSinTraducir } from '../../../services/translate';
 
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
+
+// Subconjunto curado de useCuentaNavGroups para el popup del Header: MISMOS
+// 6 accesos que ya tenía la lista plana de antes, ahora agrupados bajo los
+// mismos encabezados del sidebar de /cuenta (Cuenta / Recompensas /
+// Personalización) en vez de una lista suelta sin jerarquía. A propósito NO
+// se muestran los 11 del sidebar completo -Rastreo, Misiones, Referidos,
+// Creaciones, Fechas- para que el popup no crezca: quedan a un clic con el
+// link "Ver toda mi cuenta" al final de la lista.
+const ACCESOS_RAPIDOS_HEADER = new Set([
+  '/cuenta/perfil',
+  '/cuenta/pedidos',
+  '/cuenta/ajustes',
+  '/cuenta/catalogo',
+  '/cuenta/cupones',
+  '/cuenta/wishlist',
+]);
 
 // Mapa de etiquetas estándar del menú (texto en español tal cual lo guarda el
 // admin) -> clave de diccionario i18n. Sólo se usa para traducir los rótulos de
@@ -72,6 +89,10 @@ const Header = () => {
   const navigate = useNavigate();
   const { wishlistItems } = useWishlist();
   const { lang, setLang, available, t } = useLanguage();
+  // Misma fuente única que ya usan CuentaLayout (sidebar) y CuentaResumenPage
+  // (grilla de accesos) — ver ACCESOS_RAPIDOS_HEADER arriba para el
+  // subconjunto curado que de verdad se muestra en este popup.
+  const cuentaNavGroups = useCuentaNavGroups();
   const { storeConfigDraft } = useVisualEditor();
   const { isHeaderVisible } = useLayoutContext();
   // Avatar del ícono de cuenta: foto propia (subida en "Mi Perfil") primero,
@@ -848,41 +869,34 @@ const Header = () => {
                         </div>
                       )}
 
-                      {/* Lista limpia de accesos directos (antes: 2 botones
-                          grandes tipo pill) — mismo patrón que un menú de
-                          cuenta "serio", ícono + etiqueta, sin relleno de
-                          color. Refleja las secciones más usadas del sidebar
-                          de /cuenta (ver CuentaLayout.jsx). */}
+                      {/* Accesos agrupados por categoría -MISMOS 6 accesos
+                          que ya había, MISMA fuente que el sidebar de /cuenta
+                          (useCuentaNavGroups)-, no una lista suelta sin
+                          jerarquía como antes. El popup NO muestra los 11
+                          accesos completos del sidebar -quedaría pesado para
+                          un menú rápido-, solo el subconjunto curado
+                          (ACCESOS_RAPIDOS_HEADER); "Ver toda mi cuenta" es la
+                          puerta a todo lo demás (Rastreo, Misiones,
+                          Referidos, Creaciones, Fechas). */}
                       <nav className={styles.accountMenuList} aria-label="Accesos de cuenta">
-                        <Link to="/cuenta/perfil" className={styles.accountMenuItem} onClick={closeDropdowns}>
-                          <User size={18} strokeWidth={1.75} aria-hidden="true" />
-                          <span><T>Mi Perfil</T></span>
-                        </Link>
-                        <Link to="/cuenta/pedidos" className={styles.accountMenuItem} onClick={closeDropdowns}>
-                          <Package size={18} strokeWidth={1.75} aria-hidden="true" />
-                          <span><T>Mis Pedidos</T></span>
-                        </Link>
-                        <Link to="/cuenta/catalogo" className={styles.accountMenuItem} onClick={closeDropdowns}>
-                          <Gift size={18} strokeWidth={1.75} aria-hidden="true" />
-                          <span><T>Catálogo Recompensas</T></span>
-                        </Link>
-                        <Link to="/cuenta/cupones" className={styles.accountMenuItem} onClick={closeDropdowns}>
-                          <Ticket size={18} strokeWidth={1.75} aria-hidden="true" />
-                          <span><T>Mis Cupones</T></span>
-                        </Link>
-                        <Link to="/cuenta/wishlist" className={styles.accountMenuItem} onClick={closeDropdowns}>
-                          <Heart size={18} strokeWidth={1.75} aria-hidden="true" />
-                          <span><T>Lista de Deseos</T></span>
-                        </Link>
-                        {/* Reemplaza la sección "Preferencias" (tema/idioma)
-                            que vivía suelta acá abajo: ahora ese control
-                            vive en su propia página (/cuenta/ajustes, la
-                            misma que ve el usuario en móvil), así que este
-                            es solo el acceso directo — un link más de la
-                            lista, no controles duplicados. */}
-                        <Link to="/cuenta/ajustes" className={styles.accountMenuItem} onClick={closeDropdowns}>
-                          <Settings size={18} strokeWidth={1.75} aria-hidden="true" />
-                          <span><T>Ajustes</T></span>
+                        {cuentaNavGroups.map((group) => {
+                          const groupItems = group.items.filter((item) => ACCESOS_RAPIDOS_HEADER.has(item.to));
+                          if (groupItems.length === 0) return null;
+                          return (
+                            <div key={group.label} className={styles.accountMenuGroup}>
+                              <p className={styles.accountMenuGroupLabel}><T>{group.labelFallback}</T></p>
+                              {groupItems.map((item) => (
+                                <Link key={item.to} to={item.to} className={styles.accountMenuItem} onClick={closeDropdowns}>
+                                  <item.icon size={18} strokeWidth={1.75} aria-hidden="true" />
+                                  <span><T>{item.label}</T></span>
+                                </Link>
+                              ))}
+                            </div>
+                          );
+                        })}
+                        <Link to="/cuenta" className={styles.accountMenuSeeAll} onClick={closeDropdowns}>
+                          <span><T>Ver toda mi cuenta</T></span>
+                          <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
                         </Link>
                       </nav>
                     </>
