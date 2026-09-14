@@ -293,6 +293,13 @@
   color: var(--rojo-principal);
   padding: 0.35rem 0.1rem;
   cursor: default;
+  /* Es un <span> de texto plano, sin onClick: sin esto, un click sobre las
+     letras coloca el cursor de texto del navegador ahí mismo (la "raya" que
+     parpadea como si se estuviera escribiendo) y un segundo click en otro
+     lado del panel selecciona/mueve ese cursor a otra palabra. No es texto
+     que se deba poder seleccionar. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Flyout lateral con las marcas que FALTAN (estilo Falabella: submenú que se
