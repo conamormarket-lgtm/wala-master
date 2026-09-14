@@ -26,8 +26,19 @@ const Cart = () => {
 
   const total = getTotalPrice();
   const monedasCount = userProfile?.monedas || 0;
+
+  // ── Selección ──
+  // Se calcula ANTES del envío: con 0 artículos seleccionados no hay nada que
+  // despachar, así que no corresponde cobrar envío (antes se mostraba "Envío
+  // estimado: S/15" y un Total de S/15 con el carrito completo desmarcado,
+  // como si se pudiera pagar solo por el envío de nada).
+  const selectedCount = useMemo(
+    () => items.filter(i => i.selected !== false).length,
+    [items]
+  );
+
   // El umbral se mide sobre el subtotal de los productos, igual que el checkout.
-  const envioPrice = costoEnvio(total);
+  const envioPrice = selectedCount > 0 ? costoEnvio(total) : 0;
   const theFinalTotal = total + envioPrice;
 
   // Si todos los items están en estado confirmación, mostramos un aviso
@@ -51,11 +62,7 @@ const Cart = () => {
     [items, incompletos]
   );
 
-  // ── Selección ──
-  const selectedCount = useMemo(
-    () => items.filter(i => i.selected !== false).length,
-    [items]
-  );
+  // (selectedCount ya se calculó arriba, antes del envío)
   const todosSeleccionados = items.length > 0 && selectedCount === items.length;
   const algunoSeleccionado = selectedCount > 0 && !todosSeleccionados;
 
