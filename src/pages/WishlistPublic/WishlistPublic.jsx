@@ -149,7 +149,10 @@ const WishlistPublic = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>Lista de deseos de {ownerName} 🎁</h1>
+        <h1 className={styles.headerTitle}>
+          Lista de deseos de {ownerName}
+          <Gift className={styles.headerTitleIcon} size={28} strokeWidth={2.25} aria-hidden="true" />
+        </h1>
         <p><T>Elige un regalo de esta lista y sorpréndele.</T></p>
       </div>
 

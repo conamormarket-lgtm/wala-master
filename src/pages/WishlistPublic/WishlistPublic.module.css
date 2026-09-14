@@ -21,12 +21,25 @@
   box-shadow: var(--sombra-media);
 }
 
-.header h1 {
+/* .headerTitle en vez de ".header h1" a secas: antes el 🎁 vivía como emoji
+   suelto al final del texto (string plano en el JSX); ahora es el icono real
+   <Gift> (lucide, mismo que "Regalar esto"), así que el título necesita
+   flex para alinearlo con el texto en vez de quedar en su propia línea. */
+.headerTitle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   font-size: var(--section-title-size, clamp(1.35rem, 2.6vw, 1.85rem));
   font-weight: var(--section-title-weight, 800);
   letter-spacing: var(--section-title-tracking, -0.02em);
   color: var(--gris-texto-principal);
   margin: 0 0 0.5rem;
+}
+
+.headerTitleIcon {
+  color: var(--rojo-principal);
+  flex-shrink: 0;
 }
 
 .header p {
@@ -187,7 +200,12 @@
 }
 
 @media (max-width: 640px) {
-  .header h1 {
+  .headerTitle {
     font-size: 1.5rem;
+  }
+
+  .headerTitleIcon {
+    width: 22px;
+    height: 22px;
   }
 }
