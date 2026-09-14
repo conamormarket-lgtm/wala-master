@@ -292,6 +292,12 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  /* Cada <li> es un filtro clicable (onClick), no texto para leer: mismo
+     motivo que .grupoHeader arriba. Sin esto, un click en la etiqueta
+     ("Categorías", una marca...) coloca el cursor de selección nativo del
+     navegador ahí, en vez de solo aplicar el filtro. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .grupoContent {

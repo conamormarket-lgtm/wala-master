@@ -355,6 +355,12 @@ textarea.input {
   justify-content: space-between;
   align-items: center;
   transition: all 0.2s;
+  /* Toda la tarjeta es clicable (abre edición): mismo motivo que los filtros
+     del sidebar de la tienda — sin esto, un click en el nombre coloca el
+     cursor de selección nativo del navegador ahí en vez de solo abrir. */
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .recipientCard:hover {

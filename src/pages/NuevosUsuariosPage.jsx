@@ -230,6 +230,11 @@ const NuevosUsuariosPage = () => {
           box-shadow: 0 4px 10px rgba(0,0,0,0.15);
           cursor: pointer;
           flex-shrink: 0;
+          /* Es un <div onClick> con el caracter de flecha como texto plano:
+             sin esto, el click coloca el cursor de selección nativo del
+             navegador sobre la flecha en vez de solo pasar de slide. */
+          user-select: none;
+          -webkit-user-select: none;
         }
 
         .vs-box {
@@ -823,7 +828,12 @@ const NuevosUsuariosPage = () => {
               boxShadow: '0 6px 20px rgba(41, 41, 41, 0.4)',
               cursor: 'pointer',
               textAlign: 'center',
-              marginTop: '0.5rem'
+              marginTop: '0.5rem',
+              // <div onClick> con texto plano: sin esto, el click coloca el
+              // cursor de selección nativo del navegador en vez de solo
+              // avanzar el carrusel.
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
             }}>
               Descubre la Diferencia
             </div>
