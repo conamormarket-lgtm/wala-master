@@ -2,14 +2,21 @@
   position: relative;
   width: var(--flotante-tam, 56px);
   height: var(--flotante-tam, 56px);
-  background: var(--rojo-principal, #e11d48);
+  /* SIN disco de color detrás: la imagen de Kapi (transparente y más baja que
+     ancha) no llenaba el círculo y dejaba asomar una media luna del fondo —se
+     veía como una "raya" bajo/encima de la carita—. Ahora la carita flota sola
+     con su propia sombra (drop-shadow, que sigue la silueta, no un círculo). */
+  background: transparent;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   cursor: pointer;
   transition: transform 0.2s;
+}
+
+.fab img {
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28));
 }
 
 .fab:hover {
