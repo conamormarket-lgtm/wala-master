@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
-import { getReferralsByReferrer, createReferralShare, claimReferralCoins, updateReferralCode } from '../../services/referrals';
+import { getReferralsByReferrer, createReferralShare, claimReferralCoins, updateReferralCode, estimateReferralReward } from '../../services/referrals';
 import ReferralRanking from '../../components/analytics/ReferralRanking';
 import styles from './CuentaReferidosPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -96,21 +96,22 @@ const CuentaReferidosPage = () => {
   };
 
   const handleClaim = async (referralDoc) => {
-    if (referralDoc.status !== 'completed' || !referralDoc.earnedCoins) return;
-    
-    const { error } = await claimReferralCoins(
-      referralDoc.id, 
-      referralDoc.earnedCoins, 
-      user.uid, 
-      userProfile?.monedas || 0
-    );
+    if (!['completed', 'purchased'].includes(referralDoc.status)) return;
+
+    // claimReferralCoins solo necesita el id: el monto real (5%/10% del
+    // pedido) lo calcula y valida claimReferralSecure server-side contra el
+    // ERP, no lo que haya en earnedCoins/monedas del cliente.
+    const { earned, error } = await claimReferralCoins(referralDoc.id);
 
     if (error) {
-      toast.error('Error al reclamar monedas');
+      // Para 'purchased' (sin aprobación de Admin) es normal que el ERP
+      // todavía no marque el pedido como finalizado — mostrar el motivo
+      // real del servidor en vez de un genérico ayuda a entender por qué.
+      toast.error(error || 'Error al reclamar monedas');
     } else {
-      toast.success(`¡Has reclamado ${referralDoc.earnedCoins} monedas con éxito!`);
+      toast.success(`¡Has reclamado ${earned ?? ''} monedas con éxito!`);
       queryClient.invalidateQueries(['myReferrals', referralCode]);
-      // También se actualiza el userProfile globalmente a través del effect en AuthContext 
+      // También se actualiza el userProfile globalmente a través del effect en AuthContext
       // Si quieres forzar actualización inmediata de UI sin refrescar:
       // updateUserProfile({ monedas: currentMonedas + ... }) pero ya Firebase snapshot hará el update.
     }
@@ -148,17 +149,6 @@ const CuentaReferidosPage = () => {
   const totalVisitas = referrals?.filter(r => STAGES[r.status] >= 2).length || 0;
   const totalCompras = referrals?.filter(r => STAGES[r.status] >= 3 && r.status !== 'ineligible').length || 0;
   const totalMonedas = referrals?.reduce((acc, r) => acc + (r.earnedCoins || 0), 0) || 0;
-
-  // Progreso Multiplicador (mes actual)
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const comprasMesActual = referrals?.filter(r => {
-    const isCompleted = r.status === 'completed' || r.status === 'claimed';
-    const d = r.completedAt?.toDate();
-    return isCompleted && d && d >= startOfMonth;
-  }).length || 0;
-
-  const nextPurchaseMultiplier = comprasMesActual >= 2;
 
   return (
     <div className={styles.container}>
@@ -219,16 +209,8 @@ const CuentaReferidosPage = () => {
         </div>
         
         <div className={styles.infoText}>
-          Genera un enlace y compártelo. Ganarás <strong>10 monedas</strong> por cada venta finalizada.
-          {nextPurchaseMultiplier ? (
-            <div style={{ color: '#ffd700', fontWeight: 'bold', marginTop: '0.5rem' }}>
-              ¡Multiplicador activado! Tu próxima venta este mes te dará x2 monedas (20).
-            </div>
-          ) : (
-            <div style={{ color: '#a0aec0', marginTop: '0.5rem' }}>
-              Llevas {comprasMesActual}/3 compras completadas este mes. ¡En la 3ra venta el premio se duplica!
-            </div>
-          )}
+          Genera un enlace y compártelo. Cuando alguien compre con tu link, ganás
+          {' '}<strong>5% del monto de esa compra en monedas</strong> (10% si la compra supera los S/200).
         </div>
       </div>
 
@@ -242,9 +224,23 @@ const CuentaReferidosPage = () => {
         <div className={styles.list}>
           {referrals.map((ref) => {
             const currentStage = STAGES[ref.status] || 1;
-            const isCompleted = ref.status === 'completed';
+            // 'purchased' también puede reclamarse, no solo 'completed': ese
+            // paso de Admin (AdminReferidos) es para ventas por WhatsApp, que
+            // no pasan por linkPurchaseToReferral. Para las que SÍ se
+            // registran solas (compra con el link ?ref=&shareId= del
+            // checkout web), claimReferralSecure ya valida por su cuenta
+            // contra el ERP -si el pedido aún no está finalizado, rechaza con
+            // un mensaje claro (ver handleClaim)-, así que no hace falta
+            // esperar una aprobación manual aparte.
+            const canClaim = ref.status === 'completed' || ref.status === 'purchased';
             const isClaimed = ref.status === 'claimed';
             const isIneligible = ref.status === 'ineligible';
+            // Antes de reclamar no hay earnedCoins confirmado (lo fija el
+            // servidor recién al reclamar) — se muestra un estimado con la
+            // misma fórmula que usa el backend.
+            const gananciaMostrada = isClaimed || ref.status === 'completed'
+              ? (ref.earnedCoins || 0)
+              : estimateReferralReward(ref.orderTotal);
 
             const d = ref.clickedAt?.toDate() || ref.createdAt?.toDate();
             const dateStr = d ? d.toLocaleDateString() : 'N/A';
@@ -287,17 +283,18 @@ const CuentaReferidosPage = () => {
 
                 {isIneligible && (
                   <div className={styles.statusBox}>
-                    <p className={styles.errorText}>Esta compra no califica (Monto S/{ref.orderTotal}). Se requieren tramos completos de S/100.</p>
+                    <p className={styles.errorText}>Esta compra no calificó para el premio de referido.</p>
                   </div>
                 )}
 
-                {(isCompleted || isClaimed) && (
+                {(canClaim || isClaimed) && (
                   <div className={styles.actionBox}>
                     <div className={styles.earnedStats}>
                       Venta Total: <strong>S/ {ref.orderTotal?.toFixed(2) || '0.00'}</strong> <br/>
-                      Ganancia: <strong className={styles.highlightCoins}>{ref.earnedCoins} Monedas</strong>
+                      {isClaimed || ref.status === 'completed' ? 'Ganancia' : 'Ganancia estimada'}:{' '}
+                      <strong className={styles.highlightCoins}>{gananciaMostrada} Monedas</strong>
                     </div>
-                    {isCompleted && (
+                    {canClaim && (
                       <button className={styles.claimActionBtn} onClick={() => handleClaim(ref)}>
                         🪙 Reclamar Monedas
                       </button>

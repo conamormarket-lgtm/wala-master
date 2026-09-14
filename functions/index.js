@@ -2322,7 +2322,22 @@ exports.claimDatesStreakSecure = functions.https.onCall(async (data, context) =>
 });
 
 // ── Reclamar monedas de un referido completado ────────────────────────────────
-const REFERRAL_REWARD = 10; // server-authoritative; se ignora earnedCoins del cliente (H-05)
+// Regla de negocio (confirmada): % del monto TOTAL del pedido referido, en
+// monedas (1 moneda = S/1) — 5% si el pedido es S/200 o menos, 10% si supera
+// los S/200. Antes había 3 versiones distintas y NINGUNA calculaba esto: un
+// flat de 10 monedas acá (server-authoritative), un cálculo aparte de "5 por
+// cada tramo de S/100" solo VISUAL en el panel de Admin (AdminReferidos.jsx),
+// y un copy de marketing ("10 fijas, x2 en tu 3ra venta del mes") en
+// CuentaReferidosPage.jsx que no coincidía con ninguno de los dos anteriores.
+// Ahora esta es la ÚNICA función que calcula el premio, y se usa tanto acá
+// (lo que realmente se paga) como en AdminReferidos (lo que se muestra antes
+// de aprobar), para que el número sea el mismo en todos lados.
+function calcularRecompensaReferido(montoTotal) {
+  const monto = Number(montoTotal) || 0;
+  if (monto <= 0) return 0;
+  const tasa = monto > 200 ? 0.10 : 0.05;
+  return Math.round(monto * tasa);
+}
 
 exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
@@ -2362,6 +2377,13 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
   if (!["finalizado", "entregado", "completado"].includes(estado)) {
     throw new functions.https.HttpsError("failed-precondition", "La compra del referido aún no está finalizada.");
   }
+  // Monto del ERP (ya validado arriba), NUNCA de referrals/orderTotal -ese
+  // campo lo escribe el cliente en linkPurchaseToReferral y es falsificable-.
+  const montoPedido = orderData.montoTotal ?? orderData.montoPendiente ?? orderData.montoDeuda;
+  const reward = calcularRecompensaReferido(montoPedido);
+  if (reward <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "Esta compra no genera premio de referido.");
+  }
 
   // Lock GLOBAL por pedido: doc keyed por orderId en referralOrderClaims.
   const claimRef = db.collection("referralOrderClaims").doc(String(orderId));
@@ -2391,20 +2413,20 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("already-exists", "Esta compra ya otorgó un premio de referido.");
       }
 
-      const newBalance = (u.monedas || 0) + REFERRAL_REWARD;
+      const newBalance = (u.monedas || 0) + reward;
       t.set(claimRef, { uid, referralId: String(referralId), at: FieldValue.serverTimestamp() });
-      t.update(refRef, { status: "claimed", claimedAt: FieldValue.serverTimestamp() });
+      t.update(refRef, { status: "claimed", claimedAt: FieldValue.serverTimestamp(), earnedCoins: reward });
       t.update(userRef, {
         monedas: newBalance,
         referralOrdersClaimed: FieldValue.arrayUnion(String(orderId)),
       });
       writeLedger(t, uid, {
         type: "earn",
-        amount: REFERRAL_REWARD,
+        amount: reward,
         source: "referido_" + String(orderId),
         balanceAfter: newBalance,
       });
-      return { success: true, earned: REFERRAL_REWARD };
+      return { success: true, earned: reward };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;

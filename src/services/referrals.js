@@ -18,6 +18,22 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 const REFERRALS_COLLECTION = 'referrals';
 
 /**
+ * Estimado de cuántas monedas gana el referente por un pedido de este monto:
+ * 5% si es S/200 o menos, 10% si supera los S/200 (1 moneda = S/1).
+ *
+ * SOLO para mostrar un número antes de reclamar (AdminReferidos y
+ * CuentaReferidosPage). El monto real que se paga lo decide el backend
+ * (claimReferralSecure en functions/index.js, misma fórmula) a partir del
+ * monto validado contra el ERP — nunca de este cálculo del cliente.
+ */
+export function estimateReferralReward(montoTotal) {
+  const monto = Number(montoTotal) || 0;
+  if (monto <= 0) return 0;
+  const tasa = monto > 200 ? 0.10 : 0.05;
+  return Math.round(monto * tasa);
+}
+
+/**
  * Registra un clic en el enlace de referido.
  * Crea un documento de seguimiento (tracker) para esta sesión.
  */
@@ -99,48 +115,6 @@ export async function linkPurchaseToReferral(referralId, orderId, orderTotal) {
 }
 
 /**
- * Actualiza el referido a Completado cuando el Admin finaliza el pedido.
- * Calcula las monedas ganadas (5 por cada 100).
- */
-export async function updateReferralToCompletedByOrder(orderId, orderTotal) {
-  try {
-    const q = query(collection(db, REFERRALS_COLLECTION), where('orderId', '==', orderId));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return { error: null, found: false };
-
-    const referralDoc = snapshot.docs[0];
-    const data = referralDoc.data();
-    
-    // Contar compras completadas en este mes
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    const countQ = query(
-      collection(db, REFERRALS_COLLECTION),
-      where('referrerCode', '==', data.referrerCode),
-      where('status', 'in', ['completed', 'claimed']),
-      where('completedAt', '>=', Timestamp.fromDate(startOfMonth))
-    );
-    const countSnapshot = await getDocs(countQ);
-    const completedThisMonth = countSnapshot.size;
-    
-    // A partir de la 3ra compra del mes se duplica (20 monedas), caso contrario 10
-    const earnedCoins = completedThisMonth >= 2 ? 20 : 10;
-
-    await updateDoc(referralDoc.ref, {
-      status: 'completed', // Etapa 4 lista para reclamar
-      earnedCoins,
-      completedAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-
-    return { error: null, found: true };
-  } catch (error) {
-    return { error: error.message };
-  }
-}
-
-/**
  * Obtiene todos los referidos para el panel del usuario
  */
 export async function getReferralsByReferrer(referrerCode) {
@@ -177,9 +151,12 @@ export async function claimReferralCoins(referralId) {
   // H-06: el reclamo (marcar 'claimed' + acreditar monedas) se hace server-side en
   // transacción (callable claimReferralSecure), validando propiedad y estado. Se
   // ignoran earnedCoins/currentMonedas que antes venían del cliente (falsificables).
+  // El monto real (5%/10% del pedido según claimReferralSecure) viene en la
+  // respuesta — se devuelve para que la UI muestre lo que de verdad se pagó,
+  // no un estimado.
   try {
-    await httpsCallable(getFunctions(), 'claimReferralSecure')({ referralId });
-    return { error: null };
+    const result = await httpsCallable(getFunctions(), 'claimReferralSecure')({ referralId });
+    return { earned: result?.data?.earned ?? null, error: null };
   } catch (error) {
     return { error: error.message };
   }

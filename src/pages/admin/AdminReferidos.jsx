@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, query, getDocs, updateDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db } from '../../services/firebase/config';
 import { useGlobalToast } from '../../contexts/ToastContext';
+import { estimateReferralReward } from '../../services/referrals';
 import styles from './AdminReferidos.module.css';
 
 const AdminReferidos = () => {
@@ -22,7 +23,7 @@ const AdminReferidos = () => {
   });
 
   const aprobarRestriccion = async (referidoId, totalGanancia) => {
-    if (!window.confirm(`¿Confirmas que este pedido ya se entregó y el referido puede reclamar S/ ${totalGanancia} monedas?`)) return;
+    if (!window.confirm(`¿Confirmas que este pedido ya se entregó y el referido puede reclamar ${totalGanancia} monedas?`)) return;
     
     setProcesandoId(referidoId);
     try {
@@ -92,7 +93,10 @@ const AdminReferidos = () => {
             )}
             {referidos?.map(ref => {
               const d = ref.createdAt?.toDate()?.toLocaleDateString() || 'N/A';
-              const monedasCalculadas = Math.floor((ref.orderTotal || 0) / 100) * 5;
+              // 5% si el pedido es <= S/200, 10% si supera los S/200 — misma
+              // fórmula que claimReferralSecure (functions/index.js), que es
+              // quien realmente paga (esto es solo el estimado a mostrar).
+              const monedasCalculadas = estimateReferralReward(ref.orderTotal);
               
               let statusLabel = 'Etapa 2 (Solo Clic)';
               if (ref.status === 'purchased') statusLabel = 'Etapa 3 (Compró por WA)';
