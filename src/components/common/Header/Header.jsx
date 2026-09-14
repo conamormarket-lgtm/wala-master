@@ -1008,26 +1008,57 @@ const Header = () => {
                               ademas, el traductor acierta la concordancia del
                               plural en cada idioma. */}
                           <p style={textStyle}><T>{wishlistItems.length === 1 ? 'Tienes 1 producto guardado en tu lista.' : `Tienes ${wishlistItems.length} productos guardados en tu lista.`}</T></p>
-                          <div className={styles.wishlistPreviewStrip}>
-                            {wishlistItems.slice(0, 4).map((item) => (
-                              <Link
-                                key={item.productId}
-                                to="/cuenta/wishlist"
-                                onClick={closeDropdowns}
-                                className={styles.wishlistThumb}
-                                title={item.productName}
-                              >
-                                <img
-                                  src={item.productImage || '/images/placeholder.svg'}
-                                  alt={item.productName || 'Producto'}
-                                  onError={(e) => { e.currentTarget.src = '/images/placeholder.svg'; }}
-                                />
-                              </Link>
-                            ))}
-                            {wishlistItems.length > 4 && (
-                              <span className={styles.wishlistThumbMore}>+{wishlistItems.length - 4}</span>
-                            )}
-                          </div>
+                          {/* Miniaturas "en abanico": naipes superpuestos y rotados en vez
+                              de una grilla plana -antes cada foto era un cuadradito suelto
+                              sin ninguna relación visual entre sí-. El ángulo/elevación de
+                              CADA carta se calcula en JS a partir de su posición respecto
+                              al CENTRO del abanico (offset), para que quede simétrico sin
+                              importar si hay 2, 4 o 5 elementos (4 fotos + chip "+N"); en
+                              CSS puro (nth-child fijo) solo se ve bien con la cantidad
+                              exacta para la que se escribió. */}
+                          {(() => {
+                            const previewItems = wishlistItems.slice(0, 4);
+                            const hasMore = wishlistItems.length > 4;
+                            const total = previewItems.length + (hasMore ? 1 : 0);
+                            const mid = (total - 1) / 2;
+                            const fanStyle = (index) => {
+                              const offset = index - mid;
+                              return {
+                                '--rot': `${offset * 9}deg`,
+                                '--lift': `${-Math.abs(offset) * 5}px`,
+                                zIndex: total - Math.abs(offset),
+                                marginLeft: index === 0 ? 0 : '-18px',
+                              };
+                            };
+                            return (
+                              <div className={styles.wishlistPreviewStrip}>
+                                {previewItems.map((item, index) => (
+                                  <Link
+                                    key={item.productId}
+                                    to="/cuenta/wishlist"
+                                    onClick={closeDropdowns}
+                                    className={styles.wishlistThumb}
+                                    title={item.productName}
+                                    style={fanStyle(index)}
+                                  >
+                                    <img
+                                      src={item.productImage || '/images/placeholder.svg'}
+                                      alt={item.productName || 'Producto'}
+                                      onError={(e) => { e.currentTarget.src = '/images/placeholder.svg'; }}
+                                    />
+                                  </Link>
+                                ))}
+                                {hasMore && (
+                                  <span
+                                    className={styles.wishlistThumbMore}
+                                    style={fanStyle(previewItems.length)}
+                                  >
+                                    +{wishlistItems.length - 4}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                           <div className={styles.accountButtons}>
                             <Link to="/cuenta/wishlist" className={styles.primaryButton} onClick={closeDropdowns}>
                               <T>Ver mi lista</T>
