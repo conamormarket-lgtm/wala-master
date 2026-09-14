@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { Gift } from 'lucide-react';
 import { getWishlistByUserCode } from '../../services/wishlist';
+import { getCategories } from '../../services/products';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { useProducts } from '../../hooks/useProducts';
-import ProductCard from '../Tienda/components/ProductCard/ProductCard';
+// La misma tarjeta que usa la Tienda (ver el mismo fix en WishlistPage.jsx):
+// ProductCard, el componente "viejo", ponía el botón de carrito pegado al
+// precio y no resolvía la categoría real. showQuickAdd={false} apaga su
+// overlay interno porque esta página YA trae su propio botón "Regalar esto"
+// -con los dos a la vez había DOS controles compitiendo por la misma acción-.
+import PremiumProductCard from '../Tienda/components/PremiumProductCard/PremiumProductCard';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './WishlistPublic.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -27,6 +35,17 @@ const WishlistPublic = () => {
   // includeHidden: la lista compartida es HISTORIAL — un producto borrado
   // lógicamente debe seguir mostrándose (degradado), no desaparecer en silencio.
   const { data: allProducts, isLoading: productsLoading } = useProducts([], { includeHidden: true });
+  // Sin esto, PremiumProductCard no tiene con qué resolver la categoría real
+  // del producto y cae en su fallback genérico "Esencial" para TODO (mismo
+  // fix que WishlistPage.jsx).
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error: err } = await getCategories();
+      if (err) throw new Error(err);
+      return data;
+    }
+  });
   const [wishlist, setWishlist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -190,9 +209,10 @@ const WishlistPublic = () => {
                   </div>
                 )}
                 
-                <ProductCard
+                <PremiumProductCard
                   product={fullProduct}
-                  onAddToCartOverride={() => handleGift(fullProduct, item)}
+                  categories={categories}
+                  showQuickAdd={false}
                 />
 
                 {!item.isGifted && (
@@ -200,7 +220,8 @@ const WishlistPublic = () => {
                     onClick={() => handleGift(fullProduct, item)}
                     className={styles.giftBtnOverlay}
                   >
-                    Regalar esto 🎁
+                    <Gift size={18} strokeWidth={2.25} aria-hidden="true" />
+                    Regalar esto
                   </button>
                 )}
               </div>

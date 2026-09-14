@@ -48,6 +48,12 @@ const PremiumProductCard = React.memo(({
   // true: ningún uso existente en la Tienda cambia.
   showNewBadge = true,
   showStockBadge = true,
+  // La página pública de regalos (/wishlist/:code) ya trae su PROPIO botón
+  // "Regalar esto" -con su propio texto/ícono, distinto de "Al carrito"-; con
+  // los dos a la vez (el overlay interno + el de abajo) quedaban dos
+  // controles compitiendo por la misma acción en la misma tarjeta. Por
+  // defecto true: ningún uso existente en la Tienda cambia.
+  showQuickAdd = true,
 }) => {
   const { addToCart } = useCart();
   const queryClient = useQueryClient();
@@ -412,24 +418,26 @@ const PremiumProductCard = React.memo(({
             texto al lado), para que se distingan de un vistazo sin
             depender de leer la etiqueta: "+" = se agrega directo, el ícono
             de controles = hay que elegir algo antes. */}
-        <div className={styles.quickAddOverlay}>
-          <button
-            className={styles.quickAddBtn}
-            onClick={handleAddToCart}
-            disabled={!product.inStock}
-          >
-            <span className={styles.quickAddIcon} aria-hidden="true">
-              {necesitaElegir
-                ? <SlidersHorizontal size={14} strokeWidth={2.25} />
-                : <Plus size={14} strokeWidth={2.5} />}
-            </span>
-            <span className={styles.quickAddText}>
-              {necesitaElegir
-                ? t('cta.chooseOptions', 'Elegir color y talla')
-                : t('cta.addToCart', 'Al carrito')}
-            </span>
-          </button>
-        </div>
+        {showQuickAdd && (
+          <div className={styles.quickAddOverlay}>
+            <button
+              className={styles.quickAddBtn}
+              onClick={handleAddToCart}
+              disabled={!product.inStock}
+            >
+              <span className={styles.quickAddIcon} aria-hidden="true">
+                {necesitaElegir
+                  ? <SlidersHorizontal size={14} strokeWidth={2.25} />
+                  : <Plus size={14} strokeWidth={2.5} />}
+              </span>
+              <span className={styles.quickAddText}>
+                {necesitaElegir
+                  ? t('cta.chooseOptions', 'Elegir color y talla')
+                  : t('cta.addToCart', 'Al carrito')}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={styles.info}>

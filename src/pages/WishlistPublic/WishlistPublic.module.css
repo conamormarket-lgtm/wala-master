@@ -15,32 +15,34 @@
 .header {
   text-align: center;
   margin-bottom: 3rem;
-  background: white;
+  background: var(--color-surface);
   padding: 2.5rem 1.5rem;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radio-mediano, 16px);
+  box-shadow: var(--sombra-media);
 }
 
 .header h1 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #111827;
-  margin-bottom: 0.5rem;
+  font-size: var(--section-title-size, clamp(1.35rem, 2.6vw, 1.85rem));
+  font-weight: var(--section-title-weight, 800);
+  letter-spacing: var(--section-title-tracking, -0.02em);
+  color: var(--gris-texto-principal);
+  margin: 0 0 0.5rem;
 }
 
 .header p {
-  color: #6b7280;
+  color: var(--gris-texto-secundario);
   font-size: 1.1rem;
+  margin: 0;
 }
 
 .emptyState {
   text-align: center;
   padding: 4rem 2rem;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  background: var(--color-surface);
+  border-radius: var(--radio-grande, 20px);
+  box-shadow: var(--sombra-media);
   font-size: 1.2rem;
-  color: #6b7280;
+  color: var(--gris-texto-secundario);
 }
 
 .grid {
@@ -55,71 +57,87 @@
   flex-direction: column;
 }
 
+/* Insignia "¡Ya regalado!": plana (sin degradado), verde sólido de éxito
+   -antes era un degradado inline-, mismo criterio que WishlistPage.jsx. */
 .giftedOverlay {
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
+  background: var(--verde-exito, #10b981);
+  color: #ffffff;
   padding: 0.4rem 1rem;
-  border-radius: 20px;
-  font-weight: bold;
+  border-radius: var(--radio-pequeno, 10px);
+  font-weight: 700;
   font-size: 0.85rem;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
   white-space: nowrap;
   pointer-events: none;
 }
 
+/* "Regalar esto": el ÚNICO control de esta tarjeta para regalar (el overlay
+   interno de PremiumProductCard se apaga con showQuickAdd={false} para no
+   competir con este). Plano, violeta sólido -antes era un degradado
+   rosa/rojo sin relación con el resto del sitio, con "levantamiento" al
+   hover-: mismo lenguaje que el resto de CTAs primarios (Cart, Header). */
 .giftBtnOverlay {
   margin-top: 0.75rem;
   width: 100%;
-  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: #8b5cf6;
+  color: #ffffff;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radio-pequeno, 10px);
   padding: 0.75rem;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+  transition: background-color 0.2s ease;
 }
 
 .giftBtnOverlay:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(225, 29, 72, 0.4);
+  background: #7c3aed;
 }
 
 .primaryBtn {
   background: #8b5cf6;
   color: white;
   padding: 0.75rem 1.5rem;
-  border-radius: 12px;
+  border-radius: var(--radio-pequeno, 10px);
   font-weight: 600;
   text-decoration: none;
   display: inline-block;
   margin-top: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.primaryBtn:hover {
+  background: #7c3aed;
 }
 
 /* ── Tarjeta DEGRADADA "Ya no disponible" ──────────────────────────────────
    Producto de la lista compartida que fue borrado (físico legado o tombstone)
    u ocultado: snapshot en gris, sin precio ni botón de regalar. */
 .unavailableCard {
-  background: white;
-  border: 1px solid #f3f4f6;
-  border-radius: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio-mediano, 16px);
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--sombra-suave);
 }
 
 .unavailableImgWrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  /* Misma proporción que la foto de PremiumProductCard (3:4): con las dos
+     conviviendo en la misma grilla, una tarjeta cuadrada entre tarjetas 3:4
+     se veía "desalineada" fila a fila. */
+  aspect-ratio: 3 / 4;
   overflow: hidden;
-  background: #f9fafb;
+  background: var(--gris-fondo);
 }
 
 .unavailableImg {
@@ -153,7 +171,7 @@
 .unavailableName {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--gris-texto-principal);
   margin: 0 0 0.35rem 0;
   line-height: 1.4;
   display: -webkit-box;
@@ -163,48 +181,13 @@
 }
 
 .unavailableText {
-  color: #6b7280;
+  color: var(--gris-texto-secundario);
   font-size: 0.9rem;
   margin: 0;
 }
 
 @media (max-width: 640px) {
   .header h1 {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
-}
-
-/* ═════════════════════════════════════════════════════════════════════════
-   MODO NOCHE — overrides de contraste (wishlist pública)
-   Header/empty white + título #111827 viran a tokens de tema.
-   Solo color/fondo/borde.
-   ═════════════════════════════════════════════════════════════════════════ */
-
-:global([data-theme='dark']) .header {
-  background: var(--color-surface);
-}
-:global([data-theme='dark']) .header h1 {
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .header p {
-  color: var(--color-text-muted);
-}
-:global([data-theme='dark']) .emptyState {
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-}
-
-/* Tarjeta degradada "Ya no disponible": superficie/bordes/textos con tokens. */
-:global([data-theme='dark']) .unavailableCard {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-}
-:global([data-theme='dark']) .unavailableImgWrap {
-  background: var(--color-surface-2);
-}
-:global([data-theme='dark']) .unavailableName {
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .unavailableText {
-  color: var(--color-text-muted);
 }
