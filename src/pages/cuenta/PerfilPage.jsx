@@ -18,8 +18,6 @@ import { T } from '../../i18n/useTranslatedText';
 
 const Icons = {
   Gift: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12" /><rect x="2" y="7" width="20" height="5" /><line x1="12" y1="22" x2="12" y2="7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" /></svg>,
-  Copy: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>,
-  Check: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>,
   User: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
   Shirt: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" /></svg>,
 };
@@ -58,7 +56,6 @@ const PerfilPage = () => {
   });
 
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   // Antes esta página calculaba su PROPIO código a partir del uid
   // (`KS-${uid.substring(0,6)}`), distinto del código real que usa el resto
@@ -168,12 +165,6 @@ const PerfilPage = () => {
     return { error };
   };
 
-  const handleCopyReferral = () => {
-    navigator.clipboard.writeText(referralCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const email = user.email || userProfile?.email || '';
   const hasCompleteProfile = !!(userProfile?.dni && userProfile?.phone);
 
@@ -216,11 +207,14 @@ const PerfilPage = () => {
                 + {monedasEnEspera.toLocaleString()} monedas en espera ⏳
               </div>
             )}
+            {/* Solo para ver el código de un vistazo — copiarlo acá no
+                servía de nada: es el código pelado (ej. "KS-LXECDU"), no el
+                link completo (?ref=CODE&shareId=...) que de verdad cuenta
+                como referido en el checkout (ver ReferralTracker.jsx). Para
+                compartir de verdad está "Generar Link de Referido" en Mis
+                Referidos, o el botón "compartir" de cada producto. */}
             <div className={styles.referralBox}>
               <span className={styles.referralCode}>{referralCode}</span>
-              <button className={styles.copyBtn} onClick={handleCopyReferral}>
-                {copied ? <Icons.Check /> : <Icons.Copy />} {copied ? 'Copiado' : 'Copiar'}
-              </button>
             </div>
           </div>
         </StaggerItem>

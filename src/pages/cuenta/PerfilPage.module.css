@@ -186,6 +186,9 @@
   font-weight: 600;
 }
 
+/* Solo para ver el código de un vistazo (ver comentario en PerfilPage.jsx) —
+   antes tenía un botón "Copiar" al lado (justify-content: space-between);
+   sin él, se centra en vez de quedar pegado a la izquierda. */
 .referralBox {
   background: var(--gris-fondo);
   border: 1px solid var(--gris-borde);
@@ -194,7 +197,7 @@
   margin-top: 1.5rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 }
 
 .referralCode {
@@ -203,25 +206,6 @@
   font-weight: 700;
   color: var(--gris-texto-principal);
   letter-spacing: 2px;
-}
-
-.copyBtn {
-  background: #8b5cf6;
-  border: none;
-  border-radius: 10px;
-  padding: 0.6rem 1rem;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.copyBtn:hover {
-  transform: scale(1.05);
-  background: #7c3aed;
 }
 
 .form {
