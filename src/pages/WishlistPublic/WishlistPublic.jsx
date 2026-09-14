@@ -14,6 +14,7 @@ import { useProducts } from '../../hooks/useProducts';
 // overlay interno porque esta página YA trae su propio botón "Regalar esto"
 // -con los dos a la vez había DOS controles compitiendo por la misma acción-.
 import PremiumProductCard from '../Tienda/components/PremiumProductCard/PremiumProductCard';
+import Loading from '../../components/common/Loading';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './WishlistPublic.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -133,7 +134,9 @@ const WishlistPublic = () => {
   };
 
   if (loading || productsLoading) {
-    return <div className={styles.container}><p><T>Cargando lista de deseos...</T></p></div>;
+    // Mismo spinner circular de marca que Login/Registro/AdminStoreEditor
+    // (componente Loading) en vez de un simple texto plano.
+    return <Loading fullScreen portal message="Cargando lista de deseos..." />;
   }
 
   if (error || !wishlist) {
