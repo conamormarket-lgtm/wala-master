@@ -98,10 +98,15 @@
   transition: var(--transicion-rapida);
 }
 
+/* El closeButton dentro de .header está centrado verticalmente con
+   translateY(-50%) (ver ".header .closeButton" arriba). Un transform nuevo
+   en :hover REEMPLAZA al anterior en vez de sumarse -no es que "también
+   rote", pierde el translateY(-50%) entero-, así que la X saltaba de
+   posición al pasar el mouse. Se repiten los dos transforms juntos. */
 .closeButton:hover {
   background: var(--rojo-light);
   color: var(--rojo-principal);
-  transform: rotate(90deg);
+  transform: translateY(-50%) rotate(90deg);
 }
 
 .closeButton svg {
