@@ -74,6 +74,38 @@
     cursor: not-allowed;
 }
 
+/* Quitar foto: mismo tamaño/posición que .editBadge pero en la esquina
+   opuesta (izquierda) y en rojo/danger -mismo tono que .errorMessage en
+   PerfilPage- para leerse como una acción destructiva, distinta de
+   "cambiar foto" (violeta). Solo aparece si hay foto (ver AvatarStudio.jsx). */
+.removeBadge {
+    position: absolute;
+    left: -2px;
+    bottom: -2px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--danger, #dc2626);
+    color: #fff;
+    border: 2px solid #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s, background 0.15s;
+}
+
+.removeBadge:hover:not(:disabled) {
+    background: var(--danger-hover, #b91c1c);
+    transform: scale(1.06);
+}
+
+.removeBadge:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
 .spinner {
     width: 13px;
     height: 13px;
@@ -135,7 +167,8 @@
     color: var(--color-text-muted);
 }
 
-:global([data-theme='dark']) .editBadge {
+:global([data-theme='dark']) .editBadge,
+:global([data-theme='dark']) .removeBadge {
     border-color: var(--color-surface);
 }
 

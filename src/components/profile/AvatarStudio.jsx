@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { uploadFile } from '../../services/firebase/storage';
+import { uploadFile, deleteFile } from '../../services/firebase/storage';
 import styles from './AvatarStudio.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -16,7 +16,13 @@ import { T } from '../../i18n/useTranslatedText';
 export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid }) {
     const fileInputRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isRemoving, setIsRemoving] = useState(false);
     const [uploadError, setUploadError] = useState(null);
+    // "Guardar foto" antes solo aparecía si HAY foto (avatarUrl truthy) —
+    // servía para subir, pero no había forma de persistir un QUITAR (volver a
+    // sin foto). dirty cubre ese caso: se prende también al quitar, para que
+    // el link de guardar siga visible y el usuario pueda confirmar el cambio.
+    const [dirty, setDirty] = useState(false);
 
     const avatarUrl = config?.avatarUrl || null;
 
@@ -54,10 +60,32 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
             }
             // Limpiamos los restos del antiguo avatar 3D: isRpm:false y glbUrl:null.
             setConfig(prev => ({ ...prev, isRpm: false, avatarUrl: url, glbUrl: null }));
+            setDirty(true);
         } catch (err) {
             setUploadError('No se pudo subir la foto. Inténtalo de nuevo.');
         } finally {
             setIsUploading(false);
+        }
+    };
+
+    // Quita la foto actual: la borra de Storage (best-effort — si la URL no
+    // es de Storage o ya no existe, simplemente se ignora, como en
+    // AdminProductoFormV2/AdminProductos) y limpia el avatar localmente. El
+    // cambio recién queda guardado cuando el usuario confirma con "Guardar
+    // foto" (mismo flujo que subir una nueva), para no borrar en Firestore
+    // sin que el usuario lo pida explícitamente.
+    const handleRemovePhoto = async () => {
+        if (!avatarUrl || isUploading || isSaving || isRemoving) return;
+        if (!window.confirm('¿Quitar tu foto de perfil?')) return;
+
+        setUploadError(null);
+        setIsRemoving(true);
+        try {
+            await deleteFile(avatarUrl).catch(() => {});
+            setConfig(prev => ({ ...prev, avatarUrl: null }));
+            setDirty(true);
+        } finally {
+            setIsRemoving(false);
         }
     };
 
@@ -83,7 +111,7 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
                 <button
                     type="button"
                     onClick={handlePickFile}
-                    disabled={isUploading || isSaving}
+                    disabled={isUploading || isSaving || isRemoving}
                     className={styles.editBadge}
                     aria-label="Cambiar foto de perfil"
                     title="Cambiar foto de perfil"
@@ -94,6 +122,23 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
                     )}
                 </button>
+
+                {avatarUrl && (
+                    <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        disabled={isUploading || isSaving || isRemoving}
+                        className={styles.removeBadge}
+                        aria-label="Quitar foto de perfil"
+                        title="Quitar foto de perfil"
+                    >
+                        {isRemoving ? (
+                            <span className={styles.spinner} aria-hidden="true" />
+                        ) : (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        )}
+                    </button>
+                )}
             </div>
 
             {/* Input de archivo oculto; se dispara con la insignia de cámara. */}
@@ -105,11 +150,11 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid 
                 style={{ display: 'none' }}
             />
 
-            {avatarUrl && (
+            {(avatarUrl || dirty) && (
                 <button
                     type="button"
                     onClick={onSave}
-                    disabled={isSaving || isUploading}
+                    disabled={isSaving || isUploading || isRemoving}
                     className={styles.saveLink}
                 >
                     {isSaving ? <T>Guardando...</T> : <T>Guardar foto</T>}
