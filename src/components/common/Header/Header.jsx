@@ -32,19 +32,23 @@ const navLinkClass = ({ isActive }) =>
 // bajo los mismos encabezados del sidebar de /cuenta (Cuenta / Recompensas /
 // Personalización) en vez de una lista suelta sin jerarquía. A propósito NO
 // se muestran los 11 del sidebar completo -Rastreo, Misiones, Referidos,
-// Creaciones, Fechas- para que el popup no crezca: quedan a un clic con el
-// link "Ver toda mi cuenta" al final de la lista.
+// Fechas- para que el popup no crezca: quedan a un clic con el link "Ver
+// toda mi cuenta" al final de la lista.
 // "Lista de Deseos" (/cuenta/wishlist) NO va acá: ya tiene su propio ícono
 // dedicado en el header (el corazón, con su propio popup) — repetirla aquí
 // era el mismo destino en dos botones distintos de la misma barra. Regla
 // general: si algo YA tiene su propio ícono en el header, no se duplica en
-// este menú (mismo criterio aplicado más abajo si se agregan más accesos).
+// este menú. En su lugar, "Mis Creaciones" representa la categoría
+// Personalización: es el otro pilar de la tienda (lo que el cliente diseñó
+// con el editor "Crear") y, a diferencia de la wishlist, no tiene ningún
+// ícono propio en el header.
 const ACCESOS_RAPIDOS_HEADER = new Set([
   '/cuenta/perfil',
   '/cuenta/pedidos',
   '/cuenta/ajustes',
   '/cuenta/catalogo',
   '/cuenta/cupones',
+  '/cuenta/creaciones',
 ]);
 
 // Mapa de etiquetas estándar del menú (texto en español tal cual lo guarda el
