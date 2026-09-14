@@ -276,6 +276,49 @@
   color: var(--rojo-principal);
 }
 
+/* "Ver todas las marcas" / "Ver menos": es un <button> (alterna la vista), pero
+   debe leerse igual que el CTA rojo que era antes. Reset del <button> nativo. */
+.verTodasMarcasBtn {
+  background: none;
+  border: none;
+  padding: 0.25rem 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--rojo-principal);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.verTodasMarcasBtn:hover {
+  text-decoration: underline;
+}
+
+/* Panel ancho "Ver todas": TODAS las marcas repartidas en columnas (estilo
+   Falabella/Sodimac). Solo desktop; en mobile el menú ya se apila full-width. */
+@media (min-width: 769px) {
+  .megaMenuBrandsWide {
+    min-width: 560px;
+    max-width: 640px;
+  }
+  .megaMenuBrandsWide .megaMenuContent ul {
+    /* column-count no funciona sobre flex: se pasa a block para las columnas. */
+    display: block;
+    column-count: 3;
+    column-gap: 1.5rem;
+  }
+  .megaMenuBrandsWide .megaMenuContent li {
+    break-inside: avoid;
+    margin-bottom: 0.15rem;
+  }
+  /* El toggle ocupa todo el ancho, separado como pie del panel. */
+  .megaMenuBrandsWide .verTodasMarcasItem {
+    column-span: all;
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--gris-borde);
+  }
+}
+
 /* Item del desplegable en el que YA estas: la marca de la pagina abierta o la
    categoria filtrada. Antes nada lo senalaba y el menu se leia igual estuvieras
    donde estuvieras. Se marca con color de marca, algo mas de peso y un punto a

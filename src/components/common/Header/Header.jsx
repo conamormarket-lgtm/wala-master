@@ -88,6 +88,15 @@ const Header = () => {
   const [forceHideDropdowns, setForceHideDropdowns] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
+  // Menú "Marcas": arranca compacto (solo las primeras 5 por `order`). Al tocar
+  // "Ver todas las marcas" se expande a un panel ancho con TODAS las marcas en
+  // columnas (estilo Falabella/Sodimac). Se resetea a compacto cada vez que
+  // cambia el dropdown activo, para que siempre abra en la vista corta.
+  const [showAllBrands, setShowAllBrands] = useState(false);
+  useEffect(() => {
+    setShowAllBrands(false);
+  }, [activeDropdown]);
+
   const headerRef = useRef(null);
   const mobileWalletRef = useRef(null);
   const cartItemsCount = getTotalItems();
@@ -570,7 +579,7 @@ const Header = () => {
                       {translateNav(link.text)}
                       <ChevronDown size={14} strokeWidth={2} className={styles.navChevron} aria-hidden="true" />
                     </button>
-                    <div className={styles.megaMenu}>
+                    <div className={`${styles.megaMenu} ${link.isBrandAuto && showAllBrands ? styles.megaMenuBrandsWide : ''}`}>
                       <div className={styles.megaMenuContent}>
                         <h4>{translateNav(link.text)}</h4>
                         <ul>
@@ -613,7 +622,12 @@ const Header = () => {
                               Sin filtro de brandActual: a diferencia de las categorias
                               (que cruzan mercados via query param), un link a /<slug>
                               es una pagina propia, navegar entre marcas es siempre valido. */}
-                          {link.isBrandAuto && brandsData?.filter(b => b?.name && b.active !== false && b.visible !== false).map(b => {
+                          {link.isBrandAuto && (() => {
+                            const marcasVisibles = (brandsData || []).filter(b => b?.name && b.active !== false && b.visible !== false);
+                            // Compacto: solo las primeras 5 (ya vienen ordenadas por
+                            // `order`). Expandido ("Ver todas"): todas.
+                            const marcasAMostrar = showAllBrands ? marcasVisibles : marcasVisibles.slice(0, 5);
+                            return marcasAMostrar.map(b => {
                             const slug = String(b.slug || '').trim() || slugify(b.name);
                             if (!slug) return null;
                             return (
@@ -632,7 +646,8 @@ const Header = () => {
                                 </Link>
                               </li>
                             );
-                          })}
+                            });
+                          })()}
 
                           {/* Enlaces Manuales */}
                           {(!link.isCategoryAuto && !link.autoCollectionId && !link.isBrandAuto) && link.dropdownLinks?.map(subLink => (
@@ -654,10 +669,22 @@ const Header = () => {
                           )}
 
                           {link.isBrandAuto && (
-                            <li>
-                              <Link to="/" onClick={() => setMobileMenuOpen(false)} style={{fontWeight: 'bold', color: 'var(--rojo-principal)'}}>
-                                <T>Ver todas las marcas</T> →
-                              </Link>
+                            <li className={styles.verTodasMarcasItem}>
+                              {/* Ya NO navega a "/": alterna entre la vista
+                                  compacta (5 marcas) y el panel ancho con TODAS
+                                  las marcas en columnas. El menú no se cierra al
+                                  expandir porque el cursor sigue dentro del
+                                  contenedor (el panel solo crece). */}
+                              <button
+                                type="button"
+                                className={styles.verTodasMarcasBtn}
+                                onClick={() => setShowAllBrands(v => !v)}
+                                aria-expanded={showAllBrands}
+                              >
+                                {showAllBrands
+                                  ? <><T>Ver menos</T> ←</>
+                                  : <><T>Ver todas las marcas</T> →</>}
+                              </button>
                             </li>
                           )}
                         </ul>
