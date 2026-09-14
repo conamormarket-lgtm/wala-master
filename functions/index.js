@@ -2255,6 +2255,105 @@ exports.freezeCoinsSecure = functions.https.onCall(async (data, context) => {
   }
 });
 
+// ── Reconciliar monedas en espera (congeladas en checkout) ─────────────────────
+// freezeCoinsSecure congela monedas al toque, pero antes NADA las volvía a
+// mover de ahí: si el pedido se entregaba, quedaban "en espera" para siempre
+// (nunca se confirmaban como gastadas de verdad); si el pedido se cancelaba,
+// el cliente las perdía igual (seguían descontadas de `monedas` y nunca
+// volvían). Este cron revisa cada pedido con monedas pendientes contra su
+// estado real en el ERP:
+//   - finalizado/entregado/completado → se gastaron de verdad: se sacan de
+//     monedasEnEspera, NO vuelven a monedas (ya se usaron como descuento).
+//   - anulado/cancelado → el descuento nunca se aplicó: vuelven a monedas,
+//     el cliente no pierde nada.
+//   - cualquier otro estado (en producción, por pagar, etc.) → se deja igual,
+//     se reintenta en la próxima corrida.
+// Mismo vocabulario de estado que claimReferralSecure/estadoCompra.js
+// (finalizado/entregado/completado vs anulado/cancelado), para no inventar
+// una tercera lectura de "qué significa terminado" en el sistema.
+exports.reconciliarMonedasEnEspera = onSchedule("every 60 minutes", async () => {
+  const erpDb = getErpDb();
+  if (!erpDb) {
+    console.warn("reconciliarMonedasEnEspera: ERP_SERVICE_ACCOUNT no configurado; se omite esta corrida.");
+    return;
+  }
+
+  const usersSnapshot = await db.collection(PORTAL_USERS_COLLECTION)
+    .where("monedasEnEspera", ">", 0)
+    .get();
+
+  if (usersSnapshot.empty) return;
+
+  let confirmadas = 0;
+  let liberadas = 0;
+  let usuariosActualizados = 0;
+
+  for (const userDoc of usersSnapshot.docs) {
+    const u = userDoc.data() || {};
+    const historial = Array.isArray(u.historialMonedasEspera) ? u.historialMonedasEspera : [];
+    const nuevoHistorial = [...historial];
+    let liberarUsuario = 0;
+    let confirmarUsuario = 0;
+    let cambiaron = false;
+
+    for (let i = 0; i < nuevoHistorial.length; i += 1) {
+      const entry = nuevoHistorial[i];
+      if (!entry || entry.status !== "pending" || !entry.orderId) continue;
+
+      let orderData = null;
+      try {
+        for (const coll of ["pedidos_web", "pedidos"]) {
+          const snap = await erpDb.collection(coll).doc(String(entry.orderId)).get();
+          if (snap.exists) { orderData = snap.data(); break; }
+        }
+      } catch (e) {
+        console.error(`reconciliarMonedasEnEspera: error leyendo pedido ${entry.orderId}:`, e);
+        continue; // se reintenta en la próxima corrida
+      }
+      if (!orderData) continue; // pedido aún no encontrado en el ERP: reintenta después
+
+      const rawEstado = String(orderData.estadoGeneral || orderData.estado || orderData.status || "")
+        .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      const finalizado = /entreg|finaliz|complet/.test(rawEstado);
+      const anulado = /anul|cancel/.test(rawEstado);
+      if (!finalizado && !anulado) continue; // sigue en curso: reintenta después
+
+      const amount = Number(entry.amount) || 0;
+      if (finalizado) {
+        confirmarUsuario += amount;
+        nuevoHistorial[i] = { ...entry, status: "confirmed", resolvedAt: new Date().toISOString() };
+      } else {
+        liberarUsuario += amount;
+        nuevoHistorial[i] = { ...entry, status: "released", resolvedAt: new Date().toISOString() };
+      }
+      cambiaron = true;
+    }
+
+    if (!cambiaron) continue;
+
+    const totalResuelto = confirmarUsuario + liberarUsuario;
+    const update = {
+      monedasEnEspera: FieldValue.increment(-totalResuelto),
+      historialMonedasEspera: nuevoHistorial,
+    };
+    if (liberarUsuario > 0) update.monedas = FieldValue.increment(liberarUsuario);
+
+    try {
+      await userDoc.ref.update(update);
+      confirmadas += confirmarUsuario;
+      liberadas += liberarUsuario;
+      usuariosActualizados += 1;
+    } catch (e) {
+      console.error(`reconciliarMonedasEnEspera: error actualizando usuario ${userDoc.id}:`, e);
+    }
+  }
+
+  console.log(
+    `reconciliarMonedasEnEspera: ${usuariosActualizados} usuarios actualizados. ` +
+    `Confirmadas (gastadas de verdad): ${confirmadas}. Liberadas (pedido cancelado): ${liberadas}.`
+  );
+});
+
 // ── Bono por encuesta (idempotente) ───────────────────────────────────────────
 exports.grantSurveyRewardSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
