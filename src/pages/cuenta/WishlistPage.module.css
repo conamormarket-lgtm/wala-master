@@ -16,16 +16,20 @@
   flex-wrap: wrap;
   margin-bottom: 2rem;
   gap: 1rem;
-  background: white;
+  background: var(--color-surface);
   padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radio-mediano, 16px);
+  box-shadow: var(--sombra-media);
 }
 
+/* Misma escala tipográfica que los títulos de sección del home/tienda/carrito
+   (--section-title-*, ver theme/tokens.css): un solo lenguaje de título en
+   toda la app, no un tamaño propio por pantalla. */
 .title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #111827;
+  font-size: var(--section-title-size, clamp(1.35rem, 2.6vw, 1.85rem));
+  font-weight: var(--section-title-weight, 800);
+  letter-spacing: var(--section-title-tracking, -0.02em);
+  color: var(--gris-texto-principal);
   margin: 0;
   display: flex;
   align-items: center;
@@ -34,7 +38,7 @@
 
 .title::before {
   content: '💝';
-  font-size: 1.8rem;
+  font-size: 1.5em;
 }
 
 .headerActions {
@@ -44,111 +48,105 @@
   flex-wrap: wrap;
 }
 
-/* "Agregar todo al carrito": botón secundario violeta, mismo alto que el de compartir. */
-.addAllBtn {
-  background: #f5f3ff;
-  color: #6d28d9;
+/* Aviso de cumpleaños: mismos tokens dorados que el aviso de monedas del
+   carrito (--gold-soft/--gold-text) en vez de un amarillo hardcodeado aparte. */
+.birthdayTip {
+  background: var(--gold-soft, #fff3cd);
+  color: var(--gold-text, #856404);
+  padding: 1rem;
+  border-radius: var(--radio-mediano, 12px);
+  margin-bottom: 1.5rem;
+}
+
+.birthdayTip p {
+  margin: 0;
+}
+
+.birthdayTipLink {
+  color: var(--primary-color, #6d28d9);
+  font-weight: 700;
+  margin-top: 0.5rem;
+  display: inline-block;
+}
+
+/* ── Botones planos ──
+   Sólidos, sin degradado ni "levantamiento" al hover: el mismo lenguaje que
+   .primaryButton del Header (el botón que de verdad se repite en todo el
+   sitio — "Ver mi lista" del popup de wishlist, etc.), no el botón-píldora
+   con brillo. Cada acción tiene su propio color (violeta = ir al carrito /
+   explorar, ámbar = fechas de regalo, rosa = compartir) pero todas comparten
+   la misma forma: fondo sólido, esquinas de --radio-pequeno, hover = solo
+   oscurece el color, sin sombra ni transform. */
+.addAllBtn,
+.datesBtn,
+.primaryBtn {
   padding: 0.75rem 1.4rem;
-  border-radius: 12px;
+  border-radius: var(--radio-pequeno, 10px);
   font-weight: 600;
-  border: 1px solid #ddd6fe;
+  font-size: 0.95rem;
+  border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
-  transition: all 0.25s ease;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+/* "Agregar todo al carrito": acción secundaria, tinte violeta tenue. */
+.addAllBtn {
+  background: var(--violet-50, #f5f3ff);
+  color: var(--primary-color, #6d28d9);
+  border: 1px solid var(--violet-200, #ddd6fe);
 }
 
 .addAllBtn:hover {
-  background: #ede9fe;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(109, 40, 217, 0.18);
+  background: var(--violet-100, #ede9fe);
 }
 
 .addAllBtn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
 }
 
-/* "Mis fechas especiales": botón del registro de regalos (Feature B).
-   Color ámbar/dorado distinto del violeta (.addAllBtn) y del rosa (.primaryBtn). */
+/* "Mis fechas especiales": registro de regalos (Feature B), acento ámbar
+   -distinto del violeta y del rosa- para diferenciarlo de un vistazo. */
 .datesBtn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  padding: 0.75rem 1.4rem;
-  border-radius: 12px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+  background: var(--gold-600, #d97706);
+  color: #ffffff;
 }
 
 .datesBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.4);
+  background: var(--gold-700, #b45309);
 }
 
+/* Acción principal (Compartir mi lista / Explorar Tienda en el vacío):
+   MISMO violeta sólido que el resto de CTAs primarios del sitio. */
 .primaryBtn {
-  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+  background: #8b5cf6;
+  color: #ffffff;
 }
 
 .primaryBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(225, 29, 72, 0.4);
+  background: #7c3aed;
   /* Repetir el color NO es redundante: el `a:hover { color: var(--rojo-hover) }`
      global de globals.css tiene mas especificidad (0-1-1) que esta clase (0-1-0),
      y sin esta linea tine la letra de violeta al pasar el cursor. */
-  color: white;
+  color: #ffffff;
 }
 
 .primaryBtn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
-}
-
-.secondaryBtn {
-  background: transparent;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 0.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.secondaryBtn:hover {
-  background: #fee2e2;
-  color: #dc2626;
-  border-color: #fca5a5;
 }
 
 .emptyState {
   text-align: center;
   padding: 4rem 2rem;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  background: var(--color-surface);
+  border-radius: var(--radio-grande, 20px);
+  box-shadow: var(--sombra-media);
 }
 
 .emptyIcon {
@@ -164,12 +162,12 @@
 
 .emptyState h3 {
   font-size: 1.5rem;
-  color: #1f2937;
+  color: var(--gris-texto-principal);
   margin-bottom: 0.5rem;
 }
 
 .emptyState p {
-  color: #6b7280;
+  color: var(--gris-texto-secundario);
   margin-bottom: 1.5rem;
   max-width: 400px;
   margin-left: auto;
@@ -179,7 +177,7 @@
 .loading {
   text-align: center;
   padding: 3rem;
-  color: #6b7280;
+  color: var(--gris-texto-secundario);
   font-weight: 500;
 }
 
@@ -189,22 +187,43 @@
   gap: 1.5rem;
 }
 
+/* Envuelve cada <ProductCard> del grid: solo posiciona (para el badge "Ya te
+   lo regalaron" absoluto); el aspecto de tarjeta lo trae ProductCard. */
+.cardSlot {
+  position: relative;
+}
+
+/* Insignia "¡Ya te lo regalaron!": plana (sin degradado), verde sólido de
+   éxito — antes era un degradado inline embebido en el JSX. */
+.giftedBadge {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: var(--verde-exito, #10b981);
+  color: #ffffff;
+  padding: 0.4rem 1rem;
+  border-radius: var(--radio-pequeno, 10px);
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Tarjeta DEGRADADA "Ya no disponible" ──────────────────────────────────
+   Se muestra cuando el producto de la wishlist fue borrado (físico legado o
+   tombstone) u ocultado: conserva el snapshot (nombre + imagen) en gris y solo
+   permite quitarlo de la lista. Sin precio ni botón de compra. */
 .card {
-  background: white;
-  border-radius: 16px;
+  background: var(--color-surface);
+  border-radius: var(--radio-mediano, 16px);
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--sombra-suave);
   display: flex;
   flex-direction: column;
   position: relative;
-  border: 1px solid #f3f4f6;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
-  border-color: #e5e7eb;
+  border: 1px solid var(--gris-borde);
 }
 
 .imageWrapper {
@@ -212,7 +231,7 @@
   width: 100%;
   padding-top: 100%;
   overflow: hidden;
-  background: #f9fafb;
+  background: var(--gris-fondo);
 }
 
 .image {
@@ -222,11 +241,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.card:hover .image {
-  transform: scale(1.05);
 }
 
 .info {
@@ -239,7 +253,7 @@
 .name {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--gris-texto-principal);
   margin: 0 0 1rem 0;
   line-height: 1.4;
   display: -webkit-box;
@@ -248,55 +262,14 @@
   overflow: hidden;
 }
 
-.giftedBadge {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
 .actionRow {
   display: flex;
   gap: 0.75rem;
   margin-top: auto;
 }
 
-.btnView {
-  flex: 1;
-  background: #f3f4f6;
-  color: #374151;
-  padding: 0.6rem;
-  border-radius: 10px;
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-  transition: all 0.2s;
-  font-size: 0.9rem;
-}
-
-.btnView:hover {
-  background: #e5e7eb;
-  color: #111827;
-}
-
-/* ── Tarjeta DEGRADADA "Ya no disponible" ──────────────────────────────────
-   Se muestra cuando el producto de la wishlist fue borrado (físico legado o
-   tombstone) u ocultado: conserva el snapshot (nombre + imagen) en gris y solo
-   permite quitarlo de la lista. Sin precio ni botón de compra. */
 .unavailableCard {
   opacity: 0.92;
-}
-
-.unavailableCard:hover {
-  transform: none; /* sin "lift": no es interactiva como las demás */
 }
 
 .unavailableImg {
@@ -321,37 +294,32 @@
 }
 
 .unavailableText {
-  color: #6b7280;
+  color: var(--gris-texto-secundario);
   font-size: 0.9rem;
   margin: 0 0 1rem 0;
 }
 
 .removeBtn {
   flex: 1;
-  background: #fef2f2;
+  background: var(--danger-soft, #fef2f2);
   color: #b91c1c;
-  border: 1px solid #fecaca;
+  border: 1px solid rgba(239, 68, 68, 0.35);
   padding: 0.6rem;
-  border-radius: 10px;
+  border-radius: var(--radio-pequeno, 10px);
   font-weight: 600;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: all 0.2s;
+  transition: background-color 0.2s;
 }
 
 .removeBtn:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
+  background: rgba(239, 68, 68, 0.16);
 }
 
 @media (max-width: 640px) {
   .headerRow {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .title {
-    font-size: 1.5rem;
   }
 
   .headerActions {
@@ -363,44 +331,16 @@
   .addAllBtn,
   .datesBtn {
     width: 100%;
-    justify-content: center;
   }
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
    MODO NOCHE — WishlistPage
    ---------------------------------------------------------------------------
-   Colores HARDCODEADOS: aquí pasamos las superficies blancas/grises a las
-   variables de tema y aclaramos los textos. Los botones de gradiente con
-   texto blanco (.primaryBtn rojo, .datesBtn ámbar, .giftedBadge verde) ya son
-   legibles en ambos modos y se conservan. Solo color/contraste; sin layout.
+   headerRow/emptyState/card ya usan --color-surface + --sombra-* (que se
+   voltean solos en oscuro vía variables.css), así que aquí solo queda lo que
+   NO usa esos tokens: los botones de color fijo y el badge "no disponible".
    ═════════════════════════════════════════════════════════════════════════ */
-
-/* Cabecera y estados (cards blancas -> superficie oscura) */
-:global([data-theme='dark']) .headerRow,
-:global([data-theme='dark']) .emptyState,
-:global([data-theme='dark']) .card {
-  background: var(--color-surface);
-  box-shadow: var(--sombra-media);
-}
-:global([data-theme='dark']) .card {
-  border-color: var(--color-border);
-}
-:global([data-theme='dark']) .card:hover {
-  border-color: var(--color-border);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
-}
-
-/* Títulos y textos */
-:global([data-theme='dark']) .title,
-:global([data-theme='dark']) .emptyState h3,
-:global([data-theme='dark']) .name {
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .emptyState p,
-:global([data-theme='dark']) .loading {
-  color: var(--color-text-muted);
-}
 
 /* Botón violeta "agregar todo": tinte de marca translúcido + texto acento */
 :global([data-theme='dark']) .addAllBtn {
@@ -412,37 +352,13 @@
   background: rgba(167, 139, 250, 0.22);
 }
 
-/* Botón secundario (icono compartir): borde y texto de tema */
-:global([data-theme='dark']) .secondaryBtn {
-  color: var(--color-text-muted);
-  border-color: var(--color-border);
-}
-:global([data-theme='dark']) .secondaryBtn:hover {
-  background: rgba(239, 68, 68, 0.16);
-  color: #FCA5A5;
-  border-color: rgba(239, 68, 68, 0.45);
-}
-
 /* Caja de imagen del producto: fondo neutro oscuro (no blanco brillante) */
 :global([data-theme='dark']) .imageWrapper {
   background: var(--color-surface-2);
 }
 
-/* Botón "ver" gris -> superficie elevada con texto claro */
-:global([data-theme='dark']) .btnView {
-  background: var(--color-surface-2);
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .btnView:hover {
-  background: var(--color-hover);
-  color: var(--color-text);
-}
-
-/* Tarjeta degradada "Ya no disponible": texto atenuado y botón de quitar con
-   tinte rojo translúcido sobre superficie oscura (tokens del tema). */
-:global([data-theme='dark']) .unavailableText {
-  color: var(--color-text-muted);
-}
+/* Tarjeta degradada "Ya no disponible": botón de quitar con tinte rojo
+   translúcido sobre superficie oscura (tokens del tema). */
 :global([data-theme='dark']) .removeBtn {
   background: rgba(239, 68, 68, 0.12);
   color: #FCA5A5;

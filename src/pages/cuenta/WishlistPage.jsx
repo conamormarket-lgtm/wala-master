@@ -146,11 +146,11 @@ const WishlistPage = () => {
       </div>
 
       {!userProfile?.birthDate && (
-        <div style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-          <p style={{ margin: 0 }}>
+        <div className={styles.birthdayTip}>
+          <p>
             <strong>💡 Tip:</strong> Registra tu fecha de cumpleaños en tu perfil para que te recordemos compartir esta lista con tus amigos antes de tu gran día.
           </p>
-          <Link to="/cuenta/perfil" style={{ color: '#8b5cf6', fontWeight: 'bold', marginTop: '0.5rem', display: 'inline-block' }}><T>Ir a mi perfil</T></Link>
+          <Link to="/cuenta/perfil" className={styles.birthdayTipLink}><T>Ir a mi perfil</T></Link>
         </div>
       )}
 
@@ -216,28 +216,11 @@ const WishlistPage = () => {
             }
 
             return (
-              <div key={item.productId} style={{ position: 'relative' }}>
+              <div key={item.productId} className={styles.cardSlot}>
                 <ProductCard product={fullProduct} />
-                
+
                 {item.isGifted && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '10px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 10,
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    color: 'white',
-                    padding: '0.4rem 1rem',
-                    borderRadius: '20px',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-                    whiteSpace: 'nowrap',
-                    pointerEvents: 'none'
-                  }}>
-                    ¡Ya te lo regalaron! 🎁
-                  </div>
+                  <div className={styles.giftedBadge}>¡Ya te lo regalaron! 🎁</div>
                 )}
               </div>
             );
