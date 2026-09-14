@@ -7,18 +7,17 @@ import { T } from '../../i18n/useTranslatedText';
 // Mismo recorte que ya usa Admin (AdminImageCropper, react-easy-crop) para
 // logos/fondos de marca — se reimplementa acá en vez de importar ese
 // componente porque el avatar necesita círculo fijo (cropShape="round",
-// aspect=1, sin grilla) y una pantalla completa estilo WhatsApp/Instagram
-// (barra superior con cerrar/confirmar + imagen grande en el medio) en vez
-// de la card chica y centrada de Admin — con una foto real se ve mucho
-// mejor para recortar con precisión.
+// aspect=1, sin grilla) y el look del sitio (violeta #8b5cf6 + tokens
+// --gris-/--blanco) en vez de los botones y el modal planos de Admin.
 //
 // Se monta con un portal a document.body (mismo patrón que
 // components/common/Modal) en vez de quedar anidado donde vive AvatarStudio
 // -dentro de <Reveal>/<Stagger>, wrappers de framer-motion que aplican un
 // transform inline-: un transform en cualquier ancestro convierte a ESE
-// ancestro en el "contenedor" de todo lo position:fixed adentro, así que la
-// pantalla completa quedaba encerrada en el ancho de la card de identidad en
-// vez de cubrir la ventana entera.
+// ancestro en el "contenedor" de todo lo position:fixed adentro, así que el
+// fondo oscuro quedaba encerrado en el ancho de la card de identidad en vez
+// de cubrir la ventana entera (el modal en sí ya era chico y centrado a
+// propósito; lo único roto era que el FONDO no tapaba toda la página).
 const createImage = (url) =>
   new Promise((resolve, reject) => {
     const image = new Image();
@@ -73,8 +72,8 @@ export default function AvatarCropModal({ imageSrc, onConfirm, onCancel }) {
     }
   }, [imageSrc, croppedAreaPixels, processing, onConfirm, onCancel]);
 
-  // Pantalla completa: bloquea el scroll del body mientras está abierto,
-  // mismo criterio que components/common/Modal.
+  // Bloquea el scroll del body mientras está abierto, mismo criterio que
+  // components/common/Modal.
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -85,47 +84,24 @@ export default function AvatarCropModal({ imageSrc, onConfirm, onCancel }) {
 
   const contenido = (
     <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Recortar foto de perfil">
-      {/* Pantalla completa (patrón WhatsApp/Instagram) en vez de una card
-          chica centrada: la imagen se ve mucho más grande para recortar con
-          precisión, en vez de apretada en 280px dentro de un modal. */}
-      <div className={styles.topBar}>
-        <button
-          type="button"
-          className={styles.closeBtn}
-          onClick={onCancel}
-          disabled={processing}
-          aria-label="Cancelar"
-          title="Cancelar"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-        </button>
+      <div className={styles.modal}>
         <h3 className={styles.title}><T>Recorta tu foto</T></h3>
-        <button
-          type="button"
-          className={styles.doneBtn}
-          onClick={handleConfirm}
-          disabled={processing || !croppedAreaPixels}
-        >
-          {processing ? <T>Guardando...</T> : <T>Listo</T>}
-        </button>
-      </div>
-
-      <div className={styles.cropContainer}>
-        <Cropper
-          image={imageSrc}
-          crop={crop}
-          zoom={zoom}
-          aspect={1}
-          cropShape="round"
-          showGrid={false}
-          onCropChange={setCrop}
-          onCropComplete={handleCropComplete}
-          onZoomChange={setZoom}
-        />
-      </div>
-
-      <div className={styles.bottomBar}>
         <p className={styles.subtitle}><T>Arrastra la imagen y usa el zoom para elegir cómo se va a ver.</T></p>
+
+        <div className={styles.cropContainer}>
+          <Cropper
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            cropShape="round"
+            showGrid={false}
+            onCropChange={setCrop}
+            onCropComplete={handleCropComplete}
+            onZoomChange={setZoom}
+          />
+        </div>
+
         <label className={styles.zoomLabel}>
           <T>Zoom</T>
           <input
@@ -139,6 +115,15 @@ export default function AvatarCropModal({ imageSrc, onConfirm, onCancel }) {
             aria-label="Zoom de la foto"
           />
         </label>
+
+        <div className={styles.actions}>
+          <button type="button" className={styles.btnCancel} onClick={onCancel} disabled={processing}>
+            <T>Cancelar</T>
+          </button>
+          <button type="button" className={styles.btnConfirm} onClick={handleConfirm} disabled={processing || !croppedAreaPixels}>
+            {processing ? <T>Guardando...</T> : <T>Usar esta foto</T>}
+          </button>
+        </div>
       </div>
     </div>
   );
