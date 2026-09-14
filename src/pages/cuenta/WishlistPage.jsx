@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ShoppingCart, CalendarHeart, Share2 } from 'lucide-react';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../contexts/CartContext';
-import ProductCard from '../Tienda/components/ProductCard/ProductCard';
+// La misma tarjeta que usa la Tienda (ProductGrid/FeaturedCarousel/...), NO el
+// ProductCard "viejo": ese ponía el botón de carrito pegado al precio, sin aire
+// (padding horizontal en 0), mientras que PremiumProductCard ya resuelve el
+// agregado rápido como un overlay sobre la imagen -con su propio padding- y
+// ya trae el aviso "Elegir color y talla" cuando el producto lo necesita.
+import PremiumProductCard from '../Tienda/components/PremiumProductCard/PremiumProductCard';
 import { productNeedsVariantSelection } from '../../utils/comboProductUtils';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './WishlistPage.module.css';
@@ -121,7 +127,8 @@ const WishlistPage = () => {
               disabled={addingAll}
               title="Agrega todos tus productos guardados a tu carrito"
             >
-              {addingAll ? 'Agregando…' : '🛒 Agregar todo al carrito'}
+              <ShoppingCart size={17} strokeWidth={2.25} aria-hidden="true" />
+              {addingAll ? 'Agregando…' : 'Agregar todo al carrito'}
             </button>
             {giftRegistryLink && (
               <button
@@ -129,7 +136,8 @@ const WishlistPage = () => {
                 onClick={handleShareGiftRegistry}
                 title="Comparte tus fechas especiales para que te regalen en la fecha justa"
               >
-                📅 Mis fechas especiales
+                <CalendarHeart size={17} strokeWidth={2.25} aria-hidden="true" />
+                Mis fechas especiales
               </button>
             )}
             {shareLink && (
@@ -138,6 +146,7 @@ const WishlistPage = () => {
                 onClick={handleCopyLink}
                 disabled={copying}
               >
+                <Share2 size={16} strokeWidth={2.25} aria-hidden="true" />
                 {copying ? '¡Copiado!' : 'Compartir mi lista'}
               </button>
             )}
@@ -217,7 +226,7 @@ const WishlistPage = () => {
 
             return (
               <div key={item.productId} className={styles.cardSlot}>
-                <ProductCard product={fullProduct} />
+                <PremiumProductCard product={fullProduct} />
 
                 {item.isGifted && (
                   <div className={styles.giftedBadge}>¡Ya te lo regalaron! 🎁</div>
