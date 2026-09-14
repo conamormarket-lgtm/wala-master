@@ -20,14 +20,14 @@
   text-decoration: none;
   display: inline-block;
   text-align: center;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  background: var(--primary-color);
   color: var(--blanco);
   box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
   letter-spacing: 0.02em;
 }
 
 .button:hover {
-  background: linear-gradient(135deg, var(--primary-hover) 0%, #4C1D95 100%);
+  background: var(--primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(109, 40, 217, 0.3);
   /* Repetir el color NO es redundante: el `a:hover { color: var(--rojo-hover) }`
