@@ -396,14 +396,15 @@
    color/contraste; sin tocar tamaños ni layout.
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* La mayoría de las reglas de abajo (fondo/borde/texto del sidebar, items,
-   grupo activo, cerrar sesión) YA se voltean solas en oscuro: pasaron a usar
-   --gris-*/--blanco/--rojo-* de arriba, que son alias de los --color-*/
-   --primary-* que este mismo archivo remapea para modo noche (variables.css).
-   Solo queda acá lo que SÍ necesita un valor propio en oscuro: sombras (un
-   negro a 4% casi no se ve sobre superficie oscura) y el ícono del item al
-   hover, que a propósito NO usa el mismo muted que el texto -en oscuro se
-   aclara del todo para seguir siendo legible sobre el fondo de hover-. */
+/* La mayoría de las reglas de abajo (fondo, borde y texto del sidebar, los
+   items, el grupo activo, "Cerrar sesión") YA se voltean solas en oscuro:
+   pasaron a usar los tokens --gris-, --blanco y --rojo- de arriba, que son
+   alias de los tokens --color- y --primary- que este mismo archivo
+   remapea para modo noche (variables.css). Solo queda acá lo que SÍ
+   necesita un valor propio en oscuro: sombras (un negro al 4% casi no se
+   ve sobre superficie oscura) y el ícono del item al hover, que a
+   propósito NO usa el mismo muted que el texto (en oscuro se aclara del
+   todo para seguir siendo legible sobre el fondo de hover). */
 :global([data-theme='dark']) .sidebar {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
