@@ -295,6 +295,46 @@
   margin-bottom: 1.5rem;
 }
 
+/* ── CTA plano ──
+   A propósito NO usa el gradiente/brillo de Button o GlassButton: el botón
+   que de verdad se repite por todo el sitio (Header: "Ver mi lista" del
+   popup de wishlist, "Mi Perfil"…) es sólido, sin degradado, con esquinas
+   suaves — no una píldora. Mismo color/radio que .primaryButton del Header,
+   escalado a tamaño de CTA de carrito. */
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #8b5cf6;
+  color: #ffffff;
+  border: none;
+  padding: 0.85rem 1.5rem;
+  border-radius: var(--radio-pequeno, 8px);
+  font-weight: 600;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.ctaButton:hover:not(:disabled) {
+  background-color: #7c3aed;
+}
+
+.ctaButton:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.ctaButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ctaButtonFull {
+  width: 100%;
+}
+
 /* RESPONSIVE ≤ 992px: el resumen deja de flotar al lado y pasa a ir debajo,
    igual que en Checkout. */
 @media (max-width: 992px) {

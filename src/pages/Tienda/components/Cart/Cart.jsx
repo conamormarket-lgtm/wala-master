@@ -5,12 +5,17 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import CartItem from '../CartItem/CartItem';
 import { idsDeItemsIncompletos } from '../../../../utils/cartValidation';
 import { costoEnvio } from '../../../../constants/envio';
-// Design System "Aurora Violeta Serena": las MISMAS superficies/CTA que ya usa
-// CheckoutPage (GlassCard del resumen, GlassButton del pago). El carrito es el
-// paso anterior del mismo embudo de compra, así que debe verse como la MISMA
-// pagina en vez de una pantalla suelta con su propio estilo. Uso presentacional
-// (aditivo): no toca la logica de items/totales/seleccion, vive toda en <Cart/>.
-import { GlassCard, GlassButton, Badge, Stagger, StaggerItem } from '../../../../components/ui';
+// Design System "Aurora Violeta Serena": la MISMA superficie de vidrio que ya
+// usa CheckoutPage para el resumen (GlassCard). El carrito es el paso anterior
+// del mismo embudo de compra, así que debe verse como la MISMA pagina en vez
+// de una pantalla suelta con su propio estilo. Uso presentacional (aditivo):
+// no toca la logica de items/totales/seleccion, vive toda en <Cart/>.
+// El CTA es un botón PLANO (fondo violeta sólido, sin degradado ni brillo):
+// el mismo look que ".primaryButton" del Header ("Ver mi lista" del popup de
+// wishlist, "Mi Perfil", etc.), que es el botón que de verdad se repite por
+// todo el sitio. Ni Button (gradiente rojo->violeta) ni GlassButton (vidrio
+// con brillo) calzaban con eso -se veían "aparte" del resto de la página-.
+import { GlassCard, Badge, Stagger, StaggerItem } from '../../../../components/ui';
 import styles from './Cart.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
 
@@ -86,9 +91,9 @@ const Cart = () => {
         <div className={styles.emptyIcon}>🛍️</div>
         <h2><T>Tu carrito está vacío</T></h2>
         <p><T>Parece que aún no has agregado productos.</T></p>
-        <GlassButton variant="primary" onClick={() => navigate('/tienda')}>
+        <button type="button" className={styles.ctaButton} onClick={() => navigate('/tienda')}>
           <T>Ir a la Tienda</T>
-        </GlassButton>
+        </button>
       </GlassCard>
     );
   }
@@ -205,10 +210,9 @@ const Cart = () => {
               <span><T>Total</T></span>
               <span>S/ {theFinalTotal.toFixed(2)}</span>
             </div>
-            <GlassButton
-              variant="primary"
-              size="lg"
-              fullWidth
+            <button
+              type="button"
+              className={`${styles.ctaButton} ${styles.ctaButtonFull}`}
               onClick={() => navigate('/checkout')}
               disabled={isPendingConfirmation || incompletosACobrar.length > 0 || selectedCount === 0}
             >
@@ -219,7 +223,7 @@ const Cart = () => {
                   : incompletosACobrar.length > 0
                     ? 'Falta elegir color o talla'
                     : `Proceder al Pago (${selectedCount})`}
-            </GlassButton>
+            </button>
           </GlassCard>
         </div>
       </div>
