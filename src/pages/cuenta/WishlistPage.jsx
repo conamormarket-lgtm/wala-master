@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Heart, ShoppingCart, CalendarHeart, Share2 } from 'lucide-react';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../contexts/CartContext';
+import { getCategories } from '../../services/products';
 // La misma tarjeta que usa la Tienda (ProductGrid/FeaturedCarousel/...), NO el
 // ProductCard "viejo": ese ponía el botón de carrito pegado al precio, sin aire
 // (padding horizontal en 0), mientras que PremiumProductCard ya resuelve el
@@ -25,11 +27,42 @@ import { T } from '../../i18n/useTranslatedText';
  */
 const estaDisponible = (p) => !!p && p.visible !== false && p.deleted !== true;
 
+/**
+ * "Guardado hace 3 días" / "Guardado ayer" / "Guardado hoy": lo único que
+ * distingue a esta tarjeta de una del catálogo normal es CUÁNDO se guardó,
+ * así que es el dato que le da identidad propia a la lista de deseos (ver
+ * item.addedAt en WishlistContext). Intl.RelativeTimeFormat con numeric:
+ * 'auto' ya resuelve "hoy"/"ayer" en español sin tener que codificarlos a mano.
+ */
+const formatearGuardadoHace = (isoDate) => {
+  if (!isoDate) return null;
+  const entonces = new Date(isoDate);
+  if (Number.isNaN(entonces.getTime())) return null;
+  const diffDias = Math.round((Date.now() - entonces.getTime()) / 86400000);
+  const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
+  if (diffDias < 30) return `Guardado ${rtf.format(-diffDias, 'day')}`;
+  const diffMeses = Math.round(diffDias / 30);
+  if (diffMeses < 12) return `Guardado ${rtf.format(-diffMeses, 'month')}`;
+  const diffAnios = Math.round(diffMeses / 12);
+  return `Guardado ${rtf.format(-diffAnios, 'year')}`;
+};
+
 const WishlistPage = () => {
   const { wishlistItems, loading: wishlistLoading, toggleFavorite } = useWishlist();
   // includeHidden: la wishlist es HISTORIAL — los productos borrados lógicamente
   // deben seguir resolviendo nombre/imagen (tarjeta degradada, no desaparecer).
   const { data: allProducts, isLoading: productsLoading } = useProducts([], { includeHidden: true });
+  // Sin esto, PremiumProductCard no tiene con qué resolver la categoría real
+  // del producto (idsDeCategoriaDe -> nombre) y cae en su fallback genérico
+  // "Esencial"/"Personalizable" para TODO, sea cual sea el producto.
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error: err } = await getCategories();
+      if (err) throw new Error(err);
+      return data;
+    }
+  });
   const { userProfile } = useAuth();
   const { addToast } = useGlobalToast();
   const { addToCart, items: cartItems } = useCart();
@@ -229,12 +262,24 @@ const WishlistPage = () => {
               );
             }
 
+            const guardadoHace = formatearGuardadoHace(item.addedAt);
+
             return (
               <div key={item.productId} className={styles.cardSlot}>
-                <PremiumProductCard product={fullProduct} />
+                <PremiumProductCard product={fullProduct} categories={categories} />
 
                 {item.isGifted && (
                   <div className={styles.giftedBadge}>¡Ya te lo regalaron! 🎁</div>
+                )}
+
+                {/* Lo único que distingue a esta tarjeta de una del catálogo:
+                    CUÁNDO se guardó. Es la identidad propia de "lista de
+                    deseos" frente a la tarjeta normal de la tienda. */}
+                {guardadoHace && (
+                  <p className={styles.savedCaption}>
+                    <Heart size={12} fill="currentColor" aria-hidden="true" />
+                    {guardadoHace}
+                  </p>
                 )}
               </div>
             );

@@ -210,10 +210,38 @@
   gap: 1.5rem;
 }
 
-/* Envuelve cada <ProductCard> del grid: solo posiciona (para el badge "Ya te
-   lo regalaron" absoluto); el aspecto de tarjeta lo trae ProductCard. */
+/* Envuelve cada <PremiumProductCard> del grid con un "marco" violeta tenue:
+   la MISMA tarjeta que la Tienda (para el espaciado/comportamiento correcto
+   del agregado rápido), pero la lista de deseos necesita su propia
+   identidad visual y no verse como un catálogo cualquiera. El marco es
+   aditivo -no toca PremiumProductCard.module.css, así que la Tienda real
+   sigue igual- y también posiciona el badge "Ya te lo regalaron" y el pie
+   "Guardado hace...". */
 .cardSlot {
   position: relative;
+  padding: 10px 10px 2.25rem;
+  border-radius: calc(var(--radio-grande, 16px) + 10px);
+  background: var(--violet-50, #f5f3ff);
+  border: 1px solid var(--violet-100, #ede9fe);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.cardSlot:hover {
+  background: var(--violet-100, #ede9fe);
+  border-color: var(--violet-200, #ddd6fe);
+}
+
+/* "Guardado hace...": lo único que distingue esta tarjeta de una del
+   catálogo normal. Vive en el "marco", como el pie de una foto guardada. */
+.savedCaption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin: 0.6rem 0 0;
+  color: var(--primary-color, #6d28d9);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 /* Insignia "¡Ya te lo regalaron!": plana (sin degradado), verde sólido de
@@ -365,6 +393,21 @@
    voltean solos en oscuro vía variables.css), así que aquí solo queda lo que
    NO usa esos tokens: los botones de color fijo y el badge "no disponible".
    ═════════════════════════════════════════════════════════════════════════ */
+
+/* El "marco" violeta de cada tarjeta (--violet-50/100/200 son una escala fija,
+   NO theme-aware): en oscuro se vuelve translúcido de marca, mismo criterio
+   que los botones de tinte suave de abajo. */
+:global([data-theme='dark']) .cardSlot {
+  background: var(--primary-light);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .cardSlot:hover {
+  background: rgba(167, 139, 250, 0.22);
+  border-color: rgba(167, 139, 250, 0.32);
+}
+:global([data-theme='dark']) .savedCaption {
+  color: var(--primary-hover);
+}
 
 /* Botones de tinte violeta suave (fechas / compartir): en oscuro el tinte
    claro fijo (--violet-50) se vuelve translúcido de marca + texto acento,
