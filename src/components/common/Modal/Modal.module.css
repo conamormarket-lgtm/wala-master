@@ -98,15 +98,19 @@
   transition: var(--transicion-rapida);
 }
 
-/* El closeButton dentro de .header está centrado verticalmente con
-   translateY(-50%) (ver ".header .closeButton" arriba). Un transform nuevo
-   en :hover REEMPLAZA al anterior en vez de sumarse -no es que "también
-   rote", pierde el translateY(-50%) entero-, así que la X saltaba de
-   posición al pasar el mouse. Se repiten los dos transforms juntos. */
+/* Mismo hover que .iconButton del Header (búsqueda/carrito/favoritos/tema):
+   fondo + color de acento y un leve levantamiento — nada de rotar, ese gesto
+   no tiene equivalente en ningún otro botón del sitio, se sentía un cuerpo
+   extraño acá. El closeButton dentro de .header está centrado verticalmente
+   con translateY(-50%) (ver ".header .closeButton" arriba); un transform
+   nuevo en :hover REEMPLAZA al anterior en vez de sumarse, así que el
+   levantamiento se escribe DENTRO del mismo translateY (calc(-50% - 2px))
+   en vez de como una función aparte -si no, se repetiría el mismo salto de
+   posición que ya tuvo el rotate(90deg) anterior. */
 .closeButton:hover {
-  background: var(--rojo-light);
+  background-color: var(--rojo-light);
   color: var(--rojo-principal);
-  transform: translateY(-50%) rotate(90deg);
+  transform: translateY(calc(-50% - 2px));
 }
 
 .closeButton svg {
