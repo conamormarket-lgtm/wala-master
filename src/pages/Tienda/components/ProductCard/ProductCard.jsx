@@ -12,7 +12,7 @@ import { useWishlist } from '../../../../contexts/WishlistContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { T } from '../../../../i18n/useTranslatedText';
-import { isComboProduct } from '../../../../utils/comboProductUtils';
+import { isComboProduct, productNeedsVariantSelection } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 // eslint-disable-next-line no-unused-vars
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
@@ -93,7 +93,17 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
     return () => observer.disconnect();
   }, [product?.id, recordImpression]);
 
+  // ¿Hay algo que el cliente TENGA que elegir antes de comprar (color, talla,
+  // piezas de combo)? Si es así, el botón rápido NO agrega a ciegas — deja
+  // que el clic navegue a la ficha (mismo comportamiento que PremiumProductCard,
+  // ver ese archivo para el detalle de por qué "hasVariants" solo no alcanza).
+  // Antes esto solo estaba resuelto en PremiumProductCard (la tarjeta de la
+  // tienda); esta tarjeta más vieja -la que usan Wishlist, WishlistPublic,
+  // VendorStorefrontPage y NichePage- seguía agregando con variante vacía.
+  const necesitaElegir = !onAddToCartOverride && productNeedsVariantSelection(product);
+
   const handleAddToCart = useCallback((e) => {
+    if (necesitaElegir) return;
     e.preventDefault();
     e.stopPropagation();
     if (onAddToCartOverride) {
@@ -102,7 +112,7 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
       addToCart(product, {}, null, 1);
     }
   // eslint-disable-next-line no-unused-vars
-  }, [addToCart, product, onAddToCartOverride]);
+  }, [addToCart, product, onAddToCartOverride, necesitaElegir]);
 
   // eslint-disable-next-line no-unused-vars
   const handlePersonalize = useCallback((e) => {
@@ -295,14 +305,23 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
             className={`${styles.cartQuickBtn} ${product.salePrice ? styles.cartQuickBtnPulse : ''}`}
             onClick={handleAddToCart}
             disabled={!product.inStock}
-            aria-label={t('cta.addToCart', 'Al carrito')}
-            title={t('cta.addToCart', 'Al carrito')}
+            aria-label={necesitaElegir ? t('cta.chooseOptions', 'Elegir color y talla') : t('cta.addToCart', 'Al carrito')}
+            title={necesitaElegir ? t('cta.chooseOptions', 'Elegir color y talla') : t('cta.addToCart', 'Al carrito')}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-              <circle cx="9" cy="21" r="1" />
-              <circle cx="20" cy="21" r="1" />
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-            </svg>
+            {necesitaElegir ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+                <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+                <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+            )}
           </button>
         </div>
 

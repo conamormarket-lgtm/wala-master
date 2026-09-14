@@ -13,7 +13,7 @@ import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { T } from '../../../../i18n/useTranslatedText';
 import { toThumbnailImageUrl } from '../../../../utils/imageUrl';
-import { isComboProduct } from '../../../../utils/comboProductUtils';
+import { isComboProduct, productNeedsVariantSelection } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
@@ -112,26 +112,9 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
   // así que metía la línea al carrito SIN color y SIN talla: el pedido salía sin
   // saber qué despachar. Cuando hay colores, tallas o piezas de combo, el botón
   // deja de añadir a ciegas y abre la ficha, que es donde se eligen.
-  //
-  // "hasVariants && variants.length > 0" NO alcanza: el editor de productos
-  // (y los imports en bloque, ver scripts/seed-mussa-*) crean SIEMPRE al menos
-  // una variante "Principal" para guardar la foto del producto, aunque no
-  // tenga colores reales — sizes:[] y un colorHex gris genérico de relleno.
-  // Con esa condición, cualquier producto sin variantes de verdad (todo el
-  // catálogo MUSSA/skincare) igual pedía "elegir color y talla" para UN solo
-  // producto sin nada que elegir. Ahora exige una eleccion real: más de una
-  // variante (hay color entre qué elegir) o alguna variante con tallas.
-  const tieneEleccionRealDeVariante = Boolean(
-    product?.hasVariants && (
-      (product?.variants?.length || 0) > 1 ||
-      product?.variants?.some((v) => Array.isArray(v?.sizes) && v.sizes.length > 0)
-    )
-  );
-  const necesitaElegir = Boolean(
-    tieneEleccionRealDeVariante ||
-    product?.mainSizes?.length > 0 ||
-    (isComboProduct(product) && product?.comboItems?.length > 0)
-  );
+  // Lógica compartida (ver productNeedsVariantSelection) para que otras
+  // tarjetas de "agregar rápido" (ProductCard, wishlist) no repitan el bug.
+  const necesitaElegir = productNeedsVariantSelection(product);
 
   const handleAddToCart = useCallback((e) => {
     // Sin preventDefault el clic sube al <Link> raíz de la tarjeta y navega a la

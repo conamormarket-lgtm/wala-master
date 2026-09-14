@@ -6,6 +6,7 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../contexts/CartContext';
 import ProductCard from '../Tienda/components/ProductCard/ProductCard';
+import { productNeedsVariantSelection } from '../../utils/comboProductUtils';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './WishlistPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -73,6 +74,11 @@ const WishlistPage = () => {
       // agotado (ProductCard/ProductDetail). `stock` e `isActive` no existen.
       if (!(Number(p.inStock) > 0)) { skipped++; continue; }              // sin stock
       if (cartItems.some((ci) => ci.productId === p.id)) { skipped++; continue; } // ya en carrito
+      // Tiene color/talla/combo para elegir: un agregado masivo no puede abrir
+      // la ficha por cada uno, así que se omite en vez de mandarlo al carrito
+      // sin variante (eso era lo que dejaba la línea "Falta elegir color y
+      // talla" en el carrito). El usuario lo agrega desde su propia ficha.
+      if (productNeedsVariantSelection(p)) { skipped++; continue; }
       addToCart(p, {}, null, 1, null, { silent: true });
       added++;
     }
