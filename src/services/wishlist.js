@@ -1,5 +1,6 @@
 import { db } from './firebase/config';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const WISHLIST_COLLECTION = 'wishlists';
 
@@ -102,41 +103,20 @@ export const removeWishlistItem = async (userId, productId) => {
   }
 };
 
+// Antes esto era un updateDoc/addDoc directo del cliente sobre la wishlist AJENA
+// del dueño (y sobre su subcolección de notificaciones). Casi siempre fallaba en
+// silencio: `wishlists/{userId}` exige ser el dueño para escribir y
+// `users/{userId}/notifications` exige ser admin para crear (firestore.rules) —
+// quien compra el regalo nunca es ninguna de las dos cosas. El pedido se creaba
+// igual (el checkout no revisa el resultado), pero el item nunca quedaba
+// marcado y el dueño nunca era notificado. Ahora corre en el servidor
+// (markWishlistItemGiftedSecure, Admin SDK, bypassa las reglas) via Cloud Function.
 export const markItemAsGifted = async (userCode, productId, buyerName) => {
   try {
-    const q = query(collection(db, WISHLIST_COLLECTION), where('userCode', '==', userCode));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return { data: null, error: 'Lista no encontrada' };
-    
-    const wishlistDoc = snapshot.docs[0];
-    const items = wishlistDoc.data().items || [];
-    const itemIndex = items.findIndex(i => i.productId === productId);
-    
-    if (itemIndex > -1) {
-      items[itemIndex].isGifted = true;
-      items[itemIndex].giftedBy = buyerName || 'Alguien';
-      
-      await updateDoc(wishlistDoc.ref, { items });
-      
-      // Notify the owner
-      if (wishlistDoc.data().userId) {
-        try {
-          await addDoc(collection(db, `users/${wishlistDoc.data().userId}/notifications`), {
-            title: '¡Alguien acaba de regalarte algo de tu lista! 🎁',
-            body: 'Han comprado un regalo de tu lista de deseos. ¡Qué emoción!',
-            createdAt: new Date().toISOString(),
-            read: false,
-            type: 'wishlist_gift'
-          });
-        } catch (e) {
-          console.error("Error notifying owner:", e);
-        }
-      }
-      
-      return { data: true, error: null };
-    }
-    
-    return { data: null, error: 'Producto no encontrado en la lista' };
+    const callable = httpsCallable(getFunctions(), 'markWishlistItemGiftedSecure');
+    const { data } = await callable({ wishlistUserCode: userCode, productId, buyerName });
+    if (!data?.ok) return { data: null, error: data?.error || 'No se pudo marcar el regalo' };
+    return { data: true, error: null };
   } catch (error) {
     console.error("Error marking item as gifted:", error);
     return { data: null, error: error.message };

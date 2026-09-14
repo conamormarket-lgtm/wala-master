@@ -4205,6 +4205,85 @@ exports.getPublicGiftRegistry = functions.https.onCall(async (data, context) => 
   }
 });
 
+/**
+ * Marca un item de una wishlist AJENA como regalado + notifica al dueño.
+ *
+ * POR QUÉ ES UNA CLOUD FUNCTION (no un write directo del cliente, que es lo que
+ * había antes en services/wishlist.js): quien compra el regalo casi nunca es el
+ * dueño de esa wishlist —`wishlists/{userId}` exige ser el dueño para escribir
+ * (firestore.rules) y `users/{userId}/notifications` exige ser admin para
+ * crear—, así que un `updateDoc`/`addDoc` directo desde el navegador SIEMPRE se
+ * rechazaba por permisos (en silencio: el try/catch del checkout solo hacía
+ * console.warn y dejaba pasar la compra). El Admin SDK del servidor sí puede
+ * escribir en nombre del dueño, así que la operación completa vive aquí.
+ *
+ * Tolerante a errores: nunca lanza (HttpsError incluido) para no bloquear la
+ * confirmación de un pedido real por esto — responde { ok:false, error } y el
+ * llamador (CheckoutPage.jsx) sigue igual, sin verificar el resultado.
+ */
+exports.markWishlistItemGiftedSecure = functions.https.onCall(async (data) => {
+  try {
+    const userCode = typeof data?.wishlistUserCode === "string" ? data.wishlistUserCode.trim().toUpperCase() : "";
+    const productId = typeof data?.productId === "string" ? data.productId.trim() : "";
+    const buyerName = typeof data?.buyerName === "string" && data.buyerName.trim() ? data.buyerName.trim() : "Alguien";
+    if (!userCode || !productId) return { ok: false, error: "Datos incompletos" };
+
+    const snap = await db.collection("wishlists").where("userCode", "==", userCode).limit(1).get();
+    if (snap.empty) return { ok: false, error: "Lista no encontrada" };
+
+    const wishlistDoc = snap.docs[0];
+    const items = Array.isArray(wishlistDoc.data().items) ? wishlistDoc.data().items : [];
+    const idx = items.findIndex((it) => it && it.productId === productId);
+    if (idx === -1) return { ok: false, error: "Producto no encontrado en la lista" };
+
+    items[idx] = { ...items[idx], isGifted: true, giftedBy: buyerName };
+    await wishlistDoc.ref.update({ items });
+
+    // Notificar al dueño: best-effort, NO revierte el marcado de arriba si falla.
+    const ownerId = wishlistDoc.data().userId || wishlistDoc.id;
+    try {
+      await db.collection("users").doc(ownerId).collection("notifications").add({
+        title: "¡Alguien acaba de regalarte algo de tu lista! 🎁",
+        body: "Han comprado un regalo de tu lista de deseos. ¡Qué emoción!",
+        createdAt: new Date().toISOString(),
+        read: false,
+        type: "wishlist_gift",
+      });
+    } catch (e) {
+      console.warn("markWishlistItemGiftedSecure: no se pudo notificar al dueño:", e.message);
+    }
+
+    return { ok: true };
+  } catch (err) {
+    console.error("markWishlistItemGiftedSecure error:", err);
+    return { ok: false, error: err.message };
+  }
+});
+
+/**
+ * Notifica al dueño de una wishlist que alguien la visitó (link público
+ * /wishlist/:userCode). Mismo motivo que markWishlistItemGiftedSecure: crear en
+ * users/{uid}/notifications exige ser admin, así que un visitante anónimo nunca
+ * puede hacerlo desde el cliente. Tolerante a errores: nunca lanza.
+ */
+exports.notifyWishlistVisitSecure = functions.https.onCall(async (data) => {
+  try {
+    const userId = typeof data?.userId === "string" ? data.userId.trim() : "";
+    if (!userId) return { ok: false };
+    await db.collection("users").doc(userId).collection("notifications").add({
+      title: "¡Alguien visitó tu lista de deseos! 👀",
+      body: "Un amigo o familiar acaba de ver tu lista de regalos.",
+      createdAt: new Date().toISOString(),
+      read: false,
+      type: "wishlist_visit",
+    });
+    return { ok: true };
+  } catch (err) {
+    console.warn("notifyWishlistVisitSecure error:", err.message);
+    return { ok: false };
+  }
+});
+
 // ════════════════════════════════════════════════════════════════════════════
 // S-1 — PAGOS PAYPAL SERVER-SIDE (CABLEADO AL CLIENTE TRAS EL FLAG, OFF POR DEFECTO)
 // ────────────────────────────────────────────────────────────────────────────

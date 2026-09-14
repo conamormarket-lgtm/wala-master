@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getWishlistByUserCode } from '../../services/wishlist';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
-import { db } from '../../services/firebase/config';
-// eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
-import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { useProducts } from '../../hooks/useProducts';
 import ProductCard from '../Tienda/components/ProductCard/ProductCard';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
@@ -48,34 +45,40 @@ const WishlistPublic = () => {
       
       setWishlist(data);
 
-      // Try to get the owner's name
+      // Nombre real del dueño: un visitante anónimo NO puede leer
+      // portal_clientes_users/{uid} directo (firestore.rules exige ser el
+      // dueño o admin), así que antes esto fallaba en silencio y el nombre se
+      // quedaba en el fallback 'Alguien' SIEMPRE. getPublicGiftRegistry ya
+      // resuelve esto mismo (mismo referralCode/userCode) devolviendo solo el
+      // nombre público -sin exponer el perfil completo-, así que se reutiliza
+      // en vez de crear una Cloud Function nueva para lo mismo.
       if (data.userId) {
         try {
-          const userDoc = await getDoc(doc(db, 'portal_clientes_users', data.userId));
-          if (userDoc.exists()) {
-            setOwnerName(userDoc.data().displayName || userDoc.data().name || 'Alguien');
+          const callable = httpsCallable(getFunctions(), 'getPublicGiftRegistry');
+          const { data: registry } = await callable({ referralCode: userCode });
+          if (registry?.ok && registry.ownerName) {
+            setOwnerName(registry.ownerName);
           }
         } catch (e) {
-          console.error("Error fetching user name:", e);
+          console.error("Error fetching owner name:", e);
         }
       }
 
       setLoading(false);
 
-      // Notify the owner that someone visited their wishlist
-      // (This could be optimized to not spam)
-      try {
-        if (data.userId) {
-          await addDoc(collection(db, `users/${data.userId}/notifications`), {
-            title: '¡Alguien visitó tu lista de deseos! 👀',
-            body: 'Un amigo o familiar acaba de ver tu lista de regalos.',
-            createdAt: new Date().toISOString(),
-            read: false,
-            type: 'wishlist_visit'
-          });
+      // Avisa al dueño que alguien visitó su lista. Antes era un addDoc directo
+      // sobre users/{uid}/notifications, que firestore.rules rechaza para
+      // cualquiera que no sea el propio dueño o un admin -es decir, SIEMPRE
+      // fallaba para un visitante-. Ahora corre en el servidor (Admin SDK
+      // bypassa esa regla). Best-effort: si falla, la página sigue igual
+      // (mismo criterio que antes, solo que ahora el aviso sí puede llegar).
+      if (data.userId) {
+        try {
+          const notify = httpsCallable(getFunctions(), 'notifyWishlistVisitSecure');
+          await notify({ userId: data.userId });
+        } catch (e) {
+          console.error("Error notifying owner:", e);
         }
-      } catch (e) {
-        console.error("Error notifying owner:", e);
       }
     };
 
