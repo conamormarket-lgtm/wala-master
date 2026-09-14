@@ -117,14 +117,21 @@
   justify-content: center;
 }
 
+/* Antes era una card oscura fija (gradiente carbón + texto blanco) sin
+   relación con el resto de la página, que es clara — se leía como si
+   "esa zona" se hubiera quedado en modo noche. Ahora usa los mismos
+   tokens --gris-/--blanco que .identityHeader (misma superficie, borde y
+   sombra), así que en modo claro combina con el resto y en modo oscuro
+   se voltea sola, sin bloque [data-theme='dark'] aparte. */
 .walletBanner {
-  background: linear-gradient(135deg, #111827 0%, #374151 100%);
+  background: var(--blanco);
+  border: 1px solid var(--gris-borde);
   border-radius: 20px;
   padding: 2rem;
-  color: white;
+  color: var(--gris-texto-principal);
   text-align: center;
   margin-bottom: 2rem;
-  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.2);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
 }
@@ -134,7 +141,7 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   font-weight: 700;
-  color: #9ca3af;
+  color: var(--gris-texto-secundario);
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -150,7 +157,6 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 /* Moneda: mismo 🪙 emoji que Header (badge "Tus monedas"), MisionesPage,
@@ -160,7 +166,7 @@
 .coinEmoji {
   font-size: 2.75rem;
   line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
 }
 
 /* "Monedas" junto al monto — mismo patrón que .balanceCurrency de
@@ -168,7 +174,7 @@
 .walletCurrency {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--gris-texto-secundario);
   align-self: flex-end;
   padding-bottom: 8px;
 }
@@ -176,13 +182,13 @@
 .walletEspera {
   margin-top: 0.5rem;
   font-size: 0.85rem;
-  color: #fbbf24;
+  color: #d97706;
   font-weight: 600;
 }
 
 .referralBox {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--gris-fondo);
+  border: 1px solid var(--gris-borde);
   border-radius: 12px;
   padding: 1rem;
   margin-top: 1.5rem;
@@ -195,7 +201,7 @@
   font-family: monospace;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--gris-texto-principal);
   letter-spacing: 2px;
 }
 
@@ -367,12 +373,11 @@
    --danger-, que se voltean solos en oscuro (variables.css / tokens.css);
    por eso ya no hace falta un bloque [data-theme='dark'] aparte para ellas.
    Lo que queda aquí es SOLO lo que de verdad necesita un valor propio en
-   oscuro: colores semánticos (verde/ámbar de los badges) que no forman
-   parte de la paleta gris/violeta, la superficie "elevada" de los inputs
-   (para que no se fundan con el fondo de la card), y el texto de error
-   (un rojo más claro para legibilidad sobre fondo oscuro). El .walletBanner
-   ya es oscuro por diseño (gradiente carbón con texto claro): se conserva
-   tal cual porque es legible en ambos modos.
+   oscuro: colores semánticos (verde/ámbar de los badges y de "monedas en
+   espera") que no forman parte de la paleta gris/violeta, la superficie
+   "elevada" de los inputs (para que no se fundan con el fondo de la card),
+   y el texto de error (un rojo más claro para legibilidad sobre fondo
+   oscuro).
    ═════════════════════════════════════════════════════════════════════════ */
 
 :global([data-theme='dark']) .identityHeader {
@@ -385,6 +390,10 @@
 }
 :global([data-theme='dark']) .identityBadgeWarn {
   background: rgba(217, 119, 6, 0.18);
+  color: #fbbf24;
+}
+
+:global([data-theme='dark']) .walletEspera {
   color: #fbbf24;
 }
 
