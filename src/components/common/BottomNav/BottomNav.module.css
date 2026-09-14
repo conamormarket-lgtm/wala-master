@@ -36,6 +36,11 @@
     /* Horizontal safe areas */
     padding-left: max(0px, var(--safe-left, 0px));
     padding-right: max(0px, var(--safe-right, 0px));
+    /* Nav de chrome, no texto para seleccionar. Mismo fix que .header
+       (Header.module.css): evita el cursor de selección nativo del
+       navegador al hacer click en las etiquetas ("Inicio", "Tienda"...). */
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   /* Fallback de contraste (WCAG): sin backdrop-filter, fondo casi opaco

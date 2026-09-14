@@ -7,6 +7,10 @@
   top: 0;
   width: 100%;
   border-bottom: 2px solid #e31837; /* El color rojo principal de Wala */
+  /* Barra de chrome (botones "Panel"/"Activar Editor Visual"), no texto para
+     seleccionar. Mismo fix que .header (Header.module.css). */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .adminBarContainer {

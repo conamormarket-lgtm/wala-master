@@ -14,6 +14,10 @@
   box-shadow: 0 4px 18px rgba(228, 89, 110, 0.45);
   animation: bounce 2.4s ease-in-out infinite;
   transition: box-shadow 0.25s ease, transform 0.18s ease;
+  /* Botón flotante = chrome de interfaz. Mismo fix que .header (Header.module.css):
+     evita el cursor de selección nativo del navegador al hacer click. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -13,6 +13,11 @@
   justify-content: center;
   cursor: pointer;
   transition: transform 0.2s;
+  /* Botón flotante = chrome de interfaz, no texto para seleccionar. Mismo
+     fix que .header: evita el cursor de selección nativo del navegador al
+     hacer click (ver Header.module.css .header). */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .fab img {
@@ -71,6 +76,11 @@
   box-shadow: 0 20px 44px rgba(17, 24, 39, 0.2);
   box-sizing: border-box;
   text-align: center;
+  /* Título, subtítulo, stats y botones son chrome de interfaz, no contenido
+     para copiar. NO afecta al input de evidencia: los navegadores exceptúan
+     <input>/<textarea> de esta regla heredada (ver .header). */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .closeBtn {
