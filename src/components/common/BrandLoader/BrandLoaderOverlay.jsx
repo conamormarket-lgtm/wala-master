@@ -87,44 +87,30 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
   useLayoutEffect(() => {
     if (useBrand || !show) return undefined;
     // Anclamos el círculo al BORDE INFERIOR real del header, no al top de
-    // #main-content-area medido una sola vez. En el primer commit el header
-    // todavía puede estar creciendo (las categorías/marcas cargan async): una
-    // única medición temprana lo deja corto y el círculo termina tapando parte
-    // del header, que se ve "lavado". Medimos el header (que es lo que cambia
-    // de alto), re-medimos en los próximos frames y lo observamos con
-    // ResizeObserver para que el tope siga al header mientras crece.
+    // #main-content-area medido una sola vez.
+    // El header suele MONTARSE o crecer DESPUÉS de que este overlay ya midió
+    // (isHeaderVisible arranca en false, las categorías/marcas cargan async).
+    // Una medición puntual —aunque re-mida un par de frames— se queda con el
+    // borde del AdminBar y el círculo termina tapando el header. Para que el
+    // tope siga al header pase lo que pase, re-medimos en CADA frame mientras
+    // el loader está visible: es un puñado de getBoundingClientRect por frame,
+    // solo durante la carga, y elimina toda condición de carrera de layout.
+    let raf;
     const medir = () => {
       const header = document.querySelector('header');
       const main = document.getElementById('main-content-area');
       let top = 0;
       if (header) top = header.getBoundingClientRect().bottom;
       else if (main) top = main.getBoundingClientRect().top;
-      setContentTop(Math.max(0, Math.round(top)));
+      setContentTop((prev) => {
+        const next = Math.max(0, Math.round(top));
+        return next === prev ? prev : next;
+      });
+      raf = requestAnimationFrame(medir);
     };
     medir();
-    // Dos frames extra: el layout del header suele asentarse justo después del
-    // primer paint (fuentes, safe-area, altura de la barra admin).
-    let raf1;
-    let raf2;
-    raf1 = requestAnimationFrame(() => {
-      medir();
-      raf2 = requestAnimationFrame(medir);
-    });
-
-    let ro;
-    const header = document.querySelector('header');
-    if (header && typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(medir);
-      ro.observe(header);
-    }
-    window.addEventListener('resize', medir);
-    window.addEventListener('scroll', medir, { passive: true });
     return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-      if (ro) ro.disconnect();
-      window.removeEventListener('resize', medir);
-      window.removeEventListener('scroll', medir);
+      cancelAnimationFrame(raf);
     };
   }, [useBrand, show]);
 
@@ -242,7 +228,10 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
                   zIndex: 99999, transformOrigin: 'center',
                   pointerEvents: effectiveShow ? 'auto' : 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.98) 100%)',
+                  // Fondo por TEMA: antes estaba hardcodeado en blanco y en modo
+                  // oscuro producía un flash blanco al cargar. --color-bg lo
+                  // publica el tema (claro/oscuro).
+                  background: 'var(--color-bg, #fff)',
                 }
           }
           initial={false}
