@@ -238,13 +238,6 @@
   flex: 0 0 auto;
 }
 
-/* Pausa por stock (ámbar). */
-.alertaWarn {
-  color: #b45309;
-  background: rgba(217, 119, 6, 0.12);
-  border-color: rgba(217, 119, 6, 0.28);
-}
-
 /* Deuda pendiente (rojo, es un enlace al detalle para pagar). */
 .alertaDeuda {
   color: #b91c1c;

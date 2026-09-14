@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { PackageSearch, PauseCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { PackageSearch, AlertTriangle, XCircle } from 'lucide-react';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
@@ -378,14 +378,15 @@ const CuentaRastreoPage = () => {
                   </p>
                 </div>
 
-                {/* Señales especiales visibles (pausa / deuda / anulado). */}
-                {(r.isProblemaStock || r.tieneDeuda || r.esAnulado) && (
+                {/* Señales especiales visibles (deuda / anulado). Antes había
+                    también un chip "Pausa por stock" -pedido a mano: quitarlo,
+                    que la única señal de esa situación sea el badge principal
+                    de arriba, que ya dice "En Preparación" (ver
+                    getEtapaBadgeLabel/getQueueStage en utils/constants.js).
+                    isProblemaStock se sigue calculando arriba: todavía hace
+                    falta para la combinación con deuda ("PAGAR DEUDA"). */}
+                {(r.tieneDeuda || r.esAnulado) && (
                   <div className={glass.alertas}>
-                    {r.isProblemaStock && (
-                      <span className={`${glass.alerta} ${glass.alertaWarn}`}>
-                        <PauseCircle size={15} aria-hidden="true" /> Pausa por stock
-                      </span>
-                    )}
                     {r.tieneDeuda && (
                       <Link to={`/cuenta/pedidos/${r.id}`} className={`${glass.alerta} ${glass.alertaDeuda}`}>
                         <AlertTriangle size={15} aria-hidden="true" />
