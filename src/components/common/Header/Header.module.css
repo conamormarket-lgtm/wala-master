@@ -183,7 +183,9 @@
      solo se desliza unos px, sensacion de "abrirse desde el link" en vez
      de aparecer separado. */
   transform: translateY(4px);
-  transition: opacity 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.2s;
+  /* Se anima también el ancho para que "Ver todas las marcas" expanda suave el
+     panel (de 5 marcas a todas en columnas) en vez de saltar de golpe. */
+  transition: opacity 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.2s, min-width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), max-width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   border: 1px solid var(--gris-borde);
   z-index: 102;
   margin-top: 2px;
@@ -276,9 +278,12 @@
   color: var(--rojo-principal);
 }
 
-/* "Ver todas las marcas" / "Ver menos": es un <button> (alterna la vista), pero
-   debe leerse igual que el CTA rojo que era antes. Reset del <button> nativo. */
+/* "Ver todas las marcas" / "Ver menos": es un <button> (expande/colapsa la
+   vista). Reset del <button> nativo + look de CTA con flechita animada. */
 .verTodasMarcasBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   background: none;
   border: none;
   padding: 0.25rem 0;
@@ -287,36 +292,63 @@
   color: var(--rojo-principal);
   cursor: pointer;
   text-align: left;
-  width: 100%;
 }
 .verTodasMarcasBtn:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Item que envuelve el botón: separado como pie del panel. */
+.verTodasMarcasItem {
+  margin-top: 0.35rem;
 }
 
 /* Panel ancho "Ver todas": TODAS las marcas repartidas en columnas (estilo
    Falabella/Sodimac). Solo desktop; en mobile el menú ya se apila full-width. */
 @media (min-width: 769px) {
   .megaMenuBrandsWide {
-    min-width: 560px;
+    min-width: 580px;
     max-width: 640px;
   }
+  .megaMenuBrandsWide .megaMenuContent {
+    /* Aparición suave del contenido nuevo al ensancharse el panel. */
+    animation: brandsWideIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
   .megaMenuBrandsWide .megaMenuContent ul {
-    /* column-count no funciona sobre flex: se pasa a block para las columnas. */
+    /* column-count no funciona sobre flex: se pasa a block para las columnas.
+       Separadores sutiles entre columnas para que se lea como grilla. */
     display: block;
     column-count: 3;
-    column-gap: 1.5rem;
+    column-gap: 2rem;
+    column-rule: 1px solid var(--gris-borde);
   }
   .megaMenuBrandsWide .megaMenuContent li {
     break-inside: avoid;
     margin-bottom: 0.15rem;
   }
+  /* Cada marca como "pill" con hover: fondo suave + desplazamiento a la derecha,
+     en vez de solo cambiar de color el texto. Se ve como un menú diseñado. */
+  .megaMenuBrandsWide .megaMenuContent li a {
+    padding: 0.45rem 0.6rem;
+    border-radius: 10px;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  }
+  .megaMenuBrandsWide .megaMenuContent li a:hover {
+    background-color: var(--gris-fondo, #f5f5f7);
+    transform: translateX(3px);
+  }
   /* El toggle ocupa todo el ancho, separado como pie del panel. */
   .megaMenuBrandsWide .verTodasMarcasItem {
     column-span: all;
-    margin-top: 0.75rem;
-    padding-top: 0.6rem;
+    margin-top: 0.85rem;
+    padding-top: 0.7rem;
     border-top: 1px solid var(--gris-borde);
   }
+}
+
+@keyframes brandsWideIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Item del desplegable en el que YA estas: la marca de la pagina abierta o la

@@ -670,14 +670,17 @@ const Header = () => {
 
                           {link.isBrandAuto && (
                             <li className={styles.verTodasMarcasItem}>
-                              {/* Ya NO navega a "/": alterna entre la vista
-                                  compacta (5 marcas) y el panel ancho con TODAS
-                                  las marcas en columnas. El menú no se cierra al
-                                  expandir porque el cursor sigue dentro del
-                                  contenedor (el panel solo crece). */}
+                              {/* Ya NO navega a "/": expande la vista compacta
+                                  (5 marcas) al panel ancho con TODAS las marcas
+                                  en columnas. Se expande al PASAR EL MOUSE (se
+                                  siente natural, sin el "salto" del click) y
+                                  queda fijado; "Ver menos" (o cerrar el menú)
+                                  vuelve a la vista compacta. El click también
+                                  alterna, para touch/teclado. */}
                               <button
                                 type="button"
                                 className={styles.verTodasMarcasBtn}
+                                onMouseEnter={() => setShowAllBrands(true)}
                                 onClick={() => setShowAllBrands(v => !v)}
                                 aria-expanded={showAllBrands}
                               >
