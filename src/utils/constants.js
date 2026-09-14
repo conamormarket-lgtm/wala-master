@@ -60,23 +60,35 @@ export function estadoToKey(estado) {
 
 /**
  * Normaliza el estado para detectar en qué cola se encuentra (para casos como "LISTO PARA ...").
+ *
+ * "Pausa por stock" cuenta como parte de la etapa de preparación (el pedido
+ * sigue ahí, solo detenido esperando insumos) — pedido a mano: que se lea
+ * "En Preparación" en vez de exponer el motivo interno del taller.
  */
 export function getQueueStage(estado) {
   if (estado == null || estado === '') return null;
   const str = String(estado).toLowerCase();
   if (str.includes('diseno') || str.includes('diseño') || str.includes('diseñar')) return 'diseno';
   if (str.includes('impresion') || str.includes('impresión') || str.includes('imprimir')) return 'impresion';
-  if (str.includes('preparacion') || str.includes('preparación') || str.includes('preparar')) return 'preparacion';
+  if (str.includes('preparacion') || str.includes('preparación') || str.includes('preparar') || str.includes('stock')) return 'preparacion';
   if (str.includes('estampado') || str.includes('estampar')) return 'estampado';
   if (str.includes('empaquetado') || str.includes('empaquetar')) return 'empaquetado';
   return null;
 }
 /**
  * Devuelve el texto a mostrar en el badge de etapa. Si no está en el mapeo, devuelve el estado tal cual (capitalizado).
+ *
+ * Antes solo probaba estadoToKey (normaliza espacios/tildes, sin más) — un
+ * estado como "Listo para preparar" no calzaba con ninguna key del mapeo y
+ * el badge terminaba mostrando el texto crudo del ERP tal cual. getQueueStage
+ * SÍ reconoce esas variantes por substring (mismo criterio que ya usa el
+ * stepper de Timeline.jsx para elegir el paso "actual"); probarlo primero
+ * acá evita que el badge y el stepper cuenten una historia distinta para el
+ * mismo pedido.
  */
 export function getEtapaBadgeLabel(estado) {
   if (estado == null || estado === '') return 'Pendiente';
-  const key = estadoToKey(estado) ?? '';
+  const key = getQueueStage(estado) || estadoToKey(estado) || '';
   return ESTADO_BADGE_LABEL[key] ?? ESTADO_BADGE_LABEL[key.replace(/[íi]/g, 'i')] ?? (estado || 'Pendiente');
 }
 
