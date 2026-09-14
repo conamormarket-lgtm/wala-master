@@ -210,25 +210,29 @@
   gap: 1.5rem;
 }
 
-/* Envuelve cada <PremiumProductCard> del grid con un "marco" violeta tenue:
-   la MISMA tarjeta que la Tienda (para el espaciado/comportamiento correcto
-   del agregado rápido), pero la lista de deseos necesita su propia
-   identidad visual y no verse como un catálogo cualquiera. El marco es
-   aditivo -no toca PremiumProductCard.module.css, así que la Tienda real
-   sigue igual- y también posiciona el badge "Ya te lo regalaron" y el pie
-   "Guardado hace...". */
+/* Envuelve cada <PremiumProductCard> del grid: la MISMA tarjeta que la
+   Tienda (para el espaciado/comportamiento correcto del agregado rápido),
+   pero la lista de deseos necesita algo de identidad propia sin dejar de
+   verse "de la casa". Un relleno lila sólido (probado primero) se veía como
+   una caja de color pegada encima del catálogo -no calzaba con el resto del
+   sitio, que casi no usa fondos de color plano-. Se reemplaza por una
+   superficie NEUTRA (misma que cualquier card del sitio) con un borde y una
+   sombra violeta MUY tenues, que solo se notan más al pasar el cursor: la
+   marca aparece como un detalle, no como un bloque de color. También
+   posiciona el badge "Ya te lo regalaron" y el pie "Guardado hace...". */
 .cardSlot {
   position: relative;
-  padding: 10px 10px 2.25rem;
-  border-radius: calc(var(--radio-grande, 16px) + 10px);
-  background: var(--violet-50, #f5f3ff);
-  border: 1px solid var(--violet-100, #ede9fe);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  padding: 8px 8px 2.25rem;
+  border-radius: calc(var(--radio-grande, 16px) + 8px);
+  background: var(--color-surface);
+  border: 1px solid var(--gris-borde);
+  box-shadow: var(--sombra-suave);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .cardSlot:hover {
-  background: var(--violet-100, #ede9fe);
   border-color: var(--violet-200, #ddd6fe);
+  box-shadow: 0 10px 24px -14px rgba(139, 92, 246, 0.35), var(--sombra-suave);
 }
 
 /* "Guardado hace...": lo único que distingue esta tarjeta de una del
@@ -394,16 +398,12 @@
    NO usa esos tokens: los botones de color fijo y el badge "no disponible".
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* El "marco" violeta de cada tarjeta (--violet-50/100/200 son una escala fija,
-   NO theme-aware): en oscuro se vuelve translúcido de marca, mismo criterio
-   que los botones de tinte suave de abajo. */
-:global([data-theme='dark']) .cardSlot {
-  background: var(--primary-light);
-  border-color: var(--color-border);
-}
+/* .cardSlot ya usa --color-surface/--gris-borde/--sombra-suave (theme-aware);
+   solo el realce violeta del hover necesita su propio ajuste en oscuro
+   (--violet-200 es una escala fija, no se voltea sola). */
 :global([data-theme='dark']) .cardSlot:hover {
-  background: rgba(167, 139, 250, 0.22);
-  border-color: rgba(167, 139, 250, 0.32);
+  border-color: rgba(167, 139, 250, 0.4);
+  box-shadow: 0 10px 24px -14px rgba(167, 139, 250, 0.45), var(--sombra-suave);
 }
 :global([data-theme='dark']) .savedCaption {
   color: var(--primary-hover);

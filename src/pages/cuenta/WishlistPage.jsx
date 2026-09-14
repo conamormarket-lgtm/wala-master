@@ -266,7 +266,18 @@ const WishlistPage = () => {
 
             return (
               <div key={item.productId} className={styles.cardSlot}>
-                <PremiumProductCard product={fullProduct} categories={categories} />
+                {/* "NUEVO" y "X disponibles" son insignias de descubrimiento
+                    (ayudan a decidir QUÉ comprar mientras se explora el
+                    catálogo); acá el producto ya fue elegido a propósito, así
+                    que solo suman ruido. "OFERTA" y "Agotado" sí se quedan
+                    -esos importan en cualquier lado- y también la marca
+                    (currentBrandId sin pasar = se muestra, como en la Tienda). */}
+                <PremiumProductCard
+                  product={fullProduct}
+                  categories={categories}
+                  showNewBadge={false}
+                  showStockBadge={false}
+                />
 
                 {item.isGifted && (
                   <div className={styles.giftedBadge}>¡Ya te lo regalaron! 🎁</div>

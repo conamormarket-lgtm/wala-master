@@ -35,7 +35,20 @@ const hexToRgba = (hex, alpha) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold = false, currentBrandId = null }) => {
+const PremiumProductCard = React.memo(({
+  product,
+  categories = [],
+  isAboveFold = false,
+  currentBrandId = null,
+  // "NUEVO" y "X disponibles" son insignias de DESCUBRIMIENTO (ayudan a decidir
+  // qué comprar mientras se explora el catálogo). En un contexto donde el
+  // producto ya fue elegido a propósito -la lista de deseos- no aportan nada y
+  // solo suman ruido; "OFERTA" y "Agotado" sí siguen importando en cualquier
+  // lado (información accionable sobre el precio/disponibilidad). Por defecto
+  // true: ningún uso existente en la Tienda cambia.
+  showNewBadge = true,
+  showStockBadge = true,
+}) => {
   const { addToCart } = useCart();
   const queryClient = useQueryClient();
   const { thumbnailImageUrl, recordImpression, variantIndex } = useProductThumbnailVariant(product);
@@ -362,10 +375,10 @@ const PremiumProductCard = React.memo(({ product, categories = [], isAboveFold =
 
         {/* Badges - Nude Project / Gymshark style */}
         <div className={styles.badges}>
-          {(typeof product.inStock === 'number' && product.inStock > 0) && (
+          {showStockBadge && (typeof product.inStock === 'number' && product.inStock > 0) && (
             <span className={styles.badgeSold}>{product.inStock} {t('card.disponibles', 'disponibles')}</span>
           )}
-          {isNew && <span className={styles.badgeNew}>{t('card.nuevo', 'NUEVO')}</span>}
+          {showNewBadge && isNew && <span className={styles.badgeNew}>{t('card.nuevo', 'NUEVO')}</span>}
           {product.salePrice && (
             <Badge tone="danger" variant="solid" size="sm">{t('card.oferta', 'OFERTA')}</Badge>
           )}
