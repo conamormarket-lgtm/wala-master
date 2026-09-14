@@ -19,6 +19,58 @@ export const useCart = () => {
 
 const CART_STORAGE_KEY = 'shopping_cart';
 
+/**
+ * Clave de "mismo producto" para deduplicar líneas del carrito: productId +
+ * color + talla + personalización, TODO normalizado (trim/lowercase, y
+ * null/undefined/'' tratados como equivalentes). Un regalo (wishlist pública
+ * / registro de regalos) o un combo SIEMPRE es su propia línea -mismo
+ * criterio que ya usa addToCart- y por eso nunca se fusiona (retorna null).
+ *
+ * Por qué normalizar tan a fondo: dos líneas del MISMO producto sin variantes
+ * pueden llegar con el campo color/size como null en una y '' en otra según
+ * por qué camino se agregaron (fecha del código, quick-add vs. ficha, o un
+ * carrito viejo restaurado desde la nube) — una comparación estricta (===)
+ * las trataba como productos DISTINTOS y terminaban duplicadas en vez de
+ * sumar cantidad en una sola fila.
+ */
+const claveDedupItem = (item) => {
+  if (item.isWishlistGift || item.deliveryDate || item.isComboProduct) return null;
+  const color = String(item.variant?.selectedVariant?.name || item.variant?.color || '').trim().toLowerCase();
+  const size = String(item.variant?.size || '').trim().toLowerCase();
+  const custom = JSON.stringify(item.customization || null);
+  return `${item.productId}__${color}__${size}__${custom}`;
+};
+
+/**
+ * Fusiona líneas duplicadas del carrito (misma claveDedupItem) sumando
+ * cantidades, en vez de dejarlas como filas separadas. Si CUALQUIERA de las
+ * copias estaba seleccionada, la fusionada queda seleccionada (agregar de
+ * nuevo algo marcado "no comprar esta vez" se interpreta como "sí lo quiero
+ * ahora"). Se corre al cargar el carrito (localStorage) y después de
+ * fusionar con la nube, para autolimpiar duplicados de cualquier origen.
+ */
+const consolidarDuplicados = (items) => {
+  if (!Array.isArray(items) || items.length === 0) return items || [];
+  const indicePorClave = new Map();
+  const resultado = [];
+  for (const item of items) {
+    const clave = claveDedupItem(item);
+    if (clave && indicePorClave.has(clave)) {
+      const idx = indicePorClave.get(clave);
+      const existente = resultado[idx];
+      resultado[idx] = {
+        ...existente,
+        quantity: (existente.quantity || 0) + (item.quantity || 0),
+        selected: existente.selected !== false || item.selected !== false,
+      };
+      continue;
+    }
+    if (clave) indicePorClave.set(clave, resultado.length);
+    resultado.push(item);
+  }
+  return resultado;
+};
+
 const snapshotProductReferences = (product, selectedVariant, colorName) => {
   const references = [];
   const seen = new Set();
@@ -70,7 +122,7 @@ export const CartProvider = ({ children }) => {
   const [items, setItems] = useState(() => {
     try {
       const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-      return savedCart ? JSON.parse(savedCart) : [];
+      return savedCart ? consolidarDuplicados(JSON.parse(savedCart)) : [];
     } catch (error) {
       console.error('Error al cargar carrito:', error);
       return [];
@@ -161,17 +213,20 @@ export const CartProvider = ({ children }) => {
         if (!Array.isArray(remoteItems) || remoteItems.length === 0) return;
 
         setItems((prev) => {
-          const mismoItem = (a, b) =>
-            a.productId === b.productId &&
-            (a.variant?.selectedVariant?.name ?? a.variant?.color) === (b.variant?.selectedVariant?.name ?? b.variant?.color) &&
-            a.variant?.size === b.variant?.size &&
-            JSON.stringify(a.customization) === JSON.stringify(b.customization);
-
-          const nuevos = remoteItems.filter(
-            (remoto) => !prev.some((local) => mismoItem(local, remoto))
-          );
-          if (nuevos.length === 0) return prev;
-          return [...prev, ...nuevos];
+          // 1) Limpia PRIMERO los duplicados que ya pudiera tener este dispositivo
+          //    (de cualquier origen, no solo de esta fusión).
+          const propios = consolidarDuplicados(prev);
+          // 2) De lo que trae la nube, solo entra lo que NO esté ya representado
+          //    aquí (por claveDedupItem) — si ya está, es la misma línea synced
+          //    en un reload normal y sumarla de nuevo duplicaría la cantidad.
+          //    Los regalos/combos (clave null) siempre entran, son su propia línea.
+          const clavesLocales = new Set(propios.map(claveDedupItem).filter(Boolean));
+          const nuevosDeLaNube = remoteItems.filter((remoto) => {
+            const clave = claveDedupItem(remoto);
+            return !clave || !clavesLocales.has(clave);
+          });
+          if (nuevosDeLaNube.length === 0) return propios;
+          return consolidarDuplicados([...propios, ...nuevosDeLaNube]);
         });
       } catch (err) {
         console.warn('No se pudo restaurar el carrito guardado en la nube:', err);
