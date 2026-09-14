@@ -450,18 +450,16 @@ export const CartProvider = ({ children }) => {
     }
 
     setItems(prev => {
-      const sameVariant = (a, b) =>
-        a.size === b.size &&
-        (a.selectedVariant?.name ?? a.color) === (b.selectedVariant?.name ?? b.color);
-      // Un REGALO (wishlist pública / registro de regalos por fecha) SIEMPRE crea una
-      // línea NUEVA: no debe fusionarse con un item normal del mismo producto, porque al
-      // deduplicar se perderían deliveryDate / wishlistUserCode. Solo los items normales deduplican.
-      const esRegalo = !!(product.isWishlistGift || product.deliveryDate);
-      const existingIndex = esRegalo ? -1 : prev.findIndex(item => {
-        if (item.productId !== product.id) return false;
-        return sameVariant(item.variant, variant) &&
-          JSON.stringify(item.customization) === JSON.stringify(customization);
-      });
+      // MISMA clave que usan consolidarDuplicados/la fusión con la nube (ver
+      // claveDedupItem arriba): antes esta comparación era su propia lógica
+      // aparte (sameVariant) y comparaba item.variant (ya normalizado, con
+      // color:null) contra el `variant` CRUDO de este llamado (p.ej. {} en un
+      // "agregar todo" -> color:undefined). null !== undefined, así que el
+      // MISMO producto sin variantes terminaba en una fila nueva cada vez en
+      // vez de sumar cantidad. claveDedupItem normaliza los dos lados igual,
+      // y ya trae la regla de "un regalo/combo siempre es su propia línea".
+      const clave = claveDedupItem(cartItem);
+      const existingIndex = clave ? prev.findIndex(item => claveDedupItem(item) === clave) : -1;
 
       // "Comprar ahora": deja seleccionado SOLO este item (los demás permanecen en
       // el carrito pero deseleccionados), para que el checkout pague únicamente este.
