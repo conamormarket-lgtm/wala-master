@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { getWishlistByUserId, addWishlistItem, removeWishlistItem, createWishlist } from '../services/wishlist';
+import { getWishlistByUserId, addWishlistItem, removeWishlistItem, createWishlist, syncWishlistUserCode } from '../services/wishlist';
 
 const WishlistContext = createContext();
 
@@ -27,9 +27,15 @@ export const WishlistProvider = ({ children }) => {
       
       setLoading(true);
       const { data, error } = await getWishlistByUserId(user.uid);
-      
+
       if (data && data.items) {
         setWishlistItems(data.items);
+        // Autoreparación: si el referralCode del perfil cambió desde que se
+        // creó la wishlist, userCode se quedó desalineado y "Compartir mi
+        // lista" arma un link que ya no encuentra nada (ver syncWishlistUserCode).
+        if (data.userCode !== userProfile.referralCode) {
+          syncWishlistUserCode(user.uid, userProfile.referralCode);
+        }
       } else if (!error && !data) {
         // Create an empty wishlist if it doesn't exist
         await createWishlist(user.uid, userProfile.referralCode);

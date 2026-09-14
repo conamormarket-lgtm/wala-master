@@ -17,6 +17,30 @@ export const getWishlistByUserCode = async (userCode) => {
   }
 };
 
+/**
+ * Realinea wishlists/{userId}.userCode con el referralCode ACTUAL del perfil.
+ *
+ * POR QUÉ EXISTE: userCode se graba UNA sola vez, al crear la wishlist
+ * (createWishlist), con el referralCode que el perfil tenía en ESE momento.
+ * Si el referralCode del perfil cambia después (se detectó un caso real: el
+ * perfil quedó con un código distinto al que tenía la wishlist ya creada),
+ * userCode se queda con el valor viejo PARA SIEMPRE — nada lo vuelve a tocar.
+ * El link "Compartir mi lista" siempre arma la URL con el referralCode
+ * ACTUAL (WishlistPage.jsx), así que ese link deja de encontrar la lista:
+ * "Lista no encontrada" para un usuario que sí tiene productos guardados.
+ *
+ * Se llama (best-effort, no bloquea la carga) cada vez que se lee la wishlist
+ * propia y el código no coincide, para que se autorepare sola.
+ */
+export const syncWishlistUserCode = async (userId, currentReferralCode) => {
+  if (!userId || !currentReferralCode) return;
+  try {
+    await updateDoc(doc(db, WISHLIST_COLLECTION, userId), { userCode: currentReferralCode });
+  } catch (error) {
+    console.error("Error resincronizando userCode de la wishlist:", error);
+  }
+};
+
 export const getWishlistByUserId = async (userId) => {
   try {
     const docRef = doc(db, WISHLIST_COLLECTION, userId);
