@@ -8,8 +8,15 @@
   justify-content: space-between;
 }
 
+/* flex:1 (flex-basis:0%) dejaba que los 8 pasos se encogieran para caber
+   TODOS en el ancho de la tarjeta -en vez de activar el overflow-x:auto del
+   contenedor-, así que en pedidos con muchas etapas el texto de cada paso
+   quedaba amontonado/pisado contra el de al lado. Con flex:0 0 auto +
+   min-width, los pasos mantienen su ancho real: si no entran todos, ahora sí
+   scrollea en vez de apretarse. */
 .item {
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 92px;
   display: flex;
   flex-direction: column;
   align-items: center;
