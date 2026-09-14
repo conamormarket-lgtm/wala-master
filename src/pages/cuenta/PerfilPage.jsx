@@ -24,28 +24,6 @@ const Icons = {
   Shirt: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" /></svg>,
 };
 
-const KapiSolCoin = () => (
-  <div className={styles.coinContainer}>
-    <div className={styles.coinFlip}>
-      <div className={styles.coinFace}>
-        <svg viewBox="0 0 100 100" className={styles.coinSvg}>
-          <path d="M20,60 Q20,30 50,30 Q80,30 80,60 Q80,80 65,90 Q50,95 35,90 Q20,80 20,60 Z" fill="#6B4423" />
-          <circle cx="35" cy="55" r="4" fill="#000" />
-          <circle cx="65" cy="55" r="4" fill="#000" />
-          <path d="M45,70 Q50,75 55,70" stroke="#000" strokeWidth="3" fill="none" />
-          <rect x="45" y="65" width="10" height="5" rx="2" fill="#3E2723" />
-        </svg>
-      </div>
-      <div className={`${styles.coinFace} ${styles.coinBack}`}>
-        <svg viewBox="0 0 100 100" className={styles.coinSvg}>
-          <path d="M20,70 L30,40 L45,60 L60,30 L80,70 Z" fill="#8B6508" stroke="#4A3600" strokeWidth="2" />
-          <path d="M20,70 L80,70 L80,80 L20,80 Z" fill="#6B4423" />
-        </svg>
-      </div>
-    </div>
-  </div>
-);
-
 const PerfilPage = () => {
   const { user, userProfile, updateUserProfile } = useAuth();
   const toast = useGlobalToast();
@@ -89,8 +67,8 @@ const PerfilPage = () => {
   // código de esta pantalla podía llevar a un código que nadie más reconocía.
   // Usamos el real, con el mismo fallback visual solo por si aún no cargó.
   const referralCode = userProfile?.referralCode || `KS-${(user?.uid || 'USER').substring(0, 6).toUpperCase()}`;
-  const kapiSolBalance = userProfile?.monedas || 0;
-  const kapiSolEspera = userProfile?.monedasEnEspera || 0;
+  const monedasBalance = userProfile?.monedas || 0;
+  const monedasEnEspera = userProfile?.monedasEnEspera || 0;
 
   useEffect(() => {
     if (userProfile) {
@@ -219,11 +197,13 @@ const PerfilPage = () => {
           <div className={styles.walletBanner}>
             <div className={styles.walletTitle}><Icons.Gift /> Recompensas</div>
             <h4 className={styles.walletAmount}>
-              <KapiSolCoin /> {kapiSolBalance.toLocaleString()} <span style={{ fontSize: '1.5rem', alignSelf: 'flex-end', paddingBottom: '8px' }}>KS</span>
+              <span className={styles.coinEmoji} aria-hidden="true">🪙</span>
+              {monedasBalance.toLocaleString()}
+              <span className={styles.walletCurrency}>Monedas</span>
             </h4>
-            {kapiSolEspera > 0 && (
-              <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#fbbf24', fontWeight: 600 }}>
-                + {kapiSolEspera.toLocaleString()} KS en espera ⏳
+            {monedasEnEspera > 0 && (
+              <div className={styles.walletEspera}>
+                + {monedasEnEspera.toLocaleString()} monedas en espera ⏳
               </div>
             )}
             <div className={styles.referralBox}>
