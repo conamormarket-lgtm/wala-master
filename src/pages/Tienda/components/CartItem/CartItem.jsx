@@ -6,6 +6,9 @@ import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { T } from '../../../../i18n/useTranslatedText';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import { queLeFalta } from '../../../../utils/cartValidation';
+// Design System "Aurora Violeta Serena": mismo Badge que el resto del sitio
+// para la etiqueta "Combo" (antes un <span> con color hardcodeado aparte).
+import { Badge } from '../../../../components/ui';
 import styles from './CartItem.module.css';
 
 const CartItem = ({ item, incompleto = false }) => {
@@ -71,7 +74,11 @@ const CartItem = ({ item, incompleto = false }) => {
         <Link to={`/producto/${item.productId}`} className={styles.name}>
           {/* Nombre dinámico del producto (viene de la BD): se traduce con <T>. */}
           <T>{item.productName}</T>
-          {isCombo && <span className={styles.comboBadge}>Combo</span>}
+          {isCombo && (
+            <Badge tone="violet" variant="soft" size="sm" className={styles.comboBadge}>
+              Combo
+            </Badge>
+          )}
         </Link>
         
         {isCombo && item.comboItems && item.comboItems.length > 0 && (

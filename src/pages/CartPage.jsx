@@ -14,8 +14,10 @@ const CartPage = () => {
 
   return (
     <div className={styles.container}>
-      {/* Fondo de marca MUY suave detrás del contenido (decorativo, no interactivo). */}
-      <AuroraBackground variant="subtle" intensity={0.16} />
+      {/* Fondo de marca MUY suave detrás del contenido (decorativo, no interactivo).
+          Misma intensidad que Checkout, para que el paso previo del embudo de
+          compra se sienta como la MISMA página, no como un salto de estilo. */}
+      <AuroraBackground variant="subtle" intensity={0.18} />
       <div className={styles.header}>
         <h1><T>Carrito de Compras</T></h1>
         {!isEmpty && (

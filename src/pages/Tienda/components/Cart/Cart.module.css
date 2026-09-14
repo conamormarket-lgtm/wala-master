@@ -1,7 +1,14 @@
+/* ═════════════════════════════════════════════════════════════════════════
+   CART — Design System "Aurora Violeta Serena"
+   ---------------------------------------------------------------------------
+   Mismo patrón de layout que CheckoutPage (columna de items + resumen en
+   GlassCard sticky), para que el carrito y el checkout se sientan el MISMO
+   paso del embudo de compra en vez de dos pantallas con estilos distintos.
+   ═════════════════════════════════════════════════════════════════════════ */
+
 .cartContainer {
   display: flex;
   flex-direction: column;
-  height: 100%;
   max-width: var(--container-default, 1200px);
   margin: 0 auto;
   padding: 2rem;
@@ -13,7 +20,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .title {
@@ -26,14 +33,9 @@
 }
 
 .pendingBadge {
-  font-size: 0.875rem;
-  background-color: #fff3cd;
-  color: #856404;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  border: 1px solid #ffeeba;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  /* El tamaño/color de estado ya los aporta <Badge tone="warning">; solo se
+     ajusta el peso para que combine con el título. */
+  font-weight: 700;
 }
 
 .clearBtn {
@@ -50,13 +52,33 @@
   color: var(--rojo-principal);
 }
 
+/* ── Layout de dos columnas (idéntico a CheckoutPage.layout) ──
+   Items a la izquierda, resumen sticky a la derecha en escritorio. */
+.layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.itemsColumn {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.summaryColumn {
+  position: sticky;
+  top: calc(var(--header-height, 72px) + 1rem);
+}
+
 .pendingNotice {
   background-color: #fff3cd;
   border: 1px solid #ffeeba;
   color: #856404;
   padding: 1rem 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  border-radius: var(--radio-medio, 12px);
+  margin-bottom: 1.5rem;
   display: flex;
   gap: 1rem;
   align-items: flex-start;
@@ -79,41 +101,27 @@
 }
 
 .itemList {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding-right: 0.5rem;
-  margin-bottom: 2rem;
-}
-
-/* Aviso discreto: items marcados como "no comprar esta vez". */
-.deselectedNotice {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: var(--gris-fondo);
-  border: 1px dashed var(--gris-borde);
-  color: var(--gris-texto-secundario);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  margin-bottom: 1.5rem;
+  gap: 1rem;
 }
 
 /* ── Barra de selección ──
-   Decide qué se paga en esta compra sin sacar nada del carrito. */
+   Vidrio suave (mismo token que las superficies glass del sitio) en vez del
+   gris plano de antes: se lee como parte del mismo sistema, no un widget
+   aparte. Decide qué se paga en esta compra sin sacar nada del carrito. */
 .selectionBar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
-  padding: 0.625rem 1rem;
-  margin-bottom: 1rem;
-  border: 1px solid var(--gris-borde);
-  border-radius: 8px;
-  background-color: var(--gris-fondo);
+  padding: 0.75rem 1.125rem;
+  margin-bottom: 1.25rem;
+  border: var(--glass-border);
+  border-radius: var(--radio-medio, 12px);
+  background: var(--glass-bg-tint);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   font-size: 0.875rem;
 }
 
@@ -132,12 +140,12 @@
   width: 19px;
   height: 19px;
   cursor: pointer;
-  accent-color: var(--rojo-principal);
+  accent-color: var(--primary-color, #6d28d9);
   margin: 0;
 }
 
 .selectAll input:focus-visible {
-  outline: 2px solid var(--rojo-principal);
+  outline: 2px solid var(--primary-color, #6d28d9);
   outline-offset: 2px;
 }
 
@@ -161,11 +169,11 @@
 }
 
 .bulkRemove:hover {
-  color: var(--rojo-principal);
+  color: var(--danger, #ef4444);
 }
 
 .bulkRemove:focus-visible {
-  outline: 2px solid var(--rojo-principal);
+  outline: 2px solid var(--primary-color, #6d28d9);
   outline-offset: 2px;
 }
 
@@ -183,7 +191,7 @@
 @media (max-width: 480px) {
   .selectionBar {
     gap: 0.5rem 0.75rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.625rem 0.875rem;
   }
 
   .bulkRemove {
@@ -197,14 +205,14 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: rgba(217, 35, 45, 0.07);
+  background-color: var(--danger-soft, rgba(217, 35, 45, 0.07));
   border: 1px solid rgba(217, 35, 45, 0.35);
   color: #b91c1c;
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radio-medio, 12px);
   font-size: 0.875rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 :global([data-theme='dark']) .incompletoNotice {
@@ -212,33 +220,61 @@
   color: #fca5a5;
 }
 
+/* ── Carrito vacío ── */
 .emptyCart {
+  margin: 2rem auto;
+  max-width: 480px;
+  text-align: center;
+}
+
+.emptyCartBody {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  text-align: center;
-  gap: 1.5rem;
-  height: 60vh;
+  gap: 1.25rem;
+  padding: 2rem 1rem;
+}
+
+.emptyCartBody h2 {
+  margin: 0;
+  color: var(--gris-texto-principal);
 }
 
 .emptyIcon {
   font-size: 4rem;
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
-.emptyCart p {
-  font-size: 1.125rem;
+.emptyCartBody p {
+  margin: 0;
+  font-size: 1.0625rem;
   color: var(--gris-texto-secundario);
 }
 
-.summary {
-  background-color: var(--gris-fondo);
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid var(--gris-borde);
-  margin-top: auto;
+/* ── Resumen (GlassCard) ──
+   El wrapper `.summaryColumn` solo posiciona (sticky); el aspecto de vidrio lo
+   trae el propio GlassCard. `.summaryGlass` deja el wrapper que pasa al
+   GlassCard como className sin estilos propios que dupliquen fondo/borde;
+   `.summaryBody` reproduce la disposición vertical que tenía la caja plana. */
+.summaryGlass {
+  width: 100%;
+}
+
+.summaryBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.coinsNotice {
+  margin-bottom: 1rem;
+  background: var(--gold-soft, #fef3c7);
+  color: var(--gold-text, #92400e);
+  padding: 0.75rem;
+  border-radius: var(--radio-medio, 12px);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .row {
@@ -246,6 +282,7 @@
   justify-content: space-between;
   margin-bottom: 0.75rem;
   font-size: 1rem;
+  color: var(--gris-texto-principal);
 }
 
 .row.total {
@@ -258,7 +295,20 @@
   margin-bottom: 1.5rem;
 }
 
-/* RESPONSIVE */
+/* RESPONSIVE ≤ 992px: el resumen deja de flotar al lado y pasa a ir debajo,
+   igual que en Checkout. */
+@media (max-width: 992px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .summaryColumn {
+    position: static;
+  }
+}
+
+/* RESPONSIVE ≤ 768px */
 @media (max-width: 768px) {
   .cartContainer {
     padding: 1.5rem 1rem;
@@ -275,27 +325,19 @@
     padding: 1rem;
   }
 
-  .emptyCart {
-    padding: 2rem 1.25rem;
+  .emptyCartBody {
+    padding: 1.5rem 1rem;
     gap: 1rem;
   }
 
-  .emptyCart p {
+  .emptyCartBody p {
     font-size: 1rem;
-  }
-
-  .summary {
-    padding: 1.5rem;
   }
 }
 
 @media (max-width: 576px) {
   .title {
     font-size: 1.5rem;
-  }
-
-  .summary {
-    padding: 1.25rem;
   }
 
   .row {

@@ -1,5 +1,10 @@
 /* ═══════════════════════════════════════════
-   CART ITEM — Responsive profesional
+   CART ITEM — Design System "Aurora Violeta Serena"
+   ---------------------------------------------------------------------------
+   Cada fila es su propia tarjeta redondeada (antes: filas planas separadas
+   por un simple border-bottom), en línea con las superficies con sombra que
+   usa el resto del sitio (PremiumProductCard, GlassCard). El espaciado entre
+   filas lo aporta el gap de <Stagger> en Cart.module.css .itemList.
    ═══════════════════════════════════════════ */
 
 .item {
@@ -8,8 +13,22 @@
   grid-template-columns: auto 88px 1fr auto auto;
   gap: 0.875rem;
   padding: 1rem;
-  border-bottom: 1px solid var(--gris-borde);
+  background: var(--color-surface);
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio-mediano, 16px);
+  box-shadow: var(--sombra-suave);
   align-items: center;
+  transition: var(--transicion-suave, box-shadow 0.2s ease, transform 0.2s ease);
+}
+
+.item:hover {
+  box-shadow: var(--sombra-media);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item {
+    transition: none;
+  }
 }
 
 /* ── Casilla de selección ── */
@@ -60,7 +79,7 @@
 .imageLink {
   width: 88px;
   height: 88px;
-  border-radius: 8px;
+  border-radius: var(--radio-pequeno, 10px);
   overflow: hidden;
   background-color: var(--gris-fondo);
   flex-shrink: 0;
@@ -97,13 +116,11 @@
   color: var(--rojo-principal);
 }
 
-.pairBadge,
+/* El color/tamaño de la etiqueta "Combo" ya los aporta <Badge>; solo se
+   ajusta la separación respecto al nombre del producto. */
 .comboBadge {
-  font-size: 0.75rem;
-  color: var(--rojo-principal);
-  font-weight: 600;
-  text-transform: uppercase;
   margin-left: 0.5rem;
+  vertical-align: middle;
 }
 
 .comboImage {

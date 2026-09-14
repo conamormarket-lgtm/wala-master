@@ -21,9 +21,13 @@
   gap: 1rem;
 }
 
+/* Misma escala tipográfica que los títulos de sección del home/tienda
+   (--section-title-*, ver theme/tokens.css): que el carrito se sienta
+   parte de la MISMA página, no una pantalla aparte con su propia tipografía. */
 .header h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: var(--section-title-size, clamp(1.35rem, 2.6vw, 1.85rem));
+  font-weight: var(--section-title-weight, 800);
+  letter-spacing: var(--section-title-tracking, -0.02em);
   color: var(--gris-texto-principal);
   margin: 0;
 }
@@ -34,10 +38,6 @@
 @media (max-width: 992px) {
   .container {
     padding: var(--page-padding-md, 1.5rem);
-  }
-
-  .header h1 {
-    font-size: 1.5rem;
   }
 }
 
@@ -56,10 +56,6 @@
     gap: 0.75rem;
     margin-bottom: 1.25rem;
   }
-
-  .header h1 {
-    font-size: 1.375rem;
-  }
 }
 
 /* ══════════════════════════════
@@ -70,10 +66,6 @@
     padding: 0.875rem;
     padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 0.875rem);
   }
-
-  .header h1 {
-    font-size: 1.25rem;
-  }
 }
 
 /* ══════════════════════════════
@@ -83,9 +75,5 @@
   .container {
     padding: 0.75rem;
     padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 0.75rem);
-  }
-
-  .header h1 {
-    font-size: 1.125rem;
   }
 }
