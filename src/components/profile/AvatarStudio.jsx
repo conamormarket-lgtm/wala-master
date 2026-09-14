@@ -13,7 +13,7 @@ import { T } from '../../i18n/useTranslatedText';
 // identidad de PerfilPage, como un círculo pequeño con una insignia de
 // cámara superpuesta (patrón LinkedIn/WhatsApp) — sin título ni descripción
 // repetidos, porque el encabezado ya dice de quién es la foto.
-export default function AvatarStudio({ config, setConfig, onSave, isSaving }) {
+export default function AvatarStudio({ config, setConfig, onSave, isSaving, uid }) {
     const fileInputRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState(null);
@@ -33,10 +33,20 @@ export default function AvatarStudio({ config, setConfig, onSave, isSaving }) {
         e.target.value = '';
         if (!file) return;
 
+        // Las reglas de Storage (firebase/storage.rules) exigen que la ruta sea
+        // users/{tu-propio-uid}/... para poder escribir ahí. Antes esta ruta era
+        // literalmente "users/avatars/..." -"avatars" como si fuera el uid-, así
+        // que SIEMPRE se rechazaba por permisos: la subida nunca funcionaba,
+        // para NINGÚN usuario. Sin uid no hay a dónde subir con permiso.
+        if (!uid) {
+            setUploadError('No se pudo identificar tu cuenta. Refresca la página e inténtalo de nuevo.');
+            return;
+        }
+
         setUploadError(null);
         setIsUploading(true);
         try {
-            const path = 'users/avatars/' + Date.now() + '_' + file.name;
+            const path = `users/${uid}/avatars/${Date.now()}_${file.name}`;
             const { url, error } = await uploadFile(file, path);
             if (error || !url) {
                 setUploadError(error || 'No se pudo subir la foto. Inténtalo de nuevo.');

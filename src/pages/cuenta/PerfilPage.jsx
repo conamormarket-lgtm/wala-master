@@ -7,9 +7,12 @@ import CountrySelect from '../../components/intl/CountrySelect';
 import PhoneIntlInput from '../../components/intl/PhoneIntlInput';
 import { dialCodeByCountry } from '../../constants/countries';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../../constants/documentTypes';
-// Sistema de diseño Walá: superficies de vidrio, botón premium y envoltorios de
-// entrada. SOLO presentación/animación; no alteran la lógica del formulario.
-import { GlassCard, GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
+// Sistema de diseño Walá: superficie de vidrio (la tarjeta, no un botón) y
+// envoltorios de entrada. Los BOTONES usan clases planas propias (.btnSave/
+// .btnCancel más abajo) en vez de GlassButton -su degradado con brillo no
+// calza con el resto del sitio, mismo criterio ya aplicado en Carrito/
+// Wishlist/Header-. SOLO presentación/animación; no alteran la lógica.
+import { GlassCard, Reveal, Stagger, StaggerItem } from '../../components/ui';
 import styles from './PerfilPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -79,7 +82,13 @@ const PerfilPage = () => {
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const referralCode = `KS-${(user?.uid || 'USER').substring(0, 6).toUpperCase()}`;
+  // Antes esta página calculaba su PROPIO código a partir del uid
+  // (`KS-${uid.substring(0,6)}`), distinto del código real que usa el resto
+  // de la app (Referidos, Lista de Deseos compartida): userProfile.referralCode,
+  // generado una sola vez en AuthContext y guardado en Firestore. Copiar el
+  // código de esta pantalla podía llevar a un código que nadie más reconocía.
+  // Usamos el real, con el mismo fallback visual solo por si aún no cargó.
+  const referralCode = userProfile?.referralCode || `KS-${(user?.uid || 'USER').substring(0, 6).toUpperCase()}`;
   const kapiSolBalance = userProfile?.monedas || 0;
   const kapiSolEspera = userProfile?.monedasEnEspera || 0;
 
@@ -193,6 +202,7 @@ const PerfilPage = () => {
           setConfig={setAvatarConfig}
           onSave={handleSaveAvatar}
           isSaving={isAvatarSaving}
+          uid={user.uid}
         />
         <div className={styles.identityText}>
           <h1>{userProfile.displayName || user.displayName || <T>Mi Perfil</T>}</h1>
@@ -289,8 +299,8 @@ const PerfilPage = () => {
                 {error && <div className={styles.errorMessage}>{error}</div>}
 
                 <div className={styles.actionsGroup}>
-                  <GlassButton type="button" variant="ghost" fullWidth onClick={() => setEditing(false)} disabled={loading}>Cancelar</GlassButton>
-                  <GlassButton type="submit" variant="primary" fullWidth loading={loading} disabled={!formValid || loading}>{loading ? 'Guardando...' : 'Guardar'}</GlassButton>
+                  <button type="button" className={styles.btnCancel} onClick={() => setEditing(false)} disabled={loading}>Cancelar</button>
+                  <button type="submit" className={styles.btnSave} disabled={!formValid || loading}>{loading ? 'Guardando...' : 'Guardar'}</button>
                 </div>
               </form>
             ) : (
@@ -306,7 +316,7 @@ const PerfilPage = () => {
                   <div className={styles.errorMessage}><T>Para ver tus pedidos necesitamos tu DNI y número de teléfono.</T></div>
                 )}
                 <div className={styles.actionsGroup}>
-                  <GlassButton variant="primary" fullWidth onClick={() => setEditing(true)}>Editar</GlassButton>
+                  <button type="button" className={styles.btnSave} onClick={() => setEditing(true)}>Editar</button>
                 </div>
               </div>
             )}

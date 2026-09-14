@@ -53,7 +53,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--rojo-principal, #d9232d);
+    /* Mismo violeta plano #8b5cf6 que el resto del sitio (Header, Carrito,
+       PerfilPage) — antes usaba --rojo-principal, que ya es un alias del
+       violeta "token" más oscuro (#6D28D9), una tonalidad distinta. */
+    background: #8b5cf6;
     color: #fff;
     border: 2px solid #fff;
     cursor: pointer;
@@ -62,7 +65,7 @@
 }
 
 .editBadge:hover {
-    background: #c41828;
+    background: #7c3aed;
     transform: scale(1.06);
 }
 
@@ -93,7 +96,7 @@
     font: inherit;
     font-size: 0.78rem;
     font-weight: 700;
-    color: var(--rojo-principal, #d9232d);
+    color: #8b5cf6;
     cursor: pointer;
 }
 
@@ -106,10 +109,14 @@
     cursor: not-allowed;
 }
 
+/* Mensaje de error: antes usaba --rojo-principal (hoy un alias del violeta de
+   marca), así que un error de subida se leía en violeta, no como error. Usa
+   el color semántico de peligro (rojo), consistente con .errorMessage en
+   PerfilPage.module.css. */
 .uploadError {
     margin: 0;
     max-width: 140px;
-    color: var(--rojo-principal, #d9232d);
+    color: var(--danger, #dc2626);
     font-size: 0.72rem;
     font-weight: 600;
     text-align: center;
@@ -130,13 +137,8 @@
 
 :global([data-theme='dark']) .editBadge {
     border-color: var(--color-surface);
-    background: var(--primary-color);
 }
 
-:global([data-theme='dark']) .editBadge:hover {
-    background: var(--primary-hover);
-}
-
-:global([data-theme='dark']) .saveLink {
-    color: var(--primary-color);
+:global([data-theme='dark']) .uploadError {
+    color: #FCA5A5;
 }

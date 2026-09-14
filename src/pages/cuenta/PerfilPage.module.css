@@ -5,23 +5,6 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-.pageHeader {
-  margin-bottom: 2rem;
-}
-
-.pageHeader h1 {
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #111827;
-  margin: 0 0 0.5rem 0;
-}
-
-.pageHeader p {
-  color: #6b7280;
-  font-size: 1.1rem;
-  margin: 0;
-}
-
 /* ── Encabezado de identidad ──
    Avatar + nombre + email + estado, una sola vez, arriba de todo. Antes el
    nombre/email se repetían dentro de "Datos Personales" sin conexión visual
@@ -31,8 +14,8 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(229, 231, 235, 0.7);
+  background: var(--blanco);
+  border: 1px solid var(--gris-borde);
   border-radius: 24px;
   padding: 1.75rem 2rem;
   margin-bottom: 2rem;
@@ -47,14 +30,14 @@
   margin: 0;
   font-size: 1.6rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--gris-texto-principal);
   overflow-wrap: break-word;
 }
 
 .identityEmail {
   margin: 0.2rem 0 0.6rem;
   font-size: 0.95rem;
-  color: #6b7280;
+  color: var(--gris-texto-secundario);
   overflow-wrap: break-word;
 }
 
@@ -91,6 +74,14 @@
   }
 }
 
+/* Columna izquierda (Recompensas): en el grid de escritorio ya toma su ancho
+   del grid-template-columns (380px 1fr) de arriba; min-width:0 evita que el
+   código de referido (monoespaciado, con letter-spacing) empuje la columna
+   más ancha de lo que ese carril del grid le da. */
+.leftColumn {
+  min-width: 0;
+}
+
 /* Encabezado de identidad: apilado y centrado en pantallas chicas. */
 @media (max-width: 640px) {
   .identityHeader {
@@ -100,40 +91,25 @@
   }
 }
 
-.glassCard {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
-  padding: 2rem;
-  border: 1px solid rgba(229, 231, 235, 0.7);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.glassCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.12);
-}
-
 .cardHeader {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--gris-borde);
 }
 
 .cardHeader h3 {
   margin: 0;
   font-size: 1.3rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--gris-texto-principal);
 }
 
 .headerIcon {
-  color: #D9232D;
-  background: rgba(217, 35, 45, 0.1);
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
   padding: 0.5rem;
   border-radius: 12px;
   display: flex;
@@ -248,14 +224,14 @@
 }
 
 .copyBtn {
-  background: #D9232D;
+  background: #8b5cf6;
   border: none;
   border-radius: 10px;
   padding: 0.6rem 1rem;
   color: white;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s, transform 0.2s;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -263,7 +239,7 @@
 
 .copyBtn:hover {
   transform: scale(1.05);
-  background: #E83A43;
+  background: #7c3aed;
 }
 
 .form {
@@ -280,71 +256,44 @@
 
 .formGroup label {
   font-weight: 600;
-  color: #374151;
+  color: var(--gris-texto-principal);
   font-size: 0.9rem;
 }
 
 .formGroup input {
   padding: 0.9rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--gris-borde);
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s ease;
-  background: #f9fafb;
-  color: #111827;
+  background: var(--gris-fondo);
+  color: var(--gris-texto-principal);
 }
 
 .formGroup input:focus {
   outline: none;
-  border-color: #D9232D;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
+  border-color: #8b5cf6;
+  background: var(--blanco);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
 }
 
 /* Select de tipo de documento (mismo aspecto que los inputs del formulario). */
 .select {
   padding: 0.9rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--gris-borde);
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s ease;
-  background: #f9fafb;
-  color: #111827;
+  background: var(--gris-fondo);
+  color: var(--gris-texto-principal);
   cursor: pointer;
 }
 
 .select:focus {
   outline: none;
-  border-color: #D9232D;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(217, 35, 45, 0.1);
-}
-
-.toggleRow {
-  display: flex;
-  background: #f3f4f6;
-  border-radius: 12px;
-  padding: 4px;
-  gap: 4px;
-}
-
-.toggle {
-  flex: 1;
-  padding: 0.75rem;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.toggle.active {
-  background: white;
-  color: #111827;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  border-color: #8b5cf6;
+  background: var(--blanco);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
 }
 
 .infoRow {
@@ -352,7 +301,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--gris-borde);
 }
 
 .infoRow:last-child {
@@ -361,13 +310,13 @@
 
 .infoLabel {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--gris-texto-secundario);
   font-weight: 500;
 }
 
 .infoValue {
   font-size: 1rem;
-  color: #111827;
+  color: var(--gris-texto-principal);
   font-weight: 600;
 }
 
@@ -377,16 +326,12 @@
   margin-top: 1rem;
 }
 
-/* Los GlassButton del sistema de diseño ocupan toda su caja (fullWidth); aquí
-   los hacemos compartir la fila en partes iguales, como hacían los botones
-   originales con flex:1. Aditivo: no cambia ninguna lógica. */
-.actionsGroup > * {
-  flex: 1;
-  min-width: 0;
-}
-
+/* Botones planos: mismo violeta sólido #8b5cf6 / hover #7c3aed que el resto
+   del sitio (Header .primaryButton, Carrito .ctaButton) — nada de gradiente
+   ni pill con brillo (GlassButton), ese estilo quedó descartado esta
+   temporada por no calzar con el look plano establecido. */
 .btnSave {
-  background: #111827;
+  background: #8b5cf6;
   color: white;
   font-weight: 600;
   border: none;
@@ -397,14 +342,19 @@
   flex: 1;
 }
 
-.btnSave:hover {
-  background: #1f2937;
+.btnSave:hover:not(:disabled) {
+  background: #7c3aed;
   transform: translateY(-2px);
 }
 
+.btnSave:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btnCancel {
-  background: #f3f4f6;
-  color: #4b5563;
+  background: var(--gris-hover);
+  color: var(--gris-texto-secundario);
   font-weight: 600;
   border: none;
   padding: 0.9rem;
@@ -414,33 +364,22 @@
   flex: 1;
 }
 
-.btnCancel:hover {
-  background: #e5e7eb;
+.btnCancel:hover:not(:disabled) {
+  background: var(--gris-borde);
   transform: translateY(-2px);
 }
 
-.btnSecondary {
-  background: #fef2f2;
-  color: #D9232D;
-  font-weight: 600;
-  border: none;
-  padding: 0.9rem;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex: 1;
-}
-
-.btnSecondary:hover {
-  background: #fee2e2;
+.btnCancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .errorMessage {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--danger-soft);
+  color: var(--danger-hover, #dc2626);
   padding: 1rem;
   border-radius: 10px;
-  border-left: 4px solid #dc2626;
+  border-left: 4px solid var(--danger);
   font-size: 0.9rem;
   margin-top: 1rem;
 }
@@ -448,35 +387,22 @@
 /* ═════════════════════════════════════════════════════════════════════════
    MODO NOCHE — PerfilPage
    ---------------------------------------------------------------------------
-   Este módulo tiene casi TODOS los colores HARDCODEADOS (hex blancos/grises/
-   negros), así que no hereda la red global de --gris-* y --blanco. Aquí pasamos
-   cada superficie clara a la variable de tema (--color-surface / --color-text /
-   --color-border …) para que en oscuro el texto quede legible y nada quede
-   claro-sobre-claro. NO se tocan tamaños ni layout, solo color/contraste.
-   El .walletBanner ya es oscuro por diseño (gradiente carbón con texto claro):
-   se conserva tal cual porque es legible en ambos modos.
+   La mayoría de las reglas de arriba ya usan los tokens --gris-, --blanco y
+   --danger-, que se voltean solos en oscuro (variables.css / tokens.css);
+   por eso ya no hace falta un bloque [data-theme='dark'] aparte para ellas.
+   Lo que queda aquí es SOLO lo que de verdad necesita un valor propio en
+   oscuro: colores semánticos (verde/ámbar de los badges) que no forman
+   parte de la paleta gris/violeta, la superficie "elevada" de los inputs
+   (para que no se fundan con el fondo de la card), y el texto de error
+   (un rojo más claro para legibilidad sobre fondo oscuro). El .walletBanner
+   ya es oscuro por diseño (gradiente carbón con texto claro): se conserva
+   tal cual porque es legible en ambos modos.
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* Encabezado de página */
-:global([data-theme='dark']) .pageHeader h1 {
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .pageHeader p {
-  color: var(--color-text-muted);
-}
-
-/* Encabezado de identidad (avatar + nombre + email + estado) */
 :global([data-theme='dark']) .identityHeader {
-  background: var(--color-surface);
-  border-color: var(--color-border);
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.55);
 }
-:global([data-theme='dark']) .identityText h1 {
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .identityEmail {
-  color: var(--color-text-muted);
-}
+
 :global([data-theme='dark']) .identityBadgeOk {
   background: rgba(5, 150, 105, 0.18);
   color: #34d399;
@@ -486,109 +412,17 @@
   color: #fbbf24;
 }
 
-/* Tarjeta de cristal -> superficie oscura, borde y sombra de tema */
-:global([data-theme='dark']) .glassCard {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.55);
-}
-:global([data-theme='dark']) .glassCard:hover {
-  box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.65);
-}
-
-/* Cabecera de tarjeta y títulos */
-:global([data-theme='dark']) .cardHeader {
-  border-bottom-color: var(--color-border);
-}
-:global([data-theme='dark']) .cardHeader h3 {
-  color: var(--color-text);
-}
-
-/* Icono de cabecera: usa el acento de marca (violeta-claro en oscuro) */
-:global([data-theme='dark']) .headerIcon {
-  color: var(--primary-color);
-  background: var(--primary-light);
-}
-
-/* Botón "copiar código" (acento de marca para coherencia en oscuro) */
-:global([data-theme='dark']) .copyBtn {
-  background: var(--primary-color);
-}
-:global([data-theme='dark']) .copyBtn:hover {
-  background: var(--primary-hover);
-}
-
-/* Inputs y select del formulario: fondo elevado, texto claro, borde de tema */
-:global([data-theme='dark']) .formGroup label {
-  color: var(--color-text);
-}
+/* Inputs y select del formulario: superficie ELEVADA (no el mismo tono que
+   el fondo de la página) para que se distingan sobre la card en oscuro. */
 :global([data-theme='dark']) .formGroup input,
 :global([data-theme='dark']) .select {
   background: var(--color-surface-2);
-  border-color: var(--color-border);
-  color: var(--color-text);
 }
 :global([data-theme='dark']) .formGroup input::placeholder {
   color: var(--color-text-muted);
 }
-:global([data-theme='dark']) .formGroup input:focus,
-:global([data-theme='dark']) .select:focus {
-  border-color: var(--primary-color);
-  background: var(--color-surface);
-  box-shadow: 0 0 0 4px var(--primary-light);
-}
 
-/* Toggle de tipo de persona (Natural/Jurídica) */
-:global([data-theme='dark']) .toggleRow {
-  background: var(--color-surface-2);
-}
-:global([data-theme='dark']) .toggle {
-  color: var(--color-text-muted);
-}
-:global([data-theme='dark']) .toggle.active {
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
-}
-
-/* Filas de información (perfil completo) */
-:global([data-theme='dark']) .infoRow {
-  border-bottom-color: var(--color-border);
-}
-:global([data-theme='dark']) .infoLabel {
-  color: var(--color-text-muted);
-}
-:global([data-theme='dark']) .infoValue {
-  color: var(--color-text);
-}
-
-/* Botones de acción: el primario negro -> superficie elevada con texto claro */
-:global([data-theme='dark']) .btnSave {
-  background: var(--color-surface-2);
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .btnSave:hover {
-  background: var(--color-hover);
-}
-:global([data-theme='dark']) .btnCancel {
-  background: var(--color-surface-2);
-  color: var(--color-text-muted);
-}
-:global([data-theme='dark']) .btnCancel:hover {
-  background: var(--color-hover);
-}
-/* Botón secundario "peligro suave" (rojo claro -> rojo translúcido legible) */
-:global([data-theme='dark']) .btnSecondary {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-:global([data-theme='dark']) .btnSecondary:hover {
-  background: rgba(239, 68, 68, 0.18);
-}
-
-/* Mensaje de error */
+/* Mensaje de error: rojo-200, más legible que el rojo base sobre oscuro */
 :global([data-theme='dark']) .errorMessage {
-  background: var(--danger-soft);
-  color: #FCA5A5; /* rojo-200: legible sobre fondo oscuro */
-  border-left-color: var(--danger);
+  color: #FCA5A5;
 }
