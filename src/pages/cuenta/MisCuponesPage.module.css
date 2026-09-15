@@ -110,8 +110,7 @@
 .cupon {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1.15rem;
+  overflow: hidden;
   border-radius: var(--radio-mediano, 16px);
   background: var(--color-surface);
   border: 1px dashed var(--primary-color);
@@ -119,52 +118,72 @@
 }
 
 /* Usado o vencido: sigue visible como historial, pero deja de competir por la
-   atención con los que aún sirven. */
+   atención con los que aún sirven. La imagen del banner se desatura de paso
+   (opacity ya cae con el resto de la tarjeta), para que no compita en color
+   con los cupones que sí sirven. */
 .cuponInactivo {
   border-style: solid;
   border-color: var(--color-border);
   opacity: 0.65;
 }
 
-.cuponCabecera {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+/* ── Banner ilustrado (mascota Kapi), uno por origen del cupón ───────────
+   Recorte pensado para la franja superior de la ilustración -mascota +
+   íconos-, dejando fuera el "ticket" en blanco de abajo (ese espacio ya lo
+   cubre el contenido real de la tarjeta). */
+.cuponBanner {
+  position: relative;
+  width: 100%;
+  height: 92px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: var(--color-hover, #f1f5f9);
 }
 
-.estado_activo,
-.estado_usado,
-.estado_caducado {
-  padding: 0.2rem 0.6rem;
+.cuponBanner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  display: block;
+}
+
+.cuponBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+/* Chip de estado flotando sobre el banner: fondo oscuro translúcido propio
+   -no el color por estado- para que se lea igual de bien sin importar qué
+   parte de la ilustración quede detrás. */
+.estadoChip {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  color: #fff;
 }
 
 .estado_activo {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
-}
-
-[data-theme='dark'] .estado_activo {
-  color: #6ee7b7;
+  background: rgba(6, 95, 70, 0.72);
 }
 
 .estado_usado {
-  background: var(--color-hover);
-  color: var(--color-text-muted);
+  background: rgba(15, 23, 42, 0.55);
 }
 
 .estado_caducado {
-  background: var(--danger-soft, rgba(239, 68, 68, 0.12));
-  color: var(--danger-hover, #b91c1c);
-}
-
-[data-theme='dark'] .estado_caducado {
-  color: #fca5a5;
+  background: rgba(153, 27, 27, 0.72);
 }
 
 .origen {

@@ -27,6 +27,17 @@ const ORIGEN = {
   recompensa: 'Catálogo de recompensas',
 };
 
+// Banner ilustrado por origen (mascota Kapi + motivo de cada fuente real de
+// cupones, ver services/cupones.js): "ruleta" es el único valor que el
+// servidor escribe hoy (spinRuletaSecure); los del catálogo de recompensas
+// (redeemRewardSecure) no traen `origen` -por eso el fallback es el banner
+// de catálogo, no uno "sin origen" en blanco-.
+const BANNER_ORIGEN = {
+  ruleta: '/assets/kapi/cupon-ruleta.webp',
+  recompensa: '/assets/kapi/cupon-catalogo.webp',
+};
+const BANNER_DEFECTO = BANNER_ORIGEN.recompensa;
+
 const MisCuponesPage = () => {
   const { user } = useAuth();
   const { addToast } = useGlobalToast();
@@ -101,51 +112,56 @@ const MisCuponesPage = () => {
         {ordenados.map((c) => {
           const estado = estadoCupon(c);
           const usable = estado === 'activo';
+          const banner = BANNER_ORIGEN[c.origen] || BANNER_DEFECTO;
           return (
             <li key={c.id} className={`${styles.cupon} ${usable ? '' : styles.cuponInactivo}`}>
-              <div className={styles.cuponCabecera}>
-                <span className={`${styles.estado} ${styles[`estado_${estado}`]}`}>
+              <div className={styles.cuponBanner}>
+                <img src={banner} alt="" loading="lazy" />
+                <span className={`${styles.estadoChip} ${styles[`estado_${estado}`]}`}>
                   <T>{ETIQUETA_ESTADO[estado]}</T>
                 </span>
+              </div>
+
+              <div className={styles.cuponBody}>
                 {c.origen && (
                   <span className={styles.origen}><T>{ORIGEN[c.origen] || c.origen}</T></span>
                 )}
-              </div>
 
-              <p className={styles.cuponTexto}>{c.texto || c.titulo || c.title}</p>
+                <p className={styles.cuponTexto}>{c.texto || c.titulo || c.title}</p>
 
-              <div className={styles.codigoFila}>
-                <code className={styles.codigo}>{c.code}</code>
-                {usable && (
-                  <button
-                    type="button"
-                    className={styles.copiar}
-                    onClick={() => copiar(c.code)}
-                    aria-label={`Copiar el código ${c.code}`}
-                  >
-                    {copiado === c.code
-                      ? <Check size={16} aria-hidden="true" />
-                      : <Copy size={16} aria-hidden="true" />}
-                  </button>
+                <div className={styles.codigoFila}>
+                  <code className={styles.codigo}>{c.code}</code>
+                  {usable && (
+                    <button
+                      type="button"
+                      className={styles.copiar}
+                      onClick={() => copiar(c.code)}
+                      aria-label={`Copiar el código ${c.code}`}
+                    >
+                      {copiado === c.code
+                        ? <Check size={16} aria-hidden="true" />
+                        : <Copy size={16} aria-hidden="true" />}
+                    </button>
+                  )}
+                </div>
+
+                {/* Solo se dice la fecha cuando aún sirve de algo saberla. */}
+                {c.expiraEn && estado !== 'usado' && (
+                  <span className={styles.caduca}>
+                    {estado === 'caducado'
+                      ? <T>Venció el</T>
+                      : <T>Válido hasta el</T>} {c.expiraEn}
+                  </span>
+                )}
+
+                {/* Los cupones viejos del catálogo no llevan tipo ni valor: no hay
+                    nada que el carrito pueda descontar solo. */}
+                {usable && !c.tipo && (
+                  <span className={styles.nota}>
+                    <T>Este cupón se canjea con un asesor.</T>
+                  </span>
                 )}
               </div>
-
-              {/* Solo se dice la fecha cuando aún sirve de algo saberla. */}
-              {c.expiraEn && estado !== 'usado' && (
-                <span className={styles.caduca}>
-                  {estado === 'caducado'
-                    ? <T>Venció el</T>
-                    : <T>Válido hasta el</T>} {c.expiraEn}
-                </span>
-              )}
-
-              {/* Los cupones viejos del catálogo no llevan tipo ni valor: no hay
-                  nada que el carrito pueda descontar solo. */}
-              {usable && !c.tipo && (
-                <span className={styles.nota}>
-                  <T>Este cupón se canjea con un asesor.</T>
-                </span>
-              )}
             </li>
           );
         })}
