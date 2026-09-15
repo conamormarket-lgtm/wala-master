@@ -679,7 +679,7 @@ const CuentaCompraDetallePage = () => {
             <Reveal>
               <GlassCard variant="solid" padding="md" animate={false}>
                 <h2 className={styles.cardTitle}><T>Pagos y documentos</T></h2>
-                <PedidoAcciones pedido={pedido} />
+                <PedidoAcciones pedido={pedido} estado={estado} />
               </GlassCard>
             </Reveal>
           )}

@@ -39,8 +39,16 @@ const DEUDA_IMPRESION_MENSAJE = 'STOP... TIENES UNA DEUDA PENDIENTE, POR FAVOR R
  * @param {object} props.pedido  Pedido CRUDO del ERP (mismos campos que lee
  *   PedidoCard: conDeuda, montoDeuda, montoTotal, montoAdelantado, id,
  *   estadoGeneral, historialPagos, reparto).
+ * @param {object} props.estado  El mismo objeto que devuelve
+ *   derivarEstadoCompra(pedido) en CuentaCompraDetallePage (label/paid/key).
+ *   `pedido.conDeuda` SOLO distingue si hay un SALDO PARCIAL pendiente -no
+ *   dice si el pedido se pagó alguna vez-: un pedido "Pendiente de pago"
+ *   recién creado también tiene conDeuda=false (nunca se registró ni un
+ *   adelanto), y usar solo ese campo mostraba "Pedido pagado" en pedidos que
+ *   todavía dicen "Pendiente de pago" en el resto de la página. `estado.paid`
+ *   es la misma fuente que ya usa el badge del header y "Seguimiento".
  */
-const PedidoAcciones = ({ pedido }) => {
+const PedidoAcciones = ({ pedido, estado }) => {
   const { userProfile, claimMonedas } = useAuth();
 
   const [showDeudaImpresionModal, setShowDeudaImpresionModal] = useState(false);
@@ -209,6 +217,19 @@ const PedidoAcciones = ({ pedido }) => {
           <button type="button" className={styles.btnPagar} onClick={() => setShowPagoModal(true)}>
             <T>Pagar</T>
           </button>
+        </div>
+      ) : estado?.paid === false ? (
+        // Sin deuda registrada PERO tampoco pagado (p.ej. "Pendiente de
+        // pago" recién creado, nunca hubo ni un adelanto): ni "Saldo
+        // pendiente" (no hay una deuda parcial que cobrar acá) ni "Pedido
+        // pagado" -sería contradictorio con el badge del header y
+        // "Seguimiento", que ya dicen que está pendiente-.
+        <div className={`${styles.banner} ${styles.bannerPendiente}`}>
+          <AlertTriangle className={styles.bannerIcono} aria-hidden="true" />
+          <div className={styles.bannerTextos}>
+            <span className={styles.bannerLabel}>{estado.label || 'Pendiente de pago'}</span>
+            <span className={styles.bannerMonto}>S/ {pedido.montoTotal || '0.00'}</span>
+          </div>
         </div>
       ) : (
         <div className={`${styles.banner} ${styles.bannerPagado}`}>

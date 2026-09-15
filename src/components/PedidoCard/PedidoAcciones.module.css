@@ -64,6 +64,19 @@
   color: var(--verde-exito, #16a34a);
 }
 
+/* Mismo ámbar que .estadoBadge/"Pendiente de pago" en el header de esta
+   misma página (CuentaCompraDetallePage), para que no contradiga al resto
+   de la pantalla. */
+.bannerPendiente {
+  background: rgba(217, 119, 6, 0.1);
+  border-color: rgba(217, 119, 6, 0.28);
+  color: #92400e;
+}
+
+.bannerPendiente .bannerIcono {
+  color: #d97706;
+}
+
 .btnPagar {
   flex: 0 0 auto;
   background: #ef4444;
@@ -196,6 +209,9 @@
 }
 :global([data-theme='dark']) .bannerPagado {
   color: #6ee7b7;
+}
+:global([data-theme='dark']) .bannerPendiente {
+  color: #fbbf24;
 }
 :global([data-theme='dark']) .chipReclamado {
   color: var(--color-text-muted);
