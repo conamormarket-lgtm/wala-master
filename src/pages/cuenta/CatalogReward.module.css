@@ -72,6 +72,32 @@
   box-shadow: none;
 }
 
+.rewardImageWrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: #f3f4f6;
+}
+
+.rewardImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rewardImgFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c4b5fd;
+  background: linear-gradient(135deg, #f3eefe, #ede9fe);
+}
+
 .cardHeader {
   margin-bottom: 12px;
 }
@@ -135,6 +161,27 @@
   background: #d1d5db;
   color: #9ca3af;
   cursor: not-allowed;
+}
+
+.confirmRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.confirmCancelBtn {
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.confirmCancelBtn:hover {
+  background: #f3f4f6;
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
@@ -201,4 +248,19 @@
 :global([data-theme='dark']) .claimBtn:disabled {
   background: var(--color-border);
   color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .rewardImageWrap {
+  background: var(--color-surface);
+}
+:global([data-theme='dark']) .rewardImgFallback {
+  background: rgba(139, 92, 246, 0.14);
+  color: #C4B5FD;
+}
+:global([data-theme='dark']) .confirmCancelBtn {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .confirmCancelBtn:hover {
+  background: var(--color-surface);
 }

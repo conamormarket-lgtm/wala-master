@@ -2776,9 +2776,18 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
 // CANJE DE RECOMPENSAS (Fase 2b): catálogo público + cupones server-authoritative.
 // Contrato Fase 2b:
 //   - 'rewardsCatalog' (lectura pública, escritura admin): { title, description,
-//     cost (number, en puntos), value (texto ref), active (bool), order (number) }.
+//     cost (number, en puntos), value (texto ref), active (bool), order (number),
+//     tipo, descuentoPct, descuentoMonto, topeDescuento, productId, productName,
+//     vigenciaDias, imageUrl }. `tipo` usa el mismo vocabulario que los premios
+//     de la Ruleta (ver ruletaLogic.js / ruletaModel.js).
 //   - 'userCoupons' (lectura dueño, escritura solo servidor): { uid, rewardId,
-//     title, code, status:'active', createdAt }.
+//     title, code, status:'active', createdAt, origen:'recompensa', y —si
+//     `tipo` genera cupón (esCupon)— los mismos campos que ya escribe
+//     spinRuletaSecure (tipo, titulo, texto, descuentoPct, descuentoMonto,
+//     topeDescuento, productId, productName, expiraEn) para que se aplique
+//     solo en el checkout. Si `tipo` es 'manual' (o el doc es viejo y no lo
+//     trae), el cupón se crea sin `tipo`: el checkout pide canjearlo con un
+//     asesor, igual que siempre.
 // ════════════════════════════════════════════════════════════════════════════
 
 // ── Helper: genera un code aleatorio de cupón tipo 'WALA-XXXXXX' ────────────────
@@ -2847,17 +2856,47 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
         balanceAfter,
       });
 
-      // Crea el cupón (id auto) con un code aleatorio.
+      // Crea el cupón (id auto) con un code aleatorio. Si la recompensa tiene un
+      // `tipo` que la Ruleta ya sabe convertir en cupón (descuento, envío
+      // gratis, producto...), se escriben los mismos campos que spinRuletaSecure
+      // para que este cupón se aplique solo en el checkout. Las recompensas
+      // 'manual' (o viejas, sin `tipo`) no llevan esos campos: el checkout las
+      // sigue tratando como "canjéalo con un asesor" (motivoRechazo).
       const code = generateCouponCode();
       const couponRef = db.collection("userCoupons").doc();
-      t.set(couponRef, {
+      const cuponBase = {
         uid,
         rewardId: String(rewardId),
         title: reward.title || "",
         code,
         status: "active",
+        origen: "recompensa",
         createdAt: FieldValue.serverTimestamp(),
-      });
+      };
+      if (esCupon(reward.tipo)) {
+        Object.assign(cuponBase, {
+          tipo: reward.tipo,
+          titulo: reward.title || "",
+          // textoPremio hace .toFixed() sobre descuentoMonto/topeDescuento sin
+          // comprobar que sean número: un campo ausente (doc viejo o parcial)
+          // tiraría la transacción entera, así que se defaultean a 0 aquí.
+          texto: textoPremio({
+            tipo: reward.tipo,
+            nombre: reward.title,
+            descuentoPct: reward.descuentoPct || 0,
+            descuentoMonto: reward.descuentoMonto || 0,
+            topeDescuento: reward.topeDescuento || 0,
+            productName: reward.productName,
+          }),
+          descuentoPct: reward.descuentoPct || 0,
+          descuentoMonto: reward.descuentoMonto || 0,
+          topeDescuento: reward.topeDescuento || 0,
+          productId: reward.productId || null,
+          productName: reward.productName || "",
+          expiraEn: limaFechaEnDias(reward.vigenciaDias || 30),
+        });
+      }
+      t.set(couponRef, cuponBase);
 
       return { success: true, coupon: { rewardId: String(rewardId), code } };
     });

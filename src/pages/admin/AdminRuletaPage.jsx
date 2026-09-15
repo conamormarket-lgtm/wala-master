@@ -19,13 +19,13 @@ import {
   getRuletaPrizes, saveRuletaPrize, deleteRuletaPrize, resetStockPremio,
   getRuletaConfig, saveRuletaConfig, getRuletaWins, marcarPremioEntregado,
 } from '../../services/firebase/ruleta';
-import { getProducts } from '../../services/products';
 import {
   TIPOS_PREMIO, PRESETS_TEMA, MODOS_DESBLOQUEO,
   normalizarPremio, premiosDeHoy, sumaProbabilidades, textoPremio,
 } from '../../utils/ruletaModel';
 import { limaTodayStr, limaDayOfWeek } from '../../utils/fechaLima';
 import RuedaRuleta from '../../components/ruleta/RuedaRuleta';
+import BuscadorProducto from '../../components/admin/BuscadorProducto/BuscadorProducto';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import styles from './AdminRuletaPage.module.css';
 
@@ -72,83 +72,6 @@ const FORM_VACIO = {
   hasta: '',
   stockTotal: '',
   maxPorUsuario: '',
-};
-
-// ── Buscador de productos ────────────────────────────────────────────────────
-// Ofertas Flash pide el productId escrito a mano, que obliga a ir a buscarlo a
-// otra pestaña y a pegarlo sin saber si es el correcto. Aquí se busca por nombre.
-const BuscadorProducto = ({ productId, productName, onElegir }) => {
-  const [termino, setTermino] = useState('');
-  const [productos, setProductos] = useState([]);
-  const [cargando, setCargando] = useState(false);
-
-  useEffect(() => {
-    let vivo = true;
-    setCargando(true);
-    // Una sola lectura del catálogo y se filtra en memoria: buscar contra
-    // Firestore en cada tecla sería una lectura completa por pulsación.
-    getProducts().then(({ data }) => {
-      if (!vivo) return;
-      setProductos(data || []);
-      setCargando(false);
-    });
-    return () => { vivo = false; };
-  }, []);
-
-  const resultados = useMemo(() => {
-    const t = termino.trim().toLowerCase();
-    if (t.length < 2) return [];
-    return productos
-      .filter((p) => String(p.name || '').toLowerCase().includes(t))
-      .slice(0, 8);
-  }, [termino, productos]);
-
-  if (productId) {
-    return (
-      <div className={styles.productoElegido}>
-        <span className={styles.productoNombre}>{productName || productId}</span>
-        <button
-          type="button"
-          className={styles.enlaceBoton}
-          onClick={() => onElegir({ id: '', name: '' })}
-        >
-          Cambiar
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.buscador}>
-      <input
-        type="text"
-        className={styles.input}
-        value={termino}
-        onChange={(e) => setTermino(e.target.value)}
-        placeholder={cargando ? 'Cargando catálogo...' : 'Escribe el nombre del producto'}
-        disabled={cargando}
-      />
-      {resultados.length > 0 && (
-        <ul className={styles.resultados}>
-          {resultados.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                className={styles.resultado}
-                onClick={() => { onElegir(p); setTermino(''); }}
-              >
-                <span>{p.name}</span>
-                <span className={styles.resultadoPrecio}>S/ {Number(p.salePrice || p.price || 0).toFixed(2)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {termino.trim().length >= 2 && resultados.length === 0 && !cargando && (
-        <p className={styles.ayuda}>Ningún producto coincide con «{termino}».</p>
-      )}
-    </div>
-  );
 };
 
 const AdminRuletaPage = () => {
