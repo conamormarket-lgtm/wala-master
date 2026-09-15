@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useProducts } from '../../hooks/useProducts';
 
-import { GlassCard, GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
+import { GlassCard, Reveal, Stagger, StaggerItem } from '../../components/ui';
 import Timeline from '../../components/Timeline';
 import { PASOS_GENERALES } from '../../utils/constants';
 
@@ -290,9 +290,9 @@ const CuentaCompraDetallePage = () => {
               Es posible que el pedido ya no esté disponible o que no pertenezca a tu
               cuenta.
             </p>
-            <GlassButton as={Link} to="/cuenta/pedidos" variant="primary" className={styles.btnSolido}>
+            <Link to="/cuenta/pedidos" className={styles.btnSolido}>
               Volver a Mis Compras
-            </GlassButton>
+            </Link>
           </GlassCard>
         </Reveal>
       </div>
@@ -666,34 +666,40 @@ const CuentaCompraDetallePage = () => {
             <p className={styles.waHint}><T>¿Dudas con tu pedido?</T></p>
             {brandsConNumero.length > 1 ? (
               brandsConNumero.map((b) => (
-                <GlassButton
+                <a
                   key={b.id}
-                  as="a"
                   href={b.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  variant="primary"
-                  fullWidth
-                  className={styles.btnSolido}
+                  className={`${styles.btnSolido} ${styles.btnSolidoFull}`}
                 >
                   Consultar a {b.name} por WhatsApp
-                </GlassButton>
+                </a>
               ))
             ) : (
-              <GlassButton
-                as="a"
-                href={
-                  brandsConNumero[0]?.link || waGeneralLink || undefined
+              (() => {
+                const waLink = brandsConNumero[0]?.link || waGeneralLink || null;
+                if (!waLink) {
+                  return (
+                    <span
+                      className={`${styles.btnSolido} ${styles.btnSolidoFull} ${styles.btnSolidoDisabled}`}
+                      aria-disabled="true"
+                    >
+                      Consultar estado de mi pedido
+                    </span>
+                  );
                 }
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="primary"
-                fullWidth
-                disabled={!(brandsConNumero[0]?.link || waGeneralLink)}
-                className={styles.btnSolido}
-              >
-                Consultar estado de mi pedido
-              </GlassButton>
+                return (
+                  <a
+                    href={waLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${styles.btnSolido} ${styles.btnSolidoFull}`}
+                  >
+                    Consultar estado de mi pedido
+                  </a>
+                );
+              })()
             )}
           </GlassCard>
           </Reveal>

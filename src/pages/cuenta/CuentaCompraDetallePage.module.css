@@ -501,42 +501,48 @@
   margin-top: 0.25rem;
 }
 
-/* Botón PLANO/sólido, mismo violeta que .primaryButton del header ("Ver mi
-   lista" en el popover de wishlist/carrito) -pedido a mano tras comparar
-   capturas: "así, no así"-, en vez del degradado que trae por defecto
-   GlassButton variant="primary". Se aplica en esta página nada más
-   (Volver a Mis Compras / Consultar por WhatsApp), NO al componente
-   compartido: gana por orden de import (este módulo se inserta después que
-   GlassButton.module.css en el bundle), misma especificidad de una clase. */
+/* Botón PLANO: MISMO componente que .primaryButton en Header.module.css
+   ("Ver mi lista" del popover de wishlist/carrito) -pedido a mano tras
+   comparar capturas: "así, no así" / "debe funcionar como los botones del
+   header"-. Estos tres botones (Volver a Mis Compras, Consultar por
+   WhatsApp) ya NO son <GlassButton>: son <Link>/<a> planos con esta clase,
+   para que el comportamiento sea IDÉNTICO -transición de color simple en
+   CSS, sin el lift (whileHover y=-2) ni el ripple de framer-motion que trae
+   GlassButton variant="primary"-, no solo el color. */
 .btnSolido {
-  background: #8b5cf6;
-  color: #fff;
-  border-radius: var(--radio-pequeno, 10px);
-  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #8b5cf6;
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* Repetir el color NO es redundante: dos de estos botones son <a> (as="a",
-   el de WhatsApp) y globals.css trae un `a:hover { color: var(--rojo-hover) }`
-   global -mismo bug ya documentado en Header.module.css/AdminBar.module.css/
-   ProductDetail.module.css para .primaryButton:hover y compañía- que sin
-   este repaso apaga el texto a rojo oscuro al pasar el mouse. */
+/* Repetir el color NO es redundante: globals.css trae un
+   `a:hover { color: var(--rojo-hover) }` global cuya especificidad gana a
+   la de esta clase sola -mismo motivo por el que .primaryButton:hover lo
+   repite en Header.module.css-. Sin esta línea el texto se apaga a rojo
+   oscuro al pasar el mouse sobre los que son <a>. */
 .btnSolido:hover {
-  background: #7c3aed;
-  color: #fff;
-  box-shadow: none;
+  background-color: #7c3aed;
+  color: white;
 }
 
-.btnSolido:active {
-  color: #fff;
-  box-shadow: none;
+.btnSolidoFull {
+  width: 100%;
 }
 
-/* Oculta el "ripple" (brillo circular blanco) que GlassButton expande en
-   hover para el efecto vidrio/degradado: no encaja con el estilo plano.
-   Es el primer <span> hijo del botón (ver GlassButton.jsx); se referencia
-   estructuralmente porque su clase real viene hasheada por CSS Modules. */
-.btnSolido > span:first-child {
-  display: none;
+.btnSolidoDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .waHint {
