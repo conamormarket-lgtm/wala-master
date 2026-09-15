@@ -472,21 +472,32 @@ const CuentaCompraDetallePage = () => {
                   <p className={styles.seguimientoGeneralNota}>
                     <T>El detalle por etapas de producción (8 pasos) aparece aquí cuando el taller registra el pedido.</T>
                   </p>
+                  {/* Cada paso como una pill de color sólido -mismo lenguaje
+                      que el badge de estado del header de arriba
+                      (.estadoBadge: relleno, texto blanco, redondeado,
+                      sombra)-, en vez de un círculo de radio + texto plano.
+                      El paso ACTUAL usa el mismo color que el badge del
+                      header (estado.color); los completados van en verde
+                      (progreso alcanzado, mismo criterio que el resto del
+                      sitio); los pendientes quedan en gris neutro. */}
                   <ol className={styles.seguimientoGeneral}>
                     {PASOS_GENERALES.map((label, i) => {
                       const done = pasoGeneralIdx >= 0 && i < pasoGeneralIdx;
                       const actual = i === pasoGeneralIdx;
                       return (
-                        <li
-                          key={label}
-                          className={[
-                            styles.pasoGeneralItem,
-                            done && styles.pasoGeneralDone,
-                            actual && styles.pasoGeneralActual,
-                          ].filter(Boolean).join(' ')}
-                        >
-                          <span className={styles.pasoGeneralDot} aria-hidden="true">{done ? '✓' : ''}</span>
-                          <span className={styles.pasoGeneralLabel}>{label}</span>
+                        <li key={label} className={styles.pasoGeneralItem}>
+                          <span
+                            className={[
+                              styles.pasoGeneralBadge,
+                              done && styles.pasoGeneralBadgeDone,
+                              actual && styles.pasoGeneralBadgeActual,
+                            ].filter(Boolean).join(' ')}
+                            style={actual ? { background: estado.color } : undefined}
+                          >
+                            {done && <span aria-hidden="true">✓</span>}
+                            {actual && <span className={styles.pasoGeneralBadgeDot} aria-hidden="true" />}
+                            {label}
+                          </span>
                         </li>
                       );
                     })}

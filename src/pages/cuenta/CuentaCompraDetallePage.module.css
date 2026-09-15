@@ -128,11 +128,12 @@
 }
 
 /* ── Seguimiento GENERAL (5 pasos: Pago…Entregado) ──────────────────────────
-   Lista vertical simple para cuando el pedido todavía no tiene fase real de
-   producción del ERP (ver hayFaseReal). Mismo lenguaje visual que el
-   stepper de <Timeline> (punto + línea conectora + etiqueta), pero más
-   liviano — acá no hace falta fecha por paso, solo mostrar el flujo completo
-   y en cuál está parado. */
+   Lista vertical para cuando el pedido todavía no tiene fase real de
+   producción del ERP (ver hayFaseReal). Pedido a mano: cada paso como una
+   PILL de color sólido -mismo lenguaje que .estadoBadge, el badge grande
+   del header de arriba (relleno, texto blanco, redondeado, con sombra)-,
+   en vez del círculo de radio + texto plano que tenía antes. Une los tres
+   estados con un conector fino, para no perder la lectura de secuencia. */
 .seguimientoGeneralNota {
   margin: 0 0 1rem;
   font-size: 0.85rem;
@@ -147,71 +148,53 @@
 }
 
 .pasoGeneralItem {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.4rem 0;
   position: relative;
+  padding-bottom: 0.6rem;
 }
 
-.pasoGeneralItem:not(:last-child)::after {
+.pasoGeneralItem:not(:last-child)::before {
   content: '';
   position: absolute;
-  left: 11px;
-  top: calc(50% + 13px);
+  left: 1.1rem;
+  top: 100%;
   width: 2px;
-  height: calc(100% - 6px);
+  height: 0.6rem;
   background: var(--gris-borde, #e2e8f0);
 }
 
-.pasoGeneralDone:not(:last-child)::after {
-  background: var(--verde-principal, #16a34a);
-}
-
-.pasoGeneralDot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--gris-fondo, #f1f5f9);
-  border: 2px solid var(--gris-borde, #cbd5e1);
-  display: flex;
+/* Mismo molde que .estadoBadge (header): pill rellena, texto blanco,
+   redondeada, con sombra. Pendiente = versión neutra sin relleno/sombra. */
+.pasoGeneralBadge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #fff;
-  flex-shrink: 0;
-  z-index: 1;
-}
-
-.pasoGeneralDone .pasoGeneralDot {
-  background: var(--verde-principal, #16a34a);
-  border-color: var(--verde-principal, #16a34a);
-}
-
-.pasoGeneralActual .pasoGeneralDot {
-  background: var(--primary-color, #6d28d9);
-  border-color: var(--primary-color, #6d28d9);
-  box-shadow: 0 0 0 4px rgba(109, 40, 217, 0.18);
-}
-
-.pasoGeneralLabel {
-  font-size: 0.9rem;
-  font-weight: 600;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: var(--gris-texto-secundario, #64748b);
+  background: var(--gris-fondo, #f1f5f9);
+  border: 1px solid var(--gris-borde, #e2e8f0);
 }
 
-.pasoGeneralDone .pasoGeneralLabel,
-.pasoGeneralActual .pasoGeneralLabel {
-  color: var(--gris-texto-principal, #0f172a);
+.pasoGeneralBadgeDone {
+  color: #fff;
+  background: var(--verde-principal, #16a34a);
+  border-color: transparent;
+  box-shadow: 0 6px 14px -6px rgba(22, 163, 74, 0.45);
 }
 
-.pasoGeneralActual .pasoGeneralLabel {
-  font-weight: 800;
+.pasoGeneralBadgeActual {
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 18px -6px rgba(17, 24, 39, 0.35);
 }
 
-:global([data-theme='dark']) .pasoGeneralActual .pasoGeneralDot {
-  box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.22);
+.pasoGeneralBadgeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 /* ── Encabezado: código + fecha + badge grande ──────────────────────────── */
