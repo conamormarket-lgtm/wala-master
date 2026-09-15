@@ -501,6 +501,36 @@
   margin-top: 0.25rem;
 }
 
+/* Botón PLANO/sólido, mismo violeta que .primaryButton del header ("Ver mi
+   lista" en el popover de wishlist/carrito) -pedido a mano tras comparar
+   capturas: "así, no así"-, en vez del degradado que trae por defecto
+   GlassButton variant="primary". Se aplica en esta página nada más
+   (Volver a Mis Compras / Consultar por WhatsApp), NO al componente
+   compartido: gana por orden de import (este módulo se inserta después que
+   GlassButton.module.css en el bundle), misma especificidad de una clase. */
+.btnSolido {
+  background: #8b5cf6;
+  border-radius: var(--radio-pequeno, 10px);
+  box-shadow: none;
+}
+
+.btnSolido:hover {
+  background: #7c3aed;
+  box-shadow: none;
+}
+
+.btnSolido:active {
+  box-shadow: none;
+}
+
+/* Oculta el "ripple" (brillo circular blanco) que GlassButton expande en
+   hover para el efecto vidrio/degradado: no encaja con el estilo plano.
+   Es el primer <span> hijo del botón (ver GlassButton.jsx); se referencia
+   estructuralmente porque su clase real viene hasheada por CSS Modules. */
+.btnSolido > span:first-child {
+  display: none;
+}
+
 .waHint {
   font-size: 0.8rem;
   color: var(--gris-texto-secundario, #6b7280);

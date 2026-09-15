@@ -290,7 +290,7 @@ const CuentaCompraDetallePage = () => {
               Es posible que el pedido ya no esté disponible o que no pertenezca a tu
               cuenta.
             </p>
-            <GlassButton as={Link} to="/cuenta/pedidos" variant="primary">
+            <GlassButton as={Link} to="/cuenta/pedidos" variant="primary" className={styles.btnSolido}>
               Volver a Mis Compras
             </GlassButton>
           </GlassCard>
@@ -674,6 +674,7 @@ const CuentaCompraDetallePage = () => {
                   rel="noopener noreferrer"
                   variant="primary"
                   fullWidth
+                  className={styles.btnSolido}
                 >
                   Consultar a {b.name} por WhatsApp
                 </GlassButton>
@@ -689,6 +690,7 @@ const CuentaCompraDetallePage = () => {
                 variant="primary"
                 fullWidth
                 disabled={!(brandsConNumero[0]?.link || waGeneralLink)}
+                className={styles.btnSolido}
               >
                 Consultar estado de mi pedido
               </GlassButton>
