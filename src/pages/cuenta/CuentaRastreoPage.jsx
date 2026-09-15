@@ -14,6 +14,7 @@ import {
   getQueueStage,
   ESTADOS_COLORS,
   ETAPAS_TIMELINE,
+  PASOS_GENERALES,
 } from '../../utils/constants';
 // Fallback de estado propio de WALA (espejo) cuando el ERP borró el doc del pedido.
 import { estadoWalaADisplay } from '../../services/walaOrders';
@@ -157,7 +158,7 @@ function resumirRastreo(pedido, indiceCatalogo) {
   // restricción de fila del grid); acá alcanza con "Paso X de Y" + una barra,
   // mismo alto sea cual sea la fase.
   let pasoActual = 0;
-  let totalPasos = PASOS_COARSE.length; // 5, si no hay fase real del ERP
+  let totalPasos = PASOS_GENERALES.length; // 5, si no hay fase real del ERP
   let pasoLabel = null; // nombre del paso actual (ej. "Pago", "Preparación") — pedido a mano
   if (hayFaseErpReal) {
     totalPasos = ETAPAS_TIMELINE.length; // 8 (Compra…Finalizado)
@@ -166,7 +167,7 @@ function resumirRastreo(pedido, indiceCatalogo) {
     pasoLabel = ETAPAS_TIMELINE[pasoActual - 1]?.nombre || null;
   } else if (coarse && coarse.paso >= 0) {
     pasoActual = coarse.paso + 1;
-    pasoLabel = PASOS_COARSE[coarse.paso] || null;
+    pasoLabel = PASOS_GENERALES[coarse.paso] || null;
   }
 
   return {
@@ -188,11 +189,6 @@ function resumirRastreo(pedido, indiceCatalogo) {
   };
 }
 
-// Pasos del stepper REDUCIDO (estado propio de Walá) cuando el ERP aún no reporta
-// la fase de producción detallada. Espeja el orden de estadoWalaADisplay (paso 0-4).
-// Ya no se renderiza un stepper con estas 5 etiquetas acá (ver ProgresoResumen
-// más abajo) — el array se conserva por su .length, para "Paso X de 5".
-const PASOS_COARSE = ['Pago', 'Pagado', 'En preparación', 'Enviado', 'Entregado'];
 
 /**
  * Barra de progreso compacta: reemplaza al stepper completo (8 pasos
@@ -441,9 +437,20 @@ const CuentaRastreoPage = () => {
                 />
                 {!r.esAnulado && (
                   <p className={glass.pasosNota}>
-                    {r.hayFaseErpReal
-                      ? 'Seguimiento detallado de producción (8 pasos): el taller ya está registrando cada etapa de este pedido.'
-                      : 'Seguimiento general (5 pasos). El detalle por etapas de producción (8 pasos) aparece aquí cuando el taller registra el pedido.'}
+                    {r.hayFaseErpReal ? (
+                      <>
+                        <T>Seguimiento detallado de producción (8 pasos): el taller ya está registrando cada etapa de este pedido.</T>
+                      </>
+                    ) : (
+                      <>
+                        {/* Antes esta nota solo decía "seguimiento de 5 pasos" sin
+                            decir CUÁLES — pedido a mano: listar el flujo completo,
+                            no solo el paso actual (que ya se ve en la barra de
+                            arriba). */}
+                        <T>Seguimiento general</T> ({PASOS_GENERALES.join(' → ')}).{' '}
+                        <T>El detalle por etapas de producción (8 pasos) aparece aquí cuando el taller registra el pedido.</T>
+                      </>
+                    )}
                   </p>
                 )}
 

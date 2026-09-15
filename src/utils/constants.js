@@ -13,6 +13,15 @@ export const ETAPAS_TIMELINE = [
   { nombre: 'Finalizado', key: 'finalizado' }
 ];
 
+// Pasos del seguimiento GENERAL (estado propio de Walá) para pedidos que
+// todavía no tienen fase real de producción del ERP -antes de que el taller
+// empiece a registrar Diseño/Impresión/etc., ver ETAPAS_TIMELINE arriba-.
+// Espeja el orden de paso (0-4) de estadoWalaADisplay/derivarEstadoCompra.
+// Centralizado acá (antes vivía solo dentro de CuentaRastreoPage.jsx) para
+// que la lista de/hacia "Ver detalle" (CuentaCompraDetallePage) no se
+// desincronice si algún día cambia.
+export const PASOS_GENERALES = ['Pago', 'Pagado', 'En preparación', 'Enviado', 'Entregado'];
+
 export const ESTADOS_COLORS = {
   'finalizado': 'var(--verde-exito)',
   'reparto': '#17a2b8',

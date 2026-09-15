@@ -8,6 +8,7 @@ import { useProducts } from '../../hooks/useProducts';
 
 import { GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
 import Timeline from '../../components/Timeline';
+import { PASOS_GENERALES } from '../../utils/constants';
 
 import {
   derivarEstadoCompra,
@@ -17,6 +18,7 @@ import {
 } from '../../utils/estadoCompra';
 import { formatCurrency } from '../../utils/formatters';
 import { toThumbnailImageUrl } from '../../utils/imageUrl';
+import { normalizarPedidoParaVista } from '../../utils/pedidos';
 
 import { getBrands } from '../../services/brands';
 import { getMessage } from '../../services/messages';
@@ -173,6 +175,22 @@ const CuentaCompraDetallePage = () => {
     staleTime: 1000 * 60 * 10,
   });
 
+  // 3.5) Pedido normalizado a la forma que espera <Timeline> (fechas por
+  //    etapa). El pedido EFECTIVO de esta página prioriza el crudo del ERP
+  //    (pedidoRaw), que trae las fechas anidadas por etapa (ej.
+  //    pedido.impresion.fechaSalida), NO el mapa plano {impresion, diseno,
+  //    preparacion...} que Timeline lee de `fechas`. normalizarPedidoParaVista
+  //    -la MISMA función que usePedidos ya usa para toda la lista- hace esa
+  //    conversión; sin pasar por acá, Timeline no encontraba fecha para
+  //    ninguna etapa y no marcaba ningún paso como completado, sin importar
+  //    qué tan avanzado estuviera el pedido en la realidad.
+  //    Tolerante a `pedido` aún no disponible (mismo criterio que el useMemo
+  //    de abajo: se calcula ANTES de los early returns).
+  const pedidoParaTimeline = useMemo(
+    () => normalizarPedidoParaVista(pedido) || {},
+    [pedido]
+  );
+
   // 4) "También te puede interesar": recomendación POR CATEGORÍA del producto
   //    comprado, con fallback a destacados.
   //
@@ -295,6 +313,17 @@ const CuentaCompraDetallePage = () => {
   const codigo = getCodigoPedido(pedido);
   const lineas = getProductosPedido(pedido);
 
+  // ¿El pedido ya tiene fase REAL de producción del ERP (para mostrar el
+  // stepper granular de 8 pasos), o todavía va por el seguimiento general de
+  // 5 (Pago→Entregado, estado propio de Walá)? Mismo criterio que
+  // CuentaRastreoPage.jsx (hayFaseErpReal): hay fase real si quedó alguna
+  // fecha de etapa (diseño, impresión…) tras normalizar el pedido.
+  const hayFaseReal = Object.keys(pedidoParaTimeline.fechas || {}).length > 0;
+  // Paso actual (0-4) dentro del seguimiento general, mismo mapeo que usa
+  // CuentaRastreoPage.jsx para el mismo `estado.key` (derivarEstadoCompra).
+  const mapaPasoGeneral = { por_confirmar_pago: 0, pago_confirmado: 1, en_preparacion: 2, entregado: 4, anulado: -1 };
+  const pasoGeneralIdx = mapaPasoGeneral[estado.key] ?? 0;
+
   // Índice productoId -> producto del catálogo (para imagen).
   const catalogoPorId = new Map();
   (catalogo || []).forEach((p) => {
@@ -416,24 +445,54 @@ const CuentaCompraDetallePage = () => {
             </div>
           </Reveal>
 
-          {/* Seguimiento de producción: el stepper completo de 8 pasos
-              (Compra…Finalizado) que antes vivía en la tarjeta de Rastreo
-              -y la desparejaba contra tarjetas vecinas en otra fase, cada
-              una con una altura muy distinta-. Acá hay ancho real y no hay
-              una fila de grid que desparejar, así que el detalle completo
-              vive en este lugar; Rastreo solo muestra "Paso X de Y". No
-              tiene sentido para un pedido anulado (no hay fase a la que
-              seguirle el rastro). */}
+          {/* Seguimiento: el stepper completo -de 8 pasos (Compra…Finalizado)
+              si el taller ya reporta fase real del ERP, o de 5 (Pago…
+              Entregado, estado propio de Walá) mientras no- que antes vivía
+              apretado en la tarjeta de Rastreo y la desparejaba contra
+              tarjetas vecinas en otra fase. Acá hay ancho real y no hay una
+              fila de grid que desparejar, así que el detalle completo (los
+              5 O los 8 pasos, no solo el actual) vive en este lugar; Rastreo
+              solo muestra "Paso X de Y". No tiene sentido para un pedido
+              anulado (no hay fase a la que seguirle el rastro). */}
           {estado.key !== 'anulado' && (
             <Reveal className={styles.glass}>
-              <h2 className={styles.cardTitle}><T>Seguimiento de producción</T></h2>
-              <div className={styles.seguimientoWrap}>
-                <Timeline
-                  fechas={pedido.fechas}
-                  fechaCompra={pedido.fechaCompra}
-                  pedido={pedido}
-                />
-              </div>
+              <h2 className={styles.cardTitle}>
+                {hayFaseReal ? <T>Seguimiento de producción</T> : <T>Seguimiento general</T>}
+              </h2>
+              {hayFaseReal ? (
+                <div className={styles.seguimientoWrap}>
+                  <Timeline
+                    fechas={pedidoParaTimeline.fechas}
+                    fechaCompra={pedidoParaTimeline.fechaCompra}
+                    pedido={pedidoParaTimeline}
+                  />
+                </div>
+              ) : (
+                <>
+                  <p className={styles.seguimientoGeneralNota}>
+                    <T>El detalle por etapas de producción (8 pasos) aparece aquí cuando el taller registra el pedido.</T>
+                  </p>
+                  <ol className={styles.seguimientoGeneral}>
+                    {PASOS_GENERALES.map((label, i) => {
+                      const done = pasoGeneralIdx >= 0 && i < pasoGeneralIdx;
+                      const actual = i === pasoGeneralIdx;
+                      return (
+                        <li
+                          key={label}
+                          className={[
+                            styles.pasoGeneralItem,
+                            done && styles.pasoGeneralDone,
+                            actual && styles.pasoGeneralActual,
+                          ].filter(Boolean).join(' ')}
+                        >
+                          <span className={styles.pasoGeneralDot} aria-hidden="true">{done ? '✓' : ''}</span>
+                          <span className={styles.pasoGeneralLabel}>{label}</span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </>
+              )}
             </Reveal>
           )}
 

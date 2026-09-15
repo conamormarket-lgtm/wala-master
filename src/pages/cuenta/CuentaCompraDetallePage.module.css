@@ -127,6 +127,93 @@
   container-name: timelineHost;
 }
 
+/* ── Seguimiento GENERAL (5 pasos: Pago…Entregado) ──────────────────────────
+   Lista vertical simple para cuando el pedido todavía no tiene fase real de
+   producción del ERP (ver hayFaseReal). Mismo lenguaje visual que el
+   stepper de <Timeline> (punto + línea conectora + etiqueta), pero más
+   liviano — acá no hace falta fecha por paso, solo mostrar el flujo completo
+   y en cuál está parado. */
+.seguimientoGeneralNota {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario, #64748b);
+  line-height: 1.4;
+}
+
+.seguimientoGeneral {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pasoGeneralItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  position: relative;
+}
+
+.pasoGeneralItem:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: calc(50% + 13px);
+  width: 2px;
+  height: calc(100% - 6px);
+  background: var(--gris-borde, #e2e8f0);
+}
+
+.pasoGeneralDone:not(:last-child)::after {
+  background: var(--verde-principal, #16a34a);
+}
+
+.pasoGeneralDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gris-fondo, #f1f5f9);
+  border: 2px solid var(--gris-borde, #cbd5e1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.pasoGeneralDone .pasoGeneralDot {
+  background: var(--verde-principal, #16a34a);
+  border-color: var(--verde-principal, #16a34a);
+}
+
+.pasoGeneralActual .pasoGeneralDot {
+  background: var(--primary-color, #6d28d9);
+  border-color: var(--primary-color, #6d28d9);
+  box-shadow: 0 0 0 4px rgba(109, 40, 217, 0.18);
+}
+
+.pasoGeneralLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.pasoGeneralDone .pasoGeneralLabel,
+.pasoGeneralActual .pasoGeneralLabel {
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.pasoGeneralActual .pasoGeneralLabel {
+  font-weight: 800;
+}
+
+:global([data-theme='dark']) .pasoGeneralActual .pasoGeneralDot {
+  box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.22);
+}
+
 /* ── Encabezado: código + fecha + badge grande ──────────────────────────── */
 .headerCard {
   display: flex;
