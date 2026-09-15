@@ -22,7 +22,12 @@ const CatalogReward = () => {
       { field: 'order', direction: 'asc' }
     );
     if (err) {
-      setError(err);
+      // `err` es el mensaje crudo de Firestore (ej. "The query requires an
+      // index. You can create it here: https://..."): un detalle técnico
+      // para quien despliega la app, no algo que un cliente deba leer. Se
+      // deja en consola para depurar y se muestra un mensaje genérico.
+      console.error('Error al cargar el catálogo de recompensas:', err);
+      setError('No pudimos cargar el catálogo. Intenta de nuevo en unos minutos.');
       setRewards([]);
     } else {
       setError('');
