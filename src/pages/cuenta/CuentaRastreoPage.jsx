@@ -406,7 +406,11 @@ const CuentaRastreoPage = () => {
                 {(r.tieneDeuda || r.esAnulado) && (
                   <div className={glass.alertas}>
                     {r.tieneDeuda && (
-                      <Link to={`/cuenta/pedidos/${r.id}`} className={`${glass.alerta} ${glass.alertaDeuda}`}>
+                      <Link
+                        to={`/cuenta/pedidos/${r.id}`}
+                        state={{ from: 'rastreo' }}
+                        className={`${glass.alerta} ${glass.alertaDeuda}`}
+                      >
                         <AlertTriangle size={15} aria-hidden="true" />
                         Pagar deuda: S/ {r.montoPendiente.toFixed(2)}
                       </Link>
@@ -440,6 +444,7 @@ const CuentaRastreoPage = () => {
                   <GlassButton
                     as={Link}
                     to={`/cuenta/pedidos/${r.id}`}
+                    state={{ from: 'rastreo' }}
                     variant="ghost"
                     size="sm"
                     fullWidth

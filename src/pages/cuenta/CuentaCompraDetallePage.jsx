@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { Check } from 'lucide-react';
@@ -83,6 +83,20 @@ function imagenDeLinea(linea, productoCatalogo) {
  * ────────────────────────────────────────────────────────────────────────── */
 const CuentaCompraDetallePage = () => {
   const { id } = useParams();
+  const location = useLocation();
+  // Breadcrumb consciente del origen real: HOY la única entrada a este
+  // detalle dentro de "Mi cuenta" es "Rastreo del Pedido" (Ver detalle /
+  // Pagar deuda, ambos pasan state={{from:'rastreo'}}) -"Mis Pedidos" todavía
+  // no enlaza a ningún detalle-, así que un breadcrumb fijo a "Compras" →
+  // /cuenta/pedidos mandaba a un lugar del que el usuario no había venido y
+  // que además no tiene forma de volver a este detalle (pedido a mano: "dice
+  // estado de compra y me manda a pedidos, es algo raro"). Si en el futuro
+  // "Mis Pedidos" también enlaza aquí, no hace falta tocar esto: sin
+  // location.state.from cae al fallback de siempre.
+  const vieneDeRastreo = location.state?.from === 'rastreo';
+  const breadcrumbAnterior = vieneDeRastreo
+    ? { label: 'Rastreo del Pedido', to: '/cuenta/rastreo' }
+    : { label: 'Compras', to: '/cuenta/pedidos' };
   const { user, userProfile, loading: authLoading } = useAuth();
   const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
   const uid = user?.uid || undefined; // misma clave de caché que la lista; rescata espejos por usuario
@@ -290,8 +304,8 @@ const CuentaCompraDetallePage = () => {
               Es posible que el pedido ya no esté disponible o que no pertenezca a tu
               cuenta.
             </p>
-            <Link to="/cuenta/pedidos" className={styles.btnSolido}>
-              Volver a Mis Compras
+            <Link to={breadcrumbAnterior.to} className={styles.btnSolido}>
+              Volver a {breadcrumbAnterior.label}
             </Link>
           </GlassCard>
         </Reveal>
@@ -410,8 +424,8 @@ const CuentaCompraDetallePage = () => {
     <div className={styles.page}>
       {/* Breadcrumb */}
       <nav className={styles.breadcrumb} aria-label="Ruta de navegación">
-        <Link to="/cuenta/pedidos" className={styles.breadcrumbLink}>
-          Compras
+        <Link to={breadcrumbAnterior.to} className={styles.breadcrumbLink}>
+          <T>{breadcrumbAnterior.label}</T>
         </Link>
         <span className={styles.breadcrumbSep} aria-hidden="true">
           ›
