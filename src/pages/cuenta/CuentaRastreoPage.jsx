@@ -7,14 +7,13 @@ import { useProducts } from '../../hooks/useProducts';
 // Sistema de diseño Walá: superficie de vidrio + botón + envoltorios de movimiento.
 // SOLO estética; NO se altera la búsqueda de pedidos por DNI ni el flujo del hook.
 import { GlassCard, GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
-// Rastreo por fases: REUTILIZAMOS el mismo stepper de 8 pasos de "Mis Compras".
-import Timeline from '../../components/Timeline';
 // Helpers REALES de fase (los mismos que usa PedidoCard) — NO reinventar.
 import {
   getEtapaBadgeLabel,
   estadoToKey,
   getQueueStage,
   ESTADOS_COLORS,
+  ETAPAS_TIMELINE,
 } from '../../utils/constants';
 // Fallback de estado propio de WALA (espejo) cuando el ERP borró el doc del pedido.
 import { estadoWalaADisplay } from '../../services/walaOrders';
@@ -149,6 +148,24 @@ function resumirRastreo(pedido, indiceCatalogo) {
     badgeColor = coarse.color;
   }
 
+  // ── Progreso resumido (barra compacta en la tarjeta) ─────────────────────
+  // Antes la tarjeta mostraba el stepper COMPLETO (8 pasos verticales si hay
+  // fase real del ERP, 5 si no) — en un grid con varias tarjetas por fila,
+  // una tarjeta con 8 pasos termina mucho más alta que su vecina con 5,
+  // dejando el grid disparejo. El detalle paso a paso completo ahora vive en
+  // "Ver detalle" (CuentaCompraDetallePage, con más ancho y sin la
+  // restricción de fila del grid); acá alcanza con "Paso X de Y" + una barra,
+  // mismo alto sea cual sea la fase.
+  let pasoActual = 0;
+  let totalPasos = PASOS_COARSE.length; // 5, si no hay fase real del ERP
+  if (hayFaseErpReal) {
+    totalPasos = ETAPAS_TIMELINE.length; // 8 (Compra…Finalizado)
+    const idx = ETAPAS_TIMELINE.findIndex((e) => e.key === faseKey);
+    pasoActual = idx >= 0 ? idx + 1 : 1;
+  } else if (coarse && coarse.paso >= 0) {
+    pasoActual = coarse.paso + 1;
+  }
+
   return {
     id: pedido?.id,
     codigo,
@@ -162,58 +179,55 @@ function resumirRastreo(pedido, indiceCatalogo) {
     esAnulado,
     hayFaseErpReal,
     coarse,
+    pasoActual,
+    totalPasos,
   };
 }
 
 // Pasos del stepper REDUCIDO (estado propio de Walá) cuando el ERP aún no reporta
 // la fase de producción detallada. Espeja el orden de estadoWalaADisplay (paso 0-4).
+// Ya no se renderiza un stepper con estas 5 etiquetas acá (ver ProgresoResumen
+// más abajo) — el array se conserva por su .length, para "Paso X de 5".
 const PASOS_COARSE = ['Pago', 'Pagado', 'En preparación', 'Enviado', 'Entregado'];
 
-/** Stepper reducido de 5 nodos para pedidos sin fase granular del ERP. */
-function StepperCoarse({ coarse }) {
-  if (!coarse) return null;
-  if (coarse.paso === -1) {
+/**
+ * Barra de progreso compacta: reemplaza al stepper completo (8 pasos
+ * verticales o 5 horizontales) que hacía que las tarjetas del grid quedaran
+ * de alturas muy distintas entre sí. El detalle paso a paso completo vive
+ * en "Ver detalle" (CuentaCompraDetallePage) — acá alcanza con saber CUÁNTO
+ * avanzó, mismo alto en toda tarjeta sea cual sea la fase.
+ */
+function ProgresoResumen({ esAnulado, pasoActual, totalPasos, color }) {
+  if (esAnulado) {
     return (
-      <div className={glass.coarseStepper}>
-        <span className={glass.coarseCancel} style={{ color: coarse.color }}><T>Pedido cancelado</T></span>
+      <div className={glass.progresoResumen}>
+        <div className={glass.progresoBarraTrack}>
+          <div className={`${glass.progresoBarraFill} ${glass.progresoBarraAnulada}`} style={{ width: '100%' }} />
+        </div>
+        <span className={glass.progresoTexto}><T>Pedido cancelado</T></span>
       </div>
     );
   }
+  const pct = totalPasos > 0 ? Math.max(8, Math.min(100, (pasoActual / totalPasos) * 100)) : 0;
   return (
-    <ol className={glass.coarseStepper} aria-label="Progreso del pedido">
-      {PASOS_COARSE.map((label, i) => {
-        const done = i < coarse.paso;
-        const actual = i === coarse.paso;
-        return (
-          <li
-            key={label}
-            className={`${glass.coarseNode} ${done ? glass.coarseDone : ''} ${actual ? glass.coarseActual : ''}`}
-          >
-            {/* El color de fase (coarse.color) es UN solo color para toda la
-                tarjeta (el de la fase actual), no uno distinto por paso. Antes
-                se aplicaba también a los pasos ya completados -todos los
-                "done" quedaban pintados del mismo color que el actual-; ahora
-                solo se lo lleva el paso ACTUAL. Los completados los pinta el
-                CSS en verde (.coarseDone .coarseDot), como "progreso
-                alcanzado" — mismo criterio que ya usaba la línea conectora. */}
-            <span
-              className={glass.coarseDot}
-              style={actual ? { backgroundColor: coarse.color, borderColor: coarse.color } : undefined}
-              aria-hidden="true"
-            />
-            <span className={glass.coarseLabel}>{label}</span>
-          </li>
-        );
-      })}
-    </ol>
+    <div className={glass.progresoResumen}>
+      <div className={glass.progresoBarraTrack} role="progressbar" aria-valuenow={pasoActual} aria-valuemin={0} aria-valuemax={totalPasos}>
+        <div className={glass.progresoBarraFill} style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+      <span className={glass.progresoTexto}>
+        <T>Paso</T> {pasoActual} <T>de</T> {totalPasos}
+      </span>
+    </div>
   );
 }
 
 /**
  * Contenido de "Rastreo" dentro de Mi cuenta.
  * Página pública NUEVA enfocada en la FASE DE PRODUCCIÓN del ERP: por cada
- * pedido muestra su fase actual y, de forma prominente, el stepper de 8 pasos
- * (Compra→…→Finalizado) reutilizando el componente <Timeline>.
+ * pedido muestra su fase actual y una barra de progreso compacta (Paso X de
+ * Y) — el detalle paso a paso completo (el stepper de 8 pasos, reutilizando
+ * <Timeline>) vive en "Ver detalle" (CuentaCompraDetallePage), donde hay
+ * ancho real para mostrarlo sin desparejar el grid de tarjetas.
  *
  * Carga clonada de "Mis Compras" (CuentaPedidosPage): usePedidos(dni, uid) con
  * userProfile.dni + user.uid, cruzando con useProducts para imagen/nombre.
@@ -401,25 +415,23 @@ const CuentaRastreoPage = () => {
                   </div>
                 )}
 
-                {/* RASTREO PROMINENTE: si hay fase real del ERP, el stepper granular
-                    de 8 pasos; si no (solo espejo / recién creado), el stepper reducido
-                    de Walá con una nota aclaratoria (evita un timeline vacío engañoso). */}
-                {r.hayFaseErpReal ? (
-                  <div className={glass.timelineWrap}>
-                    <Timeline
-                      fechas={pedido.fechas}
-                      fechaCompra={pedido.fechaCompra}
-                      pedido={pedido}
-                    />
-                  </div>
-                ) : (
-                  <div className={glass.timelineWrap}>
-                    <p className={glass.fallbackNota}>
-                      La fase detallada de producción (diseño, estampado, empaquetado…)
-                      aparecerá aquí cuando el taller la registre.
-                    </p>
-                    <StepperCoarse coarse={r.coarse} />
-                  </div>
+                {/* Progreso compacto: "Paso X de Y" + barra, mismo alto en toda
+                    tarjeta. El stepper completo (8 pasos, <Timeline>) se
+                    mudó a "Ver detalle" — ver comentario arriba de
+                    ProgresoResumen. Sin fase real del ERP todavía (solo
+                    espejo / recién creado), una nota aclara por qué el
+                    conteo es sobre 5 pasos y no 8. */}
+                <ProgresoResumen
+                  esAnulado={r.esAnulado}
+                  pasoActual={r.pasoActual}
+                  totalPasos={r.totalPasos}
+                  color={r.badgeColor}
+                />
+                {!r.hayFaseErpReal && !r.esAnulado && (
+                  <p className={glass.fallbackNota}>
+                    La fase detallada de producción (diseño, estampado, empaquetado…)
+                    aparecerá aquí cuando el taller la registre.
+                  </p>
                 )}
 
                 {/* Enlace al detalle completo de la compra. */}

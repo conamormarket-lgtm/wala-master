@@ -7,6 +7,7 @@ import { usePedidos } from '../../hooks/usePedidos';
 import { useProducts } from '../../hooks/useProducts';
 
 import { GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
+import Timeline from '../../components/Timeline';
 
 import {
   derivarEstadoCompra,
@@ -414,6 +415,27 @@ const CuentaCompraDetallePage = () => {
               {estado.paymentLabel}
             </div>
           </Reveal>
+
+          {/* Seguimiento de producción: el stepper completo de 8 pasos
+              (Compra…Finalizado) que antes vivía en la tarjeta de Rastreo
+              -y la desparejaba contra tarjetas vecinas en otra fase, cada
+              una con una altura muy distinta-. Acá hay ancho real y no hay
+              una fila de grid que desparejar, así que el detalle completo
+              vive en este lugar; Rastreo solo muestra "Paso X de Y". No
+              tiene sentido para un pedido anulado (no hay fase a la que
+              seguirle el rastro). */}
+          {estado.key !== 'anulado' && (
+            <Reveal className={styles.glass}>
+              <h2 className={styles.cardTitle}><T>Seguimiento de producción</T></h2>
+              <div className={styles.seguimientoWrap}>
+                <Timeline
+                  fechas={pedido.fechas}
+                  fechaCompra={pedido.fechaCompra}
+                  pedido={pedido}
+                />
+              </div>
+            </Reveal>
+          )}
 
           {/* Lista de productos */}
           <Reveal className={styles.glass}>

@@ -270,139 +270,43 @@
 }
 
 /* =========================================================================
-   Stepper REDUCIDO (estado propio de Walá) — pedidos sin fase granular del ERP.
-   5 nodos horizontales (Pago → Pagado → En preparación → Enviado → Entregado).
-   ========================================================================= */
-.coarseStepper {
-  list-style: none;
-  margin: 0;
-  padding: 0.6rem 0.2rem 0.2rem;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.25rem;
-}
-.coarseNode {
-  flex: 1 1 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  position: relative;
-  min-width: 0;
-}
-/* Línea conectora entre nodos — antes un hilo de 2px, apenas se notaba el
-   avance real entre pasos. */
-.coarseNode:not(:first-child)::before {
-  content: '';
-  position: absolute;
-  top: 9px;
-  right: 50%;
-  width: 100%;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--gris-borde, #e2e8f0);
-}
-.coarseDone::before,
-.coarseActual::before {
-  background: var(--verde-principal, #16a34a);
-}
-/* "No alcanzado": hueco, relleno del fondo de la tarjeta -antes era un
-   punto gris chico (14px/borde 2px), con la misma pinta para el paso
-   ACTUAL y los ya COMPLETADOS (solo el halo los distinguía). Ahora cada
-   estado tiene su propia lectura: hueco / tilde verde / halo pulsante. */
-.coarseDot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--gris-fondo, #f1f5f9);
-  border: 3px solid var(--gris-borde, #cbd5e1);
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease, border-color 0.2s ease, width 0.2s ease, height 0.2s ease;
-}
-/* Completado: siempre verde (progreso alcanzado) con un tilde, sin importar
-   el color de la fase actual -ese color queda solo para el paso ACTUAL,
-   ver StepperCoarse en CuentaRastreoPage.jsx: el estilo inline con
-   coarse.color ahora solo se aplica a .coarseActual, no a .coarseDone-. */
-.coarseDone .coarseDot {
-  background: var(--verde-principal, #16a34a);
-  border-color: var(--verde-principal, #16a34a);
-}
-.coarseDone .coarseDot::after {
-  content: '';
-  width: 5px;
-  height: 9px;
-  border-right: 2px solid #fff;
-  border-bottom: 2px solid #fff;
-  transform: rotate(45deg) translate(-1px, -1px);
-}
-/* Actual: más grande + halo pulsante -refuerza el "en tiempo real" del
-   subtítulo de la página, en vez de solo un halo estático-. El color de
-   fondo/borde lo pone el inline style (coarse.color) en el componente. */
-.coarseActual .coarseDot {
-  width: 22px;
-  height: 22px;
-  animation: coarsePulso 1.8s ease-in-out infinite;
-}
-@keyframes coarsePulso {
-  0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 20%, transparent); }
-  50% { box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 8%, transparent); }
-}
-.coarseLabel {
-  font-size: 0.7rem;
-  line-height: 1.15;
-  text-align: center;
-  color: var(--gris-texto-secundario, #64748b);
-  word-break: break-word;
-}
-.coarseDone .coarseLabel {
-  color: var(--verde-principal, #16a34a);
-  font-weight: 600;
-}
-.coarseActual .coarseLabel {
-  font-weight: 800;
-  color: var(--gris-texto, #1e293b);
-}
-.coarseCancel {
-  display: inline-block;
-  padding: 0.5rem 0.25rem;
-  font-weight: 700;
-}
-:global([data-theme='dark']) .coarseDot {
-  background: var(--color-surface-alt, #334155);
-  border-color: var(--color-border, #475569);
-}
-:global([data-theme='dark']) .coarseNode:not(:first-child)::before {
-  background: var(--color-border, #475569);
-}
-:global([data-theme='dark']) .coarseActual .coarseLabel {
-  color: var(--gris-texto, #e2e8f0);
-}
-
-/* =========================================================================
-   Rastreo prominente: contenedor del stepper (Timeline reutilizado)
+   Progreso resumido: barra compacta + "Paso X de Y"
    -------------------------------------------------------------------------
-   El propio Timeline es horizontal con overflow-x:auto; aquí solo le damos un
-   marco de vidrio suave para destacarlo como el foco de la tarjeta.
+   Reemplaza al stepper completo (8 pasos verticales / 5 horizontales) que
+   vivía acá antes: con tarjetas vecinas en fases muy distintas (una recién
+   "Pago", otra ya en "Preparación" con el layout vertical de Timeline), el
+   grid quedaba disparejo -unas mucho más altas que otras-. El stepper
+   completo (<Timeline>, reutilizado) se mudó a "Ver detalle"
+   (CuentaCompraDetallePage), donde hay ancho real y no hay una fila de
+   grid que desparejar. Acá alcanza con CUÁNTO avanzó: mismo alto en toda
+   tarjeta, sea cual sea la fase.
    ========================================================================= */
-.timelineWrap {
-  border-radius: var(--radio-mediano, 16px);
-  background: var(--gris-hover, rgba(248, 250, 252, 0.6));
-  border: 1px solid var(--gris-borde, #e2e8f0);
-  padding: 0 0.25rem;
+.progresoResumen {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.progresoBarraTrack {
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--gris-borde, #e2e8f0);
   overflow: hidden;
-  /* Declara el contenedor que Timeline.module.css consulta con
-     "@container timelineHost (max-width: 700px)" para pasar a layout
-     vertical cuando la tarjeta es angosta -en vez de forzar scroll
-     horizontal para ver los 8 pasos-, sin importar el ancho de la
-     ventana. */
-  container-type: inline-size;
-  container-name: timelineHost;
+}
+.progresoBarraFill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.progresoBarraAnulada {
+  background: var(--gris-texto-secundario, #94a3b8) !important;
+}
+.progresoTexto {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario, #64748b);
+  white-space: nowrap;
 }
 
 /* =========================================================================
@@ -416,15 +320,11 @@
 /* =========================================================================
    MODO NOCHE
    -------------------------------------------------------------------------
-   Casi todo consume tokens que ya se oscurecen solos. Ajustamos aquí las
-   superficies/bordes con valores literales (marco del stepper, nota de
-   fallback) y el fallback @supports de la tarjeta de estado.
+   Casi todo consume tokens que ya se oscurecen solos (incluida la barra de
+   progreso: .progresoBarraTrack/.progresoTexto usan --gris-*). Ajustamos
+   aquí solo lo que necesita un valor propio en oscuro (nota de fallback) y
+   el fallback @supports de la tarjeta de estado.
    ========================================================================= */
-:global([data-theme='dark']) .timelineWrap {
-  background: var(--color-surface-alt, rgba(30, 41, 59, 0.5));
-  border-color: var(--color-border, #334155);
-}
-
 :global([data-theme='dark']) .fallbackNota {
   background: var(--color-surface-alt, rgba(30, 41, 59, 0.5));
   border-color: var(--color-border, #334155);

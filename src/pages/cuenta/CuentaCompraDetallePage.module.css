@@ -117,6 +117,16 @@
   color: var(--gris-texto-principal, #111827);
 }
 
+/* Envuelve <Timeline> (Seguimiento de producción): declara el contenedor que
+   Timeline.module.css consulta con "@container timelineHost (max-width:
+   700px)" para pasar a layout vertical en mobile -esta columna se achica a
+   ancho completo del teléfono bajo .layout-, sin depender solo del @media
+   de la ventana. */
+.seguimientoWrap {
+  container-type: inline-size;
+  container-name: timelineHost;
+}
+
 /* ── Encabezado: código + fecha + badge grande ──────────────────────────── */
 .headerCard {
   display: flex;
