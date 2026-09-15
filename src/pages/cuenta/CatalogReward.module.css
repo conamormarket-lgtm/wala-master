@@ -24,6 +24,18 @@
   border-radius: 8px;
   margin-bottom: 20px;
   border: 1px solid #a7f3d0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.messageLink {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
 }
 
 .errorBox {
@@ -135,11 +147,23 @@
   color: #92400e;
   padding: 6px 12px;
   border-radius: 20px;
-  font-weight: bold;
   font-size: 14px;
   display: flex;
-  align-items: center;
-  gap: 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.costLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+.costAmount {
+  font-weight: bold;
 }
 
 .claimBtn {

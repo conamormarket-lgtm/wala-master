@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { Gift } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -31,6 +32,7 @@ const CatalogReward = () => {
   const [claimingId, setClaimingId] = useState(null);
   const [confirmingId, setConfirmingId] = useState(null);
   const [message, setMessage] = useState('');
+  const [showCuponesLink, setShowCuponesLink] = useState(false);
 
   // Carga el catálogo público de recompensas activas, ordenadas por `order`.
   const loadRewards = useCallback(async () => {
@@ -66,6 +68,7 @@ const CatalogReward = () => {
     setConfirmingId(null);
     setClaimingId(reward.id);
     setMessage('');
+    setShowCuponesLink(false);
     setError('');
 
     try {
@@ -74,11 +77,12 @@ const CatalogReward = () => {
       const coupon = res?.data?.coupon;
       if (coupon?.code) {
         setMessage(
-          `¡Has canjeado "${reward.title}"! Tu código de cupón es ${coupon.code}. Lo encontrarás en tus cupones.`
+          `¡Has canjeado "${reward.title}"! Tu código de cupón es ${coupon.code}.`
         );
       } else {
         setMessage(`¡Has canjeado "${reward.title}" con éxito!`);
       }
+      setShowCuponesLink(true);
       // Refresca saldo/perfil server-side.
       if (typeof reloadProfile === 'function') await reloadProfile();
     } catch (e) {
@@ -95,7 +99,16 @@ const CatalogReward = () => {
         Canjea tus monedas por beneficios exclusivos.
       </p>
 
-      {message && <div className={styles.messageBox}>{message}</div>}
+      {message && (
+        <div className={styles.messageBox}>
+          <span>{message}</span>
+          {showCuponesLink && (
+            <Link to="/cuenta/cupones" className={styles.messageLink}>
+              Ver mis cupones →
+            </Link>
+          )}
+        </div>
+      )}
       {error && <div className={styles.errorBox}>{error}</div>}
 
       {loading ? (
@@ -138,7 +151,10 @@ const CatalogReward = () => {
                 )}
 
                 <div className={styles.cardFooter}>
-                  <div className={styles.costBadge}>🪙 {reward.cost}</div>
+                  <div className={styles.costBadge}>
+                    <span className={styles.costLabel}>Cuesta</span>
+                    <span className={styles.costAmount}>🪙 {reward.cost}</span>
+                  </div>
                   {isConfirming ? (
                     <div className={styles.confirmRow}>
                       <button
