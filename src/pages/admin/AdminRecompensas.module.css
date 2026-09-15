@@ -5,7 +5,42 @@
 }
 
 .header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 2rem;
+}
+
+.headerStats {
+  display: flex;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.headerStat,
+.headerStatMuted {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  background: #f3eefe;
+  color: #7c3aed;
+}
+
+.headerStatMuted {
+  background: #f1f3f5;
+  color: #6b7280;
+}
+
+[data-theme="dark"] .headerStat {
+  background: rgba(139, 92, 246, 0.16);
+  color: #C4B5FD;
+}
+
+[data-theme="dark"] .headerStatMuted {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
 }
 
 .title {
@@ -148,6 +183,15 @@
 
 .error {
   color: #ff4757;
+}
+
+.groupLabel {
+  margin: 1.75rem 0 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
 }
 
 .rewardsGrid {
@@ -308,9 +352,44 @@
 }
 
 .emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 3rem 0;
+  gap: 0.35rem;
+  padding: 3rem 1.5rem;
   color: #888;
+}
+
+.emptyIcon {
+  color: #d1c4f7;
+  margin-bottom: 0.5rem;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #444;
+}
+
+.emptyText {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .emptyIcon {
+  color: rgba(139, 92, 246, 0.45);
+}
+
+[data-theme="dark"] .emptyTitle {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .emptyText {
+  color: var(--color-text-muted);
 }
 
 /* Modal */

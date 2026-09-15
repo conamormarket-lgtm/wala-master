@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getRewards, createReward, updateReward, deleteReward } from '../../services/rewardsCatalog';
-import { Edit2, Trash2, Gift } from 'lucide-react';
+import { Edit2, Trash2, Gift, PackageOpen } from 'lucide-react';
 import Button from '../../components/common/Button';
 import styles from './AdminRecompensas.module.css';
 
@@ -13,6 +13,56 @@ const emptyForm = {
   order: 0,
   active: true
 };
+
+// Extraída del map original (antes vivía duplicada -misma tarjeta- para
+// poder separar Activas de Inactivas sin repetir el JSX dos veces).
+const RewardCard = ({ reward, onEdit, onDelete }) => (
+  <div className={styles.rewardCard}>
+    <div className={styles.rewardVisual}>
+      <div className={styles.rewardBubble}>
+        <Gift size={22} />
+      </div>
+    </div>
+    <div className={styles.rewardInfo}>
+      <h3 className={styles.rewardName}>{reward.title}</h3>
+      {reward.description && (
+        <p className={styles.rewardDesc}>{reward.description}</p>
+      )}
+      <div className={styles.badgeRow}>
+        <span className={styles.costBadge}>{reward.cost ?? 0} pts</span>
+        <span className={styles.rewardBadge}>Orden: {reward.order ?? 0}</span>
+        <span
+          className={`${styles.statusBadge} ${
+            reward.active !== false ? styles.statusActive : styles.statusInactive
+          }`}
+        >
+          {reward.active !== false ? 'Activa' : 'Inactiva'}
+        </span>
+      </div>
+      {reward.value && (
+        <span className={styles.rewardValue}>{reward.value}</span>
+      )}
+    </div>
+    <div className={styles.rewardActions}>
+      <button
+        type="button"
+        className={styles.actionBtn}
+        onClick={() => onEdit(reward)}
+        title="Editar"
+      >
+        <Edit2 size={16} />
+      </button>
+      <button
+        type="button"
+        className={`${styles.actionBtn} ${styles.actionBtnDelete}`}
+        onClick={() => onDelete(reward)}
+        title="Eliminar"
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
+  </div>
+);
 
 const AdminRecompensas = () => {
   const queryClient = useQueryClient();
@@ -30,6 +80,17 @@ const AdminRecompensas = () => {
   });
 
   const rewards = rewardsData ?? [];
+
+  // Separadas en dos grupos -en vez de una sola grilla mezclada- para que se
+  // pueda distinguir de un vistazo qué está realmente visible para canje
+  // (Activas) de lo que quedó pausado (Inactivas), sin tener que leer el
+  // badge de estado de cada tarjeta una por una.
+  const { activas, inactivas } = useMemo(() => {
+    const act = [];
+    const inact = [];
+    for (const r of rewards) (r.active !== false ? act : inact).push(r);
+    return { activas: act, inactivas: inact };
+  }, [rewards]);
 
   const resetForm = (nextOrder) =>
     setForm({ ...emptyForm, order: nextOrder ?? rewards.length });
@@ -110,6 +171,18 @@ const AdminRecompensas = () => {
             Catálogo de premios que los clientes canjean con sus puntos (monedas).
           </p>
         </div>
+        {rewards.length > 0 && (
+          <div className={styles.headerStats}>
+            <span className={styles.headerStat}>
+              <strong>{activas.length}</strong> activa{activas.length === 1 ? '' : 's'}
+            </span>
+            {inactivas.length > 0 && (
+              <span className={styles.headerStatMuted}>
+                <strong>{inactivas.length}</strong> inactiva{inactivas.length === 1 ? '' : 's'}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className={styles.contentGrid}>
@@ -219,59 +292,36 @@ const AdminRecompensas = () => {
             {isLoading && <p className={styles.loading}>Cargando...</p>}
             {error && <p className={styles.error}>{error.message}</p>}
 
-            <div className={styles.rewardsGrid}>
-              {rewards.map((reward) => (
-                <div key={reward.id} className={styles.rewardCard}>
-                  <div className={styles.rewardVisual}>
-                    <div className={styles.rewardBubble}>
-                      <Gift size={22} />
-                    </div>
-                  </div>
-                  <div className={styles.rewardInfo}>
-                    <h3 className={styles.rewardName}>{reward.title}</h3>
-                    {reward.description && (
-                      <p className={styles.rewardDesc}>{reward.description}</p>
-                    )}
-                    <div className={styles.badgeRow}>
-                      <span className={styles.costBadge}>{reward.cost ?? 0} pts</span>
-                      <span className={styles.rewardBadge}>Orden: {reward.order ?? 0}</span>
-                      <span
-                        className={`${styles.statusBadge} ${
-                          reward.active !== false ? styles.statusActive : styles.statusInactive
-                        }`}
-                      >
-                        {reward.active !== false ? 'Activa' : 'Inactiva'}
-                      </span>
-                    </div>
-                    {reward.value && (
-                      <span className={styles.rewardValue}>{reward.value}</span>
-                    )}
-                  </div>
-                  <div className={styles.rewardActions}>
-                    <button
-                      type="button"
-                      className={styles.actionBtn}
-                      onClick={() => handleEdit(reward)}
-                      title="Editar"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.actionBtn} ${styles.actionBtnDelete}`}
-                      onClick={() => setDeleteConfirm(reward)}
-                      title="Eliminar"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {!isLoading && !error && activas.length > 0 && (
+              <div className={styles.rewardsGrid}>
+                {activas.map((reward) => (
+                  <RewardCard key={reward.id} reward={reward} onEdit={handleEdit} onDelete={setDeleteConfirm} />
+                ))}
+              </div>
+            )}
 
-            {rewards.length === 0 && !isLoading && (
+            {/* Inactivas: aparte y con su propio rótulo -en vez de mezcladas
+                en la misma grilla- para que pausar una recompensa no la deje
+                "perdida" entre las que sí se pueden canjear hoy. */}
+            {!isLoading && !error && inactivas.length > 0 && (
+              <>
+                <h3 className={styles.groupLabel}>Inactivas</h3>
+                <div className={styles.rewardsGrid}>
+                  {inactivas.map((reward) => (
+                    <RewardCard key={reward.id} reward={reward} onEdit={handleEdit} onDelete={setDeleteConfirm} />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {rewards.length === 0 && !isLoading && !error && (
               <div className={styles.emptyState}>
-                <p>No tienes recompensas creadas todavía.</p>
+                <PackageOpen size={36} aria-hidden="true" className={styles.emptyIcon} />
+                <p className={styles.emptyTitle}>No tienes recompensas creadas todavía.</p>
+                <p className={styles.emptyText}>
+                  Usa el formulario de la izquierda para crear la primera: el catálogo
+                  que ven tus clientes en "Mi cuenta" se llena con lo que actives acá.
+                </p>
               </div>
             )}
           </div>
