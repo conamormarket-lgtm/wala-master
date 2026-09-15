@@ -420,14 +420,13 @@ const CuentaRastreoPage = () => {
                 )}
 
                 {/* Progreso compacto: "Paso X de Y · Nombre" + barra, mismo
-                    alto en toda tarjeta. El stepper completo (8 pasos,
-                    <Timeline>) se mudó a "Ver detalle" — ver comentario
-                    arriba de ProgresoResumen. Pedido a mano: aclarar en QUÉ
-                    se diferencian los pedidos de 5 pasos (aún no entraron a
-                    producción: Pago→Entregado, estado propio de Walá) de
-                    los de 8 (ya está el taller registrando cada etapa:
-                    Compra→Finalizado, el detalle real del ERP) — antes solo
-                    el de 5 pasos tenía nota, el de 8 no explicaba nada. */}
+                    alto en toda tarjeta. El stepper completo (8 pasos o el
+                    listado de los 5) se mudó a "Ver detalle" — ver
+                    comentario arriba de ProgresoResumen. Pedido a mano: la
+                    nota que explicaba acá la diferencia entre 5 y 8 pasos se
+                    quita -quedaba rara repitiendo algo que "Ver detalle" ya
+                    explica mejor, con el listado completo en vez de un solo
+                    texto-; en la lista alcanza con el badge + la barra. */}
                 <ProgresoResumen
                   esAnulado={r.esAnulado}
                   pasoActual={r.pasoActual}
@@ -435,24 +434,6 @@ const CuentaRastreoPage = () => {
                   pasoLabel={r.pasoLabel}
                   color={r.badgeColor}
                 />
-                {!r.esAnulado && (
-                  <p className={glass.pasosNota}>
-                    {r.hayFaseErpReal ? (
-                      <>
-                        <T>Seguimiento detallado de producción (8 pasos): el taller ya está registrando cada etapa de este pedido.</T>
-                      </>
-                    ) : (
-                      <>
-                        {/* Antes esta nota solo decía "seguimiento de 5 pasos" sin
-                            decir CUÁLES — pedido a mano: listar el flujo completo,
-                            no solo el paso actual (que ya se ve en la barra de
-                            arriba). */}
-                        <T>Seguimiento general</T> ({PASOS_GENERALES.join(' → ')}).{' '}
-                        <T>El detalle por etapas de producción (8 pasos) aparece aquí cuando el taller registra el pedido.</T>
-                      </>
-                    )}
-                  </p>
-                )}
 
                 {/* Enlace al detalle completo de la compra. */}
                 <div className={glass.cardActions}>

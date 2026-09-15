@@ -257,21 +257,6 @@
   border-color: rgba(107, 114, 128, 0.28);
 }
 
-/* Nota que aclara si el pedido va por el seguimiento de 5 pasos (Pago…
-   Entregado, estado propio de Walá) o el de 8 (Compra…Finalizado, el
-   detalle real del ERP) — antes solo existía para el caso de 5, ahora
-   aparece en los dos para que la diferencia sea explícita en cualquiera. */
-.pasosNota {
-  margin: 0 0 0.6rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 10px;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: var(--gris-texto-secundario, #475569);
-  background: var(--gris-hover, rgba(241, 245, 249, 0.7));
-  border: 1px solid var(--gris-borde, #e2e8f0);
-}
-
 /* =========================================================================
    Progreso resumido: barra compacta + "Paso X de Y"
    -------------------------------------------------------------------------
@@ -324,16 +309,9 @@
    MODO NOCHE
    -------------------------------------------------------------------------
    Casi todo consume tokens que ya se oscurecen solos (incluida la barra de
-   progreso: .progresoBarraTrack/.progresoTexto usan --gris-*). Ajustamos
-   aquí solo lo que necesita un valor propio en oscuro (nota de los pasos) y
-   el fallback @supports de la tarjeta de estado.
+   progreso: .progresoBarraTrack/.progresoTexto usan --gris-*). Lo único que
+   queda acá es el fallback @supports de la tarjeta de estado.
    ========================================================================= */
-:global([data-theme='dark']) .pasosNota {
-  background: var(--color-surface-alt, rgba(30, 41, 59, 0.5));
-  border-color: var(--color-border, #334155);
-  color: var(--gris-texto-secundario, #cbd5e1);
-}
-
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   :global([data-theme='dark']) .card {
     background: var(--color-surface);
