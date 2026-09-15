@@ -27,7 +27,7 @@ import { getMessage } from '../../services/messages';
 import { getFeaturedProducts, getProductsByCategory } from '../../services/products';
 import { getOrderByIdAnyCollection } from '../../services/erp/firebase';
 
-import PremiumProductCard from '../Tienda/components/PremiumProductCard/PremiumProductCard';
+import FeaturedCarousel from '../Tienda/components/FeaturedCarousel/FeaturedCarousel';
 
 import styles from './CuentaCompraDetallePage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -706,24 +706,21 @@ const CuentaCompraDetallePage = () => {
         </div>
       </div>
 
-      {/* También te puede interesar: fila ÚNICA con scroll horizontal, no la
-          grilla de <ProductGrid> (pensada para el catálogo completo, se
-          envuelve a 2 filas y con 8 sugerencias se veía muy cargada, cortando
-          feo la última tarjeta contra el borde de la pantalla). Mismas
-          tarjetas (<PremiumProductCard>, igual look que en la Tienda), una
-          sola fila que nunca se corta: si sobran, se desliza en vez de
-          envolver. */}
+      {/* También te puede interesar: el MISMO carrusel con flechas que usa el
+          builder para "Destacados"/"Novedades"/etc. (<FeaturedCarousel>), no
+          una imitación -pedido a mano: "mira el builder a ver cómo se usa la
+          sección de productos cuando es para mover por flechas"-. Antes era
+          <ProductGrid> (pensada para el catálogo completo: se envolvía a 2
+          filas cargadas y cortaba la última tarjeta contra el borde). Una
+          sola fila SIEMPRE: flechas en desktop (se esconden solas al llegar
+          al final), swipe nativo en mobile. */}
       {relacionados.length > 0 && (
-        <Reveal className={styles.relacionados}>
-          <h2 className={styles.relacionadosTitulo}><T>También te puede interesar</T></h2>
-          <div className={styles.relacionadosFila}>
-            {relacionados.map((product, index) => (
-              <div className={styles.relacionadosItem} key={product.id}>
-                <PremiumProductCard product={product} categories={[]} isAboveFold={index < 2} />
-              </div>
-            ))}
-          </div>
-        </Reveal>
+        <FeaturedCarousel
+          title={<T>También te puede interesar</T>}
+          products={relacionados}
+          categories={[]}
+          visibleItems={4}
+        />
       )}
     </div>
   );

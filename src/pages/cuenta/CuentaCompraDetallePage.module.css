@@ -551,53 +551,13 @@
   margin: 0 0 0.1rem;
 }
 
-/* ── Sección "También te puede interesar" ───────────────────────────────── */
-.relacionados {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-.relacionadosTitulo {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--gris-texto-principal, #111827);
-}
-
-/* Fila ÚNICA con scroll horizontal (en vez de la grilla de <ProductGrid>,
-   pensada para el catálogo completo: con 8 sugerencias se envolvía a 2 filas
-   muy cargadas y la última tarjeta quedaba cortada contra el borde de la
-   pantalla). Cada tarjeta con un ancho fijo -mismo mínimo que usa
-   ProductGrid.module.css (minmax(320px..) desktop / 260px tablet)- para que
-   se vea igual de "llena" que en la Tienda; si sobran, se desliza en vez de
-   apilarse verticalmente. */
-.relacionadosFila {
-  display: flex;
-  gap: 1.25rem;
-  overflow-x: auto;
-  padding: 0.25rem 0.25rem 1rem;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-}
-
-.relacionadosItem {
-  flex: 0 0 260px;
-  scroll-snap-align: start;
-}
-
-@media (min-width: 1024px) {
-  .relacionadosItem {
-    flex-basis: 300px;
-  }
-}
-
-@media (max-width: 480px) {
-  .relacionadosItem {
-    flex-basis: 68vw;
-  }
-}
+/* "También te puede interesar" ya NO tiene CSS propio: es <FeaturedCarousel>
+   -el mismo carrusel con flechas que usa el builder para Destacados/
+   Novedades/etc. (src/pages/Tienda/components/FeaturedCarousel)-, con su
+   propio FeaturedCarousel.module.css. Antes era una grilla de <ProductGrid>
+   (2 filas cargadas, última tarjeta cortada contra el borde), luego una fila
+   con scroll libre hecha a mano; ahora es el componente real del builder,
+   no una imitación. */
 
 /* ── Estados de carga / vacío ───────────────────────────────────────────── */
 .skeletonWrap {
