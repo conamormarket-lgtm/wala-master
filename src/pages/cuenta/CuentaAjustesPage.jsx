@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, LogOut, Moon, Sun } from 'lucide-react';
+import { Check, LogOut, Moon, Sun, Languages } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,15 +42,15 @@ const CuentaAjustesPage = () => {
   return (
     <div className={styles.ajustes}>
       <Reveal>
-        <GlassCard variant="solid" padding="md" animate={false}>
-          <h2 className={styles.sectionLabel}><T>Apariencia</T></h2>
+        <GlassCard variant="solid" padding="lg" animate={false}>
+          <div className={styles.cardHeader}>
+            <div className={styles.headerIcon}>
+              {isDark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+            </div>
+            <h2><T>Apariencia</T></h2>
+          </div>
           <div className={styles.row}>
             <span className={styles.rowLabel}>
-              {isDark ? (
-                <Sun size={18} strokeWidth={1.75} className={styles.rowIcon} aria-hidden="true" />
-              ) : (
-                <Moon size={18} strokeWidth={1.75} className={styles.rowIcon} aria-hidden="true" />
-              )}
               <T>{isDark ? 'Modo claro' : 'Modo oscuro'}</T>
             </span>
             <ThemeToggle />
@@ -59,8 +59,11 @@ const CuentaAjustesPage = () => {
       </Reveal>
 
       <Reveal>
-        <GlassCard variant="solid" padding="md" animate={false}>
-          <h2 className={styles.sectionLabel}><T>Idioma</T></h2>
+        <GlassCard variant="solid" padding="lg" animate={false}>
+          <div className={styles.cardHeader}>
+            <div className={styles.headerIcon}><Languages size={18} aria-hidden="true" /></div>
+            <h2><T>Idioma</T></h2>
+          </div>
           <div className={styles.langList}>
             {available.map((code) => {
               const name = LANG_NAMES[code] || code.toUpperCase();

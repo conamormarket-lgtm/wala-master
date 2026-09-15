@@ -265,16 +265,23 @@ const CuentaRastreoPage = () => {
     return idx;
   }, [productos]);
 
-  // Cabecera reutilizable de la sección (misma en todos los estados).
+  // Cabecera reutilizable de la sección (misma en todos los estados). Mismo
+  // patrón "ícono en insignia + título" que la tarjeta "Datos Personales" de
+  // Mi Perfil (PerfilPage.module.css .cardHeader/.headerIcon) -pedido a
+  // mano: "las tarjetas de pedidos y ajustes deben verse como en mi
+  // perfil"-, en vez del título suelto que tenía antes.
   const Cabecera = () => (
-    <Reveal className={glass.header}>
-      <h2 className={glass.headerTitle}>
-        <PackageSearch size={22} aria-hidden="true" /> Rastrea la fase de producción de tu pedido
-      </h2>
-      <p className={glass.headerSub}>
-        Sigue en tiempo real en qué etapa está cada pedido: desde el diseño y la
-        impresión hasta el estampado, el empaquetado y el reparto final.
-      </p>
+    <Reveal>
+      <GlassCard variant="solid" padding="lg" animate={false} className={glass.header}>
+        <div className={glass.cardHeader}>
+          <div className={glass.headerIcon}><PackageSearch size={20} aria-hidden="true" /></div>
+          <h2>Rastrea la fase de producción de tu pedido</h2>
+        </div>
+        <p className={glass.headerSub}>
+          Sigue en tiempo real en qué etapa está cada pedido: desde el diseño y la
+          impresión hasta el estampado, el empaquetado y el reparto final.
+        </p>
+      </GlassCard>
     </Reveal>
   );
 

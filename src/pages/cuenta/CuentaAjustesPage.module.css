@@ -36,13 +36,37 @@
   }
 }
 
-.sectionLabel {
-  margin: 0 0 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--gris-texto-secundario, #6b7280);
+/* Mismo patrón que "Datos Personales" en Mi Perfil (PerfilPage.module.css
+   .cardHeader/.headerIcon): ícono en insignia violeta + título, con un
+   filete divisorio debajo -pedido a mano: "las tarjetas de pedidos y
+   ajustes deben verse como en mi perfil"-, en vez del rótulo suelto en
+   mayúsculas que tenía antes. */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.cardHeader h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.headerIcon {
+  flex: 0 0 auto;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .row {
@@ -53,17 +77,9 @@
 }
 
 .rowLabel {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--gris-texto-principal, #1f2937);
-}
-
-.rowIcon {
-  color: var(--violet-600, #7c3aed);
-  flex: 0 0 auto;
 }
 
 .langList {
