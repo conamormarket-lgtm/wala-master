@@ -79,36 +79,11 @@
   }
 }
 
-/* ── Superficie de cristal genérica (se aplica junto a las tarjetas) ─────── */
-.glass {
-  position: relative;
-  border-radius: var(--radio-grande, 18px);
-  background: var(--glass-bg, rgba(255, 255, 255, 0.72));
-  -webkit-backdrop-filter: var(--glass-blur, blur(16px));
-  backdrop-filter: var(--glass-blur, blur(16px));
-  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.5));
-  box-shadow: var(--glass-shadow, 0 10px 40px -10px rgba(17, 24, 39, 0.12));
-  padding: 1.1rem 1.15rem;
-  overflow: hidden;
-}
-
-.glass::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 52%;
-  pointer-events: none;
-  background: var(--glass-highlight, linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent));
-  border-top-left-radius: inherit;
-  border-top-right-radius: inherit;
-}
-
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .glass {
-    background: #ffffff;
-    border-color: var(--gris-borde, rgba(229, 231, 235, 0.9));
-  }
-}
+/* Las superficies de tarjeta ya NO se pintan a mano acá: la página usa
+   <GlassCard> (src/components/ui/GlassCard.jsx), el mismo componente que usa
+   el resto de "Mi cuenta" (CuentaRastreoPage) y el builder, para que todas
+   las tarjetas compartan exactamente el mismo vidrio/sombra/radio. Este
+   módulo solo aporta layout y detalles propios de esta vista. */
 
 .cardTitle {
   margin: 0 0 0.75rem;
@@ -128,12 +103,16 @@
 }
 
 /* ── Seguimiento GENERAL (5 pasos: Pago…Entregado) ──────────────────────────
-   Lista vertical para cuando el pedido todavía no tiene fase real de
-   producción del ERP (ver hayFaseReal). Pedido a mano: cada paso como una
-   PILL de color sólido -mismo lenguaje que .estadoBadge, el badge grande
-   del header de arriba (relleno, texto blanco, redondeado, con sombra)-,
-   en vez del círculo de radio + texto plano que tenía antes. Une los tres
-   estados con un conector fino, para no perder la lectura de secuencia. */
+   Nodo circular + línea conectora: EXACTAMENTE el mismo lenguaje visual que
+   <Timeline> (src/components/Timeline), el stepper de 8 pasos de producción
+   que aparece en esta misma tarjeta cuando el taller ya reportó fase real.
+   Así ambos estados de "Seguimiento" -el general de Walá y el de
+   producción del ERP- se leen como la MISMA familia de componente, no como
+   dos interfaces distintas para el mismo concepto.
+   Horizontal con línea entre nodos en desktop; colapsa a lista vertical en
+   pantallas/contenedores angostos (mismo criterio de @container que
+   Timeline, con @media como respaldo si el navegador no soporta
+   container queries). */
 .seguimientoGeneralNota {
   margin: 0 0 1rem;
   font-size: 0.85rem;
@@ -141,60 +120,148 @@
   line-height: 1.4;
 }
 
+.pasoGeneralWrap {
+  container-type: inline-size;
+  container-name: pasoGeneralHost;
+}
+
 .seguimientoGeneral {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.5rem 0 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 0.25rem;
 }
 
 .pasoGeneralItem {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
-  padding-bottom: 0.6rem;
+  text-align: center;
 }
 
-.pasoGeneralItem:not(:last-child)::before {
+/* Línea conectora hacia el SIGUIENTE nodo. */
+.pasoGeneralItem::before {
   content: '';
   position: absolute;
-  left: 1.1rem;
-  top: 100%;
-  width: 2px;
-  height: 0.6rem;
+  top: 15px;
+  left: 50%;
+  width: 100%;
+  height: 3px;
   background: var(--gris-borde, #e2e8f0);
+  z-index: 0;
 }
 
-/* Mismo molde que .estadoBadge (header): pill rellena, texto blanco,
-   redondeada, con sombra. Pendiente = versión neutra sin relleno/sombra. */
-.pasoGeneralBadge {
-  display: inline-flex;
+.pasoGeneralItem:last-child::before {
+  display: none;
+}
+
+.pasoGeneralItemDone::before,
+.pasoGeneralItem:has(+ .pasoGeneralItemActual)::before {
+  background: var(--verde-exito, #16a34a);
+}
+
+.pasoGeneralDot {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.95rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--gris-texto-secundario, #64748b);
-  background: var(--gris-fondo, #f1f5f9);
-  border: 1px solid var(--gris-borde, #e2e8f0);
-}
-
-.pasoGeneralBadgeDone {
+  justify-content: center;
   color: #fff;
-  background: var(--verde-principal, #16a34a);
-  border-color: transparent;
-  box-shadow: 0 6px 14px -6px rgba(22, 163, 74, 0.45);
+  background: var(--gris-borde, #e2e8f0);
+  box-shadow: 0 0 0 4px var(--glass-bg-solid, #fff);
+  transition: var(--transicion-suave, all 0.3s ease);
 }
 
-.pasoGeneralBadgeActual {
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 6px 18px -6px rgba(17, 24, 39, 0.35);
+.pasoGeneralItemDone .pasoGeneralDot {
+  background: var(--verde-exito, #16a34a);
 }
 
-.pasoGeneralBadgeDot {
+.pasoGeneralItemActual .pasoGeneralDot {
+  transform: scale(1.2);
+}
+
+/* Puntito interno del paso ACTUAL (color de fondo inyectado desde JS). */
+.pasoGeneralPuntito {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.pasoGeneralLabel {
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.pasoGeneralItemActual .pasoGeneralLabel,
+.pasoGeneralItemDone .pasoGeneralLabel {
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+/* Contenedor angosto (columna única en mobile, o esta tarjeta encogida
+   dentro de un layout más chico): stepper vertical, mismo criterio que
+   Timeline en pantallas chicas. */
+@media (max-width: 640px) {
+  .seguimientoGeneral {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .pasoGeneralItem {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+  }
+  .pasoGeneralItem::before {
+    left: 15px;
+    top: 32px;
+    width: 3px;
+    height: calc(100% + 1.5rem - 32px);
+  }
+  .pasoGeneralLabel {
+    margin-top: 0;
+    margin-left: 0.85rem;
+  }
+}
+
+@container pasoGeneralHost (max-width: 640px) {
+  .seguimientoGeneral {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .pasoGeneralItem {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+  }
+  .pasoGeneralItem::before {
+    left: 15px;
+    top: 32px;
+    width: 3px;
+    height: calc(100% + 1.5rem - 32px);
+  }
+  .pasoGeneralLabel {
+    margin-top: 0;
+    margin-left: 0.85rem;
+  }
 }
 
 /* ── Encabezado: código + fecha + badge grande ──────────────────────────── */
@@ -231,25 +298,29 @@
   color: var(--gris-texto-secundario, #6b7280);
 }
 
-/* Badge grande de estado (color inyectado por estilo inline desde JS). */
+/* Badge grande de estado: mismo patrón "tintado" (color + fondo al 10% +
+   borde al 20% de opacidad, todo inyectado desde JS a partir de un único
+   estado.color) que .faseBadge en CuentaRastreoPage.module.css -la tarjeta
+   de "Rastreo" que enlaza a este mismo detalle-, en vez del relleno sólido
+   de antes. Así el badge de esta página y el de la lista de rastreo se ven
+   como el mismo componente. */
 .estadoBadge {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.5rem 0.95rem;
+  padding: 0.4rem 0.85rem;
   border-radius: 999px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #fff;
   white-space: nowrap;
-  box-shadow: 0 6px 18px -6px rgba(17, 24, 39, 0.35);
+  border: 1px solid transparent;
 }
 
 .estadoDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  flex: 0 0 auto;
 }
 
 .pagoLinea {
@@ -271,8 +342,15 @@
 .linea {
   display: flex;
   gap: 0.85rem;
-  padding: 0.75rem 0;
+  padding: 0.75rem 0.5rem;
+  margin: 0 -0.5rem;
+  border-radius: var(--radio-pequeno, 10px);
   border-bottom: 1px solid var(--gris-borde, rgba(229, 231, 235, 0.7));
+  transition: background-color 0.2s ease;
+}
+
+.linea:hover {
+  background: var(--gris-hover, #f1f5f9);
 }
 
 .linea:last-child {
@@ -492,7 +570,6 @@
   align-items: center;
   text-align: center;
   gap: 0.75rem;
-  padding: 2.5rem 1.25rem;
 }
 
 .noEncontradoTitulo {
@@ -512,24 +589,17 @@
 /* ═════════════════════════════════════════════════════════════════════════
    MODO NOCHE — CuentaCompraDetallePage
    ---------------------------------------------------------------------------
-   Casi todo consume tokens --glass-* --gris-* --violet-* y se oscurece solo.
-   Aquí afinamos: (1) el fallback @supports (#ffffff) -> superficie oscura;
-   (2) el skeleton de carga, demasiado luminoso sobre oscuro; (3) los chips e
-   imágenes que usan --violet-50 (claro fijo): los pasamos a un tinte violeta
-   translúcido con texto claro para que no queden como manchas claras. El badge
-   de estado (.estadoBadge) recibe su color inline desde JS con texto blanco:
-   legible en ambos modos, se conserva. Solo color/contraste.
+   Las tarjetas (<GlassCard>) ya resuelven su propio modo noche (incluido el
+   fallback @supports sin backdrop-filter); acá solo afinamos lo propio de
+   esta vista: (1) el skeleton de carga, demasiado luminoso sobre oscuro;
+   (2) los chips e imágenes que usan --violet-50 (claro fijo): los pasamos a
+   un tinte violeta translúcido con texto claro; (3) el stepper de
+   Seguimiento general (línea/nodo pendiente en gris claro fijo). El badge de
+   estado y los nodos DONE/ACTUAL reciben su color inline desde JS: legibles
+   en ambos modos, se conservan. Solo color/contraste.
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* (1) Fallback sólido sin backdrop-filter -> superficie oscura */
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  :global([data-theme='dark']) .glass {
-    background: var(--color-surface);
-    border-color: var(--color-border);
-  }
-}
-
-/* (2) Skeleton: grises claros -> grises oscuros translúcidos */
+/* (1) Skeleton: grises claros -> grises oscuros translúcidos */
 :global([data-theme='dark']) .skeletonBlock {
   background: linear-gradient(
     100deg,
@@ -540,7 +610,7 @@
   background-size: 200% 100%;
 }
 
-/* (3) Chips de atributos e imagen placeholder con --violet-50 (claro fijo) */
+/* (2) Chips de atributos e imagen placeholder con --violet-50 (claro fijo) */
 :global([data-theme='dark']) .chip {
   color: var(--primary-hover);
   background: var(--primary-light);
@@ -558,4 +628,23 @@
 :global([data-theme='dark']) .resumenGratis,
 :global([data-theme='dark']) .resumenDescuento {
   color: #6EE7B7; /* emerald-300 */
+}
+
+/* (3) Stepper de Seguimiento general: línea/nodo PENDIENTE (gris claro fijo)
+   -> borde del tema. Verde (done) y el color inline del paso ACTUAL se
+   mantienen -comunican significado y se ven bien en oscuro-, mismo criterio
+   que Timeline.module.css con su propio stepper de 8 pasos. */
+:global([data-theme='dark']) .pasoGeneralItem:not(.pasoGeneralItemDone):not(.pasoGeneralItemActual)::before,
+:global([data-theme='dark']) .pasoGeneralItem:not(.pasoGeneralItemDone):not(.pasoGeneralItemActual) .pasoGeneralDot {
+  background: var(--color-border);
+}
+:global([data-theme='dark']) .pasoGeneralDot {
+  box-shadow: 0 0 0 4px var(--color-bg);
+}
+:global([data-theme='dark']) .pasoGeneralLabel {
+  color: var(--color-text-muted);
+}
+:global([data-theme='dark']) .pasoGeneralItemActual .pasoGeneralLabel,
+:global([data-theme='dark']) .pasoGeneralItemDone .pasoGeneralLabel {
+  color: var(--color-text);
 }

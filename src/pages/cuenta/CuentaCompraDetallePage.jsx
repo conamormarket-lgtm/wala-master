@@ -2,11 +2,13 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
+import { Check } from 'lucide-react';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { usePedidos } from '../../hooks/usePedidos';
 import { useProducts } from '../../hooks/useProducts';
 
-import { GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
+import { GlassCard, GlassButton, Reveal, Stagger, StaggerItem } from '../../components/ui';
 import Timeline from '../../components/Timeline';
 import { PASOS_GENERALES } from '../../utils/constants';
 
@@ -281,15 +283,17 @@ const CuentaCompraDetallePage = () => {
   if (!pedido && !rawLoading && (rawError || listaResuelta)) {
     return (
       <div className={styles.page}>
-        <Reveal className={`${styles.glass} ${styles.noEncontrado}`}>
-          <h2 className={styles.noEncontradoTitulo}><T>No encontramos esta compra</T></h2>
-          <p className={styles.noEncontradoTexto}>
-            Es posible que el pedido ya no esté disponible o que no pertenezca a tu
-            cuenta.
-          </p>
-          <GlassButton as={Link} to="/cuenta/pedidos" variant="primary">
-            Volver a Mis Compras
-          </GlassButton>
+        <Reveal>
+          <GlassCard variant="solid" padding="lg" animate={false} bodyClassName={styles.noEncontrado}>
+            <h2 className={styles.noEncontradoTitulo}><T>No encontramos esta compra</T></h2>
+            <p className={styles.noEncontradoTexto}>
+              Es posible que el pedido ya no esté disponible o que no pertenezca a tu
+              cuenta.
+            </p>
+            <GlassButton as={Link} to="/cuenta/pedidos" variant="primary">
+              Volver a Mis Compras
+            </GlassButton>
+          </GlassCard>
         </Reveal>
       </div>
     );
@@ -419,30 +423,40 @@ const CuentaCompraDetallePage = () => {
         {/* ── Columna principal ──────────────────────────────────────────── */}
         <div className={styles.mainCol}>
           {/* Encabezado: código + fecha + badge de estado + pago */}
-          <Reveal className={`${styles.glass} ${styles.headerCard}`}>
-            <div className={styles.headerTop}>
-              <div className={styles.headerMeta}>
-                <span className={styles.codigo}>Pedido #{codigo || '—'}</span>
-                {fechaLegible && (
-                  <span className={styles.fecha}>Realizado el {fechaLegible}</span>
-                )}
+          <Reveal>
+            <GlassCard variant="solid" padding="md" animate={false} bodyClassName={styles.headerCard}>
+              <div className={styles.headerTop}>
+                <div className={styles.headerMeta}>
+                  <span className={styles.codigo}>Pedido #{codigo || '—'}</span>
+                  {fechaLegible && (
+                    <span className={styles.fecha}>Realizado el {fechaLegible}</span>
+                  )}
+                </div>
+                <span
+                  className={styles.estadoBadge}
+                  style={{
+                    color: estado.color,
+                    backgroundColor: `${estado.color}1A`,
+                    borderColor: `${estado.color}33`,
+                  }}
+                >
+                  <span
+                    className={styles.estadoDot}
+                    style={{ background: estado.color }}
+                    aria-hidden="true"
+                  />
+                  {estado.label}
+                </span>
               </div>
-              <span
-                className={styles.estadoBadge}
-                style={{ background: estado.color }}
-              >
-                <span className={styles.estadoDot} aria-hidden="true" />
-                {estado.label}
-              </span>
-            </div>
-            <div className={styles.pagoLinea}>
-              <span
-                className={styles.pagoDot}
-                style={{ background: estado.color }}
-                aria-hidden="true"
-              />
-              {estado.paymentLabel}
-            </div>
+              <div className={styles.pagoLinea}>
+                <span
+                  className={styles.pagoDot}
+                  style={{ background: estado.color }}
+                  aria-hidden="true"
+                />
+                {estado.paymentLabel}
+              </div>
+            </GlassCard>
           </Reveal>
 
           {/* Seguimiento: el stepper completo -de 8 pasos (Compra…Finalizado)
@@ -455,60 +469,67 @@ const CuentaCompraDetallePage = () => {
               solo muestra "Paso X de Y". No tiene sentido para un pedido
               anulado (no hay fase a la que seguirle el rastro). */}
           {estado.key !== 'anulado' && (
-            <Reveal className={styles.glass}>
-              <h2 className={styles.cardTitle}>
-                {hayFaseReal ? <T>Seguimiento de producción</T> : <T>Seguimiento general</T>}
-              </h2>
-              {hayFaseReal ? (
-                <div className={styles.seguimientoWrap}>
-                  <Timeline
-                    fechas={pedidoParaTimeline.fechas}
-                    fechaCompra={pedidoParaTimeline.fechaCompra}
-                    pedido={pedidoParaTimeline}
-                  />
-                </div>
-              ) : (
-                <>
-                  <p className={styles.seguimientoGeneralNota}>
-                    <T>El detalle por etapas de producción (8 pasos) aparece aquí cuando el taller registra el pedido.</T>
-                  </p>
-                  {/* Cada paso como una pill de color sólido -mismo lenguaje
-                      que el badge de estado del header de arriba
-                      (.estadoBadge: relleno, texto blanco, redondeado,
-                      sombra)-, en vez de un círculo de radio + texto plano.
-                      El paso ACTUAL usa el mismo color que el badge del
-                      header (estado.color); los completados van en verde
-                      (progreso alcanzado, mismo criterio que el resto del
-                      sitio); los pendientes quedan en gris neutro. */}
-                  <ol className={styles.seguimientoGeneral}>
-                    {PASOS_GENERALES.map((label, i) => {
-                      const done = pasoGeneralIdx >= 0 && i < pasoGeneralIdx;
-                      const actual = i === pasoGeneralIdx;
-                      return (
-                        <li key={label} className={styles.pasoGeneralItem}>
-                          <span
-                            className={[
-                              styles.pasoGeneralBadge,
-                              done && styles.pasoGeneralBadgeDone,
-                              actual && styles.pasoGeneralBadgeActual,
-                            ].filter(Boolean).join(' ')}
-                            style={actual ? { background: estado.color } : undefined}
-                          >
-                            {done && <span aria-hidden="true">✓</span>}
-                            {actual && <span className={styles.pasoGeneralBadgeDot} aria-hidden="true" />}
-                            {label}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </>
-              )}
+            <Reveal>
+              <GlassCard variant="solid" padding="md" animate={false}>
+                <h2 className={styles.cardTitle}>
+                  {hayFaseReal ? <T>Seguimiento de producción</T> : <T>Seguimiento general</T>}
+                </h2>
+                {hayFaseReal ? (
+                  <div className={styles.seguimientoWrap}>
+                    <Timeline
+                      fechas={pedidoParaTimeline.fechas}
+                      fechaCompra={pedidoParaTimeline.fechaCompra}
+                      pedido={pedidoParaTimeline}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <p className={styles.seguimientoGeneralNota}>
+                      <T>El detalle por etapas de producción (8 pasos) aparece aquí cuando el taller registra el pedido.</T>
+                    </p>
+                    {/* Mismo lenguaje visual que <Timeline> (el stepper de 8
+                        pasos de producción): nodo circular + línea
+                        conectora, en vez de una pila de pills sueltas. Así
+                        "Seguimiento general" y "Seguimiento de producción"
+                        se leen como la MISMA familia de componente. El paso
+                        ACTUAL usa el color de estado.color (mismo color que
+                        el badge del header); los completados van en verde
+                        (--verde-exito, igual criterio que el resto del
+                        sitio); los pendientes quedan en gris neutro. */}
+                    <div className={styles.pasoGeneralWrap}>
+                      <ol className={styles.seguimientoGeneral}>
+                        {PASOS_GENERALES.map((label, i) => {
+                          const done = pasoGeneralIdx >= 0 && i < pasoGeneralIdx;
+                          const actual = i === pasoGeneralIdx;
+                          const itemClass = [
+                            styles.pasoGeneralItem,
+                            done && styles.pasoGeneralItemDone,
+                            actual && styles.pasoGeneralItemActual,
+                          ].filter(Boolean).join(' ');
+                          return (
+                            <li key={label} className={itemClass}>
+                              <span
+                                className={styles.pasoGeneralDot}
+                                style={actual ? { background: estado.color } : undefined}
+                              >
+                                {done && <Check size={14} strokeWidth={4} aria-hidden="true" />}
+                                {actual && <span className={styles.pasoGeneralPuntito} aria-hidden="true" />}
+                              </span>
+                              <span className={styles.pasoGeneralLabel}>{label}</span>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </div>
+                  </>
+                )}
+              </GlassCard>
             </Reveal>
           )}
 
           {/* Lista de productos */}
-          <Reveal className={styles.glass}>
+          <Reveal>
+          <GlassCard variant="solid" padding="md" animate={false}>
             <h2 className={styles.cardTitle}>
               Producto{lineas.length === 1 ? '' : 's'}
             </h2>
@@ -573,25 +594,29 @@ const CuentaCompraDetallePage = () => {
                 })}
               </Stagger>
             )}
+          </GlassCard>
           </Reveal>
 
           {/* Dirección de entrega */}
           {(direccion || partesDireccionSecundaria.length > 0) && (
-            <Reveal className={styles.glass}>
-              <h2 className={styles.cardTitle}><T>Dirección de entrega</T></h2>
-              {direccion && <p className={styles.direccionTexto}>{direccion}</p>}
-              {partesDireccionSecundaria.length > 0 && (
-                <p className={styles.direccionSecundaria}>
-                  {partesDireccionSecundaria.join(', ')}
-                </p>
-              )}
+            <Reveal>
+              <GlassCard variant="solid" padding="md" animate={false}>
+                <h2 className={styles.cardTitle}><T>Dirección de entrega</T></h2>
+                {direccion && <p className={styles.direccionTexto}>{direccion}</p>}
+                {partesDireccionSecundaria.length > 0 && (
+                  <p className={styles.direccionSecundaria}>
+                    {partesDireccionSecundaria.join(', ')}
+                  </p>
+                )}
+              </GlassCard>
             </Reveal>
           )}
         </div>
 
         {/* ── Columna lateral: detalle de la compra + WhatsApp ───────────── */}
         <div className={styles.sideCol}>
-          <Reveal className={styles.glass}>
+          <Reveal>
+          <GlassCard variant="solid" padding="md" animate={false}>
             <h2 className={styles.cardTitle}><T>Detalle de la compra</T></h2>
 
             <div className={styles.resumenRow}>
@@ -632,10 +657,12 @@ const CuentaCompraDetallePage = () => {
             </div>
 
             <p className={styles.resumenPago}>{estado.paymentLabel}</p>
+          </GlassCard>
           </Reveal>
 
           {/* WhatsApp al asesor de la marca (o general) */}
-          <Reveal className={`${styles.glass} ${styles.waBlock}`}>
+          <Reveal>
+          <GlassCard variant="solid" padding="md" animate={false} bodyClassName={styles.waBlock}>
             <p className={styles.waHint}><T>¿Dudas con tu pedido?</T></p>
             {brandsConNumero.length > 1 ? (
               brandsConNumero.map((b) => (
@@ -666,6 +693,7 @@ const CuentaCompraDetallePage = () => {
                 Consultar estado de mi pedido
               </GlassButton>
             )}
+          </GlassCard>
           </Reveal>
         </div>
       </div>
