@@ -130,11 +130,18 @@
 /* ── Banner ilustrado (mascota Kapi), uno por origen del cupón ───────────
    Recorte pensado para la franja superior de la ilustración -mascota +
    íconos-, dejando fuera el "ticket" en blanco de abajo (ese espacio ya lo
-   cubre el contenido real de la tarjeta). */
+   cubre el contenido real de la tarjeta). object-position TOP (no un
+   porcentaje intermedio): en las dos ilustraciones la cabeza de la mascota
+   empieza casi pegada al borde superior de la imagen (orejas ~5-9% del
+   alto); cualquier recorte que arranque más abajo del todo le corta el
+   pelo/orejas -exactamente lo que se veía "cortado"-. Arrancando desde
+   arriba siempre entra la cabeza completa, sea cual sea el ancho real de
+   la tarjeta (columnas más anchas simplemente muestran menos cuerpo, nunca
+   menos cabeza). */
 .cuponBanner {
   position: relative;
   width: 100%;
-  height: 92px;
+  height: 104px;
   flex: 0 0 auto;
   overflow: hidden;
   background: var(--color-hover, #f1f5f9);
@@ -144,7 +151,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 18%;
+  object-position: 50% top;
   display: block;
 }
 
