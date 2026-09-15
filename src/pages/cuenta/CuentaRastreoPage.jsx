@@ -158,12 +158,15 @@ function resumirRastreo(pedido, indiceCatalogo) {
   // mismo alto sea cual sea la fase.
   let pasoActual = 0;
   let totalPasos = PASOS_COARSE.length; // 5, si no hay fase real del ERP
+  let pasoLabel = null; // nombre del paso actual (ej. "Pago", "Preparación") — pedido a mano
   if (hayFaseErpReal) {
     totalPasos = ETAPAS_TIMELINE.length; // 8 (Compra…Finalizado)
     const idx = ETAPAS_TIMELINE.findIndex((e) => e.key === faseKey);
     pasoActual = idx >= 0 ? idx + 1 : 1;
+    pasoLabel = ETAPAS_TIMELINE[pasoActual - 1]?.nombre || null;
   } else if (coarse && coarse.paso >= 0) {
     pasoActual = coarse.paso + 1;
+    pasoLabel = PASOS_COARSE[coarse.paso] || null;
   }
 
   return {
@@ -181,6 +184,7 @@ function resumirRastreo(pedido, indiceCatalogo) {
     coarse,
     pasoActual,
     totalPasos,
+    pasoLabel,
   };
 }
 
@@ -197,7 +201,7 @@ const PASOS_COARSE = ['Pago', 'Pagado', 'En preparación', 'Enviado', 'Entregado
  * en "Ver detalle" (CuentaCompraDetallePage) — acá alcanza con saber CUÁNTO
  * avanzó, mismo alto en toda tarjeta sea cual sea la fase.
  */
-function ProgresoResumen({ esAnulado, pasoActual, totalPasos, color }) {
+function ProgresoResumen({ esAnulado, pasoActual, totalPasos, pasoLabel, color }) {
   if (esAnulado) {
     return (
       <div className={glass.progresoResumen}>
@@ -214,8 +218,12 @@ function ProgresoResumen({ esAnulado, pasoActual, totalPasos, color }) {
       <div className={glass.progresoBarraTrack} role="progressbar" aria-valuenow={pasoActual} aria-valuemin={0} aria-valuemax={totalPasos}>
         <div className={glass.progresoBarraFill} style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
+      {/* "Paso X de Y" solo decía el número — pedido a mano: sumar el
+          nombre del paso (ej. "Pago", "Preparación"), para saber en qué
+          etapa concreta está sin tener que ir a "Ver detalle". */}
       <span className={glass.progresoTexto}>
         <T>Paso</T> {pasoActual} <T>de</T> {totalPasos}
+        {pasoLabel && <> · {pasoLabel}</>}
       </span>
     </div>
   );
@@ -415,22 +423,27 @@ const CuentaRastreoPage = () => {
                   </div>
                 )}
 
-                {/* Progreso compacto: "Paso X de Y" + barra, mismo alto en toda
-                    tarjeta. El stepper completo (8 pasos, <Timeline>) se
-                    mudó a "Ver detalle" — ver comentario arriba de
-                    ProgresoResumen. Sin fase real del ERP todavía (solo
-                    espejo / recién creado), una nota aclara por qué el
-                    conteo es sobre 5 pasos y no 8. */}
+                {/* Progreso compacto: "Paso X de Y · Nombre" + barra, mismo
+                    alto en toda tarjeta. El stepper completo (8 pasos,
+                    <Timeline>) se mudó a "Ver detalle" — ver comentario
+                    arriba de ProgresoResumen. Pedido a mano: aclarar en QUÉ
+                    se diferencian los pedidos de 5 pasos (aún no entraron a
+                    producción: Pago→Entregado, estado propio de Walá) de
+                    los de 8 (ya está el taller registrando cada etapa:
+                    Compra→Finalizado, el detalle real del ERP) — antes solo
+                    el de 5 pasos tenía nota, el de 8 no explicaba nada. */}
                 <ProgresoResumen
                   esAnulado={r.esAnulado}
                   pasoActual={r.pasoActual}
                   totalPasos={r.totalPasos}
+                  pasoLabel={r.pasoLabel}
                   color={r.badgeColor}
                 />
-                {!r.hayFaseErpReal && !r.esAnulado && (
-                  <p className={glass.fallbackNota}>
-                    La fase detallada de producción (diseño, estampado, empaquetado…)
-                    aparecerá aquí cuando el taller la registre.
+                {!r.esAnulado && (
+                  <p className={glass.pasosNota}>
+                    {r.hayFaseErpReal
+                      ? 'Seguimiento detallado de producción (8 pasos): el taller ya está registrando cada etapa de este pedido.'
+                      : 'Seguimiento general (5 pasos). El detalle por etapas de producción (8 pasos) aparece aquí cuando el taller registra el pedido.'}
                   </p>
                 )}
 
