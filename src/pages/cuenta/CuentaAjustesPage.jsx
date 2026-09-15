@@ -1,12 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, LogOut } from 'lucide-react';
+import { Check, LogOut, Moon, Sun } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { logout } from '../../services/firebase/auth';
 import ThemeToggle from '../../components/common/ThemeToggle/ThemeToggle';
 import FlagIcon from '../../components/i18n/FlagIcon';
+import { GlassCard, Reveal } from '../../components/ui';
 import { T } from '../../i18n/useTranslatedText';
 import styles from './CuentaAjustesPage.module.css';
 
@@ -36,40 +37,51 @@ const CuentaAjustesPage = () => {
     navigate('/');
   };
 
+  const isDark = theme === 'dark';
+
   return (
     <div className={styles.ajustes}>
-      <section className={styles.section}>
-        <h2 className={styles.sectionLabel}><T>Apariencia</T></h2>
-        <div className={styles.row}>
-          <span className={styles.rowLabel}>
-            <T>{theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}</T>
-          </span>
-          <ThemeToggle />
-        </div>
-      </section>
+      <Reveal>
+        <GlassCard variant="solid" padding="md" animate={false}>
+          <h2 className={styles.sectionLabel}><T>Apariencia</T></h2>
+          <div className={styles.row}>
+            <span className={styles.rowLabel}>
+              {isDark ? (
+                <Sun size={18} strokeWidth={1.75} className={styles.rowIcon} aria-hidden="true" />
+              ) : (
+                <Moon size={18} strokeWidth={1.75} className={styles.rowIcon} aria-hidden="true" />
+              )}
+              <T>{isDark ? 'Modo claro' : 'Modo oscuro'}</T>
+            </span>
+            <ThemeToggle />
+          </div>
+        </GlassCard>
+      </Reveal>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionLabel}><T>Idioma</T></h2>
-        <div className={styles.langList}>
-          {available.map((code) => {
-            const name = LANG_NAMES[code] || code.toUpperCase();
-            const activo = lang === code;
-            return (
-              <button
-                key={code}
-                type="button"
-                aria-pressed={activo}
-                onClick={() => setLang(code)}
-                className={`${styles.langOption} ${activo ? styles.langOptionActive : ''}`}
-              >
-                <FlagIcon code={code} size={20} />
-                <span>{name}</span>
-                {activo && <Check size={16} strokeWidth={2.5} className={styles.langCheck} aria-hidden="true" />}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      <Reveal>
+        <GlassCard variant="solid" padding="md" animate={false}>
+          <h2 className={styles.sectionLabel}><T>Idioma</T></h2>
+          <div className={styles.langList}>
+            {available.map((code) => {
+              const name = LANG_NAMES[code] || code.toUpperCase();
+              const activo = lang === code;
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  aria-pressed={activo}
+                  onClick={() => setLang(code)}
+                  className={`${styles.langOption} ${activo ? styles.langOptionActive : ''}`}
+                >
+                  <FlagIcon code={code} size={20} />
+                  <span>{name}</span>
+                  {activo && <Check size={16} strokeWidth={2.5} className={styles.langCheck} aria-hidden="true" />}
+                </button>
+              );
+            })}
+          </div>
+        </GlassCard>
+      </Reveal>
 
       {user && (
         <button type="button" className={styles.logoutBtn} onClick={handleLogout}>

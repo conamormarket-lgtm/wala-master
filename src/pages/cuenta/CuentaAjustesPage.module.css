@@ -1,31 +1,26 @@
-/* ═══════════════════════════════════════════
-   AJUSTES DE CUENTA — apariencia, idioma, sesión
-   ═══════════════════════════════════════════ */
+/* =========================================================================
+   CuentaAjustesPage — apariencia, idioma, sesión
+   -------------------------------------------------------------------------
+   Mismo sistema "Aurora Violeta Serena" que el resto de "Mi cuenta"
+   (CuentaRastreoPage/CuentaCompraDetallePage): las tarjetas son <GlassCard>,
+   no divs con borde/fondo plano hechos a mano -pedido a mano: "mejora el
+   diseño de ajustes" tras ver las cajas blancas actuales-.
+   ========================================================================= */
 
 .ajustes {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   max-width: 420px;
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem 1.1rem;
-  border-radius: var(--radio-grande, 16px);
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, var(--gris-borde, #e5e7eb));
-}
-
 .sectionLabel {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.75rem;
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-text-muted, var(--gris-texto-secundario, #6b7280));
+  color: var(--gris-texto-secundario, #6b7280);
 }
 
 .row {
@@ -36,14 +31,23 @@
 }
 
 .rowLabel {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-text, var(--gris-texto-principal, #1f2937));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #1f2937);
+}
+
+.rowIcon {
+  color: var(--violet-600, #7c3aed);
+  flex: 0 0 auto;
 }
 
 .langList {
   display: flex;
   flex-direction: column;
+  gap: 0.25rem;
 }
 
 .langOption {
@@ -51,55 +55,58 @@
   align-items: center;
   gap: 0.65rem;
   width: 100%;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   font: inherit;
   font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-text, var(--gris-texto-principal, #1f2937));
-  padding: 0.6rem 0.25rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #1f2937);
+  padding: 0.65rem 0.75rem;
   cursor: pointer;
-  border-radius: 8px;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  border-radius: var(--radio-mediano, 12px);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .langOption:hover {
-  background: var(--color-hover, var(--gris-hover, #f5f3ff));
+  background: var(--gris-hover, #f8fafc);
 }
 
-.langOptionActive {
-  font-weight: 700;
-  color: var(--primary-color, #8b5cf6);
+.langOptionActive,
+.langOptionActive:hover {
+  background: var(--violet-50, rgba(139, 92, 246, 0.1));
+  border-color: var(--violet-100, rgba(139, 92, 246, 0.25));
+  color: var(--violet-700, #6d28d9);
 }
 
 .langCheck {
   margin-left: auto;
   flex-shrink: 0;
-  color: var(--primary-color, #8b5cf6);
+  color: var(--violet-600, #7c3aed);
 }
 
-/* "Cerrar sesión": mismo patrón que el logout del sidebar de escritorio —
-   atenuado, al final, sin competir con el resto de la página. Solo el
-   sidebar de escritorio (≥900px) tenía uno; en móvil no había ninguno. */
+/* "Cerrar sesión": pill tintada en rojo -mismo patrón "tintado" (color +
+   fondo/borde translúcidos) que los chips de estado del resto de "Mi
+   cuenta"-, en vez de un link de texto plano. Solo el sidebar de escritorio
+   (≥900px) tenía uno; en móvil no había ninguno (ver comentario en el JSX). */
 .logoutBtn {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  border: none;
-  border-top: 1px solid var(--color-border, var(--gris-borde, #eee));
-  background: transparent;
+  justify-content: center;
+  gap: 0.6rem;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.08);
   font: inherit;
   font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-text-muted, var(--gris-texto-secundario, #6b7280));
-  padding: 0.9rem 0.25rem 0.25rem;
+  font-weight: 700;
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radio-mediano, 12px);
   cursor: pointer;
-  text-align: left;
-  transition: color 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
 .logoutBtn:hover {
-  color: var(--rojo-principal);
+  background: rgba(239, 68, 68, 0.14);
 }
 
 /* En escritorio (>860px) el sidebar de CuentaLayout ya trae su propio
@@ -110,4 +117,18 @@
   .logoutBtn {
     display: none;
   }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE
+   ═════════════════════════════════════════════════════════════════════════ */
+:global([data-theme='dark']) .langOptionActive,
+:global([data-theme='dark']) .langOptionActive:hover {
+  color: var(--primary-hover);
+  background: var(--primary-light);
+  border-color: rgba(167, 139, 250, 0.28);
+}
+
+:global([data-theme='dark']) .logoutBtn {
+  color: #fca5a5;
 }
