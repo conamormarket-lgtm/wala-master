@@ -7,11 +7,33 @@
    diseño de ajustes" tras ver las cajas blancas actuales-.
    ========================================================================= */
 
+/* En mobile, una columna angosta (420px) se ve bien: ocupa casi todo el
+   ancho real de la pantalla. En escritorio esa misma columna quedaba como
+   una islita chica flotando en un canvas enorme -pedido a mano: "se ve muy
+   pequeño... no va mucho, pero en modo móvil sí"-. Desde 700px, Apariencia
+   e Idioma pasan a vivir lado a lado en una grilla más ancha, para que la
+   página use el espacio como el resto de "Mi cuenta" en vez de encogerse a
+   una columna sola. */
 .ajustes {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1rem;
   max-width: 420px;
+}
+
+@media (min-width: 700px) {
+  .ajustes {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    max-width: 760px;
+  }
+
+  /* "Cerrar sesión" ya está oculto en escritorio (ver @media más abajo),
+     pero si algún día deja de estarlo no debería partirse la grilla de 2
+     columnas por la mitad. */
+  .logoutBtn {
+    grid-column: 1 / -1;
+  }
 }
 
 .sectionLabel {
