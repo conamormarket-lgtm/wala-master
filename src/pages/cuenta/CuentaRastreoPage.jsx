@@ -408,7 +408,6 @@ const CuentaRastreoPage = () => {
                     {r.tieneDeuda && (
                       <Link
                         to={`/cuenta/pedidos/${r.id}`}
-                        state={{ from: 'rastreo' }}
                         className={`${glass.alerta} ${glass.alertaDeuda}`}
                       >
                         <AlertTriangle size={15} aria-hidden="true" />
@@ -444,7 +443,6 @@ const CuentaRastreoPage = () => {
                   <GlassButton
                     as={Link}
                     to={`/cuenta/pedidos/${r.id}`}
-                    state={{ from: 'rastreo' }}
                     variant="ghost"
                     size="sm"
                     fullWidth

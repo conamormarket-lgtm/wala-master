@@ -216,10 +216,17 @@ const CuentaLayout = lazy(() => import('./pages/CuentaLayout'));
 const CuentaResumenPage = lazy(() => import('./pages/cuenta/CuentaResumenPage'));
 const CuentaAjustesPage = lazy(() => import('./pages/cuenta/CuentaAjustesPage'));
 const PerfilPage = lazy(() => import('./pages/cuenta/PerfilPage'));
-const CuentaPedidosPage = lazy(() => import('./pages/cuenta/CuentaPedidosPage'));
 const CuentaCompraDetallePage = lazy(() => import('./pages/cuenta/CuentaCompraDetallePage'));
 
-// Rastreo del pedido por fases de producción del ERP (tab al lado de "Mis Pedidos").
+// "Mis Pedidos" y "Rastreo del Pedido" mostraban la MISMA lista (mismo hook
+// usePedidos) en dos diseños distintos y sin enlace entre sí -confuso a
+// propósito de una captura del usuario ("se repite 2 veces lo mismo")-.
+// Se unificaron: CuentaRastreoPage (el diseño liviano tipo tarjeta+barra de
+// progreso, ya enlazaba a CuentaCompraDetallePage) es ahora TAMBIÉN el
+// contenido de /cuenta/pedidos; /cuenta/rastreo redirige ahí. La tarjeta
+// densa vieja (CuentaPedidosPage/Results/PedidoCard) queda sin usar; sus
+// acciones reales (pagar deuda, reclamar monedas, ver boleta) se movieron a
+// CuentaCompraDetallePage vía <PedidoAcciones>.
 const CuentaRastreoPage = lazy(() => import('./pages/cuenta/CuentaRastreoPage'));
 const MisCreacionesPage = lazy(() => import('./pages/cuenta/MisCreacionesPage'));
 const CuentaReferidosPage = lazy(() => import('./pages/cuenta/CuentaReferidosPage'));
@@ -378,9 +385,12 @@ function App() {
                                     <Route index element={<CuentaResumenPage />} />
                                     <Route path="ajustes" element={<CuentaAjustesPage />} />
                                     <Route path="perfil" element={<PerfilPage />} />
-                                    <Route path="pedidos" element={<CuentaPedidosPage />} />
+                                    <Route path="pedidos" element={<CuentaRastreoPage />} />
                                     <Route path="pedidos/:id" element={<CuentaCompraDetallePage />} />
-                                    <Route path="rastreo" element={<CuentaRastreoPage />} />
+                                    {/* /cuenta/rastreo se unificó con "Mis Pedidos" (ver comentario junto al
+                                        lazy import de CuentaRastreoPage); se conserva como redirect por si
+                                        queda algún enlace/bookmark viejo apuntando ahí. */}
+                                    <Route path="rastreo" element={<Navigate to="/cuenta/pedidos" replace />} />
                                     <Route path="creaciones" element={<MisCreacionesPage />} />
                                     <Route path="referidos" element={<CuentaReferidosPage />} />
                                     <Route path="fechas-importantes" element={<CuentaFechasImportantesPage />} />

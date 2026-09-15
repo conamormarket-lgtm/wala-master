@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link, useParams, useLocation } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { Check } from 'lucide-react';
@@ -28,6 +28,7 @@ import { getFeaturedProducts, getProductsByCategory } from '../../services/produ
 import { getOrderByIdAnyCollection } from '../../services/erp/firebase';
 
 import FeaturedCarousel from '../Tienda/components/FeaturedCarousel/FeaturedCarousel';
+import PedidoAcciones from '../../components/PedidoCard/PedidoAcciones';
 
 import styles from './CuentaCompraDetallePage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -83,20 +84,12 @@ function imagenDeLinea(linea, productoCatalogo) {
  * ────────────────────────────────────────────────────────────────────────── */
 const CuentaCompraDetallePage = () => {
   const { id } = useParams();
-  const location = useLocation();
-  // Breadcrumb consciente del origen real: HOY la única entrada a este
-  // detalle dentro de "Mi cuenta" es "Rastreo del Pedido" (Ver detalle /
-  // Pagar deuda, ambos pasan state={{from:'rastreo'}}) -"Mis Pedidos" todavía
-  // no enlaza a ningún detalle-, así que un breadcrumb fijo a "Compras" →
-  // /cuenta/pedidos mandaba a un lugar del que el usuario no había venido y
-  // que además no tiene forma de volver a este detalle (pedido a mano: "dice
-  // estado de compra y me manda a pedidos, es algo raro"). Si en el futuro
-  // "Mis Pedidos" también enlaza aquí, no hace falta tocar esto: sin
-  // location.state.from cae al fallback de siempre.
-  const vieneDeRastreo = location.state?.from === 'rastreo';
-  const breadcrumbAnterior = vieneDeRastreo
-    ? { label: 'Rastreo del Pedido', to: '/cuenta/rastreo' }
-    : { label: 'Compras', to: '/cuenta/pedidos' };
+  // "Mis Pedidos" y "Rastreo del Pedido" se unificaron en una sola lista en
+  // /cuenta/pedidos (ver App.jsx): ahora SÍ es de ahí de donde se llega a
+  // este detalle, así que el breadcrumb puede volver a ser fijo (antes tuvo
+  // que leer location.state.from porque, temporalmente, solo Rastreo
+  // enlazaba aquí).
+  const breadcrumbAnterior = { label: 'Mis Pedidos', to: '/cuenta/pedidos' };
   const { user, userProfile, loading: authLoading } = useAuth();
   const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
   const uid = user?.uid || undefined; // misma clave de caché que la lista; rescata espejos por usuario
@@ -673,6 +666,23 @@ const CuentaCompraDetallePage = () => {
             <p className={styles.resumenPago}>{estado.paymentLabel}</p>
           </GlassCard>
           </Reveal>
+
+          {/* Pagos y documentos: pagar saldo pendiente, historial de pagos,
+              boleta/recibos, fotos de envío y reclamar monedas -acciones
+              reales que antes vivían en la tarjeta vieja de "Mis Pedidos"
+              (PedidoCard), ahora unificada con "Rastreo" (ver App.jsx). Se
+              usa el pedido CRUDO del ERP (mismo objeto `pedido` que ya
+              calcula el resto de esta página) porque estas acciones leen
+              campos crudos (conDeuda, montoDeuda, historialPagos, reparto)
+              que el pedido normalizado de la lista no conserva. */}
+          {estado.key !== 'anulado' && (
+            <Reveal>
+              <GlassCard variant="solid" padding="md" animate={false}>
+                <h2 className={styles.cardTitle}><T>Pagos y documentos</T></h2>
+                <PedidoAcciones pedido={pedido} />
+              </GlassCard>
+            </Reveal>
+          )}
 
           {/* WhatsApp al asesor de la marca (o general) */}
           <Reveal>

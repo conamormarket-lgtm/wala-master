@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import {
   User,
   Package,
-  Truck,
   Gift,
   Ticket,
   Trophy,
@@ -26,8 +25,10 @@ export const useCuentaNavGroups = () => {
       labelFallback: 'Cuenta',
       items: [
         { to: '/cuenta/perfil', labelKey: 'account.perfil', label: 'Mi Perfil', icon: User },
+        // "Mis Pedidos" y "Rastreo del Pedido" eran dos ítems separados que
+        // mostraban la misma lista con distinto diseño -pedido a mano: "se
+        // repite 2 veces lo mismo"-. Se unificaron en uno solo.
         { to: '/cuenta/pedidos', labelKey: 'account.misPedidos', label: 'Mis Pedidos', icon: Package },
-        { to: '/cuenta/rastreo', labelKey: 'account.rastreo', label: 'Rastreo del Pedido', icon: Truck },
         { to: '/cuenta/ajustes', labelKey: 'account.ajustes', label: 'Ajustes', icon: Settings },
       ],
     },
