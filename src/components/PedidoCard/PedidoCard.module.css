@@ -195,6 +195,12 @@
   background-color: #ffffff;
   display: none;
   border-top: 1px solid #f1f5f9;
+  /* Declara el contenedor que Timeline.module.css consulta con
+     "@container timelineHost (max-width: 700px)" -el <Timeline> de la
+     LÍNEA DE TIEMPO vive acá adentro-, para que pase a layout vertical si
+     algún día esta card se ve angosta, en vez de forzar scroll horizontal. */
+  container-type: inline-size;
+  container-name: timelineHost;
 }
 
 .cardBody.expanded {

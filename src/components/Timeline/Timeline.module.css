@@ -167,7 +167,7 @@
   box-shadow: 0 0 0 4px var(--color-bg), 0 0 0 8px rgba(59, 130, 246, 0.2);
 }
 
-/* ---- RESPONSIVE MOBILE ---- */
+/* ---- RESPONSIVE MOBILE (pantalla angosta) ---- */
 @media (max-width: 768px) {
   .timeline {
     flex-direction: column;
@@ -187,6 +187,49 @@
     top: 32px;
     width: 4px;
     height: calc(100% + 14px); /* conecta verticalmente al siguiente nodo */
+  }
+  .contenido {
+    margin-top: 0;
+    margin-left: 1.5rem;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+/* ---- RESPONSIVE por TARJETA angosta (pantalla grande, card chica) ----
+   El media query de arriba solo reacciona al ancho de LA VENTANA: en un
+   grid de tarjetas angostas (CuentaRastreoPage) o cualquier lugar donde
+   Timeline vive en un espacio chico DENTRO de una pantalla ancha, seguía
+   horizontal y forzaba a scrollear para ver los 8 pasos. Con @container
+   pasa al mismo layout vertical de arriba, pero reaccionando al ancho REAL
+   del contenedor donde está (ver container-name: timelineHost en
+   CuentaRastreoPage.module.css / PedidoCard.module.css) — así no hace
+   falta scroll ni un modal aparte, se acomoda solo según el espacio real
+   que tenga, sin importar si la pantalla es grande. Mismas reglas que el
+   media query: si algún navegador no soporta @container, este bloque se
+   ignora y sigue el comportamiento de scroll horizontal de siempre (no es
+   un salto atrás, solo no gana la mejora). */
+@container timelineHost (max-width: 700px) {
+  .timeline {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem 1rem;
+  }
+  .item {
+    flex-direction: row;
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+  .item:last-child {
+    margin-bottom: 0;
+  }
+  .item::before {
+    left: 14px;
+    top: 32px;
+    width: 4px;
+    height: calc(100% + 14px);
   }
   .contenido {
     margin-top: 0;

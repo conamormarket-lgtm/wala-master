@@ -395,8 +395,14 @@
   background: var(--gris-hover, rgba(248, 250, 252, 0.6));
   border: 1px solid var(--gris-borde, #e2e8f0);
   padding: 0 0.25rem;
-  /* El stepper ya scrollea solo; garantizamos que no desborde la tarjeta. */
   overflow: hidden;
+  /* Declara el contenedor que Timeline.module.css consulta con
+     "@container timelineHost (max-width: 700px)" para pasar a layout
+     vertical cuando la tarjeta es angosta -en vez de forzar scroll
+     horizontal para ver los 8 pasos-, sin importar el ancho de la
+     ventana. */
+  container-type: inline-size;
+  container-name: timelineHost;
 }
 
 /* =========================================================================
