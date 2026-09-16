@@ -1,457 +1,864 @@
-.container {
-  padding: 20px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  margin-top: 20px;
-}
+/* =========================================================================
+   MisionesPage — Misiones diarias (dentro de Mi cuenta)
+   -------------------------------------------------------------------------
+   Reescrito sobre el sistema "Aurora Violeta Serena" (el mismo del builder y
+   de Rastreo / Mi Perfil): superficies de vidrio (<GlassCard>), acento
+   violeta escaso, dorado SOLO para monedas, y tokens en vez de hex sueltos.
 
-.title {
-  font-size: 24px;
-  margin-bottom: 8px;
-  color: #111827;
-}
+   Antes esta vista era una caja blanca con tarjetas pastel hardcodeadas
+   (indigo para el nivel, ámbar para la racha, gris para los saldos) y un
+   bloque de modo noche entero repintándolas a mano. Al consumir --glass-* /
+   --gris-* / --color-*, el modo noche sale casi solo: acá abajo queda solo
+   lo que de verdad necesita otro tono en oscuro (los tintes cálidos) y el
+   fallback sólido obligatorio (@supports) para el WebView de Capacitor.
 
-.subtitle {
-  color: #6b7280;
-  margin-bottom: 24px;
-}
+   Mobile-first: una columna en móvil, filas de 3 / lado a lado en desktop.
+   ========================================================================= */
 
-/* Resumen de saldos */
-.statsRow {
+/* Columna de la página: mismo ritmo vertical que el resto de /cuenta. */
+.page {
+  width: 100%;
   display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* =========================================================================
+   Cabecera de la sección
+   -------------------------------------------------------------------------
+   Mismo patrón "ícono en insignia violeta + título" de Mi Perfil y Rastreo
+   (PerfilPage.module.css .cardHeader/.headerIcon), en vez del <h2> suelto.
+   ========================================================================= */
+.card {
+  width: 100%;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.cardHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.headerIcon {
+  flex: 0 0 auto;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headerSub {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+/* =========================================================================
+   Resumen: monedas / experiencia / racha
+   -------------------------------------------------------------------------
+   Tres tarjetas con el MISMO molde (insignia + etiqueta + número + contexto).
+   Lo único que cambia entre ellas es el tinte de la insignia, así que se lee
+   como una fila de marcadores y no como tres componentes distintos.
+   ========================================================================= */
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Los hijos directos son los envoltorios de <StaggerItem>: que estiren para
+   que las tres tarjetas queden del mismo alto aunque el pie mida distinto. */
+.statsGrid > * {
+  display: flex;
 }
 
 .statCard {
-  flex: 1;
-  min-width: 140px;
-  background: #fdfbfb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
+  width: 100%;
+}
+
+/* El cuerpo de GlassCard es el que lleva el layout (los hijos van dentro). */
+.statBody {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 0.35rem;
+  height: 100%;
+}
+
+/* En móvil las tres tarjetas se apilan: en columna cada una ocupaba media
+   pantalla para mostrar un solo número. Acá se compactan a "insignia a la
+   izquierda / etiqueta + número a la derecha / pie abajo", que ocupa la mitad
+   del alto sin perder nada de información. */
+@media (max-width: 639px) {
+  .statBody {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'icon label'
+      'icon value'
+      'foot foot';
+    column-gap: 0.75rem;
+    row-gap: 0;
+  }
+
+  .statIcon {
+    grid-area: icon;
+    align-self: center;
+    margin-bottom: 0;
+  }
+
+  .statLabel {
+    grid-area: label;
+    align-self: end;
+  }
+
+  .statValue {
+    grid-area: value;
+    align-self: start;
+    font-size: 1.4rem;
+  }
+
+  .statHint,
+  .statLink {
+    grid-area: foot;
+    margin-top: 0.5rem;
+    padding-top: 0;
+  }
+}
+
+.statIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.15rem;
+}
+
+/* Dorado = monedas (mismo código de color que la píldora del header). */
+.statIconGold {
+  color: var(--gold-700, #b45309);
+  background: var(--gold-soft, rgba(245, 158, 11, 0.12));
+}
+
+/* Violeta = experiencia/nivel (el acento de marca). */
+.statIconViolet {
+  color: #7c3aed;
+  background: rgba(139, 92, 246, 0.12);
+}
+
+/* Naranja = racha (el fuego). */
+.statIconFlame {
+  color: #c2410c;
+  background: rgba(249, 115, 22, 0.12);
 }
 
 .statLabel {
-  font-size: 13px;
-  color: #6b7280;
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris-texto-secundario, #64748b);
 }
 
 .statValue {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-/* Tarjeta de nivel / tier */
-.tierCard {
-  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
-  border: 1px solid #c7d2fe;
-  border-radius: 12px;
-  padding: 18px 20px;
-  margin-bottom: 20px;
-}
-
-.tierHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.tierInfo {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.tierBadge {
-  font-size: 18px;
+  font-size: 1.6rem;
   font-weight: 800;
-  color: #3730a3;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--gris-texto-principal, #0f172a);
+  font-variant-numeric: tabular-nums;
 }
 
-.tierXp {
-  font-size: 13px;
-  color: #6366f1;
+/* La unidad ("XP", "días") no compite con el número. */
+.statValue small {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.statHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.statHintOk {
+  color: #047857;
   font-weight: 600;
 }
 
-.tierNext {
-  font-size: 13px;
-  color: #4338ca;
-  font-weight: 500;
+.statHintOk svg {
+  flex: 0 0 auto;
+}
+
+/* Pie de la tarjeta de monedas: lleva a donde se gastan. */
+.statLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #7c3aed;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+/* globals.css trae un `a:hover { color: var(--rojo-hover) }` global que gana
+   por especificidad: hay que repetir el color en :hover (mismo motivo que en
+   .primaryButton del Header y .btnSolido de CuentaCompraDetallePage). */
+.statLink:hover {
+  color: #5b21b6;
+}
+
+.statLink svg {
+  flex: 0 0 auto;
+}
+
+/* =========================================================================
+   Nivel por XP
+   ========================================================================= */
+.tierTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.tierIdent {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.tierMedal {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  line-height: 1;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+}
+
+.tierTexts {
+  min-width: 0;
+}
+
+.tierName {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.tierXp {
+  margin: 0.1rem 0 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario, #64748b);
+  font-variant-numeric: tabular-nums;
 }
 
 .progressTrack {
   width: 100%;
   height: 10px;
-  background: #e0e7ff;
   border-radius: 999px;
+  background: var(--gris-borde, #e2e8f0);
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1, #4f46e5);
   border-radius: 999px;
+  background: linear-gradient(90deg, var(--violet-400, #a78bfa), var(--violet-600, #7c3aed));
   transition: width 0.4s ease;
 }
 
-/* Tarjeta de racha */
-.streakCard {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  background: linear-gradient(135deg, #fff7ed, #ffedd5);
-  border: 1px solid #fed7aa;
-  border-radius: 12px;
-  padding: 18px 20px;
-  margin-bottom: 20px;
+/* Escala completa de niveles: la barra sola no decía hacia dónde avanza.
+   Los ya alcanzados se ven "encendidos"; el actual, remarcado. */
+.tierScale {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin: 0.9rem 0 0 0;
+  padding: 0;
 }
 
-.streakInfo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+@media (min-width: 560px) {
+  .tierScale {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
-.streakIcon {
-  font-size: 32px;
-  line-height: 1;
-}
-
-.streakCount {
-  font-size: 22px;
-  font-weight: 800;
-  color: #9a3412;
-}
-
-.streakLabel {
-  font-size: 13px;
-  color: #b45309;
-  font-weight: 500;
-}
-
-.streakStatus {
-  font-size: 14px;
-}
-
-.checkedIn {
-  color: #065f46;
-  font-weight: 600;
-}
-
-.checkPending {
-  color: #92400e;
-}
-
-/* Mensajes */
-.messageBox {
-  background: #ecfdf5;
-  color: #065f46;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border: 1px solid #a7f3d0;
-}
-
-.errorBox {
-  background: #fef2f2;
-  color: #991b1b;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border: 1px solid #fecaca;
-}
-
-.loading {
-  color: #6b7280;
-  padding: 24px 0;
-  text-align: center;
-}
-
-.empty {
+.tierStep {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0.1rem;
+  padding: 0.5rem 0.35rem;
+  border-radius: var(--radio-pequeno, 10px);
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  background: transparent;
   text-align: center;
-  gap: 4px;
-  padding: 36px 16px;
 }
 
-.emptyIcon {
-  color: #c4b5fd;
-  margin-bottom: 8px;
+.tierStepIcon {
+  font-size: 1.05rem;
+  line-height: 1.2;
+  /* Los niveles aún no alcanzados se ven apagados. */
+  filter: grayscale(1);
+  opacity: 0.45;
 }
 
-.emptyTitle {
-  margin: 0;
-  font-size: 15px;
+.tierStepName {
+  font-size: 0.78rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--gris-texto-secundario, #64748b);
 }
 
-.emptyText {
+.tierStepMin {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario, #94a3b8);
+  font-variant-numeric: tabular-nums;
+}
+
+.tierStepDone .tierStepIcon {
+  filter: none;
+  opacity: 1;
+}
+
+.tierStepDone .tierStepName {
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.tierStepCurrent {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.tierStepCurrent .tierStepName {
+  color: #6d28d9;
+}
+
+/* =========================================================================
+   Mensajes de éxito / error
+   ========================================================================= */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radio-mediano, 16px);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+
+.alert svg {
+  flex: 0 0 auto;
+}
+
+.alertOk {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.alertError {
+  color: #b91c1c;
+  background: var(--danger-soft, rgba(239, 68, 68, 0.1));
+  border-color: rgba(239, 68, 68, 0.28);
+}
+
+/* =========================================================================
+   Encabezado de la lista: título + avance del día + fecha
+   -------------------------------------------------------------------------
+   La fecha ("Misiones del 16 de setiembre") estaba perdida al fondo de la
+   página, en gris chico y alineada a la derecha, lejos de lo que fecha.
+   Ahora va acá arriba junto al contador de avance, que es donde se busca.
+   ========================================================================= */
+.listHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.listTitle {
   margin: 0;
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal, #0f172a);
 }
 
-/* Lista de misiones */
+.listMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.listCount {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario, #64748b);
+  font-variant-numeric: tabular-nums;
+}
+
+.listCountDone {
+  color: #047857;
+}
+
+.dateNote {
+  font-size: 0.78rem;
+  color: var(--gris-texto-secundario, #94a3b8);
+}
+
+/* =========================================================================
+   Lista de misiones
+   ========================================================================= */
 .missionList {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
-.missionItem {
+.missionRow {
+  list-style: none;
   display: flex;
-  justify-content: space-between;
+}
+
+.missionCard {
+  width: 100%;
+  transition: var(--transicion-suave, all 0.2s ease);
+}
+
+.missionCard:hover {
+  box-shadow: var(--glass-inset-top), var(--elev-2, 0 12px 32px -12px rgba(76, 29, 149, 0.22));
+}
+
+.missionBody {
+  display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 0.9rem;
   flex-wrap: wrap;
-  background: #fdfbfb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px 20px;
-  transition: box-shadow 0.2s, transform 0.2s;
 }
 
-.missionItem:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+/* Marca de estado: un círculo vacío que se llena en verde al completarse.
+   Da la lectura de checklist que el título solo no daba. */
+.missionMark {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--gris-borde, #cbd5e1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
 }
 
-.missionDone {
-  opacity: 0.75;
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+.missionMarkDone {
+  background: var(--verde-exito, #10b981);
+  border-color: var(--verde-exito, #10b981);
 }
 
 .missionMain {
-  flex: 1;
-  min-width: 200px;
+  flex: 1 1 200px;
+  min-width: 0;
 }
 
 .missionTitle {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  color: #1f2937;
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--gris-texto-principal, #0f172a);
 }
 
 .missionDesc {
-  font-size: 14px;
-  color: #4b5563;
-  margin: 0;
+  margin: 0.2rem 0 0 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--gris-texto-secundario, #475569);
 }
 
 .missionAside {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-left: auto;
+  flex-wrap: wrap;
 }
 
+/* Ranura de la acción: ancho mínimo fijo y contenido pegado a la derecha, para
+   que la columna de badges "Ganas +N" quede alineada de tarjeta a tarjeta en
+   vez de bailar según lo largo que sea el botón ("Completar" vs. "Ir a mi
+   Lista de Deseos"). El botón conserva su ancho natural. */
+.missionActionSlot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 190px;
+}
+
+/* En móvil la tarjeta apila: la ranura fija dejaría un hueco muerto. */
+@media (max-width: 599px) {
+  .missionAside {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .missionActionSlot {
+    min-width: 0;
+  }
+}
+
+/* Misión ya completada: se apaga y toma un velo verde muy tenue, pero no
+   tanto como para no poder leerla (antes iba a opacity .75, que apagaba
+   también el botón y el badge). */
+.missionDone {
+  background: rgba(16, 185, 129, 0.07);
+  border-color: rgba(16, 185, 129, 0.24);
+}
+
+.missionDone:hover {
+  box-shadow: var(--glass-inset-top), var(--glass-shadow);
+}
+
+.missionDone .missionTitle,
+.missionDone .missionDesc {
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+/* =========================================================================
+   Recompensa y acciones
+   -------------------------------------------------------------------------
+   El badge lleva la palabra "Ganas" delante del número: un "🪙 15" pelado es
+   ambiguo (¿lo gano o lo pago?), el mismo problema que ya se resolvió con
+   "CUESTA" en el Catálogo de Recompensas — acá es el caso inverso.
+   ========================================================================= */
 .rewardBadge {
-  background: #fef3c7;
-  color: #92400e;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-weight: bold;
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: var(--gold-soft, rgba(245, 158, 11, 0.12));
+  border: 1px solid rgba(245, 158, 11, 0.3);
   white-space: nowrap;
+}
+
+.rewardLabel {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold-700, #b45309);
+  opacity: 0.85;
+}
+
+.rewardAmount {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--gold-text, #92400e);
+  font-variant-numeric: tabular-nums;
 }
 
 .doneBadge {
-  color: #15803d;
-  font-weight: 600;
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #047857;
   white-space: nowrap;
 }
 
-.goBtn {
-  display: inline-block;
-  background: transparent;
-  color: var(--rojo-principal, #e11d48);
-  border: 1.5px solid var(--rojo-principal, #e11d48);
-  padding: 7px 14px;
+/* Botón primario PLANO (color liso, sin degradado ni ripple), igual que el
+   ".primaryButton" del header y el ".btnSolido" del detalle de compra. */
+.btnSolido {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background-color: #8b5cf6;
+  color: #fff;
+  padding: 0.55rem 1rem;
   border-radius: 8px;
+  border: none;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 0.2s;
-}
-
-.goBtn:hover {
-  background: rgba(225, 29, 72, 0.08);
-}
-
-.completeBtn {
-  background: var(--rojo-principal, #e11d48);
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
-  white-space: nowrap;
 }
 
-.completeBtn:hover:not(:disabled) {
-  background: #be123c;
+.btnSolido:hover:not(:disabled) {
+  background-color: #7c3aed;
+  color: #fff;
 }
 
-.completeBtn:disabled {
-  background: #d1d5db;
-  color: #9ca3af;
+.btnSolido:disabled {
+  background-color: var(--gris-borde, #d1d5db);
+  color: var(--gris-texto-secundario, #9ca3af);
   cursor: not-allowed;
 }
 
-.dateNote {
-  margin-top: 20px;
-  font-size: 12px;
-  color: #9ca3af;
-  text-align: right;
+/* Secundario: la misión todavía no está verificada, así que el botón manda a
+   HACERLA. Es un paso previo, no el premio: va en contorno, no relleno. */
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: transparent;
+  color: #7c3aed;
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
-/* ═════════════════════════════════════════════════════════════════════════
-   MODO NOCHE — MisionesPage
-   ---------------------------------------------------------------------------
-   Colores HARDCODEADOS. Pasamos el contenedor y las tarjetas a superficie
-   oscura con texto claro. Las tarjetas-acento pastel (tier indigo, racha
-   ámbar, badges) llevarían texto oscuro sobre fondo claro; en oscuro las
-   convertimos a su tinte translúcido con texto claro para que NO queden
-   ilegibles. Solo color/contraste; sin tocar tamaños ni layout.
-   ═════════════════════════════════════════════════════════════════════════ */
-
-/* Contenedor general */
-:global([data-theme='dark']) .container {
-  background: var(--color-surface);
-  box-shadow: var(--sombra-media);
-}
-:global([data-theme='dark']) .title {
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .subtitle,
-:global([data-theme='dark']) .loading,
-:global([data-theme='dark']) .dateNote {
-  color: var(--color-text-muted);
+.btnGhost:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.7);
+  color: #6d28d9;
 }
 
+.btnSolido:focus-visible,
+.btnGhost:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   Carga y estado vacío
+   ========================================================================= */
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skeletonItem {
+  height: 84px;
+  border-radius: var(--radio-grande, 24px);
+  background: linear-gradient(
+    90deg,
+    var(--gris-hover, #f1f5f9) 25%,
+    var(--gris-borde, #e2e8f0) 37%,
+    var(--gris-hover, #f1f5f9) 63%
+  );
+  background-size: 400% 100%;
+  animation: misionesShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes misionesShimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.empty {
+  width: 100%;
+}
+
+.emptyBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 1.25rem 0.5rem;
+}
+
+.emptyIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  margin-bottom: 0.5rem;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+/* =========================================================================
+   MODO NOCHE
+   -------------------------------------------------------------------------
+   Casi todo consume tokens que se oscurecen solos (--gris-*, --glass-*), así
+   que acá queda SOLO lo que necesita otro tono: los tintes cálidos (dorado,
+   naranja, verde, rojo) y el violeta de texto, que en claro son oscuros sobre
+   fondo pastel y en oscuro deben ir claros sobre tinte translúcido.
+   ========================================================================= */
+:global([data-theme='dark']) .statIconGold {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.18);
+}
+
+:global([data-theme='dark']) .statIconViolet,
+:global([data-theme='dark']) .headerIcon,
 :global([data-theme='dark']) .emptyIcon {
-  color: rgba(139, 92, 246, 0.45);
-}
-:global([data-theme='dark']) .emptyTitle {
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .emptyText {
-  color: var(--color-text-muted);
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.18);
 }
 
-/* Tarjetas de saldo */
-:global([data-theme='dark']) .statCard {
-  background: var(--color-surface-2);
-  border-color: var(--color-border);
-}
-:global([data-theme='dark']) .statLabel {
-  color: var(--color-text-muted);
-}
-:global([data-theme='dark']) .statValue {
-  color: var(--color-text);
+:global([data-theme='dark']) .statIconFlame {
+  color: #fdba74;
+  background: rgba(249, 115, 22, 0.18);
 }
 
-/* Tarjeta de nivel/tier: indigo claro -> tinte violeta translúcido legible */
-:global([data-theme='dark']) .tierCard {
-  background: rgba(99, 102, 241, 0.14);
-  border-color: rgba(129, 140, 248, 0.30);
-}
-:global([data-theme='dark']) .tierBadge {
-  color: #C7D2FE; /* indigo-200 */
-}
-:global([data-theme='dark']) .tierXp,
-:global([data-theme='dark']) .tierNext {
-  color: #A5B4FC; /* indigo-300 */
-}
-:global([data-theme='dark']) .progressTrack {
-  background: rgba(129, 140, 248, 0.22);
+:global([data-theme='dark']) .statHintOk,
+:global([data-theme='dark']) .listCountDone,
+:global([data-theme='dark']) .doneBadge,
+:global([data-theme='dark']) .alertOk {
+  color: #6ee7b7;
 }
 
-/* Tarjeta de racha: ámbar claro -> tinte ámbar translúcido legible */
-:global([data-theme='dark']) .streakCard {
-  background: rgba(245, 158, 11, 0.14);
-  border-color: rgba(251, 191, 36, 0.30);
-}
-:global([data-theme='dark']) .streakCount {
-  color: #FCD34D; /* amber-300 */
-}
-:global([data-theme='dark']) .streakLabel {
-  color: #FBBF24; /* amber-400 */
-}
-:global([data-theme='dark']) .checkedIn {
-  color: #6EE7B7; /* emerald-300 */
-}
-:global([data-theme='dark']) .checkPending {
-  color: #FCD34D;
-}
-
-/* Mensajes de éxito/error: fondos translúcidos con texto claro */
-:global([data-theme='dark']) .messageBox {
+:global([data-theme='dark']) .alertOk {
   background: rgba(16, 185, 129, 0.14);
-  color: #6EE7B7;
-  border-color: rgba(16, 185, 129, 0.30);
-}
-:global([data-theme='dark']) .errorBox {
-  background: var(--danger-soft);
-  color: #FCA5A5;
-  border-color: rgba(239, 68, 68, 0.30);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
-/* Lista de misiones */
-:global([data-theme='dark']) .missionItem {
-  background: var(--color-surface-2);
-  border-color: var(--color-border);
+:global([data-theme='dark']) .alertError {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
 }
-:global([data-theme='dark']) .missionItem:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+
+:global([data-theme='dark']) .statLink,
+:global([data-theme='dark']) .tierStepCurrent .tierStepName,
+:global([data-theme='dark']) .btnGhost {
+  color: #c4b5fd;
 }
+
+:global([data-theme='dark']) .statLink:hover,
+:global([data-theme='dark']) .btnGhost:hover {
+  color: #ddd6fe;
+}
+
+:global([data-theme='dark']) .tierMedal,
+:global([data-theme='dark']) .tierStepCurrent {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
 :global([data-theme='dark']) .missionDone {
   background: rgba(16, 185, 129, 0.12);
   border-color: rgba(16, 185, 129, 0.28);
 }
-:global([data-theme='dark']) .missionTitle {
-  color: var(--color-text);
-}
-:global([data-theme='dark']) .missionDesc {
-  color: var(--color-text-muted);
-}
 
-/* Badge de recompensa (ámbar) y "hecho" (verde) legibles en oscuro */
 :global([data-theme='dark']) .rewardBadge {
   background: rgba(245, 158, 11, 0.18);
-  color: #FCD34D;
-}
-:global([data-theme='dark']) .doneBadge {
-  color: #6EE7B7;
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
-/* Botón completar deshabilitado: gris oscuro coherente */
-:global([data-theme='dark']) .completeBtn:disabled {
-  background: var(--color-border);
-  color: var(--color-text-muted);
+:global([data-theme='dark']) .rewardLabel,
+:global([data-theme='dark']) .rewardAmount {
+  color: #fcd34d;
+}
+
+/* =========================================================================
+   Fallback sólido obligatorio (WebView de Capacitor/Android sin backdrop-filter)
+   ========================================================================= */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .card,
+  .statCard,
+  .missionCard,
+  .empty {
+    background: var(--color-surface, #ffffff);
+    border-color: var(--color-border, rgba(226, 232, 240, 0.9));
+  }
+}
+
+/* =========================================================================
+   Movimiento reducido
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .progressFill,
+  .missionCard,
+  .btnSolido,
+  .btnGhost,
+  .statLink {
+    transition: none;
+  }
+
+  .skeletonItem {
+    animation: none;
+  }
 }
