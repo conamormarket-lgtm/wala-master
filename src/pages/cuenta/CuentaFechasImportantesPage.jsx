@@ -90,6 +90,10 @@ const CuentaFechasImportantesPage = () => {
   const photoInputRef = useRef(null);          // input file oculto del modal
   const [uploadingPhoto, setUploadingPhoto] = useState(false); // spinner mientras sube
   const [photoError, setPhotoError] = useState(null);          // mensaje de error de subida
+  // Validación del modal. Antes eran alert() del navegador: bloquean la
+  // pantalla, no dicen QUÉ campo falla cuando hay varias fechas y se ven
+  // como un error del sistema, no como "te faltó algo".
+  const [formError, setFormError] = useState(null);
 
   const recipients = userProfile?.giftRecipients || [];
   const hasCompletedSurvey = userProfile?.hasCompletedSurvey;
@@ -184,14 +188,32 @@ const CuentaFechasImportantesPage = () => {
       events: [{ id: Math.random().toString(36).substring(2, 9), type: 'Cumpleaños', date: '' }],
     });
     setPhotoError(null);
+    setFormError(null);
     setIsModalOpen(true);
   };
 
   const handleEdit = (rec) => {
     setTempRecipient(JSON.parse(JSON.stringify(rec)));
     setPhotoError(null);
+    setFormError(null);
     setIsModalOpen(true);
   };
+
+  // Cerrar el modal. No se cierra mientras se guarda o sube una foto: perder
+  // el formulario a mitad de una operación en curso es peor que esperar.
+  const closeModal = React.useCallback(() => {
+    if (saving || uploadingPhoto) return;
+    setIsModalOpen(false);
+    setFormError(null);
+  }, [saving, uploadingPhoto]);
+
+  // Escape cierra, como en cualquier modal del sistema.
+  useEffect(() => {
+    if (!isModalOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') closeModal(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isModalOpen, closeModal]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que deseas eliminar a esta persona de tus fechas importantes?')) return;
@@ -282,20 +304,22 @@ const CuentaFechasImportantesPage = () => {
   };
 
   const saveRecipient = async () => {
+    setFormError(null);
     if (!tempRecipient.name || tempRecipient.name.trim() === '') {
-       return alert('El nombre es obligatorio.');
+      return setFormError('Falta el nombre de la persona.');
     }
     if (!tempRecipient.gender || tempRecipient.gender.trim() === '') {
-       return alert('El género es obligatorio.');
+      return setFormError('Falta elegir el género.');
     }
 
     for (const ev of tempRecipient.events) {
       const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.id === 'otro');
-      if (evTypeConfig.needsDate && (!ev.date || ev.date.trim() === '')) {
-        return alert(`La fecha es obligatoria para el evento: ${ev.type}.`);
-      }
       if (ev.type === 'Fecha Especial' && (!ev.customName || ev.customName.trim() === '')) {
-        return alert('Por favor, indica qué se celebra en la Fecha Especial.');
+        return setFormError('Escribe qué se celebra en la fecha especial.');
+      }
+      if (evTypeConfig.needsDate && (!ev.date || ev.date.trim() === '')) {
+        const cual = ev.type === 'Fecha Especial' ? ev.customName : ev.type;
+        return setFormError(`Falta la fecha de "${cual}".`);
       }
     }
 
@@ -311,7 +335,7 @@ const CuentaFechasImportantesPage = () => {
       await updateUserProfile({ giftRecipients: copy });
       setIsModalOpen(false);
     } catch (e) {
-      alert('Error al guardar los datos.');
+      setFormError('No pudimos guardar los cambios. Intenta de nuevo.');
     } finally {
       setSaving(false);
     }
@@ -503,29 +527,40 @@ const CuentaFechasImportantesPage = () => {
       )}
 
       {isModalOpen && tempRecipient && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
+        // El clic en el fondo cierra; el de adentro no burbujea hasta acá.
+        <div
+          className={styles.modalOverlay}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+          role="presentation"
+        >
+          <div className={styles.modalContent} role="dialog" aria-modal="true" aria-labelledby="fechasModalTitle">
+            {/* Cabecera fija: antes se iba con el scroll y, en una pantalla
+                baja, el formulario arrancaba cortado por la mitad. */}
             <div className={styles.modalHeader}>
-              <h2>{tempRecipient.name ? `Editar a ${tempRecipient.name}` : 'Añadir Nueva Persona'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className={styles.closeBtn}>
-                <X size={24} />
+              <div className={styles.headerIcon}>
+                <CalendarHeart size={18} aria-hidden="true" />
+              </div>
+              <h2 id="fechasModalTitle">
+                {tempRecipient.name ? `Editar a ${tempRecipient.name}` : 'Añadir persona'}
+              </h2>
+              <button type="button" onClick={closeModal} className={styles.closeBtn} aria-label="Cerrar">
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
-            
+
             <div className={styles.formBody}>
               {/* ── FOTO de la persona (avatar circular) ──────────────────────
                   Sube/cambia/quita la foto. La URL se guarda en tempRecipient.photoUrl
-                  y se persiste con el resto del recipient al pulsar "Guardar Cambios". */}
+                  y se persiste con el resto del recipient al pulsar "Guardar". */}
               <div className={styles.photoUploadRow}>
                 <div className={styles.photoAvatar}>
                   {tempRecipient.photoUrl ? (
                     <img
                       src={tempRecipient.photoUrl}
-                      alt={tempRecipient.name || 'Foto de la persona'}
+                      alt=""
                       className={styles.photoAvatarImg}
                     />
                   ) : (
-                    // Placeholder con la inicial del nombre (círculo --primary-color).
                     <span className={styles.photoAvatarInitial}>
                       {(tempRecipient.name || '?').trim().charAt(0).toUpperCase() || '?'}
                     </span>
@@ -536,7 +571,6 @@ const CuentaFechasImportantesPage = () => {
                 </div>
 
                 <div className={styles.photoActions}>
-                  {/* Input de archivo oculto, disparado por el botón de abajo. */}
                   <input
                     ref={photoInputRef}
                     type="file"
@@ -550,9 +584,9 @@ const CuentaFechasImportantesPage = () => {
                     disabled={uploadingPhoto}
                     className={styles.photoBtn}
                   >
-                    <Camera size={16} />
+                    <Camera size={15} aria-hidden="true" />
                     {uploadingPhoto
-                      ? 'Subiendo...'
+                      ? 'Subiendo…'
                       : (tempRecipient.photoUrl ? 'Cambiar foto' : 'Subir foto')}
                   </button>
                   {tempRecipient.photoUrl && !uploadingPhoto && (
@@ -564,29 +598,33 @@ const CuentaFechasImportantesPage = () => {
                       Quitar foto
                     </button>
                   )}
+                  <p className={styles.photoHint}>Opcional. Ayuda a reconocerla de un vistazo.</p>
                   {photoError && <p className={styles.photoError}>{photoError}</p>}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div className={styles.fieldGroup} style={{ flex: 2 }}>
-                  <label><T>Nombre de la persona *</T></label>
-                  <input 
-                    type="text" 
-                    className={styles.input} 
-                    placeholder="Ej. Carlos" 
-                    value={tempRecipient.name} 
-                    onChange={e => handleTempChange('name', e.target.value)} 
+              {/* Datos básicos. La grilla reemplaza a los style={{flex}} inline. */}
+              <div className={styles.fieldRow}>
+                <div className={`${styles.fieldGroup} ${styles.fieldGrow}`}>
+                  <label htmlFor="fiNombre"><T>Nombre de la persona</T> *</label>
+                  <input
+                    id="fiNombre"
+                    type="text"
+                    className={styles.input}
+                    placeholder="Ej. Carlos"
+                    value={tempRecipient.name}
+                    onChange={e => handleTempChange('name', e.target.value)}
                   />
                 </div>
-                <div className={styles.fieldGroup} style={{ flex: 1 }}>
-                  <label><T>Género *</T></label>
-                  <select 
-                    className={styles.input} 
-                    value={tempRecipient.gender || ''} 
+                <div className={styles.fieldGroup}>
+                  <label htmlFor="fiGenero"><T>Género</T> *</label>
+                  <select
+                    id="fiGenero"
+                    className={styles.input}
+                    value={tempRecipient.gender || ''}
                     onChange={e => handleTempChange('gender', e.target.value)}
                   >
-                    <option value="">Seleccionar...</option>
+                    <option value="">Seleccionar…</option>
                     <option value="Masculino">Masculino</option>
                     <option value="Femenino">Femenino</option>
                     <option value="Otro">Otro</option>
@@ -595,85 +633,114 @@ const CuentaFechasImportantesPage = () => {
               </div>
 
               <div className={styles.fieldGroup}>
-                <label><T>Relación / Parentesco *</T></label>
-                <select 
-                  className={styles.input} 
-                  value={tempRecipient.roleKey || 'otros'} 
+                <label htmlFor="fiRol"><T>Relación</T> *</label>
+                <select
+                  id="fiRol"
+                  className={styles.input}
+                  value={tempRecipient.roleKey || 'otros'}
                   onChange={e => handleTempChange('roleKey', e.target.value)}
                 >
                   {Object.keys(ROLES_MAP).map(key => (
                     <option key={key} value={key}>{ROLES_MAP[key].label}</option>
                   ))}
                 </select>
+                <p className={styles.fieldHint}>
+                  Con la relación y el género sumamos las fechas del calendario que le
+                  tocan (Día de la Madre, del Padre, de la Amistad…).
+                </p>
               </div>
-              
-              <div className={styles.breakdownSection}>
-                <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '1rem' }}>Fechas Importantes</h3>
-                
+
+              {/* ── Fechas ──────────────────────────────────────────────────
+                  El cumpleaños es siempre el primer evento y no se puede quitar
+                  ni cambiar de tipo; el resto sí. Antes esa diferencia se
+                  pintaba con style={{}} condicionales en medio del JSX. */}
+              <div className={styles.datesSection}>
+                <h3 className={styles.datesTitle}>Fechas de esta persona</h3>
+
                 {tempRecipient.events.map((event, eventIdx) => {
                   const evTypeConfig = EVENT_TYPES.find(e => e.label === event.type) || EVENT_TYPES.find(e => e.id === 'otro');
-                  
+                  const esCumple = eventIdx === 0;
+
                   return (
-                    <div key={event.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-start', background: eventIdx === 0 ? 'var(--color-surface)' : 'transparent', padding: eventIdx === 0 ? '1rem' : '0', borderRadius: '8px', border: eventIdx === 0 ? '1px solid var(--color-border)' : 'none' }}>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        
-                        {eventIdx === 0 ? (
-                          <div style={{ fontWeight: 'bold', color: 'var(--color-text)', padding: '0.5rem 0' }}>
-                            Cumpleaños *
-                          </div>
+                    <div
+                      key={event.id}
+                      className={`${styles.dateRow} ${esCumple ? styles.dateRowMain : ''}`}
+                    >
+                      <div className={styles.dateFields}>
+                        {esCumple ? (
+                          <span className={styles.dateFixedLabel}>Cumpleaños *</span>
                         ) : (
-                          <select 
-                            className={styles.input} 
+                          <select
+                            className={styles.input}
                             value={event.type}
                             onChange={e => updateEvent(eventIdx, 'type', e.target.value)}
+                            aria-label="Tipo de fecha"
                           >
                             {EVENT_TYPES.filter(et => et.id !== 'cumpleanos').map(et => (
                               <option key={et.id} value={et.label}>{et.label}</option>
                             ))}
                           </select>
                         )}
-                        
-                        {event.type === 'Fecha Especial' && eventIdx > 0 && (
-                          <input 
-                            type="text" 
-                            className={styles.input} 
-                            placeholder="¿Qué se celebra? (Ej. Bautizo)" 
-                            value={event.customName || ''} 
+
+                        {event.type === 'Fecha Especial' && !esCumple && (
+                          <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="¿Qué se celebra? Ej. Bautizo"
+                            value={event.customName || ''}
                             onChange={e => updateEvent(eventIdx, 'customName', e.target.value)}
                           />
                         )}
 
                         {evTypeConfig.needsDate && (
-                          <input 
-                            type="date" 
-                            className={styles.input} 
-                            value={event.date} 
-                            onChange={e => updateEvent(eventIdx, 'date', e.target.value)} 
+                          <input
+                            type="date"
+                            className={styles.input}
+                            value={event.date}
+                            onChange={e => updateEvent(eventIdx, 'date', e.target.value)}
+                            aria-label="Fecha"
                           />
                         )}
                       </div>
-                      
-                      {eventIdx > 0 && (
-                        <button type="button" onClick={() => removeEvent(eventIdx)} className={styles.removeBtn} style={{ marginTop: '0.2rem' }}>
-                          <Trash2 size={20} />
+
+                      {!esCumple && (
+                        <button
+                          type="button"
+                          onClick={() => removeEvent(eventIdx)}
+                          className={styles.removeBtn}
+                          title="Quitar esta fecha"
+                          aria-label="Quitar esta fecha"
+                        >
+                          <Trash2 size={17} aria-hidden="true" />
                         </button>
                       )}
                     </div>
                   );
                 })}
-                
+
                 <button type="button" onClick={addEvent} className={styles.addBtn}>
-                  <Plus size={18} /> Agregar otra fecha importante
+                  <Plus size={17} aria-hidden="true" /> Agregar otra fecha
                 </button>
               </div>
-
             </div>
-            
+
+            {/* Pie fijo, con el aviso de validación justo encima de los botones
+                (antes era un alert() del navegador). */}
             <div className={styles.modalFooter}>
-              <button onClick={() => setIsModalOpen(false)} className={styles.cancelBtn}>Cancelar</button>
-              <button onClick={saveRecipient} className={styles.primaryButton} disabled={saving}>
-                {saving ? 'Guardando...' : 'Guardar Cambios'}
-              </button>
+              {formError && (
+                <p className={styles.formError} role="alert">
+                  <AlertCircle size={15} aria-hidden="true" />
+                  {formError}
+                </p>
+              )}
+              <div className={styles.footerActions}>
+                <button type="button" onClick={closeModal} className={styles.cancelBtn} disabled={saving}>
+                  Cancelar
+                </button>
+                <button type="button" onClick={saveRecipient} className={styles.btnSolido} disabled={saving || uploadingPhoto}>
+                  {saving ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

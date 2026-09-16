@@ -492,89 +492,96 @@
 }
 
 /* =========================================================================
-   MODAL de alta/edición — sin cambios respecto de la versión anterior
+   MODAL de alta / edición
+   -------------------------------------------------------------------------
+   Reescrito junto con el resto de la página. Lo que cambia de fondo:
+   cabecera y pie FIJOS con el cuerpo scrolleando en el medio (antes el modal
+   entero scrolleaba y, en una pantalla baja, el formulario arrancaba cortado
+   por la mitad, con el título ya fuera de vista), y las clases que faltaban
+   para los bloques que se armaban con style={{}} inline en el JSX.
    ========================================================================= */
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.55);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
   padding: 1rem;
+  overscroll-behavior: contain;
 }
 
 .modalContent {
-  background: white;
-  border-radius: 12px;
   width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+  max-width: 620px;
+  max-height: calc(100dvh - 2rem);
   display: flex;
   flex-direction: column;
+  background: var(--color-surface, #fff);
+  border-radius: var(--radio-grande, 24px);
+  box-shadow: 0 24px 60px -20px rgba(15, 23, 42, 0.45);
+  overflow: hidden;
 }
 
+/* ── Cabecera fija ─────────────────────────────────────────────────────── */
 .modalHeader {
-  padding: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  flex: 0 0 auto;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.7rem;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--gris-borde, #e2e8f0);
 }
 
 .modalHeader h2 {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
-  font-size: 1.25rem;
-  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal, #0f172a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .closeBtn {
-  background: none;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--gris-texto-secundario, #94a3b8);
   cursor: pointer;
-  color: #64748b;
+  transition: background-color 0.2s, color 0.2s;
 }
 
+.closeBtn:hover {
+  background: var(--gris-hover, #f1f5f9);
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+/* ── Cuerpo con scroll propio ──────────────────────────────────────────── */
 .formBody {
-  padding: 1.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.1rem;
 }
 
-.fieldGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.fieldGroup label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.input {
-  padding: 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-family: inherit;
-}
-
-.input:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
-}
-
-/* ── Subida de FOTO de la persona en el modal (avatar + acciones) ── */
+/* ── Foto ──────────────────────────────────────────────────────────────── */
 .photoUploadRow {
   display: flex;
   align-items: center;
@@ -583,16 +590,16 @@
 
 .photoAvatar {
   position: relative;
+  flex: 0 0 auto;
   width: 72px;
   height: 72px;
-  flex-shrink: 0;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #8b5cf6; /* --primary-color (placeholder) */
-  border: 2px solid #ede9fe;
+  background: var(--primary-color, #6d28d9);
+  border: 1px solid var(--gris-borde, #e2e8f0);
 }
 
 .photoAvatarImg {
@@ -603,139 +610,326 @@
 }
 
 .photoAvatarInitial {
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 1.75rem;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #fff;
   line-height: 1;
-  text-transform: uppercase;
 }
 
-/* Overlay "Subiendo…" mientras se sube la imagen. */
 .photoAvatarOverlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  color: #ffffff;
-  font-size: 0.7rem;
-  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .photoActions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
-/* Botón principal: subir/cambiar foto (acento de marca, contorno). */
 .photoBtn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: rgba(139, 92, 246, 0.08);
-  color: #7c3aed;
-  border: 1px solid #c4b5fd;
-  padding: 0.5rem 0.9rem;
+  gap: 0.35rem;
+  padding: 0.45rem 0.8rem;
   border-radius: 8px;
+  font-size: 0.82rem;
   font-weight: 600;
-  font-size: 0.85rem;
+  color: #7c3aed;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .photoBtn:hover:not(:disabled) {
   background: rgba(139, 92, 246, 0.16);
+  border-color: rgba(139, 92, 246, 0.6);
 }
 
 .photoBtn:disabled {
   opacity: 0.6;
-  cursor: default;
+  cursor: not-allowed;
 }
 
-/* Botón secundario: quitar foto (texto discreto). */
 .photoRemoveBtn {
-  background: none;
   border: none;
-  color: #64748b;
-  font-size: 0.8rem;
+  background: none;
+  padding: 0.45rem 0.2rem;
+  font-size: 0.82rem;
   font-weight: 600;
+  color: var(--gris-texto-secundario, #64748b);
   cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
+  transition: color 0.2s;
 }
 
 .photoRemoveBtn:hover {
-  color: #ef4444;
+  color: #b91c1c;
+}
+
+.photoHint {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--gris-texto-secundario, #94a3b8);
 }
 
 .photoError {
-  color: #ef4444;
-  font-size: 0.78rem;
+  flex: 1 1 100%;
   margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #b91c1c;
 }
 
-.breakdownSection {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1rem;
+/* ── Campos ────────────────────────────────────────────────────────────── */
+.fieldRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.fieldGrow {
+  flex: 1 1 220px;
+}
+
+.fieldGroup label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--gris-borde, #cbd5e1);
+  background: var(--color-surface, #fff);
+  color: var(--gris-texto-principal, #0f172a);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+}
+
+.fieldHint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--gris-texto-secundario, #94a3b8);
+}
+
+/* ── Fechas ────────────────────────────────────────────────────────────── */
+.datesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border-radius: var(--radio-mediano, 16px);
+  background: var(--gris-hover, #f8fafc);
+  border: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.datesTitle {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.dateRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.dateFields {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* El cumpleaños es el evento base: va sobre superficie propia para que se lea
+   como "este siempre está", frente a los que se pueden quitar. */
+.dateRowMain {
+  padding: 0.75rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.dateFixedLabel {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal, #0f172a);
 }
 
 .removeBtn {
-  background: none;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-top: 0.15rem;
   border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--gris-texto-secundario, #94a3b8);
   cursor: pointer;
-  color: #ef4444;
-  padding: 0.5rem;
-  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .removeBtn:hover {
-  background: #fef2f2;
-}
-
-.modalFooter {
-  padding: 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-
-.cancelBtn {
-  background: white;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.cancelBtn:hover {
-  background: #f8fafc;
+  background: var(--danger-soft, rgba(239, 68, 68, 0.1));
+  color: #b91c1c;
 }
 
 .addBtn {
-  background: transparent;
-  color: #8b5cf6;
-  border: 1px dashed #8b5cf6;
-  padding: 0.75rem;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
+  justify-content: center;
+  gap: 0.35rem;
   width: 100%;
+  padding: 0.6rem;
+  border-radius: var(--radio-pequeno, 10px);
+  border: 1.5px dashed rgba(139, 92, 246, 0.45);
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .addBtn:hover {
-  background: rgba(139, 92, 246, 0.05);
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.7);
+}
+
+/* ── Pie fijo ──────────────────────────────────────────────────────────── */
+.modalFooter {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.formError {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: var(--danger-soft, rgba(239, 68, 68, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}
+
+.formError svg {
+  flex: 0 0 auto;
+}
+
+.footerActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.cancelBtn {
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--gris-borde, #cbd5e1);
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario, #475569);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: var(--gris-hover, #f1f5f9);
+}
+
+.cancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.closeBtn:focus-visible,
+.photoBtn:focus-visible,
+.photoRemoveBtn:focus-visible,
+.removeBtn:focus-visible,
+.addBtn:focus-visible,
+.cancelBtn:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* En móvil el modal ocupa la pantalla y el pie queda al alcance del pulgar. */
+@media (max-width: 599px) {
+  /* Sin esto, "Género" se queda con el ancho de su contenido al envolverse y
+     queda un select a media asta debajo de un campo de ancho completo. */
+  .fieldRow {
+    flex-direction: column;
+  }
+
+  .fieldGroup {
+    width: 100%;
+  }
+
+  /* En columna, el flex-basis de .fieldGrow pasa a ser ALTO: sin esto el campo
+     del nombre se estira a 220px de alto y deja un hueco enorme debajo. */
+  .fieldGrow {
+    flex: 0 0 auto;
+  }
+
+  .modalOverlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modalContent {
+    max-width: none;
+    max-height: 92dvh;
+    border-radius: var(--radio-grande, 24px) var(--radio-grande, 24px) 0 0;
+  }
+
+  .footerActions button {
+    flex: 1 1 0;
+  }
 }
 
 /* =========================================================================
@@ -803,9 +997,12 @@
 }
 
 /* ── Modal (superficie ELEVADA) ── */
+:global([data-theme='dark']) .modalOverlay {
+  background: rgba(0, 0, 0, 0.6);
+}
 :global([data-theme='dark']) .modalContent {
   background: var(--color-surface-2);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
 }
 :global([data-theme='dark']) .modalHeader {
   border-bottom-color: var(--color-border);
@@ -813,8 +1010,9 @@
 :global([data-theme='dark']) .modalHeader h2 {
   color: var(--color-text);
 }
-:global([data-theme='dark']) .closeBtn {
-  color: var(--color-text-muted);
+:global([data-theme='dark']) .closeBtn:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 :global([data-theme='dark']) .modalFooter {
   border-top-color: var(--color-border);
@@ -830,34 +1028,35 @@
 :global([data-theme='dark']) .input::placeholder {
   color: var(--color-text-muted);
 }
-:global([data-theme='dark']) .input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px var(--primary-light);
-}
-:global([data-theme='dark']) .breakdownSection {
+:global([data-theme='dark']) .datesSection {
   background: var(--color-surface);
   border-color: var(--color-border);
 }
-:global([data-theme='dark']) .removeBtn {
+:global([data-theme='dark']) .dateRowMain {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+:global([data-theme='dark']) .dateFixedLabel {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .photoBtn,
+:global([data-theme='dark']) .addBtn {
+  color: #c4b5fd;
+}
+:global([data-theme='dark']) .removeBtn:hover,
+:global([data-theme='dark']) .photoRemoveBtn:hover {
   color: #fca5a5;
 }
-:global([data-theme='dark']) .removeBtn:hover {
-  background: rgba(239, 68, 68, 0.16);
+:global([data-theme='dark']) .formError,
+:global([data-theme='dark']) .photoError {
+  color: #fca5a5;
 }
 :global([data-theme='dark']) .cancelBtn {
-  background: var(--color-surface);
   border-color: var(--color-border);
   color: var(--color-text);
 }
-:global([data-theme='dark']) .cancelBtn:hover {
-  background: var(--color-hover);
-}
-:global([data-theme='dark']) .addBtn {
-  color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-:global([data-theme='dark']) .addBtn:hover {
-  background: var(--primary-light);
+:global([data-theme='dark']) .cancelBtn:hover:not(:disabled) {
+  background: var(--color-surface);
 }
 
 /* Foto de la persona (tarjeta + modal): el círculo placeholder mantiene
@@ -866,23 +1065,6 @@
 :global([data-theme='dark']) .photoAvatar {
   background: var(--primary-color);
   border-color: var(--color-border);
-}
-:global([data-theme='dark']) .photoBtn {
-  background: var(--primary-light);
-  color: var(--primary-hover);
-  border-color: rgba(167, 139, 250, 0.4);
-}
-:global([data-theme='dark']) .photoBtn:hover:not(:disabled) {
-  background: rgba(167, 139, 250, 0.24);
-}
-:global([data-theme='dark']) .photoRemoveBtn {
-  color: var(--color-text-muted);
-}
-:global([data-theme='dark']) .photoRemoveBtn:hover {
-  color: #fca5a5;
-}
-:global([data-theme='dark']) .photoError {
-  color: #fca5a5;
 }
 
 /* =========================================================================
