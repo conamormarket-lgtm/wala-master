@@ -78,8 +78,9 @@ const AdminConfiguracion = () => {
   const convertirImagenes = async () => {
     if (!imgConteo || !imgConteo.imagenes) return;
     const ok = window.confirm(
-      `Se van a reconvertir ${imgConteo.imagenes} imagen(es) a WebP.\n\n`
-      + 'Cada una se vuelve a subir convertida y se actualiza el enlace en su documento. '
+      `Se van a revisar ${imgConteo.imagenes} imagen(es).\n\n`
+      + 'Las que sigan en PNG/JPG pasan a WebP, y las que pasen de 2000 px se guardan mas pequenas. '
+      + 'Cada una que cambie se vuelve a subir y se actualiza el enlace en su documento. '
       + 'Los archivos originales NO se borran, asi que si algo saliera mal siguen ahi.\n\n'
       + 'Puede tardar un rato. No cierres esta pestana mientras corre.'
     );
@@ -420,12 +421,17 @@ const AdminConfiguracion = () => {
       {activeTab === 'imagenes' && (
         <div className={styles.formCard}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ImageDown size={18} /> Convertir imágenes antiguas a WebP
+            <ImageDown size={18} /> Optimizar imágenes antiguas
           </h3>
           <p style={{ color: '#888', fontSize: '0.9rem', lineHeight: 1.6, marginTop: 4 }}>
-            Todo lo que subas de ahora en adelante ya se guarda en WebP automáticamente. Esto es para las
-            imágenes que se subieron antes: revisa los banners, los slides del hero y los logos y fondos de
-            marca, vuelve a subir en WebP las que sigan en PNG o JPG y actualiza el enlace en cada página.
+            Todo lo que subas de ahora en adelante ya se guarda en WebP y con un máximo de 2000 px de lado.
+            Esto es para lo que se subió antes: revisa los banners, los slides del hero y los logos y fondos
+            de marca, y vuelve a subir las que lo necesiten, actualizando el enlace en cada página.
+            <br /><br />
+            Entran dos casos: las que siguen en <strong>PNG o JPG</strong> (pasan a WebP) y las que ya son
+            WebP pero se guardaron <strong>más grandes de 2000 px</strong> — normalmente fotos de móvil a
+            resolución completa, que el cliente descarga enteras para verlas en una tarjeta de 300 px. Una
+            WebP que ya cabe en ese tamaño no se toca.
             <br /><br />
             Los archivos originales <strong>no se borran</strong>: si algo saliera mal, siguen en su sitio.
             Las imágenes externas (Google Drive y demás), los SVG y los GIF se dejan como están. Los productos
@@ -442,7 +448,7 @@ const AdminConfiguracion = () => {
             <p style={{ fontSize: '0.95rem' }}>
               {imgConteo.imagenes === 0
                 ? 'No queda ninguna imagen por convertir.'
-                : `Quedan ${imgConteo.imagenes} imagen(es) por convertir, repartidas en ${imgConteo.documentos} documento(s).`}
+                : `Hay ${imgConteo.imagenes} imagen(es) por revisar, repartidas en ${imgConteo.documentos} documento(s). Solo se reescriben las que lo necesiten.`}
             </p>
           )}
 
@@ -467,7 +473,7 @@ const AdminConfiguracion = () => {
             <div style={{ margin: '1rem 0', fontSize: '0.9rem' }}>
               <p style={{ color: '#16a34a' }}>
                 Listo: {imgResultado.convertidas} imagen(es) convertida(s) en {imgResultado.documentos} documento(s)
-                {imgResultado.saltadas ? ` · ${imgResultado.saltadas} se dejaron como estaban porque el WebP no las mejoraba` : ''}.
+                {imgResultado.saltadas ? ` · ${imgResultado.saltadas} se dejaron como estaban (ya estaban bien o el WebP no las mejoraba)` : ''}.
               </p>
               {imgResultado.errores.length > 0 && (
                 <details style={{ marginTop: 8 }}>

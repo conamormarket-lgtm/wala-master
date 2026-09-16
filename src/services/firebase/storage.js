@@ -24,7 +24,9 @@ import { obtenerStorage } from './config';
 // GIF puede estar animado y el canvas solo se queda con el primer cuadro.
 // WebP y AVIF ya vienen en un formato moderno.
 // Lado maximo (px) con el que se guarda una imagen. Ver convertirAWebp.
-const MAX_LADO = 2000;
+// Exportado para que la reconversion de imagenes ya subidas (imagenesWebp.js)
+// decida con el MISMO numero cuales estan de mas.
+export const MAX_LADO = 2000;
 
 const TIPOS_SIN_CONVERTIR = new Set(['image/svg+xml', 'image/gif', 'image/webp', 'image/avif']);
 

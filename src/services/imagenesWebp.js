@@ -1,5 +1,5 @@
 import { getCollection, setDocument } from './firebase/firestore';
-import { uploadFile } from './firebase/storage';
+import { uploadFile, MAX_LADO } from './firebase/storage';
 
 /**
  * RECONVERSIÓN A WEBP DE IMÁGENES YA SUBIDAS
@@ -31,7 +31,14 @@ import { uploadFile } from './firebase/storage';
  *    el canvas solo ve el primer cuadro de un GIF.
  */
 
-const EXTENSIONES = /\.(png|jpe?g)(\?|$)/i;
+// PNG y JPG siempre valen la pena (van a WebP). Las WebP entran tambien, pero
+// solo se reescriben si superan MAX_LADO: son las que se subieron cuando la
+// conversion a WebP ya existia pero aun no habia techo de resolucion, asi que
+// pesan lo que pesaba el original del movil. Las que ya estan dentro del techo
+// se descartan al mirar sus dimensiones (ver mas abajo), sin reescribir nada.
+const EXTENSIONES = /\.(png|jpe?g|webp)(\?|$)/i;
+
+export const esWebp = (url) => /\.webp(\?|$)/i.test(nombreDelObjeto(url));
 
 const esUrlDeNuestroStorage = (v) =>
   typeof v === 'string' && v.includes('firebasestorage.googleapis.com');
@@ -91,7 +98,13 @@ export const reemplazarUrls = (valor, mapa) => {
  * camino que ya usa el editor con imágenes de Storage y se sabe que el CORS
  * lo permite.
  */
-const descargarComoFile = (url, nombre) => new Promise((resolve, reject) => {
+/**
+ * Descarga una imagen y la devuelve como File PNG junto con sus dimensiones.
+ * Las dimensiones son las que deciden si una WebP ya subida merece reescribirse
+ * (ver el bucle de reconvertirImagenesAWebp). Exportada, como buscarUrls, para
+ * poder comprobarla por separado.
+ */
+export const descargarComoFile = (url, nombre) => new Promise((resolve, reject) => {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => {
@@ -102,10 +115,16 @@ const descargarComoFile = (url, nombre) => new Promise((resolve, reject) => {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
       // Se re-empaqueta como PNG para no perder calidad dos veces: la única
-      // compresión con pérdida la hace uploadFile al pasarlo a WebP.
+      // compresión con pérdida la hace uploadFile al pasarlo a WebP. (Para una
+      // WebP que ya venía comprimida es una generación más, pero lo que importa
+      // ahí es el redimensionado, que es de donde sale todo el ahorro.)
       canvas.toBlob((blob) => {
         if (!blob) { reject(new Error('El canvas no devolvió imagen')); return; }
-        resolve(new File([blob], nombre, { type: 'image/png' }));
+        resolve({
+          file: new File([blob], nombre, { type: 'image/png' }),
+          ancho: img.naturalWidth,
+          alto: img.naturalHeight,
+        });
       }, 'image/png');
     } catch (e) {
       reject(e);
@@ -164,7 +183,12 @@ export const reconvertirImagenesAWebp = async ({
       }
       try {
         const nombre = (nombreDelObjeto(url).split('/').pop() || 'imagen').replace(/\.[^.]+$/, '');
-        const file = await descargarComoFile(url, `${nombre}.png`);
+        const { file, ancho, alto } = await descargarComoFile(url, `${nombre}.png`);
+
+        // Una WebP que ya cabe en el techo no tiene nada que ganar: reescribirla
+        // solo gastaría cuota y cambiaría la URL en el documento para nada.
+        if (esWebp(url) && Math.max(ancho, alto) <= MAX_LADO) { saltadas++; hechas++; continue; }
+
         const ruta = `reconvertidas/${Date.now()}_${nombre}.png`;
         const { url: nueva, error } = await uploadFile(file, ruta);
         if (error || !nueva) throw new Error(error || 'No se pudo subir');
@@ -193,8 +217,14 @@ export const reconvertirImagenesAWebp = async ({
 };
 
 /**
- * Cuenta, sin tocar nada, cuántas imágenes quedarían por convertir. Sirve para
+ * Cuenta, sin tocar nada, cuántas imágenes se van a REVISAR. Sirve para
  * decirle al admin qué va a pasar ANTES de que pulse el botón.
+ *
+ * Es un techo, no un exacto: en el recuento entran también las WebP, y de esas
+ * solo se reescriben las que pasen de MAX_LADO. Saberlo requiere descargar cada
+ * una para medirla, que es justo lo que hace el proceso de verdad — hacerlo dos
+ * veces solo para dar una cifra más bonita no compensa. El resultado final
+ * reporta cuántas se saltaron.
  */
 export const contarImagenesPorConvertir = async ({
   colecciones = ['tienda_brands', 'pages'],
