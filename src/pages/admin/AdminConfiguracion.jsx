@@ -46,12 +46,23 @@ const AdminConfiguracion = () => {
   const [imgResultado, setImgResultado] = useState(null);
   const [imgTrabajando, setImgTrabajando] = useState(false);
 
-  const revisarImagenes = async (ambito = imgAmbito) => {
-    const cols = ambito === 'productos' ? AMBITO_PRODUCTOS : AMBITO_DISENO;
+  // `ambito` se valida en vez de usarse tal cual con un valor por defecto: si
+  // esta funcion se engancha directa a un onClick, React le pasa el EVENTO del
+  // clic como primer argumento. Con un `= imgAmbito` por defecto eso no salta —
+  // el evento no es undefined, asi que el defecto no se aplica— y al comparar
+  // contra 'productos' daba false, de modo que "Volver a revisar" recontaba
+  // siempre el ambito de diseño aunque en pantalla estuviera elegido Productos.
+  const revisarImagenes = async (ambito) => {
+    const elegido = (ambito === 'productos' || ambito === 'diseno') ? ambito : imgAmbito;
+    const cols = elegido === 'productos' ? AMBITO_PRODUCTOS : AMBITO_DISENO;
     setImgConteo('cargando');
     setImgResultado(null);
     try {
-      setImgConteo(await contarImagenesPorConvertir({ colecciones: cols }));
+      const conteo = await contarImagenesPorConvertir({ colecciones: cols });
+      // Se guarda de QUE ambito es este recuento. Convertir usa el ambito
+      // seleccionado en pantalla; si el numero que se ve viniera de otro, el
+      // boton estaria prometiendo una cosa y haciendo otra.
+      setImgConteo({ ...conteo, ambito: elegido });
     } catch (e) {
       setImgConteo({ error: e?.message || String(e) });
     }
@@ -93,6 +104,7 @@ const AdminConfiguracion = () => {
 
   const convertirImagenes = async () => {
     if (!imgConteo || !imgConteo.imagenes) return;
+    if (imgConteo.ambito !== imgAmbito) { revisarImagenes(imgAmbito); return; }
     const ok = window.confirm(
       `Se van a revisar ${imgConteo.imagenes} imagen(es).\n\n`
       + 'Las que sigan en PNG/JPG pasan a WebP, y las que pasen de 2000 px se guardan mas pequenas. '
@@ -546,13 +558,13 @@ const AdminConfiguracion = () => {
           )}
 
           <div style={{ display: 'flex', gap: 10, marginTop: '1rem' }}>
-            <Button variant="secondary" onClick={revisarImagenes} disabled={imgTrabajando}>
+            <Button variant="secondary" onClick={() => revisarImagenes()} disabled={imgTrabajando}>
               Volver a revisar
             </Button>
             <Button
               variant="primary"
               onClick={convertirImagenes}
-              disabled={imgTrabajando || !imgConteo || !imgConteo.imagenes}
+              disabled={imgTrabajando || !imgConteo || !imgConteo.imagenes || imgConteo.ambito !== imgAmbito}
             >
               {imgTrabajando ? 'Convirtiendo…' : 'Convertir a WebP'}
             </Button>
