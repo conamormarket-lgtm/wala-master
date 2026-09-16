@@ -26,6 +26,34 @@ window.addEventListener('error', (event) => {
   }
 });
 
+// ── Caché del shell de la app (service worker) ─────────────────────────────
+// Sin esto, cada arranque en frío vuelve a pedir por red los ~430 KB de JS y
+// CSS aunque sean idénticos a los de la visita anterior — y en la app de
+// Android eso pasa cada vez que se abre. Ver public/sw.js para qué cachea cada
+// cosa y por qué; en resumen: los /assets con hash de caché, index.html
+// siempre de red (para que un deploy se note al instante) y nada de Firestore
+// ni Storage.
+//
+// Solo en producción: en desarrollo, un worker entre medias enmascara los
+// cambios de Vite y vuelve loco el hot-reload.
+//
+// Solo en http/https: bajo Capacitor la app puede correr en un esquema propio
+// (capacitor://) donde registrar un worker falla, y no hay nada que cachear
+// porque los archivos ya son locales.
+if (
+  import.meta.env.PROD &&
+  'serviceWorker' in navigator &&
+  /^https?:$/.test(window.location.protocol)
+) {
+  // Tras 'load' para no competir por ancho de banda con la primera pintada.
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((e) => {
+      // Que falle no rompe nada: la app funciona igual, solo sin caché.
+      console.warn('[sw] no se pudo registrar:', e?.message || e);
+    });
+  });
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
