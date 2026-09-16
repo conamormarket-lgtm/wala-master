@@ -36,6 +36,12 @@ import { uploadFile, MAX_LADO } from './firebase/storage';
 // conversion a WebP ya existia pero aun no habia techo de resolucion, asi que
 // pesan lo que pesaba el original del movil. Las que ya estan dentro del techo
 // se descartan al mirar sus dimensiones (ver mas abajo), sin reescribir nada.
+// Ambitos que se pueden reconvertir. Los productos van SEPARADOS a proposito:
+// son muchisimos mas documentos y muchas mas imagenes, asi que conviene
+// lanzarlo a conciencia y no de refilon junto con los cuatro banners.
+export const AMBITO_DISENO = ['tienda_brands', 'pages'];
+export const AMBITO_PRODUCTOS = ['productos_wala'];
+
 const EXTENSIONES = /\.(png|jpe?g|webp)(\?|$)/i;
 
 export const esWebp = (url) => /\.webp(\?|$)/i.test(nombreDelObjeto(url));
@@ -145,7 +151,7 @@ export const descargarComoFile = (url, nombre) => new Promise((resolve, reject) 
  * @returns {Promise<{convertidas:number, documentos:number, saltadas:number, errores:string[]}>}
  */
 export const reconvertirImagenesAWebp = async ({
-  colecciones = ['tienda_brands', 'pages'],
+  colecciones = AMBITO_DISENO,
   onProgreso,
 } = {}) => {
   const errores = [];
@@ -227,10 +233,16 @@ export const reconvertirImagenesAWebp = async ({
  * reporta cuántas se saltaron.
  */
 export const contarImagenesPorConvertir = async ({
-  colecciones = ['tienda_brands', 'pages'],
+  colecciones = AMBITO_DISENO,
 } = {}) => {
   const urls = new Set();
   let documentos = 0;
+  // Una misma imagen puede estar referenciada desde varios documentos (el logo
+  // de una marca vive en su ficha y en el marquee de cada pagina). `imagenes`
+  // son las DISTINTAS —lo que le interesa saber a una persona— y `apariciones`
+  // los pasos que va a dar el proceso, que es lo que necesita la barra de
+  // progreso para no llenarse antes de tiempo.
+  let apariciones = 0;
   for (const coleccion of colecciones) {
     const { data } = await getCollection(coleccion);
     for (const doc of (data || [])) {
@@ -238,9 +250,10 @@ export const contarImagenesPorConvertir = async ({
       const encontradas = buscarUrls(contenido);
       if (encontradas.size > 0) {
         documentos++;
+        apariciones += encontradas.size;
         encontradas.forEach((u) => urls.add(u));
       }
     }
   }
-  return { imagenes: urls.size, documentos };
+  return { imagenes: urls.size, documentos, apariciones };
 };

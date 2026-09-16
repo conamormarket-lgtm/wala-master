@@ -6,7 +6,7 @@ import Button from '../../components/common/Button';
 import styles from './AdminConfiguracion.module.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { Lock, Unlock, ImageDown, Languages } from 'lucide-react';
-import { reconvertirImagenesAWebp, contarImagenesPorConvertir } from '../../services/imagenesWebp';
+import { reconvertirImagenesAWebp, contarImagenesPorConvertir, AMBITO_DISENO, AMBITO_PRODUCTOS } from '../../services/imagenesWebp';
 import { guardarTraduccionesEnNube, traduccionesPendientes } from '../../services/translate';
 
 const AVAILABLE_PERMISSIONS = [
@@ -33,18 +33,34 @@ const AdminConfiguracion = () => {
   const [landingPages, setLandingPages] = useState([]);
 
   // ── Reconversion de imagenes a WebP ────────────────────────────────────
+  // Dos ambitos separados. "Diseño de tienda" son los banners, slides del hero
+  // y logos de marca: cuatro imagenes muy visibles. "Productos" son las fotos
+  // del catalogo — muchisimas mas, y las que de verdad descarga el cliente al
+  // entrar en la tienda. Van aparte para que lanzar lo segundo sea una decision
+  // deliberada y no algo que ocurre de refilon al pulsar el primer boton.
+  const [imgAmbito, setImgAmbito] = useState('diseno');
+  const colecciones = imgAmbito === 'productos' ? AMBITO_PRODUCTOS : AMBITO_DISENO;
+
   const [imgConteo, setImgConteo] = useState(null);
   const [imgProgreso, setImgProgreso] = useState(null);
   const [imgResultado, setImgResultado] = useState(null);
   const [imgTrabajando, setImgTrabajando] = useState(false);
 
-  const revisarImagenes = async () => {
+  const revisarImagenes = async (ambito = imgAmbito) => {
+    const cols = ambito === 'productos' ? AMBITO_PRODUCTOS : AMBITO_DISENO;
     setImgConteo('cargando');
+    setImgResultado(null);
     try {
-      setImgConteo(await contarImagenesPorConvertir());
+      setImgConteo(await contarImagenesPorConvertir({ colecciones: cols }));
     } catch (e) {
       setImgConteo({ error: e?.message || String(e) });
     }
+  };
+
+  const cambiarAmbito = (ambito) => {
+    if (imgTrabajando) return;
+    setImgAmbito(ambito);
+    revisarImagenes(ambito);
   };
 
   // ── Traducciones del contenido ─────────────────────────────────────────
@@ -87,9 +103,12 @@ const AdminConfiguracion = () => {
     if (!ok) return;
     setImgTrabajando(true);
     setImgResultado(null);
-    setImgProgreso({ hechas: 0, total: imgConteo.imagenes, actual: '' });
+    // El tope es APARICIONES, no imagenes distintas: el proceso da un paso por
+    // cada sitio donde la imagen esta referenciada. Con el otro numero la barra
+    // se llenaba mucho antes de terminar.
+    setImgProgreso({ hechas: 0, total: imgConteo.apariciones ?? imgConteo.imagenes, actual: '' });
     try {
-      const res = await reconvertirImagenesAWebp({ onProgreso: setImgProgreso });
+      const res = await reconvertirImagenesAWebp({ colecciones, onProgreso: setImgProgreso });
       setImgResultado(res);
       await revisarImagenes();
     } catch (e) {
@@ -432,10 +451,44 @@ const AdminConfiguracion = () => {
             WebP pero se guardaron <strong>más grandes de 2000 px</strong> — normalmente fotos de móvil a
             resolución completa, que el cliente descarga enteras para verlas en una tarjeta de 300 px. Una
             WebP que ya cabe en ese tamaño no se toca.
+          </p>
+
+          {/* Los productos van aparte: son muchísimos más documentos y es donde
+              de verdad está el peso que descarga el cliente. */}
+          <div style={{ display: 'flex', gap: 8, margin: '1rem 0 0.5rem' }}>
+            {[
+              { id: 'diseno', etiqueta: 'Diseño de tienda', detalle: 'banners, hero y marcas' },
+              { id: 'productos', etiqueta: 'Productos', detalle: 'fotos del catálogo' },
+            ].map((op) => (
+              <button
+                key={op.id}
+                type="button"
+                onClick={() => cambiarAmbito(op.id)}
+                disabled={imgTrabajando}
+                style={{
+                  flex: 1,
+                  textAlign: 'left',
+                  padding: '0.6rem 0.8rem',
+                  borderRadius: 10,
+                  cursor: imgTrabajando ? 'not-allowed' : 'pointer',
+                  border: imgAmbito === op.id ? '2px solid #7C3AED' : '1px solid #d4d4d8',
+                  background: imgAmbito === op.id ? 'rgba(124,58,237,0.06)' : 'transparent',
+                  color: 'inherit',
+                }}
+              >
+                <strong style={{ display: 'block', fontSize: '0.9rem' }}>{op.etiqueta}</strong>
+                <span style={{ color: '#888', fontSize: '0.78rem' }}>{op.detalle}</span>
+              </button>
+            ))}
+          </div>
+
+          <p style={{ color: '#888', fontSize: '0.86rem', lineHeight: 1.6, marginTop: 0 }}>
+            {imgAmbito === 'productos'
+              ? 'Las fotos de producto son las que descarga cualquiera que entre en la tienda, así que es donde más se nota. Son muchas: puede tardar bastante.'
+              : 'Los banners y logos se ven en todas las páginas, pero son pocos archivos.'}
             <br /><br />
             Los archivos originales <strong>no se borran</strong>: si algo saliera mal, siguen en su sitio.
-            Las imágenes externas (Google Drive y demás), los SVG y los GIF se dejan como están. Los productos
-            no entran aquí, son muchos más y conviene tratarlos aparte.
+            Las imágenes externas (Google Drive y demás), los SVG y los GIF se dejan como están.
           </p>
 
           {imgConteo === 'cargando' && <p style={{ color: '#888' }}>Revisando…</p>}
@@ -448,7 +501,11 @@ const AdminConfiguracion = () => {
             <p style={{ fontSize: '0.95rem' }}>
               {imgConteo.imagenes === 0
                 ? 'No queda ninguna imagen por convertir.'
-                : `Hay ${imgConteo.imagenes} imagen(es) por revisar, repartidas en ${imgConteo.documentos} documento(s). Solo se reescriben las que lo necesiten.`}
+                : `Hay ${imgConteo.imagenes} imagen(es) distinta(s) por revisar, en ${imgConteo.documentos} documento(s)`
+                  + (imgConteo.apariciones && imgConteo.apariciones !== imgConteo.imagenes
+                      ? ` (${imgConteo.apariciones} apariciones en total: una misma imagen puede estar en varios sitios)`
+                      : '')
+                  + '. Solo se reescriben las que lo necesiten.'}
             </p>
           )}
 
