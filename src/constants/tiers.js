@@ -3,10 +3,10 @@
 // presentación: NO otorga beneficios server-side ni escribe en Firestore.
 // El umbral de cada nivel es su XP mínima (campo `min`).
 export const TIERS = [
-  { key: 'bronce', name: 'Bronce', min: 0 },
-  { key: 'plata', name: 'Plata', min: 100 },
-  { key: 'oro', name: 'Oro', min: 300 },
-  { key: 'diamante', name: 'Diamante', min: 1000 },
+  { key: 'bronce', name: 'Bronce', min: 0, icon: '🥉' },
+  { key: 'plata', name: 'Plata', min: 100, icon: '🥈' },
+  { key: 'oro', name: 'Oro', min: 300, icon: '🥇' },
+  { key: 'diamante', name: 'Diamante', min: 1000, icon: '💎' },
 ];
 
 /**

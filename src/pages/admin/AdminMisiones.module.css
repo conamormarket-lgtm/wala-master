@@ -1,0 +1,523 @@
+.wrapper {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.headerStats {
+  display: flex;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.headerStat,
+.headerStatMuted {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  background: #f3eefe;
+  color: #7c3aed;
+}
+
+.headerStatMuted {
+  background: #f1f3f5;
+  color: #6b7280;
+}
+
+[data-theme="dark"] .headerStat {
+  background: rgba(139, 92, 246, 0.16);
+  color: #C4B5FD;
+}
+
+[data-theme="dark"] .headerStatMuted {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f0f0;
+}
+
+.cardTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.noteBox {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background-color: #fafafa;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #111;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.1);
+}
+
+.textarea {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background-color: #fafafa;
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #111;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.1);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #111;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.loading {
+  color: #888;
+}
+
+.error {
+  color: #ff4757;
+}
+
+.groupLabel {
+  margin: 1.75rem 0 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+}
+
+.missionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.missionCard {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+  min-width: 0;
+}
+
+.missionCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: #e0e0e0;
+}
+
+.missionVisual {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+}
+
+.missionBubble {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.missionInfo {
+  margin-bottom: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.missionName {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.missionDesc {
+  font-size: 0.85rem;
+  color: #777;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.rewardBadge {
+  background: #f3eefe;
+  color: #7c3aed;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+.orderBadge {
+  background: #f1f3f5;
+  color: #555;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+.statusBadge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+.statusActive {
+  background: #e6f7ee;
+  color: #0a8f4f;
+}
+
+.statusInactive {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.missionActions {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.actionBtn {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  color: #444;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionBtn:hover {
+  background: #e9ecef;
+  color: #111;
+}
+
+.actionBtnDelete:hover {
+  background: #fff0f0;
+  color: #ff4757;
+  border-color: #ff4757;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 3rem 1.5rem;
+  color: #888;
+}
+
+.emptyIcon {
+  color: #d1c4f7;
+  margin-bottom: 0.5rem;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #444;
+}
+
+.emptyText {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .emptyIcon {
+  color: rgba(139, 92, 246, 0.45);
+}
+
+[data-theme="dark"] .emptyTitle {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .emptyText {
+  color: var(--color-text-muted);
+}
+
+/* Modal */
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.modalTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.modalText {
+  margin: 0 0 2rem 0;
+  color: #555;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MODO NOCHE — overrides de contraste (área admin)
+   ---------------------------------------------------------------------------
+   SOLO color/fondo/borde; NO toca tamaños, espaciados ni layout. Mismo
+   patrón que AdminRecompensas.module.css.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .title {
+  color: var(--color-text);
+}
+[data-theme="dark"] .subtitle {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .cardTitle {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+[data-theme="dark"] .noteBox {
+  background: rgba(99, 102, 241, 0.14);
+  border-color: rgba(129, 140, 248, 0.30);
+  color: #C7D2FE;
+}
+[data-theme="dark"] .label {
+  color: var(--color-text);
+}
+[data-theme="dark"] .input {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .input:focus {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .textarea {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+[data-theme="dark"] .textarea:focus {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .checkboxLabel {
+  color: var(--color-text);
+}
+[data-theme="dark"] .missionCard {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .missionCard:hover {
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .missionName {
+  color: var(--color-text);
+}
+[data-theme="dark"] .missionDesc {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .orderBadge {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .rewardBadge {
+  background: rgba(139, 92, 246, 0.16);
+  color: #C4B5FD;
+}
+[data-theme="dark"] .statusActive {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+}
+[data-theme="dark"] .statusInactive {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .actionBtn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+[data-theme="dark"] .actionBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+[data-theme="dark"] .actionBtnDelete:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+[data-theme="dark"] .modal {
+  background: var(--color-surface);
+}
+[data-theme="dark"] .modalText {
+  color: var(--color-text-muted);
+}

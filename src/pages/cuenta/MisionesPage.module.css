@@ -176,11 +176,37 @@
   border: 1px solid #fecaca;
 }
 
-.loading,
-.empty {
+.loading {
   color: #6b7280;
   padding: 24px 0;
   text-align: center;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 36px 16px;
+}
+
+.emptyIcon {
+  color: #c4b5fd;
+  margin-bottom: 8px;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 /* Lista de misiones */
@@ -306,8 +332,17 @@
 }
 :global([data-theme='dark']) .subtitle,
 :global([data-theme='dark']) .loading,
-:global([data-theme='dark']) .empty,
 :global([data-theme='dark']) .dateNote {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .emptyIcon {
+  color: rgba(139, 92, 246, 0.45);
+}
+:global([data-theme='dark']) .emptyTitle {
+  color: var(--color-text);
+}
+:global([data-theme='dark']) .emptyText {
   color: var(--color-text-muted);
 }
 

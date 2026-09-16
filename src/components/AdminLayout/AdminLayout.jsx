@@ -365,6 +365,12 @@ const AdminLayout = () => {
               >
                 Retos Semanales
               </NavLink>
+              <NavLink
+                to="/admin/misiones"
+                className={({ isActive }) => getLinkClass(isActive, 'clientes')}
+              >
+                Misiones Diarias
+              </NavLink>
               {/* "Raffles" (sorteos) NO va aquí: vive como tarjeta dentro de
                   "Elementos con diseño" (grupo Diseño de Tienda). */}
             </>

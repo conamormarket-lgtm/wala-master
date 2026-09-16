@@ -181,6 +181,7 @@ const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
 const AdminCrearCuentasPedidos = lazy(() => import('./pages/admin/AdminCrearCuentasPedidos'));
 const AdminRetos = lazy(() => import('./pages/admin/AdminRetos'));
+const AdminMisiones = lazy(() => import('./pages/admin/AdminMisiones'));
 const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuariosAnalyticsPage'));
 
 // Panel "Ver qué hacen los usuarios": wishlists, carritos y fechas (solo-admin).
@@ -443,6 +444,7 @@ function App() {
 
                                       <Route path="libro-reclamaciones" element={<AdminLibroReclamaciones />} />
                                       <Route path="retos" element={<AdminRetos />} />
+                                      <Route path="misiones" element={<AdminMisiones />} />
                                       <Route path="sorteos" element={<AdminSorteos />} />
                                       <Route path="sorteos/:id" element={<AdminSorteoDetalle />} />
 

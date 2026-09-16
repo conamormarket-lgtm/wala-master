@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ListChecks } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   dailyCheckIn,
@@ -10,6 +11,22 @@ import { trackMissionComplete } from '../../services/analytics/tracker';
 import styles from './MisionesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 import { volarMonedasGanadas } from '../../utils/animations';
+
+// Fecha legible en español (ej. "16 de septiembre"). `missionsDate` llega
+// como 'YYYY-MM-DD' del servidor (limaTodayStr); mismo patrón inline que ya
+// usan CuentaFechasImportantesPage.jsx / CuentaCompraDetallePage.jsx — no hay
+// un helper de fechas legibles compartido en el repo.
+const fechaLegible = (iso) => {
+  if (!iso) return '';
+  try {
+    return new Date(iso + 'T00:00:00').toLocaleDateString('es-PE', {
+      day: 'numeric',
+      month: 'long',
+    });
+  } catch {
+    return iso;
+  }
+};
 
 const MisionesPage = () => {
   const { user, userProfile, reloadProfile } = useAuth();
@@ -32,7 +49,11 @@ const MisionesPage = () => {
   const loadMissions = useCallback(async () => {
     const { error: err, data } = await getDailyMissions();
     if (err) {
-      setError(err);
+      // `err` puede ser un código técnico crudo (ej. "internal") si la función
+      // no respondió, no solo el mensaje en español que arma el servidor. Se
+      // deja en consola para depurar y se muestra un mensaje genérico.
+      console.error('Error al cargar las misiones diarias:', err);
+      setError('No pudimos cargar tus misiones. Intenta de nuevo en unos minutos.');
       return;
     }
     setError('');
@@ -68,7 +89,8 @@ const MisionesPage = () => {
     setCompletingId(null);
 
     if (err) {
-      setError(err);
+      console.error('Error al completar la misión:', err);
+      setError('No pudimos completar la misión. Intenta de nuevo.');
       return;
     }
     if (data?.reward) {
@@ -129,7 +151,9 @@ const MisionesPage = () => {
       <div className={styles.tierCard}>
         <div className={styles.tierHeader}>
           <div className={styles.tierInfo}>
-            <span className={styles.tierBadge}>Nivel {tier.current.name}</span>
+            <span className={styles.tierBadge}>
+              {tier.current.icon} Nivel {tier.current.name}
+            </span>
             <span className={styles.tierXp}>{xp} XP acumulada</span>
           </div>
           {!tier.isMax ? (
@@ -159,8 +183,10 @@ const MisionesPage = () => {
         <div className={styles.streakInfo}>
           <span className={styles.streakIcon}>🔥</span>
           <div>
-            <div className={styles.streakCount}>{streakCount} días</div>
-            <div className={styles.streakLabel}>Racha diaria</div>
+            <div className={styles.streakCount}>{streakCount} días seguidos</div>
+            <div className={styles.streakLabel}>
+              Racha diaria · entras a la app día tras día
+            </div>
           </div>
         </div>
         <div className={styles.streakStatus}>
@@ -181,12 +207,16 @@ const MisionesPage = () => {
       {message && <div className={styles.messageBox}>{message}</div>}
       {error && <div className={styles.errorBox}>{error}</div>}
 
-      {/* Lista de misiones */}
+      {/* Lista de misiones. Si hay un error no se muestra el vacío debajo: son
+          dos explicaciones distintas de "no veo misiones" y mostrarlas juntas
+          confunde más de lo que aclara. */}
       {loading ? (
         <div className={styles.loading}><T>Cargando misiones…</T></div>
-      ) : missions.length === 0 ? (
+      ) : error ? null : missions.length === 0 ? (
         <div className={styles.empty}>
-          No hay misiones disponibles hoy. ¡Vuelve mañana!
+          <ListChecks size={32} aria-hidden="true" className={styles.emptyIcon} />
+          <p className={styles.emptyTitle}>Todavía no hay misiones activas.</p>
+          <p className={styles.emptyText}>Vuelve pronto — se agregan seguido.</p>
         </div>
       ) : (
         <ul className={styles.missionList}>
@@ -224,7 +254,7 @@ const MisionesPage = () => {
       )}
 
       {missionsDate && (
-        <p className={styles.dateNote}>Misiones del {missionsDate}</p>
+        <p className={styles.dateNote}>Misiones del {fechaLegible(missionsDate)}</p>
       )}
     </div>
   );

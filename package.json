@@ -57,6 +57,8 @@
     "seed:landing-billetera:prod": "node scripts/seed-landing-billetera.js --prod --confirm",
     "seed:recompensas": "node scripts/seed-recompensas.js",
     "seed:recompensas:prod": "node scripts/seed-recompensas.js --prod --confirm",
+    "seed:misiones": "node scripts/seed-misiones.js",
+    "seed:misiones:prod": "node scripts/seed-misiones.js --prod --confirm",
     "deploy:firestore-rules": "node scripts/deploy-firestore-rules.js",
     "deploy:storage-rules": "node scripts/deploy-storage-rules.js",
     "deploy:functions": "firebase deploy --only functions --project sistema-gestion-3b225",
