@@ -3,7 +3,7 @@ import { getMessage } from '../services/messages';
 import { toDirectImageUrl, getPreviewImageUrl } from '../utils/mascotaImage';
 
 const MASCOTA_KEY = 'mascota_kap_image_url';
-const LOCAL_MASCOT_FALLBACK = `${import.meta.env.BASE_URL}assets/kapi/kapi-happy.png`;
+const LOCAL_MASCOT_FALLBACK = `${import.meta.env.BASE_URL}assets/kapi/kapi-happy.webp`;
 
 /**
  * Devuelve la URL de la imagen de la mascota configurada en Admin > Mascota.

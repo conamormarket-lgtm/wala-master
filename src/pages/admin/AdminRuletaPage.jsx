@@ -706,7 +706,7 @@ const AdminRuletaPage = () => {
                 value={config.tema.imagenCentro}
                 onChange={(e) => setConfig({ ...config, tema: { ...config.tema, imagenCentro: e.target.value } })}
                 onBlur={() => guardarConfig(config)}
-                placeholder="/assets/kapi/kapi-happy.png"
+                placeholder="/assets/kapi/kapi-happy.webp"
               />
             </label>
 

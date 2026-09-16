@@ -77,23 +77,26 @@ const OptimizedImage = ({
         setIsCached(false);
     }, [src, seamless, loaded]);
 
-    // Verificar si la imagen ya está cacheada
+    // ¿Ya sabemos que esta URL cargó bien antes? Entonces nos ahorramos el
+    // estado "cargando" y el esqueleto.
+    //
+    // OJO con cómo se comprueba: aquí antes se hacía `new Image(); img.src =
+    // src` para leer `img.complete`. Asignar `.src` NO es una consulta a la
+    // caché — inicia una descarga de verdad, inmediatamente y sin pasar por el
+    // `loading="lazy"` del <img> real. Es decir, este componente anulaba el
+    // lazy-loading de TODA la app: en la home, las 24 tarjetas de producto
+    // bajaban sus dos imágenes (principal + hover) de golpe al montar, aunque
+    // estuvieran muy por debajo del pliegue, y de paso saturaban la conexión
+    // justo mientras Firestore intentaba resolver las queries que mantienen
+    // puesta la pantalla de carga. Para imágenes de Cloudinary era peor: `src`
+    // es la original sin transformar, así que se bajaba esa Y la optimizada.
+    //
+    // El <img> de abajo ya lleva `onLoad`, y el effect de más abajo cubre el
+    // caso "vino de la caché del navegador y `complete` ya era true al montar".
+    // Con eso basta; no hace falta descargar nada por adelantado.
     useEffect(() => {
         if (!src) return;
-        
-        // Si ya verificamos esta URL antes, usar el resultado cacheado
         if (verifiedCache.has(src)) {
-            setIsCached(true);
-            setLoaded(true);
-            return;
-        }
-
-        // Verificar si la imagen ya está en caché del navegador
-        const img = new Image();
-        img.src = src;
-        
-        if (img.complete && img.naturalWidth > 0) {
-            verifiedCache.add(src);
             setIsCached(true);
             setLoaded(true);
         }

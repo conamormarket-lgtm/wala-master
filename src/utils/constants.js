@@ -1,4 +1,5 @@
-export const LOGO_URL = "/logo-wala.png";
+// 384 px en WebP (26 KB). El PNG de 1080x1080 pesaba 279 KB y se pinta a ~200 px.
+export const LOGO_URL = "/logo-wala-384.webp";
 export const WHATSAPP_NUMBER = "51912881722";
 export const WHATSAPP_MESSAGE = "Hola, quiero hacer un nuevo pedido";
 

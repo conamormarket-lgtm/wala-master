@@ -23,6 +23,9 @@ const isStorageAvailable = () => {
 // SVG es vectorial: pasarlo por canvas lo rasteriza y pierde el escalado.
 // GIF puede estar animado y el canvas solo se queda con el primer cuadro.
 // WebP y AVIF ya vienen en un formato moderno.
+// Lado maximo (px) con el que se guarda una imagen. Ver convertirAWebp.
+const MAX_LADO = 2000;
+
 const TIPOS_SIN_CONVERTIR = new Set(['image/svg+xml', 'image/gif', 'image/webp', 'image/avif']);
 
 let soportaWebpCache = null;
@@ -73,16 +76,31 @@ export const convertirAWebp = async (file, path) => {
     if (!soportaWebp() || typeof document === 'undefined') return original;
 
     const img = await decodificarImagen(file);
-    const ancho = img.width || img.naturalWidth;
-    const alto = img.height || img.naturalHeight;
-    if (!ancho || !alto) return original;
+    const anchoOriginal = img.width || img.naturalWidth;
+    const altoOriginal = img.height || img.naturalHeight;
+    if (!anchoOriginal || !altoOriginal) return original;
+
+    // Techo de resolucion. Antes el canvas copiaba el original 1:1, asi que la
+    // foto de 4000x3000 que sale de un movil se guardaba y se servia a 4000x3000
+    // para pintarla en una tarjeta de 300 px. Firebase Storage no redimensiona
+    // del lado del servidor, asi que esta es la unica oportunidad de hacerlo: lo
+    // que se sube es literalmente lo que va a descargar cada visitante.
+    // MAX_LADO cubre de sobra el uso mas exigente (un hero a pantalla completa);
+    // por debajo de ese tamano no se toca nada.
+    const escala = Math.min(1, MAX_LADO / Math.max(anchoOriginal, altoOriginal));
+    const ancho = Math.round(anchoOriginal * escala);
+    const alto = Math.round(altoOriginal * escala);
 
     const canvas = document.createElement('canvas');
     canvas.width = ancho;
     canvas.height = alto;
     const ctx = canvas.getContext('2d');
     if (!ctx) return original;
-    ctx.drawImage(img, 0, 0);
+    // Al reducir, el remuestreo por defecto deja bordes sucios; 'high' usa el
+    // filtrado bueno del navegador. Sin efecto cuando escala === 1.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, ancho, alto);
     if (typeof img.close === 'function') img.close();
 
     // Un PNG suele ser logo o gráfico con bordes duros, donde la compresión se
@@ -94,8 +112,10 @@ export const convertirAWebp = async (file, path) => {
     // Si el navegador ignoró el formato, toBlob devuelve PNG: no sirve.
     if (!blob || blob.type !== 'image/webp') return original;
     // Con imágenes diminutas o ya muy optimizadas el WebP puede salir más
-    // pesado; en ese caso convertir empeoraría las cosas.
-    if (blob.size >= file.size) return original;
+    // pesado; en ese caso convertir empeoraría las cosas. Salvo que hayamos
+    // REDUCIDO el tamaño: ahí preferimos el WebP aunque pese algo más que el
+    // original, porque lo que importa es no servir 4000 px para pintar 300.
+    if (blob.size >= file.size && escala === 1) return original;
 
     const nombre = String(file.name || path.split('/').pop() || 'imagen').replace(/\.[^.]+$/, '');
     return {

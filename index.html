@@ -26,8 +26,11 @@
     </script>
     <meta name="description" content="Walá - Tienda de prendas personalizadas. Personaliza y compra tus prendas favoritas." />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" type="image/png" href="/logo-wala.png" />
-    <link rel="apple-touch-icon" href="/logo-wala.png" />
+    <!-- 192 px basta para pestana y pantalla de inicio. Antes apuntaban al
+         logo de 1080x1080 (279 KB), que el navegador se descargaba en CADA
+         carga solo para pintar un icono de 16 px. -->
+    <link rel="icon" type="image/png" href="/logo-wala-192.png" />
+    <link rel="apple-touch-icon" href="/logo-wala-192.png" />
 
     <!-- Preconnect crítico: fuentes UI y Firebase -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

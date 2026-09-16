@@ -49,9 +49,12 @@ const KapiPet = () => {
   // suave. Se renombraron para que el nombre no vuelva a mentir.
   // eslint-disable-next-line no-unused-vars
   const IMAGES = {
-    happy: process.env.PUBLIC_URL + '/assets/kapi/kapi-happy.png',
-    hungry: process.env.PUBLIC_URL + '/assets/kapi/kapi-hungry.png',
-    sad: process.env.PUBLIC_URL + '/assets/kapi/kapi-sad.png'
+    // WebP a 400 px. Los PNG originales eran de 800 px y pesaban 638/598/545 KB
+    // CADA UNO, y el boton flotante los pinta a 56 px en TODAS las paginas: eran
+    // ~600 KB de descarga garantizada por visita para un icono de pulgar.
+    happy: process.env.PUBLIC_URL + '/assets/kapi/kapi-happy.webp',
+    hungry: process.env.PUBLIC_URL + '/assets/kapi/kapi-hungry.webp',
+    sad: process.env.PUBLIC_URL + '/assets/kapi/kapi-sad.webp'
   };
 
   useEffect(() => {
