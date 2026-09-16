@@ -520,10 +520,13 @@
 /* =========================================================================
    Pie de la tarjeta: nota de estado o zona de reclamo
    ========================================================================= */
+/* Texto del pie. El filete y el padding superior los pone .actionBox, que
+   ahora envuelve los tres casos del pie (antes .pieNota era un <p> suelto
+   fuera de la caja y traía filete propio). */
 .pieNota {
+  flex: 1 1 240px;
   margin: 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--gris-borde, #e2e8f0);
+  min-width: 0;
   font-size: 0.82rem;
   line-height: 1.4;
   color: var(--gris-texto-secundario, #64748b);
@@ -540,6 +543,7 @@
 }
 
 .montos {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 0.6rem;

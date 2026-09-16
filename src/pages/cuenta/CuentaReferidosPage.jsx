@@ -95,6 +95,18 @@ const CuentaReferidosPage = () => {
     }
   }, [referrals, referralCode, toast]);
 
+  // El enlace de un referido se puede reconstruir en cualquier momento: el
+  // `shareId` ES el id del documento de `referrals`, así que cada fila del
+  // historial sabe cuál era su enlace. Por eso olvidarse de mandarlo no
+  // obliga a generar otro (que gastaría uno del cupo de 50 al mes).
+  const buildShareUrl = (shareId) =>
+    `${window.location.origin}?ref=${referralCode}&shareId=${shareId}`;
+
+  const copyShareUrl = (shareId) =>
+    navigator.clipboard.writeText(buildShareUrl(shareId))
+      .then(() => toast.success('¡Enlace copiado! Mándaselo a una sola persona.'))
+      .catch(() => toast.error('Error copiando al portapapeles'));
+
   const generateLink = async () => {
     if (!referralCode) return;
     setGenerating(true);
@@ -110,11 +122,7 @@ const CuentaReferidosPage = () => {
     // la caché de la app (productos, pedidos…), no solo esta lista.
     queryClient.invalidateQueries({ queryKey: ['myReferrals', referralCode] });
 
-    const url = `${window.location.origin}?ref=${referralCode}&shareId=${id}`;
-    navigator.clipboard.writeText(url)
-      .then(() => toast.success('¡Enlace copiado! Mándaselo a una sola persona.'))
-      .catch(() => toast.error('Error copiando al portapapeles'));
-
+    await copyShareUrl(id);
     setGenerating(false);
   };
 
@@ -412,13 +420,16 @@ const CuentaReferidosPage = () => {
                     })}
                   </ol>
 
-                  {/* Pie: qué está pasando y qué puede hacer el usuario */}
-                  {isIneligible ? (
-                    <p className={styles.pieNota}>
-                      Esta compra no calificó para el premio de referido.
-                    </p>
-                  ) : (canClaim || isClaimed) ? (
-                    <div className={styles.actionBox}>
+                  {/* Pie: qué está pasando y qué puede hacer el usuario.
+                      Un solo contenedor para los tres casos (no calificó /
+                      hay monedas que reclamar / todavía esperando), con el
+                      texto a la izquierda y la acción a la derecha. */}
+                  <div className={styles.actionBox}>
+                    {isIneligible ? (
+                      <p className={styles.pieNota}>
+                        Esta compra no calificó para el premio de referido.
+                      </p>
+                    ) : canClaim || isClaimed ? (
                       <div className={styles.montos}>
                         <span className={styles.montoLinea}>
                           Compra: <strong>S/ {ref.orderTotal?.toFixed(2) || '0.00'}</strong>
@@ -430,27 +441,43 @@ const CuentaReferidosPage = () => {
                           <span className={styles.rewardAmount}>🪙 +{gananciaMostrada}</span>
                         </span>
                       </div>
-                      {canClaim && (
-                        <button
-                          type="button"
-                          className={styles.btnSolido}
-                          onClick={() => handleClaim(ref)}
-                          disabled={claimingId === ref.id}
-                        >
-                          <Coins size={16} aria-hidden="true" />
-                          {claimingId === ref.id ? 'Reclamando…' : 'Reclamar monedas'}
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    // Enlace creado o abierto pero sin compra: decir qué falta,
-                    // en vez de dejar el stepper solo y sin pie.
-                    <p className={styles.pieNota}>
-                      {currentStage >= 2
-                        ? 'Ya entraron a tu enlace. Las monedas llegan cuando esa persona compre.'
-                        : 'Enlace generado. Todavía nadie lo abrió.'}
-                    </p>
-                  )}
+                    ) : (
+                      <p className={styles.pieNota}>
+                        {currentStage >= 2
+                          ? 'Ya entraron a tu enlace. Las monedas llegan cuando esa persona compre.'
+                          : 'Enlace generado. Todavía nadie lo abrió.'}
+                      </p>
+                    )}
+
+                    {canClaim && (
+                      <button
+                        type="button"
+                        className={styles.btnSolido}
+                        onClick={() => handleClaim(ref)}
+                        disabled={claimingId === ref.id}
+                      >
+                        <Coins size={16} aria-hidden="true" />
+                        {claimingId === ref.id ? 'Reclamando…' : 'Reclamar monedas'}
+                      </button>
+                    )}
+
+                    {/* Solo mientras nadie lo abrió: es el caso de "lo generé
+                        y me olvidé de mandarlo". Una vez que alguien entró, el
+                        enlace ya tiene dueño — recopiarlo y mandárselo a otra
+                        persona haría que ambas compartan el mismo seguimiento
+                        y solo una compra quedaría registrada. */}
+                    {ref.status === 'sent' && (
+                      <button
+                        type="button"
+                        className={styles.btnGhost}
+                        onClick={() => copyShareUrl(ref.id)}
+                      >
+                        <Copy size={15} aria-hidden="true" />
+                        Copiar enlace
+                      </button>
+                    )}
+                  </div>
+
                 </GlassCard>
               </Reveal>
             );
