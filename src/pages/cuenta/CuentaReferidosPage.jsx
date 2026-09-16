@@ -4,9 +4,7 @@ import {
   Users,
   Link2,
   Copy,
-  Pencil,
   Check,
-  X,
   Coins,
   MousePointerClick,
   ShoppingBag,
@@ -19,7 +17,6 @@ import {
   getReferralsByReferrer,
   createReferralShare,
   claimReferralCoins,
-  updateReferralCode,
   estimateReferralReward,
 } from '../../services/referrals';
 import ReferralRanking from '../../components/analytics/ReferralRanking';
@@ -47,15 +44,10 @@ const PASOS = [
 ];
 
 const CuentaReferidosPage = () => {
-  const { user, userProfile, updateUserProfile } = useAuth();
+  const { userProfile } = useAuth();
   const toast = useGlobalToast();
   const queryClient = useQueryClient();
   const [generating, setGenerating] = useState(false);
-
-  // States para edición de código
-  const [isEditingCode, setIsEditingCode] = useState(false);
-  const [newCodeInput, setNewCodeInput] = useState('');
-  const [savingCode, setSavingCode] = useState(false);
   const [claimingId, setClaimingId] = useState(null);
 
   const referralCode = userProfile?.referralCode || '';
@@ -152,24 +144,6 @@ const CuentaReferidosPage = () => {
       .catch(() => toast.error('Error al copiar'));
   };
 
-  const handleSaveNewCode = async () => {
-    if (!newCodeInput || newCodeInput.trim().length < 4) {
-      toast.error('El código debe tener al menos 4 caracteres');
-      return;
-    }
-    setSavingCode(true);
-    const { error } = await updateReferralCode(user.uid, newCodeInput);
-    if (error) {
-      toast.error(error);
-      setSavingCode(false);
-    } else {
-      toast.success('Código actualizado exitosamente');
-      await updateUserProfile({ referralCode: newCodeInput.trim().toUpperCase(), referralCodeEdited: true });
-      setIsEditingCode(false);
-      setSavingCode(false);
-    }
-  };
-
   // Cálculos de estadísticas.
   // Ojo con el vocabulario: cada documento de `referrals` es UN enlace
   // generado, no una persona. Por eso no son "visitas" (un mismo enlace
@@ -233,64 +207,24 @@ const CuentaReferidosPage = () => {
         <GlassCard variant="solid" padding="lg" animate={false} className={styles.card}>
           <p className={styles.codeLabel}>Tu código de referido</p>
 
-          {isEditingCode ? (
-            <div className={styles.codeEditRow}>
-              <input
-                type="text"
-                className={styles.codeInput}
-                value={newCodeInput}
-                onChange={(e) => setNewCodeInput(e.target.value)}
-                maxLength={15}
-                placeholder="NUEVO-CODIGO"
-                aria-label="Nuevo código de referido"
-              />
-              <button
-                type="button"
-                className={styles.btnSolido}
-                onClick={handleSaveNewCode}
-                disabled={savingCode}
-              >
-                <Check size={16} aria-hidden="true" />
-                {savingCode ? 'Guardando…' : 'Guardar'}
-              </button>
-              <button
-                type="button"
-                className={styles.btnGhost}
-                onClick={() => setIsEditingCode(false)}
-                disabled={savingCode}
-              >
-                <X size={16} aria-hidden="true" />
-                Cancelar
-              </button>
-            </div>
-          ) : (
-            <div className={styles.codeRow}>
-              <span className={styles.codeText}>{referralCode || '—'}</span>
-              <button
-                type="button"
-                className={styles.btnGhost}
-                onClick={copyCodeOnly}
-                disabled={!referralCode}
-              >
-                <Copy size={15} aria-hidden="true" />
-                Copiar código
-              </button>
-              {!userProfile?.referralCodeEdited && referralCode && (
-                <button
-                  type="button"
-                  className={styles.btnQuiet}
-                  onClick={() => { setIsEditingCode(true); setNewCodeInput(referralCode); }}
-                >
-                  <Pencil size={14} aria-hidden="true" />
-                  Cambiar
-                </button>
-              )}
-            </div>
-          )}
+          {/* El código es único y permanente: antes había un lápiz "Cambiar"
+              que permitía editarlo una sola vez (referralCodeEdited). Se quitó
+              a pedido — un código que puede cambiar deja enlaces ya compartidos
+              apuntando a un código que ya no existe. */}
+          <div className={styles.codeRow}>
+            <span className={styles.codeText}>{referralCode || '—'}</span>
+            <button
+              type="button"
+              className={styles.btnGhost}
+              onClick={copyCodeOnly}
+              disabled={!referralCode}
+            >
+              <Copy size={15} aria-hidden="true" />
+              Copiar código
+            </button>
+          </div>
 
-          {!isEditingCode && !userProfile?.referralCodeEdited && (
-            <p className={styles.codeNote}>Puedes cambiar tu código una sola vez.</p>
-          )}
+          <p className={styles.codeNote}>Este es tu código y no cambia.</p>
 
           <div className={styles.generateRow}>
             <button

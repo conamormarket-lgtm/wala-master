@@ -142,8 +142,7 @@
   color: var(--gris-texto-secundario, #64748b);
 }
 
-.codeRow,
-.codeEditRow {
+.codeRow {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -163,27 +162,6 @@
   border-radius: var(--radio-pequeno, 10px);
   padding: 0.5rem 0.9rem;
   white-space: nowrap;
-}
-
-.codeInput {
-  flex: 1 1 180px;
-  min-width: 0;
-  font-family: var(--fuente-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.55rem 0.8rem;
-  border-radius: var(--radio-pequeno, 10px);
-  border: 1.5px solid var(--gris-borde, #cbd5e1);
-  background: var(--color-surface, #fff);
-  color: var(--gris-texto-principal, #0f172a);
-}
-
-.codeInput:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
 }
 
 .codeNote {
@@ -672,28 +650,8 @@
   cursor: not-allowed;
 }
 
-/* Terciario: "Cambiar" es una acción de una sola vez, no compite con copiar. */
-.btnQuiet {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: none;
-  border: none;
-  padding: 0.5rem 0.3rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--gris-texto-secundario, #64748b);
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.btnQuiet:hover {
-  color: #7c3aed;
-}
-
 .btnSolido:focus-visible,
-.btnGhost:focus-visible,
-.btnQuiet:focus-visible {
+.btnGhost:focus-visible {
   outline: 2px solid #8b5cf6;
   outline-offset: 2px;
 }
@@ -803,8 +761,7 @@
   background: rgba(139, 92, 246, 0.08);
 }
 
-:global([data-theme='dark']) .btnGhost,
-:global([data-theme='dark']) .btnQuiet:hover {
+:global([data-theme='dark']) .btnGhost {
   color: #c4b5fd;
 }
 
@@ -854,7 +811,6 @@
 @media (prefers-reduced-motion: reduce) {
   .btnSolido,
   .btnGhost,
-  .btnQuiet,
   .stepCircle {
     transition: none;
   }

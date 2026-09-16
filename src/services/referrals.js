@@ -11,8 +11,6 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase/config';
-// eslint-disable-next-line no-unused-vars
-import { setDocument } from './firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const REFERRALS_COLLECTION = 'referrals';
@@ -157,32 +155,6 @@ export async function claimReferralCoins(referralId) {
   try {
     const result = await httpsCallable(getFunctions(), 'claimReferralSecure')({ referralId });
     return { earned: result?.data?.earned ?? null, error: null };
-  } catch (error) {
-    return { error: error.message };
-  }
-}
-
-/**
- * Permite editar el código de referido por única vez.
- */
-export async function updateReferralCode(uid, newCode) {
-  try {
-    const cleanCode = newCode.trim().toUpperCase();
-    
-    // Verificar que no esté en uso
-    const q = query(collection(db, 'portal_clientes_users'), where('referralCode', '==', cleanCode));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      return { error: 'El código ya está en uso' };
-    }
-    
-    await setDocument('portal_clientes_users', uid, {
-      referralCode: cleanCode,
-      referralCodeEdited: true,
-      updatedAt: serverTimestamp()
-    });
-    
-    return { error: null };
   } catch (error) {
     return { error: error.message };
   }
