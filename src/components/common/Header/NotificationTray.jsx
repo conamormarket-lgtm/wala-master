@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Bell, Check, X } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { tiempoRelativo } from '../../../utils/tiempoRelativo';
 import { useNotifications } from '../../../contexts/NotificationsContext';
 import styles from './Header.module.css';
 import { T } from '../../../i18n/useTranslatedText';
@@ -13,7 +12,7 @@ const haceCuanto = (createdAt) => {
   try {
     const fecha = createdAt?.toDate ? createdAt.toDate() : (createdAt ? new Date(createdAt) : null);
     if (!fecha || Number.isNaN(fecha.getTime())) return '';
-    return formatDistanceToNow(fecha, { addSuffix: true, locale: es });
+    return tiempoRelativo(fecha);
   } catch {
     return '';
   }

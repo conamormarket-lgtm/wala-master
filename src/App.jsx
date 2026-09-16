@@ -6,7 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationsProvider } from './contexts/NotificationsContext';
 import { CartProvider } from './contexts/CartContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { VisualEditorProvider } from './pages/Tienda/contexts/VisualEditorContext';
+import { VisualEditorProvider, useVisualEditor } from './pages/Tienda/contexts/VisualEditorContext';
 import { LayoutProvider } from './contexts/LayoutContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -32,14 +32,12 @@ import './App.css';
 import TiendaPage from './pages/Tienda/TiendaPage';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
-import WordlePage from './pages/Tienda/WordlePage';
 import BottomNav from './components/common/BottomNav';
 import WhatsAppButton from './components/common/WhatsAppButton';
 import FirebaseWarning from './components/common/FirebaseWarning';
 import KapiPet from './components/common/KapiPet/KapiPet';
 import AdminBar from './components/common/AdminBar/AdminBar';
 import PackageBubble from './components/common/PackageBubble/PackageBubble';
-import VisualEditorPanel from './pages/Tienda/admin/VisualEditorPanel';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 import SystemAlert from './components/common/SystemAlert/SystemAlert';
 import LanguagePopup from './components/i18n/LanguagePopup';
@@ -109,6 +107,10 @@ const SubscriptionSurveyPage = lazy(() => import('./pages/SubscriptionSurveyPage
 const SubscriptionLandingPage = lazy(() => import('./pages/SubscriptionLandingPage'));
 const NuevosUsuariosPage = lazy(() => import('./pages/NuevosUsuariosPage'));
 const MinijuegosPage = lazy(() => import('./pages/Minijuegos/MinijuegosPage'));
+// Estaba en el bloque de "carga inmediata" junto al layout, pero es una ruta
+// de juego: 32 KB de pagina mas 99 KB de diccionario que nadie necesita para
+// ver la tienda.
+const WordlePage = lazy(() => import('./pages/Tienda/WordlePage'));
 const RuletaPage = lazy(() => import('./pages/Minijuegos/RuletaPage'));
 const BallSortPage = lazy(() => import('./pages/Minijuegos/BallSortPage'));
 const GiftExperiencePage = lazy(() => import('./pages/GiftExperiencePage'));
@@ -186,6 +188,13 @@ const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuario
 // Panel "Ver qué hacen los usuarios": wishlists, carritos y fechas (solo-admin).
 const AdminUsuariosComportamiento = lazy(() => import('./pages/admin/AdminUsuariosComportamiento'));
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
+
+// El panel del editor visual son 230 KB de codigo (mas react-easy-crop y el
+// editor de navegacion) y arranca con `if (!isEditModeActive) return null`.
+// Estaba montado de forma estatica en GlobalLayout: TODOS los visitantes se lo
+// descargaban para no pintar nada. Ahora ni se pide hasta que un admin abre el
+// editor.
+const VisualEditorPanel = lazy(() => import('./pages/Tienda/admin/VisualEditorPanel'));
 // AdminNotifications importa recharts. Cargado de forma estatica arrastraba el
 // chunk de graficas (413 KB) al arranque de TODOS los visitantes, aunque solo
 // se usa en /admin/notificaciones. lazy() lo devuelve a su propio chunk.
@@ -259,6 +268,7 @@ const queryClient = new QueryClient({
 
 const GlobalLayout = ({ children }) => {
   const location = useLocation();
+  const { isEditModeActive } = useVisualEditor();
   const isIndependentRoute = location.pathname.startsWith('/regalos-con-amor');
 
   // Activar Heatmap Tracker globalmente
@@ -282,7 +292,11 @@ const GlobalLayout = ({ children }) => {
       <ReferralTracker />
       <ScrollTracker />
       <AdminBar />
-      <VisualEditorPanel />
+      {isEditModeActive && (
+        <Suspense fallback={null}>
+          <VisualEditorPanel />
+        </Suspense>
+      )}
 
       {/* Punto de anclaje para AppDownloadBanner (portal): vive fuera de
           #main-content-area a propósito, para que el aviso de "Wala App"

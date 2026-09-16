@@ -11,8 +11,6 @@ import {
 import { useGlobalToast } from '../../../contexts/ToastContext';
 import { diseno, disenoNum } from '../../../utils/modoDiseno';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { driver } from 'driver.js';
-import 'driver.js/dist/driver.css';
 import { Badge } from '../../ui';
 import styles from './KapiPet.module.css';
 import { T } from '../../../i18n/useTranslatedText';
@@ -112,7 +110,15 @@ const KapiPet = () => {
     if (isOpen) {
       const tutorialCompleted = localStorage.getItem('kapiTutorialCompleted');
       if (!tutorialCompleted) {
-        setTimeout(() => {
+        setTimeout(async () => {
+          // driver.js (27 KB + su CSS) solo hace falta la PRIMERA vez que
+          // alguien abre a Kapi, para el tour. KapiPet esta montado en todas
+          // las paginas, asi que importarlo arriba metia la libreria en el
+          // bundle de arranque de todo el mundo, tutorial visto o no.
+          const [{ driver }] = await Promise.all([
+            import('driver.js'),
+            import('driver.js/dist/driver.css'),
+          ]);
           const driverObj = driver({
             showProgress: true,
             animate: true,

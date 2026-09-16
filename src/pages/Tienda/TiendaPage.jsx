@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { Plus } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useInfiniteQuery, keepPreviousData, useIsFetching, useQueryClient } from '@tanstack/react-query';
@@ -19,13 +19,19 @@ import BestSellersRow from './components/BestSellersRow/BestSellersRow';
 import Testimonials from './components/Testimonials';
 import MapLocation from './components/MapLocation';
 import TrustBadges from './components/TrustBadges/TrustBadges';
-import LandingPaymentBlock from './components/LandingPaymentBlock/LandingPaymentBlock';
 import ConversionFold from './components/ConversionFold/ConversionFold';
 import FeatureList from './components/FeatureList/FeatureList';
 import FaqAccordion from './components/FaqAccordion/FaqAccordion';
 import TextBlock from './components/TextBlock/TextBlock';
 import ImageBlock from './components/ImageBlock/ImageBlock';
 import HeaderBlock from './components/HeaderBlock/HeaderBlock';
+
+// El bloque de pago de las landings arrastra react-select (con emotion,
+// floating-ui y stylis detras: ~270 KB) mas el ubigeo de Peru. Importado de
+// forma estatica, eso viajaba en el bundle de arranque de CUALQUIER visita a
+// la tienda, aunque la mayoria de storefronts no llevan seccion de pago.
+// Se pide cuando una pagina de verdad incluye la seccion 'landing_payment'.
+const LandingPaymentBlock = lazy(() => import('./components/LandingPaymentBlock/LandingPaymentBlock'));
 import {
   getProducts,
   getCategories,
@@ -1169,7 +1175,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         return (
           <section key={section.id} className={styles.sectionBlock} style={{ paddingTop: s.paddingTop || '1.5rem', paddingBottom: s.paddingBottom || '0', overflow: 'hidden' }}>
             <SectionBackground config={s} />
-            <LandingPaymentBlock config={payConfig} />
+            {/* minHeight reserva el hueco mientras llega el chunk: sin eso, el
+                contenido de debajo salta cuando aparece el formulario. */}
+            <Suspense fallback={<div style={{ minHeight: '420px' }} aria-hidden="true" />}>
+              <LandingPaymentBlock config={payConfig} />
+            </Suspense>
           </section>
         );
       }
