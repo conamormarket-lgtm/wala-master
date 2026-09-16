@@ -31,18 +31,66 @@ const ROLES_MAP = {
   otros: { label: 'Otros', singular: 'Otra persona' }
 };
 
+// ── Fechas del calendario ──────────────────────────────────────────────
+// Antes esto devolvía SOLO etiquetas ("Día del Hombre"), sin fecha detrás: el
+// badge aparecía todo el año y no significaba que se acercara nada. Ahora cada
+// fecha trae su regla y se resuelve a un día concreto.
+//
+// Varias son MOVIBLES (caen el n-ésimo día de la semana de un mes), así que se
+// calculan por año en vez de fijarse a un día que quedaría mal el siguiente:
+// el Día de la Madre no cae el mismo número en 2026 que en 2027.
+//
+// `diaSemana` sigue a Date.getDay(): 0 = domingo … 6 = sábado.
+// NOTA: son las fechas de PERÚ. Si el negocio celebra otra, se cambia acá y
+// listo: es el único lugar donde viven.
+const FECHAS_GLOBALES = {
+  san_valentin: { label: 'San Valentín', fija: { mes: 2, dia: 14 } },
+  dia_mujer: { label: 'Día de la Mujer', fija: { mes: 3, dia: 8 } },
+  dia_madre: { label: 'Día de la Madre', movil: { mes: 5, diaSemana: 0, ordinal: 2 } },
+  dia_padre: { label: 'Día del Padre', movil: { mes: 6, diaSemana: 0, ordinal: 3 } },
+  dia_nino: { label: 'Día del Niño', movil: { mes: 8, diaSemana: 0, ordinal: 3 } },
+  dia_amistad: { label: 'Día de la Amistad', movil: { mes: 7, diaSemana: 6, ordinal: 3 } },
+};
+
+// Resuelve una regla al día que le toca en ese año.
+const fechaDelAnio = (regla, anio) => {
+  if (regla.fija) return new Date(anio, regla.fija.mes - 1, regla.fija.dia);
+  const { mes, diaSemana, ordinal } = regla.movil;
+  const primero = new Date(anio, mes - 1, 1);
+  // Cuántos días hay desde el 1 hasta el primer `diaSemana` del mes.
+  const desplazamiento = (diaSemana - primero.getDay() + 7) % 7;
+  return new Date(anio, mes - 1, 1 + desplazamiento + (ordinal - 1) * 7);
+};
+
+// Qué fechas del calendario le tocan a esta persona por su rol y su género.
+// Se quitó "Día del Hombre": salía solo por tener género masculino, no es una
+// fecha que la tienda trabaje y tampoco existe en el calendario del admin.
 const getGlobalDates = (roleKey, gender) => {
-  const dates = [];
-  if (gender === 'Femenino') dates.push('Día de la Mujer');
-  if (gender === 'Masculino') dates.push('Día del Hombre');
-  
-  if (roleKey === 'pareja') dates.push('San Valentín');
-  if (roleKey === 'padres' && gender === 'Femenino') dates.push('Día de la Madre');
-  if (roleKey === 'padres' && gender === 'Masculino') dates.push('Día del Padre');
-  if (roleKey === 'hijos') dates.push('Día del Niño');
-  if (roleKey === 'amigos') dates.push('Día de la Amistad');
-  
-  return dates;
+  const claves = [];
+  if (gender === 'Femenino') claves.push('dia_mujer');
+  if (roleKey === 'pareja') claves.push('san_valentin');
+  if (roleKey === 'padres' && gender === 'Femenino') claves.push('dia_madre');
+  if (roleKey === 'padres' && gender === 'Masculino') claves.push('dia_padre');
+  if (roleKey === 'hijos') claves.push('dia_nino');
+  if (roleKey === 'amigos') claves.push('dia_amistad');
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  return claves
+    .map((clave) => {
+      const regla = FECHAS_GLOBALES[clave];
+      let fecha = fechaDelAnio(regla, hoy.getFullYear());
+      if (fecha < hoy) fecha = fechaDelAnio(regla, hoy.getFullYear() + 1);
+      return {
+        clave,
+        label: regla.label,
+        fecha,
+        dias: Math.round((fecha - hoy) / 86400000),
+      };
+    })
+    // La más cercana primero: es la única que se puede accionar ya.
+    .sort((a, b) => a.dias - b.dias);
 };
 
 // Días que faltan para la PRÓXIMA vez que se celebre una fecha 'YYYY-MM-DD'.
@@ -456,15 +504,31 @@ const CuentaFechasImportantesPage = () => {
                     })}
                   </ul>
 
-                  {/* Fechas del calendario que le corresponden por rol/género. */}
+                  {/* Fechas del calendario que le tocan por rol/género. Van
+                      con el MISMO molde que las propias —fecha y aviso de
+                      cuánto falta— porque antes eran etiquetas sueltas que no
+                      decían cuándo era nada. El globo las distingue de las que
+                      cargó el usuario. */}
                   {fechasGlobales.length > 0 && (
-                    <div className={styles.globalDatesContainer}>
-                      {fechasGlobales.map((gDate) => (
-                        <span key={gDate} className={styles.globalDateBadge}>
-                          <Globe size={12} aria-hidden="true" /> {gDate}
-                        </span>
-                      ))}
-                    </div>
+                    <ul className={styles.eventsList}>
+                      {fechasGlobales.map((gDate) => {
+                        const aviso = avisoProximidad(gDate.dias);
+                        return (
+                          <li key={gDate.clave} className={`${styles.eventItem} ${styles.eventItemGlobal}`}>
+                            <Globe size={15} aria-hidden="true" className={styles.eventIconGlobal} />
+                            <span className={styles.eventName}>{gDate.label}</span>
+                            <span className={styles.eventDate}>
+                              {gDate.fecha.toLocaleDateString('es-PE', { day: 'numeric', month: 'long' })}
+                            </span>
+                            {aviso && (
+                              <span className={`${styles.eventSoon} ${gDate.dias === 0 ? styles.eventToday : ''}`}>
+                                {aviso}
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   )}
 
                   {/* Paquete sugerido. Mientras el catálogo carga no se pinta

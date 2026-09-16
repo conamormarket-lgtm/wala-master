@@ -263,24 +263,17 @@
   border-color: rgba(245, 158, 11, 0.35);
 }
 
-/* ── Fechas del calendario por rol/género ──────────────────────────────── */
-.globalDatesContainer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+/* ── Fechas del calendario por rol/género ──────────────────────────────────
+   Mismo molde que las fechas propias, con un tinte fucsia para distinguirlas:
+   estas no las cargó el usuario, se las asigna su rol/género. */
+.eventItemGlobal {
+  background: rgba(217, 70, 239, 0.06);
+  border-color: rgba(217, 70, 239, 0.2);
 }
 
-.globalDateBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
+.eventIconGlobal {
+  flex: 0 0 auto;
   color: #a21caf;
-  background: rgba(217, 70, 239, 0.1);
-  border: 1px solid rgba(217, 70, 239, 0.26);
 }
 
 /* =========================================================================
@@ -970,10 +963,13 @@
   border-color: rgba(245, 158, 11, 0.35);
 }
 
-:global([data-theme='dark']) .globalDateBadge {
-  background: rgba(217, 70, 239, 0.16);
+:global([data-theme='dark']) .eventItemGlobal {
+  background: rgba(217, 70, 239, 0.12);
+  border-color: rgba(217, 70, 239, 0.3);
+}
+
+:global([data-theme='dark']) .eventIconGlobal {
   color: #f0abfc;
-  border-color: rgba(217, 70, 239, 0.34);
 }
 
 :global([data-theme='dark']) .suggestedPackage {
