@@ -44,10 +44,32 @@ export const AMBITO_PRODUCTOS = ['productos_wala'];
 
 const EXTENSIONES = /\.(png|jpe?g|webp)(\?|$)/i;
 
+/**
+ * Copias pequeñas que el documento YA tiene guardadas, mirando tanto la raíz
+ * como las variantes de producto, que es donde las escribe el formulario de
+ * admin. Devuelve siempre un objeto para poder indexarlo sin comprobar nulos.
+ */
+const variantesPrevias = (contenido) => {
+  const fuera = {};
+  if (!contenido || typeof contenido !== 'object') return fuera;
+  Object.assign(fuera, contenido.imagesVariantes || {});
+  for (const v of (Array.isArray(contenido.variants) ? contenido.variants : [])) {
+    Object.assign(fuera, v?.imagesVariantes || {});
+  }
+  return fuera;
+};
+
 export const esWebp = (url) => /\.webp(\?|$)/i.test(nombreDelObjeto(url));
 
-const esUrlDeNuestroStorage = (v) =>
-  typeof v === 'string' && v.includes('firebasestorage.googleapis.com');
+const esUrlDeNuestroStorage = (v) => {
+  if (typeof v !== 'string') return false;
+  if (v.includes('firebasestorage.googleapis.com')) return true;
+  // El emulador de Storage sirve desde localhost:9199. Sin esto la herramienta
+  // no se podia ejercitar en local -ninguna URL pasaba el filtro-, que es como
+  // se colo el fallo de no guardar las copias pequeñas: la pasada completa solo
+  // se podia probar contra produccion. En produccion este host no aparece.
+  return /^https?:\/\/(localhost|127\.0\.0\.1):9199\//.test(v);
+};
 
 /**
  * Una URL de Firebase Storage trae el nombre del objeto codificado en la ruta
@@ -66,6 +88,13 @@ const nombreDelObjeto = (url) => {
 const esImagenConvertible = (url) =>
   esUrlDeNuestroStorage(url) && EXTENSIONES.test(nombreDelObjeto(url));
 
+// Campos cuyo contenido NO son imágenes a convertir, sino el registro de las
+// copias que este mismo proceso ya generó. Sin excluirlos, una segunda pasada
+// encontraba las URLs de las variantes dentro del mapa y las trataba como
+// imágenes nuevas: hacía copias de las copias, y cada ejecución multiplicaba
+// los archivos en Storage.
+const CAMPOS_IGNORADOS = new Set(['imagesVariantes']);
+
 /**
  * Recorre cualquier estructura y devuelve las URLs convertibles que encuentre.
  * Exportada para poder comprobarla por separado: es la pieza de la que depende
@@ -81,7 +110,10 @@ export const buscarUrls = (valor, encontradas = new Set()) => {
     return encontradas;
   }
   if (valor && typeof valor === 'object') {
-    Object.values(valor).forEach((v) => buscarUrls(v, encontradas));
+    Object.entries(valor).forEach(([clave, v]) => {
+      if (CAMPOS_IGNORADOS.has(clave)) return;
+      buscarUrls(v, encontradas);
+    });
   }
   return encontradas;
 };
@@ -180,10 +212,14 @@ export const reconvertirImagenesAWebp = async ({
 
   for (const trabajo of trabajos) {
     const mapa = new Map();
+    // { [urlNueva]: { 160, 400, 800 } } que se guardará en el documento.
+    const variantesNuevas = {};
     for (const url of trabajo.urls) {
       if (onProgreso) onProgreso({ hechas, total, actual: `${trabajo.coleccion}/${trabajo.id}` });
       if (yaConvertidas.has(url)) {
-        mapa.set(url, yaConvertidas.get(url));
+        const { nueva, variantes } = yaConvertidas.get(url);
+        mapa.set(url, nueva);
+        if (variantes) variantesNuevas[nueva] = variantes;
         hechas++;
         continue;
       }
@@ -191,19 +227,27 @@ export const reconvertirImagenesAWebp = async ({
         const nombre = (nombreDelObjeto(url).split('/').pop() || 'imagen').replace(/\.[^.]+$/, '');
         const { file, ancho, alto } = await descargarComoFile(url, `${nombre}.png`);
 
-        // Una WebP que ya cabe en el techo no tiene nada que ganar: reescribirla
-        // solo gastaría cuota y cambiaría la URL en el documento para nada.
-        if (esWebp(url) && Math.max(ancho, alto) <= MAX_LADO) { saltadas++; hechas++; continue; }
+        // Una WebP que ya cabe en el techo Y que ya tiene sus copias pequeñas
+        // no tiene nada que ganar. Si le faltan las copias sí hay que pasarla,
+        // aunque su tamaño esté bien: son ellas las que hacen que un hueco de
+        // 60 px deje de pedir la imagen entera.
+        const yaTieneCopias = !!(variantesPrevias(trabajo.contenido)[url]);
+        if (esWebp(url) && Math.max(ancho, alto) <= MAX_LADO && yaTieneCopias) { saltadas++; hechas++; continue; }
 
         const ruta = `reconvertidas/${Date.now()}_${nombre}.png`;
-        const { url: nueva, error } = await uploadFile(file, ruta);
+        const { url: nueva, variantes, error } = await uploadFile(file, ruta);
         if (error || !nueva) throw new Error(error || 'No se pudo subir');
         // uploadFile descarta la conversión si el WebP no mejora. En ese caso
         // la URL nueva apunta a un PNG igual de pesado: no vale la pena
         // cambiar el documento por nada.
         if (!nombreDelObjeto(nueva).endsWith('.webp')) { saltadas++; hechas++; continue; }
         mapa.set(url, nueva);
-        yaConvertidas.set(url, nueva);
+        // Sin esto, la reconversión generaba las copias pequeñas en Storage y
+        // tiraba sus URLs: los archivos quedaban ahí sin que nadie pudiera
+        // pedirlos. Es lo que hacía que una pasada completa no cambiara nada
+        // en pantalla.
+        if (variantes && Object.keys(variantes).length) variantesNuevas[nueva] = variantes;
+        yaConvertidas.set(url, { nueva, variantes });
         convertidas++;
       } catch (e) {
         errores.push(`${trabajo.coleccion}/${trabajo.id}: ${e?.message || e}`);
@@ -213,6 +257,12 @@ export const reconvertirImagenesAWebp = async ({
 
     if (mapa.size === 0) continue;
     const actualizado = reemplazarUrls(trabajo.contenido, mapa);
+    // Las copias van en el propio documento, con la URL como clave. Es donde
+    // las busca variantesDeImagen (services/products.js) cuando la variante del
+    // producto no las tiene.
+    if (Object.keys(variantesNuevas).length) {
+      actualizado.imagesVariantes = { ...variantesPrevias(trabajo.contenido), ...variantesNuevas };
+    }
     const { error } = await setDocument(trabajo.coleccion, trabajo.id, actualizado);
     if (error) errores.push(`${trabajo.coleccion}/${trabajo.id}: al guardar, ${error}`);
     else documentos++;

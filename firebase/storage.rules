@@ -40,6 +40,23 @@ service firebase.storage {
       allow read, write: if isAdmin();
     }
 
+    // Fotos de producto (modelo V2). NO estaban cubiertas: sin regla, Storage
+    // deniega por defecto, asi que estas reglas tal cual romperian la subida de
+    // imagenes desde el formulario de producto. Que en produccion funcione
+    // significa que lo desplegado no es este archivo — revisar antes de
+    // ejecutar deploy:storage-rules.
+    match /productos_v2/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Destino de la herramienta "Optimizar imagenes antiguas" (imagenesWebp.js).
+    // Mismo caso: sin esta regla, esa herramienta falla con storage/unauthorized.
+    match /reconvertidas/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Cliparts (galería global) - lectura pública, solo admin puede subir/eliminar
     match /cliparts/{allPaths=**} {
       allow read: if true;
