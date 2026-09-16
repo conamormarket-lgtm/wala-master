@@ -36,6 +36,34 @@ const getCloudinarySrcSet = (url) => {
     `.trim();
 };
 
+/**
+ * srcSet a partir del mapa de variantes que devuelve uploadFile
+ * ({ 160: url, 400: url, 800: url }).
+ *
+ * Esto es lo que hace que un hueco de 60 px reciba un archivo de 160 px en vez
+ * del de 2000: sin `srcSet` el navegador no tiene alternativa que ofrecer, y
+ * reducir 30 veces de golpe no solo pesa — se ve sucio, porque a esa escala el
+ * navegador remuestrea con un filtro barato.
+ *
+ * A la principal se le pone el ancho MÁXIMO posible como descriptor. Su ancho
+ * real no se guarda en ningún sitio y pedirlo costaría una petición extra; con
+ * este valor el navegador la elige solo cuando ninguna variante alcanza, que es
+ * justo lo que se busca.
+ */
+const ANCHO_MAXIMO_PRINCIPAL = 2000;
+
+const srcSetDeVariantes = (principal, variantes) => {
+    if (!principal || !variantes) return null;
+    const partes = Object.entries(variantes)
+        .map(([ancho, url]) => [Number(ancho), url])
+        .filter(([ancho, url]) => Number.isFinite(ancho) && ancho > 0 && typeof url === 'string' && url)
+        .sort((a, b) => a[0] - b[0])
+        .map(([ancho, url]) => `${url} ${ancho}w`);
+    if (partes.length === 0) return null;
+    partes.push(`${principal} ${ANCHO_MAXIMO_PRINCIPAL}w`);
+    return partes.join(', ');
+};
+
 // Cache de imágenes verificadas
 const verifiedCache = new Set();
 
@@ -57,6 +85,12 @@ const OptimizedImage = ({
     fadeInDuration = 150,
     seamless = false,
     cropData,
+    // Mapa { ancho: url } de las copias pequeñas (ver uploadFile). Si no viene,
+    // el componente se comporta exactamente como antes.
+    variantes,
+    // Cuánto espacio ocupará la imagen, para que el navegador elija bien del
+    // srcSet. Sin esto asume el ancho de la ventana y se lleva la más grande.
+    sizes: sizesProp,
     ...rest
 }) => {
     const [loaded, setLoaded] = useState(false);
@@ -130,8 +164,16 @@ const OptimizedImage = ({
     const baseDisplaySrc = errored && fallbackSrc ? fallbackSrc : src;
     
     const finalSrc = errored ? baseDisplaySrc : (isCloudinary ? getCloudinaryOptimized(baseDisplaySrc, 800) : baseDisplaySrc);
-    const srcSet = errored ? null : getCloudinarySrcSet(baseDisplaySrc);
-    const sizes = isCloudinary ? "(max-width: 400px) 400px, (max-width: 600px) 600px, (max-width: 1024px) 800px, 1200px" : undefined;
+    // Cloudinary transforma por URL; Firebase no, así que ahí las alternativas
+    // son los archivos que uploadFile dejó subidos.
+    const srcSet = errored
+        ? null
+        : (isCloudinary ? getCloudinarySrcSet(baseDisplaySrc) : srcSetDeVariantes(baseDisplaySrc, variantes));
+    const sizes = srcSet
+        ? (sizesProp || (isCloudinary
+            ? "(max-width: 400px) 400px, (max-width: 600px) 600px, (max-width: 1024px) 800px, 1200px"
+            : undefined))
+        : undefined;
 
     const containerCls = [
         styles.container,

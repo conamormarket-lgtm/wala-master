@@ -64,71 +64,117 @@ const decodificarConImg = (file) => new Promise((resolve, reject) => {
 });
 
 /**
- * Devuelve { file, path } listos para subir. Si no se puede o no conviene
- * convertir, devuelve los originales sin tocar.
- * Se exporta para poder comprobarla por separado y reutilizarla si alguna vez
- * hace falta reconvertir imagenes ya subidas.
+ * Anchos de las copias pequeñas que se generan junto a la imagen principal.
+ *
+ * No son números redondos al azar: salen de medir los huecos reales de la
+ * tienda. 160 cubre el swatch de color (44 px), la miniatura de la lista de
+ * deseos (60) y la de la ficha (68); 400 la tarjeta en móvil (~180); 800 la
+ * tarjeta en escritorio (~320) — todos a densidad 2x. Por encima manda la
+ * principal, limitada a MAX_LADO, que es la que necesita un hero a pantalla
+ * completa.
+ *
+ * El objetivo es que ningún hueco reduzca más de ~2x: por encima de eso el
+ * navegador remuestrea con un filtro barato y la imagen se ve sucia. Ese es el
+ * motivo de CALIDAD, tanto o más que el peso.
  */
-export const convertirAWebp = async (file, path) => {
-  const original = { file, path };
+export const ANCHOS_VARIANTE = [160, 400, 800];
+
+/** Dibuja la imagen ya decodificada en un canvas del tamaño pedido y la codifica. */
+const codificarWebp = async (img, ancho, alto, calidad) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = ancho;
+  canvas.height = alto;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  // Al reducir, el remuestreo por defecto deja bordes sucios; 'high' usa el
+  // filtrado bueno del navegador.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, ancho, alto);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', calidad));
+  // Si el navegador ignoró el formato, toBlob devuelve PNG: no sirve.
+  return blob && blob.type === 'image/webp' ? blob : null;
+};
+
+/** `carpeta/foto.png` + 400 -> `carpeta/foto_400.webp` */
+export const rutaDeVariante = (path, ancho) =>
+  path.replace(/\.[^./]+$/, '') + `_${ancho}.webp`;
+
+/**
+ * Prepara TODO lo que se sube para una imagen: el archivo principal (limitado
+ * a MAX_LADO) y sus copias pequeñas. La imagen se decodifica UNA vez y se
+ * reutiliza para todos los tamaños.
+ *
+ * Es conservador: ante cualquier duda devuelve el original sin tocar y sin
+ * variantes, y quien llame sigue funcionando igual que antes.
+ */
+export const prepararSubida = async (file, path) => {
+  const soloOriginal = { principal: { file, path }, variantes: [] };
   try {
-    if (!file || typeof file.type !== 'string') return original;
-    if (!file.type.startsWith('image/')) return original;   // fuentes, PDFs, etc.
-    if (TIPOS_SIN_CONVERTIR.has(file.type)) return original;
-    if (!soportaWebp() || typeof document === 'undefined') return original;
+    if (!file || typeof file.type !== 'string') return soloOriginal;
+    if (!file.type.startsWith('image/')) return soloOriginal;   // fuentes, PDFs, etc.
+    if (TIPOS_SIN_CONVERTIR.has(file.type)) return soloOriginal;
+    if (!soportaWebp() || typeof document === 'undefined') return soloOriginal;
 
     const img = await decodificarImagen(file);
     const anchoOriginal = img.width || img.naturalWidth;
     const altoOriginal = img.height || img.naturalHeight;
-    if (!anchoOriginal || !altoOriginal) return original;
-
-    // Techo de resolucion. Antes el canvas copiaba el original 1:1, asi que la
-    // foto de 4000x3000 que sale de un movil se guardaba y se servia a 4000x3000
-    // para pintarla en una tarjeta de 300 px. Firebase Storage no redimensiona
-    // del lado del servidor, asi que esta es la unica oportunidad de hacerlo: lo
-    // que se sube es literalmente lo que va a descargar cada visitante.
-    // MAX_LADO cubre de sobra el uso mas exigente (un hero a pantalla completa);
-    // por debajo de ese tamano no se toca nada.
-    const escala = Math.min(1, MAX_LADO / Math.max(anchoOriginal, altoOriginal));
-    const ancho = Math.round(anchoOriginal * escala);
-    const alto = Math.round(altoOriginal * escala);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = ancho;
-    canvas.height = alto;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return original;
-    // Al reducir, el remuestreo por defecto deja bordes sucios; 'high' usa el
-    // filtrado bueno del navegador. Sin efecto cuando escala === 1.
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, 0, 0, ancho, alto);
-    if (typeof img.close === 'function') img.close();
+    if (!anchoOriginal || !altoOriginal) return soloOriginal;
 
     // Un PNG suele ser logo o gráfico con bordes duros, donde la compresión se
     // nota antes; un JPG ya es una foto que venía comprimida. De ahí los dos
     // niveles de calidad.
     const calidad = file.type === 'image/png' ? 0.92 : 0.82;
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', calidad));
-
-    // Si el navegador ignoró el formato, toBlob devuelve PNG: no sirve.
-    if (!blob || blob.type !== 'image/webp') return original;
-    // Con imágenes diminutas o ya muy optimizadas el WebP puede salir más
-    // pesado; en ese caso convertir empeoraría las cosas. Salvo que hayamos
-    // REDUCIDO el tamaño: ahí preferimos el WebP aunque pese algo más que el
-    // original, porque lo que importa es no servir 4000 px para pintar 300.
-    if (blob.size >= file.size && escala === 1) return original;
-
     const nombre = String(file.name || path.split('/').pop() || 'imagen').replace(/\.[^.]+$/, '');
-    return {
-      file: new File([blob], `${nombre}.webp`, { type: 'image/webp' }),
-      path: path.replace(/\.[^./]+$/, '') + '.webp',
-    };
+    const proporcion = altoOriginal / anchoOriginal;
+
+    // ── Principal ───────────────────────────────────────────────────────────
+    // Techo de resolución: Firebase Storage no redimensiona del lado del
+    // servidor, así que esta es la única oportunidad. Lo que se sube es
+    // literalmente lo que va a descargar cada visitante.
+    const escala = Math.min(1, MAX_LADO / Math.max(anchoOriginal, altoOriginal));
+    const anchoPrincipal = Math.round(anchoOriginal * escala);
+    const blobPrincipal = await codificarWebp(
+      img, anchoPrincipal, Math.round(altoOriginal * escala), calidad
+    );
+
+    let principal = { file, path };
+    // Con imágenes diminutas o ya muy optimizadas el WebP puede salir más
+    // pesado; ahí convertir empeoraría las cosas. Salvo que hayamos REDUCIDO
+    // el tamaño: entonces preferimos el WebP aunque pese algo más, porque lo
+    // que importa es no servir 4000 px para pintar 300.
+    if (blobPrincipal && !(blobPrincipal.size >= file.size && escala === 1)) {
+      principal = {
+        file: new File([blobPrincipal], `${nombre}.webp`, { type: 'image/webp' }),
+        path: path.replace(/\.[^./]+$/, '') + '.webp',
+      };
+    }
+
+    // ── Variantes ───────────────────────────────────────────────────────────
+    // Solo las que son de verdad más pequeñas que la principal: generar una
+    // copia de 800 px a partir de un logo de 200 px sería agrandar, que pesa
+    // más y se ve peor.
+    const variantes = [];
+    for (const ancho of ANCHOS_VARIANTE) {
+      if (ancho >= anchoPrincipal) continue;
+      const blob = await codificarWebp(img, ancho, Math.round(ancho * proporcion), calidad);
+      if (!blob) continue;
+      variantes.push({ ancho, file: new File([blob], `${nombre}_${ancho}.webp`, { type: 'image/webp' }), path: rutaDeVariante(path, ancho) });
+    }
+
+    if (typeof img.close === 'function') img.close();
+    return { principal, variantes };
   } catch (error) {
-    console.warn('[storage] no se pudo convertir a WebP, se sube el original:', error?.message || error);
-    return original;
+    console.warn('[storage] no se pudieron preparar las variantes, se sube el original:', error?.message || error);
+    return soloOriginal;
   }
 };
+
+/**
+ * Compatibilidad: devuelve solo el archivo principal, como antes.
+ * Se conserva porque estaba exportada y se podía comprobar por separado.
+ */
+export const convertirAWebp = async (file, path) => (await prepararSubida(file, path)).principal;
 
 /**
  * Subir archivo a Firebase Storage
@@ -140,26 +186,42 @@ export const convertirAWebp = async (file, path) => {
  * sea imagen —fuentes, por ejemplo— pasa intacto.
  */
 export const uploadFile = async (archivoOriginal, rutaOriginal) => {
-  const { file, path } = await convertirAWebp(archivoOriginal, rutaOriginal);
+  const { principal, variantes } = await prepararSubida(archivoOriginal, rutaOriginal);
   const storage = await obtenerStorage();
   if (!storage) {
-    const tempUrl = URL.createObjectURL(file);
-    return { url: tempUrl, error: null };
+    const tempUrl = URL.createObjectURL(principal.file);
+    return { url: tempUrl, variantes: {}, error: null };
   }
   const TIMEOUT_MS = 45000;
   try {
-    const storageRef = ref(storage, path);
+    const subirUno = async ({ file, path }) => {
+      const snapshot = await uploadBytes(ref(storage, path), file);
+      return await getDownloadURL(snapshot.ref);
+    };
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Tiempo de espera agotado. Revisa tu conexión y las reglas de Storage en Firebase.')), TIMEOUT_MS);
     });
-    const uploadPromise = (async () => {
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return { url: downloadURL, error: null };
-    })();
-    return await Promise.race([uploadPromise, timeoutPromise]);
+
+    // La principal manda: es la que se guarda en el documento y la que ve todo
+    // el que aún no sepa de variantes.
+    const url = await Promise.race([subirUno(principal), timeoutPromise]);
+
+    // Las variantes van DESPUÉS y cada una por su cuenta: si una falla (red,
+    // permisos, cuota) no puede tumbar una subida que ya tuvo éxito. Lo peor
+    // que pasa es que esa imagen se siga sirviendo en su tamaño grande, que es
+    // exactamente lo que ocurría antes de existir las variantes.
+    const mapa = {};
+    await Promise.all(variantes.map(async (v) => {
+      try {
+        mapa[v.ancho] = await subirUno(v);
+      } catch (e) {
+        console.warn(`[storage] la variante de ${v.ancho}px no se pudo subir:`, e?.message || e);
+      }
+    }));
+
+    return { url, variantes: mapa, error: null };
   } catch (error) {
-    return { url: null, error: error.message };
+    return { url: null, variantes: {}, error: error.message };
   }
 };
 
