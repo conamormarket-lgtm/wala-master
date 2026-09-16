@@ -283,6 +283,24 @@
   white-space: nowrap;
 }
 
+.goBtn {
+  display: inline-block;
+  background: transparent;
+  color: var(--rojo-principal, #e11d48);
+  border: 1.5px solid var(--rojo-principal, #e11d48);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+}
+
+.goBtn:hover {
+  background: rgba(225, 29, 72, 0.08);
+}
+
 .completeBtn {
   background: var(--rojo-principal, #e11d48);
   color: #fff;

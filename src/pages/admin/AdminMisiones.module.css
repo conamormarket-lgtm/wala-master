@@ -313,6 +313,17 @@
   color: #9ca3af;
 }
 
+.verifiedRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #0a8f4f;
+}
+
 .missionActions {
   display: flex;
   gap: 0.5rem;
@@ -502,6 +513,9 @@
 }
 [data-theme="dark"] .statusInactive {
   background: var(--color-surface);
+}
+[data-theme="dark"] .verifiedRow {
+  color: #6EE7B7;
 }
 [data-theme="dark"] .actionBtn {
   background: var(--color-surface);

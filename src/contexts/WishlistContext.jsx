@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { getWishlistByUserId, addWishlistItem, removeWishlistItem, createWishlist, syncWishlistUserCode } from '../services/wishlist';
+import { recordMissionAction } from '../services/loyalty';
 
 const WishlistContext = createContext();
 
@@ -154,6 +155,10 @@ export const WishlistProvider = ({ children }) => {
       if (processChallengeEvent) {
         processChallengeEvent('add_wishlist', 1);
       }
+      // Marca para Misiones Diarias que el cliente agregó un favorito de
+      // verdad (no que le dio clic a "Completar" sin hacer nada). Mismo
+      // criterio fire-and-forget que el hook de arriba.
+      recordMissionAction('add_wishlist').catch(() => {});
     }
 
     return { success: true };

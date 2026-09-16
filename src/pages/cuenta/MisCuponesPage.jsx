@@ -13,6 +13,7 @@ import { Copy, Check, Ticket } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getMisCupones, estadoCupon } from '../../services/cupones';
+import { recordMissionAction } from '../../services/loyalty';
 import styles from './MisCuponesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -56,6 +57,12 @@ const MisCuponesPage = () => {
   }, [user?.uid]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  // Marca para Misiones Diarias que el cliente entró aquí de verdad. Ver el
+  // mismo patrón en CatalogReward.jsx.
+  useEffect(() => {
+    if (user?.uid) recordMissionAction('visit_mis_cupones').catch(() => {});
+  }, [user?.uid]);
 
   const copiar = async (code) => {
     try {

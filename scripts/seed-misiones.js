@@ -96,6 +96,7 @@ const MISIONES = [
     order: 1,
     active: true,
     type: "daily",
+    actionKey: "visit_catalogo_recompensas",
   },
   {
     id: "mision-lista-deseos",
@@ -105,6 +106,7 @@ const MISIONES = [
     order: 2,
     active: true,
     type: "daily",
+    actionKey: "add_wishlist",
   },
   {
     id: "mision-mis-cupones",
@@ -114,6 +116,7 @@ const MISIONES = [
     order: 3,
     active: true,
     type: "daily",
+    actionKey: "visit_mis_cupones",
   },
   {
     id: "mision-minijuegos",
@@ -123,6 +126,7 @@ const MISIONES = [
     order: 4,
     active: true,
     type: "daily",
+    actionKey: "visit_minijuegos",
   },
 ];
 

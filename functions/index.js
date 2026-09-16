@@ -2541,9 +2541,19 @@ exports.claimReferralSecure = functions.https.onCall(async (data, context) => {
 //   - 'loyaltyLedger' (id auto): { uid, type:'earn'|'spend', amount, source,
 //     balanceAfter, createdAt }. Escritura solo servidor.
 //   - 'missions' (config admin): { title, description, type:'daily', actionKey,
-//     rewardPoints, active, order }.
+//     rewardPoints, active, order }. `actionKey` es opcional: si está seteado,
+//     completeMissionSecure exige que esa acción ya se haya registrado HOY en
+//     'userActions' antes de pagar la recompensa (ver más abajo). Si no tiene
+//     `actionKey`, la misión sigue siendo de auto-reporte (el cliente la marca
+//     él mismo, sin comprobación) — así nacieron todas las misiones antes de
+//     esto, y siguen funcionando igual.
 //   - 'userMissions' id '<uid>_<YYYY-MM-DD>': { userId, date, items:[{ missionId,
 //     completed, claimedAt }] }.
+//   - 'userActions' id '<uid>_<YYYY-MM-DD>': { userId, date, actions: {
+//     [actionKey]: true } }. La escribe recordMissionActionSecure cuando el
+//     cliente hace de verdad la acción (visita una página, agrega un
+//     favorito...); completeMissionSecure la lee para no pagar una misión
+//     verificable que nunca ocurrió.
 //   - 'dailyStreak' = { count, lastDate, freezeTokens }; 'lastCheckInDate'; 'xp'
 //     escritos SOLO por el servidor (reglas los bloquean al cliente).
 // ════════════════════════════════════════════════════════════════════════════
@@ -2628,15 +2638,47 @@ exports.dailyCheckInSecure = functions.https.onCall(async (data, context) => {
   }
 });
 
+// ── Registra que el cliente hizo de verdad la acción de una misión ─────────────
+// Lo llaman las páginas reales (Catálogo de Recompensas, Mis Cupones,
+// Minijuegos, agregar a la Lista de Deseos) al entrar/actuar, NO el botón
+// "Completar" de Misiones. Idempotente: repetir el mismo actionKey el mismo
+// día no cambia nada. Merge manual (leer-fusionar-escribir) en vez de
+// set(...,{merge:true}) sobre un mapa anidado, mismo criterio que ya usa
+// dailyCheckInSecure con dailyStreak.
+exports.recordMissionActionSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const actionKey = data && data.actionKey;
+  if (!actionKey || typeof actionKey !== "string") {
+    throw new functions.https.HttpsError("invalid-argument", "Falta actionKey.");
+  }
+  const today = limaTodayStr();
+  const ref = db.collection("userActions").doc(uid + "_" + today);
+  try {
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const actions = snap.exists ? { ...(snap.data().actions || {}) } : {};
+      actions[actionKey] = true;
+      t.set(ref, { userId: uid, date: today, actions });
+    });
+    return { success: true };
+  } catch (e) {
+    console.error("recordMissionActionSecure error:", e);
+    throw new functions.https.HttpsError("internal", "No se pudo registrar la acción.");
+  }
+});
+
 // ── Asegura/devuelve las misiones diarias de hoy ───────────────────────────────
 // Si el doc userMissions de hoy no existe, lo crea con las misiones activas
 // (type 'daily'). Devuelve { date, items:[{ missionId, title, description,
-// rewardPoints, completed }] }.
+// rewardPoints, completed, actionKey, verified }] }. `verified` es true si la
+// misión no pide ninguna acción (actionKey vacío) o si ya se registró en
+// userActions vía recordMissionActionSecure.
 exports.getDailyMissionsSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const today = limaTodayStr();
   const docId = uid + "_" + today;
   const umRef = db.collection("userMissions").doc(docId);
+  const actionsRef = db.collection("userActions").doc(docId);
 
   try {
     // Misiones activas diarias, ordenadas por `order`.
@@ -2650,22 +2692,26 @@ exports.getDailyMissionsSecure = functions.https.onCall(async (data, context) =>
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     // Crea el doc de hoy si no existe (idempotente por id determinista).
-    const completedMap = await db.runTransaction(async (t) => {
-      const umSnap = await t.get(umRef);
-      if (!umSnap.exists) {
-        const items = missions.map((m) => ({
-          missionId: m.id,
-          completed: false,
-          claimedAt: null,
-        }));
-        t.set(umRef, { userId: uid, date: today, items });
-        return {};
-      }
-      const items = umSnap.data().items || [];
-      const map = {};
-      for (const it of items) map[it.missionId] = !!it.completed;
-      return map;
-    });
+    const [completedMap, actionsSnap] = await Promise.all([
+      db.runTransaction(async (t) => {
+        const umSnap = await t.get(umRef);
+        if (!umSnap.exists) {
+          const items = missions.map((m) => ({
+            missionId: m.id,
+            completed: false,
+            claimedAt: null,
+          }));
+          t.set(umRef, { userId: uid, date: today, items });
+          return {};
+        }
+        const items = umSnap.data().items || [];
+        const map = {};
+        for (const it of items) map[it.missionId] = !!it.completed;
+        return map;
+      }),
+      actionsRef.get(),
+    ]);
+    const doneActions = actionsSnap.exists ? (actionsSnap.data().actions || {}) : {};
 
     const items = missions.map((m) => ({
       missionId: m.id,
@@ -2673,6 +2719,8 @@ exports.getDailyMissionsSecure = functions.https.onCall(async (data, context) =>
       description: m.description || "",
       rewardPoints: Number(m.rewardPoints) || 0,
       completed: !!completedMap[m.id],
+      actionKey: m.actionKey || null,
+      verified: m.actionKey ? !!doneActions[m.actionKey] : true,
     }));
 
     return { date: today, items };
@@ -2684,7 +2732,9 @@ exports.getDailyMissionsSecure = functions.https.onCall(async (data, context) =>
 });
 
 // ── Completar una misión diaria (idempotente) ──────────────────────────────────
-// Valida que la misión esté activa y no completada hoy; marca completed en el doc
+// Valida que la misión esté activa, no completada hoy, y -si pide una acción
+// verificable (actionKey)- que esa acción ya se haya registrado hoy en
+// userActions (recordMissionActionSecure). Marca completed en el doc
 // userMissions de hoy; otorga rewardPoints a 'monedas' + XP; escribe ledger.
 exports.completeMissionSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
@@ -2697,13 +2747,15 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
   const umRef = db.collection("userMissions").doc(docId);
   const missionRef = db.collection("missions").doc(String(missionId));
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  const actionsRef = db.collection("userActions").doc(docId);
 
   try {
     return await db.runTransaction(async (t) => {
-      const [missionSnap, umSnap, userSnap] = await Promise.all([
+      const [missionSnap, umSnap, userSnap, actionsSnap] = await Promise.all([
         t.get(missionRef),
         t.get(umRef),
         t.get(userRef),
+        t.get(actionsRef),
       ]);
 
       if (!missionSnap.exists) {
@@ -2712,6 +2764,15 @@ exports.completeMissionSecure = functions.https.onCall(async (data, context) => 
       const mission = missionSnap.data();
       if (mission.active !== true) {
         throw new functions.https.HttpsError("failed-precondition", "La misión no está activa.");
+      }
+      if (mission.actionKey) {
+        const doneActions = actionsSnap.exists ? (actionsSnap.data().actions || {}) : {};
+        if (!doneActions[mission.actionKey]) {
+          throw new functions.https.HttpsError(
+            "failed-precondition",
+            "Todavía no hiciste lo que pide esta misión. Hazlo y vuelve a intentar."
+          );
+        }
       }
       if (!userSnap.exists) {
         throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");

@@ -150,6 +150,12 @@ service cloud.firestore {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow write: if isAdmin();
     }
+    // Acciones verificables de misiones (id '<uid>_<YYYY-MM-DD>'). Lo escribe el
+    // servidor (recordMissionActionSecure vía admin SDK). El dueño solo lee.
+    match /userActions/{id} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow write: if isAdmin();
+    }
     // Libro mayor de puntos (earn/spend). Solo el servidor escribe; el dueño lo lee.
     match /loyaltyLedger/{id} {
       allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;

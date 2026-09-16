@@ -40,6 +40,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getRuletaEligibility } from '../../services/firebase/ruleta';
+import { recordMissionAction } from '../../services/loyalty';
 import {
   limaTodayStr, msHastaMananaLima, msHastaLunesLima, textoEspera,
 } from '../../utils/fechaLima';
@@ -157,6 +158,12 @@ const MinijuegosPage = () => {
     const id = setInterval(() => setTic((n) => n + 1), 60000);
     return () => clearInterval(id);
   }, []);
+
+  // Marca para Misiones Diarias que el cliente entró aquí de verdad. Ver el
+  // mismo patrón en CatalogReward.jsx.
+  useEffect(() => {
+    if (user?.uid) recordMissionAction('visit_minijuegos').catch(() => {});
+  }, [user?.uid]);
 
   const [wordleHecho, setWordleHecho] = useState(false);
   const forzarPalabra = diseno('palabra');

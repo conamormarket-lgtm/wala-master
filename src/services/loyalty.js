@@ -33,6 +33,12 @@ export const getDailyMissions = async () => callFn('getDailyMissionsSecure');
 export const completeMission = async (missionId) =>
   callFn('completeMissionSecure', { missionId });
 
+// Registra que el cliente hizo de verdad la acción de una misión verificable
+// (visitó tal página, agregó un favorito...). Fire-and-forget: lo disparan las
+// páginas reales al entrar/actuar, no el botón "Completar" de Misiones.
+export const recordMissionAction = async (actionKey) =>
+  callFn('recordMissionActionSecure', { actionKey });
+
 // Lee las últimas 50 entradas del ledger de fidelización del usuario.
 // Lectura directa con el SDK (las reglas restringen a uid == dueño).
 export const getLedger = async (uid) => {

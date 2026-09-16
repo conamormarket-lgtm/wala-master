@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMissions, createMission, updateMission, deleteMission } from '../../services/missions';
-import { Edit2, Trash2, ListChecks, PackageOpen } from 'lucide-react';
+import { MISSION_ACTIONS } from '../../constants/missionActions';
+import { Edit2, Trash2, ListChecks, PackageOpen, ShieldCheck } from 'lucide-react';
 import Button from '../../components/common/Button';
 import styles from './AdminMisiones.module.css';
 
@@ -11,6 +12,7 @@ const emptyForm = {
   rewardPoints: 0,
   order: 0,
   active: true,
+  actionKey: '',
 };
 
 // Extraída del map original (antes vivía duplicada -misma tarjeta- para
@@ -39,6 +41,12 @@ const MissionCard = ({ mission, onEdit, onDelete }) => (
           {mission.active !== false ? 'Activa' : 'Inactiva'}
         </span>
       </div>
+      {mission.actionKey && (
+        <div className={styles.verifiedRow}>
+          <ShieldCheck size={13} aria-hidden="true" />
+          <span>Verificada: {MISSION_ACTIONS[mission.actionKey]?.adminLabel || mission.actionKey}</span>
+        </div>
+      )}
     </div>
     <div className={styles.missionActions}>
       <button
@@ -125,7 +133,8 @@ const AdminMisiones = () => {
       description: form.description.trim(),
       rewardPoints: Number(form.rewardPoints) || 0,
       order: Number(form.order) || 0,
-      active: !!form.active
+      active: !!form.active,
+      actionKey: form.actionKey || '',
     };
 
     if (editingId) {
@@ -143,7 +152,8 @@ const AdminMisiones = () => {
       description: mission.description || '',
       rewardPoints: mission.rewardPoints ?? 0,
       order: mission.order ?? 0,
-      active: mission.active !== false
+      active: mission.active !== false,
+      actionKey: mission.actionKey || '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -185,10 +195,11 @@ const AdminMisiones = () => {
             </h2>
 
             <div className={styles.noteBox}>
-              El cliente marca la misión como completada él mismo, con un botón;
-              no hay verificación automática de que la haya hecho. Por eso funcionan
-              mejor misiones simples de comprobar (ej. "visita tal sección") que
-              misiones de confianza (ej. "compártelo en redes").
+              Si eliges una <strong>Verificación</strong>, el servidor comprueba que el
+              cliente de verdad hizo esa acción (entró a la página, agregó un favorito...)
+              antes de darle la recompensa. Si eliges "Ninguna", queda de auto-reporte: el
+              cliente pulsa "Completar" y se le paga sin comprobar nada — solo úsalo para
+              acciones que no se puedan verificar (ej. "compártelo en redes").
             </div>
 
             <form className={styles.form} onSubmit={handleSubmit}>
@@ -238,6 +249,20 @@ const AdminMisiones = () => {
                     className={styles.input}
                   />
                 </div>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Verificación</label>
+                <select
+                  className={styles.input}
+                  value={form.actionKey}
+                  onChange={(e) => setForm((f) => ({ ...f, actionKey: e.target.value }))}
+                >
+                  <option value="">Ninguna (el cliente la marca él mismo)</option>
+                  {Object.entries(MISSION_ACTIONS).map(([key, accion]) => (
+                    <option key={key} value={key}>{accion.adminLabel}</option>
+                  ))}
+                </select>
               </div>
 
               <div className={styles.field}>

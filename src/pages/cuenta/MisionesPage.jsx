@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { ListChecks } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -7,6 +8,7 @@ import {
   completeMission,
 } from '../../services/loyalty';
 import { tierForXp } from '../../constants/tiers';
+import { MISSION_ACTIONS } from '../../constants/missionActions';
 import { trackMissionComplete } from '../../services/analytics/tracker';
 import styles from './MisionesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
@@ -237,6 +239,17 @@ const MisionesPage = () => {
                 <span className={styles.rewardBadge}>🪙 {m.rewardPoints}</span>
                 {m.completed ? (
                   <span className={styles.doneBadge}>✓ Completada</span>
+                ) : m.actionKey && !m.verified ? (
+                  // Todavía no se registró la acción real de esta misión: en
+                  // vez de "Completar" (que la pagaría sin comprobar nada), se
+                  // manda al cliente a hacerla. Al volver aquí, verified ya
+                  // estará en true y el botón pasa a ser "Completar".
+                  <Link
+                    to={MISSION_ACTIONS[m.actionKey]?.path || '/cuenta/misiones'}
+                    className={styles.goBtn}
+                  >
+                    {MISSION_ACTIONS[m.actionKey]?.goLabel || 'Ir a hacerlo'} →
+                  </Link>
                 ) : (
                   <button
                     type="button"

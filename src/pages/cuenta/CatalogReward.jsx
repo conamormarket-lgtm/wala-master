@@ -5,6 +5,7 @@ import { Gift } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCollection } from '../../services/firebase/firestore';
 import { textoPremio } from '../../utils/ruletaModel';
+import { recordMissionAction } from '../../services/loyalty';
 import styles from './CatalogReward.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -25,7 +26,7 @@ const beneficioDe = (reward) => {
 };
 
 const CatalogReward = () => {
-  const { userProfile, activeMainCoins, reloadProfile } = useAuth();
+  const { user, userProfile, activeMainCoins, reloadProfile } = useAuth();
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -60,6 +61,14 @@ const CatalogReward = () => {
   useEffect(() => {
     loadRewards();
   }, [loadRewards]);
+
+  // Marca para Misiones Diarias que el cliente entró aquí de verdad -no solo
+  // que le dio clic a "Completar" sin visitar nada-. Fire-and-forget: si falla
+  // (sin conexión, etc.) no bloquea ni avisa, simplemente la misión queda
+  // pendiente de verificar para la próxima vez.
+  useEffect(() => {
+    if (user?.uid) recordMissionAction('visit_catalogo_recompensas').catch(() => {});
+  }, [user?.uid]);
 
   if (!userProfile) return null;
 
