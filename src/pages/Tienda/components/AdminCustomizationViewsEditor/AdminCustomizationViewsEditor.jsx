@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fabric } from 'fabric';
+import '../../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no en el entry
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import { Plus, Trash2, ImagePlus, Type, Image as ImageIcon, Loader2 } from 'lucide-react';

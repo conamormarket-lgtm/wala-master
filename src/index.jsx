@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './fabricPatch';
 import './styles/variables.css';
 import './theme/tokens.css';
 import './styles/globals.css';

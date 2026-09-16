@@ -12,7 +12,6 @@ import { WishlistProvider } from './contexts/WishlistContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 
-import AdminNotifications from './pages/admin/AdminNotifications/AdminNotifications';
 import AdminRoute from './components/AdminRoute/AdminRoute';
 import RouteTracker from './components/analytics/RouteTracker';
 import ReferralTracker from './components/analytics/ReferralTracker';
@@ -187,6 +186,10 @@ const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuario
 // Panel "Ver qué hacen los usuarios": wishlists, carritos y fechas (solo-admin).
 const AdminUsuariosComportamiento = lazy(() => import('./pages/admin/AdminUsuariosComportamiento'));
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
+// AdminNotifications importa recharts. Cargado de forma estatica arrastraba el
+// chunk de graficas (413 KB) al arranque de TODOS los visitantes, aunque solo
+// se usa en /admin/notificaciones. lazy() lo devuelve a su propio chunk.
+const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications/AdminNotifications'));
 const AdminMarcas = lazy(() => import('./pages/admin/AdminMarcas'));
 
 // Enlaces útiles (constructor tipo Linktree / link-in-bio).
@@ -318,9 +321,6 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <CustomFontsInjector />
 
-        {/* Prefetch silencioso en background cuando el navegador está libre */}
-        <AppPrefetcher />
-
         <ToastProvider>
           <ThemeProvider>
             <LanguageProvider>
@@ -333,6 +333,12 @@ function App() {
                         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                           <DeepLinkHandler />
                           <ScrollToTop />
+
+                          {/* Prefetch silencioso en segundo plano cuando el
+                              navegador esta libre. Vive DENTRO del Router
+                              porque decide que adelantar segun la ruta actual
+                              (ver AppPrefetcher). */}
+                          <AppPrefetcher />
 
                           <GlobalLayout>
                             <ErrorBoundary>

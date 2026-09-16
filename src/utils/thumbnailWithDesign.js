@@ -3,10 +3,25 @@
  * Usado al guardar producto para thumbnailWithDesignUrl (admin y tienda).
  */
 
-import { fabric } from 'fabric';
 import { toDirectImageUrl, toCanvasImageUrl, isGoogleDriveUrl, isFirebaseStorageUrl, ensureSingleImageUrl } from './imageUrl';
 import { getCloudinaryOptimized } from '../components/common/OptimizedImage/OptimizedImage';
 import { FONT_WEIGHT_NORMAL, FONT_STYLE_NORMAL } from '../constants/fonts';
+
+// ── Fabric bajo demanda ───────────────────────────────────────────────────
+// Fabric pesa 303 KB y solo hace falta para COMPONER una miniatura con diseno.
+// Importado de forma estatica, este modulo lo arrastraba al bundle de arranque
+// (llega hasta TiendaPage via ComboProductImageWithDesign), asi que todo el
+// mundo se descargaba el motor de canvas aunque nunca viera un combo. Ahora se
+// trae en el primer uso real; el parche de renderAll viaja con el.
+let fabric = null;
+
+const cargarFabric = async () => {
+  if (fabric) return fabric;
+  const [mod] = await Promise.all([import('fabric'), import('../fabricPatch')]);
+  fabric = mod.fabric;
+  return fabric;
+};
+
 
 function tryLoadImageUrl(imageUrl, { skipCloudinaryOptimize = false } = {}) {
   if (imageUrl && imageUrl.startsWith('data:')) return [{ url: imageUrl, original: imageUrl, isCb: false }];
@@ -255,6 +270,8 @@ export async function generateThumbnailWithDesign(baseImageUrl, layers = [], opt
     throw new Error('Se requiere URL de imagen base');
   }
 
+  await cargarFabric();
+
   // CLAVE: Si la imagen es de Google Drive y las capas tienen baseW, forzar sz=w{baseW}.
   // El editor carga thumbnail?id=xxx&sz=w1000 y Google Drive devuelve ~441px.
   // Los proxies (wsrv.nl) cargan la misma URL pero obtienen ~718px (resolución completa).
@@ -481,6 +498,8 @@ export async function generateThumbnailWithDesign(baseImageUrl, layers = [], opt
 export async function generateDesignOnlyOverlay(layers = [], baseW = 500, baseH = 600) {
   const validLayers = Array.isArray(layers) ? layers.filter(l => l && l.type) : [];
   if (validLayers.length === 0) return null;
+
+  await cargarFabric();
 
   const canvasEl = document.createElement('canvas');
   canvasEl.width = baseW;

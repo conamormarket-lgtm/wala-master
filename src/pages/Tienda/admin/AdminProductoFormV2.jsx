@@ -21,6 +21,7 @@ import AdminCustomizationViewsEditor from '../components/AdminCustomizationViews
 import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
 import YoryoPersonalizado from '../../../components/YoryoPersonalizado/YoryoPersonalizado';
 import { fabric } from 'fabric';
+import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no en el entry
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import styles from './AdminProductoFormV2.module.css';

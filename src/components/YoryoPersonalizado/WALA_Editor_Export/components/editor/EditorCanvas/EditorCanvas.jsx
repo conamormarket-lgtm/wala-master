@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fabric } from 'fabric';
+import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no en el entry
 import { useEditor } from '../../../contexts/EditorContext';
 import { useDesignClipboard } from '../../../contexts/DesignClipboardContext';
 import { EDITOR_FONTS, FONT_WEIGHT_NORMAL, FONT_WEIGHT_BOLD, FONT_STYLE_NORMAL, FONT_STYLE_ITALIC } from '../../../../../../constants/fonts';

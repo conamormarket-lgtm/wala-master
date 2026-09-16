@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fabric } from 'fabric';
+import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no en el entry
 import { getProduct } from '../../../../../../services/products';
 import { EditorProvider, useEditor } from '../../../contexts/EditorContext';
 import { useAuth } from '../../../../../../contexts/AuthContext';

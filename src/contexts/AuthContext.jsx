@@ -133,27 +133,57 @@ export const AuthProvider = ({ children }) => {
         if (firebaseUser) {
           setUser(firebaseUser);
 
-          // Rol admin desde custom claims de Firebase Auth (fuente de verdad).
-          // Nunca desde localStorage ni emails hardcodeados (ver FASE-0-SEGURIDAD.md, H-01/H-09).
-          // forceRefresh=true: sin esto, revocar el claim admin a alguien no se reflejaba en
-          // la UI (AdminBar/AdminRoute) hasta que el token cacheado expirara (hasta ~1h).
-          // Las reglas de Firestore igual re-validan server-side con el token real en cada
-          // request, así que esto es solo para que la UI deje de mostrar acceso obsoleto.
-          try {
-            const tokenResult = await firebaseUser.getIdTokenResult(true);
-            setIsAdminClaim(tokenResult.claims?.admin === true);
-          } catch (e) {
-            setIsAdminClaim(false);
-          }
+          // ── Arranque en PARALELO ────────────────────────────────────────
+          // Todo lo de aquí abajo bloquea `loading`, y con `loading` en true no
+          // se pinta la app. Antes iban uno detrás de otro con `await`: token,
+          // luego el perfil, luego (si hacía falta) el doc legacy, luego el rol
+          // admin. Son 3-4 idas y vueltas a la red ENCADENADAS — en datos
+          // móviles, segundos enteros de pantalla de carga por nada, porque no
+          // dependen unos de otros. Ahora salen todos a la vez y se espera una
+          // sola vez, así que el coste es el de la petición más lenta, no la
+          // suma de todas.
+          const [tokenResult, perfilPortal, rolAdmin] = await Promise.all([
+            // Rol admin desde custom claims de Firebase Auth (fuente de verdad).
+            // Nunca desde localStorage ni emails hardcodeados (ver
+            // FASE-0-SEGURIDAD.md, H-01/H-09).
+            //
+            // Sin forceRefresh: se lee el token que ya está en el dispositivo.
+            // forceRefresh=true obligaba a un viaje al servidor de tokens de
+            // Google EN CADA APERTURA de la app, solo para el caso raro de un
+            // admin al que le acaban de revocar el permiso. Ese caso se sigue
+            // cubriendo con el refresco de abajo, que corre por detrás sin
+            // retener la pantalla; y las reglas de Firestore revalidan
+            // server-side con el token real en cada petición de todos modos.
+            firebaseUser.getIdTokenResult().catch(() => null),
+            getDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid).catch(() => ({ data: null })),
+            // Permisos admin desde adminRoles (RBAC por email). El bootstrap por
+            // email hardcodeado fue eliminado (H-01); conceder admin se hace con
+            // custom claims vía la Cloud Function setAdminClaim / el script
+            // scripts/set-admin-claims.js.
+            firebaseUser.email
+              ? getAdminRoleByEmail(firebaseUser.email).catch(() => null)
+              : Promise.resolve(null),
+          ]);
 
-          const { data: portalDoc } = await getDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid);
+          setIsAdminClaim(tokenResult?.claims?.admin === true);
+          setAdminPermissions(rolAdmin ? rolAdmin.permissions || [] : []);
 
-          let profileData = null;
+          // Revocar el claim admin a alguien debe notarse en la UI (AdminBar/
+          // AdminRoute) sin esperar a que caduque el token cacheado (hasta ~1 h).
+          // Se comprueba contra el servidor, pero POR DETRÁS: si el claim cambió,
+          // la UI se corrige sola un instante después en vez de retener el
+          // arranque de todo el mundo.
+          firebaseUser
+            .getIdTokenResult(true)
+            .then((fresco) => setIsAdminClaim(fresco?.claims?.admin === true))
+            .catch(() => { /* sin red: vale el token local */ });
 
-          if (portalDoc) {
-            profileData = portalDoc;
-          } else {
-            // Intentar obtener de legacy users si no existe en portal
+          let profileData = perfilPortal?.data || null;
+
+          if (!profileData) {
+            // Intentar obtener de legacy users si no existe en portal. Este sí
+            // va después: solo tiene sentido preguntarlo cuando el portal no
+            // tiene el documento, que es el caso minoritario.
             const { data: legacyDoc } = await getDocument(LEGACY_USERS_COLLECTION, firebaseUser.uid);
             profileData = legacyDoc || {
               email: firebaseUser.email,
@@ -168,14 +198,6 @@ export const AuthProvider = ({ children }) => {
 
             // Guardar en Firestore asíncronamente
             setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { referralCode: newCode });
-          }
-
-          // Permisos admin desde adminRoles (RBAC por email). El bootstrap por email
-          // hardcodeado fue eliminado (H-01); conceder admin se hace con custom claims
-          // vía la Cloud Function setAdminClaim / el script scripts/set-admin-claims.js.
-          if (firebaseUser.email) {
-            const roleData = await getAdminRoleByEmail(firebaseUser.email);
-            setAdminPermissions(roleData ? roleData.permissions || [] : []);
           }
 
           // Update lastAppOpen if not updated today

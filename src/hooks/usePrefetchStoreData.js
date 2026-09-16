@@ -1,20 +1,45 @@
 /**
  * usePrefetchStoreData
  *
- * Precarga INMEDIATA de los datos de la tienda al montar la app.
- * Se ejecuta sin esperar requestIdleCallback porque la prioridad
- * es tener los datos listos ANTES de que el usuario navegue a /tienda.
+ * Precarga en SEGUNDO PLANO los datos que necesitarán otras pantallas, para
+ * que al navegar ya estén en el caché de React Query (y, con la persistencia
+ * de Firestore, se sirvan desde IndexedDB en ~10 ms).
  *
- * Con Firestore persistence activado, las lecturas posteriores
- * se sirven desde IndexedDB (~10ms). Este prefetch asegura que
- * la primera visita también sea rápida al poblar el caché de React Query.
+ * Dos cosas importantes, aprendidas por las malas:
+ *
+ * 1. Corre en tiempo OCIOSO, no al montar. Antes salía inmediatamente y sus
+ *    cinco peticiones —una de ellas, el catálogo ENTERO sin límite— competían
+ *    por la conexión justo con las consultas de las que depende la primera
+ *    pintada de la home. Adelantar datos para una navegación que quizá no
+ *    ocurra nunca no puede retrasar la pantalla que la persona está mirando.
+ *
+ * 2. Van marcadas con `meta.segundoPlano`. TiendaPage mantiene puesta la
+ *    pantalla de carga mientras queden consultas en vuelo (useIsFetching);
+ *    sin la marca, el splash se quedaba esperando también a ESTAS, que no
+ *    pinta ninguna de ellas. La marca deja excluirlas de ese recuento.
  */
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getProducts, getCategories, getFeaturedProducts } from '../services/products';
 import { getMessage } from '../services/messages';
 import { getStorefrontConfig } from '../pages/Tienda/services/storefront';
+
 const STALE_TIME = 60 * 60 * 1000; // 1 hour
+
+// Lo lee el filtro de useIsFetching en TiendaPage (ver punto 2 de arriba).
+export const EN_SEGUNDO_PLANO = { segundoPlano: true };
+
+const cuandoEsteOcioso = (fn) => {
+    if (typeof window === 'undefined') return () => {};
+    if (typeof window.requestIdleCallback === 'function') {
+        // El timeout es el tope: si el navegador nunca queda ocioso (scroll
+        // continuo, animaciones), a los 4 s se lanza igual.
+        const id = window.requestIdleCallback(fn, { timeout: 4000 });
+        return () => window.cancelIdleCallback?.(id);
+    }
+    const id = setTimeout(fn, 2000);
+    return () => clearTimeout(id);
+};
 
 export function usePrefetchStoreData() {
     const queryClient = useQueryClient();
@@ -25,10 +50,8 @@ export function usePrefetchStoreData() {
         if (ran.current) return;
         ran.current = true;
 
-        // Iniciar prefetch EN PARALELO sin esperar
-        // Usamos setTimeout(0) solo para salir del ciclo de render actual
-        const t = setTimeout(() => {
-            // Todas las queries se lanzan en paralelo
+        // Todas se lanzan en paralelo, pero solo cuando el navegador esté ocioso.
+        const cancelar = cuandoEsteOcioso(() => {
             queryClient.prefetchQuery({
                 queryKey: ['storefront-config'],
                 queryFn: async () => {
@@ -37,6 +60,7 @@ export function usePrefetchStoreData() {
                     return { sections: sections ?? [] };
                 },
                 staleTime: 10 * 60 * 1000,
+                meta: EN_SEGUNDO_PLANO,
             });
 
             queryClient.prefetchQuery({
@@ -49,6 +73,7 @@ export function usePrefetchStoreData() {
                     );
                 },
                 staleTime: STALE_TIME,
+                meta: EN_SEGUNDO_PLANO,
             });
 
             queryClient.prefetchQuery({
@@ -59,6 +84,7 @@ export function usePrefetchStoreData() {
                     return data;
                 },
                 staleTime: STALE_TIME,
+                meta: EN_SEGUNDO_PLANO,
             });
 
             queryClient.prefetchQuery({
@@ -69,6 +95,7 @@ export function usePrefetchStoreData() {
                     return data;
                 },
                 staleTime: STALE_TIME,
+                meta: EN_SEGUNDO_PLANO,
             });
 
             queryClient.prefetchQuery({
@@ -86,9 +113,10 @@ export function usePrefetchStoreData() {
                     };
                 },
                 staleTime: 15 * 60 * 1000,
+                meta: EN_SEGUNDO_PLANO,
             });
-        }, 0);
+        });
 
-        return () => clearTimeout(t);
+        return cancelar;
     }, [queryClient]);
 }

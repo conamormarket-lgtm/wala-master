@@ -54,6 +54,8 @@ import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderO
 import styles from './TiendaPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
+const esConsultaDePantalla = (q) => !q.meta?.segundoPlano;
+
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
 
@@ -1453,7 +1455,11 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // error tambien activan la deteccion de "listo" y el tope, en vez de dejar
   // el overlay colgado para siempre.
   const contenidoRenderizando = !(isConfigLoading && !storefrontConfig);
-  const queriesEnVuelo = useIsFetching();
+  // Solo cuentan las consultas que de verdad alimentan ESTA pantalla. Las de
+  // segundo plano (AppPrefetcher, que adelanta datos para OTRAS pantallas y se
+  // trae el catalogo entero) no pintan nada aqui: si entran en el recuento, el
+  // splash se queda puesto esperando a una descarga que nadie va a mirar.
+  const queriesEnVuelo = useIsFetching({ predicate: esConsultaDePantalla });
   const queryClient = useQueryClient();
   const [pageReady, setPageReady] = useState(false);
 
@@ -1493,7 +1499,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   useEffect(() => {
     if (pageReady || !contenidoRenderizando || queriesEnVuelo > 0) return undefined;
     const t = setTimeout(() => {
-      if (queryClient.isFetching() === 0) setPageReady(true);
+      if (queryClient.isFetching({ predicate: esConsultaDePantalla }) === 0) setPageReady(true);
     }, 180);
     return () => clearTimeout(t);
   }, [pageReady, contenidoRenderizando, queriesEnVuelo, queryClient]);

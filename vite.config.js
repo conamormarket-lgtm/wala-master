@@ -68,6 +68,21 @@ export default defineConfig(({ mode }) => {
               return 'firebase-vendor';
             }
 
+            // Micro-utilidades COMPARTIDAS (recharts, react-select, formik y la
+            // propia app las usan por igual). Si no se les da chunk propio,
+            // Rollup las mete dentro del primer chunk que las pida —el de
+            // gráficas— y entonces el entry acaba importando charts ENTERO
+            // (422 KB) solo para sacar de ahí clsx o lodash. Con su propio
+            // chunk, `charts` vuelve a ser recharts puro y deja de cargarse
+            // en el arranque de quien nunca abre un dashboard.
+            if (
+              /node_modules\/(@babel\/runtime|clsx|lodash|prop-types|react-is|tiny-invariant|fast-equals|eventemitter3)\//.test(
+                id
+              )
+            ) {
+              return 'shared-utils';
+            }
+
             // Recharts y su dependencia de gráficos d3.
             if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) {
               return 'charts';
