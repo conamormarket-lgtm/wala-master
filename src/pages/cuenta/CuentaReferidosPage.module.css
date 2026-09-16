@@ -425,6 +425,15 @@
   border-color: rgba(16, 185, 129, 0.28);
 }
 
+/* Cuenta regresiva de la ventana de 36 h: ámbar, como todo lo que es "ojo,
+   esto tiene plazo" en el resto de la app. */
+.chipTiempo {
+  color: var(--gold-text, #92400e);
+  background: var(--gold-soft, rgba(245, 158, 11, 0.12));
+  border-color: rgba(245, 158, 11, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
 .chipOff {
   color: var(--gris-texto-secundario, #64748b);
   background: var(--gris-hover, #f1f5f9);
@@ -775,6 +784,12 @@
 
 :global([data-theme='dark']) .chipOk {
   color: #6ee7b7;
+}
+
+:global([data-theme='dark']) .chipTiempo {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
 :global([data-theme='dark']) .cardClaimed {

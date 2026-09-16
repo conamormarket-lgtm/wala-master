@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Send,
   AlertCircle,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -43,12 +44,30 @@ const PASOS = [
   { key: 'claimed', label: 'Reclamas' },
 ];
 
+// Ventana para comprar, contada desde que la otra persona ABRE el enlace (no
+// desde que se genera: el enlace en sí no caduca). Es el mismo plazo que
+// aplican ReferralTracker.jsx -guarda el clic en el localStorage del visitante-
+// y CheckoutPage.jsx, que solo vincula la compra si el clic sigue dentro de él.
+const VENTANA_COMPRA_MS = 36 * 60 * 60 * 1000;
+
+// "12 h 30 min" / "45 min" / "menos de 1 min". Devuelve null si ya venció.
+const restanteLegible = (ms) => {
+  if (!(ms > 0)) return null;
+  const totalMin = Math.floor(ms / 60000);
+  const horas = Math.floor(totalMin / 60);
+  const minutos = totalMin % 60;
+  if (horas > 0) return `${horas} h ${minutos} min`;
+  if (totalMin > 0) return `${totalMin} min`;
+  return 'menos de 1 min';
+};
+
 const CuentaReferidosPage = () => {
   const { userProfile } = useAuth();
   const toast = useGlobalToast();
   const queryClient = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [claimingId, setClaimingId] = useState(null);
+  const [ahora, setAhora] = useState(() => Date.now());
 
   const referralCode = userProfile?.referralCode || '';
 
@@ -164,6 +183,20 @@ const CuentaReferidosPage = () => {
   const totalCompras = referrals?.filter(r => STAGES[r.status] >= 3 && r.status !== 'ineligible').length || 0;
   const totalMonedas = referrals?.reduce((acc, r) => acc + (r.earnedCoins || 0), 0) || 0;
   const porReclamar = referrals?.filter(r => r.status === 'completed' || r.status === 'purchased').length || 0;
+
+  // ¿Hay alguna ventana de 36 h corriendo ahora mismo? Solo en ese caso vale la
+  // pena mantener un reloj vivo; cuando todas vencieron no queda nada que
+  // contar y el intervalo se limpia solo.
+  const hayCuentaRegresiva = (referrals || []).some(
+    (r) => r.status === 'clicked'
+      && (r.clickedAt?.toMillis?.() || 0) + VENTANA_COMPRA_MS > ahora
+  );
+
+  useEffect(() => {
+    if (!hayCuentaRegresiva) return undefined;
+    const id = setInterval(() => setAhora(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, [hayCuentaRegresiva]);
 
   return (
     <div className={styles.page}>
@@ -359,6 +392,16 @@ const CuentaReferidosPage = () => {
               ? (ref.earnedCoins || 0)
               : estimateReferralReward(ref.orderTotal);
 
+            // Lo que queda de la ventana de 36 h. Solo tiene sentido mientras
+            // el referido está en 'clicked': antes de que abran el enlace no
+            // hay reloj corriendo, y si ya compró el plazo dejó de importar.
+            const clickMs = ref.clickedAt?.toMillis?.() || 0;
+            const venceEnMs = ref.status === 'clicked' && clickMs
+              ? clickMs + VENTANA_COMPRA_MS - ahora
+              : null;
+            const restante = venceEnMs == null ? null : restanteLegible(venceEnMs);
+            const ventanaVencida = venceEnMs != null && !restante;
+
             const d = ref.clickedAt?.toDate() || ref.createdAt?.toDate();
             const dateStr = d ? d.toLocaleDateString('es-PE', { day: 'numeric', month: 'long' }) : 'Sin fecha';
 
@@ -391,6 +434,16 @@ const CuentaReferidosPage = () => {
                       {isIneligible && (
                         <span className={`${styles.estadoChip} ${styles.chipOff}`}>
                           <AlertCircle size={13} aria-hidden="true" /> No calificó
+                        </span>
+                      )}
+                      {restante && (
+                        <span className={`${styles.estadoChip} ${styles.chipTiempo}`}>
+                          <Clock size={13} aria-hidden="true" /> Quedan {restante}
+                        </span>
+                      )}
+                      {ventanaVencida && (
+                        <span className={`${styles.estadoChip} ${styles.chipOff}`}>
+                          <Clock size={13} aria-hidden="true" /> Plazo vencido
                         </span>
                       )}
                     </div>
@@ -443,9 +496,11 @@ const CuentaReferidosPage = () => {
                       </div>
                     ) : (
                       <p className={styles.pieNota}>
-                        {currentStage >= 2
-                          ? 'Ya entraron a tu enlace. Las monedas llegan cuando esa persona compre.'
-                          : 'Enlace generado. Todavía nadie lo abrió.'}
+                        {currentStage < 2
+                          ? 'Enlace generado. Todavía nadie lo abrió — el enlace no caduca.'
+                          : restante
+                            ? `Ya entraron a tu enlace. Le quedan ${restante} para comprar y que cuente como tu referido.`
+                            : 'Pasaron las 36 horas desde que abrió tu enlace. Si compra ahora ya no cuenta: mándale un enlace nuevo.'}
                       </p>
                     )}
 
