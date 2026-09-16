@@ -1,429 +1,865 @@
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 1rem;
-}
+/* =========================================================================
+   CuentaReferidosPage — Mis Referidos (dentro de Mi cuenta)
+   -------------------------------------------------------------------------
+   Reescrito sobre el sistema "Aurora Violeta Serena", igual que Misiones /
+   Rastreo / Mi Perfil: superficies de vidrio (<GlassCard>), acento violeta
+   escaso, dorado SOLO para monedas y tokens en vez de hex sueltos.
 
-.headerCard {
-  background: #1E293B;
-  color: white;
-  border-radius: var(--radio-mediano);
-  padding: 2rem;
-  text-align: center;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
+   Antes la cabecera era un bloque azul-pizarra (#1E293B) con un número de 4rem
+   y un botón con degradado azul marino: la única superficie oscura de toda la
+   sección de cuenta, con una paleta (azul/verde/dorado) que no es la de la
+   marca. Además repetía el saldo de monedas que ya está en el header de la
+   app, así que ocupaba media pantalla para decir algo que ya se veía arriba.
 
-.recompensaTitle {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #E2E8F0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
+   Ahora ese espacio lo ocupa lo que de verdad hace falta acá: cómo funciona el
+   programa, el código, el botón de generar enlace y tres marcadores propios
+   del referido (enlaces abiertos / compras / monedas ganadas).
 
-.balance {
-  margin: 1.5rem 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
+   Mobile-first. Modo noche casi gratis vía tokens: abajo solo queda lo que
+   necesita otro tono en oscuro, más el fallback sólido (@supports) del WebView.
+   ========================================================================= */
 
-.coinIcon {
-  font-size: 2.5rem;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-.balanceNumber {
-  font-size: 4rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.balanceCurrency {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #E2E8F0;
-  align-self: flex-end;
-  margin-bottom: 0.5rem;
-}
-
-.codeRow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-.codeBox {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 0.8rem 1rem 0.8rem 1.5rem;
-  border-radius: var(--radio-pequeno);
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.copyBtn {
-  background: var(--rojo-principal);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radio-pequeno);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.copyBtn:hover {
-  background: var(--rojo-secundario);
-}
-
-.generateBtn {
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  color: white;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: var(--radio-pequeno);
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 1.1rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
-}
-
-.generateBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-}
-
-.generateBtn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.infoText {
-  margin-top: 2rem;
-  font-size: 0.85rem;
-  color: #E2E8F0;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
-  line-height: 1.5;
-}
-
-.listTitle {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--gris-texto-principal);
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid var(--gris-fondo);
-  padding-bottom: 0.5rem;
-}
-
-.empty {
-  text-align: center;
-  padding: 3rem;
-  background: var(--gris-fondo);
-  border-radius: var(--radio-mediano);
-  color: var(--gris-texto-secundario);
-  font-style: italic;
-}
-
-.list {
+.page {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
-.referralCard {
-  background: white;
-  border: 1px solid var(--gris-borde);
-  border-radius: var(--radio-mediano);
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease;
-}
-
-.referralCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.cardClaimed {
-  opacity: 0.8;
-  background: #fdfdfd;
+/* =========================================================================
+   Cabecera + "cómo funciona"
+   ========================================================================= */
+.card {
+  width: 100%;
 }
 
 .cardHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--gris-borde, #e2e8f0);
 }
 
-.dateText {
-  font-size: 0.85rem;
-  color: var(--gris-texto-secundario);
-  font-weight: 600;
+.cardHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal, #0f172a);
 }
 
-.orderLabel {
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: var(--gris-fondo);
-  padding: 4px 10px;
-  border-radius: var(--radio-pequeno);
-  color: var(--gris-texto-principal);
-}
-
-/* ══════════════════════════════
-   STEPPER
-   ══════════════════════════════ */
-.stepperContainer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  padding: 0 0.5rem;
-}
-
-.step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  position: relative;
-  z-index: 2;
+.headerIcon {
   flex: 0 0 auto;
-}
-
-.stepCircle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--gris-borde);
-  color: white;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
 }
 
-.stepLabel {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--gris-texto-secundario);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.activeStep .stepCircle {
-  background: var(--verde-exito);
-  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
-}
-
-.activeStep .stepLabel {
-  color: var(--verde-exito);
-}
-
-.stepLine {
-  flex: 1;
-  height: 3px;
-  background: var(--gris-borde);
-  margin: 0 0.5rem;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
-  z-index: 1;
-}
-
-.activeLine {
-  background: var(--verde-exito);
-}
-
-.statusBox {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #fff3cd;
-  border-radius: var(--radio-pequeno);
-  border-left: 4px solid #ffc107;
-}
-
-.errorText {
+.headerSub {
   margin: 0;
-  font-size: 0.85rem;
-  color: #856404;
-  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--gris-texto-secundario, #475569);
 }
 
-.actionBox {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px dashed var(--gris-borde);
+.headerSub strong {
+  color: var(--gris-texto-principal, #0f172a);
+  font-weight: 700;
+}
+
+/* Tres pasos del programa. En móvil se apilan; en desktop van en fila. */
+.pasos {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  margin: 1rem 0 0 0;
+  padding: 0;
+}
+
+@media (min-width: 720px) {
+  .pasos {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.paso {
   display: flex;
-  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radio-pequeno, 10px);
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  background: rgba(139, 92, 246, 0.04);
+}
+
+.pasoNum {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fff;
+  background: #8b5cf6;
+}
+
+.pasoTitle {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.pasoText {
+  margin: 0.15rem 0 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+/* =========================================================================
+   Código de referido + generar enlace
+   ========================================================================= */
+.codeLabel {
+  margin: 0 0 0.6rem 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.codeRow,
+.codeEditRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   flex-wrap: wrap;
+}
+
+/* El código es el dato protagonista de la tarjeta: monoespaciado y con
+   tracking para que se pueda leer/dictar letra por letra. */
+.codeText {
+  font-family: var(--fuente-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #6d28d9;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: var(--radio-pequeno, 10px);
+  padding: 0.5rem 0.9rem;
+  white-space: nowrap;
+}
+
+.codeInput {
+  flex: 1 1 180px;
+  min-width: 0;
+  font-family: var(--fuente-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radio-pequeno, 10px);
+  border: 1.5px solid var(--gris-borde, #cbd5e1);
+  background: var(--color-surface, #fff);
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.codeInput:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+}
+
+.codeNote {
+  margin: 0.55rem 0 0 0;
+  font-size: 0.78rem;
+  color: var(--gris-texto-secundario, #94a3b8);
+}
+
+.generateRow {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gris-borde, #e2e8f0);
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.btnGenerate {
+  flex: 0 0 auto;
+  padding: 0.7rem 1.2rem;
+  font-size: 0.95rem;
+}
+
+.generateHint {
+  flex: 1 1 240px;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+/* =========================================================================
+   Marcadores
+   ========================================================================= */
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
 
-.earnedStats {
-  font-size: 0.9rem;
-  color: var(--gris-texto-principal);
-  line-height: 1.4;
+@media (min-width: 640px) {
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.highlightCoins {
-  color: #d35400;
-  font-size: 1rem;
-}
-
-.claimActionBtn {
-  background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radio-mediano);
-  font-weight: 700;
-  font-size: 0.95rem;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
-  transition: all 0.2s ease;
-}
-
-.claimActionBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(243, 156, 18, 0.4);
-}
-
-.claimedBadge {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--verde-exito);
+.statsGrid > * {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(40, 167, 69, 0.1);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radio-pequeno);
 }
 
-@media (max-width: 576px) {
-  .headerCard {
-    padding: 1.5rem 1rem;
-  }
-  .balanceNumber {
-    font-size: 3rem;
-  }
-  .codeRow {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .codeBox {
-    justify-content: center;
-  }
-  .stepperContainer {
-    padding: 0;
-  }
-  .stepCircle {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
-  }
-  .stepLabel {
-    font-size: 0.65rem;
-  }
-  .actionBox {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .claimActionBtn {
-    width: 100%;
-  }
+.statCard {
+  width: 100%;
 }
 
-.statsRow {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-top: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.statBox {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radio-pequeno);
-  padding: 1rem;
-  min-width: 120px;
+.statBody {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 0.35rem;
+  height: 100%;
 }
 
-.statValue {
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #fbbf24;
-  line-height: 1;
+/* En móvil se compactan a "insignia izquierda / número derecha" (mismo
+   tratamiento que los marcadores de Misiones). */
+@media (max-width: 639px) {
+  .statBody {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'icon label'
+      'icon value'
+      'foot foot';
+    column-gap: 0.75rem;
+    row-gap: 0;
+  }
+
+  .statIcon {
+    grid-area: icon;
+    align-self: center;
+    margin-bottom: 0;
+  }
+
+  .statLabel {
+    grid-area: label;
+    align-self: end;
+  }
+
+  .statValue {
+    grid-area: value;
+    align-self: start;
+    font-size: 1.4rem;
+  }
+
+  .statHint {
+    grid-area: foot;
+    margin-top: 0.5rem;
+    padding-top: 0;
+  }
+}
+
+.statIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.15rem;
+}
+
+.statIconViolet {
+  color: #7c3aed;
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.statIconBlue {
+  color: #0369a1;
+  background: rgba(14, 165, 233, 0.12);
+}
+
+.statIconGold {
+  color: var(--gold-700, #b45309);
+  background: var(--gold-soft, rgba(245, 158, 11, 0.12));
 }
 
 .statLabel {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #94a3b8;
+  letter-spacing: 0.05em;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.statValue {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--gris-texto-principal, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+
+.statHint {
+  margin-top: auto;
+  padding-top: 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+/* =========================================================================
+   Encabezado del historial
+   ========================================================================= */
+.listHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.listTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.listCount {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario, #64748b);
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+   Tarjetas del historial
+   ========================================================================= */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.listItem {
+  list-style: none;
+  display: flex;
+}
+
+.referralCard {
+  width: 100%;
+}
+
+.referralBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.cardClaimed {
+  background: rgba(16, 185, 129, 0.07);
+  border-color: rgba(16, 185, 129, 0.24);
+}
+
+.cardIneligible {
+  opacity: 0.85;
+}
+
+.rowTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.dateText {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.rowTags {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.orderLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--gris-hover, #f1f5f9);
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  color: var(--gris-texto-secundario, #475569);
+  font-variant-numeric: tabular-nums;
+}
+
+.estadoChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.chipOk {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.chipOff {
+  color: var(--gris-texto-secundario, #64748b);
+  background: var(--gris-hover, #f1f5f9);
+  border-color: var(--gris-borde, #e2e8f0);
+}
+
+/* =========================================================================
+   Stepper
+   -------------------------------------------------------------------------
+   Antes: círculos numerados unidos por líneas absolutas con un
+   `transform: translateY(-10px)` para calzarlas a mano con los círculos —
+   frágil en cuanto cambiaba el tamaño del texto. Ahora la línea es un
+   ::before de cada paso (mitad izquierda / mitad derecha), así se alinea sola
+   con el círculo sin importar el alto de la etiqueta.
+   ========================================================================= */
+.stepper {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+  min-width: 0;
+}
+
+/* Riel: cruza todo el ancho del paso por detrás, a la altura del círculo. */
+.step::before {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: -50%;
+  right: 50%;
+  height: 3px;
+  background: var(--gris-borde, #e2e8f0);
+}
+
+.step:first-child::before {
+  display: none;
+}
+
+/* El tramo se enciende cuando el paso al que LLEGA ya está hecho. */
+.stepDone::before {
+  background: #8b5cf6;
+}
+
+.stepCircle {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--gris-texto-secundario, #94a3b8);
+  background: var(--color-surface, #fff);
+  border: 2px solid var(--gris-borde, #e2e8f0);
+  transition: var(--transicion-suave, all 0.2s ease);
+}
+
+.stepDone .stepCircle {
+  color: #fff;
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+}
+
+/* Paso en curso: aro violeta tenue para señalar "acá está parado ahora". */
+.stepCurrent .stepCircle {
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.18);
+}
+
+.stepLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--gris-texto-secundario, #94a3b8);
+}
+
+.stepDone .stepLabel {
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+/* =========================================================================
+   Pie de la tarjeta: nota de estado o zona de reclamo
+   ========================================================================= */
+.pieNota {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gris-borde, #e2e8f0);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+.actionBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.montos {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.montoLinea {
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.montoLinea strong {
+  color: var(--gris-texto-principal, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mismo badge etiquetado que en Misiones: el número junto al ícono de moneda
+   no distingue ganancia de costo si no lleva la palabra delante. */
+.rewardBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: var(--gold-soft, rgba(245, 158, 11, 0.12));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  white-space: nowrap;
+}
+
+.rewardLabel {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold-700, #b45309);
+  opacity: 0.85;
+}
+
+.rewardAmount {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--gold-text, #92400e);
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+   Botones
+   -------------------------------------------------------------------------
+   Planos (color liso, sin degradado ni sombra de color), igual que el
+   ".primaryButton" del header y el ".btnSolido" del detalle de compra. Antes
+   acá había dos degradados distintos: azul marino para "Generar Link" y
+   dorado para "Reclamar Monedas".
+   ========================================================================= */
+.btnSolido {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background-color: #8b5cf6;
+  color: #fff;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: none;
   font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* ═════════════════════════════════════════════════════════════════════════
-   MODO NOCHE — CuentaReferidosPage
-   ---------------------------------------------------------------------------
-   El .headerCard ya es oscuro por diseño (#1E293B con texto claro) y sus
-   elementos internos (.statBox, .codeBox, balance, etc.) son legibles en
-   ambos modos: se conservan. Aquí solo ajustamos la zona CLARA inferior
-   (lista de referidos, tarjetas, statusBox) que en oscuro quedaría
-   blanca-sobre-oscuro o con texto oscuro ilegible. Solo color/contraste.
-   ═════════════════════════════════════════════════════════════════════════ */
+.btnSolido:hover:not(:disabled) {
+  background-color: #7c3aed;
+  color: #fff;
+}
 
-/* Tarjetas de referido (blanco -> superficie oscura) */
-:global([data-theme='dark']) .referralCard {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+.btnSolido:disabled {
+  background-color: var(--gris-borde, #d1d5db);
+  color: var(--gris-texto-secundario, #9ca3af);
+  cursor: not-allowed;
 }
-:global([data-theme='dark']) .referralCard:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: transparent;
+  color: #7c3aed;
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
+
+.btnGhost:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.7);
+  color: #6d28d9;
+}
+
+.btnGhost:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Terciario: "Cambiar" es una acción de una sola vez, no compite con copiar. */
+.btnQuiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0.5rem 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario, #64748b);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btnQuiet:hover {
+  color: #7c3aed;
+}
+
+.btnSolido:focus-visible,
+.btnGhost:focus-visible,
+.btnQuiet:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   Carga y estado vacío
+   ========================================================================= */
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skeletonItem {
+  height: 148px;
+  border-radius: var(--radio-grande, 24px);
+  background: linear-gradient(
+    90deg,
+    var(--gris-hover, #f1f5f9) 25%,
+    var(--gris-borde, #e2e8f0) 37%,
+    var(--gris-hover, #f1f5f9) 63%
+  );
+  background-size: 400% 100%;
+  animation: referidosShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes referidosShimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.empty {
+  width: 100%;
+}
+
+.emptyBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 1.25rem 0.5rem;
+}
+
+.emptyIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  margin-bottom: 0.5rem;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.emptyText {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--gris-texto-secundario, #64748b);
+}
+
+/* =========================================================================
+   MODO NOCHE
+   -------------------------------------------------------------------------
+   Casi todo sale por tokens (--gris-*, --glass-*, --color-*). Acá solo lo que
+   necesita otro tono: violetas y dorados de texto, que en claro son oscuros
+   sobre pastel y en oscuro deben ir claros sobre tinte translúcido.
+   ========================================================================= */
+:global([data-theme='dark']) .headerIcon,
+:global([data-theme='dark']) .statIconViolet,
+:global([data-theme='dark']) .emptyIcon {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.18);
+}
+
+:global([data-theme='dark']) .statIconBlue {
+  color: #7dd3fc;
+  background: rgba(14, 165, 233, 0.18);
+}
+
+:global([data-theme='dark']) .statIconGold {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.18);
+}
+
+:global([data-theme='dark']) .codeText {
+  color: #ddd6fe;
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+:global([data-theme='dark']) .paso {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+:global([data-theme='dark']) .btnGhost,
+:global([data-theme='dark']) .btnQuiet:hover {
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .btnGhost:hover:not(:disabled) {
+  color: #ddd6fe;
+}
+
+:global([data-theme='dark']) .chipOk {
+  color: #6ee7b7;
+}
+
 :global([data-theme='dark']) .cardClaimed {
-  background: var(--color-surface-2);
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
 }
 
-/* Caja de estado pendiente (amarillo claro -> tinte ámbar translúcido) */
-:global([data-theme='dark']) .statusBox {
-  background: rgba(245, 158, 11, 0.14);
-  border-left-color: #F59E0B;
-}
-:global([data-theme='dark']) .errorText {
-  color: #FCD34D; /* amber-300, legible sobre fondo oscuro */
+:global([data-theme='dark']) .rewardBadge {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
-/* Monedas destacadas: naranja oscuro -> ámbar claro legible */
-:global([data-theme='dark']) .highlightCoins {
-  color: #FBBF24;
+:global([data-theme='dark']) .rewardLabel,
+:global([data-theme='dark']) .rewardAmount {
+  color: #fcd34d;
+}
+
+:global([data-theme='dark']) .stepCircle {
+  background: var(--color-surface-2, #272338);
+}
+
+/* =========================================================================
+   Fallback sólido (WebView de Capacitor/Android sin backdrop-filter)
+   ========================================================================= */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .card,
+  .statCard,
+  .referralCard,
+  .empty {
+    background: var(--color-surface, #ffffff);
+    border-color: var(--color-border, rgba(226, 232, 240, 0.9));
+  }
+}
+
+/* =========================================================================
+   Movimiento reducido
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .btnSolido,
+  .btnGhost,
+  .btnQuiet,
+  .stepCircle {
+    transition: none;
+  }
+
+  .skeletonItem {
+    animation: none;
+  }
 }
