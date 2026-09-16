@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { variantesDeImagen } from '../services/products';
 import { useGlobalToast } from './ToastContext';
 import { useAuth } from './AuthContext';
 import { onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -346,6 +347,11 @@ export const CartProvider = ({ children }) => {
       productImage = customization.imageURL;
     }
 
+    // Copias pequeñas de esa foto. El carrito guarda un snapshot y la vista
+    // previa del header la pinta a 60 px: sin esto pedía la imagen entera.
+    // Una imagen de personalización es única de este pedido y no tiene copias.
+    const variantesImagen = customization?.imageURL ? undefined : variantesDeImagen(product, productImage);
+
     const itemPrice = product.salePrice || product.price;
     const regularPrice = product.salePrice ? product.price : null;
 
@@ -358,6 +364,8 @@ export const CartProvider = ({ children }) => {
       id: itemId,
       productId: product.id,
       productName: product.name,
+      // Omitida si no hay: Firestore rechaza undefined.
+      ...(variantesImagen ? { productImageVariantes: variantesImagen } : {}),
       productImage,
       productReferenceImages: productReferences.references,
       // Marca del producto: permite dividir el WhatsApp del checkout por marca

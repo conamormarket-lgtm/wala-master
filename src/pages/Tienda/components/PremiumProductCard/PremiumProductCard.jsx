@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Plus, SlidersHorizontal } from 'lucide-react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { getBrands } from '../../../../services/brands';
-import { idsDeCategoriaDe } from '../../../../services/products';
+import { idsDeCategoriaDe, variantesDeImagen } from '../../../../services/products';
 import { useCart } from '../../../../contexts/CartContext';
 import { useWishlist } from '../../../../contexts/WishlistContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
@@ -253,6 +253,13 @@ const PremiumProductCard = React.memo(({
   // eslint-disable-next-line no-unused-vars
   const stats = getProductStats(product?.id);
 
+  // Copias pequeñas de cada foto, si el producto las tiene. `sizes` describe el
+  // hueco real de la tarjeta: dos columnas en móvil y ~320-400 px en escritorio.
+  // Sin él, el navegador asume el ancho de la ventana y se lleva siempre la más
+  // grande, que es justo lo que pasaba.
+  const variantesPrincipal = variantesDeImagen(product, cardImageUrl);
+  const variantesSecundaria = secondaryImageUrl ? variantesDeImagen(product, secondaryImageUrl) : undefined;
+
   const mainVariantCrop = principalVariant?.thumbnailCrop?.percentages;
 
   // New badge detection. createdAt puede llegar como Timestamp de Firestore
@@ -317,6 +324,8 @@ const PremiumProductCard = React.memo(({
               src={toThumbnailImageUrl(cardImageUrl)}
               fallbackSrc={fallbackImageUrl !== toThumbnailImageUrl(cardImageUrl) ? fallbackImageUrl : undefined}
               alt={product.name}
+              variantes={variantesPrincipal}
+              sizes="(max-width: 640px) 50vw, 400px"
               containerClassName={styles.imageWrapper}
               className={`${styles.primaryImage} ${secondaryImageUrl ? styles.hasSecondary : ''}`}
               objectFit="cover"
@@ -330,6 +339,8 @@ const PremiumProductCard = React.memo(({
               <OptimizedImage
                 src={toThumbnailImageUrl(secondaryImageUrl)}
                 alt={`${product.name} alternate`}
+                variantes={variantesSecundaria}
+                sizes="(max-width: 640px) 50vw, 400px"
                 containerClassName={`${styles.imageWrapper} ${styles.secondaryImageWrapper}`}
                 className={styles.secondaryImage}
                 objectFit="cover"

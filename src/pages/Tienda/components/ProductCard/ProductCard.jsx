@@ -1,6 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import React, { useEffect, useRef, useCallback } from 'react';
+import { variantesDeImagen } from '../../../../services/products';
 import { Link } from 'react-router-dom';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { getBrands } from '../../../../services/brands';
@@ -133,7 +134,8 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
       addToast(isFav ? 'Eliminado de tu lista de deseos' : 'Agregado a tu lista de deseos', 'success');
     }
   }, [product, toggleFavorite, addToast, isFav]);
-// eslint-disable-next-line react-hooks/exhaustive-deps
+
+// eslint-disable-next-line react-hooks/exhaustive-deps
 
   const handlePrefetch = useCallback(() => {
     queryClient.setQueryData(['product', product.id], product);
@@ -192,9 +194,17 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
   const secondaryImageUrl = product?.isV2 
     ? (product?.images?.[0] || null)
     : (product?.images?.[1] || null);
-// eslint-disable-next-line no-unused-vars
+
+// eslint-disable-next-line no-unused-vars
 
   // Extraer el crop de la variante principal si existe
+  // Copias pequeñas de cada foto, si el producto las tiene. `sizes` describe el
+  // hueco real de la tarjeta: dos columnas en móvil y ~320-400 px en escritorio.
+  // Sin él, el navegador asume el ancho de la ventana y se lleva siempre la más
+  // grande, que es justo lo que pasaba.
+  const variantesPrincipal = variantesDeImagen(product, cardImageUrl);
+  const variantesSecundaria = secondaryImageUrl ? variantesDeImagen(product, secondaryImageUrl) : undefined;
+
   const mainVariantCrop = principalVariant?.thumbnailCrop?.percentages;
   // Encuadre propio de la imagen de hover (si el admin lo definió para esa foto).
   const secondaryCrop = secondaryImageUrl ? principalVariant?.imagesCrops?.[secondaryImageUrl]?.percentages : undefined;
@@ -225,6 +235,8 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
               src={toThumbnailImageUrl(cardImageUrl)}
               fallbackSrc={fallbackImageUrl !== toThumbnailImageUrl(cardImageUrl) ? fallbackImageUrl : undefined}
               alt={product.name}
+              variantes={variantesPrincipal}
+              sizes="(max-width: 640px) 50vw, 400px"
               containerClassName={styles.image}
               className={`${styles.productImg} ${showHoverSecondaryMedia && secondaryImageUrl ? styles.primaryImgHover : ''}`}
               objectFit="cover"
@@ -238,6 +250,8 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
               <OptimizedImage
                 src={toThumbnailImageUrl(secondaryImageUrl)}
                 alt={`${product.name} alternate`}
+                variantes={variantesSecundaria}
+                sizes="(max-width: 640px) 50vw, 400px"
                 containerClassName={`${styles.image} ${styles.secondaryImageContainer}`}
                 className={styles.secondaryImg}
                 objectFit="cover"

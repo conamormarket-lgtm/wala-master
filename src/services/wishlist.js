@@ -1,4 +1,5 @@
 import { db } from './firebase/config';
+import { variantesDeImagen } from './products';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
@@ -80,10 +81,14 @@ export const addWishlistItem = async (userId, userCode, product) => {
       await createWishlist(userId, userCode);
     }
     
+    const imagenWishlist = product.mainImage || product.images?.[0] || '';
+    const variantesWishlist = variantesDeImagen(product, imagenWishlist);
     const newItem = {
       productId: product.id,
       productName: product.name,
-      productImage: product.mainImage || product.images?.[0] || '',
+      productImage: imagenWishlist,
+      // Omitida si no hay: Firestore rechaza undefined.
+      ...(variantesWishlist ? { productImageVariantes: variantesWishlist } : {}),
       // Precio snapshot al momento de agregar (salePrice manda): así /regalar y
       // la wishlist pública muestran precio aunque el producto salga del catálogo.
       // Items antiguos no lo tienen → los lectores usan item.price || 0.

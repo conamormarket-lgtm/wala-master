@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { variantesDeImagen } from '../services/products';
 import { useAuth } from './AuthContext';
 import { getWishlistByUserId, addWishlistItem, removeWishlistItem, createWishlist, syncWishlistUserCode } from '../services/wishlist';
 import { recordMissionAction } from '../services/loyalty';
@@ -128,10 +129,17 @@ export const WishlistProvider = ({ children }) => {
       }
     } else {
       // Agregar (Optimistic UI update)
+      const imagenWishlist = product.mainImage || product.images?.[0] || '';
+      const variantesWishlist = variantesDeImagen(product, imagenWishlist);
+        // Copias pequeñas de esa foto, si las tiene. Se guardan junto al resto
+        // del snapshot porque la lista de deseos no tiene el producto delante
+        // cuando pinta sus miniaturas (60 px), y sin esto pedia la imagen
+        // entera. Se omite la clave si no hay: Firestore rechaza undefined.
       const newItem = {
         productId: product.id,
         productName: product.name,
-        productImage: product.mainImage || product.images?.[0] || '',
+        productImage: imagenWishlist,
+        ...(variantesWishlist ? { productImageVariantes: variantesWishlist } : {}),
         // Precio snapshot (mismo criterio que addWishlistItem en services/wishlist.js):
         // el espejo optimista debe calzar con lo que se persiste en Firestore.
         price: product.salePrice || product.price || 0,

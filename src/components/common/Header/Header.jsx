@@ -1062,10 +1062,18 @@ const Header = () => {
                                     title={item.productName}
                                     style={fanStyle(index)}
                                   >
-                                    <img
+                                    {/* 60x60 girada por el abanico. Con la foto
+                                        completa esto reducia ~58 veces y encima
+                                        la rotacion la remuestrea otra vez: se
+                                        veia sucia. `sizes` hace que pida la
+                                        copia de 160 px. */}
+                                    <OptimizedImage
                                       src={item.productImage || '/images/placeholder.svg'}
+                                      variantes={item.productImageVariantes}
+                                      sizes="60px"
                                       alt={item.productName || 'Producto'}
-                                      onError={(e) => { e.currentTarget.src = '/images/placeholder.svg'; }}
+                                      fallbackSrc="/images/placeholder.svg"
+                                      loading="lazy"
                                     />
                                   </Link>
                                 ))}
@@ -1149,11 +1157,19 @@ const Header = () => {
                             <div className={styles.previewItemList}>
                               {seleccionados.slice(0, 3).map((item) => (
                                 <div key={item.id} className={styles.previewItem}>
-                                  <img
+                                  <OptimizedImage
                                     src={item.productImage || '/images/placeholder.svg'}
+                                    variantes={item.productImageVariantes}
+                                    sizes="60px"
                                     alt={item.productName || 'Producto'}
-                                    className={styles.previewItemImg}
-                                    onError={(e) => { e.currentTarget.src = '/images/placeholder.svg'; }}
+                                    /* El 60x60 y el borde viven en esta clase, y aqui
+                                       es un item de flex: si la clase se quedara en el
+                                       <img>, el contenedor que envuelve OptimizedImage
+                                       seria el item y con width:100% reventaria la fila.
+                                       Va al contenedor; el <img> lo rellena. */
+                                    containerClassName={styles.previewItemImg}
+                                    fallbackSrc="/images/placeholder.svg"
+                                    loading="lazy"
                                   />
                                   <div className={styles.previewItemDetails}>
                                     <span className={styles.previewItemName}>{item.productName || 'Producto'}</span>
