@@ -13,7 +13,7 @@ import { recordProductClick, recordVariantViewTime } from '../../../../utils/pro
 import { trackProductView } from '../../../../services/analytics/tracker';
 import { getFallbackHex, getContrastTextColor } from '../../../../utils/colors';
 import { getBrands } from '../../../../services/brands';
-import { getProductsByCategory, getProduct } from '../../../../services/products';
+import { getProductsByCategory, getProduct, variantesDeImagen } from '../../../../services/products';
 import FeaturedCarousel from '../FeaturedCarousel/FeaturedCarousel';
 import { useImagePreloader } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
@@ -38,7 +38,12 @@ const buildImages = (product, variant, isCombo, comboSels, comboProd) => {
   const list = [];
   const push = (url, extra = {}) => {
     const u = toDirectImageUrl(url);
-    if (u && !u.includes('undefined') && !seen.has(u)) { seen.add(u); list.push({ url: u, ...extra }); }
+    if (u && !u.includes('undefined') && !seen.has(u)) {
+      seen.add(u);
+      // Las copias pequeñas viajan con cada imagen para que la galería no tenga
+      // que saber de qué variante del producto salió.
+      list.push({ url: u, variantes: variantesDeImagen(product, url), ...extra });
+    }
   };
 
   if (isCombo) {
@@ -67,11 +72,11 @@ const buildImages = (product, variant, isCombo, comboSels, comboProd) => {
             if (bk) push(view.backSide.imagesByColor[bk], tag);
           }
         });
-        (mv.galleryImages || []).forEach(u => push(u, tag));
-        if (!mv.galleryImages?.length && mv.imageUrl) push(mv.imageUrl, tag);
+        (mv.galleryImages || []).forEach(u => push(u, { ...tag, variantes: variantesDeImagen(sub, u) }));
+        if (!mv.galleryImages?.length && mv.imageUrl) push(mv.imageUrl, { ...tag, variantes: variantesDeImagen(sub, mv.imageUrl) });
       } else {
-        (sub.images || []).forEach(u => push(u, tag));
-        if (sub.mainImage) push(sub.mainImage, tag);
+        (sub.images || []).forEach(u => push(u, { ...tag, variantes: variantesDeImagen(sub, u) }));
+        if (sub.mainImage) push(sub.mainImage, { ...tag, variantes: variantesDeImagen(sub, sub.mainImage) });
       }
     });
     (product?.images || []).forEach(u => push(u));
@@ -165,7 +170,11 @@ const Gallery = ({ images, activeIdx, setActiveIdx }) => {
               onClick={() => setActiveIdx(i)}
               onMouseEnter={() => setActiveIdx(i)}
             >
-              <img src={img.url} alt="" loading="lazy" />
+              {/* 68 px de ancho. Con la imagen completa esto reducia ~30 veces,
+                  y encima el CSS la rota: el navegador remuestrea dos veces y se
+                  ve sucia. `sizes` le dice el hueco real para que elija la copia
+                  de 160 en vez de la principal. */}
+              <OptimizedImage src={img.url} variantes={img.variantes} sizes="68px" alt="" loading="lazy" />
             </button>
           ))}
         </div>
@@ -180,13 +189,20 @@ const Gallery = ({ images, activeIdx, setActiveIdx }) => {
         onTouchEnd={onTouchEnd}
         onTouchCancel={() => { touchStartX.current = null; }}
       >
-        <img
+        <OptimizedImage
           src={active.url}
+          variantes={active.variantes}
+          /* Ocupa media pantalla en escritorio y toda en movil. */
+          sizes="(max-width: 768px) 100vw, 50vw"
           alt="Producto"
+          /* .mainImg usa object-fit: contain, pero OptimizedImage lo impone en
+             linea (por defecto 'cover') y el estilo en linea gana a la clase:
+             sin esto la foto de producto pasaria a recortarse. */
+          objectFit="contain"
           className={styles.mainImg}
           style={zoom ? { transform: 'scale(2.4)', transformOrigin: `${pos.x}% ${pos.y}%` } : {}}
-          fetchpriority="high"
           loading="eager"
+          fetchPriority="high"
         />
         {!zoom && <span className={styles.zoomHint}>🔍 <T>Hover para zoom</T></span>}
       </div>
@@ -649,7 +665,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
                         }}
                         title={v.name}>
                         {v.imageUrl
-                          ? <OptimizedImage src={toDirectImageUrl(v.imageUrl)} cropData={v.thumbnailCrop?.percentages} alt={v.name} className={styles.swatchImg} />
+                          ? <OptimizedImage src={toDirectImageUrl(v.imageUrl)} variantes={v.imagesVariantes?.[v.imageUrl]} sizes="44px" cropData={v.thumbnailCrop?.percentages} alt={v.name} className={styles.swatchImg} />
                           : <span className={styles.swatchColor} style={{ background: hex }} />}
                       </button>
                     );
@@ -695,7 +711,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
                       className={`${styles.swatch} ${variantIdx === i ? styles.swatchActive : ''}`}
                       onClick={() => setVariantIdx(i)} title={v.name}>
                       {v.imageUrl
-                        ? <OptimizedImage src={toDirectImageUrl(v.imageUrl)} cropData={v.thumbnailCrop?.percentages} alt={v.name} className={styles.swatchImg} />
+                        ? <OptimizedImage src={toDirectImageUrl(v.imageUrl)} variantes={v.imagesVariantes?.[v.imageUrl]} sizes="44px" cropData={v.thumbnailCrop?.percentages} alt={v.name} className={styles.swatchImg} />
                         : <span className={styles.swatchColor} style={{ background: hex }} />}
                     </button>
                   );

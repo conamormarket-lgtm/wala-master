@@ -177,6 +177,16 @@ function normalizeVariantItem(item, index) {
     ? item.imagesCrops
     : {};
 
+  // Copias pequeñas por imagen: mapa { [url]: { 160: url, 400: url, 800: url } }.
+  // Mismo patrón que imagesCrops —la URL como clave— para no cambiar la forma de
+  // `imageUrl` ni de `images`, que son strings en decenas de sitios. Las escribe
+  // uploadFile al subir (ver services/firebase/storage.js) y las lee
+  // OptimizedImage para armar el srcSet. Lo subido antes de esto no tiene
+  // entrada aquí, y entonces todo cae a la URL principal como siempre.
+  const imagesVariantes = (item.imagesVariantes && typeof item.imagesVariantes === 'object' && !Array.isArray(item.imagesVariantes))
+    ? item.imagesVariantes
+    : {};
+
   return {
     id,
     name,
@@ -186,9 +196,31 @@ function normalizeVariantItem(item, index) {
     galleryImages: images,
     thumbnailCrop: item.thumbnailCrop ?? null,
     imagesCrops,
+    imagesVariantes,
     ...(item.colorHex ? { colorHex: item.colorHex } : {})
   };
 }
+
+/**
+ * Copias pequeñas de una imagen concreta, o undefined si no tiene.
+ *
+ * Busca en todas las variantes del producto porque una misma URL puede venir
+ * de la galería de cualquiera de ellas, de la imagen principal o de las vistas
+ * de personalización, y quien pinta no siempre sabe de cuál salió.
+ *
+ * Devolver undefined es lo normal para todo lo subido antes de que existieran
+ * las variantes: OptimizedImage entonces no arma srcSet y sirve la principal,
+ * igual que siempre.
+ */
+export const variantesDeImagen = (producto, url) => {
+  if (!producto || !url) return undefined;
+  for (const v of (producto.variants || [])) {
+    const m = v?.imagesVariantes?.[url];
+    if (m && Object.keys(m).length) return m;
+  }
+  const propio = producto.imagesVariantes?.[url];
+  return propio && Object.keys(propio).length ? propio : undefined;
+};
 
 /**
  * Normaliza un producto leÃ­do de Firestore.

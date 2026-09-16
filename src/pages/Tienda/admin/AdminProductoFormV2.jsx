@@ -517,14 +517,25 @@ const AdminProductoFormV2 = () => {
       const blob = dataURLtoBlob(dataURL);
       
       const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}.png`;
-      const { url } = await uploadFile(blob, path);
+      const { url, variantes } = await uploadFile(blob, path);
       if (url) {
         await safelyDeleteOldImage(activeVariant.imageUrl);
-        updateActiveVariant({ imageUrl: url });
+        updateActiveVariant({ imageUrl: url, ...conVariantes(url, variantes) });
       }
     } finally {
       setUploading(false);
     }
+  };
+
+  /**
+   * Añade al mapa de la variante activa las copias pequeñas que devolvió
+   * uploadFile, con la URL principal como clave (mismo patrón que imagesCrops).
+   * Si no hubo variantes —imagen ya diminuta, o falló su subida— no escribe
+   * nada y esa imagen se sigue sirviendo en su tamaño único, como antes.
+   */
+  const conVariantes = (url, variantes) => {
+    if (!url || !variantes || Object.keys(variantes).length === 0) return {};
+    return { imagesVariantes: { ...(activeVariant?.imagesVariantes || {}), [url]: variantes } };
   };
 
   const handleRedoMockup = () => {
@@ -549,10 +560,10 @@ const AdminProductoFormV2 = () => {
     setUploading(true);
     try {
       const path = `productos_v2/${draftId}/main_${activeVariant.id}_${Date.now()}_${file.name}`;
-      const { url } = await uploadFile(file, path);
+      const { url, variantes } = await uploadFile(file, path);
       if (url) {
         await safelyDeleteOldImage(activeVariant.imageUrl);
-        updateActiveVariant({ imageUrl: url });
+        updateActiveVariant({ imageUrl: url, ...conVariantes(url, variantes) });
       }
     } finally {
       setUploading(false);
@@ -565,12 +576,19 @@ const AdminProductoFormV2 = () => {
     setUploading(true);
     try {
       const newImages = [];
+      const mapaVariantes = { ...(activeVariant.imagesVariantes || {}) };
       for (const file of files) {
         const path = `productos_v2/${draftId}/gallery_${Date.now()}_${file.name}`;
-        const { url } = await uploadFile(file, path);
-        if (url) newImages.push(url);
+        const { url, variantes } = await uploadFile(file, path);
+        if (url) {
+          newImages.push(url);
+          if (variantes && Object.keys(variantes).length > 0) mapaVariantes[url] = variantes;
+        }
       }
-      updateActiveVariant({ images: [...(activeVariant.images || []), ...newImages] });
+      updateActiveVariant({
+        images: [...(activeVariant.images || []), ...newImages],
+        imagesVariantes: mapaVariantes,
+      });
     } finally {
       setUploading(false);
     }
