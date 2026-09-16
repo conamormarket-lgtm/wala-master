@@ -2,11 +2,28 @@
   "buildCommand": "npm run build",
   "outputDirectory": "build",
   "images": {
-    "sizes": [256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    "domains": ["firebasestorage.googleapis.com", "drive.google.com"]
+    "sizes": [
+      256,
+      384,
+      640,
+      750,
+      828,
+      1080,
+      1200,
+      1920,
+      2048,
+      3840
+    ],
+    "domains": [
+      "firebasestorage.googleapis.com",
+      "drive.google.com"
+    ]
   },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
@@ -15,6 +32,33 @@
         {
           "key": "Cross-Origin-Opener-Policy",
           "value": "same-origin-allow-popups"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|mp4)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }
