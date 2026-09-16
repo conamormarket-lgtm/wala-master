@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { useProducts } from '../../hooks/useProducts';
+import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import { getUserSuggestedPackages } from '../../services/fechasImportantes';
+import { GlassCard, Reveal } from '../../components/ui';
 // eslint-disable-next-line no-unused-vars
-// eslint-disable-next-line no-unused-vars
-import { Gift, Calendar, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package, Camera } from 'lucide-react';
+import { Gift, Calendar, CalendarHeart, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package, Camera, AlertCircle, Check } from 'lucide-react';
 // Helper de subida YA existente en el repo (mismo que usan AvatarStudio / CategoryNavEditor).
 import { uploadFile } from '../../services/firebase/storage';
 import styles from './CuentaFechasImportantesPage.module.css';
@@ -42,6 +44,34 @@ const getGlobalDates = (roleKey, gender) => {
   return dates;
 };
 
+// Días que faltan para la PRÓXIMA vez que se celebre una fecha 'YYYY-MM-DD'.
+// Solo importan mes y día: un cumpleaños del 2001 se celebra igual este año, y
+// si ya pasó, la próxima es el año que viene. Devuelve null si no hay fecha.
+// (Un 29 de febrero cae en el 1 de marzo los años no bisiestos; es el
+// comportamiento nativo de Date y alcanza para un recordatorio.)
+const diasParaProxima = (iso) => {
+  if (!iso) return null;
+  const [, mesStr, diaStr] = String(iso).split('-');
+  const mes = Number(mesStr);
+  const dia = Number(diaStr);
+  if (!mes || !dia) return null;
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  let proxima = new Date(hoy.getFullYear(), mes - 1, dia);
+  if (proxima < hoy) proxima = new Date(hoy.getFullYear() + 1, mes - 1, dia);
+  return Math.round((proxima - hoy) / 86400000);
+};
+
+// "¡Es hoy!" / "Mañana" / "En 12 días". Más allá de un mes no se avisa: la
+// fecha completa ya está escrita al lado y un "en 210 días" no ayuda a nadie.
+const avisoProximidad = (dias) => {
+  if (dias == null || dias > 30) return null;
+  if (dias === 0) return '¡Es hoy!';
+  if (dias === 1) return 'Mañana';
+  return `En ${dias} días`;
+};
+
 const CuentaFechasImportantesPage = () => {
   // eslint-disable-next-line no-unused-vars
   const { user, userProfile, updateUserProfile } = useAuth();
@@ -64,6 +94,39 @@ const CuentaFechasImportantesPage = () => {
   const recipients = userProfile?.giftRecipients || [];
   const hasCompletedSurvey = userProfile?.hasCompletedSurvey;
 
+  // Catálogo PÚBLICO (useProducts sin opciones ya excluye lo oculto/borrado:
+  // visible !== false). Los paquetes sugeridos guardan una FOTO del producto
+  // al momento de armarlos (id/nombre/precio/imagen), así que por su cuenta
+  // seguirían mostrando productos dados de baja -y "Agregar todo al carrito"
+  // metía ese fantasma al carrito, con el precio viejo-. Acá se cruzan contra
+  // el catálogo real: lo que ya no está se cae, y lo que sigue se pinta con
+  // sus datos de hoy, no con los de cuando se armó el paquete.
+  const { data: catalogo, isLoading: cargandoCatalogo } = useProducts();
+  const catalogoPorId = useMemo(() => {
+    const indice = new Map();
+    (catalogo || []).forEach((p) => {
+      if (p?.id != null) indice.set(String(p.id), p);
+    });
+    return indice;
+  }, [catalogo]);
+
+  const resolverPaquete = (pkg) => {
+    const guardados = pkg.products || [];
+    const items = guardados
+      .map((prod) => {
+        const vivo = catalogoPorId.get(String(prod.id));
+        if (!vivo) return null;
+        return {
+          producto: vivo,
+          nombre: vivo.name || prod.name,
+          precio: vivo.salePrice || vivo.price,
+          imagen: vivo.images?.[0] || PLACEHOLDER_IMG,
+        };
+      })
+      .filter(Boolean);
+    return { items, retirados: guardados.length - items.length };
+  };
+
   // Load suggested packages for current user
   useEffect(() => {
     if (user?.uid) {
@@ -80,33 +143,32 @@ const CuentaFechasImportantesPage = () => {
     );
   };
 
-  // Add all products from a package to cart
-  const handleAddPackageToCart = (pkg) => {
-    (pkg.products || []).forEach(prod => {
-      addToCart(
-        { id: prod.id, name: prod.name, price: prod.price, images: [prod.image] },
-        {},
-        null,
-        1
-      );
-    });
+  // Manda al carrito el producto REAL del catálogo (no el recortado
+  // {id,name,price,images} que se armaba con la foto guardada): así viajan
+  // precio de oferta, variantes e imágenes tal como están hoy.
+  const handleAddPackageToCart = (pkg, items) => {
+    items.forEach(({ producto }) => addToCart(producto, {}, null, 1));
     setAddedPackageIds(prev => new Set([...prev, pkg.id]));
   };
 
   if (!hasCompletedSurvey) {
     return (
-      <div className={styles.container}>
-        <div className={styles.emptyState}>
-          <Gift size={64} className={styles.emptyStateIcon} />
-          <h2><T>¡Gana recompensas diciéndonos qué te gusta!</T></h2>
-          <p>
-            Al completar nuestro perfil de regalos, ganarás monedas que puedes canjear
-            por descuentos, y te recordaremos las fechas más importantes de tus seres queridos.
+      <div className={styles.page}>
+        <GlassCard variant="solid" padding="lg" animate={false} className={styles.empty} bodyClassName={styles.emptyBody}>
+          <div className={styles.emptyIcon}>
+            <Gift size={26} aria-hidden="true" />
+          </div>
+          <p className={styles.emptyTitle}>
+            <T>Gana recompensas diciéndonos qué te gusta</T>
           </p>
-          <Link to="/encuesta-suscripcion" className={styles.primaryButton}>
-            Completa la encuesta ahora
+          <p className={styles.emptyText}>
+            Al completar tu perfil de regalos ganas monedas para canjear por descuentos, y
+            te recordamos las fechas más importantes de tus seres queridos.
+          </p>
+          <Link to="/encuesta-suscripcion" className={styles.btnSolido}>
+            Completar la encuesta
           </Link>
-        </div>
+        </GlassCard>
       </div>
     );
   }
@@ -256,117 +318,189 @@ const CuentaFechasImportantesPage = () => {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1>Fechas Importantes</h1>
-        <button onClick={handleAddNew} className={styles.primaryButton}>
-          <Plus size={20} /> Añadir Persona
-        </button>
-      </div>
+    <div className={styles.page}>
+      {/* ── Cabecera ─────────────────────────────────────────────────── */}
+      <Reveal>
+        <GlassCard variant="solid" padding="lg" animate={false} className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.headerIcon}>
+              <CalendarHeart size={20} aria-hidden="true" />
+            </div>
+            <h2>Fechas importantes</h2>
+            <button type="button" onClick={handleAddNew} className={`${styles.btnSolido} ${styles.headerAction}`}>
+              <Plus size={17} aria-hidden="true" /> Añadir persona
+            </button>
+          </div>
+          <p className={styles.headerSub}>
+            Guarda a quién quieres regalarle y cuándo. Te avisamos cuando se acerque la
+            fecha y te armamos un paquete con productos que le pegan.
+          </p>
+        </GlassCard>
+      </Reveal>
 
-      <div className={styles.grid}>
-        {recipients.length === 0 ? (
-          <p style={{ color: '#64748b' }}><T>Aún no has agregado personas a tu lista.</T></p>
-        ) : (
-          recipients.map(rec => {
+      {recipients.length === 0 ? (
+        <Reveal>
+          <GlassCard variant="solid" padding="lg" animate={false} className={styles.empty} bodyClassName={styles.emptyBody}>
+            <div className={styles.emptyIcon}>
+              <Calendar size={26} aria-hidden="true" />
+            </div>
+            <p className={styles.emptyTitle}>Todavía no agregaste a nadie.</p>
+            <p className={styles.emptyText}>
+              Empieza por la persona a la que más le regalas: con su cumpleaños alcanza.
+            </p>
+            <button type="button" onClick={handleAddNew} className={styles.btnSolido}>
+              <Plus size={17} aria-hidden="true" /> Añadir persona
+            </button>
+          </GlassCard>
+        </Reveal>
+      ) : (
+        // OJO: acá NO va <Stagger>/<StaggerItem>. El contenedor revela a sus
+        // hijos una sola vez (whileInView + once), así que una tarjeta agregada
+        // después se quedaría invisible. <Reveal> por tarjeta monta su propio
+        // observador. Mismo motivo que en el historial de Mis Referidos.
+        <div className={styles.grid}>
+          {recipients.map((rec, idx) => {
+            const fechasGlobales = getGlobalDates(rec.roleKey, rec.gender);
             const recPackages = getPackagesForRecipient(rec);
+
             return (
-              <div key={rec.id} className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <div className={styles.cardHeaderMain}>
-                    {/* FOTO de la persona (avatar circular). Sin foto -> inicial. */}
+              <Reveal key={rec.id} delay={Math.min(idx, 6) * 0.06} className={styles.gridItem}>
+                <GlassCard
+                  as="article"
+                  variant="solid"
+                  padding="lg"
+                  animate={false}
+                  className={styles.personCard}
+                  bodyClassName={styles.personBody}
+                >
+                  {/* Identidad */}
+                  <div className={styles.personTop}>
                     <div className={styles.cardAvatar}>
                       {rec.photoUrl ? (
-                        <img
-                          src={rec.photoUrl}
-                          alt={rec.name || 'Foto'}
-                          className={styles.cardAvatarImg}
-                        />
+                        <img src={rec.photoUrl} alt="" className={styles.cardAvatarImg} />
                       ) : (
                         <span className={styles.cardAvatarInitial}>
                           {(rec.name || '?').trim().charAt(0).toUpperCase() || '?'}
                         </span>
                       )}
                     </div>
-                    <div className={styles.cardHeaderText}>
-                      <h3 className={styles.cardTitle}>{rec.name}</h3>
+                    <div className={styles.personIdent}>
+                      <h3 className={styles.cardTitle}>{rec.name || 'Sin nombre'}</h3>
                       <span className={styles.cardRole}>{rec.roleDisplay}</span>
-                      {getGlobalDates(rec.roleKey, rec.gender).length > 0 && (
-                        <div className={styles.globalDatesContainer}>
-                          {getGlobalDates(rec.roleKey, rec.gender).map((gDate, i) => (
-                            <span key={i} className={styles.globalDateBadge}>
-                              <Globe size={12} /> {gDate}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                    </div>
+                    <div className={styles.cardActions}>
+                      <button type="button" onClick={() => handleEdit(rec)} className={styles.iconBtn} title="Editar">
+                        <Edit2 size={17} aria-hidden="true" />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(rec.id)} className={`${styles.iconBtn} ${styles.deleteBtn}`} title="Eliminar">
+                        <Trash2 size={17} aria-hidden="true" />
+                      </button>
                     </div>
                   </div>
-                  <div className={styles.cardActions}>
-                    <button onClick={() => handleEdit(rec)} className={styles.iconBtn} title="Editar">
-                      <Edit2 size={18} />
-                    </button>
-                    <button onClick={() => handleDelete(rec.id)} className={`${styles.iconBtn} ${styles.deleteBtn}`} title="Eliminar">
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className={styles.eventsList}>
-                  {rec.events.map(ev => (
-                    <div key={ev.id} className={styles.eventItem}>
-                      <Calendar size={16} />
-                      <span>
-                        <strong>{ev.type === 'Fecha Especial' ? ev.customName : ev.type}:</strong>{' '}
-                        {ev.date ? new Date(ev.date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : 'Sin fecha'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
 
-                {/* Suggested Packages Section */}
-                {recPackages.length > 0 && (
-                  <div className={styles.suggestedSection}>
-                    <div className={styles.suggestedHeader}>
-                      <Package size={16} />
-                      <span><T>Paquete sugerido para ti</T></span>
-                    </div>
-                    {recPackages.map(pkg => {
-                      const isAdded = addedPackageIds.has(pkg.id);
+                  {/* Fechas propias: la que está cerca se marca con su aviso. */}
+                  <ul className={styles.eventsList}>
+                    {rec.events.map((ev) => {
+                      const dias = diasParaProxima(ev.date);
+                      const aviso = avisoProximidad(dias);
                       return (
-                        <div key={pkg.id} className={styles.suggestedPackage}>
-                          <div className={styles.suggestedProducts}>
-                            {(pkg.products || []).map((prod, i) => (
-                              <div key={i} className={styles.suggestedProductItem}>
-                                <img 
-                                  src={prod.image || '/images/placeholder.svg'}
-                                  alt={prod.name} 
-                                />
-                                <div className={styles.suggestedProductInfo}>
-                                  <span className={styles.suggestedProductName}>{prod.name}</span>
-                                  <span className={styles.suggestedProductPrice}>S/ {prod.price}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          <button 
-                            className={`${styles.addToCartBtn} ${isAdded ? styles.addToCartBtnDone : ''}`}
-                            onClick={() => !isAdded && handleAddPackageToCart(pkg)}
-                            disabled={isAdded}
-                          >
-                            <ShoppingCart size={16} />
-                            {isAdded ? 'Agregado al carrito' : 'Agregar todo al carrito'}
-                          </button>
-                        </div>
+                        <li key={ev.id} className={styles.eventItem}>
+                          <Calendar size={15} aria-hidden="true" className={styles.eventIcon} />
+                          <span className={styles.eventName}>
+                            {ev.type === 'Fecha Especial' ? ev.customName : ev.type}
+                          </span>
+                          <span className={styles.eventDate}>
+                            {ev.date
+                              ? new Date(ev.date + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long' })
+                              : 'Sin fecha'}
+                          </span>
+                          {aviso && (
+                            <span className={`${styles.eventSoon} ${dias === 0 ? styles.eventToday : ''}`}>
+                              {aviso}
+                            </span>
+                          )}
+                        </li>
                       );
                     })}
-                  </div>
-                )}
-              </div>
+                  </ul>
+
+                  {/* Fechas del calendario que le corresponden por rol/género. */}
+                  {fechasGlobales.length > 0 && (
+                    <div className={styles.globalDatesContainer}>
+                      {fechasGlobales.map((gDate) => (
+                        <span key={gDate} className={styles.globalDateBadge}>
+                          <Globe size={12} aria-hidden="true" /> {gDate}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Paquete sugerido. Mientras el catálogo carga no se pinta
+                      nada: mostrar la foto guardada y recortarla un segundo
+                      después se ve como un error. */}
+                  {!cargandoCatalogo && recPackages.length > 0 && (
+                    <div className={styles.suggestedSection}>
+                      {recPackages.map((pkg) => {
+                        const { items, retirados } = resolverPaquete(pkg);
+                        if (items.length === 0) return null;
+                        const isAdded = addedPackageIds.has(pkg.id);
+                        const total = items.reduce((acc, it) => acc + (Number(it.precio) || 0), 0);
+
+                        return (
+                          <div key={pkg.id} className={styles.suggestedPackage}>
+                            <div className={styles.suggestedHeader}>
+                              <Package size={15} aria-hidden="true" />
+                              <span className={styles.suggestedTitle}>Paquete sugerido</span>
+                              <span className={styles.suggestedTotal}>S/ {total.toFixed(2)}</span>
+                            </div>
+
+                            <ul className={styles.suggestedProducts}>
+                              {items.map((it) => (
+                                <li key={it.producto.id} className={styles.suggestedProductItem}>
+                                  <img
+                                    src={it.imagen}
+                                    alt=""
+                                    className={styles.suggestedProductImg}
+                                    loading="lazy"
+                                    onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+                                  />
+                                  <Link to={`/producto/${it.producto.id}`} className={styles.suggestedProductName}>
+                                    {it.nombre}
+                                  </Link>
+                                  <span className={styles.suggestedProductPrice}>S/ {it.precio}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            {retirados > 0 && (
+                              <p className={styles.suggestedNota}>
+                                <AlertCircle size={13} aria-hidden="true" />
+                                {retirados === 1
+                                  ? 'Un producto de esta sugerencia ya no está disponible y se quitó.'
+                                  : `${retirados} productos de esta sugerencia ya no están disponibles y se quitaron.`}
+                              </p>
+                            )}
+
+                            <button
+                              type="button"
+                              className={`${styles.btnSolido} ${styles.addToCartBtn} ${isAdded ? styles.addToCartBtnDone : ''}`}
+                              onClick={() => !isAdded && handleAddPackageToCart(pkg, items)}
+                              disabled={isAdded}
+                            >
+                              {isAdded ? <Check size={16} aria-hidden="true" /> : <ShoppingCart size={16} aria-hidden="true" />}
+                              {isAdded ? 'Agregado al carrito' : 'Agregar todo al carrito'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </GlassCard>
+              </Reveal>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
 
       {isModalOpen && tempRecipient && (
         <div className={styles.modalOverlay}>
