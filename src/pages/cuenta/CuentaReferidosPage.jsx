@@ -105,8 +105,10 @@ const CuentaReferidosPage = () => {
       return;
     }
 
-    // Invalidate queries so it shows in the list as "Etapa 1"
-    queryClient.invalidateQueries(['myReferrals', referralCode]);
+    // react-query v5 espera un objeto de filtros. Con el array suelto que
+    // había antes, `filters.queryKey` quedaba undefined y se invalidaba TODA
+    // la caché de la app (productos, pedidos…), no solo esta lista.
+    queryClient.invalidateQueries({ queryKey: ['myReferrals', referralCode] });
 
     const url = `${window.location.origin}?ref=${referralCode}&shareId=${id}`;
     navigator.clipboard.writeText(url)
@@ -133,7 +135,7 @@ const CuentaReferidosPage = () => {
       toast.error(error || 'Error al reclamar monedas');
     } else {
       toast.success(`¡Has reclamado ${earned ?? ''} monedas con éxito!`);
-      queryClient.invalidateQueries(['myReferrals', referralCode]);
+      queryClient.invalidateQueries({ queryKey: ['myReferrals', referralCode] });
       // También se actualiza el userProfile globalmente a través del effect en AuthContext
     }
   };
@@ -317,8 +319,18 @@ const CuentaReferidosPage = () => {
           </GlassCard>
         </Reveal>
       ) : (
-        <Stagger as="ul" className={styles.list}>
-          {referrals.map((ref) => {
+        // OJO: acá NO va <Stagger>/<StaggerItem>. El contenedor <Stagger>
+        // revela a sus hijos con whileInView + viewport={{ once: true }}, y
+        // <StaggerItem> no trae observador propio: depende de que el padre le
+        // propague "show". Como el padre ya disparó su única pasada, las filas
+        // que se montan DESPUÉS (justo lo que pasa al generar un enlace nuevo)
+        // se quedaban en `opacity: 0; translateY(24px)` — un hueco en blanco
+        // hasta recargar la página. <Reveal as="li"> monta su propio
+        // observador por fila, así que una fila nueva se revela sola; la
+        // cascada se conserva con el delay escalonado (tope de 6 para que una
+        // lista larga no arranque con un segundo de espera).
+        <ul className={styles.list}>
+          {referrals.map((ref, i) => {
             const currentStage = STAGES[ref.status] || 1;
             // 'purchased' también puede reclamarse, no solo 'completed': ese
             // paso de Admin (AdminReferidos) es para ventas por WhatsApp, que
@@ -343,7 +355,12 @@ const CuentaReferidosPage = () => {
             const dateStr = d ? d.toLocaleDateString('es-PE', { day: 'numeric', month: 'long' }) : 'Sin fecha';
 
             return (
-              <StaggerItem as="li" key={ref.id} className={styles.listItem}>
+              <Reveal
+                as="li"
+                key={ref.id}
+                delay={Math.min(i, 6) * 0.06}
+                className={styles.listItem}
+              >
                 <GlassCard
                   as="article"
                   variant="solid"
@@ -435,10 +452,10 @@ const CuentaReferidosPage = () => {
                     </p>
                   )}
                 </GlassCard>
-              </StaggerItem>
+              </Reveal>
             );
           })}
-        </Stagger>
+        </ul>
       )}
 
       {/* Ranking mensual */}
