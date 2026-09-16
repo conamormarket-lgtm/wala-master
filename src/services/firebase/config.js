@@ -9,9 +9,7 @@ import {
   browserLocalPersistence,
   connectAuthEmulator,
 } from 'firebase/auth';
-import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
-import { getMessaging, isSupported } from 'firebase/messaging';
 
 // Verificar si Firebase está configurado
 const isFirebaseConfigured = () => {
@@ -59,8 +57,6 @@ const arrancarAuth = (instancia) => {
 let app = null;
 let db = null;
 let auth = null;
-let storage = null;
-let messaging = null;
 
 // En DEV usamos emuladores por defecto. También en preview local
 // (vite build --mode preview o VITE_USE_EMULATORS=true).
@@ -71,7 +67,16 @@ const USE_EMULATORS =
 
 if (USE_EMULATORS) {
   try {
-    app = initializeApp({ projectId: 'demo-wala', apiKey: 'demo-emulator', authDomain: 'localhost' });
+    // storageBucket hace falta aunque sea un emulador: sin el, cualquier ref()
+    // de Storage falla con 'storage/no-default-bucket' y no habia forma de
+    // probar una subida en local. El nombre no se resuelve contra Google, solo
+    // le da un bucket por defecto al SDK para hablar con el emulador.
+    app = initializeApp({
+      projectId: 'demo-wala',
+      apiKey: 'demo-emulator',
+      authDomain: 'localhost',
+      storageBucket: 'demo-wala.appspot.com',
+    });
     try {
       // Long polling evita cuelgues del WebChannel en Windows + emulador.
       db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
@@ -79,10 +84,8 @@ if (USE_EMULATORS) {
       db = getFirestore(app);
     }
     auth = arrancarAuth(app);
-    storage = getStorage(app);
     connectFirestoreEmulator(db, 'localhost', 8080);
     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-    try { connectStorageEmulator(storage, 'localhost', 9199); } catch (e) { /* storage opcional */ }
     try { connectFunctionsEmulator(getFunctions(app), 'localhost', 5001); } catch (e) { /* functions opcional */ }
     console.info('[Wala] EMULADORES de Firebase activos (proyecto demo-wala) — datos locales, sin tocar producción.');
   } catch (error) {
@@ -104,7 +107,6 @@ if (USE_EMULATORS) {
     };
 
     app = initializeApp(firebaseConfig);
-    storage = getStorage(app);
 
     // ── Detección de iframe ─────────────────────────────────────────────
     // Si la app corre DENTRO de un iframe (p. ej. la PREVIEW del mapa de calor en
@@ -138,26 +140,11 @@ if (USE_EMULATORS) {
       console.warn('Solución: en Firebase Console > Authentication > haz clic en "Comenzar" y añade "localhost" en Dominios autorizados.');
     }
 
-    // Inicializar Messaging solo si es soportado por el navegador
-    isSupported().then((supported) => {
-      if (supported) {
-        try {
-          messaging = getMessaging(app);
-        } catch (messagingError) {
-          console.warn('Firebase Messaging no disponible:', messagingError);
-        }
-      } else {
-        console.warn('Firebase Messaging no está soportado en este navegador.');
-      }
-    });
-
   } catch (error) {
     console.warn('Error al inicializar Firebase:', error);
     app = null;
     db = null;
     auth = null;
-    storage = null;
-    messaging = null;
   }
 } else {
   console.warn('Firebase no está configurado. Usando modo desarrollo con backend mock.');
@@ -172,5 +159,69 @@ const getFirebaseConfigMessage = () => {
   return 'Firebase no está configurado. Por favor configura tus credenciales en el archivo .env';
 };
 
-export { db, auth, storage, messaging, getFirebaseConfigMessage };
+/**
+ * Storage BAJO DEMANDA.
+ *
+ * Antes se hacia `getStorage(app)` aqui mismo, al cargar el modulo, con lo que
+ * el SDK de Firebase Storage entraba en el bundle de arranque de cualquier
+ * visita. Pero Storage solo hace falta para SUBIR archivos (panel de admin,
+ * avatares, reseñas): para ver la tienda no se usa nunca — las imagenes se
+ * piden por URL normal, sin SDK.
+ *
+ * Devuelve null si Firebase no esta configurado, igual que hacia el export
+ * anterior, para que quien llame siga pudiendo comprobarlo.
+ */
+let storagePromesa = null;
+
+export const obtenerStorage = () => {
+  if (!app) return Promise.resolve(null);
+  if (!storagePromesa) {
+    storagePromesa = import('firebase/storage')
+      .then(async ({ getStorage, connectStorageEmulator }) => {
+        const s = getStorage(app);
+        if (USE_EMULATORS) {
+          try { connectStorageEmulator(s, 'localhost', 9199); } catch (e) { /* ya conectado */ }
+        }
+        return s;
+      })
+      .catch((e) => {
+        console.warn('Firebase Storage no disponible:', e?.message || e);
+        storagePromesa = null;
+        return null;
+      });
+  }
+  return storagePromesa;
+};
+
+/**
+ * Messaging BAJO DEMANDA.
+ *
+ * Antes se llamaba a isSupported() + getMessaging(app) al cargar el modulo, o
+ * sea en CADA arranque, cuando las notificaciones push solo hacen falta si la
+ * persona acepta el permiso — y el permiso se pide mas tarde, con la sesion ya
+ * iniciada. Devuelve null si el navegador no lo soporta.
+ */
+let messagingPromesa = null;
+
+export const obtenerMessaging = () => {
+  if (!app) return Promise.resolve(null);
+  if (!messagingPromesa) {
+    messagingPromesa = import('firebase/messaging')
+      .then(async ({ getMessaging, isSupported }) => {
+        if (!(await isSupported())) {
+          console.warn('Firebase Messaging no está soportado en este navegador.');
+          return null;
+        }
+        return getMessaging(app);
+      })
+      .catch((e) => {
+        console.warn('Firebase Messaging no disponible:', e?.message || e);
+        messagingPromesa = null;
+        return null;
+      });
+  }
+  return messagingPromesa;
+};
+
+export { db, auth, getFirebaseConfigMessage };
 export default app;

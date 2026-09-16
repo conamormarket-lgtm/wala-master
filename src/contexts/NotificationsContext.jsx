@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { db, messaging } from '../services/firebase/config';
+import { db, obtenerMessaging } from '../services/firebase/config';
 import { collection, query, onSnapshot, orderBy, updateDoc, doc, arrayUnion, setDoc } from 'firebase/firestore';
-import { getToken, onMessage } from 'firebase/messaging';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
@@ -66,9 +65,14 @@ export const NotificationsProvider = ({ children }) => {
         console.log('Push received: ' + JSON.stringify(notification));
       });
     } else {
-      // Web: Firebase Cloud Messaging
-      if (!messaging) return;
+      // Web: Firebase Cloud Messaging.
+      // El SDK se trae AQUI, no arriba: solo hace falta si de verdad vamos a
+      // registrar un token, y esto corre con la sesion ya iniciada. Importarlo
+      // de forma estatica lo metia en el bundle de arranque de toda visita.
       if (typeof Notification === 'undefined') return;
+      const messaging = await obtenerMessaging();
+      if (!messaging) return;
+      const { getToken, onMessage } = await import('firebase/messaging');
 
       try {
         // Solo pedimos permiso si NUNCA se decidió ('default'). Si ya está 'denied'

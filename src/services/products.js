@@ -1,5 +1,4 @@
 import { getCollection, getDocument, getCollectionPaginated, createDocument, updateDocument, deleteDocument, setDocument } from './firebase/firestore';
-import { deleteFile } from './firebase/storage';
 import { collection, doc, updateDoc, deleteField, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '../constants/marketplace';
@@ -898,9 +897,16 @@ export const deleteProductPermanently = async (id) => {
         typeof url === 'string' && url.includes('firebasestorage.googleapis.com')
       );
 
-      // Eliminar de Storage
-      for (const url of firebaseUrls) {
-        await deleteFile(url).catch(() => {});
+      // Eliminar de Storage. El modulo se carga aqui y no arriba: products.js
+      // lo usa todo el mundo (es quien lista el catalogo), pero borrar imagenes
+      // solo pasa cuando un admin elimina un producto. Con el import estatico,
+      // el SDK de Firebase Storage entero viajaba en el bundle de arranque de
+      // cualquier visita a la tienda.
+      if (firebaseUrls.length > 0) {
+        const { deleteFile } = await import('./firebase/storage');
+        for (const url of firebaseUrls) {
+          await deleteFile(url).catch(() => {});
+        }
       }
     }
   } catch (error) {

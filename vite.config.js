@@ -63,7 +63,27 @@ export default defineConfig(({ mode }) => {
               return 'react-vendor';
             }
 
-            // Firebase (auth, firestore, storage, messaging, etc.) — muy pesado.
+            // Firebase, separado por lo que hace falta AL ARRANCAR y lo que no.
+            // Metiendo todo en un solo chunk daba igual que storage o messaging
+            // se importasen con import(): Rollup los dejaba dentro del chunk que
+            // el entry ya carga, así que se descargaban igual en cada visita.
+            //
+            // - storage: solo sirve para SUBIR archivos (admin, avatares,
+            //   reseñas). Ver la tienda no sube nada; las imágenes se piden por
+            //   URL normal, sin SDK.
+            // - messaging + installations: solo si la persona acepta el permiso
+            //   de notificaciones, ya con la sesión iniciada.
+            // Firestore y auth sí se necesitan desde el primer render.
+            if (id.includes('@firebase/storage') || id.includes('node_modules/firebase/storage')) {
+              return 'firebase-storage';
+            }
+            if (
+              id.includes('@firebase/messaging') ||
+              id.includes('@firebase/installations') ||
+              id.includes('node_modules/firebase/messaging')
+            ) {
+              return 'firebase-messaging';
+            }
             if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
               return 'firebase-vendor';
             }

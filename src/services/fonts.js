@@ -1,7 +1,12 @@
 import { getCollection, createDocument, getDocument, deleteDocument } from './firebase/firestore';
-import { uploadFile, deleteFile } from './firebase/storage';
 
 const COLLECTION = 'fonts';
+
+// Storage se carga bajo demanda. getFonts (leer la lista) lo usa
+// CustomFontsInjector, que esta montado en toda la app; subir o borrar una
+// tipografia solo pasa en el panel de admin. Con el import estatico, el SDK de
+// Firebase Storage entero viajaba en el bundle de arranque de cada visita.
+const storage = () => import('./firebase/storage');
 
 /**
  * Obtener todas las tipografías personalizadas
@@ -23,6 +28,7 @@ export const createFont = async (file, name, family = null) => {
   const fontFamily = (family || displayName).trim();
 
   const path = `fonts/${Date.now()}_${file.name}`;
+  const { uploadFile } = await storage();
   const { url, error: uploadError } = await uploadFile(file, path);
   if (uploadError || !url) {
     return { id: null, error: uploadError || 'Error al subir el archivo' };
@@ -46,6 +52,7 @@ export const deleteFont = async (id) => {
   const { data: doc, error: getError } = await getDocument(COLLECTION, id);
   if (getError || !doc) return { error: getError || 'Tipografía no encontrada' };
   if (doc.storagePath) {
+    const { deleteFile } = await storage();
     await deleteFile(doc.storagePath);
   }
   return await deleteDocument(COLLECTION, id);

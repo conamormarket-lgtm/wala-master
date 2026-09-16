@@ -51,7 +51,7 @@ console.log('[emuladores] Firebase CLI:', firebaseBin);
 
 const child = spawn(
   firebaseBin,
-  ['emulators:start', '--project', 'demo-wala', '--only', 'firestore,auth'],
+  ['emulators:start', '--project', 'demo-wala', '--only', 'firestore,auth,storage'],
   {
     stdio: 'inherit',
     env,

@@ -1,10 +1,10 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
-import { storage } from './config';
+import { obtenerStorage } from './config';
 
-// Verificar si Storage está disponible
-const isStorageAvailable = () => {
-  return storage !== null;
-};
+// Instancia de Storage, o null si Firebase no esta configurado (modo
+// desarrollo sin credenciales). Se pide cuando hace falta en vez de al cargar
+// el modulo: ver obtenerStorage en config.js — el SDK de Storage solo sirve
+// para SUBIR, y ver la tienda no sube nada.
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONVERSIÓN A WEBP AL SUBIR
@@ -139,7 +139,8 @@ export const convertirAWebp = async (file, path) => {
  */
 export const uploadFile = async (archivoOriginal, rutaOriginal) => {
   const { file, path } = await convertirAWebp(archivoOriginal, rutaOriginal);
-  if (!isStorageAvailable()) {
+  const storage = await obtenerStorage();
+  if (!storage) {
     const tempUrl = URL.createObjectURL(file);
     return { url: tempUrl, error: null };
   }
@@ -218,7 +219,8 @@ export const uploadMultipleFiles = async (files, basePath) => {
  * Eliminar archivo de Storage
  */
 export const deleteFile = async (path) => {
-  if (!isStorageAvailable()) {
+  const storage = await obtenerStorage();
+  if (!storage) {
     return { error: null }; // En modo desarrollo, no hacer nada
   }
   try {
@@ -234,7 +236,8 @@ export const deleteFile = async (path) => {
  * Obtener URL de descarga
  */
 export const getFileURL = async (path) => {
-  if (!isStorageAvailable()) {
+  const storage = await obtenerStorage();
+  if (!storage) {
     return { url: path, error: null }; // En modo desarrollo, retornar path como URL
   }
   try {
@@ -250,7 +253,8 @@ export const getFileURL = async (path) => {
  * Obtener todos los archivos de una carpeta (ej. para boletas)
  */
 export const listFilesInFolder = async (folderPath) => {
-  if (!isStorageAvailable()) {
+  const storage = await obtenerStorage();
+  if (!storage) {
     return { urls: [], error: null };
   }
   try {
