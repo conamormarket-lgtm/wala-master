@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { validateDNI, validateCE, validatePhone, validateDocInternacional } from '../../utils/helpers';
@@ -57,13 +58,8 @@ const PerfilPage = () => {
 
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
 
-  // Antes esta página calculaba su PROPIO código a partir del uid
-  // (`KS-${uid.substring(0,6)}`), distinto del código real que usa el resto
-  // de la app (Referidos, Lista de Deseos compartida): userProfile.referralCode,
-  // generado una sola vez en AuthContext y guardado en Firestore. Copiar el
-  // código de esta pantalla podía llevar a un código que nadie más reconocía.
-  // Usamos el real, con el mismo fallback visual solo por si aún no cargó.
-  const referralCode = userProfile?.referralCode || `KS-${(user?.uid || 'USER').substring(0, 6).toUpperCase()}`;
+  // El código de referido ya NO se muestra acá: vive solo en Mis Referidos
+  // (ver el comentario del enlace más abajo).
   const monedasBalance = userProfile?.monedas || 0;
   const monedasEnEspera = userProfile?.monedasEnEspera || 0;
 
@@ -207,15 +203,17 @@ const PerfilPage = () => {
                 + {monedasEnEspera.toLocaleString()} monedas en espera ⏳
               </div>
             )}
-            {/* Solo para ver el código de un vistazo — copiarlo acá no
-                servía de nada: es el código pelado (ej. "KS-LXECDU"), no el
-                link completo (?ref=CODE&shareId=...) que de verdad cuenta
-                como referido en el checkout (ver ReferralTracker.jsx). Para
-                compartir de verdad está "Generar Link de Referido" en Mis
-                Referidos, o el botón "compartir" de cada producto. */}
-            <div className={styles.referralBox}>
-              <span className={styles.referralCode}>{referralCode}</span>
-            </div>
+            {/* Acá había SOLO el código de referido pelado (ej. "KS-LXECDU"),
+                sin botones: no se podía hacer nada con él —el que cuenta como
+                referido en el checkout es el link completo
+                (?ref=CODE&shareId=..., ver ReferralTracker.jsx), no el código
+                suelto— y además lo repetía la tarjeta "Tu código de referido"
+                de Mis Referidos, que sí tiene copiar y generar enlace. El
+                código vive ahora en un solo lugar; desde acá se va hasta él. */}
+            <Link to="/cuenta/referidos" className={styles.walletLink}>
+              Invita y gana monedas
+              <span aria-hidden="true">→</span>
+            </Link>
           </div>
         </StaggerItem>
 

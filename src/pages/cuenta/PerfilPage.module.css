@@ -186,26 +186,32 @@
   font-weight: 600;
 }
 
-/* Solo para ver el código de un vistazo (ver comentario en PerfilPage.jsx) —
-   antes tenía un botón "Copiar" al lado (justify-content: space-between);
-   sin él, se centra en vez de quedar pegado a la izquierda. */
-.referralBox {
-  background: var(--gris-fondo);
-  border: 1px solid var(--gris-borde);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-top: 1.5rem;
-  display: flex;
+/* Pie de la tarjeta de Recompensas: lleva a Mis Referidos, que es donde el
+   código de referido se puede copiar y convertir en un enlace. Reemplaza al
+   recuadro que solo mostraba el código sin poder hacer nada con él. */
+.walletLink {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  background: rgba(139, 92, 246, 0.06);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #7c3aed;
+  text-decoration: none;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
-.referralCode {
-  font-family: monospace;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--gris-texto-principal);
-  letter-spacing: 2px;
+/* globals.css trae un `a:hover { color: var(--rojo-hover) }` global que gana
+   por especificidad: hay que repetir el color en :hover. */
+.walletLink:hover {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.7);
+  color: #6d28d9;
 }
 
 .form {
@@ -379,6 +385,15 @@
 
 :global([data-theme='dark']) .walletEspera {
   color: #fbbf24;
+}
+
+:global([data-theme='dark']) .walletLink {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.12);
+}
+:global([data-theme='dark']) .walletLink:hover {
+  color: #ddd6fe;
+  background: rgba(139, 92, 246, 0.2);
 }
 
 /* Inputs y select del formulario: superficie ELEVADA (no el mismo tono que
