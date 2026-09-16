@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -207,12 +208,19 @@ const CuentaFechasImportantesPage = () => {
     setFormError(null);
   }, [saving, uploadingPhoto]);
 
-  // Escape cierra, como en cualquier modal del sistema.
+  // Escape cierra, como en cualquier modal del sistema. Y mientras está
+  // abierto se congela el scroll del fondo: si no, la rueda mueve la página de
+  // atrás cuando el puntero sale del cuadro.
   useEffect(() => {
     if (!isModalOpen) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') closeModal(); };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const overflowPrevio = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflowPrevio;
+    };
   }, [isModalOpen, closeModal]);
 
   const handleDelete = async (id) => {
@@ -526,7 +534,14 @@ const CuentaFechasImportantesPage = () => {
         </div>
       )}
 
-      {isModalOpen && tempRecipient && (
+      {/* El modal se monta en <body> con un portal, NO acá dentro. El
+          contenedor .outlet del layout de cuenta (CuentaPage.module.css) lleva
+          `will-change: transform` para su animación de entrada, y eso crea un
+          bloque contenedor: un `position: fixed` descendiente se ancla a ESE
+          elemento en vez de al viewport. Sin el portal, el modal quedaba
+          encerrado en la columna de contenido y su cabecera terminaba cortada
+          bajo el header del sitio. Mismo patrón que GlassModal y Modal. */}
+      {isModalOpen && tempRecipient && ReactDOM.createPortal(
         // El clic en el fondo cierra; el de adentro no burbujea hasta acá.
         <div
           className={styles.modalOverlay}
@@ -743,7 +758,8 @@ const CuentaFechasImportantesPage = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
