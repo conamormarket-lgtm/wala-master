@@ -45,6 +45,7 @@
     "dev": "vite",
     "dev:3001": "vite --port 3001",
     "build": "vite build",
+    "postinstall": "node scripts/patch-google-auth-gradle.js",
     "preview": "vite build --mode preview && vite preview",
     "preview:local": "npm run preview",
     "emulators": "node scripts/emulators.js",
