@@ -107,7 +107,7 @@ export const NotificationsProvider = ({ children }) => {
           });
         }
       } catch (error) {
-        console.warn('Error configurando notificaciones web:', error);
+        if (import.meta.env.DEV) console.warn('Error configurando notificaciones web:', error);
       }
     }
   }, []);

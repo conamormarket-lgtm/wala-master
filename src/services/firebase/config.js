@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
-import { initializeFirestore, persistentLocalCache, getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, getFirestore, connectFirestoreEmulator, setLogLevel } from 'firebase/firestore';
 import {
   getAuth,
   initializeAuth,
@@ -10,6 +10,9 @@ import {
   connectAuthEmulator,
 } from 'firebase/auth';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+
+// Ocultar los diagnósticos de Firestore en producción.
+if (import.meta.env.PROD) setLogLevel('silent');
 
 // Verificar si Firebase está configurado
 const isFirebaseConfigured = () => {

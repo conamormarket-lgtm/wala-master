@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator, setLogLevel } from 'firebase/firestore';
 import {
   collection,
   doc,
@@ -34,6 +34,9 @@ let erpDb = null;
 
 const ERP_USE_EMULATORS = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS !== 'false';
 
+// Ocultar los diagnósticos de Firestore en producción.
+if (import.meta.env.PROD) setLogLevel('silent');
+
 try {
   // Verificar si ya existe una instancia con el nombre 'erp-firebase'
   const existingApps = getApps();
@@ -52,7 +55,7 @@ try {
     if (erpFirebaseConfig.apiKey) {
       erpApp = initializeApp(erpFirebaseConfig, 'erp-firebase');
       erpDb = getFirestore(erpApp);
-      console.log('ERP Firebase inicializado correctamente.', erpFirebaseConfig.projectId);
+      if (import.meta.env.DEV) console.log('ERP Firebase inicializado correctamente.', erpFirebaseConfig.projectId);
     } else {
       console.warn('ERP Firebase config no tiene apiKey. Las variables de entorno no cargaron.');
     }
