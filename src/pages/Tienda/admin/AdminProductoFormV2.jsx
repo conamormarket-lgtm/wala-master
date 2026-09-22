@@ -137,6 +137,11 @@ const AdminProductoFormV2 = () => {
     comboPreviewImage: '',
     featured: false,
     inStock: 0,
+    // WhatsApp por producto. Vacio = hereda el de su marca (/admin/marcas) y,
+    // si la marca no tiene, el global de /admin/whatsapp.
+    whatsappEnabled: true,
+    whatsappNumber: '',
+    whatsappMessage: '',
   });
 
   const [initialFormState, setInitialFormState] = useState(null);
@@ -283,6 +288,11 @@ const AdminProductoFormV2 = () => {
         tags: productData.tags || [],
         featured: productData.featured || false,
         inStock: productData.inStock || 0,
+        // Sin esto, editar un producto con numero propio lo BORRABA: el form
+        // no los leia ni los reenviaba, y el payload los machacaba con ''.
+        whatsappEnabled: productData.whatsappEnabled !== false,
+        whatsappNumber: productData.whatsappNumber || '',
+        whatsappMessage: productData.whatsappMessage || '',
       };
       setForm(newForm);
       setInitialFormState(JSON.stringify(newForm));
@@ -799,6 +809,9 @@ const AdminProductoFormV2 = () => {
         hasVariants: !isCombo && finalVariants.length > 0,
         customizable: form.customizable,
         customizationViews: form.customizationViews,
+        whatsappEnabled: form.whatsappEnabled !== false,
+        whatsappNumber: (form.whatsappNumber || '').trim(),
+        whatsappMessage: (form.whatsappMessage || '').trim(),
         isComboProduct: isCombo,
         comboItems: isCombo ? form.comboItems : [],
         comboPreviewImage: isCombo ? currentComboPreview : '',
@@ -1045,6 +1058,57 @@ const AdminProductoFormV2 = () => {
                   <option value="dropship">Dropship</option>
                 </select>
               </label>
+            </div>
+
+            {/* ── WhatsApp de ESTE producto ─────────────────────────────────
+                Se hereda: vacío usa el número de la marca (/admin/marcas) y,
+                si la marca no tiene, el general de /admin/whatsapp. Solo se
+                rellena para un producto que deba atender otro número. */}
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, margin: '12px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={form.whatsappEnabled !== false}
+                  onChange={(e) => setForm(f => ({ ...f, whatsappEnabled: e.target.checked }))}
+                />
+                Mostrar el botón de WhatsApp en este producto
+              </label>
+
+              {form.whatsappEnabled !== false && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginTop: 10 }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', fontSize: 13, gap: 4 }}>
+                    Número propio (opcional)
+                    <input
+                      type="text"
+                      value={form.whatsappNumber}
+                      onChange={(e) => setForm(f => ({ ...f, whatsappNumber: e.target.value.replace(/[^\d\s\-()+]/g, '') }))}
+                      placeholder={selectedBrand?.whatsappNumber || 'Hereda el de la marca'}
+                      style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}
+                    />
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>
+                      {form.whatsappNumber?.trim()
+                        ? 'Este producto usará este número.'
+                        : selectedBrand?.whatsappNumber
+                          ? `Vacío: usa el de ${selectedBrand.name} (${selectedBrand.whatsappNumber}).`
+                          : 'Vacío: usa el número general de /admin/whatsapp.'}
+                    </span>
+                  </label>
+
+                  <label style={{ display: 'flex', flexDirection: 'column', fontSize: 13, gap: 4 }}>
+                    Mensaje al abrir el chat (opcional)
+                    <input
+                      type="text"
+                      value={form.whatsappMessage}
+                      onChange={(e) => setForm(f => ({ ...f, whatsappMessage: e.target.value }))}
+                      placeholder="Hola CON AMOR: Me interesa este producto de tu página: {url}"
+                      style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}
+                    />
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>
+                      {'{url}'} se reemplaza por el enlace del producto.
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Fila de Marcas (Miniviews) */}

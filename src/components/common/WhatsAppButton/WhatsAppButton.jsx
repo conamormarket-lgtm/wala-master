@@ -159,6 +159,18 @@ const WhatsAppButton = () => {
     rawWhatsappNumber = brandActual.whatsappNumber.trim();
   }
 
+  // En la FICHA de producto la marca no se puede sacar de la ruta: el primer
+  // segmento es "producto", así que brandActual es null y un reloj de Yoryo
+  // caía al número global aunque su marca tuviera el suyo. Aquí la marca se
+  // busca por el brandId del propio producto.
+  if (isProductDetail && product?.brandId && Array.isArray(brandsData)) {
+    const marcaDelProducto = brandsData.find((b) => b.id === product.brandId);
+    if (marcaDelProducto?.whatsappNumber?.trim()) {
+      rawWhatsappNumber = marcaDelProducto.whatsappNumber.trim();
+    }
+  }
+
+  // Lo más específico manda: el número propio del producto, si lo tiene.
   if (isProductDetail && product && product.whatsappNumber) {
     rawWhatsappNumber = product.whatsappNumber;
   }

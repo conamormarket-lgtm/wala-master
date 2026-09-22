@@ -361,7 +361,13 @@ export function normalizeProductForRead(doc) {
     vendors: Array.isArray(doc.vendors) ? doc.vendors : (doc.vendor ? [doc.vendor] : []),
     sku: doc.sku ?? '',
     whatsappEnabled: doc.whatsappEnabled !== false,
-    whatsappNumber: doc.whatsappNumber ?? '+51912881722',
+    // Sin número propio se deja VACÍO a propósito. Antes había aquí un número
+    // escrito a fuego ('+51912881722') como valor por defecto, y como el
+    // número del producto es el de mayor prioridad en WhatsAppButton, ese
+    // literal anulaba el de /admin/whatsapp y el de la marca en TODAS las
+    // fichas: las consultas de toda la tienda iban a ese número pasara lo que
+    // pasara. Vacío, la cascada real (producto → marca → global) funciona.
+    whatsappNumber: doc.whatsappNumber ?? '',
     productType: doc.productType ?? '',
     brandId: doc.brandId ?? '',
     // Base multi-vendor / multi-nicho (Fase 1) — defaults aditivos.
