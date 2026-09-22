@@ -1,6 +1,7 @@
 /**
  * Utilidades para productos combo
  */
+import { getCachedProducts } from '../services/products';
 
 /**
  * Verifica si un producto es un producto combo
@@ -21,6 +22,80 @@ export const getComboItems = (product) => {
   return Array.isArray(product.comboItems) ? product.comboItems : [];
 };
 
+/** Lo que un producto suelto pide por sus propios datos. */
+const necesidadesPropias = (product) => {
+  const variantes = Array.isArray(product?.variants) ? product.variants : [];
+  return {
+    // Más de una variante: el editor crea siempre una variante "Principal" de
+    // relleno para la foto, aunque no haya colores reales.
+    color: Boolean(product?.hasVariants && variantes.length > 1),
+    talla: Boolean(
+      (product?.mainSizes?.length || 0) > 0 ||
+      variantes.some((v) => Array.isArray(v?.sizes) && v.sizes.length > 0)
+    ),
+  };
+};
+
+/**
+ * ¿QUÉ tiene que elegir el cliente en este producto? Devuelve
+ * { color, talla, indeterminado }.
+ *
+ * Existe porque saber que hay algo que elegir (productNeedsVariantSelection)
+ * no basta para hablarle al cliente: el botón decía siempre "Elegir color y
+ * talla", también en un reloj o una billetera, que no tienen tallas.
+ *
+ * EN UN COMBO las piezas son otros productos, y sus tallas no viven en el
+ * comboItem. Mirar solo lo que el combo declara se queda corto: un conjunto
+ * de casaca, polo y jogger decía "Elegir color" cuando además pide talla.
+ * Por eso se resuelven las piezas contra el catálogo cacheado
+ * (getCachedProducts, síncrono y ya poblado por la tienda, mismo recurso que
+ * usa cartValidation).
+ *
+ * Con las piezas que se encuentran se afirma lo que ellas pidan. De las que
+ * no estén en la caché —las ocultas, que no salen en el catálogo público— no
+ * se puede saber nada; si NINGUNA pieza se pudo resolver se devuelve
+ * `indeterminado` para que quien llame use un texto neutro en vez de
+ * inventarse una respuesta.
+ *
+ * @param {Object} product
+ * @param {Function} [buscarProducto] Resolutor opcional (id) => producto. Por
+ *   defecto, la caché del catálogo. Se puede inyectar para test.
+ * @returns {{ color: boolean, talla: boolean, indeterminado: boolean }}
+ */
+export const productSelectionNeeds = (product, buscarProducto) => {
+  if (!isComboProduct(product)) {
+    return { ...necesidadesPropias(product), indeterminado: false };
+  }
+
+  const items = getComboItems(product);
+  if (items.length === 0) return { color: false, talla: false, indeterminado: false };
+
+  let lookup = buscarProducto;
+  if (!lookup) {
+    const catalogo = getCachedProducts();
+    const porId = Array.isArray(catalogo) ? new Map(catalogo.map((p) => [p.id, p])) : new Map();
+    lookup = (id) => porId.get(id);
+  }
+
+  let color = false;
+  let talla = false;
+  let resueltas = 0;
+
+  for (const item of items) {
+    // El color fijado en el combo ya prueba que esa pieza tiene colores.
+    if (item?.variantMapping?.color) color = true;
+
+    const pieza = item?.productId ? lookup(item.productId) : null;
+    if (!pieza) continue;
+    resueltas++;
+    const n = necesidadesPropias(pieza);
+    color = color || n.color;
+    talla = talla || n.talla;
+  }
+
+  return { color, talla, indeterminado: resueltas === 0 && !color };
+};
+
 /**
  * ¿Hay algo que el cliente TENGA que elegir antes de comprar este producto
  * (color, talla o piezas de combo)? Si es así, un "agregar rápido" no puede
@@ -36,44 +111,6 @@ export const getComboItems = (product) => {
  * @param {Object} product - Producto a verificar
  * @returns {boolean}
  */
-/**
- * ¿QUÉ tiene que elegir el cliente en este producto? Devuelve { color, talla }.
- *
- * Existe porque saber que hay algo que elegir (productNeedsVariantSelection)
- * no basta para hablarle al cliente: el botón decía siempre "Elegir color y
- * talla", también en un reloj o una billetera, que no tienen tallas.
- *
- * Mismo criterio que productNeedsVariantSelection para el color —más de una
- * variante, porque el editor crea siempre una variante "Principal" de relleno
- * aunque no haya colores reales—.
- *
- * En un combo las piezas viven en otros productos que aquí no tenemos
- * cargados, así que solo se puede afirmar lo que el propio combo declara: si
- * sus comboItems traen un color fijado (variantMapping.color), hay color que
- * elegir. De las tallas de esas piezas no sabemos nada, y por eso no se
- * afirman: quien no pueda determinarlo cae en el texto neutro "Elegir
- * opciones".
- *
- * @param {Object} product
- * @returns {{ color: boolean, talla: boolean }}
- */
-export const productSelectionNeeds = (product) => {
-  const variantes = Array.isArray(product?.variants) ? product.variants : [];
-
-  const talla = Boolean(
-    (product?.mainSizes?.length || 0) > 0 ||
-    variantes.some((v) => Array.isArray(v?.sizes) && v.sizes.length > 0)
-  );
-
-  let color = Boolean(product?.hasVariants && variantes.length > 1);
-
-  if (isComboProduct(product)) {
-    color = color || getComboItems(product).some((i) => Boolean(i?.variantMapping?.color));
-  }
-
-  return { color, talla };
-};
-
 export const productNeedsVariantSelection = (product) => {
   const tieneEleccionRealDeVariante = Boolean(
     product?.hasVariants && (

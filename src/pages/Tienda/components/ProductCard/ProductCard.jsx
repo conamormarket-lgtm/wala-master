@@ -106,11 +106,13 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
   // Qué decirle al cliente en el botón. Antes era siempre "Elegir color y
   // talla", también en relojes, billeteras o lentes, que no tienen tallas.
   const textoElegir = React.useMemo(() => {
-    const { color, talla } = productSelectionNeeds(product);
+    const { color, talla, indeterminado } = productSelectionNeeds(product);
+    // Combo cuyas piezas no están en la caché: no se puede saber qué pedirá
+    // la ficha, así que se dice algo neutro en vez de arriesgar.
+    if (indeterminado) return t('cta.chooseOptions', 'Elegir opciones');
     if (color && talla) return t('cta.chooseColorSize', 'Elegir color y talla');
     if (talla) return t('cta.chooseSize', 'Elegir talla');
     if (color) return t('cta.chooseColor', 'Elegir color');
-    // Combo cuyas piezas no declaran color: no sabemos qué pedirá la ficha.
     return t('cta.chooseOptions', 'Elegir opciones');
   }, [product, t]);
 
