@@ -17,7 +17,7 @@ import { isComboProduct, productNeedsVariantSelection, productSelectionNeeds } f
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 // eslint-disable-next-line no-unused-vars
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
-import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
+import OptimizedImage, { SIZES_TARJETA_PRODUCTO } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import styles from './ProductCard.module.css';
 
 const hexToRgba = (hex, alpha) => {
@@ -249,7 +249,7 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
               fallbackSrc={fallbackImageUrl !== toThumbnailImageUrl(cardImageUrl) ? fallbackImageUrl : undefined}
               alt={product.name}
               variantes={variantesPrincipal}
-              sizes="(max-width: 640px) 50vw, 400px"
+              sizes={SIZES_TARJETA_PRODUCTO}
               containerClassName={styles.image}
               className={`${styles.productImg} ${showHoverSecondaryMedia && secondaryImageUrl ? styles.primaryImgHover : ''}`}
               objectFit="cover"
@@ -264,7 +264,7 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
                 src={toThumbnailImageUrl(secondaryImageUrl)}
                 alt={`${product.name} alternate`}
                 variantes={variantesSecundaria}
-                sizes="(max-width: 640px) 50vw, 400px"
+                sizes={SIZES_TARJETA_PRODUCTO}
                 containerClassName={`${styles.image} ${styles.secondaryImageContainer}`}
                 className={styles.secondaryImg}
                 objectFit="cover"

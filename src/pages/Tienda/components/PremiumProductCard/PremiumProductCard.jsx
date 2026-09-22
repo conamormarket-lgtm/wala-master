@@ -16,7 +16,7 @@ import { toThumbnailImageUrl } from '../../../../utils/imageUrl';
 import { isComboProduct, productNeedsVariantSelection, productSelectionNeeds } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
-import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
+import OptimizedImage, { SIZES_TARJETA_PRODUCTO } from '../../../../components/common/OptimizedImage/OptimizedImage';
 import { Badge } from '../../../../components/ui';
 import { fadeUp, neutralVariants, useReducedMotionSafe } from '../../../../theme/motion';
 import styles from './PremiumProductCard.module.css';
@@ -338,7 +338,7 @@ const PremiumProductCard = React.memo(({
               fallbackSrc={fallbackImageUrl !== toThumbnailImageUrl(cardImageUrl) ? fallbackImageUrl : undefined}
               alt={product.name}
               variantes={variantesPrincipal}
-              sizes="(max-width: 640px) 50vw, 400px"
+              sizes={SIZES_TARJETA_PRODUCTO}
               containerClassName={styles.imageWrapper}
               className={`${styles.primaryImage} ${secondaryImageUrl ? styles.hasSecondary : ''}`}
               objectFit="cover"
@@ -353,7 +353,7 @@ const PremiumProductCard = React.memo(({
                 src={toThumbnailImageUrl(secondaryImageUrl)}
                 alt={`${product.name} alternate`}
                 variantes={variantesSecundaria}
-                sizes="(max-width: 640px) 50vw, 400px"
+                sizes={SIZES_TARJETA_PRODUCTO}
                 containerClassName={`${styles.imageWrapper} ${styles.secondaryImageWrapper}`}
                 className={styles.secondaryImage}
                 objectFit="cover"

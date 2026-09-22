@@ -52,6 +52,31 @@ const getCloudinarySrcSet = (url) => {
  */
 const ANCHO_MAXIMO_PRINCIPAL = 2000;
 
+/**
+ * `sizes` de la imagen de una tarjeta de producto.
+ *
+ * NO es el ancho de la tarjeta, y esa es justo la trampa: `sizes` describe el
+ * ancho de la IMAGEN RENDERIZADA, y con `object-fit: cover` en un hueco 3/4 una
+ * foto apaisada se pinta mucho más ancha que el hueco — lo que sobra se recorta,
+ * pero el navegador ya tuvo que resolverlo.
+ *
+ * El caso que lo destapó: una casaca de 1370x784 (16/9) en la lista de deseos.
+ * Declarando 400px el navegador servía la copia de 400x229 y, como con `cover`
+ * manda el alto, 229px tenían que cubrir 373 → la ampliaba 1,63x y se veía
+ * borrosa, mientras la miniatura de 60px del header (que recibe la principal)
+ * se veía perfecta.
+ *
+ * La cuenta del caso peor, una foto 16/9 en un hueco 3/4:
+ *     alto del hueco  = ancho / 0,75          = ancho x 1,333
+ *     ancho renderizado = alto x 1,777         = ancho x 2,37
+ * De ahí 750px en escritorio (~320px de tarjeta) y 117vw en móvil (50vw x 2,37).
+ *
+ * Coste: una foto que YA viene en 3/4 no necesita tanto y se lleva una copia
+ * más grande de la cuenta. Se acepta a cambio de que ninguna se vea borrosa;
+ * la solución de fondo es que las fotos de producto vengan en 3/4.
+ */
+export const SIZES_TARJETA_PRODUCTO = '(max-width: 640px) 117vw, 750px';
+
 const srcSetDeVariantes = (principal, variantes) => {
     if (!principal || !variantes) return null;
     const partes = Object.entries(variantes)
