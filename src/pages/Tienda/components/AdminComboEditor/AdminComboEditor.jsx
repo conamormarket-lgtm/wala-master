@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Trash2, ImagePlus, Loader2, Package, X } from 'lucide-react';
-import { searchProducts } from '../../../../services/products';
+import { searchProducts, getProduct } from '../../../../services/products';
 import { uploadFile } from '../../../../services/firebase/storage';
 import ProductImageContainer from '../ProductImageContainer/ProductImageContainer';
 import styles from './AdminComboEditor.module.css';
@@ -10,6 +10,10 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Variantes de cada pieza del combo, { [productId]: [variante, ...] }. El
+  // comboItem guardado solo trae productId/name/imageUrl, así que para poder
+  // ofrecer los colores hay que traerse el producto.
+  const [variantesPorProducto, setVariantesPorProducto] = useState({});
 
   useEffect(() => {
     if (!searchTerm.trim()) {
@@ -44,6 +48,51 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
     return () => clearTimeout(timer);
   }, [searchTerm, excludeProductId]);
 
+  // Carga las variantes de las piezas que ya estaban guardadas en el combo (al
+  // abrir un combo existente no pasan por addProductToCombo, así que sus
+  // colores no están en memoria). Solo pide las que faltan.
+  useEffect(() => {
+    const pendientes = (comboItems || [])
+      .map((i) => i.productId)
+      .filter((id) => id && !(id in variantesPorProducto));
+    if (pendientes.length === 0) return;
+
+    let cancelado = false;
+    (async () => {
+      const nuevos = {};
+      for (const id of [...new Set(pendientes)]) {
+        try {
+          const { data } = await getProduct(id);
+          nuevos[id] = Array.isArray(data?.variants) ? data.variants : [];
+        } catch {
+          nuevos[id] = [];   // si falla, esa pieza simplemente no ofrece colores
+        }
+      }
+      if (!cancelado) setVariantesPorProducto((prev) => ({ ...prev, ...nuevos }));
+    })();
+
+    return () => { cancelado = true; };
+  }, [comboItems, variantesPorProducto]);
+
+  /**
+   * Fija con qué color entra una pieza al combo. Se escribe en
+   * variantMapping.color, que es lo que la ficha usa como selección inicial
+   * (ver getComboVariantInfo en ProductDetail), y de paso se cambia la
+   * imageUrl de la pieza por la de esa variante para que la miniatura de aquí
+   * y el collage de la tienda muestren el color correcto.
+   */
+  const setItemColor = (idx, colorName) => {
+    setComboItems(comboItems.map((item, i) => {
+      if (i !== idx) return item;
+      const variante = (variantesPorProducto[item.productId] || []).find((v) => v.name === colorName);
+      return {
+        ...item,
+        variantMapping: { ...(item.variantMapping || {}), color: colorName },
+        ...(variante?.imageUrl ? { imageUrl: variante.imageUrl } : {}),
+      };
+    }));
+  };
+
   const addProductToCombo = (product) => {
     // Sin este chequeo se podía agregar el mismo producto varias veces (cada
     // click sumaba otra tarjeta idéntica en la tienda, sin ningún aviso).
@@ -51,13 +100,24 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
       alert(`"${product.name}" ya está en este combo.`);
       return;
     }
+    // El buscador ya devuelve el producto entero, así que sus colores se
+    // guardan aquí mismo y el selector puede pintarse sin ir de nuevo a la BD.
+    const variantes = Array.isArray(product.variants) ? product.variants : [];
+    setVariantesPorProducto((prev) => ({ ...prev, [product.id]: variantes }));
+
+    // Se preselecciona el primer color. Antes la pieza entraba SIN
+    // variantMapping y la ficha, al no ver colores fijados, le ofrecía al
+    // cliente todas las variantes del producto (ver getComboVariantInfo).
+    const primera = variantes[0];
+
     const newItem = {
       _uid: Math.random().toString(36).substring(2, 10), // Unique ID para React keys
       productId: product.id,
       name: product.name,
-      imageUrl: product.images?.[0] || product.mainImage || '',
+      imageUrl: primera?.imageUrl || product.images?.[0] || product.mainImage || '',
       position: comboItems.length,
       scale: 1,
+      ...(primera?.name ? { variantMapping: { color: primera.name } } : {}),
       ...(product.YoryoPersonalizado ? { YoryoPersonalizado: product.YoryoPersonalizado } : {})
     };
     setComboItems([...comboItems, newItem]);
@@ -160,7 +220,36 @@ const AdminComboEditor = ({ comboItems, setComboItems, comboPreviewImage, setCom
                     placeholder="Nombre de esta pieza en el combo"
                     aria-label={`Nombre de la pieza #${idx + 1} del combo`}
                   />
-                  <span>Producto #{idx + 1}</span>
+                  {/* Color con el que entra esta pieza al combo. Si el producto
+                      no tiene variantes no se pinta nada. */}
+                  {(() => {
+                    const colores = variantesPorProducto[item.productId] || [];
+                    if (colores.length === 0) return <span>Producto #{idx + 1}</span>;
+
+                    const actual = item.variantMapping?.color || '';
+                    // Si el color guardado ya no existe (se renombró o se borró
+                    // la variante) el select se quedaría en blanco y al guardar
+                    // se perdería sin aviso. Se muestra marcado para que el
+                    // admin vea que hay que reelegirlo.
+                    const huerfano = actual && !colores.some((v) => v.name === actual);
+
+                    return (
+                      <label className={styles.comboItemColor}>
+                        <span>Color:</span>
+                        <select
+                          value={actual}
+                          onChange={(e) => setItemColor(idx, e.target.value)}
+                          aria-label={`Color de ${item.name} en el combo`}
+                        >
+                          {!actual && <option value="">— elegir —</option>}
+                          {huerfano && <option value={actual}>{actual} (ya no existe)</option>}
+                          {colores.map((v) => (
+                            <option key={v.id || v.name} value={v.name}>{v.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                    );
+                  })()}
                 </div>
                 <button type="button" onClick={() => removeProduct(idx)} className={styles.removeBtn}>
                   <Trash2 size={18} />

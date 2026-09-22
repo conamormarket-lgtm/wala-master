@@ -294,3 +294,32 @@
   line-height: 1.4;
   margin-bottom: 1rem;
 }
+
+/* Color con el que entra cada pieza al combo (ver setItemColor en el JSX).
+   Va justo debajo del nombre editable, dentro de .comboItemDetails. */
+.comboItemColor {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.comboItemColor select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: #111;
+  cursor: pointer;
+}
+
+.comboItemColor select:focus {
+  outline: none;
+  border-color: #868e96;
+}
