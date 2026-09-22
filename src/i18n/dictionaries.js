@@ -35,6 +35,10 @@ export const dictionaries = {
     'nav.admin': 'Admin',
 
     'cta.addToCart': 'Al carrito',
+    'cta.chooseOptions': 'Elegir opciones',
+    'cta.chooseColor': 'Elegir color',
+    'cta.chooseSize': 'Elegir talla',
+    'cta.chooseColorSize': 'Elegir color y talla',
     'cta.buyNow': 'Comprar',
     'cta.payNow': 'Pagar',
     'cta.goToCart': 'Ir al carrito',
@@ -138,6 +142,10 @@ export const dictionaries = {
     'nav.admin': 'Admin',
 
     'cta.addToCart': 'Add to cart',
+    'cta.chooseOptions': 'Choose options',
+    'cta.chooseColor': 'Choose colour',
+    'cta.chooseSize': 'Choose size',
+    'cta.chooseColorSize': 'Choose colour and size',
     'cta.buyNow': 'Buy now',
     'cta.payNow': 'Pay',
     'cta.goToCart': 'Go to cart',
@@ -243,6 +251,10 @@ export const dictionaries = {
     'nav.admin': 'Admin',
 
     'cta.addToCart': 'Adicionar ao carrinho',
+    'cta.chooseOptions': 'Escolher opções',
+    'cta.chooseColor': 'Escolher cor',
+    'cta.chooseSize': 'Escolher tamanho',
+    'cta.chooseColorSize': 'Escolher cor e tamanho',
     'cta.buyNow': 'Comprar',
     'cta.payNow': 'Pagar',
     'cta.goToCart': 'Ir para o carrinho',

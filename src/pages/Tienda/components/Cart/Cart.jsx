@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../../../contexts/CartContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import CartItem from '../CartItem/CartItem';
-import { idsDeItemsIncompletos } from '../../../../utils/cartValidation';
+import { idsDeItemsIncompletos, queLeFalta } from '../../../../utils/cartValidation';
 import { costoEnvio } from '../../../../constants/envio';
 // Design System "Aurora Violeta Serena": la MISMA superficie de vidrio que ya
 // usa CheckoutPage para el resumen (GlassCard). El carrito es el paso anterior
@@ -57,10 +57,22 @@ const Cart = () => {
   // tarjeta y no se pueden despachar. Solo cuentan los que SÍ se van a comprar:
   // uno apartado con "no comprar esta vez" no debe bloquear el pago.
   const incompletos = useMemo(() => idsDeItemsIncompletos(items), [items]);
+
+  // Qué falta exactamente, mirando los productos: decir "color o talla" en un
+  // carrito de relojes —que no llevan talla— confunde al cliente, que se pone
+  // a buscar un selector de tallas que no existe.
   const incompletosACobrar = useMemo(
     () => items.filter(i => i.selected !== false && incompletos.has(i.id)),
     [items, incompletos]
   );
+
+  // "color", "talla" o "color o talla" según lo que de verdad falte en los
+  // artículos marcados (queLeFalta ya contrasta contra el producto).
+  const faltanteTexto = useMemo(() => {
+    const set = new Set();
+    incompletosACobrar.forEach((i) => queLeFalta(i).forEach((f) => set.add(f)));
+    return set.size > 0 ? [...set].join(' o ') : 'las opciones';
+  }, [incompletosACobrar]);
 
   // (selectedCount ya se calculó arriba, antes del envío)
   const todosSeleccionados = items.length > 0 && selectedCount === items.length;
@@ -168,8 +180,8 @@ const Cart = () => {
               <span aria-hidden="true">⚠</span>
               <span>
                 {incompletosACobrar.length === 1
-                  ? 'Un artículo no tiene color o talla elegidos. Ábrelo y elígelos para poder pagar.'
-                  : `${incompletosACobrar.length} artículos no tienen color o talla elegidos. Ábrelos y elígelos para poder pagar.`}
+                  ? `Un artículo no tiene ${faltanteTexto} elegido. Ábrelo y elígelo para poder pagar.`
+                  : `${incompletosACobrar.length} artículos no tienen ${faltanteTexto} elegido. Ábrelos y elígelos para poder pagar.`}
               </span>
             </div>
           )}
@@ -230,7 +242,7 @@ const Cart = () => {
                 : selectedCount === 0
                   ? 'Selecciona algún artículo'
                   : incompletosACobrar.length > 0
-                    ? 'Falta elegir color o talla'
+                    ? `Falta elegir ${faltanteTexto}`
                     : `Proceder al Pago (${selectedCount})`}
             </button>
           </GlassCard>

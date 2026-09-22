@@ -13,7 +13,7 @@ import { useWishlist } from '../../../../contexts/WishlistContext';
 import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { T } from '../../../../i18n/useTranslatedText';
-import { isComboProduct, productNeedsVariantSelection } from '../../../../utils/comboProductUtils';
+import { isComboProduct, productNeedsVariantSelection, productSelectionNeeds } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 // eslint-disable-next-line no-unused-vars
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
@@ -102,6 +102,17 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
   // tienda); esta tarjeta más vieja -la que usan Wishlist, WishlistPublic,
   // VendorStorefrontPage y NichePage- seguía agregando con variante vacía.
   const necesitaElegir = !onAddToCartOverride && productNeedsVariantSelection(product);
+
+  // Qué decirle al cliente en el botón. Antes era siempre "Elegir color y
+  // talla", también en relojes, billeteras o lentes, que no tienen tallas.
+  const textoElegir = React.useMemo(() => {
+    const { color, talla } = productSelectionNeeds(product);
+    if (color && talla) return t('cta.chooseColorSize', 'Elegir color y talla');
+    if (talla) return t('cta.chooseSize', 'Elegir talla');
+    if (color) return t('cta.chooseColor', 'Elegir color');
+    // Combo cuyas piezas no declaran color: no sabemos qué pedirá la ficha.
+    return t('cta.chooseOptions', 'Elegir opciones');
+  }, [product, t]);
 
   const handleAddToCart = useCallback((e) => {
     if (necesitaElegir) return;
@@ -319,8 +330,8 @@ const ProductCard = React.memo(({ product, categories = [], isAboveFold = false,
             className={`${styles.cartQuickBtn} ${product.salePrice ? styles.cartQuickBtnPulse : ''}`}
             onClick={handleAddToCart}
             disabled={!product.inStock}
-            aria-label={necesitaElegir ? t('cta.chooseOptions', 'Elegir color y talla') : t('cta.addToCart', 'Al carrito')}
-            title={necesitaElegir ? t('cta.chooseOptions', 'Elegir color y talla') : t('cta.addToCart', 'Al carrito')}
+            aria-label={necesitaElegir ? textoElegir : t('cta.addToCart', 'Al carrito')}
+            title={necesitaElegir ? textoElegir : t('cta.addToCart', 'Al carrito')}
           >
             {necesitaElegir ? (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">

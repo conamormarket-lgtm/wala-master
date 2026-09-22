@@ -13,7 +13,7 @@ import { useGlobalToast } from '../../../../contexts/ToastContext';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { T } from '../../../../i18n/useTranslatedText';
 import { toThumbnailImageUrl } from '../../../../utils/imageUrl';
-import { isComboProduct, productNeedsVariantSelection } from '../../../../utils/comboProductUtils';
+import { isComboProduct, productNeedsVariantSelection, productSelectionNeeds } from '../../../../utils/comboProductUtils';
 import { useProductThumbnailVariant } from '../../../../hooks/useProductThumbnailVariant';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
@@ -134,6 +134,17 @@ const PremiumProductCard = React.memo(({
   // Lógica compartida (ver productNeedsVariantSelection) para que otras
   // tarjetas de "agregar rápido" (ProductCard, wishlist) no repitan el bug.
   const necesitaElegir = productNeedsVariantSelection(product);
+
+  // Qué decirle al cliente en el botón. Antes era siempre "Elegir color y
+  // talla", también en relojes, billeteras o lentes, que no tienen tallas.
+  const textoElegir = React.useMemo(() => {
+    const { color, talla } = productSelectionNeeds(product);
+    if (color && talla) return t('cta.chooseColorSize', 'Elegir color y talla');
+    if (talla) return t('cta.chooseSize', 'Elegir talla');
+    if (color) return t('cta.chooseColor', 'Elegir color');
+    // Combo cuyas piezas no declaran color: no sabemos qué pedirá la ficha.
+    return t('cta.chooseOptions', 'Elegir opciones');
+  }, [product, t]);
 
   const handleAddToCart = useCallback((e) => {
     // Sin preventDefault el clic sube al <Link> raíz de la tarjeta y navega a la
@@ -443,7 +454,7 @@ const PremiumProductCard = React.memo(({
               </span>
               <span className={styles.quickAddText}>
                 {necesitaElegir
-                  ? t('cta.chooseOptions', 'Elegir color y talla')
+                  ? textoElegir
                   : t('cta.addToCart', 'Al carrito')}
               </span>
             </button>

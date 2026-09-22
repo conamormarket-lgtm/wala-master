@@ -68,10 +68,26 @@ export const idsDeItemsIncompletos = (items = []) => {
   return incompletos;
 };
 
-/** Qué le falta a un artículo, para poder decírselo al cliente. */
+/**
+ * Qué le falta a un artículo, para poder decírselo al cliente.
+ *
+ * Se contrasta con el producto real, igual que idsDeItemsIncompletos: antes
+ * esta función solo miraba la línea del carrito, así que a un reloj o una
+ * billetera —que no tienen tallas— les decía "Falta elegir color y talla".
+ * Si el producto no está en la caché se nombran ambos, que es lo que hacía
+ * hasta ahora y es el lado seguro.
+ */
 export const queLeFalta = (item) => {
+  const catalogo = getCachedProducts();
+  const product = Array.isArray(catalogo)
+    ? catalogo.find((p) => p.id === item?.productId)
+    : null;
+
+  const pideColor = product ? Boolean(product.hasVariants && product.variants?.length > 0) : true;
+  const pideTalla = product ? tallasDe(product).length > 0 : true;
+
   const falta = [];
-  if (!nombreColor(item)) falta.push('color');
-  if (!item?.variant?.size) falta.push('talla');
+  if (pideColor && !nombreColor(item)) falta.push('color');
+  if (pideTalla && !item?.variant?.size) falta.push('talla');
   return falta;
 };

@@ -36,6 +36,44 @@ export const getComboItems = (product) => {
  * @param {Object} product - Producto a verificar
  * @returns {boolean}
  */
+/**
+ * ¿QUÉ tiene que elegir el cliente en este producto? Devuelve { color, talla }.
+ *
+ * Existe porque saber que hay algo que elegir (productNeedsVariantSelection)
+ * no basta para hablarle al cliente: el botón decía siempre "Elegir color y
+ * talla", también en un reloj o una billetera, que no tienen tallas.
+ *
+ * Mismo criterio que productNeedsVariantSelection para el color —más de una
+ * variante, porque el editor crea siempre una variante "Principal" de relleno
+ * aunque no haya colores reales—.
+ *
+ * En un combo las piezas viven en otros productos que aquí no tenemos
+ * cargados, así que solo se puede afirmar lo que el propio combo declara: si
+ * sus comboItems traen un color fijado (variantMapping.color), hay color que
+ * elegir. De las tallas de esas piezas no sabemos nada, y por eso no se
+ * afirman: quien no pueda determinarlo cae en el texto neutro "Elegir
+ * opciones".
+ *
+ * @param {Object} product
+ * @returns {{ color: boolean, talla: boolean }}
+ */
+export const productSelectionNeeds = (product) => {
+  const variantes = Array.isArray(product?.variants) ? product.variants : [];
+
+  const talla = Boolean(
+    (product?.mainSizes?.length || 0) > 0 ||
+    variantes.some((v) => Array.isArray(v?.sizes) && v.sizes.length > 0)
+  );
+
+  let color = Boolean(product?.hasVariants && variantes.length > 1);
+
+  if (isComboProduct(product)) {
+    color = color || getComboItems(product).some((i) => Boolean(i?.variantMapping?.color));
+  }
+
+  return { color, talla };
+};
+
 export const productNeedsVariantSelection = (product) => {
   const tieneEleccionRealDeVariante = Boolean(
     product?.hasVariants && (
