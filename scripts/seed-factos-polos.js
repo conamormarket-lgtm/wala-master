@@ -172,7 +172,7 @@ const PRODUCTS = [
     slug: 'perro', id: 'factos-polo-lobo-de-la-manada', sku: 'FACTOS-LOBO',
     name: 'Polo Lobo de la Manada', collection: COL_CALAVERAS,
     tags: ['Humor', 'Frases', 'Tendencias'],
-    description: '<p><strong>"Pa la manada mi sonrisa, pa las lobas mi longaniza."</strong> En la espalda, el hombre lobo bajo la luna llena; en el pecho, "Cuidado con el perro, piloto que me cargo".</p>',
+    description: '<p><strong>"Pa la manada mi sonrisa, pa las lobas mi longaniza."</strong> En la espalda, el hombre lobo bajo la luna llena; en el pecho, "Cuidado con el perro, pitote que me cargo".</p>',
   },
 ];
 
