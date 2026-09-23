@@ -173,7 +173,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
           });
 
           if (result.data && result.data.success) {
-            trackCulqiPurchase(result.data, currency);
+            trackCulqiPurchase(result.data, currency, pedido);
             toast.success('¡Pago procesado exitosamente!');
             // Usa la versión más reciente del callback (ref estable): NO depende
             // de la identidad del arrow inline del padre, así que la instancia

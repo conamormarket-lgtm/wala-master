@@ -487,6 +487,9 @@ const LandingPaymentBlock = ({ config = {} }) => {
       id,
       pedidoWebId: id,
       numeroPedido: pseudoOrderId,
+      // Solo la línea comercial. La billetera incluida repite el mismo ID
+      // como instrucción de despacho y no es una segunda unidad del combo.
+      productos: { item_0: webOrderPayload.productos.item_0 },
       montoDeuda: chargeAmount, // Culqi cobra el total o solo el adelanto según la modalidad
       esPeru: true,
       country: 'PE',

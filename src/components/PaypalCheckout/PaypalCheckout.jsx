@@ -146,7 +146,7 @@ const PaypalCheckout = ({
           // El servidor no confirmó el pago: estado seguro, no marcamos nada.
           throw new Error('El servidor no confirmó el pago de PayPal.');
         }
-        trackPaypalPurchase(cap);
+        trackPaypalPurchase(cap, pedido, webOrderId);
         // No reintentamos captura en cliente: la CF deduplica por captureId.
         if (onSuccess) {
           onSuccess(cap);
@@ -156,7 +156,7 @@ const PaypalCheckout = ({
 
       // ── Modo CLIENTE (flag OFF, default): comportamiento histórico intacto ──
       const details = await actions.order.capture();
-      trackPaypalPurchase(details);
+      trackPaypalPurchase(details, pedido, webOrderId);
 
       // Actualizar el pedido en la base de datos
       const historialAnterior = Array.isArray(pedido.historialPagos) ? pedido.historialPagos : [];
