@@ -7,6 +7,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore"); // robusto en emulador (FieldValue puede ser undefined ahí)
 const crypto = require("crypto");
+const { precioDeCatalogo } = require("./catalogPricing");
 const {
   ADVANCE_TYPE,
   ADVANCE_AMOUNT_USD,
@@ -2989,14 +2990,6 @@ exports.redeemRewardSecure = functions.https.onCall(async (data, context) => {
 const ENVIO_ESTANDAR = 15;
 const ENVIO_GRATIS_DESDE = 100;
 
-// Precio de catálogo server-authoritative (misma regla que buildOrderInTransaction).
-function precioDeCatalogo(p) {
-  const price = Number(p.price);
-  const salePrice = Number(p.salePrice);
-  if (Number.isFinite(salePrice) && salePrice < price) return salePrice;
-  return Number.isFinite(price) ? price : null;
-}
-
 // Busca el cupón por código para este usuario. Devuelve { ref, cupon } o null.
 async function buscarCupon(uid, code, lector) {
   const codigo = String(code || "").trim().toUpperCase();
@@ -3295,13 +3288,8 @@ async function buildOrderInTransaction(t, { qtyByProduct, shippingZoneId, orderI
       throw new functions.https.HttpsError("failed-precondition", "El producto " + productId + " no tiene vendedor.");
     }
 
-    // Precio server-authoritative: salePrice si < price, si no price.
-    const price = Number(p.price);
-    const salePrice = Number(p.salePrice);
-    let unitPrice = price;
-    if (Number.isFinite(salePrice) && salePrice < price) {
-      unitPrice = salePrice;
-    }
+    // Misma regla que checkout y cupones: una oferta vacía no vale cero.
+    const unitPrice = precioDeCatalogo(p);
     if (!Number.isFinite(unitPrice) || unitPrice < 0) {
       throw new functions.https.HttpsError("failed-precondition", "Precio inválido para " + productId + ".");
     }
