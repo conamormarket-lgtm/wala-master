@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { trackPaypalPurchase } from '../../services/analytics/metaPixel.mjs';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { updateDocument } from '../../services/firebase/firestore';
@@ -56,6 +57,7 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
         if (!capture?.success || capture?.status !== 'COMPLETED') {
           throw new Error('El servidor no confirmó el pago.');
         }
+        trackPaypalPurchase(capture);
         if (onSuccess) {
           onSuccess({ ...capture, id: capture.captureId || data.orderID });
         }
@@ -63,6 +65,7 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
       }
 
       const details = await actions.order.capture();
+      trackPaypalPurchase(details);
       
       // Marcar el enlace como pagado en la base de datos
       const updates = {

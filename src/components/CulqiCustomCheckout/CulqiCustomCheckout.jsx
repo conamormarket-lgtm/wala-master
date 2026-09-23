@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getOrCreateCulqi } from './culqiSingleton';
+import { trackCulqiPurchase } from '../../services/analytics/metaPixel.mjs';
 
 // Recuerda a nivel de MÓDULO (sobrevive a remontes del componente) para qué
 // combinación de pedido + reintento ya se auto-abrió el modal. Así, si el
@@ -172,6 +173,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
           });
 
           if (result.data && result.data.success) {
+            trackCulqiPurchase(result.data, currency);
             toast.success('¡Pago procesado exitosamente!');
             // Usa la versión más reciente del callback (ref estable): NO depende
             // de la identidad del arrow inline del padre, así que la instancia
