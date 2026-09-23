@@ -1219,7 +1219,9 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
 /**
  * Callable Function: Procesar pago con Culqi
  */
-exports.processCulqiPayment = functions.https.onCall(async (data, context) => {
+exports.processCulqiPayment = functions
+  .runWith({ secrets: ["CULQI_SECRET_KEY"] })
+  .https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado para pagar.");
   }
