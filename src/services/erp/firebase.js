@@ -1,4 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
+import portalApp, { db as portalDb, USE_EMULATORS } from '../firebase/config';
+import { readOrdersByDocument } from './orderLookup.mjs';
 import { getFirestore, connectFirestoreEmulator, setLogLevel } from 'firebase/firestore';
 import {
   collection,
@@ -32,7 +34,7 @@ const erpFirebaseConfig = {
 let erpApp = null;
 let erpDb = null;
 
-const ERP_USE_EMULATORS = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS !== 'false';
+const ERP_USE_EMULATORS = USE_EMULATORS;
 
 // Ocultar los diagnósticos de Firestore en producción.
 if (import.meta.env.PROD) setLogLevel('silent');
@@ -42,7 +44,12 @@ try {
   const existingApps = getApps();
   const existingErpApp = existingApps.find(app => app.name === 'erp-firebase');
 
-  if (ERP_USE_EMULATORS) {
+  // Mismo proyecto: comparte conexión, persistencia y credenciales del portal.
+  // También mantiene preview/dev dentro del mismo emulador aislado.
+  if (portalApp && portalDb && (ERP_USE_EMULATORS || portalApp.options.projectId === erpFirebaseConfig.projectId)) {
+    erpApp = portalApp;
+    erpDb = portalDb;
+  } else if (ERP_USE_EMULATORS) {
     // En dev, el ERP también apunta al emulador (mismo proyecto demo aislado 'demo-wala').
     erpApp = existingErpApp || initializeApp({ projectId: 'demo-wala', apiKey: 'demo-emulator' }, 'erp-firebase');
     erpDb = getFirestore(erpApp);
@@ -149,77 +156,19 @@ export async function searchOrdersByDniInERP(dni, { userId } = {}) {
   }
 
   try {
-    const q = query(
-      collection(erpDb, 'pedidos'),
-      where('clienteNumeroDocumento', '==', dniNorm)
-    );
-    const querySnapshot = await getDocs(q);
-    let pedidos = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    if (pedidos.length === 0) {
-      const qDni = query(
-        collection(erpDb, 'pedidos'),
-        where('dni', '==', dniNorm)
-      );
-      const snapDni = await getDocs(qDni);
-      pedidos = snapDni.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
-
-    // Fallback: si nada casó con el documento normalizado, reintenta con el
-    // dni CRUDO del perfil (pedidos antiguos guardados sin normalizar).
-    if (pedidos.length === 0 && dniRaw && dniRaw !== dniNorm) {
-      const qRaw = query(
-        collection(erpDb, 'pedidos'),
-        where('clienteNumeroDocumento', '==', dniRaw)
-      );
-      const snapRaw = await getDocs(qRaw);
-      pedidos = snapRaw.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (pedidos.length === 0) {
-        const qRawDni = query(
-          collection(erpDb, 'pedidos'),
-          where('dni', '==', dniRaw)
-        );
-        const snapRawDni = await getDocs(qRawDni);
-        pedidos = snapRawDni.docs.map(d => ({ id: d.id, ...d.data() }));
-      }
-    }
-
-    // Buscar también en pedidos_web (pedidos recientes aún no validados por admin)
-    const qWeb = query(
-      collection(erpDb, 'pedidos_web'),
-      where('clienteNumeroDocumento', '==', dniNorm)
-    );
-    const querySnapshotWeb = await getDocs(qWeb);
-    let pedidosWeb = querySnapshotWeb.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    if (pedidosWeb.length === 0) {
-      const qWebDni = query(
-        collection(erpDb, 'pedidos_web'),
-        where('dni', '==', dniNorm)
-      );
-      const snapWebDni = await getDocs(qWebDni);
-      pedidosWeb = snapWebDni.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
-
-    // Fallback en pedidos_web con el dni CRUDO (solicitudes web antiguas).
-    if (pedidosWeb.length === 0 && dniRaw && dniRaw !== dniNorm) {
-      const qWebRaw = query(
-        collection(erpDb, 'pedidos_web'),
-        where('clienteNumeroDocumento', '==', dniRaw)
-      );
-      const snapWebRaw = await getDocs(qWebRaw);
-      pedidosWeb = snapWebRaw.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (pedidosWeb.length === 0) {
-        const qWebRawDni = query(
-          collection(erpDb, 'pedidos_web'),
-          where('dni', '==', dniRaw)
-        );
-        const snapWebRawDni = await getDocs(qWebRawDni);
-        pedidosWeb = snapWebRawDni.docs.map(d => ({ id: d.id, ...d.data() }));
-      }
-    }
-
-    pedidos = [...pedidos, ...pedidosWeb];
+    const [liveOrders, espejo] = await Promise.all([
+      readOrdersByDocument(async (name, field, value) => {
+        const snap = await getDocs(query(collection(erpDb, name), where(field, '==', value)));
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      }, dniRaw, dniNorm),
+      import('../walaOrders')
+        .then(({ getWalaMirrorOrders }) => getWalaMirrorOrders({ userId, dni: dniRaw || dniNorm }))
+        .catch((error) => {
+          console.warn('No se pudo leer el espejo wala_pedidos:', error?.message);
+          return [];
+        }),
+    ]);
+    let pedidos = liveOrders;
 
     // ── WALA = FUENTE DE VERDAD: presencia garantizada desde wala_pedidos ──────
     // Los pedidos VIVOS (pedidos + pedidos_web) ya están en `pedidos`. Ahora
@@ -236,9 +185,6 @@ export async function searchOrdersByDniInERP(dni, { userId } = {}) {
     //      monto ni se borra nada.
     // Best-effort: getWalaMirrorOrders nunca lanza (devuelve [] ante error).
     try {
-      const { getWalaMirrorOrders } = await import('../walaOrders');
-      const espejo = await getWalaMirrorOrders({ userId, dni: dniRaw || dniNorm });
-
       if (Array.isArray(espejo) && espejo.length > 0) {
         // Clave de negocio idéntica a adminOrders.js (dedup de "Recepción").
         const claveDeNegocio = (p) =>

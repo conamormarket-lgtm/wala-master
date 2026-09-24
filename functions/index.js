@@ -8,6 +8,7 @@ const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore"); // robusto en emulador (FieldValue puede ser undefined ahí)
 const crypto = require("crypto");
 const { precioDeCatalogo } = require("./catalogPricing");
+const { createCartValidator } = require("./cartValidation");
 const {
   ADVANCE_TYPE,
   ADVANCE_AMOUNT_USD,
@@ -143,42 +144,7 @@ async function readCheckoutIntent(intentId, context) {
 // propio price/salePrice/inStock de paquete (NO una suma de sus piezas —
 // comboItems solo define qué imagen mostrar, no precio ni stock propio), así
 // que se valida con el mismo criterio que un producto simple.
-async function verificarPreciosYStock(productos, lector) {
-  const items = productos && typeof productos === "object" ? Object.values(productos) : [];
-  for (const item of items) {
-    if (!item) continue;
-    const productoId = String(item.productoId || "").trim();
-    if (!productoId) continue;
-    const nombreItem = item.producto || productoId;
-    const cantidad = Math.max(1, Number(item.cantidad) || 1);
-    const ref = db.collection("productos_wala").doc(productoId);
-    const snap = lector ? await lector.get(ref) : await ref.get();
-    if (!snap.exists) {
-      throw new functions.https.HttpsError(
-        "failed-precondition",
-        `"${nombreItem}" ya no está disponible. Actualiza tu carrito.`
-      );
-    }
-    const p = snap.data() || {};
-    const inStock = Number(p.inStock);
-    if (Number.isFinite(inStock) && inStock < cantidad) {
-      throw new functions.https.HttpsError(
-        "failed-precondition",
-        `"${nombreItem}" ya no tiene stock suficiente (quedan ${Math.max(0, inStock)}). Actualiza tu carrito.`
-      );
-    }
-    if (!item.personalizado) {
-      const precioReal = precioDeCatalogo(p);
-      const precioCliente = Number(item.precio);
-      if (precioReal !== null && Number.isFinite(precioCliente) && Math.abs(precioReal - precioCliente) > 0.01) {
-        throw new functions.https.HttpsError(
-          "failed-precondition",
-          `El precio de "${nombreItem}" cambió a S/ ${precioReal.toFixed(2)}. Actualiza tu carrito.`
-        );
-      }
-    }
-  }
-}
+const verificarPreciosYStock = createCartValidator({ db, HttpsError: functions.https.HttpsError });
 
 // Callable standalone para flujos que crean el pedido DIRECTO, sin pasar por
 // prepareCheckoutPayment (ej. LandingPaymentBlock.jsx, que llama createWebOrder

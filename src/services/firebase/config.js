@@ -63,7 +63,7 @@ let auth = null;
 
 // En DEV usamos emuladores por defecto. También en preview local
 // (vite build --mode preview o VITE_USE_EMULATORS=true).
-const USE_EMULATORS =
+export const USE_EMULATORS =
   import.meta.env.VITE_USE_EMULATORS === 'true'
   || import.meta.env.MODE === 'preview'
   || (import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS !== 'false');

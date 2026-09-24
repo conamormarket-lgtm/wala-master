@@ -2,8 +2,8 @@
  * usePrefetchStoreData
  *
  * Precarga en SEGUNDO PLANO los datos que necesitarán otras pantallas, para
- * que al navegar ya estén en el caché de React Query (y, con la persistencia
- * de Firestore, se sirvan desde IndexedDB en ~10 ms).
+ * que al navegar ya estén en el caché de React Query.
+ * El catálogo completo se carga solo cuando una pantalla lo necesita.
  *
  * Dos cosas importantes, aprendidas por las malas:
  *
@@ -18,9 +18,9 @@
  *    sin la marca, el splash se quedaba esperando también a ESTAS, que no
  *    pinta ninguna de ellas. La marca deja excluirlas de ese recuento.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getProducts, getCategories, getFeaturedProducts } from '../services/products';
+import { getCategories, getFeaturedProducts } from '../services/products';
 import { getMessage } from '../services/messages';
 import { getStorefrontConfig } from '../pages/Tienda/services/storefront';
 
@@ -43,36 +43,17 @@ const cuandoEsteOcioso = (fn) => {
 
 export function usePrefetchStoreData() {
     const queryClient = useQueryClient();
-    const ran = useRef(false);
-
     useEffect(() => {
-        // Solo ejecutar una vez
-        if (ran.current) return;
-        ran.current = true;
-
         // Todas se lanzan en paralelo, pero solo cuando el navegador esté ocioso.
         const cancelar = cuandoEsteOcioso(() => {
             queryClient.prefetchQuery({
-                queryKey: ['storefront-config'],
+                queryKey: ['storefront-config', 'home'],
                 queryFn: async () => {
                     const { sections, error } = await getStorefrontConfig();
                     if (error) throw new Error(error);
                     return { sections: sections ?? [] };
                 },
                 staleTime: 10 * 60 * 1000,
-                meta: EN_SEGUNDO_PLANO,
-            });
-
-            queryClient.prefetchQuery({
-                queryKey: ['products', null, '', 'name'],
-                queryFn: async () => {
-                    const result = await getProducts([], null, null);
-                    if (result.error) throw new Error(result.error);
-                    return [...(result.data || [])].sort((a, b) =>
-                        (a.name || '').localeCompare(b.name || '')
-                    );
-                },
-                staleTime: STALE_TIME,
                 meta: EN_SEGUNDO_PLANO,
             });
 
@@ -88,7 +69,7 @@ export function usePrefetchStoreData() {
             });
 
             queryClient.prefetchQuery({
-                queryKey: ['featured-products'],
+                queryKey: ['featured-products', null],
                 queryFn: async () => {
                     const { data, error } = await getFeaturedProducts();
                     if (error) throw new Error(error);

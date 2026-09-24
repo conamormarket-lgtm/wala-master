@@ -3,8 +3,11 @@ import { collection, doc, updateDoc, deleteField, serverTimestamp } from 'fireba
 import { db } from './firebase/config';
 import { DEFAULT_VENDOR_ID, DEFAULT_NICHE_ID, normalizeFulfillmentType } from '../constants/marketplace';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';
+import { createInFlightReads } from './shared/inFlightReads.mjs';
 
 const COLLECTION = 'productos_wala';
+const productReads = createInFlightReads();
+let productCacheGeneration = 0;
 const CACHE_VERSION = 'v2'; // Cambiar esto invalida la caché de todos los usuarios
 const CACHE_KEYS = {
   products: `wala_products_cache_${CACHE_VERSION}`,
@@ -136,12 +139,18 @@ try {
 } catch(e) {}
 export const getProducts = async (filters = [], orderBy = null, limitCount = null, options = {}) => {
   const { includeHidden = false } = options;
-  const result = await getCollection(COLLECTION, filters, orderBy, limitCount);
+  const generation = productCacheGeneration;
+  const isFullCatalog = (!filters || filters.length === 0) && !orderBy && !limitCount;
+  // La tienda, el menú y las categorías usan claves distintas de React Query.
+  // Comparten la lectura en curso, pero cada consumidor normaliza su propia lista.
+  const result = isFullCatalog
+    ? await productReads.run('catalog', () => getCollection(COLLECTION))
+    : await getCollection(COLLECTION, filters, orderBy, limitCount);
   if (result.error) return result;
-  const raw = includeHidden ? result.data : result.data.filter((p) => p.visible !== false);
+  const raw = includeHidden ? result.data : result.data.filter((p) => p.visible !== false && p.deleted !== true);
   const data = raw.map((doc) => normalizeProductForRead(doc));
 
-  if (!includeHidden && (!filters || filters.length === 0) && !orderBy && !limitCount) {
+  if (!includeHidden && isFullCatalog && generation === productCacheGeneration) {
     writeCache(CACHE_KEYS.products, data);
   }
 
@@ -719,6 +728,8 @@ export const getFeaturedProducts = async (brandId = null) => {
 export const getCachedFeaturedProducts = () => readCache(CACHE_KEYS.featured);
 
 export const clearProductCaches = () => {
+  productCacheGeneration += 1;
+  productReads.clear();
   try {
     localStorage.removeItem(CACHE_KEYS.products);
     localStorage.removeItem(CACHE_KEYS.featured);

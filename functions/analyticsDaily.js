@@ -392,10 +392,11 @@ async function procesarDia(dayKey) {
   }
   const { startMs, endMs } = limaDayRange(dayKey);
 
-  // Eventos del día (por clientTsMs, igual que el dashboard).
-  const events = await fetchAllPaged(EVENTS_COLLECTION, "clientTsMs", startMs, endMs);
-  // Sesiones del día (por startedAtClientMs, igual que getGlobalAnalytics).
-  const sessions = await fetchAllPaged(SESSIONS_COLLECTION, "startedAtClientMs", startMs, endMs);
+  // Consultas independientes: misma ventana y paginación, sin espera en serie.
+  const [events, sessions] = await Promise.all([
+    fetchAllPaged(EVENTS_COLLECTION, "clientTsMs", startMs, endMs),
+    fetchAllPaged(SESSIONS_COLLECTION, "startedAtClientMs", startMs, endMs),
+  ]);
 
   // Ensamblar el doc del CONTRATO con las funciones puras compartidas.
   const doc = buildDailyDoc(dayKey, events, sessions);
