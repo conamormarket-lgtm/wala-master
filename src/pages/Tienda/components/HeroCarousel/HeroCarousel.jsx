@@ -23,6 +23,9 @@ const HeroCarousel = ({ slides = [], autoPlaySpeed = 5000, config = {} }) => {
   const { isMobile } = useIsMobile(768);
 
   const filteredSlides = slides.filter(s => s?.imageUrl?.trim());
+  const firstImageKey = `${filteredSlides[0]?.imageUrl || ''}|${filteredSlides[0]?.mobileImageUrl || ''}`;
+  const [loadedFirstImage, setLoadedFirstImage] = useState(null);
+  const firstImageReady = loadedFirstImage === firstImageKey;
   const autoPlay = config.autoPlay !== false;
   const pauseOnHover = config.pauseOnHover !== false;
   const showArrows = config.showArrows !== false;
@@ -62,14 +65,14 @@ const HeroCarousel = ({ slides = [], autoPlaySpeed = 5000, config = {} }) => {
   }, [filteredSlides.length, isMobile]);
 
   useEffect(() => {
-    if (!autoPlay || isPaused || filteredSlides.length <= 1 || !autoPlaySpeed) return;
+    if (!firstImageReady || !autoPlay || isPaused || filteredSlides.length <= 1 || !autoPlaySpeed) return;
 
     const interval = setInterval(() => {
       goTo(currentIndexRef.current + 1);
     }, autoPlaySpeed);
 
     return () => clearInterval(interval);
-  }, [autoPlay, isPaused, filteredSlides.length, autoPlaySpeed, goTo]);
+  }, [firstImageReady, autoPlay, isPaused, filteredSlides.length, autoPlaySpeed, goTo]);
 
   // Sincroniza currentIndex cuando el usuario desliza el carril a mano
   // (scroll nativo) — así los puntos y el autoplay siguen el gesto.
@@ -140,14 +143,19 @@ const HeroCarousel = ({ slides = [], autoPlaySpeed = 5000, config = {} }) => {
   const renderSlideBody = (slide, index, isActive) => {
     const hasContent = Boolean(slide.title || slide.subtitle || slide.buttonText);
     const imagePosition = slide.imagePosition || 'center center';
+    // Hidden slides occupy the viewport too, so loading="lazy" alone still
+    // downloads them. Let the first image finish before warming the rest.
+    const loadImage = index === 0 || isActive || firstImageReady;
 
     const imageEl = (
       <picture className={styles.slideMedia}>
-        {slide.mobileImageUrl?.trim() && (
+        {loadImage && slide.mobileImageUrl?.trim() && (
           <source media="(max-width: 768px)" srcSet={toDirectImageUrl(slide.mobileImageUrl)} />
         )}
         <img
-          src={toDirectImageUrl(slide.imageUrl)}
+          src={loadImage ? toDirectImageUrl(slide.imageUrl) : undefined}
+          onLoad={index === 0 ? () => setLoadedFirstImage(firstImageKey) : undefined}
+          onError={index === 0 ? () => setLoadedFirstImage(firstImageKey) : undefined}
           alt={slide.alt || `Banner ${index + 1}`}
           className={styles.slideImage}
           style={{ objectPosition: imagePosition }}

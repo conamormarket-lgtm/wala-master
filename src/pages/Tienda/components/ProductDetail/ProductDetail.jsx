@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -19,7 +19,8 @@ import { useImagePreloader } from '../../../../components/common/OptimizedImage/
 import OptimizedImage from '../../../../components/common/OptimizedImage/OptimizedImage';
 import DraggableContainer from '../../../../components/common/DraggableContainer/DraggableContainer';
 import ProductCuestionarioModal from '../ProductCuestionarioModal/ProductCuestionarioModal';
-import YoryoPersonalizadoCliente from '../../../../components/YoryoPersonalizadoCliente/YoryoPersonalizadoCliente';
+import { withEditorFonts } from '../../../../services/shared/fontResources';
+const YoryoPersonalizadoCliente = lazy(() => withEditorFonts(import('../../../../components/YoryoPersonalizadoCliente/YoryoPersonalizadoCliente')));
 import HistorialPersonalizacionesModal from '../../../../components/YoryoPersonalizadoCliente/HistorialPersonalizacionesModal';
 import { getCustomerCustomProductsByUser } from '../../../../services/customerCustomProducts';
 import ProductReviews from '../ProductReviews';
@@ -837,6 +838,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             >
               Cerrar (X)
             </button>
+            <Suspense fallback={<p role="status" style={{ padding: '4rem 2rem' }}>Cargando personalizador…</p>}>
             <YoryoPersonalizadoCliente 
               productData={product} 
               existingDesignData={selectedPastDesign}
@@ -854,6 +856,7 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
                 navigate('/carrito');
               }} 
             />
+            </Suspense>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { storefrontBootstrap } from './scripts/storefront-bootstrap.mjs';
 
 // Migración CRA -> Vite (Fase 1). Para NO obligar a renombrar el .env ni el código,
 // se mantienen las variables `REACT_APP_*` y `process.env.*` resolviéndolas vía `define`.
@@ -34,7 +35,16 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react()],
+    plugins: [react(), {
+      name: 'public-storefront-bootstrap',
+      apply: 'build',
+      transformIndexHtml() {
+        if (mode !== 'production' || env.VITE_USE_EMULATORS === 'true' ||
+            !env.REACT_APP_FIREBASE_PROJECT_ID || !env.REACT_APP_FIREBASE_API_KEY) return [];
+        const config = JSON.stringify([env.REACT_APP_FIREBASE_PROJECT_ID, env.REACT_APP_FIREBASE_API_KEY]).replace(/</g, '\\u003c');
+        return [{ tag: 'script', injectTo: 'head-prepend', children: `(${storefrontBootstrap.toString()})(...${config});` }];
+      },
+    }],
     define,
     server: { port: 3000, open: false },
     preview: {

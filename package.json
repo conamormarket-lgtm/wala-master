@@ -68,7 +68,8 @@
     "deploy:vercel:prod": "npx vercel --prod",
     "test:functions": "node functions/test/economyLogic.test.js && node functions/test/internationalAdvanceLogic.test.js && node functions/test/ruletaLogic.test.js && node functions/test/catalogPricing.test.js",
     "test:meta-pixel": "node --test src/services/analytics/metaPixel.test.mjs",
-    "test:performance": "node --test functions/test/cartValidation.test.js functions/test/analyticsDailyReads.test.js src/services/shared/inFlightReads.test.mjs src/services/erp/orderLookup.test.mjs && node --experimental-vm-modules --test scripts/test/dataServices.test.mjs"
+    "test:performance": "node --test functions/test/cartValidation.test.js functions/test/analyticsDailyReads.test.js src/services/shared/inFlightReads.test.mjs src/services/erp/orderLookup.test.mjs && node --experimental-vm-modules --test scripts/test/dataServices.test.mjs",
+    "test:startup": "node --test src/pages/Tienda/services/startup.test.mjs scripts/test/storefrontBootstrap.test.mjs"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

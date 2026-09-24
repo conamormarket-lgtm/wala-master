@@ -155,23 +155,103 @@ test('real order lookup keeps mirror-only orders and enriches matching live orde
   assert.equal(result.data[0]._esWalaMirror, true);
 });
 
-test('prefetch survives effect cleanup/replay and never requests the entire catalog', async () => {
-  const idle = new Map();
-  const keys = [];
-  let cleanup, next = 0;
-  const api = await loadService('src/hooks/usePrefetchStoreData.js', {
+test('navigation prefetch waits for intent, respects data saving and survives StrictMode replay', async () => {
+  const listeners = new Map();
+  const loaded = [];
+  const navigator = { connection: { saveData: false } };
+  let cleanup;
+  const api = await loadService('src/components/common/AppPrefetcher/AppPrefetcher.jsx', {
     react: { useEffect: fn => { cleanup = fn(); } },
-    '@tanstack/react-query': { useQueryClient: () => ({ prefetchQuery: options => keys.push(Array.from(options.queryKey)) }) },
-    '../services/products': { getCategories: unused, getFeaturedProducts: unused },
-    '../services/messages': { getMessage: unused },
-    '../pages/Tienda/services/storefront': { getStorefrontConfig: unused },
-  }, { window: {
-    requestIdleCallback: fn => { idle.set(++next, fn); return next; },
-    cancelIdleCallback: id => idle.delete(id),
-  } });
-  api.usePrefetchStoreData();
+    '../../../pages/ProductPage': { get default() { loaded.push('product'); return () => null; } },
+    '../../../pages/EditorPage': { get default() { loaded.push('editor'); return () => null; } },
+  }, {
+    URL, navigator, location: { href: 'https://www.wala.pe/', origin: 'https://www.wala.pe' },
+    document: {
+      addEventListener: (name, fn) => listeners.set(name, fn),
+      removeEventListener: name => listeners.delete(name),
+    },
+  });
+  api.default();
+  assert.deepEqual(loaded, []);
   cleanup();
-  api.usePrefetchStoreData();
-  for (const fn of idle.values()) fn();
-  assert.deepEqual(keys, [['storefront-config', 'home'], ['categories'], ['featured-products', null], ['store-messages']]);
+  assert.equal(listeners.size, 0);
+  api.default();
+  assert.equal(listeners.size, 3);
+  const intent = href => listeners.get('pointerover')({ target: { closest: () => ({ href }) } });
+  intent('https://example.com/producto/demo');
+  navigator.connection.saveData = true;
+  intent('https://www.wala.pe/producto/demo');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.deepEqual(loaded, []);
+  navigator.connection.saveData = false;
+  intent('https://www.wala.pe/producto/demo');
+  intent('https://www.wala.pe/producto/demo');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.deepEqual(loaded, ['product']);
+  cleanup();
+});
+
+test('storefront consumes the HTML response once and later refreshes use current SDK data', async () => {
+  const initial = [{ type: 'header', settings: { title: 'Initial' } }];
+  const current = [{ type: 'header', settings: { title: 'Updated' } }];
+  let sdkReads = 0, migrations = 0;
+  const api = await loadService('src/pages/Tienda/services/startup.js', {
+    './storefront': {
+      getStorefrontConfig: async () => { sdkReads++; return { sections: current }; },
+      migrateHomeCategoryGrid: sections => { migrations++; return sections; },
+    },
+    '../../../utils/imageUrl': { toDirectImageUrl: value => value },
+  }, { window: {
+    __walaStorefrontBootstrap: { pageId: 'home', promise: Promise.resolve(initial), consumed: false },
+    matchMedia: () => ({ matches: false }),
+  } });
+  assert.equal((await api.loadStorefrontPage('home')).sections, initial);
+  assert.equal(sdkReads, 0);
+  assert.equal(migrations, 1);
+  assert.equal((await api.loadStorefrontPage('home')).sections, current);
+  assert.equal(sdkReads, 1);
+});
+
+test('failed public bootstrap falls back to the existing Firestore reader', async () => {
+  const reads = [];
+  const sections = [{ type: 'header' }];
+  const api = await loadService('src/pages/Tienda/services/startup.js', {
+    './storefront': {
+      getStorefrontConfig: async id => { reads.push(id); return { sections }; },
+      migrateHomeCategoryGrid: unused,
+    },
+    '../../../utils/imageUrl': { toDirectImageUrl: value => value },
+  }, { window: {
+    __walaStorefrontBootstrap: { pageId: 'home', promise: Promise.resolve(null), consumed: false },
+    matchMedia: () => ({ matches: false }),
+  } });
+  assert.equal((await api.loadStorefrontPage('home')).sections, sections);
+  assert.equal((await api.loadStorefrontPage('brand')).sections, sections);
+  assert.deepEqual(reads, ['home', 'brand']);
+});
+
+test('lazy editor waits for font-face registration before exposing the canvas module', async () => {
+  const elements = [];
+  let releaseCss;
+  const api = await loadService('src/services/shared/fontResources.js', {
+    './googleFonts.json': { default: { Inter: 'Inter:wght@400;700' } },
+  }, {
+    setTimeout, clearTimeout,
+    fetch: () => new Promise(resolve => { releaseCss = () => resolve({
+      ok: true, text: async () => "@font-face { font-family: 'Editor Font'; src: url('font.ttf'); }",
+    }); }),
+    document: {
+      createElement: () => ({ remove() {} }),
+      getElementById: id => elements.find(element => element.id === id),
+      head: { appendChild: element => { elements.push(element); if (element.onload) queueMicrotask(element.onload); } },
+    },
+  });
+  const module = { default: 'canvas' };
+  let exposed = false;
+  const ready = api.withEditorFonts(Promise.resolve(module)).then(value => { exposed = true; return value; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(exposed, false);
+  releaseCss();
+  assert.equal(await ready, module);
+  assert.ok(elements.some(element => element.textContent?.includes('Editor Font')));
 });

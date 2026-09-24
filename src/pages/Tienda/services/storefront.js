@@ -373,7 +373,7 @@ export function getDefaultSettings(type) {
  */
 const HOME_CATEGORY_GRID_MIGRATION = 1;
 
-function migrateHomeCategoryGrid(sections, pageId) {
+export function migrateHomeCategoryGrid(sections, pageId) {
   const sorted = [...sections]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((section) => ({

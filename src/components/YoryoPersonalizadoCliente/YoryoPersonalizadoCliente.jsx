@@ -1,3 +1,4 @@
+import CustomFontsInjector from '../common/CustomFontsInjector/CustomFontsInjector';
 import React, { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
@@ -170,6 +171,7 @@ const YoryoPersonalizadoClienteContent = ({ productData, existingDesignData, use
 export default function YoryoPersonalizadoCliente(props) {
   return (
     <EditorProvider>
+      <CustomFontsInjector all />
       <YoryoPersonalizadoClienteContent {...props} />
     </EditorProvider>
   );

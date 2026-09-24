@@ -46,7 +46,12 @@ import {
   getCachedFeaturedProducts
 } from '../../services/products';
 import { getMessage } from '../../services/messages';
-import { getStorefrontConfig, SECTION_TYPES, getDefaultSettings } from './services/storefront';
+import { SECTION_TYPES, getDefaultSettings } from './services/storefront';
+import { loadStorefrontPage, preloadHero } from './services/startup.js';
+import { firstHeroUrl, criticalQueryNames, initialSectionCount, resolveCatalogFacet } from './services/startup.mjs';
+import DeferredSection from './components/DeferredSection';
+import useIsMobile from '../../hooks/useIsMobile';
+import CustomFontsInjector from '../../components/common/CustomFontsInjector/CustomFontsInjector';
 import { getDocument } from '../../services/firebase/firestore';
 import { getBrand, getBrands } from '../../services/brands';
 import { toDirectImageUrl } from '../../utils/imageUrl';
@@ -60,7 +65,7 @@ import BrandLoaderOverlay from '../../components/common/BrandLoader/BrandLoaderO
 import styles from './TiendaPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
-const esConsultaDePantalla = (q) => !q.meta?.segundoPlano;
+
 
 const DEFAULT_STORE_TITLE = 'Nuestra Tienda';
 const DEFAULT_STORE_SUBTITLE = 'Explora nuestros productos y personaliza el que más te guste.';
@@ -297,7 +302,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   const pageId = pageIdOverride || (location.pathname === '/' || location.pathname === '/home' ? 'home' :
                  location.pathname.replace(/^\/+/, '').split('/')[0] || 'home');
 
-  const { storeConfigDraft, activePageId, setActivePageId } = useVisualEditor();
+  const { storeConfigDraft, activePageId, setActivePageId, isEditModeActive, updateSectionsDraft } = useVisualEditor();
 
   // Actualizar el pageId activo en el contexto del editor para que guarde en el lugar correcto
   React.useEffect(() => {
@@ -310,30 +315,45 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
 
   const { data: storefrontConfig, isLoading: isConfigLoading } = useQuery({
     queryKey: ['storefront-config', pageId],
-    queryFn: async () => {
-      const { sections, error } = await getStorefrontConfig(pageId);
-      if (error) throw new Error(error);
-      return { sections: sections ?? [] };
-    },
+    queryFn: () => loadStorefrontPage(pageId),
     staleTime: isPreview ? 0 : 10 * 60 * 1000,
     refetchOnMount: isPreview ? 'always' : false,
   });
 
+  const configuredSections = useMemo(() =>
+    [...(storeConfigDraft?.sections || storefrontConfig?.sections || [])]
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)), [storeConfigDraft, storefrontConfig]);
+  const [visibleSections, setVisibleSections] = useState({ pageId, ids: new Set() });
+  const markSectionVisible = useCallback((id) => {
+    setVisibleSections((previous) => {
+      const ids = previous.pageId === pageId ? previous.ids : new Set();
+      if (ids.has(id)) return previous;
+      return { pageId, ids: new Set([...ids, id]) };
+    });
+  }, [pageId]);
+  const sectionIsActive = useCallback((section, index) =>
+    isEditModeActive || isPreview || index < initialSectionCount(configuredSections) ||
+    (visibleSections.pageId === pageId && visibleSections.ids.has(section.id)),
+  [isEditModeActive, isPreview, visibleSections, pageId, configuredSections]);
+  const activeSections = useMemo(() => configuredSections.filter(sectionIsActive), [configuredSections, sectionIsActive]);
+  const needsSection = (...types) => activeSections.some((section) => types.includes(section.type));
+  const needsCatalog = needsSection('product_grid', 'sidebar_catalog');
+
   // El mosaico automático lee la misma colección que Administración de Marcas.
   // Solo hacemos esta consulta cuando la página realmente usa ese modo.
   const usesAutomaticBrandGrid = useMemo(() => {
-    const sections = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+    const sections = activeSections;
     return sections.some(
       (section) => section?.type === 'banner_grid' && section?.settings?.dataSource === 'brands'
     );
-  }, [storeConfigDraft, storefrontConfig]);
+  }, [activeSections]);
 
   const usesAutomaticCategoryGrid = useMemo(() => {
-    const sections = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+    const sections = activeSections;
     return sections.some(
       (section) => section?.type === 'category_grid' && section?.settings?.dataSource === 'products'
     );
-  }, [storeConfigDraft, storefrontConfig]);
+  }, [activeSections]);
 
   // queryKey ['brands']: MISMA clave que usa Header.jsx (menu "Marcas"),
   // PremiumProductCard y SidebarCatalogLayout — antes esta seccion tenia su
@@ -367,6 +387,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
         emptyMessage: emptyRes.data?.trim() || ''
       };
     },
+    enabled: needsSection('header', 'product_grid', 'sidebar_catalog', 'featured_products'),
     staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
@@ -388,6 +409,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       if (error) throw new Error(error);
       return data;
     },
+    enabled: needsSection('product_grid', 'sidebar_catalog', 'category_grid', 'categories_nav', 'featured_products', 'featured_carousel'),
     initialData: getCachedCategories()
   });
 
@@ -464,6 +486,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
       if (error) throw new Error(error);
       return data;
     },
+    enabled: needsSection('featured_products', 'featured_carousel'),
     initialData: pageBrandId ? undefined : getCachedFeaturedProducts()
   });
 
@@ -487,8 +510,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
 
       return ordenarEnMemoria(result.data || [], sortBy);
     },
+    enabled: needsCatalog && Boolean(categoryId || searchTerm),
     placeholderData: keepPreviousData,
-    initialData: (!searchTerm && !categoryId && sortBy === 'newest') ? getCachedProducts() : undefined,
     // Mismo motivo que en el catálogo paginado más abajo: con refetchOnMount:false
     // global (App.jsx) y sin esto, volver a una categoría o búsqueda ya vista
     // en la misma sesión podía quedarse mostrando hasta 1h de datos viejos
@@ -512,13 +535,13 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // cargamos sus docs para mapear brandId -> categoryNav. Sin brandId no se pide
   // nada (retrocompat: el nav queda vacío).
   const navBrandIds = useMemo(() => {
-    const secs = storeConfigDraft?.sections || storefrontConfig?.sections || [];
+    const secs = activeSections;
     const ids = secs
       .filter((sec) => sec?.type === 'categories_nav')
       .map((sec) => (typeof sec?.settings?.brandId === 'string' ? sec.settings.brandId.trim() : ''))
       .filter(Boolean);
     return Array.from(new Set(ids));
-  }, [storeConfigDraft, storefrontConfig]);
+  }, [activeSections]);
 
   // Mapa { categoryId -> { id, name, imageUrl, order } } a partir de las categorías
   // globales (tienda_categories vía getCategories). Es la fuente de la imagen y el
@@ -554,12 +577,14 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // estado para que el resultado filtrado ya esté listo al llegar.
   const handleNavCategorySelect = useCallback((nextCategoryId) => {
     setNavCategoryId(nextCategoryId || null);
+    const catalog = configuredSections.find((section) => section.type === 'sidebar_catalog');
+    if (catalog) markSectionVisible(catalog.id);
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         catalogSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
-  }, []);
+  }, [configuredSections, markSectionVisible]);
 
   // Mapa { brandId: categoryNav[] } para las marcas referenciadas por el nav.
   //
@@ -697,21 +722,15 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   //  · SIN marca de página: null (la elige el sidebar al pulsar una categoría, como hoy).
   // Las demás facetas siguen filtrándose en cliente. Cambiarla reinicia el cursor
   // (forma parte de la queryKey de la infinite query).
-  const [catalogFacet, setCatalogFacet] = useState(
-    pageBrandId ? { type: 'brand', value: pageBrandId } : null
-  );
-
-  // Si pageBrandId aparece/cambia tras el primer render (config asíncrona o cambio
-  // de página), re-fija la faceta de marca server-side. Sin pageBrandId no toca nada
-  // aquí (retrocompat: la faceta la maneja el sidebar como hoy).
-  React.useEffect(() => {
-    if (!pageBrandId) return;
-    setCatalogFacet((prev) =>
-      prev && prev.type === 'brand' && prev.value === pageBrandId
-        ? prev
-        : { type: 'brand', value: pageBrandId }
-    );
-  }, [pageBrandId]);
+  const [catalogSelection, setCatalogSelection] = useState({ pageId, facet: null });
+  const catalogFacet = useMemo(() => resolveCatalogFacet(catalogSelection, pageId, pageBrandId),
+    [catalogSelection, pageId, pageBrandId]);
+  const setCatalogFacet = useCallback((facet) => {
+    setCatalogSelection((previous) => {
+      if (previous.pageId === pageId && previous.facet?.type === facet?.type && previous.facet?.value === facet?.value) return previous;
+      return { pageId, facet };
+    });
+  }, [pageId]);
 
   const {
     data: catalogPages,
@@ -744,7 +763,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     // El cursor es un DocumentSnapshot de Firestore (no serializable): se usa tal
     // cual desde la memoria de React Query.
     getNextPageParam: (last) => (last?.hasMore ? last.lastDoc : undefined),
-    enabled: usePaginatedCatalog,
+    enabled: usePaginatedCatalog && needsCatalog && (!pageBrandId || (catalogFacet?.type === 'brand' && catalogFacet.value === pageBrandId)),
     staleTime: 5 * 60 * 1000,
     // Primera pintura instantánea desde la caché local (igual que hoy): solo en el
     // estado neutro (sin faceta, orden por defecto). Mostramos una "primera página"
@@ -785,18 +804,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // CON marca de página: el "estado limpio" es la faceta de MARCA (no null), para
   // que el catálogo siga acotado a esa marca al volver. SIN marca: null como hoy.
   React.useEffect(() => {
-    if (usePaginatedCatalog) return;
-    if (pageBrandId) {
-      // Vuelve a la faceta de marca si la query estaba apuntando a otra cosa.
-      setCatalogFacet((prev) =>
-        prev && prev.type === 'brand' && prev.value === pageBrandId
-          ? prev
-          : { type: 'brand', value: pageBrandId }
-      );
-    } else if (catalogFacet) {
-      setCatalogFacet(null);
-    }
-  }, [usePaginatedCatalog, catalogFacet, pageBrandId]);
+    if (!usePaginatedCatalog) setCatalogFacet(null);
+  }, [usePaginatedCatalog, setCatalogFacet]);
 
   // Callback estable que el sidebar usa para empujar UNA faceta al servidor.
   // null = sin faceta de servidor (vuelve a la primera página del catálogo).
@@ -808,18 +817,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // SidebarCatalogLayout sobre las páginas de esa marca. Sin pageBrandId, todo
   // queda EXACTAMENTE como hoy (la categoría puede ir server-side).
   const handleServerFacetChange = useCallback((facet) => {
-    if (pageBrandId) {
-      // Mantén SIEMPRE la marca server-side; no la sobrescribas con la categoría.
-      // Reusa el objeto previo si ya es la marca (evita re-render/refetch inútil).
-      setCatalogFacet((prev) =>
-        prev && prev.type === 'brand' && prev.value === pageBrandId
-          ? prev
-          : { type: 'brand', value: pageBrandId }
-      );
-      return;
-    }
-    setCatalogFacet(facet || null);
-  }, [pageBrandId]);
+    if (!pageBrandId) setCatalogFacet(facet || null);
+  }, [pageBrandId, setCatalogFacet]);
 
   // Fase 1: la búsqueda de la tienda lleva a la página facetada /buscar (searchCatalog).
   // Si el término viene vacío, mantiene el filtrado en página (comportamiento previo).
@@ -1364,7 +1363,8 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
             <SectionBackground config={s} />
             <SidebarCatalogLayout
               productsData={catalogProducts}
-              facetProducts={productsData || catalogProducts}
+              facetProducts={usePaginatedCatalog ? undefined : productsData}
+              loadCatalogFacets={usePaginatedCatalog}
               scopeFacetsToProducts
               productsLoading={catalogLoadingResolved}
               productsError={catalogErrorResolved}
@@ -1397,7 +1397,7 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
   // El header unificado ha sido movido a LegacyTiendaPage.
   // Esta vista ahora es puramente una Landing Page dinámica.
 
-  const { isEditModeActive, updateSectionsDraft } = useVisualEditor();
+
 
   const ModuleInserter = ({ index }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -1449,142 +1449,72 @@ const TiendaPage = ({ isLandingPage = false, pageIdOverride = null, pageBrandIdO
     );
   };
 
-  const sorted = [...displaySections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-  // ── LOADER DE PÁGINA COMPLETA (Walá) HASTA QUE TODO CARGUE ──────────
-  // El usuario pidio que la pantalla de carga de Walá se mantenga hasta que
-  // la pagina este realmente cargada, no a medio llenar mientras cada
-  // seccion resuelve su fetch. useIsFetching() cuenta TODAS las queries de
-  // react-query en vuelo (config, categorias, destacados, colecciones,
-  // ofertas, carruseles, grillas automaticas, header...): cuando llega a 0
-  // con la config ya presente, la pagina esta lista.
-  // "Ya hay contenido para renderizar debajo del overlay": pasamos el gate
-  // inicial. Basado en NO estar en el estado de config-cargando-sin-datos, no
-  // en tener `storefrontConfig` — asi el editor visual (secciones desde el
-  // borrador storeConfigDraft, sin storefrontConfig) y el caso de config con
-  // error tambien activan la deteccion de "listo" y el tope, en vez de dejar
-  // el overlay colgado para siempre.
-  const contenidoRenderizando = !(isConfigLoading && !storefrontConfig);
-  // Solo cuentan las consultas que de verdad alimentan ESTA pantalla. Las de
-  // segundo plano (AppPrefetcher, que adelanta datos para OTRAS pantallas y se
-  // trae el catalogo entero) no pintan nada aqui: si entran en el recuento, el
-  // splash se queda puesto esperando a una descarga que nadie va a mirar.
+  const sorted = configuredSections;
+  const criticalNames = useMemo(() => criticalQueryNames(sorted), [sorted]);
+  const esConsultaDePantalla = useCallback((query) =>
+    !query.meta?.segundoPlano && criticalNames.has(query.queryKey[0]) &&
+    (query.queryKey[0] !== 'storefront-config' || query.queryKey[1] === pageId),
+  [criticalNames, pageId]);
   const queriesEnVuelo = useIsFetching({ predicate: esConsultaDePantalla });
   const queryClient = useQueryClient();
-  const [pageReady, setPageReady] = useState(false);
+  const [readyState, setReadyState] = useState({ pageId, ready: false });
+  const pageReady = readyState.pageId === pageId && readyState.ready;
+  const contenidoRenderizando = !(isConfigLoading && !storefrontConfig);
 
-  // Al cambiar de pagina (p. ej. saltar de una marca a otra) TiendaPage NO se
-  // vuelve a montar: React Router reutiliza el mismo componente. Sin esto,
-  // pageReady se quedaba en true del pase anterior y la marca nueva aparecia
-  // de golpe, con el contenido viejo todavia debajo. Se vuelve a "cargando"
-  // para que el overlay tape la transicion.
-  const paginaAnteriorRef = useRef(pageId);
-  useEffect(() => {
-    if (paginaAnteriorRef.current === pageId) return;
-    paginaAnteriorRef.current = pageId;
-    setPageReady(false);
-  }, [pageId]);
-
-  // Tope absoluto desde el MONTAJE (no depende de que la config resuelva):
-  // si algo cuelga — una query que reintenta sin fin, o incluso la propia
-  // config que nunca llega (Firestore caido) — no dejamos al usuario
-  // atrapado en el loader. Pasada esta cota se revela la pagina igual (lo
-  // que falte sigue con su ProductCardSkeleton, o vacia si ni la config
-  // cargo). Es la red de seguridad; en una carga normal quien dispara
-  // pageReady es la deteccion de "idle" de abajo, mucho antes.
   useEffect(() => {
     if (pageReady) return undefined;
-    const tope = setTimeout(() => setPageReady(true), 10000);
-    return () => clearTimeout(tope);
-  }, [pageReady]);
+    const timeout = setTimeout(() => setReadyState({ pageId, ready: true }), 10000);
+    return () => clearTimeout(timeout);
+  }, [pageReady, pageId]);
 
-  // Deteccion de "ya no queda nada cargando": cuando queriesEnVuelo llega a 0
-  // con la config lista, esperamos un instante y re-chequeamos de forma
-  // imperativa (queryClient.isFetching()). Ese pequeño respiro evita el "0
-  // prematuro": las secciones recien montadas disparan sus fetches en un
-  // effect posterior a este render, asi que un 0 puede ser "todavia no
-  // arrancaron" y no "ya terminaron". Si en ese lapso arrancan, queriesEnVuelo
-  // pasa a >0, este effect se re-ejecuta y espera; si sigue en 0, la pagina
-  // esta genuinamente ociosa -> lista.
   useEffect(() => {
     if (pageReady || !contenidoRenderizando || queriesEnVuelo > 0) return undefined;
-    const t = setTimeout(() => {
-      if (queryClient.isFetching({ predicate: esConsultaDePantalla }) === 0) setPageReady(true);
-    }, 180);
-    return () => clearTimeout(t);
-  }, [pageReady, contenidoRenderizando, queriesEnVuelo, queryClient]);
-
-  // ── LA IMAGEN DEL HERO TAMBIEN CUENTA COMO "CARGANDO" ─────────────
-  // pageReady mira solo las queries de Firestore. Pero el hero es una imagen
-  // grande servida desde Storage: las queries terminaban, el overlay se iba y
-  // quedaba el hero en NEGRO (su capa de oscurecido sobre nada) hasta que la
-  // imagen bajaba. Al cambiar de marca eso se veia como un pantallazo negro.
-  // Se precarga la imagen del hero y no se revela la pagina hasta tenerla.
-  const heroImagenUrl = useMemo(() => {
-    for (const sec of sorted) {
-      const st = sec?.settings || {};
-      if (sec?.type === 'hero_banner' && st.mediaType !== 'video' && st.mediaUrl) return st.mediaUrl;
-      if (sec?.type === 'hero_carousel') {
-        const primera = Array.isArray(st.slides) ? st.slides[0] : null;
-        if (primera?.imageUrl) return primera.imageUrl;
+    const timeout = setTimeout(() => {
+      if (queryClient.isFetching({ predicate: esConsultaDePantalla }) === 0) {
+        setReadyState({ pageId, ready: true });
       }
-    }
-    return '';
-  }, [sorted]);
+    }, 180);
+    return () => clearTimeout(timeout);
+  }, [pageReady, pageId, contenidoRenderizando, queriesEnVuelo, queryClient, esConsultaDePantalla]);
 
-  const [heroListo, setHeroListo] = useState(false);
-
+  const { isMobile } = useIsMobile(769); // Matches <picture media="(max-width: 768px)">.
+  const heroImagenUrl = toDirectImageUrl(firstHeroUrl(sorted, isMobile));
+  const [loadedHero, setLoadedHero] = useState('');
+  const heroListo = !heroImagenUrl || loadedHero === heroImagenUrl;
   useEffect(() => {
-    // Sin hero con imagen no hay nada que esperar.
-    if (!heroImagenUrl) { setHeroListo(true); return undefined; }
-    setHeroListo(false);
-    let vivo = true;
-    const marcarListo = () => { if (vivo) setHeroListo(true); };
-    const img = new Image();
-    img.onload = marcarListo;
-    // Si la imagen falla (borrada, sin permisos) se revela igual: mejor la
-    // pagina sin hero que un loader eterno.
-    img.onerror = marcarListo;
-    img.src = toDirectImageUrl(heroImagenUrl);
-    // Tope propio, mas corto que el general de 10 s: una imagen pesada o un
-    // CDN lento no deben dejar al usuario mirando el loader.
-    const tope = setTimeout(marcarListo, 5000);
-    return () => { vivo = false; clearTimeout(tope); };
+    if (!heroImagenUrl) return undefined;
+    preloadHero(sorted);
+    let active = true;
+    const image = new Image();
+    image.fetchPriority = 'high';
+    const ready = () => { if (active) setLoadedHero(heroImagenUrl); };
+    image.onload = ready;
+    image.onerror = ready;
+    image.src = heroImagenUrl;
+    const timeout = setTimeout(ready, 5000);
+    return () => { active = false; clearTimeout(timeout); };
   }, [heroImagenUrl]);
-
-  // NOTA: ya NO hay un `return <BrandLoader/>` aparte para el estado
-  // "config cargando". Antes ese gate tapaba SOLO el area de contenido
-  // (#main-content-area), dejando ver el header, y luego el overlay de abajo
-  // tapaba TODO — ese salto "header visible -> header tapado" se percibia
-  // como un parpadeo. Ahora el MISMO overlay a pantalla completa cubre desde
-  // el primer render (config cargando -> container vacio debajo) hasta que
-  // pageReady, sin transicion intermedia. Mientras la config no llega,
-  // `sorted` es un array vacio, asi que el container se renderiza vacio
-  // (tapado por el overlay) y no hay nada que pintar mal.
 
   return (
     <div className={styles.container}>
-      {/* LOADER DE PÁGINA COMPLETA (Walá) HASTA QUE TODO CARGUE
-          El contenido se renderiza SIEMPRE debajo (para que cada seccion
-          monte y dispare sus fetches), pero mientras `pageReady` sea false
-          lo tapa este overlay a pantalla completa con el BrandLoader. Cuando
-          pageReady pasa a true, el overlay hace su transicion de SALIDA
-          (fade + leve zoom) revelando la tienda ya pintada — ver
-          BrandLoaderOverlay. La logica de pageReady (useIsFetching + latch +
-          tope de 8s) esta definida arriba. */}
+      {/* Keep the first screen complete; lower sections load near the viewport. */}
       <BrandLoaderOverlay show={!pageReady || !heroListo} />
+      <CustomFontsInjector config={activeSections} all={isEditModeActive} />
       {!isLandingPage && !categoryId && !searchTerm && <AppDownloadBanner />}
       {sorted.map((section, index) => {
-        const rendered = renderSection(section);
-        if (!rendered) return null;
+        const active = sectionIsActive(section, index);
+        const rendered = active ? renderSection(section) : null;
+        if (active && !rendered) return null;
         const typeLabel = SECTION_TYPES?.find(t => t.id === section.type)?.label || section.type;
         
         return (
-          <React.Fragment key={section.id}>
+          <React.Fragment key={pageId + ":" + section.id}>
             <ModuleInserter index={index} />
-            <EditableSection sectionId={section.id} currentConfig={activeConfig} label={typeLabel}>
-              {rendered}
-            </EditableSection>
+            <DeferredSection active={active} observe={pageReady && heroListo && (index === 0 || sectionIsActive(sorted[index - 1], index - 1))} onVisible={markSectionVisible} section={section}>
+              <EditableSection sectionId={section.id} currentConfig={activeConfig} label={typeLabel}>
+                {rendered}
+              </EditableSection>
+            </DeferredSection>
           </React.Fragment>
         );
       })}

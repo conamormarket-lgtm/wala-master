@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom/client';
 import './styles/variables.css';
 import './theme/tokens.css';
 import './styles/globals.css';
-import App from './App';
+import App, { queryClient } from './App';
+import { loadStorefrontPage } from './pages/Tienda/services/startup.js';
 
 // Evitar que el error auth/configuration-not-found cierre la app
 window.addEventListener('unhandledrejection', (event) => {
@@ -51,6 +52,17 @@ if (
       // Que falle no rompe nada: la app funciona igual, solo sin caché.
       console.warn('[sw] no se pudo registrar:', e?.message || e);
     });
+  });
+}
+
+// Start the public page config before mounting providers and other readers.
+const initialPage = window.location.pathname.replace(/\/+$/, '') || '/';
+if (['/', '/home', '/tienda'].includes(initialPage)) {
+  const pageId = initialPage === '/tienda' ? 'tienda' : 'home';
+  queryClient.prefetchQuery({
+    queryKey: ['storefront-config', pageId],
+    queryFn: () => loadStorefrontPage(pageId),
+    staleTime: 10 * 60 * 1000,
   });
 }
 

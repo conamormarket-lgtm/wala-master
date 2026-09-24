@@ -10,7 +10,7 @@ import { getBrands } from '../../../services/brands';
 import { getTags } from '../../../services/tags';
 import { getCharacters } from '../../../services/characters';
 import { getProductTypes } from '../../../services/productTypes';
-import { getProductsByBrand } from '../../../services/products';
+import { getProducts, getProductsByBrand } from '../../../services/products';
 // i18n: t() para textos estáticos; <T> para nombres dinámicos de la BD.
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { T } from '../../../i18n/useTranslatedText';
@@ -21,6 +21,7 @@ const SidebarCatalogLayout = ({
   // una grilla paginada muestre filtros de todo el catálogo, no solo de la
   // primera página que ya llegó al navegador.
   facetProducts,
+  loadCatalogFacets = false,
   productsLoading,
   productsError,
   emptyMessage,
@@ -168,20 +169,18 @@ const SidebarCatalogLayout = ({
   const { data: characters } = useQuery({ queryKey: ['characters'], queryFn: async () => (await getCharacters()).data });
   const { data: productTypes } = useQuery({ queryKey: ['productTypes'], queryFn: async () => (await getProductTypes()).data });
 
-  // ── Productos de la marca para derivar las facetas (multimarca) ─────────
-  // Solo cuando hay `brandId`. Igual que el categories_nav (TiendaPage.jsx:468),
-  // se piden TODOS los productos de la marca (no las páginas paginadas que llegan
-  // en productsData, que pueden estar incompletas) para conocer el conjunto REAL
-  // de taxonomías presentes en la marca. Sin brandId no se pide nada (enabled:false)
-  // y las facetas se quedan con las listas globales de hoy.
+  // This component mounts near the viewport. Load the complete facet source
+  // here, sharing the category menu/grid query, never deriving filters from
+  // just the first product page. Search callers can supply their own results.
   const { data: brandProducts } = useQuery({
-    queryKey: ['sidebar-brand-products', brandId],
+    queryKey: ['storefront-category-grid-products', brandId || 'global'],
     queryFn: async () => {
-      const { data, error } = await getProductsByBrand(brandId);
+      const { data, error } = brandId ? await getProductsByBrand(brandId) : await getProducts([], null, null);
       if (error || !Array.isArray(data)) return [];
       return data;
     },
-    enabled: !!brandId,
+    enabled: !!brandId || loadCatalogFacets,
+    meta: { segundoPlano: true },
     staleTime: 10 * 60 * 1000,
   });
 
@@ -249,7 +248,7 @@ const SidebarCatalogLayout = ({
     const types = new Set();
     const brandIds = new Set();
     if (shouldScopeFacets) {
-      const source = brandId ? (brandProducts || []) : (facetProducts || productsData || []);
+      const source = brandId ? (brandProducts || []) : (facetProducts || (loadCatalogFacets ? brandProducts : productsData) || []);
       source.forEach((p) => {
         // Categorías: array categories[] + fallback legacy (categoryId/category),
         // exactamente como el filtro de cliente de abajo y el nav.
@@ -268,7 +267,7 @@ const SidebarCatalogLayout = ({
     }
     return { cats, cols, tgs, chars, types, brandIds };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brandId, brandProducts, facetProducts, productsData, shouldScopeFacets]);
+  }, [brandId, brandProducts, facetProducts, loadCatalogFacets, productsData, shouldScopeFacets]);
 
   // Listas EFECTIVAS que consume el render. Con brandId: acotadas a la marca.
   // Sin brandId: las globales de hoy (categories=prop; resto de los servicios).

@@ -1,3 +1,4 @@
+import CustomFontsInjector from '../CustomFontsInjector/CustomFontsInjector';
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -266,12 +267,13 @@ const Header = () => {
 
   // ¿Hay algún desplegable automático de categorías en el menú? Si no lo hay,
   // pedir el catálogo entero solo para filtrarlas seria tirar la lectura.
+  const [categoryMenuRequested, setCategoryMenuRequested] = useState(false);
   const hayMenuDeCategorias = navLinks.some((l) => l?.isCategoryAuto);
 
   // Productos para saber qué categorías tienen algo dentro. Comparte queryKey y
   // queryFn con la cuadrícula de categorías de TiendaPage, así que en una página
   // de tienda no se pide dos veces: React Query reparte el mismo resultado.
-  const { data: productosParaCategorias } = useQuery({
+  const { data: productosParaCategorias, error: categoryMenuError, refetch: retryCategoryMenu } = useQuery({
     queryKey: ['storefront-category-grid-products', brandActual?.id || 'global'],
     queryFn: async () => {
       const result = brandActual?.id
@@ -280,7 +282,8 @@ const Header = () => {
       if (result.error) throw new Error(result.error);
       return result.data || [];
     },
-    enabled: hayMenuDeCategorias,
+    enabled: hayMenuDeCategorias && categoryMenuRequested,
+    meta: { segundoPlano: true },
     staleTime: 15 * 60 * 1000,
   });
 
@@ -301,7 +304,7 @@ const Header = () => {
   // categoria vacia lleva a una pagina sin nada. Segun se les vayan asignando
   // productos van apareciendo solas.
   const categoriasDelMenu = useMemo(() => {
-    const conProducto = (id) => !idsConProductos || idsConProductos.has(id);
+    const conProducto = (id) => idsConProductos?.has(id);
     if (brandActual) {
       const nav = Array.isArray(brandActual.categoryNav) ? brandActual.categoryNav : [];
       return nav
@@ -485,6 +488,7 @@ const Header = () => {
   return (
     <>
     <header ref={headerRef} className={`${styles.header} ${forceHideDropdowns ? styles.forceHideHover : ''}`}>
+        <CustomFontsInjector config={activeConfig} />
       <div className={styles.container}>
         {isNativeApp ? (
           <Link to="/" className={styles.nativeBackBtn}>
@@ -580,6 +584,9 @@ const Header = () => {
                   <div
                     key={link.id}
                     className={`${styles.navItemWithDropdown} ${isNavOpen ? styles.navDropdownOpen : ''} ${isNavBlocked ? styles.hoverBlocked : ''}`}
+                    onPointerEnter={() => { if (link.isCategoryAuto) setCategoryMenuRequested(true); }}
+                    onFocus={() => { if (link.isCategoryAuto) setCategoryMenuRequested(true); }}
+                    onPointerDown={() => { if (link.isCategoryAuto) setCategoryMenuRequested(true); }}
                     // Al hacer click el menu queda FIJADO (hace falta para
                     // touch/teclado). En desktop eso lo dejaba "pegado"
                     // abierto aunque te fueras con el mouse: al salir se
@@ -612,6 +619,13 @@ const Header = () => {
                                 acotar por marca). Para no cruzar mercados, en marca solo
                                 queda "Ver Todo el Catálogo" → /<slug> (abajo).
                               · FUERA DE MARCA: comportamiento EXACTO actual (global). */}
+                          {link.isCategoryAuto && !productosParaCategorias && (
+                            <li role="status">
+                              {categoryMenuError
+                                ? <button type="button" onClick={() => retryCategoryMenu()}>Reintentar cargar categorías</button>
+                                : 'Cargando categorías…'}
+                            </li>
+                          )}
                           {link.isCategoryAuto && categoriasDelMenu.map(c => (
                             <li key={`cat-${c.id}`}>
                               <Link

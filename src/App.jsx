@@ -22,6 +22,7 @@ import PageLoading from './components/common/PageLoading/PageLoading';
 import AppPrefetcher from './components/common/AppPrefetcher/AppPrefetcher';
 import NavProgressBar from './components/common/NavProgressBar/NavProgressBar';
 import CustomFontsInjector from './components/common/CustomFontsInjector/CustomFontsInjector';
+import { withEditorFonts } from './services/shared/fontResources';
 import { useHeatmapTracker } from './hooks/useHeatmapTracker';
 import ScrollTracker from './components/analytics/ScrollTracker';
 import ScrollToTop from './components/common/ScrollToTop/ScrollToTop';
@@ -137,7 +138,7 @@ const LinkInBioPage = lazy(() => import('./pages/LinkInBioPage'));
 const AdminLayout = lazy(() => import('./components/AdminLayout/AdminLayout'));
 
 // ── Secciones pesadas — lazy ─────────────────────────────────────────────────
-const EditorPage = lazy(() => import('./pages/EditorPage'));
+const EditorPage = lazy(() => withEditorFonts(import('./pages/EditorPage')));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminDashboardAnalytics = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -252,7 +253,7 @@ const WishlistPublicPage = lazy(() => import('./pages/WishlistPublic/WishlistPub
 const GiftRegistryPage = lazy(() => import('./pages/GiftRegistry/GiftRegistryPage'));
 
 // ── QueryClient optimizado ────────────────────────────────────────────────────
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
@@ -333,7 +334,7 @@ function App() {
   return (
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <CustomFontsInjector />
+
 
         <ToastProvider>
           <ThemeProvider>
@@ -345,13 +346,11 @@ function App() {
                     <CartProvider>
                       <LayoutProvider>
                         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                          <CustomFontsInjector routeFonts />
                           <DeepLinkHandler />
                           <ScrollToTop />
 
-                          {/* Prefetch silencioso en segundo plano cuando el
-                              navegador esta libre. Vive DENTRO del Router
-                              porque decide que adelantar segun la ruta actual
-                              (ver AppPrefetcher). */}
+                          {/* Precarga solo cuando hay intención de navegar. */}
                           <AppPrefetcher />
 
                           <GlobalLayout>
