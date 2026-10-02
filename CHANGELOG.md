@@ -16,13 +16,20 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
-## [2026-10-02] — MARKETING: ofertas por notificación, interés por producto, recordatorios de fechas, monedas por formulario y WhatsApp (frontend por Vercel; functions + reglas **desplegadas** el 2026-10-02)
+## [2026-10-02] — MARKETING: ofertas por notificación, interés por producto, recordatorios de fechas, monedas por formulario y WhatsApp (frontend por Vercel; functions **desplegadas** el 2026-10-02; reglas **NO vigentes**, ver nota)
 
 Mapeo del dueño en 5 puntos. **No toca montos, pagos ni el checkout.** Build verde; tests nuevos
 `functions/test/fechasLogic.test.js` (9) y `src/services/analytics/productInterest.test.mjs` (5);
 probado de punta a punta en el emulador (functions incluidas). **Frontend DESPLEGADO** por **Vercel**
 (auto-deploy desde `master`). **Backend DESPLEGADO** (2026-10-02) con:
 `firebase deploy --only functions:claimDatesRewardSecure,functions:grantSurveyRewardSecure,functions:notificationEngine,functions:sendManualPromoNotification,functions:datesReminderEngine,firestore:rules`.
+
+> ⚠️ **Reglas Firestore:** se desplegó `firestore:rules` junto con las functions (15:39 Lima) y eso
+> **pisó las reglas vivas del ERP** (que comparte la base; ver [DESPLIEGUE-ESTADO.md](docs/wala/DESPLIEGUE-ESTADO.md)).
+> A las 16:02 alguien publicó `allow read, write: if true` desde el lado ERP. Las reglas del repo
+> (`camposSaldo()` con `datesRewardedIds`/`datesRewardTotal`/`datesReminderLog`, y
+> `notification_campaigns`) **no están vigentes**: hay que FUSIONARLAS con las reglas del ERP. Las
+> functions funcionan igual (escriben con Admin SDK). **No volver a desplegar `firestore:rules` desde este repo.**
 
 ### Bugs arreglados
 - ✅ **"Fechas importantes" se podía romper**: el `return` temprano (sin encuesta) iba ANTES de dos hooks; al cargar el perfil React tiraba "Rendered more hooks". Además la página estaba **bloqueada** sin encuesta (ahora es una invitación) y `updateUserProfile` devolvía `{error}` sin lanzar, así que un guardado fallido cerraba el modal como si nada.
