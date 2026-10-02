@@ -47,7 +47,9 @@ const mensajeWhatsApp = (nombre, producto) => {
   const url = `${window.location.origin}/producto/${producto.id}`;
   const precio = producto.salePrice || producto.price;
   return [
-    `Hola${primerNombre ? ` ${primerNombre}` : ''} 👋`,
+    // Sin emojis: WhatsApp de escritorio (Windows) los rompe al abrir un link
+    // wa.me y llegan como "�". Las negritas con *...* sí funcionan.
+    `¡Hola${primerNombre ? ` ${primerNombre}` : ''}!`,
     `Vimos que te gustó *${producto.name}*${precio ? ` (S/ ${precio})` : ''}. ¡Todavía está disponible!`,
     url,
     '¿Te ayudamos con tu pedido?',
