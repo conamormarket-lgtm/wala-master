@@ -16,12 +16,12 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
-## [2026-10-02] — MARKETING: ofertas por notificación, interés por producto, recordatorios de fechas, monedas por formulario y WhatsApp (frontend por Vercel; **requiere redeploy de functions + reglas**)
+## [2026-10-02] — MARKETING: ofertas por notificación, interés por producto, recordatorios de fechas, monedas por formulario y WhatsApp (frontend por Vercel; functions + reglas **desplegadas** el 2026-10-02)
 
 Mapeo del dueño en 5 puntos. **No toca montos, pagos ni el checkout.** Build verde; tests nuevos
 `functions/test/fechasLogic.test.js` (9) y `src/services/analytics/productInterest.test.mjs` (5);
 probado de punta a punta en el emulador (functions incluidas). **Frontend DESPLEGADO** por **Vercel**
-(auto-deploy desde `master`). **Backend REQUIERE redeploy:**
+(auto-deploy desde `master`). **Backend DESPLEGADO** (2026-10-02) con:
 `firebase deploy --only functions:claimDatesRewardSecure,functions:grantSurveyRewardSecure,functions:notificationEngine,functions:sendManualPromoNotification,functions:datesReminderEngine,firestore:rules`.
 
 ### Bugs arreglados
