@@ -4,6 +4,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import Button from '../../components/common/Button';
 import { getGlobalAnalytics, getUserAnalytics, getUsersBaseList } from '../../services/adminAnalytics';
 import { rebuildHistoricalAnalyticsSummary } from '../../services/adminAnalyticsBackfill';
+import { useProducts } from '../../hooks/useProducts';
+import { recomendarSimilares } from '../../services/analytics/productInterest.mjs';
+import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import styles from './AdminUsuariosAnalyticsPage.module.css';
 
 function fmtNumber(value) {
@@ -120,6 +123,16 @@ const AdminUsuariosAnalyticsPage = () => {
 
   const detail = userInfoQuery.data;
   const detailMetrics = detail?.metrics;
+
+  // Catálogo (con ocultos, para nombrar productos ya retirados) para pasar de
+  // "/producto/abc123" a nombre + foto, y para recomendarle similares.
+  const { data: catalogo } = useProducts([], { includeHidden: true });
+  const catalogoPorId = useMemo(() => new Map((catalogo || []).map((p) => [String(p.id), p])), [catalogo]);
+  const productosInteres = useMemo(() => (detail?.productInterest || []).slice(0, 8), [detail]);
+  const recomendados = useMemo(
+    () => recomendarSimilares(detail?.productInterest || [], catalogo || [], 6),
+    [detail, catalogo]
+  );
 
   const handlePreset = (label, days) => {
     if (days === null) {
@@ -625,6 +638,49 @@ const AdminUsuariosAnalyticsPage = () => {
                         <li key={r.path}>{r.path}: {fmtDuration(r.dwellMs?.total)} ({fmtDuration(r.dwellMs?.app)} APP / {fmtDuration(r.dwellMs?.web)} WEB)</li>
                       ))}
                     </ul>
+                  </div>
+                </div>
+
+                <div className={styles.listsGrid}>
+                  <div>
+                    <h3 className={styles.sectionTitle}>Productos donde más tiempo pasa</h3>
+                    {productosInteres.length === 0 ? (
+                      <p className={styles.meta}>Todavía no miró fichas de producto.</p>
+                    ) : (
+                      <ul className={styles.productList}>
+                        {productosInteres.map((r) => {
+                          const p = catalogoPorId.get(String(r.productId));
+                          return (
+                            <li key={r.productId} className={styles.productRow}>
+                              <img src={p?.images?.[0] || PLACEHOLDER_IMG} alt="" className={styles.productThumb} loading="lazy" onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMG; }} />
+                              <span className={styles.productInfo}>
+                                <a href={`/producto/${r.productId}`} target="_blank" rel="noopener noreferrer">{p?.name || r.name || r.productId}</a>
+                                <span className={styles.meta}>{fmtDuration(r.dwellMs)} · {fmtNumber(r.views)} {r.views === 1 ? 'vista' : 'vistas'} · {fmtDate(r.lastSeenMs)}</span>
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className={styles.sectionTitle}>Recomendarle</h3>
+                    <p className={styles.meta}>De las mismas categorías que más miró y que todavía no vio.</p>
+                    {recomendados.length === 0 ? (
+                      <p className={styles.meta}>Sin datos suficientes para recomendar.</p>
+                    ) : (
+                      <ul className={styles.productList}>
+                        {recomendados.map((p) => (
+                          <li key={p.id} className={styles.productRow}>
+                            <img src={p.images?.[0] || PLACEHOLDER_IMG} alt="" className={styles.productThumb} loading="lazy" onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMG; }} />
+                            <span className={styles.productInfo}>
+                              <a href={`/producto/${p.id}`} target="_blank" rel="noopener noreferrer">{p.name}</a>
+                              <span className={styles.meta}>S/ {p.salePrice || p.price}</span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
 

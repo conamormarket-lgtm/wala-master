@@ -128,6 +128,13 @@ const AdminLayout = () => {
               >
                 👥 Ver qué hacen los usuarios
               </NavLink>
+              {/* Quién pasó tiempo mirando qué producto + WhatsApp con ese producto. */}
+              <NavLink
+                to="/admin/interes-productos"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                🔥 Interés por producto
+              </NavLink>
               {/* Gestión de Pagos (unifica Métodos de Pago + Generador de Enlaces
                   + historial/analíticas): JUSTO DEBAJO de "Ver qué hacen los usuarios". */}
               <NavLink

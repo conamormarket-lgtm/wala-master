@@ -11,6 +11,7 @@ import { GlassCard, Reveal } from '../../components/ui';
 import { Gift, Calendar, CalendarHeart, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package, Camera, AlertCircle, Check } from 'lucide-react';
 // Helper de subida YA existente en el repo (mismo que usan AvatarStudio / CategoryNavEditor).
 import { uploadFile } from '../../services/firebase/storage';
+import { volarMonedasGanadas } from '../../utils/animations';
 import styles from './CuentaFechasImportantesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -123,7 +124,7 @@ const avisoProximidad = (dias) => {
 
 const CuentaFechasImportantesPage = () => {
   // eslint-disable-next-line no-unused-vars
-  const { user, userProfile, updateUserProfile } = useAuth();
+  const { user, userProfile, updateUserProfile, claimDatesReward } = useAuth();
   const { addToCart } = useCart();
   // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
@@ -143,6 +144,8 @@ const CuentaFechasImportantesPage = () => {
   // pantalla, no dicen QUÉ campo falla cuando hay varias fechas y se ven
   // como un error del sistema, no como "te faltó algo".
   const [formError, setFormError] = useState(null);
+  // Aviso tras guardar: cuántas monedas pagó el servidor por las fechas nuevas.
+  const [premio, setPremio] = useState(null);
 
   const recipients = userProfile?.giftRecipients || [];
   const hasCompletedSurvey = userProfile?.hasCompletedSurvey;
@@ -189,6 +192,24 @@ const CuentaFechasImportantesPage = () => {
     }
   }, [user?.uid]);
 
+  // Ideas de regalo AUTOMÁTICAS para quien tiene una fecha en los próximos 30
+  // días y todavía no tiene un paquete armado por el admin. Se eligen del
+  // catálogo por las categorías que el usuario marcó para esa persona en la
+  // encuesta (mismo criterio que el "Auto-generar" del admin). Sin categorías
+  // no se adivina: se muestra solo el atajo a la tienda.
+  const ideasPara = (rec) => {
+    const cerca = (rec.events || []).some((ev) => {
+      const d = diasParaProxima(ev.date);
+      return d != null && d <= 30;
+    });
+    if (!cerca) return null;
+    const prefs = Array.isArray(rec.selectedCategories) ? rec.selectedCategories : [];
+    const productos = prefs.length === 0 ? [] : (catalogo || [])
+      .filter((p) => Array.isArray(p.categories) && prefs.some((c) => p.categories.includes(c)))
+      .slice(0, 3);
+    return productos;
+  };
+
   // Get packages for a specific recipient
   const getPackagesForRecipient = (rec) => {
     return suggestedPackages.filter(pkg => 
@@ -203,28 +224,6 @@ const CuentaFechasImportantesPage = () => {
     items.forEach(({ producto }) => addToCart(producto, {}, null, 1));
     setAddedPackageIds(prev => new Set([...prev, pkg.id]));
   };
-
-  if (!hasCompletedSurvey) {
-    return (
-      <div className={styles.page}>
-        <GlassCard variant="solid" padding="lg" animate={false} className={styles.empty} bodyClassName={styles.emptyBody}>
-          <div className={styles.emptyIcon}>
-            <Gift size={26} aria-hidden="true" />
-          </div>
-          <p className={styles.emptyTitle}>
-            <T>Gana recompensas diciéndonos qué te gusta</T>
-          </p>
-          <p className={styles.emptyText}>
-            Al completar tu perfil de regalos ganas monedas para canjear por descuentos, y
-            te recordamos las fechas más importantes de tus seres queridos.
-          </p>
-          <Link to="/encuesta-suscripcion" className={styles.btnSolido}>
-            Completar la encuesta
-          </Link>
-        </GlassCard>
-      </div>
-    );
-  }
 
   const handleAddNew = () => {
     setTempRecipient({
@@ -275,11 +274,8 @@ const CuentaFechasImportantesPage = () => {
     if (!window.confirm('¿Seguro que deseas eliminar a esta persona de tus fechas importantes?')) return;
     
     const newList = recipients.filter(r => r.id !== id);
-    try {
-      await updateUserProfile({ giftRecipients: newList });
-    } catch (e) {
-      alert('Error al eliminar la persona.');
-    }
+    const { error } = await updateUserProfile({ giftRecipients: newList });
+    if (error) alert('No pudimos eliminar a la persona. Intenta de nuevo.');
   };
 
   const handleTempChange = (field, value) => {
@@ -388,8 +384,20 @@ const CuentaFechasImportantesPage = () => {
       } else {
         copy.push(tempRecipient);
       }
-      await updateUserProfile({ giftRecipients: copy });
+      // updateUserProfile NO lanza: devuelve { error }. Antes el error se
+      // perdía y el modal se cerraba como si se hubiera guardado.
+      const { error } = await updateUserProfile({ giftRecipients: copy });
+      if (error) throw new Error(error);
       setIsModalOpen(false);
+
+      // Monedas por fechas nuevas: las calcula y paga el servidor (5 c/u, con
+      // tope). Si falla, la fecha igual quedó guardada; solo no se muestra premio.
+      const res = await claimDatesReward();
+      const ganadas = res.error ? 0 : res.data?.reward || 0;
+      if (ganadas > 0) {
+        setPremio(ganadas);
+        volarMonedasGanadas(null, ganadas);
+      }
     } catch (e) {
       setFormError('No pudimos guardar los cambios. Intenta de nuevo.');
     } finally {
@@ -412,11 +420,36 @@ const CuentaFechasImportantesPage = () => {
             </button>
           </div>
           <p className={styles.headerSub}>
-            Guarda a quién quieres regalarle y cuándo. Te avisamos cuando se acerque la
-            fecha y te armamos un paquete con productos que le pegan.
+            Guarda a quién quieres regalarle y cuándo. Te avisamos una semana antes y un
+            día antes, con ideas de regalo que le pegan. Ganas 5 monedas por cada fecha
+            nueva (hasta 50).
           </p>
+          {premio > 0 && (
+            <p className={styles.premio} role="status">
+              🪙 ¡Ganaste {premio} monedas! Úsalas como descuento en tu próxima compra.
+            </p>
+          )}
         </GlassCard>
       </Reveal>
+
+      {/* La encuesta ya NO bloquea la página: antes, sin encuesta no se podía
+          cargar ninguna fecha. Ahora es una invitación con su premio aparte. */}
+      {!hasCompletedSurvey && (
+        <Reveal>
+          <GlassCard variant="solid" padding="lg" animate={false} className={styles.card}>
+            <div className={styles.encuestaBanner}>
+              <Gift size={22} aria-hidden="true" />
+              <p>
+                <strong><T>Completa tu perfil de regalos y gana 15 monedas</T></strong>
+                <span>Cuéntanos qué le gusta a cada persona y te recomendamos mejor.</span>
+              </p>
+              <Link to="/encuesta-suscripcion" className={styles.btnSolido}>
+                Completar la encuesta
+              </Link>
+            </div>
+          </GlassCard>
+        </Reveal>
+      )}
 
       {recipients.length === 0 ? (
         <Reveal>
@@ -591,6 +624,40 @@ const CuentaFechasImportantesPage = () => {
                       })}
                     </div>
                   )}
+                  {(() => {
+                    if (cargandoCatalogo || recPackages.length > 0) return null;
+                    const ideas = ideasPara(rec);
+                    if (!ideas) return null;
+                    return (
+                      <div className={styles.suggestedSection}>
+                        <p className={styles.ideasTitle}>
+                          <Gift size={15} aria-hidden="true" /> Ideas de regalo para {rec.name}
+                        </p>
+                        {ideas.length > 0 && (
+                          <ul className={styles.suggestedProducts}>
+                            {ideas.map((p) => (
+                              <li key={p.id} className={styles.suggestedProductItem}>
+                                <img
+                                  src={p.images?.[0] || PLACEHOLDER_IMG}
+                                  alt=""
+                                  className={styles.suggestedProductImg}
+                                  loading="lazy"
+                                  onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+                                />
+                                <Link to={`/producto/${p.id}`} className={styles.suggestedProductName}>
+                                  {p.name}
+                                </Link>
+                                <span className={styles.suggestedProductPrice}>S/ {p.salePrice || p.price}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <Link to="/tienda" className={`${styles.btnSolido} ${styles.addToCartBtn}`}>
+                          <ShoppingCart size={16} aria-hidden="true" /> Ver más regalos
+                        </Link>
+                      </div>
+                    );
+                  })()}
                 </GlassCard>
               </Reveal>
             );

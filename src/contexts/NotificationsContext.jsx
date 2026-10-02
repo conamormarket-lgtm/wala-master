@@ -5,6 +5,11 @@ import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from './AuthContext';
+import { abrirLinkDePush } from '../utils/pushLink';
+
+// setupPushNotifications corre más de una vez por sesión (el efecto y el
+// requestPermission del header): el listener de "tocó la push" va una sola vez.
+let listenerToqueRegistrado = false;
 
 /**
  * Antes esta lógica vivía en el hook `useNotifications` (src/hooks/), y cada
@@ -64,6 +69,15 @@ export const NotificationsProvider = ({ children }) => {
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
         console.log('Push received: ' + JSON.stringify(notification));
       });
+
+      // Al tocar la push se abre su link (producto, oferta, fechas…). Antes no
+      // había listener y tocarla solo abría la app en la portada.
+      if (!listenerToqueRegistrado) {
+        listenerToqueRegistrado = true;
+        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          abrirLinkDePush(action?.notification?.data?.link);
+        });
+      }
     } else {
       // Web: Firebase Cloud Messaging.
       // El SDK se trae AQUI, no arriba: solo hace falta si de verdad vamos a

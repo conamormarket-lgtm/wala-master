@@ -57,6 +57,7 @@ const PerfilPage = () => {
   });
 
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+  const [savingConsent, setSavingConsent] = useState(false);
 
   // El código de referido ya NO se muestra acá: vive solo en Mis Referidos
   // (ver el comentario del enlace más abajo).
@@ -159,6 +160,22 @@ const PerfilPage = () => {
       toast.success('¡Avatar actualizado increíblemente bien! 😎');
     }
     return { error };
+  };
+
+  // Permiso para ofertas por WhatsApp. Se guarda al tocarlo (sin pasar por
+  // "Editar"): el admin solo ve el botón de WhatsApp destacado para quien lo
+  // aceptó (ver /admin/interes-productos). Se guarda la fecha del cambio como
+  // constancia del consentimiento.
+  const aceptaWhatsApp = userProfile?.marketingConsent?.whatsapp === true;
+  const handleToggleWhatsApp = async (e) => {
+    const valor = e.target.checked;
+    setSavingConsent(true);
+    const { error: err } = await updateUserProfile({
+      marketingConsent: { ...(userProfile?.marketingConsent || {}), whatsapp: valor, updatedAt: new Date().toISOString() },
+    });
+    setSavingConsent(false);
+    if (err) toast.error('No pudimos guardar tu preferencia');
+    else toast.success(valor ? '¡Listo! Te avisaremos de ofertas por WhatsApp' : 'Ya no te enviaremos ofertas por WhatsApp');
   };
 
   const email = user.email || userProfile?.email || '';
@@ -293,6 +310,13 @@ const PerfilPage = () => {
                 <div className={styles.infoRow}><span className={styles.infoLabel}>DNI</span><span className={styles.infoValue}>{userProfile.dni || '—'}</span></div>
                 <div className={styles.infoRow}><span className={styles.infoLabel}><T>Teléfono</T></span><span className={styles.infoValue}>{userProfile.phone || '—'}</span></div>
                 <div className={styles.infoRow}><span className={styles.infoLabel}><T>Cumpleaños</T></span><span className={styles.infoValue}>{userProfile.birthDate || '—'}</span></div>
+                <label className={styles.consentRow}>
+                  <input type="checkbox" checked={aceptaWhatsApp} onChange={handleToggleWhatsApp} disabled={savingConsent} />
+                  <span>
+                    <T>Quiero recibir ofertas y novedades por WhatsApp</T>
+                    <small><T>Puedes desactivarlo cuando quieras.</T></small>
+                  </span>
+                </label>
 
                 {!hasCompleteProfile && (
                   <div className={styles.errorMessage}><T>Para ver tus pedidos necesitamos tu DNI y número de teléfono.</T></div>

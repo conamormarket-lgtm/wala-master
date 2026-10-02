@@ -16,6 +16,40 @@ Convención: ✅ hecho · 🔧 parcial · ⬜ por hacer.
 
 ---
 
+## [2026-10-02] — MARKETING: ofertas por notificación, interés por producto, recordatorios de fechas, monedas por formulario y WhatsApp (frontend por Vercel; **requiere redeploy de functions + reglas**)
+
+Mapeo del dueño en 5 puntos. **No toca montos, pagos ni el checkout.** Build verde; tests nuevos
+`functions/test/fechasLogic.test.js` (9) y `src/services/analytics/productInterest.test.mjs` (5);
+probado de punta a punta en el emulador (functions incluidas). **Frontend DESPLEGADO** por **Vercel**
+(auto-deploy desde `master`). **Backend REQUIERE redeploy:**
+`firebase deploy --only functions:claimDatesRewardSecure,functions:grantSurveyRewardSecure,functions:notificationEngine,functions:sendManualPromoNotification,functions:datesReminderEngine,firestore:rules`.
+
+### Bugs arreglados
+- ✅ **"Fechas importantes" se podía romper**: el `return` temprano (sin encuesta) iba ANTES de dos hooks; al cargar el perfil React tiraba "Rendered more hooks". Además la página estaba **bloqueada** sin encuesta (ahora es una invitación) y `updateUserProfile` devolvía `{error}` sin lanzar, así que un guardado fallido cerraba el modal como si nada.
+- ✅ **Push de carrito rotas tras guardar textos en el panel**: el panel guarda `{a:{text,emoji,cta},b}` y el motor lo usaba como string. Ahora se arma el texto, se reparte la variante B (mitad de usuarios por uid) y se aceptan `{nombre}` / `{monedas}`.
+- ✅ **Horario anti-spam en UTC**: "9 a 21" era 4 a 16 de Lima. Ahora usa hora de Lima y respeta los interruptores y horarios por categoría del panel (antes se guardaban y nadie los leía).
+
+### Monedas por formulario (server-authoritative)
+- ✅ Nueva callable **`claimDatesRewardSecure`** (sin parámetros): el servidor lee `giftRecipients`, valida cada fecha y paga **5 monedas por fecha nueva, tope de por vida 50** (`functions/fechasLogic.js`). Campos server-only `datesRewardedIds`/`datesRewardTotal` (en `camposSaldo()` de las reglas). A quien ya cobró la encuesta vieja se le dan por pagadas sus 3 primeras fechas.
+- ✅ **`grantSurveyRewardSecure`** ahora paga un bono **fijo de 15** por completar la encuesta (ignora el monto del cliente, que antes se calculaba en el navegador) y exige `hasCompletedSurvey`.
+- ✅ La encuesta y la página de fechas solo animan las monedas que el servidor de verdad pagó.
+
+### Recordatorios de fechas importantes
+- ✅ Nueva programada **`datesReminderEngine`** (10:00 Lima): 7 y 1 día antes de cada fecha guardada → aviso en la campanita (siempre) y push (si tiene app), con link a sus ideas de regalo. Sin repetir (`datesReminderLog`, server-only).
+- ✅ En la tarjeta de cada persona con fecha en ≤30 días y sin paquete del admin: **"Ideas de regalo"** automáticas del catálogo según las categorías marcadas en la encuesta.
+
+### Notificaciones de ofertas y novedades (`/admin/notificaciones`)
+- ✅ **Anunciar un producto** (rellena título/mensaje/link/foto; detecta si está en oferta), **link** al tocarla, **imagen**, **programar** (la manda el motor horario) y segmentos nuevos **con carrito** / **con fechas**.
+- ✅ La campaña llega como push a quien tiene app **y a la campanita de todo el segmento** (también web). Historial real en `notification_campaigns` (la pestaña de métricas mostraba números inventados).
+- ✅ Tocar una push en Android ahora abre su link (`pushNotificationActionPerformed` → `PushLinkHandler`); en la campanita, tocar la notificación navega y muestra la foto.
+
+### Interés por producto + WhatsApp
+- ✅ Nueva página **`/admin/interes-productos`** ("🔥 Interés por producto"): productos que más miran y **clientes que pasaron ≥ N tiempo en un producto** (route_dwell en `/producto/:id`), con botón **WhatsApp** al número del cliente y mensaje listo con el producto.
+- ✅ Ficha del usuario en **Usuarios y métricas**: "Productos donde más tiempo pasa" (nombre + foto, no la ruta cruda) y **"Recomendarle"** (misma categoría, no vistos).
+- ✅ **Mi perfil**: casilla "Quiero recibir ofertas y novedades por WhatsApp" (`marketingConsent.whatsapp` + fecha). El panel marca quién aceptó.
+- ⬜ Envío **automático** por WhatsApp: requiere la API oficial de WhatsApp Business (Meta), plantillas aprobadas y costo por mensaje. Hoy el envío es con un clic del admin.
+- ⬜ Push en **web**: `public/firebase-messaging-sw.js` sigue con config de ejemplo; en web las ofertas llegan por la campanita.
+
 ## [2026-07-01/02] — INTEGRIDAD DE DATOS + ANALÍTICA: soft-delete de productos (el historial nunca se rompe), captura enriquecida de analítica, dashboard con filtros/comparación y nueva área "👥 Ver qué hacen los usuarios" (frontend por Vercel; **requiere redeploy de las 2 functions de agregación**)
 
 Ciclo de **4 fases** (P0–P3, commits `88a3368` → `d293ea0`) con dos objetivos del dueño: (1) que

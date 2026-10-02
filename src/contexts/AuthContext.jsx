@@ -398,9 +398,18 @@ export const AuthProvider = ({ children }) => {
     return res;
   }, [callFn, reloadProfile, activeWeeklyChallenge]);
 
-  const grantSurveyReward = React.useCallback(async (coins) => {
-    const res = await callFn('grantSurveyRewardSecure', { coins });
+  // El monto lo decide el servidor (bono fijo por completar la encuesta).
+  const grantSurveyReward = React.useCallback(async () => {
+    const res = await callFn('grantSurveyRewardSecure', {});
     if (!res.error) await reloadProfile();
+    return res;
+  }, [callFn, reloadProfile]);
+
+  // Paga las fechas importantes nuevas que el usuario ya guardó en su perfil.
+  // El servidor las valida y decide cuánto; devuelve { data: { reward } }.
+  const claimDatesReward = React.useCallback(async () => {
+    const res = await callFn('claimDatesRewardSecure', {});
+    if (!res.error && res.data?.reward > 0) await reloadProfile();
     return res;
   }, [callFn, reloadProfile]);
 
@@ -442,6 +451,7 @@ export const AuthProvider = ({ children }) => {
     spendMonedas,
     freezeMonedas,
     grantSurveyReward,
+    claimDatesReward,
     feedKapi,
     validateDatesStreak,
     processChallengeEvent,
@@ -462,6 +472,7 @@ export const AuthProvider = ({ children }) => {
     spendMonedas,
     freezeMonedas,
     grantSurveyReward,
+    claimDatesReward,
     feedKapi,
     validateDatesStreak,
     processChallengeEvent,

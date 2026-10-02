@@ -30,6 +30,7 @@ const {
   sortearPremio, esCupon, textoPremio,
 } = require("./ruletaLogic");
 const { palabraDelDia } = require("./wordleWords");
+const { calcularRecompensaFechas } = require("./fechasLogic");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -2324,10 +2325,13 @@ exports.reconciliarMonedasEnEspera = onSchedule("every 60 minutes", async () => 
 });
 
 // ── Bono por encuesta (idempotente) ───────────────────────────────────────────
+// Bono FIJO por completar la encuesta, una sola vez. El monto lo decide el
+// servidor: lo que mande el cliente en `coins` se ignora (antes se confiaba en
+// un cálculo del navegador). Las fechas que se cargan en la encuesta se pagan
+// aparte, con claimDatesRewardSecure.
 exports.grantSurveyRewardSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
-  const requested = Number(data && data.coins) || 0;
-  const reward = Math.max(0, Math.min(requested, SURVEY_REWARD_MAX)); // clamp anti-abuso
+  const reward = SURVEY_REWARD_MAX;
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
   try {
     return await db.runTransaction(async (t) => {
@@ -2335,11 +2339,16 @@ exports.grantSurveyRewardSecure = functions.https.onCall(async (data, context) =
       if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = snap.data();
       if (u.surveyRewardClaimed) return { success: true, alreadyClaimed: true };
+      if (u.hasCompletedSurvey !== true) return { success: true, notEligible: true };
       const newBalance = (u.monedas || 0) + reward;
-      t.update(userRef, {
+      const update = {
         monedas: newBalance,
         surveyRewardClaimed: true,
-      });
+      };
+      // Marca al usuario como del esquema nuevo: así claimDatesRewardSecure no le
+      // descuenta las 3 fechas que la encuesta vieja ya pagaba.
+      if (!Array.isArray(u.datesRewardedIds)) update.datesRewardedIds = [];
+      t.update(userRef, update);
       if (reward > 0) {
         writeLedger(t, uid, {
           type: "earn",
@@ -2354,6 +2363,43 @@ exports.grantSurveyRewardSecure = functions.https.onCall(async (data, context) =
     if (e instanceof functions.https.HttpsError) throw e;
     console.error("grantSurveyRewardSecure error:", e);
     throw new functions.https.HttpsError("internal", "Error al otorgar el bono.");
+  }
+});
+
+// ── Monedas por registrar fechas importantes (idempotente) ───────────────────
+// El servidor lee las fechas del propio doc del usuario, valida cada una y paga
+// 5 monedas por fecha que todavía no cobró, con un tope de por vida (ver
+// functions/fechasLogic.js). No recibe parámetros: el cliente no decide nada.
+exports.claimDatesRewardSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+  try {
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
+      const u = snap.data();
+      const { reward, rewardedIds, total } = calcularRecompensaFechas(u);
+      const update = { datesRewardedIds: rewardedIds, datesRewardTotal: total };
+      if (reward <= 0) {
+        // Igual se persiste la marca inicial (usuarios de la encuesta vieja).
+        if (!Array.isArray(u.datesRewardedIds)) t.update(userRef, update);
+        return { success: true, reward: 0 };
+      }
+      const newBalance = (u.monedas || 0) + reward;
+      update.monedas = newBalance;
+      t.update(userRef, update);
+      writeLedger(t, uid, {
+        type: "earn",
+        amount: reward,
+        source: "fechas_importantes",
+        balanceAfter: newBalance,
+      });
+      return { success: true, reward };
+    });
+  } catch (e) {
+    if (e instanceof functions.https.HttpsError) throw e;
+    console.error("claimDatesRewardSecure error:", e);
+    throw new functions.https.HttpsError("internal", "Error al otorgar las monedas.");
   }
 });
 
@@ -3853,6 +3899,7 @@ exports.computeSegmentsSecure = functions.https.onCall(async (data, context) => 
 
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;
+exports.datesReminderEngine = require('./notificationsEngine').datesReminderEngine;
 
 // ── Pre-agregación analítica diaria (Fase 2, PARTE 1) ─────────────────────────
 // Cron gen2 (00:20 hora Lima) que agrega el día anterior de analytics_events +

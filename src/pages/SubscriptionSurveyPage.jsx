@@ -26,7 +26,7 @@ const ROLES_MAP = {
 };
 
 const SubscriptionSurveyPage = () => {
-  const { userProfile, updateUserProfile, loading: authLoading, grantSurveyReward } = useAuth();
+  const { userProfile, updateUserProfile, loading: authLoading, grantSurveyReward, claimDatesReward } = useAuth();
   const navigate = useNavigate();
   
   const [config, setConfig] = useState(DEFAULT_SURVEY_CONFIG);
@@ -328,28 +328,6 @@ const SubscriptionSurveyPage = () => {
       const previosNoTocados = previos.filter(r => r?.id && !idsValidos.has(r.id));
       const recipientsAGuardar = [...validRecipients, ...previosNoTocados];
 
-      // Calcular monedas ganadas por fechas nuevas agregadas
-      let oldTotalFechas = 0;
-      if (userProfile?.giftRecipients) {
-        userProfile.giftRecipients.forEach(r => {
-          if (r.events) oldTotalFechas += r.events.length;
-        });
-      }
-
-      let newTotalFechas = 0;
-      validRecipients.forEach(r => {
-        if (r.events) newTotalFechas += r.events.length;
-      });
-
-      const newEventsAdded = newTotalFechas - oldTotalFechas;
-      let coinsEarned = 0;
-      
-      if (newEventsAdded > 0) {
-        // Límite de 3 fechas pagadas (máximo 15 monedas)
-        const eventosPagados = Math.min(newEventsAdded, 3);
-        coinsEarned = eventosPagados * 5;
-      }
-      
       // Cumpleaños propio: solo se incluye si hay valor, para NO sobrescribir
       // con vacío un birthDate ya existente en el perfil.
       const profileUpdates = {
@@ -363,13 +341,16 @@ const SubscriptionSurveyPage = () => {
         profileUpdates.birthDate = ownBirthDate;
       }
 
-      await updateUserProfile(profileUpdates);
+      const { error: saveError } = await updateUserProfile(profileUpdates);
+      if (saveError) throw new Error(saveError);
 
-      if (coinsEarned > 0) {
-        // H-06: el bono se acredita server-side (idempotente, con tope anti-abuso).
-        await grantSurveyReward(coinsEarned);
-        volarMonedasGanadas(null, coinsEarned);
-      }
+      // H-06: las monedas las calcula y acredita el SERVIDOR. Bono fijo por
+      // completar la encuesta (una vez) + 5 por cada fecha nueva (con tope).
+      // La animación solo sale con lo que el servidor de verdad pagó.
+      const [encuesta, fechas] = await Promise.all([grantSurveyReward(), claimDatesReward()]);
+      const coinsEarned = (encuesta.error ? 0 : encuesta.data?.reward || 0)
+        + (fechas.error ? 0 : fechas.data?.reward || 0);
+      if (coinsEarned > 0) volarMonedasGanadas(null, coinsEarned);
 
       setAnimationDir('Right');
       setCurrentStep(4);
@@ -422,7 +403,7 @@ const SubscriptionSurveyPage = () => {
               <div style={{ backgroundColor: '#fffbeb', color: '#b45309', padding: '1rem', borderRadius: '12px', margin: '1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 'bold', border: '1px solid #fde68a', boxShadow: '0 4px 6px -1px rgba(251, 191, 36, 0.1)' }}>
                 <span style={{ fontSize: '2rem', lineHeight: 1 }}>🪙</span>
                 <span style={{ fontSize: '1rem', textAlign: 'left' }}>
-                  ¡Gana 5 monedas por cada fecha importante que registres (hasta un máximo de 15 monedas)!
+                  ¡Gana 15 monedas al terminar la encuesta y 5 más por cada fecha importante que registres (hasta 50)!
                 </span>
               </div>
 

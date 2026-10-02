@@ -4,6 +4,7 @@ import { ANALYTICS_COLLECTIONS, ANALYTICS_EVENT_TYPES, formatDayKey, safeNumber,
 // con este MISMO parseo): ver src/services/analytics/ua.js.
 import { parseUserAgent } from './analytics/ua';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
+import { aggregateProductInterest } from './analytics/productInterest.mjs';
 
 const DEFAULT_EVENTS_LIMIT = 1200;
 const DEFAULT_SESSIONS_LIMIT = 400;
@@ -619,6 +620,8 @@ export async function getUserAnalytics(uid, email) {
   const routeStats = aggregateRouteMetrics(events);
   const frequency = aggregateFrequency(pageViews);
   const lastAccessAtMs = computeLastAccess(events, sessions);
+  // Productos donde más tiempo pasa (route_dwell en /producto/:id + product_view).
+  const productInterest = aggregateProductInterest(events).slice(0, 20);
   return {
     data: {
       uid: uid || null,
@@ -636,6 +639,7 @@ export async function getUserAnalytics(uid, email) {
         mostTimeRoute: routeStats.mostTimeRoute,
         lastAccessAtMs,
       },
+      productInterest,
       sessions,
       recentEvents: events.slice(0, 50),
       estimatedSummary,

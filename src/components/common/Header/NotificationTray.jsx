@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { Bell, Check, X } from 'lucide-react';
 import { tiempoRelativo } from '../../../utils/tiempoRelativo';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../../contexts/NotificationsContext';
+import { irALink } from '../../../utils/pushLink';
 import styles from './Header.module.css';
 import { T } from '../../../i18n/useTranslatedText';
 
@@ -20,6 +22,17 @@ const haceCuanto = (createdAt) => {
 
 const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, className = '' }) => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, requestPermission } = useNotifications();
+  const navigate = useNavigate();
+
+  // Tocar una notificación la marca como leída y, si trae link (oferta,
+  // producto, recordatorio de fecha), lleva ahí y cierra el panel.
+  const abrir = (notif) => {
+    if (!notif.read) markAsRead(notif.id);
+    if (notif.link) {
+      irALink(navigate, notif.link);
+      if (isOpen && onToggle) onToggle();
+    }
+  };
 
   useEffect(() => {
     // Pedir permiso al montar el componente si el usuario está logueado
@@ -91,12 +104,16 @@ const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, classNa
                   <li
                     key={notif.id}
                     className={`${styles.notifItem} ${notif.read ? '' : styles.notifItemUnread}`}
-                    onClick={() => { if (!notif.read) markAsRead(notif.id); }}
+                    onClick={() => abrir(notif)}
+                    style={notif.link ? { cursor: 'pointer' } : undefined}
                   >
                     {!notif.read && <span className={styles.notifDot} aria-hidden="true" />}
                     <div className={styles.notifItemBody}>
                       <h4 className={styles.notifItemTitle}>{notif.title}</h4>
                       <p className={styles.notifItemText}>{notif.body}</p>
+                      {notif.image && (
+                        <img src={notif.image} alt="" loading="lazy" className={styles.notifItemImg} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                      )}
                       {cuando && <span className={styles.notifItemTime}>{cuando}</span>}
                     </div>
                   </li>
