@@ -143,6 +143,22 @@ function copyDe(settings, key, uid, vars, fallback) {
   return { text: texto, variante };
 }
 
+const SITIO = String(process.env.PUBLIC_SITE_URL || "https://www.wala.pe").replace(/\/+$/, "");
+
+// Link absoluto para las notificaciones WEB: al tocarlas el navegador abre esta
+// URL. Lleva ?notif=/&camp= para que la página registre la apertura al cargar.
+function linkWeb(link, notifId, campaignId) {
+  let url;
+  try {
+    url = new URL(link && /^https:\/\//.test(link) ? link : `${SITIO}${link && link.startsWith("/") ? link : "/"}`);
+  } catch (e) {
+    url = new URL(SITIO);
+  }
+  if (notifId) url.searchParams.set("notif", notifId);
+  else if (campaignId) url.searchParams.set("camp", campaignId);
+  return url.toString();
+}
+
 function mensajeFcm(tokens, { title, body, type, link, image, notifId, campaignId }) {
   const notification = { title, body };
   if (image) notification.imageUrl = image;
@@ -156,6 +172,11 @@ function mensajeFcm(tokens, { title, body, type, link, image, notifId, campaignI
       link: String(link || ""),
       notifId: String(notifId || ""),
       campaignId: String(campaignId || ""),
+    },
+    // Navegador (Chrome, Brave, Edge…): ícono de Walá y, al tocar, abre el link.
+    webpush: {
+      notification: { icon: "/logo192.png" },
+      fcmOptions: { link: linkWeb(link, notifId, campaignId) },
     },
   };
 }

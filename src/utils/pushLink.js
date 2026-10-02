@@ -3,7 +3,17 @@
 // que deja el link acá y <PushLinkHandler>, que sí está dentro, navega. Si el
 // toque llega antes de que el router monte (app abierta desde la push), el link
 // queda guardado y se consume al montar.
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
 const EVENTO = 'wala:push-link';
+
+// Registra en el servidor que un aviso se ABRIÓ (campanita, push de la app o
+// notificación del navegador). Sirve para medir A/B y aperturas de campañas.
+// Best-effort: si falla, no se molesta al usuario.
+export const registrarApertura = (datos) => {
+  if (!datos?.notifId && !datos?.campaignId) return;
+  httpsCallable(getFunctions(), 'markNotificationOpenedSecure')(datos).catch(() => {});
+};
 let pendiente = null;
 
 export const abrirLinkDePush = (link) => {

@@ -1,37 +1,33 @@
+/* Service worker de notificaciones web (Firebase Cloud Messaging).
+ *
+ * Recibe las push cuando la pestaña de Walá está cerrada o en segundo plano y
+ * las muestra. Al tocarlas, Firebase abre el link que manda el servidor en
+ * webpush.fcmOptions.link (el producto, la oferta, el pedido…).
+ *
+ * La configuración (pública) de Firebase llega por la URL de registro
+ * (?apiKey=…&projectId=…), así no se repite a mano en este archivo. Lo
+ * registra NotificationsContext con su propio scope para no reemplazar al
+ * service worker de la PWA (/sw.js).
+ */
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js');
 
-// La configuración de Firebase
+const params = new URL(self.location.href).searchParams;
 const firebaseConfig = {
-  // Los valores exactos se inyectarán o deben leerse desde un config estático, 
-  // pero el Service Worker usualmente necesita inicializarse hardcodeado o importando un script.
-  // Como esto depende del entorno, usaremos una versión simplificada. 
-  // Para que funcione en tu PWA, asegúrate de colocar aquí los valores de tu entorno de prod,
-  // o utilizar un mecanismo de inyección.
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_STORAGE_BUCKET",
-  messagingSenderId: "TU_MESSAGING_SENDER_ID",
-  appId: "TU_APP_ID"
+  apiKey: params.get('apiKey'),
+  authDomain: params.get('authDomain') || undefined,
+  projectId: params.get('projectId'),
+  messagingSenderId: params.get('messagingSenderId'),
+  appId: params.get('appId'),
 };
 
-// Intenta inicializar solo si la URL actual no tiene params que inyecten config
-try {
-  // Por ahora lo dejamos listo para que lo configures con tus keys.
-  // En un entorno dinámico, podrías pasar la config a través de la URL de registro del SW.
-  // firebase.initializeApp(firebaseConfig);
-  // const messaging = firebase.messaging();
-
-  // messaging.onBackgroundMessage((payload) => {
-  //   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  //   const notificationTitle = payload.notification.title;
-  //   const notificationOptions = {
-  //     body: payload.notification.body,
-  //     icon: '/logo192.png'
-  //   };
-  //   self.registration.showNotification(notificationTitle, notificationOptions);
-  // });
-} catch (e) {
-  console.log("Error inicializando SW de Firebase", e);
+if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.messagingSenderId && firebaseConfig.appId) {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    // Con esto basta: los mensajes con `notification` los muestra el SDK solo,
+    // y el clic abre webpush.fcmOptions.link.
+    firebase.messaging();
+  } catch (e) {
+    console.log('[firebase-messaging-sw] no se pudo inicializar', e);
+  }
 }

@@ -5,16 +5,24 @@ import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from './AuthContext';
-import { abrirLinkDePush } from '../utils/pushLink';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { abrirLinkDePush, registrarApertura } from '../utils/pushLink';
 
-// Registra en el servidor que el aviso se ABRIÓ (tocado en la campanita o como
-// push). Con eso se mide qué texto funciona mejor (variante A vs B) y cuántos
-// abrieron cada campaña. Best-effort: si falla, no se molesta al usuario.
-const registrarApertura = (datos) => {
-  if (!datos?.notifId && !datos?.campaignId) return;
-  httpsCallable(getFunctions(), 'markNotificationOpenedSecure')(datos).catch(() => {});
+// Service worker de notificaciones web, con su PROPIO scope para no pisar al de
+// la PWA (/sw.js, scope "/"). La config pública de Firebase va en la URL.
+const registrarSwMensajes = () => {
+  if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+  const p = new URLSearchParams({
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY || '',
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || '',
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || '',
+    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: process.env.REACT_APP_FIREBASE_APP_ID || '',
+  });
+  return navigator.serviceWorker
+    .register(`/firebase-messaging-sw.js?${p.toString()}`, { scope: '/firebase-cloud-messaging-push-scope' })
+    .catch(() => null);
 };
+let onMessageRegistrado = false;
 
 // setupPushNotifications corre más de una vez por sesión (el efecto y el
 // requestPermission del header): el listener de "tocó la push" va una sola vez.
@@ -109,8 +117,14 @@ export const NotificationsProvider = ({ children }) => {
           permission = await Notification.requestPermission();
         }
         if (permission === 'granted') {
+          // Sin VAPID propia se usa la de Firebase por defecto (antes se pasaba
+          // 'TU_VAPID_KEY' y el token nunca se generaba: no había push web).
+          const swRegistration = await registrarSwMensajes();
+          if (!swRegistration) return;
+          const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
           const currentToken = await getToken(messaging, {
-            vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY || 'TU_VAPID_KEY'
+            ...(vapidKey ? { vapidKey } : {}),
+            serviceWorkerRegistration: swRegistration,
           });
           if (currentToken) {
             console.log('Web FCM token:', currentToken);
@@ -122,14 +136,25 @@ export const NotificationsProvider = ({ children }) => {
             }
           }
 
-          // Escuchar mensajes en primer plano (Web)
-          onMessage(messaging, (payload) => {
-            console.log('Message received in foreground: ', payload);
-            new Notification(payload.notification.title, {
-              body: payload.notification.body,
-              icon: '/logo192.png'
+          // Con la pestaña abierta el service worker no muestra nada: se arma la
+          // notificación acá y, al tocarla, lleva al link (y cuenta la apertura).
+          if (!onMessageRegistrado) {
+            onMessageRegistrado = true;
+            onMessage(messaging, (payload) => {
+              const data = payload?.data || {};
+              const n = new Notification(payload?.notification?.title || 'Walá', {
+                body: payload?.notification?.body || '',
+                icon: '/logo192.png',
+                image: payload?.notification?.image,
+              });
+              n.onclick = () => {
+                window.focus();
+                registrarApertura({ notifId: data.notifId, campaignId: data.campaignId });
+                abrirLinkDePush(data.link);
+                n.close();
+              };
             });
-          });
+          }
         }
       } catch (error) {
         if (import.meta.env.DEV) console.warn('Error configurando notificaciones web:', error);
