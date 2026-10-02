@@ -55,6 +55,10 @@ probado de punta a punta en el emulador (functions incluidas). **Frontend DESPLE
 - ✅ **PROMOS**: las campañas programadas esperan si está apagado o fuera de horario; "Enviar ahora" pide confirmación.
 - ✅ **A/B medible**: `markNotificationOpenedSecure` cuenta aperturas (tocar en campanita o push) en `notification_stats/{tipo}.{a|b}`; Historial compara variantes y muestra aperturas por campaña.
 
+### Aviso "Producto que estuvo mirando" (reemplaza el "¡Sigue disponible!" del navegador)
+- ✅ Nueva categoría **product_views** (11–20 h por defecto): una vez al día, a quien miró un producto 3+ veces (visitas de 3 s+) o 2+ min en 7 días, ya no lo mira hace 12 h+ y no lo compró (`wala_pedidos`), le llega "👀 Lo que estuviste viendo" con foto y link. Campanita siempre, push si tiene app (respeta el tope diario). Mismo producto no se repite en 14 días. Texto editable con `{producto}` y medible A/B (`functions/productViewLogic.js`).
+- ✅ Se quitó `src/hooks/useProductTracking.js`: la notificación la armaba el navegador MIENTRAS el cliente miraba el producto, sin control del panel y con texto "Ese {producto}".
+
 ### Interés por producto + WhatsApp
 - ✅ Nueva página **`/admin/interes-productos`** ("🔥 Interés por producto"): productos que más miran y **clientes que pasaron ≥ N tiempo en un producto** (route_dwell en `/producto/:id`), con botón **WhatsApp** al número del cliente y mensaje listo con el producto.
 - ✅ Ficha del usuario en **Usuarios y métricas**: "Productos donde más tiempo pasa" (nombre + foto, no la ruta cruda) y **"Recomendarle"** (misma categoría, no vistos).

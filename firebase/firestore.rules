@@ -304,6 +304,9 @@ service cloud.firestore {
     match /order_notifications/{id}   { allow read: if isAdmin(); allow write: if false; }
     // Notificaciones guardadas (borradores reutilizables del panel): solo admin.
     match /notification_drafts/{id}   { allow read, write: if isAdmin(); }
+    // Aviso "producto que estuvo mirando": control diario y qué se avisó a quién. Solo servidor.
+    match /notification_state/{id}    { allow read: if isAdmin(); allow write: if false; }
+    match /product_view_notifications/{id} { allow read: if isAdmin(); allow write: if false; }
     match /storeConfigLogs/{id}       { allow read, write: if isAdmin(); }
     match /inventoryLogs/{id}         { allow read, write: if isAdmin(); }
     // (regla fantasma 'analytics_kapi' eliminada: ninguna parte del código la usa;

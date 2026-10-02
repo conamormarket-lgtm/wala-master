@@ -11,12 +11,14 @@ const defaultSettings = {
     cart_abandoned: true,
     retention: true,
     orders: true,
+    product_views: true,
     promos: true
   },
   schedules: {
     cart_abandoned: { start: '09:00', end: '21:00' },
     retention: { start: '09:00', end: '21:00' },
     orders: { start: '08:00', end: '21:00' },
+    product_views: { start: '11:00', end: '20:00' },
     promos: { start: '10:00', end: '20:00' }
   },
   copys: {
@@ -24,7 +26,8 @@ const defaultSettings = {
     cart_24h: { a: { text: "El box que elegiste sigue en tu carrito.", emoji: "🎁", cta: "¿Terminamos de armarlo?" }, b: null },
     cart_48h: { a: { text: "Última oportunidad. Tu carrito se vacía mañana.", emoji: "⏳", cta: "¿Lo completamos?" }, b: null },
     retention_7d: { a: { text: "Kapi te extraña mucho. Lleva varios días sin verte", emoji: "😢", cta: "Abre la app" }, b: null },
-    retention_14d: { a: { text: "Tienes {monedas} monedas que se van a perder. Y Kapi está triste...", emoji: "💔", cta: "Sálvalas" }, b: null }
+    retention_14d: { a: { text: "Tienes {monedas} monedas que se van a perder. Y Kapi está triste...", emoji: "💔", cta: "Sálvalas" }, b: null },
+    product_view: { a: { text: "¿Te quedaste pensando en {producto}?", emoji: "👀", cta: "Sigue disponible" }, b: null }
   }
 };
 
@@ -37,6 +40,7 @@ const promoVacia = {
 const CATEGORIAS = {
   cart_abandoned: { nombre: 'Carrito abandonado', detalle: 'Avisa a la 1 h, 24 h y 48 h a quien dejó productos en el carrito. Solo a quien tiene la app.' },
   retention: { nombre: 'Kapi te extraña', detalle: 'Avisa a quien no abre la app hace 7 o 14 días. Solo a quien tiene la app.' },
+  product_views: { nombre: 'Producto que estuvo mirando', detalle: 'Una vez al día, dentro de este horario: a quien miró un producto 3 veces o más (o más de 2 minutos) y no lo compró, le recuerda ese producto. Llega a la campanita y, si tiene la app, al celular.' },
   orders: { nombre: 'Pedidos', detalle: 'Avisa cuando se confirma el pago, entra a producción, sale a reparto y se entrega. Fuera de horario queda en la campanita y la push no sale.' },
   promos: { nombre: 'Ofertas programadas', detalle: 'Las ofertas programadas solo salen dentro de este horario. Apagado: quedan en espera. "Enviar ahora" fuera de horario pide confirmación.' },
 };
@@ -56,6 +60,13 @@ const GRUPOS_AVISOS = [
     ],
   },
   {
+    nombre: '👀 Producto que estuvo mirando',
+    detalle: 'Para quien miró un producto varias veces y no lo compró. Usa + Producto para poner el nombre del producto.',
+    avisos: [
+      { key: 'product_view', nombre: 'Al día siguiente', cuando: 'Sale una vez al día (dentro de su horario) a quien lo miró 3+ veces o más de 2 minutos y ya no lo está mirando. El mismo producto no se repite en 14 días.', titulo: '👀 Lo que estuviste viendo', conProducto: true },
+    ],
+  },
+  {
     nombre: '🐾 Kapi te extraña',
     detalle: 'Para quien dejó de abrir la app (Kapi es la mascota virtual).',
     avisos: [
@@ -72,13 +83,14 @@ const vistaPrevia = (v) => [v?.text, v?.cta, v?.emoji]
   .filter(Boolean)
   .join(' ')
   .replace(/\{nombre\}/g, 'María')
-  .replace(/\{monedas\}/g, '25');
+  .replace(/\{monedas\}/g, '25')
+  .replace(/\{producto\}/g, 'Casaca Dragon Ball · Gohan Beast');
 
 // Nombres de los avisos automáticos para la tabla A/B.
 const NOMBRES_AVISO = {
   cart_1h: 'Carrito 1 h', cart_24h: 'Carrito 24 h', cart_48h: 'Carrito 48 h',
   retention_7d: 'Kapi 7 días', retention_14d: 'Kapi 14 días',
-  orders: 'Pedidos', fecha_recordatorio: 'Fechas importantes', manual_promo: 'Ofertas (campañas)',
+  orders: 'Pedidos', product_view: 'Producto que estuvo mirando', fecha_recordatorio: 'Fechas importantes', manual_promo: 'Ofertas (campañas)',
 };
 
 const tasa = (abiertos, enviados) => (enviados > 0 ? `${Math.round((abiertos / enviados) * 100)}%` : '—');
@@ -459,6 +471,9 @@ const AdminNotifications = () => {
                                   <div className={styles.datosBtns}>
                                     <button type="button" className={styles.datoBtn} onClick={() => insertarDato(aviso.key, variant, 'nombre')}>+ Nombre</button>
                                     <button type="button" className={styles.datoBtn} onClick={() => insertarDato(aviso.key, variant, 'monedas')}>+ Monedas</button>
+                                    {aviso.conProducto && (
+                                      <button type="button" className={styles.datoBtn} onClick={() => insertarDato(aviso.key, variant, 'producto')}>+ Producto</button>
+                                    )}
                                   </div>
                                 </div>
                                 <div className={styles.copyFieldsRow}>

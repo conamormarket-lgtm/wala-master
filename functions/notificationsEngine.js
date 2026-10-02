@@ -5,6 +5,7 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { limaNow, limaTodayStr } = require("./economyLogic");
 const { recordatoriosDeHoy } = require("./fechasLogic");
 const { hitoDeEstadoErp, hitoDeEstadoWala, debeAvisar, textoHito } = require("./ordersLogic");
+const { agruparInteres, elegirProducto } = require("./productViewLogic");
 
 const db = admin.firestore();
 const messaging = admin.messaging();
@@ -35,6 +36,7 @@ const HORARIO_POR_DEFECTO = {
   retention: ["09:00", "21:00"],
   promos: ["10:00", "20:00"],
   orders: ["08:00", "21:00"],
+  product_views: ["11:00", "20:00"],
 };
 function categoriaEncendida(settings, categoria) {
   return !(settings.categories && settings.categories[categoria] === false);
@@ -136,7 +138,8 @@ function copyDe(settings, key, uid, vars, fallback) {
   if (!texto) return { text: fallback, variante: null };
   texto = texto
     .replace(/\{nombre\}/g, vars.nombre || "")
-    .replace(/\{monedas\}/g, String(vars.monedas || 0));
+    .replace(/\{monedas\}/g, String(vars.monedas || 0))
+    .replace(/\{producto\}/g, vars.producto || "");
   return { text: texto, variante };
 }
 
@@ -317,6 +320,12 @@ exports.notificationEngine = onSchedule({
     await procesarCampanasProgramadas(settings);
   } catch (e) {
     console.error("Error procesando campañas programadas:", e);
+  }
+
+  try {
+    await avisosProductoVisto(settings);
+  } catch (e) {
+    console.error("Error en avisos de producto visto:", e);
   }
 
   try {
@@ -687,3 +696,116 @@ exports.cancelPromoCampaign = functions.https.onCall(async (data, context) => {
   }
   return { success: true };
 });
+
+// ── Aviso "Producto que estuvo mirando" (categoría product_views) ────────────
+// Una vez al día, en la primera vuelta del motor dentro del horario de la
+// categoría: a quien miró un producto 3+ veces (o 2+ min) en la última semana,
+// ya no lo está mirando (12 h+) y no lo compró, le llega un recordatorio con
+// ese producto. Uno por cliente por día; el mismo producto no se repite en 14
+// días. Reemplaza la notificación que antes armaba el navegador del cliente
+// (src/hooks/useProductTracking.js) mientras todavía miraba el producto.
+const PV_STATE_DOC = "notification_state/product_views";
+const PV_LOG_COLLECTION = "product_view_notifications";
+const PV_TITULO = "👀 Lo que estuviste viendo";
+const PV_TEXTO_POR_DEFECTO = "¿Te quedaste pensando en {producto}? Sigue disponible 👀";
+
+async function productosComprados(uid) {
+  const comprados = new Set();
+  try {
+    const snap = await db.collection("wala_pedidos").where("buyerUid", "==", uid).get();
+    snap.forEach((d) => {
+      const prods = d.data().productos;
+      const lineas = Array.isArray(prods) ? prods : Object.values(prods || {});
+      lineas.forEach((l) => { if (l && l.productoId) comprados.add(String(l.productoId)); });
+    });
+  } catch (e) {
+    console.warn("productosComprados:", e.message);
+  }
+  return comprados;
+}
+
+async function avisosProductoVisto(settings, { forzar = false } = {}) {
+  if (!forzar && !categoriaActiva(settings, "product_views")) return { omitido: "fuera_de_horario" };
+
+  // Una sola corrida por día (Lima): se marca antes para no duplicar si dos
+  // vueltas del motor se pisan.
+  const hoy = limaTodayStr();
+  const stateRef = db.doc(PV_STATE_DOC);
+  const yaCorrio = await db.runTransaction(async (t) => {
+    const snap = await t.get(stateRef);
+    if (!forzar && snap.exists && snap.data().lastRunDate === hoy) return true;
+    t.set(stateRef, { lastRunDate: hoy, startedAt: new Date().toISOString() }, { merge: true });
+    return false;
+  });
+  if (yaCorrio) return { omitido: "ya_corrio_hoy" };
+
+  const now = Date.now();
+  const snap = await db.collection("analytics_events")
+    .where("type", "==", "route_dwell")
+    .where("clientTsMs", ">=", now - 7 * 86400 * 1000)
+    .select("uid", "path", "dwellMs", "clientTsMs")
+    .limit(20000)
+    .get();
+  const porUsuario = agruparInteres(snap.docs.map((d) => d.data()));
+
+  let enviados = 0;
+  for (const [uid, lista] of porUsuario) {
+    const logRef = db.collection(PV_LOG_COLLECTION).doc(uid);
+    const logSnap = await logRef.get();
+    const log = logSnap.exists ? logSnap.data() : {};
+    // Se consulta lo comprado solo si hay un candidato posible.
+    if (!elegirProducto(lista, log, new Set(), now)) continue;
+    const elegido = elegirProducto(lista, log, await productosComprados(uid), now);
+    if (!elegido) continue;
+
+    const prodSnap = await db.collection("productos_wala").doc(elegido.productId).get();
+    if (!prodSnap.exists) continue;
+    const prod = prodSnap.data();
+    if (prod.visible === false || prod.deleted) continue;
+
+    const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) continue;
+    const user = userSnap.data();
+
+    const vars = {
+      nombre: user.displayName ? user.displayName.split(" ")[0] : "",
+      monedas: user.monedas || 0,
+      producto: prod.name || "el producto que viste",
+    };
+    const { text, variante } = copyDe(settings, "product_view", uid, vars, PV_TEXTO_POR_DEFECTO.replace("{producto}", vars.producto));
+    const payload = {
+      title: PV_TITULO,
+      body: text,
+      type: "product_view",
+      link: `/producto/${elegido.productId}`,
+      image: (Array.isArray(prod.images) && prod.images[0]) || prod.mainImage || "",
+      variante,
+    };
+
+    // Campanita siempre (también web); push si tiene la app y no pasó el tope diario.
+    const ref = db.collection(`users/${uid}/notifications`).doc();
+    await ref.set(docInApp(payload));
+    await contar("product_view", variante, "sent");
+    const tokens = user.fcmTokens || [];
+    if (tokens.length > 0 && canSendPush(user, "product_view")) {
+      try {
+        const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, { ...payload, notifId: ref.id }));
+        await removeInvalidTokens(userRef, tokens, response);
+        if (response.successCount > 0) {
+          const nuevoLog = [...(user.antiSpamLog || []), { date: new Date().toISOString(), type: "product_view" }];
+          await userRef.update({ antiSpamLog: nuevoLog.slice(-20) });
+        }
+      } catch (e) {
+        console.warn(`avisosProductoVisto: push a ${uid} falló:`, e.message);
+      }
+    }
+    await logRef.set({ [elegido.productId]: new Date().toISOString() }, { merge: true });
+    enviados++;
+  }
+
+  await stateRef.set({ finishedAt: new Date().toISOString(), enviados }, { merge: true });
+  console.log(`avisosProductoVisto: ${enviados} avisos (${hoy}).`);
+  return { enviados };
+}
+exports._avisosProductoVisto = avisosProductoVisto; // para pruebas en el emulador

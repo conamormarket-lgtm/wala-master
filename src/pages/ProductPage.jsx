@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useProduct } from '../hooks/useProducts';
 import { getCategories } from '../services/products';
 import ProductDetail from './Tienda/components/ProductDetail';
-import { useProductTracking } from '../hooks/useProductTracking';
 
 const ProductPage = () => {
   const { id } = useParams();
@@ -23,9 +22,9 @@ const ProductPage = () => {
   // comprable (nada de agregar al carrito) sino un estado limpio de "no disponible".
   const noDisponible = Boolean(product) && (product.deleted === true || product.visible === false);
 
-  // Rastreo de vistas de producto para notificaciones de comportamiento
-  // (no se rastrean productos borrados/ocultos).
-  useProductTracking(noDisponible ? null : product);
+  // El recordatorio "¡Sigue disponible!" ya no lo arma el navegador mientras
+  // el cliente mira el producto: lo manda el servidor al día siguiente (aviso
+  // "Producto que estuvo mirando", functions/notificationsEngine.js).
 
   if (error) {
     return <div>Error al cargar el producto: {error.message}</div>;
