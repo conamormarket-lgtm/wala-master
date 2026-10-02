@@ -481,3 +481,127 @@
 .fieldGroupSmall {
   flex: 0 1 120px;
 }
+
+/* ── Notificaciones guardadas + acciones del formulario ── */
+.guardadas {
+  margin-bottom: 24px;
+}
+
+.guardadasLista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.guardada {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.guardadaActiva {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 1px #8b5cf6 inset;
+}
+
+.guardadaImg {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.guardadaTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.guardadaTexto span {
+  color: #4b5563;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guardadaTexto small {
+  color: #6b7280;
+}
+
+.guardadaAcciones {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.editandoGuardada {
+  margin: 0 0 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(139, 92, 246, 0.08);
+  font-size: 0.85rem;
+}
+
+.accionesForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.accionesForm .saveBtn {
+  margin-top: 0;
+}
+
+/* Botón plano secundario (borde violeta, sin degradado). */
+.btnSecundario {
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid #8b5cf6;
+  background: transparent;
+  color: #6d28d9;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnSecundario:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.btnSecundario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.accionesFila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 6px;
+}
+
+.accionesFila button {
+  padding-left: 0;
+}
+
+[data-theme="dark"] .guardada {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .guardadaTexto span,
+[data-theme="dark"] .guardadaTexto small {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .btnSecundario {
+  color: #c4b5fd;
+}

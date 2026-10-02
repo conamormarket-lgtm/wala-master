@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase/config';
-import { doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, addDoc, deleteDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useGlobalToast } from '../../../contexts/ToastContext';
 import BuscadorProducto from '../../../components/admin/BuscadorProducto/BuscadorProducto';
@@ -87,8 +87,14 @@ const SEGMENTOS = {
   all: 'Todos', vip: 'VIP', inactive: 'Inactivos', cart: 'Con carrito', dates: 'Con fechas',
 };
 const ESTADOS = {
-  sent: '✅ Enviada', scheduled: '🕒 Programada', sending: '⏳ Enviando', error: '⚠️ Error',
+  sent: '✅ Enviada', scheduled: '🕒 Programada', sending: '⏳ Enviando', error: '⚠️ Error', cancelled: '🚫 Cancelada',
 };
+
+// Campos de una campaña que se guardan/reutilizan (sin "cuándo").
+const camposCampana = (c) => ({
+  title: c.title || '', body: c.body || '', link: c.link || '', image: c.image || '',
+  segment: c.segment || 'all', productId: c.productId || '', productName: c.productName || '',
+});
 
 const AdminNotifications = () => {
   const [activeTab, setActiveTab] = useState('settings');
@@ -103,6 +109,11 @@ const AdminNotifications = () => {
   const [cargandoCampanas, setCargandoCampanas] = useState(false);
   // Enviados/abiertos por aviso y variante (los cuenta el servidor).
   const [stats, setStats] = useState([]);
+  const [recargaHistorial, setRecargaHistorial] = useState(0);
+
+  // Notificaciones guardadas (borradores para reutilizar cuando se quiera).
+  const [guardadas, setGuardadas] = useState([]);
+  const [recargaGuardadas, setRecargaGuardadas] = useState(0);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -132,6 +143,15 @@ const AdminNotifications = () => {
   }, []);
 
   useEffect(() => {
+    if (activeTab !== 'manual') return;
+    let vivo = true;
+    getDocs(query(collection(db, 'notification_drafts'), orderBy('updatedAt', 'desc'), limit(50)))
+      .then((snap) => { if (vivo) setGuardadas(snap.docs.map((d) => ({ id: d.id, ...d.data() }))); })
+      .catch((err) => console.warn('Error cargando guardadas:', err));
+    return () => { vivo = false; };
+  }, [activeTab, recargaGuardadas]);
+
+  useEffect(() => {
     if (activeTab !== 'metrics') return;
     let vivo = true;
     setCargandoCampanas(true);
@@ -147,7 +167,7 @@ const AdminNotifications = () => {
       .catch((err) => console.warn('Error cargando historial:', err))
       .finally(() => { if (vivo) setCargandoCampanas(false); });
     return () => { vivo = false; };
-  }, [activeTab]);
+  }, [activeTab, recargaHistorial]);
 
   const handleSave = async () => {
     try {
@@ -226,6 +246,82 @@ const AdminNotifications = () => {
       link: `/producto/${p.id}`,
       image: p.images?.[0] || p.mainImage || prev.image,
     }));
+  };
+
+  // ── Guardadas, prueba y reutilizar ──
+  const guardarNotificacion = async () => {
+    if (!manualPromo.title || !manualPromo.body) {
+      return toast.error('Escribe al menos el título y el mensaje para guardarla.');
+    }
+    const datos = { ...camposCampana(manualPromo), updatedAt: new Date().toISOString() };
+    try {
+      if (manualPromo.draftId) {
+        await setDoc(doc(db, 'notification_drafts', manualPromo.draftId), datos, { merge: true });
+        toast.success('Notificación guardada actualizada.');
+      } else {
+        const ref = await addDoc(collection(db, 'notification_drafts'), { ...datos, createdAt: datos.updatedAt });
+        setManualPromo((prev) => ({ ...prev, draftId: ref.id }));
+        toast.success('Notificación guardada. La encuentras arriba, en "Notificaciones guardadas".');
+      }
+      setRecargaGuardadas((n) => n + 1);
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo guardar.');
+    }
+  };
+
+  const usarNotificacion = (n) => {
+    setManualPromo({ ...promoVacia, ...camposCampana(n), draftId: n.id || '' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const borrarGuardada = async (n) => {
+    if (!window.confirm(`¿Borrar "${n.title}" de las notificaciones guardadas?`)) return;
+    try {
+      await deleteDoc(doc(db, 'notification_drafts', n.id));
+      if (manualPromo.draftId === n.id) setManualPromo((prev) => ({ ...prev, draftId: '' }));
+      setRecargaGuardadas((x) => x + 1);
+    } catch (err) {
+      toast.error('No se pudo borrar.');
+    }
+  };
+
+  const enviarmePrueba = async () => {
+    if (!manualPromo.title || !manualPromo.body) {
+      return toast.error('Escribe el título y el mensaje primero.');
+    }
+    setIsSending(true);
+    try {
+      const fn = httpsCallable(getFunctions(), 'sendManualPromoNotification');
+      const { data } = await fn({ ...camposCampana(manualPromo), prueba: true });
+      toast.success(data.tieneApp
+        ? 'Prueba enviada solo a ti: revisa la campanita y tu celular.'
+        : 'Prueba enviada solo a ti: revisa la campanita (tu cuenta no tiene la app).');
+    } catch (err) {
+      toast.error(err?.message || 'No se pudo enviar la prueba.');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Desde el Historial: carga la campaña en el formulario para volver a
+  // enviarla o programarla (no se envía sola).
+  const reutilizarCampana = (c) => {
+    setManualPromo({ ...promoVacia, ...camposCampana(c) });
+    setActiveTab('manual');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast.success('Campaña cargada: revisa el texto y elige cuándo enviarla.');
+  };
+
+  const cancelarProgramada = async (c) => {
+    if (!window.confirm(`¿Cancelar el envío programado de "${c.title}"?`)) return;
+    try {
+      await httpsCallable(getFunctions(), 'cancelPromoCampaign')({ campaignId: c.id });
+      toast.success('Envío cancelado.');
+      setRecargaHistorial((n) => n + 1);
+    } catch (err) {
+      toast.error(err?.message || 'No se pudo cancelar.');
+    }
   };
 
   const handleSendManualPromo = async (forzar = false) => {
@@ -413,7 +509,37 @@ const AdminNotifications = () => {
             Llega como push a quienes tienen la app y queda en la campanita 🔔 de todos los del
             segmento (también en la web). Al tocarla se abre el link que pongas.
           </p>
+
+          {guardadas.length > 0 && (
+            <div className={styles.guardadas}>
+              <h4 className={styles.grupoTitulo}>📌 Notificaciones guardadas</h4>
+              <p className={styles.helpText}>Tócale "Usar" para cargarla abajo y enviarla o programarla cuando quieras.</p>
+              <ul className={styles.guardadasLista}>
+                {guardadas.map((n) => (
+                  <li key={n.id} className={`${styles.guardada} ${manualPromo.draftId === n.id ? styles.guardadaActiva : ''}`}>
+                    {n.image && <img src={n.image} alt="" className={styles.guardadaImg} onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
+                    <div className={styles.guardadaTexto}>
+                      <strong>{n.title}</strong>
+                      <span>{n.body}</span>
+                      <small>{SEGMENTOS[n.segment] || n.segment}</small>
+                    </div>
+                    <div className={styles.guardadaAcciones}>
+                      <button type="button" className={styles.textBtn} onClick={() => usarNotificacion(n)}>Usar</button>
+                      <button type="button" className={styles.textBtnDanger} onClick={() => borrarGuardada(n)}>Borrar</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className={styles.manualForm}>
+            {manualPromo.draftId && (
+              <p className={styles.editandoGuardada}>
+                Estás usando una notificación guardada. "Guardar" actualiza esa misma.{' '}
+                <button type="button" className={styles.textBtn} onClick={() => setManualPromo(promoVacia)}>Empezar una nueva</button>
+              </p>
+            )}
             <label>Anunciar un producto (opcional):</label>
             <BuscadorProducto
               productId={manualPromo.productId}
@@ -457,9 +583,20 @@ const AdminNotifications = () => {
               </>
             )}
 
-            <button className={styles.saveBtn} onClick={() => handleSendManualPromo(false)} disabled={isSending}>
-              {isSending ? 'Enviando...' : manualPromo.cuando === 'programar' ? 'Programar campaña' : 'Enviar ahora'}
-            </button>
+            <div className={styles.accionesForm}>
+              <button type="button" className={styles.btnSecundario} onClick={enviarmePrueba} disabled={isSending}>
+                📱 Enviarme una prueba
+              </button>
+              <button type="button" className={styles.btnSecundario} onClick={guardarNotificacion} disabled={isSending}>
+                📌 {manualPromo.draftId ? 'Guardar cambios' : 'Guardar para después'}
+              </button>
+              <button className={styles.saveBtn} onClick={() => handleSendManualPromo(false)} disabled={isSending}>
+                {isSending ? 'Enviando...' : manualPromo.cuando === 'programar' ? 'Programar campaña' : 'Enviar a todos ahora'}
+              </button>
+            </div>
+            <p className={styles.helpText}>
+              "Enviarme una prueba" te la manda solo a ti. "Enviar a todos ahora" la manda a todo el segmento elegido y no se puede deshacer.
+            </p>
           </div>
         </div>
       )}
@@ -529,7 +666,15 @@ const AdminNotifications = () => {
                   {campanas.map((c) => (
                     <tr key={c.id}>
                       <td>{new Date(c.sentAt || c.scheduledAt || c.createdAt).toLocaleString('es-PE')}</td>
-                      <td><strong>{c.title}</strong><br /><span className={styles.helpText}>{c.body}</span></td>
+                      <td>
+                        <strong>{c.title}</strong><br /><span className={styles.helpText}>{c.body}</span>
+                        <div className={styles.accionesFila}>
+                          <button type="button" className={styles.textBtn} onClick={() => reutilizarCampana(c)}>↻ Volver a usar</button>
+                          {c.status === 'scheduled' && (
+                            <button type="button" className={styles.textBtnDanger} onClick={() => cancelarProgramada(c)}>Cancelar envío</button>
+                          )}
+                        </div>
+                      </td>
                       <td>{SEGMENTOS[c.segment] || c.segment}</td>
                       <td>{ESTADOS[c.status] || c.status}</td>
                       <td>{c.pushUsers ?? '—'}</td>

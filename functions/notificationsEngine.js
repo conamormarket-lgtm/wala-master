@@ -451,22 +451,51 @@ exports.datesReminderEngine = onSchedule({
   }
 });
 
-exports.sendManualPromoNotification = functions.https.onCall(async (data, context) => {
+// Admin = custom claim o, como puente de bootstrap, doc adminUsers/{uid} con
+// role 'admin' (H-04).
+async function exigirAdmin(context) {
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
   }
-
-  // Solo admins pueden enviar push masivos (H-04). Admin = custom claim o, como
-  // puente de bootstrap, doc adminUsers/{uid} con role 'admin'.
-  const isCallerAdmin = context.auth.token?.admin === true
+  const esAdmin = context.auth.token?.admin === true
     || (await db.collection("adminUsers").doc(context.auth.uid).get()
       .then((s) => s.exists && s.data().role === "admin")
       .catch(() => false));
-  if (!isCallerAdmin) {
+  if (!esAdmin) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede enviar notificaciones.");
   }
+}
+
+// Prueba: la campaña llega SOLO al admin que la pide (campanita + push si tiene
+// la app). No crea campaña ni suma a las estadísticas.
+async function enviarPrueba(uid, campana) {
+  const payload = { ...campana, type: "manual_promo" };
+  const ref = db.collection(`users/${uid}/notifications`).doc();
+  await ref.set({ ...docInApp(payload), prueba: true });
+  const snap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+  const tokens = (snap.exists && snap.data().fcmTokens) || [];
+  let push = 0;
+  if (tokens.length > 0) {
+    try {
+      const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, { ...payload, notifId: ref.id }));
+      await removeInvalidTokens(snap.ref, tokens, response);
+      push = response.successCount;
+    } catch (e) {
+      console.warn("enviarPrueba: push falló:", e.message);
+    }
+  }
+  return { push, tieneApp: tokens.length > 0 };
+}
+
+exports.sendManualPromoNotification = functions.https.onCall(async (data, context) => {
+  await exigirAdmin(context);
 
   const campana = validarCampana(data);
+
+  if (data && data.prueba === true) {
+    const r = await enviarPrueba(context.auth.uid, campana);
+    return { success: true, test: true, ...r };
+  }
 
   // PROMOS apagado o fuera de horario: "Enviar ahora" pide confirmación en el
   // panel (forzar). Las programadas se aceptan y esperan al horario.
@@ -638,3 +667,23 @@ exports.notifyOrderMilestoneWala = functions.firestore
     }
     return null;
   });
+
+// Cancela una campaña programada que todavía no salió.
+exports.cancelPromoCampaign = functions.https.onCall(async (data, context) => {
+  await exigirAdmin(context);
+  const id = String((data && data.campaignId) || "");
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) {
+    throw new functions.https.HttpsError("invalid-argument", "Campaña inválida.");
+  }
+  const ref = db.collection(CAMPAIGNS_COLLECTION).doc(id);
+  const ok = await db.runTransaction(async (t) => {
+    const snap = await t.get(ref);
+    if (!snap.exists || snap.data().status !== "scheduled") return false;
+    t.update(ref, { status: "cancelled", cancelledAt: new Date().toISOString(), cancelledBy: context.auth.uid });
+    return true;
+  });
+  if (!ok) {
+    throw new functions.https.HttpsError("failed-precondition", "Esa campaña ya no está programada.");
+  }
+  return { success: true };
+});
