@@ -50,6 +50,11 @@ probado de punta a punta en el emulador (functions incluidas). **Frontend DESPLE
 - ✅ La campaña llega como push a quien tiene app **y a la campanita de todo el segmento** (también web). Historial real en `notification_campaigns` (la pestaña de métricas mostraba números inventados).
 - ✅ Tocar una push en Android ahora abre su link (`pushNotificationActionPerformed` → `PushLinkHandler`); en la campanita, tocar la notificación navega y muestra la foto.
 
+### ORDERS, PROMOS y medición A/B (commit `93ff056`, functions desplegadas; reglas NO)
+- ✅ **ORDERS**: aviso al cliente al confirmarse el pago (`wala_pedidos.estadoWala`), al entrar a producción, salir a reparto y entregarse (`pedidos.estadoGeneral` del ERP). Una vez por hito y pedido (`order_notifications`, clave `numeroPedido`), nunca hacia atrás. Campanita siempre; push solo en el horario de ORDERS (08–21 por defecto). Functions `notifyOrderMilestoneErp` / `notifyOrderMilestoneWala` (`functions/ordersLogic.js`).
+- ✅ **PROMOS**: las campañas programadas esperan si está apagado o fuera de horario; "Enviar ahora" pide confirmación.
+- ✅ **A/B medible**: `markNotificationOpenedSecure` cuenta aperturas (tocar en campanita o push) en `notification_stats/{tipo}.{a|b}`; Historial compara variantes y muestra aperturas por campaña.
+
 ### Interés por producto + WhatsApp
 - ✅ Nueva página **`/admin/interes-productos`** ("🔥 Interés por producto"): productos que más miran y **clientes que pasaron ≥ N tiempo en un producto** (route_dwell en `/producto/:id`), con botón **WhatsApp** al número del cliente y mensaje listo con el producto.
 - ✅ Ficha del usuario en **Usuarios y métricas**: "Productos donde más tiempo pasa" (nombre + foto, no la ruta cruda) y **"Recomendarle"** (misma categoría, no vistos).
