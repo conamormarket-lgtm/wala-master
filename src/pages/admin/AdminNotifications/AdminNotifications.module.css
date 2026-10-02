@@ -322,3 +322,29 @@
   color: #6b7280;
   font-weight: 600;
 }
+
+/* Explicación de cada categoría bajo su nombre. */
+.categoryHelp {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* Modo noche: la tarjeta también se oscurece (antes quedaba blanca con filas
+   oscuras adentro y texto claro encima: ilegible en ambos casos). */
+[data-theme="dark"] .tabContent {
+  background: var(--color-surface-2, var(--color-surface));
+  color: var(--color-text);
+  box-shadow: none;
+  border: 1px solid var(--color-border);
+}
+[data-theme="dark"] .categoryHelp,
+[data-theme="dark"] .tabla th {
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .tabla th,
+[data-theme="dark"] .tabla td {
+  border-bottom-color: var(--color-border);
+}

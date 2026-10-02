@@ -16,6 +16,7 @@ const defaultSettings = {
   schedules: {
     cart_abandoned: { start: '09:00', end: '21:00' },
     retention: { start: '09:00', end: '21:00' },
+    orders: { start: '08:00', end: '21:00' },
     promos: { start: '10:00', end: '20:00' }
   },
   copys: {
@@ -31,6 +32,23 @@ const promoVacia = {
   title: '', body: '', segment: 'all', link: '', image: '',
   productId: '', productName: '', cuando: 'ahora', scheduledAt: '',
 };
+
+// Nombre y explicación de cada categoría (antes se mostraba la clave cruda).
+const CATEGORIAS = {
+  cart_abandoned: { nombre: 'Carrito abandonado', detalle: 'Avisa a la 1 h, 24 h y 48 h a quien dejó productos en el carrito. Solo a quien tiene la app.' },
+  retention: { nombre: 'Kapi te extraña', detalle: 'Avisa a quien no abre la app hace 7 o 14 días. Solo a quien tiene la app.' },
+  orders: { nombre: 'Pedidos', detalle: 'Avisa cuando se confirma el pago, entra a producción, sale a reparto y se entrega. Fuera de horario queda en la campanita y la push no sale.' },
+  promos: { nombre: 'Ofertas programadas', detalle: 'Las ofertas programadas solo salen dentro de este horario. Apagado: quedan en espera. "Enviar ahora" fuera de horario pide confirmación.' },
+};
+
+// Nombres de los avisos automáticos para la tabla A/B.
+const NOMBRES_AVISO = {
+  cart_1h: 'Carrito 1 h', cart_24h: 'Carrito 24 h', cart_48h: 'Carrito 48 h',
+  retention_7d: 'Kapi 7 días', retention_14d: 'Kapi 14 días',
+  orders: 'Pedidos', fecha_recordatorio: 'Fechas importantes', manual_promo: 'Ofertas (campañas)',
+};
+
+const tasa = (abiertos, enviados) => (enviados > 0 ? `${Math.round((abiertos / enviados) * 100)}%` : '—');
 
 const SEGMENTOS = {
   all: 'Todos', vip: 'VIP', inactive: 'Inactivos', cart: 'Con carrito', dates: 'Con fechas',
@@ -50,6 +68,8 @@ const AdminNotifications = () => {
   // Historial REAL de campañas (antes esta pestaña mostraba números inventados).
   const [campanas, setCampanas] = useState([]);
   const [cargandoCampanas, setCargandoCampanas] = useState(false);
+  // Enviados/abiertos por aviso y variante (los cuenta el servidor).
+  const [stats, setStats] = useState([]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -57,7 +77,17 @@ const AdminNotifications = () => {
         const docRef = doc(db, 'notification_settings', 'global');
         const snap = await getDoc(docRef);
         if (snap.exists()) {
-          setSettings({ ...defaultSettings, ...snap.data() });
+          // Mezcla por sección: una configuración guardada antes de que existiera
+          // una categoría (p. ej. el horario de "orders") la toma de los valores
+          // por defecto en vez de perderla.
+          const d = snap.data();
+          setSettings({
+            ...defaultSettings,
+            ...d,
+            categories: { ...defaultSettings.categories, ...(d.categories || {}) },
+            schedules: { ...defaultSettings.schedules, ...(d.schedules || {}) },
+            copys: { ...defaultSettings.copys, ...(d.copys || {}) },
+          });
         }
       } catch (err) {
         console.warn("Error cargando configuración:", err);
@@ -72,9 +102,16 @@ const AdminNotifications = () => {
     if (activeTab !== 'metrics') return;
     let vivo = true;
     setCargandoCampanas(true);
-    getDocs(query(collection(db, 'notification_campaigns'), orderBy('createdAt', 'desc'), limit(50)))
-      .then((snap) => { if (vivo) setCampanas(snap.docs.map((d) => ({ id: d.id, ...d.data() }))); })
-      .catch((err) => console.warn('Error cargando campañas:', err))
+    Promise.all([
+      getDocs(query(collection(db, 'notification_campaigns'), orderBy('createdAt', 'desc'), limit(50))),
+      getDocs(collection(db, 'notification_stats')),
+    ])
+      .then(([snapC, snapS]) => {
+        if (!vivo) return;
+        setCampanas(snapC.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setStats(snapS.docs.map((d) => ({ id: d.id, ...d.data() })));
+      })
+      .catch((err) => console.warn('Error cargando historial:', err))
       .finally(() => { if (vivo) setCargandoCampanas(false); });
     return () => { vivo = false; };
   }, [activeTab]);
@@ -153,7 +190,7 @@ const AdminNotifications = () => {
     }));
   };
 
-  const handleSendManualPromo = async () => {
+  const handleSendManualPromo = async (forzar = false) => {
     if (!manualPromo.title || !manualPromo.body) {
       return toast.error("El título y el mensaje son requeridos.");
     }
@@ -173,6 +210,7 @@ const AdminNotifications = () => {
         image: manualPromo.image,
         // datetime-local llega sin zona: new Date() lo toma en la hora del navegador.
         scheduledAt: programar ? new Date(manualPromo.scheduledAt).toISOString() : null,
+        forzar,
       });
       if (response.data.success) {
         if (response.data.scheduled) {
@@ -185,6 +223,16 @@ const AdminNotifications = () => {
         throw new Error(response.data.error || 'Error desconocido');
       }
     } catch (err) {
+      // PROMOS apagado o fuera de horario: se confirma y se reenvía forzando.
+      const motivo = err?.details?.motivo;
+      if (!forzar && (motivo === 'promos_apagado' || motivo === 'promos_fuera_horario')) {
+        setIsSending(false);
+        const texto = motivo === 'promos_apagado'
+          ? 'La categoría "Ofertas programadas" (PROMOS) está apagada. ¿Enviar igual ahora?'
+          : `Estás fuera del horario de ofertas (${settings.schedules?.promos?.start || '10:00'} a ${settings.schedules?.promos?.end || '20:00'}). ¿Enviar igual ahora?`;
+        if (window.confirm(texto)) handleSendManualPromo(true);
+        return;
+      }
       console.error(err);
       toast.error(err?.message || 'Ocurrió un error al enviar la campaña promocional.');
     } finally {
@@ -213,7 +261,10 @@ const AdminNotifications = () => {
               <div key={cat} className={styles.categoryRow}>
                 <label className={styles.switchLabel}>
                   <input type="checkbox" checked={settings.categories[cat]} onChange={() => handleCategoryToggle(cat)} />
-                  {cat.replace('_', ' ').toUpperCase()}
+                  <span>
+                    {CATEGORIAS[cat]?.nombre || cat}
+                    {CATEGORIAS[cat]?.detalle && <small className={styles.categoryHelp}>{CATEGORIAS[cat].detalle}</small>}
+                  </span>
                 </label>
                 {settings.schedules[cat] && (
                   <div className={styles.scheduleInputs}>
@@ -230,8 +281,13 @@ const AdminNotifications = () => {
           <h3>Copys y A/B Testing</h3>
           <p className={styles.helpText}>
             Edita el texto, emoji y call to action de cada notificación. Puedes escribir{' '}
-            <code>{'{nombre}'}</code> y <code>{'{monedas}'}</code> dentro del texto. Si agregas una
-            Variante B, la mitad de los usuarios recibe esa versión.
+            <code>{'{nombre}'}</code> y <code>{'{monedas}'}</code> dentro del texto.
+          </p>
+          <p className={styles.helpText}>
+            <strong>¿Para qué sirve la Variante B?</strong> Para probar dos textos a la vez y quedarte con el
+            que mejor funciona: la mitad de los clientes recibe la A y la otra mitad la B. En{' '}
+            <em>Historial</em> ves cuántos abrió cada una. Cuando una gane con claridad, copia su texto en la A
+            y quita la B.
           </p>
           <div className={styles.copysList}>
             {Object.keys(settings.copys).map(key => (
@@ -326,7 +382,7 @@ const AdminNotifications = () => {
               </>
             )}
 
-            <button className={styles.saveBtn} onClick={handleSendManualPromo} disabled={isSending}>
+            <button className={styles.saveBtn} onClick={() => handleSendManualPromo(false)} disabled={isSending}>
               {isSending ? 'Enviando...' : manualPromo.cuando === 'programar' ? 'Programar campaña' : 'Enviar ahora'}
             </button>
           </div>
@@ -335,7 +391,46 @@ const AdminNotifications = () => {
 
       {activeTab === 'metrics' && (
         <div className={styles.tabContent}>
-          <h3>Historial de campañas</h3>
+          <h3>Avisos automáticos: ¿qué texto funciona mejor?</h3>
+          <p className={styles.helpText}>
+            Enviados y abiertos por cada aviso. "Abierto" = el cliente lo tocó (en la campanita o la push).
+            Con al menos 50 envíos por variante ya puedes comparar.
+          </p>
+          {stats.length === 0 ? (
+            <p className={styles.helpText}>Todavía no hay envíos registrados.</p>
+          ) : (
+            <div className={styles.tablaWrap}>
+              <table className={styles.tabla}>
+                <thead>
+                  <tr>
+                    <th>Aviso</th>
+                    <th>Variante A</th>
+                    <th>Variante B</th>
+                    <th>Mejor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.map((st) => {
+                    const a = st.a || {};
+                    const b = st.b || {};
+                    const ta = a.sent ? (a.opened || 0) / a.sent : 0;
+                    const tb = b.sent ? (b.opened || 0) / b.sent : 0;
+                    const comparable = (a.sent || 0) >= 50 && (b.sent || 0) >= 50;
+                    return (
+                      <tr key={st.id}>
+                        <td>{NOMBRES_AVISO[st.id] || st.id}</td>
+                        <td>{a.sent || 0} enviados · {a.opened || 0} abiertos ({tasa(a.opened || 0, a.sent || 0)})</td>
+                        <td>{b.sent ? `${b.sent} enviados · ${b.opened || 0} abiertos (${tasa(b.opened || 0, b.sent)})` : '—'}</td>
+                        <td>{!b.sent ? '—' : comparable ? (ta === tb ? 'Empate' : ta > tb ? '🏆 A' : '🏆 B') : 'Faltan envíos'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <h3 style={{ marginTop: '1.5rem' }}>Historial de campañas</h3>
           <p className={styles.helpText}>Las últimas 50 campañas enviadas o programadas desde este panel.</p>
           {cargandoCampanas ? (
             <p>Cargando...</p>
@@ -352,6 +447,7 @@ const AdminNotifications = () => {
                     <th>Estado</th>
                     <th>Push</th>
                     <th>Campanita</th>
+                    <th>Abiertas</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -363,6 +459,7 @@ const AdminNotifications = () => {
                       <td>{ESTADOS[c.status] || c.status}</td>
                       <td>{c.pushUsers ?? '—'}</td>
                       <td>{c.inAppUsers ?? '—'}</td>
+                      <td>{c.status === 'sent' ? `${c.opened || 0} (${tasa(c.opened || 0, c.inAppUsers || 0)})` : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

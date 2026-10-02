@@ -3900,6 +3900,9 @@ exports.computeSegmentsSecure = functions.https.onCall(async (data, context) => 
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;
 exports.datesReminderEngine = require('./notificationsEngine').datesReminderEngine;
+exports.markNotificationOpenedSecure = require('./notificationsEngine').markNotificationOpenedSecure;
+exports.notifyOrderMilestoneErp = require('./notificationsEngine').notifyOrderMilestoneErp;
+exports.notifyOrderMilestoneWala = require('./notificationsEngine').notifyOrderMilestoneWala;
 
 // ── Pre-agregación analítica diaria (Fase 2, PARTE 1) ─────────────────────────
 // Cron gen2 (00:20 hora Lima) que agrega el día anterior de analytics_events +

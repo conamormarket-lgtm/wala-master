@@ -1,13 +1,20 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore"); // admin.firestore.FieldValue puede venir undefined (emulador)
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { limaNow, limaTodayStr } = require("./economyLogic");
 const { recordatoriosDeHoy } = require("./fechasLogic");
+const { hitoDeEstadoErp, hitoDeEstadoWala, debeAvisar, textoHito } = require("./ordersLogic");
 
 const db = admin.firestore();
 const messaging = admin.messaging();
 const PORTAL_USERS_COLLECTION = "portal_clientes_users";
 const CAMPAIGNS_COLLECTION = "notification_campaigns";
+// Conteo de enviados/abiertos por tipo de aviso y variante (A/B), para saber
+// qué texto funciona mejor. Lo escribe solo el servidor; el panel lo lee.
+const STATS_COLLECTION = "notification_stats";
+// Qué hitos de cada pedido ya se avisaron (para no repetir). Solo servidor.
+const ORDER_LOG_COLLECTION = "order_notifications";
 
 // ── Hora de Lima ──────────────────────────────────────────────────────────────
 // Antes se usaba new Date().getHours(), que en Cloud Functions es la hora UTC:
@@ -23,13 +30,48 @@ const aMinutos = (hhmm, porDefecto) => {
 
 // Respeta el interruptor y el horario que el admin fija por categoría en
 // /admin/notificaciones (antes se guardaban pero el motor no los leía).
-function categoriaActiva(settings, categoria) {
-  if (settings.categories && settings.categories[categoria] === false) return false;
+const HORARIO_POR_DEFECTO = {
+  cart_abandoned: ["09:00", "21:00"],
+  retention: ["09:00", "21:00"],
+  promos: ["10:00", "20:00"],
+  orders: ["08:00", "21:00"],
+};
+function categoriaEncendida(settings, categoria) {
+  return !(settings.categories && settings.categories[categoria] === false);
+}
+function enHorario(settings, categoria) {
   const horario = (settings.schedules && settings.schedules[categoria]) || {};
-  const desde = aMinutos(horario.start, 9 * 60);
-  const hasta = aMinutos(horario.end, 21 * 60);
+  const [d, h] = HORARIO_POR_DEFECTO[categoria] || ["09:00", "21:00"];
+  const desde = aMinutos(horario.start, aMinutos(d, 9 * 60));
+  const hasta = aMinutos(horario.end, aMinutos(h, 21 * 60));
   const ahora = minutosLima();
   return ahora >= desde && ahora < hasta;
+}
+function categoriaActiva(settings, categoria) {
+  return categoriaEncendida(settings, categoria) && enHorario(settings, categoria);
+}
+
+async function leerSettings() {
+  const base = { categories: {}, copys: {}, schedules: {} };
+  try {
+    const snap = await db.collection("notification_settings").doc("global").get();
+    return snap.exists ? { ...base, ...snap.data() } : base;
+  } catch (e) {
+    console.warn("leerSettings:", e.message);
+    return base;
+  }
+}
+
+// Suma al conteo A/B. Best-effort: si falla, el aviso igual salió.
+async function contar(type, variante, campo) {
+  try {
+    await db.collection(STATS_COLLECTION).doc(String(type)).set({
+      [variante === "b" ? "b" : "a"]: { [campo]: FieldValue.increment(1) },
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+  } catch (e) {
+    console.warn("contar:", e.message);
+  }
 }
 
 // Limpia de fcmTokens los tokens que FCM reporta como inválidos/no registrados (H-10).
@@ -48,7 +90,7 @@ async function removeInvalidTokens(userRef, tokens, response) {
       }
     });
     if (invalid.length > 0) {
-      await userRef.update({ fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalid) });
+      await userRef.update({ fcmTokens: FieldValue.arrayRemove(...invalid) });
     }
   } catch (e) {
     console.warn("removeInvalidTokens error:", e.message);
@@ -98,13 +140,20 @@ function copyDe(settings, key, uid, vars, fallback) {
   return { text: texto, variante };
 }
 
-function mensajeFcm(tokens, { title, body, type, link, image }) {
+function mensajeFcm(tokens, { title, body, type, link, image, notifId, campaignId }) {
   const notification = { title, body };
   if (image) notification.imageUrl = image;
+  // notifId / campaignId viajan en la push para que, al tocarla, la app pueda
+  // marcarla como abierta (markNotificationOpenedSecure) y contar la apertura.
   return {
     tokens,
     notification,
-    data: { type: String(type || ""), link: String(link || "") },
+    data: {
+      type: String(type || ""),
+      link: String(link || ""),
+      notifId: String(notifId || ""),
+      campaignId: String(campaignId || ""),
+    },
   };
 }
 
@@ -121,10 +170,13 @@ function docInApp({ title, body, type, link, image, variante, campaignId }) {
 const sendPush = async (uid, tokens, payload, userRef, currentLog) => {
   if (!tokens || tokens.length === 0) return false;
   try {
-    const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, payload));
+    // El id del aviso in-app se reserva antes para mandarlo dentro de la push.
+    const ref = db.collection(`users/${uid}/notifications`).doc();
+    const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, { ...payload, notifId: ref.id }));
     await removeInvalidTokens(userRef, tokens, response);
     if (response.successCount > 0) {
-      await db.collection(`users/${uid}/notifications`).add(docInApp(payload));
+      await ref.set(docInApp(payload));
+      await contar(payload.type, payload.variante, "sent");
       const newLog = [...(currentLog || [])];
       newLog.push({ date: new Date().toISOString(), type: payload.type });
       await userRef.update({ antiSpamLog: newLog.slice(-20) });
@@ -213,7 +265,7 @@ async function enviarCampana(campaignId, campana) {
         }
       });
       for (const { ref, tokens } of invalidosPorUsuario.values()) {
-        await ref.update({ fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokens) }).catch(() => {});
+        await ref.update({ fcmTokens: FieldValue.arrayRemove(...tokens) }).catch(() => {});
       }
     } catch (e) {
       console.warn("enviarCampana: error en un grupo de envío:", e.message);
@@ -230,7 +282,10 @@ async function enviarCampana(campaignId, campana) {
   return { pushUsers: pushUsers.size, inAppUsers: inApp };
 }
 
-async function procesarCampanasProgramadas() {
+async function procesarCampanasProgramadas(settings) {
+  // PROMOS apagado o fuera de su horario: las programadas esperan (siguen en
+  // cola y salen en la primera vuelta dentro del horario).
+  if (!categoriaActiva(settings, "promos")) return;
   const snap = await db.collection(CAMPAIGNS_COLLECTION).where("status", "==", "scheduled").get();
   const ahora = new Date().toISOString();
   for (const doc of snap.docs) {
@@ -256,16 +311,15 @@ exports.notificationEngine = onSchedule({
   console.log("Running notification engine...");
   const now = new Date();
 
+  const settings = await leerSettings();
+
   try {
-    await procesarCampanasProgramadas();
+    await procesarCampanasProgramadas(settings);
   } catch (e) {
     console.error("Error procesando campañas programadas:", e);
   }
 
   try {
-    let settings = { categories: {}, copys: {}, schedules: {} };
-    const settingsDoc = await db.collection("notification_settings").doc("global").get();
-    if (settingsDoc.exists) settings = { ...settings, ...settingsDoc.data() };
 
     const carritoActivo = categoriaActiva(settings, "cart_abandoned");
     const retencionActiva = categoriaActiva(settings, "retention");
@@ -375,10 +429,12 @@ exports.datesReminderEngine = onSchedule({
         const payload = {
           title: r.titulo, body: r.cuerpo, type: "fecha_recordatorio", link: "/cuenta/fechas-importantes",
         };
-        await db.collection(`users/${doc.id}/notifications`).add(docInApp(payload));
+        const ref = db.collection(`users/${doc.id}/notifications`).doc();
+        await ref.set(docInApp(payload));
+        await contar("fecha_recordatorio", "a", "sent");
         if (tokens.length > 0) {
           try {
-            const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, payload));
+            const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, { ...payload, notifId: ref.id }));
             await removeInvalidTokens(doc.ref, tokens, response);
           } catch (e) {
             console.warn(`datesReminderEngine: push a ${doc.id} falló:`, e.message);
@@ -412,6 +468,19 @@ exports.sendManualPromoNotification = functions.https.onCall(async (data, contex
 
   const campana = validarCampana(data);
 
+  // PROMOS apagado o fuera de horario: "Enviar ahora" pide confirmación en el
+  // panel (forzar). Las programadas se aceptan y esperan al horario.
+  const quiereProgramar = !!(data && data.scheduledAt && Date.parse(data.scheduledAt) > Date.now() + 5 * 60 * 1000);
+  if (!quiereProgramar && !(data && data.forzar === true)) {
+    const settings = await leerSettings();
+    if (!categoriaEncendida(settings, "promos")) {
+      throw new functions.https.HttpsError("failed-precondition", "PROMOS está apagado en Configuración.", { motivo: "promos_apagado" });
+    }
+    if (!enHorario(settings, "promos")) {
+      throw new functions.https.HttpsError("failed-precondition", "Estás fuera del horario de PROMOS.", { motivo: "promos_fuera_horario" });
+    }
+  }
+
   // Programada: queda en cola y la manda el motor horario cuando llegue la hora.
   let scheduledAt = null;
   if (data && data.scheduledAt) {
@@ -442,3 +511,130 @@ exports.sendManualPromoNotification = functions.https.onCall(async (data, contex
     throw new functions.https.HttpsError("internal", "Error al enviar la promo");
   }
 });
+
+// ── Apertura de avisos (para medir A/B y campañas) ───────────────────────────
+// El cliente la llama al tocar un aviso en la campanita o una push. Marca el
+// aviso como abierto UNA vez y suma al conteo de su tipo/variante y, si es de
+// una campaña, a la campaña. "Marcar todas como leídas" NO cuenta como abrir.
+exports.markNotificationOpenedSecure = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
+  }
+  const uid = context.auth.uid;
+  const notifId = String((data && data.notifId) || "");
+  const campaignId = String((data && data.campaignId) || "");
+  const col = db.collection(`users/${uid}/notifications`);
+  const ID_VALIDO = /^[A-Za-z0-9_-]{1,64}$/;
+
+  let ref = null;
+  if (notifId && ID_VALIDO.test(notifId)) {
+    ref = col.doc(notifId);
+  } else if (campaignId && ID_VALIDO.test(campaignId)) {
+    const snap = await col.where("campaignId", "==", campaignId).limit(1).get();
+    if (!snap.empty) ref = snap.docs[0].ref;
+  }
+  if (!ref) return { ok: false };
+
+  const abierto = await db.runTransaction(async (t) => {
+    const snap = await t.get(ref);
+    if (!snap.exists) return null;
+    const n = snap.data();
+    if (n.openedAt) return null;
+    t.update(ref, { openedAt: new Date().toISOString(), read: true });
+    return n;
+  });
+  if (!abierto) return { ok: true, yaContado: true };
+
+  await contar(abierto.type || "otro", abierto.variante, "opened");
+  if (abierto.campaignId) {
+    await db.collection(CAMPAIGNS_COLLECTION).doc(String(abierto.campaignId))
+      .update({ opened: FieldValue.increment(1) })
+      .catch(() => {});
+  }
+  return { ok: true };
+});
+
+// ── Avisos de pedido (categoría ORDERS) ──────────────────────────────────────
+// Dos fuentes: wala_pedidos (pago confirmado, estado propio de Wala) y pedidos
+// del ERP (producción, reparto, entregado). Una sola vez por hito y pedido,
+// aunque el pedido aparezca en las dos colecciones (la clave es numeroPedido).
+async function uidDePedido(p) {
+  if (p.buyerUid) return String(p.buyerUid);
+  const dni = String(p.dni || p.clienteNumeroDocumento || "").trim();
+  if (!dni) return null;
+  const snap = await db.collection(PORTAL_USERS_COLLECTION).where("dni", "==", dni).limit(2).get();
+  // Si dos cuentas comparten DNI no se adivina a quién avisar.
+  return snap.size === 1 ? snap.docs[0].id : null;
+}
+
+function claveDePedido(p, docId) {
+  return String(p.numeroPedido || docId).trim().replace(/[/\\#?[\].]/g, "-").replace(/\s+/g, "-");
+}
+
+async function avisarHitoPedido(pedido, docId, hito) {
+  const settings = await leerSettings();
+  if (!categoriaEncendida(settings, "orders")) return;
+
+  const uid = await uidDePedido(pedido);
+  if (!uid) return;
+
+  const logRef = db.collection(ORDER_LOG_COLLECTION).doc(claveDePedido(pedido, docId));
+  const avisar = await db.runTransaction(async (t) => {
+    const snap = await t.get(logRef);
+    const hitos = snap.exists ? (snap.data().hitos || []) : [];
+    if (!debeAvisar(hito, hitos)) return false;
+    t.set(logRef, { uid, hitos: [...hitos, hito], updatedAt: new Date().toISOString() }, { merge: true });
+    return true;
+  });
+  if (!avisar) return;
+
+  const texto = textoHito(hito, pedido.numeroPedido);
+  if (!texto) return;
+  const payload = { ...texto, type: "orders", link: "/cuenta/pedidos" };
+
+  // En la campanita siempre; push solo dentro del horario de ORDERS (para no
+  // despertar a nadie a las 3 a. m. si el ERP mueve pedidos de noche).
+  const ref = db.collection(`users/${uid}/notifications`).doc();
+  await ref.set(docInApp(payload));
+  await contar("orders", "a", "sent");
+
+  if (!enHorario(settings, "orders")) return;
+  const userSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+  const tokens = (userSnap.exists && userSnap.data().fcmTokens) || [];
+  if (tokens.length === 0) return;
+  try {
+    const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, { ...payload, notifId: ref.id }));
+    await removeInvalidTokens(userSnap.ref, tokens, response);
+  } catch (e) {
+    console.warn(`avisarHitoPedido: push a ${uid} falló:`, e.message);
+  }
+}
+
+exports.notifyOrderMilestoneErp = functions.firestore
+  .document("pedidos/{pedidoId}")
+  .onUpdate(async (change, context) => {
+    const antes = hitoDeEstadoErp((change.before.data() || {}).estadoGeneral);
+    const despues = hitoDeEstadoErp((change.after.data() || {}).estadoGeneral);
+    if (!despues || despues === antes) return null;
+    try {
+      await avisarHitoPedido(change.after.data(), context.params.pedidoId, despues);
+    } catch (e) {
+      console.error("notifyOrderMilestoneErp:", e);
+    }
+    return null;
+  });
+
+exports.notifyOrderMilestoneWala = functions.firestore
+  .document("wala_pedidos/{id}")
+  .onWrite(async (change, context) => {
+    if (!change.after.exists) return null;
+    const antes = change.before.exists ? hitoDeEstadoWala(change.before.data().estadoWala) : null;
+    const despues = hitoDeEstadoWala(change.after.data().estadoWala);
+    if (!despues || despues === antes) return null;
+    try {
+      await avisarHitoPedido(change.after.data(), context.params.id, despues);
+    } catch (e) {
+      console.error("notifyOrderMilestoneWala:", e);
+    }
+    return null;
+  });

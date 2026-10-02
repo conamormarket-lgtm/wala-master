@@ -6,6 +6,15 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from './AuthContext';
 import { abrirLinkDePush } from '../utils/pushLink';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
+// Registra en el servidor que el aviso se ABRIÓ (tocado en la campanita o como
+// push). Con eso se mide qué texto funciona mejor (variante A vs B) y cuántos
+// abrieron cada campaña. Best-effort: si falla, no se molesta al usuario.
+const registrarApertura = (datos) => {
+  if (!datos?.notifId && !datos?.campaignId) return;
+  httpsCallable(getFunctions(), 'markNotificationOpenedSecure')(datos).catch(() => {});
+};
 
 // setupPushNotifications corre más de una vez por sesión (el efecto y el
 // requestPermission del header): el listener de "tocó la push" va una sola vez.
@@ -75,7 +84,9 @@ export const NotificationsProvider = ({ children }) => {
       if (!listenerToqueRegistrado) {
         listenerToqueRegistrado = true;
         PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-          abrirLinkDePush(action?.notification?.data?.link);
+          const data = action?.notification?.data || {};
+          registrarApertura({ notifId: data.notifId, campaignId: data.campaignId });
+          abrirLinkDePush(data.link);
         });
       }
     } else {
@@ -166,6 +177,13 @@ export const NotificationsProvider = ({ children }) => {
     }
   }, [user]);
 
+  // Tocar un aviso: se marca leído y cuenta como ABIERTO (markAllAsRead no).
+  const abrirNotificacion = useCallback((notif) => {
+    if (!user || !notif) return;
+    if (!notif.read) markAsRead(notif.id);
+    if (!notif.openedAt) registrarApertura({ notifId: notif.id });
+  }, [user, markAsRead]);
+
   const markAllAsRead = useCallback(() => {
     if (!user) return;
     notifications.filter((n) => !n.read).forEach((n) => markAsRead(n.id));
@@ -180,6 +198,7 @@ export const NotificationsProvider = ({ children }) => {
     unreadCount,
     markAsRead,
     markAllAsRead,
+    abrirNotificacion,
     requestPermission,
   };
 

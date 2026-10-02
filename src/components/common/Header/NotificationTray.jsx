@@ -21,13 +21,13 @@ const haceCuanto = (createdAt) => {
 };
 
 const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, className = '' }) => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead, requestPermission } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, abrirNotificacion, requestPermission } = useNotifications();
   const navigate = useNavigate();
 
   // Tocar una notificación la marca como leída y, si trae link (oferta,
   // producto, recordatorio de fecha), lleva ahí y cierra el panel.
   const abrir = (notif) => {
-    if (!notif.read) markAsRead(notif.id);
+    abrirNotificacion(notif);
     if (notif.link) {
       irALink(navigate, notif.link);
       if (isOpen && onToggle) onToggle();

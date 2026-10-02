@@ -299,6 +299,9 @@ service cloud.firestore {
     // Historial y cola de campañas push: las escribe solo el servidor
     // (sendManualPromoNotification / notificationEngine); el admin las lee.
     match /notification_campaigns/{id} { allow read: if isAdmin(); allow write: if false; }
+    // Conteo A/B de avisos y registro de hitos de pedido ya avisados: solo servidor.
+    match /notification_stats/{id}    { allow read: if isAdmin(); allow write: if false; }
+    match /order_notifications/{id}   { allow read: if isAdmin(); allow write: if false; }
     match /storeConfigLogs/{id}       { allow read, write: if isAdmin(); }
     match /inventoryLogs/{id}         { allow read, write: if isAdmin(); }
     // (regla fantasma 'analytics_kapi' eliminada: ninguna parte del código la usa;

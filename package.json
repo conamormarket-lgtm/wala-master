@@ -66,7 +66,7 @@
     "deploy:indexes": "firebase deploy --only firestore:indexes --project sistema-gestion-3b225",
     "deploy:vercel": "npx vercel",
     "deploy:vercel:prod": "npx vercel --prod",
-    "test:functions": "node functions/test/economyLogic.test.js && node functions/test/internationalAdvanceLogic.test.js && node functions/test/ruletaLogic.test.js && node functions/test/catalogPricing.test.js && node functions/test/fechasLogic.test.js",
+    "test:functions": "node functions/test/economyLogic.test.js && node functions/test/internationalAdvanceLogic.test.js && node functions/test/ruletaLogic.test.js && node functions/test/catalogPricing.test.js && node functions/test/fechasLogic.test.js && node functions/test/ordersLogic.test.js",
     "test:meta-pixel": "node --test src/services/analytics/metaPixel.test.mjs",
     "test:product-interest": "node --test src/services/analytics/productInterest.test.mjs",
     "test:performance": "node --test functions/test/cartValidation.test.js functions/test/analyticsDailyReads.test.js src/services/shared/inFlightReads.test.mjs src/services/erp/orderLookup.test.mjs && node --experimental-vm-modules --test scripts/test/dataServices.test.mjs",
