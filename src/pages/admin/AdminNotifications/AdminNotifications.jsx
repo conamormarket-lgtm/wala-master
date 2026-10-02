@@ -41,6 +41,39 @@ const CATEGORIAS = {
   promos: { nombre: 'Ofertas programadas', detalle: 'Las ofertas programadas solo salen dentro de este horario. Apagado: quedan en espera. "Enviar ahora" fuera de horario pide confirmación.' },
 };
 
+// Avisos automáticos editables, en lenguaje de negocio (las claves internas
+// cart_1h, retention_7d… no le dicen nada a quien administra la tienda).
+// `titulo` es el título FIJO con que llega la notificación (lo pone el motor,
+// functions/notificationsEngine.js); acá se muestra en la vista previa.
+const GRUPOS_AVISOS = [
+  {
+    nombre: '🛒 Carrito abandonado',
+    detalle: 'Para quien agregó productos al carrito y no terminó de comprar.',
+    avisos: [
+      { key: 'cart_1h', nombre: '1 hora después', cuando: 'Sale 1 hora después de que dejó el carrito.', titulo: '🛒 Tu Carrito' },
+      { key: 'cart_24h', nombre: 'Al día siguiente', cuando: 'Sale 24 horas después, si todavía no compró.', titulo: '🛒 Tu Carrito' },
+      { key: 'cart_48h', nombre: 'Último aviso', cuando: 'Sale a las 48 horas: es el último recordatorio del carrito.', titulo: '🛒 Tu Carrito' },
+    ],
+  },
+  {
+    nombre: '🐾 Kapi te extraña',
+    detalle: 'Para quien dejó de abrir la app (Kapi es la mascota virtual).',
+    avisos: [
+      { key: 'retention_7d', nombre: 'Después de 7 días', cuando: 'Sale cuando lleva 7 días sin abrir la app.', titulo: 'Mascota Hambrienta' },
+      { key: 'retention_14d', nombre: 'Después de 14 días', cuando: 'Sale cuando lleva 14 días sin abrir la app.', titulo: 'Kapi te extraña' },
+    ],
+  },
+];
+
+// Vista previa: arma el mensaje igual que el motor (texto + frase final +
+// emoji) y reemplaza {nombre}/{monedas} por datos de ejemplo.
+const vistaPrevia = (v) => [v?.text, v?.cta, v?.emoji]
+  .map((x) => (x || '').trim())
+  .filter(Boolean)
+  .join(' ')
+  .replace(/\{nombre\}/g, 'María')
+  .replace(/\{monedas\}/g, '25');
+
 // Nombres de los avisos automáticos para la tabla A/B.
 const NOMBRES_AVISO = {
   cart_1h: 'Carrito 1 h', cart_24h: 'Carrito 24 h', cart_48h: 'Carrito 48 h',
@@ -153,6 +186,11 @@ const AdminNotifications = () => {
     });
   };
 
+  const insertarDato = (key, variant, dato) => {
+    const actual = settings.copys[key]?.[variant]?.text || '';
+    handleCopyChange(key, variant, 'text', `${actual}${actual && !actual.endsWith(' ') ? ' ' : ''}{${dato}}`);
+  };
+
   const enableVariantB = (key) => {
     setSettings(prev => {
       const newCopys = { ...prev.copys };
@@ -254,8 +292,8 @@ const AdminNotifications = () => {
 
       {activeTab === 'settings' && (
         <div className={styles.tabContent}>
-          <h3>Categorías y Horarios</h3>
-          <p className={styles.helpText}>Horario de Lima. Una categoría apagada no envía avisos automáticos.</p>
+          <h3>¿Qué avisos están prendidos y en qué horario?</h3>
+          <p className={styles.helpText}>Desmarca un aviso para que deje de enviarse. Las horas son de Lima.</p>
           <div className={styles.switches}>
             {Object.keys(settings.categories).map(cat => (
               <div key={cat} className={styles.categoryRow}>
@@ -278,53 +316,90 @@ const AdminNotifications = () => {
             ))}
           </div>
 
-          <h3>Copys y A/B Testing</h3>
+          <h3>Textos de los avisos automáticos</h3>
           <p className={styles.helpText}>
-            Edita el texto, emoji y call to action de cada notificación. Puedes escribir{' '}
-            <code>{'{nombre}'}</code> y <code>{'{monedas}'}</code> dentro del texto.
+            Escribe lo que dirá cada aviso. A la derecha ves cómo le llegará al cliente en su celular.
+            Los botones <strong>+ Nombre</strong> y <strong>+ Monedas</strong> agregan el nombre del cliente o
+            cuántas monedas tiene (en la vista previa salen como "María" y "25").
           </p>
-          <p className={styles.helpText}>
-            <strong>¿Para qué sirve la Variante B?</strong> Para probar dos textos a la vez y quedarte con el
-            que mejor funciona: la mitad de los clientes recibe la A y la otra mitad la B. En{' '}
-            <em>Historial</em> ves cuántos abrió cada una. Cuando una gane con claridad, copia su texto en la A
-            y quita la B.
-          </p>
-          <div className={styles.copysList}>
-            {Object.keys(settings.copys).map(key => (
-              <div key={key} className={styles.copyBlock}>
-                <div className={styles.copyHeader}>
-                  <h4>{key.toUpperCase()}</h4>
-                  {!settings.copys[key].b ? (
-                    <button className={styles.textBtn} onClick={() => enableVariantB(key)}>+ Añadir Variante B (Test A/B)</button>
-                  ) : (
-                    <button className={styles.textBtnDanger} onClick={() => disableVariantB(key)}>- Quitar Variante B</button>
-                  )}
-                </div>
 
-                {['a', 'b'].map(variant => {
-                  if (variant === 'b' && !settings.copys[key].b) return null;
+          {GRUPOS_AVISOS.map((grupo) => (
+            <div key={grupo.nombre} className={styles.grupoAvisos}>
+              <h4 className={styles.grupoTitulo}>{grupo.nombre}</h4>
+              <p className={styles.helpText}>{grupo.detalle}</p>
+
+              <div className={styles.copysList}>
+                {grupo.avisos.filter((a) => settings.copys[a.key]).map((aviso) => {
+                  const copy = settings.copys[aviso.key];
                   return (
-                    <div key={variant} className={styles.variantContainer}>
-                      <span className={styles.variantLabel}>Variante {variant.toUpperCase()}</span>
-                      <div className={styles.copyFields}>
-                        <div className={styles.fieldGroup}>
-                          <label>Texto Principal</label>
-                          <input type="text" value={settings.copys[key][variant].text} onChange={(e) => handleCopyChange(key, variant, 'text', e.target.value)} className={styles.copyInput} />
+                    <div key={aviso.key} className={styles.copyBlock}>
+                      <div className={styles.copyHeader}>
+                        <div>
+                          <h4>{aviso.nombre}</h4>
+                          <p className={styles.copyCuando}>{aviso.cuando}</p>
                         </div>
-                        <div className={styles.fieldGroupSmall}>
-                          <label>Emoji</label>
-                          <input type="text" value={settings.copys[key][variant].emoji} onChange={(e) => handleCopyChange(key, variant, 'emoji', e.target.value)} className={styles.copyInput} />
-                        </div>
-                        <div className={styles.fieldGroup}>
-                          <label>Call to Action (Botón)</label>
-                          <input type="text" value={settings.copys[key][variant].cta} onChange={(e) => handleCopyChange(key, variant, 'cta', e.target.value)} className={styles.copyInput} />
-                        </div>
+                        {!copy.b ? (
+                          <button className={styles.textBtn} onClick={() => enableVariantB(aviso.key)}>+ Probar un segundo texto</button>
+                        ) : (
+                          <button className={styles.textBtnDanger} onClick={() => disableVariantB(aviso.key)}>Quitar el segundo texto</button>
+                        )}
                       </div>
+
+                      {['a', 'b'].map((variant) => {
+                        if (variant === 'b' && !copy.b) return null;
+                        const v = copy[variant];
+                        return (
+                          <div key={variant} className={styles.variantContainer}>
+                            {copy.b && (
+                              <span className={styles.variantLabel}>
+                                {variant === 'a' ? 'Texto 1 (lo recibe la mitad de los clientes)' : 'Texto 2 (lo recibe la otra mitad)'}
+                              </span>
+                            )}
+                            <div className={styles.copyEditor}>
+                              <div className={styles.copyFieldsCol}>
+                                <div className={styles.fieldGroup}>
+                                  <label>Mensaje</label>
+                                  <input type="text" value={v.text} onChange={(e) => handleCopyChange(aviso.key, variant, 'text', e.target.value)} className={styles.copyInput} placeholder="Ej. Tu regalo te está esperando." />
+                                  <div className={styles.datosBtns}>
+                                    <button type="button" className={styles.datoBtn} onClick={() => insertarDato(aviso.key, variant, 'nombre')}>+ Nombre</button>
+                                    <button type="button" className={styles.datoBtn} onClick={() => insertarDato(aviso.key, variant, 'monedas')}>+ Monedas</button>
+                                  </div>
+                                </div>
+                                <div className={styles.copyFieldsRow}>
+                                  <div className={styles.fieldGroup}>
+                                    <label>Frase final <small>(invita a actuar)</small></label>
+                                    <input type="text" value={v.cta} onChange={(e) => handleCopyChange(aviso.key, variant, 'cta', e.target.value)} className={styles.copyInput} placeholder="Ej. ¿Terminamos tu compra?" />
+                                  </div>
+                                  <div className={styles.fieldGroupSmall}>
+                                    <label>Emoji <small>(al final)</small></label>
+                                    <input type="text" value={v.emoji} onChange={(e) => handleCopyChange(aviso.key, variant, 'emoji', e.target.value)} className={styles.copyInput} placeholder="🎁" />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className={styles.preview} aria-label="Vista previa de la notificación">
+                                <span className={styles.previewApp}>WALÁ · ahora</span>
+                                <strong className={styles.previewTitulo}>{aviso.titulo}</strong>
+                                <span className={styles.previewTexto}>{vistaPrevia(v) || 'Escribe el mensaje…'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}
               </div>
-            ))}
+            </div>
+          ))}
+
+          <div className={styles.abInfo}>
+            <strong>¿Para qué sirve "Probar un segundo texto"?</strong>
+            <p>
+              Para saber qué mensaje convence más. La mitad de los clientes recibe el texto 1 y la otra
+              mitad el texto 2. En la pestaña <em>Historial</em> ves cuántos abrió cada uno. Cuando uno gane
+              con claridad, déjalo como texto 1 y quita el segundo.
+            </p>
           </div>
 
           <button className={styles.saveBtn} onClick={handleSave}>Guardar Cambios</button>
