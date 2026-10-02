@@ -135,6 +135,14 @@ const AdminLayout = () => {
               >
                 🔥 Interés por producto
               </NavLink>
+              {/* Ofertas y novedades por push + campanita (la página existía,
+                  pero no tenía entrada en el menú: solo se llegaba por URL). */}
+              <NavLink
+                to="/admin/notificaciones"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                🔔 Notificaciones y ofertas
+              </NavLink>
               {/* Gestión de Pagos (unifica Métodos de Pago + Generador de Enlaces
                   + historial/analíticas): JUSTO DEBAJO de "Ver qué hacen los usuarios". */}
               <NavLink

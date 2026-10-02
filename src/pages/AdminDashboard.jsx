@@ -177,6 +177,8 @@ const AdminDashboard = () => {
   const quickLinks = [
     { to: '/admin/productos', label: 'Productos', description: 'Crear, editar y eliminar productos' },
     { to: '/admin/fechas-importantes', label: 'Fechas Importantes', description: 'Gestionar calendario universal y ver encuestas' },
+    { to: '/admin/notificaciones', label: 'Notificaciones y ofertas', description: 'Enviar o programar ofertas y novedades' },
+    { to: '/admin/interes-productos', label: 'Interés por producto', description: 'Quién mira qué producto + WhatsApp' },
     { to: '/admin/categorias', label: 'Categorías', description: 'Gestionar categorías' },
     { to: '/admin/colecciones', label: 'Colecciones', description: 'Gestionar colecciones' },
     { to: '/admin/marcas', label: 'Marcas', description: 'Gestionar marcas de productos' },
