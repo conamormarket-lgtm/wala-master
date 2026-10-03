@@ -3,6 +3,7 @@ import { getProducts } from '../../../services/products';
 import { saveSuggestedPackage, updateSuggestedPackage } from '../../../services/fechasImportantes';
 import Button from '../../common/Button';
 import { X, Search, Sparkles, Trash2 } from 'lucide-react';
+import { useGiftCatalog } from '../../../hooks/useGiftCatalog';
 import styles from './PackageCreatorModal.module.css';
 
 /**
@@ -17,6 +18,7 @@ import styles from './PackageCreatorModal.module.css';
  * - isFirstPackage: (opcional) si true, se marcará como isSelected automáticamente
  */
 const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, onClose, onSave, isFirstPackage = false }) => {
+  const { recomendar } = useGiftCatalog();
   const isEditMode = !!existingPackage;
   const isReuseMode = !!reuseProducts && !isEditMode;
 
@@ -50,25 +52,15 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
     fetchProds();
   }, []);
 
+  // Auto-generar con el buscador de regalos (lo que el cliente contó de la
+  // persona: equipo, anime, personaje, pareja, presupuesto…). Antes buscaba el
+  // ID del conjunto entre las categorías de la tienda —nunca coincidía— y
+  // completaba con productos AL AZAR. Si faltan, completa con destacados.
   const handleAutoGenerate = () => {
-    const prefs = recipientData.selectedCategories || [];
-    
-    let matchedProducts = [];
-    if (prefs.length > 0) {
-      matchedProducts = allProducts.filter(p => 
-        p.categories && prefs.some(pref => p.categories.includes(pref))
-      );
-    }
-
-    let candidates = [...matchedProducts];
-    if (candidates.length < 3) {
-      const remaining = allProducts.filter(p => !candidates.includes(p));
-      const shuffled = remaining.sort(() => 0.5 - Math.random());
-      candidates = [...candidates, ...shuffled.slice(0, 3 - candidates.length)];
-    }
-
-    const finalSelection = candidates.slice(0, 3);
-    setSelectedProducts(finalSelection);
+    const ideas = recomendar(recipientData, { limite: 3 }).map((x) => x.producto);
+    const usados = new Set(ideas.map((p) => p.id));
+    const destacados = allProducts.filter((p) => p.featured && p.visible !== false && !p.deleted && !usados.has(p.id));
+    setSelectedProducts([...ideas, ...destacados].slice(0, 3));
     setStep(2);
   };
 

@@ -1131,3 +1131,108 @@
   font-size: 0.85rem;
   margin: 0 0 0.5rem;
 }
+
+/* Ideas de regalo del buscador (por persona) */
+.ideasLista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ideaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.ideaImg {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--color-bg, #f8fafc);
+}
+
+.ideaTexto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+
+.ideaNombre {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+  text-decoration: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ideaNombre:hover {
+  text-decoration: underline;
+}
+
+.ideaMotivo {
+  font-size: 0.75rem;
+  color: #8b5cf6;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ideaPrecio {
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.ideaBtn {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: none;
+  background: #8b5cf6;
+  color: #fff;
+  cursor: pointer;
+}
+
+.ideaBtn:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.ideaBtnHecho {
+  background: #10b981;
+  cursor: default;
+}
+
+.ideasVacio {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.verMasLink {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8b5cf6;
+  text-decoration: none;
+}
+
+.verMasLink:hover {
+  text-decoration: underline;
+}

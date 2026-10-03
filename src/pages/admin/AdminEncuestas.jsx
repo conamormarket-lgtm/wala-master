@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { Save, Plus, Trash2 } from 'lucide-react';
 import { getSurveyConfig, saveSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
+import { getCategories } from '../../services/categories';
 import styles from './AdminEncuestas.module.css';
 
 const AdminEncuestas = () => {
@@ -10,6 +11,11 @@ const AdminEncuestas = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('intro'); // intro, basic, brands, completion, design
+  // Categorías de la tienda, para ligar cada conjunto con productos reales.
+  const [categoriasTienda, setCategoriasTienda] = useState([]);
+  useEffect(() => {
+    getCategories().then(({ data }) => setCategoriasTienda(data || [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line no-unused-vars
@@ -100,6 +106,19 @@ const AdminEncuestas = () => {
       brandsPanel: { ...config.brandsPanel, categories: newCats }
     });
   };
+  // Conjunto → categorías de la tienda. El buscador de regalos usa esta
+  // relación para recomendar productos a quien marcó el conjunto.
+  const toggleCategoriaTienda = (catIndex, categoriaId) => {
+    const newCats = [...config.brandsPanel.categories];
+    const actuales = Array.isArray(newCats[catIndex].tiendaCategorias) ? newCats[catIndex].tiendaCategorias : [];
+    newCats[catIndex] = {
+      ...newCats[catIndex],
+      tiendaCategorias: actuales.includes(categoriaId)
+        ? actuales.filter((id) => id !== categoriaId)
+        : [...actuales, categoriaId],
+    };
+    setConfig({ ...config, brandsPanel: { ...config.brandsPanel, categories: newCats } });
+  };
   const removeBrandCategory = (catIndex) => {
     const newCats = [...config.brandsPanel.categories];
     newCats.splice(catIndex, 1);
@@ -148,17 +167,17 @@ const AdminEncuestas = () => {
       <div className={styles.row}>
         <div className={styles.fieldGroup}>
           <label>Etiqueta de la pregunta</label>
-          <input 
-            type="text" 
-            className={styles.input} 
-            value={field.label} 
+          <input
+            type="text"
+            className={styles.input}
+            value={field.label}
             onChange={e => onUpdate(index, 'label', e.target.value)}
           />
         </div>
         <div className={styles.fieldGroup}>
           <label>Tipo de respuesta</label>
-          <select 
-            className={styles.input} 
+          <select
+            className={styles.input}
             value={field.type}
             onChange={e => onUpdate(index, 'type', e.target.value)}
           >
@@ -169,8 +188,8 @@ const AdminEncuestas = () => {
         </div>
         <div className={styles.fieldGroup}>
           <label>¿Es obligatorio?</label>
-          <select 
-            className={styles.input} 
+          <select
+            className={styles.input}
             value={field.required ? 'yes' : 'no'}
             onChange={e => onUpdate(index, 'required', e.target.value === 'yes')}
           >
@@ -182,10 +201,10 @@ const AdminEncuestas = () => {
       {field.type === 'select' && (
         <div className={styles.fieldGroup}>
           <label>Opciones (separadas por comas)</label>
-          <input 
-            type="text" 
-            className={styles.input} 
-            value={field.options?.join(', ') || ''} 
+          <input
+            type="text"
+            className={styles.input}
+            value={field.options?.join(', ') || ''}
             onChange={e => onUpdate(index, 'options', e.target.value.split(',').map(s => s.trim()).filter(s => s))}
             placeholder="Ej: Opción 1, Opción 2, Opción 3"
           />
@@ -300,10 +319,10 @@ const AdminEncuestas = () => {
                 <div className={styles.fieldHeader}>
                   <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%' }}>
                     <h3 style={{ margin: 0, minWidth: '120px' }}>Categoría:</h3>
-                    <input 
-                      type="text" 
-                      className={styles.input} 
-                      value={cat.name} 
+                    <input
+                      type="text"
+                      className={styles.input}
+                      value={cat.name}
                       onChange={e => updateBrandCategoryName(catIndex, e.target.value)}
                       style={{ padding: '0.5rem', fontWeight: 'bold' }}
                     />
@@ -313,14 +332,38 @@ const AdminEncuestas = () => {
                   </button>
                 </div>
 
+                <div className={styles.ligarCategorias}>
+                  <h4>Recomendar productos de estas categorías a quien elija "{cat.name}"</h4>
+                  <p>
+                    Las ideas de regalo usan sobre todo lo que el cliente responde (equipo, anime,
+                    personaje…). Estas categorías suman como apoyo.
+                  </p>
+                  <div className={styles.chipsCategorias}>
+                    {categoriasTienda.map((c) => {
+                      const activa = (cat.tiendaCategorias || []).includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className={`${styles.chipCategoria} ${activa ? styles.chipCategoriaActiva : ''}`}
+                          aria-pressed={activa}
+                          onClick={() => toggleCategoriaTienda(catIndex, c.id)}
+                        >
+                          {activa ? '✓ ' : ''}{c.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div style={{ padding: '1rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '1rem' }}>
                   <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#475569' }}>Preguntas para quien seleccione "{cat.name}"</h4>
                   <div className={styles.fieldsList}>
-                    {cat.fields.map((field, fieldIndex) => 
+                    {cat.fields.map((field, fieldIndex) =>
                       renderFieldEditor(
-                        field, 
-                        fieldIndex, 
-                        (i, k, v) => updateBrandField(catIndex, i, k, v), 
+                        field,
+                        fieldIndex,
+                        (i, k, v) => updateBrandField(catIndex, i, k, v),
                         (i) => removeBrandField(catIndex, i)
                       )
                     )}
@@ -332,7 +375,7 @@ const AdminEncuestas = () => {
               </div>
             ))}
           </div>
-          
+
           <button className={styles.addBtn} onClick={addBrandCategory}>
             <Plus size={18} /> Crear nueva categoría de interés
           </button>

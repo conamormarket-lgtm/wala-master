@@ -4,6 +4,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useProducts } from '../../hooks/useProducts';
+import { useGiftCatalog } from '../../hooks/useGiftCatalog';
+import { PRESUPUESTOS } from '../../utils/giftRecommender.mjs';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import { getUserSuggestedPackages } from '../../services/fechasImportantes';
 import { GlassCard, Reveal } from '../../components/ui';
@@ -128,7 +130,7 @@ const CuentaFechasImportantesPage = () => {
   const { addToCart } = useCart();
   // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tempRecipient, setTempRecipient] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -192,27 +194,30 @@ const CuentaFechasImportantesPage = () => {
     }
   }, [user?.uid]);
 
-  // Ideas de regalo AUTOMÁTICAS para quien tiene una fecha en los próximos 30
-  // días y todavía no tiene un paquete armado por el admin. Se eligen del
-  // catálogo por las categorías que el usuario marcó para esa persona en la
-  // encuesta (mismo criterio que el "Auto-generar" del admin). Sin categorías
-  // no se adivina: se muestra solo el atajo a la tienda.
+  // Ideas de regalo AUTOMÁTICAS (buscador de regalos, src/utils/giftRecommender):
+  // cruza lo que el cliente contó de la persona en la encuesta (equipo, anime,
+  // personaje…), su conjunto, si es pareja, el género y el presupuesto con el
+  // catálogo. Antes buscaba el ID del conjunto ("cat_geek") entre las
+  // categorías de la tienda, que nunca coincidía: siempre salía vacío.
+  const { recomendar, cargando: cargandoIdeas } = useGiftCatalog();
+  const [ideasAgregadas, setIdeasAgregadas] = useState(new Set());
   const ideasPara = (rec) => {
-    const cerca = (rec.events || []).some((ev) => {
-      const d = diasParaProxima(ev.date);
-      return d != null && d <= 30;
-    });
-    if (!cerca) return null;
-    const prefs = Array.isArray(rec.selectedCategories) ? rec.selectedCategories : [];
-    const productos = prefs.length === 0 ? [] : (catalogo || [])
-      .filter((p) => Array.isArray(p.categories) && prefs.some((c) => p.categories.includes(c)))
-      .slice(0, 3);
-    return productos;
+    // La ocasión que cuenta es la próxima fecha de la persona.
+    const proxima = [...(rec.events || [])]
+      .map((ev) => ({ ev, dias: diasParaProxima(ev.date) }))
+      .filter((x) => x.dias != null)
+      .sort((a, b) => a.dias - b.dias)[0];
+    const ocasion = proxima ? (proxima.ev.type === 'Fecha Especial' ? proxima.ev.customName : proxima.ev.type) : '';
+    return recomendar(rec, { ocasion, limite: 4 });
+  };
+  const agregarIdea = (producto) => {
+    addToCart(producto, {}, null, 1);
+    setIdeasAgregadas((prev) => new Set([...prev, producto.id]));
   };
 
   // Get packages for a specific recipient
   const getPackagesForRecipient = (rec) => {
-    return suggestedPackages.filter(pkg => 
+    return suggestedPackages.filter(pkg =>
       pkg.recipientId === rec.id
     );
   };
@@ -272,7 +277,7 @@ const CuentaFechasImportantesPage = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que deseas eliminar a esta persona de tus fechas importantes?')) return;
-    
+
     const newList = recipients.filter(r => r.id !== id);
     const { error } = await updateUserProfile({ giftRecipients: newList });
     if (error) alert('No pudimos eliminar a la persona. Intenta de nuevo.');
@@ -625,35 +630,53 @@ const CuentaFechasImportantesPage = () => {
                     </div>
                   )}
                   {(() => {
-                    if (cargandoCatalogo || recPackages.length > 0) return null;
+                    if (cargandoIdeas || recPackages.length > 0) return null;
                     const ideas = ideasPara(rec);
-                    if (!ideas) return null;
                     return (
                       <div className={styles.suggestedSection}>
                         <p className={styles.ideasTitle}>
                           <Gift size={15} aria-hidden="true" /> Ideas de regalo para {rec.name}
                         </p>
-                        {ideas.length > 0 && (
-                          <ul className={styles.suggestedProducts}>
-                            {ideas.map((p) => (
-                              <li key={p.id} className={styles.suggestedProductItem}>
-                                <img
-                                  src={p.images?.[0] || PLACEHOLDER_IMG}
-                                  alt=""
-                                  className={styles.suggestedProductImg}
-                                  loading="lazy"
-                                  onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMG; }}
-                                />
-                                <Link to={`/producto/${p.id}`} className={styles.suggestedProductName}>
-                                  {p.name}
-                                </Link>
-                                <span className={styles.suggestedProductPrice}>S/ {p.salePrice || p.price}</span>
-                              </li>
-                            ))}
+                        {ideas.length > 0 ? (
+                          <ul className={styles.ideasLista}>
+                            {ideas.map(({ producto: p, motivo }) => {
+                              const agregado = ideasAgregadas.has(p.id);
+                              const precio = Number(p.salePrice) > 0 ? p.salePrice : p.price;
+                              return (
+                                <li key={p.id} className={styles.ideaItem}>
+                                  <img
+                                    src={p.images?.[0] || p.mainImage || PLACEHOLDER_IMG}
+                                    alt=""
+                                    className={styles.ideaImg}
+                                    loading="lazy"
+                                    onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+                                  />
+                                  <div className={styles.ideaTexto}>
+                                    <Link to={`/producto/${p.id}`} className={styles.ideaNombre}>{p.name}</Link>
+                                    <span className={styles.ideaMotivo}>{motivo}</span>
+                                    <span className={styles.ideaPrecio}>S/ {precio}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className={`${styles.ideaBtn} ${agregado ? styles.ideaBtnHecho : ''}`}
+                                    onClick={() => !agregado && agregarIdea(p)}
+                                    disabled={agregado}
+                                    aria-label={agregado ? 'Agregado al carrito' : `Agregar ${p.name} al carrito`}
+                                  >
+                                    {agregado ? <Check size={16} aria-hidden="true" /> : <ShoppingCart size={16} aria-hidden="true" />}
+                                  </button>
+                                </li>
+                              );
+                            })}
                           </ul>
+                        ) : (
+                          <p className={styles.ideasVacio}>
+                            Cuéntanos qué le gusta (equipo, anime, personaje…) editando a {rec.name} y te
+                            recomendamos regalos a su medida.
+                          </p>
                         )}
-                        <Link to="/tienda" className={`${styles.btnSolido} ${styles.addToCartBtn}`}>
-                          <ShoppingCart size={16} aria-hidden="true" /> Ver más regalos
+                        <Link to="/tienda" className={styles.verMasLink}>
+                          Ver más regalos en la tienda →
                         </Link>
                       </div>
                     );
@@ -793,6 +816,24 @@ const CuentaFechasImportantesPage = () => {
                 <p className={styles.fieldHint}>
                   Con la relación y el género sumamos las fechas del calendario que le
                   tocan (Día de la Madre, del Padre, de la Amistad…).
+                </p>
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label htmlFor="fiPresupuesto"><T>¿Cuánto sueles gastar en su regalo?</T></label>
+                <select
+                  id="fiPresupuesto"
+                  className={styles.input}
+                  value={tempRecipient.budget || ''}
+                  onChange={e => handleTempChange('budget', e.target.value)}
+                >
+                  <option value="">Sin preferencia</option>
+                  {PRESUPUESTOS.map((r) => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </select>
+                <p className={styles.fieldHint}>
+                  Lo usamos para que las ideas de regalo entren en tu presupuesto.
                 </p>
               </div>
 

@@ -6,6 +6,7 @@ const { limaNow, limaTodayStr } = require("./economyLogic");
 const { recordatoriosDeHoy } = require("./fechasLogic");
 const { hitoDeEstadoErp, hitoDeEstadoWala, debeAvisar, textoHito } = require("./ordersLogic");
 const { agruparInteres, elegirProducto } = require("./productViewLogic");
+const { recomendarRegalos } = require("./giftLogic");
 
 const db = admin.firestore();
 const messaging = admin.messaging();
@@ -434,6 +435,25 @@ exports.notificationEngine = onSchedule({
 // usuario guardó en "Fechas importantes" le llega un aviso (in-app siempre, push
 // si tiene la app) con link a sus ideas de regalo. No cuenta para el tope
 // anti-spam: es un aviso que el usuario pidió al cargar la fecha.
+// Catálogo para el buscador de regalos (se carga una vez por corrida, solo si
+// hay recordatorios que mandar). Ver functions/giftLogic.js.
+async function cargarCatalogoRegalos() {
+  const mapa = async (col) => Object.fromEntries((await db.collection(col).get()).docs.map((d) => [d.id, d.data().name || ""]));
+  const [prods, tags, characters, collections, cfg] = await Promise.all([
+    db.collection("productos_wala").get(),
+    mapa("tags"), mapa("characters"), mapa("tienda_collections"),
+    db.doc("tienda_encuesta_config/global").get(),
+  ]);
+  const conjuntoCategorias = {};
+  const cats = (cfg.exists && cfg.data().brandsPanel && cfg.data().brandsPanel.categories) || [];
+  cats.forEach((c) => { if (c && c.id && Array.isArray(c.tiendaCategorias)) conjuntoCategorias[c.id] = c.tiendaCategorias; });
+  return {
+    productos: prods.docs.map((d) => ({ id: d.id, ...d.data() })),
+    dicts: { tags, characters, collections },
+    conjuntoCategorias,
+  };
+}
+
 exports.datesReminderEngine = onSchedule({
   schedule: "0 10 * * *",
   timeZone: "America/Lima",
@@ -441,6 +461,7 @@ exports.datesReminderEngine = onSchedule({
   const hoy = limaTodayStr();
   const anioMinimo = Number(hoy.slice(0, 4)) - 1;
   let avisos = 0;
+  let catalogo = null;
   try {
     const usersSnapshot = await db.collection(PORTAL_USERS_COLLECTION).get();
     for (const doc of usersSnapshot.docs) {
@@ -459,6 +480,19 @@ exports.datesReminderEngine = onSchedule({
         const payload = {
           title: r.titulo, body: r.cuerpo, type: "fecha_recordatorio", link: "/cuenta/fechas-importantes",
         };
+        // Foto del mejor regalo sugerido para esa persona (buscador de regalos).
+        try {
+          if (!catalogo) catalogo = await cargarCatalogoRegalos();
+          const ocasion = r.event.type === "Fecha Especial" ? r.event.customName : r.event.type;
+          const [mejor] = recomendarRegalos({ recipient: r.recipient, ...catalogo, ocasion, limite: 1 });
+          if (mejor) {
+            const p = mejor.producto;
+            payload.image = (Array.isArray(p.images) && p.images[0]) || p.mainImage || "";
+            payload.body = `${r.cuerpo} Por ejemplo: ${p.name}.`;
+          }
+        } catch (e) {
+          console.warn("datesReminderEngine: sin sugerencia de regalo:", e.message);
+        }
         const ref = db.collection(`users/${doc.id}/notifications`).doc();
         await ref.set(docInApp(payload));
         await contar("fecha_recordatorio", "a", "sent");

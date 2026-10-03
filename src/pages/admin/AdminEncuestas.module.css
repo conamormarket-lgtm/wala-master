@@ -270,3 +270,47 @@
 [data-theme="dark"] .addBtn {
   color: #C4B5FD;
 }
+
+/* Conjunto → categorías de la tienda (para las ideas de regalo) */
+.ligarCategorias {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px dashed #c4b5fd;
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.ligarCategorias h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.9rem;
+  color: #4c1d95;
+}
+
+.ligarCategorias p {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.chipsCategorias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chipCategoria {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.chipCategoriaActiva {
+  border-color: #8b5cf6;
+  background: #8b5cf6;
+  color: #fff;
+  font-weight: 600;
+}

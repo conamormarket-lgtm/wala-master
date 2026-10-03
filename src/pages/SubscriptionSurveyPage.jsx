@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
 import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Plus, Trash2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
 import { showFlyingCoins, volarMonedasGanadas } from '../utils/animations';
+import { useGiftCatalog } from '../hooks/useGiftCatalog';
+import { PRESUPUESTOS } from '../utils/giftRecommender.mjs';
+import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import styles from './SubscriptionSurveyPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -64,6 +67,10 @@ const SubscriptionSurveyPage = () => {
 
   const [finalRecipients, setFinalRecipients] = useState([]);
 
+  // Buscador de regalos: ideas en la pantalla final y sugerencias (etiquetas,
+  // personajes, colecciones del catálogo) al escribir gustos de cada persona.
+  const { recomendar, sugerencias } = useGiftCatalog();
+
   useEffect(() => {
     const fetchConfig = async () => {
       const { data } = await getSurveyConfig();
@@ -110,6 +117,7 @@ const SubscriptionSurveyPage = () => {
       categoryAnswers: r?.categoryAnswers || {},
       familySet: r?.familySet ?? false,
       familyAnswers: r?.familyAnswers || { q1: '', q2: '', q3: '' },
+      budget: r?.budget || '',
     }));
     setFinalRecipients(mapped);
   }, [userProfile?.giftRecipients]);
@@ -144,7 +152,8 @@ const SubscriptionSurveyPage = () => {
       selectedCategories: [],
       categoryAnswers: {},
       familySet: false,
-      familyAnswers: { q1: '', q2: '', q3: '' }
+      familyAnswers: { q1: '', q2: '', q3: '' },
+      budget: '',
     };
   };
 
@@ -381,7 +390,7 @@ const SubscriptionSurveyPage = () => {
   // Paso visible para el cliente (1 a 4). El 0 es la portada.
   const pasoVisible = Math.min(Math.max(currentStep, 1), 4);
 
-  const currentRoleObj = rolesList[currentRoleIndex] === 'pareja' 
+  const currentRoleObj = rolesList[currentRoleIndex] === 'pareja'
     ? { label: 'Pareja', icon: <Heart size={32} />, singular: 'Pareja' }
     : ROLES_MAP[rolesList[currentRoleIndex]];
 
@@ -639,6 +648,24 @@ const SubscriptionSurveyPage = () => {
                       </button>
                     </div>
 
+                    <div className={styles.breakdownSection}>
+                      <h3 className={styles.breakdownTitle}>¿Cuánto sueles gastar en su regalo?</h3>
+                      <p className={styles.breakdownAyuda}>Opcional. Así te recomendamos regalos que entren en tu presupuesto.</p>
+                      <div className={styles.pillsContainer}>
+                        {PRESUPUESTOS.map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            className={`${styles.pillBtn} ${tempRecipient.budget === r.id ? styles.pillSelected : ''}`}
+                            aria-pressed={tempRecipient.budget === r.id}
+                            onClick={() => handleTempChange('budget', tempRecipient.budget === r.id ? '' : r.id)}
+                          >
+                            {r.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* CONJUNTO FAMILIA (Hardcoded con lógica de género) */}
                     <div className={styles.breakdownSection}>
                       <button
@@ -712,6 +739,8 @@ const SubscriptionSurveyPage = () => {
                                   <input
                                     type="text"
                                     className={styles.input}
+                                    list="sugerencias-gustos"
+                                    autoComplete="off"
                                     value={answerValue}
                                     onChange={e => {
                                       const currentAnswers = tempRecipient.categoryAnswers || {};
@@ -758,6 +787,12 @@ const SubscriptionSurveyPage = () => {
             </>
           )}
 
+          {/* Sugerencias para autocompletar gustos: nombres del catálogo, así lo
+              que escribe el cliente coincide con cómo se llaman los productos. */}
+          <datalist id="sugerencias-gustos">
+            {sugerencias.map((s) => <option key={s} value={s} />)}
+          </datalist>
+
           {currentStep === 4 && (
             <>
               <div className={`${styles.headerIcon} ${styles.headerIconOk}`}>
@@ -765,6 +800,42 @@ const SubscriptionSurveyPage = () => {
               </div>
               <h1 className={styles.title}>{config.completionPanel.title}</h1>
               <p className={styles.description}>{config.completionPanel.message}</p>
+
+              {(() => {
+                // Ideas de regalo para las personas que acaba de cargar.
+                const conIdeas = finalRecipients
+                  .filter((r) => isRecipientComplete(r))
+                  .map((r) => ({ r, ideas: recomendar(r, { limite: 3 }) }))
+                  .filter((x) => x.ideas.length > 0)
+                  .slice(0, 3);
+                if (conIdeas.length === 0) return null;
+                return (
+                  <div className={styles.ideasFinal}>
+                    <h3 className={styles.ideasFinalTitulo}>🎁 Ya tenemos ideas de regalo</h3>
+                    {conIdeas.map(({ r, ideas }) => (
+                      <div key={r.id} className={styles.ideasPersona}>
+                        <p className={styles.ideasPersonaNombre}>Para {r.name}</p>
+                        <ul className={styles.ideasGrid}>
+                          {ideas.map(({ producto: p, motivo }) => (
+                            <li key={p.id}>
+                              <Link to={`/producto/${p.id}`} className={styles.ideaCard}>
+                                <img
+                                  src={p.images?.[0] || p.mainImage || PLACEHOLDER_IMG}
+                                  alt=""
+                                  loading="lazy"
+                                  onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+                                />
+                                <span className={styles.ideaCardNombre}>{p.name}</span>
+                                <span className={styles.ideaCardMotivo}>{motivo}</span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               <div className={styles.tipBox}>
                 <p>

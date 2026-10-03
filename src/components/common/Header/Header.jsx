@@ -146,6 +146,8 @@ const Header = () => {
   const realCoins = activeMainCoins || 0;
   
   const [displayCoins, setDisplayCoins] = useState(realCoins);
+  const realCoinsRef = useRef(realCoins);
+  realCoinsRef.current = realCoins;
   const pendingCoinsRef = useRef(0);
   const [isCoinBouncing, setIsCoinBouncing] = useState(false);
 
@@ -372,13 +374,23 @@ const Header = () => {
   }, [realCoins]);
 
   useEffect(() => {
+    // Muchas pantallas ya recargaron el saldo ANTES de animar (el servidor paga
+    // y el perfil se actualiza al instante). Si el número mostrado ya incluye
+    // lo ganado, se baja primero para que las monedas "sumen" hasta el total
+    // real; y nunca se pasa del saldo real. Antes se sumaba dos veces y el
+    // header quedaba mostrando de más (p. ej. 90 con un saldo de 70).
     const handleStart = (e) => {
-      pendingCoinsRef.current += (e.detail?.amount || 10);
+      const amount = e.detail?.amount || 10;
+      const real = realCoinsRef.current;
+      if (pendingCoinsRef.current <= 0) {
+        setDisplayCoins(prev => (prev >= real ? Math.max(0, real - amount) : prev));
+      }
+      pendingCoinsRef.current += amount;
     };
-    
+
     const handleReached = (e) => {
       const inc = e.detail?.amount || 1;
-      setDisplayCoins(prev => prev + inc);
+      setDisplayCoins(prev => Math.min(prev + inc, Math.max(realCoinsRef.current, prev)));
       pendingCoinsRef.current -= inc;
       
       // Animación de bounce del contenedor al recibir la moneda
