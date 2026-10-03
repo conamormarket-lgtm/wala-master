@@ -2078,55 +2078,126 @@
    circulos), pero comparte linea de base, separacion lateral y capa con la pila
    de la derecha: antes estaba a 85px del borde mientras la pila estaba a 20, y
    en un z-index distinto sin motivo. */
-.floatingSurveyBtn {
+/* Botón flotante de la encuesta. Plano (violeta liso, sin degradado ni
+   brillo que late sin parar), dice qué se gana y se puede ocultar con la "×". */
+.floatingSurvey {
   position: fixed;
   bottom: calc(var(--flotante-abajo, 20px) + env(safe-area-inset-bottom, 0px));
   left: calc(var(--flotante-lado, 20px) + env(safe-area-inset-left, 0px));
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+  animation: floatingSurveyEntrada 0.4s ease-out both;
+}
+
+.floatingSurveyBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  background: #8b5cf6;
   color: #fff;
-  border: none;
-  border-radius: 50px;
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(76, 29, 149, 0.35);
   text-decoration: none;
-  animation: floatingSurveyPulse 2.5s ease-in-out infinite;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.floatingSurveyBtn:hover {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.floatingSurveyBtn:active {
+  transform: scale(0.97);
+}
+
+.floatingSurveyBtn:focus-visible,
+.floatingSurveyClose:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 2px;
+}
+
+.floatingSurveyIcon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.floatingSurveyTexto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.floatingSurveyLabel {
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.floatingSurveySub {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+/* "×" para ocultarlo: pegada al botón, discreta pero con área táctil de 28px. */
+.floatingSurveyClose {
+  width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #fff);
+  color: var(--color-text-muted, #475569);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+}
+
+.floatingSurveyClose:hover {
+  color: var(--color-text, #0f172a);
+}
+
+@keyframes floatingSurveyEntrada {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .floatingSurveyBtn {
+  .floatingSurvey {
     animation: none;
   }
 }
 
-.floatingSurveyBtn:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.3);
-}
-
-.floatingSurveyIcon {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.floatingSurveyLabel {
-  white-space: nowrap;
-  letter-spacing: 0.02em;
-}
-
-@keyframes floatingSurveyPulse {
-  0%, 100% {
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+/* En pantallas angostas: solo la línea principal, para tapar menos. */
+@media (max-width: 480px) {
+  .floatingSurveySub {
+    display: none;
   }
-  50% {
-    box-shadow: 0 4px 30px rgba(139, 92, 246, 0.7);
+
+  .floatingSurveyBtn {
+    padding: 6px 14px 6px 6px;
+  }
+
+  .floatingSurveyIcon {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
   }
 }
 

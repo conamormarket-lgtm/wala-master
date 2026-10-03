@@ -91,6 +91,11 @@ const initialsOf = (name) => {
   return clean.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 };
 
+// Botón flotante de la encuesta: dónde NO mostrarlo (pagar, carrito, panel
+// admin) y clave del "ocultar 3 días".
+const RUTAS_SIN_FAB_ENCUESTA = ['/encuesta-suscripcion', '/checkout', '/carrito', '/admin', '/pago'];
+const CLAVE_FAB_ENCUESTA = 'surveyFabHiddenUntil';
+
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
   const { user, userProfile, updateUserProfile, activeMainCoins } = useAuth();
@@ -115,6 +120,24 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileWalletOpen, setMobileWalletOpen] = useState(false);
   const [forceHideDropdowns, setForceHideDropdowns] = useState(false);
+  // Botón flotante de la encuesta: se puede ocultar 3 días con la "×" (por
+  // navegador). Antes no tenía forma de cerrarse y tapaba contenido.
+  const [surveyFabOculto, setSurveyFabOculto] = useState(() => {
+    try {
+      return Number(localStorage.getItem(CLAVE_FAB_ENCUESTA) || 0) > Date.now();
+    } catch {
+      return false;
+    }
+  });
+  const ocultarFabEncuesta = () => {
+    setSurveyFabOculto(true);
+    try {
+      localStorage.setItem(CLAVE_FAB_ENCUESTA, String(Date.now() + 3 * 24 * 60 * 60 * 1000));
+    } catch {
+      /* sin storage: queda oculto solo en esta visita */
+    }
+  };
+
   const [activeDropdown, setActiveDropdown] = useState(null);
 
   const headerRef = useRef(null);
@@ -1240,11 +1263,25 @@ const Header = () => {
           la condición era TRUE mientras cargaba (`!undefined` = true), así que el
           botón aparecía a TODOS los usuarios logueados —incluidos los que ya
           hicieron la encuesta— y se iba solo un segundo después. */}
-      {user && userProfile && !userProfile.hasCompletedSurvey && location.pathname !== '/encuesta-suscripcion' && (
-        <Link to="/encuesta-suscripcion" className={styles.floatingSurveyBtn} onClick={closeDropdowns}>
-          <span className={styles.floatingSurveyIcon}>🎁</span>
-          <span className={styles.floatingSurveyLabel}>Completar Encuesta</span>
-        </Link>
+      {user && userProfile && !userProfile.hasCompletedSurvey && !surveyFabOculto && !RUTAS_SIN_FAB_ENCUESTA.some((r) => location.pathname.startsWith(r)) && (
+        <div className={styles.floatingSurvey}>
+          <Link to="/encuesta-suscripcion" className={styles.floatingSurveyBtn} onClick={closeDropdowns}>
+            <span className={styles.floatingSurveyIcon} aria-hidden="true">🎁</span>
+            <span className={styles.floatingSurveyTexto}>
+              <span className={styles.floatingSurveyLabel}>Gana 15 monedas</span>
+              <span className={styles.floatingSurveySub}>Completa tu perfil de regalos</span>
+            </span>
+          </Link>
+          <button
+            type="button"
+            className={styles.floatingSurveyClose}
+            onClick={ocultarFabEncuesta}
+            aria-label="Ocultar por ahora"
+            title="Ocultar por 3 días"
+          >
+            ×
+          </button>
+        </div>
       )}
     </>
   );
