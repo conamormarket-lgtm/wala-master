@@ -360,26 +360,16 @@ const AdminEncuestas = () => {
       {activeTab === 'design' && (
         <div className={styles.panel}>
           <h2>Diseño Visual</h2>
+          <p style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: 0 }}>
+            La encuesta usa el mismo fondo y textos que la tienda (modo claro y oscuro). Aquí eliges el
+            color de acento: botones, barra de progreso y selecciones.
+          </p>
           <div className={styles.row}>
             <div className={styles.fieldGroup}>
-              <label>Color Principal</label>
+              <label>Color de acento</label>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <input type="color" className={styles.colorPicker} value={config.design.primaryColor} onChange={e => handleDesignChange('primaryColor', e.target.value)} />
                 <code>{config.design.primaryColor}</code>
-              </div>
-            </div>
-            <div className={styles.fieldGroup}>
-              <label>Color de Fondo</label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input type="color" className={styles.colorPicker} value={config.design.backgroundColor} onChange={e => handleDesignChange('backgroundColor', e.target.value)} />
-                <code>{config.design.backgroundColor}</code>
-              </div>
-            </div>
-            <div className={styles.fieldGroup}>
-              <label>Color de Texto Principal</label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input type="color" className={styles.colorPicker} value={config.design.textColor} onChange={e => handleDesignChange('textColor', e.target.value)} />
-                <code>{config.design.textColor}</code>
               </div>
             </div>
           </div>

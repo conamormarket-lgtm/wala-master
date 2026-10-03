@@ -28,21 +28,21 @@ const ROLES_MAP = {
 const SubscriptionSurveyPage = () => {
   const { userProfile, updateUserProfile, loading: authLoading, grantSurveyReward, claimDatesReward } = useAuth();
   const navigate = useNavigate();
-  
+
   const [config, setConfig] = useState(DEFAULT_SURVEY_CONFIG);
   const [configLoading, setConfigLoading] = useState(true);
-  
+
   // Flujo Principal
-  const [currentStep, setCurrentStep] = useState(0); 
+  const [currentStep, setCurrentStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [animationDir, setAnimationDir] = useState('Right');
-  
+
   const [basicAnswers, setBasicAnswers] = useState({});
 
   // Cumpleaños PROPIO del usuario (no de terceros). Opcional.
   // Se precarga si el perfil ya lo tiene para que pueda confirmarlo/editarlo.
   const [ownBirthDate, setOwnBirthDate] = useState('');
-  
+
   // Selección de Roles
   const [selectedRoles, setSelectedRoles] = useState({
     pareja: false,
@@ -58,10 +58,10 @@ const SubscriptionSurveyPage = () => {
   // Bucle de Roles (Hub and Spoke)
   const [rolesList, setRolesList] = useState([]);
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
-  
+
   const [isEditingRecipient, setIsEditingRecipient] = useState(false);
   const [tempRecipient, setTempRecipient] = useState(null);
-  
+
   const [finalRecipients, setFinalRecipients] = useState([]);
 
   useEffect(() => {
@@ -159,11 +159,11 @@ const SubscriptionSurveyPage = () => {
 
   const goToNextStep = () => {
     if (currentStep === 1 && !validateFields(config.basicDataPanel.fields, basicAnswers)) return;
-    
+
     if (currentStep === 2) {
       const selectedKeys = Object.keys(ROLES_MAP).filter(key => selectedRoles[key]);
       if (selectedRoles.pareja) selectedKeys.unshift('pareja');
-      
+
       if (selectedKeys.length === 0) {
         return alert('Por favor, selecciona al menos un rol o dale a Atrás/Omitir si no deseas regalar a nadie.');
       }
@@ -186,7 +186,7 @@ const SubscriptionSurveyPage = () => {
   const isRecipientComplete = (rec) => {
     if (!rec.name || rec.name.trim() === '') return false;
     if (!rec.gender || rec.gender.trim() === '') return false;
-    
+
     for (const ev of rec.events) {
       // Fallback al tipo 'otro' (id) si el label no coincide; evita undefined.
       const evTypeConfig = EVENT_TYPES.find(e => e.label === ev.type) || EVENT_TYPES.find(e => e.id === 'otro');
@@ -194,19 +194,19 @@ const SubscriptionSurveyPage = () => {
         return false;
       }
     }
-    
+
     return true;
   };
 
   const goToNextRoleGroup = () => {
     const currentRoleKey = rolesList[currentRoleIndex];
     const roleRecipients = finalRecipients.filter(r => r.roleKey === currentRoleKey);
-    
+
     const hasIncompletes = roleRecipients.some(r => !isRecipientComplete(r));
     if (hasIncompletes) {
        return alert('Por favor completa todos los datos obligatorios (Nombre y Género) de todas las tarjetas antes de continuar.');
     }
-    
+
     if (roleRecipients.length === 0 && currentRoleKey !== 'pareja') {
       const confirmSkip = window.confirm('No has agregado a nadie en este grupo. ¿Deseas continuar de todos modos?');
       if (!confirmSkip) return;
@@ -361,7 +361,9 @@ const SubscriptionSurveyPage = () => {
     }
   };
 
-  if (authLoading || configLoading) return <div className={styles.surveyLayout}><T>Cargando...</T></div>;
+  if (authLoading || configLoading) {
+    return <div className={styles.surveyLayout}><p className={styles.cargando}><T>Cargando...</T></p></div>;
+  }
 
   let progressPercent = 0;
   if (currentStep <= 2) {
@@ -376,41 +378,48 @@ const SubscriptionSurveyPage = () => {
   const animationKey = currentStep === 3 ? `${rolesList[currentRoleIndex]}-${isEditingRecipient ? 'edit' : 'hub'}` : `main-${currentStep}`;
   const animationClass = animationDir === 'Right' ? styles.animateSlideInRight : styles.animateSlideInLeft;
 
+  // Paso visible para el cliente (1 a 4). El 0 es la portada.
+  const pasoVisible = Math.min(Math.max(currentStep, 1), 4);
+
   const currentRoleObj = rolesList[currentRoleIndex] === 'pareja' 
-    ? { label: 'Pareja', icon: <Heart size={32} />, singular: 'Pareja' } 
+    ? { label: 'Pareja', icon: <Heart size={32} />, singular: 'Pareja' }
     : ROLES_MAP[rolesList[currentRoleIndex]];
 
   return (
-    <div className={styles.surveyLayout} style={{ '--survey-primary': config.design.primaryColor, backgroundColor: config.design.backgroundColor, color: config.design.textColor }}>
-      
-      <div className={styles.sideScene}></div>
-
+    <div className={styles.surveyLayout} style={{ '--survey-primary': config.design?.primaryColor || '#8b5cf6' }}>
       <div className={styles.centerColumn}>
-        
-        <div className={styles.progressBarContainer}>
-          <div className={styles.progressBarLight}></div>
-          <div className={styles.progressBarFill} style={{ width: `${progressPercent}%` }}></div>
-        </div>
+
+        {currentStep > 0 && (
+          <div className={styles.progreso}>
+            <span className={styles.progresoTexto}>
+              {currentStep >= 4 ? '¡Listo!' : `Paso ${pasoVisible} de 3`}
+            </span>
+            <div className={styles.progressBarContainer} role="progressbar" aria-valuenow={Math.round(progressPercent)} aria-valuemin={0} aria-valuemax={100}>
+              <div className={styles.progressBarFill} style={{ width: `${progressPercent}%` }}></div>
+            </div>
+          </div>
+        )}
 
         <div key={animationKey} className={`${styles.card} ${animationClass}`}>
-          
+
           {currentStep === 0 && (
             <>
-              <div className={styles.headerIcon}><Gift size={40} color={config.design.primaryColor} /></div>
+              <div className={styles.headerIcon}><Gift size={30} /></div>
               <h1 className={styles.title}>{config.introPanel.title}</h1>
               <h2 className={styles.subtitle}>{config.introPanel.subtitle}</h2>
-              
-              <div style={{ backgroundColor: '#fffbeb', color: '#b45309', padding: '1rem', borderRadius: '12px', margin: '1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 'bold', border: '1px solid #fde68a', boxShadow: '0 4px 6px -1px rgba(251, 191, 36, 0.1)' }}>
-                <span style={{ fontSize: '2rem', lineHeight: 1 }}>🪙</span>
-                <span style={{ fontSize: '1rem', textAlign: 'left' }}>
-                  ¡Gana 15 monedas al terminar la encuesta y 5 más por cada fecha importante que registres (hasta 50)!
+
+              <div className={styles.premioBanner}>
+                <span className={styles.premioIcono} aria-hidden="true">🪙</span>
+                <span>
+                  <strong>Gana 15 monedas</strong> al terminar y <strong>5 más</strong> por cada fecha
+                  importante que registres (hasta 50). Úsalas como descuento en tus compras.
                 </span>
               </div>
 
               <p className={styles.description}>
                 Completa esta encuesta para recibir recomendaciones y regalos exclusivos. Es muy rápido.
               </p>
-              <div className={styles.actions} style={{ justifyContent: 'center' }}>
+              <div className={`${styles.actions} ${styles.actionsCentro}`}>
                 <button type="button" onClick={handleSkip} className={styles.skipBtn}>{config.introPanel.skipButtonText}</button>
                 <button type="button" onClick={goToNextStep} className={styles.saveBtn}>{config.introPanel.continueButtonText}</button>
               </div>
@@ -419,7 +428,7 @@ const SubscriptionSurveyPage = () => {
 
           {currentStep === 1 && (
             <>
-              <div className={styles.headerIcon}><UserCircle size={40} color={config.design.primaryColor} /></div>
+              <div className={styles.headerIcon}><UserCircle size={30} /></div>
               <h1 className={styles.title}>{config.basicDataPanel.title}</h1>
               <h2 className={styles.subtitle}>{config.basicDataPanel.subtitle}</h2>
               <div className={styles.form}>
@@ -455,19 +464,19 @@ const SubscriptionSurveyPage = () => {
 
           {currentStep === 2 && (
             <>
-              <div className={styles.headerIcon}><Users size={40} color={config.design.primaryColor} /></div>
+              <div className={styles.headerIcon}><Users size={30} /></div>
               <h1 className={styles.title}><T>¿A quiénes sueles regalar?</T></h1>
               <p className={styles.description}><T>Selecciona todos los perfiles a los que sueles hacer regalos (puedes elegir varios).</T></p>
-              
+
               <div className={styles.groupsContainer}>
-                <button 
+                <button
                   className={`${styles.groupCard} ${selectedRoles.pareja ? styles.groupCardSelected : ''}`}
                   onClick={() => setSelectedRoles(p => ({...p, pareja: !p.pareja}))}
                 >
-                  <Heart size={32} /><h3>Pareja</h3>
+                  <Heart size={26} /><h3>Pareja</h3>
                 </button>
                 {Object.keys(ROLES_MAP).map(roleKey => (
-                  <button 
+                  <button
                     key={roleKey}
                     className={`${styles.groupCard} ${selectedRoles[roleKey] ? styles.groupCardSelected : ''}`}
                     onClick={() => setSelectedRoles(p => ({...p, [roleKey]: !p[roleKey]}))}
@@ -491,7 +500,7 @@ const SubscriptionSurveyPage = () => {
                   <div className={styles.headerIcon}>{currentRoleObj.icon}</div>
                   <h1 className={styles.title}>{rolesList[currentRoleIndex] === 'pareja' ? 'Tu Pareja' : `Tus ${currentRoleObj.label}`}</h1>
                   <p className={styles.description}><T>Completa los datos de estas personas para poder guardarlas.</T></p>
-                  
+
                   <div className={styles.form}>
                     <div className={styles.recipientsList}>
                       {finalRecipients.filter(r => r.roleKey === rolesList[currentRoleIndex]).map((rec, idx) => {
@@ -501,17 +510,17 @@ const SubscriptionSurveyPage = () => {
                             <div className={styles.recipientInfo}>
                               <h3>{rec.name || `${rec.roleDisplay} (Sin Nombre)`}</h3>
                               {isDone ? (
-                                <p style={{color: '#10b981'}}><CheckCircle size={14}/> Perfil Completado</p>
+                                <p className={styles.estadoOk}><CheckCircle size={14} /> Perfil completo</p>
                               ) : (
-                                <p style={{color: '#f59e0b'}}><AlertCircle size={14}/> Falta completar datos</p>
+                                <p className={styles.estadoPendiente}><AlertCircle size={14} /> Faltan datos</p>
                               )}
                             </div>
                             <button type="button" className={isDone ? styles.hubEditBtn : styles.hubCompleteBtn} onClick={(e) => { e.stopPropagation(); startEditingCard(rec); }}>
                               {isDone ? 'Editar' : 'Completar Perfil'}
                             </button>
                             {rolesList[currentRoleIndex] !== 'pareja' && (
-                              <button type="button" onClick={(e) => { e.stopPropagation(); setFinalRecipients(prev => prev.filter(p => p.id !== rec.id)); }} className={styles.removeBtn} style={{marginLeft:'0.5rem'}}>
-                                <Trash2 size={20} />
+                              <button type="button" onClick={(e) => { e.stopPropagation(); setFinalRecipients(prev => prev.filter(p => p.id !== rec.id)); }} className={styles.removeBtn} aria-label="Quitar persona">
+                                <Trash2 size={18} />
                               </button>
                             )}
                           </div>
@@ -544,19 +553,19 @@ const SubscriptionSurveyPage = () => {
               ) : (
                 <>
                   <div className={styles.subFlowHeader}>
-                    <button className={styles.backLinkBtn} onClick={cancelTempRecipient} style={{background:'none', border:'none', color:'#64748b', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', marginBottom:'1rem', fontWeight:'600'}}>
-                      <ArrowLeft size={16}/> Volver sin guardar
+                    <button type="button" className={styles.backLinkBtn} onClick={cancelTempRecipient}>
+                      <ArrowLeft size={16} /> Volver sin guardar
                     </button>
                     <h3>Datos de {tempRecipient.roleDisplay}</h3>
                   </div>
-                  
+
                   <div className={styles.form}>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                      <div className={styles.fieldGroup} style={{ flex: 2 }}>
+                    <div className={styles.formRow}>
+                      <div className={`${styles.fieldGroup} ${styles.fieldGrande}`}>
                         <label><T>Nombre de la persona *</T></label>
                         <input type="text" className={styles.input} placeholder="Ej. Carlos" value={tempRecipient.name} onChange={e => handleTempChange('name', e.target.value)} />
                       </div>
-                      <div className={styles.fieldGroup} style={{ flex: 1 }}>
+                      <div className={styles.fieldGroup}>
                         <label><T>Género *</T></label>
                         <select className={styles.input} value={tempRecipient.gender || ''} onChange={e => handleTempChange('gender', e.target.value)} required>
                           <option value="">Seleccionar...</option>
@@ -566,24 +575,25 @@ const SubscriptionSurveyPage = () => {
                         </select>
                       </div>
                     </div>
-                    
+
                     <div className={styles.breakdownSection}>
-                      <h3 className={styles.breakdownTitle} style={{fontSize:'1rem'}}>Fechas Importantes</h3>
-                      
+                      <h3 className={styles.breakdownTitle}>Fechas importantes</h3>
+                      <p className={styles.breakdownAyuda}>Ganas 5 monedas por cada fecha nueva.</p>
+
                       {tempRecipient.events.map((event, eventIdx) => {
                         const evTypeConfig = EVENT_TYPES.find(e => e.label === event.type) || EVENT_TYPES.find(e => e.id === 'otro');
-                        
+
                         return (
-                          <div key={event.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-start', background: eventIdx === 0 ? '#f8fafc' : 'transparent', padding: eventIdx === 0 ? '1rem' : '0', borderRadius: '8px', border: eventIdx === 0 ? '1px solid #e2e8f0' : 'none' }}>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                              
+                          <div key={event.id} className={styles.eventRow}>
+                            <div className={styles.eventRowMain}>
+
                               {eventIdx === 0 ? (
-                                <div style={{ fontWeight: 'bold', color: '#0f172a', padding: '0.5rem 0' }}>
+                                <div className={styles.eventLabel}>
                                   Cumpleaños *
                                 </div>
                               ) : (
-                                <select 
-                                  className={styles.input} 
+                                <select
+                                  className={styles.input}
                                   value={event.type}
                                   onChange={e => updateEvent(eventIdx, 'type', e.target.value)}
                                 >
@@ -592,58 +602,59 @@ const SubscriptionSurveyPage = () => {
                                   ))}
                                 </select>
                               )}
-                              
+
                               {event.type === 'Fecha Especial' && eventIdx > 0 && (
-                                <input 
-                                  type="text" 
-                                  className={styles.input} 
-                                  placeholder="¿Qué se celebra? (Ej. Bautizo, Graduación)" 
-                                  value={event.customName || ''} 
+                                <input
+                                  type="text"
+                                  className={styles.input}
+                                  placeholder="¿Qué se celebra? (Ej. Bautizo, Graduación)"
+                                  value={event.customName || ''}
                                   onChange={e => updateEvent(eventIdx, 'customName', e.target.value)}
                                   required={true}
                                 />
                               )}
 
                               {evTypeConfig.needsDate && (
-                                <input 
-                                  type="date" 
-                                  className={styles.input} 
-                                  value={event.date} 
-                                  onChange={e => updateEvent(eventIdx, 'date', e.target.value)} 
+                                <input
+                                  type="date"
+                                  className={styles.input}
+                                  value={event.date}
+                                  onChange={e => updateEvent(eventIdx, 'date', e.target.value)}
                                   required={true}
                                 />
                               )}
                             </div>
-                            
+
                             {eventIdx > 0 && (
-                              <button type="button" onClick={() => removeEvent(eventIdx)} className={styles.removeBtn} style={{ marginTop: '0.2rem' }}>
-                                <Trash2 size={20} />
+                              <button type="button" onClick={() => removeEvent(eventIdx)} className={styles.removeBtn} aria-label="Quitar fecha">
+                                <Trash2 size={18} />
                               </button>
                             )}
                           </div>
                         );
                       })}
-                      
-                      <button type="button" onClick={addEvent} className={styles.addBtn} style={{ background: 'transparent', color: config.design.primaryColor, border: `1px dashed ${config.design.primaryColor}`, padding: '0.5rem', borderRadius: '8px', width: '100%', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold' }}>
+
+                      <button type="button" onClick={addEvent} className={styles.addBtn}>
                         <Plus size={18} /> Agregar otra fecha importante
                       </button>
                     </div>
 
                     {/* CONJUNTO FAMILIA (Hardcoded con lógica de género) */}
-                    <div className={styles.breakdownSection} style={{ padding: '1rem' }}>
-                      <button 
+                    <div className={styles.breakdownSection}>
+                      <button
                         type="button"
                         className={`${styles.conjuntoBtn} ${tempRecipient.familySet ? styles.conjuntoBtnActive : ''}`}
                         onClick={() => handleTempChange('familySet', !tempRecipient.familySet)}
+                        aria-pressed={!!tempRecipient.familySet}
                       >
-                        <span style={{flex: 1, textAlign: 'left', fontWeight: 'bold'}}>Conjunto Familia</span>
+                        <span className={styles.conjuntoNombre}>Conjunto Familia</span>
                         <div className={styles.toggleIndicator}>
                           <div className={styles.toggleCircle}></div>
                         </div>
                       </button>
-                      
+
                       {tempRecipient.familySet && (
-                        <div className={styles.pillsContainer} style={{ marginTop: '1.5rem', justifyContent: 'flex-start' }}>
+                        <div className={styles.pillsContainer}>
                           <button
                             type="button"
                             className={`${styles.pillBtn} ${tempRecipient.familyAnswers?.q1 ? styles.pillSelected : ''}`}
@@ -651,7 +662,7 @@ const SubscriptionSurveyPage = () => {
                           >
                             Es para {tempRecipient.gender === 'Masculino' ? 'él' : tempRecipient.gender === 'Femenino' ? 'ella' : 'él o ella'}
                           </button>
-                          
+
                           <button
                             type="button"
                             className={`${styles.pillBtn} ${tempRecipient.familyAnswers?.q2 ? styles.pillSelected : ''}`}
@@ -675,9 +686,10 @@ const SubscriptionSurveyPage = () => {
                     {config.brandsPanel?.categories?.map(cat => {
                       const isCatSelected = tempRecipient.selectedCategories?.includes(cat.id);
                       return (
-                        <div key={cat.id} className={styles.breakdownSection} style={{ padding: '1rem' }}>
-                          <button 
+                        <div key={cat.id} className={styles.breakdownSection}>
+                          <button
                             type="button"
+                            aria-pressed={!!isCatSelected}
                             className={`${styles.conjuntoBtn} ${isCatSelected ? styles.conjuntoBtnActive : ''}`}
                             onClick={() => {
                               const currentList = tempRecipient.selectedCategories || [];
@@ -685,43 +697,43 @@ const SubscriptionSurveyPage = () => {
                               handleTempChange('selectedCategories', newList);
                             }}
                           >
-                            <span style={{flex: 1, textAlign: 'left', fontWeight: 'bold'}}>Conjunto {cat.name}</span>
+                            <span className={styles.conjuntoNombre}>Conjunto {cat.name}</span>
                             <div className={styles.toggleIndicator}>
                               <div className={styles.toggleCircle}></div>
                             </div>
                           </button>
-                          
+
                           {isCatSelected && cat.fields?.map(field => {
                             const answerValue = tempRecipient.categoryAnswers?.[cat.id]?.[field.id] || '';
                             return (
-                              <div key={field.id} className={styles.fieldGroup} style={{ marginTop: '1rem' }}>
+                              <div key={field.id} className={`${styles.fieldGroup} ${styles.conjuntoCampo}`}>
                                 <label>{field.label} {field.required && '*'}</label>
                                 {field.type === 'text' && (
-                                  <input 
-                                    type="text" 
-                                    className={styles.input} 
-                                    value={answerValue} 
+                                  <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={answerValue}
                                     onChange={e => {
                                       const currentAnswers = tempRecipient.categoryAnswers || {};
                                       handleTempChange('categoryAnswers', {
                                         ...currentAnswers,
                                         [cat.id]: { ...(currentAnswers[cat.id] || {}), [field.id]: e.target.value }
                                       });
-                                    }} 
+                                    }}
                                     required={field.required}
                                   />
                                 )}
                                 {field.type === 'select' && (
-                                  <select 
-                                    className={styles.input} 
-                                    value={answerValue} 
+                                  <select
+                                    className={styles.input}
+                                    value={answerValue}
                                     onChange={e => {
                                       const currentAnswers = tempRecipient.categoryAnswers || {};
                                       handleTempChange('categoryAnswers', {
                                         ...currentAnswers,
                                         [cat.id]: { ...(currentAnswers[cat.id] || {}), [field.id]: e.target.value }
                                       });
-                                    }} 
+                                    }}
                                     required={field.required}
                                   >
                                     <option value="">Seleccionar...</option>
@@ -748,20 +760,19 @@ const SubscriptionSurveyPage = () => {
 
           {currentStep === 4 && (
             <>
-              <div className={styles.headerIcon}>
-                <CheckCircle size={60} color={config.design.primaryColor} />
+              <div className={`${styles.headerIcon} ${styles.headerIconOk}`}>
+                <CheckCircle size={34} />
               </div>
               <h1 className={styles.title}>{config.completionPanel.title}</h1>
               <p className={styles.description}>{config.completionPanel.message}</p>
-              
-              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '1rem', textAlign: 'left' }}>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569' }}>
+
+              <div className={styles.tipBox}>
+                <p>
                   <strong>💡 Tip:</strong> <T>A partir de ahora puedes gestionar a tus personas importantes y agregar nuevas fechas yendo a tu Perfil y dándole a la pestaña</T> <strong>"Fechas Importantes"</strong>.
                 </p>
               </div>
 
-              <div style={{ flex: 1 }}></div>
-              <div className={styles.actions} style={{ justifyContent: 'center' }}>
+              <div className={`${styles.actions} ${styles.actionsCentro}`}>
                 <button type="button" onClick={handleSkip} className={styles.saveBtn}>
                   {config.completionPanel.buttonText}
                 </button>
@@ -771,8 +782,6 @@ const SubscriptionSurveyPage = () => {
 
         </div>
       </div>
-
-      <div className={styles.sideScene}></div>
 
     </div>
   );
