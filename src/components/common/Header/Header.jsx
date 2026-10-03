@@ -14,7 +14,7 @@ import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorCont
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
 import HeaderSearch from '../HeaderSearch/HeaderSearch';
-import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, ChevronRight, Check, LogOut } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, ChevronRight, Check, LogOut, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
 import { useCuentaNavGroups } from '../../../pages/cuenta/useCuentaNavGroups';
@@ -1279,7 +1279,7 @@ const Header = () => {
             aria-label="Ocultar por ahora"
             title="Ocultar por 3 días"
           >
-            ×
+            <X size={12} strokeWidth={2.75} aria-hidden="true" />
           </button>
         </div>
       )}

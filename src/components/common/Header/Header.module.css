@@ -2150,23 +2150,33 @@
   white-space: nowrap;
 }
 
-/* "×" para ocultarlo: pegada al botón, discreta pero con área táctil de 28px. */
+/* "×" para ocultarlo: insignia en la esquina superior derecha del botón
+   (antes colgaba al costado y se veía chueca). Ícono SVG en vez del carácter
+   "×", que según la fuente no quedaba centrado en el círculo. El ::before
+   agranda el área táctil a 36px sin agrandar el círculo. */
 .floatingSurveyClose {
-  width: 28px;
-  height: 28px;
-  margin-left: -6px;
-  align-self: flex-start;
-  display: inline-flex;
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   border: 1px solid var(--color-border, #e2e8f0);
   background: var(--color-surface, #fff);
   color: var(--color-text-muted, #475569);
-  font-size: 1.05rem;
-  line-height: 1;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+}
+
+.floatingSurveyClose::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
 }
 
 .floatingSurveyClose:hover {
