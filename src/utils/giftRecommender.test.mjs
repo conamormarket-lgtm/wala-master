@@ -148,6 +148,14 @@ test('sugerencias por pregunta: equipos, jugadores o deporte según lo que se pr
   assert.ok(geek.includes('Demon Slayer') && !geek.includes('Alianza Lima'));
 });
 
+test('apagar un conjunto deja de usar sus respuestas (aunque sigan guardadas)', () => {
+  const base = { categoryAnswers: { cat_geek: { q: 'Demon slayer' }, cat_dep: { q: 'Alianza Lima' } } };
+  const soloDep = recomendarRegalos({ recipient: persona({ ...base, selectedCategories: ['cat_dep'] }), productos, dicts });
+  assert.ok(soloDep.every((x) => !x.producto.id.startsWith('ds')));
+  const ninguno = recomendarRegalos({ recipient: persona({ ...base, selectedCategories: [] }), productos, dicts });
+  assert.ok(ninguno.every((x) => !/^(ds|al)/.test(x.producto.id)));
+});
+
 test('palabras clave sin relleno y normalizadas', () => {
   assert.deepEqual(palabrasClave('Del universitario deportes y del Barza'), ['universitario', 'barza']);
   assert.equal(normalizar('Fútbol  Perú!'), 'futbol peru');

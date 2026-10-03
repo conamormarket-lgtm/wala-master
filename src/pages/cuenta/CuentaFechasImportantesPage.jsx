@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useGiftCatalog } from '../../hooks/useGiftCatalog';
-import { PRESUPUESTOS } from '../../utils/giftRecommender.mjs';
+import { PRESUPUESTOS, respuestasDe } from '../../utils/giftRecommender.mjs';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import { getUserSuggestedPackages } from '../../services/fechasImportantes';
 import { GlassCard, Reveal } from '../../components/ui';
@@ -200,8 +200,7 @@ const CuentaFechasImportantesPage = () => {
   // catálogo. Antes buscaba el ID del conjunto ("cat_geek") entre las
   // categorías de la tienda, que nunca coincidía: siempre salía vacío.
   const { recomendar, sugerenciasCampo, conjuntos, cargando: cargandoIdeas } = useGiftCatalog();
-  const tieneGustos = (rec) => Object.values(rec.categoryAnswers || {})
-    .some((campos) => Object.values(campos || {}).some((v) => String(v || '').trim()));
+  const tieneGustos = (rec) => respuestasDe(rec).length > 0;
 
   // Gustos de la persona (mismos conjuntos y preguntas que la encuesta).
   const toggleConjunto = (catId) => {

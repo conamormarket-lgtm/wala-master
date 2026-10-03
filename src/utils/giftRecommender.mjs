@@ -53,10 +53,14 @@ export function textoProducto(p, dicts = {}) {
 }
 
 // Respuestas escritas de la persona → frases y palabras clave.
+// Solo cuentan los conjuntos ENCENDIDOS: al apagar "Geek" sus respuestas quedan
+// guardadas (por si se vuelve a encender) pero ya no influyen en las ideas.
 export function respuestasDe(recipient) {
   const out = [];
   const porConjunto = (recipient && recipient.categoryAnswers) || {};
-  Object.values(porConjunto).forEach((campos) => {
+  const activos = recipient && Array.isArray(recipient.selectedCategories) ? new Set(recipient.selectedCategories) : null;
+  Object.entries(porConjunto).forEach(([conjuntoId, campos]) => {
+    if (activos && !activos.has(conjuntoId)) return;
     Object.values(campos || {}).forEach((v) => {
       const t = String(v || '').trim();
       if (t) out.push(t);
