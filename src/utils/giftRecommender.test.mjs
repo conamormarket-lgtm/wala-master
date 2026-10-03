@@ -71,7 +71,7 @@ test('excluye lo ya comprado y sin señales no inventa', () => {
 });
 
 test('sin respuestas, usa lo etiquetado "Para regalar" como respaldo', () => {
-  const conRegalo = [...productos, { id: 'reg', name: 'Taza personalizada', tags: ['t9'], price: 35, inStock: 10 }];
+  const conRegalo = [...productos, { id: 'reg', name: 'Taza personalizada', tags: ['t9'], publico: 'unisex', price: 35, inStock: 10 }];
   const r = recomendarRegalos({ recipient: persona({}), productos: conRegalo, dicts: { ...dicts, tags: { ...dicts.tags, t9: 'Para regalar' } } });
   assert.deepEqual(r.map((x) => x.producto.id), ['reg']);
   assert.equal(r[0].motivo, 'Ideal para regalar');
@@ -81,13 +81,13 @@ test('variedad: no más de 2 por el mismo motivo ni de la misma marca', () => {
   const muchos = [
     ...['a', 'b', 'c', 'd'].map((x) => ({ id: `sp${x}`, name: `Polo Spider-Man ${x}`, tags: [], price: 80, inStock: 5 })),
     { id: 'par2', name: 'Conjunto Parejas Dragon Ball', tags: [], price: 90, inStock: 5 },
-    ...['1', '2', '3'].map((x) => ({ id: `rel${x}`, name: `Reloj para regalo ${x}`, tags: [], brandId: 'yoryo', price: 90, inStock: 5 })),
+    ...['1', '2', '3'].map((x) => ({ id: `rel${x}`, name: `Reloj para regalo ${x}`, tags: [], brandId: 'yoryo', publico: 'hombre', price: 90, inStock: 5 })),
   ];
   const r = recomendarRegalos({ recipient: persona({ roleKey: 'pareja', categoryAnswers: { g: { q: 'Spider Man' } } }), productos: muchos });
   const spider = r.filter((x) => x.producto.id.startsWith('sp')).length;
   assert.equal(spider, 2);
   assert.equal(r[2].producto.id, 'par2', 'después de 2 de Spider-Man viene lo de pareja, no lo genérico');
-  const conOtras = [...muchos, ...['x', 'y'].map((x) => ({ id: `taza${x}`, name: `Taza para regalo ${x}`, tags: [], brandId: 'otra', price: 40, inStock: 5 }))];
+  const conOtras = [...muchos, ...['x', 'y'].map((x) => ({ id: `taza${x}`, name: `Taza para regalo ${x}`, tags: [], brandId: 'otra', publico: 'unisex', price: 40, inStock: 5 }))];
   const sinGustos = recomendarRegalos({ recipient: persona({}), productos: conOtras });
   assert.equal(sinGustos.length, 4);
   assert.equal(sinGustos.filter((x) => x.producto.brandId === 'yoryo').length, 2);
@@ -154,6 +154,18 @@ test('apagar un conjunto deja de usar sus respuestas (aunque sigan guardadas)', 
   assert.ok(soloDep.every((x) => !x.producto.id.startsWith('ds')));
   const ninguno = recomendarRegalos({ recipient: persona({ ...base, selectedCategories: [] }), productos, dicts });
   assert.ok(ninguno.every((x) => !/^(ds|al)/.test(x.producto.id)));
+});
+
+test('sin marca de "para quién es", un producto no entra como idea genérica para ella', () => {
+  const ps = [
+    { id: 'relSin', name: 'Reloj Yoryo Expedición', tags: ['t9'], price: 80, inStock: 5 },
+    { id: 'colM', name: 'Collar Luna', tags: ['t9'], publico: 'mujer', price: 70, inStock: 5 },
+  ];
+  const d = { ...dicts, tags: { ...dicts.tags, t9: 'Para regalar' } };
+  const r = recomendarRegalos({ recipient: persona({ gender: 'Femenino' }), productos: ps, dicts: d }).map((x) => x.producto.id);
+  assert.deepEqual(r, ['colM']);
+  const sinGenero = recomendarRegalos({ recipient: persona({ gender: 'Otro' }), productos: ps, dicts: d }).map((x) => x.producto.id);
+  assert.equal(sinGenero.length, 2);
 });
 
 test('palabras clave sin relleno y normalizadas', () => {

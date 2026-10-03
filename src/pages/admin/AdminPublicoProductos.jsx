@@ -78,6 +78,28 @@ const AdminPublicoProductos = () => {
     queryClient.invalidateQueries({ queryKey: ['products'] });
   };
 
+  // Marcar en bloque todo lo que se está viendo (p. ej. filtrar "Relojes" y
+  // marcarlos todos "Hombre" de una vez, en vez de uno por uno).
+  const [masivo, setMasivo] = useState(false);
+  const marcarTodos = async (valor) => {
+    const etiqueta = PUBLICOS.find((x) => x.id === valor)?.label;
+    if (!window.confirm(`¿Marcar los ${lista.length} productos que estás viendo como "${etiqueta}"?`)) return;
+    setMasivo(true);
+    let fallos = 0;
+    const nuevos = {};
+    for (let i = 0; i < lista.length; i += 20) {
+      const grupo = lista.slice(i, i + 20);
+      // eslint-disable-next-line no-await-in-loop
+      const res = await Promise.all(grupo.map((p) => updateDocument('productos_wala', p.id, { publico: valor })));
+      res.forEach((r, k) => { if (r.error) fallos += 1; else nuevos[grupo[k].id] = valor; });
+    }
+    setLocales((prev) => ({ ...prev, ...nuevos }));
+    setMasivo(false);
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    if (fallos) toast.error(`${fallos} no se pudieron guardar.`);
+    else toast.success(`Listo: ${Object.keys(nuevos).length} productos marcados como "${etiqueta}".`);
+  };
+
   return (
     <div className={styles.pagina}>
       <header>
@@ -113,6 +135,18 @@ const AdminPublicoProductos = () => {
           onChange={(e) => setBuscar(e.target.value)}
         />
       </div>
+
+      {lista.length > 1 && (
+        <div className={styles.masivo}>
+          <span>Marcar los {lista.length} que estás viendo como:</span>
+          {PUBLICOS.map((op) => (
+            <button key={op.id} type="button" className={styles.opcion} disabled={masivo} onClick={() => marcarTodos(op.id)}>
+              {op.label}
+            </button>
+          ))}
+          {masivo && <span className={styles.meta}>Guardando…</span>}
+        </div>
+      )}
 
       {isLoading ? (
         <p className={styles.meta}>Cargando productos…</p>

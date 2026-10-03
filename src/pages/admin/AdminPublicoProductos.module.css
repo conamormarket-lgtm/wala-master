@@ -146,3 +146,16 @@
   border-color: #8b5cf6;
   color: #7c3aed;
 }
+
+/* Marcar en bloque lo filtrado */
+.masivo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px dashed #c4b5fd;
+  background: rgba(139, 92, 246, 0.06);
+  font-size: 0.85rem;
+}

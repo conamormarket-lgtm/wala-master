@@ -86,6 +86,16 @@ const PAREJA = [' pareja', ' parejas', ' el & ella', ' el y ella', ' duo ', ' no
 // Productos que la tienda etiquetó para regalo: respaldo cuando no hay otra pista.
 const REGALO = [' para regalar', ' regalo ', ' regalos '];
 const GENERICO = 'Ideal para regalar';
+const CONJUNTO = 'Va con lo que le gusta';
+
+// Texto del "por qué" de una idea. Respuestas de opción como el tipo de piel
+// no se leen bien como "Le gusta Mixta": se dicen como "Para piel mixta".
+const TIPOS_PIEL = ['seca', 'grasa', 'mixta', 'sensible', 'normal'];
+function motivoDe(respuesta) {
+  const t = String(respuesta || '').trim();
+  if (TIPOS_PIEL.includes(normalizar(t))) return `Para piel ${normalizar(t)}`;
+  return `Le gusta ${t}`;
+}
 const MUJER = [' mujer', ' dama', ' femenin'];
 const HOMBRE = [' hombre', ' caballero', ' masculin'];
 
@@ -153,15 +163,16 @@ function recomendarRegalos({
       s += Math.min(aciertos, 3) * 8;
       if (s > mejorRespuesta) {
         mejorRespuesta = s;
-        motivo = `Le gusta ${r.original.trim()}`;
+        motivo = motivoDe(r.original);
       }
       score += s;
     }
 
-    // 2) Conjunto ligado a categorías de la tienda.
+    // 2) Conjunto ligado a categorías de la tienda. Pesa más que lo genérico de
+    // pareja: si eligió "Belleza", primero van productos de belleza.
     if (categoriasLigadas.size && (p.categories || []).some((c) => categoriasLigadas.has(c))) {
-      score += 4;
-      if (!motivo) motivo = 'Va con lo que le gusta';
+      score += 7;
+      if (!motivo) motivo = CONJUNTO;
     }
 
     // 3) Pareja / aniversario. Lo pensado para parejas, a quien no es pareja
@@ -174,15 +185,21 @@ function recomendarRegalos({
       score -= 10;
     }
 
-    // 3b) Respaldo: etiquetado "Para regalar" (vale para cualquiera).
-    if (REGALO.some((k) => txt.includes(k))) {
+    // 3b) Respaldo: etiquetado "Para regalar". Para alguien con género definido
+    // solo vale si el producto está marcado para su género o unisex: sin esa
+    // marca no se sabe si un reloj es de hombre o de mujer, y no se adivina.
+    const publico = publicoDe(p, txt);
+    const generoDefinido = genero === 'Femenino' || genero === 'Masculino';
+    const publicoSirve = !generoDefinido || publico === 'unisex'
+      || (publico === 'mujer' && genero === 'Femenino') || (publico === 'hombre' && genero === 'Masculino')
+      || (publico === 'ninos' && ['hijos', 'sobrinos'].includes(recipient.roleKey));
+    if (publicoSirve && REGALO.some((k) => txt.includes(k))) {
       score += 4;
       if (!motivo) motivo = GENERICO;
     }
 
     // 4) Para quién es: lo del género contrario NO se recomienda (un reloj de
     // hombre no es idea para ella), y lo de niños solo para hijos/sobrinos.
-    const publico = publicoDe(p, txt);
     if (publico === 'hombre' && genero === 'Femenino') continue;
     if (publico === 'mujer' && genero === 'Masculino') continue;
     if (publico === 'ninos' && !['hijos', 'sobrinos'].includes(recipient.roleKey)) continue;
@@ -218,7 +235,11 @@ function variar(ordenados, limite) {
   for (const r of ordenados) {
     const m = r.motivo;
     const b = m === GENERICO ? (r.producto.brandId || '') : '';
-    if ((porMotivo[m] || 0) >= 2 || (b && (porMarca[b] || 0) >= 2)) {
+    // Las genéricas comparten motivo; ahí manda el tope por marca, no por motivo.
+    // Lo del conjunto admite 3 (es justo lo que eligió).
+    const maxMotivo = m === CONJUNTO ? 3 : 2;
+    const topeMotivo = m !== GENERICO && (porMotivo[m] || 0) >= maxMotivo;
+    if (topeMotivo || (b && (porMarca[b] || 0) >= 2)) {
       sobrantes.push(r);
       continue;
     }
