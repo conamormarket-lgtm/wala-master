@@ -191,6 +191,7 @@ const AdminUsuariosAnalyticsPage = lazy(() => import('./pages/admin/AdminUsuario
 const AdminUsuariosComportamiento = lazy(() => import('./pages/admin/AdminUsuariosComportamiento'));
 const AdminInteresProductos = lazy(() => import('./pages/admin/AdminInteresProductos'));
 const AdminPublicoProductos = lazy(() => import('./pages/admin/AdminPublicoProductos'));
+const AdminRespuestasEncuesta = lazy(() => import('./pages/admin/AdminRespuestasEncuesta'));
 const AdminWordlePage = lazy(() => import('./pages/admin/AdminWordlePage'));
 
 // El panel del editor visual son 230 KB de codigo (mas react-easy-crop y el
@@ -488,6 +489,7 @@ function App() {
                                       <Route path="usuarios-comportamiento" element={<AdminUsuariosComportamiento />} />
                                       <Route path="interes-productos" element={<AdminInteresProductos />} />
                                       <Route path="publico-productos" element={<AdminPublicoProductos />} />
+                                      <Route path="respuestas-encuesta" element={<AdminRespuestasEncuesta />} />
                                       <Route path="wordle" element={<AdminWordlePage />} />
                                       <Route path="notificaciones" element={<AdminNotifications />} />
                                       <Route path="marcas" element={<AdminMarcas />} />

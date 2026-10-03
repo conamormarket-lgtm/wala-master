@@ -314,3 +314,20 @@
   color: #fff;
   font-weight: 600;
 }
+
+/* Atajo a "Respuestas de la encuesta" */
+.verRespuestas {
+  margin-left: auto;
+  margin-right: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #c4b5fd;
+  color: #6d28d9;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.verRespuestas:hover {
+  background: rgba(139, 92, 246, 0.08);
+}

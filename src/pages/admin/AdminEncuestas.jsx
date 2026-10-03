@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // eslint-disable-next-line no-unused-vars
 // eslint-disable-next-line no-unused-vars
+import { Link } from 'react-router-dom';
 import { Save, Plus, Trash2 } from 'lucide-react';
 import { getSurveyConfig, saveSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
 import { getCategories } from '../../services/categories';
@@ -219,6 +220,7 @@ const AdminEncuestas = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Configuración de Encuesta</h1>
+        <Link to="/admin/respuestas-encuesta" className={styles.verRespuestas}>📋 Ver respuestas</Link>
         <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
           <Save size={18} /> {saving ? 'Guardando...' : 'Guardar Cambios'}
         </button>

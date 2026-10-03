@@ -16,7 +16,7 @@ function normalizar(estado) {
   return String(estado || "")
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim();
 }
 
