@@ -28,7 +28,8 @@ export function useGiftCatalog() {
         getTags(), getCharacters(), getCollections(), getSurveyConfig(),
       ]);
       const conjuntoCategorias = {};
-      ((config.data && config.data.brandsPanel && config.data.brandsPanel.categories) || []).forEach((c) => {
+      const conjuntos = (config.data && config.data.brandsPanel && config.data.brandsPanel.categories) || [];
+      conjuntos.forEach((c) => {
         if (c && c.id && Array.isArray(c.tiendaCategorias)) conjuntoCategorias[c.id] = c.tiendaCategorias;
       });
       return {
@@ -38,6 +39,7 @@ export function useGiftCatalog() {
           collections: aMapa(collections.data),
         },
         conjuntoCategorias,
+        conjuntos,
       };
     },
     staleTime: 1000 * 60 * 10,
@@ -59,6 +61,9 @@ export function useGiftCatalog() {
   return {
     recomendar,
     sugerencias,
+    // Conjuntos de la encuesta (Deportes, Geek…) con sus preguntas, para
+    // preguntar gustos también desde "Fechas importantes".
+    conjuntos: extra?.conjuntos || [],
     cargando: cargandoProductos || cargandoExtra,
   };
 }

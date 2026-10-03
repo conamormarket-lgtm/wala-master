@@ -199,7 +199,29 @@ const CuentaFechasImportantesPage = () => {
   // personaje…), su conjunto, si es pareja, el género y el presupuesto con el
   // catálogo. Antes buscaba el ID del conjunto ("cat_geek") entre las
   // categorías de la tienda, que nunca coincidía: siempre salía vacío.
-  const { recomendar, cargando: cargandoIdeas } = useGiftCatalog();
+  const { recomendar, sugerencias, conjuntos, cargando: cargandoIdeas } = useGiftCatalog();
+  const tieneGustos = (rec) => Object.values(rec.categoryAnswers || {})
+    .some((campos) => Object.values(campos || {}).some((v) => String(v || '').trim()));
+
+  // Gustos de la persona (mismos conjuntos y preguntas que la encuesta).
+  const toggleConjunto = (catId) => {
+    setTempRecipient((prev) => {
+      const lista = Array.isArray(prev.selectedCategories) ? prev.selectedCategories : [];
+      return {
+        ...prev,
+        selectedCategories: lista.includes(catId) ? lista.filter((c) => c !== catId) : [...lista, catId],
+      };
+    });
+  };
+  const responderConjunto = (catId, fieldId, valor) => {
+    setTempRecipient((prev) => {
+      const respuestas = prev.categoryAnswers || {};
+      return {
+        ...prev,
+        categoryAnswers: { ...respuestas, [catId]: { ...(respuestas[catId] || {}), [fieldId]: valor } },
+      };
+    });
+  };
   const [ideasAgregadas, setIdeasAgregadas] = useState(new Set());
   const ideasPara = (rec) => {
     // La ocasión que cuenta es la próxima fecha de la persona.
@@ -637,6 +659,15 @@ const CuentaFechasImportantesPage = () => {
                         <p className={styles.ideasTitle}>
                           <Gift size={15} aria-hidden="true" /> Ideas de regalo para {rec.name}
                         </p>
+                        {!tieneGustos(rec) && ideas.length > 0 && (
+                          <p className={styles.ideasGenericas}>
+                            Son ideas generales.{' '}
+                            <button type="button" className={styles.linkBtn} onClick={() => handleEdit(rec)}>
+                              Cuéntanos qué le gusta
+                            </button>{' '}
+                            y las hacemos a su medida.
+                          </p>
+                        )}
                         {ideas.length > 0 ? (
                           <ul className={styles.ideasLista}>
                             {ideas.map(({ producto: p, motivo }) => {
@@ -836,6 +867,60 @@ const CuentaFechasImportantesPage = () => {
                   Lo usamos para que las ideas de regalo entren en tu presupuesto.
                 </p>
               </div>
+
+              {conjuntos.length > 0 && (
+                <div className={styles.gustosBox}>
+                  <p className={styles.gustosTitulo}>¿Qué le gusta a {tempRecipient.name || 'esta persona'}?</p>
+                  <p className={styles.fieldHint}>
+                    Opcional, pero es lo que más mejora las ideas de regalo. Escribe su equipo, anime,
+                    personaje… y te sugerimos nombres de nuestro catálogo.
+                  </p>
+                  {conjuntos.map((cat) => {
+                    const activo = (tempRecipient.selectedCategories || []).includes(cat.id);
+                    return (
+                      <div key={cat.id} className={styles.gustoConjunto}>
+                        <button
+                          type="button"
+                          className={`${styles.gustoToggle} ${activo ? styles.gustoToggleOn : ''}`}
+                          aria-pressed={activo}
+                          onClick={() => toggleConjunto(cat.id)}
+                        >
+                          <span>{cat.name}</span>
+                          <span className={styles.gustoSwitch} aria-hidden="true"><span /></span>
+                        </button>
+                        {activo && (cat.fields || []).map((field) => {
+                          const valor = tempRecipient.categoryAnswers?.[cat.id]?.[field.id] || '';
+                          const id = `gusto-${cat.id}-${field.id}`;
+                          return (
+                            <div key={field.id} className={styles.fieldGroup}>
+                              <label htmlFor={id}>{field.label}</label>
+                              {field.type === 'select' ? (
+                                <select id={id} className={styles.input} value={valor} onChange={(e) => responderConjunto(cat.id, field.id, e.target.value)}>
+                                  <option value="">Seleccionar…</option>
+                                  {(field.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
+                                </select>
+                              ) : (
+                                <input
+                                  id={id}
+                                  type="text"
+                                  className={styles.input}
+                                  list="sugerencias-gustos-fechas"
+                                  autoComplete="off"
+                                  value={valor}
+                                  onChange={(e) => responderConjunto(cat.id, field.id, e.target.value)}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                  <datalist id="sugerencias-gustos-fechas">
+                    {sugerencias.map((s) => <option key={s} value={s} />)}
+                  </datalist>
+                </div>
+              )}
 
               {/* ── Fechas ──────────────────────────────────────────────────
                   El cumpleaños es siempre el primer evento y no se puede quitar

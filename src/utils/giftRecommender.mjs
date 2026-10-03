@@ -81,6 +81,7 @@ const contiene = (txt, w) => txt.includes(` ${w} `) || txt.includes(` ${w}`);
 const PAREJA = [' pareja', ' parejas', ' el & ella', ' el y ella', ' duo ', ' novios', ' enamorados'];
 // Productos que la tienda etiquetó para regalo: respaldo cuando no hay otra pista.
 const REGALO = [' para regalar', ' regalo ', ' regalos '];
+const GENERICO = 'Ideal para regalar';
 const MUJER = [' mujer', ' dama', ' femenin', ' para ella '];
 const HOMBRE = [' hombre', ' caballero', ' masculin', ' para el '];
 
@@ -137,16 +138,20 @@ export function recomendarRegalos({
       if (!motivo) motivo = 'Va con lo que le gusta';
     }
 
-    // 3) Pareja / aniversario.
-    if (esPareja && PAREJA.some((k) => txt.includes(k))) {
+    // 3) Pareja / aniversario. Lo pensado para parejas, a quien no es pareja
+    // (un hermano, un amigo), baja: "Conjunto Pareja" no le sirve.
+    const dePareja = PAREJA.some((k) => txt.includes(k));
+    if (esPareja && dePareja) {
       score += 6;
       if (!motivo) motivo = 'Para regalar en pareja';
+    } else if (!esPareja && dePareja) {
+      score -= 10;
     }
 
     // 3b) Respaldo: etiquetado "Para regalar" (vale para cualquiera).
     if (REGALO.some((k) => txt.includes(k))) {
       score += 4;
-      if (!motivo) motivo = 'Ideal para regalar';
+      if (!motivo) motivo = GENERICO;
     }
 
     // 4) Género (solo si el producto es claramente de uno).
@@ -157,10 +162,12 @@ export function recomendarRegalos({
       else if (genero === 'Femenino' || genero === 'Masculino') score += 1;
     }
 
-    // 5) Presupuesto.
+    // 5) Presupuesto: hasta un 10 % de margen está bien; un poco más afuera
+    // baja; muy afuera (más de 25 %) no se recomienda.
     if (rango) {
       const precio = precioDe(p);
-      if (precio < rango.min * 0.8 || precio > rango.max * 1.2) score -= 6;
+      if (precio > rango.max * 1.25 || precio < rango.min * 0.75) continue;
+      if (precio < rango.min * 0.9 || precio > rango.max * 1.1) score -= 8;
       else score += 1;
     }
 
@@ -170,7 +177,31 @@ export function recomendarRegalos({
   resultados.sort((a, b) => (b.score - a.score)
     || ((b.producto.featured ? 1 : 0) - (a.producto.featured ? 1 : 0))
     || (precioDe(a.producto) - precioDe(b.producto)));
-  return resultados.slice(0, limite);
+  return variar(resultados, limite);
+}
+
+// Variedad: como mucho 2 ideas por el mismo motivo ("Le gusta Spider Man"), y
+// entre las ideas genéricas ("Ideal para regalar") como mucho 2 de la misma
+// marca, para no mostrar 4 casacas de lo mismo ni 3 relojes de la misma línea.
+// Si no alcanza, se completa con las que quedaron (en orden).
+function variar(ordenados, limite) {
+  const elegidos = [];
+  const sobrantes = [];
+  const porMotivo = {};
+  const porMarca = {};
+  for (const r of ordenados) {
+    const m = r.motivo;
+    const b = m === GENERICO ? (r.producto.brandId || '') : '';
+    if ((porMotivo[m] || 0) >= 2 || (b && (porMarca[b] || 0) >= 2)) {
+      sobrantes.push(r);
+      continue;
+    }
+    elegidos.push(r);
+    porMotivo[m] = (porMotivo[m] || 0) + 1;
+    if (b) porMarca[b] = (porMarca[b] || 0) + 1;
+    if (elegidos.length >= limite) return elegidos;
+  }
+  return [...elegidos, ...sobrantes].slice(0, limite);
 }
 
 // Sugerencias para autocompletar las respuestas de la encuesta: los nombres de
