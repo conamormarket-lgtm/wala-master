@@ -143,6 +143,13 @@ const AdminLayout = () => {
               >
                 🔔 Notificaciones y ofertas
               </NavLink>
+              {/* Mujer / Hombre / Unisex / Niños por producto (para las ideas de regalo). */}
+              <NavLink
+                to="/admin/publico-productos"
+                className={({ isActive }) => getLinkClass(isActive, 'diseno')}
+              >
+                👫 Para quién es cada producto
+              </NavLink>
               {/* Gestión de Pagos (unifica Métodos de Pago + Generador de Enlaces
                   + historial/analíticas): JUSTO DEBAJO de "Ver qué hacen los usuarios". */}
               <NavLink

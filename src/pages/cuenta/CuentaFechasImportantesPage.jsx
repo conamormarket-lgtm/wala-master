@@ -199,7 +199,7 @@ const CuentaFechasImportantesPage = () => {
   // personaje…), su conjunto, si es pareja, el género y el presupuesto con el
   // catálogo. Antes buscaba el ID del conjunto ("cat_geek") entre las
   // categorías de la tienda, que nunca coincidía: siempre salía vacío.
-  const { recomendar, sugerencias, conjuntos, cargando: cargandoIdeas } = useGiftCatalog();
+  const { recomendar, sugerenciasCampo, conjuntos, cargando: cargandoIdeas } = useGiftCatalog();
   const tieneGustos = (rec) => Object.values(rec.categoryAnswers || {})
     .some((campos) => Object.values(campos || {}).some((v) => String(v || '').trim()));
 
@@ -900,15 +900,21 @@ const CuentaFechasImportantesPage = () => {
                                   {(field.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
                                 </select>
                               ) : (
-                                <input
-                                  id={id}
-                                  type="text"
-                                  className={styles.input}
-                                  list="sugerencias-gustos-fechas"
-                                  autoComplete="off"
-                                  value={valor}
-                                  onChange={(e) => responderConjunto(cat.id, field.id, e.target.value)}
-                                />
+                                <>
+                                  <input
+                                    id={id}
+                                    type="text"
+                                    className={styles.input}
+                                    list={`${id}-sug`}
+                                    autoComplete="off"
+                                    value={valor}
+                                    onChange={(e) => responderConjunto(cat.id, field.id, e.target.value)}
+                                  />
+                                  {/* Sugerencias de ESTA pregunta (equipos, jugadores, animes…). */}
+                                  <datalist id={`${id}-sug`}>
+                                    {sugerenciasCampo(cat, field).map((s) => <option key={s} value={s} />)}
+                                  </datalist>
+                                </>
                               )}
                             </div>
                           );
@@ -916,9 +922,6 @@ const CuentaFechasImportantesPage = () => {
                       </div>
                     );
                   })}
-                  <datalist id="sugerencias-gustos-fechas">
-                    {sugerencias.map((s) => <option key={s} value={s} />)}
-                  </datalist>
                 </div>
               )}
 

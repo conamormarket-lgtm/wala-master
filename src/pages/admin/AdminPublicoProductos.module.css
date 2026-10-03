@@ -1,0 +1,148 @@
+.pagina {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem clamp(0.75rem, 2.5vw, 1.75rem) 2.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  color: var(--color-text, #0f172a);
+}
+
+.titulo {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 1.7rem);
+  font-weight: 800;
+}
+
+.subtitulo {
+  margin: 0.3rem 0 0;
+  max-width: 70ch;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--color-text-muted, #475569);
+}
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: transparent;
+  color: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.chipActivo {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #fff;
+}
+
+.select,
+.buscar {
+  min-height: 36px;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
+  font-size: 0.85rem;
+}
+
+.buscar {
+  flex: 1 1 200px;
+}
+
+.meta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #475569);
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #fff);
+}
+
+.img {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--color-bg, #f8fafc);
+}
+
+.info {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.88rem;
+}
+
+.opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.opcion {
+  min-width: 64px;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: transparent;
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.opcion:hover:not(:disabled) {
+  border-color: #8b5cf6;
+}
+
+.opcion:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.opcionActiva {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #fff;
+}
+
+/* Lo que el texto de la ficha sugiere, todavía sin confirmar. */
+.opcionSugerida {
+  border-style: dashed;
+  border-color: #8b5cf6;
+  color: #7c3aed;
+}

@@ -82,8 +82,28 @@ const PAREJA = [' pareja', ' parejas', ' el & ella', ' el y ella', ' duo ', ' no
 // Productos que la tienda etiquetó para regalo: respaldo cuando no hay otra pista.
 const REGALO = [' para regalar', ' regalo ', ' regalos '];
 const GENERICO = 'Ideal para regalar';
-const MUJER = [' mujer', ' dama', ' femenin', ' para ella '];
-const HOMBRE = [' hombre', ' caballero', ' masculin', ' para el '];
+const MUJER = [' mujer', ' dama', ' femenin'];
+const HOMBRE = [' hombre', ' caballero', ' masculin'];
+
+// "Para quién es" el producto. Lo marca el admin en el campo `publico`
+// ('hombre' | 'mujer' | 'unisex' | 'ninos', pantalla "Para quién es cada
+// producto"); si no está marcado, se intenta deducir del texto (pocas fichas
+// lo dicen, por eso conviene marcarlo).
+const PUBLICOS = [
+  { id: 'mujer', label: 'Mujer' },
+  { id: 'hombre', label: 'Hombre' },
+  { id: 'unisex', label: 'Unisex' },
+  { id: 'ninos', label: 'Niños' },
+];
+function publicoDe(p, txt) {
+  if (p && PUBLICOS.some((x) => x.id === p.publico)) return p.publico;
+  const t = txt || ` ${normalizar(`${(p && p.name) || ''} ${String((p && p.description) || '').slice(0, 300)}`)} `;
+  const m = MUJER.some((k) => t.includes(k));
+  const h = HOMBRE.some((k) => t.includes(k));
+  if (m && !h) return 'mujer';
+  if (h && !m) return 'hombre';
+  return null;
+}
 
 /**
  * @param {object} opts
@@ -122,7 +142,9 @@ function recomendarRegalos({
     // 1) Lo que respondió (lo que más pesa).
     for (const r of respuestas) {
       let s = 0;
-      if (r.frase.trim().length >= 4 && txt.includes(r.frase)) s += 6;
+      // La frase completa solo cuenta si tiene alguna palabra útil: "Fútbol"
+      // sola no debe recomendar productos de cualquier equipo.
+      if (r.palabras.length > 0 && r.frase.trim().length >= 4 && txt.includes(r.frase)) s += 6;
       const aciertos = r.palabras.filter((w) => contiene(txt, w)).length;
       s += Math.min(aciertos, 3) * 8;
       if (s > mejorRespuesta) {
@@ -154,13 +176,13 @@ function recomendarRegalos({
       if (!motivo) motivo = GENERICO;
     }
 
-    // 4) Género (solo si el producto es claramente de uno).
-    const deMujer = MUJER.some((k) => txt.includes(k));
-    const deHombre = HOMBRE.some((k) => txt.includes(k));
-    if (deMujer !== deHombre) {
-      if ((genero === 'Femenino' && deHombre) || (genero === 'Masculino' && deMujer)) score -= 8;
-      else if (genero === 'Femenino' || genero === 'Masculino') score += 1;
-    }
+    // 4) Para quién es: lo del género contrario NO se recomienda (un reloj de
+    // hombre no es idea para ella), y lo de niños solo para hijos/sobrinos.
+    const publico = publicoDe(p, txt);
+    if (publico === 'hombre' && genero === 'Femenino') continue;
+    if (publico === 'mujer' && genero === 'Masculino') continue;
+    if (publico === 'ninos' && !['hijos', 'sobrinos'].includes(recipient.roleKey)) continue;
+    if ((publico === 'mujer' && genero === 'Femenino') || (publico === 'hombre' && genero === 'Masculino')) score += 2;
 
     // 5) Presupuesto: hasta un 10 % de margen está bien; un poco más afuera
     // baja; muy afuera (más de 25 %) no se recomienda.
@@ -204,6 +226,70 @@ function variar(ordenados, limite) {
   return [...elegidos, ...sobrantes].slice(0, limite);
 }
 
+// Palabras que "anclan" cada conjunto a una parte del catálogo, por nombre de
+// etiqueta/colección. Ej. Deportes → productos con etiqueta "Fútbol".
+const ANCLAS = {
+  deport: ['futbol', 'deporte', 'deportes', 'voley', 'basquet', 'sport', 'hincha', 'camiseta'],
+  geek: ['anime', 'animes', 'geek', 'manga', 'comic', 'comics', 'gamer', 'videojuego', 'marvel', 'superheroe', 'superheroes', 'supervillanos'],
+};
+// Etiquetas que no son un gusto (no se sugieren como respuesta).
+const NO_GUSTO = new Set([
+  'para regalar', 'regalo', 'personalizable', 'personalizad', 'promocion', 'tendencias', 'ejemplo',
+  'parejas', 'pareja', 'amor', 'frases', 'humor', 'fotos', 'inicial', 'institucional', 'disruptivo',
+]);
+
+function anclasDe(conjunto) {
+  const n = normalizar(conjunto && conjunto.name);
+  const clave = Object.keys(ANCLAS).find((k) => n.includes(k));
+  return clave ? ANCLAS[clave] : n.split(' ').filter((w) => w.length >= 4);
+}
+
+/**
+ * Sugerencias para UNA pregunta de un conjunto: nombres sacados solo de los
+ * productos de ese conjunto. Preguntas de personaje/jugador → personajes; de
+ * deporte → el tipo de deporte; el resto (equipo, anime, franquicia…) →
+ * etiquetas y colecciones de esos productos. Ordenadas por cuántos productos
+ * las usan. Así "¿De qué equipo es hincha?" sugiere equipos, no "Dr.Althea".
+ */
+function sugerenciasPorCampo({ conjunto, field, productos = [], dicts = {}, conjuntoCategorias = {} }) {
+  const anclas = anclasDe(conjunto);
+  const cats = new Set((conjunto && conjuntoCategorias[conjunto.id]) || []);
+  const label = normalizar(field && field.label);
+  const esAncla = (nombre) => {
+    const n = ` ${normalizar(nombre)} `;
+    return anclas.some((a) => n.includes(` ${a}`));
+  };
+
+  const delConjunto = productos.filter((p) => {
+    if (!disponible(p)) return false;
+    if ((p.categories || []).some((c) => cats.has(c))) return true;
+    return [...nombres(p.tags, dicts.tags), ...nombres(p.collections, dicts.collections)].some(esAncla);
+  });
+
+  const conteo = new Map();
+  const sumar = (nombre) => {
+    const t = String(nombre || '').trim();
+    const n = normalizar(t);
+    if (t.length < 3 || t.length > 40 || NO_GUSTO.has(n)) return;
+    conteo.set(t, (conteo.get(t) || 0) + 1);
+  };
+  const quierePersonaje = /personaje|jugador|idolo|artista|cantante/.test(label);
+  const quiereDeporte = /deporte|disciplina/.test(label);
+  delConjunto.forEach((p) => {
+    if (quierePersonaje) {
+      nombres(p.characters, dicts.characters).forEach(sumar);
+      return;
+    }
+    const etiquetas = [...nombres(p.tags, dicts.tags), ...nombres(p.collections, dicts.collections)];
+    etiquetas.filter((n) => (quiereDeporte ? esAncla(n) : !esAncla(n))).forEach(sumar);
+  });
+
+  return [...conteo.entries()]
+    .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0], 'es'))
+    .map(([nombre]) => nombre)
+    .slice(0, 40);
+}
+
 // Sugerencias para autocompletar las respuestas de la encuesta: los nombres de
 // etiquetas, personajes y colecciones del catálogo, así lo que escriba el
 // cliente coincide con cómo están nombrados los productos.
@@ -218,4 +304,4 @@ function sugerenciasRespuestas(dicts = {}) {
   return [...set].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
-module.exports = { PRESUPUESTOS, normalizar, textoProducto, respuestasDe, palabrasClave, recomendarRegalos, sugerenciasRespuestas };
+module.exports = { PRESUPUESTOS, normalizar, textoProducto, respuestasDe, palabrasClave, PUBLICOS, publicoDe, recomendarRegalos, sugerenciasPorCampo, sugerenciasRespuestas };

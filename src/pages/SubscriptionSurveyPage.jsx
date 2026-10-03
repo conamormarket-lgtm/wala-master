@@ -69,7 +69,7 @@ const SubscriptionSurveyPage = () => {
 
   // Buscador de regalos: ideas en la pantalla final y sugerencias (etiquetas,
   // personajes, colecciones del catálogo) al escribir gustos de cada persona.
-  const { recomendar, sugerencias } = useGiftCatalog();
+  const { recomendar, sugerenciasCampo } = useGiftCatalog();
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -739,7 +739,7 @@ const SubscriptionSurveyPage = () => {
                                   <input
                                     type="text"
                                     className={styles.input}
-                                    list="sugerencias-gustos"
+                                    list={`sug-${cat.id}-${field.id}`}
                                     autoComplete="off"
                                     value={answerValue}
                                     onChange={e => {
@@ -751,6 +751,12 @@ const SubscriptionSurveyPage = () => {
                                     }}
                                     required={field.required}
                                   />
+                                )}
+                                {field.type === 'text' && (
+                                  // Sugerencias de ESTA pregunta (equipos, jugadores, animes…).
+                                  <datalist id={`sug-${cat.id}-${field.id}`}>
+                                    {sugerenciasCampo(cat, field).map((s) => <option key={s} value={s} />)}
+                                  </datalist>
                                 )}
                                 {field.type === 'select' && (
                                   <select
@@ -786,12 +792,6 @@ const SubscriptionSurveyPage = () => {
               )}
             </>
           )}
-
-          {/* Sugerencias para autocompletar gustos: nombres del catálogo, así lo
-              que escribe el cliente coincide con cómo se llaman los productos. */}
-          <datalist id="sugerencias-gustos">
-            {sugerencias.map((s) => <option key={s} value={s} />)}
-          </datalist>
 
           {currentStep === 4 && (
             <>

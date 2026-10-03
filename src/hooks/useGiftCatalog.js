@@ -5,7 +5,7 @@ import { getTags } from '../services/tags';
 import { getCharacters } from '../services/characters';
 import { getCollections } from '../services/collections';
 import { getSurveyConfig } from '../services/encuestaConfig';
-import { recomendarRegalos, sugerenciasRespuestas } from '../utils/giftRecommender.mjs';
+import { recomendarRegalos, sugerenciasRespuestas, sugerenciasPorCampo } from '../utils/giftRecommender.mjs';
 
 const aMapa = (lista) => Object.fromEntries((lista || []).map((x) => [x.id, x.name || '']));
 
@@ -58,9 +58,25 @@ export function useGiftCatalog() {
 
   const sugerencias = useMemo(() => sugerenciasRespuestas(dicts || {}), [dicts]);
 
+  // Sugerencias para UNA pregunta (equipos, jugadores, animes…), sacadas de
+  // los productos de ese conjunto. Se memorizan por pregunta.
+  const sugerenciasCampo = useMemo(() => {
+    const cache = new Map();
+    return (conjunto, field) => {
+      const clave = `${conjunto?.id}|${field?.id}`;
+      if (!cache.has(clave)) {
+        cache.set(clave, sugerenciasPorCampo({
+          conjunto, field, productos: productos || [], dicts: dicts || {}, conjuntoCategorias: conjuntoCategorias || {},
+        }));
+      }
+      return cache.get(clave);
+    };
+  }, [productos, dicts, conjuntoCategorias]);
+
   return {
     recomendar,
     sugerencias,
+    sugerenciasCampo,
     // Conjuntos de la encuesta (Deportes, Geek…) con sus preguntas, para
     // preguntar gustos también desde "Fechas importantes".
     conjuntos: extra?.conjuntos || [],

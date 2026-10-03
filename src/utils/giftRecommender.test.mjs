@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { recomendarRegalos, palabrasClave, sugerenciasRespuestas, normalizar } from './giftRecommender.mjs';
+import { recomendarRegalos, palabrasClave, sugerenciasRespuestas, normalizar, sugerenciasPorCampo, publicoDe } from './giftRecommender.mjs';
 
 const require = createRequire(import.meta.url);
 const servidor = require('../../functions/giftLogic.js');
@@ -106,6 +106,46 @@ test('lo de pareja no se recomienda a un hermano, y lo muy caro no entra', () =>
   assert.ok(!r.some((x) => x.producto.id === 'caroSp'), 'S/ 188 no entra en S/ 50–100');
   const idx = r.findIndex((x) => x.producto.id === 'parSp');
   assert.ok(idx === -1 || idx > 0);
+});
+
+test('"para quién es": un reloj de hombre no se recomienda a una mujer', () => {
+  const ps = [
+    { id: 'relH', name: 'Reloj Yoryo Titán', tags: ['t9'], publico: 'hombre', price: 90, inStock: 5 },
+    { id: 'relM', name: 'Reloj Yoryo Perla', tags: ['t9'], publico: 'mujer', price: 90, inStock: 5 },
+    { id: 'kids', name: 'Polo para regalo infantil', tags: ['t9'], publico: 'ninos', price: 40, inStock: 5 },
+  ];
+  const d = { ...dicts, tags: { ...dicts.tags, t9: 'Para regalar' } };
+  const ella = recomendarRegalos({ recipient: persona({ gender: 'Femenino', roleKey: 'pareja' }), productos: ps, dicts: d }).map((x) => x.producto.id);
+  assert.deepEqual(ella, ['relM']);
+  const sobrino = recomendarRegalos({ recipient: persona({ gender: 'Masculino', roleKey: 'sobrinos' }), productos: ps, dicts: d }).map((x) => x.producto.id);
+  assert.ok(sobrino.includes('kids') && !sobrino.includes('relM'));
+  assert.equal(publicoDe({ name: 'Polo dama floral' }), 'mujer');
+  assert.equal(publicoDe({ name: 'Set Él & Ella' }), null);
+});
+
+test('"Fútbol" solo no recomienda productos de cualquier equipo', () => {
+  const r = recomendarRegalos({
+    recipient: persona({ categoryAnswers: { d: { q1: 'Fútbol', q2: 'Alianza Lima' } } }), productos, dicts,
+  });
+  assert.ok(r.every((x) => x.motivo !== 'Le gusta Fútbol'));
+});
+
+test('sugerencias por pregunta: equipos, jugadores o deporte según lo que se pregunta', () => {
+  const ps = [
+    { id: 'a', name: 'Casaca A', tags: ['t1', 't4'], characters: ['c2'], collections: ['k1'], inStock: 1 },
+    { id: 'u', name: 'Casaca U', tags: ['tu', 't4'], characters: [], inStock: 1 },
+    { id: 'n', name: 'Casaca N', tags: ['t2', 't5'], characters: ['c1'], collections: ['k2'], inStock: 1 },
+  ];
+  const d = { ...dicts, tags: { ...dicts.tags, tu: 'Universitario' } };
+  const dep = { id: 'cat_deportes', name: 'Deportes' };
+  const equipos = sugerenciasPorCampo({ conjunto: dep, field: { label: '¿De qué equipo es hincha?' }, productos: ps, dicts: d });
+  assert.deepEqual(equipos.sort(), ['Alianza Lima', 'Universitario']);
+  const jugadores = sugerenciasPorCampo({ conjunto: dep, field: { label: '¿Jugador favorito?' }, productos: ps, dicts: d });
+  assert.deepEqual(jugadores, ['Paolo Guerrero']);
+  const deporte = sugerenciasPorCampo({ conjunto: dep, field: { label: '¿Cuál es su deporte favorito?' }, productos: ps, dicts: d });
+  assert.ok(deporte.includes('Fútbol'));
+  const geek = sugerenciasPorCampo({ conjunto: { id: 'cat_geek', name: 'Geek' }, field: { label: '¿Anime o franquicia favorita?' }, productos: ps, dicts: d });
+  assert.ok(geek.includes('Demon Slayer') && !geek.includes('Alianza Lima'));
 });
 
 test('palabras clave sin relleno y normalizadas', () => {
