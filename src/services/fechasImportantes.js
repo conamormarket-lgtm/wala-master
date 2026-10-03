@@ -49,6 +49,8 @@ export const getUserDates = async () => {
                 recipientName: recipient.name || 'Sin nombre',
                 recipientRole: recipient.roleDisplay || 'Otro',
                 recipientGender: recipient.gender,
+                recipientRoleKey: recipient.roleKey || 'otros',
+                recipientBudget: recipient.budget || '',
                 selectedCategories: recipient.selectedCategories || [],
                 categoryAnswers: recipient.categoryAnswers || {},
                 familySet: recipient.familySet || false,

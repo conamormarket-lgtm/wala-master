@@ -57,7 +57,16 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
   // ID del conjunto entre las categorías de la tienda —nunca coincidía— y
   // completaba con productos AL AZAR. Si faltan, completa con destacados.
   const handleAutoGenerate = () => {
-    const ideas = recomendar(recipientData, { limite: 3 }).map((x) => x.producto);
+    // recipientData viene de getUserDates con otros nombres de campo: se arma
+    // la persona como la espera el buscador (género, relación, presupuesto…).
+    const persona = {
+      roleKey: recipientData.recipientRoleKey || recipientData.roleKey,
+      gender: recipientData.recipientGender || recipientData.gender,
+      budget: recipientData.recipientBudget || recipientData.budget,
+      selectedCategories: recipientData.selectedCategories || [],
+      categoryAnswers: recipientData.categoryAnswers || {},
+    };
+    const ideas = recomendar(persona, { ocasion: recipientData.eventType || '', limite: 3 }).map((x) => x.producto);
     const usados = new Set(ideas.map((p) => p.id));
     const destacados = allProducts.filter((p) => p.featured && p.visible !== false && !p.deleted && !usados.has(p.id));
     setSelectedProducts([...ideas, ...destacados].slice(0, 3));
