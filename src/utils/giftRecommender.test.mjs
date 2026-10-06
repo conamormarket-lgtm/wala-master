@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { recomendarRegalos, palabrasClave, sugerenciasRespuestas, normalizar, sugerenciasPorCampo, publicoDe, edadDe } from './giftRecommender.mjs';
+import { recomendarRegalos, palabrasClave, sugerenciasRespuestas, normalizar, sugerenciasPorCampo, publicoDe, edadDe, equipoDe, edadMinimaDe } from './giftRecommender.mjs';
 
 const require = createRequire(import.meta.url);
 const servidor = require('../../functions/giftLogic.js');
@@ -234,6 +234,39 @@ test('niños: sin relojes, lentes, parejas ni humor; como idea genérica, solo l
   assert.ok(r.length <= 2 && r.every((x) => x.tipo === 'general'), 'adulto sin producto de su gusto: como mucho 2 genéricas');
   assert.ok(!ids(r).includes('kids'));
   assert.equal(edadDe({ events: [{ type: 'Cumpleaños', date: '2026-12-01' }] }, new Date(2026, 9, 6)), null, 'el año de la próxima fecha no es su edad');
+});
+
+test('club nuevo sin tocar código: etiqueta "Fútbol" + la del equipo (o el campo equipo)', () => {
+  const d = { tags: { f: 'Fútbol', bj: 'Boca Juniors', db: 'Dragon Ball' }, characters: { gk: 'Goku' } };
+  const ps = [
+    { id: 'bocaGoku', name: 'Casaca Boca · Goku', tags: ['f', 'bj'], characters: ['gk'], price: 109, inStock: 3 },
+    { id: 'dbGoku', name: 'Casaca Dragon Ball · Goku', tags: ['db'], characters: ['gk'], price: 109, inStock: 3 },
+    { id: 'garci', name: 'Polo Garcilaso Campeón', equipo: 'Deportivo Garcilaso', tags: [], characters: ['gk'], price: 45, inStock: 3 },
+  ];
+  const fanGoku = recomendarRegalos({ recipient: persona({ categoryAnswers: { g: { q: 'Goku' } } }), productos: ps, dicts: d }).map((x) => x.producto.id);
+  assert.deepEqual(fanGoku, ['dbGoku'], 'ni Boca ni Garcilaso para quien solo ama a Goku');
+  const bostero = recomendarRegalos({ recipient: persona({ categoryAnswers: { d: { q: 'Boca' }, g: { q: 'Goku' } } }), productos: ps, dicts: d }).map((x) => x.producto.id);
+  assert.equal(bostero[0], 'bocaGoku');
+  assert.ok(!bostero.includes('garci'));
+  const garcilasino = recomendarRegalos({ recipient: persona({ categoryAnswers: { d: { q: 'Garcilaso' } } }), productos: ps, dicts: d }).map((x) => x.producto.id);
+  assert.deepEqual(garcilasino, ['garci']);
+  assert.deepEqual(equipoDe(ps[0], d), { nombre: 'Boca Juniors', deducido: true });
+  assert.deepEqual(equipoDe(ps[2], d), { nombre: 'Deportivo Garcilaso', deducido: false });
+  assert.equal(equipoDe(ps[1], d).nombre, '');
+});
+
+test('edad mínima marcada manda sobre lo deducido', () => {
+  const ps = [
+    { id: 'perfume', name: 'Perfume Noche', edadMinima: 18, tags: ['pr'], publico: 'unisex', price: 80, inStock: 3 },
+    { id: 'relojKids', name: 'Reloj Paw Patrol', edadMinima: 0, tags: ['pr'], publico: 'ninos', price: 50, inStock: 3 },
+  ];
+  const d = { tags: { pr: 'Para regalar' } };
+  const nino = persona({ roleKey: 'hijos', events: [{ type: 'Cumpleaños', date: '2018-03-10' }] });
+  const r = recomendarRegalos({ recipient: nino, productos: ps, dicts: d, hoy: new Date(2026, 9, 6) }).map((x) => x.producto.id);
+  assert.deepEqual(r, ['relojKids'], 'un reloj marcado "todas las edades" sí; un perfume "solo adultos" no');
+  assert.deepEqual(edadMinimaDe(ps[0]), { valor: 18, deducida: false });
+  assert.deepEqual(edadMinimaDe({ name: 'Reloj Titán' }), { valor: 13, deducida: true });
+  assert.deepEqual(edadMinimaDe({ name: 'Polo Grosería', tags: ['h'] }, ' polo groseria humor '), { valor: 18, deducida: true });
 });
 
 test('palabras clave sin relleno y normalizadas', () => {

@@ -1226,6 +1226,21 @@ function normalizeComboLayout(layout) {
   };
 }
 
+// Datos para las ideas de regalo (ver utils/giftRecommender.mjs y
+// /admin/publico-productos). Solo viajan si quien guarda los manda: así una
+// edición que no los conoce no los borra. Vacío/null = "sin marcar" (se borra
+// del documento y el buscador vuelve a deducirlo de las etiquetas).
+function camposRecomendacion(data) {
+  const out = {};
+  if ('publico' in data) out.publico = ['mujer', 'hombre', 'unisex', 'ninos'].includes(data.publico) ? data.publico : null;
+  if ('equipo' in data) out.equipo = String(data.equipo || '').trim() || null;
+  if ('edadMinima' in data) {
+    const n = Number(data.edadMinima);
+    out.edadMinima = data.edadMinima !== '' && data.edadMinima !== null && [0, 13, 18].includes(n) ? n : null;
+  }
+  return out;
+}
+
 function normalizeProductPayload(data) {
   const customizationViews = Array.isArray(data.customizationViews)
     ? data.customizationViews.map(normalizeCustomizationView).filter(Boolean)
@@ -1356,6 +1371,7 @@ function normalizeProductPayload(data) {
     featured: Boolean(data.featured),
     featuredOrder: typeof data.featuredOrder === 'number' ? data.featuredOrder : (parseInt(data.featuredOrder, 10) || 0),
     visible,
+    ...camposRecomendacion(data),
     isComboProduct,
     ...(isComboProduct && comboLayout && { comboLayout }),
     ...(isComboProduct && comboItems.length > 0 && { comboItems }),

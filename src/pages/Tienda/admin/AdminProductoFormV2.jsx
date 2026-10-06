@@ -25,6 +25,7 @@ import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no e
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import styles from './AdminProductoFormV2.module.css';
+import { PUBLICOS, EDADES } from '../../../utils/giftRecommender.mjs';
 
 const Size = Quill.import('attributors/style/size');
 Size.whitelist = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
@@ -132,6 +133,10 @@ const AdminProductoFormV2 = () => {
     customizationViews: [],
     characters: [],
     tags: [],
+    // Datos para las ideas de regalo (ver /admin/publico-productos).
+    publico: '',
+    equipo: '',
+    edadMinima: '',
     isComboProduct: false,
     comboItems: [],
     comboPreviewImage: '',
@@ -286,6 +291,9 @@ const AdminProductoFormV2 = () => {
         comboPreviewImage: productData.comboPreviewImage || '',
         characters: productData.characters || [],
         tags: productData.tags || [],
+        publico: productData.publico || '',
+        equipo: productData.equipo || '',
+        edadMinima: productData.edadMinima ?? '',
         featured: productData.featured || false,
         inStock: productData.inStock || 0,
         // Sin esto, editar un producto con numero propio lo BORRABA: el form
@@ -340,6 +348,9 @@ const AdminProductoFormV2 = () => {
         customizationViews: [],
         characters: [],
         tags: [],
+        publico: '',
+        equipo: '',
+        edadMinima: '',
         isComboProduct: false,
         comboItems: [],
         comboPreviewImage: '',
@@ -817,6 +828,9 @@ const AdminProductoFormV2 = () => {
         comboPreviewImage: isCombo ? currentComboPreview : '',
         characters: form.characters || [],
         tags: form.tags || [],
+        publico: form.publico || '',
+        equipo: form.equipo || '',
+        edadMinima: form.edadMinima,
         variants: isCombo ? [] : finalVariants,
         visible: true,
         featured: form.featured,
@@ -1239,6 +1253,27 @@ const AdminProductoFormV2 = () => {
                     return tag ? { label: tag.name, value: id } : { label: id, value: id };
                   })}
                 />
+              </div>
+              {/* Datos para las ideas de regalo: sin marcar, se deducen de las etiquetas. */}
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="producto-publico">Para quién es</label>
+                <select id="producto-publico" value={form.publico || ''} onChange={(e) => setForm(f => ({ ...f, publico: e.target.value }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+                  <option value="">Sin marcar</option>
+                  {PUBLICOS.map(op => <option key={op.id} value={op.id}>{op.label}</option>)}
+                </select>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="producto-edad">Edad</label>
+                <select id="producto-edad" value={form.edadMinima === '' || form.edadMinima == null ? '' : String(form.edadMinima)} onChange={(e) => setForm(f => ({ ...f, edadMinima: e.target.value === '' ? '' : Number(e.target.value) }))} style={{ padding: 8, borderRadius: 6, border: '1px solid #ccc' }}>
+                  <option value="">Sin marcar</option>
+                  {EDADES.map(op => <option key={op.id} value={op.id}>{op.label}</option>)}
+                </select>
+                <p className={styles.helpText}>Lo "Desde 13" o "Solo adultos" nunca se recomienda a un niño.</p>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="producto-equipo">Equipo (si es de un club o selección)</label>
+                <input id="producto-equipo" className={styles.input} value={form.equipo || ''} placeholder="Ej. Alianza Lima" onChange={(e) => setForm(f => ({ ...f, equipo: e.target.value }))} />
+                <p className={styles.helpText}>Solo se recomienda a hinchas de ese equipo. Con la etiqueta "Fútbol" + la del equipo se deduce solo.</p>
               </div>
             </div>
           </div>

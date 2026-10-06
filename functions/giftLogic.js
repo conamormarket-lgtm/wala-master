@@ -3,9 +3,9 @@
 // encuesta (equipo, anime, personaje, jugador…), su conjunto, a quién es, la
 // ocasión, el género y el presupuesto. Puro: sin Firebase.
 //
-// ⚠️ Hay una COPIA en functions/giftLogic.js (CommonJS, para el recordatorio de
-// fechas del servidor). Si cambias la lógica, cámbiala en los dos; el test
-// src/utils/giftRecommender.test.mjs compara que ambas den lo mismo.
+// ⚠️ COPIA GENERADA de src/utils/giftRecommender.mjs (la fuente es ese archivo).
+// No la edites a mano: corre  npm run gen:gift-logic  después de cambiar el original.
+// El test src/utils/giftRecommender.test.mjs verifica que ambas den lo mismo.
 //
 // Las etiquetas, personajes y colecciones de los productos se guardan como IDs;
 // `dicts` trae sus nombres ({ tags:{id:nombre}, characters:{…}, collections:{…} }).
@@ -28,7 +28,7 @@ const STOP = new Set([
 const SINONIMOS = [
   { canon: 'alianza lima', club: true, formas: ['alianza', 'grone', 'blanquiazul', 'aliancista', 'intimos', 'alianza lima'] },
   { canon: 'universitario', club: true, formas: ['la u', 'de la u', 'crema', 'cremas', 'universitario de deportes', 'u de deportes'] },
-  { canon: 'sporting cristal', club: true, formas: ['cristal', 'celeste', 'celestes', 'rimense', 'rimenses'] },
+  { canon: 'sporting cristal', club: true, formas: ['cristal', 'sporting', 'celeste', 'celestes', 'rimense', 'rimenses'] },
   { canon: 'cienciano', club: true, formas: ['cienciano', 'cinciano'] },
   { canon: 'melgar', club: true, formas: ['melgar', 'dominos'] },
   { canon: 'barcelona', club: true, formas: ['barza', 'barca', 'barsa', 'fc barcelona'] },
@@ -188,8 +188,8 @@ const MUJER = [' mujer', ' dama', ' femenin'];
 const HOMBRE = [' hombre', ' caballero', ' masculin'];
 
 // "Para quién es" el producto. Lo marca el admin en el campo `publico`
-// ('hombre' | 'mujer' | 'unisex' | 'ninos', pantalla "Para quién es cada
-// producto"); si no está marcado, se intenta deducir del texto (pocas fichas
+// ('hombre' | 'mujer' | 'unisex' | 'ninos', pantalla "Datos para recomendar"
+// o el formulario del producto); si no está marcado, se intenta deducir del texto (pocas fichas
 // lo dicen, por eso conviene marcarlo).
 const PUBLICOS = [
   { id: 'mujer', label: 'Mujer' },
@@ -209,10 +209,64 @@ function publicoDe(p, txt) {
 
 // Ocasiones románticas: ahí un conjunto de pareja SÍ es una buena idea.
 const ROMANTICO = /aniversario|san valentin|amor|enamorad|14 de febrero|boda|novios/;
-// Lo que no se le regala a un niño (y "humor"/"disruptivo" tampoco a un menor).
-const ADULTO = [' reloj', ' billetera', ' joyas', ' lentes', ' esclava', ' pareja', ' parejas', ' el & ella'];
-const PICANTE = [' humor', ' disruptivo'];
 const ROLES_NINOS = ['hijos', 'sobrinos', 'nietos'];
+
+// ── Datos de recomendación de cada producto ────────────────────────────────
+// Se marcan en /admin/publico-productos (y en el formulario del producto):
+//   publico     'mujer' | 'hombre' | 'unisex' | 'ninos'
+//   equipo      club o selección del producto ("Alianza Lima"); vacío = ninguno
+//   edadMinima  0 (todas) | 13 | 18 (solo adultos)
+// Si un producto todavía no los tiene, se DEDUCEN de sus etiquetas (por eso
+// siguen funcionando los productos viejos), pero lo marcado manda siempre.
+
+const EDADES = [
+  { id: 0, label: 'Todas las edades' },
+  { id: 13, label: 'Desde 13 años' },
+  { id: 18, label: 'Solo adultos' },
+];
+// Deducción de edad cuando no está marcada: lo que no se le regala a un niño,
+// y lo de humor/disruptivo, que no es para menores.
+const NO_NINOS = [' reloj', ' billetera', ' joyas', ' lentes', ' esclava', ' pareja', ' parejas', ' el & ella'];
+const PICANTE = [' humor', ' disruptivo'];
+
+const marcado = (v) => v !== undefined && v !== null && v !== '';
+
+/** { valor: 0|13|18, deducida: bool } */
+function edadMinimaDe(p, txt) {
+  const n = Number(p && p.edadMinima);
+  if (p && marcado(p.edadMinima) && EDADES.some((e) => e.id === n)) return { valor: n, deducida: false };
+  const t = txt || textoProducto(p || {});
+  if (PICANTE.some((k) => t.includes(k))) return { valor: 18, deducida: true };
+  if (NO_NINOS.some((k) => t.includes(k))) return { valor: 13, deducida: true };
+  return { valor: 0, deducida: true };
+}
+
+// Palabras de nombres de equipo que por sí solas no identifican a ninguno.
+const PALABRA_EQUIPO_COMUN = new Set(['club', 'deportivo', 'deportes', 'sport', 'sporting', 'atletico', 'union', 'real', 'futbol', 'seleccion', 'juniors', 'city', 'united']);
+
+// Etiquetas que acompañan a "Fútbol" pero no son un equipo.
+const NO_EQUIPO = new Set(['futbol', 'deporte', 'deportes', 'para regalar', 'regalo', 'personalizable', 'parejas', 'humor', 'frases', 'futbol peruano', 'sin personalizar']);
+
+/**
+ * Equipo del producto: el marcado; si no, el que dicen sus etiquetas (todo
+ * producto con la etiqueta "Fútbol" es de un equipo: su otra etiqueta), o un
+ * club conocido en su nombre. { nombre: 'Alianza Lima' | '', deducido: bool }
+ */
+function equipoDe(p, dicts = {}) {
+  if (p && marcado(p.equipo)) return { nombre: String(p.equipo).trim(), deducido: false };
+  const etiquetas = nombres(p && p.tags, dicts.tags);
+  if (etiquetas.some((t) => normalizar(t) === 'futbol')) {
+    const otra = etiquetas.find((t) => !NO_EQUIPO.has(normalizar(t)));
+    if (otra) return { nombre: otra, deducido: true };
+  }
+  const fuerte = ` ${normalizar([p && p.name, ...etiquetas, ...nombres(p && p.collections, dicts.collections)].join(' '))} `;
+  const club = SINONIMOS.find((g) => g.club && fuerte.includes(` ${g.canon} `));
+  if (club) {
+    const bonito = etiquetas.find((t) => normalizar(t) === club.canon);
+    return { nombre: bonito || club.canon.replace(/\b\w/g, (c) => c.toUpperCase()), deducido: true };
+  }
+  return { nombre: '', deducido: true };
+}
 
 // Respuesta → frase, palabras clave y entidades conocidas (equipos, animes…).
 function prepararRespuesta(original) {
@@ -260,11 +314,13 @@ function motivoPorGusto(r, entidades, acertadas) {
  * Reglas para no recomendar cosas fuera de contexto:
  *  - Primero lo que le gusta. Las ideas genéricas ("Ideal para regalar") solo
  *    rellenan, y si contó sus gustos, como mucho 2.
- *  - Productos de un equipo de fútbol: solo para hinchas de ESE equipo.
+ *  - Productos de un equipo (campo `equipo`, o etiqueta "Fútbol" + la del
+ *    equipo): solo para hinchas de ESE equipo. Sirve para clubes nuevos sin
+ *    tocar código.
  *  - Conjuntos de pareja: solo para su pareja o en una ocasión romántica.
- *  - Niños (por edad, o hijos/sobrinos sin edad): nada de relojes, billeteras,
- *    lentes, joyas, parejas ni polos de humor; como idea genérica, solo lo
- *    marcado "Niños". Menores de 18: nada de humor/disruptivo.
+ *  - Edad (campo `edadMinima`, o deducida): a un niño (por edad, o
+ *    hijos/sobrinos sin edad) nada "desde 13" ni "solo adultos"; a un menor de
+ *    18, nada "solo adultos". Como idea genérica, a un niño solo lo de "Niños".
  *  - Lo del género contrario y lo fuera de presupuesto no entra.
  */
 function recomendarRegalos({
@@ -288,6 +344,17 @@ function recomendarRegalos({
   const esNino = edad != null ? edad < 13 : ROLES_NINOS.includes(recipient.roleKey);
   const esMenor = edad != null ? edad < 18 : esNino;
 
+  // Equipo de cada producto (marcado o deducido). Las palabras de los equipos
+  // del catálogo solo cuentan en productos de fútbol: "Alianza" no trae el
+  // "Set Yoryo Alianza", ni "Boca" un labial.
+  const equipos = new Map(productos.map((p) => [p, normalizar(equipoDe(p, dicts).nombre)]));
+  const palabrasClub = new Set(PALABRAS_CLUB);
+  equipos.forEach((e) => e.split(' ').filter((w) => w.length >= 3).forEach((w) => palabrasClub.add(w)));
+  const esHincha = (equipo) => clubesPersona.has(equipo)
+    || [...clubesPersona].some((c) => ` ${equipo} `.includes(` ${c} `) || ` ${c} `.includes(` ${equipo} `))
+    || respuestas.some((r) => r.frase.includes(` ${equipo} `)
+      || equipo.split(' ').some((w) => w.length >= 4 && !PALABRA_EQUIPO_COMUN.has(w) && r.frase.includes(` ${w} `)));
+
   const gustos = [];
   const generales = [];
   for (const p of productos) {
@@ -300,16 +367,17 @@ function recomendarRegalos({
     if (publico === 'hombre' && genero === 'Femenino') continue;
     if (publico === 'mujer' && genero === 'Masculino') continue;
     if (publico === 'ninos' && !esNino) continue;
-    if (esNino && ADULTO.some((k) => txt.includes(k))) continue;
-    if (esMenor && PICANTE.some((k) => txt.includes(k))) continue;
+    const edadMin = edadMinimaDe(p, txt).valor;
+    if (esNino && edadMin >= 13) continue;
+    if (esMenor && edadMin >= 18) continue;
 
     const dePareja = PAREJA.some((k) => txt.includes(k));
     if (dePareja && !esPareja && !romantico) continue;
 
     // Producto de un equipo: solo para hinchas de ese equipo.
-    const clubes = SINONIMOS.filter((g) => g.club && fuerte.includes(` ${g.canon} `)).map((g) => g.canon);
-    if (clubes.length && !clubes.some((c) => clubesPersona.has(c))) continue;
-    const esDeClub = clubes.length > 0;
+    const equipo = equipos.get(p);
+    if (equipo && !esHincha(equipo)) continue;
+    const esDeClub = Boolean(equipo);
 
     // ── 1) Lo que respondió (lo que más pesa) ──
     let score = 0;
@@ -328,7 +396,7 @@ function recomendarRegalos({
       // La frase completa solo cuenta si tiene alguna palabra útil: "Fútbol"
       // sola no debe recomendar productos de cualquier equipo.
       if (r.palabras.length > 0 && r.frase.trim().length >= 4 && fuerte.includes(r.frase)) s += 6;
-      const palabras = r.palabras.filter((w) => (esDeClub || !PALABRAS_CLUB.has(w)) && coincide(w, fuerte, tokens));
+      const palabras = r.palabras.filter((w) => (esDeClub || !palabrasClub.has(w)) && coincide(w, fuerte, tokens));
       s += Math.min(palabras.length, 3) * 8;
       acertadas.push(...palabras);
       // Solo en la descripción: el tipo de piel sí (así lo describen los
@@ -516,4 +584,4 @@ function sugerenciasRespuestas(dicts = {}) {
   return [...set].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
-module.exports = { SINONIMOS, PRESUPUESTOS, normalizar, textoProducto, edadDe, respuestasDe, palabrasClave, PUBLICOS, publicoDe, recomendarRegalos, sugerenciasPorCampo, sugerenciasRespuestas };
+module.exports = { SINONIMOS, PRESUPUESTOS, normalizar, textoProducto, edadDe, respuestasDe, palabrasClave, PUBLICOS, publicoDe, EDADES, edadMinimaDe, equipoDe, recomendarRegalos, sugerenciasPorCampo, sugerenciasRespuestas };
