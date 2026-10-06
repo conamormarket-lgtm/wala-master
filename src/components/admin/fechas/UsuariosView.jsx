@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { textoFechaEvento } from '../../../utils/fechaEvento.mjs';
 import { addDays, isWithinInterval, startOfDay, addWeeks, startOfMonth, addMonths, endOfMonth, startOfWeek, endOfWeek, parseISO, setYear } from 'date-fns';
 import { getUserDates, getSuggestedPackages, updateSuggestedPackage, deleteSuggestedPackage } from '../../../services/fechasImportantes';
 import Button from '../../common/Button';
@@ -368,7 +369,7 @@ const UsuariosView = () => {
                                           <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Evento</div>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0f172a' }}>
                                             <Calendar size={14} style={{ color: '#8b5cf6' }} />
-                                            {d.eventType} — {d.eventDate}
+                                            {d.eventType} — {textoFechaEvento(d.eventDate)}
                                           </div>
                                         </div>
                                       </div>

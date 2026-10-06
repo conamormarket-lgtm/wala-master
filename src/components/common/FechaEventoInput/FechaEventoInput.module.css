@@ -1,0 +1,46 @@
+.fila {
+  display: grid;
+  grid-template-columns: minmax(70px, 0.7fr) minmax(120px, 1.4fr) minmax(110px, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+  /* Las etiquetas pueden ocupar 1 o 2 líneas: los campos quedan alineados abajo. */
+  align-items: end;
+}
+
+.campo {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.campo span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.campo select,
+.campo input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.mes select {
+  text-transform: capitalize;
+}
+
+.error {
+  font-size: 0.72rem;
+  color: #dc2626;
+}
+
+@media (max-width: 380px) {
+  .fila {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fila > .campo:last-child {
+    grid-column: 1 / -1;
+  }
+}

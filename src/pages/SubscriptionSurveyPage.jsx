@@ -11,6 +11,7 @@ import { useGiftCatalog } from '../hooks/useGiftCatalog';
 import { PRESUPUESTOS } from '../utils/giftRecommender.mjs';
 import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import styles from './SubscriptionSurveyPage.module.css';
+import FechaEventoInput from '../components/common/FechaEventoInput/FechaEventoInput';
 import { T } from '../i18n/useTranslatedText';
 
 const EVENT_TYPES = [
@@ -627,12 +628,14 @@ const SubscriptionSurveyPage = () => {
                               )}
 
                               {evTypeConfig.needsDate && (
-                                <input
-                                  type="date"
-                                  className={styles.input}
+                                // Día y mes; el año es opcional (ver utils/fechaEvento.mjs).
+                                <FechaEventoInput
+                                  key={event.id || eventIdx}
+                                  id={`encuesta-evento-${event.id || eventIdx}`}
                                   value={event.date}
-                                  onChange={e => updateEvent(eventIdx, 'date', e.target.value)}
-                                  required={true}
+                                  onChange={(iso) => updateEvent(eventIdx, 'date', iso)}
+                                  inputClassName={styles.input}
+                                  etiquetaAnio={eventIdx === 0 ? 'Año en que nació (opcional)' : 'Año (opcional)'}
                                 />
                               )}
                             </div>

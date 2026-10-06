@@ -63,7 +63,7 @@ test('ficha legible de un cliente', () => {
   assert.deepEqual(f.aQuien, ['Pareja', 'Hijos']);
   assert.equal(f.personas[0].presupuesto, 'S/ 50 – 100');
   assert.deepEqual(f.personas[0].gustos, [{ conjunto: 'Deportes', respuestas: [{ label: '¿De qué equipo es hincha?', valor: 'Alianza Lima' }] }]);
-  assert.deepEqual(f.personas[0].fechas, ['Cumpleaños: 1989-05-05']);
+  assert.deepEqual(f.personas[0].fechas, ['Cumpleaños: 5 de mayo de 1989']);
 });
 
 test('CSV: una fila por persona, separador ; y comillas cuando hace falta', () => {

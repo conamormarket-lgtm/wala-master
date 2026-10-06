@@ -14,6 +14,8 @@
 //                            scripts/backfill-fecha-encuesta.js). Sin el campo
 //                            = fecha desconocida (la llenó antes y no se guardó).
 
+import { textoFechaEvento } from '../utils/fechaEvento.mjs';
+
 export const ROLES = {
   pareja: 'Pareja', hijos: 'Hijos', padres: 'Padres', hermanos: 'Hermanos',
   sobrinos: 'Sobrinos', primos: 'Primos', amigos: 'Amigos', otros: 'Otros',
@@ -187,7 +189,7 @@ export function fichaCliente(u, config) {
       genero: p.gender || '',
       presupuesto: PRESUPUESTOS[p.budget] || '',
       fechas: (p.events || []).filter((e) => e.date)
-        .map((e) => `${e.type === 'Fecha Especial' ? (e.customName || 'Fecha especial') : e.type}: ${e.date}`),
+        .map((e) => `${e.type === 'Fecha Especial' ? (e.customName || 'Fecha especial') : e.type}: ${textoFechaEvento(e.date) || e.date}`),
       gustos: conjuntos
         .filter((c) => (p.selectedCategories || []).includes(c.id))
         .map((c) => ({
@@ -237,7 +239,7 @@ export function csvRespuestas(usuarios, config) {
       filas.push([
         ...base,
         p.name || '', p.roleDisplay || ROLES[p.roleKey] || '', p.gender || '', PRESUPUESTOS[p.budget] || '',
-        (p.events || []).filter((e) => e.date).map((e) => `${e.type === 'Fecha Especial' ? (e.customName || 'Fecha especial') : e.type} ${e.date}`).join(' | '),
+        (p.events || []).filter((e) => e.date).map((e) => `${e.type === 'Fecha Especial' ? (e.customName || 'Fecha especial') : e.type} ${textoFechaEvento(e.date) || e.date}`).join(' | '),
         conjuntos.filter((c) => (p.selectedCategories || []).includes(c.id)).map((c) => c.name).join(', '),
         ...columnasGustos.map(({ c, f }) => (p.categoryAnswers && p.categoryAnswers[c.id] && p.categoryAnswers[c.id][f.id]) || ''),
       ]);

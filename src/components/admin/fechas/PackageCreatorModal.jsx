@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { textoFechaEvento } from '../../../utils/fechaEvento.mjs';
 import { getProducts } from '../../../services/products';
 import { saveSuggestedPackage, updateSuggestedPackage } from '../../../services/fechasImportantes';
 import Button from '../../common/Button';
@@ -161,7 +162,7 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
             <div className={styles.infoCard}>
               <h3>Información del Destinatario</h3>
               <p><strong>Relación:</strong> {recipientData.recipientRole}</p>
-              <p><strong>Evento:</strong> {recipientData.eventType} ({recipientData.eventDate})</p>
+              <p><strong>Evento:</strong> {recipientData.eventType} ({textoFechaEvento(recipientData.eventDate)})</p>
               <div className={styles.tagsContainer}>
                 <strong>Gustos principales:</strong>
                 {recipientData.selectedCategories && recipientData.selectedCategories.length > 0 ? (

@@ -48,6 +48,7 @@
 // =========================================================================
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { proximaOcurrencia } from '../../utils/fechaEvento.mjs';
 import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -512,7 +513,9 @@ const GiftRegistryPage = () => {
       isWishlistGift: true,
       wishlistUserCode: String(referralCode || '').trim().toUpperCase(), // alinear casing con la CF (markItemAsGifted)
       // NUEVO — contexto de fecha de entrega (aditivo, viaja en el item del carrito).
-      deliveryDate: evento.date, // 'YYYY-MM-DD' — qué día entregar
+      // Se entrega la PRÓXIMA vez que se celebra: el evento guarda el año de
+      // nacimiento (o "0000" si no se sabe), no el de la entrega.
+      deliveryDate: proximaOcurrencia(evento.date) || evento.date,
       deliveryEventLabel: evento._label, // contexto humano del evento
       deliveryRecipient: registry?.ownerName || 'Alguien', // dueño = destinatario
     };
@@ -538,7 +541,7 @@ const GiftRegistryPage = () => {
     const res = addGiftToCart(cardProduct, item, evento, { silent: false });
     if (!res) return;
     addToast(
-      `¡Regalo agregado! Se entregará el ${formatearFecha(evento.date)} para ${registry?.ownerName || 'Alguien'}.`,
+      `¡Regalo agregado! Se entregará el ${formatearFecha(proximaOcurrencia(evento.date))} para ${registry?.ownerName || 'Alguien'}.`,
       'success'
     );
     navigate('/carrito');
@@ -781,7 +784,7 @@ const GiftRegistryPage = () => {
                       {/* Footer: el evento de ESTA fecha + su día (cumpleaños). */}
                       <div className={styles.personDateRow}>
                         <span className={styles.personDateLabel}>📅 {eventoLabel}</span>
-                        <span className={styles.personDateValue}>{formatearFecha(d.date)}</span>
+                        <span className={styles.personDateValue}>{formatearFecha(proximaOcurrencia(d.date))}</span>
                       </div>
                     </button>
 
@@ -913,7 +916,7 @@ const GiftRegistryPage = () => {
           {/* Recordatorio de la fecha elegida (refuerza el contexto antes de comprar). */}
           {selectedEvent && items.length > 0 && (
             <p className={styles.deliveryHint}>
-              Con “Regalar este” se entregará el <strong>{formatearFecha(selectedEvent.date)}</strong>{' '}
+              Con “Regalar este” se entregará el <strong>{formatearFecha(proximaOcurrencia(selectedEvent.date))}</strong>{' '}
               ({selectedEvent._label}) a <strong>{ownerName}</strong>.
             </p>
           )}

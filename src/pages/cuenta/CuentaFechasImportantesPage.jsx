@@ -11,6 +11,8 @@ import { getUserSuggestedPackages } from '../../services/fechasImportantes';
 import { useFechasFestivas } from '../../services/fechasFestivas';
 import { proximasFestivas, hoyLocal, textoFecha, DIAS_ANTICIPACION } from '../../utils/fechasFestivas.mjs';
 import FechasFestivasSeccion from './FechasFestivasSeccion';
+import FechaEventoInput from '../../components/common/FechaEventoInput/FechaEventoInput';
+import { textoFechaEvento } from '../../utils/fechaEvento.mjs';
 import { GlassCard, Reveal } from '../../components/ui';
 // eslint-disable-next-line no-unused-vars
 import { Gift, Calendar, CalendarHeart, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package, Camera, AlertCircle, Check } from 'lucide-react';
@@ -517,7 +519,7 @@ const CuentaFechasImportantesPage = () => {
                           </span>
                           <span className={styles.eventDate}>
                             {ev.date
-                              ? new Date(ev.date + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long' })
+                              ? textoFechaEvento(ev.date, { conAnio: false })
                               : 'Sin fecha'}
                           </span>
                           {aviso && (
@@ -937,12 +939,15 @@ const CuentaFechasImportantesPage = () => {
                         )}
 
                         {evTypeConfig.needsDate && (
-                          <input
-                            type="date"
-                            className={styles.input}
+                          // Día y mes; el año es opcional (casi nadie sabe en qué
+                          // año nació cada persona). Ver utils/fechaEvento.mjs.
+                          <FechaEventoInput
+                            key={event.id || eventIdx}
+                            id={`evento-${event.id || eventIdx}`}
                             value={event.date}
-                            onChange={e => updateEvent(eventIdx, 'date', e.target.value)}
-                            aria-label="Fecha"
+                            onChange={(iso) => updateEvent(eventIdx, 'date', iso)}
+                            inputClassName={styles.input}
+                            etiquetaAnio={esCumple ? 'Año en que nació (opcional)' : 'Año (opcional)'}
                           />
                         )}
                       </div>
