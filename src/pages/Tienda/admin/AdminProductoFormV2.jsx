@@ -20,6 +20,7 @@ import ThumbnailCropEditor from '../../../components/admin/ThumbnailCropEditor/T
 import AdminCustomizationViewsEditor from '../components/AdminCustomizationViewsEditor/AdminCustomizationViewsEditor';
 import AdminComboEditor from '../components/AdminComboEditor/AdminComboEditor';
 import YoryoPersonalizado from '../../../components/YoryoPersonalizado/YoryoPersonalizado';
+import PersonalizacionPrenda, { prendaBaseInicial, prendaBaseParaGuardar } from '../../admin/prendasCrear/PersonalizacionPrenda';
 import { fabric } from 'fabric';
 import '../../../fabricPatch'; // parche de renderAll: viaja con fabric, ya no en el entry
 import ReactQuill, { Quill } from 'react-quill';
@@ -131,6 +132,9 @@ const AdminProductoFormV2 = () => {
     variants: [], 
     customizable: false,
     customizationViews: [],
+    // Apartado Crear: prenda que el cliente diseña (utils/prendaBase.js).
+    esPrendaBase: false,
+    prendaBase: prendaBaseInicial(),
     characters: [],
     tags: [],
     // Datos para las ideas de regalo (ver /admin/publico-productos).
@@ -286,6 +290,8 @@ const AdminProductoFormV2 = () => {
         variants: mappedVariants,
         customizable: productData.customizable || false,
         customizationViews: productData.customizable && productData.customizationViews ? productData.customizationViews : [],
+        esPrendaBase: productData.esPrendaBase === true,
+        prendaBase: productData.prendaBase || prendaBaseInicial(),
         isComboProduct: Boolean(productData.isComboProduct),
         comboItems: productData.comboItems || [],
         comboPreviewImage: productData.comboPreviewImage || '',
@@ -346,6 +352,8 @@ const AdminProductoFormV2 = () => {
         variants: [{ id: initialVariantId, name: 'Variante 1', colorHex: '#cccccc', mode: 'mockup', mockupState: { selectedMockupId: '', selectedVariantIndex: 0 }, images: [], imageUrl: '', sizes: [], sizeLabel: 'Talla', showSizeConfig: false }],
         customizable: false,
         customizationViews: [],
+        esPrendaBase: false,
+        prendaBase: prendaBaseInicial(),
         characters: [],
         tags: [],
         publico: '',
@@ -762,14 +770,27 @@ const AdminProductoFormV2 = () => {
       return;
     }
 
+    const esPrenda = form.esPrendaBase && !form.isComboProduct;
+    if (esPrenda) {
+      const vistas = form.prendaBase?.vistas || [];
+      if (!vistas.length || vistas.some((v) => !v.imagen)) {
+        alert('Producto personalizable: agrega al menos una vista y sube la foto de cada una.');
+        return;
+      }
+    }
+
     // Validación de imagen eliminada para permitir productos sin foto
     setUploading(true);
     try {
+      // Una prenda de Crear no necesita fotos por color: si a una variante le
+      // falta, se usa la foto de su primera vista para que el admin, el carrito
+      // y los pedidos no queden sin miniatura.
+      const fotoPrenda = esPrenda ? (form.prendaBase.vistas[0]?.imagen || '') : '';
       const finalVariants = form.variants.map((v) => ({
         id: v.id,
         name: v.name,
         colorHex: v.colorHex,
-        imageUrl: v.imageUrl || '',
+        imageUrl: v.imageUrl || fotoPrenda,
         images: Array.isArray(v.images) ? v.images : [],
         sizes: Array.isArray(v.sizes) ? v.sizes : [],
         sizeLabel: v.sizeLabel || 'Talla',
@@ -818,8 +839,10 @@ const AdminProductoFormV2 = () => {
         defaultVariantId: defaultVariant?.id || '',
         // ── CRÍTICO: persistir hasVariants para que normalizeProductForRead lo lea ──
         hasVariants: !isCombo && finalVariants.length > 0,
-        customizable: form.customizable,
-        customizationViews: form.customizationViews,
+        customizable: esPrenda ? false : form.customizable,
+        customizationViews: esPrenda ? [] : form.customizationViews,
+        esPrendaBase: esPrenda,
+        ...(esPrenda && { prendaBase: prendaBaseParaGuardar(form.prendaBase, finalVariants) }),
         whatsappEnabled: form.whatsappEnabled !== false,
         whatsappNumber: (form.whatsappNumber || '').trim(),
         whatsappMessage: (form.whatsappMessage || '').trim(),
@@ -1747,19 +1770,46 @@ const AdminProductoFormV2 = () => {
                 <p className={styles.cardSubtitle} style={{ marginTop: '0.25rem' }}>
                   {form.isComboProduct 
                     ? <span key="combo">Permite a los clientes personalizar los productos de este paquete usando las vistas originales de cada uno.</span>
-                    : <span key="single">Permite a los clientes añadir sus propios textos y diseños sobre este producto en la tienda.</span>}
+                    : <span key="single">El cliente la diseña en <strong>Crear</strong> con sus imágenes y textos, y se imprime en las zonas que marques.</span>}
                 </p>
               </div>
               <label className={styles.toggleSwitch}>
                 <input
                   type="checkbox"
-                  checked={form.customizable}
-                  onChange={handleToggleCustomizable}
+                  checked={form.isComboProduct ? form.customizable : (form.esPrendaBase || form.customizable)}
+                  onChange={form.isComboProduct ? handleToggleCustomizable : (e) => {
+                    const activo = e.target.checked;
+                    setForm((f) => ({
+                      ...f,
+                      esPrendaBase: activo,
+                      customizable: false,
+                      prendaBase: f.prendaBase || prendaBaseInicial(),
+                    }));
+                  }}
                 />
                 <span className={styles.slider}></span>
               </label>
             </div>
-            {form.customizable && !form.isComboProduct && (
+            {form.esPrendaBase && !form.isComboProduct && (
+              <PersonalizacionPrenda
+                valor={form.prendaBase}
+                variantes={form.variants}
+                draftId={draftId}
+                onChange={(prendaBase) => setForm((f) => ({ ...f, prendaBase }))}
+                onAgregarVariantes={(nuevas) => setForm((f) => {
+                  // Si el producto solo tiene la variante vacía de inicio, se reemplaza.
+                  const vacia = f.variants.length === 1 && !f.variants[0].imageUrl && /^Variante 1$/.test(f.variants[0].name || '');
+                  const base = vacia ? [] : f.variants;
+                  const variants = [...base, ...nuevas.map((n) => ({
+                    id: n.id, name: n.nombre, colorHex: n.hex, mode: 'direct',
+                    mockupState: { selectedMockupId: '', selectedVariantIndex: 0 },
+                    images: [], imageUrl: '', sizes: n.tallas, sizeLabel: 'Talla', showSizeConfig: true,
+                  }))];
+                  return { ...f, variants, defaultVariantId: vacia ? variants[0].id : f.defaultVariantId };
+                })}
+              />
+            )}
+            {form.customizable && !form.isComboProduct && !form.esPrendaBase && (
               <div style={{ marginTop: '2rem' }}>
                 <AdminCustomizationViewsEditor 
                   views={form.customizationViews} 

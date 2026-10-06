@@ -17,6 +17,7 @@ import {
 import {
   UNIDADES_ZONA, leerPrendaBase, altoZonaFraccion, precioBase, precioPersonalizado, vistasConDiseno,
   dpiDeCapa, calidadDeDpi, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
+  colorDisponible, tallasDeColor,
 } from '../../utils/prendaBase';
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
@@ -78,7 +79,14 @@ const CrearStudioPage = () => {
       return data;
     },
   });
-  const cfg = useMemo(() => (prenda ? leerPrendaBase(prenda) : null), [prenda]);
+  // Solo los colores que se pueden mostrar: un bicolor sin sus fotos no se ofrece.
+  const cfg = useMemo(() => {
+    if (!prenda) return null;
+    const leida = leerPrendaBase(prenda);
+    const listos = leida.colores.filter((c) => colorDisponible(c, leida.vistas));
+    return { ...leida, colores: listos.length ? listos : leida.colores };
+  }, [prenda]);
+  const agotado = typeof prenda?.inStock === 'number' && prenda.inStock <= 0;
   const disponible = Boolean(prenda) && prenda.esPrendaBase === true && prenda.deleted !== true && prenda.visible !== false;
 
   const [vistaId, setVistaId] = useState(null);
@@ -115,6 +123,7 @@ const CrearStudioPage = () => {
   const color = cfg?.colores.find((c) => c.id === colorId) || cfg?.colores[0] || null;
   const capasVista = (vista && capasPorVista[vista.id]) || [];
   const capaSel = capasVista.find((c) => c.id === seleccionId) || null;
+  const tallas = color ? tallasDeColor(color, cfg) : [];
   const vistasUsadas = useMemo(
     () => (cfg ? vistasConDiseno(capasPorVista).filter((v) => cfg.vistas.some((x) => x.id === v)) : []),
     [cfg, capasPorVista]
@@ -534,7 +543,8 @@ const CrearStudioPage = () => {
   };
 
   const agregarAlCarrito = async () => {
-    if (cfg.tallas.length && !talla) {
+    if (agotado) return;
+    if (tallas.length && !talla) {
       setAvisoTalla(true);
       tallasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       toast.info('Elige tu talla.');
@@ -573,7 +583,9 @@ const CrearStudioPage = () => {
       });
 
       addToCart(
-        { ...prenda, id: prenda.id },
+        // Sin variantes: el color y la talla van en la línea, y la foto es la
+        // vista previa (las fotos de las variantes son la prenda en blanco).
+        { ...prenda, id: prenda.id, variants: [], hasVariants: false, mainImage: vistasPrevias[0]?.url || prenda.mainImage || '' },
         { size: talla, color: color.nombre, colorHex: color.hex },
         {
           tipo: 'crear',
@@ -811,23 +823,26 @@ const CrearStudioPage = () => {
                   key={c.id}
                   type="button"
                   className={`${styles.colorPrenda} ${c.id === color.id ? styles.colorPrendaActivo : ''}`}
-                  style={{ background: c.hex }}
+                  style={{ background: c.hex2 ? `linear-gradient(135deg, ${c.hex} 50%, ${c.hex2} 50%)` : c.hex }}
                   aria-label={c.nombre}
                   aria-pressed={c.id === color.id}
                   title={c.nombre}
-                  onClick={() => setColorId(c.id)}
+                  onClick={() => {
+                    setColorId(c.id);
+                    if (talla && !tallasDeColor(c, cfg).includes(talla)) setTalla('');
+                  }}
                 />
               ))}
             </div>
           </section>
 
-          {cfg.tallas.length > 0 && (
+          {tallas.length > 0 && (
             <section ref={tallasRef} className={styles.seccion} aria-label="Talla">
               <h2 className={styles.seccionTitulo}>
                 Talla {talla && <span className={styles.valor}>{talla}</span>}
               </h2>
               <div className={styles.tallas}>
-                {cfg.tallas.map((t) => (
+                {tallas.map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -859,9 +874,9 @@ const CrearStudioPage = () => {
               <Save size={18} aria-hidden="true" />
               Guardar
             </button>
-            <button type="button" className={styles.botonPrincipal} onClick={agregarAlCarrito} disabled={!!procesando}>
+            <button type="button" className={styles.botonPrincipal} onClick={agregarAlCarrito} disabled={!!procesando || agotado}>
               <ShoppingBag size={18} aria-hidden="true" />
-              Agregar al carrito · {soles(total)}
+              {agotado ? 'Agotado por ahora' : `Agregar al carrito · ${soles(total)}`}
             </button>
           </div>
         </aside>

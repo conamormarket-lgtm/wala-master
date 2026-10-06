@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { altoZonaFraccion, cargarImagen, tintarImagen } from '../../../utils/prendaBase';
-import styles from './AdminPrendasCrear.module.css';
+import styles from './PersonalizacionPrenda.module.css';
 
 /**
  * Dibuja la zona de impresión sobre la foto de una vista.

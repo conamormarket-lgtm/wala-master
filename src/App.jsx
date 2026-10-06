@@ -181,7 +181,6 @@ const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminPagos = lazy(() => import('./pages/admin/AdminPagos'));
 const AdminDestacados = lazy(() => import('./pages/admin/AdminDestacados'));
 const AdminCliparts = lazy(() => import('./pages/admin/AdminCliparts'));
-const AdminPrendasCrear = lazy(() => import('./pages/admin/prendasCrear/AdminPrendasCrear'));
 const AdminMascota = lazy(() => import('./pages/admin/AdminMascota'));
 const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
@@ -450,7 +449,6 @@ function App() {
                                       <Route path="productos" element={<AdminProductos />} />
                                       <Route path="inventario" element={<AdminInventario />} />
                                       <Route path="mockups" element={<AdminMockups />} />
-                                      <Route path="prendas-crear" element={<AdminPrendasCrear />} />
                                       <Route path="productos/nuevo" element={<AdminProductoFormV2 />} />
                                       <Route path="productos/:id" element={<AdminProductoFormV2 />} />
                                       <Route path="categorias" element={<AdminCategorias />} />

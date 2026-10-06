@@ -602,3 +602,92 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Apartado dentro del formulario de productos ─────────────────────────── */
+
+.contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  color: var(--gris-texto-principal);
+}
+
+.aviso {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: var(--primary-light);
+  color: var(--gris-texto-principal);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.bloqueCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.bloqueTitulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.muestra {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}
+
+.tallasColor {
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario);
+}
+
+.bicolor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.bicolor input {
+  accent-color: var(--primary-color);
+}
+
+.alerta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #B45309;
+}
+
+:global([data-theme="dark"]) .alerta {
+  color: #FCD34D;
+}
+
+.nombreColor {
+  font-size: 0.95rem;
+}
+
+.colorFila {
+  flex-wrap: wrap;
+}

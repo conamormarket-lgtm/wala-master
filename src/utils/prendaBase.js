@@ -1,17 +1,20 @@
 /**
- * Prendas base del apartado "Crear".
+ * Prendas personalizables del apartado "Crear".
  *
- * Una prenda base es un documento normal de productos_wala con
- * `esPrendaBase: true` y su configuración en `prendaBase`. Vive en la misma
- * colección que el resto del catálogo a propósito: así el carrito, el
- * checkout, la validación de precios del servidor y el ERP la tratan como un
- * producto más, sin rutas paralelas. La tienda la excluye (ver
- * esProductoDeTienda en services/products.js): solo se ve en Crear.
+ * Son productos normales de productos_wala: se crean y editan en Admin ->
+ * Productos, y en su apartado "Producto personalizable" se activa
+ * `esPrendaBase` y se configura `prendaBase`. Al vivir en el catálogo, el
+ * carrito, el checkout, la validación de precios del servidor y el ERP los
+ * tratan como un producto más. La tienda los excluye (ver esProductoDeTienda
+ * en services/products.js): solo se compran diseñándolos en Crear.
+ *
+ * Los COLORES y las TALLAS son las variantes del producto (nombre, colorHex y
+ * tallas de cada una), las mismas que usa el resto del catálogo. `prendaBase`
+ * solo guarda lo propio de la personalización:
  *
  *   prendaBase: {
- *     tallas:  ['S', 'M', 'L', 'XL'],
- *     colores: [{ id, nombre, hex, fotos: { [vistaId]: url } }],
  *     vistas:  [{ id, nombre, imagen, costo, zona: { x, y, w, anchoCm, altoCm } }],
+ *     colores: { [variantId]: { hex2, fotos: { [vistaId]: url } } },
  *   }
  *
  * La zona se guarda en fracciones de la imagen (x, y, w) más su medida real
@@ -21,6 +24,8 @@
  * Las fotos de cada vista son PNG/WebP con fondo transparente de la prenda en
  * blanco; los colores se tiñen en el navegador (tintarImagen). Un color puede
  * traer su propia foto por vista (fotos[vistaId]) cuando el teñido no basta.
+ * Los bicolores (hex2) no se pueden teñir de un solo tono: solo se ofrecen
+ * cuando tienen su foto en todas las vistas (colorDisponible).
  */
 
 // Ancho de la zona en "unidades" de diseño. Las capas guardan posición y
@@ -37,12 +42,47 @@ export const DPI_MINIMO_ACEPTABLE = 100;
 
 export const TALLAS_SUGERIDAS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
+/**
+ * Tonos con los que el catálogo ya nombra sus prendas (los usan ~120
+ * productos). Sirven de respaldo cuando una variante no trae colorHex y para
+ * crear de un clic los colores de las poleras.
+ */
+export const PALETA_PRENDAS = {
+  blanco: '#F3F3F3',
+  negro: '#101010',
+  melange: '#C8CACB',
+  'azul acero': '#0F1E37',
+  acero: '#0F1E37',
+  guinda: '#651322',
+  rosado: '#FDA9C9',
+  celeste: '#A9D5F6',
+};
+
+/** Colores de la polera del proveedor (S a XL), incluidos los bicolores. */
+export const COLORES_POLERA = [
+  { nombre: 'Negro', hex: '#101010' },
+  { nombre: 'Blanco', hex: '#F3F3F3' },
+  { nombre: 'Melange', hex: '#C8CACB' },
+  { nombre: 'Azul Acero', hex: '#0F1E37' },
+  { nombre: 'Guinda', hex: '#651322' },
+  { nombre: 'Rosado', hex: '#FDA9C9' },
+  { nombre: 'Celeste', hex: '#A9D5F6' },
+  { nombre: 'Celeste / Rosado', hex: '#A9D5F6', hex2: '#FDA9C9' },
+  { nombre: 'Negro / Rosado', hex: '#101010', hex2: '#FDA9C9' },
+  { nombre: 'Blanco / Negro', hex: '#F3F3F3', hex2: '#101010' },
+  { nombre: 'Panda', hex: '#F3F3F3', hex2: '#101010' },
+];
+
+export const TALLAS_POLERA = ['S', 'M', 'L', 'XL'];
+
 const num = (v, def) => {
   const n = typeof v === 'number' ? v : parseFloat(v);
   return Number.isFinite(n) ? n : def;
 };
 
 const limitar = (v, min, max) => Math.min(max, Math.max(min, v));
+
+const esHex = (v) => /^#[0-9a-f]{6}$/i.test(v || '');
 
 export const slug = (texto) =>
   String(texto || '')
@@ -68,34 +108,87 @@ export const normalizarVista = (vista, i = 0) => ({
   zona: normalizarZona(vista?.zona),
 });
 
-export const normalizarColor = (color, i = 0) => {
-  const fotos = {};
-  Object.entries(color?.fotos || {}).forEach(([vistaId, url]) => {
-    if (typeof url === 'string' && url.trim()) fotos[vistaId] = url.trim();
-  });
-  const hex = /^#[0-9a-f]{6}$/i.test(color?.hex || '') ? color.hex.toUpperCase() : '#FFFFFF';
-  return {
-    id: String(color?.id || slug(color?.nombre) || `color-${i + 1}`),
-    nombre: String(color?.nombre || `Color ${i + 1}`),
-    hex,
-    fotos,
-  };
+/** Tono de respaldo por nombre ("Azul Acero" -> paleta), o blanco. */
+const hexPorNombre = (nombre) => {
+  const n = String(nombre || '').trim().toLowerCase();
+  if (PALETA_PRENDAS[n]) return PALETA_PRENDAS[n];
+  const clave = Object.keys(PALETA_PRENDAS).find((k) => n.startsWith(k));
+  return clave ? PALETA_PRENDAS[clave] : '#FFFFFF';
 };
 
-/** Configuración segura de una prenda base, con valores por defecto. */
+const limpiarFotos = (fotos) => {
+  const out = {};
+  Object.entries(fotos || {}).forEach(([vistaId, url]) => {
+    if (typeof url === 'string' && url.trim()) out[vistaId] = url.trim();
+  });
+  return out;
+};
+
+export const normalizarColor = (color, i = 0) => ({
+  id: String(color?.id || slug(color?.nombre) || `color-${i + 1}`),
+  nombre: String(color?.nombre || `Color ${i + 1}`),
+  hex: esHex(color?.hex) ? color.hex.toUpperCase() : hexPorNombre(color?.nombre),
+  hex2: esHex(color?.hex2) ? color.hex2.toUpperCase() : '',
+  fotos: limpiarFotos(color?.fotos),
+  tallas: (Array.isArray(color?.tallas) ? color.tallas : []).map((t) => String(t || '').trim()).filter(Boolean),
+});
+
+const ordenTallas = (tallas) => {
+  const pos = (t) => {
+    const i = TALLAS_SUGERIDAS.indexOf(String(t).toUpperCase());
+    return i === -1 ? 100 : i;
+  };
+  return [...new Set(tallas)].sort((a, b) => pos(a) - pos(b));
+};
+
+/**
+ * Configuración segura de una prenda: vistas de `prendaBase` y colores/tallas
+ * de las variantes del producto. Si el producto no tiene variantes se acepta
+ * el formato anterior (colores y tallas dentro de prendaBase).
+ */
 export const leerPrendaBase = (producto) => {
   const cfg = producto?.prendaBase || {};
   const vistas = (Array.isArray(cfg.vistas) ? cfg.vistas : []).map(normalizarVista);
-  const colores = (Array.isArray(cfg.colores) ? cfg.colores : []).map(normalizarColor);
-  const tallas = (Array.isArray(cfg.tallas) ? cfg.tallas : [])
-    .map((t) => String(t || '').trim())
-    .filter(Boolean);
+  const variantes = (Array.isArray(producto?.variants) ? producto.variants : [])
+    .filter((v) => v && String(v.name || '').trim());
+
+  let colores;
+  if (variantes.length) {
+    const extra = cfg.colores && !Array.isArray(cfg.colores) ? cfg.colores : {};
+    colores = variantes.map((v, i) => normalizarColor({
+      id: v.id,
+      nombre: String(v.name).trim(),
+      hex: v.colorHex,
+      hex2: extra[v.id]?.hex2,
+      fotos: extra[v.id]?.fotos,
+      tallas: v.sizes,
+    }, i));
+  } else {
+    colores = (Array.isArray(cfg.colores) ? cfg.colores : []).map(normalizarColor);
+  }
+
+  const tallasSueltas = [
+    ...(Array.isArray(cfg.tallas) ? cfg.tallas : []),
+    ...(Array.isArray(producto?.mainSizes) ? producto.mainSizes : []),
+  ].map((t) => String(t || '').trim()).filter(Boolean);
+  const tallas = ordenTallas([...colores.flatMap((c) => c.tallas), ...tallasSueltas]);
+
   return {
     vistas,
     colores: colores.length ? colores : [normalizarColor({ id: 'blanco', nombre: 'Blanco', hex: '#FFFFFF' })],
     tallas,
   };
 };
+
+/** Tallas que se pueden pedir en un color (las suyas, o las de la prenda). */
+export const tallasDeColor = (color, cfg) => (color?.tallas?.length ? ordenTallas(color.tallas) : cfg.tallas);
+
+/**
+ * ¿Se puede ofrecer este color? Un bicolor necesita su foto en cada vista:
+ * teñir de un solo tono lo mostraría mal.
+ */
+export const colorDisponible = (color, vistas) =>
+  !color.hex2 || vistas.every((v) => Boolean(color.fotos[v.id]));
 
 export const esPrendaBase = (producto) => producto?.esPrendaBase === true;
 
@@ -166,7 +259,8 @@ const hexARgb = (hex) => {
 /** ¿El color es tan claro que conviene mostrar la foto tal cual? */
 export const esColorBlanco = (hex) => {
   const [r, g, b] = hexARgb(hex);
-  return (r + g + b) / 3 / 255 > 0.96;
+  // 0.94 deja entrar el blanco del catálogo (#F3F3F3): la foto ya es blanca.
+  return (r + g + b) / 3 / 255 > 0.94;
 };
 
 /** Color de texto legible sobre un fondo del color dado. */
@@ -273,44 +367,27 @@ export const fotoDeVista = (vista, color) => color?.fotos?.[vista.id] || vista.i
 /** ¿Hay que teñir? No, si el color trae foto propia para esta vista. */
 export const requiereTenido = (vista, color) => !color?.fotos?.[vista.id];
 
-// ── Ejemplo listo para cargar desde el admin ───────────────────────────────
+// ── Fotos de ejemplo listas para cargar desde el admin ─────────────────────
 
 /**
- * Hoodie de ejemplo con las fotos que viven en /public/prendas. Las URLs se
- * arman absolutas con el dominio actual porque viajan al pedido (WhatsApp y
- * ERP necesitan links completos). El precio y los costos quedan en 0 para que
- * el admin los defina antes de publicar.
+ * Vistas del hoodie con las fotos que viven en /public/prendas, con sus zonas
+ * ya ubicadas. Las URLs se arman absolutas con el dominio actual porque viajan
+ * al pedido (WhatsApp y ERP necesitan links completos). Los costos quedan en 0
+ * para que el admin los defina.
  */
-export const hoodieDeEjemplo = (origen) => ({
-  name: 'Hoodie clásico',
-  description: 'Hoodie de algodón perchado con capucha y bolsillo canguro. Personalízalo con tu diseño en el frente, la espalda o ambos.',
-  price: 0,
-  visible: false,
-  prendaBase: {
-    tallas: ['S', 'M', 'L', 'XL'],
-    colores: [
-      { id: 'blanco', nombre: 'Blanco', hex: '#FFFFFF', fotos: {} },
-      { id: 'negro', nombre: 'Negro', hex: '#1A1A1A', fotos: {} },
-      { id: 'gris-jaspeado', nombre: 'Gris', hex: '#B4B2A9', fotos: {} },
-      { id: 'azul-marino', nombre: 'Azul marino', hex: '#1F2F55', fotos: {} },
-      { id: 'rojo', nombre: 'Rojo', hex: '#C0392B', fotos: {} },
-      { id: 'lila', nombre: 'Lila', hex: '#B9A6E0', fotos: {} },
-    ],
-    vistas: [
-      {
-        id: 'frente',
-        nombre: 'Frente',
-        imagen: `${origen}/prendas/hoodie-frente.webp`,
-        costo: 0,
-        zona: { x: 0.357, y: 0.27, w: 0.284, anchoCm: 30, altoCm: 30 },
-      },
-      {
-        id: 'espalda',
-        nombre: 'Espalda',
-        imagen: `${origen}/prendas/hoodie-espalda.webp`,
-        costo: 0,
-        zona: { x: 0.3255, y: 0.32, w: 0.349, anchoCm: 35, altoCm: 40 },
-      },
-    ],
+export const vistasDeEjemplo = (origen) => [
+  {
+    id: 'frente',
+    nombre: 'Frente',
+    imagen: `${origen}/prendas/hoodie-frente.webp`,
+    costo: 0,
+    zona: { x: 0.357, y: 0.27, w: 0.284, anchoCm: 30, altoCm: 30 },
   },
-});
+  {
+    id: 'espalda',
+    nombre: 'Espalda',
+    imagen: `${origen}/prendas/hoodie-espalda.webp`,
+    costo: 0,
+    zona: { x: 0.3255, y: 0.32, w: 0.349, anchoCm: 35, altoCm: 40 },
+  },
+];

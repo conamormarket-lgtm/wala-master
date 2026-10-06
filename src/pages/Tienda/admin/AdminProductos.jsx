@@ -104,9 +104,7 @@ const AdminProductos = () => {
     queryFn: async () => {
       const { data, error: err } = await getProducts([], null, null, { includeHidden: true });
       if (err) throw new Error(err);
-      // Las prendas del apartado Crear se gestionan en /admin/prendas-crear:
-      // este formulario no conoce su configuración (vistas, zonas, colores).
-      return data.filter((p) => p.esPrendaBase !== true);
+      return data;
     }
   });
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Shirt, Upload, ShoppingBag } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
-import { leerPrendaBase, precioBase } from '../utils/prendaBase';
+import { leerPrendaBase, precioBase, colorDisponible } from '../utils/prendaBase';
 import styles from './PersonalizarPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -14,7 +14,9 @@ const PASOS = [
 ];
 
 const TarjetaPrenda = ({ prenda }) => {
-  const { vistas, colores } = leerPrendaBase(prenda);
+  const leida = leerPrendaBase(prenda);
+  const { vistas } = leida;
+  const colores = leida.colores.filter((c) => colorDisponible(c, vistas));
   const frente = vistas[0]?.imagen;
   const espalda = vistas[1]?.imagen;
   return (
@@ -27,7 +29,12 @@ const TarjetaPrenda = ({ prenda }) => {
         <h2 className={styles.nombre}>{prenda.name}</h2>
         <div className={styles.colores} aria-label={`${colores.length} colores`}>
           {colores.slice(0, 7).map((c) => (
-            <span key={c.id} className={styles.punto} style={{ background: c.hex }} title={c.nombre} />
+            <span
+              key={c.id}
+              className={styles.punto}
+              style={{ background: c.hex2 ? `linear-gradient(135deg, ${c.hex} 50%, ${c.hex2} 50%)` : c.hex }}
+              title={c.nombre}
+            />
           ))}
           {colores.length > 7 && <span className={styles.mas}>+{colores.length - 7}</span>}
         </div>

@@ -1370,6 +1370,10 @@ function normalizeProductPayload(data) {
     description: (data.description ?? '').toString(),
     inStock: typeof data.inStock === 'number' ? data.inStock : parseInt(data.inStock, 10) || 0,
     customizable: Boolean(data.customizable),
+    // Apartado Crear (utils/prendaBase.js). Solo viajan si el llamador los
+    // trae: un updateProduct parcial no debe apagar la personalización.
+    ...(data.esPrendaBase !== undefined && { esPrendaBase: data.esPrendaBase === true }),
+    ...(data.esPrendaBase === true && data.prendaBase && typeof data.prendaBase === 'object' && { prendaBase: data.prendaBase }),
     hasVariants: Boolean(hasVariants),
     mainImage: isComboProduct ? '' : mainImage,
     mainSizes: isComboProduct ? [] : mainSizes,
