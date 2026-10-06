@@ -765,3 +765,38 @@
     grid-template-columns: 1fr;
   }
 }
+
+.asaBorde {
+  position: absolute;
+  background: #fff;
+  border: 2px solid #7C3AED;
+  border-radius: 6px;
+}
+
+.asaDerecha {
+  right: -7px;
+  top: 50%;
+  width: 12px;
+  height: 26px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.asaAbajo {
+  bottom: -7px;
+  left: 50%;
+  width: 26px;
+  height: 12px;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+
+.zonaFila {
+  grid-template-columns: minmax(0, 1fr) 90px auto;
+}
+
+@media (max-width: 640px) {
+  .zonaFila {
+    grid-template-columns: minmax(0, 1fr) 80px auto;
+  }
+}

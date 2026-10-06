@@ -55,7 +55,7 @@ const MiniaturaColor = ({ imagen, hex, nombre }) => {
  * Apartado "Producto personalizable" del formulario de productos.
  *
  * Los colores y tallas NO se cargan aquí: son las variantes del producto. Aquí
- * van las vistas (foto sin fondo + zona de impresión en cm + costo extra) y,
+ * van las vistas (foto sin fondo + sus zonas de impresión de referencia) y,
  * por color, su foto propia o su segundo tono si es bicolor.
  */
 const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarVariantes }) => {
@@ -108,8 +108,8 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
   return (
     <div className={styles.contenedor}>
       <p className={styles.aviso}>
-        Este producto se vende <strong>solo en Crear</strong>: no aparece en la tienda ni en el buscador. El precio del
-        producto es el de la prenda lisa; cada lado con diseño suma su costo extra.
+        Este producto se vende <strong>solo en Crear</strong>: no aparece en la tienda ni en el buscador. Su precio es el
+        de la prenda personalizada e incluye todos los diseños que el cliente quiera poner.
       </p>
 
       <section className={styles.bloque}>
@@ -122,9 +122,9 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
           )}
         </div>
         <p className={styles.ayuda}>
-          Sube cada foto en PNG con fondo transparente y la prenda en blanco: los colores se generan solos. Arrastra el
-          rectángulo para ubicar la zona y agrándalo desde la esquina. Las medidas en cm son las del área que se imprime y
-          valen para todas las tallas.
+          Sube cada foto en PNG con fondo transparente y la prenda en blanco: los colores se generan solos. Cada vista
+          puede tener varias zonas (pecho, mangas, bolsillo...): tócalas para elegirlas, arrástralas para moverlas y
+          estíralas desde sus bordes.
         </p>
 
         {colores.length > 1 && vistas.length > 0 && (
@@ -199,20 +199,8 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
                         <input list={`zonas-sugeridas-${i}`} value={z.nombre} onChange={(e) => setZona(i, zi, { ...z, nombre: e.target.value })} />
                       </label>
                       <label className={styles.campo}>
-                        <span>Ancho cm</span>
-                        <input type="number" min="1" step="0.5" value={z.anchoCm} onChange={(e) => setZona(i, zi, { ...z, anchoCm: e.target.value })} />
-                      </label>
-                      <label className={styles.campo}>
-                        <span>Alto cm</span>
-                        <input type="number" min="1" step="0.5" value={z.altoCm} onChange={(e) => setZona(i, zi, { ...z, altoCm: e.target.value })} />
-                      </label>
-                      <label className={styles.campo}>
                         <span>Giro °</span>
                         <input type="number" min="-180" max="180" step="1" value={z.angulo} onChange={(e) => setZona(i, zi, { ...z, angulo: e.target.value })} />
-                      </label>
-                      <label className={styles.campo}>
-                        <span>Cuesta S/</span>
-                        <input type="number" min="0" step="0.5" value={z.costo} onChange={(e) => setZona(i, zi, { ...z, costo: e.target.value })} />
                       </label>
                       <button
                         type="button"
@@ -232,14 +220,14 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
                     type="button"
                     className={styles.botonSecundario}
                     onClick={() => {
-                      setVista(i, { zonas: [...v.zonas, normalizarZona({ id: nuevoIdZona(), nombre: `Zona ${v.zonas.length + 1}`, x: 0.4, y: 0.4, w: 0.2, anchoCm: 15, altoCm: 15 })] });
+                      setVista(i, { zonas: [...v.zonas, normalizarZona({ id: nuevoIdZona(), nombre: `Zona ${v.zonas.length + 1}`, x: 0.4, y: 0.4, w: 0.2, proporcion: 1 })] });
                       setZonaElegida((m) => ({ ...m, [v.id]: v.zonas.length }));
                     }}
                   >
                     <Plus size={16} aria-hidden="true" /> Agregar zona
                   </button>
                   <small className={styles.ayuda}>
-                    El cliente elige en qué zona va cada imagen o texto. El costo de una zona se suma solo si la usa.
+                    Las zonas son de referencia: arrástralas para ubicarlas y estíralas desde sus bordes (a lo ancho, a lo alto o desde la esquina). El cliente elige en cuál va cada imagen o texto.
                   </small>
                 </div>
               </div>
@@ -255,7 +243,7 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
               return normalizarVista({
                 id: vistas.some((v) => v.id === 'frente') ? `vista-${vistas.length + 1}` : 'frente',
                 nombre,
-                zonas: [{ id: nuevoIdZona(), nombre: vistas.length === 1 ? 'Espalda' : 'Pecho', x: 0.35, y: 0.3, w: 0.3, anchoCm: 30, altoCm: 30 }],
+                zonas: [{ id: nuevoIdZona(), nombre: vistas.length === 1 ? 'Espalda' : 'Pecho', x: 0.35, y: 0.3, w: 0.3, proporcion: 1 }],
               });
             })()],
           })}

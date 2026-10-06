@@ -1,7 +1,6 @@
 import { fabric } from 'fabric';
 import {
   UNIDADES_ZONA,
-  DPI_IMPRESION,
   altoZonaFraccion,
   cargarImagen,
   pixelesDeImpresion,
@@ -66,7 +65,7 @@ export const asegurarFuentesDe = (capasPorZona) => {
 };
 
 /** Alto de la zona en unidades. */
-export const altoEnUnidades = (zona) => UNIDADES_ZONA * (zona.altoCm / zona.anchoCm);
+export const altoEnUnidades = (zona) => UNIDADES_ZONA * zona.proporcion;
 
 /**
  * Transformación de una zona dibujada sobre la foto de su vista.
@@ -189,20 +188,13 @@ const aBlob = (canvasEl, tipo, calidad) =>
     canvasEl.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('No se pudo generar la imagen.'))), tipo, calidad);
   });
 
-// Safari de iPhone no dibuja canvas de más de ~16,7 millones de píxeles (un
-// 35 x 40 cm a 300 dpi son 19,5). Por encima se baja la resolución lo justo.
-const AREA_MAXIMA = 16000000;
-
 /**
- * Archivo de impresión de una zona: PNG transparente del tamaño real de la
- * zona a DPI_IMPRESION, derecho (sin el giro de la zona). Devuelve también
- * los dpi reales con que salió.
+ * Archivo de impresión de una zona: PNG transparente con el diseño de la
+ * zona, derecho (sin su giro), a LADO_IMPRESION píxeles por el lado mayor.
+ * Por debajo del límite de canvas de Safari en iPhone (~16,7 Mpx).
  */
 export const renderizarImpresion = async (capas, zona, srcDe) => {
-  const base = pixelesDeImpresion(zona);
-  const reduccion = Math.min(1, Math.sqrt(AREA_MAXIMA / (base.ancho * base.alto)));
-  const ancho = Math.round(base.ancho * reduccion);
-  const alto = Math.round(base.alto * reduccion);
+  const { ancho, alto } = pixelesDeImpresion(zona);
   const el = document.createElement('canvas');
   const lienzo = new fabric.StaticCanvas(el, {
     width: ancho,
@@ -217,7 +209,7 @@ export const renderizarImpresion = async (capas, zona, srcDe) => {
     }
     lienzo.renderAll();
     const blob = await aBlob(lienzo.lowerCanvasEl, 'image/png');
-    return { blob, dpi: Math.round(DPI_IMPRESION * reduccion) };
+    return { blob, ancho, alto };
   } finally {
     lienzo.dispose();
   }

@@ -808,3 +808,9 @@
 .zonaMini:hover {
   border-color: var(--primary-color);
 }
+
+.incluye {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario);
+}

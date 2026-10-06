@@ -5,11 +5,10 @@ import styles from './PersonalizacionPrenda.module.css';
 /**
  * Dibuja las zonas de impresión de una vista sobre su foto.
  *
- * Se elige una tocándola, se arrastra para moverla y se agranda desde la
- * esquina. Solo se controla el ANCHO: el alto sale de la medida en cm (ver
- * altoZonaFraccion), así el rectángulo siempre tiene la proporción de lo que
- * se imprime. El giro se ajusta en el formulario. La foto se muestra teñida
- * del color elegido para ver cómo queda.
+ * Se elige una tocándola y se arrastra para moverla. Se estira desde el borde
+ * derecho (ancho), el de abajo (alto) o la esquina (ambos); el alto se guarda
+ * como proporción del ancho. El giro se ajusta en el formulario. La foto se
+ * muestra teñida del color elegido para ver cómo queda.
  */
 const ZonaEditor = ({ imagen, zonas, seleccionada, colorHex, onSeleccionar, onChange }) => {
   const cajaRef = useRef(null);
@@ -59,10 +58,19 @@ const ZonaEditor = ({ imagen, zonas, seleccionada, colorHex, onSeleccionar, onCh
         y: Math.min(1, Math.max(-0.2, z.y + dyPx / caja.height)),
       });
     } else {
-      // El arrastre se mide sobre el eje de la zona (que puede estar girada).
-      const a2 = (z.angulo * Math.PI) / 180;
-      const avance = dxPx * Math.cos(a2) + dyPx * Math.sin(a2);
-      onChange(a.i, { ...z, w: Math.min(1, Math.max(0.03, z.w + avance / caja.width)) });
+      // El arrastre se mide sobre los ejes de la zona (que puede estar girada).
+      const giro = (z.angulo * Math.PI) / 180;
+      const alAncho = dxPx * Math.cos(giro) + dyPx * Math.sin(giro);
+      const alAlto = -dxPx * Math.sin(giro) + dyPx * Math.cos(giro);
+      const anchoPx = z.w * caja.width;
+      const altoPx = anchoPx * z.proporcion;
+      const nuevoAncho = a.modo === 'alto' ? anchoPx : Math.max(12, anchoPx + alAncho);
+      const nuevoAlto = a.modo === 'ancho' ? altoPx : Math.max(12, altoPx + alAlto);
+      onChange(a.i, {
+        ...z,
+        w: Math.min(1, nuevoAncho / caja.width),
+        proporcion: nuevoAlto / nuevoAncho,
+      });
     }
   };
 
@@ -94,11 +102,17 @@ const ZonaEditor = ({ imagen, zonas, seleccionada, colorHex, onSeleccionar, onCh
               onPointerDown={empezar(i, 'mover')}
               role="button"
               aria-pressed={activa}
-              aria-label={`Zona ${z.nombre}, ${z.anchoCm} por ${z.altoCm} centímetros`}
+              aria-label={`Zona ${z.nombre}`}
               tabIndex={0}
             >
               <span className={styles.zonaEtiqueta}>{z.nombre}</span>
-              {activa && <span className={styles.zonaAsa} onPointerDown={empezar(i, 'escalar')} aria-hidden="true" />}
+              {activa && (
+                <>
+                  <span className={`${styles.asaBorde} ${styles.asaDerecha}`} onPointerDown={empezar(i, 'ancho')} aria-hidden="true" />
+                  <span className={`${styles.asaBorde} ${styles.asaAbajo}`} onPointerDown={empezar(i, 'alto')} aria-hidden="true" />
+                  <span className={styles.zonaAsa} onPointerDown={empezar(i, 'ambos')} aria-hidden="true" />
+                </>
+              )}
             </div>
           );
         })}

@@ -16,13 +16,13 @@ import {
 } from '../../services/crearArchivos';
 import {
   UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
-  dpiDeCapa, calidadDeDpi, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
+  calidadDeCapa, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
   colorDisponible, tallasDeColor,
 } from '../../utils/prendaBase';
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
   propiedadesTexto, renderizarImpresion, renderizarVistaPrevia, transformDeZona, rectDeZona,
-  recorteDeZona, seSaleDeZona, ubicacion,
+  recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo,
 } from './renderDiseno';
 import styles from './CrearStudioPage.module.css';
 
@@ -262,6 +262,12 @@ const CrearStudioPage = () => {
       allowTouchScrolling: false,
     });
     fabricRef.current = lienzo;
+    // fabric guarda la posición del lienzo en la página al crearse. Si algo de
+    // arriba cambia de alto (o en el celular se desplaza el panel), los toques
+    // caen desfasados: se recalcula justo antes de que fabric los procese.
+    const contenedor = lienzo.wrapperEl;
+    const recalcular = () => lienzo.calcOffset();
+    ['mousedown', 'touchstart', 'pointerdown'].forEach((tipo) => contenedor.addEventListener(tipo, recalcular, true));
     const alSeleccionar = (e) => {
       const obj = e.selected?.[0];
       setSeleccionId(obj?.capaId || null);
@@ -279,11 +285,43 @@ const CrearStudioPage = () => {
       const obj = e.target;
       const t = obj?.zonaId && transformsRef.current[obj.zonaId];
       if (!obj?.capaId || !t) return;
+      const dentro = (tz) => {
+        const p = desdeLienzo(tz, obj.left, obj.top);
+        return p.left >= 0 && p.top >= 0 && p.left <= tz.wu && p.top <= tz.hu;
+      };
+      // Si el centro quedó sobre otra zona, el diseño pasa a esa zona.
+      if (!dentro(t)) {
+        const otra = Object.entries(transformsRef.current).find(([zId, tz]) => zId !== obj.zonaId && dentro(tz));
+        if (otra) {
+          const [destinoId, tz] = otra;
+          const capa = (capasRef.current[obj.zonaId] || []).find((c) => c.id === obj.capaId);
+          if (capa) {
+            const movida = { ...capa, ...leerTransformacion(obj, tz) };
+            // Llega con el tamaño que tenía en pantalla: se ajusta a la zona
+            // nueva para que no quede recortado (en una manga, a lo largo).
+            if (capa.type === 'text' && tz.hu > tz.wu * 1.8) movida.angulo = 90;
+            const deCostado = Math.abs(Math.round((movida.angulo || 0) / 90)) % 2 === 1;
+            const [maxAncho, maxAlto] = deCostado ? [tz.hu, tz.wu] : [tz.wu, tz.hu];
+            const escalaMax = Math.min((maxAncho * 0.9) / (obj.width || 1), (maxAlto * 0.9) / (obj.height || 1));
+            if (Math.abs(movida.escalaX) > escalaMax) {
+              movida.escalaX = escalaMax * Math.sign(movida.escalaX || 1);
+              movida.escalaY = escalaMax;
+              movida.left = tz.wu / 2;
+              movida.top = tz.hu / 2;
+            }
+            modificarCapas(obj.zonaId, (capas) => capas.filter((c) => c.id !== obj.capaId));
+            modificarCapas(destinoId, (capas) => [...capas, movida], true);
+            setZonaId(destinoId);
+            return;
+          }
+        }
+      }
       const cambios = leerTransformacion(obj, t);
       modificarCapas(obj.zonaId, (capas) => capas.map((c) => (c.id === obj.capaId ? { ...c, ...cambios } : c)));
       revisarLimites(obj);
     });
     return () => {
+      ['mousedown', 'touchstart', 'pointerdown'].forEach((tipo) => contenedor.removeEventListener(tipo, recalcular, true));
       lienzo.dispose();
       fabricRef.current = null;
     };
@@ -482,16 +520,24 @@ const CrearStudioPage = () => {
     }, true);
   };
 
-  /** Pasa la capa elegida a otra zona de la misma vista (centrada y ajustada). */
+  /** Pasa la capa elegida a otra zona, de esta vista o de otra (centrada y ajustada). */
   const moverAZona = (destino) => {
     if (!capaSel || !zonaSel || destino.id === zonaSel.id) return;
     const ajuste = capaSel.type === 'image'
       ? Math.min((0.8 * UNIDADES_ZONA) / capaSel.anchoNatural, (0.8 * altoEnUnidades(destino)) / capaSel.altoNatural, capaSel.escalaX)
       : capaSel.escalaX;
-    const movida = { ...capaSel, ...centroDe(destino), escalaX: ajuste, escalaY: ajuste, angulo: 0 };
+    const alargada = altoEnUnidades(destino) > UNIDADES_ZONA * 1.8;
+    const movida = {
+      ...capaSel, ...centroDe(destino), escalaX: ajuste, escalaY: ajuste,
+      angulo: capaSel.type === 'text' && alargada ? 90 : 0,
+    };
     modificarCapas(zonaSel.id, (capas) => capas.filter((c) => c.id !== capaSel.id));
-    modificarCapas(destino.id, (capas) => [...capas, movida], true);
+    modificarCapas(destino.id, (capas) => [...capas, movida]);
+    if (destino.vistaId && destino.vistaId !== vista.id) setVistaId(destino.vistaId);
     setZonaId(destino.id);
+    // Un texto que pasa a una zona más chica se ajusta para entrar.
+    setTimeout(() => { if (movida.type === 'text') editarCapa(movida.id, {}); }, 400);
+    setVersion((v) => v + 1);
   };
 
   const centrar = () => capaSel && zonaSel && editarCapa(capaSel.id, centroDe(zonaSel));
@@ -627,10 +673,10 @@ const CrearStudioPage = () => {
         const zonasConCapas = v.zonas.filter((z) => capas[z.id]);
         for (const z of zonasConCapas) {
           setProcesando(`Preparando el archivo de impresión (${v.nombre} · ${z.nombre})…`);
-          const { blob, dpi } = await renderizarImpresion(capas[z.id], z, srcDe);
+          const { blob, ancho, alto } = await renderizarImpresion(capas[z.id], z, srcDe);
           const url = await subirArchivoImpresion(user.uid, blob, z.id);
           archivosImpresion.push({
-            vista: z.id, vistaId: v.id, nombre: `${v.nombre} · ${z.nombre}`, url, anchoCm: z.anchoCm, altoCm: z.altoCm, dpi,
+            vista: z.id, vistaId: v.id, nombre: `${v.nombre} · ${z.nombre}`, url, ancho, alto,
           });
         }
         setProcesando(`Preparando la vista previa (${v.nombre})…`);
@@ -706,8 +752,7 @@ const CrearStudioPage = () => {
     );
   }
 
-  const dpi = capaSel?.type === 'image' && zonaSel ? dpiDeCapa(capaSel, zonaSel) : null;
-  const calidad = calidadDeDpi(dpi);
+  const calidad = capaSel?.type === 'image' ? calidadDeCapa(capaSel, zonaSel) : null;
   const base = precioBase(prenda);
 
   return (
@@ -759,8 +804,8 @@ const CrearStudioPage = () => {
           <p className={styles.zonaInfo}>
             <Info size={14} aria-hidden="true" />
             {vista.zonas.length > 1
-              ? 'Toca una zona punteada para elegir dónde va tu diseño.'
-              : `Zona de impresión: ${zona.anchoCm} × ${zona.altoCm} cm`}
+              ? 'Toca una zona punteada para elegirla. Arrastra tu diseño a otra zona para pasarlo ahí.'
+              : 'Ubica tu diseño dentro de la zona punteada.'}
           </p>
 
         </section>
@@ -783,10 +828,6 @@ const CrearStudioPage = () => {
                     <span className={styles.zonaNombre}>
                       {z.nombre}
                       {conDiseno && <span className={styles.puntoDiseno} aria-label="con diseño" />}
-                    </span>
-                    <span className={styles.zonaDetalle}>
-                      {z.anchoCm} × {z.altoCm} cm
-                      {z.costo > 0 && <span className={styles.costoVista}>+{soles(z.costo)}</span>}
                     </span>
                   </button>
                 );
@@ -836,7 +877,6 @@ const CrearStudioPage = () => {
                     {calidad === 'buena' && 'Buena calidad de impresión.'}
                     {calidad === 'regular' && 'Calidad aceptable. Si la achicas un poco se verá más nítida.'}
                     {calidad === 'baja' && 'Se verá pixelada a este tamaño. Achícala o usa una imagen más grande.'}
-                    <small> ({dpi} dpi)</small>
                   </span>
                 </div>
               )}
@@ -906,12 +946,12 @@ const CrearStudioPage = () => {
                 </>
               )}
 
-              {zonaSel && vista.zonas.length > 1 && (
+              {zonaSel && zonasPrenda.length > 1 && (
                 <div className={styles.moverA}>
-                  <span>Mover a:</span>
-                  {vista.zonas.filter((z) => z.id !== zonaSel.id).map((z) => (
+                  <span>Pasar a:</span>
+                  {zonasPrenda.filter((z) => z.id !== zonaSel.id).map((z) => (
                     <button key={z.id} type="button" className={styles.zonaMini} onClick={() => moverAZona(z)}>
-                      {z.nombre}
+                      {z.vistaId === vista.id || z.vistaNombre === z.nombre ? z.nombre : `${z.vistaNombre} · ${z.nombre}`}
                     </button>
                   ))}
                 </div>
@@ -983,13 +1023,8 @@ const CrearStudioPage = () => {
           )}
 
           <section className={`${styles.seccion} ${styles.resumen}`} aria-label="Resumen de precio">
-            <div className={styles.lineaPrecio}><span>{prenda.name}</span><span>{soles(base)}</span></div>
-            {zonasPrenda.filter((z) => z.costo > 0 && zonasUsadas.includes(z.id)).map((v) => (
-              <div key={v.id} className={styles.lineaPrecio}>
-                <span>{v.vistaNombre === v.nombre ? v.nombre : `${v.vistaNombre} · ${v.nombre}`} <small>(costo extra)</small></span>
-                <span>+ {soles(v.costo)}</span>
-              </div>
-            ))}
+            <div className={styles.lineaPrecio}><span>{prenda.name} personalizada</span><span>{soles(base)}</span></div>
+            <p className={styles.incluye}>Incluye todos tus diseños, en las zonas que quieras.</p>
             <div className={`${styles.lineaPrecio} ${styles.lineaTotal}`}><span>Total</span><span>{soles(total)}</span></div>
           </section>
 

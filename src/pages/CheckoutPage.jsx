@@ -138,7 +138,9 @@ const getDesignReferences = (item) => {
     refs.push(archivo?.url);
     if (views[archivo?.vista]) {
       views[archivo.vista].archivoImpresion = archivo.url || '';
-      views[archivo.vista].medidaCm = `${archivo.anchoCm} x ${archivo.altoCm}`;
+      views[archivo.vista].medida = archivo.ancho
+        ? `${archivo.ancho} x ${archivo.alto} px`
+        : `${archivo.anchoCm} x ${archivo.altoCm} cm`;
       if (archivo.nombre) views[archivo.vista].zona = archivo.nombre;
     }
   });
@@ -810,7 +812,7 @@ const CheckoutPage = () => {
               urlImagenPersonalizada: item.customization?.imageURL || '',
               disenoVistas: designReferences.views,
               designId: item.customization?.designId || '',
-              // Prendas de Crear: el servidor cobra base + costo de estas vistas.
+              // Prendas de Crear: zonas con diseño (el servidor revalida el precio).
               ...(item.customization?.tipo === 'crear' && {
                 vistasPersonalizadas: item.customization.vistasUsadas || [],
                 colorPrenda: item.customization.color?.nombre || '',

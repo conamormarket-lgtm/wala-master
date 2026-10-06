@@ -14,18 +14,16 @@
  *
  *   prendaBase: {
  *     vistas:  [{ id, nombre, imagen,
- *                 zonas: [{ id, nombre, x, y, w, anchoCm, altoCm, angulo, costo }] }],
+ *                 zonas: [{ id, nombre, x, y, w, proporcion, angulo }] }],
  *     colores: { [variantId]: { hex2, fotos: { [vistaId]: url } } },
  *   }
  *
  * Cada vista (frente, espalda) tiene sus zonas de impresión (pecho, mangas,
- * bolsillo...). El cliente elige en cuál va cada imagen o texto, y cada zona
- * usada suma su costo. Las capas del diseño se agrupan por id de zona.
+ * bolsillo...). El cliente elige en cuál va cada imagen o texto; el precio
+ * del producto ya incluye todos los diseños. Las capas se agrupan por zona.
  *
- * La zona se guarda en fracciones de la imagen (x, y, w) más su medida real
- * en cm y su giro. El alto en la imagen NO se guarda: sale del ancho y de la
- * proporción en cm, así el rectángulo nunca se deforma respecto de lo que se
- * imprime.
+ * La zona se guarda en fracciones de la imagen (x, y, w), su proporción
+ * (alto / ancho) y su giro.
  *
  * Las fotos de cada vista son PNG/WebP con fondo transparente de la prenda en
  * blanco; los colores se tiñen en el navegador (tintarImagen). Un color puede
@@ -40,11 +38,6 @@
 export const UNIDADES_ZONA = 1000;
 
 // Resolución del archivo de impresión.
-export const DPI_IMPRESION = 300;
-
-// Por debajo de esto una imagen se ve pixelada al imprimirse.
-export const DPI_MINIMO_OK = 150;
-export const DPI_MINIMO_ACEPTABLE = 100;
 
 export const TALLAS_SUGERIDAS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -102,25 +95,29 @@ export const slug = (texto) =>
 export const nuevoIdZona = () => `z${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 /**
- * Zona de impresión. (x, y, w) en fracciones de la foto: esquina superior
- * izquierda y ancho del rectángulo SIN girar; el giro (angulo, en grados) es
- * alrededor de su centro, para las mangas u otras zonas inclinadas.
+ * Zona de impresión: un área de referencia sobre la foto. (x, y, w) en
+ * fracciones de la foto: esquina superior izquierda y ancho del rectángulo
+ * SIN girar; `proporcion` es su alto dividido entre su ancho (en la foto); el
+ * giro (angulo, en grados) es alrededor de su centro, para las mangas u otras
+ * zonas inclinadas. Las zonas guardadas con medidas en cm toman su proporción
+ * de ellas.
  */
-export const normalizarZona = (zona, i = 0) => ({
-  id: String(zona?.id || `zona-${i + 1}`),
-  nombre: String(zona?.nombre || `Zona ${i + 1}`),
-  x: limitar(num(zona?.x, 0.3), -0.5, 1),
-  y: limitar(num(zona?.y, 0.3), -0.5, 1),
-  w: limitar(num(zona?.w, 0.4), 0.02, 1),
-  anchoCm: limitar(num(zona?.anchoCm, 30), 1, 200),
-  altoCm: limitar(num(zona?.altoCm, 30), 1, 200),
-  angulo: limitar(num(zona?.angulo, 0), -180, 180),
-  costo: Math.max(0, num(zona?.costo, 0)),
-});
+export const normalizarZona = (zona, i = 0) => {
+  const deCm = num(zona?.anchoCm, 0) > 0 && num(zona?.altoCm, 0) > 0 ? num(zona.altoCm, 1) / num(zona.anchoCm, 1) : 1;
+  return {
+    id: String(zona?.id || `zona-${i + 1}`),
+    nombre: String(zona?.nombre || `Zona ${i + 1}`),
+    x: limitar(num(zona?.x, 0.3), -0.5, 1),
+    y: limitar(num(zona?.y, 0.3), -0.5, 1),
+    w: limitar(num(zona?.w, 0.4), 0.02, 1),
+    proporcion: limitar(num(zona?.proporcion, deCm), 0.05, 20),
+    angulo: limitar(num(zona?.angulo, 0), -180, 180),
+  };
+};
 
 /**
  * Vista (frente, espalda...) con sus zonas. El formato anterior tenía una
- * sola `zona` y el costo en la vista: se convierte a una zona con el id de la
+ * sola `zona` por vista: se convierte a una zona con el id de la
  * vista, así los diseños guardados con ese formato siguen encajando.
  */
 export const normalizarVista = (vista, i = 0) => {
@@ -129,7 +126,7 @@ export const normalizarVista = (vista, i = 0) => {
   const zonas = Array.isArray(vista?.zonas) && vista.zonas.length
     ? vista.zonas.map(normalizarZona)
     : vista?.zona
-      ? [normalizarZona({ ...vista.zona, id, nombre, costo: vista.costo })]
+      ? [normalizarZona({ ...vista.zona, id, nombre })]
       : [];
   return { id, nombre, imagen: String(vista?.imagen || ''), zonas };
 };
@@ -225,7 +222,7 @@ export const esPrendaBase = (producto) => producto?.esPrendaBase === true;
 /** Alto de la zona como fracción del alto de la imagen. */
 export const altoZonaFraccion = (zona, anchoImg, altoImg) => {
   if (!anchoImg || !altoImg) return zona.w;
-  return (zona.w * anchoImg * (zona.altoCm / zona.anchoCm)) / altoImg;
+  return (zona.w * anchoImg * zona.proporcion) / altoImg;
 };
 
 /** Mismo criterio que el servidor (functions/catalogPricing.js). */
@@ -243,42 +240,34 @@ export const zonasConDiseno = (capasPorZona) =>
     .map(([zonaId]) => zonaId);
 
 /**
- * Precio final de una prenda personalizada: base + el costo de cada zona que
- * lleva diseño. El servidor repite este cálculo al cobrar
- * (functions/cartValidation.js).
+ * Precio de una prenda personalizada: el del producto, que ya incluye todos
+ * los diseños que el cliente quiera poner, en las zonas que quiera. El
+ * servidor lo vuelve a validar al cobrar (functions/cartValidation.js).
  */
-export const precioPersonalizado = (producto, zonasUsadas = []) => {
-  const { vistas } = leerPrendaBase(producto);
-  const extra = listarZonas(vistas)
-    .filter((z) => zonasUsadas.includes(z.id))
-    .reduce((acc, z) => acc + z.costo, 0);
-  return Math.round((precioBase(producto) + extra) * 100) / 100;
-};
+export const precioPersonalizado = (producto) => precioBase(producto);
 
-/**
- * Resolución real con la que se imprimiría una imagen, en puntos por pulgada.
- * La capa ocupa (anchoNatural * escala) unidades de las UNIDADES_ZONA que mide
- * la zona entera, o sea esa fracción de anchoCm.
- */
-export const dpiDeCapa = (capa, zona) => {
-  if (capa?.type !== 'image' || !capa.anchoNatural || !capa.escalaX) return null;
-  const anchoCm = ((capa.anchoNatural * Math.abs(capa.escalaX)) / UNIDADES_ZONA) * zona.anchoCm;
-  if (!(anchoCm > 0)) return null;
-  return Math.round(capa.anchoNatural / (anchoCm / 2.54));
-};
-
-export const calidadDeDpi = (dpi) => {
-  if (dpi == null) return null;
-  if (dpi >= DPI_MINIMO_OK) return 'buena';
-  if (dpi >= DPI_MINIMO_ACEPTABLE) return 'regular';
-  return 'baja';
-};
+// Lado mayor del archivo de impresión de una zona, en píxeles (unos 30 cm a
+// 300 dpi). Las zonas son de referencia, así que todas salen a esta escala.
+export const LADO_IMPRESION = 3600;
 
 /** Tamaño en píxeles del archivo de impresión de una zona. */
-export const pixelesDeImpresion = (zona) => ({
-  ancho: Math.round((zona.anchoCm / 2.54) * DPI_IMPRESION),
-  alto: Math.round((zona.altoCm / 2.54) * DPI_IMPRESION),
-});
+export const pixelesDeImpresion = (zona) => (zona.proporcion >= 1
+  ? { ancho: Math.round(LADO_IMPRESION / zona.proporcion), alto: LADO_IMPRESION }
+  : { ancho: LADO_IMPRESION, alto: Math.round(LADO_IMPRESION * zona.proporcion) });
+
+/**
+ * ¿Se verá nítida una imagen al imprimirse? Compara cuántos píxeles ocupará
+ * en el archivo de impresión con los que trae: si hay que estirarla mucho, se
+ * pixela.
+ */
+export const calidadDeCapa = (capa, zona) => {
+  if (capa?.type !== 'image' || !capa.anchoNatural || !capa.escalaX || !zona) return null;
+  const { ancho } = pixelesDeImpresion(zona);
+  const estiramiento = (Math.abs(capa.escalaX) * ancho) / UNIDADES_ZONA;
+  if (estiramiento <= 1.5) return 'buena';
+  if (estiramiento <= 2.5) return 'regular';
+  return 'baja';
+};
 
 // ── Teñido de la prenda ────────────────────────────────────────────────────
 
@@ -403,8 +392,7 @@ export const requiereTenido = (vista, color) => !color?.fotos?.[vista.id];
 /**
  * Vistas del hoodie con las fotos que viven en /public/prendas, con sus zonas
  * ya ubicadas. Las URLs se arman absolutas con el dominio actual porque viajan
- * al pedido (WhatsApp y ERP necesitan links completos). Los costos quedan en 0
- * para que el admin los defina.
+ * al pedido (WhatsApp y ERP necesitan links completos).
  */
 export const vistasDeEjemplo = (origen) => [
   {
@@ -412,10 +400,10 @@ export const vistasDeEjemplo = (origen) => [
     nombre: 'Frente',
     imagen: `${origen}/prendas/hoodie-frente.webp`,
     zonas: [
-      { id: 'frente-pecho', nombre: 'Pecho', x: 0.357, y: 0.27, w: 0.284, anchoCm: 30, altoCm: 30, angulo: 0, costo: 0 },
+      { id: 'frente-pecho', nombre: 'Pecho', x: 0.357, y: 0.27, w: 0.284, proporcion: 1, angulo: 0 },
       // Las mangas caen inclinadas: la zona gira con ellas.
-      { id: 'frente-manga-derecha', nombre: 'Manga derecha', x: 0.067, y: 0.399, w: 0.0755, anchoCm: 8, altoCm: 30, angulo: 5, costo: 0 },
-      { id: 'frente-manga-izquierda', nombre: 'Manga izquierda', x: 0.8575, y: 0.399, w: 0.0755, anchoCm: 8, altoCm: 30, angulo: -5, costo: 0 },
+      { id: 'frente-manga-derecha', nombre: 'Manga derecha', x: 0.067, y: 0.399, w: 0.0755, proporcion: 3.75, angulo: 5 },
+      { id: 'frente-manga-izquierda', nombre: 'Manga izquierda', x: 0.8575, y: 0.399, w: 0.0755, proporcion: 3.75, angulo: -5 },
     ],
   },
   {
@@ -423,7 +411,7 @@ export const vistasDeEjemplo = (origen) => [
     nombre: 'Espalda',
     imagen: `${origen}/prendas/hoodie-espalda.webp`,
     zonas: [
-      { id: 'espalda-centro', nombre: 'Espalda', x: 0.3255, y: 0.32, w: 0.349, anchoCm: 35, altoCm: 40, angulo: 0, costo: 0 },
+      { id: 'espalda-centro', nombre: 'Espalda', x: 0.3255, y: 0.32, w: 0.349, proporcion: 1.1429, angulo: 0 },
     ],
   },
 ];
