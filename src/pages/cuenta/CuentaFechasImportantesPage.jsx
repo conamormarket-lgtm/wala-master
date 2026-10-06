@@ -9,7 +9,7 @@ import { PRESUPUESTOS, respuestasDe } from '../../utils/giftRecommender.mjs';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import { getUserSuggestedPackages } from '../../services/fechasImportantes';
 import { useFechasFestivas } from '../../services/fechasFestivas';
-import { proximasFestivas, hoyLocal, textoFecha } from '../../utils/fechasFestivas.mjs';
+import { proximasFestivas, hoyLocal, textoFecha, DIAS_ANTICIPACION } from '../../utils/fechasFestivas.mjs';
 import FechasFestivasSeccion from './FechasFestivasSeccion';
 import { GlassCard, Reveal } from '../../components/ui';
 // eslint-disable-next-line no-unused-vars
@@ -465,7 +465,8 @@ const CuentaFechasImportantesPage = () => {
         // observador. Mismo motivo que en el historial de Mis Referidos.
         <div className={styles.grid}>
           {recipients.map((rec, idx) => {
-            const fechasGlobales = festivasDe(rec);
+            // Las festivas solo cuando se acercan; sus propias fechas, siempre.
+            const fechasGlobales = festivasDe(rec).filter((f) => f.dias <= DIAS_ANTICIPACION);
             const recPackages = getPackagesForRecipient(rec);
 
             return (

@@ -51,6 +51,10 @@ export const FESTIVAS_DEFAULT = [
   { id: 'navidad', nombre: 'Navidad', emoji: '🎄', activo: true, regla: { tipo: 'fija', mes: 12, dia: 25 }, para: { roles: [], genero: '' }, avisarDias: [21, 10, 3], avisarATodos: true },
 ];
 
+// En la web, una fecha festiva solo se muestra cuando faltan estos días o
+// menos: con meses de anticipación es ruido (Navidad "en 80 días").
+export const DIAS_ANTICIPACION = 30;
+
 const DIA_MS = 24 * 60 * 60 * 1000;
 const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 const dos = (n) => String(n).padStart(2, '0');
