@@ -123,6 +123,21 @@ const getDesignReferences = (item) => {
   };
 
   addLayers(item?.customization?.layersByView);
+
+  // Prendas del apartado Crear: por cada vista con diseño llega la vista
+  // previa (prenda + diseño) y el PNG a tamaño real para imprimir.
+  (item?.customization?.vistasPrevias || []).forEach((previa) => {
+    refs.push(previa?.url);
+    if (views[previa?.vista]) views[previa.vista].vistaPrevia = previa.url || '';
+  });
+  (item?.customization?.archivosImpresion || []).forEach((archivo) => {
+    refs.push(archivo?.url);
+    if (views[archivo?.vista]) {
+      views[archivo.vista].archivoImpresion = archivo.url || '';
+      views[archivo.vista].medidaCm = `${archivo.anchoCm} x ${archivo.altoCm}`;
+    }
+  });
+
   (item?.customization?.comboItemCustomization || []).forEach((customization) => {
     addLayers(customization?.layersByView);
   });
@@ -790,6 +805,11 @@ const CheckoutPage = () => {
               urlImagenPersonalizada: item.customization?.imageURL || '',
               disenoVistas: designReferences.views,
               designId: item.customization?.designId || '',
+              // Prendas de Crear: el servidor cobra base + costo de estas vistas.
+              ...(item.customization?.tipo === 'crear' && {
+                vistasPersonalizadas: item.customization.vistasUsadas || [],
+                colorPrenda: item.customization.color?.nombre || '',
+              }),
             };
           }
         });

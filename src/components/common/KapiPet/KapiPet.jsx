@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLayoutContext } from '../../../contexts/LayoutContext';
@@ -26,6 +27,8 @@ const KapiPet = () => {
   // del pago y espantaría la venta.
   const layout = useLayoutContext();
   const onLandingPage = layout && layout.isHeaderVisible === false;
+  // En el estudio de Crear tapaba el botón de compra en el celular.
+  const enEstudioCrear = useLocation().pathname.startsWith('/crear/');
   const [isOpen, setIsOpen] = useState(false);
   const [isFeeding, setIsFeeding] = useState(false);
   const [evidenceUrl, setEvidenceUrl] = useState('');
@@ -187,7 +190,7 @@ const KapiPet = () => {
     return () => window.removeEventListener('keydown', alPulsar);
   }, [isOpen, isFeeding]);
 
-  if (onLandingPage) return null; // Kapi no aparece en landings (protege la conversión del checkout)
+  if (onLandingPage || enEstudioCrear) return null; // Kapi no aparece en landings (protege la conversión del checkout)
   // ?sesion=activa pinta a Kapi sin cuenta, para poder repasar el modal sin una
   // sesión delante. Inerte en producción, como todo modoDiseno: no concede nada,
   // el servidor sigue decidiendo si se puede alimentar.

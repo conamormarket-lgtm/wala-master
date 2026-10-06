@@ -85,10 +85,26 @@ const MiCreacionCard = ({ design, isPurchased }) => {
   const priceDisplay = typeof product.price === 'number' ? `S/ ${product.price.toFixed(2)}` : '';
   const salePriceDisplay = typeof product.salePrice === 'number' ? `S/ ${product.salePrice.toFixed(2)}` : '';
 
+  // Diseños del apartado Crear: otro editor y miniatura ya renderizada.
+  const esDeCrear = design.tipo === 'crear';
+  const editarUrl = esDeCrear
+    ? `/crear/${design.productId}?designId=${design.id}`
+    : `/editor/${design.productId || 'unknown'}?designId=${design.id}`;
+
   return (
     <li className={styles.cardItem}>
-      <Link to={`/editor/${design.productId}?designId=${design.id}`} className={styles.thumbWrapper} style={{ display: 'block', position: 'relative', background: '#fff' }}>
-        {isCombo ? (
+      <Link to={editarUrl} className={styles.thumbWrapper} style={{ display: 'block', position: 'relative', background: '#fff' }}>
+        {esDeCrear ? (
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '1', backgroundColor: '#fff' }}>
+            <OptimizedImage
+              src={design.previewUrl || cardImageUrl}
+              alt={design.productName || product.name}
+              objectFit="contain"
+              className={styles.plainThumbImg}
+              showSkeleton={false}
+            />
+          </div>
+        ) : isCombo ? (
           <div style={{ pointerEvents: 'none' }}>
             <ComboProductImage
               comboProduct={effectiveProductForCombo}
@@ -146,7 +162,7 @@ const MiCreacionCard = ({ design, isPurchased }) => {
             </div>
             
             <Link
-              to={`/editor/${design.productId || 'unknown'}?designId=${design.id}`}
+              to={editarUrl}
               className={styles.cardLink}
             >
               Seguir editando

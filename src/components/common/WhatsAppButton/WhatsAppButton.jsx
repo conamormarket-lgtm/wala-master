@@ -82,6 +82,7 @@ const WhatsAppButton = () => {
     context = 'tienda';
   } else if (
     pathname.startsWith('/personalizar') ||
+    pathname.startsWith('/crear/') ||
     pathname.startsWith('/editor')
   ) {
     context = 'crear';

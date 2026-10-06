@@ -97,6 +97,7 @@ if (typeof window !== 'undefined') {
 // ── Páginas secundarias — lazy para no bloquear ──────────
 const ProductPage = lazy(() => import('./pages/ProductPage'));
 const PersonalizarPage = lazy(() => import('./pages/PersonalizarPage'));
+const CrearStudioPage = lazy(() => import('./pages/Crear/CrearStudioPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
@@ -180,6 +181,7 @@ const AdminWhatsApp = lazy(() => import('./pages/admin/AdminWhatsApp'));
 const AdminPagos = lazy(() => import('./pages/admin/AdminPagos'));
 const AdminDestacados = lazy(() => import('./pages/admin/AdminDestacados'));
 const AdminCliparts = lazy(() => import('./pages/admin/AdminCliparts'));
+const AdminPrendasCrear = lazy(() => import('./pages/admin/prendasCrear/AdminPrendasCrear'));
 const AdminMascota = lazy(() => import('./pages/admin/AdminMascota'));
 const AdminBackups = lazy(() => import('./pages/admin/AdminBackups'));
 const AdminConfiguracion = lazy(() => import('./pages/admin/AdminConfiguracion'));
@@ -395,6 +397,7 @@ function App() {
 
                                   <Route path="/producto/:id" element={<ProductPage />} />
                                   <Route path="/personalizar" element={<PersonalizarPage />} />
+                                  <Route path="/crear/:id" element={<CrearStudioPage />} />
                                   <Route path="/editor/:id" element={<EditorPage />} />
                                   <Route path="/carrito" element={<CartPage />} />
                                   <Route path="/checkout" element={<CheckoutPage />} />
@@ -447,6 +450,7 @@ function App() {
                                       <Route path="productos" element={<AdminProductos />} />
                                       <Route path="inventario" element={<AdminInventario />} />
                                       <Route path="mockups" element={<AdminMockups />} />
+                                      <Route path="prendas-crear" element={<AdminPrendasCrear />} />
                                       <Route path="productos/nuevo" element={<AdminProductoFormV2 />} />
                                       <Route path="productos/:id" element={<AdminProductoFormV2 />} />
                                       <Route path="categorias" element={<AdminCategorias />} />

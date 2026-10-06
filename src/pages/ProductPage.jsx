@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useProduct } from '../hooks/useProducts';
 import { getCategories } from '../services/products';
@@ -28,6 +28,11 @@ const ProductPage = () => {
 
   if (error) {
     return <div>Error al cargar el producto: {error.message}</div>;
+  }
+
+  // Las prendas del apartado Crear no tienen ficha: se compran diseñándolas.
+  if (product?.esPrendaBase === true && !noDisponible) {
+    return <Navigate to={`/crear/${id}`} replace />;
   }
 
   if (noDisponible) {

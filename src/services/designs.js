@@ -99,7 +99,7 @@ export const getDesignById = async (designId) => {
 export const saveDesign = async (userId, payload) => {
   if (!userId) return { id: null, error: 'Usuario no autenticado' };
 
-  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign } = payload || {};
+  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color } = payload || {};
 
   // Formar una vista estandar del root layersByView (hacia atrás para compatibilidad)
   const sanitizedLayersByView = sanitizeLayersByViewMap(layersByView);
@@ -130,6 +130,9 @@ export const saveDesign = async (userId, payload) => {
     variant: variant || { size: '', color: '' },
     name: name || `Diseño ${new Date().toLocaleDateString('es-PE')}`,
     ...(isUserComboDesign && sanitizedComboItems ? { comboItemCustomization: sanitizedComboItems, isUserComboDesign: true } : {}),
+    // Diseños del apartado Crear: se reabren en /crear/:id y su miniatura es
+    // la vista previa ya renderizada (prenda teñida + diseño).
+    ...(tipo === 'crear' ? { tipo: 'crear', previewUrl: previewUrl || '', color: color || null } : {}),
   };
 
   try {

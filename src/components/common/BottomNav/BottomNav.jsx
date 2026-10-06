@@ -31,7 +31,7 @@ const BottomNav = () => {
   if (!isFooterVisible) return null;
 
   // Ocultar BottomNav en la ruta del editor para dar espacio al Toolbar móvil
-  if (location.pathname.startsWith('/editor')) {
+  if (location.pathname.startsWith('/editor') || location.pathname.startsWith('/crear/')) {
     return null;
   }
 

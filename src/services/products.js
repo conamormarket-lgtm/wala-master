@@ -137,6 +137,14 @@ try {
   localStorage.removeItem('conamor_featured_cache');
   localStorage.removeItem('conamor_categories_cache');
 } catch(e) {}
+/**
+ * ¿Se muestra en la tienda? Las prendas base del apartado Crear
+ * (esPrendaBase) son productos de verdad -se compran, se validan y llegan al
+ * ERP como cualquiera-, pero son lienzos en blanco: solo tienen sentido dentro
+ * de Crear, así que ningún listado de la tienda las incluye.
+ */
+export const esProductoDeTienda = (p) => p?.visible !== false && p?.esPrendaBase !== true;
+
 export const getProducts = async (filters = [], orderBy = null, limitCount = null, options = {}) => {
   const { includeHidden = false } = options;
   const generation = productCacheGeneration;
@@ -147,7 +155,7 @@ export const getProducts = async (filters = [], orderBy = null, limitCount = nul
     ? await productReads.run('catalog', () => getCollection(COLLECTION))
     : await getCollection(COLLECTION, filters, orderBy, limitCount);
   if (result.error) return result;
-  const raw = includeHidden ? result.data : result.data.filter((p) => p.visible !== false && p.deleted !== true);
+  const raw = includeHidden ? result.data : result.data.filter((p) => esProductoDeTienda(p) && p.deleted !== true);
   const data = raw.map((doc) => normalizeProductForRead(doc));
 
   if (!includeHidden && isFullCatalog && generation === productCacheGeneration) {
@@ -531,7 +539,7 @@ export const getStoreProductsPage = async ({ facet = null, sort = 'newest', curs
   // hasMore se basa en el tamaño CRUDO de la página (antes de filtrar visibles).
   const rawCount = Array.isArray(result.data) ? result.data.length : 0;
   const items = (result.data || [])
-    .filter((p) => p.visible !== false)
+    .filter(esProductoDeTienda)
     .map((doc) => normalizeProductForRead(doc));
 
   // ── RED DE SEGURIDAD (anti catálogo-vacío) ──────────────────────────
@@ -577,7 +585,7 @@ export const searchProducts = async (searchTerm) => {
 
   const term = searchTerm.toLowerCase();
   const filtered = data
-    .filter((p) => p.visible !== false)
+    .filter(esProductoDeTienda)
     .filter((product) => {
       if (product.name?.toLowerCase().includes(term)) return true;
       if (product.description?.toLowerCase().includes(term)) return true;
@@ -602,12 +610,12 @@ export const getProductsByCategory = async (categoryId, brandId = null) => {
     { field: 'categories', operator: 'array-contains', value: categoryId }
   ]);
   if (result.error) return result;
-  let data = result.data.filter((p) => p.visible !== false);
+  let data = result.data.filter(esProductoDeTienda);
   if (data.length === 0) {
     const legacy = await getCollection(COLLECTION, [
       { field: 'category', operator: '==', value: categoryId }
     ]);
-    if (!legacy.error) data = legacy.data.filter((p) => p.visible !== false);
+    if (!legacy.error) data = legacy.data.filter(esProductoDeTienda);
   }
   // Acotar a la marca de la página si viene brandId (filtro en cliente).
   if (brandId) data = data.filter((p) => p.brandId === brandId);
@@ -622,7 +630,7 @@ export const getProductsByBrand = async (brandId) => {
     { field: 'brandId', operator: '==', value: brandId }
   ]);
   if (result.error) return result;
-  let data = result.data.filter((p) => p.visible !== false);
+  let data = result.data.filter(esProductoDeTienda);
   return { data: data.map((doc) => normalizeProductForRead(doc)), error: null };
 };
 
@@ -654,7 +662,7 @@ export const getOnSaleProducts = async (brandId = null) => {
   );
   if (result.error) return result;
   let data = result.data
-    .filter((p) => p.visible !== false)
+    .filter(esProductoDeTienda)
     .filter((p) => Number(p.salePrice) > 0 && Number(p.salePrice) < Number(p.price));
   if (brandId) data = data.filter((p) => p.brandId === brandId);
 
@@ -684,7 +692,7 @@ export const getProductsByCollection = async (collectionName, brandId = null) =>
     { field: 'collections', operator: 'array-contains', value: collectionName }
   ]);
   if (result.error) return result;
-  let data = result.data.filter((p) => p.visible !== false);
+  let data = result.data.filter(esProductoDeTienda);
   // Acotar a la marca de la página si viene brandId (filtro en cliente).
   if (brandId) data = data.filter((p) => p.brandId === brandId);
   return { data: data.map((doc) => normalizeProductForRead(doc)), error: null };
@@ -718,7 +726,7 @@ export const getFeaturedProducts = async (brandId = null) => {
     null
   );
   if (result.error) return result;
-  const data = result.data.filter((p) => p.visible !== false).map((doc) => normalizeProductForRead(doc));
+  const data = result.data.filter(esProductoDeTienda).map((doc) => normalizeProductForRead(doc));
 
   writeCache(CACHE_KEYS.featured, data);
 

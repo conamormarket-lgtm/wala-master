@@ -1,55 +1,89 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getProducts } from '../services/products';
-import ProductGrid from './Tienda/components/ProductGrid';
-import Button from '../components/common/Button';
+import { Shirt, Upload, ShoppingBag } from 'lucide-react';
+import { getPrendasBase } from '../services/prendasBase';
+import { leerPrendaBase, precioBase } from '../utils/prendaBase';
 import styles from './PersonalizarPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
-const PersonalizarPage = () => {
-  const { data: productsData, isLoading, error } = useQuery({
-    queryKey: ['products-personalizables'],
-    queryFn: async () => {
-      const { data, error } = await getProducts();
-      if (error) throw new Error(error);
-      return (data || []).filter(p => p.customizable !== false);
-    }
-  });
+const PASOS = [
+  { icono: Shirt, titulo: 'Elige tu prenda', texto: 'Color y talla' },
+  { icono: Upload, titulo: 'Diseña', texto: 'Sube tu imagen o escribe un texto' },
+  { icono: ShoppingBag, titulo: 'Recíbela', texto: 'La imprimimos y te la enviamos' },
+];
 
-  const products = productsData || [];
-  const hasProducts = products.length > 0;
+const TarjetaPrenda = ({ prenda }) => {
+  const { vistas, colores } = leerPrendaBase(prenda);
+  const frente = vistas[0]?.imagen;
+  const espalda = vistas[1]?.imagen;
+  return (
+    <Link to={`/crear/${prenda.id}`} className={styles.tarjeta}>
+      <div className={styles.foto}>
+        {frente && <img src={frente} alt={prenda.name} className={styles.fotoFrente} loading="lazy" />}
+        {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
+      </div>
+      <div className={styles.info}>
+        <h2 className={styles.nombre}>{prenda.name}</h2>
+        <div className={styles.colores} aria-label={`${colores.length} colores`}>
+          {colores.slice(0, 7).map((c) => (
+            <span key={c.id} className={styles.punto} style={{ background: c.hex }} title={c.nombre} />
+          ))}
+          {colores.length > 7 && <span className={styles.mas}>+{colores.length - 7}</span>}
+        </div>
+        <div className={styles.pie}>
+          <span className={styles.precio}>Desde S/ {precioBase(prenda).toFixed(2)}</span>
+          <span className={styles.cta}>Diseñar</span>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+const PersonalizarPage = () => {
+  const { data: prendas = [], isLoading } = useQuery({
+    queryKey: ['prendas-base'],
+    queryFn: async () => {
+      const { data, error } = await getPrendasBase();
+      if (error) throw new Error(error);
+      return data;
+    },
+  });
 
   return (
     <div className={styles.container}>
       <div className={styles.hero}>
-        <h1 className={styles.title}><T>Personaliza tu prenda</T></h1>
+        <h1 className={styles.title}><T>Crea tu prenda</T></h1>
         <p className={styles.subtitle}>
-          Elige un producto, agrega tu texto, imágenes o diseños y recibe una prenda única. 
-          Selecciona abajo la prenda que quieres personalizar.
+          <T>Elige una prenda, ponle tu imagen o tu frase y la imprimimos para ti.</T>
         </p>
+        <ol className={styles.pasos}>
+          {PASOS.map(({ icono: Icono, titulo, texto }, i) => (
+            <li key={titulo} className={styles.paso}>
+              <span className={styles.pasoIcono}><Icono size={20} aria-hidden="true" /></span>
+              <span className={styles.pasoTexto}>
+                <strong>{i + 1}. <T>{titulo}</T></strong>
+                <span><T>{texto}</T></span>
+              </span>
+            </li>
+          ))}
+        </ol>
       </div>
 
-      {hasProducts ? (
-        <>
-          <p className={styles.sectionLabel}><T>Productos que puedes personalizar</T></p>
-          <ProductGrid 
-            products={products} 
-            loading={isLoading}
-            error={error?.message}
-          />
-        </>
+      {isLoading ? (
+        <div className={styles.grilla}>
+          {[0, 1, 2].map((i) => <div key={i} className={styles.esqueleto} />)}
+        </div>
+      ) : prendas.length > 0 ? (
+        <div className={styles.grilla}>
+          {prendas.map((p) => <TarjetaPrenda key={p.id} prenda={p} />)}
+        </div>
       ) : (
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>✨</div>
-          <h2><T>Elige tu prenda en la tienda</T></h2>
-          <p>
-            Entra a la tienda, elige el producto que te guste y haz clic en <strong>Crear</strong> 
-            para agregar tu diseño, texto o imágenes.
-          </p>
-          <Link to="/tienda">
-            <Button variant="primary" size="large"><T>Ir a la Tienda</T></Button>
-          </Link>
+          <div className={styles.emptyIcon}><Shirt size={48} aria-hidden="true" /></div>
+          <h2><T>Muy pronto</T></h2>
+          <p><T>Estamos preparando las prendas que podrás diseñar. Mientras tanto, mira lo que tenemos en la tienda.</T></p>
+          <Link to="/tienda" className={styles.botonTienda}><T>Ir a la tienda</T></Link>
         </div>
       )}
     </div>

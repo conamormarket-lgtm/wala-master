@@ -1,6 +1,6 @@
 import { collection, query, where, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 import { db } from './firebase/config';
-import { getProducts, getCachedProducts, normalizeSearchText, normalizeProductForRead } from './products';
+import { getProducts, getCachedProducts, normalizeSearchText, normalizeProductForRead, esProductoDeTienda } from './products';
 
 const COLLECTION = 'productos_wala';
 
@@ -78,7 +78,7 @@ function facetCounts(items, key) {
  * @returns {Promise<{ items: object[], total: number, page: number, pageSize: number, totalPages: number, facets: object }>}
  */
 export async function searchCatalog({ term = '', facets = {}, sort = 'newest', page = 1, pageSize = 24, fresh = false } = {}) {
-  const all = (await fetchAll({ fresh })).filter((p) => p.visible !== false);
+  const all = (await fetchAll({ fresh })).filter(esProductoDeTienda);
   let results = all.filter((p) => matchesTerm(p, term) && matchesFacets(p, facets));
   if (SORTERS[sort]) results = results.slice().sort(SORTERS[sort]);
 
@@ -202,7 +202,7 @@ export async function searchProductsFirestore({ term = '', mode = 'token', curso
 
     const items = snap.docs
       .map((d) => normalizeProductForRead({ id: d.id, ...d.data() }))
-      .filter((p) => p.visible !== false && matchesTerm(p, q));
+      .filter((p) => esProductoDeTienda(p) && matchesTerm(p, q));
 
     const lastDoc = snap.docs[snap.docs.length - 1] || null;
     return {
@@ -292,7 +292,7 @@ export async function getSearchSuggestions(term, opts = {}) {
   }
 
   const casan = all
-    .filter((p) => p.visible !== false && casaSugerencia(p, q))
+    .filter((p) => esProductoDeTienda(p) && casaSugerencia(p, q))
     .sort(porPertinencia(q));
 
   // Las categorías viven en `categories` (array); las marcas, en `brandId`.

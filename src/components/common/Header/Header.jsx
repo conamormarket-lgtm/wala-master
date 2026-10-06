@@ -93,7 +93,7 @@ const initialsOf = (name) => {
 
 // Botón flotante de la encuesta: dónde NO mostrarlo (pagar, carrito, panel
 // admin) y clave del "ocultar 3 días".
-const RUTAS_SIN_FAB_ENCUESTA = ['/encuesta-suscripcion', '/checkout', '/carrito', '/admin', '/pago'];
+const RUTAS_SIN_FAB_ENCUESTA = ['/encuesta-suscripcion', '/checkout', '/carrito', '/admin', '/pago', '/crear/'];
 const CLAVE_FAB_ENCUESTA = 'surveyFabHiddenUntil';
 
 const Header = () => {

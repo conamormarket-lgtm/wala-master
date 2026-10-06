@@ -5,6 +5,7 @@ const routes = [
   [/^\/carrito\/?$/, () => import('../../../pages/CartPage')],
   [/^\/editor\//, () => import('../../../pages/EditorPage')],
   [/^\/personalizar\/?$/, () => import('../../../pages/PersonalizarPage')],
+  [/^\/crear\//, () => import('../../../pages/Crear/CrearStudioPage')],
   [/^\/checkout\/?$/, () => import('../../../pages/CheckoutPage')],
 ];
 
