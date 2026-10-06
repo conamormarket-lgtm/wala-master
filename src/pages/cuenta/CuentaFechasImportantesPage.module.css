@@ -1328,3 +1328,151 @@
   cursor: pointer;
   text-decoration: underline;
 }
+
+/* =========================================================================
+   Fechas festivas (Día de la Madre, Navidad…): la próxima destacada con
+   ideas por persona, y las que vienen después.
+   ========================================================================= */
+.festivaDestacada {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.festivaCabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.festivaEmoji {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  font-size: 1.6rem;
+  background: rgba(217, 70, 239, 0.1);
+}
+
+.festivaTitulo {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.festivaFecha {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.festivaFecha strong {
+  color: #a21caf;
+}
+
+.festivaPersonas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 1rem;
+}
+
+.festivaPersona {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  min-width: 0;
+}
+
+.festivaSinPersonas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(217, 70, 239, 0.06);
+  border: 1px solid rgba(217, 70, 239, 0.2);
+}
+
+.festivaSinPersonas p {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.festivasSeparadas {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.festivasSubtitulo {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.festivasLista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.festivaItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radio-pequeno, 10px);
+  background: rgba(217, 70, 239, 0.05);
+  border: 1px solid rgba(217, 70, 239, 0.16);
+}
+
+.festivaItemEmoji {
+  flex: 0 0 auto;
+}
+
+.festivaItemNombre {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.festivaItemFecha,
+.festivaItemPara {
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.festivaItemDias {
+  margin-left: auto;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #a21caf;
+  background: rgba(217, 70, 239, 0.1);
+  white-space: nowrap;
+}
+
+:global([data-theme='dark']) .festivaEmoji,
+:global([data-theme='dark']) .festivaSinPersonas,
+:global([data-theme='dark']) .festivaItem {
+  background: rgba(217, 70, 239, 0.12);
+}
+
+:global([data-theme='dark']) .festivaFecha strong,
+:global([data-theme='dark']) .festivaItemDias {
+  color: #f0abfc;
+}

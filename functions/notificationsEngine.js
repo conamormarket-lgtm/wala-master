@@ -7,6 +7,7 @@ const { recordatoriosDeHoy } = require("./fechasLogic");
 const { hitoDeEstadoErp, hitoDeEstadoWala, debeAvisar, textoHito } = require("./ordersLogic");
 const { agruparInteres, elegirProducto } = require("./productViewLogic");
 const { recomendarRegalos } = require("./giftLogic");
+const { avisosFestivosDeHoy, festivasDesdeDoc } = require("./fechasFestivasLogic");
 
 const db = admin.firestore();
 const messaging = admin.messaging();
@@ -66,10 +67,10 @@ async function leerSettings() {
 }
 
 // Suma al conteo A/B. Best-effort: si falla, el aviso igual salió.
-async function contar(type, variante, campo) {
+async function contar(type, variante, campo, cantidad = 1) {
   try {
     await db.collection(STATS_COLLECTION).doc(String(type)).set({
-      [variante === "b" ? "b" : "a"]: { [campo]: FieldValue.increment(1) },
+      [variante === "b" ? "b" : "a"]: { [campo]: FieldValue.increment(cantidad) },
       updatedAt: new Date().toISOString(),
     }, { merge: true });
   } catch (e) {
@@ -457,46 +458,86 @@ async function cargarCatalogoRegalos() {
 exports.datesReminderEngine = onSchedule({
   schedule: "0 10 * * *",
   timeZone: "America/Lima",
+  // El aviso general de una fecha festiva puede llegar a todos los clientes
+  // (miles): escrituras en lote y hasta 9 minutos.
+  timeoutSeconds: 540,
+  memory: "512MiB",
 }, async () => {
   const hoy = limaTodayStr();
   const anioMinimo = Number(hoy.slice(0, 4)) - 1;
   let avisos = 0;
   let catalogo = null;
+  const enviados = {};
+  // Avisos in-app y logs en lote: con miles de avisos generales, uno por uno
+  // no termina a tiempo.
+  const lote = db.bulkWriter();
+  lote.onWriteError((err) => {
+    console.warn("datesReminderEngine: escritura falló:", err.message);
+    return err.failedAttempts < 3;
+  });
   try {
+    // Calendario de fechas festivas (Día de la Madre, Navidad…), editable en
+    // /admin/fechas-importantes. Sin documento, las de Perú por defecto.
+    const festivasDoc = await db.doc("storeConfig/fechasFestivas").get();
+    const festivas = festivasDesdeDoc(festivasDoc.exists ? festivasDoc.data() : null);
+
     const usersSnapshot = await db.collection(PORTAL_USERS_COLLECTION).get();
     for (const doc of usersSnapshot.docs) {
       const data = doc.data();
-      if (!Array.isArray(data.giftRecipients) || data.giftRecipients.length === 0) continue;
-      const pendientes = recordatoriosDeHoy(data.giftRecipients, hoy, data.datesReminderLog);
+      const personas = Array.isArray(data.giftRecipients) ? data.giftRecipients : [];
+      // Fechas de sus personas (cumpleaños, aniversarios…) + fechas festivas:
+      // con su persona si le toca a alguien que anotó; si no, aviso general
+      // solo en las fechas marcadas "avisar a todos".
+      const pendientes = [
+        ...recordatoriosDeHoy(personas, hoy, data.datesReminderLog).map((r) => ({
+          ...r,
+          tipo: "fecha_recordatorio",
+          ocasion: r.event.type === "Fecha Especial" ? r.event.customName : r.event.type,
+        })),
+        ...avisosFestivosDeHoy(festivas, personas, hoy, data.datesReminderLog).map((a) => ({
+          ...a,
+          tipo: "fecha_festiva",
+          recipient: a.personas[0] || null,
+          ocasion: a.festiva.nombre,
+        })),
+      ];
       if (pendientes.length === 0) continue;
 
+      // Se conservan solo los avisos de este año y el anterior. Las claves son
+      // "<evento>|<año>|<días>" y las festivas "fest|<id>|<año>|<días>".
       const log = {};
       Object.keys(data.datesReminderLog || {}).forEach((k) => {
-        if (Number(k.split("|")[1]) >= anioMinimo) log[k] = true;
+        const partes = k.split("|");
+        const anio = Number(partes[0] === "fest" ? partes[2] : partes[1]);
+        if (anio >= anioMinimo) log[k] = true;
       });
 
       const tokens = data.fcmTokens || [];
       for (const r of pendientes) {
         const payload = {
-          title: r.titulo, body: r.cuerpo, type: "fecha_recordatorio", link: "/cuenta/fechas-importantes",
+          title: r.titulo, body: r.cuerpo, type: r.tipo, link: "/cuenta/fechas-importantes",
         };
         // Foto del mejor regalo sugerido para esa persona (buscador de regalos).
-        try {
-          if (!catalogo) catalogo = await cargarCatalogoRegalos();
-          const ocasion = r.event.type === "Fecha Especial" ? r.event.customName : r.event.type;
-          const [mejor] = recomendarRegalos({ recipient: r.recipient, ...catalogo, ocasion, limite: 1 });
-          if (mejor) {
-            const p = mejor.producto;
-            payload.image = (Array.isArray(p.images) && p.images[0]) || p.mainImage || "";
-            payload.body = `${r.cuerpo} Por ejemplo: ${p.name}.`;
+        if (r.recipient) {
+          try {
+            if (!catalogo) catalogo = await cargarCatalogoRegalos();
+            const [mejor] = recomendarRegalos({ recipient: r.recipient, ...catalogo, ocasion: r.ocasion, limite: 1 });
+            if (mejor) {
+              const p = mejor.producto;
+              payload.image = (Array.isArray(p.images) && p.images[0]) || p.mainImage || "";
+              payload.body = `${r.cuerpo} Por ejemplo: ${p.name}.`;
+            }
+          } catch (e) {
+            console.warn("datesReminderEngine: sin sugerencia de regalo:", e.message);
           }
-        } catch (e) {
-          console.warn("datesReminderEngine: sin sugerencia de regalo:", e.message);
         }
         const ref = db.collection(`users/${doc.id}/notifications`).doc();
-        await ref.set(docInApp(payload));
-        await contar("fecha_recordatorio", "a", "sent");
-        if (tokens.length > 0) {
+        lote.create(ref, docInApp(payload));
+        enviados[r.tipo] = (enviados[r.tipo] || 0) + 1;
+        // El aviso general es casi publicidad: su push respeta el tope
+        // anti-spam diario. Los de sus personas (los pidió él) salen siempre.
+        const pushPermitido = r.tipo !== "fecha_festiva" || r.personal || canSendPush(data, r.tipo);
+        if (tokens.length > 0 && pushPermitido) {
           try {
             const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, { ...payload, notifId: ref.id }));
             await removeInvalidTokens(doc.ref, tokens, response);
@@ -507,11 +548,14 @@ exports.datesReminderEngine = onSchedule({
         log[r.key] = true;
         avisos++;
       }
-      await doc.ref.update({ datesReminderLog: log });
+      lote.update(doc.ref, { datesReminderLog: log });
     }
-    console.log(`datesReminderEngine: ${avisos} recordatorios enviados (${hoy}).`);
+    await lote.close();
+    await Promise.all(Object.entries(enviados).map(([tipo, n]) => contar(tipo, "a", "sent", n)));
+    console.log(`datesReminderEngine: ${avisos} avisos enviados (${hoy}).`, enviados);
   } catch (e) {
     console.error("Error in datesReminderEngine:", e);
+    await lote.close().catch(() => {});
   }
 });
 

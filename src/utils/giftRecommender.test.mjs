@@ -271,6 +271,18 @@ test('edad mínima marcada manda sobre lo deducido', () => {
   assert.deepEqual(edadMinimaDe({ name: 'Polo Grosería', tags: ['h'] }, ' polo groseria humor '), { valor: 18, deducida: true });
 });
 
+test('producto etiquetado para la ocasión sube como idea para esa fecha', () => {
+  const ps = [
+    { id: 'taza', name: 'Taza Mamá', tags: ['dm'], publico: 'mujer', price: 40, inStock: 3 },
+    { id: 'otro', name: 'Taza lisa', tags: [], publico: 'mujer', price: 40, inStock: 3 },
+  ];
+  const d = { tags: { dm: 'Día de la Madre' } };
+  const marta = persona({ roleKey: 'padres', gender: 'Femenino' });
+  const r = recomendarRegalos({ recipient: marta, productos: ps, dicts: d, ocasion: 'Día de la Madre' });
+  assert.deepEqual(r.map((x) => [x.producto.id, x.tipo, x.motivo]), [['taza', 'gusto', 'Para Día de la Madre']]);
+  assert.deepEqual(recomendarRegalos({ recipient: marta, productos: ps, dicts: d, ocasion: 'Cumpleaños' }), []);
+});
+
 test('palabras clave sin relleno y normalizadas', () => {
   assert.deepEqual(palabrasClave('Del universitario deportes y del Barza'), ['universitario', 'barza']);
   assert.equal(normalizar('Fútbol  Perú!'), 'futbol peru');

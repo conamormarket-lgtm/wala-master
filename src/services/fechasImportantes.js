@@ -2,34 +2,8 @@ import { collection, getDocs, doc, setDoc, deleteDoc, addDoc, query, where } fro
 import { db } from './firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 
-export const getUniversalDates = async () => {
-  try {
-    const snap = await getDocs(collection(db, 'universal_dates'));
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error('Error fetching universal dates:', error);
-    return [];
-  }
-};
-
-export const addUniversalDate = async (dateData) => {
-  try {
-    const docRef = await addDoc(collection(db, 'universal_dates'), dateData);
-    return { id: docRef.id, ...dateData };
-  } catch (error) {
-    console.error('Error adding universal date:', error);
-    throw error;
-  }
-};
-
-export const deleteUniversalDate = async (id) => {
-  try {
-    await deleteDoc(doc(db, 'universal_dates', id));
-  } catch (error) {
-    console.error('Error deleting universal date:', error);
-    throw error;
-  }
-};
+// Las fechas festivas (antes "universal_dates", que nadie leía) viven ahora en
+// services/fechasFestivas.js + utils/fechasFestivas.mjs.
 
 export const getUserDates = async () => {
   try {

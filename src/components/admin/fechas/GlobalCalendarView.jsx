@@ -13,7 +13,9 @@ import {
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Button from '../../common/Button';
-import { getUniversalDates, getOrganizableEvents } from '../../../services/fechasImportantes';
+import { getOrganizableEvents } from '../../../services/fechasImportantes';
+import { getFechasFestivas } from '../../../services/fechasFestivas';
+import { fechaDelAnio } from '../../../utils/fechasFestivas.mjs';
 import styles from './fechasStyles.module.css';
 
 const GlobalCalendarView = ({ onChangeView }) => {
@@ -27,9 +29,9 @@ const GlobalCalendarView = ({ onChangeView }) => {
 
   const loadData = async () => {
     // Para simplificar, traemos todo (en un app real se filtraría por mes)
-    const uni = await getUniversalDates();
+    const { data: uni } = await getFechasFestivas();
     const org = await getOrganizableEvents();
-    setUniversales(uni);
+    setUniversales((uni || []).filter((f) => f.activo));
     setEventos(org);
   };
 
@@ -48,7 +50,11 @@ const GlobalCalendarView = ({ onChangeView }) => {
   const isUniversalDate = (day) => {
     const d = day.getDate();
     const m = day.getMonth() + 1; // 1-indexed
-    return universales.filter(u => u.day === d && u.month === m);
+    // Fechas festivas: cada una con su regla (las móviles cambian de día cada año).
+    const iso = `${day.getFullYear()}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    return universales
+      .filter((f) => fechaDelAnio(f.regla, day.getFullYear()) === iso)
+      .map((f) => ({ ...f, name: `${f.emoji ? `${f.emoji} ` : ''}${f.nombre}` }));
   };
 
   const isOrganizableEvent = (day) => {
@@ -66,7 +72,7 @@ const GlobalCalendarView = ({ onChangeView }) => {
       <div className={styles.header}>
         <div>
           <h2>Calendario Global</h2>
-          <p>Visión general de las fechas universales y eventos configurados para {format(currentDate, 'MMMM yyyy', { locale: es })}.</p>
+          <p>Visión general de las fechas festivas y eventos configurados para {format(currentDate, 'MMMM yyyy', { locale: es })}.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <Button variant="secondary" onClick={prevMonth}>Anterior</Button>
@@ -96,8 +102,8 @@ const GlobalCalendarView = ({ onChangeView }) => {
               <span className={styles.calendarDayNum}>{format(day, dateFormat)}</span>
               
               {unis.map((u, i) => (
-                <div key={`u-${i}`} className={`${styles.eventPill} ${styles.universal}`} onClick={() => onChangeView('universales')}>
-                  🌎 {u.name}
+                <div key={`u-${i}`} className={`${styles.eventPill} ${styles.universal}`} onClick={() => onChangeView('festivas')}>
+                  {u.name}
                 </div>
               ))}
 

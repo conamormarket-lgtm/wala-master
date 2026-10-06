@@ -336,6 +336,8 @@ export function recomendarRegalos({
     (recipient.selectedCategories || []).flatMap((c) => conjuntoCategorias[c] || []),
   );
   const romantico = ROMANTICO.test(normalizar(ocasion));
+  // Ocasión como etiqueta del catálogo ("Día de la Madre", "Navidad").
+  const ocasionN = normalizar(ocasion);
   const esPareja = recipient.roleKey === 'pareja';
   const genero = recipient.gender;
   const generoDefinido = genero === 'Femenino' || genero === 'Masculino';
@@ -423,6 +425,13 @@ export function recomendarRegalos({
       score += 7;
       relevante = true;
       if (!motivo) motivo = 'Para regalar en pareja';
+    }
+
+    // ── 3b) Producto etiquetado para la ocasión ("Día de la Madre") ──
+    if (ocasionN.length >= 6 && fuerte.includes(` ${ocasionN} `)) {
+      score += 7;
+      relevante = true;
+      if (!motivo) motivo = `Para ${String(ocasion).trim()}`;
     }
 
     // ── 4) Respaldo genérico: pareja (sin ocasión romántica) o "Para regalar" ──

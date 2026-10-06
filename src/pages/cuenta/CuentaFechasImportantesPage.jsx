@@ -8,6 +8,9 @@ import { useGiftCatalog } from '../../hooks/useGiftCatalog';
 import { PRESUPUESTOS, respuestasDe } from '../../utils/giftRecommender.mjs';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import { getUserSuggestedPackages } from '../../services/fechasImportantes';
+import { useFechasFestivas } from '../../services/fechasFestivas';
+import { proximasFestivas, hoyLocal, textoFecha } from '../../utils/fechasFestivas.mjs';
+import FechasFestivasSeccion from './FechasFestivasSeccion';
 import { GlassCard, Reveal } from '../../components/ui';
 // eslint-disable-next-line no-unused-vars
 import { Gift, Calendar, CalendarHeart, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package, Camera, AlertCircle, Check } from 'lucide-react';
@@ -34,67 +37,11 @@ const ROLES_MAP = {
   otros: { label: 'Otros', singular: 'Otra persona' }
 };
 
-// ── Fechas del calendario ──────────────────────────────────────────────
-// Antes esto devolvía SOLO etiquetas ("Día del Hombre"), sin fecha detrás: el
-// badge aparecía todo el año y no significaba que se acercara nada. Ahora cada
-// fecha trae su regla y se resuelve a un día concreto.
-//
-// Varias son MOVIBLES (caen el n-ésimo día de la semana de un mes), así que se
-// calculan por año en vez de fijarse a un día que quedaría mal el siguiente:
-// el Día de la Madre no cae el mismo número en 2026 que en 2027.
-//
-// `diaSemana` sigue a Date.getDay(): 0 = domingo … 6 = sábado.
-// NOTA: son las fechas de PERÚ. Si el negocio celebra otra, se cambia acá y
-// listo: es el único lugar donde viven.
-const FECHAS_GLOBALES = {
-  san_valentin: { label: 'San Valentín', fija: { mes: 2, dia: 14 } },
-  dia_mujer: { label: 'Día de la Mujer', fija: { mes: 3, dia: 8 } },
-  dia_madre: { label: 'Día de la Madre', movil: { mes: 5, diaSemana: 0, ordinal: 2 } },
-  dia_padre: { label: 'Día del Padre', movil: { mes: 6, diaSemana: 0, ordinal: 3 } },
-  dia_nino: { label: 'Día del Niño', movil: { mes: 8, diaSemana: 0, ordinal: 3 } },
-  dia_amistad: { label: 'Día de la Amistad', movil: { mes: 7, diaSemana: 6, ordinal: 3 } },
-};
-
-// Resuelve una regla al día que le toca en ese año.
-const fechaDelAnio = (regla, anio) => {
-  if (regla.fija) return new Date(anio, regla.fija.mes - 1, regla.fija.dia);
-  const { mes, diaSemana, ordinal } = regla.movil;
-  const primero = new Date(anio, mes - 1, 1);
-  // Cuántos días hay desde el 1 hasta el primer `diaSemana` del mes.
-  const desplazamiento = (diaSemana - primero.getDay() + 7) % 7;
-  return new Date(anio, mes - 1, 1 + desplazamiento + (ordinal - 1) * 7);
-};
-
-// Qué fechas del calendario le tocan a esta persona por su rol y su género.
-// Se quitó "Día del Hombre": salía solo por tener género masculino, no es una
-// fecha que la tienda trabaje y tampoco existe en el calendario del admin.
-const getGlobalDates = (roleKey, gender) => {
-  const claves = [];
-  if (gender === 'Femenino') claves.push('dia_mujer');
-  if (roleKey === 'pareja') claves.push('san_valentin');
-  if (roleKey === 'padres' && gender === 'Femenino') claves.push('dia_madre');
-  if (roleKey === 'padres' && gender === 'Masculino') claves.push('dia_padre');
-  if (roleKey === 'hijos') claves.push('dia_nino');
-  if (roleKey === 'amigos') claves.push('dia_amistad');
-
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-
-  return claves
-    .map((clave) => {
-      const regla = FECHAS_GLOBALES[clave];
-      let fecha = fechaDelAnio(regla, hoy.getFullYear());
-      if (fecha < hoy) fecha = fechaDelAnio(regla, hoy.getFullYear() + 1);
-      return {
-        clave,
-        label: regla.label,
-        fecha,
-        dias: Math.round((fecha - hoy) / 86400000),
-      };
-    })
-    // La más cercana primero: es la única que se puede accionar ya.
-    .sort((a, b) => a.dias - b.dias);
-};
+// ── Fechas festivas (Día de la Madre, del Padre, Navidad…) ───────────────
+// Antes vivían fijas en este archivo (y dos estaban mal para Perú: Día del Niño
+// y de la Amistad). Ahora salen del calendario configurable del admin
+// (storeConfig/fechasFestivas, ver utils/fechasFestivas.mjs), con reglas para
+// las que cambian de día cada año.
 
 // Días que faltan para la PRÓXIMA vez que se celebre una fecha 'YYYY-MM-DD'.
 // Solo importan mes y día: un cumpleaños del 2001 se celebra igual este año, y
@@ -151,6 +98,14 @@ const CuentaFechasImportantesPage = () => {
 
   const recipients = userProfile?.giftRecipients || [];
   const hasCompletedSurvey = userProfile?.hasCompletedSurvey;
+
+  // Fechas festivas que vienen, con a quién de la lista le toca cada una.
+  const { data: festivas } = useFechasFestivas();
+  const proximas = useMemo(
+    () => proximasFestivas(festivas || [], recipients, hoyLocal()),
+    [festivas, recipients],
+  );
+  const festivasDe = (rec) => proximas.filter((f) => f.personas.includes(rec));
 
   // Catálogo PÚBLICO (useProducts sin opciones ya excluye lo oculto/borrado:
   // visible !== false). Los paquetes sugeridos guardan una FOTO del producto
@@ -224,11 +179,13 @@ const CuentaFechasImportantesPage = () => {
   const [ideasAgregadas, setIdeasAgregadas] = useState(new Set());
   const ideasPara = (rec) => {
     // La ocasión que cuenta es la próxima fecha de la persona.
-    const proxima = [...(rec.events || [])]
-      .map((ev) => ({ ev, dias: diasParaProxima(ev.date) }))
-      .filter((x) => x.dias != null)
-      .sort((a, b) => a.dias - b.dias)[0];
-    const ocasion = proxima ? (proxima.ev.type === 'Fecha Especial' ? proxima.ev.customName : proxima.ev.type) : '';
+    // (sus fechas o una festiva que le toque, p. ej. el Día de la Madre).
+    const propias = (rec.events || [])
+      .map((ev) => ({ dias: diasParaProxima(ev.date), ocasion: ev.type === 'Fecha Especial' ? ev.customName : ev.type }))
+      .filter((x) => x.dias != null);
+    const festivasRec = festivasDe(rec).map((f) => ({ dias: f.dias, ocasion: f.nombre }));
+    const proxima = [...propias, ...festivasRec].sort((a, b) => a.dias - b.dias)[0];
+    const ocasion = proxima ? proxima.ocasion : '';
     return recomendar(rec, { ocasion, limite: 4 });
   };
   const agregarIdea = (producto) => {
@@ -477,6 +434,15 @@ const CuentaFechasImportantesPage = () => {
         </Reveal>
       )}
 
+      <FechasFestivasSeccion
+        proximas={proximas}
+        recomendar={recomendar}
+        cargandoIdeas={cargandoIdeas}
+        onAddNew={handleAddNew}
+        ideasAgregadas={ideasAgregadas}
+        onAgregar={agregarIdea}
+      />
+
       {recipients.length === 0 ? (
         <Reveal>
           <GlassCard variant="solid" padding="lg" animate={false} className={styles.empty} bodyClassName={styles.emptyBody}>
@@ -499,7 +465,7 @@ const CuentaFechasImportantesPage = () => {
         // observador. Mismo motivo que en el historial de Mis Referidos.
         <div className={styles.grid}>
           {recipients.map((rec, idx) => {
-            const fechasGlobales = getGlobalDates(rec.roleKey, rec.gender);
+            const fechasGlobales = festivasDe(rec);
             const recPackages = getPackagesForRecipient(rec);
 
             return (
@@ -573,12 +539,10 @@ const CuentaFechasImportantesPage = () => {
                       {fechasGlobales.map((gDate) => {
                         const aviso = avisoProximidad(gDate.dias);
                         return (
-                          <li key={gDate.clave} className={`${styles.eventItem} ${styles.eventItemGlobal}`}>
+                          <li key={gDate.id} className={`${styles.eventItem} ${styles.eventItemGlobal}`}>
                             <Globe size={15} aria-hidden="true" className={styles.eventIconGlobal} />
-                            <span className={styles.eventName}>{gDate.label}</span>
-                            <span className={styles.eventDate}>
-                              {gDate.fecha.toLocaleDateString('es-PE', { day: 'numeric', month: 'long' })}
-                            </span>
+                            <span className={styles.eventName}>{gDate.nombre}</span>
+                            <span className={styles.eventDate}>{textoFecha(gDate.fecha)}</span>
                             {aviso && (
                               <span className={`${styles.eventSoon} ${gDate.dias === 0 ? styles.eventToday : ''}`}>
                                 {aviso}

@@ -90,7 +90,7 @@ const vistaPrevia = (v) => [v?.text, v?.cta, v?.emoji]
 const NOMBRES_AVISO = {
   cart_1h: 'Carrito 1 h', cart_24h: 'Carrito 24 h', cart_48h: 'Carrito 48 h',
   retention_7d: 'Kapi 7 días', retention_14d: 'Kapi 14 días',
-  orders: 'Pedidos', product_view: 'Producto que estuvo mirando', fecha_recordatorio: 'Fechas importantes', manual_promo: 'Ofertas (campañas)',
+  orders: 'Pedidos', product_view: 'Producto que estuvo mirando', fecha_recordatorio: 'Fechas importantes', fecha_festiva: 'Fechas festivas (Día de la Madre…)', manual_promo: 'Ofertas (campañas)',
 };
 
 const tasa = (abiertos, enviados) => (enviados > 0 ? `${Math.round((abiertos / enviados) * 100)}%` : '—');

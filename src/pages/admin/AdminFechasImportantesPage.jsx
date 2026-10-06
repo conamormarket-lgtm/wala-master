@@ -3,7 +3,7 @@ import styles from './AdminFechasImportantesPage.module.css';
 
 // Componentes secundarios a implementar
 import GlobalCalendarView from '../../components/admin/fechas/GlobalCalendarView';
-import UniversalesView from '../../components/admin/fechas/UniversalesView';
+import FechasFestivasView from '../../components/admin/fechas/FechasFestivasView';
 import UsuariosView from '../../components/admin/fechas/UsuariosView';
 import EventosView from '../../components/admin/fechas/EventosView';
 
@@ -14,8 +14,8 @@ const AdminFechasImportantesPage = () => {
     switch (activeView) {
       case 'calendario':
         return <GlobalCalendarView onChangeView={setActiveView} />;
-      case 'universales':
-        return <UniversalesView />;
+      case 'festivas':
+        return <FechasFestivasView />;
       case 'usuarios':
         return <UsuariosView />;
       case 'eventos':
@@ -38,10 +38,10 @@ const AdminFechasImportantesPage = () => {
             Calendario Global
           </button>
           <button 
-            className={`${styles.drawerBtn} ${activeView === 'universales' ? styles.active : ''}`}
-            onClick={() => setActiveView('universales')}
+            className={`${styles.drawerBtn} ${activeView === 'festivas' ? styles.active : ''}`}
+            onClick={() => setActiveView('festivas')}
           >
-            Fechas Universales
+            Fechas festivas
           </button>
           <button 
             className={`${styles.drawerBtn} ${activeView === 'usuarios' ? styles.active : ''}`}
