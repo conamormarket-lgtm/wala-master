@@ -251,3 +251,52 @@ export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, 
     lienzo.dispose();
   }
 };
+
+const aImagen = (blob) => new Promise((resolve, reject) => {
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => resolve({ img, url });
+  img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer la vista previa.')); };
+  img.src = url;
+});
+
+/**
+ * Une las vistas previas (frente, espalda...) en una sola imagen, una al lado
+ * de la otra y con su nombre encima. Es la imagen que el cliente descarga y
+ * la que acompaña al pedido para ver la prenda completa de un vistazo.
+ */
+export const componerVistas = async (piezas, { titulo = '' } = {}) => {
+  const cargadas = await Promise.all(piezas.map(async (p) => ({ ...p, ...(await aImagen(p.blob)) })));
+  try {
+    const margen = 40;
+    const separacion = 24;
+    const cabecera = titulo ? 120 : 76;
+    const altoPieza = Math.max(...cargadas.map((p) => p.img.naturalHeight));
+    const ancho = cargadas.reduce((acc, p) => acc + p.img.naturalWidth, 0) + separacion * (cargadas.length - 1) + margen * 2;
+    const alto = altoPieza + cabecera + margen;
+    const canvas = document.createElement('canvas');
+    canvas.width = ancho;
+    canvas.height = alto;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#F3F1F7';
+    ctx.fillRect(0, 0, ancho, alto);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (titulo) {
+      ctx.fillStyle = '#1F1B2E';
+      ctx.font = '700 40px Montserrat, Arial, sans-serif';
+      ctx.fillText(titulo, ancho / 2, 52);
+    }
+    let x = margen;
+    cargadas.forEach((p) => {
+      ctx.fillStyle = '#3C3489';
+      ctx.font = '700 30px Montserrat, Arial, sans-serif';
+      ctx.fillText(p.nombre, x + p.img.naturalWidth / 2, cabecera - 34);
+      ctx.drawImage(p.img, x, cabecera + (altoPieza - p.img.naturalHeight) / 2);
+      x += p.img.naturalWidth + separacion;
+    });
+    return await aBlob(canvas, 'image/jpeg', 0.9);
+  } finally {
+    cargadas.forEach((p) => URL.revokeObjectURL(p.url));
+  }
+};

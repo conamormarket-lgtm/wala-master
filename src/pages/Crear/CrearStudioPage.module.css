@@ -814,3 +814,28 @@
   font-size: 0.8rem;
   color: var(--gris-texto-secundario);
 }
+
+.botonDescarga {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 46px;
+  border-radius: 14px;
+  border: 1.5px dashed var(--primary-color);
+  background: transparent;
+  color: var(--primary-color);
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.botonDescarga:hover:not(:disabled) {
+  background: var(--primary-light);
+}
+
+.botonDescarga:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

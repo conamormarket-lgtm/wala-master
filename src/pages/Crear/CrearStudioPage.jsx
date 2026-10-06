@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Crop, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
+  Crosshair, Maximize2, RotateCw, Crop, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -17,11 +17,11 @@ import {
 import {
   UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
   calidadDeCapa, medidaZona, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
-  colorDisponible, tallasDeColor,
+  colorDisponible, tallasDeColor, slug,
 } from '../../utils/prendaBase';
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
-  propiedadesTexto, renderizarImpresion, renderizarVistaPrevia, transformDeZona, rectDeZona,
+  propiedadesTexto, renderizarImpresion, renderizarVistaPrevia, componerVistas, transformDeZona, rectDeZona,
   recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo,
 } from './renderDiseno';
 import RecorteImagen from './RecorteImagen';
@@ -635,6 +635,40 @@ const CrearStudioPage = () => {
     navigate('/login', { state: { from: location.pathname + location.search } });
   };
 
+  /** Todas las vistas de la prenda (con o sin diseño) en una sola imagen. */
+  const imagenConjunta = async (capas, previasHechas = {}) => {
+    const piezas = [];
+    for (const v of cfg.vistas) {
+      piezas.push({ nombre: v.nombre, blob: previasHechas[v.id] || await renderizarVista(v, capas) });
+    }
+    return componerVistas(piezas, { titulo: `${prenda.name} · ${color.nombre}${talla ? ` · Talla ${talla}` : ''}` });
+  };
+
+  const descargarImagen = async () => {
+    if (!zonasUsadas.length) {
+      toast.info('Agrega una imagen o un texto a tu diseño.');
+      return;
+    }
+    setProcesando('Preparando tu imagen…');
+    try {
+      // Incluye las imágenes que aún se están subiendo: se pintan desde el equipo.
+      const capas = Object.fromEntries(Object.entries(capasRef.current).filter(([, c]) => c?.length));
+      const blob = await imagenConjunta(capas);
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.download = `${slug(`${prenda.name} ${color.nombre}`)}-diseno.jpg`;
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+      toast.error(`No pudimos preparar la imagen: ${err?.message || err}`);
+    } finally {
+      setProcesando(null);
+    }
+  };
+
   const renderizarVista = async (v, capas) => {
     const img = await cargarImagen(fotoDeVista(v, color));
     const fuente = requiereTenido(v, color) ? tintarImagen(img, color.hex) : img;
@@ -712,6 +746,7 @@ const CrearStudioPage = () => {
       const capas = capasParaGuardar(capasRef.current);
       const archivosImpresion = [];
       const vistasPrevias = [];
+      const blobsPrevias = {};
       for (const v of vistasConCapas(capas)) {
         const zonasConCapas = v.zonas.filter((z) => capas[z.id]);
         for (const z of zonasConCapas) {
@@ -726,9 +761,15 @@ const CrearStudioPage = () => {
         }
         setProcesando(`Preparando la vista previa (${v.nombre})…`);
         const previa = await renderizarVista(v, capas);
+        blobsPrevias[v.id] = previa;
         const url = await subirVistaPrevia(user.uid, previa, v.id);
         vistasPrevias.push({ vista: v.id, nombre: v.nombre, url, zonas: zonasConCapas.map((z) => z.id) });
       }
+
+      // La prenda completa (todas las vistas) en una sola imagen para el pedido.
+      setProcesando('Uniendo las vistas…');
+      const conjunta = await imagenConjunta(capas, blobsPrevias);
+      const urlConjunta = await subirVistaPrevia(user.uid, conjunta, 'conjunto');
 
       setProcesando('Agregando al carrito…');
       const usadas = Object.keys(capas);
@@ -763,6 +804,7 @@ const CrearStudioPage = () => {
           variant: { size: talla, color: color.nombre },
           finalPrice: precio,
           imageURL: vistasPrevias[0]?.url || '',
+          imagenConjunta: urlConjunta,
           designId: guardadoId || designId || '',
           isComboDesign: false,
         },
@@ -1074,6 +1116,11 @@ const CrearStudioPage = () => {
             <p className={styles.incluye}>Incluye todos tus diseños, en las zonas que quieras.</p>
             <div className={`${styles.lineaPrecio} ${styles.lineaTotal}`}><span>Total</span><span>{soles(total)}</span></div>
           </section>
+
+          <button type="button" className={styles.botonDescarga} onClick={descargarImagen} disabled={!!procesando}>
+            <Download size={18} aria-hidden="true" />
+            Descargar imagen ({cfg.vistas.length > 1 ? cfg.vistas.map((v) => v.nombre.toLowerCase()).join(' y ') : 'diseño'})
+          </button>
 
           <div className={styles.acciones}>
             <button type="button" className={styles.botonSecundario} onClick={guardar} disabled={!!procesando}>

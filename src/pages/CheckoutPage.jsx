@@ -127,6 +127,8 @@ const getDesignReferences = (item) => {
   // Prendas del apartado Crear: las capas van por zona de impresión (pecho,
   // manga, espalda...). Cada zona lleva su PNG a tamaño real para imprimir y
   // la vista previa de su lado (prenda + diseño).
+  // La prenda completa: todas las vistas (frente y espalda) en una imagen.
+  refs.push(item?.customization?.imagenConjunta);
   (item?.customization?.vistasPrevias || []).forEach((previa) => {
     refs.push(previa?.url);
     const zonas = Array.isArray(previa?.zonas) ? previa.zonas : [previa?.vista];
