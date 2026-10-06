@@ -88,7 +88,7 @@ const MiCreacionCard = ({ design, isPurchased }) => {
   // Diseños del apartado Crear: otro editor y miniatura ya renderizada.
   const esDeCrear = design.tipo === 'crear';
   const editarUrl = esDeCrear
-    ? `/crear/${design.productId}?designId=${design.id}`
+    ? `/creacion/${design.id}`
     : `/editor/${design.productId || 'unknown'}?designId=${design.id}`;
 
   return (
@@ -97,7 +97,7 @@ const MiCreacionCard = ({ design, isPurchased }) => {
         {esDeCrear ? (
           <div style={{ position: 'relative', width: '100%', aspectRatio: '1', backgroundColor: '#fff' }}>
             <OptimizedImage
-              src={design.previewUrl || cardImageUrl}
+              src={design.imagenConjunta || design.previewUrl || cardImageUrl}
               alt={design.productName || product.name}
               objectFit="contain"
               className={styles.plainThumbImg}
@@ -165,7 +165,7 @@ const MiCreacionCard = ({ design, isPurchased }) => {
               to={editarUrl}
               className={styles.cardLink}
             >
-              Seguir editando
+              {esDeCrear ? 'Ver creación' : 'Seguir editando'}
             </Link>
         </div>
       </div>

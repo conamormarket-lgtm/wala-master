@@ -6,6 +6,7 @@ const routes = [
   [/^\/editor\//, () => import('../../../pages/EditorPage')],
   [/^\/personalizar\/?$/, () => import('../../../pages/PersonalizarPage')],
   [/^\/crear\//, () => import('../../../pages/Crear/CrearStudioPage')],
+  [/^\/creacion\//, () => import('../../../pages/Crear/CreacionPage')],
   [/^\/checkout\/?$/, () => import('../../../pages/CheckoutPage')],
 ];
 

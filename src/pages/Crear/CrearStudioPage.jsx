@@ -25,6 +25,7 @@ import {
   recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo,
 } from './renderDiseno';
 import RecorteImagen from './RecorteImagen';
+import { itemDeCreacion } from './creacionCarrito';
 import styles from './CrearStudioPage.module.css';
 
 const VIOLETA = '#7C3AED';
@@ -110,6 +111,11 @@ const CrearStudioPage = () => {
   const [avisoTalla, setAvisoTalla] = useState(false);
   const [fueraDeZona, setFueraDeZona] = useState(false);
   const [recortando, setRecortando] = useState(null);
+  // Nombre de la creación (se pide al guardar) y aviso de "guardada".
+  const [nombre, setNombre] = useState('');
+  const [nombreEditado, setNombreEditado] = useState('');
+  const [dialogoGuardar, setDialogoGuardar] = useState(false);
+  const [guardada, setGuardada] = useState(null);
 
   const contenedorRef = useRef(null);
   const canvasElRef = useRef(null);
@@ -179,6 +185,7 @@ const CrearStudioPage = () => {
           const colorGuardado = cfg.colores.find((c) => c.nombre === diseno.variant?.color || c.id === diseno.color?.id);
           const primeraZona = Object.keys(diseno.layersByView || {})[0];
           const vistaDeZona = cfg.vistas.find((v) => v.zonas.some((z) => z.id === primeraZona));
+          setNombre(diseno.name || '');
           return aplicar({
             capasPorZona: diseno.layersByView || {},
             vistaId: vistaDeZona?.id,
@@ -702,32 +709,81 @@ const CrearStudioPage = () => {
 
   const vistasConCapas = (capas) => cfg.vistas.filter((v) => v.zonas.some((z) => capas[z.id]));
 
-  const guardar = async () => {
-    if (!validar()) return;
-    setProcesando('Guardando tu diseño…');
-    try {
-      const capas = capasParaGuardar(capasRef.current);
-      const primera = vistasConCapas(capas)[0];
-      const previa = await renderizarVista(primera, capas);
-      const previewUrl = await subirVistaPrevia(user.uid, previa, primera.id);
-      const { id: guardadoId, error: err } = await saveDesign(user.uid, {
-        designId: designId || undefined,
-        productId: prenda.id,
-        productName: prenda.name,
-        layersByView: capas,
-        variant: { size: talla, color: color.nombre },
-        tipo: 'crear',
-        previewUrl,
-        color: datosColor(),
-      });
-      if (err) throw new Error(err);
-      if (guardadoId && guardadoId !== designId) {
-        setDesignId(guardadoId);
-        navigate(`/crear/${id}?designId=${guardadoId}`, { replace: true });
+  const nombrePorDefecto = () => `${prenda.name} ${color.nombre}`;
+
+  /**
+   * Genera todo lo de una creación: un archivo de impresión por zona con
+   * diseño, una vista previa por lado y la imagen con todos los lados.
+   */
+  const generarArchivos = async (capas) => {
+    const archivosImpresion = [];
+    const vistasPrevias = [];
+    const blobsPrevias = {};
+    for (const v of vistasConCapas(capas)) {
+      const zonasConCapas = v.zonas.filter((z) => capas[z.id]);
+      for (const z of zonasConCapas) {
+        setProcesando(`Preparando el archivo de impresión (${v.nombre} · ${z.nombre})…`);
+        const medida = medidaZona(z, v);
+        const { blob, ancho, alto } = await renderizarImpresion(capas[z.id], z, srcDe, medida);
+        const url = await subirArchivoImpresion(user.uid, blob, z.id);
+        archivosImpresion.push({
+          vista: z.id, vistaId: v.id, nombre: `${v.nombre} · ${z.nombre}`, url, ancho, alto,
+          ...(medida && { anchoCm: medida.anchoCm, altoCm: medida.altoCm }),
+        });
       }
-      toast.success('Diseño guardado en Mis creaciones.');
+      setProcesando(`Preparando la vista previa (${v.nombre})…`);
+      const previa = await renderizarVista(v, capas);
+      blobsPrevias[v.id] = previa;
+      const url = await subirVistaPrevia(user.uid, previa, v.id);
+      vistasPrevias.push({ vista: v.id, nombre: v.nombre, url, zonas: zonasConCapas.map((z) => z.id) });
+    }
+    setProcesando('Uniendo las vistas…');
+    const conjunta = await imagenConjunta(capas, blobsPrevias);
+    const imagenConjuntaUrl = await subirVistaPrevia(user.uid, conjunta, 'conjunto');
+    return { archivosImpresion, vistasPrevias, imagenConjunta: imagenConjuntaUrl };
+  };
+
+  /** Genera y guarda la creación del cliente (en su cuenta, no en la plantilla). */
+  const guardarCreacion = async (nombreCreacion) => {
+    const capas = capasParaGuardar(capasRef.current);
+    const archivos = await generarArchivos(capas);
+    setProcesando('Guardando tu creación…');
+    const creacion = {
+      designId: designId || undefined,
+      productId: prenda.id,
+      productName: prenda.name,
+      name: (nombreCreacion || '').trim() || nombrePorDefecto(),
+      layersByView: capas,
+      variant: { size: talla, color: color.nombre },
+      tipo: 'crear',
+      previewUrl: archivos.imagenConjunta,
+      color: datosColor(),
+      ...archivos,
+    };
+    const { id: guardadoId, error: err } = await saveDesign(user.uid, creacion);
+    if (err) throw new Error(err);
+    const idFinal = guardadoId || designId;
+    if (idFinal && idFinal !== designId) {
+      setDesignId(idFinal);
+      navigate(`/crear/${id}?designId=${idFinal}`, { replace: true });
+    }
+    setNombre(creacion.name);
+    return { ...creacion, id: idFinal };
+  };
+
+  const guardar = () => {
+    if (!validar()) return;
+    setNombreEditado(nombre || nombrePorDefecto());
+    setDialogoGuardar(true);
+  };
+
+  const confirmarGuardar = async () => {
+    setDialogoGuardar(false);
+    try {
+      const creacion = await guardarCreacion(nombreEditado);
+      setGuardada(creacion);
     } catch (err) {
-      toast.error(`No pudimos guardar tu diseño: ${err?.message || err}`);
+      toast.error(`No pudimos guardar tu creación: ${err?.message || err}`);
     } finally {
       setProcesando(null);
     }
@@ -743,73 +799,9 @@ const CrearStudioPage = () => {
     }
     if (!validar()) return;
     try {
-      const capas = capasParaGuardar(capasRef.current);
-      const archivosImpresion = [];
-      const vistasPrevias = [];
-      const blobsPrevias = {};
-      for (const v of vistasConCapas(capas)) {
-        const zonasConCapas = v.zonas.filter((z) => capas[z.id]);
-        for (const z of zonasConCapas) {
-          setProcesando(`Preparando el archivo de impresión (${v.nombre} · ${z.nombre})…`);
-          const medida = medidaZona(z, v);
-          const { blob, ancho, alto } = await renderizarImpresion(capas[z.id], z, srcDe, medida);
-          const url = await subirArchivoImpresion(user.uid, blob, z.id);
-          archivosImpresion.push({
-            vista: z.id, vistaId: v.id, nombre: `${v.nombre} · ${z.nombre}`, url, ancho, alto,
-            ...(medida && { anchoCm: medida.anchoCm, altoCm: medida.altoCm }),
-          });
-        }
-        setProcesando(`Preparando la vista previa (${v.nombre})…`);
-        const previa = await renderizarVista(v, capas);
-        blobsPrevias[v.id] = previa;
-        const url = await subirVistaPrevia(user.uid, previa, v.id);
-        vistasPrevias.push({ vista: v.id, nombre: v.nombre, url, zonas: zonasConCapas.map((z) => z.id) });
-      }
-
-      // La prenda completa (todas las vistas) en una sola imagen para el pedido.
-      setProcesando('Uniendo las vistas…');
-      const conjunta = await imagenConjunta(capas, blobsPrevias);
-      const urlConjunta = await subirVistaPrevia(user.uid, conjunta, 'conjunto');
-
+      const creacion = await guardarCreacion(nombre);
       setProcesando('Agregando al carrito…');
-      const usadas = Object.keys(capas);
-      const precio = precioPersonalizado(prenda, usadas);
-      const { id: guardadoId } = await saveDesign(user.uid, {
-        designId: designId || undefined,
-        productId: prenda.id,
-        productName: prenda.name,
-        layersByView: capas,
-        variant: { size: talla, color: color.nombre },
-        tipo: 'crear',
-        previewUrl: vistasPrevias[0]?.url || '',
-        color: datosColor(),
-      });
-
-      addToCart(
-        // Sin variantes: el color y la talla van en la línea, y la foto es la
-        // vista previa (las fotos de las variantes son la prenda en blanco).
-        { ...prenda, id: prenda.id, variants: [], hasVariants: false, mainImage: vistasPrevias[0]?.url || prenda.mainImage || '' },
-        { size: talla, color: color.nombre, colorHex: color.hex },
-        {
-          tipo: 'crear',
-          layersByView: capas,
-          vistasUsadas: usadas,
-          zonas: usadas.map((zId) => {
-            const z = zonaPorId(zId);
-            return { id: zId, nombre: z ? `${z.vistaNombre} · ${z.nombre}` : zId };
-          }),
-          archivosImpresion,
-          vistasPrevias,
-          color: datosColor(),
-          variant: { size: talla, color: color.nombre },
-          finalPrice: precio,
-          imageURL: vistasPrevias[0]?.url || '',
-          imagenConjunta: urlConjunta,
-          designId: guardadoId || designId || '',
-          isComboDesign: false,
-        },
-        1
-      );
+      addToCart(...itemDeCreacion({ prenda, creacion, talla }));
       try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
       navigate('/carrito');
     } catch (err) {
@@ -1150,6 +1142,42 @@ const CrearStudioPage = () => {
           onCancelar={() => setRecortando(null)}
           onAplicar={(corte) => aplicarRecorte(capaSel, corte)}
         />
+      )}
+
+      {dialogoGuardar && (
+        <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardar-titulo" onClick={() => setDialogoGuardar(false)}>
+          <form
+            className={styles.cajaBloqueo}
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => { e.preventDefault(); confirmarGuardar(); }}
+          >
+            <h2 id="crear-guardar-titulo" className={styles.estadoTitulo}>Guarda tu creación</h2>
+            <p>Queda en tu cuenta, en Mis creaciones, con sus dos lados. Puedes comprarla o seguir editándola cuando quieras.</p>
+            <label className={styles.campoNombre}>
+              <span>Ponle un nombre</span>
+              <input
+                value={nombreEditado}
+                maxLength={60}
+                onChange={(e) => setNombreEditado(e.target.value)}
+                autoFocus
+              />
+            </label>
+            <button type="submit" className={styles.botonPrincipal}>Guardar creación</button>
+            <button type="button" className={styles.botonTexto} onClick={() => setDialogoGuardar(false)}>Cancelar</button>
+          </form>
+        </div>
+      )}
+
+      {guardada && (
+        <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardada-titulo" onClick={() => setGuardada(null)}>
+          <div className={styles.cajaBloqueo} onClick={(e) => e.stopPropagation()}>
+            <h2 id="crear-guardada-titulo" className={styles.estadoTitulo}>¡Creación guardada!</h2>
+            {guardada.imagenConjunta && <img src={guardada.imagenConjunta} alt={guardada.name} className={styles.imagenGuardada} />}
+            <p><strong>{guardada.name}</strong></p>
+            <Link to={`/creacion/${guardada.id}`} className={styles.botonPrincipal}>Ver mi creación</Link>
+            <button type="button" className={styles.botonTexto} onClick={() => setGuardada(null)}>Seguir diseñando</button>
+          </div>
+        </div>
       )}
 
       {pedirLogin && (

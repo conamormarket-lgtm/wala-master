@@ -38,6 +38,12 @@ const CartItem = ({ item, incompleto = false }) => {
   // avisar. Para quitarlo está la papelera; aquí el "-" simplemente se apaga.
   const canDecrease = item.quantity > 1;
 
+  // Una creación del apartado Crear abre su propia página (la del cliente),
+  // no la prenda en blanco.
+  const enlace = item.customization?.tipo === 'crear' && item.customization?.designId
+    ? `/creacion/${item.customization.designId}`
+    : `/producto/${item.productId}`;
+
   return (
     <div className={`${styles.item} ${!isSelected ? styles.itemDeselected : ''} ${incompleto ? styles.itemIncompleto : ''}`}>
       {/* Casilla de selección, como en cualquier carrito: decide qué se paga
@@ -53,7 +59,7 @@ const CartItem = ({ item, incompleto = false }) => {
         </span>
       </label>
 
-      <Link to={`/producto/${item.productId}`} className={styles.imageLink}>
+      <Link to={enlace} className={styles.imageLink}>
         {isCombo && item.comboItems ? (
           <ComboProductImage
             comboProduct={{
@@ -72,7 +78,7 @@ const CartItem = ({ item, incompleto = false }) => {
       </Link>
       
       <div className={styles.details}>
-        <Link to={`/producto/${item.productId}`} className={styles.name}>
+        <Link to={enlace} className={styles.name}>
           {/* Nombre dinámico del producto (viene de la BD): se traduce con <T>. */}
           <T>{item.productName}</T>
           {isCombo && (
@@ -117,7 +123,7 @@ const CartItem = ({ item, incompleto = false }) => {
             <span className={styles.incompletoTexto}>
               <T>Falta elegir</T> {queLeFalta(item).join(' y ')}
             </span>
-            <Link to={`/producto/${item.productId}`} className={styles.incompletoLink}>
+            <Link to={enlace} className={styles.incompletoLink}>
               <T>Elegir ahora</T>
             </Link>
           </div>

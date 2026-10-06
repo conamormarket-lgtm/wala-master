@@ -839,3 +839,34 @@
   opacity: 0.6;
   cursor: wait;
 }
+
+.campoNombre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.campoNombre input {
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+}
+
+.campoNombre input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.imagenGuardada {
+  width: 100%;
+  border-radius: 12px;
+  background: #F3F1F7;
+}

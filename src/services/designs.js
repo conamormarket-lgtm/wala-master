@@ -99,7 +99,7 @@ export const getDesignById = async (designId) => {
 export const saveDesign = async (userId, payload) => {
   if (!userId) return { id: null, error: 'Usuario no autenticado' };
 
-  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color } = payload || {};
+  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color, archivosImpresion, vistasPrevias, imagenConjunta } = payload || {};
 
   // Formar una vista estandar del root layersByView (hacia atrás para compatibilidad)
   const sanitizedLayersByView = sanitizeLayersByViewMap(layersByView);
@@ -132,7 +132,17 @@ export const saveDesign = async (userId, payload) => {
     ...(isUserComboDesign && sanitizedComboItems ? { comboItemCustomization: sanitizedComboItems, isUserComboDesign: true } : {}),
     // Diseños del apartado Crear: se reabren en /crear/:id y su miniatura es
     // la vista previa ya renderizada (prenda teñida + diseño).
-    ...(tipo === 'crear' ? { tipo: 'crear', previewUrl: previewUrl || '', color: color || null } : {}),
+    // Además guarda lo ya generado (imágenes de cada lado y archivos de
+    // impresión): así la creación se puede ver y agregar al carrito desde su
+    // propia página (/creacion/:id) sin volver a abrir el estudio.
+    ...(tipo === 'crear' ? {
+      tipo: 'crear',
+      previewUrl: previewUrl || '',
+      color: color || null,
+      ...(Array.isArray(archivosImpresion) && { archivosImpresion }),
+      ...(Array.isArray(vistasPrevias) && { vistasPrevias }),
+      ...(imagenConjunta && { imagenConjunta }),
+    } : {}),
   };
 
   try {
