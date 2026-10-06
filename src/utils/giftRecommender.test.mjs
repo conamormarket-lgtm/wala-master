@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { recomendarRegalos, palabrasClave, sugerenciasRespuestas, normalizar, sugerenciasPorCampo, publicoDe } from './giftRecommender.mjs';
+import { recomendarRegalos, palabrasClave, sugerenciasRespuestas, normalizar, sugerenciasPorCampo, publicoDe, edadDe } from './giftRecommender.mjs';
 
 const require = createRequire(import.meta.url);
 const servidor = require('../../functions/giftLogic.js');
@@ -43,10 +43,12 @@ test('el personaje pesa más que solo la serie', () => {
   assert.equal(r[1].producto.id, 'ds1');
 });
 
-test('pareja / aniversario sube los productos "Parejas" / "Él & Ella"', () => {
-  const r = recomendarRegalos({ recipient: persona({ roleKey: 'pareja' }), productos, dicts });
+test('aniversario sube los productos "Parejas" / "Él & Ella"; sin ocasión romántica, un conjunto de pareja solo no alcanza', () => {
+  const r = recomendarRegalos({ recipient: persona({ roleKey: 'pareja' }), productos, dicts, ocasion: 'Aniversario' });
   assert.equal(r[0].producto.id, 'par');
   assert.equal(r[0].motivo, 'Para regalar en pareja');
+  assert.equal(r[0].tipo, 'gusto');
+  assert.deepEqual(recomendarRegalos({ recipient: persona({ roleKey: 'pareja' }), productos, dicts, ocasion: 'Cumpleaños' }), []);
 });
 
 test('conjunto ligado a categorías de la tienda', () => {
@@ -83,10 +85,12 @@ test('variedad: no más de 2 por el mismo motivo ni de la misma marca', () => {
     { id: 'par2', name: 'Conjunto Parejas Dragon Ball', tags: [], price: 90, inStock: 5 },
     ...['1', '2', '3'].map((x) => ({ id: `rel${x}`, name: `Reloj para regalo ${x}`, tags: [], brandId: 'yoryo', publico: 'hombre', price: 90, inStock: 5 })),
   ];
-  const r = recomendarRegalos({ recipient: persona({ roleKey: 'pareja', categoryAnswers: { g: { q: 'Spider Man' } } }), productos: muchos });
+  const r = recomendarRegalos({ recipient: persona({ roleKey: 'pareja', categoryAnswers: { g: { q: 'Spider Man' } } }), productos: muchos, ocasion: 'Aniversario' });
   const spider = r.filter((x) => x.producto.id.startsWith('sp')).length;
   assert.equal(spider, 2);
-  assert.equal(r[2].producto.id, 'par2', 'después de 2 de Spider-Man viene lo de pareja, no lo genérico');
+  assert.equal(r[2].producto.id, 'par2', 'en un aniversario, después de 2 de Spider-Man viene lo de pareja, no lo genérico');
+  const cumple = recomendarRegalos({ recipient: persona({ roleKey: 'pareja', categoryAnswers: { g: { q: 'Spider Man' } } }), productos: muchos });
+  assert.deepEqual(cumple.map((x) => x.tipo), ['gusto', 'gusto', 'general', 'general'], 'después de sus gustos, como mucho 2 genéricas');
   const conOtras = [...muchos, ...['x', 'y'].map((x) => ({ id: `taza${x}`, name: `Taza para regalo ${x}`, tags: [], brandId: 'otra', publico: 'unisex', price: 40, inStock: 5 }))];
   const sinGustos = recomendarRegalos({ recipient: persona({}), productos: conOtras });
   assert.equal(sinGustos.length, 4);
@@ -168,6 +172,70 @@ test('sin marca de "para quién es", un producto no entra como idea genérica pa
   assert.equal(sinGenero.length, 2);
 });
 
+// ── Casos reales del diagnóstico (2026-10-06) ──────────────────────────────
+const real = {
+  dicts: {
+    tags: { f: 'Fútbol', al: 'Alianza Lima', u: 'Universitario', ds: 'Demon Slayer', bc: 'Black Clover', db: 'Dragon Ball', pr: 'Para regalar', re: 'Reloj', le: 'Lentes', hu: 'Humor', par: 'Parejas', ni: 'Niños' },
+    characters: { gk: 'Goku', pg: 'Paolo Guerrero', zt: 'Zenitsu Agatsuma', as: 'Asta' },
+    collections: { fp: 'Fútbol peruano', an: 'Anime' },
+  },
+  productos: [
+    { id: 'alGoku', name: 'Casaca Alianza Lima · Goku Blanquiazul', tags: ['f', 'al'], characters: ['gk'], collections: ['fp'], price: 109, inStock: 3 },
+    { id: 'alGuerrero', name: 'Casaca Alianza Lima · Guerrero 34', tags: ['f', 'al'], characters: ['pg'], collections: ['fp'], price: 109, inStock: 3 },
+    { id: 'uPolo', name: 'Polo Universitario · 100 Años', tags: ['f', 'u'], price: 45, inStock: 3 },
+    { id: 'dbGoku', name: 'Casaca Dragon Ball · Goku Ultra Instinto', tags: ['db'], characters: ['gk'], collections: ['an'], price: 109, inStock: 3 },
+    { id: 'dsZen', name: 'Casaca Demon Slayer · Zenitsu Thunder', tags: ['ds'], characters: ['zt'], collections: ['an'], price: 109, inStock: 3 },
+    { id: 'bcAsta', name: 'Casaca Black Clover · Asta Demonio', tags: ['bc'], characters: ['as'], collections: ['an'], price: 109, inStock: 3 },
+    { id: 'setAlianza', name: 'Set Yoryo Alianza · Él & Ella', tags: ['re', 'pr'], publico: 'unisex', price: 240, inStock: 3 },
+    { id: 'reloj', name: 'Reloj Yoryo Titán', tags: ['re', 'pr'], publico: 'hombre', price: 90, inStock: 3 },
+    { id: 'lentes', name: 'Lentes Yoryo Imperial', tags: ['le', 'pr'], price: 120, inStock: 3 },
+    { id: 'poloHumor', name: 'Polo Solo Vine a Ver', tags: ['hu'], description: 'Para el que siempre llega con sus lentes oscuros.', price: 45, inStock: 3 },
+    { id: 'parBB', name: 'Conjunto Pareja · Bella y Bestia', tags: ['par'], price: 188, inStock: 3 },
+    { id: 'kids', name: 'Casaca para niños', tags: ['ni', 'pr'], publico: 'ninos', price: 60, inStock: 3 },
+  ],
+};
+const ids = (r) => r.map((x) => x.producto.id);
+const recReal = (extra, opts = {}) => recomendarRegalos({ recipient: persona(extra), ...real, hoy: new Date(2026, 9, 6), ...opts });
+
+test('"La U" / "De la u" es Universitario, y el motivo usa el nombre del catálogo', () => {
+  const r = recReal({ categoryAnswers: { d: { q: 'De la u' } } });
+  assert.equal(r[0].producto.id, 'uPolo');
+  assert.equal(r[0].motivo, 'Le gusta Universitario');
+});
+
+test('equipos: nada de otro club, ni "Alianza" en productos que no son de fútbol', () => {
+  const goku = ids(recReal({ categoryAnswers: { g: { q: 'Goku' } } }));
+  assert.ok(goku.includes('dbGoku') && !goku.includes('alGoku'), 'a un fan de Goku no se le da la casaca de Alianza');
+  const crema = ids(recReal({ categoryAnswers: { d: { q: 'Universitario' }, g: { q: 'Goku' } } }));
+  assert.ok(!crema.includes('alGoku'), 'menos a un hincha de la U');
+  const grone = ids(recReal({ categoryAnswers: { d: { q: 'Alianza' }, g: { q: 'Goku' } } }));
+  assert.equal(grone[0], 'alGoku', 'al hincha de Alianza que ama a Goku, sí y primero');
+  const r = recReal({ categoryAnswers: { d: { q: 'Alianza' } } });
+  assert.ok(r.every((x) => x.producto.id !== 'setAlianza' || x.tipo === 'general'), '"Set Yoryo Alianza" no es por su equipo');
+  assert.ok(ids(recReal({ categoryAnswers: { d: { q: 'Paolo Guerrero' } } })).includes('alGuerrero'), 'su ídolo cuenta como su club');
+});
+
+test('errores de tipeo y palabras sueltas: "Zenitzu" sí, "Demon" no es "Demonio"', () => {
+  assert.equal(recReal({ categoryAnswers: { g: { q: 'Zenitzu' } } })[0].producto.id, 'dsZen');
+  assert.ok(!ids(recReal({ categoryAnswers: { g: { q: 'Demon slayer' } } })).includes('bcAsta'));
+});
+
+test('lo que solo dice la descripción no basta ("Lentes" no es un polo de humor)', () => {
+  const r = ids(recReal({ categoryAnswers: { a: { q: 'Lentes' } } }));
+  assert.equal(r[0], 'lentes');
+  assert.ok(!r.includes('poloHumor'));
+});
+
+test('niños: sin relojes, lentes, parejas ni humor; como idea genérica, solo lo de niños', () => {
+  const nino = { roleKey: 'hijos', events: [{ type: 'Cumpleaños', date: '2018-03-10' }] };
+  assert.deepEqual(ids(recReal({ ...nino, categoryAnswers: { d: { q: 'Real Madrid' } } })), ['kids']);
+  const adulto = { roleKey: 'hijos', events: [{ type: 'Cumpleaños', date: '1995-03-10' }] };
+  const r = recReal({ ...adulto, categoryAnswers: { d: { q: 'Real Madrid' } } });
+  assert.ok(r.length <= 2 && r.every((x) => x.tipo === 'general'), 'adulto sin producto de su gusto: como mucho 2 genéricas');
+  assert.ok(!ids(r).includes('kids'));
+  assert.equal(edadDe({ events: [{ type: 'Cumpleaños', date: '2026-12-01' }] }, new Date(2026, 9, 6)), null, 'el año de la próxima fecha no es su edad');
+});
+
 test('palabras clave sin relleno y normalizadas', () => {
   assert.deepEqual(palabrasClave('Del universitario deportes y del Barza'), ['universitario', 'barza']);
   assert.equal(normalizar('Fútbol  Perú!'), 'futbol peru');
@@ -185,8 +253,8 @@ test('la copia del servidor (functions/giftLogic.js) da exactamente lo mismo', (
     persona({ roleKey: 'pareja', budget: '100a200' }),
   ];
   for (const recipient of casos) {
-    const web = recomendarRegalos({ recipient, productos, dicts }).map((x) => [x.producto.id, x.score, x.motivo]);
-    const srv = servidor.recomendarRegalos({ recipient, productos, dicts }).map((x) => [x.producto.id, x.score, x.motivo]);
+    const web = recomendarRegalos({ recipient, productos, dicts }).map((x) => [x.producto.id, x.score, x.motivo, x.tipo]);
+    const srv = servidor.recomendarRegalos({ recipient, productos, dicts }).map((x) => [x.producto.id, x.score, x.motivo, x.tipo]);
     assert.deepEqual(srv, web);
   }
 });

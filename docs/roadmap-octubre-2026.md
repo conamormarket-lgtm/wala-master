@@ -117,23 +117,30 @@ No necesita API: es una lista de trabajo para el equipo.
 - No usa el comportamiento del usuario: lo que vio, su wishlist ni sus compras.
 - Depende de que los productos estén bien etiquetados.
 
+> ✅ 06/10/2026: diagnóstico con las 386 personas reales de la encuesta y reglas nuevas en `src/utils/giftRecommender.mjs` (copia generada en `functions/giftLogic.js`, `datesReminderEngine` desplegada).
+> Resultado: ideas por gusto 110 → 133 (+21 %), relojes/conjuntos genéricos repetidos 1.092 → 395, niños con algo de adulto (relojes, parejas, humor…) 57 de 96 → 0.
+
 ### 4.1 Diagnóstico
-- [ ] Armar un set de casos reales a partir de "Respuestas de la encuesta" y anotar qué sale y qué *debería* salir. Ese set queda como test.
-- [ ] Medir qué tan completos están los datos: cuántos productos tienen `publico`, tags y categoría bien puestos.
+- [x] Set de casos reales (Alianza/U/Goku/Zenitzu/"De la u"/niños…) convertido en tests (`giftRecommender.test.mjs`).
+- [x] Calidad de datos: de 159 productos visibles, solo **19 tienen `publico`** (para quién es); 139 quedan sin saber. Marcarlo en `/admin/publico-productos` mejora mucho las ideas genéricas.
+- [x] Demanda sin producto: solo el **44 %** de los gustos pedidos tiene producto. Sin producto: Messi (12), Barcelona (6), Cristiano Ronaldo (8), Real Madrid (6), Yamal (4), vóley (3)…
 
 ### 4.2 Arreglos de reglas
-- [ ] Poner un **puntaje mínimo**: si nada pasa el umbral, mostrar menos ideas o una categoría segura, nunca relleno aleatorio.
-- [ ] Reglas de contexto:
-  - No recomendar productos de niños a adultos, ni de pareja si la relación no es pareja.
-  - Que la ocasión encaje (por ejemplo, no algo de San Valentín para un cumpleaños de mamá).
-- [ ] Diccionario de sinónimos y temas, por ejemplo anime ↔ manga ↔ nombres de personajes, editable desde el admin.
-- [ ] Penalizar los productos que la persona ya compró o ya recibió.
+- [x] Sin relleno: primero lo que le gusta; las ideas genéricas solo rellenan (máx. 2 si contó sus gustos). El autogenerador de paquetes ya no rellena con "destacados".
+- [x] Reglas de contexto:
+  - Productos de un club solo para hinchas de ese club (y su ídolo cuenta: Guerrero → Alianza).
+  - Pareja solo para su pareja o en ocasión romántica; un conjunto de pareja en un cumpleaños solo si además es "para regalar".
+  - Niños (por edad del cumpleaños, o hijos/sobrinos sin edad): nada de relojes, billeteras, lentes, joyas, parejas ni humor.
+  - La descripción del producto casi no suma (evita "Lentes" → polo de humor).
+- [x] Sinónimos y errores de tipeo: "La U"→Universitario, "Barza"→Barcelona, "Zenitzu"→Zenitsu, "Stich"→Stitch… (`SINONIMOS` en el código).
+- [ ] Sinónimos editables desde el admin (hoy están en el código).
+- [ ] Penalizar lo que la persona ya recibió (el parámetro `excluir` existe, falta pasarle las compras previas).
 
 ### 4.3 Señales de comportamiento
-- [ ] Sumar puntos a categorías y productos que vio, puso en wishlist o agregó al carrito. Esos datos ya están en `analytics_*`, `wishlists` y `cart`.
+- [ ] Sumar lo que el comprador vio / puso en wishlist / agregó al carrito. Ojo: eso dice qué le gusta al COMPRADOR, no a la persona a quien le regala; sirve más para los seguimientos del punto 3 que para "ideas de regalo".
 
 ### 4.4 Mantenimiento
-- [ ] Unificar la lógica del cliente y de functions en una sola fuente, para que no se desincronicen.
+- [x] Una sola fuente: `functions/giftLogic.js` se genera con `npm run gen:gift-logic` y un test verifica que den lo mismo.
 - [ ] Opcional, más adelante: embeddings o IA para entender respuestas abiertas.
 
 ---

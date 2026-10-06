@@ -66,10 +66,11 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
       selectedCategories: recipientData.selectedCategories || [],
       categoryAnswers: recipientData.categoryAnswers || {},
     };
+    // Solo lo que el buscador encuentra para esta persona. Antes se rellenaba
+    // hasta 3 con productos "destacados" que no tenían nada que ver con ella;
+    // si faltan, el admin los agrega a mano en el paso 2.
     const ideas = recomendar(persona, { ocasion: recipientData.eventType || '', limite: 3 }).map((x) => x.producto);
-    const usados = new Set(ideas.map((p) => p.id));
-    const destacados = allProducts.filter((p) => p.featured && p.visible !== false && !p.deleted && !usados.has(p.id));
-    setSelectedProducts([...ideas, ...destacados].slice(0, 3));
+    setSelectedProducts(ideas);
     setStep(2);
   };
 

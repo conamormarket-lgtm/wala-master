@@ -808,7 +808,8 @@ const SubscriptionSurveyPage = () => {
                 // Ideas de regalo para las personas que acaba de cargar.
                 const conIdeas = finalRecipients
                   .filter((r) => isRecipientComplete(r))
-                  .map((r) => ({ r, ideas: recomendar(r, { limite: 3 }) }))
+                  // Solo las ideas por sus gustos: "ya tenemos ideas" promete algo a su medida.
+                  .map((r) => ({ r, ideas: recomendar(r, { limite: 3 }).filter((x) => x.tipo === 'gusto') }))
                   .filter((x) => x.ideas.length > 0)
                   .slice(0, 3);
                 if (conIdeas.length === 0) return null;

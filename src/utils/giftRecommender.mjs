@@ -16,7 +16,37 @@ const STOP = new Set([
   'todo', 'todos', 'toda', 'ninguno', 'ninguna', 'nada', 'no', 'si', 'tambien', 'gusta', 'gustan', 'favorito',
   'favorita', 'equipo', 'hincha', 'juega', 'jugar', 'ver', 'serie', 'series', 'otro', 'otros', 'etc',
   'futbol', 'deporte', 'deportes', 'anime', 'animes',
+  // "No sé", "nadie"…: no son gustos.
+  'nose', 'sabe', 'nadie', 'idea', 'tiene', 'tienes', 'cualquier', 'cualquiera',
 ]);
+
+// Formas en que la gente escribe lo mismo → cómo está nombrado en el catálogo.
+// `club`: equipos de fútbol. Un producto de un equipo SOLO se recomienda a quien
+// es hincha de ese equipo (a un hincha de la U no se le regala nada de Alianza),
+// y "Alianza" solo cuenta en productos de fútbol (no en "Set Yoryo Alianza").
+// `implica`: nombrar a ese jugador cuenta como ser hincha de su club.
+export const SINONIMOS = [
+  { canon: 'alianza lima', club: true, formas: ['alianza', 'grone', 'blanquiazul', 'aliancista', 'intimos', 'alianza lima'] },
+  { canon: 'universitario', club: true, formas: ['la u', 'de la u', 'crema', 'cremas', 'universitario de deportes', 'u de deportes'] },
+  { canon: 'sporting cristal', club: true, formas: ['cristal', 'celeste', 'celestes', 'rimense', 'rimenses'] },
+  { canon: 'cienciano', club: true, formas: ['cienciano', 'cinciano'] },
+  { canon: 'melgar', club: true, formas: ['melgar', 'dominos'] },
+  { canon: 'barcelona', club: true, formas: ['barza', 'barca', 'barsa', 'fc barcelona'] },
+  { canon: 'real madrid', club: true, formas: ['madrid', 'real madril', 'el madrid'] },
+  // Un ídolo de un club cuenta como ser hincha de ese club.
+  { canon: 'paolo guerrero', formas: ['guerrero', 'depredador'], implica: 'alianza lima' },
+  { canon: 'dragon ball', formas: ['dbz', 'dragon ball z', 'dragon ball super', 'dragonball'] },
+  { canon: 'spider man', formas: ['spiderman', 'hombre arana', 'miles morales'] },
+  { canon: 'stitch', formas: ['stich', 'lilo y stitch', 'stitch y angel'] },
+  { canon: 'demon slayer', formas: ['kimetsu', 'kimetsu no yaiba'] },
+  { canon: 'jujutsu kaisen', formas: ['jjk', 'jujutsu'] },
+  { canon: 'attack on titan', formas: ['shingeki', 'shingeki no kyojin', 'aot', 'ataque a los titanes', 'ataque de titanes'] },
+  { canon: 'one piece', formas: ['onepiece'] },
+];
+
+// Palabras que solo nombran un equipo: fuera de un producto de fútbol no cuentan.
+const PALABRAS_CLUB = new Set(SINONIMOS.filter((g) => g.club)
+  .flatMap((g) => [g.canon, ...g.formas]).flatMap((f) => f.split(' ')).filter((w) => w.length >= 3));
 
 export const PRESUPUESTOS = [
   { id: 'hasta50', label: 'Hasta S/ 50', min: 0, max: 50 },
@@ -52,6 +82,65 @@ export function textoProducto(p, dicts = {}) {
   ].join(' '))} `;
 }
 
+// Lo que el producto ES (nombre, etiquetas, personajes, colecciones): pesa
+// completo. La descripción es ruido ("Polo Solo Vine a Ver" menciona "lentes")
+// y casi no suma.
+function partesProducto(p, dicts) {
+  const entidades = [
+    ...nombres(p.characters, dicts.characters),
+    ...nombres(p.tags, dicts.tags),
+    ...nombres(p.collections, dicts.collections),
+  ];
+  const fuerte = ` ${normalizar([p.name, ...entidades].join(' '))} `;
+  return {
+    entidades,
+    fuerte,
+    tokens: fuerte.trim().split(' '),
+    debil: ` ${normalizar(String(p.description || '').slice(0, 300))} `,
+  };
+}
+
+// Entidades que no son un gusto concreto (no sirven de "por qué").
+const ENTIDAD_GENERICA = new Set(['geek', 'anime', 'futbol', 'futbol peruano', 'comics', 'supervillanos', 'para regalar', 'parejas', 'humor', 'frases']);
+
+function distancia(a, b) {
+  if (Math.abs(a.length - b.length) > 1) return 2;
+  const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    let diag = prev[0];
+    prev[0] = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const tmp = prev[j];
+      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diag = tmp;
+    }
+  }
+  return prev[b.length];
+}
+
+// ¿La palabra está en el texto? Palabras cortas: exacta. Largas: también con
+// una letra de diferencia ("Zenitzu" → "Zenitsu", "Guerreo" → "Guerrero",
+// "gokus" → "goku"). No como inicio de otra palabra: "demon" no es "demonio".
+function coincide(w, texto, tokens) {
+  if (texto.includes(` ${w} `)) return true;
+  if (w.length < 5) return false;
+  return tokens.some((t) => t.length >= 5 && distancia(t, w) <= 1);
+}
+
+// Edad de la persona si su cumpleaños tiene un año creíble (muchos guardan el
+// año de la próxima fecha, no el de nacimiento: esos no cuentan).
+export function edadDe(recipient, hoy = new Date()) {
+  const ev = ((recipient && recipient.events) || []).find((e) => /cumplea/i.test(e.type || '') && e.date);
+  const m = ev && /^(\d{4})-(\d{2})-(\d{2})/.exec(String(ev.date));
+  if (!m) return null;
+  const anio = Number(m[1]);
+  if (anio < 1900 || anio >= hoy.getFullYear() - 1) return null;
+  let edad = hoy.getFullYear() - anio;
+  const mes = Number(m[2]);
+  if (hoy.getMonth() + 1 < mes || (hoy.getMonth() + 1 === mes && hoy.getDate() < Number(m[3]))) edad -= 1;
+  return edad;
+}
+
 // Respuestas escritas de la persona → frases y palabras clave.
 // Solo cuentan los conjuntos ENCENDIDOS: al apagar "Geek" sus respuestas quedan
 // guardadas (por si se vuelve a encender) pero ya no influyen en las ideas.
@@ -80,7 +169,6 @@ const precioDe = (p) => {
 
 const disponible = (p) => p && p.visible !== false && !p.deleted && p.inStock !== 0 && p.inStock !== false;
 
-const contiene = (txt, w) => txt.includes(` ${w} `) || txt.includes(` ${w}`);
 
 const PAREJA = [' pareja', ' parejas', ' el & ella', ' el y ella', ' duo ', ' novios', ' enamorados'];
 // Productos que la tienda etiquetó para regalo: respaldo cuando no hay otra pista.
@@ -119,6 +207,43 @@ export function publicoDe(p, txt) {
   return null;
 }
 
+// Ocasiones románticas: ahí un conjunto de pareja SÍ es una buena idea.
+const ROMANTICO = /aniversario|san valentin|amor|enamorad|14 de febrero|boda|novios/;
+// Lo que no se le regala a un niño (y "humor"/"disruptivo" tampoco a un menor).
+const ADULTO = [' reloj', ' billetera', ' joyas', ' lentes', ' esclava', ' pareja', ' parejas', ' el & ella'];
+const PICANTE = [' humor', ' disruptivo'];
+const ROLES_NINOS = ['hijos', 'sobrinos', 'nietos'];
+
+// Respuesta → frase, palabras clave y entidades conocidas (equipos, animes…).
+function prepararRespuesta(original) {
+  const frase = ` ${normalizar(original)} `;
+  const grupos = SINONIMOS.filter((g) => [g.canon, ...g.formas].some((f) => frase.includes(` ${normalizar(f)} `)));
+  const piel = TIPOS_PIEL.find((t) => frase.trim() === t) || null;
+  return { original, frase, palabras: palabrasClave(original), grupos, piel };
+}
+
+// El "por qué" de una idea: el nombre con que el catálogo llama a lo que le
+// gusta ("Le gusta Dragon Ball"), no la respuesta entera ("Dragon Ball/Naruto").
+function motivoPorGusto(r, entidades, acertadas) {
+  if (r.piel) return `Para piel ${r.piel}`;
+  let mejor = null;
+  let mejorN = 0;
+  for (const e of entidades) {
+    const n = ` ${normalizar(e)} `;
+    if (ENTIDAD_GENERICA.has(n.trim())) continue;
+    const aciertos = acertadas.filter((w) => n.includes(` ${w}`)).length;
+    if (aciertos > mejorN) {
+      mejor = e;
+      mejorN = aciertos;
+    }
+  }
+  if (mejor) return `Le gusta ${mejor.charAt(0).toUpperCase()}${mejor.slice(1)}`;
+  const t = String(r.original || '').trim();
+  if (t.length <= 24 && !/[/,;]/.test(t)) return motivoDe(t);
+  const w = acertadas.find((x) => !x.includes(' ')) || acertadas[0] || '';
+  return `Le gusta ${w.charAt(0).toUpperCase()}${w.slice(1)}`;
+}
+
 /**
  * @param {object} opts
  * @param {object} opts.recipient   persona de giftRecipients
@@ -128,117 +253,180 @@ export function publicoDe(p, txt) {
  * @param {string} [opts.ocasion]   'Cumpleaños' | 'Aniversario' | …
  * @param {Set}    [opts.excluir]   productIds a no recomendar (ya comprados)
  * @param {number} [opts.limite]
- * @returns {Array<{producto, score, motivo}>}
+ * @param {Date}   [opts.hoy]       para calcular la edad (tests)
+ * @returns {Array<{producto, score, motivo, tipo}>}  tipo: 'gusto' (por lo que
+ *   le gusta, su conjunto o la ocasión) | 'general' (idea de regalo genérica)
+ *
+ * Reglas para no recomendar cosas fuera de contexto:
+ *  - Primero lo que le gusta. Las ideas genéricas ("Ideal para regalar") solo
+ *    rellenan, y si contó sus gustos, como mucho 2.
+ *  - Productos de un equipo de fútbol: solo para hinchas de ESE equipo.
+ *  - Conjuntos de pareja: solo para su pareja o en una ocasión romántica.
+ *  - Niños (por edad, o hijos/sobrinos sin edad): nada de relojes, billeteras,
+ *    lentes, joyas, parejas ni polos de humor; como idea genérica, solo lo
+ *    marcado "Niños". Menores de 18: nada de humor/disruptivo.
+ *  - Lo del género contrario y lo fuera de presupuesto no entra.
  */
 export function recomendarRegalos({
-  recipient, productos, dicts = {}, conjuntoCategorias = {}, ocasion = '', excluir = new Set(), limite = 4,
+  recipient, productos, dicts = {}, conjuntoCategorias = {}, ocasion = '', excluir = new Set(), limite = 4, hoy = new Date(),
 }) {
   if (!recipient || !Array.isArray(productos)) return [];
 
-  const respuestas = respuestasDe(recipient).map((r) => ({
-    original: r, frase: ` ${normalizar(r)} `, palabras: palabrasClave(r),
-  }));
+  const respuestas = respuestasDe(recipient).map(prepararRespuesta);
+  const contoGustos = respuestas.some((r) => r.palabras.length || r.grupos.length || r.piel);
+  const clubesPersona = new Set(respuestas.flatMap((r) => r.grupos
+    .map((g) => (g.club ? g.canon : g.implica)).filter(Boolean)));
   const categoriasLigadas = new Set(
     (recipient.selectedCategories || []).flatMap((c) => conjuntoCategorias[c] || []),
   );
-  const esPareja = recipient.roleKey === 'pareja' || /aniversario/i.test(ocasion || '');
+  const romantico = ROMANTICO.test(normalizar(ocasion));
+  const esPareja = recipient.roleKey === 'pareja';
   const genero = recipient.gender;
+  const generoDefinido = genero === 'Femenino' || genero === 'Masculino';
   const rango = PRESUPUESTOS.find((r) => r.id === recipient.budget);
+  const edad = edadDe(recipient, hoy);
+  const esNino = edad != null ? edad < 13 : ROLES_NINOS.includes(recipient.roleKey);
+  const esMenor = edad != null ? edad < 18 : esNino;
 
-  const resultados = [];
+  const gustos = [];
+  const generales = [];
   for (const p of productos) {
     if (!disponible(p) || excluir.has(String(p.id))) continue;
     const txt = textoProducto(p, dicts);
+    const { entidades, fuerte, tokens, debil } = partesProducto(p, dicts);
+
+    // ── Para quién es / contexto: lo que no corresponde no entra ──
+    const publico = publicoDe(p, txt);
+    if (publico === 'hombre' && genero === 'Femenino') continue;
+    if (publico === 'mujer' && genero === 'Masculino') continue;
+    if (publico === 'ninos' && !esNino) continue;
+    if (esNino && ADULTO.some((k) => txt.includes(k))) continue;
+    if (esMenor && PICANTE.some((k) => txt.includes(k))) continue;
+
+    const dePareja = PAREJA.some((k) => txt.includes(k));
+    if (dePareja && !esPareja && !romantico) continue;
+
+    // Producto de un equipo: solo para hinchas de ese equipo.
+    const clubes = SINONIMOS.filter((g) => g.club && fuerte.includes(` ${g.canon} `)).map((g) => g.canon);
+    if (clubes.length && !clubes.some((c) => clubesPersona.has(c))) continue;
+    const esDeClub = clubes.length > 0;
+
+    // ── 1) Lo que respondió (lo que más pesa) ──
     let score = 0;
     let motivo = null;
     let mejorRespuesta = 0;
-
-    // 1) Lo que respondió (lo que más pesa).
     for (const r of respuestas) {
       let s = 0;
+      const acertadas = [];
+      for (const g of r.grupos) {
+        if (g.club && !esDeClub) continue;
+        if (fuerte.includes(` ${g.canon} `)) {
+          s += 14;
+          acertadas.push(g.canon);
+        }
+      }
       // La frase completa solo cuenta si tiene alguna palabra útil: "Fútbol"
       // sola no debe recomendar productos de cualquier equipo.
-      if (r.palabras.length > 0 && r.frase.trim().length >= 4 && txt.includes(r.frase)) s += 6;
-      const aciertos = r.palabras.filter((w) => contiene(txt, w)).length;
-      s += Math.min(aciertos, 3) * 8;
+      if (r.palabras.length > 0 && r.frase.trim().length >= 4 && fuerte.includes(r.frase)) s += 6;
+      const palabras = r.palabras.filter((w) => (esDeClub || !PALABRAS_CLUB.has(w)) && coincide(w, fuerte, tokens));
+      s += Math.min(palabras.length, 3) * 8;
+      acertadas.push(...palabras);
+      // Solo en la descripción: el tipo de piel sí (así lo describen los
+      // productos de skincare); cualquier otra palabra casi no suma.
+      if (!s && r.piel && debil.includes(` ${r.piel}`)) s += 8;
+      else if (!s && r.palabras.some((w) => coincide(w, debil, []))) s += 3;
       if (s > mejorRespuesta) {
         mejorRespuesta = s;
-        motivo = motivoDe(r.original);
+        motivo = motivoPorGusto(r, entidades, acertadas);
       }
       score += s;
     }
+    let relevante = mejorRespuesta >= 8;
 
-    // 2) Conjunto ligado a categorías de la tienda. Pesa más que lo genérico de
-    // pareja: si eligió "Belleza", primero van productos de belleza.
+    // ── 2) Conjunto ligado a categorías de la tienda ("Belleza" → skincare) ──
     if (categoriasLigadas.size && (p.categories || []).some((c) => categoriasLigadas.has(c))) {
       score += 7;
+      relevante = true;
       if (!motivo) motivo = CONJUNTO;
     }
 
-    // 3) Pareja / aniversario. Lo pensado para parejas, a quien no es pareja
-    // (un hermano, un amigo), baja: "Conjunto Pareja" no le sirve.
-    const dePareja = PAREJA.some((k) => txt.includes(k));
-    if (esPareja && dePareja) {
-      score += 6;
+    // ── 3) Pareja en ocasión romántica: es justo lo que pide la ocasión ──
+    if (dePareja && romantico) {
+      score += 7;
+      relevante = true;
       if (!motivo) motivo = 'Para regalar en pareja';
-    } else if (!esPareja && dePareja) {
-      score -= 10;
     }
 
-    // 3b) Respaldo: etiquetado "Para regalar". Para alguien con género definido
-    // solo vale si el producto está marcado para su género o unisex: sin esa
-    // marca no se sabe si un reloj es de hombre o de mujer, y no se adivina.
-    const publico = publicoDe(p, txt);
-    const generoDefinido = genero === 'Femenino' || genero === 'Masculino';
-    const publicoSirve = !generoDefinido || publico === 'unisex'
-      || (publico === 'mujer' && genero === 'Femenino') || (publico === 'hombre' && genero === 'Masculino')
-      || (publico === 'ninos' && ['hijos', 'sobrinos'].includes(recipient.roleKey));
+    // ── 4) Respaldo genérico: pareja (sin ocasión romántica) o "Para regalar" ──
+    // Con género definido, solo lo marcado para su género o unisex: sin marca no
+    // se sabe si un reloj es de hombre o de mujer. A un niño, solo lo de niños.
+    let generico = 0;
+    let motivoGenerico = null;
+    // Sin ocasión romántica, un conjunto de pareja solo no alcanza: tiene que
+    // ser además algo "para regalar" (un set Él & Ella sí; un polo a juego, no).
+    if (dePareja && !romantico) {
+      generico += 2;
+      motivoGenerico = 'Para regalar en pareja';
+    }
+    const publicoSirve = esNino ? publico === 'ninos'
+      : (!generoDefinido || publico === 'unisex'
+        || (publico === 'mujer' && genero === 'Femenino') || (publico === 'hombre' && genero === 'Masculino'));
     if (publicoSirve && REGALO.some((k) => txt.includes(k))) {
-      score += 4;
-      if (!motivo) motivo = GENERICO;
+      generico += 4;
+      if (!motivoGenerico) motivoGenerico = GENERICO;
     }
-
-    // 4) Para quién es: lo del género contrario NO se recomienda (un reloj de
-    // hombre no es idea para ella), y lo de niños solo para hijos/sobrinos.
-    if (publico === 'hombre' && genero === 'Femenino') continue;
-    if (publico === 'mujer' && genero === 'Masculino') continue;
-    if (publico === 'ninos' && !['hijos', 'sobrinos'].includes(recipient.roleKey)) continue;
+    if (esNino && publico !== 'ninos') generico = 0;
     if ((publico === 'mujer' && genero === 'Femenino') || (publico === 'hombre' && genero === 'Masculino')) score += 2;
 
-    // 5) Presupuesto: hasta un 10 % de margen está bien; un poco más afuera
+    // ── 5) Presupuesto: hasta un 10 % de margen está bien; un poco más afuera
     // baja; muy afuera (más de 25 %) no se recomienda.
+    let ajustePrecio = 0;
     if (rango) {
       const precio = precioDe(p);
       if (precio > rango.max * 1.25 || precio < rango.min * 0.75) continue;
-      if (precio < rango.min * 0.9 || precio > rango.max * 1.1) score -= 8;
-      else score += 1;
+      ajustePrecio = (precio < rango.min * 0.9 || precio > rango.max * 1.1) ? -8 : 1;
     }
 
-    if (score >= 4) resultados.push({ producto: p, score, motivo: motivo || 'Recomendado para esta persona' });
+    if (relevante) {
+      gustos.push({ producto: p, score: score + generico + ajustePrecio, motivo: motivo || CONJUNTO, tipo: 'gusto' });
+    } else if (generico >= 4 && generico + ajustePrecio + score >= 4) {
+      generales.push({ producto: p, score: generico + score + ajustePrecio, motivo: motivoGenerico, tipo: 'general' });
+    }
   }
 
-  resultados.sort((a, b) => (b.score - a.score)
+  const orden = (a, b) => (b.score - a.score)
     || ((b.producto.featured ? 1 : 0) - (a.producto.featured ? 1 : 0))
-    || (precioDe(a.producto) - precioDe(b.producto)));
-  return variar(resultados, limite);
+    || (precioDe(a.producto) - precioDe(b.producto));
+  gustos.sort(orden);
+  generales.sort(orden);
+
+  // Primero lo que le gusta (con variedad); después, si contó sus gustos y no
+  // alcanzó, como mucho 2 ideas genéricas; al final más de lo que le gusta.
+  const { elegidos, sobrantes } = variar(gustos, limite);
+  const topeGenerales = contoGustos ? 2 : limite;
+  const ideasGenerales = variar(generales, Math.min(topeGenerales, limite - elegidos.length)).elegidos;
+  return [...elegidos, ...ideasGenerales, ...sobrantes].slice(0, limite);
 }
 
 // Variedad: como mucho 2 ideas por el mismo motivo ("Le gusta Spider Man"), y
-// entre las ideas genéricas ("Ideal para regalar") como mucho 2 de la misma
-// marca, para no mostrar 4 casacas de lo mismo ni 3 relojes de la misma línea.
-// Si no alcanza, se completa con las que quedaron (en orden).
+// entre las ideas genéricas como mucho 2 de la misma marca, para no mostrar 4
+// casacas de lo mismo ni 3 relojes de la misma línea.
 function variar(ordenados, limite) {
   const elegidos = [];
   const sobrantes = [];
   const porMotivo = {};
   const porMarca = {};
   for (const r of ordenados) {
+    if (elegidos.length >= limite) {
+      sobrantes.push(r);
+      continue;
+    }
     const m = r.motivo;
-    const b = m === GENERICO ? (r.producto.brandId || '') : '';
+    const b = r.tipo === 'general' ? (r.producto.brandId || '') : '';
     // Las genéricas comparten motivo; ahí manda el tope por marca, no por motivo.
     // Lo del conjunto admite 3 (es justo lo que eligió).
     const maxMotivo = m === CONJUNTO ? 3 : 2;
-    const topeMotivo = m !== GENERICO && (porMotivo[m] || 0) >= maxMotivo;
+    const topeMotivo = r.tipo !== 'general' && (porMotivo[m] || 0) >= maxMotivo;
     if (topeMotivo || (b && (porMarca[b] || 0) >= 2)) {
       sobrantes.push(r);
       continue;
@@ -246,9 +434,8 @@ function variar(ordenados, limite) {
     elegidos.push(r);
     porMotivo[m] = (porMotivo[m] || 0) + 1;
     if (b) porMarca[b] = (porMarca[b] || 0) + 1;
-    if (elegidos.length >= limite) return elegidos;
   }
-  return [...elegidos, ...sobrantes].slice(0, limite);
+  return { elegidos, sobrantes };
 }
 
 // Palabras que "anclan" cada conjunto a una parte del catálogo, por nombre de

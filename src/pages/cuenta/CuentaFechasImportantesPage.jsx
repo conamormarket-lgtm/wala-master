@@ -658,7 +658,7 @@ const CuentaFechasImportantesPage = () => {
                         <p className={styles.ideasTitle}>
                           <Gift size={15} aria-hidden="true" /> Ideas de regalo para {rec.name}
                         </p>
-                        {!tieneGustos(rec) && ideas.length > 0 && (
+                        {ideas.length > 0 && ideas.every((i) => i.tipo === 'general') && (
                           <p className={styles.ideasGenericas}>
                             Son ideas generales.{' '}
                             <button type="button" className={styles.linkBtn} onClick={() => handleEdit(rec)}>
@@ -699,6 +699,11 @@ const CuentaFechasImportantesPage = () => {
                               );
                             })}
                           </ul>
+                        ) : tieneGustos(rec) ? (
+                          <p className={styles.ideasVacio}>
+                            Todavía no tenemos productos de lo que le gusta a {rec.name}. Preferimos no
+                            recomendarte algo que no le va: mira la tienda o vuelve pronto.
+                          </p>
                         ) : (
                           <p className={styles.ideasVacio}>
                             Cuéntanos qué le gusta (equipo, anime, personaje…) editando a {rec.name} y te
