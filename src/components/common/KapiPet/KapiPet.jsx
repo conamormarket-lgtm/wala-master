@@ -15,8 +15,11 @@ import { Badge } from '../../ui';
 import styles from './KapiPet.module.css';
 import { T } from '../../../i18n/useTranslatedText';
 
+// Marca del navegador (compatibilidad); la que manda es userProfile.kapiTutorialVisto.
+const CLAVE_TUTORIAL = 'kapiTutorialCompleted';
+
 const KapiPet = () => {
-  const { user, userProfile, feedKapi, activeWeeklyChallenge } = useAuth();
+  const { user, userProfile, feedKapi, activeWeeklyChallenge, updateUserProfile } = useAuth();
   const { addToast } = useGlobalToast();
   // En landing pages el header se oculta (LayoutContext). Ahí NO mostramos ni
   // auto-abrimos a Kapi: el login anónimo del checkout dispararía el modal encima
@@ -94,22 +97,52 @@ const KapiPet = () => {
     }
   }, [activeWeeklyChallenge, userProfile]);
 
+  // ── Tutorial de Kapi: se muestra UNA vez por CUENTA ────────────────────
+  // Antes solo se recordaba en el navegador (localStorage): volvía a salir en
+  // otro dispositivo, en la app, en incógnito, al borrar datos o al entrar por
+  // wala.pe en vez de www.wala.pe. Ahora se guarda también en el perfil
+  // (kapiTutorialVisto) y se marca apenas arranca el recorrido.
+  const tutorialVisto = () => {
+    if (userProfile?.kapiTutorialVisto) return true;
+    try {
+      return Boolean(localStorage.getItem(CLAVE_TUTORIAL));
+    } catch {
+      return false;
+    }
+  };
+  const marcarTutorialVisto = () => {
+    try {
+      localStorage.setItem(CLAVE_TUTORIAL, 'true');
+    } catch {
+      /* sin storage: queda en el perfil */
+    }
+    if (user && !userProfile?.kapiTutorialVisto) updateUserProfile({ kapiTutorialVisto: true });
+  };
+
   // Hook para disparar Onboarding Tutorial a usuarios nuevos
   useEffect(() => {
     if (onLandingPage) return; // no auto-abrir Kapi en landings/checkout
-    if (userProfile) {
-      const tutorialCompleted = localStorage.getItem('kapiTutorialCompleted');
-      if (!tutorialCompleted) {
-        // Abrir modal automáticamente si no ha completado el tutorial
-        setIsOpen(true);
-      }
+    if (!userProfile) return;
+    let enNavegador = false;
+    try {
+      enNavegador = Boolean(localStorage.getItem(CLAVE_TUTORIAL));
+    } catch {
+      /* sin storage */
     }
-  }, [userProfile, onLandingPage]);
+    if (userProfile.kapiTutorialVisto) return;
+    // Ya lo vio en ESTE navegador antes de que existiera el campo: se pasa a
+    // su cuenta para que no le vuelva a salir en otro lado.
+    if (enNavegador) {
+      updateUserProfile({ kapiTutorialVisto: true });
+      return;
+    }
+    // Abrir modal automáticamente si no ha completado el tutorial
+    setIsOpen(true);
+  }, [userProfile, onLandingPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isOpen) {
-      const tutorialCompleted = localStorage.getItem('kapiTutorialCompleted');
-      if (!tutorialCompleted) {
+      if (!tutorialVisto()) {
         setTimeout(async () => {
           // driver.js (27 KB + su CSS) solo hace falta la PRIMERA vez que
           // alguien abre a Kapi, para el tour. KapiPet esta montado en todas
@@ -130,11 +163,11 @@ const KapiPet = () => {
               { element: '#kapi-stats', popover: { title: 'Felicidad de Kapi', description: 'Kapi necesita atención. Si olvidas alimentarlo, se pondrá triste y su barra de felicidad bajará.', side: "bottom" } },
               { element: '#kapi-feed-btn', popover: { title: '¡A comer!', description: 'Aliméntalo todos los días aquí. A cambio, él te premiará con monedas que puedes canjear por recompensas reales.', side: "top" } }
             ],
-            onDestroyed: () => {
-              localStorage.setItem('kapiTutorialCompleted', 'true');
-            }
+            onDestroyed: () => marcarTutorialVisto(),
           });
           driverObj.drive();
+          // Ya lo vio: aunque cierre el recorrido a la mitad no se repite.
+          marcarTutorialVisto();
         }, 500); // 500ms para asegurar que el DOM cargó los IDs del modal
       }
     }
