@@ -8,7 +8,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 10050; /* sobre el header de la tienda y la AdminBar (9999) */
   padding: 2rem;
 }
 

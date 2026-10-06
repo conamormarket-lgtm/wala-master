@@ -5,10 +5,10 @@
 // anotado. Se guarda todo en storeConfig/fechasFestivas.
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { BellRing, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import {
   getFechasFestivas, saveFechasFestivas, FESTIVAS_QUERY_KEY,
-  getRecordatorioPersonal, saveRecordatorioPersonal, RECORDATORIO_QUERY_KEY,
+  getRecordatorioPersonal, saveRecordatorioPersonal, RECORDATORIO_QUERY_KEY, probarAvisoFechas,
 } from '../../../services/fechasFestivas';
 import {
   FESTIVAS_DEFAULT, MESES, DIAS_SEMANA, ORDINALES, ROLES,
@@ -175,8 +175,46 @@ const Editor = ({ inicial, usados, onGuardar, onCancelar, guardando }) => {
   );
 };
 
+// Resultado de una prueba: cómo se ve la notificación y adónde llegó.
+const VistaPrevia = ({ prueba, onCerrar }) => {
+  if (!prueba) return null;
+  if (prueba.error) {
+    return (
+      <div className={styles.prueba} role="alert">
+        <p className={styles.error}>{prueba.error}</p>
+        <button type="button" className={styles.btnSecundario} onClick={onCerrar}>Cerrar</button>
+      </div>
+    );
+  }
+  const r = prueba.data;
+  return (
+    <div className={styles.prueba} role="status">
+      <div className={styles.notif}>
+        <div className={styles.notifApp}>
+          <img src="/logo-wala-192.png" alt="" />
+          <span>Walá · ahora</span>
+        </div>
+        <div className={styles.notifCuerpo}>
+          <div>
+            <strong>{r.titulo}</strong>
+            <p>{r.cuerpo}</p>
+          </div>
+          {r.image && <img src={r.image} alt="" className={styles.notifImg} />}
+        </div>
+      </div>
+      <p className={styles.nota}>
+        ✅ Te llegó a la <strong>campanita</strong> de la web
+        {r.tieneApp
+          ? (r.push > 0 ? ' y como notificación push a tu celular.' : '. La push a tu celular no salió (revisa los permisos de la app).')
+          : '. Para verla como push, inicia sesión con esta cuenta en la app del celular.'}
+      </p>
+      <button type="button" className={styles.btnSecundario} onClick={onCerrar}>Cerrar</button>
+    </div>
+  );
+};
+
 // Avisos de las fechas que cada cliente anotó (cumpleaños, aniversario…).
-const AvisosPersonales = () => {
+const AvisosPersonales = ({ onProbar, probando }) => {
   const queryClient = useQueryClient();
   const { data: dias, isLoading, error } = useQuery({
     queryKey: ['admin-recordatorio-personal'],
@@ -232,6 +270,16 @@ const AvisosPersonales = () => {
         >
           {guardar.isPending ? 'Guardando…' : 'Guardar'}
         </button>
+        <button
+          type="button"
+          className={styles.btnSecundario}
+          style={{ alignSelf: 'end' }}
+          onClick={() => onProbar(null)}
+          disabled={!!probando}
+          title="Te manda a ti el aviso de la fecha más cercana de las personas que anotaste con tu cuenta"
+        >
+          <BellRing size={15} /> {probando === 'personal' ? 'Enviando…' : 'Enviarme un aviso de prueba'}
+        </button>
       </div>
       <p className={styles.nota}>
         {nuevos.length
@@ -247,6 +295,16 @@ const AvisosPersonales = () => {
 const FechasFestivasView = () => {
   const queryClient = useQueryClient();
   const [editando, setEditando] = useState(null);
+  // Prueba de aviso: { data } o { error }; probando = 'personal' | id de festiva.
+  const [prueba, setPrueba] = useState(null);
+  const [probando, setProbando] = useState(null);
+  const probar = async (festivaId) => {
+    setProbando(festivaId || 'personal');
+    setPrueba(null);
+    const r = await probarAvisoFechas(festivaId);
+    setProbando(null);
+    setPrueba(r.error ? { error: r.error } : { data: r.data });
+  };
   const hoy = hoyLocal();
 
   const { data: fechas = [], isLoading, error } = useQuery({
@@ -312,7 +370,8 @@ const FechasFestivasView = () => {
         </div>
       </div>
 
-      <AvisosPersonales />
+      <AvisosPersonales onProbar={probar} probando={probando} />
+      <VistaPrevia prueba={prueba} onCerrar={() => setPrueba(null)} />
 
       <h3 className={styles.subtitulo}>📅 Fechas festivas del año</h3>
 
@@ -350,6 +409,16 @@ const FechasFestivasView = () => {
               <input type="checkbox" checked={f.activo} onChange={() => alternar(f)} disabled={guardar.isPending} />
               <span className={styles.srOnly}>Activa</span>
             </label>
+            <button
+              type="button"
+              className={styles.icono}
+              onClick={() => probar(f.id)}
+              disabled={!!probando}
+              aria-label={`Enviarme un aviso de prueba de ${f.nombre}`}
+              title="Enviarme un aviso de prueba"
+            >
+              <BellRing size={16} />
+            </button>
             <button type="button" className={styles.icono} onClick={() => setEditando(f)} aria-label={`Editar ${f.nombre}`}>
               <Pencil size={16} />
             </button>

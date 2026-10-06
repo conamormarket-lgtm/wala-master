@@ -317,3 +317,65 @@
 .subtitulo {
   margin-top: 0.5rem;
 }
+
+/* ── Prueba de aviso: así se ve la notificación ── */
+.prueba {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px dashed #8b5cf6;
+  background: var(--color-surface, #fff);
+}
+
+.notif {
+  width: min(420px, 100%);
+  padding: 0.75rem 0.85rem;
+  border-radius: 16px;
+  background: #f1f5f9;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+.notifApp {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.notifApp img {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.notifCuerpo {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.notifCuerpo strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.notifCuerpo p {
+  margin: 0.15rem 0 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: #334155;
+}
+
+.notifImg {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #fff;
+}

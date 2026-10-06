@@ -3,11 +3,13 @@ const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore"); // admin.firestore.FieldValue puede venir undefined (emulador)
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { limaNow, limaTodayStr } = require("./economyLogic");
-const { recordatoriosDeHoy } = require("./fechasLogic");
+const { recordatoriosDeHoy, eventosValidos, diasHastaProxima } = require("./fechasLogic");
 const { hitoDeEstadoErp, hitoDeEstadoWala, debeAvisar, textoHito } = require("./ordersLogic");
 const { agruparInteres, elegirProducto } = require("./productViewLogic");
 const { recomendarRegalos } = require("./giftLogic");
-const { avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc } = require("./fechasFestivasLogic");
+const {
+  avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc, proximaFecha,
+} = require("./fechasFestivasLogic");
 
 const db = admin.firestore();
 const messaging = admin.messaging();
@@ -455,6 +457,25 @@ async function cargarCatalogoRegalos() {
   };
 }
 
+// Agrega al aviso la foto y el nombre del mejor regalo para esa persona
+// (buscador de regalos). Si no hay idea, el aviso sale igual, sin foto.
+async function conIdeaDeRegalo(payload, r, catalogo) {
+  if (!r.recipient) return payload;
+  try {
+    const [mejor] = recomendarRegalos({ recipient: r.recipient, ...catalogo, ocasion: r.ocasion, limite: 1 });
+    if (!mejor) return payload;
+    const p = mejor.producto;
+    return {
+      ...payload,
+      image: (Array.isArray(p.images) && p.images[0]) || p.mainImage || "",
+      body: `${r.cuerpo} Por ejemplo: ${p.name}.`,
+    };
+  } catch (e) {
+    console.warn("aviso de fecha: sin sugerencia de regalo:", e.message);
+    return payload;
+  }
+}
+
 exports.datesReminderEngine = onSchedule({
   schedule: "0 10 * * *",
   timeZone: "America/Lima",
@@ -516,23 +537,10 @@ exports.datesReminderEngine = onSchedule({
 
       const tokens = data.fcmTokens || [];
       for (const r of pendientes) {
-        const payload = {
+        if (r.recipient && !catalogo) catalogo = await cargarCatalogoRegalos();
+        const payload = await conIdeaDeRegalo({
           title: r.titulo, body: r.cuerpo, type: r.tipo, link: "/cuenta/fechas-importantes",
-        };
-        // Foto del mejor regalo sugerido para esa persona (buscador de regalos).
-        if (r.recipient) {
-          try {
-            if (!catalogo) catalogo = await cargarCatalogoRegalos();
-            const [mejor] = recomendarRegalos({ recipient: r.recipient, ...catalogo, ocasion: r.ocasion, limite: 1 });
-            if (mejor) {
-              const p = mejor.producto;
-              payload.image = (Array.isArray(p.images) && p.images[0]) || p.mainImage || "";
-              payload.body = `${r.cuerpo} Por ejemplo: ${p.name}.`;
-            }
-          } catch (e) {
-            console.warn("datesReminderEngine: sin sugerencia de regalo:", e.message);
-          }
-        }
+        }, r, catalogo);
         const ref = db.collection(`users/${doc.id}/notifications`).doc();
         lote.create(ref, docInApp(payload));
         enviados[r.tipo] = (enviados[r.tipo] || 0) + 1;
@@ -559,6 +567,74 @@ exports.datesReminderEngine = onSchedule({
     console.error("Error in datesReminderEngine:", e);
     await lote.close().catch(() => {});
   }
+});
+
+// ── Probar un aviso de fechas desde el admin ─────────────────────────────────
+// Arma el MISMO aviso que mandaría datesReminderEngine (texto, idea de regalo y
+// foto) y se lo manda SOLO al admin que lo pide: campanita + push si tiene la
+// app. Usa las personas que ese admin anotó en "Fechas importantes" con su
+// propia cuenta. Hace de cuenta que hoy es día de aviso. No toca el log de
+// avisos ni las estadísticas.
+//   data.festivaId: id de una fecha festiva ("dia_madre"); sin él, la fecha más
+//   cercana de sus personas (cumpleaños, aniversario…).
+exports.probarAvisoFechas = functions.https.onCall(async (data, context) => {
+  await exigirAdmin(context);
+  const uid = context.auth.uid;
+  const hoy = limaTodayStr();
+  const [userSnap, festivasDoc] = await Promise.all([
+    db.collection(PORTAL_USERS_COLLECTION).doc(uid).get(),
+    db.doc("storeConfig/fechasFestivas").get(),
+  ]);
+  const usuario = userSnap.exists ? userSnap.data() : {};
+  const personas = Array.isArray(usuario.giftRecipients) ? usuario.giftRecipients : [];
+
+  let aviso = null;
+  if (data && data.festivaId) {
+    const festivas = festivasDesdeDoc(festivasDoc.exists ? festivasDoc.data() : null);
+    const f = festivas.find((x) => x.id === String(data.festivaId));
+    if (!f) throw new functions.https.HttpsError("not-found", "Esa fecha festiva no existe.");
+    const prox = proximaFecha(f.regla, hoy);
+    const [a] = avisosFestivosDeHoy([{ ...f, activo: true, avisarDias: [prox.dias], avisarATodos: true }], personas, hoy, {});
+    if (a) aviso = { ...a, tipo: "fecha_festiva", recipient: a.personas[0] || null, ocasion: f.nombre };
+  } else {
+    let cercana = null;
+    for (const { event } of eventosValidos(personas)) {
+      const dias = diasHastaProxima(event.date, hoy);
+      if (dias != null && (!cercana || dias < cercana.dias)) cercana = { dias, event };
+    }
+    if (!cercana) {
+      throw new functions.https.HttpsError("failed-precondition",
+        "Con tu cuenta, agrega una persona con su fecha en Mi cuenta → Fechas importantes y vuelve a probar.");
+    }
+    const r = recordatoriosDeHoy(personas, hoy, {}, [cercana.dias]).find((x) => x.event.id === cercana.event.id);
+    if (r) {
+      aviso = {
+        ...r,
+        tipo: "fecha_recordatorio",
+        ocasion: r.event.type === "Fecha Especial" ? r.event.customName : r.event.type,
+      };
+    }
+  }
+  if (!aviso) throw new functions.https.HttpsError("internal", "No se pudo armar el aviso.");
+
+  const catalogo = aviso.recipient ? await cargarCatalogoRegalos() : null;
+  const payload = await conIdeaDeRegalo({
+    title: `🧪 Prueba · ${aviso.titulo}`, body: aviso.cuerpo, type: aviso.tipo, link: "/cuenta/fechas-importantes",
+  }, aviso, catalogo);
+  const ref = db.collection(`users/${uid}/notifications`).doc();
+  await ref.set({ ...docInApp(payload), prueba: true });
+  const tokens = usuario.fcmTokens || [];
+  let push = 0;
+  if (tokens.length > 0) {
+    try {
+      const response = await messaging.sendEachForMulticast(mensajeFcm(tokens, { ...payload, notifId: ref.id }));
+      await removeInvalidTokens(userSnap.ref, tokens, response);
+      push = response.successCount;
+    } catch (e) {
+      console.warn("probarAvisoFechas: push falló:", e.message);
+    }
+  }
+  return { titulo: payload.title, cuerpo: payload.body, image: payload.image || "", push, tieneApp: tokens.length > 0 };
 });
 
 // Admin = custom claim o, como puente de bootstrap, doc adminUsers/{uid} con

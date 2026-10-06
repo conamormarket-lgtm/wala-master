@@ -3912,6 +3912,7 @@ exports.computeSegmentsSecure = functions.https.onCall(async (data, context) => 
 exports.notificationEngine = require('./notificationsEngine').notificationEngine;
 exports.sendManualPromoNotification = require('./notificationsEngine').sendManualPromoNotification;
 exports.datesReminderEngine = require('./notificationsEngine').datesReminderEngine;
+exports.probarAvisoFechas = require('./notificationsEngine').probarAvisoFechas;
 exports.markNotificationOpenedSecure = require('./notificationsEngine').markNotificationOpenedSecure;
 exports.notifyOrderMilestoneErp = require('./notificationsEngine').notifyOrderMilestoneErp;
 exports.notifyOrderMilestoneWala = require('./notificationsEngine').notifyOrderMilestoneWala;

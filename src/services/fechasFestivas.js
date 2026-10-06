@@ -3,6 +3,7 @@
 // en utils/fechasFestivas.mjs. storeConfig tiene lectura pública y escritura de
 // admin en las reglas vivas; una colección nueva no tendría permisos.
 import { useQuery } from '@tanstack/react-query';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getDocument, setDocument } from './firebase/firestore';
 import {
   festivasDesdeDoc, normalizarFestiva, recordatorioPersonalDesdeDoc, normalizarDiasAviso,
@@ -40,6 +41,17 @@ export function useRecordatorioPersonal() {
     queryFn: async () => (await getRecordatorioPersonal()).data || recordatorioPersonalDesdeDoc(null),
     staleTime: 30 * 60 * 1000,
   });
+}
+
+// Manda al admin (y solo a él) el mismo aviso que saldría: campanita + push.
+// Sin festivaId, el de la fecha más cercana de las personas que anotó.
+export async function probarAvisoFechas(festivaId) {
+  try {
+    const res = await httpsCallable(getFunctions(), 'probarAvisoFechas')(festivaId ? { festivaId } : {});
+    return { data: res.data, error: null };
+  } catch (e) {
+    return { data: null, error: e?.message || 'No se pudo enviar la prueba.' };
+  }
 }
 
 export async function saveFechasFestivas(fechas) {

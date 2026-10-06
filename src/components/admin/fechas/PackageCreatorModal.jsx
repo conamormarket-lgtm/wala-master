@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { textoFechaEvento } from '../../../utils/fechaEvento.mjs';
 import { getProducts } from '../../../services/products';
 import { saveSuggestedPackage, updateSuggestedPackage } from '../../../services/fechasImportantes';
@@ -24,6 +25,8 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
   const isReuseMode = !!reuseProducts && !isEditMode;
 
   const [step, setStep] = useState(isEditMode || isReuseMode ? 2 : 1);
+  // La generación automática no encontró nada para esta persona.
+  const [autoSinIdeas, setAutoSinIdeas] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState(() => {
     if (isEditMode && existingPackage.products) {
       return existingPackage.products;
@@ -72,6 +75,7 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
     // si faltan, el admin los agrega a mano en el paso 2.
     const ideas = recomendar(persona, { ocasion: recipientData.eventType || '', limite: 3 }).map((x) => x.producto);
     setSelectedProducts(ideas);
+    setAutoSinIdeas(ideas.length === 0);
     setStep(2);
   };
 
@@ -147,7 +151,9 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
       ? `Reutilizar Paquete para ${recipientData.recipientName}`
       : `Crear Paquete para ${recipientData.recipientName}`;
 
-  return (
+  // Portal a <body>: dentro del panel admin el modal quedaba DEBAJO del header
+  // de la tienda (cortado arriba, sin título ni botón de cerrar).
+  return ReactDOM.createPortal(
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
         <div className={styles.header}>
@@ -205,7 +211,11 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
               <div className={styles.selectedSection}>
                 <h3>Productos en el Paquete ({selectedProducts.length})</h3>
                 {selectedProducts.length === 0 ? (
-                  <div className={styles.emptySelected}>No hay productos seleccionados</div>
+                  <div className={styles.emptySelected}>
+                    {autoSinIdeas
+                      ? 'No encontramos productos que vayan con lo que le gusta a esta persona (o no contó sus gustos). Elígelos del catálogo de la derecha.'
+                      : 'No hay productos seleccionados'}
+                  </div>
                 ) : (
                   <div className={styles.selectedList}>
                     {selectedProducts.map(prod => (
@@ -263,6 +273,8 @@ const PackageCreatorModal = ({ recipientData, existingPackage, reuseProducts, on
         )}
       </div>
     </div>
+    ,
+    document.body,
   );
 };
 
