@@ -79,18 +79,20 @@ test('sin respuestas, usa lo etiquetado "Para regalar" como respaldo', () => {
   assert.equal(r[0].motivo, 'Ideal para regalar');
 });
 
-test('variedad: no más de 2 por el mismo motivo ni de la misma marca', () => {
+test('variedad: primero 2 por motivo, después lo demás de su gusto; genéricas como mucho 2 por marca', () => {
   const muchos = [
     ...['a', 'b', 'c', 'd'].map((x) => ({ id: `sp${x}`, name: `Polo Spider-Man ${x}`, tags: [], price: 80, inStock: 5 })),
     { id: 'par2', name: 'Conjunto Parejas Dragon Ball', tags: [], price: 90, inStock: 5 },
     ...['1', '2', '3'].map((x) => ({ id: `rel${x}`, name: `Reloj para regalo ${x}`, tags: [], brandId: 'yoryo', publico: 'hombre', price: 90, inStock: 5 })),
   ];
   const r = recomendarRegalos({ recipient: persona({ roleKey: 'pareja', categoryAnswers: { g: { q: 'Spider Man' } } }), productos: muchos, ocasion: 'Aniversario' });
-  const spider = r.filter((x) => x.producto.id.startsWith('sp')).length;
-  assert.equal(spider, 2);
+  assert.ok(r.slice(0, 2).every((x) => x.producto.id.startsWith('sp')));
   assert.equal(r[2].producto.id, 'par2', 'en un aniversario, después de 2 de Spider-Man viene lo de pareja, no lo genérico');
   const cumple = recomendarRegalos({ recipient: persona({ roleKey: 'pareja', categoryAnswers: { g: { q: 'Spider Man' } } }), productos: muchos });
-  assert.deepEqual(cumple.map((x) => x.tipo), ['gusto', 'gusto', 'general', 'general'], 'después de sus gustos, como mucho 2 genéricas');
+  assert.deepEqual(cumple.map((x) => x.tipo), ['gusto', 'gusto', 'gusto', 'gusto'], 'todo lo de su gusto va antes que lo genérico');
+  assert.deepEqual(cumple.slice(0, 2).map((x) => x.producto.id).every((i) => i.startsWith('sp')), true);
+  const unoSolo = recomendarRegalos({ recipient: persona({ roleKey: 'pareja', categoryAnswers: { g: { q: 'Spider Man' } } }), productos: muchos.filter((p) => !['spb', 'spc', 'spd'].includes(p.id)) });
+  assert.deepEqual(unoSolo.map((x) => x.tipo), ['gusto', 'general', 'general'], 'si no alcanza, como mucho 2 genéricas');
   const conOtras = [...muchos, ...['x', 'y'].map((x) => ({ id: `taza${x}`, name: `Taza para regalo ${x}`, tags: [], brandId: 'otra', publico: 'unisex', price: 40, inStock: 5 }))];
   const sinGustos = recomendarRegalos({ recipient: persona({}), productos: conOtras });
   assert.equal(sinGustos.length, 4);

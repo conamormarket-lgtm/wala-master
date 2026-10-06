@@ -468,12 +468,14 @@ function recomendarRegalos({
   gustos.sort(orden);
   generales.sort(orden);
 
-  // Primero lo que le gusta (con variedad); después, si contó sus gustos y no
-  // alcanzó, como mucho 2 ideas genéricas; al final más de lo que le gusta.
+  // Todo lo que le gusta va antes que cualquier idea genérica (con variedad:
+  // primero 2 por motivo, después el resto). Las genéricas solo rellenan lo que
+  // falte y, si contó sus gustos, como mucho 2.
   const { elegidos, sobrantes } = variar(gustos, limite);
+  const porGusto = [...elegidos, ...sobrantes].slice(0, limite);
   const topeGenerales = contoGustos ? 2 : limite;
-  const ideasGenerales = variar(generales, Math.min(topeGenerales, limite - elegidos.length)).elegidos;
-  return [...elegidos, ...ideasGenerales, ...sobrantes].slice(0, limite);
+  const ideasGenerales = variar(generales, Math.min(topeGenerales, limite - porGusto.length)).elegidos;
+  return [...porGusto, ...ideasGenerales];
 }
 
 // Variedad: como mucho 2 ideas por el mismo motivo ("Le gusta Spider Man"), y
