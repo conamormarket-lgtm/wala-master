@@ -1362,7 +1362,7 @@ function normalizeProductPayload(data) {
     // Base multi-vendor / multi-nicho (Fase 1).
     vendorId: (data.vendorId ? String(data.vendorId).trim() : '') || DEFAULT_VENDOR_ID,
     nicheId: (data.nicheId ? String(data.nicheId).trim() : '') || DEFAULT_NICHE_ID,
-    fulfillmentType: normalizeFulfillmentType(data.fulfillmentType, Boolean(data.customizable)),
+    fulfillmentType: normalizeFulfillmentType(data.fulfillmentType, Boolean(data.customizable) || data.esPrendaBase === true),
     price,
     salePrice: finalSalePrice,
     images: images.length ? images : [],

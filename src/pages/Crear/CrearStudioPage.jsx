@@ -66,7 +66,7 @@ const CrearStudioPage = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const { addToCart } = useCart();
   const toast = useGlobalToast();
   const designIdParam = searchParams.get('designId');
@@ -87,7 +87,9 @@ const CrearStudioPage = () => {
     return { ...leida, colores: listos.length ? listos : leida.colores };
   }, [prenda]);
   const agotado = typeof prenda?.inStock === 'number' && prenda.inStock <= 0;
-  const disponible = Boolean(prenda) && prenda.esPrendaBase === true && prenda.deleted !== true && prenda.visible !== false;
+  // Un borrador (visible: false) solo lo ve el admin, para revisarlo antes de publicar.
+  const borrador = prenda?.visible === false;
+  const disponible = Boolean(prenda) && prenda.esPrendaBase === true && prenda.deleted !== true && (!borrador || isAdmin);
 
   const [vistaId, setVistaId] = useState(null);
   const [colorId, setColorId] = useState(null);
@@ -493,6 +495,10 @@ const CrearStudioPage = () => {
   };
 
   const validar = () => {
+    if (borrador) {
+      toast.info('Es un borrador: publícala para poder comprarla.');
+      return false;
+    }
     if (!vistasUsadas.length) {
       toast.info('Agrega una imagen o un texto a tu diseño.');
       return false;
@@ -647,6 +653,12 @@ const CrearStudioPage = () => {
         </div>
         <span className={styles.precioMovil}>{soles(total)}</span>
       </div>
+
+      {borrador && (
+        <p className={styles.borrador}>
+          Borrador: solo los administradores ven esta prenda. Publícala desde Admin → Productos.
+        </p>
+      )}
 
       <div className={styles.cuerpo}>
         <section className={styles.areaLienzo} aria-label="Lienzo de diseño">

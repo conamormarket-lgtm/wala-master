@@ -112,6 +112,19 @@
   background: #2A2640;
 }
 
+.borrador {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
 .fotoFrente,
 .fotoEspalda {
   position: absolute;

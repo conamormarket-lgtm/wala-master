@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Shirt, Upload, ShoppingBag } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
+import { useAuth } from '../contexts/AuthContext';
 import { leerPrendaBase, precioBase, colorDisponible } from '../utils/prendaBase';
 import styles from './PersonalizarPage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -22,6 +23,7 @@ const TarjetaPrenda = ({ prenda }) => {
   return (
     <Link to={`/crear/${prenda.id}`} className={styles.tarjeta}>
       <div className={styles.foto}>
+        {prenda.visible === false && <span className={styles.borrador}>Borrador</span>}
         {frente && <img src={frente} alt={prenda.name} className={styles.fotoFrente} loading="lazy" />}
         {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
       </div>
@@ -48,10 +50,12 @@ const TarjetaPrenda = ({ prenda }) => {
 };
 
 const PersonalizarPage = () => {
+  // El admin ve también los borradores, para revisarlos antes de publicarlos.
+  const { isAdmin } = useAuth();
   const { data: prendas = [], isLoading } = useQuery({
-    queryKey: ['prendas-base'],
+    queryKey: ['prendas-base', Boolean(isAdmin)],
     queryFn: async () => {
-      const { data, error } = await getPrendasBase();
+      const { data, error } = await getPrendasBase({ incluirBorradores: Boolean(isAdmin) });
       if (error) throw new Error(error);
       return data;
     },

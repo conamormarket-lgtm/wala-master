@@ -67,6 +67,20 @@
   font-size: 1rem;
 }
 
+.borrador {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #92400E;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+:global([data-theme="dark"]) .borrador {
+  color: #FCD34D;
+}
+
 .cuerpo {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
@@ -674,6 +688,11 @@
 
   .titulo {
     font-size: 1.05rem;
+  }
+
+  .borrador {
+    margin: 0;
+    border-radius: 0;
   }
 
   .precioMovil {
