@@ -5,6 +5,7 @@ import { getDesignsByUser } from '../../services/designs';
 import { usePedidos } from '../../hooks/usePedidos';
 import MiCreacionCard from './components/MiCreacionCard';
 import { useEliminarCreacion } from '../Crear/useEliminarCreacion';
+import TusBorradores from '../Crear/TusBorradores';
 import styles from './MisCreacionesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -108,6 +109,7 @@ const MisCreacionesPage = () => {
   return (
     <div className={styles.wrapper}>
       <h2 className={styles.title}><T>Mis Creaciones</T></h2>
+      <TusBorradores uid={user.uid} />
       {designs.length === 0 ? (
         <div className={styles.card}>
           <p><T>Aún no tienes diseños guardados. Crea uno en el editor y guárdalo para verlo aquí.</T></p>

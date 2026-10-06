@@ -41,6 +41,7 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
     ? (items || []).filter((i) => i.customization?.designId === pendiente.diseno.id)
     : [];
   const enPedido = Boolean(pendiente && (pendiente.enPedido || pendiente.diseno.enPedido));
+  const esBorrador = pendiente?.diseno.estado === 'borrador';
 
   const confirmar = async () => {
     if (!user || !pendiente) return;
@@ -54,9 +55,10 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
     }
     enCarrito.forEach((i) => removeFromCart(i.id));
     queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'] });
+    queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'] });
     queryClient.removeQueries({ queryKey: ['creacion', diseno.id] });
     setPendiente(null);
-    toast.success('Creación eliminada.');
+    toast.success(diseno.estado === 'borrador' ? 'Borrador eliminado.' : 'Creación eliminada.');
     alEliminar?.(diseno);
   };
 
@@ -65,7 +67,7 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
       <div className={styles.caja} onClick={(e) => e.stopPropagation()}>
         <span className={styles.icono}><Trash2 size={22} aria-hidden="true" /></span>
         <h2 id="eliminar-creacion-titulo" className={styles.titulo}>
-          ¿Eliminar «{pendiente.diseno.name || 'Mi diseño'}»?
+          {esBorrador ? '¿Eliminar este borrador?' : `¿Eliminar «${pendiente.diseno.name || 'Mi diseño'}»?`}
         </h2>
         <p>
           {enPedido

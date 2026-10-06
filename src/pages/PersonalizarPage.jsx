@@ -7,6 +7,7 @@ import { getDesignsByUser } from '../services/designs';
 import { useAuth } from '../contexts/AuthContext';
 import { leerPrendaBase, precioBase, colorDisponible } from '../utils/prendaBase';
 import { useEliminarCreacion } from './Crear/useEliminarCreacion';
+import TusBorradores, { useBorradoresCrear } from './Crear/TusBorradores';
 import styles from './PersonalizarPage.module.css';
 import estilosEliminar from './Crear/EliminarCreacion.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -56,14 +57,17 @@ const TarjetaPrenda = ({ prenda }) => {
  * Las últimas creaciones del cliente, arriba de las prendas: así vuelve a lo
  * suyo desde donde empieza a diseñar, sin pasar por su cuenta.
  */
+const useCreacionesCrear = (uid) => useQuery({
+  queryKey: ['mis-creaciones-crear', uid],
+  enabled: Boolean(uid),
+  queryFn: async () => {
+    const { data } = await getDesignsByUser(uid);
+    return (data || []).filter((d) => d.tipo === 'crear');
+  },
+});
+
 const TusCreaciones = ({ uid }) => {
-  const { data: creaciones = [] } = useQuery({
-    queryKey: ['mis-creaciones-crear', uid],
-    queryFn: async () => {
-      const { data } = await getDesignsByUser(uid);
-      return (data || []).filter((d) => d.tipo === 'crear');
-    },
-  });
+  const { data: creaciones = [] } = useCreacionesCrear(uid);
   const { pedir: pedirEliminar, dialogo: dialogoEliminar } = useEliminarCreacion();
   if (!creaciones.length) return dialogoEliminar;
   return (
@@ -96,7 +100,6 @@ const TusCreaciones = ({ uid }) => {
           </div>
         ))}
       </div>
-      <h2 className={`${styles.creacionesTitulo} ${styles.empiezaNueva}`}><T>Empieza una nueva</T></h2>
       {dialogoEliminar}
     </section>
   );
@@ -105,6 +108,8 @@ const TusCreaciones = ({ uid }) => {
 const PersonalizarPage = () => {
   // El admin ve también los borradores, para revisarlos antes de publicarlos.
   const { isAdmin, user } = useAuth();
+  const { data: creaciones = [] } = useCreacionesCrear(user?.uid);
+  const { data: borradores = [] } = useBorradoresCrear(user?.uid);
   const { data: prendas = [], isLoading } = useQuery({
     queryKey: ['prendas-base', Boolean(isAdmin)],
     queryFn: async () => {
@@ -134,7 +139,11 @@ const PersonalizarPage = () => {
         </ol>
       </div>
 
+      {user && <TusBorradores uid={user.uid} />}
       {user && <TusCreaciones uid={user.uid} />}
+      {(creaciones.length > 0 || borradores.length > 0) && (
+        <h2 className={`${styles.creacionesTitulo} ${styles.empiezaNueva}`}><T>Empieza una nueva</T></h2>
+      )}
 
       {isLoading ? (
         <div className={styles.grilla}>

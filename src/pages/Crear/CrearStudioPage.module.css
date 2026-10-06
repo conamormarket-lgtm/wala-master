@@ -903,6 +903,18 @@
   font-size: 0.875rem;
 }
 
+.estadoBorrador {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--gris-texto-principal);
+}
+
+.estadoBorrador svg {
+  flex-shrink: 0;
+  color: var(--primary-color);
+}
+
 .editando .botonTexto {
   display: inline-flex;
   align-items: center;

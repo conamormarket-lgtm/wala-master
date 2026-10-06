@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
@@ -34,6 +34,13 @@ const COLORES_TEXTO = ['#111111', '#FFFFFF', '#7C3AED', '#E11D48', '#F59E0B', '#
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 const nuevoId = () => `capa_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 const claveBorrador = (id) => `crear_borrador_${id}`;
+
+const aDataUrl = (blob) => new Promise((resolve, reject) => {
+  const lector = new FileReader();
+  lector.onload = () => resolve(lector.result);
+  lector.onerror = () => reject(lector.error);
+  lector.readAsDataURL(blob);
+});
 // Marca "vuelve de iniciar sesión": solo entonces (o al recargar) se recupera el borrador.
 const claveVolver = (id) => `crear_volver_${id}`;
 
@@ -130,6 +137,11 @@ const CrearStudioPage = () => {
   const [nombreEditado, setNombreEditado] = useState('');
   const [dialogoGuardar, setDialogoGuardar] = useState(false);
   const [guardada, setGuardada] = useState(null);
+  // Borrador en la cuenta: un diseño sin terminar se guarda solo mientras se
+  // diseña, y se continúa desde Crear → Tus borradores.
+  const [esBorrador, setEsBorrador] = useState(false);
+  const [estadoBorrador, setEstadoBorrador] = useState(null);
+  const queryClient = useQueryClient();
 
   const contenedorRef = useRef(null);
   const canvasElRef = useRef(null);
@@ -143,6 +155,16 @@ const CrearStudioPage = () => {
   const tokenRef = useRef(0);
   const inputArchivoRef = useRef(null);
   const tallasRef = useRef(null);
+  // Lo del borrador va en refs: el autoguardado corre fuera del render (y
+  // puede terminar después de salir del estudio).
+  const designIdRef = useRef(designIdParam || null);
+  const esBorradorRef = useRef(false);
+  const guardandoRef = useRef(false);
+  const colaBorradorRef = useRef(Promise.resolve());
+  const timerBorradorRef = useRef(null);
+  const firmaBorradorRef = useRef(null);
+  const autoguardarRef = useRef(null);
+  const montadoRef = useRef(true);
   const recargadaRef = useRef(null);
   if (recargadaRef.current === null) recargadaRef.current = !estudioAbierto && recargadaEn(location.pathname);
   useEffect(() => { estudioAbierto = true; }, []);
@@ -187,6 +209,7 @@ const CrearStudioPage = () => {
       if (cancelado) return;
       capasRef.current = capas;
       setCapasPorZona(capas);
+      firmaBorradorRef.current = JSON.stringify({ capas: capasParaGuardar(capas), colorId: estado?.colorId, talla: estado?.talla || '' });
       const vistaInicial = cfg.vistas.find((v) => v.id === estado?.vistaId) || cfg.vistas[0];
       setVistaId(vistaInicial?.id);
       setZonaId(vistaInicial?.zonas.some((z) => z.id === estado?.zonaId) ? estado.zonaId : vistaInicial?.zonas[0]?.id);
@@ -199,10 +222,13 @@ const CrearStudioPage = () => {
       if (designIdParam && user) {
         const { data: diseno } = await getDesignById(designIdParam);
         if (diseno && diseno.userId === user.uid && diseno.productId === id) {
+          const deBorrador = diseno.estado === 'borrador';
+          esBorradorRef.current = deBorrador;
+          setEsBorrador(deBorrador);
           const colorGuardado = cfg.colores.find((c) => c.nombre === diseno.variant?.color || c.id === diseno.color?.id);
           const primeraZona = Object.keys(diseno.layersByView || {})[0];
           const vistaDeZona = cfg.vistas.find((v) => v.zonas.some((z) => z.id === primeraZona));
-          setNombre(diseno.name || '');
+          if (!deBorrador) setNombre(diseno.name || '');
           return aplicar({
             capasPorZona: diseno.layersByView || {},
             vistaId: vistaDeZona?.id,
@@ -211,6 +237,7 @@ const CrearStudioPage = () => {
             talla: diseno.variant?.size,
           });
         }
+        designIdRef.current = null;
         setDesignId(null);
       }
       // La plantilla se abre limpia. El borrador solo vuelve si el cliente fue
@@ -248,6 +275,29 @@ const CrearStudioPage = () => {
   useEffect(() => {
     if (listo) guardarBorrador();
   }, [listo, capasPorZona, guardarBorrador]);
+
+  // Con sesión, el diseño sin terminar se guarda en la cuenta unos segundos
+  // después de cada cambio (y al salir del estudio, si quedó algo pendiente).
+  useEffect(() => {
+    if (!listo || !user) return;
+    clearTimeout(timerBorradorRef.current);
+    timerBorradorRef.current = setTimeout(() => {
+      timerBorradorRef.current = null;
+      autoguardarRef.current?.();
+    }, 2000);
+  }, [listo, user, capasPorZona, colorId, talla]);
+
+  useEffect(() => {
+    montadoRef.current = true;
+    return () => {
+      montadoRef.current = false;
+      if (timerBorradorRef.current) {
+        clearTimeout(timerBorradorRef.current);
+        timerBorradorRef.current = null;
+        autoguardarRef.current?.();
+      }
+    };
+  }, []);
 
   // ── Capas (agrupadas por zona) ───────────────────────────────────────────
   const modificarCapas = useCallback((zId, fn, reconstruir = false) => {
@@ -707,11 +757,12 @@ const CrearStudioPage = () => {
     }
   };
 
-  const renderizarVista = async (v, capas) => {
+  const renderizarVista = async (v, capas, ancho) => {
     const img = await cargarImagen(fotoDeVista(v, color));
     const fuente = requiereTenido(v, color) ? tintarImagen(img, color.hex) : img;
     return renderizarVistaPrevia({
       fuente, anchoImg: img.naturalWidth, altoImg: img.naturalHeight, vista: v, capasPorZona: capas, srcDe,
+      ...(ancho && { ancho }),
     });
   };
 
@@ -774,30 +825,125 @@ const CrearStudioPage = () => {
     return { archivosImpresion, vistasPrevias, imagenConjunta: imagenConjuntaUrl };
   };
 
-  /** Genera y guarda la creación del cliente (en su cuenta, no en la plantilla). */
+  /**
+   * Guarda el diseño sin terminar como borrador en la cuenta. Solo un diseño
+   * nuevo o un borrador: una creación ya guardada se actualiza con "Guardar",
+   * que vuelve a generar sus archivos. Las llamadas van en cola para no
+   * crear dos borradores a la vez.
+   */
+  const autoguardar = () => {
+    colaBorradorRef.current = colaBorradorRef.current.then(async () => {
+      if (!user || !prenda || !color || guardandoRef.current) return;
+      if (designIdRef.current && !esBorradorRef.current) return;
+      const capas = capasParaGuardar(capasRef.current);
+      // Sin nada diseñado todavía no hay borrador que guardar.
+      if (!designIdRef.current && !Object.keys(capas).length) return;
+      const firma = JSON.stringify({ capas, colorId: color.id, talla });
+      if (firma === firmaBorradorRef.current) return;
+      if (montadoRef.current) setEstadoBorrador('guardando');
+      let miniatura = '';
+      try {
+        const v = cfg.vistas.find((x) => x.zonas.some((z) => capas[z.id])) || cfg.vistas[0];
+        miniatura = await aDataUrl(await renderizarVista(v, capas, 360));
+      } catch { /* sin miniatura */ }
+      if (guardandoRef.current) {
+        if (montadoRef.current) setEstadoBorrador(null);
+        return;
+      }
+      const { id: guardadoId, error: err } = await saveDesign(user.uid, {
+        designId: designIdRef.current || undefined,
+        productId: prenda.id,
+        productName: prenda.name,
+        name: nombrePorDefecto(),
+        layersByView: capas,
+        variant: { size: talla, color: color.nombre },
+        tipo: 'crear',
+        estado: 'borrador',
+        color: datosColor(),
+        miniatura,
+      });
+      if (err) throw new Error(err);
+      firmaBorradorRef.current = firma;
+      queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'] });
+      if (!designIdRef.current && guardadoId) {
+        designIdRef.current = guardadoId;
+        esBorradorRef.current = true;
+        if (montadoRef.current) {
+          setDesignId(guardadoId);
+          setEsBorrador(true);
+          // Recargar la página reabre este mismo borrador.
+          navigate(`/crear/${id}?designId=${guardadoId}`, { replace: true });
+        }
+      }
+      if (montadoRef.current) setEstadoBorrador('guardado');
+    }).catch(() => {
+      if (montadoRef.current) setEstadoBorrador('error');
+    });
+    return colaBorradorRef.current;
+  };
+  autoguardarRef.current = autoguardar;
+
+  /** Termina un autoguardado pendiente (antes de guardar o de empezar otro). */
+  const terminarBorrador = async () => {
+    if (timerBorradorRef.current) {
+      clearTimeout(timerBorradorRef.current);
+      timerBorradorRef.current = null;
+      if (!guardandoRef.current) autoguardar();
+    }
+    await colaBorradorRef.current;
+  };
+
+  const empezarNuevo = async () => {
+    await terminarBorrador();
+    try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
+    window.location.assign(`/crear/${id}`);
+  };
+
+  /**
+   * Genera y guarda la creación del cliente (en su cuenta, no en la
+   * plantilla). Si venía de un borrador, el borrador pasa a ser la creación.
+   */
   const guardarCreacion = async (nombreCreacion) => {
+    await terminarBorrador();
+    guardandoRef.current = true;
+    try {
+      return await generarYGuardar(nombreCreacion);
+    } finally {
+      guardandoRef.current = false;
+    }
+  };
+
+  const generarYGuardar = async (nombreCreacion) => {
+    const designIdActual = designIdRef.current;
     const capas = capasParaGuardar(capasRef.current);
     const archivos = await generarArchivos(capas);
     setProcesando('Guardando tu creación…');
     const creacion = {
-      designId: designId || undefined,
+      designId: designIdActual || undefined,
       productId: prenda.id,
       productName: prenda.name,
       name: (nombreCreacion || '').trim() || nombrePorDefecto(),
       layersByView: capas,
       variant: { size: talla, color: color.nombre },
       tipo: 'crear',
+      estado: 'guardada',
+      miniatura: '',
       previewUrl: archivos.imagenConjunta,
       color: datosColor(),
       ...archivos,
     };
     const { id: guardadoId, error: err } = await saveDesign(user.uid, creacion);
     if (err) throw new Error(err);
-    const idFinal = guardadoId || designId;
-    if (idFinal && idFinal !== designId) {
-      setDesignId(idFinal);
-      navigate(`/crear/${id}?designId=${idFinal}`, { replace: true });
-    }
+    const idFinal = guardadoId || designIdActual;
+    designIdRef.current = idFinal;
+    esBorradorRef.current = false;
+    setDesignId(idFinal);
+    setEsBorrador(false);
+    setEstadoBorrador(null);
+    if (idFinal !== designIdParam) navigate(`/crear/${id}?designId=${idFinal}`, { replace: true });
+    queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'] });
+    queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'] });
+    queryClient.removeQueries({ queryKey: ['creacion', idFinal] });
     setNombre(creacion.name);
     // Ya está guardada: la próxima vez la plantilla se abre limpia.
     try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
@@ -889,17 +1035,32 @@ const CrearStudioPage = () => {
 
       {designId && (
         <div className={styles.editando}>
-          <span>Estás editando <strong>{nombre ? `«${nombre}»` : 'tu creación'}</strong>. Al guardar se actualiza.</span>
-          <button
-            type="button"
-            className={styles.botonTexto}
-            onClick={() => {
-              try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
-              window.location.assign(`/crear/${id}`);
-            }}
-          >
+          {esBorrador ? (
+            <span className={styles.estadoBorrador} role="status">
+              {estadoBorrador === 'guardando'
+                ? <Loader2 size={15} className={styles.girando} aria-hidden="true" />
+                : estadoBorrador === 'error'
+                  ? <AlertTriangle size={15} aria-hidden="true" />
+                  : <CheckCircle2 size={15} aria-hidden="true" />}
+              {estadoBorrador === 'guardando'
+                ? 'Guardando borrador…'
+                : estadoBorrador === 'error'
+                  ? 'No pudimos guardar el borrador. Revisa tu conexión.'
+                  : 'Borrador guardado: lo encuentras en Crear para continuarlo después.'}
+            </span>
+          ) : (
+            <span>Estás editando <strong>{nombre ? `«${nombre}»` : 'tu creación'}</strong>. Al guardar se actualiza.</span>
+          )}
+          <button type="button" className={styles.botonTexto} onClick={empezarNuevo}>
             <Plus size={16} aria-hidden="true" /> Empezar uno nuevo
           </button>
+        </div>
+      )}
+
+      {!user && !authLoading && zonasUsadas.length > 0 && (
+        <div className={styles.editando}>
+          <span>Inicia sesión para guardar tu diseño como borrador y continuarlo después.</span>
+          <button type="button" className={styles.botonTexto} onClick={irALogin}>Iniciar sesión</button>
         </div>
       )}
 

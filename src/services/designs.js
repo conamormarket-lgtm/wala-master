@@ -4,7 +4,7 @@ import { obtenerStorage } from './firebase/config';
 /**
  * Obtiene los diseños guardados de un usuario (colección designs por userId).
  */
-export const getDesignsByUser = async (userId) => {
+export const getDesignsByUser = async (userId, { soloBorradores = false } = {}) => {
   if (!userId) return { data: [], error: 'userId requerido' };
 
   // No usamos orderBy ni limit en Firestore para evitar errores de índice compuesto
@@ -13,9 +13,12 @@ export const getDesignsByUser = async (userId) => {
     [{ field: 'userId', operator: '==', value: userId }]
   );
 
+  // Los borradores de Crear (diseños sin terminar) van aparte de las creaciones.
+  const elegidos = (data || []).filter((d) => (d.estado === 'borrador') === soloBorradores);
+
   let sortedData = [];
-  if (data && data.length > 0) {
-    sortedData = [...data].sort((a, b) => {
+  if (elegidos.length > 0) {
+    sortedData = [...elegidos].sort((a, b) => {
       const timeA = a.updatedAt?.seconds || a.createdAt?.seconds || 0;
       const timeB = b.updatedAt?.seconds || b.createdAt?.seconds || 0;
       return timeB - timeA;
@@ -24,6 +27,9 @@ export const getDesignsByUser = async (userId) => {
 
   return { data: sortedData.slice(0, 50), error };
 };
+
+/** Borradores del apartado Crear: diseños que el cliente empezó y no guardó. */
+export const getBorradoresCrear = (userId) => getDesignsByUser(userId, { soloBorradores: true });
 
 /**
  * Quita capas de imagen con src blob: (no válidas al recargar).
@@ -100,7 +106,7 @@ export const getDesignById = async (designId) => {
 export const saveDesign = async (userId, payload) => {
   if (!userId) return { id: null, error: 'Usuario no autenticado' };
 
-  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color, archivosImpresion, vistasPrevias, imagenConjunta } = payload || {};
+  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color, archivosImpresion, vistasPrevias, imagenConjunta, estado, miniatura } = payload || {};
 
   // Formar una vista estandar del root layersByView (hacia atrás para compatibilidad)
   const sanitizedLayersByView = sanitizeLayersByViewMap(layersByView);
@@ -136,8 +142,13 @@ export const saveDesign = async (userId, payload) => {
     // Además guarda lo ya generado (imágenes de cada lado y archivos de
     // impresión): así la creación se puede ver y agregar al carrito desde su
     // propia página (/creacion/:id) sin volver a abrir el estudio.
+    // Un borrador se guarda solo mientras el cliente diseña (sin archivos de
+    // impresión, con una miniatura pequeña). Al guardarlo pasa a 'guardada'
+    // en el mismo documento.
     ...(tipo === 'crear' ? {
       tipo: 'crear',
+      estado: estado === 'borrador' ? 'borrador' : 'guardada',
+      ...(typeof miniatura === 'string' && { miniatura }),
       previewUrl: previewUrl || '',
       color: color || null,
       ...(Array.isArray(archivosImpresion) && { archivosImpresion }),
