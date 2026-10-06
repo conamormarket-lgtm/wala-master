@@ -195,6 +195,13 @@ const CuentaFechasImportantesPage = () => {
     addToCart(producto, {}, null, 1);
     setIdeasAgregadas((prev) => new Set([...prev, producto.id]));
   };
+  // "Agregar todo": las ideas automáticas funcionan como un paquete armado
+  // solo, sin que el equipo tenga que hacer nada. Agrega las que faltan.
+  const agregarTodasLasIdeas = (ideas) => {
+    const faltan = ideas.filter(({ producto }) => !ideasAgregadas.has(producto.id));
+    faltan.forEach(({ producto }) => addToCart(producto, {}, null, 1));
+    setIdeasAgregadas((prev) => new Set([...prev, ...faltan.map(({ producto }) => producto.id)]));
+  };
 
   // Get packages for a specific recipient
   const getPackagesForRecipient = (rec) => {
@@ -573,7 +580,7 @@ const CuentaFechasImportantesPage = () => {
                           <div key={pkg.id} className={styles.suggestedPackage}>
                             <div className={styles.suggestedHeader}>
                               <Package size={15} aria-hidden="true" />
-                              <span className={styles.suggestedTitle}>Paquete sugerido</span>
+                              <span className={styles.suggestedTitle}>Elegido por nuestro equipo</span>
                               <span className={styles.suggestedTotal}>S/ {total.toFixed(2)}</span>
                             </div>
 
@@ -619,8 +626,13 @@ const CuentaFechasImportantesPage = () => {
                     </div>
                   )}
                   {(() => {
-                    if (cargandoIdeas || recPackages.length > 0) return null;
-                    const ideas = ideasPara(rec);
+                    // Las ideas automáticas salen SIEMPRE (antes, un paquete armado
+                    // a mano las escondía), sin repetir lo que ya trae ese paquete.
+                    if (cargandoIdeas) return null;
+                    const enPaquetes = new Set(recPackages.flatMap((pkg) => (pkg.products || []).map((x) => String(x.id))));
+                    const ideas = ideasPara(rec).filter(({ producto }) => !enPaquetes.has(String(producto.id)));
+                    const totalIdeas = ideas.reduce((acc, { producto: p }) => acc + (Number(p.salePrice) > 0 ? Number(p.salePrice) : Number(p.price) || 0), 0);
+                    const todasAgregadas = ideas.length > 0 && ideas.every(({ producto }) => ideasAgregadas.has(producto.id));
                     return (
                       <div className={styles.suggestedSection}>
                         <p className={styles.ideasTitle}>
@@ -677,6 +689,19 @@ const CuentaFechasImportantesPage = () => {
                             Cuéntanos qué le gusta (equipo, anime, personaje…) editando a {rec.name} y te
                             recomendamos regalos a su medida.
                           </p>
+                        )}
+                        {ideas.length >= 2 && (
+                          <button
+                            type="button"
+                            className={`${styles.btnSolido} ${styles.addToCartBtn} ${todasAgregadas ? styles.addToCartBtnDone : ''}`}
+                            onClick={() => !todasAgregadas && agregarTodasLasIdeas(ideas)}
+                            disabled={todasAgregadas}
+                          >
+                            {todasAgregadas ? <Check size={16} aria-hidden="true" /> : <ShoppingCart size={16} aria-hidden="true" />}
+                            {todasAgregadas
+                              ? 'Agregadas al carrito'
+                              : `Agregar las ${ideas.length} al carrito · S/ ${totalIdeas.toFixed(2)}`}
+                          </button>
                         )}
                         <Link to="/tienda" className={styles.verMasLink}>
                           Ver más regalos en la tienda →
