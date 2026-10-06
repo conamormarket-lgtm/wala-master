@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useCart } from '../contexts/CartContext';
-import { idsDeItemsIncompletos } from '../utils/cartValidation';
+import { idsDeItemsIncompletos, muestraColor } from '../utils/cartValidation';
 import { costoEnvio } from '../constants/envio';
 import { useAuth } from '../contexts/AuthContext';
 import { useGlobalToast } from '../contexts/ToastContext';
@@ -584,7 +584,8 @@ const CheckoutPage = () => {
               return `[COMBO] ${item.productName}: ${subResumen} x${item.quantity}`;
             }
             const talla = item.variant?.size ? `(${item.variant.size})` : '';
-            const color = item.variant?.color ? `/${item.variant.color}` : '';
+            // Sin "/Principal" en productos que no tienen colores (un sérum).
+            const color = item.variant?.color && muestraColor(item) ? `/${item.variant.color}` : '';
             return `${item.productName}${color} ${talla} x${item.quantity}`.trim();
           })
           .join(' - ');

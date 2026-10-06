@@ -5,7 +5,7 @@ import { useCart } from '../../../../contexts/CartContext';
 import { toDirectImageUrl } from '../../../../utils/imageUrl';
 import { T } from '../../../../i18n/useTranslatedText';
 import ComboProductImage from '../ComboProductImage/ComboProductImage';
-import { queLeFalta } from '../../../../utils/cartValidation';
+import { queLeFalta, muestraColor } from '../../../../utils/cartValidation';
 // Design System "Aurora Violeta Serena": mismo Badge que el resto del sitio
 // para la etiqueta "Combo" (antes un <span> con color hardcodeado aparte).
 import { Badge } from '../../../../components/ui';
@@ -30,7 +30,8 @@ const CartItem = ({ item, incompleto = false }) => {
 
   // Color elegido: el nombre vive en selectedVariant.name y, en los items que
   // vienen del editor, en variant.color. El hex (si lo hay) pinta la bolita.
-  const colorName = item.variant?.selectedVariant?.name || item.variant?.color || null;
+  // No se muestra si el producto no tiene colores (un sérum: "Principal").
+  const colorName = muestraColor(item) ? (item.variant?.selectedVariant?.name || item.variant?.color || null) : null;
   const colorHex = item.variant?.selectedVariant?.colorHex || null;
 
   // A cantidad 1 el "-" llamaba a updateQuantity(0), que borra el artículo sin

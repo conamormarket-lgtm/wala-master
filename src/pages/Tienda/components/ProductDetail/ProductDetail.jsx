@@ -700,8 +700,10 @@ const ProductDetail = ({ product, loading, categories = [] }) => {
             </div>
           )}
 
-          {/* Color selector — etiqueta estática t(); nombre de color dinámico <T>. */}
-          {hasVariants && variants.length > 0 && (
+          {/* Color selector — etiqueta estática t(); nombre de color dinámico <T>.
+              Con una sola variante y sin tallas (un sérum) no hay color que
+              elegir ni mostrar: antes salía "Color: Principal". */}
+          {hasVariants && (variants.length > 1 || (variants.length === 1 && (variants[0]?.sizes?.length || 0) > 0)) && (
             <div className={styles.selectorGroup}>
               <span className={styles.selectorLabel}>{t('card.color', 'Color')}: <em><T>{selectedVariant?.name}</T></em></span>
               <DraggableContainer className={styles.swatchRow}>

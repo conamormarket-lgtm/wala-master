@@ -69,6 +69,20 @@ export const idsDeItemsIncompletos = (items = []) => {
 };
 
 /**
+ * ¿Vale la pena mostrar el "color" de este artículo? Todo producto guarda al
+ * menos una variante, aunque no sea ropa: un sérum queda con "Color:
+ * Principal". Si el producto tiene una sola variante y el artículo no lleva
+ * talla, no hay nada que decir. Sin el producto en caché se muestra (lo seguro).
+ */
+export const muestraColor = (item) => {
+  if (item?.variant?.size) return true;
+  const catalogo = getCachedProducts();
+  const product = Array.isArray(catalogo) ? catalogo.find((p) => p.id === item?.productId) : null;
+  if (!product) return true;
+  return (product.variants?.length || 0) > 1;
+};
+
+/**
  * Qué le falta a un artículo, para poder decírselo al cliente.
  *
  * Se contrasta con el producto real, igual que idsDeItemsIncompletos: antes
