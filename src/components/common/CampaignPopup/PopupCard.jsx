@@ -10,13 +10,15 @@ import { X } from 'lucide-react';
 import styles from './CampaignPopup.module.css';
 
 const PopupCard = ({ popup, onCta, onClose }) => {
-  const ctaRef = useRef(null);
+  // El foco inicial va a la ventana (no al botón): así el navegador no dibuja
+  // el contorno de foco sobre la imagen al abrir, y Tab sigue funcionando.
+  const dialogoRef = useRef(null);
   const soloImagen = popup.formato === 'imagen' && popup.imagenUrl;
 
   useEffect(() => {
     const anterior = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    ctaRef.current?.focus({ preventScroll: true });
+    dialogoRef.current?.focus({ preventScroll: true });
     const alTeclear = (e) => {
       if (e.key === 'Escape') onClose();
     };
@@ -39,13 +41,15 @@ const PopupCard = ({ popup, onCta, onClose }) => {
       <div className={`${styles.overlay} ${styles.overlayImagen}`} onClick={onClose}>
         <div
           className={styles.cardImagen}
+          ref={dialogoRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
           aria-label={popup.titulo || 'Anuncio'}
           onClick={(e) => e.stopPropagation()}
         >
           {cerrar}
-          <button ref={ctaRef} type="button" className={styles.imagenBoton} onClick={onCta}>
+          <button type="button" className={styles.imagenBoton} onClick={onCta}>
             <img src={popup.imagenUrl} alt={popup.titulo || ''} />
           </button>
         </div>
@@ -58,6 +62,8 @@ const PopupCard = ({ popup, onCta, onClose }) => {
     <div className={styles.overlay} onClick={onClose}>
       <div
         className={styles.card}
+        ref={dialogoRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby={tituloId}
@@ -73,7 +79,7 @@ const PopupCard = ({ popup, onCta, onClose }) => {
           <h2 id={tituloId} className={styles.titulo}>{popup.titulo}</h2>
           {popup.texto && <p className={styles.texto}>{popup.texto}</p>}
           <div className={styles.acciones}>
-            <button ref={ctaRef} type="button" className={styles.cta} onClick={onCta}>
+            <button type="button" className={styles.cta} onClick={onCta}>
               {popup.botonTexto || 'Continuar'}
             </button>
             {popup.cerrarTexto && (

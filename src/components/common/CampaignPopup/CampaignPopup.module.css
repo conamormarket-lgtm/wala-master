@@ -161,17 +161,21 @@
   height: auto;
   max-height: calc(100vh - 2rem);
   object-fit: contain;
-  transition: transform 0.2s ease, filter 0.2s ease;
 }
 
-.imagenBoton:hover img {
-  transform: scale(1.015);
-  filter: brightness(1.03);
+/* Solo con teclado (Tab): con mouse o dedo no se dibuja nada. */
+.imagenBoton:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .imagenBoton:focus-visible {
-  outline: 3px solid #8b5cf6;
-  outline-offset: -3px;
+  outline: 3px solid #fff;
+  outline-offset: -6px;
+}
+
+.card:focus,
+.cardImagen:focus {
+  outline: none;
 }
 
 @media (max-width: 640px) {
@@ -248,7 +252,4 @@
     animation: none;
   }
 
-  .imagenBoton img {
-    transition: none;
-  }
 }
