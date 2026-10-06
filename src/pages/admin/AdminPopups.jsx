@@ -4,12 +4,63 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Eye, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { getEstadisticasPopup, getPopups, reiniciarEstadoLocal, savePopups } from '../../services/popups';
-import { OPCIONES, POPUP_VACIO, idDesdeNombre, normalizarPopup } from '../../services/popupsLogic.mjs';
+import {
+  OPCIONES, POPUP_VACIO, PAGINAS_SUGERIDAS, idDesdeNombre, normalizarPopup, normalizarRuta,
+} from '../../services/popupsLogic.mjs';
 import { uploadFile } from '../../services/firebase/storage';
 import PopupCard from '../../components/common/CampaignPopup/PopupCard';
 import styles from './AdminPopups.module.css';
 
 const etiqueta = (campo, valor) => OPCIONES[campo].find((o) => o.value === valor)?.label || valor;
+
+const nombrePagina = (ruta) => PAGINAS_SUGERIDAS.find((x) => x.ruta === ruta)?.label || ruta;
+
+// "En qué páginas": accesos rápidos a las comunes + cualquier otra a mano.
+const ElegirPaginas = ({ rutas, onChange }) => {
+  const [otra, setOtra] = useState('');
+  const toggle = (ruta) => onChange(rutas.includes(ruta) ? rutas.filter((r) => r !== ruta) : [...rutas, ruta]);
+  const agregar = () => {
+    const r = normalizarRuta(otra);
+    if (r && !rutas.includes(r)) onChange([...rutas, r]);
+    setOtra('');
+  };
+  const propias = rutas.filter((r) => !PAGINAS_SUGERIDAS.some((x) => x.ruta === r));
+  return (
+    <div className={styles.paginas}>
+      <div className={styles.chips}>
+        {PAGINAS_SUGERIDAS.map((x) => (
+          <button
+            key={x.ruta}
+            type="button"
+            className={rutas.includes(x.ruta) ? styles.chipActivo : styles.chip}
+            aria-pressed={rutas.includes(x.ruta)}
+            onClick={() => toggle(x.ruta)}
+          >
+            {x.label}
+          </button>
+        ))}
+        {propias.map((r) => (
+          <button key={r} type="button" className={styles.chipActivo} onClick={() => toggle(r)} title="Quitar">
+            {r} ×
+          </button>
+        ))}
+      </div>
+      <div className={styles.fila}>
+        <input
+          value={otra}
+          onChange={(e) => setOtra(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregar(); } }}
+          placeholder="Otra página: pega el link o escribe /alianza-lima"
+        />
+        <button type="button" className={styles.btnSecundario} onClick={agregar} disabled={!otra.trim()}>Agregar</button>
+      </div>
+      <span className={styles.ayuda}>
+        Termina en /* para incluir todo lo de adentro (ej. /producto/* = cualquier producto).
+        {rutas.length === 0 && ' Elige al menos una página o el popup no saldrá en ninguna.'}
+      </span>
+    </div>
+  );
+};
 
 const pct = (a, b) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '—');
 
@@ -170,6 +221,11 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
           <Campo label="Páginas"><Select campo="paginas" value={form.paginas} onChange={set('paginas')} /></Campo>
           <Campo label="Dispositivo"><Select campo="dispositivo" value={form.dispositivo} onChange={set('dispositivo')} /></Campo>
         </div>
+        {form.paginas === 'elegidas' && (
+          <Campo label="¿En qué páginas?">
+            <ElegirPaginas rutas={form.rutas || []} onChange={set('rutas')} />
+          </Campo>
+        )}
         <p className={styles.nota}>Nunca aparece en carrito, pago, login, admin, la encuesta ni el editor.</p>
       </fieldset>
 
@@ -342,7 +398,10 @@ const AdminPopups = () => {
               </p>
             </div>
             <p className={styles.meta}>
-              {etiqueta('audiencia', p.audiencia)} · {etiqueta('paginas', p.paginas)} · {etiqueta('dispositivo', p.dispositivo)} ·
+              {etiqueta('audiencia', p.audiencia)} ·{' '}
+              {p.paginas === 'elegidas'
+                ? (p.rutas.length ? `En: ${p.rutas.map(nombrePagina).join(', ')}` : 'Sin páginas elegidas')
+                : etiqueta('paginas', p.paginas)} · {etiqueta('dispositivo', p.dispositivo)} ·
               {' '}aparece {describirCuando(p)} · no se repite por {p.cooldownDias} días
               {(p.desde || p.hasta) && <> · {p.desde || '…'} → {p.hasta || '…'}</>}
             </p>

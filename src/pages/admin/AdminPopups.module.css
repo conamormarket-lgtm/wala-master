@@ -420,3 +420,41 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ── Páginas elegidas ── */
+.paginas {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip,
+.chipActivo {
+  min-height: 32px;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip {
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: transparent;
+  color: inherit;
+}
+
+.chip:hover {
+  border-color: #c4b5fd;
+}
+
+.chipActivo {
+  border: 1px solid #8b5cf6;
+  background: #8b5cf6;
+  color: #fff;
+}

@@ -50,6 +50,7 @@ export const OPCIONES = {
     { value: 'todas', label: 'Todas las páginas' },
     { value: 'inicio', label: 'Solo el inicio' },
     { value: 'productos', label: 'Solo páginas de producto' },
+    { value: 'elegidas', label: 'Las páginas que elija' },
   ],
   dispositivo: [
     { value: 'todos', label: 'Celular y computadora' },
@@ -77,6 +78,8 @@ export const POPUP_VACIO = {
   cerrarTexto: 'Ahora no',
   audiencia: 'todos',
   paginas: 'todas',
+  // Con paginas = 'elegidas': rutas donde sale ("/", "/tienda", "/producto/*").
+  rutas: [],
   dispositivo: 'todos',
   disparador: 'tiempo',
   segundos: 10,
@@ -138,6 +141,7 @@ export function normalizarPopup(raw = {}) {
     cerrarTexto: String(p.cerrarTexto || ''),
     audiencia: enOpciones('audiencia', p.audiencia),
     paginas: enOpciones('paginas', p.paginas),
+    rutas: normalizarRutas(p.rutas),
     dispositivo: enOpciones('dispositivo', p.dispositivo),
     disparador: enOpciones('disparador', p.disparador),
     segundos: num(p.segundos, 10, 0, 600),
@@ -170,9 +174,50 @@ export function rutaBloqueada(pathname = '/') {
     : pathname === r || pathname.startsWith(`${r}/`)));
 }
 
-function coincidePagina(paginas, pathname) {
-  if (paginas === 'inicio') return pathname === '/';
-  if (paginas === 'productos') return pathname.startsWith('/producto/');
+// Páginas para elegir rápido en el admin. "*" al final = esa página y todo lo
+// que cuelga de ella ("/producto/*" = cualquier producto).
+export const PAGINAS_SUGERIDAS = [
+  { ruta: '/', label: 'Inicio' },
+  { ruta: '/tienda', label: 'Tienda (todas las categorías)' },
+  { ruta: '/ofertas', label: 'Ofertas' },
+  { ruta: '/producto/*', label: 'Cualquier producto' },
+  { ruta: '/buscar', label: 'Búsqueda' },
+  { ruta: '/personalizar', label: 'Personalizar' },
+  { ruta: '/cuenta/*', label: 'Mi cuenta' },
+  { ruta: '/minijuegos', label: 'Minijuegos' },
+  { ruta: '/sorteos/*', label: 'Sorteos' },
+];
+
+// "tienda/" → "/tienda"; "https://www.wala.pe/ofertas?x=1" → "/ofertas".
+export function normalizarRuta(ruta) {
+  let r = String(ruta || '').trim();
+  if (!r) return '';
+  r = r.replace(/^https?:\/\/[^/]+/i, '').split(/[?#]/)[0].trim();
+  if (!r.startsWith('/')) r = `/${r}`;
+  if (r.length > 1) r = r.replace(/\/+$/, '');
+  return r === '/*' ? '/*' : r;
+}
+
+export function normalizarRutas(rutas) {
+  return [...new Set((Array.isArray(rutas) ? rutas : []).map(normalizarRuta).filter(Boolean))].slice(0, 30);
+}
+
+// ¿La página actual es una de las elegidas?
+export function rutaCoincide(rutas, pathname) {
+  const actual = normalizarRuta(pathname) || '/';
+  return normalizarRutas(rutas).some((r) => {
+    if (r.endsWith('/*')) {
+      const base = r.slice(0, -2);
+      return base === '' || actual === base || actual.startsWith(`${base}/`);
+    }
+    return actual === r;
+  });
+}
+
+function coincidePagina(p, pathname) {
+  if (p.paginas === 'inicio') return pathname === '/';
+  if (p.paginas === 'productos') return pathname.startsWith('/producto/');
+  if (p.paginas === 'elegidas') return rutaCoincide(p.rutas, pathname);
   return true;
 }
 
@@ -195,7 +240,7 @@ export function evaluarPopup(popup, ctx) {
   if (p.hasta && hoy > p.hasta) return { ok: false, motivo: 'ya terminó' };
 
   if (rutaBloqueada(pathname)) return { ok: false, motivo: 'ruta bloqueada' };
-  if (!coincidePagina(p.paginas, pathname)) return { ok: false, motivo: 'otra página' };
+  if (!coincidePagina(p, pathname)) return { ok: false, motivo: 'otra página' };
 
   if (p.dispositivo === 'movil' && !esMovil) return { ok: false, motivo: 'solo celular' };
   if (p.dispositivo === 'escritorio' && esMovil) return { ok: false, motivo: 'solo computadora' };

@@ -11,6 +11,8 @@ import {
   normalizarPopup,
   popupsDesdeDoc,
   rutaBloqueada,
+  rutaCoincide,
+  normalizarRuta,
 } from './popupsLogic.mjs';
 
 const AHORA = new Date(2026, 9, 6, 12, 0, 0).getTime(); // 2026-10-06 local
@@ -69,6 +71,19 @@ test('inactivo, fechas, página y dispositivo', () => {
   assert.equal(evaluarPopup(enlace({ paginas: 'productos' }), { ...base, pathname: '/producto/1' }).ok, true);
   assert.equal(evaluarPopup(enlace({ dispositivo: 'movil' }), base).ok, false);
   assert.equal(evaluarPopup(enlace({ dispositivo: 'escritorio' }), { ...base, esMovil: true }).ok, false);
+});
+
+test('páginas elegidas: exactas, con * y nunca en las bloqueadas', () => {
+  const p = enlace({ paginas: 'elegidas', rutas: ['/', 'tienda/', '/producto/*'] });
+  assert.equal(evaluarPopup(p, base).ok, true, 'inicio');
+  assert.equal(evaluarPopup(p, { ...base, pathname: '/tienda' }).ok, true);
+  assert.equal(evaluarPopup(p, { ...base, pathname: '/producto/abc' }).ok, true);
+  assert.equal(evaluarPopup(p, { ...base, pathname: '/ofertas' }).ok, false);
+  assert.equal(evaluarPopup(enlace({ paginas: 'elegidas', rutas: ['/checkout'] }), { ...base, pathname: '/checkout' }).ok, false, 'el pago sigue bloqueado');
+  assert.equal(evaluarPopup(enlace({ paginas: 'elegidas', rutas: [] }), base).ok, false, 'sin páginas no sale');
+  assert.equal(normalizarRuta('https://www.wala.pe/ofertas?x=1'), '/ofertas');
+  assert.equal(rutaCoincide(['/cuenta/*'], '/cuenta'), true);
+  assert.equal(rutaCoincide(['/cuenta/*'], '/cuentas'), false);
 });
 
 test('audiencia', () => {
