@@ -309,3 +309,91 @@
   margin: 0;
   font-size: 0.82rem;
 }
+
+/* ── Rango de fechas ─────────────────────────────────── */
+.rango {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #fff);
+}
+
+.rangoBotones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip,
+.chipActivo {
+  min-height: 34px;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip {
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
+}
+
+.chip:hover {
+  border-color: #c4b5fd;
+}
+
+.chipActivo {
+  border: 1px solid #8b5cf6;
+  background: #8b5cf6;
+  color: #fff;
+}
+
+.rangoFechas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.rangoFechas label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #475569);
+}
+
+.rangoFechas input {
+  min-height: 34px;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-border, #cbd5e1);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
+  font: inherit;
+}
+
+.kpiDestacado {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+}
+
+.kpiDestacado span {
+  color: #6d28d9;
+}
+
+.aviso {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.85rem;
+}

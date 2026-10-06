@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resumenEncuesta, fichaCliente, csvRespuestas } from './surveyResponses.mjs';
+import { resumenEncuesta, fichaCliente, csvRespuestas, filtrarPorFecha, porPeriodo, textoFechaEncuesta } from './surveyResponses.mjs';
 
 const config = {
   basicDataPanel: {
@@ -75,4 +75,22 @@ test('CSV: una fila por persona, separador ; y comillas cuando hace falta', () =
   assert.ok(lineas[1].includes('Luis') && lineas[1].includes('Alianza Lima'));
   const conPuntoYComa = csvRespuestas([{ ...usuarios[1], displayName: 'Beto; el grande' }], config);
   assert.ok(conPuntoYComa.includes('"Beto; el grande"'));
+});
+
+test('fecha de la encuesta: filtro por rango, conteo por periodo y texto', () => {
+  const t = (y, m, d, h = 12) => new Date(y, m - 1, d, h, 5).getTime();
+  const lista = [
+    { id: 'a', surveyCompletedAt: t(2026, 8, 31, 23), surveyCompletedAtSource: 'monedas' },
+    { id: 'b', surveyCompletedAt: t(2026, 9, 1), surveyCompletedAtSource: 'estimada' },
+    { id: 'c', surveyCompletedAt: t(2026, 9, 30) },
+    { id: 'd' }, // sin fecha
+  ];
+  assert.equal(filtrarPorFecha(lista, '', '').length, 4, 'sin rango entran todos, incluso sin fecha');
+  assert.deepEqual(filtrarPorFecha(lista, '2026-09-01', '2026-09-30').map((u) => u.id), ['b', 'c']);
+  assert.deepEqual(filtrarPorFecha(lista, '', '2026-08-31').map((u) => u.id), ['a']);
+  assert.deepEqual(porPeriodo(lista, 'mes'), [{ valor: '2026-08', total: 1 }, { valor: '2026-09', total: 2 }]);
+  assert.equal(porPeriodo(lista, 'dia').length, 3);
+  assert.equal(textoFechaEncuesta(lista[1]), '01/09/2026 12:05 aprox.');
+  assert.equal(textoFechaEncuesta(lista[0]), '31/08/2026 23:05');
+  assert.equal(textoFechaEncuesta(lista[3]), '');
 });

@@ -2329,6 +2329,11 @@ exports.reconciliarMonedasEnEspera = onSchedule("every 60 minutes", async () => 
 // servidor: lo que mande el cliente en `coins` se ignora (antes se confiaba en
 // un cálculo del navegador). Las fechas que se cargan en la encuesta se pagan
 // aparte, con claimDatesRewardSecure.
+// También deja la FECHA en que la completó por primera vez (`surveyCompletedAt`,
+// epoch ms) para los reportes del admin. La pone el servidor porque la escritura
+// del perfil desde el navegador pasa por las reglas vivas del ERP. Los que la
+// llenaron antes de existir este campo se completaron con
+// scripts/backfill-fecha-encuesta.js.
 exports.grantSurveyRewardSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const reward = SURVEY_REWARD_MAX;
@@ -2338,12 +2343,19 @@ exports.grantSurveyRewardSecure = functions.https.onCall(async (data, context) =
       const snap = await t.get(userRef);
       if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = snap.data();
-      if (u.surveyRewardClaimed) return { success: true, alreadyClaimed: true };
+      const fecha = u.hasCompletedSurvey === true && !u.surveyCompletedAt
+        ? { surveyCompletedAt: Date.now(), surveyCompletedAtSource: "servidor" }
+        : null;
+      if (u.surveyRewardClaimed) {
+        if (fecha) t.update(userRef, fecha);
+        return { success: true, alreadyClaimed: true };
+      }
       if (u.hasCompletedSurvey !== true) return { success: true, notEligible: true };
       const newBalance = (u.monedas || 0) + reward;
       const update = {
         monedas: newBalance,
         surveyRewardClaimed: true,
+        ...(fecha || {}),
       };
       // Marca al usuario como del esquema nuevo: así claimDatesRewardSecure no le
       // descuenta las 3 fechas que la encuesta vieja ya pagaba.

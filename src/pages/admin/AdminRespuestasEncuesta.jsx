@@ -4,7 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { getCollection } from '../../services/firebase/firestore';
 import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
-import { resumenEncuesta, fichaCliente, csvRespuestas } from '../../services/surveyResponses.mjs';
+import {
+  resumenEncuesta, fichaCliente, csvRespuestas,
+  fechaEncuesta, fechaEsEstimada, filtrarPorFecha, porPeriodo, textoFechaEncuesta, diaLocal,
+} from '../../services/surveyResponses.mjs';
 import styles from './AdminRespuestasEncuesta.module.css';
 
 /* ============================================================================
@@ -38,7 +41,57 @@ const Barras = ({ items, max = 8, base }) => {
   );
 };
 
+// ── Rango de fechas ─────────────────────────────────────────────────────────
+const RANGOS = [
+  { id: 'todo', label: 'Todo' },
+  { id: 'hoy', label: 'Hoy' },
+  { id: '7d', label: 'Últimos 7 días' },
+  { id: '30d', label: 'Últimos 30 días' },
+  { id: 'mes', label: 'Este mes' },
+  { id: 'mesPasado', label: 'Mes pasado' },
+];
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'oct', 'nov', 'dic'];
+
+function calcularRango(id) {
+  const hoy = new Date();
+  const dia = (d) => diaLocal(d.getTime());
+  const haceDias = (n) => new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - n);
+  switch (id) {
+    case 'hoy': return { desde: dia(hoy), hasta: dia(hoy) };
+    case '7d': return { desde: dia(haceDias(6)), hasta: dia(hoy) };
+    case '30d': return { desde: dia(haceDias(29)), hasta: dia(hoy) };
+    case 'mes': return { desde: dia(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), hasta: dia(hoy) };
+    case 'mesPasado': return {
+      desde: dia(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)),
+      hasta: dia(new Date(hoy.getFullYear(), hoy.getMonth(), 0)),
+    };
+    default: return { desde: '', hasta: '' };
+  }
+}
+
+const diasEntre = (desde, hasta) => Math.round((new Date(`${hasta}T00:00`) - new Date(`${desde}T00:00`)) / 86400000) + 1;
+
+const etiquetaPeriodo = (valor, unidad) => {
+  if (unidad === 'dia') {
+    const [, m, d] = valor.split('-');
+    return `${d}/${m}`;
+  }
+  const [y, m] = valor.split('-');
+  return `${MESES[Number(m) - 1]} ${y}`;
+};
+
 const AdminRespuestasEncuesta = () => {
+  const [rangoId, setRangoId] = useState('todo');
+  const [rango, setRango] = useState({ desde: '', hasta: '' });
+  const elegirRango = (id) => {
+    setRangoId(id);
+    setRango(calcularRango(id));
+  };
+  const cambiarFecha = (campo) => (e) => {
+    setRangoId('personalizado');
+    setRango((r) => ({ ...r, [campo]: e.target.value }));
+  };
   const [buscar, setBuscar] = useState('');
   const [abierto, setAbierto] = useState(null);
   const [verTodos, setVerTodos] = useState(30);
@@ -59,24 +112,43 @@ const AdminRespuestasEncuesta = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const resumen = useMemo(() => (data ? resumenEncuesta(data.usuarios, data.config) : null), [data]);
+  const hayRango = Boolean(rango.desde || rango.hasta);
+  const enRango = useMemo(
+    () => (data ? filtrarPorFecha(data.usuarios, rango.desde, rango.hasta) : []),
+    [data, rango.desde, rango.hasta],
+  );
+  const resumen = useMemo(() => (data ? resumenEncuesta(enRango, data.config) : null), [data, enRango]);
+
+  const fechas = useMemo(() => {
+    if (!data) return null;
+    const conFecha = data.usuarios.filter(fechaEncuesta);
+    // Por día si el rango es corto; si no, por mes.
+    const unidad = rango.desde && diasEntre(rango.desde, rango.hasta || diaLocal(Date.now())) <= 62 ? 'dia' : 'mes';
+    return {
+      sinFecha: data.usuarios.length - conFecha.length,
+      estimadas: enRango.filter(fechaEsEstimada).length,
+      unidad,
+      periodos: porPeriodo(enRango, unidad).map((p) => ({ ...p, valor: etiquetaPeriodo(p.valor, unidad) })),
+    };
+  }, [data, enRango, rango.desde, rango.hasta]);
 
   const clientes = useMemo(() => {
     if (!data) return [];
     const q = buscar.trim().toLowerCase();
-    return data.usuarios
+    return enRango
       .map((u) => ({ u, nombre: u.displayName || u.surveyBasicData?.nombres || 'Sin nombre' }))
       .filter(({ u, nombre }) => !q || `${nombre} ${u.email || ''} ${u.phone || ''}`.toLowerCase().includes(q))
-      .sort((a, b) => (b.u.giftRecipients?.length || 0) - (a.u.giftRecipients?.length || 0));
-  }, [data, buscar]);
+      .sort((a, b) => fechaEncuesta(b.u) - fechaEncuesta(a.u));
+  }, [data, enRango, buscar]);
 
   const descargar = () => {
     if (!data) return;
-    const csv = csvRespuestas(data.usuarios, data.config);
+    const csv = csvRespuestas(enRango, data.config);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `respuestas-encuesta-${new Date().toISOString().slice(0, 10)}.csv`;
+    const sufijo = hayRango ? `${rango.desde || 'inicio'}_a_${rango.hasta || 'hoy'}` : new Date().toISOString().slice(0, 10);
+    a.download = `respuestas-encuesta-${sufijo}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -107,14 +179,56 @@ const AdminRespuestasEncuesta = () => {
       {error && <p className={styles.error}>No se pudieron cargar las respuestas: {error.message}</p>}
       {isLoading && <p className={styles.vacio}>Cargando respuestas…</p>}
 
-      {resumen && (
+      {data && (
+        <section className={styles.rango} aria-label="Rango de fechas">
+          <div className={styles.rangoBotones}>
+            {RANGOS.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                className={rangoId === r.id ? styles.chipActivo : styles.chip}
+                onClick={() => elegirRango(r.id)}
+                aria-pressed={rangoId === r.id}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <div className={styles.rangoFechas}>
+            <label>Desde <input type="date" value={rango.desde} max={rango.hasta || undefined} onChange={cambiarFecha('desde')} /></label>
+            <label>Hasta <input type="date" value={rango.hasta} min={rango.desde || undefined} onChange={cambiarFecha('hasta')} /></label>
+          </div>
+        </section>
+      )}
+
+      {resumen && fechas && (
         <>
           <section className={styles.kpis}>
-            <div className={styles.kpi}><span>{resumen.clientes}</span>clientes completaron la encuesta</div>
+            <div className={`${styles.kpi} ${styles.kpiDestacado}`}>
+              <span>{enRango.length}</span>
+              {hayRango ? `completaron la encuesta en este rango (de ${data.usuarios.length} en total)` : 'clientes completaron la encuesta'}
+            </div>
             <div className={styles.kpi}><span>{resumen.personas}</span>personas cargadas para regalar</div>
             <div className={styles.kpi}><span>{resumen.conCumpleanos}</span>clientes dieron su cumpleaños</div>
             <div className={styles.kpi}><span>{resumen.conPresupuesto}</span>personas con presupuesto</div>
           </section>
+
+          {fechas.sinFecha === data.usuarios.length ? (
+            <p className={styles.aviso}>
+              Todavía no hay fechas guardadas: al filtrar por fechas no aparece nadie hasta que se complete la fecha de quienes ya la llenaron.
+            </p>
+          ) : (
+            <article className={styles.card}>
+              <h3>Encuestas completadas por {fechas.unidad === 'dia' ? 'día' : 'mes'}</h3>
+              <p className={styles.nota}>
+                {fechas.estimadas > 0 && `${fechas.estimadas} con fecha aproximada: la llenaron antes del 06/10/2026, cuando aún no se guardaba la fecha, y se dedujo de su visita a la encuesta. `}
+                {!hayRango && fechas.sinFecha > 0 && `${fechas.sinFecha} sin fecha (no aparecen al filtrar por fechas).`}
+              </p>
+              {fechas.periodos.length === 0
+                ? <p className={styles.vacio}>Nadie completó la encuesta en este rango.</p>
+                : <Barras items={fechas.periodos} max={fechas.periodos.length} />}
+            </article>
+          )}
 
           <section className={styles.grid}>
             {resumen.basicos.map((b) => (
@@ -170,6 +284,11 @@ const AdminRespuestasEncuesta = () => {
                   <button type="button" className={styles.clienteFila} onClick={() => setAbierto(abiertoAqui ? null : id)} aria-expanded={abiertoAqui}>
                     <span className={styles.clienteNombre}>{nombre}</span>
                     <span className={styles.nota}>{u.email || 'sin correo'}</span>
+                    {fechaEncuesta(u) > 0 && (
+                      <span className={styles.nota} title={fechaEsEstimada(u) ? 'Fecha aproximada' : 'Fecha exacta'}>
+                        📅 {textoFechaEncuesta(u)}
+                      </span>
+                    )}
                     <span className={styles.badge}>{u.giftRecipients?.length || 0} personas</span>
                     <span aria-hidden="true">{abiertoAqui ? '▲' : '▼'}</span>
                   </button>

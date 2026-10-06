@@ -8,6 +8,10 @@
 //   giftRecipients[] personas: nombre, relación, género, presupuesto, fechas,
 //                    selectedCategories (conjuntos) y categoryAnswers (gustos)
 //   birthDate        cumpleaños propio
+//   surveyCompletedAt        cuándo la completó por primera vez (epoch ms)
+//   surveyCompletedAtSource  'servidor' | 'monedas' (fecha exacta) o 'estimada'
+//                            (reconstruida de sus visitas a la encuesta; ver
+//                            scripts/backfill-fecha-encuesta.js)
 
 export const ROLES = {
   pareja: 'Pareja', hijos: 'Hijos', padres: 'Padres', hermanos: 'Hermanos',
@@ -16,6 +20,55 @@ export const ROLES = {
 export const PRESUPUESTOS = {
   hasta50: 'Hasta S/ 50', '50a100': 'S/ 50 – 100', '100a200': 'S/ 100 – 200', mas200: 'Más de S/ 200',
 };
+
+// ── Fecha en que completó la encuesta ───────────────────────────────────────
+export const fechaEncuesta = (u) => Number(u && u.surveyCompletedAt) || 0;
+export const fechaEsEstimada = (u) => Boolean(u && u.surveyCompletedAtSource === 'estimada');
+
+const dos = (n) => String(n).padStart(2, '0');
+// Día local YYYY-MM-DD (la tienda opera en Lima, igual que el navegador del admin).
+export const diaLocal = (ms) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
+};
+
+// "06/10/2026 14:05" (+ " aprox." si es estimada). Vacío si no hay fecha.
+export function textoFechaEncuesta(u) {
+  const t = fechaEncuesta(u);
+  if (!t) return '';
+  const d = new Date(t);
+  const texto = `${dos(d.getDate())}/${dos(d.getMonth() + 1)}/${d.getFullYear()} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
+  return fechaEsEstimada(u) ? `${texto} aprox.` : texto;
+}
+
+/**
+ * Clientes que completaron la encuesta entre `desde` y `hasta` (YYYY-MM-DD,
+ * ambos inclusive; vacío = sin límite). Sin ningún límite devuelve a todos,
+ * incluso a los que no tienen fecha.
+ */
+export function filtrarPorFecha(usuarios, desde, hasta) {
+  const lista = usuarios || [];
+  if (!desde && !hasta) return lista;
+  return lista.filter((u) => {
+    const t = fechaEncuesta(u);
+    if (!t) return false;
+    const dia = diaLocal(t);
+    return (!desde || dia >= desde) && (!hasta || dia <= hasta);
+  });
+}
+
+// Encuestas completadas por día ('dia') o por mes ('mes'), en orden cronológico.
+export function porPeriodo(usuarios, unidad = 'mes') {
+  const conteo = new Map();
+  (usuarios || []).forEach((u) => {
+    const t = fechaEncuesta(u);
+    if (!t) return;
+    const dia = diaLocal(t);
+    const k = unidad === 'dia' ? dia : dia.slice(0, 7);
+    conteo.set(k, (conteo.get(k) || 0) + 1);
+  });
+  return [...conteo.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([valor, total]) => ({ valor, total }));
+}
 
 // Clave para agrupar respuestas escritas: sin tildes, mayúsculas ni artículos
 // al inicio ("El fútbol" = "Fútbol").
@@ -161,7 +214,7 @@ export function csvRespuestas(usuarios, config) {
   const conjuntos = (config && config.brandsPanel && config.brandsPanel.categories) || [];
   const columnasGustos = conjuntos.flatMap((c) => (c.fields || []).map((f) => ({ c, f })));
   const cabecera = [
-    'Cliente', 'Correo', 'Teléfono', 'Cumpleaños del cliente',
+    'Cliente', 'Correo', 'Teléfono', 'Completó la encuesta', 'Cumpleaños del cliente',
     ...camposBasicos.map((f) => f.label),
     'Regala a',
     'Persona', 'Relación', 'Género', 'Presupuesto', 'Fechas', 'Conjuntos',
@@ -171,7 +224,7 @@ export function csvRespuestas(usuarios, config) {
   (usuarios || []).forEach((u) => {
     const base = [
       u.displayName || (u.surveyBasicData && u.surveyBasicData.nombres) || '',
-      u.email || '', u.phone || '', u.birthDate || '',
+      u.email || '', u.phone || '', textoFechaEncuesta(u), u.birthDate || '',
       ...camposBasicos.map((f) => (u.surveyBasicData && u.surveyBasicData[f.id]) || ''),
       Object.entries(ROLES).filter(([k]) => u.giftRoles && u.giftRoles[k]).map(([, l]) => l).join(', '),
     ];
