@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Upload, X, Sparkles, Palette, AlertTriangle } from 'lucide-react';
 import { uploadFile } from '../../../services/firebase/storage';
 import {
-  leerPrendaBase, normalizarZona, normalizarVista, nuevoIdZona, slug, cargarImagen, tintarImagen,
+  leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
+  nuevoIdZona, slug, cargarImagen, tintarImagen,
   colorDisponible, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
 } from '../../../utils/prendaBase';
 import ZonaEditor from './ZonaEditor';
@@ -23,6 +24,36 @@ export const prendaBaseParaGuardar = (valor, variantes) => {
     if (c?.hex2 || Object.keys(fotos).length) colores[id] = { ...(c.hex2 ? { hex2: c.hex2 } : {}), fotos };
   });
   return { vistas: (valor?.vistas || []).map(normalizarVista), colores };
+};
+
+/**
+ * Campo de cm que se confirma al salir o con Enter: mientras se escribe
+ * ("8." o vacío) no se recalcula la zona, así se pueden poner decimales.
+ */
+const CampoCm = ({ valor, onFijar, etiqueta }) => {
+  const [texto, setTexto] = useState(String(valor));
+  const [editando, setEditando] = useState(false);
+  useEffect(() => { if (!editando) setTexto(String(valor)); }, [valor, editando]);
+  // Lee el valor del propio campo: el estado del texto puede no estar al día
+  // si se escribe y se sale del campo en el mismo instante.
+  const confirmar = (actual) => {
+    setEditando(false);
+    const n = parseFloat(String(actual).replace(',', '.'));
+    if (n > 0 && Math.abs(n - valor) >= 0.05) onFijar(n);
+    else setTexto(String(valor));
+  };
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={texto}
+      aria-label={etiqueta}
+      onFocus={() => setEditando(true)}
+      onChange={(e) => setTexto(e.target.value)}
+      onBlur={(e) => confirmar(e.currentTarget.value)}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+    />
+  );
 };
 
 /** Miniatura teñida para revisar cómo queda cada color sin salir del admin. */
@@ -65,16 +96,32 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
   // Las zonas se editan tal como se escriben (un "-" a medio tipear no puede
   // volverse 0); se normalizan al dibujarlas y al guardar.
   const vistas = (valor?.vistas || []).map((v, i) => (Array.isArray(v?.zonas)
-    ? { id: v.id, nombre: v.nombre ?? '', imagen: v.imagen || '', zonas: v.zonas }
+    ? { ...v, nombre: v.nombre ?? '', imagen: v.imagen || '' }
     : normalizarVista(v, i)));
   const extras = valor?.colores || {};
   const { colores } = leerPrendaBase({ variants: variantes, prendaBase: { vistas, colores: extras } });
   const hexPrevio = colores.find((c) => c.id === (colorPrevio || colores[0]?.id))?.hex || '#FFFFFF';
 
-  const cambiar = (cambios) => onChange({ vistas, colores: extras, ...cambios });
-  const setVista = (i, cambios) => cambiar({ vistas: vistas.map((v, j) => (j === i ? { ...v, ...cambios } : v)) });
-  const setZona = (i, zi, zona) => setVista(i, { zonas: vistas[i].zonas.map((z, k) => (k === zi ? zona : z)) });
-  const setExtra = (id, cambios) => cambiar({ colores: { ...extras, [id]: { fotos: {}, ...extras[id], ...cambios } } });
+  // Los cambios se aplican sobre el estado más reciente: dos fotos que terminan
+  // de cargar casi a la vez (y avisan su tamaño) no se pisan entre sí.
+  const cambiar = (cambios) => onChange((prev) => {
+    const base = { vistas: prev?.vistas || [], colores: prev?.colores || {} };
+    return { ...base, ...(typeof cambios === 'function' ? cambios(base) : cambios) };
+  });
+  const setVista = (i, cambios) => cambiar((prev) => ({
+    vistas: prev.vistas.map((v, j) => (j === i ? { ...v, ...cambios } : v)),
+  }));
+  const setZona = (i, zi, zona) => cambiar((prev) => ({
+    vistas: prev.vistas.map((v, j) => {
+      if (j !== i) return v;
+      const zonas = Array.isArray(v.zonas) ? v.zonas : normalizarVista(v, j).zonas;
+      return { ...v, zonas: zonas.map((z, k) => (k === zi ? zona : z)) };
+    }),
+  }));
+  const setExtra = (id, cambios) => cambiar((prev) => ({
+    colores: { ...prev.colores, [id]: { fotos: {}, ...prev.colores[id], ...cambios } },
+  }));
+  const [cuadricula, setCuadricula] = useState({});
 
   const subir = async (archivo, clave) => {
     if (!archivo) return null;
@@ -167,6 +214,12 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
                     colorHex={hexPrevio}
                     onSeleccionar={(zi) => setZonaElegida((m) => ({ ...m, [v.id]: zi }))}
                     onChange={(zi, zona) => setZona(i, zi, zona)}
+                    referencia={v.referencia}
+                    onReferencia={(referencia) => setVista(i, { referencia })}
+                    cuadricula={Boolean(cuadricula[v.id])}
+                    onDims={(d) => {
+                      if (v.anchoImg !== d.ancho || v.altoImg !== d.alto) setVista(i, { anchoImg: d.ancho, altoImg: d.alto });
+                    }}
                   />
                   <label className={styles.botonSubir}>
                     <Upload size={16} aria-hidden="true" />
@@ -185,19 +238,84 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
                 </div>
 
                 <div className={styles.zonasLista}>
+                  <div className={styles.escala}>
+                    {v.referencia ? (
+                      <>
+                        <div className={styles.escalaFila}>
+                          <span>La línea naranja mide</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={v.referencia.cm ?? ''}
+                            onChange={(e) => setVista(i, { referencia: { ...v.referencia, cm: e.target.value } })}
+                            aria-label="Medida real de la línea de referencia en cm"
+                          />
+                          <span>cm</span>
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(cuadricula[v.id])}
+                              onChange={(e) => setCuadricula((m) => ({ ...m, [v.id]: e.target.checked }))}
+                            />
+                            Cuadrícula de 5 cm
+                          </label>
+                          <button type="button" className={styles.botonMini} onClick={() => setVista(i, { referencia: null })}>
+                            Quitar
+                          </button>
+                        </div>
+                        <small className={styles.ayuda}>
+                          Arrastra sus extremos sobre algo que puedas medir en la prenda real (por ejemplo, de axila a axila) y
+                          escribe cuánto mide. Mantén Shift para dejarla recta. Con eso las zonas se miden y se ajustan en cm.
+                          Solo tú ves estas medidas.
+                        </small>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.botonMini}
+                          onClick={() => setVista(i, { referencia: { x1: 0.25, y1: 0.4, x2: 0.75, y2: 0.4, cm: '' } })}
+                        >
+                          Agregar medida de referencia
+                        </button>
+                        <small className={styles.ayuda}>Para ver y ajustar las zonas en centímetros exactos.</small>
+                      </>
+                    )}
+                  </div>
                   <datalist id={`zonas-sugeridas-${i}`}>
                     {ZONAS_SUGERIDAS.map((n) => <option key={n} value={n} />)}
                   </datalist>
-                  {v.zonas.map((z, zi) => (
+                  {v.zonas.map((z, zi) => {
+                    const escalaV = { referencia: normalizarReferencia(v.referencia), anchoImg: v.anchoImg, altoImg: v.altoImg };
+                    const zn = normalizarZona(z, zi);
+                    const cm = medidaZona(zn, escalaV);
+                    const fijarCm = (anchoCm, altoCm) => {
+                      const nueva = zonaConMedida(zn, escalaV, anchoCm, altoCm);
+                      setZona(i, zi, { ...z, w: nueva.w, proporcion: nueva.proporcion });
+                    };
+                    return (
                     <div
                       key={z.id}
-                      className={`${styles.zonaFila} ${(zonaElegida[v.id] ?? 0) === zi ? styles.zonaFilaActiva : ''}`}
+                      className={`${styles.zonaFila} ${cm ? styles.zonaFilaCm : ''} ${(zonaElegida[v.id] ?? 0) === zi ? styles.zonaFilaActiva : ''}`}
                       onFocus={() => setZonaElegida((m) => ({ ...m, [v.id]: zi }))}
                     >
                       <label className={styles.campo}>
                         <span>Zona</span>
                         <input list={`zonas-sugeridas-${i}`} value={z.nombre} onChange={(e) => setZona(i, zi, { ...z, nombre: e.target.value })} />
                       </label>
+                      {cm && (
+                        <>
+                          <label className={styles.campo}>
+                            <span>Ancho cm</span>
+                            <CampoCm valor={cm.anchoCm} onFijar={(n) => fijarCm(n, cm.altoCm)} etiqueta={`Ancho de ${z.nombre} en cm`} />
+                          </label>
+                          <label className={styles.campo}>
+                            <span>Alto cm</span>
+                            <CampoCm valor={cm.altoCm} onFijar={(n) => fijarCm(cm.anchoCm, n)} etiqueta={`Alto de ${z.nombre} en cm`} />
+                          </label>
+                        </>
+                      )}
                       <label className={styles.campo}>
                         <span>Giro °</span>
                         <input type="number" min="-180" max="180" step="1" value={z.angulo} onChange={(e) => setZona(i, zi, { ...z, angulo: e.target.value })} />
@@ -214,7 +332,8 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
                         <X size={16} aria-hidden="true" />
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                   {!v.zonas.length && <p className={styles.ayuda}>Esta vista aún no tiene zonas.</p>}
                   <button
                     type="button"

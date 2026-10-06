@@ -138,9 +138,9 @@ const getDesignReferences = (item) => {
     refs.push(archivo?.url);
     if (views[archivo?.vista]) {
       views[archivo.vista].archivoImpresion = archivo.url || '';
-      views[archivo.vista].medida = archivo.ancho
-        ? `${archivo.ancho} x ${archivo.alto} px`
-        : `${archivo.anchoCm} x ${archivo.altoCm} cm`;
+      views[archivo.vista].medida = archivo.anchoCm
+        ? `${archivo.anchoCm} x ${archivo.altoCm} cm`
+        : `${archivo.ancho} x ${archivo.alto} px`;
       if (archivo.nombre) views[archivo.vista].zona = archivo.nombre;
     }
   });

@@ -16,7 +16,7 @@ import {
 } from '../../services/crearArchivos';
 import {
   UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
-  calidadDeCapa, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
+  calidadDeCapa, medidaZona, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
   colorDisponible, tallasDeColor,
 } from '../../utils/prendaBase';
 import {
@@ -673,10 +673,12 @@ const CrearStudioPage = () => {
         const zonasConCapas = v.zonas.filter((z) => capas[z.id]);
         for (const z of zonasConCapas) {
           setProcesando(`Preparando el archivo de impresión (${v.nombre} · ${z.nombre})…`);
-          const { blob, ancho, alto } = await renderizarImpresion(capas[z.id], z, srcDe);
+          const medida = medidaZona(z, v);
+          const { blob, ancho, alto } = await renderizarImpresion(capas[z.id], z, srcDe, medida);
           const url = await subirArchivoImpresion(user.uid, blob, z.id);
           archivosImpresion.push({
             vista: z.id, vistaId: v.id, nombre: `${v.nombre} · ${z.nombre}`, url, ancho, alto,
+            ...(medida && { anchoCm: medida.anchoCm, altoCm: medida.altoCm }),
           });
         }
         setProcesando(`Preparando la vista previa (${v.nombre})…`);
@@ -752,7 +754,8 @@ const CrearStudioPage = () => {
     );
   }
 
-  const calidad = capaSel?.type === 'image' ? calidadDeCapa(capaSel, zonaSel) : null;
+  const vistaSel = zonaSel ? cfg.vistas.find((v) => v.id === zonaSel.vistaId) : null;
+  const calidad = capaSel?.type === 'image' ? calidadDeCapa(capaSel, zonaSel, zonaSel && medidaZona(zonaSel, vistaSel)) : null;
   const base = precioBase(prenda);
 
   return (

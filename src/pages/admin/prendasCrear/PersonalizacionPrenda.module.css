@@ -749,7 +749,8 @@
 
 .vistaCuerpo {
   display: grid;
-  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  /* La foto manda: con la cuadrícula de cm hay que poder ver el detalle. */
+  grid-template-columns: minmax(280px, 1.15fr) minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
 }
@@ -798,5 +799,124 @@
 @media (max-width: 640px) {
   .zonaFila {
     grid-template-columns: minmax(0, 1fr) 80px auto;
+  }
+}
+
+/* ── Escala (medida de referencia) ─────────────────────────────────────── */
+
+.cuadricula {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(234, 88, 12, 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(234, 88, 12, 0.35) 1px, transparent 1px);
+}
+
+.reglaLinea {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.reglaLinea line {
+  stroke: #EA580C;
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+}
+
+.reglaPunto {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #EA580C;
+  border: 2px solid #fff;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  z-index: 3;
+  touch-action: none;
+}
+
+.reglaEtiqueta {
+  position: absolute;
+  transform: translate(-50%, -130%);
+  background: #EA580C;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.zonaMedida {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3C3489;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.escala {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1.5px dashed #EA580C;
+  background: rgba(234, 88, 12, 0.06);
+}
+
+.escalaFila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.escalaFila input[type="number"] {
+  width: 80px;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+}
+
+.escalaFila label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.zonaFilaCm {
+  grid-template-columns: minmax(0, 1fr) 76px 76px 76px auto;
+}
+
+@media (max-width: 640px) {
+  .zonaFilaCm {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  }
+
+  .zonaFilaCm > :first-child {
+    grid-column: 1 / -1;
   }
 }

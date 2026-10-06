@@ -1795,7 +1795,7 @@ const AdminProductoFormV2 = () => {
                 valor={form.prendaBase}
                 variantes={form.variants}
                 draftId={draftId}
-                onChange={(prendaBase) => setForm((f) => ({ ...f, prendaBase }))}
+                onChange={(valor) => setForm((f) => ({ ...f, prendaBase: typeof valor === 'function' ? valor(f.prendaBase) : valor }))}
                 onAgregarVariantes={(nuevas) => setForm((f) => {
                   // Si el producto solo tiene la variante vacía de inicio, se reemplaza.
                   const vacia = f.variants.length === 1 && !f.variants[0].imageUrl && /^Variante 1$/.test(f.variants[0].name || '');

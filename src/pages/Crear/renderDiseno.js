@@ -190,11 +190,11 @@ const aBlob = (canvasEl, tipo, calidad) =>
 
 /**
  * Archivo de impresión de una zona: PNG transparente con el diseño de la
- * zona, derecho (sin su giro), a LADO_IMPRESION píxeles por el lado mayor.
- * Por debajo del límite de canvas de Safari en iPhone (~16,7 Mpx).
+ * zona, derecho (sin su giro). Con la medida real de la zona sale a tamaño
+ * real (ver pixelesDeImpresion); sin ella, a una escala fija.
  */
-export const renderizarImpresion = async (capas, zona, srcDe) => {
-  const { ancho, alto } = pixelesDeImpresion(zona);
+export const renderizarImpresion = async (capas, zona, srcDe, medida = null) => {
+  const { ancho, alto } = pixelesDeImpresion(zona, medida);
   const el = document.createElement('canvas');
   const lienzo = new fabric.StaticCanvas(el, {
     width: ancho,

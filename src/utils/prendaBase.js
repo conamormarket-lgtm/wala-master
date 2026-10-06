@@ -128,7 +128,59 @@ export const normalizarVista = (vista, i = 0) => {
     : vista?.zona
       ? [normalizarZona({ ...vista.zona, id, nombre })]
       : [];
-  return { id, nombre, imagen: String(vista?.imagen || ''), zonas };
+  const referencia = normalizarReferencia(vista?.referencia);
+  const anchoImg = num(vista?.anchoImg, 0);
+  const altoImg = num(vista?.altoImg, 0);
+  return {
+    id,
+    nombre,
+    imagen: String(vista?.imagen || ''),
+    zonas,
+    ...(referencia && { referencia }),
+    ...(anchoImg > 0 && altoImg > 0 && { anchoImg, altoImg }),
+  };
+};
+
+/**
+ * Medida de referencia de una vista (solo la ve el admin): una línea sobre la
+ * foto (extremos en fracciones de la foto) y lo que mide en la prenda real.
+ * Con ella se conoce la escala de la foto, las zonas se pueden ajustar en cm
+ * exactos y el archivo de impresión sale a tamaño real.
+ */
+export const normalizarReferencia = (ref) => {
+  if (!ref || typeof ref !== 'object') return null;
+  return {
+    x1: limitar(num(ref.x1, 0.25), 0, 1),
+    y1: limitar(num(ref.y1, 0.4), 0, 1),
+    x2: limitar(num(ref.x2, 0.75), 0, 1),
+    y2: limitar(num(ref.y2, 0.4), 0, 1),
+    cm: Math.max(0, num(ref.cm, 0)),
+  };
+};
+
+/** Píxeles de la foto (tamaño natural) que hay en un cm de la prenda real. */
+export const pxPorCm = (vista) => {
+  const ref = vista?.referencia;
+  if (!ref || !(ref.cm > 0) || !vista.anchoImg || !vista.altoImg) return 0;
+  const largo = Math.hypot((ref.x2 - ref.x1) * vista.anchoImg, (ref.y2 - ref.y1) * vista.altoImg);
+  return largo > 0 ? largo / ref.cm : 0;
+};
+
+const redondear = (n) => Math.round(n * 10) / 10;
+
+/** Medida real de una zona en cm, o null si su vista no tiene escala. */
+export const medidaZona = (zona, vista) => {
+  const p = pxPorCm(vista);
+  if (!p) return null;
+  const anchoCm = (zona.w * vista.anchoImg) / p;
+  return { anchoCm: redondear(anchoCm), altoCm: redondear(anchoCm * zona.proporcion) };
+};
+
+/** La zona con el ancho y alto en cm pedidos (en la escala de su vista). */
+export const zonaConMedida = (zona, vista, anchoCm, altoCm) => {
+  const p = pxPorCm(vista);
+  if (!p || !(anchoCm > 0) || !(altoCm > 0)) return zona;
+  return { ...zona, w: limitar((anchoCm * p) / vista.anchoImg, 0.01, 1), proporcion: limitar(altoCm / anchoCm, 0.05, 20) };
 };
 
 /** Todas las zonas de la prenda, cada una con su vista. */
@@ -250,19 +302,42 @@ export const precioPersonalizado = (producto) => precioBase(producto);
 // 300 dpi). Las zonas son de referencia, así que todas salen a esta escala.
 export const LADO_IMPRESION = 3600;
 
-/** Tamaño en píxeles del archivo de impresión de una zona. */
-export const pixelesDeImpresion = (zona) => (zona.proporcion >= 1
-  ? { ancho: Math.round(LADO_IMPRESION / zona.proporcion), alto: LADO_IMPRESION }
-  : { ancho: LADO_IMPRESION, alto: Math.round(LADO_IMPRESION * zona.proporcion) });
+export const DPI_IMPRESION = 300;
+
+// Safari de iPhone no dibuja canvas de más de ~16,7 millones de píxeles (un
+// 35 x 40 cm a 300 dpi son 19,5). Por encima se baja la resolución lo justo.
+const AREA_MAXIMA = 16000000;
+
+/**
+ * Tamaño en píxeles del archivo de impresión de una zona. Con su medida real
+ * (la vista tiene escala) sale a tamaño real a DPI_IMPRESION; sin ella, a
+ * LADO_IMPRESION por el lado mayor.
+ */
+export const pixelesDeImpresion = (zona, medida = null) => {
+  let ancho;
+  let alto;
+  if (medida?.anchoCm > 0 && medida?.altoCm > 0) {
+    ancho = (medida.anchoCm / 2.54) * DPI_IMPRESION;
+    alto = (medida.altoCm / 2.54) * DPI_IMPRESION;
+  } else if (zona.proporcion >= 1) {
+    ancho = LADO_IMPRESION / zona.proporcion;
+    alto = LADO_IMPRESION;
+  } else {
+    ancho = LADO_IMPRESION;
+    alto = LADO_IMPRESION * zona.proporcion;
+  }
+  const reduccion = Math.min(1, Math.sqrt(AREA_MAXIMA / (ancho * alto)));
+  return { ancho: Math.round(ancho * reduccion), alto: Math.round(alto * reduccion) };
+};
 
 /**
  * ¿Se verá nítida una imagen al imprimirse? Compara cuántos píxeles ocupará
  * en el archivo de impresión con los que trae: si hay que estirarla mucho, se
  * pixela.
  */
-export const calidadDeCapa = (capa, zona) => {
+export const calidadDeCapa = (capa, zona, medida = null) => {
   if (capa?.type !== 'image' || !capa.anchoNatural || !capa.escalaX || !zona) return null;
-  const { ancho } = pixelesDeImpresion(zona);
+  const { ancho } = pixelesDeImpresion(zona, medida);
   const estiramiento = (Math.abs(capa.escalaX) * ancho) / UNIDADES_ZONA;
   if (estiramiento <= 1.5) return 'buena';
   if (estiramiento <= 2.5) return 'regular';
@@ -399,6 +474,10 @@ export const vistasDeEjemplo = (origen) => [
     id: 'frente',
     nombre: 'Frente',
     imagen: `${origen}/prendas/hoodie-frente.webp`,
+    anchoImg: 1100,
+    altoImg: 1289,
+    // De axila a axila. Es una estimación: mídela en la prenda real.
+    referencia: { x1: 0.224, y1: 0.36, x2: 0.773, y2: 0.36, cm: 58 },
     zonas: [
       { id: 'frente-pecho', nombre: 'Pecho', x: 0.357, y: 0.27, w: 0.284, proporcion: 1, angulo: 0 },
       // Las mangas caen inclinadas: la zona gira con ellas.
@@ -410,6 +489,9 @@ export const vistasDeEjemplo = (origen) => [
     id: 'espalda',
     nombre: 'Espalda',
     imagen: `${origen}/prendas/hoodie-espalda.webp`,
+    anchoImg: 1073,
+    altoImg: 1235,
+    referencia: { x1: 0.21, y1: 0.38, x2: 0.79, y2: 0.38, cm: 58 },
     zonas: [
       { id: 'espalda-centro', nombre: 'Espalda', x: 0.3255, y: 0.32, w: 0.349, proporcion: 1.1429, angulo: 0 },
     ],
