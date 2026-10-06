@@ -904,6 +904,9 @@ export const deleteProduct = async (id) => {
     searchTokens: []
   };
   const result = await updateDocument(COLLECTION, id, tombstone);
+  // Igual que updateProduct: si no se pudo guardar, que falle. Antes devolvía
+  // { error } sin lanzar y el admin mostraba "Producto archivado" sin haberlo hecho.
+  if (result.error) throw new Error(result.error);
   clearProductCaches();
   return result;
 };
