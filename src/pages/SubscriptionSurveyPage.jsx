@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 // eslint-disable-next-line no-unused-vars
 import { Gift, UserCircle, Users, CheckCircle, Heart, UserPlus, Plus, Trash2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../services/encuestaConfig';
+import { registrarConversionPopup } from '../services/popups';
 import { showFlyingCoins, volarMonedasGanadas } from '../utils/animations';
 import { useGiftCatalog } from '../hooks/useGiftCatalog';
 import { PRESUPUESTOS } from '../utils/giftRecommender.mjs';
@@ -29,7 +30,7 @@ const ROLES_MAP = {
 };
 
 const SubscriptionSurveyPage = () => {
-  const { userProfile, updateUserProfile, loading: authLoading, grantSurveyReward, claimDatesReward } = useAuth();
+  const { user, userProfile, updateUserProfile, loading: authLoading, grantSurveyReward, claimDatesReward } = useAuth();
   const navigate = useNavigate();
 
   const [config, setConfig] = useState(DEFAULT_SURVEY_CONFIG);
@@ -352,6 +353,8 @@ const SubscriptionSurveyPage = () => {
 
       const { error: saveError } = await updateUserProfile(profileUpdates);
       if (saveError) throw new Error(saveError);
+      // Si llegó desde un popup de campaña, cuenta como conversión de ese popup.
+      registrarConversionPopup('encuesta', { uid: user?.uid || null, email: user?.email || null });
 
       // H-06: las monedas las calcula y acredita el SERVIDOR. Bono fijo por
       // completar la encuesta (una vez) + 5 por cada fecha nueva (con tope).

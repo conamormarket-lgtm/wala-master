@@ -15,31 +15,33 @@ Lista de trabajo a partir de las notas del 06/10/2026. Se marca `[x]` al termina
 - Hay un `Modal` genérico.
 - **No existe** un sistema de popups o anuncios.
 
+> ✅ Hecho el 06/10/2026: `src/services/popupsLogic.mjs` (reglas + tests), `src/components/common/CampaignPopup/`, `/admin/popups`.
+
 ### 1.1 Sistema de popups/anuncios reutilizable
 Así sirve para la encuesta y luego para promos, descuentos y referidos.
-- [ ] Colección `tienda_popups` en Firestore. Cada popup tiene:
+- [x] Documento `storeConfig/popups` en Firestore (no una colección nueva: las reglas vivas son del ERP). Cada popup tiene:
   - Contenido: título, texto, imagen, texto del botón y destino (link).
   - Estado: activo o no, con fechas de inicio y fin.
-- [ ] Reglas de a quién mostrarlo (targeting):
+- [x] Reglas de a quién mostrarlo (targeting):
   - Si el usuario está logueado o no.
   - `hasCompletedSurvey == false`.
   - En qué páginas aparece (inicio, producto, después de comprar…).
   - Si es dispositivo móvil o web.
-- [ ] Reglas de cuándo mostrarlo:
+- [x] Reglas de cuándo mostrarlo:
   - Disparador: a los X segundos, al hacer X% de scroll o al intentar salir (solo en desktop).
   - Límite de frecuencia: no más de 1 popup por sesión y cooldown de N días si lo cierra.
-- [ ] Componente `CampaignPopup` montado en el layout de la tienda. Reutiliza `Modal` y tiene que funcionar bien en móvil y en Capacitor.
-- [ ] Que no choque con los popups que ya existen: `LanguagePopup`, `CuentaLoginPrompt`, `AppDownloadBanner` y `PackageBubble`. Hay que definir prioridades para que no salgan dos a la vez.
+- [x] Componente `CampaignPopup` montado en el layout de la tienda. Reutiliza `Modal` y tiene que funcionar bien en móvil y en Capacitor.
+- [x] Que no choque con los popups que ya existen: `LanguagePopup`, `CuentaLoginPrompt`, `AppDownloadBanner` y `PackageBubble`. Hay que definir prioridades para que no salgan dos a la vez.
 
 ### 1.2 Popup específico de la encuesta
-- [ ] Texto que deje claro qué se gana: recompensa de encuesta y de fechas (`grantSurveyReward` / `claimDatesReward`).
-- [ ] Si el usuario no está logueado: primero login o registro y luego volver a la encuesta.
+- [x] Texto que deje claro qué se gana: recompensa de encuesta y de fechas (`grantSurveyReward` / `claimDatesReward`).
+- [x] Si el usuario no está logueado: primero login o registro y luego volver a la encuesta.
 - [ ] Opcional: dejar la encuesta a medias y retomarla (guardar el avance).
 
 ### 1.3 Administración y medición
-- [ ] Página `/admin/popups` para crear, editar, activar y previsualizar popups. Agregarla en `App.jsx` y en el `NavLink` de `AdminLayout`.
-- [ ] Eventos de analytics: `popup_view`, `popup_click`, `popup_close` y conversión (encuesta completada después del popup).
-- [ ] Mostrar en el admin cuántos lo vieron, cuántos hicieron clic y cuántos completaron la encuesta.
+- [x] Página `/admin/popups` para crear, editar, activar y previsualizar popups. Agregarla en `App.jsx` y en el `NavLink` de `AdminLayout`.
+- [x] Eventos de analytics: `popup_view`, `popup_click`, `popup_close` y conversión (encuesta completada después del popup).
+- [x] Mostrar en el admin cuántos lo vieron, cuántos hicieron clic y cuántos completaron la encuesta.
 
 ---
 

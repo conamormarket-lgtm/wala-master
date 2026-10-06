@@ -43,6 +43,7 @@ import PackageBubble from './components/common/PackageBubble/PackageBubble';
 import DeepLinkHandler from './components/common/DeepLinkHandler';
 import SystemAlert from './components/common/SystemAlert/SystemAlert';
 import LanguagePopup from './components/i18n/LanguagePopup';
+import CampaignPopup from './components/common/CampaignPopup/CampaignPopup';
 
 // ── Auto-recuperación de bundle obsoleto tras un deploy ───
 // Si una pestaña tenía cacheado un build viejo y al navegar a una página lazy
@@ -216,6 +217,7 @@ const AdminThemes = lazy(() => import('./pages/Tienda/admin/AdminThemes'));
 const AdminStoreEditor = lazy(() => import('./pages/Tienda/admin/AdminStoreEditor'));
 const AdminRuletaPage = lazy(() => import('./pages/admin/AdminRuletaPage'));
 const AdminEncuestas = lazy(() => import('./pages/admin/AdminEncuestas'));
+const AdminPopups = lazy(() => import('./pages/admin/AdminPopups'));
 const AdminFechasImportantesPage = lazy(() => import('./pages/admin/AdminFechasImportantesPage'));
 const AdminGeneradorPagos = lazy(() => import('./pages/admin/AdminGeneradorPagos'));
 const AdminLibroReclamaciones = lazy(() => import('./pages/admin/AdminLibroReclamaciones'));
@@ -331,6 +333,9 @@ const GlobalLayout = ({ children }) => {
 
       {/* Popup discreto de sugerencia de idioma (se muestra una sola vez). */}
       <LanguagePopup />
+
+      {/* Popups de campaña (encuesta, promos…) configurados en /admin/popups. */}
+      <CampaignPopup />
     </div>
   );
 };
@@ -502,6 +507,7 @@ function App() {
                                       <Route path="backups" element={<AdminBackups />} />
                                       <Route path="configuracion" element={<AdminConfiguracion />} />
                                       <Route path="encuestas" element={<AdminEncuestas />} />
+                                      <Route path="popups" element={<AdminPopups />} />
                                       <Route path="fechas-importantes" element={<AdminFechasImportantesPage />} />
                                     </Route>
                                   </Route>

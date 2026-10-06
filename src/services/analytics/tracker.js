@@ -549,6 +549,27 @@ export async function trackWishlist(wishlistInfo = {}, userCtx = {}) {
   });
 }
 
+// ── Popups de campaña ────────────────────────────────────────────────────────
+// `type` es uno de los POPUP_* de ANALYTICS_EVENT_TYPES. Fire-and-forget: nunca
+// debe bloquear el cierre del popup ni la navegación del botón.
+export async function trackPopupEvent(type, popupId, extra = {}, userCtx = {}) {
+  const now = Date.now();
+  const anonymousId = getAnonymousId();
+  const sessionId = await ensureAnalyticsSession(userCtx);
+  await createDocument(ANALYTICS_COLLECTIONS.EVENTS, {
+    type,
+    path: window.location.pathname || '/',
+    uid: userCtx?.uid || null,
+    email: userCtx?.email || null,
+    displayName: userCtx?.displayName || null,
+    anonymousId,
+    sessionId: sessionId || null,
+    clientTsMs: now,
+    clientType: getClientType(),
+    eventData: { popupId, ...extra },
+  });
+}
+
 // ── Enlaces útiles (link-in-bio): visitas y clics ────────────────────────────
 // Ambos son FIRE-AND-FORGET: jamás bloquean la carga de /l/{slug} ni la apertura
 // del enlace. País y dispositivo se derivan de la sesión (mismo mecanismo que el
