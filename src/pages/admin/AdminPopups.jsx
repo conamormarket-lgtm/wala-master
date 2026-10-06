@@ -16,7 +16,7 @@ const pct = (a, b) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '—');
 const describirCuando = (p) => {
   if (p.disparador === 'scroll') return `al bajar ${p.scrollPct}%`;
   if (p.disparador === 'salida') return 'al intentar salir';
-  return `a los ${p.segundos} s`;
+  return p.segundos > 0 ? `a los ${p.segundos} s` : 'apenas entra';
 };
 
 const Estadisticas = ({ popupId }) => {
@@ -77,7 +77,10 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
     onGuardar(normalizarPopup({ ...form, id }));
   };
 
-  const valido = form.titulo.trim() && form.botonTexto.trim() && (form.objetivo === 'encuesta' || form.botonUrl.trim());
+  const esImagen = form.formato === 'imagen';
+  const valido = form.titulo.trim()
+    && (esImagen ? form.imagenUrl.trim() : form.botonTexto.trim())
+    && (form.objetivo === 'encuesta' || form.botonUrl.trim());
 
   return (
     <form className={styles.editor} onSubmit={enviar}>
@@ -94,13 +97,31 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
         <Campo label="Nombre interno" ayuda="Solo lo ves tú, para reconocerlo en la lista.">
           <input value={form.nombre} onChange={setInput('nombre')} placeholder="Ej. Encuesta octubre" />
         </Campo>
-        <Campo label="Título">
-          <input value={form.titulo} onChange={setInput('titulo')} required maxLength={90} />
+        <Campo
+          label="Formato"
+          ayuda={esImagen
+            ? 'Se muestra solo la imagen; al tocarla, hace lo que diga “¿Qué hace el botón?”. Pon todo el mensaje dentro de la imagen.'
+            : 'Título, texto y un botón; la imagen es opcional y va arriba.'}
+        >
+          <Select campo="formato" value={form.formato} onChange={set('formato')} />
         </Campo>
-        <Campo label="Texto">
-          <textarea value={form.texto} onChange={setInput('texto')} rows={3} maxLength={400} />
+        <Campo
+          label={esImagen ? 'Descripción de la imagen' : 'Título'}
+          ayuda={esImagen ? 'No se ve: la leen los lectores de pantalla. Resume lo que dice la imagen.' : null}
+        >
+          <input value={form.titulo} onChange={setInput('titulo')} required maxLength={120} />
         </Campo>
-        <Campo label="Imagen (opcional)" ayuda="Horizontal, 16:9. Puedes subirla o pegar un enlace.">
+        {!esImagen && (
+          <Campo label="Texto">
+            <textarea value={form.texto} onChange={setInput('texto')} rows={3} maxLength={400} />
+          </Campo>
+        )}
+        <Campo
+          label={esImagen ? 'Imagen' : 'Imagen (opcional)'}
+          ayuda={esImagen
+            ? 'Cuadrada o vertical se ve bien en celular. Puedes subirla o pegar un enlace.'
+            : 'Horizontal, 16:9. Puedes subirla o pegar un enlace.'}
+        >
           <div className={styles.fila}>
             <input value={form.imagenUrl} onChange={setInput('imagenUrl')} placeholder="https://…" />
             <label className={styles.btnSecundario}>
@@ -109,13 +130,14 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
             </label>
           </div>
           {errorImagen && <span className={styles.error}>{errorImagen}</span>}
+          {form.imagenUrl && <img className={styles.miniatura} src={form.imagenUrl} alt="" />}
         </Campo>
       </fieldset>
 
       <fieldset className={styles.grupo}>
-        <legend>Botón</legend>
+        <legend>{esImagen ? 'Al tocar la imagen' : 'Botón'}</legend>
         <Campo
-          label="¿Qué hace el botón?"
+          label={esImagen ? '¿A dónde lleva?' : '¿Qué hace el botón?'}
           ayuda={form.objetivo === 'encuesta'
             ? 'Lleva a la encuesta (o a iniciar sesión si no la tiene). No se muestra a quien ya la llenó, y completarla cuenta como conversión.'
             : 'Lleva al enlace que pongas. Puede ser una página de la tienda (/ofertas) o un enlace externo.'}
@@ -123,18 +145,22 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
           <Select campo="objetivo" value={form.objetivo} onChange={set('objetivo')} />
         </Campo>
         <div className={styles.dosCol}>
-          <Campo label="Texto del botón">
-            <input value={form.botonTexto} onChange={setInput('botonTexto')} required maxLength={40} />
-          </Campo>
+          {!esImagen && (
+            <Campo label="Texto del botón">
+              <input value={form.botonTexto} onChange={setInput('botonTexto')} required maxLength={40} />
+            </Campo>
+          )}
           {form.objetivo === 'enlace' && (
             <Campo label="Enlace">
               <input value={form.botonUrl} onChange={setInput('botonUrl')} placeholder="/ofertas" required />
             </Campo>
           )}
         </div>
-        <Campo label="Texto para cerrar" ayuda="Déjalo vacío para mostrar solo la ×.">
-          <input value={form.cerrarTexto} onChange={setInput('cerrarTexto')} maxLength={40} />
-        </Campo>
+        {!esImagen && (
+          <Campo label="Texto para cerrar" ayuda="Déjalo vacío para mostrar solo la ×.">
+            <input value={form.cerrarTexto} onChange={setInput('cerrarTexto')} maxLength={40} />
+          </Campo>
+        )}
       </fieldset>
 
       <fieldset className={styles.grupo}>
@@ -156,7 +182,10 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
               <input type="number" min={5} max={100} value={form.scrollPct} onChange={setInput('scrollPct')} />
             </Campo>
           ) : (
-            <Campo label="Segundos en el sitio" ayuda={form.disparador === 'salida' ? 'En celular se usa esto.' : null}>
+            <Campo
+              label="Segundos en el sitio"
+              ayuda={form.disparador === 'salida' ? 'En celular se usa esto.' : '0 = apenas entra.'}
+            >
               <input type="number" min={0} max={600} value={form.segundos} onChange={setInput('segundos')} />
             </Campo>
           )}
@@ -175,7 +204,7 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
       </fieldset>
 
       <div className={styles.editorAcciones}>
-        <button type="button" className={styles.btnSecundario} onClick={() => setPrevia(true)} disabled={!form.titulo.trim()}>
+        <button type="button" className={styles.btnSecundario} onClick={() => setPrevia(true)} disabled={!valido}>
           <Eye size={16} /> Vista previa
         </button>
         <span className={styles.espaciador} />
@@ -298,16 +327,20 @@ const AdminPopups = () => {
                 <h3>{p.nombre || p.titulo}</h3>
                 <span className={p.activo ? styles.badgeOn : styles.badgeOff}>{p.activo ? 'Activo' : 'Apagado'}</span>
                 <span className={styles.badge}>{etiqueta('objetivo', p.objetivo)}</span>
+                <span className={styles.badge}>{p.formato === 'imagen' ? 'Imagen' : 'Tarjeta'}</span>
               </div>
               <label className={styles.switch} title={p.activo ? 'Apagar' : 'Encender'}>
                 <input type="checkbox" checked={p.activo} onChange={() => alternar(p)} disabled={guardar.isPending} />
                 <span className={styles.srOnly}>Activo</span>
               </label>
             </div>
-            <p className={styles.resumen}>
-              <strong>{p.titulo}</strong>
-              {p.texto && <> — {p.texto}</>}
-            </p>
+            <div className={styles.cardCuerpo}>
+              {p.imagenUrl && <img className={styles.miniatura} src={p.imagenUrl} alt="" />}
+              <p className={styles.resumen}>
+                <strong>{p.titulo}</strong>
+                {p.formato !== 'imagen' && p.texto && <> — {p.texto}</>}
+              </p>
+            </div>
             <p className={styles.meta}>
               {etiqueta('audiencia', p.audiencia)} · {etiqueta('paginas', p.paginas)} · {etiqueta('dispositivo', p.dispositivo)} ·
               {' '}aparece {describirCuando(p)} · no se repite por {p.cooldownDias} días

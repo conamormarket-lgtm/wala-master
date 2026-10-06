@@ -28,6 +28,19 @@ test('documento con lista vacía no muestra nada (el admin los borró)', () => {
   assert.deepEqual(popupsDesdeDoc({ popups: [] }), []);
 });
 
+test('el popup de encuesta por defecto es una imagen que sale al entrar', () => {
+  const [p] = popupsDesdeDoc(null);
+  assert.equal(p.formato, 'imagen');
+  assert.equal(p.segundos, 0);
+  assert.ok(p.imagenUrl);
+});
+
+test('formato imagen sin imagen cae a tarjeta', () => {
+  assert.equal(normalizarPopup({ id: 'x', formato: 'imagen', imagenUrl: '' }).formato, 'tarjeta');
+  assert.equal(normalizarPopup({ id: 'x', formato: 'imagen', imagenUrl: '/a.webp' }).formato, 'imagen');
+  assert.equal(normalizarPopup({ id: 'x' }).formato, 'tarjeta');
+});
+
 test('normalizar tolera basura', () => {
   const p = normalizarPopup({ id: ' x ', activo: 'si', segundos: 'abc', audiencia: 'marcianos', desde: 'ayer' });
   assert.equal(p.id, 'x');

@@ -1,5 +1,9 @@
 // Tarjeta visual de un popup de campaña. Solo presentación: la usan el
 // controlador de la tienda (CampaignPopup) y la vista previa del admin.
+//
+// Dos formatos:
+//   - 'tarjeta': imagen opcional + título + texto + botón.
+//   - 'imagen': solo la imagen (ya trae su propio texto) y TODA ella es el botón.
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { X } from 'lucide-react';
@@ -7,6 +11,7 @@ import styles from './CampaignPopup.module.css';
 
 const PopupCard = ({ popup, onCta, onClose }) => {
   const ctaRef = useRef(null);
+  const soloImagen = popup.formato === 'imagen' && popup.imagenUrl;
 
   useEffect(() => {
     const anterior = document.body.style.overflow;
@@ -23,6 +28,31 @@ const PopupCard = ({ popup, onCta, onClose }) => {
   }, [onClose]);
 
   const tituloId = `popup-titulo-${popup.id || 'preview'}`;
+  const cerrar = (
+    <button type="button" className={styles.cerrar} onClick={onClose} aria-label="Cerrar">
+      <X size={18} />
+    </button>
+  );
+
+  if (soloImagen) {
+    return ReactDOM.createPortal(
+      <div className={`${styles.overlay} ${styles.overlayImagen}`} onClick={onClose}>
+        <div
+          className={styles.cardImagen}
+          role="dialog"
+          aria-modal="true"
+          aria-label={popup.titulo || 'Anuncio'}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {cerrar}
+          <button ref={ctaRef} type="button" className={styles.imagenBoton} onClick={onCta}>
+            <img src={popup.imagenUrl} alt={popup.titulo || ''} />
+          </button>
+        </div>
+      </div>,
+      document.body,
+    );
+  }
 
   return ReactDOM.createPortal(
     <div className={styles.overlay} onClick={onClose}>
@@ -33,9 +63,7 @@ const PopupCard = ({ popup, onCta, onClose }) => {
         aria-labelledby={tituloId}
         onClick={(e) => e.stopPropagation()}
       >
-        <button type="button" className={styles.cerrar} onClick={onClose} aria-label="Cerrar">
-          <X size={18} />
-        </button>
+        {cerrar}
         {popup.imagenUrl && (
           <div className={styles.imagen}>
             <img src={popup.imagenUrl} alt="" />

@@ -136,6 +136,44 @@
   background: #f5f3fa;
 }
 
+/* ── Formato "solo imagen": la imagen entera es el botón ───────────── */
+.cardImagen {
+  position: relative;
+  width: min(560px, 100%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(17, 12, 34, 0.35);
+  animation: cp-pop 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+.imagenBoton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.imagenBoton img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100vh - 2rem);
+  object-fit: contain;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.imagenBoton:hover img {
+  transform: scale(1.015);
+  filter: brightness(1.03);
+}
+
+.imagenBoton:focus-visible {
+  outline: 3px solid #8b5cf6;
+  outline-offset: -3px;
+}
+
 @media (max-width: 640px) {
   .overlay {
     align-items: flex-end;
@@ -152,6 +190,16 @@
 
   .imagen {
     border-radius: 20px 20px 0 0;
+  }
+
+  /* La imagen se ve mejor centrada y entera que como hoja inferior. */
+  .overlay.overlayImagen {
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .cardImagen {
+    border-radius: 16px;
   }
 }
 
@@ -195,7 +243,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .overlay,
-  .card {
+  .card,
+  .cardImagen {
     animation: none;
+  }
+
+  .imagenBoton img {
+    transition: none;
   }
 }

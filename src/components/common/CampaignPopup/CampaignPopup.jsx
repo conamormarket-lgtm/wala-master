@@ -39,6 +39,16 @@ const avisoIdiomaPendiente = () => {
   }
 };
 
+// Precarga la imagen antes de abrir el popup para que no aparezca vacío y
+// "salte" al cargar. Si falla, igual se abre (se resuelve en ambos casos).
+const precargarImagen = (url) => new Promise((resolve) => {
+  if (!url) return resolve();
+  const img = new Image();
+  img.onload = resolve;
+  img.onerror = resolve;
+  img.src = url;
+});
+
 const porcentajeScroll = () => {
   const doc = document.documentElement;
   const recorrible = doc.scrollHeight - window.innerHeight;
@@ -94,8 +104,12 @@ const CampaignPopup = () => {
     const candidato = elegirPopup(popups, contexto());
     if (!candidato) return undefined;
 
-    const disparar = () => {
-      if (yaHuboPopupEnSesion()) return;
+    let cancelado = false;
+    const imagenLista = precargarImagen(candidato.imagenUrl);
+
+    const disparar = async () => {
+      await imagenLista;
+      if (cancelado || yaHuboPopupEnSesion()) return;
       const p = elegirPopup(popups, contexto());
       if (!p || p.id !== candidato.id) return;
       registrarMostrado(p);
@@ -112,7 +126,10 @@ const CampaignPopup = () => {
         if (porcentajeScroll() >= candidato.scrollPct) disparar();
       };
       window.addEventListener('scroll', alScroll, { passive: true });
-      return () => window.removeEventListener('scroll', alScroll);
+      return () => {
+        cancelado = true;
+        window.removeEventListener('scroll', alScroll);
+      };
     }
 
     if (disparador === 'salida') {
@@ -120,12 +137,18 @@ const CampaignPopup = () => {
         if (!e.relatedTarget && e.clientY <= 0) disparar();
       };
       document.addEventListener('mouseout', alSalir);
-      return () => document.removeEventListener('mouseout', alSalir);
+      return () => {
+        cancelado = true;
+        document.removeEventListener('mouseout', alSalir);
+      };
     }
 
     const espera = Math.max(0, candidato.segundos * 1000 - (Date.now() - inicioRef.current));
     const t = setTimeout(disparar, espera);
-    return () => clearTimeout(t);
+    return () => {
+      cancelado = true;
+      clearTimeout(t);
+    };
   }, [popups, pathname, user, userProfile, loading, isEditModeActive, abierto]);
 
   const cerrar = useCallback(() => {

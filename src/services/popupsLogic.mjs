@@ -33,6 +33,10 @@ export const RUTAS_SIN_POPUP = [
 ];
 
 export const OPCIONES = {
+  formato: [
+    { value: 'imagen', label: 'Solo imagen (toda la imagen es el botón)' },
+    { value: 'tarjeta', label: 'Tarjeta con título, texto y botón' },
+  ],
   objetivo: [
     { value: 'encuesta', label: 'Llenar la encuesta' },
     { value: 'enlace', label: 'Ir a un enlace' },
@@ -63,6 +67,7 @@ export const POPUP_VACIO = {
   id: '',
   nombre: '',
   activo: false,
+  formato: 'tarjeta',
   objetivo: 'enlace',
   titulo: '',
   texto: '',
@@ -88,13 +93,16 @@ export const POPUP_ENCUESTA_DEFAULT = {
   id: 'encuesta',
   nombre: 'Llenar encuesta (perfil de regalos)',
   activo: true,
+  formato: 'imagen',
+  imagenUrl: '/images/popups/encuesta-conocerte-mejor.webp',
   objetivo: 'encuesta',
-  titulo: '🎁 Arma tu perfil de regalos',
+  // En formato imagen, el título es el texto alternativo de la imagen.
+  titulo: '¡Queremos conocerte mejor! Haz clic para completar la encuesta',
   texto: 'Cuéntanos a quién le regalas y te avisamos antes de sus fechas especiales con ideas que le van a encantar. Además ganas monedas Walá. Toma 2 minutos.',
   botonTexto: 'Llenar encuesta',
   botonUrl: '/encuesta-suscripcion',
   cerrarTexto: 'Ahora no',
-  segundos: 12,
+  segundos: 0,
   cooldownDias: 3,
   prioridad: 10,
 };
@@ -119,6 +127,8 @@ export function normalizarPopup(raw = {}) {
     id: String(p.id || '').trim(),
     nombre: String(p.nombre || ''),
     activo: p.activo === true,
+    // Sin imagen, el formato imagen no tiene nada que mostrar: cae a tarjeta.
+    formato: enOpciones('formato', p.formato) === 'imagen' && String(p.imagenUrl || '').trim() ? 'imagen' : 'tarjeta',
     objetivo: enOpciones('objetivo', p.objetivo),
     titulo: String(p.titulo || ''),
     texto: String(p.texto || ''),
