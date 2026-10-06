@@ -63,7 +63,8 @@ const LoginPage = () => {
     setLoading(true);
 
     const { error: err, errorCode } = await signInWithGoogle();
-    if (err) {
+    // Cerrar la ventana de Google no es un error: solo se deja de cargar.
+    if (err && errorCode !== 'auth/popup-closed-by-user' && errorCode !== 'auth/cancelled-popup-request') {
       setError(getAuthErrorMessage(errorCode, err));
     }
     // En éxito, la redirección la maneja el useEffect (respeta el retorno).

@@ -102,6 +102,38 @@ export const signInWithEmail = async (email, password) => {
   }
 };
 
+// Si el usuario CIERRA la ventana de Google, Firebase a veces no se entera:
+// con el encabezado Cross-Origin-Opener-Policy (vercel.json) la página no puede
+// leer si el popup se cerró, y signInWithPopup queda pendiente para siempre
+// (el botón se quedaba "cargando"). Esto detecta que la página volvió a tener el
+// foco y, si en unos segundos no hubo respuesta, lo da por cancelado. Si igual
+// terminó de iniciar sesión, onAuthStateChanged lo detecta y la página entra.
+const ESPERA_TRAS_VOLVER_MS = 4000;
+function detectarPopupCerrado() {
+  let limpiar = () => {};
+  const promesa = new Promise((resolve) => {
+    let espera = null;
+    const alVolver = () => {
+      if (document.visibilityState === 'hidden') return;
+      clearTimeout(espera);
+      espera = setTimeout(() => resolve('cerrado'), ESPERA_TRAS_VOLVER_MS);
+    };
+    // Se arma un instante después de abrir el popup, para no confundir el foco
+    // del propio clic con "volvió".
+    const armar = setTimeout(() => {
+      window.addEventListener('focus', alVolver);
+      document.addEventListener('visibilitychange', alVolver);
+    }, 600);
+    limpiar = () => {
+      clearTimeout(armar);
+      clearTimeout(espera);
+      window.removeEventListener('focus', alVolver);
+      document.removeEventListener('visibilitychange', alVolver);
+    };
+  });
+  return { promesa, limpiar };
+}
+
 /**
  * Login con Google.
  * - En Android/iOS nativo (Capacitor): usa el plugin @codetrix-studio/capacitor-google-auth
@@ -150,7 +182,17 @@ export const signInWithGoogle = async () => {
     // El resolvedor va explícito porque la instancia de auth se crea sin él
     // (ver arrancarAuth en firebase/config.js): así el iframe de Google se carga
     // aquí, al pulsar el botón, y no en el arranque de cada visita.
-    const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+    const popup = signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+    popup.catch(() => {}); // si gana la cancelación, su error tardío no queda suelto
+    const cierre = detectarPopupCerrado();
+    let result;
+    try {
+      const r = await Promise.race([popup.then((res) => ({ res })), cierre.promesa.then(() => ({ cerrado: true }))]);
+      if (r.cerrado) return { user: null, error: null, errorCode: 'auth/cancelled', credential: null };
+      result = r.res;
+    } finally {
+      cierre.limpiar();
+    }
     // Best-effort: leer el cumpleaños desde la People API (gratis) y guardarlo
     // para precargarlo en "completar perfil". Nunca rompe el login.
     try {

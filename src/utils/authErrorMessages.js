@@ -11,6 +11,8 @@ const AUTH_ERROR_MESSAGES = {
     'El inicio de sesión con este método no está habilitado. Contacte al administrador.',
   'auth/popup-closed-by-user': 'Inicio de sesión cancelado.',
   'auth/cancelled-popup-request': 'Inicio de sesión cancelado.',
+  'auth/popup-blocked':
+    'Tu navegador bloqueó la ventana de Google. Permite las ventanas emergentes para wala.pe e inténtalo de nuevo.',
   'auth/too-many-requests':
     'Demasiados intentos. Pruebe más tarde o restablezca su contraseña.',
   'auth/user-disabled':

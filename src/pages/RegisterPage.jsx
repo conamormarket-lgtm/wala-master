@@ -163,12 +163,14 @@ const RegisterPage = () => {
     if (loading) return;
     setError(null);
     setLoading(true);
-    const { error: err, errorCode } = await signInWithGoogle();
+    const { error: err, errorCode, user: usuarioGoogle } = await signInWithGoogle();
     setLoading(false);
     if (err) {
       setError(getAuthErrorMessage(errorCode, err));
       return;
     }
+    // Cerró el selector de cuentas: se queda en el registro.
+    if (errorCode === 'auth/cancelled' || !usuarioGoogle) return;
     navigate('/completar-perfil');
   };
 
