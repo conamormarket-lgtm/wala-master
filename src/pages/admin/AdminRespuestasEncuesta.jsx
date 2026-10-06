@@ -6,7 +6,7 @@ import { PORTAL_USERS_COLLECTION } from '../../constants/userCollections';
 import { getSurveyConfig, DEFAULT_SURVEY_CONFIG } from '../../services/encuestaConfig';
 import {
   resumenEncuesta, fichaCliente, csvRespuestas,
-  fechaEncuesta, fechaEsEstimada, filtrarPorFecha, porPeriodo, textoFechaEncuesta, diaLocal,
+  fechaEncuesta, filtrarPorFecha, porPeriodo, textoFechaEncuesta, diaLocal,
 } from '../../services/surveyResponses.mjs';
 import styles from './AdminRespuestasEncuesta.module.css';
 
@@ -126,7 +126,6 @@ const AdminRespuestasEncuesta = () => {
     const unidad = rango.desde && diasEntre(rango.desde, rango.hasta || diaLocal(Date.now())) <= 62 ? 'dia' : 'mes';
     return {
       sinFecha: data.usuarios.length - conFecha.length,
-      estimadas: enRango.filter(fechaEsEstimada).length,
       unidad,
       periodos: porPeriodo(enRango, unidad).map((p) => ({ ...p, valor: etiquetaPeriodo(p.valor, unidad) })),
     };
@@ -205,30 +204,33 @@ const AdminRespuestasEncuesta = () => {
         <>
           <section className={styles.kpis}>
             <div className={`${styles.kpi} ${styles.kpiDestacado}`}>
-              <span>{enRango.length}</span>
-              {hayRango ? `completaron la encuesta en este rango (de ${data.usuarios.length} en total)` : 'clientes completaron la encuesta'}
+              <span>{data.usuarios.length}</span>
+              clientes han realizado la encuesta (total)
+            </div>
+            {hayRango && (
+              <div className={`${styles.kpi} ${styles.kpiDestacado}`}>
+                <span>{enRango.length}</span>
+                la realizaron en este rango de fechas
+              </div>
+            )}
+            <div className={styles.kpi}>
+              <span>{fechas.sinFecha}</span>
+              con fecha desconocida (la llenaron antes del 29/06/2026)
             </div>
             <div className={styles.kpi}><span>{resumen.personas}</span>personas cargadas para regalar</div>
             <div className={styles.kpi}><span>{resumen.conCumpleanos}</span>clientes dieron su cumpleaños</div>
             <div className={styles.kpi}><span>{resumen.conPresupuesto}</span>personas con presupuesto</div>
           </section>
 
-          {fechas.sinFecha === data.usuarios.length ? (
-            <p className={styles.aviso}>
-              Todavía no hay fechas guardadas: al filtrar por fechas no aparece nadie hasta que se complete la fecha de quienes ya la llenaron.
+          <article className={styles.card}>
+            <h3>Encuestas completadas por {fechas.unidad === 'dia' ? 'día' : 'mes'}</h3>
+            <p className={styles.nota}>
+              Solo fechas reales. {fechas.sinFecha > 0 && `Los ${fechas.sinFecha} con fecha desconocida cuentan en el total, pero no aparecen al filtrar por fechas.`}
             </p>
-          ) : (
-            <article className={styles.card}>
-              <h3>Encuestas completadas por {fechas.unidad === 'dia' ? 'día' : 'mes'}</h3>
-              <p className={styles.nota}>
-                {fechas.estimadas > 0 && `${fechas.estimadas} con fecha aproximada: la llenaron antes del 06/10/2026, cuando aún no se guardaba la fecha, y se dedujo de su visita a la encuesta. `}
-                {!hayRango && fechas.sinFecha > 0 && `${fechas.sinFecha} sin fecha (no aparecen al filtrar por fechas).`}
-              </p>
-              {fechas.periodos.length === 0
-                ? <p className={styles.vacio}>Nadie completó la encuesta en este rango.</p>
-                : <Barras items={fechas.periodos} max={fechas.periodos.length} />}
-            </article>
-          )}
+            {fechas.periodos.length === 0
+              ? <p className={styles.vacio}>Nadie completó la encuesta en este rango.</p>
+              : <Barras items={fechas.periodos} max={fechas.periodos.length} />}
+          </article>
 
           <section className={styles.grid}>
             {resumen.basicos.map((b) => (
@@ -284,11 +286,7 @@ const AdminRespuestasEncuesta = () => {
                   <button type="button" className={styles.clienteFila} onClick={() => setAbierto(abiertoAqui ? null : id)} aria-expanded={abiertoAqui}>
                     <span className={styles.clienteNombre}>{nombre}</span>
                     <span className={styles.nota}>{u.email || 'sin correo'}</span>
-                    {fechaEncuesta(u) > 0 && (
-                      <span className={styles.nota} title={fechaEsEstimada(u) ? 'Fecha aproximada' : 'Fecha exacta'}>
-                        📅 {textoFechaEncuesta(u)}
-                      </span>
-                    )}
+                    <span className={styles.nota}>📅 {textoFechaEncuesta(u)}</span>
                     <span className={styles.badge}>{u.giftRecipients?.length || 0} personas</span>
                     <span aria-hidden="true">{abiertoAqui ? '▲' : '▼'}</span>
                   </button>

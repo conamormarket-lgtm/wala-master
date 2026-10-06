@@ -81,7 +81,7 @@ test('fecha de la encuesta: filtro por rango, conteo por periodo y texto', () =>
   const t = (y, m, d, h = 12) => new Date(y, m - 1, d, h, 5).getTime();
   const lista = [
     { id: 'a', surveyCompletedAt: t(2026, 8, 31, 23), surveyCompletedAtSource: 'monedas' },
-    { id: 'b', surveyCompletedAt: t(2026, 9, 1), surveyCompletedAtSource: 'estimada' },
+    { id: 'b', surveyCompletedAt: t(2026, 9, 1), surveyCompletedAtSource: 'servidor' },
     { id: 'c', surveyCompletedAt: t(2026, 9, 30) },
     { id: 'd' }, // sin fecha
   ];
@@ -90,7 +90,7 @@ test('fecha de la encuesta: filtro por rango, conteo por periodo y texto', () =>
   assert.deepEqual(filtrarPorFecha(lista, '', '2026-08-31').map((u) => u.id), ['a']);
   assert.deepEqual(porPeriodo(lista, 'mes'), [{ valor: '2026-08', total: 1 }, { valor: '2026-09', total: 2 }]);
   assert.equal(porPeriodo(lista, 'dia').length, 3);
-  assert.equal(textoFechaEncuesta(lista[1]), '01/09/2026 12:05 aprox.');
+  assert.equal(textoFechaEncuesta(lista[1]), '01/09/2026 12:05');
   assert.equal(textoFechaEncuesta(lista[0]), '31/08/2026 23:05');
-  assert.equal(textoFechaEncuesta(lista[3]), '');
+  assert.equal(textoFechaEncuesta(lista[3]), 'Fecha desconocida');
 });

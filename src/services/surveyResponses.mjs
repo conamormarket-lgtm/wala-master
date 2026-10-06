@@ -8,10 +8,11 @@
 //   giftRecipients[] personas: nombre, relación, género, presupuesto, fechas,
 //                    selectedCategories (conjuntos) y categoryAnswers (gustos)
 //   birthDate        cumpleaños propio
-//   surveyCompletedAt        cuándo la completó por primera vez (epoch ms)
-//   surveyCompletedAtSource  'servidor' | 'monedas' (fecha exacta) o 'estimada'
-//                            (reconstruida de sus visitas a la encuesta; ver
-//                            scripts/backfill-fecha-encuesta.js)
+//   surveyCompletedAt        cuándo la completó por primera vez (epoch ms). Solo
+//                            fechas reales: 'servidor' (desde el 2026-10-06) o
+//                            'monedas' (del premio, desde el 2026-06-29; ver
+//                            scripts/backfill-fecha-encuesta.js). Sin el campo
+//                            = fecha desconocida (la llenó antes y no se guardó).
 
 export const ROLES = {
   pareja: 'Pareja', hijos: 'Hijos', padres: 'Padres', hermanos: 'Hermanos',
@@ -23,7 +24,7 @@ export const PRESUPUESTOS = {
 
 // ── Fecha en que completó la encuesta ───────────────────────────────────────
 export const fechaEncuesta = (u) => Number(u && u.surveyCompletedAt) || 0;
-export const fechaEsEstimada = (u) => Boolean(u && u.surveyCompletedAtSource === 'estimada');
+export const FECHA_DESCONOCIDA = 'Fecha desconocida';
 
 const dos = (n) => String(n).padStart(2, '0');
 // Día local YYYY-MM-DD (la tienda opera en Lima, igual que el navegador del admin).
@@ -32,13 +33,12 @@ export const diaLocal = (ms) => {
   return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
 };
 
-// "06/10/2026 14:05" (+ " aprox." si es estimada). Vacío si no hay fecha.
+// "06/10/2026 14:05", o "Fecha desconocida" si no se guardó.
 export function textoFechaEncuesta(u) {
   const t = fechaEncuesta(u);
-  if (!t) return '';
+  if (!t) return FECHA_DESCONOCIDA;
   const d = new Date(t);
-  const texto = `${dos(d.getDate())}/${dos(d.getMonth() + 1)}/${d.getFullYear()} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
-  return fechaEsEstimada(u) ? `${texto} aprox.` : texto;
+  return `${dos(d.getDate())}/${dos(d.getMonth() + 1)}/${d.getFullYear()} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
 }
 
 /**

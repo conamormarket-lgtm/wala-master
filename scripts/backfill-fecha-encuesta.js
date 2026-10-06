@@ -2,15 +2,14 @@
  * Backfill de `surveyCompletedAt` (epoch ms) en portal_clientes_users.
  * ────────────────────────────────────────────────────────────────────────────
  * Hasta el 2026-10-06 la encuesta solo marcaba `hasCompletedSurvey: true`, sin
- * fecha. Desde entonces la pone grantSurveyRewardSecure. Para los anteriores se
- * reconstruye así (y se guarda de dónde salió en `surveyCompletedAtSource`):
+ * fecha. Desde entonces la pone grantSurveyRewardSecure. Para los anteriores
+ * SOLO se usan fechas reales: el movimiento de loyaltyLedger con source
+ * 'encuesta' (el premio que el servidor paga en el mismo momento en que se
+ * completa; existe desde el 2026-06-29). Se guarda con
+ * `surveyCompletedAtSource: 'monedas'`.
  *
- *   'monedas'  → fecha EXACTA: el movimiento de loyaltyLedger con source
- *                'encuesta' (premio por completarla; existe desde el 2026-06-29).
- *   'estimada' → la visita a /encuesta-suscripcion (analytics_events) en la que
- *                más tiempo pasó (route_dwell con mayor dwellMs): ahí la llenó.
- *                Contra los 70 con fecha exacta acierta en 69 (< 1 h de error).
- *                Sin route_dwell, la última visita a la encuesta.
+ * Quien la completó antes de eso queda SIN fecha (en el admin: "Fecha
+ * desconocida"). A propósito no se estima nada: se necesitan datos reales.
  *
  * Solo toca usuarios con la encuesta completa y SIN surveyCompletedAt. Escribe
  * únicamente esos dos campos.
@@ -32,7 +31,6 @@ admin.initializeApp(fs.existsSync(llave)
 const db = admin.firestore();
 
 const APLICAR = process.argv.includes('--aplicar');
-const RUTA_ENCUESTA = '/encuesta-suscripcion';
 
 (async () => {
   const usuarios = await db.collection('portal_clientes_users').where('hasCompletedSurvey', '==', true).get();
@@ -40,7 +38,7 @@ const RUTA_ENCUESTA = '/encuesta-suscripcion';
   console.log(`Completaron la encuesta: ${usuarios.size}. Sin fecha: ${pendientes.length}.`);
   if (!pendientes.length) return;
 
-  // Fecha exacta: primer premio de encuesta por usuario.
+  // Fecha real: primer premio de encuesta por usuario.
   const ledger = await db.collection('loyaltyLedger').where('source', '==', 'encuesta').get();
   const porMonedas = new Map();
   ledger.forEach((d) => {
@@ -50,44 +48,15 @@ const RUTA_ENCUESTA = '/encuesta-suscripcion';
     if (!porMonedas.has(x.uid) || t < porMonedas.get(x.uid)) porMonedas.set(x.uid, t);
   });
 
-  // Estimada: visitas a la página de la encuesta.
-  const eventos = await db.collection('analytics_events')
-    .where('path', '==', RUTA_ENCUESTA)
-    .select('uid', 'type', 'clientTsMs', 'dwellMs')
-    .get();
-  const visitas = new Map();
-  eventos.forEach((d) => {
-    const x = d.data();
-    if (!x.uid || !x.clientTsMs) return;
-    if (!visitas.has(x.uid)) visitas.set(x.uid, []);
-    visitas.get(x.uid).push(x);
-  });
-  const estimar = (uid) => {
-    const lista = visitas.get(uid);
-    if (!lista || !lista.length) return 0;
-    const dwell = lista.filter((x) => x.type === 'route_dwell')
-      .sort((a, b) => (b.dwellMs || 0) - (a.dwellMs || 0))[0];
-    if (dwell) return dwell.clientTsMs;
-    return Math.max(...lista.map((x) => x.clientTsMs));
-  };
+  const cambios = pendientes
+    .filter((d) => porMonedas.has(d.id))
+    .map((d) => ({ ref: d.ref, surveyCompletedAt: porMonedas.get(d.id) }));
 
-  const cambios = [];
-  const sinDatos = [];
-  pendientes.forEach((d) => {
-    const exacta = porMonedas.get(d.id);
-    if (exacta) return cambios.push({ ref: d.ref, surveyCompletedAt: exacta, surveyCompletedAtSource: 'monedas' });
-    const estimada = estimar(d.id);
-    if (estimada) return cambios.push({ ref: d.ref, surveyCompletedAt: estimada, surveyCompletedAtSource: 'estimada' });
-    sinDatos.push(d.id);
-  });
-
-  const cuenta = (f) => cambios.filter((c) => c.surveyCompletedAtSource === f).length;
-  console.log(`Exacta (monedas): ${cuenta('monedas')}. Estimada (visitas): ${cuenta('estimada')}. Sin forma de saber: ${sinDatos.length}.`);
+  console.log(`Con fecha real: ${cambios.length}. Quedan como fecha desconocida: ${pendientes.length - cambios.length}.`);
   const fechas = cambios.map((c) => c.surveyCompletedAt).sort((a, b) => a - b);
   if (fechas.length) {
     console.log(`Rango: ${new Date(fechas[0]).toISOString()} → ${new Date(fechas[fechas.length - 1]).toISOString()}`);
   }
-  if (sinDatos.length) console.log('Sin datos:', sinDatos.join(', '));
 
   if (!APLICAR) {
     console.log('\nSimulación: no se escribió nada. Corre con --aplicar para guardar.');
@@ -95,8 +64,8 @@ const RUTA_ENCUESTA = '/encuesta-suscripcion';
   }
   for (let i = 0; i < cambios.length; i += 400) {
     const lote = db.batch();
-    cambios.slice(i, i + 400).forEach(({ ref, surveyCompletedAt, surveyCompletedAtSource }) => {
-      lote.update(ref, { surveyCompletedAt, surveyCompletedAtSource });
+    cambios.slice(i, i + 400).forEach(({ ref, surveyCompletedAt }) => {
+      lote.update(ref, { surveyCompletedAt, surveyCompletedAtSource: 'monedas' });
     });
     await lote.commit();
   }
