@@ -8,7 +8,7 @@ const { hitoDeEstadoErp, hitoDeEstadoWala, debeAvisar, textoHito } = require("./
 const { agruparInteres, elegirProducto } = require("./productViewLogic");
 const { recomendarRegalos } = require("./giftLogic");
 const {
-  avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc, proximaFecha,
+  avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc, proximaFecha, armarAvisoFestivo,
 } = require("./fechasFestivasLogic");
 
 const db = admin.firestore();
@@ -593,9 +593,12 @@ exports.probarAvisoFechas = functions.https.onCall(async (data, context) => {
     const festivas = festivasDesdeDoc(festivasDoc.exists ? festivasDoc.data() : null);
     const f = festivas.find((x) => x.id === String(data.festivaId));
     if (!f) throw new functions.https.HttpsError("not-found", "Esa fecha festiva no existe.");
+    // Se arma como el PRIMER aviso que recibirán los clientes ("Navidad en 21
+    // días"), no con los días que faltan hoy (que pueden ser 200).
     const prox = proximaFecha(f.regla, hoy);
-    const [a] = avisosFestivosDeHoy([{ ...f, activo: true, avisarDias: [prox.dias], avisarATodos: true }], personas, hoy, {});
-    if (a) aviso = { ...a, tipo: "fecha_festiva", recipient: a.personas[0] || null, ocasion: f.nombre };
+    const dias = f.avisarDias.length ? f.avisarDias[0] : prox.dias;
+    const a = armarAvisoFestivo(f, personas, prox.fecha, dias);
+    aviso = { ...a, tipo: "fecha_festiva", recipient: a.personas[0] || null, ocasion: f.nombre };
   } else {
     let cercana = null;
     for (const { event } of eventosValidos(personas)) {

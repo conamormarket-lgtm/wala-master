@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import {
   FESTIVAS_DEFAULT, fechaDelAnio, proximaFecha, textoRegla, aplicaA, proximasFestivas,
-  avisosFestivosDeHoy, festivasDesdeDoc, normalizarFestiva,
+  avisosFestivosDeHoy, festivasDesdeDoc, normalizarFestiva, armarAvisoFestivo,
 } from './fechasFestivas.mjs';
 
 const require = createRequire(import.meta.url);
@@ -81,6 +81,18 @@ test('configuración: sin documento usa las de Perú; normaliza basura', () => {
   assert.deepEqual(f.regla, { tipo: 'movil', mes: 1, diaSemana: 0, ordinal: 1 });
   assert.deepEqual(f.avisarDias, [7]);
   assert.deepEqual(f.para, { roles: ['pareja'], genero: '' });
+});
+
+test('aviso de prueba: se arma para cualquier fecha, aunque falten meses', () => {
+  const navidad = FESTIVAS_DEFAULT.find((f) => f.id === 'navidad');
+  const general = armarAvisoFestivo(navidad, [], '2026-12-25', 21);
+  assert.equal(general.titulo, '🎄 Navidad en 21 días');
+  assert.equal(general.personal, false);
+  assert.match(general.cuerpo, /25 de diciembre/);
+  const madre = FESTIVAS_DEFAULT.find((f) => f.id === 'dia_madre');
+  const personal = armarAvisoFestivo(madre, [{ name: 'Marta', roleKey: 'padres', gender: 'Femenino' }], '2027-05-09', 215);
+  assert.equal(personal.personal, true);
+  assert.match(personal.cuerpo, /Marta/);
 });
 
 test('la copia del servidor da lo mismo', () => {

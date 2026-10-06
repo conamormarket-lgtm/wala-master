@@ -228,15 +228,33 @@ export function avisosFestivosDeHoy(festivas, recipients, hoy, log) {
   const out = [];
   for (const f of proximasFestivas(festivas, recipients, hoy)) {
     if (!f.avisarDias.includes(f.dias)) continue;
-    const key = `fest|${f.id}|${f.fecha.slice(0, 4)}|${f.dias}`;
-    if (enviados[key]) continue;
-    const personal = f.personas.length > 0;
-    if (!personal && !f.avisarATodos) continue;
-    const titulo = `${f.emoji ? `${f.emoji} ` : ''}${f.nombre} ${cuandoTexto(f.dias)}`;
-    const cuerpo = personal
-      ? `Te armamos ideas de regalo para ${nombresTexto(f.personas)}. Pide con tiempo y llega perfecto.`
-      : `Es el ${textoFecha(f.fecha)}. Encuentra el regalo perfecto en Walá y pide con tiempo.`;
-    out.push({ key, festiva: f, dias: f.dias, fecha: f.fecha, personas: f.personas, personal, titulo, cuerpo });
+    const aviso = armarAvisoFestivo(f, recipients, f.fecha, f.dias);
+    if (enviados[aviso.key]) continue;
+    if (!aviso.personal && !f.avisarATodos) continue;
+    out.push(aviso);
   }
   return out;
+}
+
+/**
+ * Texto de UN aviso festivo, faltando `dias` para `fecha`. Lo usan el motor
+ * diario (vía avisosFestivosDeHoy) y la prueba del admin, que lo arma para
+ * cualquier fecha aunque hoy no sea día de aviso.
+ */
+export function armarAvisoFestivo(festiva, recipients, fecha, dias) {
+  const f = normalizarFestiva(festiva);
+  const personas = (recipients || []).filter((r) => r && r.name && aplicaA(f, r));
+  const personal = personas.length > 0;
+  return {
+    key: `fest|${f.id}|${String(fecha).slice(0, 4)}|${dias}`,
+    festiva: f,
+    dias,
+    fecha,
+    personas,
+    personal,
+    titulo: `${f.emoji ? `${f.emoji} ` : ''}${f.nombre} ${cuandoTexto(dias)}`,
+    cuerpo: personal
+      ? `Te armamos ideas de regalo para ${nombresTexto(personas)}. Pide con tiempo y llega perfecto.`
+      : `Es el ${textoFecha(fecha)}. Encuentra el regalo perfecto en Walá y pide con tiempo.`,
+  };
 }
