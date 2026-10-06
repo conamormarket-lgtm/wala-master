@@ -60,6 +60,8 @@ const TarjetaPrenda = ({ prenda }) => {
 const useCreacionesCrear = (uid) => useQuery({
   queryKey: ['mis-creaciones-crear', uid],
   enabled: Boolean(uid),
+  // Al volver del estudio se ve lo recién guardado (la app no recarga al montar por defecto).
+  refetchOnMount: 'always',
   queryFn: async () => {
     const { data } = await getDesignsByUser(uid);
     return (data || []).filter((d) => d.tipo === 'crear');

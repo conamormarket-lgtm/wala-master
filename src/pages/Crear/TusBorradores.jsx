@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, PenLine, Trash2 } from 'lucide-react';
 import { getBorradoresCrear } from '../../services/designs';
 import { useEliminarCreacion } from './useEliminarCreacion';
+import { esperarGuardados } from './borradoresCache';
 import styles from './TusBorradores.module.css';
 import estilosEliminar from './EliminarCreacion.module.css';
 
@@ -23,11 +24,17 @@ const haceCuanto = (ts) => {
   return '';
 };
 
-/** Borradores del cliente en Crear (comparten caché con quien los pida). */
+/**
+ * Borradores del cliente en Crear (comparten caché con quien los pida).
+ * Se vuelven a leer cada vez que se muestran (al retroceder desde el
+ * estudio, por ejemplo) y esperan a que termine un guardado en curso.
+ */
 export const useBorradoresCrear = (uid) => useQuery({
   queryKey: ['mis-borradores-crear', uid],
   enabled: Boolean(uid),
+  refetchOnMount: 'always',
   queryFn: async () => {
+    await esperarGuardados();
     const { data } = await getBorradoresCrear(uid);
     return data || [];
   },

@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { eliminarCreacion } from '../../services/designs';
+import { quitarBorradorDeCache } from './borradoresCache';
 import styles from './EliminarCreacion.module.css';
 
 /**
@@ -54,8 +55,9 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
       return;
     }
     enCarrito.forEach((i) => removeFromCart(i.id));
-    queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'] });
-    queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'] });
+    quitarBorradorDeCache(queryClient, user.uid, diseno.id);
+    queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
+    queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
     queryClient.removeQueries({ queryKey: ['creacion', diseno.id] });
     setPendiente(null);
     toast.success(diseno.estado === 'borrador' ? 'Borrador eliminado.' : 'Creación eliminada.');

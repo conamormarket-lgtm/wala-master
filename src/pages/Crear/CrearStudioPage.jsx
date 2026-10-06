@@ -26,6 +26,7 @@ import {
 } from './renderDiseno';
 import RecorteImagen from './RecorteImagen';
 import { itemDeCreacion } from './creacionCarrito';
+import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
 import styles from './CrearStudioPage.module.css';
 
 const VIOLETA = '#7C3AED';
@@ -850,8 +851,7 @@ const CrearStudioPage = () => {
         if (montadoRef.current) setEstadoBorrador(null);
         return;
       }
-      const { id: guardadoId, error: err } = await saveDesign(user.uid, {
-        designId: designIdRef.current || undefined,
+      const datos = {
         productId: prenda.id,
         productName: prenda.name,
         name: nombrePorDefecto(),
@@ -861,10 +861,15 @@ const CrearStudioPage = () => {
         estado: 'borrador',
         color: datosColor(),
         miniatura,
-      });
+      };
+      // La lista de borradores se ve al día al instante (por si el cliente
+      // ya retrocedió), sin esperar a que Firestore termine.
+      if (designIdRef.current) ponerBorradorEnCache(queryClient, user.uid, { id: designIdRef.current, userId: user.uid, ...datos });
+      const { id: guardadoId, error: err } = await saveDesign(user.uid, { designId: designIdRef.current || undefined, ...datos });
       if (err) throw new Error(err);
       firmaBorradorRef.current = firma;
-      queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'] });
+      ponerBorradorEnCache(queryClient, user.uid, { id: guardadoId || designIdRef.current, userId: user.uid, ...datos });
+      queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
       if (!designIdRef.current && guardadoId) {
         designIdRef.current = guardadoId;
         esBorradorRef.current = true;
@@ -879,6 +884,7 @@ const CrearStudioPage = () => {
     }).catch(() => {
       if (montadoRef.current) setEstadoBorrador('error');
     });
+    registrarGuardado(colaBorradorRef.current);
     return colaBorradorRef.current;
   };
   autoguardarRef.current = autoguardar;
@@ -941,8 +947,9 @@ const CrearStudioPage = () => {
     setEsBorrador(false);
     setEstadoBorrador(null);
     if (idFinal !== designIdParam) navigate(`/crear/${id}?designId=${idFinal}`, { replace: true });
-    queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'] });
-    queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'] });
+    quitarBorradorDeCache(queryClient, user.uid, idFinal);
+    queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
+    queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
     queryClient.removeQueries({ queryKey: ['creacion', idFinal] });
     setNombre(creacion.name);
     // Ya está guardada: la próxima vez la plantilla se abre limpia.
