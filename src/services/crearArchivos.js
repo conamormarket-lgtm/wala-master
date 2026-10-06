@@ -48,9 +48,59 @@ const decodificar = (archivo) => new Promise((resolve, reject) => {
 });
 
 /**
- * Prepara la imagen que eligió el cliente: la valida y, si es enorme, la
- * reduce a LADO_MAXIMO conservando el formato (PNG sigue con transparencia).
- * Devuelve el archivo a subir, una URL local para mostrarla ya y su tamaño.
+ * Caja (en píxeles de la imagen) que contiene todo lo que no es transparente,
+ * o null si la imagen no tiene bordes transparentes que quitar. Recorre de
+ * afuera hacia adentro y se detiene en la primera fila/columna con algo
+ * visible, así no lee la imagen entera.
+ */
+export const bordesVisibles = (fuente) => {
+  const ancho = fuente.naturalWidth || fuente.width;
+  const alto = fuente.naturalHeight || fuente.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = ancho;
+  canvas.height = alto;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(fuente, 0, 0, ancho, alto);
+  let d;
+  try {
+    d = ctx.getImageData(0, 0, ancho, alto).data;
+  } catch {
+    return null;
+  }
+  const visible = (x, y) => d[(y * ancho + x) * 4 + 3] > 12;
+  const filaVisible = (y) => { for (let x = 0; x < ancho; x += 1) if (visible(x, y)) return true; return false; };
+  let arriba = 0;
+  while (arriba < alto && !filaVisible(arriba)) arriba += 1;
+  if (arriba === alto) return null; // toda transparente
+  let abajo = alto - 1;
+  while (abajo > arriba && !filaVisible(abajo)) abajo -= 1;
+  const columnaVisible = (x) => { for (let y = arriba; y <= abajo; y += 1) if (visible(x, y)) return true; return false; };
+  let izquierda = 0;
+  while (izquierda < ancho && !columnaVisible(izquierda)) izquierda += 1;
+  let derecha = ancho - 1;
+  while (derecha > izquierda && !columnaVisible(derecha)) derecha -= 1;
+  const caja = { x: izquierda, y: arriba, w: derecha - izquierda + 1, h: abajo - arriba + 1 };
+  // Si casi no hay borde que quitar, no vale la pena recortar.
+  if (caja.w * caja.h > ancho * alto * 0.98) return null;
+  return caja;
+};
+
+/** Recorta un trozo (en píxeles de la imagen) y lo devuelve como PNG. */
+export const recortarImagen = async (fuente, { x, y, w, h }) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(w));
+  canvas.height = Math.max(1, Math.round(h));
+  canvas.getContext('2d').drawImage(fuente, x, y, w, h, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('No pudimos recortar la imagen.');
+  return { blob, ancho: canvas.width, alto: canvas.height };
+};
+
+/**
+ * Prepara la imagen que eligió el cliente: la valida, si es enorme la reduce
+ * a LADO_MAXIMO, y si es PNG/WebP le quita los bordes transparentes (así la
+ * imagen ocupa en la prenda solo lo que se ve). Devuelve el archivo a subir,
+ * una URL local para mostrarla ya y su tamaño.
  */
 export const prepararImagenCliente = async (archivo) => {
   if (!archivo || !/^image\/(png|jpe?g|webp)$/i.test(archivo.type)) {
@@ -62,17 +112,21 @@ export const prepararImagenCliente = async (archivo) => {
   const { img, url } = await decodificar(archivo);
   const ancho = img.naturalWidth;
   const alto = img.naturalHeight;
+  const conTransparencia = archivo.type === 'image/png' || archivo.type === 'image/webp';
   const escala = Math.min(1, LADO_MAXIMO / Math.max(ancho, alto));
-  if (escala === 1) return { blob: archivo, urlLocal: url, ancho, alto };
+  const caja = conTransparencia ? bordesVisibles(img) : null;
+  if (escala === 1 && !caja) return { blob: archivo, urlLocal: url, ancho, alto };
 
+  const origen = caja || { x: 0, y: 0, w: ancho, h: alto };
+  const reduccion = Math.min(1, LADO_MAXIMO / Math.max(origen.w, origen.h));
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(ancho * escala);
-  canvas.height = Math.round(alto * escala);
+  canvas.width = Math.round(origen.w * reduccion);
+  canvas.height = Math.round(origen.h * reduccion);
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, origen.x, origen.y, origen.w, origen.h, 0, 0, canvas.width, canvas.height);
   URL.revokeObjectURL(url);
-  const tipo = archivo.type === 'image/png' || archivo.type === 'image/webp' ? 'image/png' : 'image/jpeg';
+  const tipo = conTransparencia ? 'image/png' : 'image/jpeg';
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, tipo, 0.95));
   if (!blob) throw new Error('No pudimos procesar esa imagen.');
   return { blob, urlLocal: URL.createObjectURL(blob), ancho: canvas.width, alto: canvas.height };

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
+  Crosshair, Maximize2, RotateCw, Crop, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -12,7 +12,7 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, saveDesign } from '../../services/designs';
 import {
-  prepararImagenCliente, subirImagenCliente, subirArchivoImpresion, subirVistaPrevia,
+  prepararImagenCliente, subirImagenCliente, subirArchivoImpresion, subirVistaPrevia, recortarImagen,
 } from '../../services/crearArchivos';
 import {
   UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
@@ -24,6 +24,7 @@ import {
   propiedadesTexto, renderizarImpresion, renderizarVistaPrevia, transformDeZona, rectDeZona,
   recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo,
 } from './renderDiseno';
+import RecorteImagen from './RecorteImagen';
 import styles from './CrearStudioPage.module.css';
 
 const VIOLETA = '#7C3AED';
@@ -108,6 +109,7 @@ const CrearStudioPage = () => {
   const [pedirLogin, setPedirLogin] = useState(false);
   const [avisoTalla, setAvisoTalla] = useState(false);
   const [fueraDeZona, setFueraDeZona] = useState(false);
+  const [recortando, setRecortando] = useState(null);
 
   const contenedorRef = useRef(null);
   const canvasElRef = useRef(null);
@@ -130,7 +132,9 @@ const CrearStudioPage = () => {
   const vista = cfg?.vistas.find((v) => v.id === vistaId) || cfg?.vistas[0] || null;
   const zona = vista?.zonas.find((z) => z.id === zonaId) || vista?.zonas[0] || null;
   zonaRef.current = zona?.id || null;
-  const color = cfg?.colores.find((c) => c.id === colorId) || cfg?.colores[0] || null;
+  // Sin elección, la variante principal del producto (no la primera de la lista).
+  const colorPrincipal = cfg?.colores.find((c) => c.id === prenda?.defaultVariantId) || cfg?.colores[0] || null;
+  const color = cfg?.colores.find((c) => c.id === colorId) || colorPrincipal;
   const zonasPrenda = useMemo(() => (cfg ? listarZonas(cfg.vistas) : []), [cfg]);
   const zonaPorId = (zId) => zonasPrenda.find((z) => z.id === zId) || null;
   const capasVista = (vista?.zonas || []).flatMap((z) => capasPorZona[z.id] || []);
@@ -163,7 +167,8 @@ const CrearStudioPage = () => {
       const vistaInicial = cfg.vistas.find((v) => v.id === estado?.vistaId) || cfg.vistas[0];
       setVistaId(vistaInicial?.id);
       setZonaId(vistaInicial?.zonas.some((z) => z.id === estado?.zonaId) ? estado.zonaId : vistaInicial?.zonas[0]?.id);
-      setColorId(cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : cfg.colores[0]?.id);
+      const principal = cfg.colores.find((c) => c.id === prenda?.defaultVariantId) || cfg.colores[0];
+      setColorId(cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : principal?.id);
       setTalla(cfg.tallas.includes(estado?.talla) ? estado.talla : '');
       setListo(true);
     };
@@ -541,6 +546,44 @@ const CrearStudioPage = () => {
   };
 
   const centrar = () => capaSel && zonaSel && editarCapa(capaSel.id, centroDe(zonaSel));
+
+  /**
+   * Reemplaza la imagen de una capa por el trozo recortado. Se conserva la
+   * escala (cada píxel sigue del mismo tamaño en la prenda) y se corre el
+   * centro para que lo que quedó no salte de lugar.
+   */
+  const aplicarRecorte = async (capa, corte) => {
+    setRecortando(null);
+    if (!corte) return;
+    const zId = zonaDe(capa.id);
+    if (!zId) return;
+    try {
+      const img = await cargarImagen(srcDe(capa));
+      const { blob, ancho, alto } = await recortarImagen(img, corte);
+      const dx = (corte.x + corte.w / 2 - img.naturalWidth / 2) * capa.escalaX * (capa.flipX ? -1 : 1);
+      const dy = (corte.y + corte.h / 2 - img.naturalHeight / 2) * capa.escalaY;
+      const giro = ((capa.angulo || 0) * Math.PI) / 180;
+      const cambios = {
+        anchoNatural: ancho,
+        altoNatural: alto,
+        left: capa.left + dx * Math.cos(giro) - dy * Math.sin(giro),
+        top: capa.top + dx * Math.sin(giro) + dy * Math.cos(giro),
+        src: '',
+        subiendo: true,
+      };
+      localSrcRef.current.set(capa.id, URL.createObjectURL(blob));
+      modificarCapas(zId, (capas) => capas.map((c) => (c.id === capa.id ? { ...c, ...cambios } : c)), true);
+      setSubiendo((n) => n + 1);
+      try {
+        const url = await subirImagenCliente(user.uid, blob);
+        modificarCapas(zId, (capas) => capas.map((c) => (c.id === capa.id ? { ...c, src: url, subiendo: false } : c)));
+      } finally {
+        setSubiendo((n) => n - 1);
+      }
+    } catch (err) {
+      toast.error(err?.message || 'No pudimos recortar la imagen.');
+    }
+  };
 
   const ajustarAZona = () => {
     if (!capaSel || capaSel.type !== 'image' || !zonaSel) return;
@@ -971,6 +1014,7 @@ const CrearStudioPage = () => {
                 </button>
                 {capaSel.type === 'image' && (
                   <>
+                    <button type="button" className={styles.herramienta} onClick={() => setRecortando(capaSel.id)} disabled={!user}><Crop size={16} aria-hidden="true" />Recortar</button>
                     <button type="button" className={styles.herramienta} onClick={ajustarAZona}><Maximize2 size={16} aria-hidden="true" />Llenar zona</button>
                     <button type="button" className={styles.herramienta} onClick={() => editarCapa(capaSel.id, { flipX: !capaSel.flipX })}><FlipHorizontal size={16} aria-hidden="true" />Voltear</button>
                   </>
@@ -1051,6 +1095,14 @@ const CrearStudioPage = () => {
             <p>{procesando}</p>
           </div>
         </div>
+      )}
+
+      {recortando && capaSel?.id === recortando && capaSel.type === 'image' && (
+        <RecorteImagen
+          src={srcDe(capaSel)}
+          onCancelar={() => setRecortando(null)}
+          onAplicar={(corte) => aplicarRecorte(capaSel, corte)}
+        />
       )}
 
       {pedirLogin && (

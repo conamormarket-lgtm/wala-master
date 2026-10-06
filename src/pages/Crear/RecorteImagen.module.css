@@ -1,0 +1,156 @@
+/* Ventana de recorte del estudio de Crear. Nada se llama "footer"/"Header_":
+   en el celular body.mobile-editor-active oculta esas clases. */
+
+.fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 3100;
+  background: rgba(20, 18, 28, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.ventana {
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  border-radius: 20px;
+  padding: 1.25rem;
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gris-texto-secundario);
+  line-height: 1.45;
+}
+
+.aviso {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #B45309;
+}
+
+:global([data-theme="dark"]) .aviso {
+  color: #FCD34D;
+}
+
+.area {
+  display: flex;
+  justify-content: center;
+  /* Cuadros para que se note lo transparente. */
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.caja {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.imagen {
+  display: block;
+  max-width: 100%;
+  max-height: 55dvh;
+  pointer-events: none;
+}
+
+.recuadro {
+  position: absolute;
+  border: 2px solid #7C3AED;
+  box-shadow: 0 0 0 9999px rgba(20, 18, 28, 0.55);
+  cursor: move;
+  box-sizing: border-box;
+}
+
+.esquina {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #7C3AED;
+  touch-action: none;
+}
+
+.no { left: -10px; top: -10px; cursor: nwse-resize; }
+.ne { right: -10px; top: -10px; cursor: nesw-resize; }
+.so { left: -10px; bottom: -10px; cursor: nesw-resize; }
+.se { right: -10px; bottom: -10px; cursor: nwse-resize; }
+
+.acciones {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.principal,
+.secundario,
+.texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.principal {
+  border: none;
+  background: var(--primary-color);
+  color: #fff;
+}
+
+:global([data-theme="dark"]) .principal {
+  color: #14121C;
+}
+
+.secundario {
+  border: 1.5px solid var(--gris-borde);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+}
+
+.texto {
+  border: none;
+  background: transparent;
+  color: var(--gris-texto-secundario);
+}
+
+.principal:disabled,
+.secundario:disabled,
+.texto:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

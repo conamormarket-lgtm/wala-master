@@ -89,7 +89,7 @@ const MiniaturaColor = ({ imagen, hex, nombre }) => {
  * van las vistas (foto sin fondo + sus zonas de impresión de referencia) y,
  * por color, su foto propia o su segundo tono si es bicolor.
  */
-const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarVariantes }) => {
+const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onChange, onAgregarVariantes }) => {
   const [subiendo, setSubiendo] = useState(null);
   const [colorPrevio, setColorPrevio] = useState(null);
   const [zonaElegida, setZonaElegida] = useState({});
@@ -100,7 +100,8 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
     : normalizarVista(v, i)));
   const extras = valor?.colores || {};
   const { colores } = leerPrendaBase({ variants: variantes, prendaBase: { vistas, colores: extras } });
-  const hexPrevio = colores.find((c) => c.id === (colorPrevio || colores[0]?.id))?.hex || '#FFFFFF';
+  const colorInicial = colores.some((c) => c.id === varianteDefecto) ? varianteDefecto : colores[0]?.id;
+  const hexPrevio = colores.find((c) => c.id === (colorPrevio || colorInicial))?.hex || '#FFFFFF';
 
   // Los cambios se aplican sobre el estado más reciente: dos fotos que terminan
   // de cargar casi a la vez (y avisan su tamaño) no se pisan entre sí.
@@ -181,7 +182,7 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
               <button
                 key={c.id}
                 type="button"
-                className={`${styles.punto} ${(colorPrevio || colores[0].id) === c.id ? styles.puntoActivo : ''}`}
+                className={`${styles.punto} ${(colorPrevio || colorInicial) === c.id ? styles.puntoActivo : ''}`}
                 style={{ background: c.hex2 ? `linear-gradient(135deg, ${c.hex} 50%, ${c.hex2} 50%)` : c.hex }}
                 title={c.nombre}
                 aria-label={c.nombre}

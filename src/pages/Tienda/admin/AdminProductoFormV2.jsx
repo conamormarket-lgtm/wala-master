@@ -1794,6 +1794,7 @@ const AdminProductoFormV2 = () => {
               <PersonalizacionPrenda
                 valor={form.prendaBase}
                 variantes={form.variants}
+                varianteDefecto={form.defaultVariantId}
                 draftId={draftId}
                 onChange={(valor) => setForm((f) => ({ ...f, prendaBase: typeof valor === 'function' ? valor(f.prendaBase) : valor }))}
                 onAgregarVariantes={(nuevas) => setForm((f) => {
