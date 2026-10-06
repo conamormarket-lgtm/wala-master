@@ -388,3 +388,12 @@
 .kpiDestacado span {
   color: #6d28d9;
 }
+
+:global([data-theme='dark']) .kpiDestacado {
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(139, 92, 246, 0.16);
+}
+
+:global([data-theme='dark']) .kpiDestacado span {
+  color: #c4b5fd;
+}
