@@ -296,3 +296,24 @@
   background: #8b5cf6;
   color: #fff;
 }
+
+/* ── Avisos de las fechas de cada persona ── */
+.avisos {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid #c4b5fd;
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.avisos h3,
+.subtitulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.subtitulo {
+  margin-top: 0.5rem;
+}

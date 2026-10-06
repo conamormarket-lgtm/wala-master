@@ -105,4 +105,13 @@ check("recordatoriosDeHoy avisa a 7 y 1 día, y no repite", () => {
   assert.deepStrictEqual(r2.map((x) => x.key), ["a2|2026|1"]);
 });
 
+check("recordatoriosDeHoy con días configurables, sin año y apagado", () => {
+  const recs = [persona("Jimena", [ev("j1", "0000-10-08")])];
+  const r = f.recordatoriosDeHoy(recs, "2026-10-06", {}, [2]);
+  assert.deepStrictEqual(r.map((x) => x.key), ["j1|2026|2"]);
+  assert.ok(r[0].titulo.includes("en 2 días"));
+  assert.strictEqual(f.recordatoriosDeHoy(recs, "2026-10-08", {}, [0])[0].titulo.includes("hoy"), true);
+  assert.deepStrictEqual(f.recordatoriosDeHoy(recs, "2026-10-06", {}, []), [], "lista vacía = apagado");
+});
+
 console.log(`fechasLogic: ${count} casos OK`);

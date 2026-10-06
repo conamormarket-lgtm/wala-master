@@ -8,8 +8,8 @@ import { useGiftCatalog } from '../../hooks/useGiftCatalog';
 import { PRESUPUESTOS, respuestasDe } from '../../utils/giftRecommender.mjs';
 import { PLACEHOLDER_IMG } from '../../constants/placeholder';
 import { getUserSuggestedPackages } from '../../services/fechasImportantes';
-import { useFechasFestivas } from '../../services/fechasFestivas';
-import { proximasFestivas, hoyLocal, textoFecha, DIAS_ANTICIPACION } from '../../utils/fechasFestivas.mjs';
+import { useFechasFestivas, useRecordatorioPersonal } from '../../services/fechasFestivas';
+import { proximasFestivas, hoyLocal, textoFecha, DIAS_ANTICIPACION, textoDiasAviso, RECORDATORIO_PERSONAL_DEFAULT } from '../../utils/fechasFestivas.mjs';
 import FechasFestivasSeccion from './FechasFestivasSeccion';
 import FechaEventoInput from '../../components/common/FechaEventoInput/FechaEventoInput';
 import { textoFechaEvento } from '../../utils/fechaEvento.mjs';
@@ -103,6 +103,7 @@ const CuentaFechasImportantesPage = () => {
 
   // Fechas festivas que vienen, con a quién de la lista le toca cada una.
   const { data: festivas } = useFechasFestivas();
+  const { data: diasAviso } = useRecordatorioPersonal();
   const proximas = useMemo(
     () => proximasFestivas(festivas || [], recipients, hoyLocal()),
     [festivas, recipients],
@@ -405,9 +406,9 @@ const CuentaFechasImportantesPage = () => {
             </button>
           </div>
           <p className={styles.headerSub}>
-            Guarda a quién quieres regalarle y cuándo. Te avisamos una semana antes y un
-            día antes, con ideas de regalo que le pegan. Ganas 5 monedas por cada fecha
-            nueva (hasta 50).
+            Guarda a quién quieres regalarle y cuándo. Te avisamos{' '}
+            {textoDiasAviso(diasAviso || RECORDATORIO_PERSONAL_DEFAULT) || 'antes de cada fecha'}, con ideas de
+            regalo que le pegan. Ganas 5 monedas por cada fecha nueva (hasta 50).
           </p>
           {premio > 0 && (
             <p className={styles.premio} role="status">

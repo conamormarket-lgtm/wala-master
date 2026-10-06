@@ -4,7 +4,9 @@
 // admin en las reglas vivas; una colección nueva no tendría permisos.
 import { useQuery } from '@tanstack/react-query';
 import { getDocument, setDocument } from './firebase/firestore';
-import { festivasDesdeDoc, normalizarFestiva } from '../utils/fechasFestivas.mjs';
+import {
+  festivasDesdeDoc, normalizarFestiva, recordatorioPersonalDesdeDoc, normalizarDiasAviso,
+} from '../utils/fechasFestivas.mjs';
 
 const COLECCION = 'storeConfig';
 const DOC_ID = 'fechasFestivas';
@@ -16,6 +18,28 @@ export async function getFechasFestivas() {
   const { data, error } = await getDocument(COLECCION, DOC_ID);
   if (error && !noExiste(error)) return { data: null, error };
   return { data: festivasDesdeDoc(data), error: null };
+}
+
+// Días de aviso de las fechas de cada persona (cumpleaños, aniversario…).
+export async function getRecordatorioPersonal() {
+  const { data, error } = await getDocument(COLECCION, DOC_ID);
+  if (error && !noExiste(error)) return { data: null, error };
+  return { data: recordatorioPersonalDesdeDoc(data), error: null };
+}
+
+export async function saveRecordatorioPersonal(dias) {
+  // setDocument hace merge: no toca la lista de fechas festivas.
+  return setDocument(COLECCION, DOC_ID, { recordatorioPersonalDias: normalizarDiasAviso(dias) });
+}
+
+export const RECORDATORIO_QUERY_KEY = ['recordatorio-personal'];
+
+export function useRecordatorioPersonal() {
+  return useQuery({
+    queryKey: RECORDATORIO_QUERY_KEY,
+    queryFn: async () => (await getRecordatorioPersonal()).data || recordatorioPersonalDesdeDoc(null),
+    staleTime: 30 * 60 * 1000,
+  });
 }
 
 export async function saveFechasFestivas(fechas) {

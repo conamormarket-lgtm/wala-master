@@ -7,7 +7,7 @@ const { recordatoriosDeHoy } = require("./fechasLogic");
 const { hitoDeEstadoErp, hitoDeEstadoWala, debeAvisar, textoHito } = require("./ordersLogic");
 const { agruparInteres, elegirProducto } = require("./productViewLogic");
 const { recomendarRegalos } = require("./giftLogic");
-const { avisosFestivosDeHoy, festivasDesdeDoc } = require("./fechasFestivasLogic");
+const { avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc } = require("./fechasFestivasLogic");
 
 const db = admin.firestore();
 const messaging = admin.messaging();
@@ -480,6 +480,8 @@ exports.datesReminderEngine = onSchedule({
     // /admin/fechas-importantes. Sin documento, las de Perú por defecto.
     const festivasDoc = await db.doc("storeConfig/fechasFestivas").get();
     const festivas = festivasDesdeDoc(festivasDoc.exists ? festivasDoc.data() : null);
+    // Días de aviso de los cumpleaños/aniversarios de cada persona (mismo doc).
+    const diasPersonales = recordatorioPersonalDesdeDoc(festivasDoc.exists ? festivasDoc.data() : null);
 
     const usersSnapshot = await db.collection(PORTAL_USERS_COLLECTION).get();
     for (const doc of usersSnapshot.docs) {
@@ -489,7 +491,7 @@ exports.datesReminderEngine = onSchedule({
       // con su persona si le toca a alguien que anotó; si no, aviso general
       // solo en las fechas marcadas "avisar a todos".
       const pendientes = [
-        ...recordatoriosDeHoy(personas, hoy, data.datesReminderLog).map((r) => ({
+        ...recordatoriosDeHoy(personas, hoy, data.datesReminderLog, diasPersonales).map((r) => ({
           ...r,
           tipo: "fecha_recordatorio",
           ocasion: r.event.type === "Fecha Especial" ? r.event.customName : r.event.type,

@@ -105,25 +105,28 @@ function nombreEvento(ev) {
  * de los ya enviados, para no repetir el mismo aviso.
  * @returns {Array<{key, dias, recipient, event, titulo, cuerpo}>}
  */
-function recordatoriosDeHoy(giftRecipients, hoy, log) {
+function recordatoriosDeHoy(giftRecipients, hoy, log, diasAviso = REMINDER_DAYS) {
   const enviados = log || {};
+  // Configurables en el admin (storeConfig/fechasFestivas.recordatorioPersonalDias);
+  // una lista vacía = el admin apagó estos avisos.
+  const dias_ = Array.isArray(diasAviso) ? diasAviso : REMINDER_DAYS;
   const anio = String(hoy).slice(0, 4);
   const out = [];
   for (const { recipient, event } of eventosValidos(giftRecipients)) {
     const dias = diasHastaProxima(event.date, hoy);
-    if (!REMINDER_DAYS.includes(dias)) continue;
+    if (!dias_.includes(dias)) continue;
     const key = `${event.id}|${anio}|${dias}`;
     if (enviados[key]) continue;
     const quien = recipient.name.trim();
     const que = nombreEvento(event);
-    const cuando = dias === 1 ? "mañana" : `en ${dias} días`;
+    const cuando = dias === 0 ? "hoy" : dias === 1 ? "mañana" : `en ${dias} días`;
     out.push({
       key,
       dias,
       recipient,
       event,
       titulo: `🎁 ${que} de ${quien} ${cuando}`,
-      cuerpo: dias === 1
+      cuerpo: dias <= 1
         ? `Todavía llegas: mira los regalos que elegimos para ${quien}.`
         : `Te armamos ideas de regalo para ${quien}. Pide con tiempo y llega perfecto.`,
     });

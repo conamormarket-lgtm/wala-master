@@ -103,6 +103,33 @@ function normalizarFestiva(raw = {}) {
   };
 }
 
+// Avisos de las fechas de cada persona (cumpleaños, aniversario…): cuántos
+// días antes. Mismo documento, campo `recordatorioPersonalDias`.
+const RECORDATORIO_PERSONAL_DEFAULT = [7, 1];
+
+function normalizarDiasAviso(dias) {
+  return [...new Set((Array.isArray(dias) ? dias : [])
+    .map((d) => entero(d, -1, 0, 60)).filter((d) => d >= 0))].sort((a, b) => b - a);
+}
+
+function recordatorioPersonalDesdeDoc(data) {
+  if (!data || !Array.isArray(data.recordatorioPersonalDias)) return [...RECORDATORIO_PERSONAL_DEFAULT];
+  return normalizarDiasAviso(data.recordatorioPersonalDias);
+}
+
+// "una semana antes y un día antes" (para el texto que ve el cliente).
+function textoDiasAviso(dias) {
+  const partes = normalizarDiasAviso(dias).map((d) => {
+    if (d === 0) return 'el mismo día';
+    if (d === 1) return 'un día antes';
+    if (d === 7) return 'una semana antes';
+    if (d === 14) return 'dos semanas antes';
+    return `${d} días antes`;
+  });
+  if (partes.length <= 1) return partes[0] || '';
+  return `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
+}
+
 // Documento de Firestore → lista. Sin documento, las de Perú por defecto.
 function festivasDesdeDoc(data) {
   if (!data || !Array.isArray(data.fechas)) return FESTIVAS_DEFAULT.map(normalizarFestiva);
@@ -213,4 +240,4 @@ function avisosFestivosDeHoy(festivas, recipients, hoy, log) {
   return out;
 }
 
-module.exports = { MESES, DIAS_SEMANA, ORDINALES, ROLES, FESTIVAS_DEFAULT, DIAS_ANTICIPACION, hoyLocal, normalizarRegla, normalizarFestiva, festivasDesdeDoc, fechaDelAnio, proximaFecha, textoRegla, textoFecha, aplicaA, proximasFestivas, avisosFestivosDeHoy };
+module.exports = { MESES, DIAS_SEMANA, ORDINALES, ROLES, FESTIVAS_DEFAULT, DIAS_ANTICIPACION, hoyLocal, normalizarRegla, normalizarFestiva, RECORDATORIO_PERSONAL_DEFAULT, normalizarDiasAviso, recordatorioPersonalDesdeDoc, textoDiasAviso, festivasDesdeDoc, fechaDelAnio, proximaFecha, textoRegla, textoFecha, aplicaA, proximasFestivas, avisosFestivosDeHoy };

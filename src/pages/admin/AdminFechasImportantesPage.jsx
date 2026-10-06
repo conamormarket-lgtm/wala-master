@@ -41,7 +41,7 @@ const AdminFechasImportantesPage = () => {
             className={`${styles.drawerBtn} ${activeView === 'festivas' ? styles.active : ''}`}
             onClick={() => setActiveView('festivas')}
           >
-            Fechas festivas
+            Avisos y fechas festivas
           </button>
           <button 
             className={`${styles.drawerBtn} ${activeView === 'usuarios' ? styles.active : ''}`}

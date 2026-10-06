@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { textoFechaEvento } from '../../../utils/fechaEvento.mjs';
-import { addDays, isWithinInterval, startOfDay, addWeeks, startOfMonth, addMonths, endOfMonth, startOfWeek, endOfWeek, parseISO, setYear } from 'date-fns';
+import { addDays, isWithinInterval, startOfDay, parseISO, setYear } from 'date-fns';
 import { getUserDates, getSuggestedPackages, updateSuggestedPackage, deleteSuggestedPackage } from '../../../services/fechasImportantes';
 import Button from '../../common/Button';
 import PackageCreatorModal from './PackageCreatorModal';
@@ -95,17 +95,15 @@ const UsuariosView = () => {
       });
     };
 
+    // Ventanas DESDE HOY. Antes "Próxima Semana" era la semana calendario
+    // siguiente y "Próximo Mes" el mes siguiente completo: un cumpleaños de
+    // pasado mañana no aparecía en ningún filtro.
     if (type === 'tomorrow') {
-      const tomorrow = addDays(today, 1);
-      setFilteredDates(filterByInterval(today, tomorrow));
+      setFilteredDates(filterByInterval(today, addDays(today, 1)));
     } else if (type === 'next_week') {
-      const nextWeekStart = startOfWeek(addWeeks(today, 1), { weekStartsOn: 1 });
-      const nextWeekEnd = endOfWeek(addWeeks(today, 1), { weekStartsOn: 1 });
-      setFilteredDates(filterByInterval(nextWeekStart, nextWeekEnd));
+      setFilteredDates(filterByInterval(today, addDays(today, 7)));
     } else if (type === 'next_month') {
-      const nextMonthStart = startOfMonth(addMonths(today, 1));
-      const nextMonthEnd = endOfMonth(nextMonthStart);
-      setFilteredDates(filterByInterval(nextMonthStart, nextMonthEnd));
+      setFilteredDates(filterByInterval(today, addDays(today, 30)));
     }
   };
 
@@ -260,13 +258,13 @@ const UsuariosView = () => {
             className={`${styles.filterBtn} ${filter === 'next_week' ? styles.active : ''}`}
             onClick={() => applyFilter('next_week')}
           >
-            Próxima Semana
+            Próximos 7 días
           </button>
           <button 
             className={`${styles.filterBtn} ${filter === 'next_month' ? styles.active : ''}`}
             onClick={() => applyFilter('next_month')}
           >
-            Próximo Mes
+            Próximos 30 días
           </button>
         </div>
         

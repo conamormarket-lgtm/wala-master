@@ -6,10 +6,14 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
-import { getFechasFestivas, saveFechasFestivas, FESTIVAS_QUERY_KEY } from '../../../services/fechasFestivas';
+import {
+  getFechasFestivas, saveFechasFestivas, FESTIVAS_QUERY_KEY,
+  getRecordatorioPersonal, saveRecordatorioPersonal, RECORDATORIO_QUERY_KEY,
+} from '../../../services/fechasFestivas';
 import {
   FESTIVAS_DEFAULT, MESES, DIAS_SEMANA, ORDINALES, ROLES,
   normalizarFestiva, fechaDelAnio, proximaFecha, textoRegla, textoFecha, hoyLocal,
+  normalizarDiasAviso, textoDiasAviso,
 } from '../../../utils/fechasFestivas.mjs';
 import styles from './FechasFestivasView.module.css';
 
@@ -171,6 +175,75 @@ const Editor = ({ inicial, usados, onGuardar, onCancelar, guardando }) => {
   );
 };
 
+// Avisos de las fechas que cada cliente anotó (cumpleaños, aniversario…).
+const AvisosPersonales = () => {
+  const queryClient = useQueryClient();
+  const { data: dias, isLoading, error } = useQuery({
+    queryKey: ['admin-recordatorio-personal'],
+    queryFn: async () => {
+      const { data, error: err } = await getRecordatorioPersonal();
+      if (err) throw new Error(err);
+      return data;
+    },
+    staleTime: 0,
+  });
+  const [texto, setTexto] = useState(null);
+  const valor = texto ?? (dias || []).join(', ');
+  const nuevos = normalizarDiasAviso(valor.split(/[,\s]+/).filter(Boolean).map(Number));
+  const guardar = useMutation({
+    mutationFn: async () => {
+      const { error: err } = await saveRecordatorioPersonal(nuevos);
+      if (err) throw new Error(err);
+      return nuevos;
+    },
+    onSuccess: (lista) => {
+      queryClient.setQueryData(['admin-recordatorio-personal'], lista);
+      queryClient.invalidateQueries({ queryKey: RECORDATORIO_QUERY_KEY });
+      setTexto(null);
+    },
+  });
+  const cambio = texto !== null && nuevos.join(',') !== (dias || []).join(',');
+
+  return (
+    <section className={styles.avisos} aria-labelledby="avisos-personales">
+      <h3 id="avisos-personales">🔔 Avisos de las fechas de cada persona</h3>
+      <p className={styles.nota}>
+        Cumpleaños, aniversarios y fechas que cada cliente anotó en “Fechas importantes”. Se revisa todos los
+        días a las <strong>10:00 a. m. (hora de Lima)</strong> y se avisa por la campanita de la web y por push a
+        quien tiene la app, con una idea de regalo y su foto.
+      </p>
+      {error && <p className={styles.error}>No se pudo cargar: {error.message}</p>}
+      <div className={styles.fila}>
+        <label className={styles.campo} style={{ maxWidth: 260 }}>
+          <span>¿Cuántos días antes avisar?</span>
+          <input
+            value={valor}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="7, 1"
+            disabled={isLoading || !!error}
+          />
+        </label>
+        <button
+          type="button"
+          className={styles.btnPrimario}
+          style={{ alignSelf: 'end' }}
+          onClick={() => guardar.mutate()}
+          disabled={!cambio || guardar.isPending}
+        >
+          {guardar.isPending ? 'Guardando…' : 'Guardar'}
+        </button>
+      </div>
+      <p className={styles.nota}>
+        {nuevos.length
+          ? <>El cliente verá: “Te avisamos {textoDiasAviso(nuevos)}”. 0 = el mismo día.</>
+          : <>Sin días: estos avisos quedan <strong>apagados</strong>.</>}
+        {' '}Si alguien anota una fecha cuando ya pasó un día de aviso, recibe el siguiente.
+      </p>
+      {guardar.error && <p className={styles.error}>No se pudo guardar: {guardar.error.message}</p>}
+    </section>
+  );
+};
+
 const FechasFestivasView = () => {
   const queryClient = useQueryClient();
   const [editando, setEditando] = useState(null);
@@ -222,11 +295,11 @@ const FechasFestivasView = () => {
     <div className={styles.vista}>
       <div className={styles.encabezado}>
         <div>
-          <h2>Fechas festivas</h2>
+          <h2>Avisos y fechas festivas</h2>
           <p>
-            Fechas que se celebran cada año. En “Fechas importantes” el cliente ve la próxima con ideas de regalo para
-            sus personas, y le avisamos antes. Las que cambian de día (Día de la Madre: 2.º domingo de mayo) se
-            calculan solas cada año.
+            Cuándo avisamos de las fechas de cada persona y el calendario de fechas que se celebran cada año. En
+            “Fechas importantes” el cliente ve la fecha festiva que se acerca (30 días antes) con ideas de regalo para
+            sus personas. Las que cambian de día (Día de la Madre: 2.º domingo de mayo) se calculan solas.
           </p>
         </div>
         <div className={styles.acciones}>
@@ -238,6 +311,10 @@ const FechasFestivasView = () => {
           </button>
         </div>
       </div>
+
+      <AvisosPersonales />
+
+      <h3 className={styles.subtitulo}>📅 Fechas festivas del año</h3>
 
       {error && <p className={styles.error}>No se pudo cargar el calendario: {error.message}</p>}
       {guardar.error && <p className={styles.error}>No se pudo guardar: {guardar.error.message}</p>}
