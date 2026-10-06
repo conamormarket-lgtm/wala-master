@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getDesignsByUser } from '../../services/designs';
 import { usePedidos } from '../../hooks/usePedidos';
 import MiCreacionCard from './components/MiCreacionCard';
+import { useEliminarCreacion } from '../Crear/useEliminarCreacion';
 import styles from './MisCreacionesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -33,6 +34,10 @@ const MisCreacionesPage = () => {
   const [designs, setDesigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const { pedir: pedirEliminar, dialogo: dialogoEliminar } = useEliminarCreacion({
+    alEliminar: (d) => setDesigns((prev) => prev.filter((x) => x.id !== d.id)),
+  });
 
   const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
   const { data: pedidosData, buscar: buscarPedidos } = usePedidos(dni);
@@ -113,10 +118,16 @@ const MisCreacionesPage = () => {
       ) : (
         <ul className={styles.grid}>
           {designs.map((d) => (
-            <MiCreacionCard key={d.id} design={d} isPurchased={purchasedDesignIds.has(d.id)} />
+            <MiCreacionCard
+              key={d.id}
+              design={d}
+              isPurchased={purchasedDesignIds.has(d.id)}
+              onEliminar={(diseno) => pedirEliminar(diseno, { enPedido: purchasedDesignIds.has(diseno.id) })}
+            />
           ))}
         </ul>
       )}
+      {dialogoEliminar}
     </div>
   );
 };

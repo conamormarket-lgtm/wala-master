@@ -19,6 +19,7 @@ import { prepareCheckoutPayment } from '../services/checkoutPayment';
 // marcado de pedidos_web; markWalaOrderPagado nunca lanza (best-effort).
 import { markWalaOrderPagado, mirrorWebOrder } from '../services/walaOrders';
 import { markItemAsGifted } from '../services/wishlist';
+import { marcarCreacionesEnPedido } from '../services/designs';
 // Cupones: el valor lo decide el servidor (validarCuponSecure), igual que las
 // monedas. Aquí solo se pinta el descuento y se consume el cupón al crear el
 // pedido; el navegador nunca decide cuánto vale.
@@ -1373,6 +1374,10 @@ const CheckoutPage = () => {
       }
     } catch (e) {
       console.warn('Error al marcar regalos de wishlist:', e);
+    }
+    // Las creaciones compradas no pueden borrar sus archivos: el pedido los usa para imprimir.
+    if (user) {
+      await marcarCreacionesEnPedido(snapshot.map((i) => i?.customization?.designId)).catch(() => {});
     }
     try {
       const rawRef = localStorage.getItem('wala_referral');

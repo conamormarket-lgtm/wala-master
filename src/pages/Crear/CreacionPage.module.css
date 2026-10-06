@@ -257,6 +257,25 @@
   border-color: var(--primary-color);
 }
 
+.eliminar {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0;
+  border: none;
+  background: transparent;
+  color: var(--rojo-principal, #DC2626);
+  font-weight: 700;
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.eliminar:hover {
+  text-decoration: underline;
+}
+
 .nota {
   margin: 0;
   font-size: 0.8rem;

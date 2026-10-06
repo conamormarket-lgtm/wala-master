@@ -1,0 +1,116 @@
+.capa {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(20, 18, 28, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.caja {
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  border-radius: 20px;
+  padding: 1.5rem;
+  width: min(380px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.caja p {
+  margin: 0;
+  color: var(--gris-texto-secundario);
+  line-height: 1.45;
+}
+
+.icono {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--rojo-light, #FEE2E2);
+  color: var(--rojo-principal, #DC2626);
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.eliminar {
+  width: 100%;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 14px;
+  background: var(--rojo-principal, #DC2626);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.98rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.eliminar:hover:not(:disabled) {
+  background: var(--rojo-hover, #B91C1C);
+}
+
+.eliminar:disabled,
+.cancelar:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cancelar {
+  border: none;
+  background: transparent;
+  color: var(--gris-texto-secundario);
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0.6rem;
+}
+
+.girando {
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+/* Botón de papelera sobre una tarjeta (Mis creaciones, Tus creaciones). */
+.botonTarjeta {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--gris-borde);
+  background: var(--blanco);
+  color: var(--gris-texto-secundario);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.botonTarjeta:hover {
+  color: var(--rojo-principal, #DC2626);
+  border-color: var(--rojo-principal, #DC2626);
+}

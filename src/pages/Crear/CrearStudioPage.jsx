@@ -34,6 +34,20 @@ const COLORES_TEXTO = ['#111111', '#FFFFFF', '#7C3AED', '#E11D48', '#F59E0B', '#
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 const nuevoId = () => `capa_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 const claveBorrador = (id) => `crear_borrador_${id}`;
+// Marca "vuelve de iniciar sesión": solo entonces (o al recargar) se recupera el borrador.
+const claveVolver = (id) => `crear_volver_${id}`;
+
+// ¿Ya se abrió el estudio en esta carga de la página? Solo la primera vista
+// puede ser una recarga; luego, entrar a la prenda es empezar de cero.
+let estudioAbierto = false;
+const recargadaEn = (ruta) => {
+  try {
+    const nav = performance.getEntriesByType('navigation')[0];
+    return nav?.type === 'reload' && new URL(nav.name).pathname === ruta;
+  } catch {
+    return false;
+  }
+};
 
 /** Controles de selección: grandes para el dedo, con el violeta de la marca. */
 const estilizar = (obj) => {
@@ -129,6 +143,9 @@ const CrearStudioPage = () => {
   const tokenRef = useRef(0);
   const inputArchivoRef = useRef(null);
   const tallasRef = useRef(null);
+  const recargadaRef = useRef(null);
+  if (recargadaRef.current === null) recargadaRef.current = !estudioAbierto && recargadaEn(location.pathname);
+  useEffect(() => { estudioAbierto = true; }, []);
 
   vistaRef.current = vistaId;
   const zonaDe = (capaId) => Object.keys(capasRef.current)
@@ -196,8 +213,18 @@ const CrearStudioPage = () => {
         }
         setDesignId(null);
       }
+      // La plantilla se abre limpia. El borrador solo vuelve si el cliente fue
+      // a iniciar sesión a mitad del diseño o si recargó la página.
       let borrador = null;
-      try { borrador = JSON.parse(sessionStorage.getItem(claveBorrador(id)) || 'null'); } catch { /* sin borrador */ }
+      try {
+        const vuelve = sessionStorage.getItem(claveVolver(id)) === '1';
+        sessionStorage.removeItem(claveVolver(id));
+        if (vuelve || recargadaRef.current) {
+          borrador = JSON.parse(sessionStorage.getItem(claveBorrador(id)) || 'null');
+        } else {
+          sessionStorage.removeItem(claveBorrador(id));
+        }
+      } catch { /* sin borrador */ }
       return aplicar(borrador);
     })();
     return () => { cancelado = true; };
@@ -642,6 +669,7 @@ const CrearStudioPage = () => {
   // ── Guardar y comprar ────────────────────────────────────────────────────
   const irALogin = () => {
     guardarBorrador();
+    try { sessionStorage.setItem(claveVolver(id), '1'); } catch { /* almacenamiento bloqueado */ }
     navigate('/login', { state: { from: location.pathname + location.search } });
   };
 

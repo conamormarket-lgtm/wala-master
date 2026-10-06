@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ShoppingBag, Pencil, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Pencil, Download, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
@@ -9,6 +9,7 @@ import { getDesignById } from '../../services/designs';
 import { getPrendaBase } from '../../services/prendasBase';
 import { leerPrendaBase, precioPersonalizado, tallasDeColor } from '../../utils/prendaBase';
 import { itemDeCreacion, creacionLista } from './creacionCarrito';
+import { useEliminarCreacion } from './useEliminarCreacion';
 import styles from './CreacionPage.module.css';
 
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
@@ -29,6 +30,9 @@ const CreacionPage = () => {
   const [talla, setTalla] = useState(null);
   const [imagenSel, setImagenSel] = useState(0);
   const [avisoTalla, setAvisoTalla] = useState(false);
+  const { pedir: pedirEliminar, dialogo: dialogoEliminar } = useEliminarCreacion({
+    alEliminar: () => navigate('/cuenta/creaciones', { replace: true }),
+  });
 
   const { data: creacion, isLoading: cargandoCreacion } = useQuery({
     queryKey: ['creacion', id, user?.uid],
@@ -209,8 +213,12 @@ const CreacionPage = () => {
             )}
           </div>
           <p className={styles.nota}>Al editarla y guardarla se actualiza esta misma creación.</p>
+          <button type="button" className={styles.eliminar} onClick={() => pedirEliminar(creacion)}>
+            <Trash2 size={16} aria-hidden="true" /> Eliminar creación
+          </button>
         </section>
       </div>
+      {dialogoEliminar}
     </div>
   );
 };

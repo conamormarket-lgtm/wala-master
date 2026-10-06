@@ -1,4 +1,5 @@
-import { getCollection, createDocument, updateDocument, getDocument } from './firebase/firestore';
+import { getCollection, createDocument, updateDocument, getDocument, deleteDocument } from './firebase/firestore';
+import { obtenerStorage } from './firebase/config';
 
 /**
  * Obtiene los diseños guardados de un usuario (colección designs por userId).
@@ -159,4 +160,71 @@ export const saveDesign = async (userId, payload) => {
     }
     return { id: designId || null, error: msg };
   }
+};
+
+/** URLs de todo lo que guarda un diseño: imágenes del cliente, vistas previas y archivos de impresión. */
+const urlsDeDiseno = (d) => {
+  const urls = new Set();
+  const agregar = (u) => { if (typeof u === 'string' && /^https?:/i.test(u)) urls.add(u); };
+  agregar(d?.previewUrl);
+  agregar(d?.imagenConjunta);
+  (d?.vistasPrevias || []).forEach((p) => agregar(p?.url));
+  (d?.archivosImpresion || []).forEach((a) => agregar(a?.url));
+  const capas = [
+    ...(Array.isArray(d?.layers) ? d.layers : []),
+    ...Object.values(d?.layersByView || {}).flat(),
+  ];
+  capas.forEach((c) => { if (c?.type === 'image') agregar(c.src); });
+  return urls;
+};
+
+/**
+ * Elimina para siempre una creación del cliente y sus imágenes en Storage.
+ *
+ * Solo borra archivos de su carpeta (designs/{uid}/): nunca fotos del
+ * catálogo. Tampoco borra un archivo que otra de sus creaciones también usa,
+ * ni ningún archivo si la creación ya está en un pedido (`conservarArchivos`
+ * o `enPedido`): el pedido apunta a esas imágenes para imprimir.
+ * Devuelve { error, archivosBorrados }.
+ */
+export const eliminarCreacion = async (userId, diseno, { conservarArchivos = false } = {}) => {
+  if (!userId || !diseno?.id) return { error: 'Falta la creación.', archivosBorrados: 0 };
+  if (diseno.userId && diseno.userId !== userId) return { error: 'Esta creación no es tuya.', archivosBorrados: 0 };
+
+  let urls = [];
+  if (!conservarArchivos && diseno.enPedido !== true) {
+    const propias = urlsDeDiseno(diseno);
+    const { data: todas } = await getCollection('designs', [{ field: 'userId', operator: '==', value: userId }]);
+    (todas || []).filter((d) => d.id !== diseno.id).forEach((d) => {
+      urlsDeDiseno(d).forEach((u) => propias.delete(u));
+    });
+    urls = [...propias];
+  }
+
+  // Primero el documento: si algún archivo no se borra, solo queda huérfano.
+  const { error } = await deleteDocument('designs', diseno.id);
+  if (error) return { error, archivosBorrados: 0 };
+
+  let archivosBorrados = 0;
+  if (urls.length) {
+    const storage = await obtenerStorage();
+    if (storage) {
+      const { ref, deleteObject } = await import('firebase/storage');
+      await Promise.all(urls.map(async (url) => {
+        try {
+          const archivo = ref(storage, url);
+          if (!archivo.fullPath.startsWith(`designs/${userId}/`)) return;
+          await deleteObject(archivo);
+          archivosBorrados += 1;
+        } catch { /* ya no existe o no es de Storage */ }
+      }));
+    }
+  }
+  return { error: null, archivosBorrados };
+};
+
+/** Marca las creaciones de un pedido: sus archivos ya no se pueden borrar. */
+export const marcarCreacionesEnPedido = async (designIds) => {
+  const ids = [...new Set((designIds || []).filter(Boolean))];
+  await Promise.all(ids.map((id) => updateDocument('designs', id, { enPedido: true }).catch(() => null)));
 };

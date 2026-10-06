@@ -7,7 +7,9 @@ import { useProductThumbnailVariant } from '../../../hooks/useProductThumbnailVa
 import ComboProductImage from '../../Tienda/components/ComboProductImage/ComboProductImage';
 import { DomOverlay } from '../../Tienda/components/ComboProductImage/ComboProductImageWithDesign';
 import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedImage';
+import { Trash2 } from 'lucide-react';
 import styles from '../MisCreacionesPage.module.css';
+import estilosEliminar from '../../Crear/EliminarCreacion.module.css';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return '—';
@@ -28,7 +30,7 @@ const formatDate = (timestamp) => {
   }
 };
 
-const MiCreacionCard = ({ design, isPurchased }) => {
+const MiCreacionCard = ({ design, isPurchased, onEliminar }) => {
   const { data: productResponse, isLoading } = useQuery({
     queryKey: ['product', design.productId],
     queryFn: () => getProduct(design.productId),
@@ -92,7 +94,18 @@ const MiCreacionCard = ({ design, isPurchased }) => {
     : `/editor/${design.productId || 'unknown'}?designId=${design.id}`;
 
   return (
-    <li className={styles.cardItem}>
+    <li className={styles.cardItem} style={{ position: 'relative' }}>
+      {onEliminar && (
+        <button
+          type="button"
+          className={estilosEliminar.botonTarjeta}
+          onClick={() => onEliminar(design)}
+          aria-label={`Eliminar ${design.name || 'creación'}`}
+          title="Eliminar"
+        >
+          <Trash2 size={17} aria-hidden="true" />
+        </button>
+      )}
       <Link to={editarUrl} className={styles.thumbWrapper} style={{ display: 'block', position: 'relative', background: '#fff' }}>
         {esDeCrear ? (
           <div style={{ position: 'relative', width: '100%', aspectRatio: '1', backgroundColor: '#fff' }}>
