@@ -5,10 +5,9 @@ import styles from './AdminFechasImportantesPage.module.css';
 import GlobalCalendarView from '../../components/admin/fechas/GlobalCalendarView';
 import FechasFestivasView from '../../components/admin/fechas/FechasFestivasView';
 import UsuariosView from '../../components/admin/fechas/UsuariosView';
-import EventosView from '../../components/admin/fechas/EventosView';
 
 const AdminFechasImportantesPage = () => {
-  const [activeView, setActiveView] = useState('calendario'); // 'calendario', 'universales', 'usuarios', 'eventos'
+  const [activeView, setActiveView] = useState('calendario'); // 'calendario', 'festivas', 'usuarios'
 
   const renderContent = () => {
     switch (activeView) {
@@ -18,8 +17,6 @@ const AdminFechasImportantesPage = () => {
         return <FechasFestivasView />;
       case 'usuarios':
         return <UsuariosView />;
-      case 'eventos':
-        return <EventosView />;
       default:
         return <GlobalCalendarView onChangeView={setActiveView} />;
     }
@@ -48,12 +45,6 @@ const AdminFechasImportantesPage = () => {
             onClick={() => setActiveView('usuarios')}
           >
             Fechas de Usuarios
-          </button>
-          <button 
-            className={`${styles.drawerBtn} ${activeView === 'eventos' ? styles.active : ''}`}
-            onClick={() => setActiveView('eventos')}
-          >
-            Eventos Organizables
           </button>
         </nav>
       </aside>

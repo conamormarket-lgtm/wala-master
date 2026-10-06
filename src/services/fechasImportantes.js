@@ -61,40 +61,6 @@ const getUserDatesDirecto = async () => {
   }
 };
 
-export const getOrganizableEvents = async () => {
-  try {
-    const snap = await getDocs(collection(db, 'organizable_events'));
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error('Error fetching organizable events:', error);
-    return [];
-  }
-};
-
-export const saveOrganizableEvent = async (eventData, id = null) => {
-  try {
-    if (id) {
-      await setDoc(doc(db, 'organizable_events', id), eventData);
-      return { id, ...eventData };
-    } else {
-      const docRef = await addDoc(collection(db, 'organizable_events'), eventData);
-      return { id: docRef.id, ...eventData };
-    }
-  } catch (error) {
-    console.error('Error saving organizable event:', error);
-    throw error;
-  }
-};
-
-export const deleteOrganizableEvent = async (id) => {
-  try {
-    await deleteDoc(doc(db, 'organizable_events', id));
-  } catch (error) {
-    console.error('Error deleting organizable event:', error);
-    throw error;
-  }
-};
-
 export const saveSuggestedPackage = async (packageData) => {
   try {
     packageData.createdAt = new Date().toISOString();
