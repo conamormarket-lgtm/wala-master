@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { useQuery } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import {
-  ArrowLeft, ImagePlus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
+  ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
   Crosshair, Maximize2, RotateCw, Crop, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -206,13 +206,16 @@ const CrearStudioPage = () => {
   // Las fuentes del selector se cargan en segundo plano para la vista previa.
   useEffect(() => { FUENTES.forEach((f) => { asegurarFuente(f); }); }, []);
 
+  // El borrador es solo para un diseño nuevo sin guardar: una creación ya
+  // guardada vive en la cuenta y no debe reaparecer al abrir la plantilla.
   const guardarBorrador = useCallback(() => {
+    if (designId) return;
     try {
       sessionStorage.setItem(claveBorrador(id), JSON.stringify({
         vistaId, zonaId, colorId, talla, capasPorZona: capasParaGuardar(capasRef.current),
       }));
     } catch { /* almacenamiento lleno o bloqueado */ }
-  }, [id, vistaId, zonaId, colorId, talla]);
+  }, [id, designId, vistaId, zonaId, colorId, talla]);
 
   // Borrador de la pestaña: recargar o ir a iniciar sesión no borra el diseño.
   useEffect(() => {
@@ -768,6 +771,8 @@ const CrearStudioPage = () => {
       navigate(`/crear/${id}?designId=${idFinal}`, { replace: true });
     }
     setNombre(creacion.name);
+    // Ya está guardada: la próxima vez la plantilla se abre limpia.
+    try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
     return { ...creacion, id: idFinal };
   };
 
@@ -846,7 +851,29 @@ const CrearStudioPage = () => {
           <span className={styles.subtitulo}>{color.nombre}{talla ? ` · Talla ${talla}` : ''}</span>
         </div>
         <span className={styles.precioMovil}>{soles(total)}</span>
+        {user && (
+          <Link to="/cuenta/creaciones" className={styles.misCreaciones} aria-label="Mis creaciones" title="Mis creaciones">
+            <Images size={18} aria-hidden="true" />
+            <span>Mis creaciones</span>
+          </Link>
+        )}
       </div>
+
+      {designId && (
+        <div className={styles.editando}>
+          <span>Estás editando <strong>{nombre ? `«${nombre}»` : 'tu creación'}</strong>. Al guardar se actualiza.</span>
+          <button
+            type="button"
+            className={styles.botonTexto}
+            onClick={() => {
+              try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
+              window.location.assign(`/crear/${id}`);
+            }}
+          >
+            <Plus size={16} aria-hidden="true" /> Empezar uno nuevo
+          </button>
+        </div>
+      )}
 
       {borrador && (
         <p className={styles.borrador}>

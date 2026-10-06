@@ -78,6 +78,96 @@
   font-size: 0.95rem;
 }
 
+/* ── Tus creaciones ── */
+.creaciones {
+  margin-bottom: 0;
+}
+
+.creacionesCabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.creacionesTitulo {
+  margin: 0 0 0.9rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal);
+}
+
+.verTodas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.empiezaNueva {
+  margin-top: 2rem;
+}
+
+.creacionesFila {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scroll-snap-type: x mandatory;
+}
+
+.creacion {
+  flex: 0 0 220px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.6rem;
+  border-radius: 16px;
+  border: 1px solid var(--gris-borde);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  text-decoration: none;
+  transition: border-color var(--dur-rapida, 180ms) ease;
+}
+
+.creacion:hover {
+  border-color: var(--primary-color);
+}
+
+.creacion strong {
+  font-size: 0.92rem;
+  margin-top: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.creacion span {
+  font-size: 0.78rem;
+  color: var(--gris-texto-secundario);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.creacionFoto {
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  background: #F3F1F7;
+  overflow: hidden;
+}
+
+.creacionFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 /* ── Grilla de prendas ── */
 .grilla {
   display: grid;
@@ -259,6 +349,10 @@
 }
 
 @media (max-width: 768px) {
+  .creacion {
+    flex-basis: 170px;
+  }
+
   .container {
     padding: var(--page-padding-md, 1.25rem);
     padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 1.5rem);

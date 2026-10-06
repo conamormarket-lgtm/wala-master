@@ -870,3 +870,59 @@
   border-radius: 12px;
   background: #F3F1F7;
 }
+
+.misCreaciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid var(--gris-borde);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.misCreaciones:hover {
+  border-color: var(--primary-color);
+}
+
+.editando {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 12px;
+  background: var(--primary-light);
+  font-size: 0.875rem;
+}
+
+.editando .botonTexto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--primary-color);
+  padding: 0.3rem 0;
+}
+
+@media (max-width: 768px) {
+  .misCreaciones {
+    padding: 0.45rem;
+  }
+
+  .misCreaciones span {
+    display: none;
+  }
+
+  .editando {
+    margin: 0;
+    border-radius: 0;
+    padding: 0.4rem 0.9rem;
+  }
+}

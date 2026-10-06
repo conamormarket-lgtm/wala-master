@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Shirt, Upload, ShoppingBag } from 'lucide-react';
+import { Shirt, Upload, ShoppingBag, ArrowRight } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
+import { getDesignsByUser } from '../services/designs';
 import { useAuth } from '../contexts/AuthContext';
 import { leerPrendaBase, precioBase, colorDisponible } from '../utils/prendaBase';
 import styles from './PersonalizarPage.module.css';
@@ -49,9 +50,46 @@ const TarjetaPrenda = ({ prenda }) => {
   );
 };
 
+/**
+ * Las últimas creaciones del cliente, arriba de las prendas: así vuelve a lo
+ * suyo desde donde empieza a diseñar, sin pasar por su cuenta.
+ */
+const TusCreaciones = ({ uid }) => {
+  const { data: creaciones = [] } = useQuery({
+    queryKey: ['mis-creaciones-crear', uid],
+    queryFn: async () => {
+      const { data } = await getDesignsByUser(uid);
+      return (data || []).filter((d) => d.tipo === 'crear');
+    },
+  });
+  if (!creaciones.length) return null;
+  return (
+    <section className={styles.creaciones} aria-label="Tus creaciones">
+      <div className={styles.creacionesCabecera}>
+        <h2 className={styles.creacionesTitulo}><T>Tus creaciones</T></h2>
+        <Link to="/cuenta/creaciones" className={styles.verTodas}>
+          <T>Ver todas</T> <ArrowRight size={16} aria-hidden="true" />
+        </Link>
+      </div>
+      <div className={styles.creacionesFila}>
+        {creaciones.slice(0, 8).map((c) => (
+          <Link key={c.id} to={`/creacion/${c.id}`} className={styles.creacion}>
+            <div className={styles.creacionFoto}>
+              {(c.imagenConjunta || c.previewUrl) && <img src={c.imagenConjunta || c.previewUrl} alt="" loading="lazy" />}
+            </div>
+            <strong>{c.name || 'Mi diseño'}</strong>
+            <span>{c.productName}{c.color?.nombre ? ` · ${c.color.nombre}` : ''}</span>
+          </Link>
+        ))}
+      </div>
+      <h2 className={`${styles.creacionesTitulo} ${styles.empiezaNueva}`}><T>Empieza una nueva</T></h2>
+    </section>
+  );
+};
+
 const PersonalizarPage = () => {
   // El admin ve también los borradores, para revisarlos antes de publicarlos.
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { data: prendas = [], isLoading } = useQuery({
     queryKey: ['prendas-base', Boolean(isAdmin)],
     queryFn: async () => {
@@ -80,6 +118,8 @@ const PersonalizarPage = () => {
           ))}
         </ol>
       </div>
+
+      {user && <TusCreaciones uid={user.uid} />}
 
       {isLoading ? (
         <div className={styles.grilla}>
