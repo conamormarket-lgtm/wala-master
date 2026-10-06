@@ -13,6 +13,7 @@ import { proximasFestivas, hoyLocal, textoFecha, DIAS_ANTICIPACION, textoDiasAvi
 import FechasFestivasSeccion from './FechasFestivasSeccion';
 import FechaEventoInput from '../../components/common/FechaEventoInput/FechaEventoInput';
 import { textoFechaEvento } from '../../utils/fechaEvento.mjs';
+import { productNeedsVariantSelection } from '../../utils/comboProductUtils';
 import { GlassCard, Reveal } from '../../components/ui';
 // eslint-disable-next-line no-unused-vars
 import { Gift, Calendar, CalendarHeart, Plus, Edit2, Trash2, X, Globe, ShoppingCart, Package, Camera, AlertCircle, Check } from 'lucide-react';
@@ -77,7 +78,6 @@ const CuentaFechasImportantesPage = () => {
   // eslint-disable-next-line no-unused-vars
   const { user, userProfile, updateUserProfile, claimDatesReward } = useAuth();
   const { addToCart } = useCart();
-  // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -191,14 +191,21 @@ const CuentaFechasImportantesPage = () => {
     const ocasion = proxima ? proxima.ocasion : '';
     return recomendar(rec, { ocasion, limite: 4 });
   };
+  // Lo que tiene talla/color de verdad para elegir (una casaca) no se manda al
+  // carrito a ciegas: se abre su página. Lo de una sola variante entra directo.
   const agregarIdea = (producto) => {
+    if (productNeedsVariantSelection(producto)) {
+      navigate(`/producto/${producto.id}`);
+      return;
+    }
     addToCart(producto, {}, null, 1);
     setIdeasAgregadas((prev) => new Set([...prev, producto.id]));
   };
   // "Agregar todo": las ideas automáticas funcionan como un paquete armado
-  // solo, sin que el equipo tenga que hacer nada. Agrega las que faltan.
+  // solo, sin que el equipo tenga que hacer nada. Agrega las que faltan y que
+  // no piden elegir talla/color.
   const agregarTodasLasIdeas = (ideas) => {
-    const faltan = ideas.filter(({ producto }) => !ideasAgregadas.has(producto.id));
+    const faltan = ideas.filter(({ producto }) => !ideasAgregadas.has(producto.id) && !productNeedsVariantSelection(producto));
     faltan.forEach(({ producto }) => addToCart(producto, {}, null, 1));
     setIdeasAgregadas((prev) => new Set([...prev, ...faltan.map(({ producto }) => producto.id)]));
   };
@@ -631,8 +638,11 @@ const CuentaFechasImportantesPage = () => {
                     if (cargandoIdeas) return null;
                     const enPaquetes = new Set(recPackages.flatMap((pkg) => (pkg.products || []).map((x) => String(x.id))));
                     const ideas = ideasPara(rec).filter(({ producto }) => !enPaquetes.has(String(producto.id)));
-                    const totalIdeas = ideas.reduce((acc, { producto: p }) => acc + (Number(p.salePrice) > 0 ? Number(p.salePrice) : Number(p.price) || 0), 0);
-                    const todasAgregadas = ideas.length > 0 && ideas.every(({ producto }) => ideasAgregadas.has(producto.id));
+                    // El "Agregar todo" lleva solo lo que no pide talla/color.
+                    const directas = ideas.filter(({ producto }) => !productNeedsVariantSelection(producto));
+                    const conTalla = ideas.length - directas.length;
+                    const totalIdeas = directas.reduce((acc, { producto: p }) => acc + (Number(p.salePrice) > 0 ? Number(p.salePrice) : Number(p.price) || 0), 0);
+                    const todasAgregadas = directas.length > 0 && directas.every(({ producto }) => ideasAgregadas.has(producto.id));
                     return (
                       <div className={styles.suggestedSection}>
                         <p className={styles.ideasTitle}>
@@ -690,7 +700,7 @@ const CuentaFechasImportantesPage = () => {
                             recomendamos regalos a su medida.
                           </p>
                         )}
-                        {ideas.length >= 2 && (
+                        {directas.length >= 2 && (
                           <button
                             type="button"
                             className={`${styles.btnSolido} ${styles.addToCartBtn} ${todasAgregadas ? styles.addToCartBtnDone : ''}`}
@@ -700,8 +710,13 @@ const CuentaFechasImportantesPage = () => {
                             {todasAgregadas ? <Check size={16} aria-hidden="true" /> : <ShoppingCart size={16} aria-hidden="true" />}
                             {todasAgregadas
                               ? 'Agregadas al carrito'
-                              : `Agregar las ${ideas.length} al carrito · S/ ${totalIdeas.toFixed(2)}`}
+                              : `Agregar ${directas.length === ideas.length ? `las ${ideas.length}` : directas.length} al carrito · S/ ${totalIdeas.toFixed(2)}`}
                           </button>
+                        )}
+                        {conTalla > 0 && ideas.length > 0 && (
+                          <p className={styles.ideasGenericas}>
+                            {conTalla === 1 ? 'Una idea pide' : `${conTalla} ideas piden`} elegir talla o color: tócala para elegirla en su página.
+                          </p>
                         )}
                         <Link to="/tienda" className={styles.verMasLink}>
                           Ver más regalos en la tienda →

@@ -326,6 +326,20 @@ export const CartProvider = ({ children }) => {
   }, []);
 
   const addToCart = React.useCallback((product, variant = {}, customization = null, quantity = 1, comboData = null, options = {}) => {
+    // Producto con UNA sola variante (un sérum, un reloj): no hay nada que
+    // elegir, así que se usa esa. Sin esto, los "agregar" rápidos (ideas de
+    // regalo, lista de deseos…) lo dejaban en el carrito con "Falta elegir
+    // color" y no se podía pagar. Si tiene una sola talla, también se usa.
+    if (!product.isComboProduct && !variant?.selectedVariant && !variant?.color
+      && product.hasVariants && Array.isArray(product.variants) && product.variants.length === 1) {
+      const unica = product.variants[0];
+      const tallas = Array.isArray(unica?.sizes) ? unica.sizes : [];
+      variant = {
+        ...(variant || {}),
+        selectedVariant: unica,
+        ...(!variant?.size && tallas.length === 1 ? { size: tallas[0] } : {}),
+      };
+    }
     const selectedVariant = variant.selectedVariant;
     const selectedColorName = selectedVariant?.name ?? variant.color ?? '';
     const productReferences = snapshotProductReferences(product, selectedVariant, selectedColorName);

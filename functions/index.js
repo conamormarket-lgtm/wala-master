@@ -7857,3 +7857,44 @@ exports.notifyKentaOrderStageChanged = functions.firestore
     }
     return null;
   });
+
+
+// ── Admin → Fechas importantes → "Fechas de Usuarios" ────────────────────────
+// Antes el panel leía en el navegador los ~6.200 perfiles COMPLETOS (3,2 MB)
+// para quedarse con los ~200 que anotaron personas: tardaba mucho. Acá se leen
+// solo email + giftRecipients y se devuelve una fila por fecha, ya filtrada.
+exports.adminFechasDeUsuarios = functions.https.onCall(async (data, context) => {
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede ver esto.");
+  }
+  const snap = await db.collection(PORTAL_USERS_COLLECTION).select("email", "giftRecipients").get();
+  const fechas = [];
+  snap.forEach((doc) => {
+    const u = doc.data();
+    if (!Array.isArray(u.giftRecipients)) return;
+    u.giftRecipients.forEach((r) => {
+      if (!r || !Array.isArray(r.events)) return;
+      r.events.forEach((ev) => {
+        if (!ev) return;
+        fechas.push({
+          userId: doc.id,
+          userEmail: u.email || "Sin correo",
+          recipientId: r.id || null,
+          recipientName: r.name || "Sin nombre",
+          recipientRole: r.roleDisplay || "Otro",
+          recipientGender: r.gender || "",
+          recipientRoleKey: r.roleKey || "otros",
+          recipientBudget: r.budget || "",
+          selectedCategories: r.selectedCategories || [],
+          categoryAnswers: r.categoryAnswers || {},
+          familySet: r.familySet || false,
+          familyAnswers: r.familyAnswers || {},
+          eventId: ev.id || null,
+          eventType: ev.type || "",
+          eventDate: ev.date || "",
+        });
+      });
+    });
+  });
+  return { fechas };
+});

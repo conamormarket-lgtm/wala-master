@@ -1,11 +1,26 @@
 import { collection, getDocs, doc, setDoc, deleteDoc, addDoc, query, where } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from './firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 
 // Las fechas festivas (antes "universal_dates", que nadie leía) viven ahora en
 // services/fechasFestivas.js + utils/fechasFestivas.mjs.
 
+// Una fila por fecha de cada persona que anotaron los clientes (admin). La arma
+// el servidor (adminFechasDeUsuarios) leyendo solo email + giftRecipients: leer
+// aquí los ~6.200 perfiles completos tardaba mucho. Si la función falla, se
+// cae a la lectura directa de antes.
 export const getUserDates = async () => {
+  try {
+    const res = await httpsCallable(getFunctions(), 'adminFechasDeUsuarios')();
+    if (Array.isArray(res?.data?.fechas)) return res.data.fechas;
+  } catch (error) {
+    console.warn('adminFechasDeUsuarios falló, leyendo directo:', error?.message || error);
+  }
+  return getUserDatesDirecto();
+};
+
+const getUserDatesDirecto = async () => {
   try {
     const usersSnap = await getDocs(collection(db, PORTAL_USERS_COLLECTION));
     const dates = [];
