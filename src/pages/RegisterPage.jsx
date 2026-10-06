@@ -72,6 +72,10 @@ const RegisterPage = () => {
 
   React.useEffect(() => {
     if (authLoading || !user) return;
+    if (userProfile?._perfilNoCargado) {
+      navigate('/', { replace: true });
+      return;
+    }
     if (userProfile?.dni && userProfile?.phone) {
       if (shouldPromptSurvey(userProfile)) {
         navigate('/encuesta-suscripcion', { replace: true });

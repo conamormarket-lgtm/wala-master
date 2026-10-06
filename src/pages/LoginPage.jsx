@@ -26,6 +26,12 @@ const LoginPage = () => {
 
   React.useEffect(() => {
     if (authLoading || !user) return;
+    // El perfil no se pudo leer (red lenta): no se sabe si está completo, así
+    // que se entra normal en vez de mandar a "Completar perfil" con todo vacío.
+    if (userProfile?._perfilNoCargado) {
+      navigate(from || '/', { replace: true });
+      return;
+    }
     if (userProfile?.dni && userProfile?.phone) {
       // Perfil completo: si vino de una página concreta (ej. /sorteos), vuelve ahí;
       // si no, encuesta o home como siempre.

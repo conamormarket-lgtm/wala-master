@@ -95,6 +95,7 @@ test('encuesta: espera el perfil, no sale si ya la llenó o la saltó hace poco'
   const p = POPUP_ENCUESTA_DEFAULT;
   assert.equal(evaluarPopup(p, base).ok, true, 'anónimo sí (irá a login)');
   assert.equal(evaluarPopup(p, { ...base, logueado: true, perfil: null }).motivo, 'perfil cargando');
+  assert.equal(evaluarPopup(p, { ...base, logueado: true, perfil: { _perfilNoCargado: true } }).motivo, 'perfil cargando', 'perfil que no se pudo leer');
   assert.equal(evaluarPopup(p, { ...base, logueado: true, perfil: { hasCompletedSurvey: true } }).ok, false);
   assert.equal(evaluarPopup(p, { ...base, logueado: true, perfil: { lastSurveyPromptedAt: AHORA - DIA_MS } }).ok, false);
   assert.equal(evaluarPopup(p, { ...base, logueado: true, perfil: { lastSurveyPromptedAt: AHORA - 10 * DIA_MS } }).ok, true);

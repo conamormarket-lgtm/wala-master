@@ -97,6 +97,27 @@ export const AuthProvider = ({ children }) => {
     return () => unsub();
   }, []);
 
+  // Lectura del perfil con un reintento si falla por algo que no sea "no existe".
+  const esNoEncontrado = (error) => /no encontrado|not found|no existe/i.test(String(error || ''));
+  const leerPerfilPortal = async (uid) => {
+    const leer = () => getDocument(PORTAL_USERS_COLLECTION, uid).catch((e) => ({ data: null, error: e?.message || 'error' }));
+    const primero = await leer();
+    if (primero.data || esNoEncontrado(primero.error)) return primero;
+    return leer();
+  };
+  // Si el perfil no cargó, se vuelve a intentar por detrás (cada 5 s, hasta 6
+  // veces) y, cuando llega, se coloca: las pantallas se corrigen solas.
+  const reintentarPerfil = (uid, intento = 1) => {
+    setTimeout(async () => {
+      const { data } = await getDocument(PORTAL_USERS_COLLECTION, uid).catch(() => ({ data: null }));
+      if (data) {
+        setUserProfile((actual) => (actual && actual._perfilNoCargado ? data : actual));
+      } else if (intento < 6) {
+        reintentarPerfil(uid, intento + 1);
+      }
+    }, 5000);
+  };
+
   useEffect(() => {
     // Reloj de seguridad: Firebase puede no contestar NUNCA quién entra. Pasa
     // cuando el navegador tiene bloqueado (o colgado) IndexedDB, que es donde
@@ -155,7 +176,7 @@ export const AuthProvider = ({ children }) => {
             // retener la pantalla; y las reglas de Firestore revalidan
             // server-side con el token real en cada petición de todos modos.
             firebaseUser.getIdTokenResult().catch(() => null),
-            getDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid).catch(() => ({ data: null })),
+            leerPerfilPortal(firebaseUser.uid),
             // Permisos admin desde adminRoles (RBAC por email). El bootstrap por
             // email hardcodeado fue eliminado (H-01); conceder admin se hace con
             // custom claims vía la Cloud Function setAdminClaim / el script
@@ -179,8 +200,18 @@ export const AuthProvider = ({ children }) => {
             .catch(() => { /* sin red: vale el token local */ });
 
           let profileData = perfilPortal?.data || null;
+          // El perfil EXISTE pero no se pudo leer (red lenta, timeout, IndexedDB
+          // bloqueado). Antes se usaba un perfil vacío de reemplazo: la app creía
+          // que faltaban DNI y teléfono, mandaba a "Completar perfil" con todo en
+          // blanco y, peor, generaba un código de referido nuevo que PISABA el
+          // real. Ahora se marca como "no cargado", no se escribe nada y se
+          // reintenta por detrás.
+          const perfilNoCargado = !profileData && perfilPortal?.error && !esNoEncontrado(perfilPortal.error);
 
-          if (!profileData) {
+          if (perfilNoCargado) {
+            profileData = { email: firebaseUser.email, role: 'client', _perfilNoCargado: true };
+            reintentarPerfil(firebaseUser.uid);
+          } else if (!profileData) {
             // Intentar obtener de legacy users si no existe en portal. Este sí
             // va después: solo tiene sentido preguntarlo cuando el portal no
             // tiene el documento, que es el caso minoritario.
@@ -191,8 +222,8 @@ export const AuthProvider = ({ children }) => {
             };
           }
 
-          // Generar referralCode si no tiene
-          if (!profileData.referralCode) {
+          // Generar referralCode si no tiene (nunca sobre un perfil que no cargó).
+          if (!profileData._perfilNoCargado && !profileData.referralCode) {
             const newCode = 'KS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
             profileData.referralCode = newCode;
 
@@ -204,7 +235,7 @@ export const AuthProvider = ({ children }) => {
           const _d1 = new Date();
           const todayStr = `${_d1.getFullYear()}-${String(_d1.getMonth() + 1).padStart(2, '0')}-${String(_d1.getDate()).padStart(2, '0')}`;
 
-          if (profileData.lastAppOpen !== todayStr) {
+          if (!profileData._perfilNoCargado && profileData.lastAppOpen !== todayStr) {
             profileData.lastAppOpen = todayStr;
             setDocument(PORTAL_USERS_COLLECTION, firebaseUser.uid, { lastAppOpen: todayStr });
           }
@@ -429,7 +460,7 @@ export const AuthProvider = ({ children }) => {
   // Perfil incompleto SOLO si faltan dni o phone (vacíos). NO se exige formato
   // peruano: un extranjero guarda su documento en `dni` y su teléfono internacional
   // en `phone`, así que con ambos no vacíos su perfil queda completo (no se bloquea).
-  const profileIncomplete = !!user && !!userProfile &&
+  const profileIncomplete = !!user && !!userProfile && !userProfile._perfilNoCargado &&
     (!String(userProfile.dni || '').trim() || !String(userProfile.phone || '').trim());
 
   // Admin = custom claim (fuente de verdad) o permisos en adminRoles (RBAC).

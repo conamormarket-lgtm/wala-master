@@ -49,6 +49,8 @@ const CompleteProfilePage = () => {
       return;
     }
     if (!authLoading && user && userProfile) {
+      // Perfil aún no cargado (red lenta): se espera, no se muestra vacío.
+      if (userProfile._perfilNoCargado) return;
       if (userProfile.dni && userProfile.phone) {
         if (shouldPromptSurvey(userProfile)) {
           navigate('/encuesta-suscripcion');
@@ -60,6 +62,14 @@ const CompleteProfilePage = () => {
       setFullName(userProfile.displayName || user.displayName || '');
       // Si el perfil ya trae país (p. ej. registro previo), respétalo.
       if (userProfile.country) setCountry(userProfile.country);
+      // Lo que ya respondió antes (a medias) se precarga: antes solo se
+      // precargaban nombre, país y cumpleaños, y se le volvía a pedir todo.
+      const docGuardado = userProfile.dni || userProfile.clienteNumeroDocumento || '';
+      if (docGuardado) setDocumento(String(docGuardado));
+      const tipoGuardado = userProfile.tipoDocumento || userProfile.docType;
+      if (tipoGuardado && tipoGuardado !== 'OTRO') setTipoDoc(tipoGuardado);
+      const telGuardado = userProfile.phoneIntl?.localNumber || userProfile.phone || '';
+      if (telGuardado) setPhone(String(telGuardado));
       // Precarga el cumpleaños: prioridad al del perfil; si no, al importado de
       // Google (lo guardó el login en localStorage) para confirmarlo aquí.
       if (userProfile.birthDate) {
@@ -148,7 +158,7 @@ const CompleteProfilePage = () => {
     }
   };
 
-  if (authLoading || (!user && !userProfile)) {
+  if (authLoading || (!user && !userProfile) || userProfile?._perfilNoCargado) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingInline}>

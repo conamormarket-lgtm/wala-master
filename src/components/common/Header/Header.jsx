@@ -911,7 +911,7 @@ const Header = () => {
                         </div>
                       </div>
 
-                      {!userProfile?.hasCompletedSurvey && (
+                      {userProfile && !userProfile._perfilNoCargado && !userProfile.hasCompletedSurvey && (
                         // Colores por tokens de tema: antes era un degradado claro fijo
                         // que en modo noche quedaba como una tarjeta blanca.
                         <div className={styles.surveyPromo}>
@@ -1275,7 +1275,7 @@ const Header = () => {
           la condición era TRUE mientras cargaba (`!undefined` = true), así que el
           botón aparecía a TODOS los usuarios logueados —incluidos los que ya
           hicieron la encuesta— y se iba solo un segundo después. */}
-      {user && userProfile && !userProfile.hasCompletedSurvey && !surveyFabOculto && !RUTAS_SIN_FAB_ENCUESTA.some((r) => location.pathname.startsWith(r)) && (
+      {user && userProfile && !userProfile._perfilNoCargado && !userProfile.hasCompletedSurvey && !surveyFabOculto && !RUTAS_SIN_FAB_ENCUESTA.some((r) => location.pathname.startsWith(r)) && (
         <div className={styles.floatingSurvey}>
           <Link to="/encuesta-suscripcion" className={styles.floatingSurveyBtn} onClick={closeDropdowns}>
             <span className={styles.floatingSurveyIcon} aria-hidden="true">🎁</span>

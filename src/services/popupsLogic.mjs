@@ -250,7 +250,8 @@ export function evaluarPopup(popup, ctx) {
 
   if (p.objetivo === 'encuesta' && logueado) {
     // Con sesión hay que esperar al perfil: sin él no sabemos si ya la llenó.
-    if (!perfil) return { ok: false, motivo: 'perfil cargando' };
+    // _perfilNoCargado: la lectura falló y se reintenta (AuthContext): todavía no se sabe.
+    if (!perfil || perfil._perfilNoCargado) return { ok: false, motivo: 'perfil cargando' };
     if (perfil.hasCompletedSurvey) return { ok: false, motivo: 'ya llenó la encuesta' };
     // Si la saltó ("No, gracias") hace poco, respetamos el mismo enfriamiento.
     const salto = Number(perfil.lastSurveyPromptedAt) || 0;
