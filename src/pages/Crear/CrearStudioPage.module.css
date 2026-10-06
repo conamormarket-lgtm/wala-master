@@ -734,3 +734,77 @@
     z-index: 2;
   }
 }
+
+/* ── Zonas de impresión ─────────────────────────────────────────────────── */
+
+.zonas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.5rem;
+}
+
+.zonaChip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--gris-borde);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.zonaChip:hover {
+  border-color: var(--primary-color);
+}
+
+.zonaChipActiva {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+}
+
+.zonaNombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.zonaDetalle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--gris-texto-secundario);
+}
+
+.moverA {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario);
+}
+
+.zonaMini {
+  border: 1px solid var(--gris-borde);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.zonaMini:hover {
+  border-color: var(--primary-color);
+}

@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { altoZonaFraccion, cargarImagen, tintarImagen } from '../../../utils/prendaBase';
+import { altoZonaFraccion, cargarImagen, normalizarZona, tintarImagen } from '../../../utils/prendaBase';
 import styles from './PersonalizacionPrenda.module.css';
 
 /**
- * Dibuja la zona de impresión sobre la foto de una vista.
+ * Dibuja las zonas de impresión de una vista sobre su foto.
  *
- * Se arrastra para moverla y se agranda desde la esquina. Solo se controla el
- * ANCHO: el alto sale de la medida en cm (ver altoZonaFraccion), así el
- * rectángulo siempre tiene la misma proporción que lo que se va a imprimir.
- * La foto se muestra teñida del color elegido para ver cómo queda.
+ * Se elige una tocándola, se arrastra para moverla y se agranda desde la
+ * esquina. Solo se controla el ANCHO: el alto sale de la medida en cm (ver
+ * altoZonaFraccion), así el rectángulo siempre tiene la proporción de lo que
+ * se imprime. El giro se ajusta en el formulario. La foto se muestra teñida
+ * del color elegido para ver cómo queda.
  */
-const ZonaEditor = ({ imagen, zona, colorHex, onChange }) => {
+const ZonaEditor = ({ imagen, zonas, seleccionada, colorHex, onSeleccionar, onChange }) => {
   const cajaRef = useRef(null);
   const canvasRef = useRef(null);
   const arrastreRef = useRef(null);
@@ -36,39 +37,39 @@ const ZonaEditor = ({ imagen, zona, colorHex, onChange }) => {
     return () => { vigente = false; };
   }, [imagen, colorHex]);
 
-  const altoFraccion = dims?.ancho ? altoZonaFraccion(zona, dims.ancho, dims.alto) : 0;
-
-  const empezar = (modo) => (e) => {
+  const empezar = (i, modo) => (e) => {
     e.preventDefault();
     e.stopPropagation();
+    onSeleccionar(i);
     e.currentTarget.setPointerCapture?.(e.pointerId);
-    arrastreRef.current = { modo, x0: e.clientX, y0: e.clientY, zona: { ...zona } };
+    arrastreRef.current = { i, modo, x0: e.clientX, y0: e.clientY, zona: { ...zonas[i], ...normalizarZona(zonas[i], i), nombre: zonas[i].nombre } };
   };
 
   const mover = (e) => {
     const a = arrastreRef.current;
     const caja = cajaRef.current?.getBoundingClientRect();
-    if (!a || !caja) return;
-    const dx = (e.clientX - a.x0) / caja.width;
-    const dy = (e.clientY - a.y0) / caja.height;
-    const proporcion = altoZonaFraccion({ ...a.zona, w: 1 }, dims.ancho, dims.alto);
+    if (!a || !caja || !dims?.ancho) return;
+    const dxPx = e.clientX - a.x0;
+    const dyPx = e.clientY - a.y0;
+    const z = a.zona;
     if (a.modo === 'mover') {
-      const h = a.zona.w * proporcion;
-      onChange({
-        ...zona,
-        x: Math.min(1 - a.zona.w, Math.max(0, a.zona.x + dx)),
-        y: Math.min(1 - h, Math.max(0, a.zona.y + dy)),
+      onChange(a.i, {
+        ...z,
+        x: Math.min(1, Math.max(-0.2, z.x + dxPx / caja.width)),
+        y: Math.min(1, Math.max(-0.2, z.y + dyPx / caja.height)),
       });
     } else {
-      const maxW = Math.min(1 - a.zona.x, (1 - a.zona.y) / proporcion);
-      onChange({ ...zona, w: Math.min(maxW, Math.max(0.05, a.zona.w + dx)) });
+      // El arrastre se mide sobre el eje de la zona (que puede estar girada).
+      const a2 = (z.angulo * Math.PI) / 180;
+      const avance = dxPx * Math.cos(a2) + dyPx * Math.sin(a2);
+      onChange(a.i, { ...z, w: Math.min(1, Math.max(0.03, z.w + avance / caja.width)) });
     }
   };
 
   const soltar = () => { arrastreRef.current = null; };
 
   if (!imagen) {
-    return <div className={styles.zonaVacia}>Sube la foto de esta vista para marcar la zona.</div>;
+    return <div className={styles.zonaVacia}>Sube la foto de esta vista para marcar sus zonas.</div>;
   }
 
   return (
@@ -76,29 +77,31 @@ const ZonaEditor = ({ imagen, zona, colorHex, onChange }) => {
       <div ref={cajaRef} className={styles.zonaCaja} onPointerMove={mover} onPointerUp={soltar} onPointerCancel={soltar}>
         <canvas ref={canvasRef} className={styles.zonaFoto} aria-label="Foto de la vista" />
         {dims?.error && <p className={styles.zonaError}>No se pudo cargar la foto.</p>}
-        {dims?.ancho && (
-          <div
-            className={styles.zonaRect}
-            style={{
-              left: `${zona.x * 100}%`,
-              top: `${zona.y * 100}%`,
-              width: `${zona.w * 100}%`,
-              height: `${altoFraccion * 100}%`,
-            }}
-            onPointerDown={empezar('mover')}
-            role="slider"
-            aria-label="Zona de impresión: arrastra para moverla"
-            aria-valuetext={`${zona.anchoCm} por ${zona.altoCm} centímetros`}
-            tabIndex={0}
-          >
-            <span className={styles.zonaEtiqueta}>{zona.anchoCm} × {zona.altoCm} cm</span>
-            <span
-              className={styles.zonaAsa}
-              onPointerDown={empezar('escalar')}
-              aria-hidden="true"
-            />
-          </div>
-        )}
+        {dims?.ancho && zonas.map((zonaCruda, i) => {
+          const z = normalizarZona(zonaCruda, i);
+          const activa = i === seleccionada;
+          return (
+            <div
+              key={z.id}
+              className={`${styles.zonaRect} ${activa ? styles.zonaRectActiva : ''}`}
+              style={{
+                left: `${z.x * 100}%`,
+                top: `${z.y * 100}%`,
+                width: `${z.w * 100}%`,
+                height: `${altoZonaFraccion(z, dims.ancho, dims.alto) * 100}%`,
+                transform: `rotate(${z.angulo || 0}deg)`,
+              }}
+              onPointerDown={empezar(i, 'mover')}
+              role="button"
+              aria-pressed={activa}
+              aria-label={`Zona ${z.nombre}, ${z.anchoCm} por ${z.altoCm} centímetros`}
+              tabIndex={0}
+            >
+              <span className={styles.zonaEtiqueta}>{z.nombre}</span>
+              {activa && <span className={styles.zonaAsa} onPointerDown={empezar(i, 'escalar')} aria-hidden="true" />}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
+  Crosshair, Maximize2, RotateCw, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -15,13 +15,14 @@ import {
   prepararImagenCliente, subirImagenCliente, subirArchivoImpresion, subirVistaPrevia,
 } from '../../services/crearArchivos';
 import {
-  UNIDADES_ZONA, leerPrendaBase, altoZonaFraccion, precioBase, precioPersonalizado, vistasConDiseno,
+  UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
   dpiDeCapa, calidadDeDpi, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
   colorDisponible, tallasDeColor,
 } from '../../utils/prendaBase';
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
-  propiedadesTexto, renderizarImpresion, renderizarVistaPrevia,
+  propiedadesTexto, renderizarImpresion, renderizarVistaPrevia, transformDeZona, rectDeZona,
+  recorteDeZona, seSaleDeZona, ubicacion,
 } from './renderDiseno';
 import styles from './CrearStudioPage.module.css';
 
@@ -49,14 +50,14 @@ const estilizar = (obj) => {
   obj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
 };
 
-/** Quita lo que solo sirve mientras se edita (marcas de subida) y las vistas vacías. */
-const capasParaGuardar = (capasPorVista) => {
+/** Quita lo que solo sirve mientras se edita (marcas de subida) y las zonas vacías. */
+const capasParaGuardar = (capasPorZona) => {
   const out = {};
-  Object.entries(capasPorVista || {}).forEach(([vistaId, capas]) => {
+  Object.entries(capasPorZona || {}).forEach(([zonaId, capas]) => {
     const limpias = (capas || [])
       .filter((c) => c.type !== 'image' || (c.src && !c.src.startsWith('blob:')))
       .map(({ subiendo, ...resto }) => resto);
-    if (limpias.length) out[vistaId] = limpias;
+    if (limpias.length) out[zonaId] = limpias;
   });
   return out;
 };
@@ -94,7 +95,9 @@ const CrearStudioPage = () => {
   const [vistaId, setVistaId] = useState(null);
   const [colorId, setColorId] = useState(null);
   const [talla, setTalla] = useState('');
-  const [capasPorVista, setCapasPorVista] = useState({});
+  const [zonaId, setZonaId] = useState(null);
+  // Capas agrupadas por zona de impresión: { [zonaId]: capa[] }.
+  const [capasPorZona, setCapasPorZona] = useState({});
   const [seleccionId, setSeleccionId] = useState(null);
   const [version, setVersion] = useState(0);
   const [listo, setListo] = useState(false);
@@ -109,7 +112,8 @@ const CrearStudioPage = () => {
   const contenedorRef = useRef(null);
   const canvasElRef = useRef(null);
   const fabricRef = useRef(null);
-  const transformRef = useRef({ k: 1, ox: 0, oy: 0 });
+  const transformsRef = useRef({});
+  const zonaRef = useRef(null);
   const capasRef = useRef({});
   const vistaRef = useRef(null);
   const seleccionRef = useRef(null);
@@ -119,18 +123,25 @@ const CrearStudioPage = () => {
   const tallasRef = useRef(null);
 
   vistaRef.current = vistaId;
+  const zonaDe = (capaId) => Object.keys(capasRef.current)
+    .find((zId) => (capasRef.current[zId] || []).some((c) => c.id === capaId)) || null;
   seleccionRef.current = seleccionId;
 
   const vista = cfg?.vistas.find((v) => v.id === vistaId) || cfg?.vistas[0] || null;
+  const zona = vista?.zonas.find((z) => z.id === zonaId) || vista?.zonas[0] || null;
+  zonaRef.current = zona?.id || null;
   const color = cfg?.colores.find((c) => c.id === colorId) || cfg?.colores[0] || null;
-  const capasVista = (vista && capasPorVista[vista.id]) || [];
+  const zonasPrenda = useMemo(() => (cfg ? listarZonas(cfg.vistas) : []), [cfg]);
+  const zonaPorId = (zId) => zonasPrenda.find((z) => z.id === zId) || null;
+  const capasVista = (vista?.zonas || []).flatMap((z) => capasPorZona[z.id] || []);
   const capaSel = capasVista.find((c) => c.id === seleccionId) || null;
+  const zonaSel = capaSel ? zonaPorId(zonaDe(capaSel.id)) : null;
   const tallas = color ? tallasDeColor(color, cfg) : [];
-  const vistasUsadas = useMemo(
-    () => (cfg ? vistasConDiseno(capasPorVista).filter((v) => cfg.vistas.some((x) => x.id === v)) : []),
-    [cfg, capasPorVista]
+  const zonasUsadas = useMemo(
+    () => zonasConDiseno(capasPorZona).filter((z) => zonasPrenda.some((x) => x.id === z)),
+    [zonasPrenda, capasPorZona]
   );
-  const total = prenda ? precioPersonalizado(prenda, vistasUsadas) : 0;
+  const total = prenda ? precioPersonalizado(prenda, zonasUsadas) : 0;
   const srcDe = useCallback((capa) => localSrcRef.current.get(capa.id) || capa.src, []);
 
   // ── Pantalla completa en el celular (oculta header, footer y barra inferior)
@@ -144,12 +155,14 @@ const CrearStudioPage = () => {
     if (!cfg || listo || authLoading) return;
     let cancelado = false;
     const aplicar = async (estado) => {
-      const capas = estado?.capasPorVista || {};
+      const capas = estado?.capasPorZona || estado?.capasPorVista || {};
       await asegurarFuentesDe(capas);
       if (cancelado) return;
       capasRef.current = capas;
-      setCapasPorVista(capas);
-      setVistaId(cfg.vistas.some((v) => v.id === estado?.vistaId) ? estado.vistaId : cfg.vistas[0]?.id);
+      setCapasPorZona(capas);
+      const vistaInicial = cfg.vistas.find((v) => v.id === estado?.vistaId) || cfg.vistas[0];
+      setVistaId(vistaInicial?.id);
+      setZonaId(vistaInicial?.zonas.some((z) => z.id === estado?.zonaId) ? estado.zonaId : vistaInicial?.zonas[0]?.id);
       setColorId(cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : cfg.colores[0]?.id);
       setTalla(cfg.tallas.includes(estado?.talla) ? estado.talla : '');
       setListo(true);
@@ -159,9 +172,12 @@ const CrearStudioPage = () => {
         const { data: diseno } = await getDesignById(designIdParam);
         if (diseno && diseno.userId === user.uid && diseno.productId === id) {
           const colorGuardado = cfg.colores.find((c) => c.nombre === diseno.variant?.color || c.id === diseno.color?.id);
+          const primeraZona = Object.keys(diseno.layersByView || {})[0];
+          const vistaDeZona = cfg.vistas.find((v) => v.zonas.some((z) => z.id === primeraZona));
           return aplicar({
-            capasPorVista: diseno.layersByView || {},
-            vistaId: Object.keys(diseno.layersByView || {})[0],
+            capasPorZona: diseno.layersByView || {},
+            vistaId: vistaDeZona?.id,
+            zonaId: primeraZona,
             colorId: colorGuardado?.id,
             talla: diseno.variant?.size,
           });
@@ -181,63 +197,56 @@ const CrearStudioPage = () => {
   const guardarBorrador = useCallback(() => {
     try {
       sessionStorage.setItem(claveBorrador(id), JSON.stringify({
-        vistaId, colorId, talla, capasPorVista: capasParaGuardar(capasRef.current),
+        vistaId, zonaId, colorId, talla, capasPorZona: capasParaGuardar(capasRef.current),
       }));
     } catch { /* almacenamiento lleno o bloqueado */ }
-  }, [id, vistaId, colorId, talla]);
+  }, [id, vistaId, zonaId, colorId, talla]);
 
   // Borrador de la pestaña: recargar o ir a iniciar sesión no borra el diseño.
   useEffect(() => {
     if (listo) guardarBorrador();
-  }, [listo, capasPorVista, guardarBorrador]);
+  }, [listo, capasPorZona, guardarBorrador]);
 
-  // ── Capas ────────────────────────────────────────────────────────────────
-  const modificarCapas = useCallback((vId, fn, reconstruir = false) => {
-    const next = { ...capasRef.current, [vId]: fn(capasRef.current[vId] || []) };
+  // ── Capas (agrupadas por zona) ───────────────────────────────────────────
+  const modificarCapas = useCallback((zId, fn, reconstruir = false) => {
+    const next = { ...capasRef.current, [zId]: fn(capasRef.current[zId] || []) };
     capasRef.current = next;
-    setCapasPorVista(next);
+    setCapasPorZona(next);
     if (reconstruir) setVersion((v) => v + 1);
   }, []);
 
   const objetoDe = (capaId) => fabricRef.current?.getObjects().find((o) => o.capaId === capaId) || null;
 
-  /** ¿El objeto se sale de la zona? Lo que queda afuera no se imprime. */
+  /** ¿El objeto se sale de su zona? Lo que queda afuera no se imprime. */
   const revisarLimites = useCallback((obj) => {
-    const t = transformRef.current;
-    if (!obj || !t.zw) { setFueraDeZona(false); return; }
-    const r = obj.getBoundingRect(true, true);
-    const margen = 1.5;
-    setFueraDeZona(
-      r.left < t.ox - margen || r.top < t.oy - margen
-      || r.left + r.width > t.ox + t.zw + margen || r.top + r.height > t.oy + t.zh + margen
-    );
+    const t = obj?.zonaId && transformsRef.current[obj.zonaId];
+    setFueraDeZona(Boolean(t) && seSaleDeZona(obj, t));
   }, []);
 
   /** Cambia propiedades de una capa y las refleja en el lienzo sin redibujar todo. */
   const editarCapa = useCallback((capaId, cambios) => {
-    const vId = vistaRef.current;
-    modificarCapas(vId, (capas) => capas.map((c) => (c.id === capaId ? { ...c, ...cambios } : c)));
+    const zId = zonaDe(capaId);
+    if (!zId) return;
+    modificarCapas(zId, (capas) => capas.map((c) => (c.id === capaId ? { ...c, ...cambios } : c)));
     const obj = objetoDe(capaId);
     const lienzo = fabricRef.current;
-    if (!obj || !lienzo) return;
-    const capa = (capasRef.current[vId] || []).find((c) => c.id === capaId);
-    const t = transformRef.current;
+    const t = transformsRef.current[zId];
+    if (!obj || !lienzo || !t) return;
+    let capa = (capasRef.current[zId] || []).find((c) => c.id === capaId);
     if (capa?.type === 'text') {
       obj.set(propiedadesTexto(capa));
       obj.initDimensions?.();
-      // Un texto que crece al escribir se achica solo para seguir entrando en la zona.
-      const maxAncho = UNIDADES_ZONA * 0.96;
-      const maxAlto = (t.zh / t.k) * 0.96;
-      const escalaMax = Math.min(maxAncho / (obj.width || 1), maxAlto / (obj.height || 1));
+      // Un texto que crece al escribir se achica solo para seguir entrando en la
+      // zona. Si está de costado (mangas), su largo se mide contra el alto.
+      const deCostado = Math.abs(Math.round((capa.angulo || 0) / 90)) % 2 === 1;
+      const [maxAncho, maxAlto] = deCostado ? [t.hu, t.wu] : [t.wu, t.hu];
+      const escalaMax = Math.min((maxAncho * 0.96) / (obj.width || 1), (maxAlto * 0.96) / (obj.height || 1));
       if (capa.escalaX > escalaMax) {
-        const ajuste = { escalaX: escalaMax, escalaY: escalaMax };
-        modificarCapas(vId, (capas) => capas.map((c) => (c.id === capaId ? { ...c, ...ajuste } : c)));
-        obj.set({ scaleX: escalaMax * t.k, scaleY: escalaMax * t.k });
+        modificarCapas(zId, (capas) => capas.map((c) => (c.id === capaId ? { ...c, escalaX: escalaMax, escalaY: escalaMax } : c)));
+        capa = { ...capa, escalaX: escalaMax, escalaY: escalaMax };
       }
     }
-    if ('left' in cambios || 'top' in cambios) obj.set({ left: t.ox + capa.left * t.k, top: t.oy + capa.top * t.k });
-    if ('escalaX' in cambios) obj.set({ scaleX: capa.escalaX * t.k, scaleY: capa.escalaY * t.k });
-    if ('flipX' in cambios) obj.set({ flipX: capa.flipX });
+    obj.set(ubicacion(capa, t));
     obj.setCoords();
     lienzo.requestRenderAll();
     revisarLimites(obj);
@@ -254,17 +263,24 @@ const CrearStudioPage = () => {
     });
     fabricRef.current = lienzo;
     const alSeleccionar = (e) => {
-      setSeleccionId(e.selected?.[0]?.capaId || null);
-      revisarLimites(e.selected?.[0]);
+      const obj = e.selected?.[0];
+      setSeleccionId(obj?.capaId || null);
+      if (obj?.zonaId) setZonaId(obj.zonaId);
+      revisarLimites(obj);
     };
     lienzo.on('selection:created', alSeleccionar);
     lienzo.on('selection:updated', alSeleccionar);
     lienzo.on('selection:cleared', () => { setSeleccionId(null); setFueraDeZona(false); });
+    // Tocar una zona vacía la elige: ahí irá lo próximo que se agregue.
+    lienzo.on('mouse:down', (e) => {
+      if (e.target?.guiaZona) setZonaId(e.target.guiaZona);
+    });
     lienzo.on('object:modified', (e) => {
       const obj = e.target;
-      if (!obj?.capaId) return;
-      const cambios = leerTransformacion(obj, transformRef.current);
-      modificarCapas(vistaRef.current, (capas) => capas.map((c) => (c.id === obj.capaId ? { ...c, ...cambios } : c)));
+      const t = obj?.zonaId && transformsRef.current[obj.zonaId];
+      if (!obj?.capaId || !t) return;
+      const cambios = leerTransformacion(obj, t);
+      modificarCapas(obj.zonaId, (capas) => capas.map((c) => (c.id === obj.capaId ? { ...c, ...cambios } : c)));
       revisarLimites(obj);
     });
     return () => {
@@ -282,6 +298,28 @@ const CrearStudioPage = () => {
     ro.observe(el);
     return () => ro.disconnect();
   }, [listo]);
+
+  /** Marca en el lienzo cuál es la zona elegida, sin redibujar todo. */
+  const pintarGuias = useCallback(() => {
+    const lienzo = fabricRef.current;
+    if (!lienzo) return;
+    const oscuro = color && !esColorBlanco(color.hex) && textoSobre(color.hex) === '#FFFFFF';
+    lienzo.getObjects().forEach((o) => {
+      if (!o.guiaZona) return;
+      const activa = o.guiaZona === zonaRef.current;
+      o.set({
+        stroke: activa
+          ? (oscuro ? 'rgba(255,255,255,0.95)' : 'rgba(124,58,237,0.95)')
+          : (oscuro ? 'rgba(255,255,255,0.45)' : 'rgba(124,58,237,0.45)'),
+        strokeWidth: activa ? 2 : 1.25,
+        strokeDashArray: activa ? [7, 4] : [4, 5],
+        fill: activa ? (oscuro ? 'rgba(255,255,255,0.08)' : 'rgba(124,58,237,0.08)') : 'rgba(0,0,0,0.001)',
+      });
+    });
+    lienzo.requestRenderAll();
+  }, [color]);
+
+  useEffect(() => { pintarGuias(); }, [zona?.id, pintarGuias]);
 
   // Redibuja todo al cambiar de vista, de color, de tamaño o de estructura.
   useEffect(() => {
@@ -317,35 +355,33 @@ const CrearStudioPage = () => {
         selectable: false, evented: false, objectCaching: false,
       }));
 
-      const zona = vista.zona;
-      const zx = margen + zona.x * iw;
-      const zy = margen + zona.y * ih;
-      const zw = zona.w * iw;
-      const zh = altoZonaFraccion(zona, anchoImg, altoImg) * ih;
-      const t = { k: zw / UNIDADES_ZONA, ox: zx, oy: zy, zw, zh };
-      transformRef.current = t;
+      // Primero todas las guías (debajo), después los diseños de cada zona.
+      const transforms = {};
+      vista.zonas.forEach((z) => {
+        const t = transformDeZona(z, { ox: margen, oy: margen, iw, ih, anchoImg, altoImg });
+        transforms[z.id] = t;
+        lienzo.add(rectDeZona(t, { selectable: false, evented: true, hoverCursor: 'pointer', guiaZona: z.id }));
+      });
+      transformsRef.current = transforms;
 
-      const oscuro = !esColorBlanco(color.hex) && textoSobre(color.hex) === '#FFFFFF';
-      lienzo.add(new fabric.Rect({
-        left: zx, top: zy, width: zw, height: zh, fill: oscuro ? 'rgba(255,255,255,0.04)' : 'rgba(124,58,237,0.04)',
-        stroke: oscuro ? 'rgba(255,255,255,0.75)' : 'rgba(124,58,237,0.7)', strokeWidth: 1.5, strokeDashArray: [6, 5],
-        selectable: false, evented: false, guia: true,
-      }));
-
-      for (const capa of capasRef.current[vista.id] || []) {
-        let obj;
-        try {
-          obj = await crearObjeto(capa, t, srcDe);
-        } catch {
-          continue;
+      for (const z of vista.zonas) {
+        for (const capa of capasRef.current[z.id] || []) {
+          let obj;
+          try {
+            obj = await crearObjeto(capa, transforms[z.id], srcDe);
+          } catch {
+            continue;
+          }
+          if (token !== tokenRef.current) return;
+          obj.capaId = capa.id;
+          obj.zonaId = z.id;
+          obj.clipPath = recorteDeZona(transforms[z.id]);
+          estilizar(obj);
+          lienzo.add(obj);
         }
-        if (token !== tokenRef.current) return;
-        obj.capaId = capa.id;
-        obj.clipPath = new fabric.Rect({ left: zx, top: zy, width: zw, height: zh, absolutePositioned: true });
-        estilizar(obj);
-        lienzo.add(obj);
       }
       if (token !== tokenRef.current) return;
+      pintarGuias();
       const sel = objetoDe(seleccionRef.current);
       if (sel) {
         lienzo.setActiveObject(sel);
@@ -357,26 +393,29 @@ const CrearStudioPage = () => {
   }, [vista?.id, color?.id, anchoLienzo, version, listo]);
 
   // ── Acciones ─────────────────────────────────────────────────────────────
-  const centro = () => ({ left: UNIDADES_ZONA / 2, top: altoEnUnidades(vista.zona) / 2 });
+  const centroDe = (z) => ({ left: UNIDADES_ZONA / 2, top: altoEnUnidades(z) / 2 });
 
   const agregarTexto = async () => {
+    if (!zona) return;
+    // En una zona alargada (una manga) el texto va a lo largo, de costado.
+    const alargada = altoEnUnidades(zona) > UNIDADES_ZONA * 1.8;
     const capa = {
       id: nuevoId(),
       type: 'text',
       text: 'Tu texto',
       fuente: 'Montserrat',
       color: esColorBlanco(color.hex) || textoSobre(color.hex) !== '#FFFFFF' ? '#111111' : '#FFFFFF',
-      tamano: 170,
+      tamano: alargada ? 520 : Math.round(Math.min(170, altoEnUnidades(zona) * 0.25)),
       negrita: true,
       cursiva: false,
       escalaX: 1,
       escalaY: 1,
-      angulo: 0,
-      ...centro(),
+      angulo: alargada ? 90 : 0,
+      ...centroDe(zona),
     };
     await asegurarFuente(capa.fuente);
     setSeleccionId(capa.id);
-    modificarCapas(vista.id, (capas) => [...capas, capa], true);
+    modificarCapas(zona.id, (capas) => [...capas, capa], true);
   };
 
   const elegirImagen = () => {
@@ -391,66 +430,76 @@ const CrearStudioPage = () => {
   const alElegirArchivo = async (e) => {
     const archivo = e.target.files?.[0];
     e.target.value = '';
-    if (!archivo || !vista) return;
-    const vId = vista.id;
+    if (!archivo || !zona) return;
+    const destino = zona;
     let capaId = null;
     try {
       const { blob, urlLocal, ancho, alto } = await prepararImagenCliente(archivo);
       capaId = nuevoId();
       localSrcRef.current.set(capaId, urlLocal);
-      const altoU = altoEnUnidades(vista.zona);
-      const escala = Math.min((0.8 * UNIDADES_ZONA) / ancho, (0.8 * altoU) / alto);
+      const escala = Math.min((0.8 * UNIDADES_ZONA) / ancho, (0.8 * altoEnUnidades(destino)) / alto);
       const capa = {
         id: capaId, type: 'image', src: '', subiendo: true, anchoNatural: ancho, altoNatural: alto,
-        escalaX: escala, escalaY: escala, angulo: 0, flipX: false, ...centro(),
+        escalaX: escala, escalaY: escala, angulo: 0, flipX: false, ...centroDe(destino),
       };
       setSeleccionId(capaId);
-      modificarCapas(vId, (capas) => [...capas, capa], true);
+      modificarCapas(destino.id, (capas) => [...capas, capa], true);
       setSubiendo((n) => n + 1);
       try {
         const url = await subirImagenCliente(user.uid, blob);
-        modificarCapas(vId, (capas) => capas.map((c) => (c.id === capaId ? { ...c, src: url, subiendo: false } : c)));
+        modificarCapas(destino.id, (capas) => capas.map((c) => (c.id === capaId ? { ...c, src: url, subiendo: false } : c)));
       } finally {
         setSubiendo((n) => n - 1);
       }
     } catch (err) {
       toast.error(err?.message || 'No pudimos subir tu imagen.');
-      if (capaId) modificarCapas(vId, (capas) => capas.filter((c) => c.id !== capaId), true);
+      if (capaId) modificarCapas(destino.id, (capas) => capas.filter((c) => c.id !== capaId), true);
     }
   };
 
   const eliminar = useCallback(() => {
-    if (!seleccionRef.current) return;
     const capaId = seleccionRef.current;
+    const zId = capaId && zonaDe(capaId);
+    if (!zId) return;
     setSeleccionId(null);
     fabricRef.current?.discardActiveObject();
-    modificarCapas(vistaRef.current, (capas) => capas.filter((c) => c.id !== capaId), true);
+    modificarCapas(zId, (capas) => capas.filter((c) => c.id !== capaId), true);
   }, [modificarCapas]);
 
   const duplicar = () => {
-    if (!capaSel) return;
+    if (!capaSel || !zonaSel) return;
     const copia = { ...capaSel, id: nuevoId(), left: capaSel.left + 40, top: capaSel.top + 40 };
     if (localSrcRef.current.has(capaSel.id)) localSrcRef.current.set(copia.id, localSrcRef.current.get(capaSel.id));
     setSeleccionId(copia.id);
-    modificarCapas(vista.id, (capas) => [...capas, copia], true);
+    modificarCapas(zonaSel.id, (capas) => [...capas, copia], true);
   };
 
   const mover = (haciaAdelante) => {
-    if (!capaSel) return;
-    modificarCapas(vista.id, (capas) => {
+    if (!capaSel || !zonaSel) return;
+    modificarCapas(zonaSel.id, (capas) => {
       const resto = capas.filter((c) => c.id !== capaSel.id);
       return haciaAdelante ? [...resto, capaSel] : [capaSel, ...resto];
     }, true);
   };
 
-  const centrar = () => capaSel && editarCapa(capaSel.id, centro());
+  /** Pasa la capa elegida a otra zona de la misma vista (centrada y ajustada). */
+  const moverAZona = (destino) => {
+    if (!capaSel || !zonaSel || destino.id === zonaSel.id) return;
+    const ajuste = capaSel.type === 'image'
+      ? Math.min((0.8 * UNIDADES_ZONA) / capaSel.anchoNatural, (0.8 * altoEnUnidades(destino)) / capaSel.altoNatural, capaSel.escalaX)
+      : capaSel.escalaX;
+    const movida = { ...capaSel, ...centroDe(destino), escalaX: ajuste, escalaY: ajuste, angulo: 0 };
+    modificarCapas(zonaSel.id, (capas) => capas.filter((c) => c.id !== capaSel.id));
+    modificarCapas(destino.id, (capas) => [...capas, movida], true);
+    setZonaId(destino.id);
+  };
+
+  const centrar = () => capaSel && zonaSel && editarCapa(capaSel.id, centroDe(zonaSel));
 
   const ajustarAZona = () => {
-    if (!capaSel || capaSel.type !== 'image') return;
-    const escala = Math.min(UNIDADES_ZONA / capaSel.anchoNatural, altoEnUnidades(vista.zona) / capaSel.altoNatural);
-    editarCapa(capaSel.id, { ...centro(), escalaX: escala, escalaY: escala, angulo: 0 });
-    const obj = objetoDe(capaSel.id);
-    if (obj) { obj.set({ angle: 0 }); obj.setCoords(); fabricRef.current.requestRenderAll(); }
+    if (!capaSel || capaSel.type !== 'image' || !zonaSel) return;
+    const escala = Math.min(UNIDADES_ZONA / capaSel.anchoNatural, altoEnUnidades(zonaSel) / capaSel.altoNatural);
+    editarCapa(capaSel.id, { ...centroDe(zonaSel), escalaX: escala, escalaY: escala, angulo: 0 });
   };
 
   const cambiarFuente = async (fuente) => {
@@ -478,6 +527,17 @@ const CrearStudioPage = () => {
     fabricRef.current?.discardActiveObject();
     setSeleccionId(null);
     setVistaId(vId);
+    setZonaId(cfg.vistas.find((v) => v.id === vId)?.zonas[0]?.id || null);
+  };
+
+  const elegirZona = (zId) => {
+    setZonaId(zId);
+    // Si hay algo elegido en otra zona, se suelta: lo próximo va a la nueva.
+    if (capaSel && zonaSel?.id !== zId) {
+      fabricRef.current?.discardActiveObject();
+      fabricRef.current?.requestRenderAll();
+      setSeleccionId(null);
+    }
   };
 
   // ── Guardar y comprar ────────────────────────────────────────────────────
@@ -490,7 +550,7 @@ const CrearStudioPage = () => {
     const img = await cargarImagen(fotoDeVista(v, color));
     const fuente = requiereTenido(v, color) ? tintarImagen(img, color.hex) : img;
     return renderizarVistaPrevia({
-      fuente, anchoImg: img.naturalWidth, altoImg: img.naturalHeight, zona: v.zona, capas, srcDe,
+      fuente, anchoImg: img.naturalWidth, altoImg: img.naturalHeight, vista: v, capasPorZona: capas, srcDe,
     });
   };
 
@@ -499,7 +559,7 @@ const CrearStudioPage = () => {
       toast.info('Es un borrador: publícala para poder comprarla.');
       return false;
     }
-    if (!vistasUsadas.length) {
+    if (!zonasUsadas.length) {
       toast.info('Agrega una imagen o un texto a tu diseño.');
       return false;
     }
@@ -517,13 +577,15 @@ const CrearStudioPage = () => {
 
   const datosColor = () => ({ id: color.id, nombre: color.nombre, hex: color.hex });
 
+  const vistasConCapas = (capas) => cfg.vistas.filter((v) => v.zonas.some((z) => capas[z.id]));
+
   const guardar = async () => {
     if (!validar()) return;
     setProcesando('Guardando tu diseño…');
     try {
       const capas = capasParaGuardar(capasRef.current);
-      const primera = cfg.vistas.find((v) => capas[v.id]);
-      const previa = await renderizarVista(primera, capas[primera.id]);
+      const primera = vistasConCapas(capas)[0];
+      const previa = await renderizarVista(primera, capas);
       const previewUrl = await subirVistaPrevia(user.uid, previa, primera.id);
       const { id: guardadoId, error: err } = await saveDesign(user.uid, {
         designId: designId || undefined,
@@ -561,17 +623,20 @@ const CrearStudioPage = () => {
       const capas = capasParaGuardar(capasRef.current);
       const archivosImpresion = [];
       const vistasPrevias = [];
-      for (const v of cfg.vistas.filter((x) => capas[x.id])) {
-        setProcesando(`Preparando el archivo de impresión (${v.nombre})…`);
-        const { blob, dpi } = await renderizarImpresion(capas[v.id], v.zona, srcDe);
-        const previa = await renderizarVista(v, capas[v.id]);
-        setProcesando(`Subiendo tu diseño (${v.nombre})…`);
-        const [urlImpresion, urlPrevia] = await Promise.all([
-          subirArchivoImpresion(user.uid, blob, v.id),
-          subirVistaPrevia(user.uid, previa, v.id),
-        ]);
-        archivosImpresion.push({ vista: v.id, nombre: v.nombre, url: urlImpresion, anchoCm: v.zona.anchoCm, altoCm: v.zona.altoCm, dpi });
-        vistasPrevias.push({ vista: v.id, nombre: v.nombre, url: urlPrevia });
+      for (const v of vistasConCapas(capas)) {
+        const zonasConCapas = v.zonas.filter((z) => capas[z.id]);
+        for (const z of zonasConCapas) {
+          setProcesando(`Preparando el archivo de impresión (${v.nombre} · ${z.nombre})…`);
+          const { blob, dpi } = await renderizarImpresion(capas[z.id], z, srcDe);
+          const url = await subirArchivoImpresion(user.uid, blob, z.id);
+          archivosImpresion.push({
+            vista: z.id, vistaId: v.id, nombre: `${v.nombre} · ${z.nombre}`, url, anchoCm: z.anchoCm, altoCm: z.altoCm, dpi,
+          });
+        }
+        setProcesando(`Preparando la vista previa (${v.nombre})…`);
+        const previa = await renderizarVista(v, capas);
+        const url = await subirVistaPrevia(user.uid, previa, v.id);
+        vistasPrevias.push({ vista: v.id, nombre: v.nombre, url, zonas: zonasConCapas.map((z) => z.id) });
       }
 
       setProcesando('Agregando al carrito…');
@@ -597,6 +662,10 @@ const CrearStudioPage = () => {
           tipo: 'crear',
           layersByView: capas,
           vistasUsadas: usadas,
+          zonas: usadas.map((zId) => {
+            const z = zonaPorId(zId);
+            return { id: zId, nombre: z ? `${z.vistaNombre} · ${z.nombre}` : zId };
+          }),
           archivosImpresion,
           vistasPrevias,
           color: datosColor(),
@@ -637,7 +706,7 @@ const CrearStudioPage = () => {
     );
   }
 
-  const dpi = capaSel?.type === 'image' ? dpiDeCapa(capaSel, vista.zona) : null;
+  const dpi = capaSel?.type === 'image' && zonaSel ? dpiDeCapa(capaSel, zonaSel) : null;
   const calidad = calidadDeDpi(dpi);
   const base = precioBase(prenda);
 
@@ -665,7 +734,7 @@ const CrearStudioPage = () => {
           {cfg.vistas.length > 1 && (
             <div className={styles.vistas} role="tablist" aria-label="Vistas de la prenda">
               {cfg.vistas.map((v) => {
-                const conDiseno = vistasUsadas.includes(v.id);
+                const conDiseno = v.zonas.some((z) => zonasUsadas.includes(z.id));
                 return (
                   <button
                     key={v.id}
@@ -677,7 +746,6 @@ const CrearStudioPage = () => {
                   >
                     {v.nombre}
                     {conDiseno && <span className={styles.puntoDiseno} aria-label="con diseño" />}
-                    {v.costo > 0 && <span className={styles.costoVista}>+{soles(v.costo)}</span>}
                   </button>
                 );
               })}
@@ -690,14 +758,40 @@ const CrearStudioPage = () => {
 
           <p className={styles.zonaInfo}>
             <Info size={14} aria-hidden="true" />
-            Zona de impresión de {vista.nombre.toLowerCase()}: {vista.zona.anchoCm} × {vista.zona.altoCm} cm
+            {vista.zonas.length > 1
+              ? 'Toca una zona punteada para elegir dónde va tu diseño.'
+              : `Zona de impresión: ${zona.anchoCm} × ${zona.altoCm} cm`}
           </p>
 
         </section>
 
         <aside className={styles.panel}>
           <section className={styles.seccion} aria-label="Agregar al diseño">
-            <h2 className={styles.seccionTitulo}>Tu diseño <span className={styles.valor}>en {vista.nombre.toLowerCase()}</span></h2>
+            <h2 className={styles.seccionTitulo}>¿Dónde va tu diseño?</h2>
+            <div className={styles.zonas} role="radiogroup" aria-label="Zona de impresión">
+              {vista.zonas.map((z) => {
+                const conDiseno = zonasUsadas.includes(z.id);
+                return (
+                  <button
+                    key={z.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={z.id === zona.id}
+                    className={`${styles.zonaChip} ${z.id === zona.id ? styles.zonaChipActiva : ''}`}
+                    onClick={() => elegirZona(z.id)}
+                  >
+                    <span className={styles.zonaNombre}>
+                      {z.nombre}
+                      {conDiseno && <span className={styles.puntoDiseno} aria-label="con diseño" />}
+                    </span>
+                    <span className={styles.zonaDetalle}>
+                      {z.anchoCm} × {z.altoCm} cm
+                      {z.costo > 0 && <span className={styles.costoVista}>+{soles(z.costo)}</span>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
             <div className={styles.agregar}>
               <button type="button" className={styles.botonAgregar} onClick={elegirImagen}>
                 <ImagePlus size={20} aria-hidden="true" />
@@ -812,8 +906,26 @@ const CrearStudioPage = () => {
                 </>
               )}
 
+              {zonaSel && vista.zonas.length > 1 && (
+                <div className={styles.moverA}>
+                  <span>Mover a:</span>
+                  {vista.zonas.filter((z) => z.id !== zonaSel.id).map((z) => (
+                    <button key={z.id} type="button" className={styles.zonaMini} onClick={() => moverAZona(z)}>
+                      {z.nombre}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className={styles.herramientas}>
                 <button type="button" className={styles.herramienta} onClick={centrar}><Crosshair size={16} aria-hidden="true" />Centrar</button>
+                <button
+                  type="button"
+                  className={styles.herramienta}
+                  onClick={() => editarCapa(capaSel.id, { angulo: (Math.round((capaSel.angulo || 0) / 90) * 90 + 90) % 360 })}
+                >
+                  <RotateCw size={16} aria-hidden="true" />Girar
+                </button>
                 {capaSel.type === 'image' && (
                   <>
                     <button type="button" className={styles.herramienta} onClick={ajustarAZona}><Maximize2 size={16} aria-hidden="true" />Llenar zona</button>
@@ -872,9 +984,9 @@ const CrearStudioPage = () => {
 
           <section className={`${styles.seccion} ${styles.resumen}`} aria-label="Resumen de precio">
             <div className={styles.lineaPrecio}><span>{prenda.name}</span><span>{soles(base)}</span></div>
-            {cfg.vistas.filter((v) => v.costo > 0 && vistasUsadas.includes(v.id)).map((v) => (
+            {zonasPrenda.filter((z) => z.costo > 0 && zonasUsadas.includes(z.id)).map((v) => (
               <div key={v.id} className={styles.lineaPrecio}>
-                <span>Diseño en {v.nombre.toLowerCase()} <small>(costo extra)</small></span>
+                <span>{v.vistaNombre === v.nombre ? v.nombre : `${v.vistaNombre} · ${v.nombre}`} <small>(costo extra)</small></span>
                 <span>+ {soles(v.costo)}</span>
               </div>
             ))}

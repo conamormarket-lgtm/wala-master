@@ -124,17 +124,22 @@ const getDesignReferences = (item) => {
 
   addLayers(item?.customization?.layersByView);
 
-  // Prendas del apartado Crear: por cada vista con diseño llega la vista
-  // previa (prenda + diseño) y el PNG a tamaño real para imprimir.
+  // Prendas del apartado Crear: las capas van por zona de impresión (pecho,
+  // manga, espalda...). Cada zona lleva su PNG a tamaño real para imprimir y
+  // la vista previa de su lado (prenda + diseño).
   (item?.customization?.vistasPrevias || []).forEach((previa) => {
     refs.push(previa?.url);
-    if (views[previa?.vista]) views[previa.vista].vistaPrevia = previa.url || '';
+    const zonas = Array.isArray(previa?.zonas) ? previa.zonas : [previa?.vista];
+    zonas.forEach((zonaId) => {
+      if (views[zonaId]) views[zonaId].vistaPrevia = previa.url || '';
+    });
   });
   (item?.customization?.archivosImpresion || []).forEach((archivo) => {
     refs.push(archivo?.url);
     if (views[archivo?.vista]) {
       views[archivo.vista].archivoImpresion = archivo.url || '';
       views[archivo.vista].medidaCm = `${archivo.anchoCm} x ${archivo.altoCm}`;
+      if (archivo.nombre) views[archivo.vista].zona = archivo.nombre;
     }
   });
 

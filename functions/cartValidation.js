@@ -4,10 +4,10 @@ const { precioDeCatalogo } = require("./catalogPricing");
 
 // Prendas del apartado "Crear" (esPrendaBase): a diferencia del resto de
 // personalizados, su precio SÍ se puede reconstruir aquí. Es el de catálogo
-// más el costo de cada vista (frente, espalda...) que lleva diseño. Las
-// vistas salen de lo mismo que recibe el ERP (disenoVistas, con sus imágenes
-// y textos por vista) y de vistasPersonalizadas: cobrar por lo que se va a
-// imprimir, no por lo que diga el precio que mandó el navegador.
+// más el costo de cada zona de impresión (pecho, manga, espalda...) que lleva
+// diseño. Las zonas salen de lo mismo que recibe el ERP (disenoVistas, con sus
+// imágenes y textos por zona) y de vistasPersonalizadas: cobrar por lo que se
+// va a imprimir, no por lo que diga el precio que mandó el navegador.
 function vistasDelDiseno(item) {
   const vistas = new Set();
   Object.entries(item.disenoVistas || {}).forEach(([vistaId, vista]) => {
@@ -20,13 +20,31 @@ function vistasDelDiseno(item) {
   return vistas;
 }
 
-function precioDePrendaPersonalizada(product, vistasUsadas) {
+// Costo por zona. Formato actual: vista.zonas[{ id, costo }]. Formato
+// anterior: una zona por vista, con el costo en la vista y el id de la vista.
+function costosPorZona(product) {
+  const costos = new Map();
+  const vistas = Array.isArray(product.prendaBase && product.prendaBase.vistas) ? product.prendaBase.vistas : [];
+  vistas.forEach((vista) => {
+    if (!vista) return;
+    if (Array.isArray(vista.zonas) && vista.zonas.length) {
+      vista.zonas.forEach((zona) => {
+        if (zona && zona.id) costos.set(String(zona.id), Math.max(0, Number(zona.costo) || 0));
+      });
+    } else if (vista.id) {
+      costos.set(String(vista.id), Math.max(0, Number(vista.costo) || 0));
+    }
+  });
+  return costos;
+}
+
+function precioDePrendaPersonalizada(product, zonasUsadas) {
   const base = precioDeCatalogo(product);
   if (base === null) return null;
-  const vistas = Array.isArray(product.prendaBase && product.prendaBase.vistas) ? product.prendaBase.vistas : [];
-  const extra = vistas
-    .filter((vista) => vista && vistasUsadas.has(String(vista.id)))
-    .reduce((acc, vista) => acc + Math.max(0, Number(vista.costo) || 0), 0);
+  let extra = 0;
+  costosPorZona(product).forEach((costo, zonaId) => {
+    if (zonasUsadas.has(zonaId)) extra += costo;
+  });
   return Math.round((base + extra) * 100) / 100;
 }
 

@@ -13,13 +13,19 @@
  * solo guarda lo propio de la personalización:
  *
  *   prendaBase: {
- *     vistas:  [{ id, nombre, imagen, costo, zona: { x, y, w, anchoCm, altoCm } }],
+ *     vistas:  [{ id, nombre, imagen,
+ *                 zonas: [{ id, nombre, x, y, w, anchoCm, altoCm, angulo, costo }] }],
  *     colores: { [variantId]: { hex2, fotos: { [vistaId]: url } } },
  *   }
  *
+ * Cada vista (frente, espalda) tiene sus zonas de impresión (pecho, mangas,
+ * bolsillo...). El cliente elige en cuál va cada imagen o texto, y cada zona
+ * usada suma su costo. Las capas del diseño se agrupan por id de zona.
+ *
  * La zona se guarda en fracciones de la imagen (x, y, w) más su medida real
- * en cm. El alto en la imagen NO se guarda: sale del ancho y de la proporción
- * en cm, así el rectángulo nunca se deforma respecto de lo que se imprime.
+ * en cm y su giro. El alto en la imagen NO se guarda: sale del ancho y de la
+ * proporción en cm, así el rectángulo nunca se deforma respecto de lo que se
+ * imprime.
  *
  * Las fotos de cada vista son PNG/WebP con fondo transparente de la prenda en
  * blanco; los colores se tiñen en el navegador (tintarImagen). Un color puede
@@ -92,21 +98,45 @@ export const slug = (texto) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'item';
 
-export const normalizarZona = (zona) => ({
-  x: limitar(num(zona?.x, 0.3), 0, 1),
-  y: limitar(num(zona?.y, 0.3), 0, 1),
+/** Id nuevo para una zona: único en toda la prenda (las capas se agrupan por él). */
+export const nuevoIdZona = () => `z${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+/**
+ * Zona de impresión. (x, y, w) en fracciones de la foto: esquina superior
+ * izquierda y ancho del rectángulo SIN girar; el giro (angulo, en grados) es
+ * alrededor de su centro, para las mangas u otras zonas inclinadas.
+ */
+export const normalizarZona = (zona, i = 0) => ({
+  id: String(zona?.id || `zona-${i + 1}`),
+  nombre: String(zona?.nombre || `Zona ${i + 1}`),
+  x: limitar(num(zona?.x, 0.3), -0.5, 1),
+  y: limitar(num(zona?.y, 0.3), -0.5, 1),
   w: limitar(num(zona?.w, 0.4), 0.02, 1),
   anchoCm: limitar(num(zona?.anchoCm, 30), 1, 200),
   altoCm: limitar(num(zona?.altoCm, 30), 1, 200),
+  angulo: limitar(num(zona?.angulo, 0), -180, 180),
+  costo: Math.max(0, num(zona?.costo, 0)),
 });
 
-export const normalizarVista = (vista, i = 0) => ({
-  id: String(vista?.id || `vista-${i + 1}`),
-  nombre: String(vista?.nombre || `Vista ${i + 1}`),
-  imagen: String(vista?.imagen || ''),
-  costo: Math.max(0, num(vista?.costo, 0)),
-  zona: normalizarZona(vista?.zona),
-});
+/**
+ * Vista (frente, espalda...) con sus zonas. El formato anterior tenía una
+ * sola `zona` y el costo en la vista: se convierte a una zona con el id de la
+ * vista, así los diseños guardados con ese formato siguen encajando.
+ */
+export const normalizarVista = (vista, i = 0) => {
+  const id = String(vista?.id || `vista-${i + 1}`);
+  const nombre = String(vista?.nombre || `Vista ${i + 1}`);
+  const zonas = Array.isArray(vista?.zonas) && vista.zonas.length
+    ? vista.zonas.map(normalizarZona)
+    : vista?.zona
+      ? [normalizarZona({ ...vista.zona, id, nombre, costo: vista.costo })]
+      : [];
+  return { id, nombre, imagen: String(vista?.imagen || ''), zonas };
+};
+
+/** Todas las zonas de la prenda, cada una con su vista. */
+export const listarZonas = (vistas) =>
+  (vistas || []).flatMap((v) => v.zonas.map((z) => ({ ...z, vistaId: v.id, vistaNombre: v.nombre })));
 
 /** Tono de respaldo por nombre ("Azul Acero" -> paleta), o blanco. */
 const hexPorNombre = (nombre) => {
@@ -206,21 +236,22 @@ export const precioBase = (producto) => {
   return Number.isFinite(price) ? price : 0;
 };
 
-/** Vistas que tienen al menos una capa. */
-export const vistasConDiseno = (capasPorVista) =>
-  Object.entries(capasPorVista || {})
+/** Zonas (ids) que tienen al menos una capa. Las capas se guardan por zona. */
+export const zonasConDiseno = (capasPorZona) =>
+  Object.entries(capasPorZona || {})
     .filter(([, capas]) => Array.isArray(capas) && capas.length > 0)
-    .map(([vistaId]) => vistaId);
+    .map(([zonaId]) => zonaId);
 
 /**
- * Precio final de una prenda personalizada: base + el costo de cada vista que
- * lleva diseño. El servidor repite este cálculo al cobrar.
+ * Precio final de una prenda personalizada: base + el costo de cada zona que
+ * lleva diseño. El servidor repite este cálculo al cobrar
+ * (functions/cartValidation.js).
  */
-export const precioPersonalizado = (producto, vistasUsadas = []) => {
+export const precioPersonalizado = (producto, zonasUsadas = []) => {
   const { vistas } = leerPrendaBase(producto);
-  const extra = vistas
-    .filter((v) => vistasUsadas.includes(v.id))
-    .reduce((acc, v) => acc + v.costo, 0);
+  const extra = listarZonas(vistas)
+    .filter((z) => zonasUsadas.includes(z.id))
+    .reduce((acc, z) => acc + z.costo, 0);
   return Math.round((precioBase(producto) + extra) * 100) / 100;
 };
 
@@ -380,14 +411,19 @@ export const vistasDeEjemplo = (origen) => [
     id: 'frente',
     nombre: 'Frente',
     imagen: `${origen}/prendas/hoodie-frente.webp`,
-    costo: 0,
-    zona: { x: 0.357, y: 0.27, w: 0.284, anchoCm: 30, altoCm: 30 },
+    zonas: [
+      { id: 'frente-pecho', nombre: 'Pecho', x: 0.357, y: 0.27, w: 0.284, anchoCm: 30, altoCm: 30, angulo: 0, costo: 0 },
+      // Las mangas caen inclinadas: la zona gira con ellas.
+      { id: 'frente-manga-derecha', nombre: 'Manga derecha', x: 0.067, y: 0.399, w: 0.0755, anchoCm: 8, altoCm: 30, angulo: 5, costo: 0 },
+      { id: 'frente-manga-izquierda', nombre: 'Manga izquierda', x: 0.8575, y: 0.399, w: 0.0755, anchoCm: 8, altoCm: 30, angulo: -5, costo: 0 },
+    ],
   },
   {
     id: 'espalda',
     nombre: 'Espalda',
     imagen: `${origen}/prendas/hoodie-espalda.webp`,
-    costo: 0,
-    zona: { x: 0.3255, y: 0.32, w: 0.349, anchoCm: 35, altoCm: 40 },
+    zonas: [
+      { id: 'espalda-centro', nombre: 'Espalda', x: 0.3255, y: 0.32, w: 0.349, anchoCm: 35, altoCm: 40, angulo: 0, costo: 0 },
+    ],
   },
 ];

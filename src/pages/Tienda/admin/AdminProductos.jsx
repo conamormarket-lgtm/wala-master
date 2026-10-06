@@ -740,6 +740,10 @@ const AdminProductos = () => {
                     {p.isComboPiece && (
                       <span className={styles.badgeCombo}>Pieza de combo</span>
                     )}
+                    {/* Solo se vende en Crear (no en la tienda): se diseña antes de comprarla. */}
+                    {p.esPrendaBase === true && (
+                      <span className={styles.badgeCombo}>Crear</span>
+                    )}
                     {!isVisible && !p.isComboPiece && (
                       <span className={styles.badgeOculto}>{p.deleted === true ? 'Archivado' : 'Oculto'}</span>
                     )}

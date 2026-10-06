@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Upload, X, Sparkles, Palette, AlertTriangle } from 'lucide-react';
 import { uploadFile } from '../../../services/firebase/storage';
 import {
-  leerPrendaBase, normalizarZona, normalizarVista, slug, cargarImagen, tintarImagen,
+  leerPrendaBase, normalizarZona, normalizarVista, nuevoIdZona, slug, cargarImagen, tintarImagen,
   colorDisponible, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
 } from '../../../utils/prendaBase';
 import ZonaEditor from './ZonaEditor';
 import styles from './PersonalizacionPrenda.module.css';
+
+const ZONAS_SUGERIDAS = ['Pecho', 'Pecho izquierdo (logo)', 'Espalda', 'Espalda alta', 'Manga derecha', 'Manga izquierda', 'Bolsillo', 'Capucha'];
 
 /** Configuración inicial al activar la personalización. */
 export const prendaBaseInicial = () => ({ vistas: [], colores: {} });
@@ -59,13 +61,19 @@ const MiniaturaColor = ({ imagen, hex, nombre }) => {
 const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarVariantes }) => {
   const [subiendo, setSubiendo] = useState(null);
   const [colorPrevio, setColorPrevio] = useState(null);
-  const vistas = (valor?.vistas || []).map(normalizarVista);
+  const [zonaElegida, setZonaElegida] = useState({});
+  // Las zonas se editan tal como se escriben (un "-" a medio tipear no puede
+  // volverse 0); se normalizan al dibujarlas y al guardar.
+  const vistas = (valor?.vistas || []).map((v, i) => (Array.isArray(v?.zonas)
+    ? { id: v.id, nombre: v.nombre ?? '', imagen: v.imagen || '', zonas: v.zonas }
+    : normalizarVista(v, i)));
   const extras = valor?.colores || {};
   const { colores } = leerPrendaBase({ variants: variantes, prendaBase: { vistas, colores: extras } });
-  const hexPrevio = colores.find((c) => c.id === colorPrevio)?.hex || '#FFFFFF';
+  const hexPrevio = colores.find((c) => c.id === (colorPrevio || colores[0]?.id))?.hex || '#FFFFFF';
 
   const cambiar = (cambios) => onChange({ vistas, colores: extras, ...cambios });
   const setVista = (i, cambios) => cambiar({ vistas: vistas.map((v, j) => (j === i ? { ...v, ...cambios } : v)) });
+  const setZona = (i, zi, zona) => setVista(i, { zonas: vistas[i].zonas.map((z, k) => (k === zi ? zona : z)) });
   const setExtra = (id, cambios) => cambiar({ colores: { ...extras, [id]: { fotos: {}, ...extras[id], ...cambios } } });
 
   const subir = async (archivo, clave) => {
@@ -150,40 +158,91 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
                   <X size={16} aria-hidden="true" />
                 </button>
               </div>
-              <ZonaEditor imagen={v.imagen} zona={v.zona} colorHex={hexPrevio} onChange={(zona) => setVista(i, { zona })} />
-              <label className={styles.botonSubir}>
-                <Upload size={16} aria-hidden="true" />
-                {subiendo === `vista-${i}` ? 'Subiendo…' : v.imagen ? 'Cambiar foto' : 'Subir foto'}
-                <input
-                  type="file"
-                  accept="image/png,image/webp"
-                  hidden
-                  onChange={async (e) => {
-                    const url = await subir(e.target.files?.[0], `vista-${i}`);
-                    e.target.value = '';
-                    if (url) setVista(i, { imagen: url });
-                  }}
-                />
-              </label>
-              <div className={styles.grilla3}>
-                <label className={styles.campo}>
-                  <span>Ancho (cm)</span>
-                  <input type="number" min="1" step="0.5" value={v.zona.anchoCm} onChange={(e) => setVista(i, { zona: normalizarZona({ ...v.zona, anchoCm: e.target.value }) })} />
-                </label>
-                <label className={styles.campo}>
-                  <span>Alto (cm)</span>
-                  <input type="number" min="1" step="0.5" value={v.zona.altoCm} onChange={(e) => setVista(i, { zona: normalizarZona({ ...v.zona, altoCm: e.target.value }) })} />
-                </label>
-                <label className={styles.campo}>
-                  <span>Cuesta extra (S/)</span>
-                  <input type="number" min="0" step="0.5" value={v.costo} onChange={(e) => setVista(i, { costo: Math.max(0, Number(e.target.value) || 0) })} />
-                </label>
+              <div className={styles.vistaCuerpo}>
+                <div className={styles.vistaFoto}>
+                  <ZonaEditor
+                    imagen={v.imagen}
+                    zonas={v.zonas}
+                    seleccionada={zonaElegida[v.id] ?? 0}
+                    colorHex={hexPrevio}
+                    onSeleccionar={(zi) => setZonaElegida((m) => ({ ...m, [v.id]: zi }))}
+                    onChange={(zi, zona) => setZona(i, zi, zona)}
+                  />
+                  <label className={styles.botonSubir}>
+                    <Upload size={16} aria-hidden="true" />
+                    {subiendo === `vista-${i}` ? 'Subiendo…' : v.imagen ? 'Cambiar foto' : 'Subir foto'}
+                    <input
+                      type="file"
+                      accept="image/png,image/webp"
+                      hidden
+                      onChange={async (e) => {
+                        const url = await subir(e.target.files?.[0], `vista-${i}`);
+                        e.target.value = '';
+                        if (url) setVista(i, { imagen: url });
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div className={styles.zonasLista}>
+                  <datalist id={`zonas-sugeridas-${i}`}>
+                    {ZONAS_SUGERIDAS.map((n) => <option key={n} value={n} />)}
+                  </datalist>
+                  {v.zonas.map((z, zi) => (
+                    <div
+                      key={z.id}
+                      className={`${styles.zonaFila} ${(zonaElegida[v.id] ?? 0) === zi ? styles.zonaFilaActiva : ''}`}
+                      onFocus={() => setZonaElegida((m) => ({ ...m, [v.id]: zi }))}
+                    >
+                      <label className={styles.campo}>
+                        <span>Zona</span>
+                        <input list={`zonas-sugeridas-${i}`} value={z.nombre} onChange={(e) => setZona(i, zi, { ...z, nombre: e.target.value })} />
+                      </label>
+                      <label className={styles.campo}>
+                        <span>Ancho cm</span>
+                        <input type="number" min="1" step="0.5" value={z.anchoCm} onChange={(e) => setZona(i, zi, { ...z, anchoCm: e.target.value })} />
+                      </label>
+                      <label className={styles.campo}>
+                        <span>Alto cm</span>
+                        <input type="number" min="1" step="0.5" value={z.altoCm} onChange={(e) => setZona(i, zi, { ...z, altoCm: e.target.value })} />
+                      </label>
+                      <label className={styles.campo}>
+                        <span>Giro °</span>
+                        <input type="number" min="-180" max="180" step="1" value={z.angulo} onChange={(e) => setZona(i, zi, { ...z, angulo: e.target.value })} />
+                      </label>
+                      <label className={styles.campo}>
+                        <span>Cuesta S/</span>
+                        <input type="number" min="0" step="0.5" value={z.costo} onChange={(e) => setZona(i, zi, { ...z, costo: e.target.value })} />
+                      </label>
+                      <button
+                        type="button"
+                        className={styles.iconoPeligro}
+                        onClick={() => {
+                          setVista(i, { zonas: v.zonas.filter((_, k) => k !== zi) });
+                          setZonaElegida((m) => ({ ...m, [v.id]: 0 }));
+                        }}
+                        aria-label={`Quitar zona ${z.nombre}`}
+                      >
+                        <X size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
+                  {!v.zonas.length && <p className={styles.ayuda}>Esta vista aún no tiene zonas.</p>}
+                  <button
+                    type="button"
+                    className={styles.botonSecundario}
+                    onClick={() => {
+                      setVista(i, { zonas: [...v.zonas, normalizarZona({ id: nuevoIdZona(), nombre: `Zona ${v.zonas.length + 1}`, x: 0.4, y: 0.4, w: 0.2, anchoCm: 15, altoCm: 15 })] });
+                      setZonaElegida((m) => ({ ...m, [v.id]: v.zonas.length }));
+                    }}
+                  >
+                    <Plus size={16} aria-hidden="true" /> Agregar zona
+                  </button>
+                  <small className={styles.ayuda}>
+                    El cliente elige en qué zona va cada imagen o texto. El costo de una zona se suma solo si la usa.
+                  </small>
+                </div>
               </div>
-              <small className={styles.ayuda}>
-                {v.costo > 0
-                  ? `Si el cliente diseña en ${v.nombre.toLowerCase()}, se suman S/ ${Number(v.costo).toFixed(2)}.`
-                  : `Diseñar en ${v.nombre.toLowerCase()} no tiene costo extra.`}
-              </small>
             </div>
           ))}
         </div>
@@ -191,10 +250,14 @@ const PersonalizacionPrenda = ({ valor, variantes, draftId, onChange, onAgregarV
           type="button"
           className={styles.botonSecundario}
           onClick={() => cambiar({
-            vistas: [...vistas, normalizarVista({
-              id: vistas.some((v) => v.id === 'frente') ? `vista-${vistas.length + 1}` : 'frente',
-              nombre: vistas.length === 0 ? 'Frente' : vistas.length === 1 ? 'Espalda' : `Vista ${vistas.length + 1}`,
-            })],
+            vistas: [...vistas, (() => {
+              const nombre = vistas.length === 0 ? 'Frente' : vistas.length === 1 ? 'Espalda' : `Vista ${vistas.length + 1}`;
+              return normalizarVista({
+                id: vistas.some((v) => v.id === 'frente') ? `vista-${vistas.length + 1}` : 'frente',
+                nombre,
+                zonas: [{ id: nuevoIdZona(), nombre: vistas.length === 1 ? 'Espalda' : 'Pecho', x: 0.35, y: 0.3, w: 0.3, anchoCm: 30, altoCm: 30 }],
+              });
+            })()],
           })}
         >
           <Plus size={16} aria-hidden="true" /> Agregar vista

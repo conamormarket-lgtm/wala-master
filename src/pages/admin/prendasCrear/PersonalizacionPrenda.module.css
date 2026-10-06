@@ -691,3 +691,77 @@
 .colorFila {
   flex-wrap: wrap;
 }
+
+.zonaRect {
+  border-color: rgba(124, 58, 237, 0.55);
+  background: rgba(124, 58, 237, 0.06);
+  transform-origin: center;
+}
+
+.zonaRectActiva {
+  border-color: #7C3AED;
+  background: rgba(124, 58, 237, 0.16);
+  z-index: 1;
+}
+
+.zonaRect .zonaEtiqueta {
+  max-width: 120%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zonasLista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.zonaFila {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(0, 0.8fr)) auto;
+  gap: 0.4rem;
+  align-items: end;
+  padding: 0.5rem;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+}
+
+.zonaFilaActiva {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+}
+
+.zonaFila .campo input {
+  padding: 0.45rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .zonaFila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.vistas {
+  display: flex;
+  flex-direction: column;
+}
+
+.vistaCuerpo {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.vistaFoto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+@media (max-width: 900px) {
+  .vistaCuerpo {
+    grid-template-columns: 1fr;
+  }
+}

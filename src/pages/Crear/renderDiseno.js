@@ -11,13 +11,17 @@ import { loadFontResources } from '../../services/shared/fontResources';
 /**
  * Dibujo de un diseño del apartado Crear. Lo usan el lienzo del estudio, la
  * vista previa que va al carrito y el archivo de impresión: los tres parten
- * de las mismas capas y de esta misma función, así lo que el cliente ve es
- * exactamente lo que se imprime.
+ * de las mismas capas y de estas mismas funciones, así lo que el cliente ve
+ * es exactamente lo que se imprime.
  *
- * Una capa guarda su centro (left, top) y su escala en UNIDADES de la zona
- * (la zona mide UNIDADES_ZONA de ancho). Para pintarla se le da una
- * transformación { k, ox, oy }: k = píxeles por unidad, (ox, oy) = esquina de
- * la zona en el lienzo de destino.
+ * Cada capa pertenece a una zona y guarda su centro (left, top) y su escala
+ * en UNIDADES de esa zona (la zona mide UNIDADES_ZONA de ancho), medidos en
+ * el sistema de la zona SIN girar. Para pintarla se usa la transformación de
+ * la zona en el lienzo de destino:
+ *
+ *   { k, cx, cy, ang, wu, hu }
+ *   k = píxeles por unidad · (cx, cy) = centro de la zona · ang = giro (grados)
+ *   wu, hu = ancho y alto de la zona en unidades
  *
  *   imagen: { id, type: 'image', src, anchoNatural, altoNatural, left, top, escalaX, escalaY, angulo, flipX }
  *   texto:  { id, type: 'text', text, fuente, color, tamano, negrita, cursiva, left, top, escalaX, escalaY, angulo }
@@ -53,9 +57,9 @@ export const asegurarFuente = (familia) => {
   return promesa;
 };
 
-export const asegurarFuentesDe = (capasPorVista) => {
+export const asegurarFuentesDe = (capasPorZona) => {
   const familias = new Set();
-  Object.values(capasPorVista || {}).forEach((capas) => {
+  Object.values(capasPorZona || {}).forEach((capas) => {
     (capas || []).forEach((c) => { if (c.type === 'text' && c.fuente) familias.add(c.fuente); });
   });
   return Promise.all([...familias].map(asegurarFuente));
@@ -63,6 +67,61 @@ export const asegurarFuentesDe = (capasPorVista) => {
 
 /** Alto de la zona en unidades. */
 export const altoEnUnidades = (zona) => UNIDADES_ZONA * (zona.altoCm / zona.anchoCm);
+
+/**
+ * Transformación de una zona dibujada sobre la foto de su vista.
+ * (ox, oy) = esquina de la foto en el lienzo; (iw, ih) = tamaño de la foto
+ * en el lienzo; (anchoImg, altoImg) = tamaño natural de la foto.
+ */
+export const transformDeZona = (zona, { ox, oy, iw, ih, anchoImg, altoImg }) => {
+  const zw = zona.w * iw;
+  const zh = altoZonaFraccion(zona, anchoImg, altoImg) * ih;
+  return {
+    k: zw / UNIDADES_ZONA,
+    cx: ox + zona.x * iw + zw / 2,
+    cy: oy + zona.y * ih + zh / 2,
+    ang: zona.angulo || 0,
+    wu: UNIDADES_ZONA,
+    hu: altoEnUnidades(zona),
+    zw,
+    zh,
+  };
+};
+
+const rad = (grados) => (grados * Math.PI) / 180;
+
+/** Punto en unidades de la zona -> píxeles del lienzo. */
+export const aLienzo = (t, left, top) => {
+  const dx = (left - t.wu / 2) * t.k;
+  const dy = (top - t.hu / 2) * t.k;
+  const a = rad(t.ang);
+  return { x: t.cx + dx * Math.cos(a) - dy * Math.sin(a), y: t.cy + dx * Math.sin(a) + dy * Math.cos(a) };
+};
+
+/** Píxeles del lienzo -> unidades de la zona. */
+export const desdeLienzo = (t, x, y) => {
+  const dx = x - t.cx;
+  const dy = y - t.cy;
+  const a = rad(t.ang);
+  return {
+    left: (dx * Math.cos(a) + dy * Math.sin(a)) / t.k + t.wu / 2,
+    top: (-dx * Math.sin(a) + dy * Math.cos(a)) / t.k + t.hu / 2,
+  };
+};
+
+/** Rectángulo de la zona (para recortar y para la guía). */
+export const rectDeZona = (t, extra = {}) => new fabric.Rect({
+  left: t.cx,
+  top: t.cy,
+  width: t.zw,
+  height: t.zh,
+  angle: t.ang,
+  originX: 'center',
+  originY: 'center',
+  ...extra,
+});
+
+export const recorteDeZona = (t) => rectDeZona(t, { absolutePositioned: true });
 
 export const propiedadesTexto = (capa) => ({
   text: capa.text?.length ? capa.text : ' ',
@@ -75,21 +134,27 @@ export const propiedadesTexto = (capa) => ({
   lineHeight: 1.05,
 });
 
+/** Posición, escala y giro de una capa en el lienzo de destino. */
+export const ubicacion = (capa, t) => {
+  const p = aLienzo(t, capa.left || 0, capa.top || 0);
+  return {
+    originX: 'center',
+    originY: 'center',
+    left: p.x,
+    top: p.y,
+    scaleX: (capa.escalaX || 1) * t.k,
+    scaleY: (capa.escalaY || 1) * t.k,
+    angle: (capa.angulo || 0) + t.ang,
+    flipX: !!capa.flipX,
+  };
+};
+
 /**
  * Crea el objeto de fabric de una capa. `srcDe(capa)` decide de dónde se lee
  * la imagen (la URL local mientras se sube, o la de Storage).
  */
-export const crearObjeto = async (capa, { k, ox, oy }, srcDe = (c) => c.src) => {
-  const comun = {
-    originX: 'center',
-    originY: 'center',
-    left: ox + (capa.left || 0) * k,
-    top: oy + (capa.top || 0) * k,
-    scaleX: (capa.escalaX || 1) * k,
-    scaleY: (capa.escalaY || 1) * k,
-    angle: capa.angulo || 0,
-    flipX: !!capa.flipX,
-  };
+export const crearObjeto = async (capa, t, srcDe = (c) => c.src) => {
+  const comun = ubicacion(capa, t);
   if (capa.type === 'image') {
     const img = await cargarImagen(srcDe(capa));
     return new fabric.Image(img, comun);
@@ -97,15 +162,27 @@ export const crearObjeto = async (capa, { k, ox, oy }, srcDe = (c) => c.src) => 
   return new fabric.Text(propiedadesTexto(capa).text, { ...comun, ...propiedadesTexto(capa) });
 };
 
-/** Lee de vuelta la posición de un objeto del lienzo, en unidades. */
-export const leerTransformacion = (obj, { k, ox, oy }) => ({
-  left: (obj.left - ox) / k,
-  top: (obj.top - oy) / k,
-  escalaX: obj.scaleX / k,
-  escalaY: obj.scaleY / k,
-  angulo: obj.angle || 0,
-  flipX: !!obj.flipX,
-});
+/** Lee de vuelta la posición de un objeto del lienzo, en unidades de su zona. */
+export const leerTransformacion = (obj, t) => {
+  const p = desdeLienzo(t, obj.left, obj.top);
+  return {
+    left: p.left,
+    top: p.top,
+    escalaX: obj.scaleX / t.k,
+    escalaY: obj.scaleY / t.k,
+    angulo: (obj.angle || 0) - t.ang,
+    flipX: !!obj.flipX,
+  };
+};
+
+/** ¿Alguna esquina del objeto queda fuera de su zona? */
+export const seSaleDeZona = (obj, t) => {
+  const margen = 1.5 / t.k;
+  return obj.getCoords(true, true).some(({ x, y }) => {
+    const p = desdeLienzo(t, x, y);
+    return p.left < -margen || p.top < -margen || p.left > t.wu + margen || p.top > t.hu + margen;
+  });
+};
 
 const aBlob = (canvasEl, tipo, calidad) =>
   new Promise((resolve, reject) => {
@@ -117,8 +194,9 @@ const aBlob = (canvasEl, tipo, calidad) =>
 const AREA_MAXIMA = 16000000;
 
 /**
- * Archivo de impresión de una vista: PNG transparente del tamaño real de la
- * zona a DPI_IMPRESION. Devuelve también los dpi reales con que salió.
+ * Archivo de impresión de una zona: PNG transparente del tamaño real de la
+ * zona a DPI_IMPRESION, derecho (sin el giro de la zona). Devuelve también
+ * los dpi reales con que salió.
  */
 export const renderizarImpresion = async (capas, zona, srcDe) => {
   const base = pixelesDeImpresion(zona);
@@ -133,7 +211,7 @@ export const renderizarImpresion = async (capas, zona, srcDe) => {
     renderOnAddRemove: false,
   });
   try {
-    const t = { k: ancho / UNIDADES_ZONA, ox: 0, oy: 0 };
+    const t = { k: ancho / UNIDADES_ZONA, cx: ancho / 2, cy: alto / 2, ang: 0, wu: UNIDADES_ZONA, hu: altoEnUnidades(zona) };
     for (const capa of capas) {
       lienzo.add(await crearObjeto(capa, t, srcDe));
     }
@@ -146,15 +224,15 @@ export const renderizarImpresion = async (capas, zona, srcDe) => {
 };
 
 /**
- * Vista previa de una vista: la prenda (ya teñida) con el diseño encima,
- * recortado a la zona. Es la miniatura del carrito, de "Mis compras" y la
- * referencia visual del pedido en el ERP.
+ * Vista previa de una vista: la prenda (ya teñida) con el diseño de todas sus
+ * zonas, cada uno recortado a la suya. Es la miniatura del carrito, de "Mis
+ * compras" y la referencia visual del pedido en el ERP.
  */
-export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, zona, capas, srcDe, ancho = 900 }) => {
+export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, vista, capasPorZona, srcDe, ancho = 900 }) => {
   const margen = Math.round(ancho * 0.06);
-  const escala = (ancho - margen * 2) / anchoImg;
-  const altoPrenda = altoImg * escala;
-  const alto = Math.round(altoPrenda + margen * 2);
+  const iw = ancho - margen * 2;
+  const ih = altoImg * (iw / anchoImg);
+  const alto = Math.round(ih + margen * 2);
   const el = document.createElement('canvas');
   const lienzo = new fabric.StaticCanvas(el, {
     width: ancho,
@@ -164,16 +242,16 @@ export const renderizarVistaPrevia = async ({ fuente, anchoImg, altoImg, zona, c
     renderOnAddRemove: false,
   });
   try {
-    lienzo.add(new fabric.Image(fuente, { left: margen, top: margen, scaleX: escala, scaleY: escala }));
-    const zx = margen + zona.x * anchoImg * escala;
-    const zy = margen + zona.y * altoPrenda;
-    const zw = zona.w * anchoImg * escala;
-    const zh = altoZonaFraccion(zona, anchoImg, altoImg) * altoPrenda;
-    const t = { k: zw / UNIDADES_ZONA, ox: zx, oy: zy };
-    for (const capa of capas) {
-      const obj = await crearObjeto(capa, t, srcDe);
-      obj.clipPath = new fabric.Rect({ left: zx, top: zy, width: zw, height: zh, absolutePositioned: true });
-      lienzo.add(obj);
+    lienzo.add(new fabric.Image(fuente, { left: margen, top: margen, scaleX: iw / anchoImg, scaleY: ih / altoImg }));
+    for (const zona of vista.zonas) {
+      const capas = capasPorZona[zona.id] || [];
+      if (!capas.length) continue;
+      const t = transformDeZona(zona, { ox: margen, oy: margen, iw, ih, anchoImg, altoImg });
+      for (const capa of capas) {
+        const obj = await crearObjeto(capa, t, srcDe);
+        obj.clipPath = recorteDeZona(t);
+        lienzo.add(obj);
+      }
     }
     lienzo.renderAll();
     return await aBlob(lienzo.lowerCanvasEl, 'image/jpeg', 0.88);

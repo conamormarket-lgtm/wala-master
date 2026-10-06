@@ -773,8 +773,8 @@ const AdminProductoFormV2 = () => {
     const esPrenda = form.esPrendaBase && !form.isComboProduct;
     if (esPrenda) {
       const vistas = form.prendaBase?.vistas || [];
-      if (!vistas.length || vistas.some((v) => !v.imagen)) {
-        alert('Producto personalizable: agrega al menos una vista y sube la foto de cada una.');
+      if (!vistas.length || vistas.some((v) => !v.imagen || !(v.zonas?.length || v.zona))) {
+        alert('Producto personalizable: cada vista necesita su foto y al menos una zona de impresión.');
         return;
       }
     }
