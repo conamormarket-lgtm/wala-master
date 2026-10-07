@@ -3,9 +3,14 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, PenLine, Trash2, Clock } from 'lucide-react';
 import { getBorradoresCrear } from '../../services/designs';
+import { getProduct } from '../../services/products';
+import { precioBase } from '../../utils/prendaBase';
 import { useEliminarCreacion } from './useEliminarCreacion';
 import { esperarGuardados } from './borradoresCache';
 import styles from './TusBorradores.module.css';
+// La misma tarjeta que las creaciones (MiCreacionCard): mismo tamaño, foto,
+// datos y pie con precio + botón. Lo propio del borrador va en `styles`.
+import tarjeta from '../cuenta/MisCreacionesPage.module.css';
 import estilosEliminar from './EliminarCreacion.module.css';
 
 const relativo = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
@@ -40,6 +45,66 @@ export const useBorradoresCrear = (uid) => useQuery({
   },
 });
 
+export const TarjetaBorrador = ({ borrador: b, onEliminar }) => {
+  // Misma consulta (y caché) que usa MiCreacionCard para el precio.
+  const { data: respuesta } = useQuery({
+    queryKey: ['product', b.productId],
+    queryFn: () => getProduct(b.productId),
+    enabled: Boolean(b.productId),
+  });
+  const precio = respuesta?.data ? precioBase(respuesta.data) : 0;
+  const editado = haceCuanto(b.updatedAt || b.createdAt);
+  const continuarUrl = `/crear/${b.productId}?designId=${b.id}`;
+
+  return (
+    <li className={`${tarjeta.card} ${styles.tarjeta}`}>
+      <div className={tarjeta.media}>
+        <Link to={continuarUrl} className={tarjeta.foto} aria-label={`Continuar ${b.productName || 'borrador'}`}>
+          {b.miniatura
+            ? <img src={b.miniatura} alt="" className={tarjeta.fotoFrente} loading="lazy" />
+            : <span className={tarjeta.fotoVacia}><PenLine size={34} aria-hidden="true" /></span>}
+        </Link>
+        <div className={tarjeta.insignias}>
+          <span className={styles.etiqueta}>Borrador</span>
+        </div>
+        <button
+          type="button"
+          className={estilosEliminar.botonTarjeta}
+          onClick={() => onEliminar(b)}
+          aria-label="Eliminar borrador"
+          title="Eliminar"
+        >
+          <Trash2 size={16} aria-hidden="true" />
+        </button>
+      </div>
+
+      <div className={tarjeta.info}>
+        <h3 className={tarjeta.nombre}>{b.productName || 'Mi diseño'}</h3>
+        <p className={tarjeta.prenda}>
+          {b.color?.hex && <span className={tarjeta.puntoColor} style={{ background: b.color.hex }} aria-hidden="true" />}
+          <span className={tarjeta.prendaTexto}>{b.color?.nombre ? `${b.color.nombre} · sin terminar` : 'Sin terminar'}</span>
+        </p>
+        {editado && (
+          <p className={tarjeta.fecha}>
+            <Clock size={12} aria-hidden="true" />
+            Editado {editado}
+          </p>
+        )}
+        <div className={tarjeta.pie}>
+          <div className={tarjeta.precios}>
+            {precio > 0 && <span className={tarjeta.precio}>S/ {precio.toFixed(2)}</span>}
+          </div>
+          <div className={tarjeta.acciones}>
+            <Link to={continuarUrl} className={tarjeta.botonPrincipal}>
+              Continuar <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+};
+
 /**
  * Diseños que el cliente empezó en Crear y no guardó: se guardan solos
  * mientras diseña y desde aquí los continúa o los elimina.
@@ -57,43 +122,7 @@ const TusBorradores = ({ uid }) => {
         <p className={styles.ayuda}>Diseños sin terminar. Continúa donde lo dejaste.</p>
       </div>
       <ul className={styles.fila}>
-        {borradores.map((b) => {
-          const editado = haceCuanto(b.updatedAt || b.createdAt);
-          return (
-            <li key={b.id} className={styles.item}>
-              <Link to={`/crear/${b.productId}?designId=${b.id}`} className={styles.tarjeta}>
-                <div className={styles.foto}>
-                  {b.miniatura
-                    ? <img src={b.miniatura} alt="" loading="lazy" />
-                    : <PenLine size={30} aria-hidden="true" />}
-                  <span className={styles.etiqueta}>Borrador</span>
-                </div>
-                <div className={styles.info}>
-                  <strong className={styles.nombre}>{b.productName || 'Mi diseño'}</strong>
-                  {b.color?.nombre && (
-                    <span className={styles.color}>
-                      {b.color.hex && <span className={styles.punto} style={{ background: b.color.hex }} aria-hidden="true" />}
-                      {b.color.nombre}
-                    </span>
-                  )}
-                  {editado && (
-                    <span className={styles.fecha}><Clock size={12} aria-hidden="true" /> Editado {editado}</span>
-                  )}
-                  <span className={styles.continuar}>Continuar <ArrowRight size={15} aria-hidden="true" /></span>
-                </div>
-              </Link>
-              <button
-                type="button"
-                className={estilosEliminar.botonTarjeta}
-                onClick={() => pedir(b)}
-                aria-label="Eliminar borrador"
-                title="Eliminar"
-              >
-                <Trash2 size={16} aria-hidden="true" />
-              </button>
-            </li>
-          );
-        })}
+        {borradores.map((b) => <TarjetaBorrador key={b.id} borrador={b} onEliminar={pedir} />)}
       </ul>
       {dialogo}
     </section>
