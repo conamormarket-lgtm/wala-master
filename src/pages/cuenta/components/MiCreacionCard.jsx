@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Trash2, ImageOff, Paintbrush, ShoppingBag, Check, Clock } from 'lucide-react';
@@ -6,6 +6,7 @@ import { getProduct } from '../../../services/products';
 import { toThumbnailImageUrl } from '../../../utils/imageUrl';
 import { precioBase, fondoColorGuardado } from '../../../utils/prendaBase';
 import { useProductThumbnailVariant } from '../../../hooks/useProductThumbnailVariant';
+import { useAlternarFotos } from '../../../hooks/useAlternarFotos';
 import ComboProductImage from '../../Tienda/components/ComboProductImage/ComboProductImage';
 import { DomOverlay } from '../../Tienda/components/ComboProductImage/ComboProductImageWithDesign';
 import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedImage';
@@ -93,6 +94,12 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
   // Utilizar la lógica de miniaturas de la tienda
   const { thumbnailImageUrl } = useProductThumbnailVariant(product);
 
+  // Frente y espalda: en el celular alternan solas (en escritorio, al pasar
+  // el mouse).
+  const mediaRef = useRef(null);
+  const dosLados = esDeCrear && (design.vistasPrevias || []).filter((p) => p?.url).length > 1;
+  const verEspalda = useAlternarFotos(mediaRef, dosLados);
+
   if (cargandoProducto && !esDeCrear) return <MiCreacionCardSkeleton />;
 
   // Combinamos la customización guardada en el diseño con el producto original para que ComboProductImage la pre-renderize si es combo
@@ -178,13 +185,21 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
 
   return (
     <li className={`${styles.card} ${noDisponible ? styles.cardNoDisponible : ''}`}>
-      <div className={styles.media}>
+      <div ref={mediaRef} className={`${styles.media} ${verEspalda ? styles.mediaEspalda : ''}`}>
         {noDisponible && !esDeCrear ? (
           <div className={styles.foto}>{foto}</div>
         ) : (
           <Link to={verUrl} className={styles.foto} aria-label={`Ver ${design.name || 'creación'}`}>
             {foto}
           </Link>
+        )}
+
+        {/* Qué lado se ve mientras alternan (solo sin mouse, ver CSS). */}
+        {dosLados && (
+          <span className={styles.puntosFoto} aria-hidden="true">
+            <span className={`${styles.puntoFoto} ${!verEspalda ? styles.puntoFotoActivo : ''}`} />
+            <span className={`${styles.puntoFoto} ${verEspalda ? styles.puntoFotoActivo : ''}`} />
+          </span>
         )}
 
         <div className={styles.insignias}>

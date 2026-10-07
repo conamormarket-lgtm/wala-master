@@ -29,6 +29,20 @@
   display: none;
 }
 
+/* Con mouse la fila se agarra y se arrastra (FilaCarrusel.jsx). */
+@media (hover: hover) and (pointer: fine) {
+  .fila { cursor: grab; }
+}
+
+/* Mientras se arrastra: sin imán ni scroll suave (pelean con el mouse) y
+   sin seleccionar texto. */
+.fila.arrastrando {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+  user-select: none;
+}
+
 .fila > li {
   flex: 0 0 calc((100% - var(--espacio) * (var(--por-vista) - 1)) / var(--por-vista));
   min-width: 0;

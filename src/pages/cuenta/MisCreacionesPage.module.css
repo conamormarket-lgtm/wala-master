@@ -198,6 +198,41 @@
   opacity: 0;
 }
 
+/* En el celular (sin hover) frente y espalda alternan solas
+   (useAlternarFotos en MiCreacionCard). */
+.mediaEspalda .fotoEspalda { opacity: 1; }
+.mediaEspalda .fotoFrente:not(:only-child) { opacity: 0; }
+
+/* Puntos de qué lado se ve: solo donde no hay mouse (en escritorio la
+   pista es el propio hover), como en las tarjetas de la tienda. */
+.puntosFoto {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: none;
+  gap: 5px;
+  pointer-events: none;
+}
+
+@media (hover: none) {
+  .puntosFoto { display: flex; }
+}
+
+.puntoFoto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.3);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.puntoFotoActivo {
+  background: #8b5cf6;
+  transform: scale(1.3);
+}
+
 @media (hover: hover) {
   .card:hover .fotoFrente { transform: scale(1.03); }
   .card:hover .fotoEspalda { opacity: 1; transform: scale(1.03); }

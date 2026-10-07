@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
 import { getDesignsByUser } from '../services/designs';
 import { useAuth } from '../contexts/AuthContext';
+import { useAlternarFotos } from '../hooks/useAlternarFotos';
 import { leerPrendaBase, precioBase, colorDisponible, fondoMuestra } from '../utils/prendaBase';
 import { useEliminarCreacion } from './Crear/useEliminarCreacion';
 import TusBorradores, { useBorradoresCrear } from './Crear/TusBorradores';
@@ -26,12 +27,21 @@ const TarjetaPrenda = ({ prenda }) => {
   const frente = vistas[0]?.imagen;
   const espalda = vistas[1]?.imagen;
   const lados = vistas.map((v) => v.nombre).filter(Boolean);
+  // En el celular frente y espalda alternan solas (en escritorio, al pasar el mouse).
+  const fotoRef = useRef(null);
+  const verEspalda = useAlternarFotos(fotoRef, Boolean(frente && espalda));
   return (
     <Link to={`/crear/${prenda.id}`} className={styles.tarjeta}>
-      <div className={styles.foto}>
+      <div ref={fotoRef} className={`${styles.foto} ${verEspalda ? styles.fotoConEspalda : ''}`}>
         {prenda.visible === false && <span className={styles.borrador}>Borrador</span>}
         {frente && <img src={frente} alt={prenda.name} className={styles.fotoFrente} loading="lazy" />}
         {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
+        {frente && espalda && (
+          <span className={styles.puntosFoto} aria-hidden="true">
+            <span className={`${styles.puntoFoto} ${!verEspalda ? styles.puntoFotoActivo : ''}`} />
+            <span className={`${styles.puntoFoto} ${verEspalda ? styles.puntoFotoActivo : ''}`} />
+          </span>
+        )}
         {lados.length > 0 && (
           <span className={styles.lados} title="Lados que puedes diseñar">{lados.join(' + ')}</span>
         )}
