@@ -1,0 +1,109 @@
+.caja {
+  position: relative;
+}
+
+.boton {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.8rem 0.4rem 1rem;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 12px;
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.boton:hover,
+.botonAbierto {
+  border-color: var(--primary-color);
+}
+
+.muestra {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cambiar {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.flecha {
+  flex-shrink: 0;
+  color: var(--primary-color);
+  transition: transform 0.2s ease;
+}
+
+.botonAbierto .flecha {
+  transform: rotate(180deg);
+}
+
+.lista {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.35rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 14px;
+  background: var(--blanco);
+  box-shadow: 0 16px 40px rgba(20, 18, 28, 0.18);
+  scrollbar-width: thin;
+}
+
+.grupo {
+  display: block;
+  padding: 0.55rem 0.65rem 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris-texto-secundario);
+}
+
+.opcion {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.35rem 0.65rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gris-texto-principal);
+  font-size: 1.15rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.opcion:hover {
+  background: var(--gris-hover, #F3F1F7);
+}
+
+.opcionActiva {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.opcionActiva svg {
+  flex-shrink: 0;
+}

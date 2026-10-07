@@ -506,31 +506,6 @@
   border-color: var(--primary-color);
 }
 
-.fuentes {
-  display: flex;
-  gap: 0.4rem;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
-}
-
-.fuente {
-  flex-shrink: 0;
-  border: 1.5px solid var(--gris-borde);
-  background: var(--blanco);
-  color: var(--gris-texto-principal);
-  border-radius: 10px;
-  padding: 0.4rem 0.7rem;
-  font-size: 0.95rem;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.fuenteActiva {
-  border-color: var(--primary-color);
-  background: var(--primary-light);
-}
-
 .filaTexto {
   display: flex;
   align-items: center;
@@ -678,7 +653,6 @@
 
 .herramienta:hover,
 .icono:hover,
-.fuente:hover,
 .talla:hover {
   border-color: var(--primary-color);
 }

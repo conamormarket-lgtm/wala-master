@@ -31,6 +31,7 @@ import { itemDeCreacion } from './creacionCarrito';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
 import MenuContextual from './MenuContextual';
 import EfectosTexto from './EfectosTexto';
+import SelectorFuente from './SelectorFuente';
 import NombreEditable from './NombreEditable';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
 import styles from './CrearStudioPage.module.css';
@@ -2490,21 +2491,7 @@ const CrearStudioPage = () => {
                     />
                   </label>
                   <span className={styles.etiquetaCampo}>Letra</span>
-                  <div className={styles.fuentes} role="listbox" aria-label="Tipografía">
-                    {FUENTES.map((f) => (
-                      <button
-                        key={f}
-                        type="button"
-                        role="option"
-                        aria-selected={capaSel.fuente === f}
-                        className={`${styles.fuente} ${capaSel.fuente === f ? styles.fuenteActiva : ''}`}
-                        style={{ fontFamily: `"${f}", sans-serif` }}
-                        onClick={() => cambiarFuente(f)}
-                      >
-                        {f}
-                      </button>
-                    ))}
-                  </div>
+                  <SelectorFuente valor={capaSel.fuente} onCambiar={cambiarFuente} />
                   <span className={styles.etiquetaCampo}>Color de la letra</span>
                   <div className={styles.filaTexto}>
                     <div className={styles.coloresTexto} aria-label="Color del texto">
