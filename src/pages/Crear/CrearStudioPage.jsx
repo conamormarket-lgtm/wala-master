@@ -82,6 +82,24 @@ const estilizar = (obj) => {
   obj.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false });
 };
 
+/**
+ * Firma del diseño, para saber si cambió desde lo último guardado: capas,
+ * color y talla. No cuenta lo que solo dice si una imagen terminó de
+ * subirse, ni el orden de los campos, ni un false que equivale a no tenerlo.
+ */
+const firmaDiseno = (capasPorZona, colorId, talla) => {
+  const capas = Object.keys(capasPorZona || {}).sort()
+    .filter((zId) => capasPorZona[zId]?.length)
+    .map((zId) => [zId, capasPorZona[zId]]);
+  return JSON.stringify({ capas, colorId: colorId || null, talla: talla || '' }, (k, v) => {
+    if (k === 'src' || k === 'subiendo' || v === false) return undefined;
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      return Object.fromEntries(Object.keys(v).sort().map((key) => [key, v[key]]));
+    }
+    return v;
+  });
+};
+
 /** Quita lo que solo sirve mientras se edita (marcas de subida) y las zonas vacías. */
 const capasParaGuardar = (capasPorZona) => {
   const out = {};
@@ -153,6 +171,8 @@ const CrearStudioPage = () => {
   const [nombreEditado, setNombreEditado] = useState('');
   const [dialogoGuardar, setDialogoGuardar] = useState(false);
   const [guardada, setGuardada] = useState(null);
+  // Firma de lo último guardado como creación (null = nunca se guardó).
+  const [firmaGuardada, setFirmaGuardada] = useState(null);
   // Borrador en la cuenta: un diseño sin terminar se guarda solo mientras se
   // diseña, y se continúa desde Crear → Tus borradores.
   const [esBorrador, setEsBorrador] = useState(false);
@@ -221,6 +241,11 @@ const CrearStudioPage = () => {
     [zonasPrenda, capasPorZona]
   );
   const total = prenda ? precioPersonalizado(prenda, zonasUsadas) : 0;
+  // "Guardar" solo tiene sentido si hay algo nuevo: un diseño sin guardar
+  // con contenido, o una creación que cambió desde que se guardó.
+  const hayCambios = firmaGuardada === null
+    ? zonasUsadas.length > 0
+    : firmaDiseno(capasPorZona, color?.id, talla) !== firmaGuardada;
   const srcDe = useCallback((capa) => localSrcRef.current.get(capa.id) || capa.src, []);
 
   // ── Pantalla completa en el celular (oculta header, footer y barra inferior)
@@ -244,8 +269,12 @@ const CrearStudioPage = () => {
       setVistaId(vistaInicial?.id);
       setZonaId(vistaInicial?.zonas.some((z) => z.id === estado?.zonaId) ? estado.zonaId : vistaInicial?.zonas[0]?.id);
       const principal = cfg.colores.find((c) => c.id === prenda?.defaultVariantId) || cfg.colores[0];
-      setColorId(cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : principal?.id);
-      setTalla(cfg.tallas.includes(estado?.talla) ? estado.talla : '');
+      const colorInicial = cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : principal?.id;
+      const tallaInicial = cfg.tallas.includes(estado?.talla) ? estado.talla : '';
+      setColorId(colorInicial);
+      setTalla(tallaInicial);
+      // Una creación guardada abre "sin cambios": Guardar se activa al cambiar algo.
+      setFirmaGuardada(estado?.guardada ? firmaDiseno(capas, colorInicial, tallaInicial) : null);
       setListo(true);
     };
     (async () => {
@@ -265,6 +294,7 @@ const CrearStudioPage = () => {
             zonaId: primeraZona,
             colorId: colorGuardado?.id,
             talla: diseno.variant?.size,
+            guardada: !deBorrador,
           });
         }
         designIdRef.current = null;
@@ -1316,12 +1346,17 @@ const CrearStudioPage = () => {
     queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
     queryClient.removeQueries({ queryKey: ['creacion', idFinal] });
     setNombre(creacion.name);
+    setFirmaGuardada(firmaDiseno(capasRef.current, color.id, talla));
     // Ya está guardada: la próxima vez la plantilla se abre limpia.
     try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
     return { ...creacion, id: idFinal };
   };
 
   const guardar = () => {
+    if (!hayCambios) {
+      toast.info(firmaGuardada === null ? 'Agrega una imagen o un texto a tu diseño.' : 'No hay cambios por guardar.');
+      return;
+    }
     if (!validar()) return;
     setNombreEditado(nombre || nombrePorDefecto());
     setDialogoGuardar(true);
@@ -1643,7 +1678,10 @@ const CrearStudioPage = () => {
                   : 'Borrador guardado: lo encuentras en Crear para continuarlo después.'}
             </span>
           ) : (
-            <span>Estás editando <strong>{nombre ? `«${nombre}»` : 'tu creación'}</strong>. Al guardar se actualiza.</span>
+            <span>
+              Estás editando <strong>{nombre ? `«${nombre}»` : 'tu creación'}</strong>.{' '}
+              {hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}
+            </span>
           )}
           <button type="button" className={styles.botonTexto} onClick={empezarNuevo}>
             <Plus size={16} aria-hidden="true" /> Empezar uno nuevo
@@ -1979,9 +2017,16 @@ const CrearStudioPage = () => {
           </button>
 
           <div className={styles.acciones}>
-            <button type="button" className={styles.botonSecundario} onClick={guardar} disabled={!!procesando} title={`Guardar (${MOD}+S)`}>
-              <Save size={18} aria-hidden="true" />
-              Guardar
+            <button
+              type="button"
+              className={`${styles.botonSecundario} ${!hayCambios ? styles.sinCambios : ''}`}
+              onClick={guardar}
+              disabled={!!procesando || !hayCambios}
+              title={hayCambios ? `Guardar (${MOD}+S)` : 'No hay cambios por guardar'}
+            >
+              {firmaGuardada !== null && !hayCambios
+                ? <><CheckCircle2 size={18} aria-hidden="true" /> Guardado</>
+                : <><Save size={18} aria-hidden="true" /> Guardar</>}
             </button>
             <button type="button" className={styles.botonPrincipal} onClick={agregarAlCarrito} disabled={!!procesando || agotado}>
               <ShoppingBag size={18} aria-hidden="true" />

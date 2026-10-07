@@ -584,6 +584,11 @@
   cursor: wait;
 }
 
+/* Sin cambios que guardar: apagado, sin el cursor de "esperando". */
+.botonSecundario.sinCambios:disabled {
+  cursor: default;
+}
+
 .botonTexto {
   border: none;
   background: transparent;
