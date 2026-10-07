@@ -171,6 +171,7 @@ const CrearStudioPage = () => {
   const [version, setVersion] = useState(0);
   const [listo, setListo] = useState(false);
   const [anchoLienzo, setAnchoLienzo] = useState(0);
+  const [altoVentana, setAltoVentana] = useState(() => (typeof window === 'undefined' ? 800 : window.innerHeight));
   const [subiendo, setSubiendo] = useState(0);
   const [procesando, setProcesando] = useState(null);
   const [designId, setDesignId] = useState(designIdParam || null);
@@ -214,6 +215,7 @@ const CrearStudioPage = () => {
   const inputArchivoRef = useRef(null);
   const editorRef = useRef(null);
   const panelRef = useRef(null);
+  const panelScrollRef = useRef(null);
   // Lo del borrador va en refs: el autoguardado corre fuera del render (y
   // puede terminar después de salir del estudio).
   const designIdRef = useRef(designIdParam || null);
@@ -276,7 +278,7 @@ const CrearStudioPage = () => {
 
   const editandoAlgoAhora = Boolean(seleccionId) || multiIds.length > 1;
   useEffect(() => {
-    if (panelRef.current) panelRef.current.scrollTop = 0;
+    if (panelScrollRef.current) panelScrollRef.current.scrollTop = 0;
   }, [editandoAlgoAhora]);
 
   // En escritorio el panel ocupa justo el alto visible desde donde empieza
@@ -785,7 +787,12 @@ const CrearStudioPage = () => {
     medir();
     const ro = new ResizeObserver(medir);
     ro.observe(el);
-    return () => ro.disconnect();
+    const alCambiarAlto = () => setAltoVentana(window.innerHeight);
+    window.addEventListener('resize', alCambiarAlto);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', alCambiarAlto);
+    };
   }, [listo]);
 
   /** Marca en el lienzo cuál es la zona elegida, sin redibujar todo. */
@@ -836,8 +843,13 @@ const CrearStudioPage = () => {
         const anchoImg = img.naturalWidth;
         const altoImg = img.naturalHeight;
         const proporcion = altoImg / anchoImg;
-        // En pantallas bajas se limita el alto para que el lienzo quepa entero.
-        const altoMax = Math.max(260, window.innerHeight * (window.innerWidth <= 768 ? 0.5 : 0.78));
+        // El lienzo cabe entero en la pantalla. En escritorio, con lo que hay
+        // arriba (título, avisos, pestañas) y lo de abajo (deshacer, ayuda):
+        // con un 78 % fijo se pasaba del borde y había que bajar la página.
+        const altoMax = window.innerWidth <= 768
+          ? Math.max(260, window.innerHeight * 0.5)
+          : Math.max(380, window.innerHeight
+            - ((contenedorRef.current?.getBoundingClientRect().top || 0) + window.scrollY) - 110);
         const ancho = Math.min(anchoLienzo, Math.floor(altoMax / proporcion));
         const margen = ancho * 0.04;
         const iw = ancho - margen * 2;
@@ -921,7 +933,7 @@ const CrearStudioPage = () => {
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vista?.id, color?.id, anchoLienzo, version, listo]);
+  }, [vista?.id, color?.id, anchoLienzo, altoVentana, version, listo]);
 
   // ── Acciones ─────────────────────────────────────────────────────────────
   const centroDe = (z) => ({ left: UNIDADES_ZONA / 2, top: altoEnUnidades(z) / 2 });
@@ -2282,6 +2294,7 @@ const CrearStudioPage = () => {
         </section>
 
         <aside ref={panelRef} className={styles.panel}>
+          <div ref={panelScrollRef} className={styles.panelContenido}>
           {!editandoAlgo && (
           <>
           {/* Paso 1 — Color */}
@@ -2612,6 +2625,8 @@ const CrearStudioPage = () => {
             </div>
             <p className={styles.incluye}>Incluye la impresión de todos tus diseños, en las zonas que quieras.</p>
           </section>
+
+          </div>
 
           <div className={styles.acciones}>
             <button type="button" className={styles.botonPrincipal} onClick={agregarAlCarrito} disabled={!!procesando || agotado}>

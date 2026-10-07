@@ -250,25 +250,31 @@
   /* Sin esto la fila de tipos de letra (que se desliza de lado) estiraba la
      columna a su largo completo y, en el celular, toda la pantalla. */
   min-width: 0;
-  /* Fijo junto a la prenda y con su propio desplazamiento: así lo que se
-     elige en la prenda muestra sus opciones a la vista, sin bajar la página. */
+  /* Fijo junto a la prenda, con el alto de lo visible (lo pone el estudio):
+     arriba el contenido, que se desplaza solo; abajo la compra, siempre a
+     la vista y sin taparlo. */
   position: sticky;
   top: 90px;
   max-height: calc(100vh - 110px);
+  gap: 0;
+}
+
+.panelContenido {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 4px 0 2px;
+  padding: 0 6px 0.9rem 0;
   scrollbar-width: thin;
 }
 
-/* La compra queda siempre visible al pie del panel. */
 .panel > .acciones {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  padding: 0.75rem 0 0.25rem;
-  margin-top: auto;
-  background: linear-gradient(to top, var(--gris-fondo, #F8F7FB) 80%, transparent);
+  flex-shrink: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gris-borde);
 }
 
 .ayudaEditar {
@@ -736,7 +742,7 @@
 }
 
 .accionesSecundarias .botonSecundario {
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 0.6rem;
   font-size: 0.88rem;
   white-space: nowrap;
@@ -942,8 +948,12 @@
     position: static;
     gap: 0.75rem;
     max-height: none;
+  }
+
+  .panelContenido {
     overflow: visible;
     padding: 0;
+    gap: 0.75rem;
   }
 
   /* Barra de compra FIJA abajo (sticky quedaba atada al panel, que empieza
