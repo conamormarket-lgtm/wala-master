@@ -7,7 +7,7 @@ import { useProductThumbnailVariant } from '../../../hooks/useProductThumbnailVa
 import ComboProductImage from '../../Tienda/components/ComboProductImage/ComboProductImage';
 import { DomOverlay } from '../../Tienda/components/ComboProductImage/ComboProductImageWithDesign';
 import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedImage';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ImageOff } from 'lucide-react';
 import styles from '../MisCreacionesPage.module.css';
 import estilosEliminar from '../../Crear/EliminarCreacion.module.css';
 import NombreEditable from '../../Crear/NombreEditable';
@@ -15,11 +15,16 @@ import NombreEditable from '../../Crear/NombreEditable';
 const formatDate = (timestamp) => {
   if (!timestamp) return '—';
   try {
+    // Puede llegar como Timestamp de Firestore, como { seconds } (de caché),
+    // como texto o número, o como Date.
+    const segundos = timestamp.seconds ?? timestamp._seconds;
     const date = typeof timestamp.toDate === 'function'
       ? timestamp.toDate()
-      : timestamp.seconds
-        ? new Date(timestamp.seconds * 1000)
-        : null;
+      : segundos !== undefined
+        ? new Date(segundos * 1000)
+        : timestamp instanceof Date || typeof timestamp === 'string' || typeof timestamp === 'number'
+          ? new Date(timestamp)
+          : null;
     if (!date || isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('es-PE', {
       day: '2-digit',
@@ -38,8 +43,14 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
     enabled: !!design.productId
   });
 
-  const product = productResponse?.data;
+  const product = productResponse?.data || null;
   const isCombo = product?.isComboProduct || product?.comboItems?.length > 0;
+  // Las creaciones de Crear ya traen su imagen y sus datos: no esperan al
+  // producto. Un diseño sin producto (o con uno que ya no existe) se muestra
+  // igual, con su aviso, en vez de quedarse "cargando" para siempre.
+  const esDeCrear = design.tipo === 'crear';
+  const cargandoProducto = Boolean(design.productId) && isLoading;
+  const sinProducto = !cargandoProducto && !product;
   
   // Utilizar la lógica de miniaturas de la tienda
   const { thumbnailImageUrl } = useProductThumbnailVariant(product);
@@ -48,7 +59,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
   // eslint-disable-next-line no-unused-vars
   const handlePrefetch = () => {}; // Si deseamos prefetch
 
-  if (isLoading || !product) {
+  if (cargandoProducto && !esDeCrear) {
     return (
       <li className={`${styles.cardItem} ${styles.skeletonCard}`}>
         <div className={styles.skeletonThumb} />
@@ -66,7 +77,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
     ...product,
     comboItemCustomization: design.isUserComboDesign && design.comboItemCustomization 
       ? design.comboItemCustomization 
-      : product.comboItemCustomization
+      : product?.comboItemCustomization
   } : product;
 
   // Lógica de imágenes para productos normales
@@ -85,11 +96,11 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
   }
 
   // Precios
-  const priceDisplay = typeof product.price === 'number' ? `S/ ${product.price.toFixed(2)}` : '';
-  const salePriceDisplay = typeof product.salePrice === 'number' ? `S/ ${product.salePrice.toFixed(2)}` : '';
+  const priceDisplay = typeof product?.price === 'number' ? `S/ ${product.price.toFixed(2)}` : '';
+  const salePriceDisplay = typeof product?.salePrice === 'number' ? `S/ ${product.salePrice.toFixed(2)}` : '';
+  const nombreProducto = product?.name || design.productName || '';
 
   // Diseños del apartado Crear: otro editor y miniatura ya renderizada.
-  const esDeCrear = design.tipo === 'crear';
   const editarUrl = esDeCrear
     ? `/creacion/${design.id}`
     : `/editor/${design.productId || 'unknown'}?designId=${design.id}`;
@@ -107,12 +118,17 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
           <Trash2 size={17} aria-hidden="true" />
         </button>
       )}
+      {sinProducto && !esDeCrear ? (
+        <div className={styles.thumbWrapper} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', aspectRatio: '1', background: 'var(--gris-fondo, #F3F1F7)', color: 'var(--gris-texto-secundario)' }}>
+          <ImageOff size={36} aria-hidden="true" />
+        </div>
+      ) : (
       <Link to={editarUrl} className={styles.thumbWrapper} style={{ display: 'block', position: 'relative', background: '#fff' }}>
         {esDeCrear ? (
           <div style={{ position: 'relative', width: '100%', aspectRatio: '1', backgroundColor: '#fff' }}>
             <OptimizedImage
               src={design.imagenConjunta || design.previewUrl || cardImageUrl}
-              alt={design.productName || product.name}
+              alt={nombreProducto}
               objectFit="contain"
               className={styles.plainThumbImg}
               showSkeleton={false}
@@ -134,7 +150,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
              ) : (
                <OptimizedImage
                  src={toThumbnailImageUrl(cardImageUrl)}
-                 alt={design.productName || product.name}
+                 alt={nombreProducto}
                  objectFit="contain"
                  className={styles.plainThumbImg}
                  showSkeleton={false}
@@ -143,6 +159,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
           </div>
         )}
       </Link>
+      )}
       
       <div className={styles.cardBody}>
         <div className={styles.cardHeaderInfo} style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
@@ -162,7 +179,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
         </div>
         
         <div style={{ fontSize: '0.8125rem', color: 'var(--gris-texto-principal)', marginBottom: '0.25rem', fontWeight: 500 }}>
-          {product.name}
+          {sinProducto && !esDeCrear ? 'Este producto ya no está disponible' : nombreProducto}
         </div>
         
         <p className={styles.cardDate}>{formatDate(design.updatedAt || design.createdAt)}</p>
@@ -171,7 +188,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-               {product.salePrice ? (
+               {product?.salePrice ? (
                  <>
                    <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--rojo-secundario)' }}>{salePriceDisplay}</span>
                    <span style={{ fontSize: '0.8rem', textDecoration: 'line-through', color: 'var(--gris-texto-secundario)' }}>{priceDisplay}</span>
@@ -181,12 +198,14 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
                )}
             </div>
             
-            <Link
-              to={editarUrl}
-              className={styles.cardLink}
-            >
-              {esDeCrear ? 'Ver creación' : 'Seguir editando'}
-            </Link>
+            {sinProducto && !esDeCrear ? null : (
+              <Link
+                to={editarUrl}
+                className={styles.cardLink}
+              >
+                {esDeCrear ? 'Ver creación' : 'Seguir editando'}
+              </Link>
+            )}
         </div>
       </div>
     </li>
