@@ -225,7 +225,10 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
               // queda intacto y el hero luego entra con su propia transición.
               : {
                   position: 'fixed', top: contentTop, left: 0, right: 0, bottom: 0,
-                  zIndex: 99999, transformOrigin: 'center',
+                  // Justo debajo del header (z-index 100): tapa el contenido
+                  // pero no los menús del header (Marcas, Tienda, cuenta…),
+                  // que bajan por encima de esta zona y quedaban cortados.
+                  zIndex: 99, transformOrigin: 'center',
                   pointerEvents: effectiveShow ? 'auto' : 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   // Fondo por TEMA: antes estaba hardcodeado en blanco y en modo
@@ -253,7 +256,12 @@ const BrandLoaderOverlay = ({ show, relevo = false }) => {
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body
+    // El círculo va DENTRO de .App: .App es `isolation: isolate`
+    // (globals.css), así que todo lo de la página —header y sus menús
+    // incluidos— es una sola capa, y un overlay suelto en <body> la tapa
+    // entera con cualquier z-index. Adentro, su z-index 99 lo deja bajo el
+    // header (100) y sobre el contenido. El splash de marca sí cubre todo.
+    (!useBrand && document.querySelector('.App')) || document.body
   );
 };
 
