@@ -451,6 +451,17 @@ const Header = () => {
   }, [location.pathname]);
 
 
+  // Los menús de cuenta, favoritos y carrito bajan desde el header: que no
+  // pasen del borde de la pantalla (con el resto, scroll propio). El header
+  // es sticky, así que el espacio libre depende de dónde esté al abrirlos.
+  const ajustarAltoPopup = (e) => {
+    const contenedor = e.currentTarget;
+    const popup = contenedor.querySelector(`.${styles.accountPopup}`);
+    if (!popup) return;
+    const tope = contenedor.getBoundingClientRect().bottom + 5;
+    popup.style.setProperty('--popup-alto-max', `${Math.max(240, window.innerHeight - tope - 16)}px`);
+  };
+
   const closeDropdowns = () => {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     setMobileMenuOpen(false);
@@ -854,7 +865,7 @@ const Header = () => {
               veces. Notificaciones/favoritos/carrito sí volvieron: esos NO
               tenían otro acceso igual de directo en móvil. */}
           {!isNativeApp && (
-          <div className={`${styles.accountDropdownContainer} ${styles.mobileHiddenAction} ${activeDropdown === 'cuenta' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'cuenta' ? styles.forceHideHover : ''}`}>
+          <div className={`${styles.accountDropdownContainer} ${styles.mobileHiddenAction} ${activeDropdown === 'cuenta' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'cuenta' ? styles.forceHideHover : ''}`} onMouseEnter={ajustarAltoPopup} onFocus={ajustarAltoPopup}>
             {/* El ícono de perfil ABRE el menú desplegable (con Mi Perfil,
                 Pedidos, Ajustes, Cerrar sesión, etc.) en vez de navegar a
                 /cuenta: al hacer click, el usuario espera elegir una opción,
@@ -1026,7 +1037,7 @@ const Header = () => {
           </div>
           )}
 
-          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`}>
+          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'favoritos' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'favoritos' ? styles.forceHideHover : ''}`} onMouseEnter={ajustarAltoPopup} onFocus={ajustarAltoPopup}>
             <Link to={user ? "/cuenta/wishlist" : "/login"} className={styles.iconButton} onClick={closeDropdowns} aria-label="Favoritos">
               <Heart strokeWidth={1.5} className={styles.icon} />
               {user && wishlistItems.length > 0 && (
@@ -1177,7 +1188,7 @@ const Header = () => {
             </div>
           </div>
 
-          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'carrito' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'carrito' ? styles.forceHideHover : ''}`}>
+          <div className={`${styles.accountDropdownContainer} ${activeDropdown === 'carrito' ? styles.activeDropdown : ''} ${activeDropdown && activeDropdown !== 'carrito' ? styles.forceHideHover : ''}`} onMouseEnter={ajustarAltoPopup} onFocus={ajustarAltoPopup}>
             <Link to="/carrito" className={styles.iconButton} onClick={closeDropdowns} aria-label="Carrito de compras">
               <ShoppingBag strokeWidth={1.5} className={styles.icon} />
               {cartItemsCount > 0 && (

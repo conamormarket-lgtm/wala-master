@@ -607,6 +607,11 @@
   border: 1px solid var(--gris-borde, #eaeaea);
   z-index: 102;
   margin-top: 5px;
+  /* Hasta el borde de la pantalla (lo mide ajustarAltoPopup en Header.jsx);
+     lo que no entra se ve con scroll dentro del menú. */
+  max-height: var(--popup-alto-max, calc(100vh - 140px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .accountDropdownContainer::before {
