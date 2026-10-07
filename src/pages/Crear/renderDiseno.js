@@ -351,20 +351,38 @@ const aImagen = (blob) => new Promise((resolve, reject) => {
   img.src = url;
 });
 
+/** Logo de Walá (mismo dominio: no bloquea el lienzo al exportarlo). */
+const LOGO_WALA = '/logo-wala-192.png';
+
+/** El logo ya cargado, o null si no se pudo (la imagen sale igual, sin él). */
+const cargarLogo = () => new Promise((resolve) => {
+  const img = new Image();
+  img.onload = () => resolve(img);
+  img.onerror = () => resolve(null);
+  img.src = LOGO_WALA;
+});
+
 /**
  * Une las vistas previas (frente, espalda...) en una sola imagen, una al lado
  * de la otra y con su nombre encima. Es la imagen que el cliente descarga y
  * la que acompaña al pedido para ver la prenda completa de un vistazo.
+ * Lleva el logo de Walá en la esquina inferior derecha ("Creado en wala.pe")
+ * para que se sepa de dónde es el diseño cuando se comparte.
  */
 export const componerVistas = async (piezas, { titulo = '' } = {}) => {
-  const cargadas = await Promise.all(piezas.map(async (p) => ({ ...p, ...(await aImagen(p.blob)) })));
+  const [cargadas, logo] = await Promise.all([
+    Promise.all(piezas.map(async (p) => ({ ...p, ...(await aImagen(p.blob)) }))),
+    cargarLogo(),
+  ]);
   try {
     const margen = 40;
     const separacion = 24;
     const cabecera = titulo ? 120 : 76;
+    const tamLogo = 76;
+    const pie = logo ? tamLogo + 32 : 0;
     const altoPieza = Math.max(...cargadas.map((p) => p.img.naturalHeight));
     const ancho = cargadas.reduce((acc, p) => acc + p.img.naturalWidth, 0) + separacion * (cargadas.length - 1) + margen * 2;
-    const alto = altoPieza + cabecera + margen;
+    const alto = altoPieza + cabecera + margen + pie;
     const canvas = document.createElement('canvas');
     canvas.width = ancho;
     canvas.height = alto;
@@ -386,6 +404,15 @@ export const componerVistas = async (piezas, { titulo = '' } = {}) => {
       ctx.drawImage(p.img, x, cabecera + (altoPieza - p.img.naturalHeight) / 2);
       x += p.img.naturalWidth + separacion;
     });
+    if (logo) {
+      const lx = ancho - margen - tamLogo;
+      const ly = alto - margen / 2 - tamLogo;
+      ctx.drawImage(logo, lx, ly, tamLogo, tamLogo);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#3C3489';
+      ctx.font = '700 30px Montserrat, Arial, sans-serif';
+      ctx.fillText('Creado en wala.pe', lx - 16, ly + tamLogo / 2);
+    }
     return await aBlob(canvas, 'image/jpeg', 0.9);
   } finally {
     cargadas.forEach((p) => URL.revokeObjectURL(p.url));
