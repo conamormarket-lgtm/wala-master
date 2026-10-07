@@ -163,6 +163,10 @@ const CrearStudioPage = () => {
   const [seleccionId, setSeleccionId] = useState(null);
   // Varios elementos elegidos a la vez (2 o más): Shift + clic, recuadro o Ctrl+A.
   const [multiIds, setMultiIds] = useState([]);
+  // "Cargando tu diseño…" sobre la prenda: la primera vez, y si un redibujo
+  // tarda (fotos o imágenes que bajan de internet).
+  const [cargandoLienzo, setCargandoLienzo] = useState(true);
+  const primerDibujoRef = useRef(true);
   const [version, setVersion] = useState(0);
   const [listo, setListo] = useState(false);
   const [anchoLienzo, setAnchoLienzo] = useState(0);
@@ -767,90 +771,114 @@ const CrearStudioPage = () => {
   useEffect(() => { pintarGuias(); }, [zona?.id, pintarGuias]);
 
   // Redibuja todo al cambiar de vista, de color, de tamaño o de estructura.
+  // Primero se prepara todo (foto, zonas e imágenes del diseño) y después se
+  // cambia el lienzo de una sola vez: antes se veía a medio armar, con las
+  // zonas negras (sin estilo) mientras bajaban las imágenes.
   useEffect(() => {
     const lienzo = fabricRef.current;
     if (!lienzo || !vista || !color || anchoLienzo < 50) return;
     const token = ++tokenRef.current;
+    const avisoTardanza = setTimeout(() => {
+      if (token === tokenRef.current) setCargandoLienzo(true);
+    }, primerDibujoRef.current ? 0 : 300);
     (async () => {
-      let img;
       try {
-        img = await cargarImagen(fotoDeVista(vista, color));
-      } catch {
-        if (token === tokenRef.current) toast.error('No pudimos cargar la foto de la prenda.');
-        return;
-      }
-      if (token !== tokenRef.current) return;
-      const fuente = requiereTenido(vista, color) ? tintarImagen(img, color.hex) : img;
+        let img;
+        try {
+          img = await cargarImagen(fotoDeVista(vista, color));
+        } catch {
+          if (token === tokenRef.current) toast.error('No pudimos cargar la foto de la prenda.');
+          return;
+        }
+        if (token !== tokenRef.current) return;
+        const fuente = requiereTenido(vista, color) ? tintarImagen(img, color.hex) : img;
 
-      const anchoImg = img.naturalWidth;
-      const altoImg = img.naturalHeight;
-      const proporcion = altoImg / anchoImg;
-      // En pantallas bajas se limita el alto para que el lienzo quepa entero.
-      const altoMax = Math.max(260, window.innerHeight * (window.innerWidth <= 768 ? 0.5 : 0.78));
-      const ancho = Math.min(anchoLienzo, Math.floor(altoMax / proporcion));
-      const margen = ancho * 0.04;
-      const iw = ancho - margen * 2;
-      const ih = iw * proporcion;
-      lienzo.setDimensions({ width: ancho, height: Math.round(ih + margen * 2) });
-      // clear() suelta la selección (y avisa "selection:cleared"): se recuerda
-      // cuál estaba elegida para volver a elegirla al terminar.
-      const elegida = seleccionRef.current;
-      const elegidos = multiRef.current.slice();
-      lienzo.clear();
-      lienzo.backgroundColor = null;
+        const anchoImg = img.naturalWidth;
+        const altoImg = img.naturalHeight;
+        const proporcion = altoImg / anchoImg;
+        // En pantallas bajas se limita el alto para que el lienzo quepa entero.
+        const altoMax = Math.max(260, window.innerHeight * (window.innerWidth <= 768 ? 0.5 : 0.78));
+        const ancho = Math.min(anchoLienzo, Math.floor(altoMax / proporcion));
+        const margen = ancho * 0.04;
+        const iw = ancho - margen * 2;
+        const ih = iw * proporcion;
+        const transforms = {};
+        vista.zonas.forEach((z) => {
+          transforms[z.id] = transformDeZona(z, { ox: margen, oy: margen, iw, ih, anchoImg, altoImg });
+        });
 
-      lienzo.add(new fabric.Image(fuente, {
-        left: margen, top: margen, scaleX: iw / anchoImg, scaleY: ih / altoImg,
-        selectable: false, evented: false, objectCaching: false,
-      }));
-
-      // Primero todas las guías (debajo), después los diseños de cada zona.
-      const transforms = {};
-      vista.zonas.forEach((z) => {
-        const t = transformDeZona(z, { ox: margen, oy: margen, iw, ih, anchoImg, altoImg });
-        transforms[z.id] = t;
-        lienzo.add(rectDeZona(t, { selectable: false, evented: true, hoverCursor: 'pointer', guiaZona: z.id }));
-      });
-      transformsRef.current = transforms;
-
-      for (const z of vista.zonas) {
-        for (const capa of capasRef.current[z.id] || []) {
-          let obj;
-          try {
-            obj = await crearObjeto(capa, transforms[z.id], srcDe, { editable: CON_MOUSE });
-          } catch {
-            continue;
+        // Los diseños de cada zona, listos antes de tocar el lienzo.
+        const objetos = [];
+        for (const z of vista.zonas) {
+          for (const capa of capasRef.current[z.id] || []) {
+            let obj;
+            try {
+              obj = await crearObjeto(capa, transforms[z.id], srcDe, { editable: CON_MOUSE });
+            } catch {
+              continue;
+            }
+            if (token !== tokenRef.current) return;
+            obj.capaId = capa.id;
+            obj.zonaId = z.id;
+            obj.clipPath = recorteDeZona(transforms[z.id]);
+            estilizar(obj);
+            objetos.push(obj);
           }
-          if (token !== tokenRef.current) return;
-          obj.capaId = capa.id;
-          obj.zonaId = z.id;
-          obj.clipPath = recorteDeZona(transforms[z.id]);
-          estilizar(obj);
-          lienzo.add(obj);
+        }
+        if (token !== tokenRef.current) return;
+
+        // De una sola vez (sin dibujar entre medio).
+        lienzo.renderOnAddRemove = false;
+        lienzo.setDimensions({ width: ancho, height: Math.round(ih + margen * 2) });
+        // clear() suelta la selección (y avisa "selection:cleared"): se recuerda
+        // cuál estaba elegida para volver a elegirla al terminar.
+        const elegida = seleccionRef.current;
+        const elegidos = multiRef.current.slice();
+        lienzo.clear();
+        lienzo.backgroundColor = null;
+        lienzo.add(new fabric.Image(fuente, {
+          left: margen, top: margen, scaleX: iw / anchoImg, scaleY: ih / altoImg,
+          selectable: false, evented: false, objectCaching: false,
+        }));
+        // Primero las guías (debajo, ya transparentes), después los diseños.
+        vista.zonas.forEach((z) => {
+          lienzo.add(rectDeZona(transforms[z.id], {
+            selectable: false, evented: true, hoverCursor: 'pointer', guiaZona: z.id, fill: 'rgba(0,0,0,0.001)', strokeWidth: 0,
+          }));
+        });
+        transformsRef.current = transforms;
+        objetos.forEach((obj) => lienzo.add(obj));
+        pintarGuias();
+        const grupo = elegidos.map((capaId) => objetoDe(capaId)).filter(Boolean);
+        if (grupo.length > 1) {
+          const seleccion = new fabric.ActiveSelection(grupo, { canvas: lienzo });
+          estilizarGrupo(seleccion);
+          lienzo.setActiveObject(seleccion);
+        }
+        const sel = grupo.length > 1 ? null : grupo[0] || objetoDe(elegida);
+        if (sel) {
+          lienzo.setActiveObject(sel);
+          revisarLimites(sel);
+          // Texto recién creado con el mouse o con T: se escribe de una vez.
+          if (editarAlCrearRef.current === sel.capaId && sel.enterEditing) {
+            accionesRef.current.mantenerEnZona?.(sel.capaId);
+            sel.enterEditing();
+            sel.selectAll();
+          }
+        }
+        editarAlCrearRef.current = null;
+        hoverRef.current = null;
+        lienzo.renderOnAddRemove = true;
+        lienzo.requestRenderAll();
+        primerDibujoRef.current = false;
+      } finally {
+        // Aunque algo falle a mitad, el lienzo vuelve a dibujar normal.
+        lienzo.renderOnAddRemove = true;
+        if (token === tokenRef.current) {
+          clearTimeout(avisoTardanza);
+          setCargandoLienzo(false);
         }
       }
-      if (token !== tokenRef.current) return;
-      pintarGuias();
-      const grupo = elegidos.map((capaId) => objetoDe(capaId)).filter(Boolean);
-      if (grupo.length > 1) {
-        const seleccion = new fabric.ActiveSelection(grupo, { canvas: lienzo });
-        estilizarGrupo(seleccion);
-        lienzo.setActiveObject(seleccion);
-      }
-      const sel = grupo.length > 1 ? null : grupo[0] || objetoDe(elegida);
-      if (sel) {
-        lienzo.setActiveObject(sel);
-        revisarLimites(sel);
-        // Texto recién creado con el mouse o con T: se escribe de una vez.
-        if (editarAlCrearRef.current === sel.capaId && sel.enterEditing) {
-          accionesRef.current.mantenerEnZona?.(sel.capaId);
-          sel.enterEditing();
-          sel.selectAll();
-        }
-      }
-      editarAlCrearRef.current = null;
-      hoverRef.current = null;
-      lienzo.requestRenderAll();
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vista?.id, color?.id, anchoLienzo, version, listo]);
@@ -2034,8 +2062,14 @@ const CrearStudioPage = () => {
             </div>
           )}
 
-          <div ref={contenedorRef} className={styles.lienzoCaja}>
+          <div ref={contenedorRef} className={styles.lienzoCaja} aria-busy={cargandoLienzo}>
             <canvas ref={canvasElRef} />
+            {cargandoLienzo && (
+              <div className={`${styles.cargandoLienzo} ${primerDibujoRef.current ? styles.cargandoPrimero : ''}`} role="status">
+                <Loader2 size={26} className={styles.girando} aria-hidden="true" />
+                <span>Cargando tu diseño…</span>
+              </div>
+            )}
             {soltando && (
               <div className={styles.soltarAqui} aria-hidden="true">
                 <ImagePlus size={28} />

@@ -1044,3 +1044,30 @@
   border-color: var(--primary-color);
   color: var(--primary-color);
 }
+
+/* ── Cargando la prenda y el diseño ────────────────────────────────────── */
+.cargandoLienzo {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--lienzo-fondo, #F3F1F7) 70%, transparent);
+  backdrop-filter: blur(2px);
+  color: var(--gris-texto-secundario);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.cargandoLienzo svg {
+  color: var(--primary-color);
+}
+
+/* La primera vez el lienzo está vacío: fondo entero, sin transparencia. */
+.cargandoPrimero {
+  background: var(--lienzo-fondo, #F3F1F7);
+}
