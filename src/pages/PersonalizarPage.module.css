@@ -11,13 +11,87 @@
   box-sizing: border-box;
 }
 
-/* ── Hero ── */
+/* ── Hero ──
+   Banner de Kapi diseñando (public/crear/banner-crear.webp). En escritorio
+   es el fondo y el texto va en su lado libre (derecha); en el celular es
+   una franja arriba y el texto va debajo. */
 .hero {
-  text-align: center;
+  position: relative;
+  overflow: hidden;
   margin-bottom: 2.5rem;
-  padding: 2.25rem 1.5rem 1.75rem;
   background: var(--primary-light);
   border-radius: 24px;
+}
+
+.heroArte {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+}
+
+.heroTexto {
+  position: relative;
+}
+
+@media (min-width: 769px) {
+  .hero {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    aspect-ratio: 3 / 1;
+    min-height: 330px;
+    background: #EEE6FD;
+  }
+
+  .heroArte {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    /* Kapi está a la izquierda: si el banner se recorta, que sea por la
+       derecha (el fondo liso). */
+    object-position: left center;
+  }
+
+  .heroTexto {
+    width: 52%;
+    padding: 1.75rem clamp(1.5rem, 4vw, 3.25rem) 1.75rem 0.5rem;
+  }
+
+  /* La imagen es clara en los dos temas: el texto va siempre oscuro. */
+  .hero .title {
+    color: #1F1534;
+    font-size: clamp(1.9rem, 3.2vw, 2.6rem);
+  }
+
+  .hero .subtitle {
+    color: #4A4360;
+    margin: 0;
+  }
+
+  /* Uno debajo del otro: en fila, en el ancho del lado libre, quedaban
+     dos arriba y uno solo abajo. */
+  .hero .pasos {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7rem;
+    margin-top: 1.25rem;
+  }
+
+  .hero .pasoTexto {
+    color: #4A4360;
+    /* El último paso cae sobre la ola violeta del fondo: un halo claro
+       lo mantiene legible. */
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 2px rgba(255, 255, 255, 0.9);
+  }
+
+  .hero .pasoTexto strong {
+    color: #1F1534;
+  }
+
+  .hero .pasoIcono {
+    background: #fff;
+    box-shadow: 0 4px 12px -6px rgba(91, 33, 182, 0.45);
+  }
 }
 
 .title {
@@ -383,9 +457,19 @@
   }
 
   .hero {
-    padding: 1.75rem 1.1rem 1.4rem;
+    text-align: center;
     margin-bottom: 1.5rem;
     border-radius: 20px;
+  }
+
+  /* Franja con Kapi y la prenda (el lado izquierdo del banner). */
+  .heroArte {
+    height: 150px;
+    object-position: 12% center;
+  }
+
+  .heroTexto {
+    padding: 1.25rem 1.1rem 1.4rem;
   }
 
   .title {

@@ -126,21 +126,35 @@ const PersonalizarPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.hero}>
-        <h1 className={styles.title}><T>Crea tu prenda</T></h1>
-        <p className={styles.subtitle}>
-          <T>Elige una prenda, ponle tu imagen o tu frase y la imprimimos para ti.</T>
-        </p>
-        <ol className={styles.pasos}>
-          {PASOS.map(({ icono: Icono, titulo, texto }, i) => (
-            <li key={titulo} className={styles.paso}>
-              <span className={styles.pasoIcono}><Icono size={20} aria-hidden="true" /></span>
-              <span className={styles.pasoTexto}>
-                <strong>{i + 1}. <T>{titulo}</T></strong>
-                <span><T>{texto}</T></span>
-              </span>
-            </li>
-          ))}
-        </ol>
+        {/* Kapi diseñando: de fondo en escritorio (el texto va en el lado
+            libre, a la derecha); en el celular, una franja arriba. */}
+        <img
+          className={styles.heroArte}
+          src="/crear/banner-crear.webp"
+          srcSet="/crear/banner-crear-1200.webp 1200w, /crear/banner-crear.webp 2172w"
+          sizes="(max-width: 768px) 100vw, 1136px"
+          alt=""
+          aria-hidden="true"
+          width="2172"
+          height="724"
+        />
+        <div className={styles.heroTexto}>
+          <h1 className={styles.title}><T>Crea tu prenda</T></h1>
+          <p className={styles.subtitle}>
+            <T>Elige una prenda, ponle tu imagen o tu frase y la imprimimos para ti.</T>
+          </p>
+          <ol className={styles.pasos}>
+            {PASOS.map(({ icono: Icono, titulo, texto }, i) => (
+              <li key={titulo} className={styles.paso}>
+                <span className={styles.pasoIcono}><Icono size={20} aria-hidden="true" /></span>
+                <span className={styles.pasoTexto}>
+                  <strong>{i + 1}. <T>{titulo}</T></strong>
+                  <span><T>{texto}</T></span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
 
       {user && <TusBorradores uid={user.uid} />}
