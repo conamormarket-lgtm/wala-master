@@ -156,7 +156,9 @@ const CrearStudioPage = () => {
   const [procesando, setProcesando] = useState(null);
   const [designId, setDesignId] = useState(designIdParam || null);
   const [pedirLogin, setPedirLogin] = useState(false);
-  const [avisoTalla, setAvisoTalla] = useState(false);
+  // La talla se elige al agregar al carrito (el estudio es solo para el diseño).
+  const [pidiendoTalla, setPidiendoTalla] = useState(false);
+  const [tallaCompra, setTallaCompra] = useState('');
   const [fueraDeZona, setFueraDeZona] = useState(false);
   const [recortando, setRecortando] = useState(null);
   const [quitandoFondo, setQuitandoFondo] = useState(null);
@@ -190,7 +192,6 @@ const CrearStudioPage = () => {
   const localSrcRef = useRef(new Map());
   const tokenRef = useRef(0);
   const inputArchivoRef = useRef(null);
-  const tallasRef = useRef(null);
   // Lo del borrador va en refs: el autoguardado corre fuera del render (y
   // puede terminar después de salir del estudio).
   const designIdRef = useRef(designIdParam || null);
@@ -1320,17 +1321,17 @@ const CrearStudioPage = () => {
    * Genera y guarda la creación del cliente (en su cuenta, no en la
    * plantilla). Si venía de un borrador, el borrador pasa a ser la creación.
    */
-  const guardarCreacion = async (nombreCreacion) => {
+  const guardarCreacion = async (nombreCreacion, tallaElegida = talla) => {
     await terminarBorrador();
     guardandoRef.current = true;
     try {
-      return await generarYGuardar(nombreCreacion);
+      return await generarYGuardar(nombreCreacion, tallaElegida);
     } finally {
       guardandoRef.current = false;
     }
   };
 
-  const generarYGuardar = async (nombreCreacion) => {
+  const generarYGuardar = async (nombreCreacion, tallaElegida) => {
     const designIdActual = designIdRef.current;
     const capas = capasParaGuardar(capasRef.current);
     const archivos = await generarArchivos(capas);
@@ -1341,7 +1342,7 @@ const CrearStudioPage = () => {
       productName: prenda.name,
       name: (nombreCreacion || '').trim() || nombrePorDefecto(),
       layersByView: capas,
-      variant: { size: talla, color: color.nombre },
+      variant: { size: tallaElegida, color: color.nombre },
       tipo: 'crear',
       estado: 'guardada',
       miniatura: '',
@@ -1364,7 +1365,7 @@ const CrearStudioPage = () => {
     queryClient.removeQueries({ queryKey: ['creacion', idFinal] });
     setNombre(creacion.name);
     setFirmaGuardada(firmaDiseno(capasRef.current, color.id));
-    tallaGuardadaRef.current = talla;
+    tallaGuardadaRef.current = tallaElegida;
     // Ya está guardada: la próxima vez la plantilla se abre limpia.
     try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
     return { ...creacion, id: idFinal };
@@ -1392,19 +1393,24 @@ const CrearStudioPage = () => {
     }
   };
 
-  const agregarAlCarrito = async () => {
-    if (agotado) return;
-    if (tallas.length && !talla) {
-      setAvisoTalla(true);
-      tallasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      toast.info('Elige tu talla.');
+  /** "Agregar al carrito": primero se elige la talla (con la última ya marcada). */
+  const agregarAlCarrito = () => {
+    if (agotado || !validar()) return;
+    if (tallas.length) {
+      setTallaCompra(tallas.includes(talla) ? talla : '');
+      setPidiendoTalla(true);
       return;
     }
-    if (!validar()) return;
+    comprar('');
+  };
+
+  const comprar = async (tallaElegida) => {
+    setPidiendoTalla(false);
+    setTalla(tallaElegida);
     try {
-      const creacion = await guardarCreacion(nombre);
+      const creacion = await guardarCreacion(nombre, tallaElegida);
       setProcesando('Agregando al carrito…');
-      addToCart(...itemDeCreacion({ prenda, creacion, talla }));
+      addToCart(...itemDeCreacion({ prenda, creacion, talla: tallaElegida }));
       try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
       navigate('/carrito');
     } catch (err) {
@@ -1416,7 +1422,7 @@ const CrearStudioPage = () => {
 
   // ── Atajos de teclado ────────────────────────────────────────────────────
   // Las ventanas (recortar, quitar fondo, guardar…) manejan sus propias teclas.
-  const ventanaAbierta = Boolean(recortando || quitandoFondo || dialogoGuardar || pedirLogin || guardada || procesando || menu);
+  const ventanaAbierta = Boolean(recortando || quitandoFondo || dialogoGuardar || pidiendoTalla || pedirLogin || guardada || procesando || menu);
   const escribiendo = () => {
     const el = document.activeElement;
     return ['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName) || Boolean(el?.isContentEditable);
@@ -1433,6 +1439,10 @@ const CrearStudioPage = () => {
     }
     if (dialogoGuardar && e.key === 'Escape') {
       setDialogoGuardar(false);
+      return;
+    }
+    if (pidiendoTalla && e.key === 'Escape') {
+      setPidiendoTalla(false);
       return;
     }
     if (ventanaAbierta) return;
@@ -1669,7 +1679,7 @@ const CrearStudioPage = () => {
         </Link>
         <div className={styles.tituloBloque}>
           <h1 className={styles.titulo}>{prenda.name}</h1>
-          <span className={styles.subtitulo}>{color.nombre}{talla ? ` · Talla ${talla}` : ''}</span>
+          <span className={styles.subtitulo}>{color.nombre}</span>
         </div>
         <span className={styles.precioMovil}>{soles(total)}</span>
         {user && (
@@ -2001,27 +2011,6 @@ const CrearStudioPage = () => {
             </div>
           </section>
 
-          {tallas.length > 0 && (
-            <section ref={tallasRef} className={styles.seccion} aria-label="Talla">
-              <h2 className={styles.seccionTitulo}>
-                Talla {talla && <span className={styles.valor}>{talla}</span>}
-              </h2>
-              <div className={styles.tallas}>
-                {tallas.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    aria-pressed={t === talla}
-                    className={`${styles.talla} ${t === talla ? styles.tallaActiva : ''}`}
-                    onClick={() => { setTalla(t); setAvisoTalla(false); }}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-              {avisoTalla && <p className={styles.avisoTalla}>Elige una talla para continuar.</p>}
-            </section>
-          )}
 
           <section className={`${styles.seccion} ${styles.resumen}`} aria-label="Resumen de precio">
             <div className={styles.lineaPrecio}><span>{prenda.name} personalizada</span><span>{soles(base)}</span></div>
@@ -2082,6 +2071,38 @@ const CrearStudioPage = () => {
       {verAtajos && <AtajosTeclado vistas={cfg.vistas} onCerrar={() => setVerAtajos(false)} />}
 
       {menu && <MenuContextual x={menu.x} y={menu.y} items={opcionesMenu()} onCerrar={cerrarMenu} />}
+
+      {pidiendoTalla && (
+        <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-talla-titulo" onClick={() => setPidiendoTalla(false)}>
+          <form
+            className={styles.cajaBloqueo}
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => { e.preventDefault(); if (tallaCompra) comprar(tallaCompra); }}
+          >
+            <h2 id="crear-talla-titulo" className={styles.estadoTitulo}>¿Qué talla quieres?</h2>
+            <p>{prenda.name} · {color.nombre}</p>
+            <div className={`${styles.tallas} ${styles.tallasDialogo}`} role="radiogroup" aria-label="Talla">
+              {tallas.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={t === tallaCompra}
+                  className={`${styles.talla} ${t === tallaCompra ? styles.tallaActiva : ''}`}
+                  onClick={() => setTallaCompra(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <button type="submit" className={styles.botonPrincipal} disabled={!tallaCompra}>
+              <ShoppingBag size={18} aria-hidden="true" />
+              Agregar al carrito · {soles(total)}
+            </button>
+            <button type="button" className={styles.botonTexto} onClick={() => setPidiendoTalla(false)}>Cancelar</button>
+          </form>
+        </div>
+      )}
 
       {dialogoGuardar && (
         <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardar-titulo" onClick={() => setDialogoGuardar(false)}>
