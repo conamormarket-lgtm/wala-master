@@ -4,7 +4,7 @@ import { uploadFile } from '../../../services/firebase/storage';
 import {
   leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
   nuevoIdZona, slug, cargarImagen, tintarImagen,
-  colorDisponible, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
+  colorDisponible, fondoMuestra, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
 } from '../../../utils/prendaBase';
 import ZonaEditor from './ZonaEditor';
 import styles from './PersonalizacionPrenda.module.css';
@@ -183,7 +183,7 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                 key={c.id}
                 type="button"
                 className={`${styles.punto} ${(colorPrevio || colorInicial) === c.id ? styles.puntoActivo : ''}`}
-                style={{ background: c.hex2 ? `linear-gradient(135deg, ${c.hex} 50%, ${c.hex2} 50%)` : c.hex }}
+                style={{ background: fondoMuestra(c) }}
                 title={c.nombre}
                 aria-label={c.nombre}
                 onClick={() => setColorPrevio(c.id)}
@@ -395,7 +395,7 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                   <div className={styles.colorFila}>
                     <span
                       className={styles.muestra}
-                      style={{ background: c.hex2 ? `linear-gradient(135deg, ${c.hex} 50%, ${c.hex2} 50%)` : c.hex }}
+                      style={{ background: fondoMuestra(c) }}
                       aria-hidden="true"
                     />
                     <strong className={styles.nombreColor}>{c.nombre}</strong>

@@ -269,6 +269,16 @@ export const tallasDeColor = (color, cfg) => (color?.tallas?.length ? ordenTalla
 export const colorDisponible = (color, vistas) =>
   !color.hex2 || vistas.every((v) => Boolean(color.fotos[v.id]));
 
+/**
+ * Fondo de la muestra redonda de un color. Un bicolor va partido en diagonal:
+ * con un borde de 1px suavizado (si no, la línea sale en escalera) y pintado
+ * también bajo el borde, sin repetirse (si no, en el borde asoma el otro
+ * color y el círculo se ve mordido).
+ */
+export const fondoMuestra = (c) => (c.hex2
+  ? `linear-gradient(135deg, ${c.hex} calc(50% - 0.5px), ${c.hex2} calc(50% + 0.5px)) border-box no-repeat`
+  : c.hex);
+
 export const esPrendaBase = (producto) => producto?.esPrendaBase === true;
 
 /** Alto de la zona como fracción del alto de la imagen. */

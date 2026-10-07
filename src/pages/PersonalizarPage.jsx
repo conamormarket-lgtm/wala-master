@@ -5,7 +5,7 @@ import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush } from 'lucide-react
 import { getPrendasBase } from '../services/prendasBase';
 import { getDesignsByUser } from '../services/designs';
 import { useAuth } from '../contexts/AuthContext';
-import { leerPrendaBase, precioBase, colorDisponible } from '../utils/prendaBase';
+import { leerPrendaBase, precioBase, colorDisponible, fondoMuestra } from '../utils/prendaBase';
 import { useEliminarCreacion } from './Crear/useEliminarCreacion';
 import TusBorradores, { useBorradoresCrear } from './Crear/TusBorradores';
 import FilaCarrusel from './Crear/FilaCarrusel';
@@ -43,7 +43,7 @@ const TarjetaPrenda = ({ prenda }) => {
             <span
               key={c.id}
               className={styles.punto}
-              style={{ background: c.hex2 ? `linear-gradient(135deg, ${c.hex} 50%, ${c.hex2} 50%)` : c.hex }}
+              style={{ background: fondoMuestra(c) }}
               title={c.nombre}
             />
           ))}

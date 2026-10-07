@@ -18,7 +18,7 @@ import {
 import {
   UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
   calidadDeCapa, medidaZona, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
-  colorDisponible, tallasDeColor, slug,
+  colorDisponible, tallasDeColor, slug, fondoMuestra,
 } from '../../utils/prendaBase';
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
@@ -2562,7 +2562,7 @@ const CrearStudioPage = () => {
                   key={c.id}
                   type="button"
                   className={`${styles.colorPrenda} ${c.id === color.id ? styles.colorPrendaActivo : ''}`}
-                  style={{ background: c.hex2 ? `linear-gradient(135deg, ${c.hex} 50%, ${c.hex2} 50%)` : c.hex }}
+                  style={{ background: fondoMuestra(c) }}
                   aria-label={c.nombre}
                   aria-pressed={c.id === color.id}
                   title={c.nombre}
