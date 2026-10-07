@@ -946,9 +946,9 @@
     display: none;
   }
 
-  /* En el celular los gestos los explica la guía (y la prenda vacía tiene
-     "Empieza tu diseño"): la ayuda bajo la prenda solo quitaba espacio. */
-  .zonaInfo {
+  /* Editando algo, la ayuda bajo la prenda se oculta (la barra rápida ya
+     está ahí); sin nada elegido sí se ve: es la que dice qué hacer. */
+  .enfoque .zonaInfo {
     display: none;
   }
 
@@ -1474,6 +1474,69 @@
 
 .rapidas + .botonAtajos {
   margin-left: 0.4rem;
+}
+
+/* Con algo elegido la barra lleva más botones: "Deshacer" queda solo con su
+   ícono y "Atajos" se oculta (se abren igual con "?"); si aun así no entra,
+   pasa a dos filas. */
+.barraConSeleccion .textoBarra,
+.barraConSeleccion .botonAtajos {
+  display: none;
+}
+
+.barraLienzo {
+  flex-wrap: wrap;
+  row-gap: 0.4rem;
+}
+
+/* "+ Imagen" y "+ Texto" junto a la prenda. */
+.agregarRapido {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.rapidas + .agregarRapido {
+  margin-left: 0.4rem;
+  padding-left: 0.4rem;
+  border-left: 1px solid var(--gris-borde);
+}
+
+.agregarRapido + .botonAtajos,
+.agregarRapido + .botonBarra {
+  margin-left: 0.4rem;
+}
+
+.botonAgregarRapido {
+  color: var(--primary-color);
+  border-color: var(--violet-200, #ddd6fe);
+  background: var(--primary-light);
+}
+
+/* "Agregar otro: Imagen · Texto" dentro del editor (celular). */
+.agregarOtro {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario);
+}
+
+.agregarOtro button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 32px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--violet-200, #ddd6fe);
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .botonBarraPeligro {

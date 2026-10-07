@@ -5,7 +5,7 @@ import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
   Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil,
-  X, Check, Minus, Hand, ZoomIn, ZoomOut, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  X, Check, Minus, Hand, ZoomIn, ZoomOut, HelpCircle, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -2426,6 +2426,7 @@ const CrearStudioPage = () => {
             {guiaGestos && (
               <div className={styles.guiaGestos} role="dialog" aria-label="Cómo editar con los dedos">
                 <ul>
+                  <li><ImagePlus size={18} aria-hidden="true" /> <span><strong>Para subir una foto o un logo,</strong> toca <strong>+ Imagen</strong> (debajo de la prenda) o <strong>Subir imagen</strong> en el paso 3.</span></li>
                   <li><Hand size={18} aria-hidden="true" /> <span><strong>Un dedo:</strong> arrástralo para moverlo.</span></li>
                   <li><Maximize2 size={18} aria-hidden="true" /> <span><strong>Dos dedos:</strong> sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo.</span></li>
                   <li><Type size={18} aria-hidden="true" /> <span><strong>Dos toques</strong> en un texto para escribirlo.</span></li>
@@ -2443,7 +2444,7 @@ const CrearStudioPage = () => {
 
           {/* Acciones rápidas junto a la prenda: siempre a mano, también en el
               celular (donde el panel queda debajo y hay que bajar para verlo). */}
-          <div className={styles.barraLienzo}>
+          <div className={`${styles.barraLienzo} ${capaSel ? styles.barraConSeleccion : ''}`}>
             <button
               type="button"
               className={styles.botonBarra}
@@ -2499,7 +2500,19 @@ const CrearStudioPage = () => {
                 </button>
               </div>
             )}
-            {CON_MOUSE && (
+            {/* Agregar, siempre a mano (con algo elegido, en el celular la fila
+                es para ajustarlo: ahí agregar está en el panel). */}
+            {!(capaSel && !CON_MOUSE) && multiIds.length < 2 && (
+              <div className={styles.agregarRapido} role="group" aria-label="Agregar al diseño">
+                <button type="button" className={`${styles.botonBarra} ${styles.botonAgregarRapido}`} onClick={elegirImagen} title="Subir imagen (I)">
+                  <ImagePlus size={17} aria-hidden="true" /> Imagen
+                </button>
+                <button type="button" className={`${styles.botonBarra} ${styles.botonAgregarRapido}`} onClick={() => agregarTexto(undefined, { editar: true })} title="Agregar texto (T)">
+                  <Type size={17} aria-hidden="true" /> Texto
+                </button>
+              </div>
+            )}
+            {CON_MOUSE ? (
               <button
                 type="button"
                 className={`${styles.botonBarra} ${styles.botonAtajos}`}
@@ -2507,6 +2520,16 @@ const CrearStudioPage = () => {
                 title="Atajos de teclado (?)"
               >
                 <Keyboard size={17} aria-hidden="true" /><span className={styles.textoBarra}>Atajos</span>
+              </button>
+            ) : !capaSel && (
+              <button
+                type="button"
+                className={styles.botonBarra}
+                onClick={() => setGuiaGestos(true)}
+                aria-label="Cómo se usa"
+                title="Cómo se usa"
+              >
+                <HelpCircle size={17} aria-hidden="true" />
               </button>
             )}
           </div>
@@ -2688,6 +2711,11 @@ const CrearStudioPage = () => {
               <p className={styles.ayudaEditar}>
                 Los cambios se ven en la prenda al instante. Cuando termines, toca <strong>Listo</strong>.
               </p>
+              <div className={`${styles.agregarOtro} ${styles.soloMovil}`}>
+                <span>Agregar otro:</span>
+                <button type="button" onClick={elegirImagen}><ImagePlus size={15} aria-hidden="true" /> Imagen</button>
+                <button type="button" onClick={() => agregarTexto(undefined, { editar: true })}><Type size={15} aria-hidden="true" /> Texto</button>
+              </div>
 
               {fueraDeZona && (
                 <div className={`${styles.calidad} ${styles.calidad_regular}`}>
