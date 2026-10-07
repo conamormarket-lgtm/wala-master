@@ -21,7 +21,7 @@ export const prendaBaseParaGuardar = (valor, variantes) => {
   Object.entries(valor?.colores || {}).forEach(([id, c]) => {
     if (!ids.has(id)) return;
     const fotos = Object.fromEntries(Object.entries(c?.fotos || {}).filter(([, url]) => url));
-    if (c?.hex2 || Object.keys(fotos).length) colores[id] = { ...(c.hex2 ? { hex2: c.hex2, patron: c.patron || 'mitades' } : {}), fotos };
+    if (c?.hex2 || Object.keys(fotos).length) colores[id] = { ...(c.hex2 ? { hex2: c.hex2 } : {}), ...(c.hex2 && c.patron ? { patron: c.patron } : {}), fotos };
   });
   return { vistas: (valor?.vistas || []).map(normalizarVista), colores };
 };
@@ -149,7 +149,7 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
     }
     const creados = nuevos.map((c, i) => ({ ...c, id: `var_${Date.now()}_${i}` }));
     onAgregarVariantes(creados.map((c) => ({ id: c.id, nombre: c.nombre, hex: c.hex, tallas: TALLAS_POLERA })));
-    const bicolores = Object.fromEntries(creados.filter((c) => c.hex2).map((c) => [c.id, { hex2: c.hex2, patron: c.patron || 'mitades', fotos: {} }]));
+    const bicolores = Object.fromEntries(creados.filter((c) => c.hex2).map((c) => [c.id, { hex2: c.hex2, ...(c.patron ? { patron: c.patron } : {}), fotos: {} }]));
     if (Object.keys(bicolores).length) cambiar({ colores: { ...extras, ...bicolores } });
   };
 

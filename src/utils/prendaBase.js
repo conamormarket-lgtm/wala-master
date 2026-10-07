@@ -213,12 +213,25 @@ export const PATRONES_BICOLOR = [
   { id: 'mangas', nombre: 'Cuerpo y mangas' },
 ];
 
+const esPatron = (id) => PATRONES_BICOLOR.some((p) => p.id === id);
+
+/**
+ * El patrón guardado; si no hay, el del color de la polera con el mismo
+ * nombre (Panda: cuerpo y mangas), y si no, mitad y mitad.
+ */
+const patronDe = (color) => {
+  if (esPatron(color?.patron)) return color.patron;
+  const nombre = String(color?.nombre || '').trim().toLowerCase();
+  const dePolera = COLORES_POLERA.find((c) => c.nombre.toLowerCase() === nombre)?.patron;
+  return esPatron(dePolera) ? dePolera : PATRONES_BICOLOR[0].id;
+};
+
 export const normalizarColor = (color, i = 0) => ({
   id: String(color?.id || slug(color?.nombre) || `color-${i + 1}`),
   nombre: String(color?.nombre || `Color ${i + 1}`),
   hex: esHex(color?.hex) ? color.hex.toUpperCase() : hexPorNombre(color?.nombre),
   hex2: esHex(color?.hex2) ? color.hex2.toUpperCase() : '',
-  patron: PATRONES_BICOLOR.some((p) => p.id === color?.patron) ? color.patron : PATRONES_BICOLOR[0].id,
+  patron: patronDe(color),
   fotos: limpiarFotos(color?.fotos),
   tallas: (Array.isArray(color?.tallas) ? color.tallas : []).map((t) => String(t || '').trim()).filter(Boolean),
 });
