@@ -22,6 +22,42 @@
   display: none;
 }
 
+.avanzado {
+  border-top: 1px solid var(--gris-borde);
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.avanzadoResumen {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.avanzadoResumen::-webkit-details-marker {
+  display: none;
+}
+
+.avanzadoResumen::before {
+  content: '+';
+  width: 1rem;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.avanzado[open] .avanzadoResumen {
+  margin-bottom: 0.5rem;
+}
+
+.avanzado[open] .avanzadoResumen::before {
+  content: '−';
+}
+
 .resumen svg {
   color: var(--primary-color);
 }

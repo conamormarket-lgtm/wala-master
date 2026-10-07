@@ -77,10 +77,10 @@ const EfectosTexto = ({ capa, onCambiar }) => {
   const alineacion = capa.alineacion || 'center';
 
   return (
-    <details className={styles.efectos} open>
-      <summary className={styles.resumen}>
-        <Sparkles size={16} aria-hidden="true" /> Efectos del texto
-      </summary>
+    <div className={styles.efectos}>
+      <span className={styles.resumen}>
+        <Sparkles size={16} aria-hidden="true" /> Estilo de la letra
+      </span>
 
       <div className={styles.estilos} aria-label="Estilos rápidos">
         {ESTILOS.map((e) => (
@@ -94,6 +94,11 @@ const EfectosTexto = ({ capa, onCambiar }) => {
           </button>
         ))}
       </div>
+
+      {/* Lo fino (contorno, sombra, curva…) queda plegado: los estilos de
+          arriba ya cubren lo común con un toque. */}
+      <details className={styles.avanzado} open={contorno > 0 || sombra > 0 || curva !== 0 || espaciado !== 0 || undefined}>
+        <summary className={styles.avanzadoResumen}>Personalizar contorno, sombra y curva</summary>
 
       <Efecto
         titulo="Contorno"
@@ -173,7 +178,8 @@ const EfectosTexto = ({ capa, onCambiar }) => {
           />
         </div>
       )}
-    </details>
+      </details>
+    </div>
   );
 };
 

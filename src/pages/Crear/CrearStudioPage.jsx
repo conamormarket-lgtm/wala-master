@@ -213,6 +213,7 @@ const CrearStudioPage = () => {
   const tokenRef = useRef(0);
   const inputArchivoRef = useRef(null);
   const editorRef = useRef(null);
+  const panelRef = useRef(null);
   // Lo del borrador va en refs: el autoguardado corre fuera del render (y
   // puede terminar después de salir del estudio).
   const designIdRef = useRef(designIdParam || null);
@@ -272,6 +273,35 @@ const CrearStudioPage = () => {
     ? zonasUsadas.length > 0
     : firmaDiseno(capasPorZona, color?.id) !== firmaGuardada;
   const srcDe = useCallback((capa) => localSrcRef.current.get(capa.id) || capa.src, []);
+
+  const editandoAlgoAhora = Boolean(seleccionId) || multiIds.length > 1;
+  useEffect(() => {
+    if (panelRef.current) panelRef.current.scrollTop = 0;
+  }, [editandoAlgoAhora]);
+
+  // En escritorio el panel ocupa justo el alto visible desde donde empieza
+  // (con el título y los avisos de arriba, 100vh fijo lo dejaba cortado): la
+  // compra, al pie del panel, queda siempre a la vista.
+  const ajustarPanel = useCallback(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    if (window.innerWidth <= 768) {
+      panel.style.maxHeight = '';
+      return;
+    }
+    const arriba = Math.max(panel.getBoundingClientRect().top, 90);
+    panel.style.maxHeight = `${Math.max(360, window.innerHeight - arriba - 16)}px`;
+  }, []);
+  useEffect(() => {
+    window.addEventListener('scroll', ajustarPanel, { passive: true });
+    window.addEventListener('resize', ajustarPanel);
+    return () => {
+      window.removeEventListener('scroll', ajustarPanel);
+      window.removeEventListener('resize', ajustarPanel);
+    };
+  }, [ajustarPanel]);
+  // Los avisos de arriba (sesión, borrador…) aparecen y desaparecen.
+  useEffect(() => { ajustarPanel(); });
 
   // ── Pantalla completa en el celular (oculta header, footer y barra inferior)
   useEffect(() => {
@@ -2044,6 +2074,8 @@ const CrearStudioPage = () => {
   const vistaSel = zonaSel ? cfg.vistas.find((v) => v.id === zonaSel.vistaId) : null;
   const calidad = capaSel?.type === 'image' ? calidadDeCapa(capaSel, zonaSel, zonaSel && medidaZona(zonaSel, vistaSel)) : null;
   const base = precioBase(prenda);
+  // Con algo elegido el panel muestra sus opciones (los pasos vuelven con "Listo").
+  const editandoAlgo = Boolean(capaSel) || multiIds.length > 1;
   // La flecha vuelve a la página desde la que se abrió el estudio (Mis
   // creaciones, la página de la creación…), que la manda en `state.desde`;
   // si se entró directo, a las prendas de Crear.
@@ -2249,7 +2281,9 @@ const CrearStudioPage = () => {
           </p>
         </section>
 
-        <aside className={styles.panel}>
+        <aside ref={panelRef} className={styles.panel}>
+          {!editandoAlgo && (
+          <>
           {/* Paso 1 — Color */}
           <section className={styles.seccion} aria-label="Color de la prenda">
             <h2 className={styles.paso}>
@@ -2348,6 +2382,8 @@ const CrearStudioPage = () => {
               <p className={styles.subiendo}><Loader2 size={14} className={styles.girando} aria-hidden="true" /> Subiendo tu imagen…</p>
             )}
           </section>
+          </>
+          )}
 
           {multiIds.length > 1 && (
             <section className={`${styles.seccion} ${styles.seccionCapa}`} aria-label="Varios elementos seleccionados">
@@ -2406,6 +2442,9 @@ const CrearStudioPage = () => {
                   <Check size={16} aria-hidden="true" /> Listo
                 </button>
               </div>
+              <p className={styles.ayudaEditar}>
+                Los cambios se ven en la prenda al instante. Cuando termines, toca <strong>Listo</strong>.
+              </p>
 
               {fueraDeZona && (
                 <div className={`${styles.calidad} ${styles.calidad_regular}`}>
@@ -2601,7 +2640,7 @@ const CrearStudioPage = () => {
                 aria-label="Descargar imagen"
                 title="Descarga una imagen con todos los lados"
               >
-                <Download size={17} aria-hidden="true" /> <span className={styles.textoAccion}>Descargar imagen</span>
+                <Download size={17} aria-hidden="true" /> <span className={styles.textoAccion}>Descargar</span>
               </button>
             </div>
           </div>
