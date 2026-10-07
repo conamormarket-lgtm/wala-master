@@ -675,7 +675,15 @@ const CrearStudioPage = () => {
     // Un texto que quedó vacío al terminar de escribir se quita.
     lienzo.on('text:editing:exited', (e) => {
       const obj = e.target;
-      if (obj?.capaId && !obj.text.trim()) accionesRef.current.quitarCapa?.(obj.capaId);
+      if (obj?.capaId && !obj.text.trim()) {
+        accionesRef.current.quitarCapa?.(obj.capaId);
+        return;
+      }
+      // Un texto curvo se enderezó para escribir: vuelve a su curva.
+      if (obj?.enderezadoParaEscribir) {
+        obj.enderezadoParaEscribir = false;
+        editarCapa(obj.capaId, {});
+      }
     });
     // Si se pasa a escribir en otro lado (el cuadro del panel, un color…)
     // mientras se escribía sobre la prenda, se termina de escribir ahí: si
@@ -924,13 +932,28 @@ const CrearStudioPage = () => {
   };
 
   /** Entra a escribir un texto directo sobre la prenda. */
-  const escribirEnLienzo = (capaId) => {
+  /**
+   * Entra a escribir un texto directo sobre la prenda. Un texto curvo se
+   * endereza mientras se escribe (sobre la curva el cursor de fabric queda
+   * mal ubicado) y vuelve a curvarse al terminar.
+   */
+  const escribirEnLienzo = (capaId, { todo = true } = {}) => {
     const obj = objetoDe(capaId);
     const lienzo = fabricRef.current;
     if (!obj?.enterEditing || !lienzo) return;
+    if (obj.path) {
+      obj.set({ path: null, pathStartOffset: 0, editable: true });
+      obj.enderezadoParaEscribir = true;
+      obj.setCoords();
+    }
     lienzo.setActiveObject(obj);
+    if (!todo) {
+      // Doble clic: el cursor al final, listo para seguir escribiendo.
+      obj.selectionStart = obj.text.length;
+      obj.selectionEnd = obj.text.length;
+    }
     obj.enterEditing();
-    obj.selectAll();
+    if (todo) obj.selectAll();
     lienzo.requestRenderAll();
   };
 
@@ -1867,7 +1890,9 @@ const CrearStudioPage = () => {
       if (!lienzo) return;
       if (obj?.capaId) {
         const capa = capaPorId(obj.capaId);
-        // El texto ya entra a escribir solo (fabric); la imagen abre Recortar.
+        // Texto recto: fabric ya entra a escribir solo. Texto curvo: se
+        // endereza para escribir. La imagen abre Recortar.
+        if (capa?.type === 'text' && Number(capa.curva) && CON_MOUSE && !obj.isEditing) escribirEnLienzo(capa.id, { todo: false });
         if (capa?.type === 'image' && user && !capa.subiendo) setRecortando(capa.id);
         return;
       }
