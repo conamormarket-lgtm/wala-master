@@ -10,6 +10,7 @@ import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedI
 import { Trash2 } from 'lucide-react';
 import styles from '../MisCreacionesPage.module.css';
 import estilosEliminar from '../../Crear/EliminarCreacion.module.css';
+import NombreEditable from '../../Crear/NombreEditable';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return '—';
@@ -30,7 +31,7 @@ const formatDate = (timestamp) => {
   }
 };
 
-const MiCreacionCard = ({ design, isPurchased, onEliminar }) => {
+const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
   const { data: productResponse, isLoading } = useQuery({
     queryKey: ['product', design.productId],
     queryFn: () => getProduct(design.productId),
@@ -145,7 +146,13 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar }) => {
       
       <div className={styles.cardBody}>
         <div className={styles.cardHeaderInfo} style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-           <h3 className={styles.cardTitle} style={{ margin: 0 }}>{design.name || 'Sin nombre'}</h3>
+           <NombreEditable
+             designId={design.id}
+             nombre={design.name || 'Sin nombre'}
+             como="h3"
+             className={styles.cardTitle}
+             onCambiado={(nuevo) => onRenombrado?.(design.id, nuevo)}
+           />
            {isPurchased && (
              <span title="Este diseño ya fue comprado" style={{ padding: '2px 6px', fontSize: '0.65rem', fontWeight: 700, color: '#15803d', backgroundColor: '#dcfce7', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>

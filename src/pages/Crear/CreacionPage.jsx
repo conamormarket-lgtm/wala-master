@@ -10,6 +10,7 @@ import { getPrendaBase } from '../../services/prendasBase';
 import { leerPrendaBase, precioPersonalizado, tallasDeColor } from '../../utils/prendaBase';
 import { itemDeCreacion, creacionLista } from './creacionCarrito';
 import { useEliminarCreacion } from './useEliminarCreacion';
+import NombreEditable from './NombreEditable';
 import styles from './CreacionPage.module.css';
 
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
@@ -166,7 +167,7 @@ const CreacionPage = () => {
 
         <section className={styles.info}>
           <span className={styles.etiqueta}>Mi creación</span>
-          <h1 className={styles.titulo}>{creacion.name || 'Mi diseño'}</h1>
+          <NombreEditable designId={id} nombre={creacion.name} como="h1" className={styles.titulo} />
           <p className={styles.base}>Hecha sobre: {creacion.productName || prenda?.name}</p>
 
           {!disponible ? (

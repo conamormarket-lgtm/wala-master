@@ -1071,3 +1071,12 @@
 .cargandoPrimero {
   background: var(--lienzo-fondo, #F3F1F7);
 }
+
+/* "Estás editando <nombre ✎>. Todo está guardado." */
+.editandoTexto {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.35rem;
+  min-width: 0;
+}

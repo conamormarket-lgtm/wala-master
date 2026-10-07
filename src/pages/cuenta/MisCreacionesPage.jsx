@@ -125,6 +125,7 @@ const MisCreacionesPage = () => {
               design={d}
               isPurchased={purchasedDesignIds.has(d.id)}
               onEliminar={(diseno) => pedirEliminar(diseno, { enPedido: purchasedDesignIds.has(diseno.id) })}
+              onRenombrado={(id, nuevo) => setDesigns((prev) => prev.map((x) => (x.id === id ? { ...x, name: nuevo } : x)))}
             />
           ))}
         </ul>

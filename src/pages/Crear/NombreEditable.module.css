@@ -1,0 +1,68 @@
+.envoltura {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.envoltura > :first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lapiz {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gris-texto-secundario);
+  cursor: pointer;
+}
+
+.lapiz:hover:not(:disabled),
+.lapiz:focus-visible {
+  border-color: var(--gris-borde);
+  background: var(--blanco);
+  color: var(--primary-color);
+}
+
+.lapiz:disabled {
+  cursor: default;
+}
+
+/* El campo hereda el tamaño del nombre (className) y se ve editable. */
+.campo {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.15rem 0.45rem;
+  border: 1.5px solid var(--primary-color);
+  border-radius: 8px;
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  font: inherit;
+  letter-spacing: inherit;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-light, rgba(124, 58, 237, 0.15));
+}
+
+.girando {
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+/* El título mientras se edita: sin recortes de línea que corten el campo. */
+.editandoTitulo {
+  display: block !important;
+  overflow: visible !important;
+  width: 100%;
+}

@@ -31,6 +31,7 @@ import { itemDeCreacion } from './creacionCarrito';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
 import MenuContextual from './MenuContextual';
 import EfectosTexto from './EfectosTexto';
+import NombreEditable from './NombreEditable';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
 import styles from './CrearStudioPage.module.css';
 
@@ -1639,15 +1640,23 @@ const CrearStudioPage = () => {
       return;
     }
     if (!validar()) return;
+    // Una creación ya guardada se actualiza directo: el nombre se cambia
+    // aparte, con el lápiz. Solo la primera vez se pide.
+    if (designIdRef.current && !esBorradorRef.current) {
+      confirmarGuardar(nombre || nombrePorDefecto(), { actualizar: true });
+      return;
+    }
     setNombreEditado(nombre || nombrePorDefecto());
     setDialogoGuardar(true);
   };
 
-  const confirmarGuardar = async () => {
+  const confirmarGuardar = async (nombreFinal = nombreEditado, { actualizar = false } = {}) => {
     setDialogoGuardar(false);
     try {
-      const creacion = await guardarCreacion(nombreEditado);
-      setGuardada(creacion);
+      const creacion = await guardarCreacion(nombreFinal);
+      // Al actualizar basta un aviso; la primera vez, la ventana con "Ver mi creación".
+      if (actualizar) toast.success('Cambios guardados.');
+      else setGuardada(creacion);
     } catch (err) {
       toast.error(`No pudimos guardar tu creación: ${err?.message || err}`);
     } finally {
@@ -1997,9 +2006,10 @@ const CrearStudioPage = () => {
                   : 'Borrador guardado: lo encuentras en Crear para continuarlo después.'}
             </span>
           ) : (
-            <span>
-              Estás editando <strong>{nombre ? `«${nombre}»` : 'tu creación'}</strong>.{' '}
-              {hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}
+            <span className={styles.editandoTexto}>
+              Estás editando{' '}
+              <NombreEditable designId={designId} nombre={nombre} como="strong" onCambiado={setNombre} />
+              <span>{hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}</span>
             </span>
           )}
           <button type="button" className={styles.botonTexto} onClick={empezarNuevo}>

@@ -246,3 +246,7 @@ export const marcarCreacionesEnPedido = async (designIds) => {
  */
 export const guardarTallaCreacion = (designId, talla) =>
   updateDocument('designs', designId, { 'variant.size': talla });
+
+/** Cambia solo el nombre de una creación (no vuelve a generar sus imágenes). */
+export const renombrarCreacion = (designId, nombre) =>
+  updateDocument('designs', designId, { name: nombre });
