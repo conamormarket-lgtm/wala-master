@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Crop, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
+  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -25,6 +25,7 @@ import {
   recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo,
 } from './renderDiseno';
 import RecorteImagen from './RecorteImagen';
+import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
 import styles from './CrearStudioPage.module.css';
@@ -133,6 +134,7 @@ const CrearStudioPage = () => {
   const [avisoTalla, setAvisoTalla] = useState(false);
   const [fueraDeZona, setFueraDeZona] = useState(false);
   const [recortando, setRecortando] = useState(null);
+  const [quitandoFondo, setQuitandoFondo] = useState(null);
   // Nombre de la creación (se pide al guardar) y aviso de "guardada".
   const [nombre, setNombre] = useState('');
   const [nombreEditado, setNombreEditado] = useState('');
@@ -636,24 +638,25 @@ const CrearStudioPage = () => {
   const centrar = () => capaSel && zonaSel && editarCapa(capaSel.id, centroDe(zonaSel));
 
   /**
-   * Reemplaza la imagen de una capa por el trozo recortado. Se conserva la
-   * escala (cada píxel sigue del mismo tamaño en la prenda) y se corre el
-   * centro para que lo que quedó no salte de lugar.
+   * Reemplaza la imagen de una capa por una nueva hecha a partir de ella
+   * (recortada o sin fondo). `corte` es lo que quedó, en píxeles de la
+   * imagen anterior, y `factor` cuántos píxeles nuevos hay por cada uno de
+   * antes. Lo que quedó conserva su tamaño y su lugar en la prenda.
    */
-  const aplicarRecorte = async (capa, corte) => {
-    setRecortando(null);
-    if (!corte) return;
+  const reemplazarImagen = async (capa, { blob, ancho, alto, corte, factor = 1 }) => {
     const zId = zonaDe(capa.id);
     if (!zId) return;
     try {
-      const img = await cargarImagen(srcDe(capa));
-      const { blob, ancho, alto } = await recortarImagen(img, corte);
-      const dx = (corte.x + corte.w / 2 - img.naturalWidth / 2) * capa.escalaX * (capa.flipX ? -1 : 1);
-      const dy = (corte.y + corte.h / 2 - img.naturalHeight / 2) * capa.escalaY;
+      const anchoAntes = capa.anchoNatural;
+      const altoAntes = capa.altoNatural;
+      const dx = (corte.x + corte.w / 2 - anchoAntes / 2) * capa.escalaX * (capa.flipX ? -1 : 1);
+      const dy = (corte.y + corte.h / 2 - altoAntes / 2) * capa.escalaY;
       const giro = ((capa.angulo || 0) * Math.PI) / 180;
       const cambios = {
         anchoNatural: ancho,
         altoNatural: alto,
+        escalaX: capa.escalaX / factor,
+        escalaY: capa.escalaY / factor,
         left: capa.left + dx * Math.cos(giro) - dy * Math.sin(giro),
         top: capa.top + dx * Math.sin(giro) + dy * Math.cos(giro),
         src: '',
@@ -669,8 +672,39 @@ const CrearStudioPage = () => {
         setSubiendo((n) => n - 1);
       }
     } catch (err) {
+      toast.error(err?.message || 'No pudimos cambiar la imagen.');
+    }
+  };
+
+  const aplicarRecorte = async (capa, corte) => {
+    setRecortando(null);
+    if (!corte) return;
+    try {
+      const img = await cargarImagen(srcDe(capa));
+      // El recorte se mide en la imagen tal como se cargó (igual a anchoNatural).
+      const escala = capa.anchoNatural / img.naturalWidth;
+      const { blob, ancho, alto } = await recortarImagen(img, corte);
+      await reemplazarImagen(capa, {
+        blob, ancho, alto, factor: 1 / escala,
+        corte: { x: corte.x * escala, y: corte.y * escala, w: corte.w * escala, h: corte.h * escala },
+      });
+    } catch (err) {
       toast.error(err?.message || 'No pudimos recortar la imagen.');
     }
+  };
+
+  const aplicarSinFondo = async (capa, resultado) => {
+    setQuitandoFondo(null);
+    if (!resultado) return;
+    const img = await cargarImagen(srcDe(capa)).catch(() => null);
+    // `corte` y `factor` vienen en píxeles de la imagen cargada.
+    const escala = img ? capa.anchoNatural / img.naturalWidth : 1;
+    const { corte, factor } = resultado;
+    await reemplazarImagen(capa, {
+      ...resultado,
+      factor: factor / escala,
+      corte: { x: corte.x * escala, y: corte.y * escala, w: corte.w * escala, h: corte.h * escala },
+    });
   };
 
   const ajustarAZona = () => {
@@ -1272,6 +1306,7 @@ const CrearStudioPage = () => {
                 {capaSel.type === 'image' && (
                   <>
                     <button type="button" className={styles.herramienta} onClick={() => setRecortando(capaSel.id)} disabled={!user}><Crop size={16} aria-hidden="true" />Recortar</button>
+                    <button type="button" className={styles.herramienta} onClick={() => setQuitandoFondo(capaSel.id)} disabled={!user || capaSel.subiendo}><Eraser size={16} aria-hidden="true" />Quitar fondo</button>
                     <button type="button" className={styles.herramienta} onClick={ajustarAZona}><Maximize2 size={16} aria-hidden="true" />Llenar zona</button>
                     <button type="button" className={styles.herramienta} onClick={() => editarCapa(capaSel.id, { flipX: !capaSel.flipX })}><FlipHorizontal size={16} aria-hidden="true" />Voltear</button>
                   </>
@@ -1364,6 +1399,14 @@ const CrearStudioPage = () => {
           src={srcDe(capaSel)}
           onCancelar={() => setRecortando(null)}
           onAplicar={(corte) => aplicarRecorte(capaSel, corte)}
+        />
+      )}
+
+      {quitandoFondo && capaSel?.id === quitandoFondo && capaSel.type === 'image' && (
+        <QuitarFondo
+          src={srcDe(capaSel)}
+          onCancelar={() => setQuitandoFondo(null)}
+          onAplicar={(resultado) => aplicarSinFondo(capaSel, resultado)}
         />
       )}
 

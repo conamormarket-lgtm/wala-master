@@ -1,0 +1,75 @@
+/* Borrador de fondo del estudio de Crear (usa la ventana de RecorteImagen). */
+
+.modos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border-radius: 14px;
+  background: var(--gris-fondo, #F3F1F7);
+}
+
+.modo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gris-texto-secundario);
+  font-weight: 700;
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.modoActivo {
+  background: var(--blanco);
+  color: var(--primary-color);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.lienzo {
+  display: block;
+  max-width: 100%;
+  max-height: 50dvh;
+  touch-action: none;
+  user-select: none;
+}
+
+.cursorVarita {
+  cursor: crosshair;
+}
+
+.cursorPincel {
+  cursor: cell;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+}
+
+.control small {
+  font-weight: 500;
+  color: var(--gris-texto-secundario);
+}
+
+.control input {
+  width: 100%;
+  accent-color: var(--primary-color);
+}
+
+.girando {
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
