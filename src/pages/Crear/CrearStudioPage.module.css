@@ -870,6 +870,8 @@
   .studio {
     position: fixed;
     inset: 0;
+    /* Debajo de la barra de administrador, si está (si no, la tapaba). */
+    top: var(--admin-bar-height, 0px);
     z-index: 40;
     background: var(--gris-fondo);
     padding: 0;
@@ -940,8 +942,42 @@
      arriba y la ayuda bajo la prenda, que ya está en la barra rápida), para
      que quepan la prenda y sus opciones. */
   .enfoque .editando,
-  .enfoque .borrador,
-  .enfoque .zonaInfo {
+  .enfoque .borrador {
+    display: none;
+  }
+
+  /* En el celular los gestos los explica la guía (y la prenda vacía tiene
+     "Empieza tu diseño"): la ayuda bajo la prenda solo quitaba espacio. */
+  .zonaInfo {
+    display: none;
+  }
+
+  /* "Estás editando FIFA 2026 ✎ · Todo está guardado · + Nuevo" en una línea. */
+  .editando {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .editandoTexto {
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .editandoTexto > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--gris-texto-secundario);
+  }
+
+  .editando .botonTexto {
+    flex-shrink: 0;
+  }
+
+  .textoLargo {
     display: none;
   }
 
@@ -1432,6 +1468,16 @@
 
 .soloMovil {
   display: none;
+}
+
+.textoCorto {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .textoCorto {
+    display: inline;
+  }
 }
 
 @media (max-width: 768px) {

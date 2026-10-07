@@ -966,7 +966,7 @@ const CrearStudioPage = () => {
         // arriba (título, avisos, pestañas) y lo de abajo (deshacer, ayuda):
         // con un 78 % fijo se pasaba del borde y había que bajar la página.
         const altoMax = window.innerWidth <= 768
-          ? Math.max(230, window.innerHeight * 0.38)
+          ? Math.max(260, window.innerHeight * 0.47)
           : Math.max(380, window.innerHeight
             - ((contenedorRef.current?.getBoundingClientRect().top || 0) + window.scrollY) - 110);
         const ancho = Math.min(anchoLienzo, Math.floor(altoMax / proporcion));
@@ -2284,7 +2284,9 @@ const CrearStudioPage = () => {
             </span>
           )}
           <button type="button" className={styles.botonTexto} onClick={empezarNuevo}>
-            <Plus size={16} aria-hidden="true" /> Empezar uno nuevo
+            <Plus size={16} aria-hidden="true" />
+            <span className={styles.textoLargo}>Empezar uno nuevo</span>
+            <span className={styles.textoCorto}>Nuevo</span>
           </button>
         </div>
       )}
