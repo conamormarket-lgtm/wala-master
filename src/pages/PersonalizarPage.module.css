@@ -12,9 +12,9 @@
 }
 
 /* ── Hero ──
-   Banner de Kapi diseñando (public/crear/banner-crear.webp). En escritorio
-   es el fondo y el texto va en su lado libre (derecha); en el celular es
-   una franja arriba y el texto va debajo. */
+   Banner de Kapi diseñando (public/crear/). En escritorio es el fondo y el
+   texto va en su lado libre (derecha); en el celular, la versión vertical:
+   el texto arriba, en su parte clara, y Kapi abajo. */
 .hero {
   position: relative;
   overflow: hidden;
@@ -23,14 +23,42 @@
   border-radius: 24px;
 }
 
+/* <picture> solo elige la imagen: que no sea una caja más del banner. */
+.hero > picture {
+  display: contents;
+}
+
 .heroArte {
   display: block;
   width: 100%;
   object-fit: cover;
+  /* Decoración: sin arrastrarla ni seleccionarla con el mouse. */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .heroTexto {
   position: relative;
+}
+
+/* Las dos imágenes son claras (también en modo noche): texto oscuro. */
+.hero .title {
+  color: #1F1534;
+}
+
+.hero .subtitle,
+.hero .pasoTexto {
+  color: #4A4360;
+}
+
+.hero .pasoTexto strong {
+  color: #1F1534;
+}
+
+.hero .pasoIcono {
+  background: #fff;
+  box-shadow: 0 4px 12px -6px rgba(91, 33, 182, 0.45);
 }
 
 @media (min-width: 769px) {
@@ -57,14 +85,11 @@
     padding: 1.75rem clamp(1.5rem, 4vw, 3.25rem) 1.75rem 0.5rem;
   }
 
-  /* La imagen es clara en los dos temas: el texto va siempre oscuro. */
   .hero .title {
-    color: #1F1534;
     font-size: clamp(1.9rem, 3.2vw, 2.6rem);
   }
 
   .hero .subtitle {
-    color: #4A4360;
     margin: 0;
   }
 
@@ -78,20 +103,11 @@
   }
 
   .hero .pasoTexto {
-    color: #4A4360;
     /* El último paso cae sobre la ola violeta del fondo: un halo claro
        lo mantiene legible. */
     text-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 2px rgba(255, 255, 255, 0.9);
   }
 
-  .hero .pasoTexto strong {
-    color: #1F1534;
-  }
-
-  .hero .pasoIcono {
-    background: #fff;
-    box-shadow: 0 4px 12px -6px rgba(91, 33, 182, 0.45);
-  }
 }
 
 .title {
@@ -456,20 +472,31 @@
     padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 1.5rem);
   }
 
+  /* El texto va primero y la imagen vertical sube por detrás hasta su
+     parte clara (margin-top negativo, en % del ancho). Si el texto es más
+     alto, la imagen se funde arriba con el mismo lila del fondo. */
   .hero {
+    display: flex;
+    flex-direction: column;
     text-align: center;
     margin-bottom: 1.5rem;
     border-radius: 20px;
-  }
-
-  /* Franja con Kapi y la prenda (el lado izquierdo del banner). */
-  .heroArte {
-    height: 150px;
-    object-position: 12% center;
+    background: #F1E8FD;
   }
 
   .heroTexto {
-    padding: 1.25rem 1.1rem 1.4rem;
+    order: 0;
+    z-index: 1;
+    padding: 1.5rem 1.1rem 0;
+  }
+
+  .heroArte {
+    order: 1;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    margin-top: -58%;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
   }
 
   .title {

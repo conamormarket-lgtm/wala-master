@@ -126,18 +126,23 @@ const PersonalizarPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.hero}>
-        {/* Kapi diseñando: de fondo en escritorio (el texto va en el lado
-            libre, a la derecha); en el celular, una franja arriba. */}
-        <img
-          className={styles.heroArte}
-          src="/crear/banner-crear.webp"
-          srcSet="/crear/banner-crear-1200.webp 1200w, /crear/banner-crear.webp 2172w"
-          sizes="(max-width: 768px) 100vw, 1136px"
-          alt=""
-          aria-hidden="true"
-          width="2172"
-          height="724"
-        />
+        {/* Kapi diseñando, de fondo. En escritorio el banner ancho (texto en
+            el lado libre, a la derecha); en el celular uno vertical (texto
+            arriba, Kapi abajo). Es decoración: no se arrastra ni se elige. */}
+        <picture>
+          <source media="(max-width: 768px)" srcSet="/crear/banner-crear-movil.webp" width="800" height="1067" />
+          <img
+            className={styles.heroArte}
+            src="/crear/banner-crear.webp"
+            srcSet="/crear/banner-crear-1200.webp 1200w, /crear/banner-crear.webp 2172w"
+            sizes="1136px"
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            width="2172"
+            height="724"
+          />
+        </picture>
         <div className={styles.heroTexto}>
           <h1 className={styles.title}><T>Crea tu prenda</T></h1>
           <p className={styles.subtitle}>
