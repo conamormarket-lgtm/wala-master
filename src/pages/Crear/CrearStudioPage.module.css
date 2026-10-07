@@ -968,10 +968,28 @@
     white-space: nowrap;
   }
 
-  .editandoTexto > span:last-child {
+  /* El nombre se corta con "…" antes del lápiz (antes se montaba encima del
+     lápiz y del estado). "Todo está guardado" no se muestra; "Sin guardar" sí. */
+  .studio .editandoTexto > span:first-of-type {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .studio .editandoTexto strong {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--gris-texto-secundario);
+    white-space: nowrap;
+  }
+
+  .estadoGuardado {
+    display: none;
+  }
+
+  .estadoSinGuardar {
+    flex-shrink: 0;
+    font-weight: 700;
+    color: #B45309;
   }
 
   .editando .botonTexto {

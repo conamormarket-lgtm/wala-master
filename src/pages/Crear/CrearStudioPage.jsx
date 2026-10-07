@@ -2337,7 +2337,10 @@ const CrearStudioPage = () => {
             <span className={styles.editandoTexto}>
               Estás editando{' '}
               <NombreEditable designId={designId} nombre={nombre} como="strong" onCambiado={setNombre} />
-              <span>{hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}</span>
+              <span className={hayCambios ? styles.estadoSinGuardar : styles.estadoGuardado}>
+                <span className={styles.textoLargo}>{hayCambios ? 'Tienes cambios sin guardar.' : 'Todo está guardado.'}</span>
+                {hayCambios && <span className={styles.textoCorto}>Sin guardar</span>}
+              </span>
             </span>
           )}
           <button type="button" className={styles.botonTexto} onClick={empezarNuevo}>
