@@ -1,0 +1,80 @@
+.menu {
+  position: fixed;
+  z-index: 3200;
+  min-width: 230px;
+  padding: 0.35rem;
+  border-radius: 14px;
+  border: 1px solid var(--gris-borde);
+  background: var(--blanco);
+  box-shadow: 0 12px 32px rgba(20, 18, 28, 0.18), 0 2px 6px rgba(20, 18, 28, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 0.65rem;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--gris-texto-principal);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.opcion svg {
+  flex-shrink: 0;
+  color: var(--gris-texto-secundario);
+}
+
+.opcion:hover:not(:disabled),
+.opcion:focus-visible {
+  background: var(--primary-light, rgba(124, 58, 237, 0.1));
+  color: var(--primary-color);
+  outline: none;
+}
+
+.opcion:hover:not(:disabled) svg,
+.opcion:focus-visible svg {
+  color: var(--primary-color);
+}
+
+.opcion:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.peligro,
+.peligro svg {
+  color: var(--danger, #EF4444);
+}
+
+.peligro:hover:not(:disabled),
+.peligro:focus-visible {
+  background: var(--danger-soft, rgba(239, 68, 68, 0.12));
+  color: var(--danger, #EF4444);
+}
+
+.etiqueta {
+  flex: 1;
+}
+
+.atajo {
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario);
+}
+
+.separador {
+  height: 1px;
+  margin: 0.3rem 0.4rem;
+  background: var(--gris-borde);
+}

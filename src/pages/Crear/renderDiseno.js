@@ -150,15 +150,27 @@ export const ubicacion = (capa, t) => {
 
 /**
  * Crea el objeto de fabric de una capa. `srcDe(capa)` decide de dónde se lee
- * la imagen (la URL local mientras se sube, o la de Storage).
+ * la imagen (la URL local mientras se sube, o la de Storage). Con
+ * `editable`, el texto se puede escribir directo sobre la prenda (estudio en
+ * escritorio); las vistas previas y la impresión usan texto fijo.
  */
-export const crearObjeto = async (capa, t, srcDe = (c) => c.src) => {
+export const crearObjeto = async (capa, t, srcDe = (c) => c.src, { editable = false } = {}) => {
   const comun = ubicacion(capa, t);
   if (capa.type === 'image') {
     const img = await cargarImagen(srcDe(capa));
     return new fabric.Image(img, comun);
   }
-  return new fabric.Text(propiedadesTexto(capa).text, { ...comun, ...propiedadesTexto(capa) });
+  const props = { ...comun, ...propiedadesTexto(capa) };
+  if (editable) {
+    return new fabric.IText(props.text, {
+      ...props,
+      cursorColor: '#7C3AED',
+      cursorWidth: 3,
+      selectionColor: 'rgba(124, 58, 237, 0.25)',
+      editingBorderColor: '#7C3AED',
+    });
+  }
+  return new fabric.Text(props.text, props);
 };
 
 /** Lee de vuelta la posición de un objeto del lienzo, en unidades de su zona. */

@@ -47,6 +47,18 @@ const grupos = (vistas) => [
       { teclas: [['Esc']], texto: 'Soltar la selección' },
     ],
   },
+  {
+    titulo: 'Con el mouse',
+    atajos: [
+      { teclas: [['Doble clic']], texto: 'En un texto: escribir sobre la prenda' },
+      { teclas: [['Doble clic']], texto: 'En la zona vacía: texto nuevo ahí' },
+      { teclas: [['Doble clic']], texto: 'En una imagen: recortar' },
+      { teclas: [['Clic derecho']], texto: 'Más opciones' },
+      { teclas: [[MOD, 'Rueda']], texto: 'Agrandar / achicar lo elegido' },
+      { teclas: [['Shift']], texto: 'Al girar: de 15° en 15°' },
+      { teclas: [['Alt']], texto: 'Al arrastrar: sin imán al centro' },
+    ],
+  },
 ];
 
 /** Ventana con los atajos de teclado del estudio (se abre con "?" o el botón Atajos). */

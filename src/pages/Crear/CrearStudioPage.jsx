@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard,
+  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -22,16 +22,22 @@ import {
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
   propiedadesTexto, renderizarImpresion, renderizarVistaPrevia, componerVistas, transformDeZona, rectDeZona,
-  recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo,
+  recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo, aLienzo,
 } from './renderDiseno';
 import RecorteImagen from './RecorteImagen';
 import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
+import MenuContextual from './MenuContextual';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
 import styles from './CrearStudioPage.module.css';
 
 const VIOLETA = '#7C3AED';
+// Con mouse se escribe directo sobre la prenda (doble clic). En el celular
+// el teclado taparía la prenda: ahí se escribe en el panel.
+const CON_MOUSE = typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: fine)').matches);
+// Distancia (px de pantalla) a la que un diseño se imanta al centro de su zona.
+const IMAN_PX = 7;
 const COLORES_TEXTO = ['#111111', '#FFFFFF', '#7C3AED', '#E11D48', '#F59E0B', '#10B981', '#2563EB', '#F472B6'];
 
 const soles = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
@@ -137,6 +143,9 @@ const CrearStudioPage = () => {
   const [recortando, setRecortando] = useState(null);
   const [quitandoFondo, setQuitandoFondo] = useState(null);
   const [verAtajos, setVerAtajos] = useState(false);
+  // Menú del clic derecho: { x, y, capaId } sobre un diseño, o { x, y, zonaId, punto } en la zona.
+  const [menu, setMenu] = useState(null);
+  const cerrarMenu = useCallback(() => setMenu(null), []);
   const [soltando, setSoltando] = useState(false);
   const [historialInfo, setHistorialInfo] = useState({ puedeDeshacer: false, puedeRehacer: false });
   // Nombre de la creación (se pide al guardar) y aviso de "guardada".
@@ -180,6 +189,12 @@ const CrearStudioPage = () => {
   const portapapelesRef = useRef(null);
   const atajosRef = useRef(null);
   const alPegarRef = useRef(null);
+  // Mouse: acciones que llaman los eventos del lienzo, lo que está bajo el
+  // puntero, las guías de centrado y el texto recién creado que se escribe ya.
+  const accionesRef = useRef({});
+  const hoverRef = useRef(null);
+  const guiasRef = useRef([]);
+  const editarAlCrearRef = useRef(null);
   const recargadaRef = useRef(null);
   if (recargadaRef.current === null) recargadaRef.current = !estudioAbierto && recargadaEn(location.pathname);
   useEffect(() => { estudioAbierto = true; }, []);
@@ -422,7 +437,10 @@ const CrearStudioPage = () => {
     if (!obj || !lienzo || !t) return;
     let capa = (capasRef.current[zId] || []).find((c) => c.id === capaId);
     if (capa?.type === 'text') {
-      obj.set(propiedadesTexto(capa));
+      const props = propiedadesTexto(capa);
+      // Mientras se escribe sobre la prenda, el texto ya está en el objeto.
+      if (obj.isEditing) delete props.text;
+      obj.set(props);
       obj.initDimensions?.();
       // Un texto que crece al escribir se achica solo para seguir entrando en la
       // zona. Si está de costado (mangas), su largo se mide contra el alto.
@@ -448,6 +466,8 @@ const CrearStudioPage = () => {
       preserveObjectStacking: true,
       enableRetinaScaling: true,
       allowTouchScrolling: false,
+      fireRightClick: true,
+      stopContextMenu: true,
     });
     fabricRef.current = lienzo;
     // fabric guarda la posición del lienzo en la página al crearse. Si algo de
@@ -468,6 +488,103 @@ const CrearStudioPage = () => {
     // Tocar una zona vacía la elige: ahí irá lo próximo que se agregue.
     lienzo.on('mouse:down', (e) => {
       if (e.target?.guiaZona) setZonaId(e.target.guiaZona);
+    });
+    // ── Mouse ──
+    // Clic derecho: menú. Doble clic: escribir, recortar o texto nuevo.
+    lienzo.on('mouse:down', (e) => { if (e.button === 3) accionesRef.current.abrirMenu?.(e); });
+    lienzo.on('mouse:dblclick', (e) => accionesRef.current.dobleClic?.(e));
+    // Ctrl + rueda (o pellizcar en el trackpad) cambia el tamaño de lo elegido.
+    lienzo.on('mouse:wheel', (e) => {
+      const ev = e.e;
+      if (!(ev.ctrlKey || ev.metaKey) || !lienzo.getActiveObject()?.capaId) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      accionesRef.current.escalar?.(ev.deltaY < 0 ? 1.05 : 1 / 1.05);
+    });
+    // Contorno de lo que está bajo el puntero (se ve qué se va a elegir).
+    lienzo.on('mouse:over', (e) => {
+      if (!e.target?.capaId) return;
+      hoverRef.current = e.target;
+      lienzo.requestRenderAll();
+    });
+    lienzo.on('mouse:out', (e) => {
+      if (!e.target || e.target !== hoverRef.current) return;
+      hoverRef.current = null;
+      lienzo.requestRenderAll();
+    });
+    // Imán al centro de la zona al arrastrar (Alt lo desactiva).
+    lienzo.on('object:moving', (e) => {
+      const obj = e.target;
+      const t = obj?.zonaId && transformsRef.current[obj.zonaId];
+      guiasRef.current = [];
+      if (!t || e.e?.altKey) return;
+      const p = desdeLienzo(t, obj.left, obj.top);
+      const tol = IMAN_PX / t.k;
+      let { left, top } = p;
+      if (Math.abs(left - t.wu / 2) < tol) {
+        left = t.wu / 2;
+        guiasRef.current.push([aLienzo(t, t.wu / 2, 0), aLienzo(t, t.wu / 2, t.hu)]);
+      }
+      if (Math.abs(top - t.hu / 2) < tol) {
+        top = t.hu / 2;
+        guiasRef.current.push([aLienzo(t, 0, t.hu / 2), aLienzo(t, t.wu, t.hu / 2)]);
+      }
+      if (guiasRef.current.length) {
+        const q = aLienzo(t, left, top);
+        obj.set({ left: q.x, top: q.y });
+        obj.setCoords();
+      }
+    });
+    // Al girar se imanta a 0°, 90°, 180°… y con Shift va de 15° en 15°.
+    lienzo.on('object:rotating', (e) => {
+      const obj = e.target;
+      const base = (obj?.zonaId && transformsRef.current[obj.zonaId]?.ang) || 0;
+      const rel = obj.angle - base;
+      const paso = e.e?.shiftKey ? 15 : 90;
+      const cerca = Math.round(rel / paso) * paso;
+      if (e.e?.shiftKey || Math.abs(rel - cerca) < 4) obj.set({ angle: cerca + base });
+    });
+    lienzo.on('mouse:up', () => {
+      if (!guiasRef.current.length) return;
+      guiasRef.current = [];
+      lienzo.requestRenderAll();
+    });
+    lienzo.on('after:render', ({ ctx }) => {
+      const h = hoverRef.current;
+      const hayHover = h && h !== lienzo.getActiveObject() && lienzo.getObjects().includes(h);
+      if (!hayHover && !guiasRef.current.length) return;
+      ctx.save();
+      if (hayHover) {
+        const pts = h.getCoords(true, true);
+        ctx.strokeStyle = VIOLETA;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        pts.forEach((pt, i) => (i ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)));
+        ctx.closePath();
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#EC4899';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      guiasRef.current.forEach(([a, b]) => {
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      });
+      ctx.restore();
+    });
+    // Escribir sobre la prenda: cada letra va a la capa (y al panel).
+    lienzo.on('text:changed', (e) => {
+      if (!e.target?.capaId) return;
+      editarCapa(e.target.capaId, { text: e.target.text });
+      accionesRef.current.mantenerEnZona?.(e.target.capaId);
+    });
+    // Un texto que quedó vacío al terminar de escribir se quita.
+    lienzo.on('text:editing:exited', (e) => {
+      const obj = e.target;
+      if (obj?.capaId && !obj.text.trim()) accionesRef.current.quitarCapa?.(obj.capaId);
     });
     lienzo.on('object:modified', (e) => {
       const obj = e.target;
@@ -513,6 +630,7 @@ const CrearStudioPage = () => {
       lienzo.dispose();
       fabricRef.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listo, modificarCapas, revisarLimites]);
 
   useEffect(() => {
@@ -597,7 +715,7 @@ const CrearStudioPage = () => {
         for (const capa of capasRef.current[z.id] || []) {
           let obj;
           try {
-            obj = await crearObjeto(capa, transforms[z.id], srcDe);
+            obj = await crearObjeto(capa, transforms[z.id], srcDe, { editable: CON_MOUSE });
           } catch {
             continue;
           }
@@ -615,7 +733,15 @@ const CrearStudioPage = () => {
       if (sel) {
         lienzo.setActiveObject(sel);
         revisarLimites(sel);
+        // Texto recién creado con el mouse o con T: se escribe de una vez.
+        if (editarAlCrearRef.current === sel.capaId && sel.enterEditing) {
+          accionesRef.current.mantenerEnZona?.(sel.capaId);
+          sel.enterEditing();
+          sel.selectAll();
+        }
       }
+      editarAlCrearRef.current = null;
+      hoverRef.current = null;
       lienzo.requestRenderAll();
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -624,27 +750,51 @@ const CrearStudioPage = () => {
   // ── Acciones ─────────────────────────────────────────────────────────────
   const centroDe = (z) => ({ left: UNIDADES_ZONA / 2, top: altoEnUnidades(z) / 2 });
 
-  const agregarTexto = async (textoInicial) => {
-    if (!zona) return;
+  /**
+   * Agrega un texto. Por defecto en el centro de la zona elegida; con
+   * `zonaId`/`punto` donde se hizo doble clic. Con `editar`, en escritorio
+   * queda listo para escribir sobre la prenda.
+   */
+  const agregarTexto = async (textoInicial, { zonaId: zonaDestino, punto, editar = false } = {}) => {
+    const destino = (zonaDestino && vista?.zonas.find((z) => z.id === zonaDestino)) || zona;
+    if (!destino) return;
     // En una zona alargada (una manga) el texto va a lo largo, de costado.
-    const alargada = altoEnUnidades(zona) > UNIDADES_ZONA * 1.8;
+    const alargada = altoEnUnidades(destino) > UNIDADES_ZONA * 1.8;
     const capa = {
       id: nuevoId(),
       type: 'text',
       text: typeof textoInicial === 'string' && textoInicial ? textoInicial : 'Tu texto',
       fuente: 'Montserrat',
       color: esColorBlanco(color.hex) || textoSobre(color.hex) !== '#FFFFFF' ? '#111111' : '#FFFFFF',
-      tamano: alargada ? 520 : Math.round(Math.min(170, altoEnUnidades(zona) * 0.25)),
+      tamano: alargada ? 520 : Math.round(Math.min(170, altoEnUnidades(destino) * 0.25)),
       negrita: true,
       cursiva: false,
       escalaX: 1,
       escalaY: 1,
       angulo: alargada ? 90 : 0,
-      ...centroDe(zona),
+      ...(punto
+        ? {
+          left: Math.min(UNIDADES_ZONA, Math.max(0, punto.left)),
+          top: Math.min(altoEnUnidades(destino), Math.max(0, punto.top)),
+        }
+        : centroDe(destino)),
     };
     await asegurarFuente(capa.fuente);
+    if (editar && CON_MOUSE) editarAlCrearRef.current = capa.id;
+    if (destino.id !== zona?.id) setZonaId(destino.id);
     setSeleccionId(capa.id);
-    modificarCapas(zona.id, (capas) => [...capas, capa], true);
+    modificarCapas(destino.id, (capas) => [...capas, capa], true);
+  };
+
+  /** Entra a escribir un texto directo sobre la prenda. */
+  const escribirEnLienzo = (capaId) => {
+    const obj = objetoDe(capaId);
+    const lienzo = fabricRef.current;
+    if (!obj?.enterEditing || !lienzo) return;
+    lienzo.setActiveObject(obj);
+    obj.enterEditing();
+    obj.selectAll();
+    lienzo.requestRenderAll();
   };
 
   const elegirImagen = () => {
@@ -1213,7 +1363,7 @@ const CrearStudioPage = () => {
 
   // ── Atajos de teclado ────────────────────────────────────────────────────
   // Las ventanas (recortar, quitar fondo, guardar…) manejan sus propias teclas.
-  const ventanaAbierta = Boolean(recortando || quitandoFondo || dialogoGuardar || pedirLogin || guardada || procesando);
+  const ventanaAbierta = Boolean(recortando || quitandoFondo || dialogoGuardar || pedirLogin || guardada || procesando || menu);
   const escribiendo = () => {
     const el = document.activeElement;
     return ['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName) || Boolean(el?.isContentEditable);
@@ -1254,7 +1404,7 @@ const CrearStudioPage = () => {
     if (e.altKey && !e.getModifierState?.('AltGraph')) return;
 
     if (tecla === '?') { e.preventDefault(); setVerAtajos(true); return; }
-    if (tecla === 't') { e.preventDefault(); agregarTexto(); return; }
+    if (tecla === 't') { e.preventDefault(); agregarTexto(undefined, { editar: true }); return; }
     if (tecla === 'i') { e.preventDefault(); elegirImagen(); return; }
     if (/^[1-9]$/.test(tecla) && cfg.vistas[Number(tecla) - 1]) {
       cambiarVista(cfg.vistas[Number(tecla) - 1].id);
@@ -1309,6 +1459,129 @@ const CrearStudioPage = () => {
       e.preventDefault();
       agregarTexto(texto.slice(0, 120));
     }
+  };
+
+  // ── Mouse: clic derecho, doble clic ──────────────────────────────────────
+  const capaPorId = (capaId) => Object.values(capasRef.current).flat().find((c) => c.id === capaId) || null;
+
+  /**
+   * Si un texto se sale de su zona por un costado (al crecer mientras se
+   * escribe, o creado junto al borde), se corre hacia adentro.
+   */
+  const mantenerEnZona = (capaId) => {
+    const obj = objetoDe(capaId);
+    const zId = zonaDe(capaId);
+    const t = zId && transformsRef.current[zId];
+    const capa = capaPorId(capaId);
+    if (!obj || !t || !capa) return;
+    obj.setCoords();
+    const pts = obj.getCoords(true, true).map((pt) => desdeLienzo(t, pt.x, pt.y));
+    const xs = pts.map((pt) => pt.left);
+    const ys = pts.map((pt) => pt.top);
+    const corrimiento = (min, max, limite) => {
+      if (max - min > limite) return limite / 2 - (min + max) / 2;
+      if (min < 0) return -min;
+      if (max > limite) return limite - max;
+      return 0;
+    };
+    const dx = corrimiento(Math.min(...xs), Math.max(...xs), t.wu);
+    const dy = corrimiento(Math.min(...ys), Math.max(...ys), t.hu);
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) editarCapa(capaId, { left: capa.left + dx, top: capa.top + dy });
+  };
+
+  accionesRef.current = {
+    escalar,
+    mantenerEnZona,
+    quitarCapa: (capaId) => {
+      const zId = zonaDe(capaId);
+      if (!zId) return;
+      if (seleccionRef.current === capaId) setSeleccionId(null);
+      modificarCapas(zId, (capas) => capas.filter((c) => c.id !== capaId), true);
+    },
+    abrirMenu: (e) => {
+      const lienzo = fabricRef.current;
+      const ev = e.e;
+      const obj = e.target;
+      if (!lienzo || !ev) return;
+      if (obj?.capaId) {
+        if (lienzo.getActiveObject() !== obj) {
+          lienzo.setActiveObject(obj);
+          lienzo.requestRenderAll();
+        }
+        setMenu({ x: ev.clientX, y: ev.clientY, capaId: obj.capaId });
+        return;
+      }
+      const zId = obj?.guiaZona || null;
+      if (zId) elegirZona(zId);
+      else soltarSeleccion();
+      const t = zId && transformsRef.current[zId];
+      const pt = lienzo.getPointer(ev);
+      setMenu({ x: ev.clientX, y: ev.clientY, capaId: null, zonaId: zId, punto: t ? desdeLienzo(t, pt.x, pt.y) : null });
+    },
+    dobleClic: (e) => {
+      const obj = e.target;
+      const lienzo = fabricRef.current;
+      if (!lienzo) return;
+      if (obj?.capaId) {
+        const capa = capaPorId(obj.capaId);
+        // El texto ya entra a escribir solo (fabric); la imagen abre Recortar.
+        if (capa?.type === 'image' && user && !capa.subiendo) setRecortando(capa.id);
+        return;
+      }
+      if (obj?.guiaZona && CON_MOUSE) {
+        const t = transformsRef.current[obj.guiaZona];
+        const pt = lienzo.getPointer(e.e);
+        asentarHistorial();
+        agregarTexto(undefined, { zonaId: obj.guiaZona, punto: desdeLienzo(t, pt.x, pt.y), editar: true });
+      }
+    },
+  };
+
+  const opcionesMenu = () => {
+    if (!menu) return [];
+    const pegarOpcion = {
+      id: 'pegar', etiqueta: 'Pegar', icono: ClipboardPaste, atajo: `${MOD}+V`,
+      deshabilitado: !portapapelesRef.current, accion: () => { asentarHistorial(); pegar(); },
+    };
+    const capa = menu.capaId ? capaPorId(menu.capaId) : null;
+    if (!capa) {
+      return [
+        {
+          id: 'texto', etiqueta: 'Agregar texto aquí', icono: Type, atajo: 'T',
+          accion: () => { asentarHistorial(); agregarTexto(undefined, { zonaId: menu.zonaId, punto: menu.punto, editar: true }); },
+        },
+        { id: 'imagen', etiqueta: 'Subir imagen', icono: ImagePlus, atajo: 'I', accion: elegirImagen },
+        pegarOpcion,
+        'separador',
+        { id: 'deshacer', etiqueta: 'Deshacer', icono: Undo2, atajo: `${MOD}+Z`, deshabilitado: !historialInfo.puedeDeshacer, accion: deshacer },
+        { id: 'rehacer', etiqueta: 'Rehacer', icono: Redo2, atajo: `${MOD}+Y`, deshabilitado: !historialInfo.puedeRehacer, accion: rehacer },
+      ];
+    }
+    const esImagen = capa.type === 'image';
+    return [
+      ...(capa.type === 'text' && CON_MOUSE
+        ? [{ id: 'escribir', etiqueta: 'Editar texto', icono: Pencil, atajo: 'Doble clic', accion: () => escribirEnLienzo(capa.id) }]
+        : []),
+      { id: 'duplicar', etiqueta: 'Duplicar', icono: Copy, atajo: `${MOD}+D`, accion: () => { asentarHistorial(); duplicar(); } },
+      { id: 'copiar', etiqueta: 'Copiar', icono: Clipboard, atajo: `${MOD}+C`, accion: copiar },
+      pegarOpcion,
+      'separador',
+      { id: 'adelante', etiqueta: 'Traer adelante', icono: ArrowUpToLine, atajo: ']', accion: () => { asentarHistorial(); mover(true); } },
+      { id: 'atras', etiqueta: 'Enviar atrás', icono: ArrowDownToLine, atajo: '[', accion: () => { asentarHistorial(); mover(false); } },
+      { id: 'centrar', etiqueta: 'Centrar en la zona', icono: Crosshair, atajo: 'C', accion: () => { asentarHistorial(); centrar(); } },
+      { id: 'girar', etiqueta: 'Girar', icono: RotateCw, atajo: 'R', accion: () => { asentarHistorial(); girar(1); } },
+      ...(esImagen ? [
+        {
+          id: 'voltear', etiqueta: 'Voltear', icono: FlipHorizontal, atajo: 'F',
+          accion: () => { asentarHistorial(); editarCapa(capa.id, { flipX: !capa.flipX }); },
+        },
+        { id: 'recortar', etiqueta: 'Recortar', icono: Crop, atajo: 'Doble clic', deshabilitado: !user, accion: () => setRecortando(capa.id) },
+        { id: 'fondo', etiqueta: 'Quitar fondo', icono: Eraser, deshabilitado: !user || capa.subiendo, accion: () => setQuitandoFondo(capa.id) },
+        { id: 'llenar', etiqueta: 'Llenar zona', icono: Maximize2, accion: () => { asentarHistorial(); ajustarAZona(); } },
+      ] : []),
+      'separador',
+      { id: 'quitar', etiqueta: 'Quitar', icono: Trash2, atajo: 'Supr', peligro: true, accion: () => { asentarHistorial(); eliminar(); } },
+    ];
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -1475,9 +1748,11 @@ const CrearStudioPage = () => {
 
           <p className={styles.zonaInfo}>
             <Info size={14} aria-hidden="true" />
-            {vista.zonas.length > 1
-              ? 'Toca una zona punteada para elegirla. Arrastra tu diseño a otra zona para pasarlo ahí.'
-              : 'Ubica tu diseño dentro de la zona punteada.'}
+            {CON_MOUSE
+              ? 'Doble clic para escribir sobre la prenda · Clic derecho para más opciones · Ctrl + rueda para cambiar el tamaño.'
+              : vista.zonas.length > 1
+                ? 'Toca una zona punteada para elegirla. Arrastra tu diseño a otra zona para pasarlo ahí.'
+                : 'Ubica tu diseño dentro de la zona punteada.'}
           </p>
 
         </section>
@@ -1510,7 +1785,7 @@ const CrearStudioPage = () => {
                 <ImagePlus size={20} aria-hidden="true" />
                 Subir imagen
               </button>
-              <button type="button" className={styles.botonAgregar} onClick={() => agregarTexto()} title="Agregar texto (T)">
+              <button type="button" className={styles.botonAgregar} onClick={() => agregarTexto(undefined, { editar: true })} title="Agregar texto (T)">
                 <Type size={20} aria-hidden="true" />
                 Agregar texto
               </button>
@@ -1742,6 +2017,8 @@ const CrearStudioPage = () => {
       )}
 
       {verAtajos && <AtajosTeclado vistas={cfg.vistas} onCerrar={() => setVerAtajos(false)} />}
+
+      {menu && <MenuContextual x={menu.x} y={menu.y} items={opcionesMenu()} onCerrar={cerrarMenu} />}
 
       {dialogoGuardar && (
         <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardar-titulo" onClick={() => setDialogoGuardar(false)}>
