@@ -190,9 +190,15 @@ const LIMITE_CURVA = (300 * Math.PI) / 180;
 export const curvarTexto = (obj, curva) => {
   const c = Math.max(-100, Math.min(100, Number(curva) || 0));
   if (obj.type === 'i-text') obj.set({ editable: !c });
-  obj.set({ path: null, pathAlign: 'center' });
+  obj.set({ path: null, pathAlign: 'center', pathStartOffset: 0 });
   if (!c) return obj;
-  const largo = Math.max(1, obj.calcTextWidth());
+  // fabric mide el arco con curvas aproximadas y le sale algo más corto que
+  // el real: con un arco justo, la primera letra "daba la vuelta" y salía al
+  // final (sobre todo con espaciado). Se deja un margen; el texto va centrado.
+  const largo = Math.max(1, obj.calcTextWidth()) * 1.04 + obj.fontSize * 0.1;
+  // El largo incluye el espaciado después de la última letra: se compensa
+  // para que lo que se ve quede centrado en el arco.
+  const espacioFinal = (obj.fontSize * (Number(obj.charSpacing) || 0)) / 1000;
   const angulo = (Math.abs(c) / 100) * LIMITE_CURVA;
   const r = largo / angulo;
   const x = Math.sin(angulo / 2) * r;
@@ -201,7 +207,7 @@ export const curvarTexto = (obj, curva) => {
   const d = c > 0
     ? `M ${-x} ${-y} A ${r} ${r} 0 ${grande} 1 ${x} ${-y}`
     : `M ${-x} ${y} A ${r} ${r} 0 ${grande} 0 ${x} ${y}`;
-  obj.set({ path: new fabric.Path(d, { visible: false }) });
+  obj.set({ path: new fabric.Path(d, { visible: false }), pathStartOffset: espacioFinal / 2 });
   return obj;
 };
 
