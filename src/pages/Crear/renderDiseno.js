@@ -122,16 +122,88 @@ export const rectDeZona = (t, extra = {}) => new fabric.Rect({
 
 export const recorteDeZona = (t) => rectDeZona(t, { absolutePositioned: true });
 
-export const propiedadesTexto = (capa) => ({
-  text: capa.text?.length ? capa.text : ' ',
-  fontFamily: capa.fuente || 'Montserrat',
-  fill: capa.color || '#111111',
-  fontSize: capa.tamano || 90,
-  fontWeight: capa.negrita ? 'bold' : 'normal',
-  fontStyle: capa.cursiva ? 'italic' : 'normal',
-  textAlign: 'center',
-  lineHeight: 1.05,
-});
+/**
+ * Propiedades de fabric de un texto, con sus efectos:
+ * - contorno: grosor visible en % del tamaño de letra (contornoColor). Se
+ *   pinta detrás de la letra, así no la adelgaza.
+ * - sombra: distancia en % del tamaño (sombraColor). Sólida, sin
+ *   desenfoque: una sombra difuminada no se imprime bien en la prenda.
+ * - espaciado (milésimas de letra), interlineado y alineacion.
+ * La curva va aparte (curvarTexto), porque depende del largo del texto.
+ */
+export const propiedadesTexto = (capa) => {
+  const tamano = capa.tamano || 90;
+  const curvo = Boolean(Number(capa.curva));
+  const texto = capa.text?.length ? capa.text : ' ';
+  const contorno = Number(capa.contorno) || 0;
+  const sombra = Number(capa.sombra) || 0;
+  return {
+    // Un texto curvo va en una sola línea (todas irían sobre el mismo arco).
+    text: curvo ? texto.replace(/\s*\n\s*/g, ' ') : texto,
+    fontFamily: capa.fuente || 'Montserrat',
+    fill: capa.color || '#111111',
+    fontSize: tamano,
+    fontWeight: capa.negrita ? 'bold' : 'normal',
+    fontStyle: capa.cursiva ? 'italic' : 'normal',
+    textAlign: curvo ? 'center' : (capa.alineacion || 'center'),
+    lineHeight: Number(capa.interlineado) || 1.05,
+    charSpacing: Number(capa.espaciado) || 0,
+    stroke: contorno > 0 ? (capa.contornoColor || '#FFFFFF') : null,
+    strokeWidth: contorno > 0 ? (tamano * contorno * 2) / 100 : 0,
+    paintFirst: 'stroke',
+    strokeLineJoin: 'round',
+    shadow: sombra > 0
+      ? new fabric.Shadow({
+        color: capa.sombraColor || '#111111',
+        blur: 0,
+        offsetX: (tamano * sombra) / 100,
+        offsetY: (tamano * sombra) / 100,
+        affectStroke: true,
+      })
+      : null,
+  };
+};
+
+/**
+ * Pinta el contorno con la sombra y la letra encima sin sombra: así la
+ * sombra es la de todo el conjunto (fabric, por defecto, o la pierde o
+ * dibuja la de la letra encima del contorno).
+ */
+function pintarTextoConContorno(ctx) {
+  if (this.stroke && this.strokeWidth > 0) {
+    this._renderTextStroke(ctx);
+    this._removeShadow(ctx);
+    this._renderTextFill(ctx);
+    return;
+  }
+  this._renderTextFill(ctx);
+}
+
+const LIMITE_CURVA = (300 * Math.PI) / 180;
+
+/**
+ * Curva el texto sobre un arco del largo justo del texto. curva (−100 a
+ * 100): positiva lo arquea hacia arriba (∩), negativa hacia abajo (∪);
+ * 100 es casi un círculo. Un texto curvo no se escribe directo sobre la
+ * prenda (se edita en el panel).
+ */
+export const curvarTexto = (obj, curva) => {
+  const c = Math.max(-100, Math.min(100, Number(curva) || 0));
+  if (obj.type === 'i-text') obj.set({ editable: !c });
+  obj.set({ path: null, pathAlign: 'center' });
+  if (!c) return obj;
+  const largo = Math.max(1, obj.calcTextWidth());
+  const angulo = (Math.abs(c) / 100) * LIMITE_CURVA;
+  const r = largo / angulo;
+  const x = Math.sin(angulo / 2) * r;
+  const y = Math.cos(angulo / 2) * r;
+  const grande = angulo > Math.PI ? 1 : 0;
+  const d = c > 0
+    ? `M ${-x} ${-y} A ${r} ${r} 0 ${grande} 1 ${x} ${-y}`
+    : `M ${-x} ${y} A ${r} ${r} 0 ${grande} 0 ${x} ${y}`;
+  obj.set({ path: new fabric.Path(d, { visible: false }) });
+  return obj;
+};
 
 /** Posición, escala y giro de una capa en el lienzo de destino. */
 export const ubicacion = (capa, t) => {
@@ -161,16 +233,17 @@ export const crearObjeto = async (capa, t, srcDe = (c) => c.src, { editable = fa
     return new fabric.Image(img, comun);
   }
   const props = { ...comun, ...propiedadesTexto(capa) };
-  if (editable) {
-    return new fabric.IText(props.text, {
+  const texto = editable
+    ? new fabric.IText(props.text, {
       ...props,
       cursorColor: '#7C3AED',
       cursorWidth: 3,
       selectionColor: 'rgba(124, 58, 237, 0.25)',
       editingBorderColor: '#7C3AED',
-    });
-  }
-  return new fabric.Text(props.text, props);
+    })
+    : new fabric.Text(props.text, props);
+  texto._renderText = pintarTextoConContorno;
+  return curvarTexto(texto, capa.curva);
 };
 
 /** Lee de vuelta la posición de un objeto del lienzo, en unidades de su zona. */

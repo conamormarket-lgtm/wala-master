@@ -22,13 +22,14 @@ import {
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
   propiedadesTexto, renderizarImpresion, renderizarVistaPrevia, componerVistas, transformDeZona, rectDeZona,
-  recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo, aLienzo,
+  recorteDeZona, seSaleDeZona, ubicacion, desdeLienzo, aLienzo, curvarTexto,
 } from './renderDiseno';
 import RecorteImagen from './RecorteImagen';
 import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
 import MenuContextual from './MenuContextual';
+import EfectosTexto from './EfectosTexto';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
 import styles from './CrearStudioPage.module.css';
 
@@ -489,6 +490,7 @@ const CrearStudioPage = () => {
       if (obj.isEditing) delete props.text;
       obj.set(props);
       obj.initDimensions?.();
+      if (!obj.isEditing) curvarTexto(obj, capa.curva);
       // Un texto que crece al escribir se achica solo para seguir entrando en la
       // zona. Si está de costado (mangas), su largo se mide contra el alto.
       const deCostado = Math.abs(Math.round((capa.angulo || 0) / 90)) % 2 === 1;
@@ -1956,6 +1958,7 @@ const CrearStudioPage = () => {
                       </button>
                     </div>
                   </div>
+                  <EfectosTexto capa={capaSel} onCambiar={(cambios) => editarCapa(capaSel.id, cambios)} />
                 </>
               )}
 
