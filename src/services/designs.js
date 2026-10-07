@@ -239,3 +239,10 @@ export const marcarCreacionesEnPedido = async (designIds) => {
   const ids = [...new Set((designIds || []).filter(Boolean))];
   await Promise.all(ids.map((id) => updateDocument('designs', id, { enPedido: true }).catch(() => null)));
 };
+
+/**
+ * Guarda solo la talla elegida de una creación. La talla no es parte del
+ * diseño (no cambia sus imágenes): se recuerda sin volver a generarlas.
+ */
+export const guardarTallaCreacion = (designId, talla) =>
+  updateDocument('designs', designId, { 'variant.size': talla });

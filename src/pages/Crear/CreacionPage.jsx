@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ShoppingBag, Pencil, Download, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
-import { getDesignById } from '../../services/designs';
+import { getDesignById, guardarTallaCreacion } from '../../services/designs';
 import { getPrendaBase } from '../../services/prendasBase';
 import { leerPrendaBase, precioPersonalizado, tallasDeColor } from '../../utils/prendaBase';
 import { itemDeCreacion, creacionLista } from './creacionCarrito';
@@ -30,6 +30,7 @@ const CreacionPage = () => {
   const [talla, setTalla] = useState(null);
   const [imagenSel, setImagenSel] = useState(0);
   const [avisoTalla, setAvisoTalla] = useState(false);
+  const queryClient = useQueryClient();
   const { pedir: pedirEliminar, dialogo: dialogoEliminar } = useEliminarCreacion({
     alEliminar: () => navigate('/cuenta/creaciones', { replace: true }),
   });
@@ -106,6 +107,19 @@ const CreacionPage = () => {
   const editarUrl = `/crear/${creacion.productId}?designId=${id}`;
   const imagen = imagenes[Math.min(imagenSel, imagenes.length - 1)];
 
+  /** Elegir talla la deja guardada en la creación (al volver, sigue la misma). */
+  const elegirTalla = async (t) => {
+    setTalla(t);
+    setAvisoTalla(false);
+    if (t === creacion.variant?.size) return;
+    const { error } = await guardarTallaCreacion(id, t);
+    if (error) {
+      toast.error('No pudimos guardar la talla. Inténtalo de nuevo.');
+      return;
+    }
+    queryClient.setQueryData(['creacion', id, user?.uid], (prev) => (prev ? { ...prev, variant: { ...prev.variant, size: t } } : prev));
+  };
+
   const agregar = () => {
     if (tallas.length && !tallaActual) {
       setAvisoTalla(true);
@@ -177,7 +191,7 @@ const CreacionPage = () => {
                         type="button"
                         aria-pressed={t === tallaActual}
                         className={`${styles.talla} ${t === tallaActual ? styles.tallaActiva : ''}`}
-                        onClick={() => { setTalla(t); setAvisoTalla(false); }}
+                        onClick={() => elegirTalla(t)}
                       >
                         {t}
                       </button>

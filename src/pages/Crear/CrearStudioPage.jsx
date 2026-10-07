@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getPrendaBase } from '../../services/prendasBase';
-import { getDesignById, saveDesign } from '../../services/designs';
+import { getDesignById, saveDesign, guardarTallaCreacion } from '../../services/designs';
 import {
   prepararImagenCliente, subirImagenCliente, subirArchivoImpresion, subirVistaPrevia, recortarImagen,
 } from '../../services/crearArchivos';
@@ -83,15 +83,15 @@ const estilizar = (obj) => {
 };
 
 /**
- * Firma del diseño, para saber si cambió desde lo último guardado: capas,
- * color y talla. No cuenta lo que solo dice si una imagen terminó de
+ * Firma del diseño, para saber si cambió desde lo último guardado: capas y
+ * color. La talla no es parte del diseño (se guarda sola). No cuenta lo que solo dice si una imagen terminó de
  * subirse, ni el orden de los campos, ni un false que equivale a no tenerlo.
  */
-const firmaDiseno = (capasPorZona, colorId, talla) => {
+const firmaDiseno = (capasPorZona, colorId) => {
   const capas = Object.keys(capasPorZona || {}).sort()
     .filter((zId) => capasPorZona[zId]?.length)
     .map((zId) => [zId, capasPorZona[zId]]);
-  return JSON.stringify({ capas, colorId: colorId || null, talla: talla || '' }, (k, v) => {
+  return JSON.stringify({ capas, colorId: colorId || null }, (k, v) => {
     if (k === 'src' || k === 'subiendo' || v === false) return undefined;
     if (v && typeof v === 'object' && !Array.isArray(v)) {
       return Object.fromEntries(Object.keys(v).sort().map((key) => [key, v[key]]));
@@ -201,6 +201,8 @@ const CrearStudioPage = () => {
   const firmaBorradorRef = useRef(null);
   const autoguardarRef = useRef(null);
   const montadoRef = useRef(true);
+  // Talla guardada de la creación abierta (null si no es una creación guardada).
+  const tallaGuardadaRef = useRef(null);
   // Deshacer / rehacer, portapapeles de capas y atajos de teclado.
   const historialRef = useRef({ pasado: [], futuro: [], actual: null });
   const restaurandoRef = useRef(false);
@@ -245,7 +247,7 @@ const CrearStudioPage = () => {
   // con contenido, o una creación que cambió desde que se guardó.
   const hayCambios = firmaGuardada === null
     ? zonasUsadas.length > 0
-    : firmaDiseno(capasPorZona, color?.id, talla) !== firmaGuardada;
+    : firmaDiseno(capasPorZona, color?.id) !== firmaGuardada;
   const srcDe = useCallback((capa) => localSrcRef.current.get(capa.id) || capa.src, []);
 
   // ── Pantalla completa en el celular (oculta header, footer y barra inferior)
@@ -274,7 +276,8 @@ const CrearStudioPage = () => {
       setColorId(colorInicial);
       setTalla(tallaInicial);
       // Una creación guardada abre "sin cambios": Guardar se activa al cambiar algo.
-      setFirmaGuardada(estado?.guardada ? firmaDiseno(capas, colorInicial, tallaInicial) : null);
+      setFirmaGuardada(estado?.guardada ? firmaDiseno(capas, colorInicial) : null);
+      tallaGuardadaRef.current = estado?.guardada ? tallaInicial : null;
       setListo(true);
     };
     (async () => {
@@ -335,6 +338,19 @@ const CrearStudioPage = () => {
   useEffect(() => {
     if (listo) guardarBorrador();
   }, [listo, capasPorZona, guardarBorrador]);
+
+  // En una creación guardada la talla se recuerda sola: no es parte del
+  // diseño, así que no hace falta "Guardar" ni volver a generar imágenes.
+  useEffect(() => {
+    if (!listo || !user || !designId || esBorrador || tallaGuardadaRef.current === null) return;
+    if (!talla || talla === tallaGuardadaRef.current) return;
+    tallaGuardadaRef.current = talla;
+    guardarTallaCreacion(designId, talla).then(({ error }) => {
+      if (error) toast.error('No pudimos guardar la talla.');
+      else queryClient.removeQueries({ queryKey: ['creacion', designId] });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [talla]);
 
   // Con sesión, el diseño sin terminar se guarda en la cuenta unos segundos
   // después de cada cambio (y al salir del estudio, si quedó algo pendiente).
@@ -1124,7 +1140,8 @@ const CrearStudioPage = () => {
     for (const v of cfg.vistas) {
       piezas.push({ nombre: v.nombre, blob: previasHechas[v.id] || await renderizarVista(v, capas) });
     }
-    return componerVistas(piezas, { titulo: `${prenda.name} · ${color.nombre}${talla ? ` · Talla ${talla}` : ''}` });
+    // Sin la talla: no se ve en la prenda y puede cambiar en cada compra.
+    return componerVistas(piezas, { titulo: `${prenda.name} · ${color.nombre}` });
   };
 
   const descargarImagen = async () => {
@@ -1346,7 +1363,8 @@ const CrearStudioPage = () => {
     queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
     queryClient.removeQueries({ queryKey: ['creacion', idFinal] });
     setNombre(creacion.name);
-    setFirmaGuardada(firmaDiseno(capasRef.current, color.id, talla));
+    setFirmaGuardada(firmaDiseno(capasRef.current, color.id));
+    tallaGuardadaRef.current = talla;
     // Ya está guardada: la próxima vez la plantilla se abre limpia.
     try { sessionStorage.removeItem(claveBorrador(id)); } catch { /* nada */ }
     return { ...creacion, id: idFinal };
