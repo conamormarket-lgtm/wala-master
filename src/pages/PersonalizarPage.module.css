@@ -135,61 +135,66 @@
   scroll-snap-align: start;
 }
 
-/* ── Grilla de prendas ── */
+/* ── Grilla de prendas ──
+   Misma tarjeta que Mis creaciones (MisCreacionesPage.module.css .card):
+   foto cuadrada sobre lila, frente/espalda al pasar el cursor, etiqueta de
+   lados, datos y pie con precio + botón violeta plano. */
 .grilla {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 1.25rem;
 }
 
 .tarjeta {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
-  background: var(--blanco);
+  min-width: 0;
+  background: var(--color-surface, var(--blanco));
   border: 1px solid var(--gris-borde);
   border-radius: 20px;
   overflow: hidden;
+  box-shadow: var(--sombra-suave);
   text-decoration: none;
   color: inherit;
-  transition: transform var(--dur-rapida, 180ms) ease, box-shadow var(--dur-rapida, 180ms) ease;
+  transition: transform var(--dur-rapida, 180ms) ease, box-shadow var(--dur-rapida, 180ms) ease, border-color var(--dur-rapida, 180ms) ease;
 }
 
 .tarjeta:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 28px var(--color-shadow, rgba(15, 23, 42, 0.08));
+  border-color: var(--violet-200, #ddd6fe);
+  box-shadow: 0 12px 28px -14px rgba(139, 92, 246, 0.4), var(--sombra-suave);
+  color: inherit;
 }
 
 .foto {
   position: relative;
   aspect-ratio: 1;
-  background: #EEEDF3;
-}
-
-:global([data-theme="dark"]) .foto {
-  background: #2A2640;
+  background: #F3F1F7;
+  overflow: hidden;
 }
 
 .borrador {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 0.6rem;
+  left: 0.6rem;
   z-index: 1;
   background: #FEF3C7;
   color: #92400E;
   font-size: 0.72rem;
   font-weight: 800;
-  padding: 2px 8px;
+  padding: 0.2rem 0.6rem;
   border-radius: 999px;
 }
 
 .fotoFrente,
 .fotoEspalda {
   position: absolute;
-  inset: 8%;
-  width: 84%;
-  height: 84%;
+  inset: 6%;
+  width: 88%;
+  height: 88%;
   object-fit: contain;
-  transition: opacity var(--dur-media, 320ms) ease;
+  transition: opacity var(--dur-media, 320ms) ease, transform var(--dur-media, 320ms) ease;
 }
 
 .fotoEspalda {
@@ -197,27 +202,52 @@
 }
 
 @media (hover: hover) {
+  .tarjeta:hover .fotoFrente,
+  .tarjeta:hover .fotoEspalda { transform: scale(1.03); }
   .tarjeta:hover .fotoEspalda { opacity: 1; }
-  .tarjeta:hover .fotoFrente { opacity: 0; }
+  .tarjeta:hover .fotoFrente:has(+ .fotoEspalda) { opacity: 0; }
+}
+
+/* Lados que se pueden diseñar ("Frente + Espalda"), como en Mis creaciones. */
+.lados {
+  position: absolute;
+  left: 0.6rem;
+  bottom: 0.6rem;
+  z-index: 1;
+  max-width: calc(100% - 1.2rem);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--primary-color, #6d28d9);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 4px rgba(20, 18, 28, 0.08);
 }
 
 .info {
-  padding: 1rem 1.1rem 1.1rem;
+  flex: 1;
+  padding: 0.95rem 1rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.4rem;
+  min-width: 0;
 }
 
 .nombre {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   font-weight: 800;
+  line-height: 1.3;
   color: var(--gris-texto-principal);
 }
 
 .colores {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.35rem;
 }
 
@@ -233,31 +263,72 @@
   color: var(--gris-texto-secundario);
 }
 
+.cantidadColores {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--gris-texto-secundario);
+}
+
 .pie {
+  margin-top: auto;
+  padding-top: 0.6rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
+.precios {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.desde {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gris-texto-secundario);
+}
+
 .precio {
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
   color: var(--gris-texto-principal);
+  white-space: nowrap;
 }
 
 /* Violeta plano, el mismo de "Comprar" / "Continuar" en las creaciones. */
 .cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 38px;
+  padding: 0 0.95rem;
+  border-radius: 10px;
   background: #8b5cf6;
   color: #fff;
   font-weight: 700;
   font-size: 0.85rem;
-  padding: 0.5rem 0.95rem;
-  border-radius: 10px;
   transition: background-color 0.2s ease;
 }
 
 .tarjeta:hover .cta {
   background: #7c3aed;
+}
+
+/* Tarjeta angosta (2 columnas en móvil): precio arriba, botón a lo ancho. */
+@container (max-width: 230px) {
+  .pie {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+:global([data-theme="dark"]) .tarjeta:hover {
+  border-color: rgba(167, 139, 250, 0.4);
+  box-shadow: 0 12px 28px -14px rgba(167, 139, 250, 0.45), var(--sombra-suave);
 }
 
 .esqueleto {
@@ -359,10 +430,5 @@
 
   .nombre {
     font-size: 0.95rem;
-  }
-
-  .pie {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }

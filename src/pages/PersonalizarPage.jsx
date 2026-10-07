@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Shirt, Upload, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Shirt, Upload, ShoppingBag, ArrowRight, Paintbrush } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
 import { getDesignsByUser } from '../services/designs';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,16 +24,20 @@ const TarjetaPrenda = ({ prenda }) => {
   const colores = leida.colores.filter((c) => colorDisponible(c, vistas));
   const frente = vistas[0]?.imagen;
   const espalda = vistas[1]?.imagen;
+  const lados = vistas.map((v) => v.nombre).filter(Boolean);
   return (
     <Link to={`/crear/${prenda.id}`} className={styles.tarjeta}>
       <div className={styles.foto}>
         {prenda.visible === false && <span className={styles.borrador}>Borrador</span>}
         {frente && <img src={frente} alt={prenda.name} className={styles.fotoFrente} loading="lazy" />}
         {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
+        {lados.length > 0 && (
+          <span className={styles.lados} title="Lados que puedes diseñar">{lados.join(' + ')}</span>
+        )}
       </div>
       <div className={styles.info}>
         <h2 className={styles.nombre}>{prenda.name}</h2>
-        <div className={styles.colores} aria-label={`${colores.length} colores`}>
+        <div className={styles.colores}>
           {colores.slice(0, 7).map((c) => (
             <span
               key={c.id}
@@ -44,9 +48,15 @@ const TarjetaPrenda = ({ prenda }) => {
           ))}
           {colores.length > 7 && <span className={styles.mas}>+{colores.length - 7}</span>}
         </div>
+        <p className={styles.cantidadColores}>
+          {colores.length} {colores.length === 1 ? 'color' : 'colores'} · tu imagen o tu frase
+        </p>
         <div className={styles.pie}>
-          <span className={styles.precio}>Desde S/ {precioBase(prenda).toFixed(2)}</span>
-          <span className={styles.cta}>Diseñar</span>
+          <div className={styles.precios}>
+            <span className={styles.desde}>Desde</span>
+            <span className={styles.precio}>S/ {precioBase(prenda).toFixed(2)}</span>
+          </div>
+          <span className={styles.cta}><Paintbrush size={15} aria-hidden="true" /> Diseñar</span>
         </div>
       </div>
     </Link>
