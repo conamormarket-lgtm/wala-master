@@ -670,6 +670,17 @@
   accent-color: var(--primary-color);
 }
 
+.patron {
+  height: 30px;
+  padding: 0 0.4rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
 .alerta {
   display: flex;
   align-items: center;

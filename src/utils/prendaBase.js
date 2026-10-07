@@ -15,7 +15,7 @@
  *   prendaBase: {
  *     vistas:  [{ id, nombre, imagen,
  *                 zonas: [{ id, nombre, x, y, w, proporcion, angulo }] }],
- *     colores: { [variantId]: { hex2, fotos: { [vistaId]: url } } },
+ *     colores: { [variantId]: { hex2, patron, fotos: { [vistaId]: url } } },
  *   }
  *
  * Cada vista (frente, espalda) tiene sus zonas de impresión (pecho, mangas,
@@ -69,7 +69,7 @@ export const COLORES_POLERA = [
   { nombre: 'Celeste / Rosado', hex: '#A9D5F6', hex2: '#FDA9C9' },
   { nombre: 'Negro / Rosado', hex: '#101010', hex2: '#FDA9C9' },
   { nombre: 'Blanco / Negro', hex: '#F3F3F3', hex2: '#101010' },
-  { nombre: 'Panda', hex: '#F3F3F3', hex2: '#101010' },
+  { nombre: 'Panda', hex: '#F3F3F3', hex2: '#101010', patron: 'mangas' },
 ];
 
 export const TALLAS_POLERA = ['S', 'M', 'L', 'XL'];
@@ -203,11 +203,22 @@ const limpiarFotos = (fotos) => {
   return out;
 };
 
+/**
+ * Cómo se reparte un bicolor en la prenda, para pintar su muestra igual:
+ * mitad y mitad (el segundo tono a la izquierda, como en las fotos) o el
+ * cuerpo de un tono y las mangas del otro (Panda).
+ */
+export const PATRONES_BICOLOR = [
+  { id: 'mitades', nombre: 'Mitad y mitad' },
+  { id: 'mangas', nombre: 'Cuerpo y mangas' },
+];
+
 export const normalizarColor = (color, i = 0) => ({
   id: String(color?.id || slug(color?.nombre) || `color-${i + 1}`),
   nombre: String(color?.nombre || `Color ${i + 1}`),
   hex: esHex(color?.hex) ? color.hex.toUpperCase() : hexPorNombre(color?.nombre),
   hex2: esHex(color?.hex2) ? color.hex2.toUpperCase() : '',
+  patron: PATRONES_BICOLOR.some((p) => p.id === color?.patron) ? color.patron : PATRONES_BICOLOR[0].id,
   fotos: limpiarFotos(color?.fotos),
   tallas: (Array.isArray(color?.tallas) ? color.tallas : []).map((t) => String(t || '').trim()).filter(Boolean),
 });
@@ -239,6 +250,7 @@ export const leerPrendaBase = (producto) => {
       nombre: String(v.name).trim(),
       hex: v.colorHex,
       hex2: extra[v.id]?.hex2,
+      patron: extra[v.id]?.patron,
       fotos: extra[v.id]?.fotos,
       tallas: v.sizes,
     }, i));
@@ -270,14 +282,20 @@ export const colorDisponible = (color, vistas) =>
   !color.hex2 || vistas.every((v) => Boolean(color.fotos[v.id]));
 
 /**
- * Fondo de la muestra redonda de un color. Un bicolor va partido en diagonal:
- * con un borde de 1px suavizado (si no, la línea sale en escalera) y pintado
- * también bajo el borde, sin repetirse (si no, en el borde asoma el otro
- * color y el círculo se ve mordido).
+ * Fondo de la muestra redonda de un color. Un bicolor se pinta con su patrón
+ * (PATRONES_BICOLOR): franjas verticales con el corte suavizado 1px y
+ * pintadas también bajo el borde, sin repetirse (si no, en el borde asoma el
+ * otro color y el círculo se ve mordido).
  */
-export const fondoMuestra = (c) => (c.hex2
-  ? `linear-gradient(135deg, ${c.hex} calc(50% - 0.5px), ${c.hex2} calc(50% + 0.5px)) border-box no-repeat`
-  : c.hex);
+export const fondoMuestra = (c) => {
+  if (!c.hex2) return c.hex;
+  const { hex: a, hex2: b } = c;
+  const franjas = c.patron === 'mangas'
+    // Mangas a los lados, cuerpo al centro.
+    ? `${b} calc(30% - 0.5px), ${a} calc(30% + 0.5px), ${a} calc(70% - 0.5px), ${b} calc(70% + 0.5px)`
+    : `${b} calc(50% - 0.5px), ${a} calc(50% + 0.5px)`;
+  return `linear-gradient(90deg, ${franjas}) border-box no-repeat`;
+};
 
 export const esPrendaBase = (producto) => producto?.esPrendaBase === true;
 

@@ -4,7 +4,7 @@ import { uploadFile } from '../../../services/firebase/storage';
 import {
   leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
   nuevoIdZona, slug, cargarImagen, tintarImagen,
-  colorDisponible, fondoMuestra, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
+  colorDisponible, fondoMuestra, PATRONES_BICOLOR, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
 } from '../../../utils/prendaBase';
 import ZonaEditor from './ZonaEditor';
 import styles from './PersonalizacionPrenda.module.css';
@@ -21,7 +21,7 @@ export const prendaBaseParaGuardar = (valor, variantes) => {
   Object.entries(valor?.colores || {}).forEach(([id, c]) => {
     if (!ids.has(id)) return;
     const fotos = Object.fromEntries(Object.entries(c?.fotos || {}).filter(([, url]) => url));
-    if (c?.hex2 || Object.keys(fotos).length) colores[id] = { ...(c.hex2 ? { hex2: c.hex2 } : {}), fotos };
+    if (c?.hex2 || Object.keys(fotos).length) colores[id] = { ...(c.hex2 ? { hex2: c.hex2, patron: c.patron || 'mitades' } : {}), fotos };
   });
   return { vistas: (valor?.vistas || []).map(normalizarVista), colores };
 };
@@ -149,7 +149,7 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
     }
     const creados = nuevos.map((c, i) => ({ ...c, id: `var_${Date.now()}_${i}` }));
     onAgregarVariantes(creados.map((c) => ({ id: c.id, nombre: c.nombre, hex: c.hex, tallas: TALLAS_POLERA })));
-    const bicolores = Object.fromEntries(creados.filter((c) => c.hex2).map((c) => [c.id, { hex2: c.hex2, fotos: {} }]));
+    const bicolores = Object.fromEntries(creados.filter((c) => c.hex2).map((c) => [c.id, { hex2: c.hex2, patron: c.patron || 'mitades', fotos: {} }]));
     if (Object.keys(bicolores).length) cambiar({ colores: { ...extras, ...bicolores } });
   };
 
@@ -416,6 +416,17 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                         aria-label={`Segundo tono de ${c.nombre}`}
                         title="Segundo tono"
                       />
+                    )}
+                    {c.hex2 && (
+                      <select
+                        className={styles.patron}
+                        value={c.patron}
+                        onChange={(e) => setExtra(c.id, { patron: e.target.value })}
+                        aria-label={`Cómo se reparte ${c.nombre}`}
+                        title="Cómo se reparten los dos tonos (así se dibuja su círculo)"
+                      >
+                        {PATRONES_BICOLOR.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                      </select>
                     )}
                   </div>
                   {!listo && (

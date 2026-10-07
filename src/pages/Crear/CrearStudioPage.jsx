@@ -2568,7 +2568,10 @@ const CrearStudioPage = () => {
                   title={c.nombre}
                   onClick={() => cambiarColorPrenda(c)}
                 >
-                  {c.id === color.id && <Check size={16} strokeWidth={3} className={styles.checkColor} style={{ color: textoSobre(c.hex) }} aria-hidden="true" />}
+                  {c.id === color.id && (c.hex2
+                    // En un bicolor el centro cae sobre el corte: va sobre un disco oscuro.
+                    ? <Check size={14} strokeWidth={3} className={`${styles.checkColor} ${styles.checkBicolor}`} aria-hidden="true" />
+                    : <Check size={16} strokeWidth={3} className={styles.checkColor} style={{ color: textoSobre(c.hex) }} aria-hidden="true" />)}
                 </button>
               ))}
             </div>
