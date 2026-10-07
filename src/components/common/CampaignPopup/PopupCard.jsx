@@ -7,6 +7,7 @@
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { X } from 'lucide-react';
+import { useBloquearScroll } from '../../../hooks/useBloquearScroll';
 import styles from './CampaignPopup.module.css';
 
 const PopupCard = ({ popup, onCta, onClose }) => {
@@ -15,18 +16,15 @@ const PopupCard = ({ popup, onCta, onClose }) => {
   const dialogoRef = useRef(null);
   const soloImagen = popup.formato === 'imagen' && popup.imagenUrl;
 
+  useBloquearScroll();
+
   useEffect(() => {
-    const anterior = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     dialogoRef.current?.focus({ preventScroll: true });
     const alTeclear = (e) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', alTeclear);
-    return () => {
-      document.body.style.overflow = anterior;
-      window.removeEventListener('keydown', alTeclear);
-    };
+    return () => window.removeEventListener('keydown', alTeclear);
   }, [onClose]);
 
   const tituloId = `popup-titulo-${popup.id || 'preview'}`;

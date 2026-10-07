@@ -12,6 +12,7 @@ import { getCharacters } from '../../../services/characters';
 import { getProductTypes } from '../../../services/productTypes';
 import { getProducts, getProductsByBrand } from '../../../services/products';
 // i18n: t() para textos estáticos; <T> para nombres dinámicos de la BD.
+import { useBloquearScroll } from '../../../hooks/useBloquearScroll';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { T } from '../../../i18n/useTranslatedText';
 
@@ -127,17 +128,8 @@ const SidebarCatalogLayout = ({
   });
   const toggleGrupo = (id) => setGruposColapsados(g => ({ ...g, [id]: !g[id] }));
 
-  // Prevenir scroll en el body cuando el drawer esté abierto
-  useEffect(() => {
-    if (isMobileDrawerOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isMobileDrawerOpen]);
+  // La página de atrás no se mueve mientras el cajón está abierto.
+  useBloquearScroll(isMobileDrawerOpen);
 
   // ── Sincroniza la categoría activa con la faceta de servidor ──────────
   // Cuando hay paginación por cursor (onServerFacetChange definido), al elegir

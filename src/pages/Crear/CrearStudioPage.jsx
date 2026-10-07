@@ -29,6 +29,7 @@ import RecorteImagen from './RecorteImagen';
 import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
 import AtajosTeclado, { MOD } from './AtajosTeclado';
+import CapaModal from './CapaModal';
 import MenuContextual from './MenuContextual';
 import EfectosTexto from './EfectosTexto';
 import SelectorFuente from './SelectorFuente';
@@ -2880,12 +2881,12 @@ const CrearStudioPage = () => {
       </div>
 
       {procesando && (
-        <div className={styles.capaBloqueo} role="status" aria-live="polite">
+        <CapaModal className={styles.capaBloqueo} role="status" aria-live="polite">
           <div className={styles.cajaBloqueo}>
             <Loader2 size={28} className={styles.girando} aria-hidden="true" />
             <p>{procesando}</p>
           </div>
-        </div>
+        </CapaModal>
       )}
 
       {recortando && capaSel?.id === recortando && capaSel.type === 'image' && (
@@ -2909,7 +2910,7 @@ const CrearStudioPage = () => {
       {menu && <MenuContextual x={menu.x} y={menu.y} items={opcionesMenu()} onCerrar={cerrarMenu} />}
 
       {pidiendoTalla && (
-        <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-talla-titulo" onClick={() => setPidiendoTalla(false)}>
+        <CapaModal className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-talla-titulo" onClick={() => setPidiendoTalla(false)}>
           <form
             className={styles.cajaBloqueo}
             onClick={(e) => e.stopPropagation()}
@@ -2938,11 +2939,11 @@ const CrearStudioPage = () => {
             </button>
             <button type="button" className={styles.botonTexto} onClick={() => setPidiendoTalla(false)}>Cancelar</button>
           </form>
-        </div>
+        </CapaModal>
       )}
 
       {dialogoGuardar && (
-        <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardar-titulo" onClick={() => setDialogoGuardar(false)}>
+        <CapaModal className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardar-titulo" onClick={() => setDialogoGuardar(false)}>
           <form
             className={styles.cajaBloqueo}
             onClick={(e) => e.stopPropagation()}
@@ -2962,11 +2963,11 @@ const CrearStudioPage = () => {
             <button type="submit" className={styles.botonPrincipal}>Guardar creación</button>
             <button type="button" className={styles.botonTexto} onClick={() => setDialogoGuardar(false)}>Cancelar</button>
           </form>
-        </div>
+        </CapaModal>
       )}
 
       {guardada && (
-        <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardada-titulo" onClick={() => setGuardada(null)}>
+        <CapaModal className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardada-titulo" onClick={() => setGuardada(null)}>
           <div className={styles.cajaBloqueo} onClick={(e) => e.stopPropagation()}>
             <h2 id="crear-guardada-titulo" className={styles.estadoTitulo}>¡Creación guardada!</h2>
             {guardada.imagenConjunta && <img src={guardada.imagenConjunta} alt={guardada.name} className={styles.imagenGuardada} />}
@@ -2974,18 +2975,18 @@ const CrearStudioPage = () => {
             <Link to={`/creacion/${guardada.id}`} className={styles.botonPrincipal}>Ver mi creación</Link>
             <button type="button" className={styles.botonTexto} onClick={() => setGuardada(null)}>Seguir diseñando</button>
           </div>
-        </div>
+        </CapaModal>
       )}
 
       {pedirLogin && (
-        <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-login-titulo" onClick={() => setPedirLogin(false)}>
+        <CapaModal className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-login-titulo" onClick={() => setPedirLogin(false)}>
           <div className={styles.cajaBloqueo} onClick={(e) => e.stopPropagation()}>
             <h2 id="crear-login-titulo" className={styles.estadoTitulo}>Inicia sesión para continuar</h2>
             <p>Así guardamos tus imágenes y tu diseño. Tus textos y elecciones se quedan como los dejaste.</p>
             <button type="button" className={styles.botonPrincipal} onClick={irALogin}>Iniciar sesión</button>
             <button type="button" className={styles.botonTexto} onClick={() => setPedirLogin(false)}>Seguir diseñando</button>
           </div>
-        </div>
+        </CapaModal>
       )}
     </div>
   );

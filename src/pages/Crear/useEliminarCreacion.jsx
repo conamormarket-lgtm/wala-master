@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,6 +6,7 @@ import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { eliminarCreacion } from '../../services/designs';
 import { quitarBorradorDeCache } from './borradoresCache';
+import CapaModal from './CapaModal';
 import styles from './EliminarCreacion.module.css';
 
 /**
@@ -15,7 +15,7 @@ import styles from './EliminarCreacion.module.css';
  *
  *   const { pedir, dialogo } = useEliminarCreacion({ alEliminar });
  *   pedir(diseno, { enPedido })  → abre la confirmación
- *   {dialogo}                    → se renderiza donde sea (va en un portal)
+ *   {dialogo}                    → se renderiza donde sea (va en CapaModal)
  *
  * También quita la creación del carrito: sin ella, el artículo quedaría
  * apuntando a imágenes que ya no existen.
@@ -64,8 +64,8 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
     alEliminar?.(diseno);
   };
 
-  const dialogo = pendiente ? createPortal(
-    <div className={styles.capa} role="dialog" aria-modal="true" aria-labelledby="eliminar-creacion-titulo" onClick={cerrar}>
+  const dialogo = pendiente ? (
+    <CapaModal className={styles.capa} role="dialog" aria-modal="true" aria-labelledby="eliminar-creacion-titulo" onClick={cerrar}>
       <div className={styles.caja} onClick={(e) => e.stopPropagation()}>
         <span className={styles.icono}><Trash2 size={22} aria-hidden="true" /></span>
         <h2 id="eliminar-creacion-titulo" className={styles.titulo}>
@@ -84,8 +84,7 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
         </button>
         <button type="button" className={styles.cancelar} onClick={cerrar} disabled={borrando}>Cancelar</button>
       </div>
-    </div>,
-    document.body
+    </CapaModal>
   ) : null;
 
   return { pedir, dialogo, borrando };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Keyboard, X } from 'lucide-react';
 import styles from './AtajosTeclado.module.css';
+import CapaModal from './CapaModal';
 
 const esMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '');
 
@@ -66,7 +67,7 @@ const grupos = (vistas) => [
 
 /** Ventana con los atajos de teclado del estudio (se abre con "?" o el botón Atajos). */
 const AtajosTeclado = ({ vistas = [], onCerrar }) => (
-  <div className={styles.capa} role="dialog" aria-modal="true" aria-labelledby="atajos-titulo" onClick={onCerrar}>
+  <CapaModal className={styles.capa} role="dialog" aria-modal="true" aria-labelledby="atajos-titulo" onClick={onCerrar}>
     <div className={styles.caja} onClick={(e) => e.stopPropagation()}>
       <div className={styles.cabecera}>
         <h2 id="atajos-titulo" className={styles.titulo}>
@@ -104,7 +105,7 @@ const AtajosTeclado = ({ vistas = [], onCerrar }) => (
         También puedes arrastrar una imagen desde tu computadora y soltarla sobre la prenda.
       </p>
     </div>
-  </div>
+  </CapaModal>
 );
 
 export default AtajosTeclado;

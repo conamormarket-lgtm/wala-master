@@ -1,18 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
+import { useBloquearScroll } from '../../../hooks/useBloquearScroll';
 import styles from './Modal.module.css';
 
 const Modal = ({ isOpen, onClose, children, title }) => {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+  useBloquearScroll(isOpen);
 
   if (!isOpen) return null;
 

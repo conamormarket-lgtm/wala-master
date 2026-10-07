@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import ReactDOM from 'react-dom';
 import Cropper from 'react-easy-crop';
+import { useBloquearScroll } from '../../hooks/useBloquearScroll';
 import styles from './AvatarCropModal.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -72,15 +73,8 @@ export default function AvatarCropModal({ imageSrc, onConfirm, onCancel }) {
     }
   }, [imageSrc, croppedAreaPixels, processing, onConfirm, onCancel]);
 
-  // Bloquea el scroll del body mientras está abierto, mismo criterio que
-  // components/common/Modal.
-  useEffect(() => {
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
-  }, []);
+  // Congela la página de atrás mientras está abierto.
+  useBloquearScroll();
 
   const contenido = (
     <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Recortar foto de perfil">

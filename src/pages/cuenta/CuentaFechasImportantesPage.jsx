@@ -20,6 +20,7 @@ import { Gift, Calendar, CalendarHeart, Plus, Edit2, Trash2, X, Globe, ShoppingC
 // Helper de subida YA existente en el repo (mismo que usan AvatarStudio / CategoryNavEditor).
 import { uploadFile } from '../../services/firebase/storage';
 import { volarMonedasGanadas } from '../../utils/animations';
+import { useBloquearScroll } from '../../hooks/useBloquearScroll';
 import styles from './CuentaFechasImportantesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 
@@ -262,13 +263,9 @@ const CuentaFechasImportantesPage = () => {
     if (!isModalOpen) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') closeModal(); };
     window.addEventListener('keydown', onKey);
-    const overflowPrevio = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = overflowPrevio;
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, [isModalOpen, closeModal]);
+  useBloquearScroll(isModalOpen);
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que deseas eliminar a esta persona de tus fechas importantes?')) return;

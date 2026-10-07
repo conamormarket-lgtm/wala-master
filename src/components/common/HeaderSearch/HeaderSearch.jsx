@@ -19,6 +19,7 @@ import { getBrands } from '../../../services/brands';
 import { trackSearchQuery } from '../../../services/analytics/tracker';
 import { useAuth } from '../../../contexts/AuthContext';
 import { T } from '../../../i18n/useTranslatedText';
+import { useBloquearScroll } from '../../../hooks/useBloquearScroll';
 import styles from './HeaderSearch.module.css';
 
 /**
@@ -189,14 +190,7 @@ const HeaderSearch = ({ brandId = null, botonClassName = '', mobileLabel = '' })
   // Con el buscador de pantalla completa abierto, el fondo (la página detrás)
   // no debe poder scrollear: se siente como si el buscador "flotara" sobre un
   // contenido que sigue vivo debajo.
-  useEffect(() => {
-    if (!abierto || typeof window === 'undefined' || window.innerWidth > ANCHO_MOVIL) {
-      return undefined;
-    }
-    const overflowPrevio = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = overflowPrevio; };
-  }, [abierto]);
+  useBloquearScroll(abierto && typeof window !== 'undefined' && window.innerWidth <= ANCHO_MOVIL);
 
   // Ir a la página de resultados. Conserva la marca si la búsqueda sale de una
   // página de marca, para no expulsar al usuario de su tienda.

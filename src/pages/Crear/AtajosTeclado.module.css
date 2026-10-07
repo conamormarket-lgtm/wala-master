@@ -3,7 +3,8 @@
 .capa {
   position: fixed;
   inset: 0;
-  z-index: 3100;
+  /* Sobre el header y la barra de admin (9999); los avisos van encima. */
+  z-index: 10050;
   background: rgba(20, 18, 28, 0.6);
   display: flex;
   align-items: center;

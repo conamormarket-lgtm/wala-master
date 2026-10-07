@@ -3,6 +3,7 @@ import { Scissors } from 'lucide-react';
 import { cargarImagen } from '../../utils/prendaBase';
 import { bordesVisibles } from '../../services/crearArchivos';
 import styles from './RecorteImagen.module.css';
+import CapaModal from './CapaModal';
 
 const limitar = (v, min, max) => Math.min(max, Math.max(min, v));
 const COMPLETA = { x: 0, y: 0, w: 1, h: 1 };
@@ -96,7 +97,7 @@ const RecorteImagen = ({ src, onCancelar, onAplicar }) => {
   };
 
   return (
-    <div className={styles.fondo} role="dialog" aria-modal="true" aria-labelledby="recorte-titulo" onClick={onCancelar}>
+    <CapaModal className={styles.fondo} role="dialog" aria-modal="true" aria-labelledby="recorte-titulo" onClick={onCancelar}>
       <div className={styles.ventana} onClick={(e) => e.stopPropagation()}>
         <h2 id="recorte-titulo" className={styles.titulo}>Recortar imagen</h2>
         <p className={styles.ayuda}>Arrastra el recuadro y ajústalo desde sus esquinas. Solo se usará lo que quede adentro.</p>
@@ -135,7 +136,7 @@ const RecorteImagen = ({ src, onCancelar, onAplicar }) => {
           <button type="button" className={styles.principal} onClick={aplicar} disabled={!img} title="Aplicar (Enter)">Aplicar recorte</button>
         </div>
       </div>
-    </div>
+    </CapaModal>
   );
 };
 

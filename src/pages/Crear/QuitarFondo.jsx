@@ -8,6 +8,7 @@ import {
   TOLERANCIA_INICIAL, fondoAutomatico, analizarBorde, reconstruir, aplicarOperacion, pintarTrazo, componer, quedaAlgo,
 } from './fondoPixeles';
 import estilos from './RecorteImagen.module.css';
+import CapaModal from './CapaModal';
 import styles from './QuitarFondo.module.css';
 
 // Vista previa (con detalle para el zoom); al aplicar se repite todo a
@@ -439,7 +440,7 @@ const QuitarFondo = ({ src, onCancelar, onAplicar }) => {
     : conPincel && cursor ? styles.cursorOculto : modo === 'varita' ? styles.cursorVarita : styles.cursorPincel;
 
   return (
-    <div className={estilos.fondo} role="dialog" aria-modal="true" aria-labelledby="quitar-fondo-titulo" onClick={aplicando ? undefined : onCancelar}>
+    <CapaModal className={estilos.fondo} role="dialog" aria-modal="true" aria-labelledby="quitar-fondo-titulo" onClick={aplicando ? undefined : onCancelar}>
       <div className={`${estilos.ventana} ${styles.ventana}`} onClick={(e) => e.stopPropagation()}>
         <h2 id="quitar-fondo-titulo" className={estilos.titulo}>Quitar fondo</h2>
 
@@ -570,7 +571,7 @@ const QuitarFondo = ({ src, onCancelar, onAplicar }) => {
           </button>
         </div>
       </div>
-    </div>
+    </CapaModal>
   );
 };
 

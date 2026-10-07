@@ -11,6 +11,7 @@ import { useEffect, useId, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { scaleIn, fadeUp, fadeIn } from '../../theme/motion';
+import { useBloquearScroll } from '../../hooks/useBloquearScroll';
 import styles from './GlassModal.module.css';
 
 // Selector de elementos enfocables para el focus-trap básico.
@@ -49,15 +50,8 @@ function GlassModal({
     if (typeof onClose === 'function') onClose();
   }, [onClose]);
 
-  // Bloquea el scroll del body mientras el modal está abierto, con cleanup.
-  useEffect(() => {
-    if (!open) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open]);
+  // Congela la página de atrás mientras el modal está abierto.
+  useBloquearScroll(open);
 
   // Guarda y restaura el foco alrededor del ciclo de vida del modal.
   useEffect(() => {

@@ -3,7 +3,8 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 1300; /* sobre el Header (1000) y el aviso de idioma (1200) */
+  /* Sobre el header y la barra de admin (9999); los avisos (10100) van encima. */
+  z-index: 10050;
   display: flex;
   align-items: center;
   justify-content: center;

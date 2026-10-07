@@ -9,7 +9,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  /* Sobre el header y la barra de admin (9999); los avisos (10100) van encima. */
+  z-index: 10050;
   padding: 1rem;
   animation: fadeIn 0.3s ease;
 }
