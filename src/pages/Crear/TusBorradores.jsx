@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, PenLine, Trash2, Clock } from 'lucide-react';
 import { getBorradoresCrear } from '../../services/designs';
 import { getProduct } from '../../services/products';
-import { precioBase } from '../../utils/prendaBase';
+import { precioBase, fondoColorGuardado } from '../../utils/prendaBase';
 import { useEliminarCreacion } from './useEliminarCreacion';
 import { esperarGuardados } from './borradoresCache';
 import FilaCarrusel from './FilaCarrusel';
@@ -85,7 +85,7 @@ export const TarjetaBorrador = ({ borrador: b, onEliminar }) => {
       <div className={tarjeta.info}>
         <h3 className={tarjeta.nombre}>{b.productName || 'Mi diseño'}</h3>
         <p className={tarjeta.prenda}>
-          {b.color?.hex && <span className={tarjeta.puntoColor} style={{ background: b.color.hex }} aria-hidden="true" />}
+          {b.color?.hex && <span className={tarjeta.puntoColor} style={{ background: fondoColorGuardado(b.color, respuesta?.data) }} aria-hidden="true" />}
           <span className={tarjeta.prendaTexto}>{b.color?.nombre ? `${b.color.nombre} · sin terminar` : 'Sin terminar'}</span>
         </p>
         {editado && (

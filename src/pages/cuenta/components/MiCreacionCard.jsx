@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Trash2, ImageOff, Paintbrush, ShoppingBag, Check, Clock } from 'lucide-react';
 import { getProduct } from '../../../services/products';
 import { toThumbnailImageUrl } from '../../../utils/imageUrl';
-import { precioBase } from '../../../utils/prendaBase';
+import { precioBase, fondoColorGuardado } from '../../../utils/prendaBase';
 import { useProductThumbnailVariant } from '../../../hooks/useProductThumbnailVariant';
 import ComboProductImage from '../../Tienda/components/ComboProductImage/ComboProductImage';
 import { DomOverlay } from '../../Tienda/components/ComboProductImage/ComboProductImageWithDesign';
@@ -226,7 +226,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
 
         <p className={styles.prenda}>
           {color?.hex && (
-            <span className={styles.puntoColor} style={{ background: color.hex }} aria-hidden="true" />
+            <span className={styles.puntoColor} style={{ background: fondoColorGuardado(color, product) }} aria-hidden="true" />
           )}
           <span className={styles.prendaTexto}>
             {noDisponible && !esDeCrear

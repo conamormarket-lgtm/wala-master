@@ -7,7 +7,7 @@ import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getDesignById, guardarTallaCreacion } from '../../services/designs';
 import { getPrendaBase } from '../../services/prendasBase';
-import { leerPrendaBase, precioPersonalizado, tallasDeColor } from '../../utils/prendaBase';
+import { leerPrendaBase, precioPersonalizado, tallasDeColor, fondoColorGuardado } from '../../utils/prendaBase';
 import { useTranslatedHtml } from '../../i18n/useTranslatedText';
 import { itemDeCreacion, creacionLista } from './creacionCarrito';
 import { useEliminarCreacion } from './useEliminarCreacion';
@@ -288,7 +288,7 @@ const CreacionPage = () => {
             <span className={styles.rotulo}>Color: <em>{creacion.color.nombre}</em></span>
             <div className={styles.filaColor}>
               <span className={styles.muestra} title={creacion.color.nombre}>
-                <span style={{ background: creacion.color.hex || '#ccc' }} />
+                <span style={{ background: fondoColorGuardado(creacion.color, prenda) || '#ccc' }} />
               </span>
               <span className={styles.ayuda}>El color va con tu diseño. Para cambiarlo, edita el diseño.</span>
             </div>

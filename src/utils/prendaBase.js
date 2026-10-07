@@ -310,6 +310,19 @@ export const fondoMuestra = (c) => {
   return `linear-gradient(90deg, ${franjas}) border-box no-repeat`;
 };
 
+/**
+ * Fondo del punto de color de una creación guardada: el color como está hoy
+ * en la prenda (con su segundo tono y su patrón) o, si ya no está, el que se
+ * guardó con la creación (las más antiguas solo guardaban un tono).
+ */
+export const fondoColorGuardado = (color, producto) => {
+  if (!color?.nombre && !color?.hex) return '';
+  const actual = producto
+    ? leerPrendaBase(producto).colores.find((c) => (color.id && c.id === color.id) || c.nombre === color.nombre)
+    : null;
+  return fondoMuestra(actual || normalizarColor(color));
+};
+
 export const esPrendaBase = (producto) => producto?.esPrendaBase === true;
 
 /** Alto de la zona como fracción del alto de la imagen. */

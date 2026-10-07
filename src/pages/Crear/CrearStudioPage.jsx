@@ -1750,7 +1750,10 @@ const CrearStudioPage = () => {
     return true;
   };
 
-  const datosColor = () => ({ id: color.id, nombre: color.nombre, hex: color.hex });
+  const datosColor = () => ({
+    id: color.id, nombre: color.nombre, hex: color.hex,
+    ...(color.hex2 ? { hex2: color.hex2, patron: color.patron } : {}),
+  });
 
   const vistasConCapas = (capas) => cfg.vistas.filter((v) => v.zonas.some((z) => capas[z.id]));
 
