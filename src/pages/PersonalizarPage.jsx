@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { leerPrendaBase, precioBase, colorDisponible } from '../utils/prendaBase';
 import { useEliminarCreacion } from './Crear/useEliminarCreacion';
 import TusBorradores, { useBorradoresCrear } from './Crear/TusBorradores';
+import FilaCarrusel from './Crear/FilaCarrusel';
 import MiCreacionCard, { fechaDeCreacion } from './cuenta/components/MiCreacionCard';
 import styles from './PersonalizarPage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -98,11 +99,11 @@ const TusCreaciones = ({ uid }) => {
           <T>Ver todas</T>{creaciones.length > 1 ? ` (${creaciones.length})` : ''} <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
-      <ul className={styles.creacionesFila}>
+      <FilaCarrusel>
         {recientes.map((c) => (
           <MiCreacionCard key={c.id} design={c} onEliminar={pedirEliminar} />
         ))}
-      </ul>
+      </FilaCarrusel>
       {dialogoEliminar}
     </section>
   );

@@ -117,24 +117,6 @@
   white-space: nowrap;
 }
 
-/* Fila deslizable con las tarjetas de Mis creaciones (MiCreacionCard). El
-   relleno de arriba deja ver el leve levantamiento de la tarjeta al pasar
-   el cursor, que si no queda cortado por el overflow. */
-.creacionesFila {
-  list-style: none;
-  margin: 0;
-  padding: 4px 2px 0.6rem;
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-}
-
-.creacionesFila > li {
-  flex: 0 0 250px;
-  scroll-snap-align: start;
-}
-
 /* ── Grilla de prendas ──
    Misma tarjeta que Mis creaciones (MisCreacionesPage.module.css .card):
    foto cuadrada sobre lila, frente/espalda al pasar el cursor, etiqueta de
@@ -395,10 +377,6 @@
 }
 
 @media (max-width: 768px) {
-  .creacionesFila > li {
-    flex-basis: 200px;
-  }
-
   .container {
     padding: var(--page-padding-md, 1.25rem);
     padding-bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 1.5rem);

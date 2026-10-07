@@ -1,0 +1,103 @@
+/* Fila deslizable de Tus borradores / Tus creaciones. Mismo patrón que los
+   carruseles de productos del builder (FeaturedCarousel.module.css):
+   tarjetas enteras por vista, sin barra de scroll y flechas redondas. */
+.marco {
+  position: relative;
+  isolation: isolate;
+}
+
+.fila {
+  --por-vista: 4;
+  --espacio: 1.25rem;
+  list-style: none;
+  margin: 0;
+  /* Arriba: deja ver el levantamiento de la tarjeta al pasar el cursor;
+     abajo: su sombra. */
+  padding: 6px 2px 1rem;
+  display: flex;
+  gap: var(--espacio);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 2px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.fila::-webkit-scrollbar {
+  display: none;
+}
+
+.fila > li {
+  flex: 0 0 calc((100% - var(--espacio) * (var(--por-vista) - 1)) / var(--por-vista));
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+@media (max-width: 1023px) {
+  .fila { --por-vista: 3; }
+}
+
+/* En el celular: una tarjeta y buena parte de la siguiente, para que se
+   note que se puede deslizar sin que el pie quede apretado. */
+@media (max-width: 640px) {
+  .fila {
+    --por-vista: 1.7;
+    --espacio: 0.75rem;
+  }
+}
+
+/* ── Flechas ── */
+.flecha {
+  position: absolute;
+  /* Centradas sobre la foto (medida en FilaCarrusel.jsx). */
+  top: var(--alto-flecha, 40%);
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--primary-color, #7c3aed) 20%, #e2e8f0);
+  background: color-mix(in srgb, var(--color-surface, #fff) 94%, transparent);
+  color: var(--gris-texto-principal, #333);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(10px);
+  transition: opacity 0.2s ease, background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.flecha:hover {
+  background: var(--color-surface, #fff);
+  color: var(--primary-color, #7c3aed);
+  transform: translateY(-50%) scale(1.06);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+}
+
+.flecha:focus-visible {
+  outline: 2px solid var(--primary-color, #7c3aed);
+  outline-offset: 2px;
+}
+
+/* Al principio o al final no hay a dónde ir. */
+.flecha:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.atras { left: -14px; }
+.adelante { right: -14px; }
+
+/* En el celular se pasa con el dedo. */
+@media (hover: none), (max-width: 767px) {
+  .flecha { display: none; }
+}
+
+:global([data-theme='dark']) .flecha {
+  border-color: var(--color-border, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}

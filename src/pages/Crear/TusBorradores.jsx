@@ -7,6 +7,7 @@ import { getProduct } from '../../services/products';
 import { precioBase } from '../../utils/prendaBase';
 import { useEliminarCreacion } from './useEliminarCreacion';
 import { esperarGuardados } from './borradoresCache';
+import FilaCarrusel from './FilaCarrusel';
 import styles from './TusBorradores.module.css';
 // La misma tarjeta que las creaciones (MiCreacionCard): mismo tamaño, foto,
 // datos y pie con precio + botón. Lo propio del borrador va en `styles`.
@@ -124,9 +125,9 @@ const TusBorradores = ({ uid }) => {
         <h2 className={styles.titulo}>Tus borradores</h2>
         <p className={styles.ayuda}>Diseños sin terminar. Continúa donde lo dejaste.</p>
       </div>
-      <ul className={styles.fila}>
+      <FilaCarrusel className={styles.fila}>
         {borradores.map((b) => <TarjetaBorrador key={b.id} borrador={b} onEliminar={pedir} />)}
-      </ul>
+      </FilaCarrusel>
       {dialogo}
     </section>
   );

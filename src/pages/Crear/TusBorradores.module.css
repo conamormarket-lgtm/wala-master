@@ -23,24 +23,8 @@
   color: var(--gris-texto-secundario);
 }
 
-/* Igual que la fila de "Tus creaciones" (PersonalizarPage .creacionesFila). */
-.fila {
-  list-style: none;
-  margin: 0;
-  /* Arriba: deja ver el levantamiento de la tarjeta al pasar el cursor. */
-  padding: 4px 2px 0.6rem;
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-}
-
-.fila > li {
-  flex: 0 0 250px;
-  scroll-snap-align: start;
-}
-
-/* `.fila >` gana a `.card` sin depender del orden en que cargan los CSS. */
+/* La fila deslizable con flechas es FilaCarrusel; `.fila` solo marca sus
+   tarjetas. `.fila >` gana a `.card` sin depender del orden en que cargan los CSS. */
 .fila > .tarjeta {
   border-style: dashed;
   border-width: 1.5px;
@@ -56,12 +40,6 @@
   color: #92400E;
   font-size: 0.72rem;
   font-weight: 800;
-}
-
-@media (max-width: 768px) {
-  .fila > li {
-    flex-basis: 200px;
-  }
 }
 
 :global([data-theme='dark']) .fila > .tarjeta {
