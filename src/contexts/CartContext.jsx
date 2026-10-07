@@ -7,6 +7,7 @@ import { erpDb } from '../services/erp/firebase';
 import { db, auth } from '../services/firebase/config';
 import { PORTAL_USERS_COLLECTION } from '../constants/userCollections';
 import { trackAddToCart } from '../services/analytics/tracker';
+import { nombreConCreacion } from '../utils/nombreCreacion';
 
 const CartContext = createContext();
 
@@ -67,7 +68,12 @@ const consolidarDuplicados = (items) => {
       continue;
     }
     if (clave) indicePorClave.set(clave, resultado.length);
-    resultado.push(item);
+    // Las creaciones agregadas antes de que la línea llevara su nombre
+    // (mostraban solo "Polera clásica") lo toman al cargar el carrito.
+    const nombre = item.customization?.tipo === 'crear' ? String(item.customization.nombre || '').trim() : '';
+    resultado.push(nombre && !String(item.productName || '').includes(nombre)
+      ? { ...item, productName: nombreConCreacion(item.productName, item.customization) }
+      : item);
   }
   return resultado;
 };
@@ -377,7 +383,8 @@ export const CartProvider = ({ children }) => {
     const cartItem = {
       id: itemId,
       productId: product.id,
-      productName: product.name,
+      // Una creación de Crear se ve con SU nombre, no solo el de la prenda.
+      productName: nombreConCreacion(product.name, customization),
       // Omitida si no hay: Firestore rechaza undefined.
       ...(variantesImagen ? { productImageVariantes: variantesImagen } : {}),
       productImage,
