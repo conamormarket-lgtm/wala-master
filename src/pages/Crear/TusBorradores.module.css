@@ -1,5 +1,8 @@
+/* Borradores de Crear (en Crear y en Mis creaciones). Misma forma que las
+   tarjetas de Mis creaciones (foto cuadrada sobre lila, datos, botón), con
+   borde punteado: todavía no están terminados. */
 .seccion {
-  margin-bottom: 1.75rem;
+  margin-bottom: 2.25rem;
 }
 
 .cabecera {
@@ -20,16 +23,19 @@
 }
 
 .fila {
+  list-style: none;
+  margin: 0;
+  /* Arriba: deja ver el levantamiento de la tarjeta al pasar el cursor. */
+  padding: 4px 2px 0.6rem;
   display: flex;
-  gap: 0.9rem;
+  gap: 1rem;
   overflow-x: auto;
-  padding-bottom: 0.4rem;
   scroll-snap-type: x mandatory;
 }
 
 .item {
   position: relative;
-  flex: 0 0 220px;
+  flex: 0 0 210px;
   scroll-snap-align: start;
   display: flex;
 }
@@ -39,32 +45,25 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.6rem;
-  border-radius: 16px;
-  border: 1px dashed var(--gris-borde);
-  background: var(--blanco);
+  border-radius: 20px;
+  border: 1.5px dashed var(--violet-200, #ddd6fe);
+  background: var(--color-surface, var(--blanco));
   color: var(--gris-texto-principal);
   text-decoration: none;
-  transition: border-color var(--dur-rapida, 180ms) ease;
+  overflow: hidden;
+  transition: transform var(--dur-rapida, 180ms) ease, border-color var(--dur-rapida, 180ms) ease, box-shadow var(--dur-rapida, 180ms) ease;
 }
 
 .tarjeta:hover {
-  border-color: var(--primary-color);
-}
-
-.tarjeta strong {
-  font-size: 0.92rem;
-  margin-top: 0.35rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  transform: translateY(-3px);
+  border-color: #8b5cf6;
+  box-shadow: 0 12px 28px -14px rgba(139, 92, 246, 0.4);
+  color: var(--gris-texto-principal);
 }
 
 .foto {
   position: relative;
-  aspect-ratio: 16 / 10;
-  border-radius: 10px;
+  aspect-ratio: 1;
   background: #F3F1F7;
   overflow: hidden;
   display: flex;
@@ -79,33 +78,105 @@
   object-fit: contain;
 }
 
+/* Mismo ámbar que la insignia "Borrador" de las prendas en Crear. */
 .etiqueta {
   position: absolute;
-  left: 0.45rem;
-  bottom: 0.45rem;
-  padding: 0.15rem 0.5rem;
+  top: 0.6rem;
+  left: 0.6rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  background: var(--primary-color);
-  color: #fff;
-  font-size: 0.7rem;
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 0.72rem;
   font-weight: 800;
 }
 
-:global([data-theme="dark"]) .etiqueta {
-  color: #14121C;
+.info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.85rem 0.9rem 0.9rem;
+  min-width: 0;
 }
 
-.fecha {
-  font-size: 0.78rem;
+.nombre {
+  font-size: 0.95rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.color {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
   color: var(--gris-texto-secundario);
 }
 
+.punto {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.fecha {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color, #6d28d9);
+}
+
+/* Botón violeta plano, como "Comprar" en las creaciones. */
 .continuar {
+  margin-top: auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.3rem;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 38px;
+  border-radius: 10px;
+  background: #8b5cf6;
+  color: #ffffff;
   font-size: 0.85rem;
-  font-weight: 800;
-  color: var(--primary-color);
+  font-weight: 700;
+  transition: background-color 0.2s ease;
+}
+
+/* Aire mínimo entre los datos y el botón (que se va al fondo). */
+.info > :nth-last-child(2) {
+  margin-bottom: 0.45rem;
+}
+
+.tarjeta:hover .continuar {
+  background: #7c3aed;
+}
+
+@media (max-width: 768px) {
+  .item {
+    flex-basis: 170px;
+  }
+
+  .info {
+    padding: 0.7rem;
+  }
+}
+
+/* ── Modo noche: borde y fecha con el violeta claro del tema. ── */
+:global([data-theme='dark']) .tarjeta {
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+:global([data-theme='dark']) .tarjeta:hover {
+  border-color: rgba(167, 139, 250, 0.7);
+}
+
+:global([data-theme='dark']) .fecha {
+  color: var(--primary-hover);
 }

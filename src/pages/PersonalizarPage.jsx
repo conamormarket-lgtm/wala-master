@@ -1,15 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Shirt, Upload, ShoppingBag, ArrowRight, Trash2 } from 'lucide-react';
+import { Shirt, Upload, ShoppingBag, ArrowRight } from 'lucide-react';
 import { getPrendasBase } from '../services/prendasBase';
 import { getDesignsByUser } from '../services/designs';
 import { useAuth } from '../contexts/AuthContext';
 import { leerPrendaBase, precioBase, colorDisponible } from '../utils/prendaBase';
 import { useEliminarCreacion } from './Crear/useEliminarCreacion';
 import TusBorradores, { useBorradoresCrear } from './Crear/TusBorradores';
+import MiCreacionCard, { fechaDeCreacion } from './cuenta/components/MiCreacionCard';
 import styles from './PersonalizarPage.module.css';
-import estilosEliminar from './Crear/EliminarCreacion.module.css';
 import { T } from '../i18n/useTranslatedText';
 
 const PASOS = [
@@ -71,37 +71,28 @@ const useCreacionesCrear = (uid) => useQuery({
 const TusCreaciones = ({ uid }) => {
   const { data: creaciones = [] } = useCreacionesCrear(uid);
   const { pedir: pedirEliminar, dialogo: dialogoEliminar } = useEliminarCreacion();
+  // Las mismas tarjetas que Mis creaciones, la más reciente primero.
+  const recientes = useMemo(
+    () => [...creaciones].sort((a, b) => (fechaDeCreacion(b) || 0) - (fechaDeCreacion(a) || 0)).slice(0, 8),
+    [creaciones]
+  );
   if (!creaciones.length) return dialogoEliminar;
   return (
-    <section className={styles.creaciones} aria-label="Tus creaciones">
-      <div className={styles.creacionesCabecera}>
-        <h2 className={styles.creacionesTitulo}><T>Tus creaciones</T></h2>
+    <section className={styles.seccion} aria-label="Tus creaciones">
+      <div className={styles.seccionCabecera}>
+        <div>
+          <h2 className={styles.seccionTitulo}><T>Tus creaciones</T></h2>
+          <p className={styles.seccionAyuda}><T>Listas para comprar o seguir editando.</T></p>
+        </div>
         <Link to="/cuenta/creaciones" className={styles.verTodas}>
-          <T>Ver todas</T> <ArrowRight size={16} aria-hidden="true" />
+          <T>Ver todas</T>{creaciones.length > 1 ? ` (${creaciones.length})` : ''} <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </div>
-      <div className={styles.creacionesFila}>
-        {creaciones.slice(0, 8).map((c) => (
-          <div key={c.id} className={styles.creacionItem}>
-            <Link to={`/creacion/${c.id}`} className={styles.creacion}>
-              <div className={styles.creacionFoto}>
-                {(c.imagenConjunta || c.previewUrl) && <img src={c.imagenConjunta || c.previewUrl} alt="" loading="lazy" />}
-              </div>
-              <strong>{c.name || 'Mi diseño'}</strong>
-              <span>{c.productName}{c.color?.nombre ? ` · ${c.color.nombre}` : ''}</span>
-            </Link>
-            <button
-              type="button"
-              className={estilosEliminar.botonTarjeta}
-              onClick={() => pedirEliminar(c)}
-              aria-label={`Eliminar ${c.name || 'creación'}`}
-              title="Eliminar"
-            >
-              <Trash2 size={16} aria-hidden="true" />
-            </button>
-          </div>
+      <ul className={styles.creacionesFila}>
+        {recientes.map((c) => (
+          <MiCreacionCard key={c.id} design={c} onEliminar={pedirEliminar} />
         ))}
-      </div>
+      </ul>
       {dialogoEliminar}
     </section>
   );
@@ -144,7 +135,12 @@ const PersonalizarPage = () => {
       {user && <TusBorradores uid={user.uid} />}
       {user && <TusCreaciones uid={user.uid} />}
       {(creaciones.length > 0 || borradores.length > 0) && (
-        <h2 className={`${styles.creacionesTitulo} ${styles.empiezaNueva}`}><T>Empieza una nueva</T></h2>
+        <div className={styles.seccionCabecera}>
+          <div>
+            <h2 className={styles.seccionTitulo}><T>Empieza una nueva</T></h2>
+            <p className={styles.seccionAyuda}><T>Elige la prenda que quieres diseñar.</T></p>
+          </div>
+        </div>
       )}
 
       {isLoading ? (

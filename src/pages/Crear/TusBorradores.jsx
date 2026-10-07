@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, PenLine, Trash2 } from 'lucide-react';
+import { ArrowRight, PenLine, Trash2, Clock } from 'lucide-react';
 import { getBorradoresCrear } from '../../services/designs';
 import { useEliminarCreacion } from './useEliminarCreacion';
 import { esperarGuardados } from './borradoresCache';
@@ -56,32 +56,45 @@ const TusBorradores = ({ uid }) => {
         <h2 className={styles.titulo}>Tus borradores</h2>
         <p className={styles.ayuda}>Diseños sin terminar. Continúa donde lo dejaste.</p>
       </div>
-      <div className={styles.fila}>
-        {borradores.map((b) => (
-          <div key={b.id} className={styles.item}>
-            <Link to={`/crear/${b.productId}?designId=${b.id}`} className={styles.tarjeta}>
-              <div className={styles.foto}>
-                {b.miniatura
-                  ? <img src={b.miniatura} alt="" loading="lazy" />
-                  : <PenLine size={28} aria-hidden="true" />}
-                <span className={styles.etiqueta}>Borrador</span>
-              </div>
-              <strong>{b.productName}{b.color?.nombre ? ` · ${b.color.nombre}` : ''}</strong>
-              <span className={styles.fecha}>Editado {haceCuanto(b.updatedAt || b.createdAt)}</span>
-              <span className={styles.continuar}>Continuar <ArrowRight size={15} aria-hidden="true" /></span>
-            </Link>
-            <button
-              type="button"
-              className={estilosEliminar.botonTarjeta}
-              onClick={() => pedir(b)}
-              aria-label="Eliminar borrador"
-              title="Eliminar"
-            >
-              <Trash2 size={16} aria-hidden="true" />
-            </button>
-          </div>
-        ))}
-      </div>
+      <ul className={styles.fila}>
+        {borradores.map((b) => {
+          const editado = haceCuanto(b.updatedAt || b.createdAt);
+          return (
+            <li key={b.id} className={styles.item}>
+              <Link to={`/crear/${b.productId}?designId=${b.id}`} className={styles.tarjeta}>
+                <div className={styles.foto}>
+                  {b.miniatura
+                    ? <img src={b.miniatura} alt="" loading="lazy" />
+                    : <PenLine size={30} aria-hidden="true" />}
+                  <span className={styles.etiqueta}>Borrador</span>
+                </div>
+                <div className={styles.info}>
+                  <strong className={styles.nombre}>{b.productName || 'Mi diseño'}</strong>
+                  {b.color?.nombre && (
+                    <span className={styles.color}>
+                      {b.color.hex && <span className={styles.punto} style={{ background: b.color.hex }} aria-hidden="true" />}
+                      {b.color.nombre}
+                    </span>
+                  )}
+                  {editado && (
+                    <span className={styles.fecha}><Clock size={12} aria-hidden="true" /> Editado {editado}</span>
+                  )}
+                  <span className={styles.continuar}>Continuar <ArrowRight size={15} aria-hidden="true" /></span>
+                </div>
+              </Link>
+              <button
+                type="button"
+                className={estilosEliminar.botonTarjeta}
+                onClick={() => pedir(b)}
+                aria-label="Eliminar borrador"
+                title="Eliminar"
+              >
+                <Trash2 size={16} aria-hidden="true" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
       {dialogo}
     </section>
   );

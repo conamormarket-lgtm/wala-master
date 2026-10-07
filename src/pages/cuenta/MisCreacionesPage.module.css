@@ -146,6 +146,8 @@
 
 /* ── Tarjeta (como .tarjeta de las prendas en Crear) ── */
 .card {
+  /* El pie se acomoda al ancho de la tarjeta (grilla, fila de Crear, móvil). */
+  container-type: inline-size;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -364,6 +366,7 @@
 .precio {
   font-size: 1.05rem;
   font-weight: 800;
+  white-space: nowrap;
   color: var(--gris-texto-principal);
 }
 
@@ -489,6 +492,10 @@
     font-size: 0.92rem;
   }
 
+}
+
+/* Tarjeta angosta: precio arriba y los botones a lo ancho debajo. */
+@container (max-width: 265px) {
   .pie {
     flex-direction: column;
     align-items: stretch;
