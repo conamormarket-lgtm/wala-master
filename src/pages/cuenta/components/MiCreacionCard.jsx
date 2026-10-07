@@ -1,40 +1,76 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Trash2, ImageOff, Paintbrush, ShoppingBag, Check, Clock } from 'lucide-react';
 import { getProduct } from '../../../services/products';
 import { toThumbnailImageUrl } from '../../../utils/imageUrl';
+import { precioBase } from '../../../utils/prendaBase';
 import { useProductThumbnailVariant } from '../../../hooks/useProductThumbnailVariant';
 import ComboProductImage from '../../Tienda/components/ComboProductImage/ComboProductImage';
 import { DomOverlay } from '../../Tienda/components/ComboProductImage/ComboProductImageWithDesign';
 import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedImage';
-import { Trash2, ImageOff } from 'lucide-react';
 import styles from '../MisCreacionesPage.module.css';
 import estilosEliminar from '../../Crear/EliminarCreacion.module.css';
 import NombreEditable from '../../Crear/NombreEditable';
 
-const formatDate = (timestamp) => {
-  if (!timestamp) return '—';
-  try {
-    // Puede llegar como Timestamp de Firestore, como { seconds } (de caché),
-    // como texto o número, o como Date.
-    const segundos = timestamp.seconds ?? timestamp._seconds;
-    const date = typeof timestamp.toDate === 'function'
-      ? timestamp.toDate()
-      : segundos !== undefined
-        ? new Date(segundos * 1000)
-        : timestamp instanceof Date || typeof timestamp === 'string' || typeof timestamp === 'number'
-          ? new Date(timestamp)
-          : null;
-    if (!date || isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString('es-PE', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return '—';
+/**
+ * Milisegundos del último guardado de una creación, o null.
+ *
+ * `updatedAt` puede llegar como Timestamp de Firestore, como { seconds } (de
+ * caché), como texto, número o Date. Las creaciones guardadas antes de
+ * corregir services/firebase/firestore.js tienen ahí un mapa sin fecha; para
+ * esas se usa la hora que llevan en el nombre las vistas previas que se
+ * suben al guardar (designs/{uid}/crear/previas/{ms}_…).
+ */
+export const fechaDeCreacion = (design) => {
+  for (const ts of [design?.updatedAt, design?.createdAt]) {
+    if (!ts) continue;
+    if (typeof ts.toMillis === 'function') return ts.toMillis();
+    const segundos = ts.seconds ?? ts._seconds;
+    if (typeof segundos === 'number') return segundos * 1000;
+    if (ts instanceof Date || typeof ts === 'string' || typeof ts === 'number') {
+      const ms = new Date(ts).getTime();
+      if (!Number.isNaN(ms)) return ms;
+    }
   }
+  const urls = [design?.imagenConjunta, design?.previewUrl, ...(design?.vistasPrevias || []).map((p) => p?.url)];
+  let ultima = null;
+  urls.forEach((u) => {
+    const m = typeof u === 'string' && u.match(/previas(?:%2F|\/)(\d{13})_/);
+    if (m) ultima = Math.max(ultima || 0, Number(m[1]));
+  });
+  return ultima;
 };
+
+const relativo = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
+
+/** "Guardada hoy", "Guardada ayer", "Guardada hace 3 días"… */
+const guardadaHace = (ms) => {
+  const dias = Math.round((Date.now() - ms) / 86400000);
+  if (dias < 30) return `Guardada ${relativo.format(-dias, 'day')}`;
+  const meses = Math.round(dias / 30);
+  if (meses < 12) return `Guardada ${relativo.format(-meses, 'month')}`;
+  return `Guardada ${relativo.format(-Math.round(meses / 12), 'year')}`;
+};
+
+const fechaCompleta = (ms) =>
+  new Date(ms).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
+
+const soles = (n) => `S/ ${n.toFixed(2)}`;
+
+export const MiCreacionCardSkeleton = () => (
+  <li className={`${styles.card} ${styles.skeletonCard}`} aria-hidden="true">
+    <div className={styles.skeletonFoto} />
+    <div className={styles.info}>
+      <div className={`${styles.skeletonLinea} ${styles.skeletonTitulo}`} />
+      <div className={`${styles.skeletonLinea} ${styles.skeletonCorta}`} />
+      <div className={styles.pie}>
+        <div className={`${styles.skeletonLinea} ${styles.skeletonPrecio}`} />
+        <div className={`${styles.skeletonLinea} ${styles.skeletonBoton}`} />
+      </div>
+    </div>
+  </li>
+);
 
 const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
   const { data: productResponse, isLoading } = useQuery({
@@ -50,162 +86,185 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
   // igual, con su aviso, en vez de quedarse "cargando" para siempre.
   const esDeCrear = design.tipo === 'crear';
   const cargandoProducto = Boolean(design.productId) && isLoading;
-  const sinProducto = !cargandoProducto && !product;
-  
+  const sinProducto = !cargandoProducto && (!product || product.deleted === true);
+
   // Utilizar la lógica de miniaturas de la tienda
   const { thumbnailImageUrl } = useProductThumbnailVariant(product);
-  
-  // eslint-disable-next-line no-unused-vars
-  // eslint-disable-next-line no-unused-vars
-  const handlePrefetch = () => {}; // Si deseamos prefetch
 
-  if (cargandoProducto && !esDeCrear) {
-    return (
-      <li className={`${styles.cardItem} ${styles.skeletonCard}`}>
-        <div className={styles.skeletonThumb} />
-        <div className={styles.cardBody}>
-          <div className={styles.skeletonTitle} />
-          <div className={styles.skeletonDate} />
-          <div className={styles.skeletonLink} />
-        </div>
-      </li>
-    );
-  }
+  if (cargandoProducto && !esDeCrear) return <MiCreacionCardSkeleton />;
 
   // Combinamos la customización guardada en el diseño con el producto original para que ComboProductImage la pre-renderize si es combo
   const effectiveProductForCombo = isCombo ? {
     ...product,
-    comboItemCustomization: design.isUserComboDesign && design.comboItemCustomization 
-      ? design.comboItemCustomization 
+    comboItemCustomization: design.isUserComboDesign && design.comboItemCustomization
+      ? design.comboItemCustomization
       : product?.comboItemCustomization
   } : product;
 
-  // Lógica de imágenes para productos normales
-  // Tratamos de obtener la imagen base del diseño, usando miniatura
   const cardImageUrl = thumbnailImageUrl || product?.mainImage || product?.images?.[0] || '';
-  
-  // Obtenemos las capas guardadas si es producto normal
+
+  // Capas guardadas de un diseño del editor anterior (producto normal).
   let baseLayers = [];
-  if (!isCombo) {
+  if (!isCombo && !esDeCrear) {
     if (design.layersByView && Object.keys(design.layersByView).length > 0) {
-      // Tomamos la primera vista por defecto que tenga capas
       baseLayers = Object.values(design.layersByView).find(l => Array.isArray(l) && l.length > 0) || [];
     } else if (design.layers && Array.isArray(design.layers)) {
       baseLayers = design.layers;
     }
   }
 
-  // Precios
-  const priceDisplay = typeof product?.price === 'number' ? `S/ ${product.price.toFixed(2)}` : '';
-  const salePriceDisplay = typeof product?.salePrice === 'number' ? `S/ ${product.salePrice.toFixed(2)}` : '';
-  const nombreProducto = product?.name || design.productName || '';
+  // Creaciones de Crear: una vista previa por lado con diseño. Se muestra el
+  // primero y, al pasar el cursor, el segundo (como las prendas en Crear).
+  const previas = esDeCrear ? (design.vistasPrevias || []).filter((p) => p?.url) : [];
+  const frente = previas[0]?.url || (esDeCrear ? design.imagenConjunta || design.previewUrl || '' : '');
+  const espalda = previas[1]?.url || '';
+  const lados = previas.map((p) => p.nombre).filter(Boolean);
 
-  // Diseños del apartado Crear: otro editor y miniatura ya renderizada.
-  const editarUrl = esDeCrear
+  const precio = product ? precioBase(product) : 0;
+  const precioLista = Number(product?.price);
+  const enOferta = precio > 0 && Number.isFinite(precioLista) && precio < precioLista;
+
+  const nombreProducto = product?.name || design.productName || '';
+  const color = design.color?.nombre ? design.color : null;
+  const fecha = fechaDeCreacion(design);
+
+  // Diseños del apartado Crear: su propia página (ver, elegir talla, comprar)
+  // y el estudio para editarlos. Los del editor anterior solo se editan.
+  const verUrl = esDeCrear
     ? `/creacion/${design.id}`
     : `/editor/${design.productId || 'unknown'}?designId=${design.id}`;
+  const editarUrl = esDeCrear
+    ? `/crear/${design.productId}?designId=${design.id}`
+    : verUrl;
+  const noDisponible = sinProducto;
+
+  const foto = esDeCrear ? (
+    frente ? (
+      <>
+        <img src={frente} alt={design.name || nombreProducto} className={styles.fotoFrente} loading="lazy" />
+        {espalda && <img src={espalda} alt="" aria-hidden="true" className={styles.fotoEspalda} loading="lazy" />}
+      </>
+    ) : (
+      <span className={styles.fotoVacia}><ImageOff size={34} aria-hidden="true" /></span>
+    )
+  ) : sinProducto ? (
+    <span className={styles.fotoVacia}><ImageOff size={34} aria-hidden="true" /></span>
+  ) : isCombo ? (
+    <div className={styles.fotoLegado}>
+      <ComboProductImage
+        comboProduct={effectiveProductForCombo}
+        variantSelections={{}}
+        isThumbnail={true}
+        className={styles.comboThumb}
+      />
+    </div>
+  ) : (
+    <div className={styles.fotoLegado}>
+      {baseLayers.length > 0 ? (
+        <DomOverlay baseImageUrl={cardImageUrl} layers={baseLayers} />
+      ) : (
+        <OptimizedImage
+          src={toThumbnailImageUrl(cardImageUrl)}
+          alt={nombreProducto}
+          objectFit="contain"
+          className={styles.plainThumbImg}
+          showSkeleton={false}
+        />
+      )}
+    </div>
+  );
 
   return (
-    <li className={styles.cardItem} style={{ position: 'relative' }}>
-      {onEliminar && (
-        <button
-          type="button"
-          className={estilosEliminar.botonTarjeta}
-          onClick={() => onEliminar(design)}
-          aria-label={`Eliminar ${design.name || 'creación'}`}
-          title="Eliminar"
-        >
-          <Trash2 size={17} aria-hidden="true" />
-        </button>
-      )}
-      {sinProducto && !esDeCrear ? (
-        <div className={styles.thumbWrapper} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', aspectRatio: '1', background: 'var(--gris-fondo, #F3F1F7)', color: 'var(--gris-texto-secundario)' }}>
-          <ImageOff size={36} aria-hidden="true" />
-        </div>
-      ) : (
-      <Link to={editarUrl} className={styles.thumbWrapper} style={{ display: 'block', position: 'relative', background: '#fff' }}>
-        {esDeCrear ? (
-          <div style={{ position: 'relative', width: '100%', aspectRatio: '1', backgroundColor: '#fff' }}>
-            <OptimizedImage
-              src={design.imagenConjunta || design.previewUrl || cardImageUrl}
-              alt={nombreProducto}
-              objectFit="contain"
-              className={styles.plainThumbImg}
-              showSkeleton={false}
-            />
-          </div>
-        ) : isCombo ? (
-          <div style={{ pointerEvents: 'none' }}>
-            <ComboProductImage
-              comboProduct={effectiveProductForCombo}
-              variantSelections={{}} 
-              isThumbnail={true}
-              className={styles.comboThumb}
-            />
-          </div>
+    <li className={`${styles.card} ${noDisponible ? styles.cardNoDisponible : ''}`}>
+      <div className={styles.media}>
+        {noDisponible && !esDeCrear ? (
+          <div className={styles.foto}>{foto}</div>
         ) : (
-          <div style={{ position: 'relative', width: '100%', aspectRatio: '1', backgroundColor: '#fff' }}>
-             {baseLayers.length > 0 ? (
-               <DomOverlay baseImageUrl={cardImageUrl} layers={baseLayers} />
-             ) : (
-               <OptimizedImage
-                 src={toThumbnailImageUrl(cardImageUrl)}
-                 alt={nombreProducto}
-                 objectFit="contain"
-                 className={styles.plainThumbImg}
-                 showSkeleton={false}
-               />
-             )}
-          </div>
+          <Link to={verUrl} className={styles.foto} aria-label={`Ver ${design.name || 'creación'}`}>
+            {foto}
+          </Link>
         )}
-      </Link>
-      )}
-      
-      <div className={styles.cardBody}>
-        <div className={styles.cardHeaderInfo} style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-           <NombreEditable
-             designId={design.id}
-             nombre={design.name || 'Sin nombre'}
-             como="h3"
-             className={styles.cardTitle}
-             onCambiado={(nuevo) => onRenombrado?.(design.id, nuevo)}
-           />
-           {isPurchased && (
-             <span title="Este diseño ya fue comprado" style={{ padding: '2px 6px', fontSize: '0.65rem', fontWeight: 700, color: '#15803d', backgroundColor: '#dcfce7', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-               COMPRADO
-             </span>
-           )}
+
+        <div className={styles.insignias}>
+          {isPurchased && (
+            <span className={styles.insigniaComprado} title="Ya compraste este diseño">
+              <Check size={12} strokeWidth={3} aria-hidden="true" /> Comprado
+            </span>
+          )}
+          {noDisponible && <span className={styles.insigniaNoDisponible}>Ya no disponible</span>}
         </div>
-        
-        <div style={{ fontSize: '0.8125rem', color: 'var(--gris-texto-principal)', marginBottom: '0.25rem', fontWeight: 500 }}>
-          {sinProducto && !esDeCrear ? 'Este producto ya no está disponible' : nombreProducto}
-        </div>
-        
-        <p className={styles.cardDate}>{formatDate(design.updatedAt || design.createdAt)}</p>
-        
-        <div style={{ flexGrow: 1 }} />
-        
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-               {product?.salePrice ? (
-                 <>
-                   <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--rojo-secundario)' }}>{salePriceDisplay}</span>
-                   <span style={{ fontSize: '0.8rem', textDecoration: 'line-through', color: 'var(--gris-texto-secundario)' }}>{priceDisplay}</span>
-                 </>
-               ) : (
-                 <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--gris-texto-principal)' }}>{priceDisplay}</span>
-               )}
-            </div>
-            
-            {sinProducto && !esDeCrear ? null : (
-              <Link
-                to={editarUrl}
-                className={styles.cardLink}
-              >
-                {esDeCrear ? 'Ver creación' : 'Seguir editando'}
+
+        {lados.length > 0 && (
+          <span className={styles.lados} title="Lados con diseño">
+            {lados.join(' + ')}
+          </span>
+        )}
+
+        {onEliminar && (
+          <button
+            type="button"
+            className={estilosEliminar.botonTarjeta}
+            onClick={() => onEliminar(design)}
+            aria-label={`Eliminar ${design.name || 'creación'}`}
+            title="Eliminar"
+          >
+            <Trash2 size={16} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      <div className={styles.info}>
+        <NombreEditable
+          designId={design.id}
+          nombre={design.name || 'Sin nombre'}
+          como="h3"
+          className={styles.nombre}
+          onCambiado={(nuevo) => onRenombrado?.(design.id, nuevo)}
+        />
+
+        <p className={styles.prenda}>
+          {color?.hex && (
+            <span className={styles.puntoColor} style={{ background: color.hex }} aria-hidden="true" />
+          )}
+          <span className={styles.prendaTexto}>
+            {noDisponible && !esDeCrear
+              ? 'Este producto ya no está disponible'
+              : [nombreProducto, color?.nombre].filter(Boolean).join(' · ')}
+          </span>
+        </p>
+
+        {fecha && (
+          <p className={styles.fecha} title={fechaCompleta(fecha)}>
+            <Clock size={12} aria-hidden="true" />
+            {guardadaHace(fecha)}
+          </p>
+        )}
+
+        <div className={styles.pie}>
+          <div className={styles.precios}>
+            {precio > 0 && <span className={styles.precio}>{soles(precio)}</span>}
+            {enOferta && <span className={styles.precioAntes}>{soles(precioLista)}</span>}
+          </div>
+
+          {!noDisponible && (
+            <div className={styles.acciones}>
+              {esDeCrear && (
+                <Link
+                  to={editarUrl}
+                  className={styles.botonEditar}
+                  aria-label="Editar diseño"
+                  title="Editar diseño"
+                >
+                  <Paintbrush size={16} aria-hidden="true" />
+                </Link>
+              )}
+              <Link to={esDeCrear ? verUrl : editarUrl} className={styles.botonPrincipal}>
+                {esDeCrear
+                  ? <><ShoppingBag size={15} aria-hidden="true" /> Comprar</>
+                  : <><Paintbrush size={15} aria-hidden="true" /> Editar</>}
               </Link>
-            )}
+            </div>
+          )}
         </div>
       </div>
     </li>

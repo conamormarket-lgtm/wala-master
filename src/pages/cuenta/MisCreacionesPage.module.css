@@ -1,95 +1,217 @@
 /* ═══════════════════════════════════════════
-   MIS CREACIONES PAGE — Responsive profesional
+   MIS CREACIONES — mismo lenguaje que la Lista de Deseos (encabezado en
+   tarjeta, botones violeta planos) y que las tarjetas de prendas de Crear
+   (foto sobre lila, frente/espalda al pasar el cursor, pie con precio + CTA).
    ═══════════════════════════════════════════ */
 
-.wrapper {
+.container {
   width: 100%;
+  padding: 1rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Encabezado (igual que WishlistPage .headerRow) ── */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  background: var(--color-surface);
+  padding: 1.5rem;
+  border-radius: var(--radio-mediano, 16px);
+  box-shadow: var(--sombra-media);
+}
+
+.headerTexto {
+  min-width: 0;
 }
 
 .title {
-  margin: 0 0 1.25rem 0;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--section-title-size, clamp(1.35rem, 2.6vw, 1.85rem));
+  font-weight: var(--section-title-weight, 800);
+  letter-spacing: var(--section-title-tracking, -0.02em);
+  color: var(--gris-texto-principal);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.titleIcon {
+  color: var(--rojo-principal);
+  flex-shrink: 0;
+}
+
+.subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--gris-texto-secundario);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* Botón violeta sólido y plano, el mismo que "Agregar todo al carrito". */
+.primaryBtn {
+  padding: 0.75rem 1.4rem;
+  border-radius: var(--radio-pequeno, 10px);
+  font-weight: 600;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  background: #8b5cf6;
+  color: #ffffff;
+  transition: background-color 0.2s ease;
+}
+
+.primaryBtn:hover {
+  background: #7c3aed;
+  /* El a:hover global de globals.css tiñe la letra si no se repite. */
+  color: #ffffff;
+}
+
+/* ── Título de la sección cuando también hay borradores ── */
+.seccionCabecera {
+  margin-bottom: 0.9rem;
+}
+
+.seccionTitulo {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: var(--gris-texto-principal);
 }
 
-/* ── Card vacío / sin creaciones ── */
-.card {
-  max-width: 500px;
-  padding: 2rem;
-  background: var(--blanco);
-  border-radius: var(--radio-grande);
-  box-shadow: var(--sombra-media);
-  border: 1px solid var(--gris-borde);
-}
-
-.card p {
-  margin: 0 0 1rem 0;
+.seccionAyuda {
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
   color: var(--gris-texto-secundario);
-  line-height: 1.6;
-  font-size: 0.9375rem;
 }
 
-.link {
+/* ── Estado vacío / error (igual que WishlistPage .emptyState) ── */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--color-surface);
+  border-radius: var(--radio-grande, 20px);
+  box-shadow: var(--sombra-media);
+}
+
+.emptyIcon {
+  display: flex;
+  justify-content: center;
   color: var(--rojo-principal);
-  font-weight: 600;
-  text-decoration: none;
+  margin-bottom: 1rem;
+  animation: bounce 2s infinite ease-in-out;
 }
 
-.link:hover {
-  text-decoration: underline;
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
-/* ── Grid de creaciones ── */
+.emptyState h3 {
+  font-size: 1.5rem;
+  color: var(--gris-texto-principal);
+  margin: 0 0 0.5rem;
+}
+
+.emptyState p {
+  color: var(--gris-texto-secundario);
+  margin: 0 auto 1.5rem;
+  max-width: 420px;
+  line-height: 1.6;
+}
+
+/* ── Grilla ── */
 .grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 1.25rem;
 }
 
-/* ── Card individual de creación ── */
-.cardItem {
-  background: var(--blanco);
-  border-radius: var(--radio-grande);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
+/* ── Tarjeta (como .tarjeta de las prendas en Crear) ── */
+.card {
+  position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  background: var(--color-surface);
   border: 1px solid var(--gris-borde);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--sombra-suave);
+  transition: transform var(--dur-rapida, 180ms) ease, box-shadow var(--dur-rapida, 180ms) ease, border-color var(--dur-rapida, 180ms) ease;
 }
 
-.cardItem:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--violet-200, #ddd6fe);
+  box-shadow: 0 12px 28px -14px rgba(139, 92, 246, 0.4), var(--sombra-suave);
 }
 
-.thumb {
+.media {
+  position: relative;
+}
+
+.foto {
+  position: relative;
+  display: block;
   aspect-ratio: 1;
-  background: var(--gris-fondo);
+  background: #F3F1F7;
+  overflow: hidden;
+}
+
+/* Vista previa de cada lado: ya viene con el mismo lila de fondo. */
+.fotoFrente,
+.fotoEspalda {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity var(--dur-media, 320ms) ease, transform var(--dur-media, 320ms) ease;
+}
+
+.fotoEspalda {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .card:hover .fotoFrente { transform: scale(1.03); }
+  .card:hover .fotoEspalda { opacity: 1; transform: scale(1.03); }
+  .card:hover .fotoFrente:not(:only-child) { opacity: 0; }
+}
+
+.fotoVacia {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  color: var(--gris-texto-secundario);
 }
 
-.thumbWrapper {
-  display: block;
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  background: var(--blanco);
-  overflow: hidden;
-  border-bottom: 1px solid var(--gris-borde);
-  transition: opacity 0.2s;
-}
-
-.thumbWrapper:hover {
-  opacity: 0.95;
+/* Diseños del editor anterior (combos / capas sobre la foto del producto). */
+.fotoLegado {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
 }
 
 .comboThumb {
@@ -103,33 +225,86 @@
   object-fit: contain;
 }
 
-.thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.insignias {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  right: 3.1rem; /* deja libre la papelera */
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  pointer-events: none;
 }
 
-.thumbLabel {
-  font-size: 0.875rem;
-  color: var(--gris-texto-secundario);
-  text-align: center;
-  padding: 0.75rem;
+.insigniaComprado,
+.insigniaNoDisponible {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  max-width: 100%;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.cardBody {
-  padding: 0.875rem;
+.insigniaComprado {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.insigniaNoDisponible {
+  background: rgba(55, 65, 81, 0.9);
+  color: #f9fafb;
+}
+
+/* Lados que llevan diseño ("Frente + Espalda"). */
+.lados {
+  position: absolute;
+  left: 0.6rem;
+  bottom: 0.6rem;
+  z-index: 1;
+  max-width: calc(100% - 1.2rem);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--primary-color, #6d28d9);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 4px rgba(20, 18, 28, 0.08);
+  pointer-events: none;
+}
+
+.cardNoDisponible .foto img,
+.cardNoDisponible .fotoLegado {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+/* ── Datos ── */
+.info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  padding: 0.95rem 1rem 1rem;
+  min-width: 0;
 }
 
-.cardTitle {
-  margin: 0 0 0.25rem 0;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--gris-texto-principal);
+.nombre {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
   line-height: 1.3;
+  color: var(--gris-texto-principal);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -137,216 +312,246 @@
   overflow: hidden;
 }
 
-.cardDate {
-  margin: 0 0 0.625rem 0;
-  font-size: 0.8125rem;
+.prenda {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  font-size: 0.84rem;
   color: var(--gris-texto-secundario);
 }
 
-.cardLink {
-  font-size: 0.875rem;
-  color: var(--rojo-principal);
+.prendaTexto {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.puntoColor {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.fecha {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  text-decoration: none;
+  color: var(--primary-color, #6d28d9);
+}
+
+.pie {
+  margin-top: auto;
+  padding-top: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.precios {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.precio {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal);
+}
+
+.precioAntes {
+  font-size: 0.78rem;
+  color: var(--gris-texto-secundario);
+  text-decoration: line-through;
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.botonPrincipal {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0;
-  min-height: 40px;
+  gap: 0.35rem;
+  min-height: 38px;
+  padding: 0 0.9rem;
+  border-radius: 10px;
+  background: #8b5cf6;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
 }
 
-.cardLink:hover {
-  text-decoration: underline;
+.botonPrincipal:hover {
+  background: #7c3aed;
+  color: #ffffff;
 }
 
-.error {
-  color: var(--rojo-principal);
-  margin: 0;
-  font-size: 0.9375rem;
+.botonEditar {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--violet-50, #f5f3ff);
+  color: var(--primary-color, #6d28d9);
+  border: 1px solid var(--violet-200, #ddd6fe);
+  transition: background-color 0.2s ease;
 }
 
-/* ── Skeletons ── */
+.botonEditar:hover {
+  background: var(--violet-100, #ede9fe);
+  color: var(--primary-color, #6d28d9);
+}
+
+/* ── Esqueletos ── */
 .skeletonCard {
   pointer-events: none;
 }
 
-.skeletonThumb {
-  aspect-ratio: 1;
-  background: #e5e7eb;
-  position: relative;
-  overflow: hidden;
+.skeletonCard:hover {
+  transform: none;
+  border-color: var(--gris-borde);
+  box-shadow: var(--sombra-suave);
 }
 
-.skeletonThumb::after,
-.skeletonTitle::after,
-.skeletonDate::after,
-.skeletonLink::after {
+.skeletonFoto,
+.skeletonLinea {
+  position: relative;
+  overflow: hidden;
+  background: #ECEAF2;
+}
+
+.skeletonFoto {
+  aspect-ratio: 1;
+}
+
+.skeletonLinea {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.skeletonTitulo { height: 16px; width: 75%; }
+.skeletonCorta { width: 50%; }
+.skeletonPrecio { height: 18px; width: 70px; }
+.skeletonBoton { height: 38px; width: 96px; border-radius: 10px; }
+
+.skeletonFoto::after,
+.skeletonLinea::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
   animation: shimmer 1.5s infinite;
 }
 
-.skeletonTitle {
-  height: 16px;
-  width: 80%;
-  background: #e5e7eb;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  position: relative;
-  overflow: hidden;
-}
-
-.skeletonDate {
-  height: 12px;
-  width: 50%;
-  background: #e5e7eb;
-  border-radius: 4px;
-  margin-bottom: 12px;
-  position: relative;
-  overflow: hidden;
-}
-
-.skeletonLink {
-  height: 20px;
-  width: 100px;
-  background: #e5e7eb;
-  border-radius: 4px;
-  margin-top: auto;
-  position: relative;
-  overflow: hidden;
-}
-
 @keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-/* ── Loading ── */
-.loadingInline {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 2rem;
-  color: var(--gris-texto-secundario);
-  font-size: 0.9375rem;
-  font-weight: 500;
-}
-
-.loadingDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--rojo-principal);
-  animation: pulse 1s ease-in-out infinite;
-}
-
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(0.9);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
 }
 
 /* ══════════════════════════════
-   RESPONSIVE ≤ 768px
+   RESPONSIVE
    ══════════════════════════════ */
 @media (max-width: 768px) {
-  .title {
-    font-size: 1.375rem;
-  }
-
-  .card {
-    max-width: 100%;
-    padding: 1.5rem;
-    border-radius: var(--radio-mediano);
+  .headerRow {
+    margin-bottom: 1.5rem;
   }
 
   .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-}
-
-/* ══════════════════════════════
-   RESPONSIVE ≤ 576px
-   ══════════════════════════════ */
-@media (max-width: 576px) {
-  .title {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-  }
-
-  .card {
-    padding: 1.25rem;
-  }
-
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
   }
 
-  .cardBody {
+  .card {
+    border-radius: 16px;
+  }
+
+  .info {
     padding: 0.75rem;
   }
 
-  .cardTitle {
-    font-size: 0.875rem;
+  .nombre {
+    font-size: 0.92rem;
+  }
+
+  .pie {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .acciones {
+    width: 100%;
+  }
+
+  .botonPrincipal {
+    flex: 1;
+    justify-content: center;
   }
 }
 
-/* ══════════════════════════════
-   RESPONSIVE ≤ 380px
-   ══════════════════════════════ */
-@media (max-width: 380px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
+@media (max-width: 640px) {
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.25rem;
   }
 
-  .cardBody {
-    padding: 0.625rem;
+  .headerRow .primaryBtn {
+    width: 100%;
   }
 
-  .cardTitle {
-    font-size: 0.8125rem;
+  .emptyState {
+    padding: 3rem 1.25rem;
   }
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
    MODO NOCHE — MisCreacionesPage
-   ---------------------------------------------------------------------------
-   El módulo ya consume --gris-* --blanco/--rojo-principal, así que textos,
-   cards y enlaces se oscurecen solos. Aquí solo afinamos los SKELETONS, cuyo
-   gris claro (#e5e7eb) y brillo blanco quedarían demasiado luminosos sobre
-   fondo oscuro. Solo color; sin tocar tamaños ni animación.
+   Superficies, bordes y sombras ya usan tokens que se voltean solos; aquí
+   va lo de color fijo (tintes violeta, esqueletos). La foto conserva su lila
+   claro: las vistas previas ya vienen con ese fondo, y las insignias van
+   encima de ella.
    ═════════════════════════════════════════════════════════════════════════ */
-:global([data-theme='dark']) .skeletonThumb,
-:global([data-theme='dark']) .skeletonTitle,
-:global([data-theme='dark']) .skeletonDate,
-:global([data-theme='dark']) .skeletonLink {
+:global([data-theme='dark']) .card:hover {
+  border-color: rgba(167, 139, 250, 0.4);
+  box-shadow: 0 12px 28px -14px rgba(167, 139, 250, 0.45), var(--sombra-suave);
+}
+
+:global([data-theme='dark']) .fecha {
+  color: var(--primary-hover);
+}
+
+:global([data-theme='dark']) .botonEditar {
+  background: var(--primary-light);
+  color: var(--primary-hover);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .botonEditar:hover {
+  background: rgba(167, 139, 250, 0.22);
+}
+
+:global([data-theme='dark']) .skeletonFoto,
+:global([data-theme='dark']) .skeletonLinea {
   background: var(--color-surface-2);
 }
-:global([data-theme='dark']) .skeletonThumb::after,
-:global([data-theme='dark']) .skeletonTitle::after,
-:global([data-theme='dark']) .skeletonDate::after,
-:global([data-theme='dark']) .skeletonLink::after {
+
+:global([data-theme='dark']) .skeletonFoto::after,
+:global([data-theme='dark']) .skeletonLinea::after {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
 }

@@ -13,7 +13,11 @@ import {
   orderBy,
   limit,
   startAfter,
-  serverTimestamp
+  serverTimestamp,
+  FieldValue,
+  Timestamp,
+  DocumentReference,
+  GeoPoint
 } from 'firebase/firestore';
 import { db, getFirebaseConfigMessage } from './config';
 
@@ -23,10 +27,20 @@ const isFirestoreAvailable = () => {
 };
 
 /**
+ * Valores propios de Firestore que viajan tal cual: serverTimestamp(),
+ * deleteField(), una fecha ya leída, una referencia… Las limpiezas de abajo
+ * recorren los objetos campo por campo; si desarman uno de estos lo vuelven
+ * un mapa común (serverTimestamp() se guardaba como { _methodName } y no
+ * como la fecha), así que no se tocan.
+ */
+const esValorDeFirestore = (v) =>
+  v instanceof FieldValue || v instanceof Timestamp || v instanceof DocumentReference || v instanceof GeoPoint;
+
+/**
  * Elimina propiedades undefined de un objeto (y anidados). Firestore no acepta undefined.
  */
 function removeUndefined(obj) {
-  if (obj === null || typeof obj !== 'object') {
+  if (obj === null || typeof obj !== 'object' || esValorDeFirestore(obj)) {
     return obj;
   }
   if (Array.isArray(obj)) {
@@ -47,7 +61,7 @@ function removeUndefined(obj) {
 function emptyStringsToNull(obj) {
   if (obj === undefined) return undefined;
   if (typeof obj === 'string') return obj === '' ? null : obj;
-  if (obj === null || typeof obj !== 'object') return obj;
+  if (obj === null || typeof obj !== 'object' || esValorDeFirestore(obj)) return obj;
   if (Array.isArray(obj)) return obj.map(emptyStringsToNull);
   const out = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -66,7 +80,7 @@ function removeEmptyForFirestore(obj) {
   if (obj === null) return undefined;
   if (typeof obj === 'string') return obj === '' ? undefined : obj;
   if (typeof obj === 'number' || typeof obj === 'boolean') return obj;
-  if (obj instanceof Date) return obj;
+  if (obj instanceof Date || esValorDeFirestore(obj)) return obj;
   if (Array.isArray(obj)) {
     const cleaned = obj.map(removeEmptyForFirestore).filter((v) => v !== undefined);
     return cleaned;
