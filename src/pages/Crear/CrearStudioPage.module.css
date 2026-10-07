@@ -952,15 +952,16 @@
     display: none;
   }
 
-  /* "Estás editando FIFA 2026 ✎ · Todo está guardado · + Nuevo" en una línea. */
-  .editando {
+  /* "Estás editando FIFA 2026 ✎ · Todo está guardado · + Nuevo" en una línea.
+     (.studio delante: la regla general de .editando va más abajo y ganaba.) */
+  .studio .editando {
     flex-wrap: nowrap;
     gap: 0.5rem;
     padding: 0.35rem 0.75rem;
     font-size: 0.8rem;
   }
 
-  .editandoTexto {
+  .studio .editandoTexto {
     flex-wrap: nowrap;
     min-width: 0;
     overflow: hidden;
@@ -1485,8 +1486,20 @@
     display: inline-flex;
   }
 
+  /* Deshacer, rehacer y las 6 acciones rápidas en una sola fila. */
   .barraLienzo {
-    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .barraLienzo .botonBarra {
+    min-width: 34px;
+    height: 36px;
+    padding: 0 0.45rem;
+  }
+
+  .rapidas {
+    gap: 0.3rem;
+    padding-left: 0.3rem;
   }
 }
 

@@ -5,7 +5,7 @@ import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
   Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil,
-  X, Check, Minus, Hand, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  X, Check, Minus, Hand, ZoomIn, ZoomOut, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -185,6 +185,8 @@ const CrearStudioPage = () => {
   const [quitandoFondo, setQuitandoFondo] = useState(null);
   const [verAtajos, setVerAtajos] = useState(false);
   const [guiaGestos, setGuiaGestos] = useState(false);
+  // En el celular, editando algo se acerca a su zona; esto muestra la prenda entera.
+  const [verCompleta, setVerCompleta] = useState(false);
   // Menú del clic derecho: { x, y, capaId } sobre un diseño, o { x, y, zonaId, punto } en la zona.
   const [menu, setMenu] = useState(null);
   const cerrarMenu = useCallback(() => setMenu(null), []);
@@ -216,6 +218,8 @@ const CrearStudioPage = () => {
   const tokenRef = useRef(0);
   const inputArchivoRef = useRef(null);
   const editorRef = useRef(null);
+  const aplicarZoomRef = useRef(null);
+  const animacionZoomRef = useRef(0);
   const areaLienzoRef = useRef(null);
   const panelRef = useRef(null);
   const panelScrollRef = useRef(null);
@@ -291,6 +295,54 @@ const CrearStudioPage = () => {
     setGuiaGestos(false);
     try { localStorage.setItem('crear_guia_gestos', '1'); } catch { /* nada */ }
   };
+
+  // ── Acercar a la zona (celular) ──
+  // Con la prenda entera, en un celular el diseño se ve diminuto: al elegir
+  // algo, la vista se acerca (con una animación corta) a la zona donde está;
+  // al soltarlo vuelve a la prenda entera.
+  const zonaAcercada = capaSel && zonaSel ? zonaSel.id : null;
+  aplicarZoomRef.current = (animar = true) => {
+    const lienzo = fabricRef.current;
+    if (!lienzo) return;
+    const t = window.innerWidth <= 768 && !verCompleta && zonaAcercada ? transformsRef.current[zonaAcercada] : null;
+    const W = lienzo.getWidth();
+    const H = lienzo.getHeight();
+    let destino = [1, 0, 0, 1, 0, 0];
+    if (t) {
+      const a = (t.ang * Math.PI) / 180;
+      const bw = Math.abs(t.zw * Math.cos(a)) + Math.abs(t.zh * Math.sin(a));
+      const bh = Math.abs(t.zw * Math.sin(a)) + Math.abs(t.zh * Math.cos(a));
+      const z = Math.max(1, Math.min(3, W / (bw * 1.3), H / (bh * 1.3)));
+      // Centrada en la zona, sin mostrar nada fuera de la foto.
+      const tx = Math.min(0, Math.max(W - W * z, W / 2 - t.cx * z));
+      const ty = Math.min(0, Math.max(H - H * z, H / 2 - t.cy * z));
+      destino = [z, 0, 0, z, tx, ty];
+    }
+    const fijar = (v) => {
+      lienzo.setViewportTransform(v);
+      lienzo.getObjects().forEach((o) => o.setCoords());
+      lienzo.getActiveObject()?.setCoords();
+      lienzo.requestRenderAll();
+    };
+    cancelAnimationFrame(animacionZoomRef.current);
+    const desde = lienzo.viewportTransform.slice();
+    if (!animar || desde.every((x, i) => Math.abs(x - destino[i]) < 0.001)) {
+      fijar(destino);
+      return;
+    }
+    const inicio = performance.now();
+    const paso = (ahora) => {
+      const p = Math.min(1, (ahora - inicio) / 260);
+      const e = 1 - (1 - p) ** 3;
+      fijar(desde.map((d, i) => d + (destino[i] - d) * e));
+      if (p < 1) animacionZoomRef.current = requestAnimationFrame(paso);
+    };
+    animacionZoomRef.current = requestAnimationFrame(paso);
+  };
+  useEffect(() => { aplicarZoomRef.current?.(true); }, [zonaAcercada, verCompleta]);
+  // Al soltar, lo próximo que se elija vuelve a acercarse.
+  useEffect(() => { if (!zonaAcercada) setVerCompleta(false); }, [zonaAcercada]);
+  useEffect(() => () => cancelAnimationFrame(animacionZoomRef.current), []);
 
   const editandoAlgoAhora = Boolean(seleccionId) || multiIds.length > 1;
   useEffect(() => {
@@ -694,18 +746,21 @@ const CrearStudioPage = () => {
       const hayHover = h && !h.group && h !== lienzo.getActiveObject() && lienzo.getObjects().includes(h);
       if (!hayHover && !guiasRef.current.length) return;
       ctx.save();
+      const v = lienzo.viewportTransform;
+      ctx.transform(v[0], v[1], v[2], v[3], v[4], v[5]);
+      const grosor = 1 / (v[0] || 1);
       if (hayHover) {
         const pts = h.getCoords(true, true);
         ctx.strokeStyle = VIOLETA;
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([5, 4]);
+        ctx.lineWidth = 1.5 * grosor;
+        ctx.setLineDash([5 * grosor, 4 * grosor]);
         ctx.beginPath();
         pts.forEach((pt, i) => (i ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)));
         ctx.closePath();
         ctx.stroke();
       }
       ctx.strokeStyle = '#EC4899';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = grosor;
       ctx.setLineDash([]);
       guiasRef.current.forEach(([a, b]) => {
         ctx.beginPath();
@@ -792,6 +847,7 @@ const CrearStudioPage = () => {
       if (gesto.vacio || e.touches.length < 2) return;
       const m = medidas(e.touches);
       const factor = m.distancia / gesto.distancia;
+      const zoom = lienzo.viewportTransform[0] || 1;
       let angulo = gesto.angulo + (m.giro - gesto.giro);
       const recto = Math.round(angulo / 90) * 90;
       if (Math.abs(angulo - recto) < 6) angulo = recto;
@@ -799,8 +855,8 @@ const CrearStudioPage = () => {
         scaleX: gesto.escalaX * factor,
         scaleY: gesto.escalaY * factor,
         angle: angulo,
-        left: gesto.left + (m.medio.x - gesto.medio.x),
-        top: gesto.top + (m.medio.y - gesto.medio.y),
+        left: gesto.left + (m.medio.x - gesto.medio.x) / zoom,
+        top: gesto.top + (m.medio.y - gesto.medio.y) / zoom,
       });
       gesto.obj.setCoords();
       lienzo.requestRenderAll();
@@ -1040,6 +1096,7 @@ const CrearStudioPage = () => {
         editarAlCrearRef.current = null;
         hoverRef.current = null;
         lienzo.renderOnAddRemove = true;
+        aplicarZoomRef.current?.(false);
         lienzo.requestRenderAll();
         primerDibujoRef.current = false;
       } finally {
@@ -2415,6 +2472,17 @@ const CrearStudioPage = () => {
                 <button type="button" className={styles.botonBarra} onClick={centrar} aria-label="Centrar" title="Centrar (C)">
                   <Crosshair size={17} aria-hidden="true" />
                 </button>
+                {zonaAcercada && (
+                  <button
+                    type="button"
+                    className={`${styles.botonBarra} ${styles.soloMovil}`}
+                    onClick={() => setVerCompleta((v) => !v)}
+                    aria-label={verCompleta ? 'Acercar a la zona' : 'Ver la prenda completa'}
+                    title={verCompleta ? 'Acercar a la zona' : 'Ver la prenda completa'}
+                  >
+                    {verCompleta ? <ZoomIn size={17} aria-hidden="true" /> : <ZoomOut size={17} aria-hidden="true" />}
+                  </button>
+                )}
                 {/* En el celular el panel queda debajo: esto lleva a sus opciones. */}
                 <button
                   type="button"
