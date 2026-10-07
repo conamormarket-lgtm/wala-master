@@ -39,11 +39,12 @@
   .fila { --por-vista: 3; }
 }
 
-/* En el celular: una tarjeta y buena parte de la siguiente, para que se
-   note que se puede deslizar sin que el pie quede apretado. */
+/* En el celular: dos tarjetas enteras, como los carruseles de productos
+   de la tienda (FeaturedCarousel). Con una y pico la segunda quedaba
+   cortada en el borde. El pie se apila solo en tarjetas angostas. */
 @media (max-width: 640px) {
   .fila {
-    --por-vista: 1.7;
+    --por-vista: 2;
     --espacio: 0.75rem;
   }
 }
