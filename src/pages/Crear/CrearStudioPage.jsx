@@ -1951,15 +1951,14 @@ const CrearStudioPage = () => {
     }
   };
 
-  /** "Agregar al carrito": con la talla elegida en el panel; si falta, se pide. */
+  /**
+   * "Agregar al carrito": la talla solo hace falta para comprar, así que se
+   * pide aquí (ya marcada si la creación la recuerda) y no en el panel.
+   */
   const agregarAlCarrito = () => {
     if (agotado || !validar()) return;
-    if (tallas.length && tallas.includes(talla)) {
-      comprar(talla);
-      return;
-    }
     if (tallas.length) {
-      setTallaCompra('');
+      setTallaCompra(tallas.includes(talla) ? talla : '');
       setPidiendoTalla(true);
       return;
     }
@@ -2838,38 +2837,6 @@ const CrearStudioPage = () => {
             </section>
           )}
 
-          {/* Paso 4 — Talla y compra */}
-          <section className={`${styles.seccion} ${styles.resumen}`} aria-label="Talla y precio">
-            {tallas.length > 0 && (
-              <>
-                <h2 className={styles.paso}>
-                  <span className={styles.numeroPaso} aria-hidden="true">4</span>
-                  Elige tu talla
-                  {talla && <span className={styles.valor}>{talla}</span>}
-                </h2>
-                <div className={styles.tallas} role="radiogroup" aria-label="Talla">
-                  {tallas.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      role="radio"
-                      aria-checked={t === talla}
-                      className={`${styles.talla} ${t === talla ? styles.tallaActiva : ''}`}
-                      onClick={() => setTalla(t)}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-            <div className={`${styles.lineaPrecio} ${styles.lineaTotal}`}>
-              <span>Total</span>
-              <span>{soles(total)}</span>
-            </div>
-            <p className={styles.incluye}>Incluye la impresión de todos tus diseños, en las zonas que quieras.</p>
-          </section>
-
           </div>
 
           <div className={styles.acciones}>
@@ -2958,6 +2925,7 @@ const CrearStudioPage = () => {
                 </button>
               ))}
             </div>
+            <p className={styles.incluye}>Incluye la impresión de todos tus diseños, en las zonas que quieras.</p>
             <button type="submit" className={styles.botonPrincipal} disabled={!tallaCompra}>
               <ShoppingBag size={18} aria-hidden="true" />
               Agregar al carrito · {soles(total)}

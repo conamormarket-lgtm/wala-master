@@ -676,32 +676,7 @@
   background: var(--danger-soft, rgba(239, 68, 68, 0.1));
 }
 
-/* Resumen y acciones */
-
-.resumen {
-  gap: 0.45rem;
-}
-
-.lineaPrecio {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.9rem;
-  color: var(--gris-texto-secundario);
-}
-
-.lineaPrecio small {
-  font-size: 0.75rem;
-}
-
-.lineaTotal {
-  margin-top: 0.35rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--gris-borde);
-  color: var(--gris-texto-principal);
-  font-size: 1.1rem;
-  font-weight: 800;
-}
+/* Acciones */
 
 .acciones {
   display: flex;
