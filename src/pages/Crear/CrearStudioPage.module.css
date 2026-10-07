@@ -905,12 +905,60 @@
     touch-action: pan-y;
     grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
-    padding: 0.75rem 0.75rem 0;
+    padding: 0 0.75rem;
   }
 
+  /* La prenda queda fija arriba mientras se baja por las opciones: cada
+     cambio se ve al instante. */
   .areaLienzo {
-    padding: 0.6rem;
-    border-radius: 18px;
+    padding: 0.5rem;
+    /* Arriba rectas: fija contra el borde, por las curvas se asomaba lo de atrás. */
+    border-radius: 0 0 18px 18px;
+    gap: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.45);
+    /* Arriba sin relleno en .cuerpo: fija, queda pegada al borde (con el
+       relleno se veía pasar el contenido por encima). */
+    margin-top: 0.75rem;
+  }
+
+  .lienzoCaja {
+    min-height: 220px;
+  }
+
+  .zonaInfo {
+    font-size: 0.76rem;
+  }
+
+  .vistas {
+    padding: 3px;
+  }
+
+  /* Editando un diseño: fuera lo que no ayuda en ese momento (avisos de
+     arriba y la ayuda bajo la prenda, que ya está en la barra rápida), para
+     que quepan la prenda y sus opciones. */
+  .enfoque .editando,
+  .enfoque .borrador,
+  .enfoque .zonaInfo {
+    display: none;
+  }
+
+  /* Escribiendo con el teclado: la prenda deja de estar fija y la barra de
+     compra se esconde, si no tapaban el campo. */
+  .cuerpo:has(textarea:focus) .areaLienzo,
+  .cuerpo:has(input:focus) .areaLienzo {
+    position: static;
+  }
+
+  .studio:has(textarea:focus) .acciones,
+  .studio:has(input[type="text"]:focus) .acciones {
+    display: none;
+  }
+
+  .cuerpo:has(textarea:focus) {
+    padding-bottom: 1rem;
   }
 
   .vistaTab {
@@ -1187,6 +1235,59 @@
     border-radius: 0;
     padding: 0.4rem 0.9rem;
   }
+}
+
+/* ── Guía de gestos (la primera vez, en pantallas táctiles) ─────────────── */
+.guiaGestos {
+  position: absolute;
+  inset: auto 0.6rem 0.6rem;
+  z-index: 3;
+  padding: 0.75rem 0.85rem;
+  border-radius: 16px;
+  background: rgba(20, 18, 28, 0.9);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  animation: aparecerGuia 0.25s ease-out;
+}
+
+.guiaGestos ul {
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.guiaGestos li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.guiaGestos li svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #C4B5FD;
+}
+
+.guiaGestos button {
+  width: 100%;
+  min-height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: #8b5cf6;
+  color: #fff;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+@keyframes aparecerGuia {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* ── Lienzo vacío: "Empieza tu diseño" ────────────────────────────────── */

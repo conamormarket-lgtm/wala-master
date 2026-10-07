@@ -5,7 +5,7 @@ import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
   Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil,
-  X, Check, Minus, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  X, Check, Minus, Hand, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -184,6 +184,7 @@ const CrearStudioPage = () => {
   const [recortando, setRecortando] = useState(null);
   const [quitandoFondo, setQuitandoFondo] = useState(null);
   const [verAtajos, setVerAtajos] = useState(false);
+  const [guiaGestos, setGuiaGestos] = useState(false);
   // Menú del clic derecho: { x, y, capaId } sobre un diseño, o { x, y, zonaId, punto } en la zona.
   const [menu, setMenu] = useState(null);
   const cerrarMenu = useCallback(() => setMenu(null), []);
@@ -215,6 +216,7 @@ const CrearStudioPage = () => {
   const tokenRef = useRef(0);
   const inputArchivoRef = useRef(null);
   const editorRef = useRef(null);
+  const areaLienzoRef = useRef(null);
   const panelRef = useRef(null);
   const panelScrollRef = useRef(null);
   // Lo del borrador va en refs: el autoguardado corre fuera del render (y
@@ -276,6 +278,19 @@ const CrearStudioPage = () => {
     ? zonasUsadas.length > 0
     : firmaDiseno(capasPorZona, color?.id) !== firmaGuardada;
   const srcDe = useCallback((capa) => localSrcRef.current.get(capa.id) || capa.src, []);
+
+  // La primera vez que se elige un diseño con el dedo, se explican los gestos.
+  useEffect(() => {
+    if (CON_MOUSE || !seleccionId) return;
+    try {
+      if (localStorage.getItem('crear_guia_gestos') === '1') return;
+    } catch { /* sin almacenamiento: se muestra igual */ }
+    setGuiaGestos(true);
+  }, [seleccionId]);
+  const cerrarGuiaGestos = () => {
+    setGuiaGestos(false);
+    try { localStorage.setItem('crear_guia_gestos', '1'); } catch { /* nada */ }
+  };
 
   const editandoAlgoAhora = Boolean(seleccionId) || multiIds.length > 1;
   useEffect(() => {
@@ -729,6 +744,105 @@ const CrearStudioPage = () => {
       lienzo.requestRenderAll();
     };
     document.addEventListener('focusin', alEnfocarOtraCosa);
+    // ── Gestos con los dedos (celular, tablet) ──
+    // Un dedo mueve (lo hace fabric). Dos dedos sobre un diseño lo agrandan o
+    // achican, lo giran (con imán a 0°, 90°…) y lo mueven, todo a la vez.
+    // Dos toques seguidos sobre un texto abren el teclado para escribirlo.
+    const superficie = lienzo.upperCanvasEl;
+    const puntoDe = (t) => {
+      const r = superficie.getBoundingClientRect();
+      const k = lienzo.getWidth() / (r.width || 1);
+      return { x: (t.clientX - r.left) * k, y: (t.clientY - r.top) * k };
+    };
+    const medidas = (toques) => {
+      const a = puntoDe(toques[0]);
+      const b = puntoDe(toques[1]);
+      return {
+        medio: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+        distancia: Math.hypot(b.x - a.x, b.y - a.y) || 1,
+        giro: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
+      };
+    };
+    const disenoBajo = (punto) => {
+      const activo = lienzo.getActiveObject();
+      if (activo && (activo.capaId || activo.type === 'activeSelection')) return activo;
+      const pt = new fabric.Point(punto.x, punto.y);
+      return [...lienzo.getObjects()].reverse().find((o) => o.capaId && o.containsPoint(pt)) || null;
+    };
+    let gesto = null;
+    const alPonerDedos = (e) => {
+      if (e.touches.length !== 2) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const m = medidas(e.touches);
+      const obj = disenoBajo(m.medio);
+      // fabric ya empezó a arrastrar con el primer dedo: se suelta.
+      lienzo._currentTransform = null;
+      if (!obj) {
+        gesto = { vacio: true };
+        return;
+      }
+      if (lienzo.getActiveObject() !== obj) lienzo.setActiveObject(obj);
+      gesto = { obj, ...m, escalaX: obj.scaleX, escalaY: obj.scaleY, angulo: obj.angle || 0, left: obj.left, top: obj.top };
+    };
+    const alMoverDedos = (e) => {
+      if (!gesto) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (gesto.vacio || e.touches.length < 2) return;
+      const m = medidas(e.touches);
+      const factor = m.distancia / gesto.distancia;
+      let angulo = gesto.angulo + (m.giro - gesto.giro);
+      const recto = Math.round(angulo / 90) * 90;
+      if (Math.abs(angulo - recto) < 6) angulo = recto;
+      gesto.obj.set({
+        scaleX: gesto.escalaX * factor,
+        scaleY: gesto.escalaY * factor,
+        angle: angulo,
+        left: gesto.left + (m.medio.x - gesto.medio.x),
+        top: gesto.top + (m.medio.y - gesto.medio.y),
+      });
+      gesto.obj.setCoords();
+      lienzo.requestRenderAll();
+    };
+    const alSoltarDedos = (e) => {
+      if (!gesto || e.touches.length > 0) return;
+      const { obj } = gesto;
+      gesto = null;
+      if (!obj) return;
+      // Igual que al terminar de arrastrar: pasa al diseño (y al deshacer).
+      lienzo.fire('object:modified', { target: obj });
+      if (obj.capaId && obj.type !== 'activeSelection') {
+        // Un texto que creció de más se ajusta para seguir entrando en la zona.
+        editarCapa(obj.capaId, {});
+        accionesRef.current.mantenerEnZona?.(obj.capaId);
+      }
+    };
+    const opcionesToque = { capture: true, passive: false };
+    contenedor.addEventListener('touchstart', alPonerDedos, opcionesToque);
+    contenedor.addEventListener('touchmove', alMoverDedos, opcionesToque);
+    contenedor.addEventListener('touchend', alSoltarDedos, true);
+    contenedor.addEventListener('touchcancel', alSoltarDedos, true);
+    // Dos toques sobre un diseño: con texto, a escribirlo.
+    let ultimoToque = null;
+    let inicioToque = null;
+    lienzo.on('mouse:down', (e) => {
+      inicioToque = e.e?.type?.startsWith('touch') ? { x: e.pointer?.x, y: e.pointer?.y } : null;
+    });
+    lienzo.on('mouse:up', (e) => {
+      if (!inicioToque || !e.target?.capaId || !e.pointer) return;
+      const quieto = Math.hypot(e.pointer.x - inicioToque.x, e.pointer.y - inicioToque.y) < 12;
+      // La hora del toque (no la de ahora): el primero elige el diseño y la
+      // pantalla tarda un momento en actualizarse; el segundo se atiende tarde.
+      const ahora = e.e.timeStamp || Date.now();
+      if (quieto && ultimoToque && ultimoToque.capaId === e.target.capaId && ahora - ultimoToque.t < 380) {
+        ultimoToque = null;
+        accionesRef.current.dobleToque?.(e.target);
+        return;
+      }
+      ultimoToque = quieto ? { capaId: e.target.capaId, t: ahora } : null;
+    });
+
     lienzo.on('object:modified', (e) => {
       const obj = e.target;
       if (obj?.type === 'activeSelection') {
@@ -774,6 +888,10 @@ const CrearStudioPage = () => {
     });
     return () => {
       ['mousedown', 'touchstart', 'pointerdown'].forEach((tipo) => contenedor.removeEventListener(tipo, recalcular, true));
+      contenedor.removeEventListener('touchstart', alPonerDedos, opcionesToque);
+      contenedor.removeEventListener('touchmove', alMoverDedos, opcionesToque);
+      contenedor.removeEventListener('touchend', alSoltarDedos, true);
+      contenedor.removeEventListener('touchcancel', alSoltarDedos, true);
       document.removeEventListener('focusin', alEnfocarOtraCosa);
       lienzo.dispose();
       fabricRef.current = null;
@@ -848,7 +966,7 @@ const CrearStudioPage = () => {
         // arriba (título, avisos, pestañas) y lo de abajo (deshacer, ayuda):
         // con un 78 % fijo se pasaba del borde y había que bajar la página.
         const altoMax = window.innerWidth <= 768
-          ? Math.max(260, window.innerHeight * 0.5)
+          ? Math.max(230, window.innerHeight * 0.38)
           : Math.max(380, window.innerHeight
             - ((contenedorRef.current?.getBoundingClientRect().top || 0) + window.scrollY) - 110);
         const ancho = Math.min(anchoLienzo, Math.floor(altoMax / proporcion));
@@ -1324,7 +1442,8 @@ const CrearStudioPage = () => {
   /** "Listo": suelta lo elegido y, en pantallas táctiles, vuelve a mostrar la prenda. */
   const terminarEdicion = () => {
     soltarSeleccion();
-    if (!CON_MOUSE) contenedorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // En el celular el panel vuelve al comienzo de los pasos.
+    if (!CON_MOUSE) contenedorRef.current?.closest(`.${styles.cuerpo}`)?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const mover = (haciaAdelante) => {
@@ -1942,7 +2061,33 @@ const CrearStudioPage = () => {
     if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) editarCapa(capaId, { left: capa.left + dx, top: capa.top + dy });
   };
 
+  /**
+   * En el celular la prenda queda fija arriba y el panel pasa por debajo:
+   * lleva el panel hasta las opciones de lo elegido, justo bajo la prenda.
+   */
+  const mostrarEditor = (enfocarTexto = false) => {
+    const editor = editorRef.current;
+    const cuerpo = editor?.closest(`.${styles.cuerpo}`);
+    if (!editor || !cuerpo) return;
+    const campo = enfocarTexto && editor.querySelector('textarea');
+    if (campo) {
+      // Con el teclado abierto la prenda deja de quedar fija (ver CSS): el
+      // campo se ve entero y lo escrito aparece en la prenda al cerrarlo.
+      campo.focus();
+      campo.select();
+      setTimeout(() => campo.scrollIntoView({ block: 'center', behavior: 'smooth' }), 350);
+      return;
+    }
+    const prenda = areaLienzoRef.current?.offsetHeight || 0;
+    const delta = editor.getBoundingClientRect().top - cuerpo.getBoundingClientRect().top - prenda - 8;
+    cuerpo.scrollBy({ top: delta, behavior: 'smooth' });
+  };
+
   accionesRef.current = {
+    dobleToque: (obj) => {
+      if (capaPorId(obj?.capaId)?.type !== 'text') return;
+      setTimeout(() => mostrarEditor(true), 60);
+    },
     escalar,
     sincronizarGrupo,
     mantenerEnZona,
@@ -2098,7 +2243,7 @@ const CrearStudioPage = () => {
     : volverA.startsWith('/creacion') ? 'Volver a tu creación' : 'Volver a las prendas';
 
   return (
-    <div className={styles.studio}>
+    <div className={`${styles.studio} ${editandoAlgo ? styles.enfoque : ''}`}>
       <div className={styles.barraSuperior}>
         <Link to={volverA} className={styles.volver} aria-label={etiquetaVolver} title={etiquetaVolver}>
           <ArrowLeft size={20} aria-hidden="true" />
@@ -2159,6 +2304,7 @@ const CrearStudioPage = () => {
 
       <div className={styles.cuerpo}>
         <section
+          ref={areaLienzoRef}
           className={styles.areaLienzo}
           aria-label="Lienzo de diseño"
           onDragOver={(e) => {
@@ -2215,6 +2361,16 @@ const CrearStudioPage = () => {
                 </div>
               </div>
             )}
+            {guiaGestos && (
+              <div className={styles.guiaGestos} role="dialog" aria-label="Cómo editar con los dedos">
+                <ul>
+                  <li><Hand size={18} aria-hidden="true" /> <span><strong>Un dedo:</strong> arrástralo para moverlo.</span></li>
+                  <li><Maximize2 size={18} aria-hidden="true" /> <span><strong>Dos dedos:</strong> sepáralos o júntalos para agrandar o achicar, y gíralos para girarlo.</span></li>
+                  <li><Type size={18} aria-hidden="true" /> <span><strong>Dos toques</strong> en un texto para escribirlo.</span></li>
+                </ul>
+                <button type="button" onClick={cerrarGuiaGestos}>Entendido</button>
+              </div>
+            )}
             {soltando && (
               <div className={styles.soltarAqui} aria-hidden="true">
                 <ImagePlus size={28} />
@@ -2261,7 +2417,7 @@ const CrearStudioPage = () => {
                 <button
                   type="button"
                   className={`${styles.botonBarra} ${styles.soloMovil}`}
-                  onClick={() => editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  onClick={() => mostrarEditor(capaSel.type === 'text')}
                 >
                   <Pencil size={16} aria-hidden="true" /><span className={styles.textoBarra}>Editar</span>
                 </button>
@@ -2287,7 +2443,7 @@ const CrearStudioPage = () => {
             {capaSel
               ? (CON_MOUSE
                 ? 'Arrástralo para moverlo. Usa las esquinas o − y + para cambiar su tamaño.'
-                : 'Arrástralo con el dedo para moverlo. Usa − y + para cambiar su tamaño.')
+                : 'Un dedo lo mueve. Con dos dedos lo agrandas, achicas o giras.')
               : zonasUsadas.length === 0
                 ? `Tu diseño irá en ${zona.nombre.toLowerCase()} (la zona punteada). Sube una imagen o escribe un texto.`
                 : 'Toca tu imagen o tu texto para moverlo o cambiarlo.'}
