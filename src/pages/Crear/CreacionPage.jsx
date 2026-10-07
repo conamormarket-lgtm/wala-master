@@ -353,7 +353,7 @@ const CreacionPage = () => {
               {agotado ? 'Agotado por ahora' : 'Agregar al carrito'}
             </button>
           )}
-          <Link to={editarUrl} className={styles.contorno}>
+          <Link to={editarUrl} state={{ desde: location.pathname }} className={styles.contorno}>
             <Paintbrush size={16} aria-hidden="true" /> Editar diseño
           </Link>
         </div>

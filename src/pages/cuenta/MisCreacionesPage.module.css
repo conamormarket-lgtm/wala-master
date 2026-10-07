@@ -99,6 +99,11 @@
   color: var(--gris-texto-secundario);
 }
 
+/* Borradores debajo de las creaciones guardadas. */
+.borradoresDespues {
+  margin-top: 2.5rem;
+}
+
 /* ── Estado vacío / error (igual que WishlistPage .emptyState) ── */
 .emptyState {
   text-align: center;

@@ -97,8 +97,6 @@ const MisCreacionesPage = () => {
         )}
       </div>
 
-      <TusBorradores uid={user.uid} />
-
       {loading ? (
         <ul className={styles.grid} aria-label="Cargando tus creaciones">
           {[1, 2, 3, 4, 5, 6].map((i) => <MiCreacionCardSkeleton key={i} />)}
@@ -129,7 +127,7 @@ const MisCreacionesPage = () => {
           {hayBorradores && (
             <div className={styles.seccionCabecera}>
               <h2 className={styles.seccionTitulo}><T>Guardadas</T></h2>
-              <p className={styles.seccionAyuda}><T>Listas para comprar. Toca el lápiz del nombre para cambiarlo.</T></p>
+              <p className={styles.seccionAyuda}><T>Listas para comprar o seguir editando.</T></p>
             </div>
           )}
           <ul className={styles.grid}>
@@ -144,6 +142,14 @@ const MisCreacionesPage = () => {
             ))}
           </ul>
         </section>
+      )}
+
+      {/* Los borradores van después: lo principal de esta sección son las
+          creaciones terminadas. En Crear van primero (ahí se viene a diseñar). */}
+      {!loading && (
+        <div className={styles.borradoresDespues}>
+          <TusBorradores uid={user.uid} />
+        </div>
       )}
       {dialogoEliminar}
     </div>

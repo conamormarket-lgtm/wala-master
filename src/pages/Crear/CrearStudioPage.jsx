@@ -1575,7 +1575,7 @@ const CrearStudioPage = () => {
           setDesignId(guardadoId);
           setEsBorrador(true);
           // Recargar la página reabre este mismo borrador.
-          navigate(`/crear/${id}?designId=${guardadoId}`, { replace: true });
+          navigate(`/crear/${id}?designId=${guardadoId}`, { replace: true, state: location.state });
         }
       }
       if (montadoRef.current) setEstadoBorrador('guardado');
@@ -1644,7 +1644,7 @@ const CrearStudioPage = () => {
     setDesignId(idFinal);
     setEsBorrador(false);
     setEstadoBorrador(null);
-    if (idFinal !== designIdParam) navigate(`/crear/${id}?designId=${idFinal}`, { replace: true });
+    if (idFinal !== designIdParam) navigate(`/crear/${id}?designId=${idFinal}`, { replace: true, state: location.state });
     quitarBorradorDeCache(queryClient, user.uid, idFinal);
     queryClient.invalidateQueries({ queryKey: ['mis-creaciones-crear'], refetchType: 'all' });
     queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
@@ -1995,11 +1995,18 @@ const CrearStudioPage = () => {
   const vistaSel = zonaSel ? cfg.vistas.find((v) => v.id === zonaSel.vistaId) : null;
   const calidad = capaSel?.type === 'image' ? calidadDeCapa(capaSel, zonaSel, zonaSel && medidaZona(zonaSel, vistaSel)) : null;
   const base = precioBase(prenda);
+  // La flecha vuelve a la página desde la que se abrió el estudio (Mis
+  // creaciones, la página de la creación…), que la manda en `state.desde`;
+  // si se entró directo, a las prendas de Crear.
+  const volverA = typeof location.state?.desde === 'string' ? location.state.desde : '/personalizar';
+  const etiquetaVolver = volverA.startsWith('/cuenta')
+    ? 'Volver a Mis creaciones'
+    : volverA.startsWith('/creacion') ? 'Volver a tu creación' : 'Volver a las prendas';
 
   return (
     <div className={styles.studio}>
       <div className={styles.barraSuperior}>
-        <Link to="/personalizar" className={styles.volver} aria-label="Volver a las prendas">
+        <Link to={volverA} className={styles.volver} aria-label={etiquetaVolver} title={etiquetaVolver}>
           <ArrowLeft size={20} aria-hidden="true" />
         </Link>
         <div className={styles.tituloBloque}>

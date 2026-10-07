@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Trash2, ImageOff, Paintbrush, ShoppingBag, Check, Clock } from 'lucide-react';
 import { getProduct } from '../../../services/products';
@@ -73,6 +73,8 @@ export const MiCreacionCardSkeleton = () => (
 );
 
 const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
+  // El estudio vuelve aquí con su flecha (ver CrearStudioPage `volverA`).
+  const { pathname } = useLocation();
   const { data: productResponse, isLoading } = useQuery({
     queryKey: ['product', design.productId],
     queryFn: () => getProduct(design.productId),
@@ -251,6 +253,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
               {esDeCrear && (
                 <Link
                   to={editarUrl}
+                  state={{ desde: pathname }}
                   className={styles.botonEditar}
                   aria-label="Editar diseño"
                   title="Editar diseño"
@@ -258,7 +261,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
                   <Paintbrush size={16} aria-hidden="true" />
                 </Link>
               )}
-              <Link to={esDeCrear ? verUrl : editarUrl} className={styles.botonPrincipal}>
+              <Link to={esDeCrear ? verUrl : editarUrl} state={esDeCrear ? undefined : { desde: pathname }} className={styles.botonPrincipal}>
                 {esDeCrear
                   ? <><ShoppingBag size={15} aria-hidden="true" /> Comprar</>
                   : <><Paintbrush size={15} aria-hidden="true" /> Editar</>}

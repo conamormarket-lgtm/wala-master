@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, PenLine, Trash2, Clock } from 'lucide-react';
 import { getBorradoresCrear } from '../../services/designs';
@@ -46,6 +46,9 @@ export const useBorradoresCrear = (uid) => useQuery({
 });
 
 export const TarjetaBorrador = ({ borrador: b, onEliminar }) => {
+  // El estudio vuelve aquí con su flecha (ver CrearStudioPage `volverA`).
+  const { pathname } = useLocation();
+  const desde = { desde: pathname };
   // Misma consulta (y caché) que usa MiCreacionCard para el precio.
   const { data: respuesta } = useQuery({
     queryKey: ['product', b.productId],
@@ -59,7 +62,7 @@ export const TarjetaBorrador = ({ borrador: b, onEliminar }) => {
   return (
     <li className={`${tarjeta.card} ${styles.tarjeta}`}>
       <div className={tarjeta.media}>
-        <Link to={continuarUrl} className={tarjeta.foto} aria-label={`Continuar ${b.productName || 'borrador'}`}>
+        <Link to={continuarUrl} state={desde} className={tarjeta.foto} aria-label={`Continuar ${b.productName || 'borrador'}`}>
           {b.miniatura
             ? <img src={b.miniatura} alt="" className={tarjeta.fotoFrente} loading="lazy" />
             : <span className={tarjeta.fotoVacia}><PenLine size={34} aria-hidden="true" /></span>}
@@ -95,7 +98,7 @@ export const TarjetaBorrador = ({ borrador: b, onEliminar }) => {
             {precio > 0 && <span className={tarjeta.precio}>S/ {precio.toFixed(2)}</span>}
           </div>
           <div className={tarjeta.acciones}>
-            <Link to={continuarUrl} className={tarjeta.botonPrincipal}>
+            <Link to={continuarUrl} state={desde} className={tarjeta.botonPrincipal}>
               Continuar <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
