@@ -5,6 +5,7 @@ import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
   Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil,
+  X, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -101,6 +102,16 @@ const firmaDiseno = (capasPorZona, colorId) => {
   });
 };
 
+/**
+ * Selección de varios: se mueve y cambia de tamaño en bloque, sin girar
+ * (cada diseño vive en su zona y su giro se maneja de a uno).
+ */
+const estilizarGrupo = (sel) => {
+  estilizar(sel);
+  sel.set({ lockRotation: true, borderDashArray: [6, 4] });
+  sel.setControlsVisibility({ mtr: false });
+};
+
 /** Quita lo que solo sirve mientras se edita (marcas de subida) y las zonas vacías. */
 const capasParaGuardar = (capasPorZona) => {
   const out = {};
@@ -150,6 +161,8 @@ const CrearStudioPage = () => {
   // Capas agrupadas por zona de impresión: { [zonaId]: capa[] }.
   const [capasPorZona, setCapasPorZona] = useState({});
   const [seleccionId, setSeleccionId] = useState(null);
+  // Varios elementos elegidos a la vez (2 o más): Shift + clic, recuadro o Ctrl+A.
+  const [multiIds, setMultiIds] = useState([]);
   const [version, setVersion] = useState(0);
   const [listo, setListo] = useState(false);
   const [anchoLienzo, setAnchoLienzo] = useState(0);
@@ -190,6 +203,7 @@ const CrearStudioPage = () => {
   const capasRef = useRef({});
   const vistaRef = useRef(null);
   const seleccionRef = useRef(null);
+  const multiRef = useRef([]);
   const localSrcRef = useRef(new Map());
   const tokenRef = useRef(0);
   const inputArchivoRef = useRef(null);
@@ -227,6 +241,7 @@ const CrearStudioPage = () => {
   const zonaDe = (capaId) => Object.keys(capasRef.current)
     .find((zId) => (capasRef.current[zId] || []).some((c) => c.id === capaId)) || null;
   seleccionRef.current = seleccionId;
+  multiRef.current = multiIds;
 
   const vista = cfg?.vistas.find((v) => v.id === vistaId) || cfg?.vistas[0] || null;
   const zona = vista?.zonas.find((z) => z.id === zonaId) || vista?.zonas[0] || null;
@@ -434,9 +449,15 @@ const CrearStudioPage = () => {
     setCapasPorZona(listas);
     historialRef.current.actual = listas;
     const sel = seleccionRef.current;
-    if (sel && !Object.values(listas).some((l) => l.some((c) => c.id === sel))) {
+    const existe = (capaId) => Object.values(listas).some((l) => l.some((c) => c.id === capaId));
+    if (sel && !existe(sel)) {
       fabricRef.current?.discardActiveObject();
       setSeleccionId(null);
+    }
+    const quedan = multiRef.current.filter(existe);
+    if (quedan.length !== multiRef.current.length) {
+      multiRef.current = quedan.length > 1 ? quedan : [];
+      setMultiIds(multiRef.current);
     }
     setVersion((v) => v + 1);
     actualizarHistorialInfo();
@@ -511,7 +532,12 @@ const CrearStudioPage = () => {
   useEffect(() => {
     if (!listo || !canvasElRef.current || fabricRef.current) return undefined;
     const lienzo = new fabric.Canvas(canvasElRef.current, {
-      selection: false,
+      // Con mouse se eligen varios arrastrando un recuadro (o con Shift + clic).
+      selection: CON_MOUSE,
+      selectionColor: 'rgba(124, 58, 237, 0.08)',
+      selectionBorderColor: VIOLETA,
+      selectionLineWidth: 1.5,
+      selectionDashArray: [5, 4],
       preserveObjectStacking: true,
       enableRetinaScaling: true,
       allowTouchScrolling: false,
@@ -525,15 +551,25 @@ const CrearStudioPage = () => {
     const contenedor = lienzo.wrapperEl;
     const recalcular = () => lienzo.calcOffset();
     ['mousedown', 'touchstart', 'pointerdown'].forEach((tipo) => contenedor.addEventListener(tipo, recalcular, true));
-    const alSeleccionar = (e) => {
-      const obj = e.selected?.[0];
+    const alSeleccionar = () => {
+      const activos = lienzo.getActiveObjects().filter((o) => o.capaId);
+      const activo = lienzo.getActiveObject();
+      if (activos.length > 1) {
+        if (activo?.type === 'activeSelection') estilizarGrupo(activo);
+        setMultiIds(activos.map((o) => o.capaId));
+        setSeleccionId(null);
+        setFueraDeZona(false);
+        return;
+      }
+      setMultiIds([]);
+      const obj = activos[0];
       setSeleccionId(obj?.capaId || null);
       if (obj?.zonaId) setZonaId(obj.zonaId);
       revisarLimites(obj);
     };
     lienzo.on('selection:created', alSeleccionar);
     lienzo.on('selection:updated', alSeleccionar);
-    lienzo.on('selection:cleared', () => { setSeleccionId(null); setFueraDeZona(false); });
+    lienzo.on('selection:cleared', () => { setSeleccionId(null); setMultiIds([]); setFueraDeZona(false); });
     // Tocar una zona vacía la elige: ahí irá lo próximo que se agregue.
     lienzo.on('mouse:down', (e) => {
       if (e.target?.guiaZona) setZonaId(e.target.guiaZona);
@@ -545,7 +581,8 @@ const CrearStudioPage = () => {
     // Ctrl + rueda (o pellizcar en el trackpad) cambia el tamaño de lo elegido.
     lienzo.on('mouse:wheel', (e) => {
       const ev = e.e;
-      if (!(ev.ctrlKey || ev.metaKey) || !lienzo.getActiveObject()?.capaId) return;
+      const activo = lienzo.getActiveObject();
+      if (!(ev.ctrlKey || ev.metaKey) || !(activo?.capaId || activo?.type === 'activeSelection')) return;
       ev.preventDefault();
       ev.stopPropagation();
       accionesRef.current.escalar?.(ev.deltaY < 0 ? 1.05 : 1 / 1.05);
@@ -600,7 +637,7 @@ const CrearStudioPage = () => {
     });
     lienzo.on('after:render', ({ ctx }) => {
       const h = hoverRef.current;
-      const hayHover = h && h !== lienzo.getActiveObject() && lienzo.getObjects().includes(h);
+      const hayHover = h && !h.group && h !== lienzo.getActiveObject() && lienzo.getObjects().includes(h);
       if (!hayHover && !guiasRef.current.length) return;
       ctx.save();
       if (hayHover) {
@@ -635,8 +672,22 @@ const CrearStudioPage = () => {
       const obj = e.target;
       if (obj?.capaId && !obj.text.trim()) accionesRef.current.quitarCapa?.(obj.capaId);
     });
+    // Si se pasa a escribir en otro lado (el cuadro del panel, un color…)
+    // mientras se escribía sobre la prenda, se termina de escribir ahí: si
+    // no, la prenda quedaba con el texto viejo y una versión pisaba a la otra.
+    const alEnfocarOtraCosa = (e) => {
+      const activo = lienzo.getActiveObject();
+      if (!activo?.isEditing || e.target === activo.hiddenTextarea) return;
+      activo.exitEditing();
+      lienzo.requestRenderAll();
+    };
+    document.addEventListener('focusin', alEnfocarOtraCosa);
     lienzo.on('object:modified', (e) => {
       const obj = e.target;
+      if (obj?.type === 'activeSelection') {
+        accionesRef.current.sincronizarGrupo?.(obj);
+        return;
+      }
       const t = obj?.zonaId && transformsRef.current[obj.zonaId];
       if (!obj?.capaId || !t) return;
       const dentro = (tz) => {
@@ -676,6 +727,7 @@ const CrearStudioPage = () => {
     });
     return () => {
       ['mousedown', 'touchstart', 'pointerdown'].forEach((tipo) => contenedor.removeEventListener(tipo, recalcular, true));
+      document.removeEventListener('focusin', alEnfocarOtraCosa);
       lienzo.dispose();
       fabricRef.current = null;
     };
@@ -743,6 +795,7 @@ const CrearStudioPage = () => {
       // clear() suelta la selección (y avisa "selection:cleared"): se recuerda
       // cuál estaba elegida para volver a elegirla al terminar.
       const elegida = seleccionRef.current;
+      const elegidos = multiRef.current.slice();
       lienzo.clear();
       lienzo.backgroundColor = null;
 
@@ -778,7 +831,13 @@ const CrearStudioPage = () => {
       }
       if (token !== tokenRef.current) return;
       pintarGuias();
-      const sel = objetoDe(elegida);
+      const grupo = elegidos.map((capaId) => objetoDe(capaId)).filter(Boolean);
+      if (grupo.length > 1) {
+        const seleccion = new fabric.ActiveSelection(grupo, { canvas: lienzo });
+        estilizarGrupo(seleccion);
+        lienzo.setActiveObject(seleccion);
+      }
+      const sel = grupo.length > 1 ? null : grupo[0] || objetoDe(elegida);
       if (sel) {
         lienzo.setActiveObject(sel);
         revisarLimites(sel);
@@ -897,6 +956,15 @@ const CrearStudioPage = () => {
   };
 
   const eliminar = useCallback(() => {
+    const varios = multiRef.current;
+    if (varios.length > 1) {
+      const porZona = {};
+      varios.forEach((capaId) => { const zId = zonaDe(capaId); if (zId) (porZona[zId] ||= new Set()).add(capaId); });
+      setMultiIds([]);
+      fabricRef.current?.discardActiveObject();
+      Object.entries(porZona).forEach(([zId, ids]) => modificarCapas(zId, (capas) => capas.filter((c) => !ids.has(c.id)), true));
+      return;
+    }
     const capaId = seleccionRef.current;
     const zId = capaId && zonaDe(capaId);
     if (!zId) return;
@@ -905,7 +973,37 @@ const CrearStudioPage = () => {
     modificarCapas(zId, (capas) => capas.filter((c) => c.id !== capaId), true);
   }, [modificarCapas]);
 
+  /** Los diseños del grupo elegido, con su zona (vacío si no hay grupo). */
+  const capasMulti = () => multiRef.current
+    .map((capaId) => ({ capa: capaPorId(capaId), zonaId: zonaDe(capaId) }))
+    .filter((x) => x.capa && x.zonaId);
+
+  /** Agrega copias corridas de varios diseños y deja elegidas las copias. */
+  const agregarCopias = (items, corrimiento = 40) => {
+    if (items.some(({ capa }) => capa.subiendo)) {
+      toast.info('Espera a que termine de subir la imagen.');
+      return [];
+    }
+    const nuevas = items.map(({ capa, zonaId, src }) => {
+      const copia = { ...capa, id: nuevoId(), left: capa.left + corrimiento, top: capa.top + corrimiento };
+      const local = src || localSrcRef.current.get(capa.id);
+      if (local) localSrcRef.current.set(copia.id, local);
+      return { capa: copia, zonaId };
+    });
+    const porZona = {};
+    nuevas.forEach(({ capa, zonaId }) => { (porZona[zonaId] ||= []).push(capa); });
+    setSeleccionId(null);
+    setMultiIds(nuevas.map(({ capa }) => capa.id));
+    multiRef.current = nuevas.map(({ capa }) => capa.id);
+    Object.entries(porZona).forEach(([zId, lista]) => modificarCapas(zId, (capas) => [...capas, ...lista], true));
+    return nuevas;
+  };
+
   const duplicar = () => {
+    if (multiRef.current.length > 1) {
+      agregarCopias(capasMulti());
+      return;
+    }
     if (!capaSel || !zonaSel) return;
     if (capaSel.subiendo) {
       toast.info('Espera a que termine de subir la imagen.');
@@ -919,6 +1017,17 @@ const CrearStudioPage = () => {
 
   /** Copia la capa elegida (Ctrl+C). Devuelve si había algo que copiar. */
   const copiar = () => {
+    if (multiRef.current.length > 1) {
+      const items = capasMulti();
+      if (items.some(({ capa }) => capa.subiendo)) {
+        toast.info('Espera a que termine de subir la imagen.');
+        return true;
+      }
+      portapapelesRef.current = {
+        varios: items.map(({ capa, zonaId }) => ({ capa: { ...capa }, zonaId, src: localSrcRef.current.get(capa.id) })),
+      };
+      return true;
+    }
     if (!capaSel || !zonaSel) return false;
     if (capaSel.subiendo) {
       toast.info('Espera a que termine de subir la imagen.');
@@ -931,6 +1040,12 @@ const CrearStudioPage = () => {
   /** Pega la capa copiada en la zona elegida: corrida si es la misma zona, centrada si es otra. */
   const pegar = () => {
     const pp = portapapelesRef.current;
+    if (pp?.varios) {
+      // Varios: cada uno a su zona, corridos; pegar otra vez los sigue corriendo.
+      const nuevas = agregarCopias(pp.varios);
+      if (nuevas.length) pp.varios = nuevas.map(({ capa, zonaId }) => ({ capa, zonaId, src: localSrcRef.current.get(capa.id) }));
+      return;
+    }
     if (!pp || !zona) return;
     let copia = { ...pp.capa, id: nuevoId() };
     if (pp.zonaId === zona.id) {
@@ -953,6 +1068,8 @@ const CrearStudioPage = () => {
     if (copia.type === 'text') setTimeout(() => editarCapa(copia.id, {}), 400);
   };
 
+  const capaPorId = (capaId) => Object.values(capasRef.current).flat().find((c) => c.id === capaId) || null;
+
   /** La capa elegida tal como está ahora (no la del último render). */
   const capaActual = () => {
     const capaId = seleccionRef.current;
@@ -960,12 +1077,123 @@ const CrearStudioPage = () => {
     return zId ? (capasRef.current[zId] || []).find((c) => c.id === capaId) || null : null;
   };
 
+  /** El grupo elegido en el lienzo (o null). */
+  const grupoActivo = () => {
+    const act = fabricRef.current?.getActiveObject();
+    return act?.type === 'activeSelection' ? act : null;
+  };
+
+  /** Pasa a cada diseño la posición y el tamaño que le dejó mover el grupo. */
+  const sincronizarGrupo = (sel) => {
+    const m = sel.calcTransformMatrix();
+    const porZona = {};
+    sel.getObjects().forEach((o) => {
+      const t = transformsRef.current[o.zonaId];
+      if (!o.capaId || !t) return;
+      const p = fabric.util.transformPoint({ x: o.left, y: o.top }, m);
+      (porZona[o.zonaId] ||= {})[o.capaId] = leerTransformacion({
+        left: p.x, top: p.y, scaleX: o.scaleX * sel.scaleX, scaleY: o.scaleY * sel.scaleY, angle: o.angle, flipX: o.flipX,
+      }, t);
+    });
+    Object.entries(porZona).forEach(([zId, cambios]) => {
+      modificarCapas(zId, (capas) => capas.map((c) => (cambios[c.id] ? { ...c, ...cambios[c.id] } : c)));
+    });
+  };
+
+  /** Mueve o escala el grupo en el lienzo y lo pasa a los diseños. */
+  const transformarGrupo = (sel, cambios) => {
+    sel.set(cambios);
+    sel.setCoords();
+    fabricRef.current?.requestRenderAll();
+    sincronizarGrupo(sel);
+  };
+
+  /** Caja de un diseño del lienzo en unidades de su zona (esté o no en un grupo). */
+  const cajaEnZona = (obj) => {
+    const t = transformsRef.current[obj.zonaId];
+    // Dentro de un grupo, fabric da las esquinas relativas al grupo: se pasan al lienzo.
+    const delGrupo = obj.group ? obj.group.calcTransformMatrix() : null;
+    const pts = obj.getCoords(true, true)
+      .map((pt) => (delGrupo ? fabric.util.transformPoint(pt, delGrupo) : pt))
+      .map((pt) => desdeLienzo(t, pt.x, pt.y));
+    const xs = pts.map((pt) => pt.left);
+    const ys = pts.map((pt) => pt.top);
+    return { x1: Math.min(...xs), x2: Math.max(...xs), y1: Math.min(...ys), y2: Math.max(...ys) };
+  };
+
+  /**
+   * Alinea los diseños del grupo entre sí (izquierda, centroH, derecha,
+   * arriba, centroV, abajo) o centra el bloque en la zona ('zona'). Solo si
+   * todos están en la misma zona.
+   */
+  const alinear = (modo) => {
+    const sel = grupoActivo();
+    const objs = sel ? sel.getObjects().filter((o) => o.capaId) : [];
+    const zId = objs[0]?.zonaId;
+    const t = zId && transformsRef.current[zId];
+    if (!t || objs.some((o) => o.zonaId !== zId)) return;
+    const cajas = objs.map(cajaEnZona);
+    const minX = Math.min(...cajas.map((c) => c.x1));
+    const maxX = Math.max(...cajas.map((c) => c.x2));
+    const minY = Math.min(...cajas.map((c) => c.y1));
+    const maxY = Math.max(...cajas.map((c) => c.y2));
+    const delta = {};
+    objs.forEach((o, i) => {
+      const c = cajas[i];
+      const d = {
+        izquierda: [minX - c.x1, 0],
+        centroH: [(minX + maxX) / 2 - (c.x1 + c.x2) / 2, 0],
+        derecha: [maxX - c.x2, 0],
+        arriba: [0, minY - c.y1],
+        centroV: [0, (minY + maxY) / 2 - (c.y1 + c.y2) / 2],
+        abajo: [0, maxY - c.y2],
+        zona: [t.wu / 2 - (minX + maxX) / 2, t.hu / 2 - (minY + maxY) / 2],
+      }[modo];
+      if (d) delta[o.capaId] = d;
+    });
+    asentarHistorial();
+    modificarCapas(zId, (capas) => capas.map((c) => (delta[c.id]
+      ? { ...c, left: c.left + delta[c.id][0], top: c.top + delta[c.id][1] }
+      : c)), true);
+  };
+
+  /** Ctrl+A: todos los diseños de la vista. */
+  const elegirTodo = () => {
+    const lienzo = fabricRef.current;
+    const objs = lienzo ? lienzo.getObjects().filter((o) => o.capaId) : [];
+    if (!objs.length) return;
+    lienzo.discardActiveObject();
+    if (objs.length === 1) {
+      lienzo.setActiveObject(objs[0]);
+    } else {
+      const sel = new fabric.ActiveSelection(objs, { canvas: lienzo });
+      estilizarGrupo(sel);
+      lienzo.setActiveObject(sel);
+    }
+    lienzo.requestRenderAll();
+  };
+
   const desplazar = (dx, dy) => {
+    const sel = grupoActivo();
+    if (sel) {
+      const k = transformsRef.current[sel.getObjects()[0]?.zonaId]?.k || 1;
+      transformarGrupo(sel, { left: sel.left + dx * k, top: sel.top + dy * k });
+      return;
+    }
     const capa = capaActual();
     if (capa) editarCapa(capa.id, { left: capa.left + dx, top: capa.top + dy });
   };
 
   const escalar = (factor) => {
+    const sel = grupoActivo();
+    if (sel) {
+      // Desde el centro del grupo (fabric escala desde su esquina).
+      const centro = sel.getCenterPoint();
+      sel.set({ scaleX: sel.scaleX * factor, scaleY: sel.scaleY * factor });
+      sel.setPositionByOrigin(centro, 'center', 'center');
+      transformarGrupo(sel, {});
+      return;
+    }
     const capa = capaActual();
     if (!capa) return;
     const escalaX = Math.max(0.01, capa.escalaX * factor);
@@ -981,6 +1209,7 @@ const CrearStudioPage = () => {
     fabricRef.current?.discardActiveObject();
     fabricRef.current?.requestRenderAll();
     setSeleccionId(null);
+    setMultiIds([]);
   };
 
   const mover = (haciaAdelante) => {
@@ -1011,7 +1240,10 @@ const CrearStudioPage = () => {
     setVersion((v) => v + 1);
   };
 
-  const centrar = () => capaSel && zonaSel && editarCapa(capaSel.id, centroDe(zonaSel));
+  const centrar = () => {
+    if (multiRef.current.length > 1) alinear('zona');
+    else if (capaSel && zonaSel) editarCapa(capaSel.id, centroDe(zonaSel));
+  };
 
   /**
    * Reemplaza la imagen de una capa por una nueva hecha a partir de ella
@@ -1463,6 +1695,7 @@ const CrearStudioPage = () => {
       else if (tecla === 'd') { e.preventDefault(); asentarHistorial(); duplicar(); }
       else if (tecla === 'c') { if (copiar()) e.preventDefault(); }
       else if (tecla === 'x') { if (copiar()) { e.preventDefault(); asentarHistorial(); eliminar(); } }
+      else if (tecla === 'a') { e.preventDefault(); elegirTodo(); }
       // Ctrl+V llega como evento "paste" (ver alPegarRef).
       return;
     }
@@ -1476,11 +1709,11 @@ const CrearStudioPage = () => {
       return;
     }
 
-    if (!capaActual()) return;
+    const capa = capaActual();
+    if (!capa && multiRef.current.length < 2) return;
     // Cada atajo es un paso propio para deshacer; solo las flechas seguidas se agrupan.
     if (!tecla.startsWith('Arrow')) asentarHistorial();
     const paso = e.shiftKey ? 50 : 5;
-    const capa = capaActual();
     switch (tecla) {
       case 'Delete':
       case 'Backspace': e.preventDefault(); eliminar(); break;
@@ -1493,13 +1726,13 @@ const CrearStudioPage = () => {
       case '=': e.preventDefault(); escalar(1.05); break;
       case '-':
       case '_': e.preventDefault(); escalar(1 / 1.05); break;
-      case 'r': e.preventDefault(); girar(e.shiftKey ? -1 : 1); break;
+      case 'r': if (capa) { e.preventDefault(); girar(e.shiftKey ? -1 : 1); } break;
       case 'c': e.preventDefault(); centrar(); break;
-      case 'f': if (capa.type === 'image') { e.preventDefault(); editarCapa(capa.id, { flipX: !capa.flipX }); } break;
+      case 'f': if (capa?.type === 'image') { e.preventDefault(); editarCapa(capa.id, { flipX: !capa.flipX }); } break;
       case 'PageUp':
-      case ']': e.preventDefault(); mover(true); break;
+      case ']': if (capa) { e.preventDefault(); mover(true); } break;
       case 'PageDown':
-      case '[': e.preventDefault(); mover(false); break;
+      case '[': if (capa) { e.preventDefault(); mover(false); } break;
       default: break;
     }
   };
@@ -1526,8 +1759,11 @@ const CrearStudioPage = () => {
     }
   };
 
+  // Alinear varios solo tiene sentido si están en la misma zona.
+  const zonasMulti = [...new Set(multiIds.map((capaId) => zonaDe(capaId)).filter(Boolean))];
+  const mismaZonaMulti = zonasMulti.length === 1 ? zonasMulti[0] : null;
+
   // ── Mouse: clic derecho, doble clic ──────────────────────────────────────
-  const capaPorId = (capaId) => Object.values(capasRef.current).flat().find((c) => c.id === capaId) || null;
 
   /**
    * Si un texto se sale de su zona por un costado (al crecer mientras se
@@ -1556,6 +1792,7 @@ const CrearStudioPage = () => {
 
   accionesRef.current = {
     escalar,
+    sincronizarGrupo,
     mantenerEnZona,
     quitarCapa: (capaId) => {
       const zId = zonaDe(capaId);
@@ -1568,6 +1805,10 @@ const CrearStudioPage = () => {
       const ev = e.e;
       const obj = e.target;
       if (!lienzo || !ev) return;
+      if (obj?.type === 'activeSelection') {
+        setMenu({ x: ev.clientX, y: ev.clientY, varios: true });
+        return;
+      }
       if (obj?.capaId) {
         if (lienzo.getActiveObject() !== obj) {
           lienzo.setActiveObject(obj);
@@ -1608,6 +1849,25 @@ const CrearStudioPage = () => {
       id: 'pegar', etiqueta: 'Pegar', icono: ClipboardPaste, atajo: `${MOD}+V`,
       deshabilitado: !portapapelesRef.current, accion: () => { asentarHistorial(); pegar(); },
     };
+    if (menu.varios) {
+      return [
+        { id: 'duplicar', etiqueta: 'Duplicar', icono: Copy, atajo: `${MOD}+D`, accion: () => { asentarHistorial(); duplicar(); } },
+        { id: 'copiar', etiqueta: 'Copiar', icono: Clipboard, atajo: `${MOD}+C`, accion: copiar },
+        pegarOpcion,
+        'separador',
+        ...(mismaZonaMulti ? [
+          { id: 'centrar', etiqueta: 'Centrar en la zona', icono: Crosshair, atajo: 'C', accion: () => alinear('zona') },
+          { id: 'izq', etiqueta: 'Alinear a la izquierda', icono: AlignStartVertical, accion: () => alinear('izquierda') },
+          { id: 'centroH', etiqueta: 'Alinear al centro', icono: AlignCenterVertical, accion: () => alinear('centroH') },
+          { id: 'der', etiqueta: 'Alinear a la derecha', icono: AlignEndVertical, accion: () => alinear('derecha') },
+          { id: 'arriba', etiqueta: 'Alinear arriba', icono: AlignStartHorizontal, accion: () => alinear('arriba') },
+          { id: 'medio', etiqueta: 'Alinear al medio', icono: AlignCenterHorizontal, accion: () => alinear('centroV') },
+          { id: 'abajo', etiqueta: 'Alinear abajo', icono: AlignEndHorizontal, accion: () => alinear('abajo') },
+          'separador',
+        ] : []),
+        { id: 'quitar', etiqueta: `Quitar los ${multiIds.length}`, icono: Trash2, atajo: 'Supr', peligro: true, accion: () => { asentarHistorial(); eliminar(); } },
+      ];
+    }
     const capa = menu.capaId ? capaPorId(menu.capaId) : null;
     if (!capa) {
       return [
@@ -1617,6 +1877,7 @@ const CrearStudioPage = () => {
         },
         { id: 'imagen', etiqueta: 'Subir imagen', icono: ImagePlus, atajo: 'I', accion: elegirImagen },
         pegarOpcion,
+        { id: 'todo', etiqueta: 'Elegir todo', icono: Copy, atajo: `${MOD}+A`, accion: elegirTodo },
         'separador',
         { id: 'deshacer', etiqueta: 'Deshacer', icono: Undo2, atajo: `${MOD}+Z`, deshabilitado: !historialInfo.puedeDeshacer, accion: deshacer },
         { id: 'rehacer', etiqueta: 'Rehacer', icono: Redo2, atajo: `${MOD}+Y`, deshabilitado: !historialInfo.puedeRehacer, accion: rehacer },
@@ -1869,6 +2130,51 @@ const CrearStudioPage = () => {
               <p className={styles.subiendo}><Loader2 size={14} className={styles.girando} aria-hidden="true" /> Subiendo tu imagen…</p>
             )}
           </section>
+          {multiIds.length > 1 && (
+            <section className={`${styles.seccion} ${styles.seccionCapa}`} aria-label="Varios elementos seleccionados">
+              <div className={styles.seccionCabecera}>
+                <h2 className={styles.seccionTitulo}>{multiIds.length} elementos</h2>
+                <button type="button" className={styles.botonPeligro} onClick={() => { asentarHistorial(); eliminar(); }} title="Quitar (Supr)">
+                  <Trash2 size={16} aria-hidden="true" /> Quitar
+                </button>
+              </div>
+              <p className={styles.ayudaVarios}>
+                Muévelos o cambia su tamaño juntos. Shift + clic suma o quita uno.
+              </p>
+              {mismaZonaMulti ? (
+                <div className={styles.alinearVarios} role="group" aria-label="Alinear">
+                  {[
+                    ['izquierda', AlignStartVertical, 'Alinear a la izquierda'],
+                    ['centroH', AlignCenterVertical, 'Alinear al centro'],
+                    ['derecha', AlignEndVertical, 'Alinear a la derecha'],
+                    ['arriba', AlignStartHorizontal, 'Alinear arriba'],
+                    ['centroV', AlignCenterHorizontal, 'Alinear al medio'],
+                    ['abajo', AlignEndHorizontal, 'Alinear abajo'],
+                  ].map(([modo, Icono, nombre]) => (
+                    <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={nombre} title={nombre}>
+                      <Icono size={18} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.ayudaVarios}>Están en zonas distintas: para alinearlos, elige los de una misma zona.</p>
+              )}
+              <div className={styles.herramientas}>
+                {mismaZonaMulti && (
+                  <button type="button" className={styles.herramienta} onClick={() => alinear('zona')} title="Centrar en la zona (C)">
+                    <Crosshair size={16} aria-hidden="true" />Centrar
+                  </button>
+                )}
+                <button type="button" className={styles.herramienta} onClick={() => { asentarHistorial(); duplicar(); }} title={`Duplicar (${MOD}+D)`}>
+                  <Copy size={16} aria-hidden="true" />Duplicar
+                </button>
+                <button type="button" className={styles.herramienta} onClick={soltarSeleccion} title="Soltar (Esc)">
+                  <X size={16} aria-hidden="true" />Soltar
+                </button>
+              </div>
+            </section>
+          )}
+
           {capaSel && (
             <section className={`${styles.seccion} ${styles.seccionCapa}`} aria-label="Elemento seleccionado">
               <div className={styles.seccionCabecera}>

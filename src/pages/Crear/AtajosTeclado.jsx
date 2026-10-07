@@ -26,6 +26,7 @@ const grupos = (vistas) => [
       { teclas: [['T']], texto: 'Agregar texto' },
       { teclas: [['I']], texto: 'Subir imagen' },
       { teclas: [[MOD, 'V']], texto: 'Pegar una imagen copiada, un texto o lo que copiaste' },
+      { teclas: [[MOD, 'A']], texto: 'Elegir todo lo de esta vista' },
       ...(vistas.length > 1
         ? [{ teclas: [vistas.slice(0, 9).map((_, i) => String(i + 1))], texto: vistas.slice(0, 9).map((v) => v.nombre).join(' / '), juntas: true }]
         : []),
@@ -54,6 +55,8 @@ const grupos = (vistas) => [
       { teclas: [['Doble clic']], texto: 'En la zona vacía: texto nuevo ahí' },
       { teclas: [['Doble clic']], texto: 'En una imagen: recortar' },
       { teclas: [['Clic derecho']], texto: 'Más opciones' },
+      { teclas: [['Shift', 'Clic']], texto: 'Sumar o quitar de la selección' },
+      { teclas: [['Arrastrar']], texto: 'En una zona vacía: elegir varios con un recuadro' },
       { teclas: [[MOD, 'Rueda']], texto: 'Agrandar / achicar lo elegido' },
       { teclas: [['Shift']], texto: 'Al girar: de 15° en 15°' },
       { teclas: [['Alt']], texto: 'Al arrastrar: sin imán al centro' },

@@ -1013,3 +1013,34 @@
   justify-content: center;
   margin: 0.25rem 0 0.5rem;
 }
+
+/* ── Varios elementos elegidos ─────────────────────────────────────────── */
+.ayudaVarios {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario);
+  line-height: 1.4;
+}
+
+.alinearVarios {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.35rem;
+}
+
+.botonAlinear {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gris-borde);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  cursor: pointer;
+}
+
+.botonAlinear:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
