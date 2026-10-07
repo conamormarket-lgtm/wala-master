@@ -14,7 +14,7 @@ import { useVisualEditor } from '../../../pages/Tienda/contexts/VisualEditorCont
 import { useLayoutContext } from '../../../contexts/LayoutContext';
 import EditableSection from '../../admin/EditableSection';
 import HeaderSearch from '../HeaderSearch/HeaderSearch';
-import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, ChevronRight, Check, LogOut, X } from 'lucide-react';
+import { Heart, User, ShoppingBag, Gamepad2, ArrowLeft, Home, Search, ChevronDown, ChevronRight, Check, LogOut, X, Loader2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { logout } from '../../../services/firebase/auth';
 import { useCuentaNavGroups } from '../../../pages/cuenta/useCuentaNavGroups';
@@ -178,7 +178,7 @@ const Header = () => {
   // "MUSSA" en /MUSSA) se compara case-insensitive con el slug de cada marca de
   // tienda_brands. Si coincide, `brandActual` es esa marca; si no, null = global
   // (Con Amor / páginas globales) y TODO queda EXACTO como hoy.
-  const { data: brandsData } = useQuery({
+  const { data: brandsData, error: brandsError, refetch: retryBrands } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
       const { data } = await getBrands();
@@ -666,10 +666,10 @@ const Header = () => {
                                 queda "Ver Todo el Catálogo" → /<slug> (abajo).
                               · FUERA DE MARCA: comportamiento EXACTO actual (global). */}
                           {link.isCategoryAuto && !productosParaCategorias && (
-                            <li role="status">
+                            <li role="status" className={styles.menuCargando}>
                               {categoryMenuError
                                 ? <button type="button" onClick={() => retryCategoryMenu()}>Reintentar cargar categorías</button>
-                                : 'Cargando categorías…'}
+                                : <><Loader2 size={15} className={styles.menuCargandoIcono} aria-hidden="true" /> Cargando categorías…</>}
                             </li>
                           )}
                           {link.isCategoryAuto && categoriasDelMenu.map(c => (
@@ -701,6 +701,13 @@ const Header = () => {
                               Sin filtro de brandActual: a diferencia de las categorias
                               (que cruzan mercados via query param), un link a /<slug>
                               es una pagina propia, navegar entre marcas es siempre valido. */}
+                          {link.isBrandAuto && !brandsData && (
+                            <li role="status" className={styles.menuCargando}>
+                              {brandsError
+                                ? <button type="button" onClick={() => retryBrands()}>Reintentar cargar marcas</button>
+                                : <><Loader2 size={15} className={styles.menuCargandoIcono} aria-hidden="true" /> Cargando marcas…</>}
+                            </li>
+                          )}
                           {link.isBrandAuto && (() => {
                             const marcasVisibles = (brandsData || []).filter(b => b?.name && b.active !== false && b.visible !== false);
                             // Panel principal: SOLO las primeras 5 (ya vienen

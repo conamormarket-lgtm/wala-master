@@ -2513,3 +2513,28 @@
   background: #7c3aed;
   color: #fff;
 }
+
+/* "Cargando marcas… / categorías…" dentro de un desplegable del header,
+   mientras llega la lista (en una carga en frío el menú se abría vacío). */
+.menuCargando {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--gris-texto-secundario, #666);
+}
+
+.menuCargandoIcono {
+  flex-shrink: 0;
+  color: var(--primary-color, #7c3aed);
+  animation: menuCargandoGiro 0.9s linear infinite;
+}
+
+@keyframes menuCargandoGiro {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menuCargandoIcono { animation: none; }
+}
