@@ -759,9 +759,13 @@
 
 .botonPrincipal:hover:not(:disabled) {
   background: var(--primary-hover);
+  /* "Ver mi creación" y "Ver prendas" son enlaces: el a:hover general les
+     ponía la letra violeta (sobre fondo violeta) o la del texto de al lado. */
+  color: #fff;
 }
 
-:global([data-theme="dark"]) .botonPrincipal {
+:global([data-theme="dark"]) .botonPrincipal,
+:global([data-theme="dark"]) .botonPrincipal:hover:not(:disabled) {
   color: #14121C;
 }
 

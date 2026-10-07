@@ -384,7 +384,13 @@
   text-decoration: none;
 }
 
-:global([data-theme="dark"]) .botonTienda {
+/* Es un enlace: sin esto el a:hover general le ponía la letra violeta. */
+.botonTienda:hover {
+  color: #fff;
+}
+
+:global([data-theme="dark"]) .botonTienda,
+:global([data-theme="dark"]) .botonTienda:hover {
   color: #14121C;
 }
 
