@@ -1,8 +1,13 @@
 /* Borrador de fondo del estudio de Crear (usa la ventana de RecorteImagen). */
 
+/* Más ancha que la de recortar: aquí se trabaja en detalle. */
+.ventana {
+  width: min(860px, 100%);
+}
+
 .modos {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.35rem;
   padding: 0.3rem;
   border-radius: 14px;
@@ -31,12 +36,55 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-.lienzo {
-  display: block;
-  max-width: 100%;
-  max-height: 50dvh;
+/* ── Visor con zoom ────────────────────────────────────────────────────── */
+.visor {
+  position: relative;
+  width: 100%;
+  height: min(58dvh, 560px);
+  min-height: 260px;
+  /* Que no se encoja cuando aparece o se va un aviso: la imagen saltaría. */
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
   touch-action: none;
   user-select: none;
+}
+
+.visor_cuadros {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.visor_oscuro {
+  background: #1F1B2E;
+}
+
+.visor_claro {
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 1px var(--gris-borde);
+}
+
+.lienzo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.cargando {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cursorVarita {
@@ -45,6 +93,122 @@
 
 .cursorPincel {
   cursor: cell;
+}
+
+.cursorOculto {
+  cursor: none;
+}
+
+.cursorMano {
+  cursor: grab;
+}
+
+.cursorMoviendo {
+  cursor: grabbing;
+}
+
+/* Círculo del pincel: muestra lo que se va a borrar o recuperar. */
+.pincel {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1.5px solid #FFFFFF;
+  box-shadow: 0 0 0 1px rgba(20, 18, 28, 0.85), inset 0 0 0 1px rgba(20, 18, 28, 0.35);
+  pointer-events: none;
+}
+
+.pincelRestaurar {
+  border-color: #A7F3D0;
+}
+
+/* ── Zoom y fondo de la vista ──────────────────────────────────────────── */
+.barraVista {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.botonVista {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 0.55rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.botonVista:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.botonVista:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.zoomValor {
+  min-width: 3.4rem;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--gris-texto-secundario);
+}
+
+.fondosVista {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.botonFondo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--gris-borde);
+  cursor: pointer;
+  padding: 0;
+}
+
+.botonFondoActivo {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.muestra_cuadros {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #d1d5db 25%, transparent 25%),
+    linear-gradient(-45deg, #d1d5db 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d1d5db 75%),
+    linear-gradient(-45deg, transparent 75%, #d1d5db 75%);
+  background-size: 10px 10px;
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+}
+
+.muestra_oscuro {
+  background: #1F1B2E;
+}
+
+.muestra_claro {
+  background: #FFFFFF;
 }
 
 .control {
@@ -72,4 +236,12 @@
 
 @keyframes girar {
   to { transform: rotate(360deg); }
+}
+
+@media (max-width: 560px) {
+  .modo {
+    font-size: 0.78rem;
+    gap: 0.25rem;
+    padding: 0 0.2rem;
+  }
 }
