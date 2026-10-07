@@ -171,16 +171,19 @@
 
 .agregar {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* Uno al lado del otro si hay espacio; si el panel es angosto, apilados. */
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 0.75rem;
 }
 
 .botonAgregar {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 48px;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  min-height: 64px;
+  padding: 0.6rem 0.85rem;
+  text-align: left;
   border-radius: 14px;
   border: 1.5px dashed var(--primary-color);
   background: var(--primary-light);
@@ -193,6 +196,39 @@
 
 .botonAgregar:hover {
   border-style: solid;
+  background: rgba(124, 58, 237, 0.14);
+}
+
+.botonAgregar svg {
+  flex-shrink: 0;
+}
+
+.botonAgregarTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.botonAgregarTexto strong {
+  font-size: 0.95rem;
+}
+
+.botonAgregarTexto small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gris-texto-secundario);
+}
+
+/* "Se agrega en: Frente · Pecho" */
+.destino {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario);
+}
+
+.destino strong {
+  color: var(--primary-color);
 }
 
 .subiendo {
@@ -211,6 +247,9 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  /* Sin esto la fila de tipos de letra (que se desliza de lado) estiraba la
+     columna a su largo completo y, en el celular, toda la pantalla. */
+  min-width: 0;
   position: sticky;
   top: 90px;
 }
@@ -241,8 +280,73 @@
   font-size: 0.95rem;
   font-weight: 800;
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.seccionTitulo svg {
+  color: var(--primary-color);
+}
+
+/* "Listo": suelta lo elegido (antes había que saber hacer clic afuera o Esc). */
+.botonListo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+:global([data-theme="dark"]) .botonListo {
+  color: #14121C;
+}
+
+.etiquetaCampo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gris-texto-secundario);
+}
+
+/* Título de un paso: "1  Elige el color   Negro" */
+.paso {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.numeroPaso {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+:global([data-theme="dark"]) .numeroPaso {
+  color: #14121C;
 }
 
 .valor {
@@ -258,8 +362,11 @@
 }
 
 .colorPrenda {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.15);
   cursor: pointer;
@@ -269,6 +376,10 @@
 
 .colorPrendaActivo {
   outline: 2.5px solid var(--primary-color);
+}
+
+.checkColor {
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.25));
 }
 
 .tallas {
@@ -483,6 +594,58 @@
   font-family: inherit;
 }
 
+.herramienta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.herramientaPeligro {
+  color: var(--danger, #EF4444);
+}
+
+.herramientaPeligro:hover {
+  border-color: var(--danger, #EF4444) !important;
+}
+
+.masOpciones {
+  border-top: 1px solid var(--gris-borde);
+  padding-top: 0.6rem;
+}
+
+.masOpciones summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.masOpciones summary::-webkit-details-marker {
+  display: none;
+}
+
+.masOpciones summary::before {
+  content: '+';
+  font-size: 1rem;
+  width: 1rem;
+  text-align: center;
+}
+
+.masOpciones[open] summary::before {
+  content: '−';
+}
+
+.masOpciones[open] summary {
+  margin-bottom: 0.6rem;
+}
+
+.masOpciones .moverA {
+  margin-top: 0.6rem;
+}
+
 .herramienta:hover,
 .icono:hover,
 .fuente:hover,
@@ -537,9 +700,28 @@
 }
 
 .acciones {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.6rem;
+}
+
+.accionesSecundarias {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.accionesSecundarias .botonSecundario {
+  min-height: 44px;
+  padding: 0 0.6rem;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.precioBoton {
+  margin-left: auto;
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .botonPrincipal,
@@ -562,6 +744,13 @@
   border: none;
   background: var(--primary-color);
   color: #fff;
+  min-height: 54px;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.acciones .botonPrincipal {
+  justify-content: flex-start;
 }
 
 .botonPrincipal:hover:not(:disabled) {
@@ -710,7 +899,7 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
     padding: 0.75rem 0.75rem 0;
   }
@@ -730,23 +919,90 @@
     gap: 0.75rem;
   }
 
+  /* Barra de compra FIJA abajo (sticky quedaba atada al panel, que empieza
+     debajo de la prenda: al abrir el estudio el botón quedaba fuera de la
+     pantalla). Una sola fila: guardar y descargar como íconos + el carrito. */
+  .cuerpo {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  }
+
   .acciones {
-    position: sticky;
+    position: fixed;
+    left: 0;
+    right: 0;
     bottom: 0;
-    margin: 0 -0.75rem;
-    padding: 0.7rem 0.75rem calc(env(safe-area-inset-bottom, 0px) + 0.7rem);
+    flex-direction: row;
+    align-items: stretch;
+    padding: 0.6rem 0.75rem calc(env(safe-area-inset-bottom, 0px) + 0.6rem);
     background: var(--blanco);
     border-top: 1px solid var(--gris-borde);
-    z-index: 2;
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.08);
+    z-index: 5;
+  }
+
+  .acciones .botonPrincipal {
+    flex: 1;
+    min-width: 0;
+    min-height: 50px;
+    padding: 0 0.9rem;
+    font-size: 0.95rem;
+  }
+
+  .accionesSecundarias {
+    order: -1;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .accionesSecundarias .botonSecundario {
+    width: 50px;
+    min-height: 50px;
+    padding: 0;
+  }
+
+  .textoAccion {
+    display: none;
+  }
+
+  /* El total ya se ve arriba, junto al nombre de la prenda. */
+  .acciones .botonPrincipal {
+    justify-content: center;
+  }
+
+  .precioBoton {
+    display: none;
   }
 }
 
 /* ── Zonas de impresión ─────────────────────────────────────────────────── */
 
+.grupoZonas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ladoZonas {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris-texto-secundario);
+}
+
 .zonas {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 0.5rem;
+}
+
+.zonaConDiseno {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--verde-exito, #16a34a);
 }
 
 .zonaChip {
@@ -819,31 +1075,6 @@
   margin: 0;
   font-size: 0.8rem;
   color: var(--gris-texto-secundario);
-}
-
-.botonDescarga {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 46px;
-  border-radius: 14px;
-  border: 1.5px dashed var(--primary-color);
-  background: transparent;
-  color: var(--primary-color);
-  font-weight: 800;
-  font-size: 0.92rem;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.botonDescarga:hover:not(:disabled) {
-  background: var(--primary-light);
-}
-
-.botonDescarga:disabled {
-  opacity: 0.6;
-  cursor: wait;
 }
 
 .campoNombre {
@@ -945,6 +1176,68 @@
   }
 }
 
+/* ── Lienzo vacío: "Empieza tu diseño" ────────────────────────────────── */
+.empezar {
+  position: absolute;
+  left: 50%;
+  bottom: 0.9rem;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100% - 1.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--blanco) 94%, transparent);
+  box-shadow: 0 8px 24px rgba(20, 18, 28, 0.12);
+  animation: aparecer 0.3s ease-out;
+}
+
+.empezarTitulo {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal);
+}
+
+.empezarBotones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.empezarBotones button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 42px;
+  padding: 0 0.9rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.empezarBotones button + button {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+:global([data-theme="dark"]) .empezarBotones button:first-child {
+  color: #14121C;
+}
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 /* ── Soltar una imagen sobre el lienzo ─────────────────────────────────── */
 .soltarAqui {
   position: absolute;
@@ -999,6 +1292,48 @@
 
 .botonAtajos {
   margin-left: auto;
+}
+
+.rapidas {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  padding-left: 0.4rem;
+  border-left: 1px solid var(--gris-borde);
+}
+
+.rapidas + .botonAtajos {
+  margin-left: 0.4rem;
+}
+
+.botonBarraPeligro {
+  color: var(--danger, #EF4444);
+}
+
+.botonBarraPeligro:hover:not(:disabled) {
+  border-color: var(--danger, #EF4444);
+  color: var(--danger, #EF4444);
+}
+
+.soloMovil {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .soloMovil {
+    display: inline-flex;
+  }
+
+  .barraLienzo {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .textoBarra {
+    display: none;
+  }
 }
 
 /* Sin teclado físico (celular, tablet) no hay atajos que mostrar. */

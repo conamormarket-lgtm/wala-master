@@ -5,7 +5,7 @@ import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
   Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard, Clipboard, ClipboardPaste, Pencil,
-  X, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  X, Check, Minus, AlignStartVertical, AlignCenterVertical, AlignEndVertical, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -212,6 +212,7 @@ const CrearStudioPage = () => {
   const localSrcRef = useRef(new Map());
   const tokenRef = useRef(0);
   const inputArchivoRef = useRef(null);
+  const editorRef = useRef(null);
   // Lo del borrador va en refs: el autoguardado corre fuera del render (y
   // puede terminar después de salir del estudio).
   const designIdRef = useRef(designIdParam || null);
@@ -896,6 +897,17 @@ const CrearStudioPage = () => {
   const centroDe = (z) => ({ left: UNIDADES_ZONA / 2, top: altoEnUnidades(z) / 2 });
 
   /**
+   * Dónde poner algo nuevo en una zona: al centro si está vacía; si ya tiene
+   * diseños, un poco más abajo o más arriba, para no taparlos.
+   */
+  const lugarNuevo = (z) => {
+    const alto = altoEnUnidades(z);
+    const desfases = [0, 0.22, -0.22, 0.36, -0.36];
+    const n = (capasRef.current[z.id] || []).length;
+    return { left: UNIDADES_ZONA / 2, top: alto / 2 + desfases[n % desfases.length] * alto };
+  };
+
+  /**
    * Agrega un texto. Por defecto en el centro de la zona elegida; con
    * `zonaId`/`punto` donde se hizo doble clic. Con `editar`, en escritorio
    * queda listo para escribir sobre la prenda.
@@ -922,7 +934,7 @@ const CrearStudioPage = () => {
           left: Math.min(UNIDADES_ZONA, Math.max(0, punto.left)),
           top: Math.min(altoEnUnidades(destino), Math.max(0, punto.top)),
         }
-        : centroDe(destino)),
+        : lugarNuevo(destino)),
     };
     await asegurarFuente(capa.fuente);
     if (editar && CON_MOUSE) editarAlCrearRef.current = capa.id;
@@ -986,10 +998,12 @@ const CrearStudioPage = () => {
       const { blob, urlLocal, ancho, alto } = await prepararImagenCliente(archivo);
       capaId = nuevoId();
       localSrcRef.current.set(capaId, urlLocal);
-      const escala = Math.min((0.8 * UNIDADES_ZONA) / ancho, (0.8 * altoEnUnidades(destino)) / alto);
+      // En una zona que ya tiene algo entra más chica, para que quepa al lado.
+      const tamano = (capasRef.current[destino.id] || []).length ? 0.5 : 0.8;
+      const escala = Math.min((tamano * UNIDADES_ZONA) / ancho, (tamano * altoEnUnidades(destino)) / alto);
       const capa = {
         id: capaId, type: 'image', src: '', subiendo: true, anchoNatural: ancho, altoNatural: alto,
-        escalaX: escala, escalaY: escala, angulo: 0, flipX: false, ...centroDe(destino),
+        escalaX: escala, escalaY: escala, angulo: 0, flipX: false, ...lugarNuevo(destino),
       };
       setSeleccionId(capaId);
       modificarCapas(destino.id, (capas) => [...capas, capa], true);
@@ -1264,6 +1278,12 @@ const CrearStudioPage = () => {
     setMultiIds([]);
   };
 
+  /** "Listo": suelta lo elegido y, en pantallas táctiles, vuelve a mostrar la prenda. */
+  const terminarEdicion = () => {
+    soltarSeleccion();
+    if (!CON_MOUSE) contenedorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   const mover = (haciaAdelante) => {
     if (!capaSel || !zonaSel) return;
     modificarCapas(zonaSel.id, (capas) => {
@@ -1395,6 +1415,31 @@ const CrearStudioPage = () => {
       window.removeEventListener('paste', alPegar);
     };
   }, []);
+
+  /** Letra que se lee sobre una prenda de este color (la misma regla que al crear un texto). */
+  const letraSobre = (hex) => (esColorBlanco(hex) || textoSobre(hex) !== '#FFFFFF' ? '#111111' : '#FFFFFF');
+
+  /**
+   * Cambia el color de la prenda. Los textos en negro o blanco (los de
+   * siempre) pasan al que se lee sobre el nuevo color: un texto negro sobre
+   * una polera que pasa a negra quedaba invisible.
+   */
+  const cambiarColorPrenda = (c) => {
+    setColorId(c.id);
+    if (talla && !tallasDeColor(c, cfg).includes(talla)) setTalla('');
+    const letra = letraSobre(c.hex);
+    const otra = letra === '#111111' ? '#FFFFFF' : '#111111';
+    let cambio = false;
+    const next = Object.fromEntries(Object.entries(capasRef.current).map(([zId, capas]) => [zId, capas.map((capa) => {
+      if (capa.type !== 'text' || String(capa.color).toUpperCase() !== otra) return capa;
+      cambio = true;
+      return { ...capa, color: letra };
+    })]));
+    if (!cambio) return;
+    capasRef.current = next;
+    setCapasPorZona(next);
+    setVersion((v) => v + 1);
+  };
 
   const cambiarVista = (vId) => {
     if (vId === vistaId) return;
@@ -1687,11 +1732,15 @@ const CrearStudioPage = () => {
     }
   };
 
-  /** "Agregar al carrito": primero se elige la talla (con la última ya marcada). */
+  /** "Agregar al carrito": con la talla elegida en el panel; si falta, se pide. */
   const agregarAlCarrito = () => {
     if (agotado || !validar()) return;
+    if (tallas.length && tallas.includes(talla)) {
+      comprar(talla);
+      return;
+    }
     if (tallas.length) {
-      setTallaCompra(tallas.includes(talla) ? talla : '');
+      setTallaCompra('');
       setPidiendoTalla(true);
       return;
     }
@@ -2112,6 +2161,15 @@ const CrearStudioPage = () => {
                 <span>Cargando tu diseño…</span>
               </div>
             )}
+            {listo && !cargandoLienzo && !soltando && zonasUsadas.length === 0 && (
+              <div className={styles.empezar}>
+                <span className={styles.empezarTitulo}>Empieza tu diseño</span>
+                <div className={styles.empezarBotones}>
+                  <button type="button" onClick={elegirImagen}><ImagePlus size={18} aria-hidden="true" /> Subir imagen</button>
+                  <button type="button" onClick={() => agregarTexto(undefined, { editar: true })}><Type size={18} aria-hidden="true" /> Escribir texto</button>
+                </div>
+              </div>
+            )}
             {soltando && (
               <div className={styles.soltarAqui} aria-hidden="true">
                 <ImagePlus size={28} />
@@ -2120,6 +2178,8 @@ const CrearStudioPage = () => {
             )}
           </div>
 
+          {/* Acciones rápidas junto a la prenda: siempre a mano, también en el
+              celular (donde el panel queda debajo y hay que bajar para verlo). */}
           <div className={styles.barraLienzo}>
             <button
               type="button"
@@ -2129,7 +2189,7 @@ const CrearStudioPage = () => {
               aria-label="Deshacer"
               title={`Deshacer (${MOD}+Z)`}
             >
-              <Undo2 size={17} aria-hidden="true" />
+              <Undo2 size={17} aria-hidden="true" /><span className={styles.textoBarra}>Deshacer</span>
             </button>
             <button
               type="button"
@@ -2141,58 +2201,137 @@ const CrearStudioPage = () => {
             >
               <Redo2 size={17} aria-hidden="true" />
             </button>
-            <button
-              type="button"
-              className={`${styles.botonBarra} ${styles.botonAtajos}`}
-              onClick={() => setVerAtajos(true)}
-              title="Atajos de teclado (?)"
-            >
-              <Keyboard size={17} aria-hidden="true" /> Atajos
-            </button>
+            {capaSel && (
+              <div className={styles.rapidas} role="group" aria-label="Ajustar lo elegido">
+                <button type="button" className={styles.botonBarra} onClick={() => escalar(1 / 1.12)} aria-label="Achicar" title="Achicar (-)">
+                  <Minus size={17} aria-hidden="true" />
+                </button>
+                <button type="button" className={styles.botonBarra} onClick={() => escalar(1.12)} aria-label="Agrandar" title="Agrandar (+)">
+                  <Plus size={17} aria-hidden="true" />
+                </button>
+                <button type="button" className={styles.botonBarra} onClick={centrar} aria-label="Centrar" title="Centrar (C)">
+                  <Crosshair size={17} aria-hidden="true" />
+                </button>
+                {/* En el celular el panel queda debajo: esto lleva a sus opciones. */}
+                <button
+                  type="button"
+                  className={`${styles.botonBarra} ${styles.soloMovil}`}
+                  onClick={() => editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                >
+                  <Pencil size={16} aria-hidden="true" /><span className={styles.textoBarra}>Editar</span>
+                </button>
+                <button type="button" className={`${styles.botonBarra} ${styles.botonBarraPeligro}`} onClick={eliminar} aria-label="Quitar" title="Quitar (Supr)">
+                  <Trash2 size={17} aria-hidden="true" />
+                </button>
+              </div>
+            )}
+            {CON_MOUSE && (
+              <button
+                type="button"
+                className={`${styles.botonBarra} ${styles.botonAtajos}`}
+                onClick={() => setVerAtajos(true)}
+                title="Atajos de teclado (?)"
+              >
+                <Keyboard size={17} aria-hidden="true" /><span className={styles.textoBarra}>Atajos</span>
+              </button>
+            )}
           </div>
 
           <p className={styles.zonaInfo}>
             <Info size={14} aria-hidden="true" />
-            {CON_MOUSE
-              ? 'Doble clic para escribir sobre la prenda · Clic derecho para más opciones · Ctrl + rueda para cambiar el tamaño.'
-              : vista.zonas.length > 1
-                ? 'Toca una zona punteada para elegirla. Arrastra tu diseño a otra zona para pasarlo ahí.'
-                : 'Ubica tu diseño dentro de la zona punteada.'}
+            {capaSel
+              ? (CON_MOUSE
+                ? 'Arrástralo para moverlo. Usa las esquinas o − y + para cambiar su tamaño.'
+                : 'Arrástralo con el dedo para moverlo. Usa − y + para cambiar su tamaño.')
+              : zonasUsadas.length === 0
+                ? `Tu diseño irá en ${zona.nombre.toLowerCase()} (la zona punteada). Sube una imagen o escribe un texto.`
+                : 'Toca tu imagen o tu texto para moverlo o cambiarlo.'}
           </p>
-
         </section>
 
         <aside className={styles.panel}>
-          <section className={styles.seccion} aria-label="Agregar al diseño">
-            <h2 className={styles.seccionTitulo}>¿Dónde va tu diseño?</h2>
-            <div className={styles.zonas} role="radiogroup" aria-label="Zona de impresión">
-              {vista.zonas.map((z) => {
-                const conDiseno = zonasUsadas.includes(z.id);
-                return (
-                  <button
-                    key={z.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={z.id === zona.id}
-                    className={`${styles.zonaChip} ${z.id === zona.id ? styles.zonaChipActiva : ''}`}
-                    onClick={() => elegirZona(z.id)}
-                  >
-                    <span className={styles.zonaNombre}>
-                      {z.nombre}
-                      {conDiseno && <span className={styles.puntoDiseno} aria-label="con diseño" />}
-                    </span>
-                  </button>
-                );
-              })}
+          {/* Paso 1 — Color */}
+          <section className={styles.seccion} aria-label="Color de la prenda">
+            <h2 className={styles.paso}>
+              <span className={styles.numeroPaso} aria-hidden="true">1</span>
+              Elige el color
+              <span className={styles.valor}>{color.nombre}</span>
+            </h2>
+            <div className={styles.coloresPrenda}>
+              {cfg.colores.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`${styles.colorPrenda} ${c.id === color.id ? styles.colorPrendaActivo : ''}`}
+                  style={{ background: c.hex2 ? `linear-gradient(135deg, ${c.hex} 50%, ${c.hex2} 50%)` : c.hex }}
+                  aria-label={c.nombre}
+                  aria-pressed={c.id === color.id}
+                  title={c.nombre}
+                  onClick={() => cambiarColorPrenda(c)}
+                >
+                  {c.id === color.id && <Check size={16} strokeWidth={3} className={styles.checkColor} style={{ color: textoSobre(c.hex) }} aria-hidden="true" />}
+                </button>
+              ))}
             </div>
+          </section>
+
+          {/* Paso 2 — Dónde va (todas las zonas, de cada lado) */}
+          <section className={styles.seccion} aria-label="Dónde va tu diseño">
+            <h2 className={styles.paso}>
+              <span className={styles.numeroPaso} aria-hidden="true">2</span>
+              ¿Dónde va tu diseño?
+            </h2>
+            {cfg.vistas.map((v) => (
+              <div key={v.id} className={styles.grupoZonas}>
+                {cfg.vistas.length > 1 && <span className={styles.ladoZonas}>{v.nombre}</span>}
+                <div className={styles.zonas} role="radiogroup" aria-label={`Zonas de ${v.nombre}`}>
+                  {v.zonas.map((z) => {
+                    const conDiseno = zonasUsadas.includes(z.id);
+                    const activa = v.id === vista.id && z.id === zona.id;
+                    return (
+                      <button
+                        key={z.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={activa}
+                        className={`${styles.zonaChip} ${activa ? styles.zonaChipActiva : ''}`}
+                        onClick={() => {
+                          if (v.id !== vista.id) cambiarVista(v.id);
+                          elegirZona(z.id);
+                        }}
+                      >
+                        <span className={styles.zonaNombre}>{z.nombre}</span>
+                        {conDiseno && (
+                          <span className={styles.zonaConDiseno}><Check size={12} strokeWidth={3} aria-hidden="true" /> Con diseño</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </section>
+
+          {/* Paso 3 — Agregar imagen o texto */}
+          <section className={styles.seccion} aria-label="Agregar al diseño">
+            <h2 className={styles.paso}>
+              <span className={styles.numeroPaso} aria-hidden="true">3</span>
+              Agrega tu imagen o tu texto
+            </h2>
             <div className={styles.agregar}>
               <button type="button" className={styles.botonAgregar} onClick={elegirImagen} title="Subir imagen (I) · también puedes arrastrarla o pegarla">
-                <ImagePlus size={20} aria-hidden="true" />
-                Subir imagen
+                <ImagePlus size={24} aria-hidden="true" />
+                <span className={styles.botonAgregarTexto}>
+                  <strong>Subir imagen</strong>
+                  <small>Una foto o un logo</small>
+                </span>
               </button>
               <button type="button" className={styles.botonAgregar} onClick={() => agregarTexto(undefined, { editar: true })} title="Agregar texto (T)">
-                <Type size={20} aria-hidden="true" />
-                Agregar texto
+                <Type size={24} aria-hidden="true" />
+                <span className={styles.botonAgregarTexto}>
+                  <strong>Escribir texto</strong>
+                  <small>Un nombre o una frase</small>
+                </span>
               </button>
               <input
                 ref={inputArchivoRef}
@@ -2202,16 +2341,20 @@ const CrearStudioPage = () => {
                 onChange={alElegirArchivo}
               />
             </div>
+            <p className={styles.destino}>
+              Se agrega en: <strong>{cfg.vistas.length > 1 && vista.nombre !== zona.nombre ? `${vista.nombre} · ` : ''}{zona.nombre}</strong>
+            </p>
             {subiendo > 0 && (
               <p className={styles.subiendo}><Loader2 size={14} className={styles.girando} aria-hidden="true" /> Subiendo tu imagen…</p>
             )}
           </section>
+
           {multiIds.length > 1 && (
             <section className={`${styles.seccion} ${styles.seccionCapa}`} aria-label="Varios elementos seleccionados">
               <div className={styles.seccionCabecera}>
-                <h2 className={styles.seccionTitulo}>{multiIds.length} elementos</h2>
-                <button type="button" className={styles.botonPeligro} onClick={() => { asentarHistorial(); eliminar(); }} title="Quitar (Supr)">
-                  <Trash2 size={16} aria-hidden="true" /> Quitar
+                <h2 className={styles.seccionTitulo}>{multiIds.length} elementos elegidos</h2>
+                <button type="button" className={styles.botonListo} onClick={terminarEdicion} title="Listo (Esc)">
+                  <Check size={16} aria-hidden="true" /> Listo
                 </button>
               </div>
               <p className={styles.ayudaVarios}>
@@ -2226,8 +2369,8 @@ const CrearStudioPage = () => {
                     ['arriba', AlignStartHorizontal, 'Alinear arriba'],
                     ['centroV', AlignCenterHorizontal, 'Alinear al medio'],
                     ['abajo', AlignEndHorizontal, 'Alinear abajo'],
-                  ].map(([modo, Icono, nombre]) => (
-                    <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={nombre} title={nombre}>
+                  ].map(([modo, Icono, nombreAlinear]) => (
+                    <button key={modo} type="button" className={styles.botonAlinear} onClick={() => alinear(modo)} aria-label={nombreAlinear} title={nombreAlinear}>
                       <Icono size={18} aria-hidden="true" />
                     </button>
                   ))}
@@ -2244,26 +2387,30 @@ const CrearStudioPage = () => {
                 <button type="button" className={styles.herramienta} onClick={() => { asentarHistorial(); duplicar(); }} title={`Duplicar (${MOD}+D)`}>
                   <Copy size={16} aria-hidden="true" />Duplicar
                 </button>
-                <button type="button" className={styles.herramienta} onClick={soltarSeleccion} title="Soltar (Esc)">
-                  <X size={16} aria-hidden="true" />Soltar
+                <button type="button" className={`${styles.herramienta} ${styles.herramientaPeligro}`} onClick={() => { asentarHistorial(); eliminar(); }} title="Quitar (Supr)">
+                  <Trash2 size={16} aria-hidden="true" />Quitar
                 </button>
               </div>
             </section>
           )}
 
           {capaSel && (
-            <section className={`${styles.seccion} ${styles.seccionCapa}`} aria-label="Elemento seleccionado">
+            <section ref={editorRef} className={`${styles.seccion} ${styles.seccionCapa}`} aria-label="Elemento seleccionado">
               <div className={styles.seccionCabecera}>
-                <h2 className={styles.seccionTitulo}>{capaSel.type === 'image' ? 'Imagen' : 'Texto'}</h2>
-                <button type="button" className={styles.botonPeligro} onClick={eliminar} title="Quitar (Supr)">
-                  <Trash2 size={16} aria-hidden="true" /> Quitar
+                <h2 className={styles.seccionTitulo}>
+                  {capaSel.type === 'image' ? <ImagePlus size={17} aria-hidden="true" /> : <Type size={17} aria-hidden="true" />}
+                  {capaSel.type === 'image' ? 'Tu imagen' : 'Tu texto'}
+                  {zonaSel && <span className={styles.valor}>en {zonaSel.nombre.toLowerCase()}</span>}
+                </h2>
+                <button type="button" className={styles.botonListo} onClick={terminarEdicion} title="Listo (Esc)">
+                  <Check size={16} aria-hidden="true" /> Listo
                 </button>
               </div>
 
               {fueraDeZona && (
                 <div className={`${styles.calidad} ${styles.calidad_regular}`}>
                   <AlertTriangle size={16} aria-hidden="true" />
-                  <span>Una parte queda fuera de la zona de impresión y no se imprimirá.</span>
+                  <span>Una parte queda fuera de la zona punteada y no se imprimirá. Usa “Centrar” o achícalo.</span>
                 </div>
               )}
 
@@ -2271,23 +2418,26 @@ const CrearStudioPage = () => {
                 <div className={`${styles.calidad} ${styles[`calidad_${calidad}`]}`}>
                   {calidad === 'buena' ? <CheckCircle2 size={16} aria-hidden="true" /> : <AlertTriangle size={16} aria-hidden="true" />}
                   <span>
-                    {calidad === 'buena' && 'Buena calidad de impresión.'}
+                    {calidad === 'buena' && 'Se imprimirá con buena calidad.'}
                     {calidad === 'regular' && 'Calidad aceptable. Si la achicas un poco se verá más nítida.'}
-                    {calidad === 'baja' && 'Se verá pixelada a este tamaño. Achícala o usa una imagen más grande.'}
+                    {calidad === 'baja' && 'Se verá borrosa a este tamaño. Achícala o usa una imagen más grande.'}
                   </span>
                 </div>
               )}
 
               {capaSel.type === 'text' && (
                 <>
-                  <textarea
-                    className={styles.textoInput}
-                    value={capaSel.text}
-                    rows={2}
-                    maxLength={120}
-                    aria-label="Texto"
-                    onChange={(e) => editarCapa(capaSel.id, { text: e.target.value })}
-                  />
+                  <label className={styles.etiquetaCampo}>
+                    Escribe tu texto
+                    <textarea
+                      className={styles.textoInput}
+                      value={capaSel.text}
+                      rows={2}
+                      maxLength={120}
+                      onChange={(e) => editarCapa(capaSel.id, { text: e.target.value })}
+                    />
+                  </label>
+                  <span className={styles.etiquetaCampo}>Letra</span>
                   <div className={styles.fuentes} role="listbox" aria-label="Tipografía">
                     {FUENTES.map((f) => (
                       <button
@@ -2303,6 +2453,7 @@ const CrearStudioPage = () => {
                       </button>
                     ))}
                   </div>
+                  <span className={styles.etiquetaCampo}>Color de la letra</span>
                   <div className={styles.filaTexto}>
                     <div className={styles.coloresTexto} aria-label="Color del texto">
                       {COLORES_TEXTO.map((c) => (
@@ -2315,7 +2466,7 @@ const CrearStudioPage = () => {
                           onClick={() => editarCapa(capaSel.id, { color: c })}
                         />
                       ))}
-                      <label className={styles.muestraLibre} aria-label="Otro color">
+                      <label className={styles.muestraLibre} aria-label="Otro color" title="Otro color">
                         <input type="color" value={capaSel.color} onChange={(e) => editarCapa(capaSel.id, { color: e.target.value })} />
                       </label>
                     </div>
@@ -2326,6 +2477,7 @@ const CrearStudioPage = () => {
                         className={`${styles.icono} ${capaSel.negrita ? styles.iconoActivo : ''}`}
                         onClick={() => editarCapa(capaSel.id, { negrita: !capaSel.negrita })}
                         aria-label="Negrita"
+                        title="Negrita"
                       >
                         <Bold size={16} aria-hidden="true" />
                       </button>
@@ -2335,6 +2487,7 @@ const CrearStudioPage = () => {
                         className={`${styles.icono} ${capaSel.cursiva ? styles.iconoActivo : ''}`}
                         onClick={() => editarCapa(capaSel.id, { cursiva: !capaSel.cursiva })}
                         aria-label="Cursiva"
+                        title="Cursiva"
                       >
                         <Italic size={16} aria-hidden="true" />
                       </button>
@@ -2344,86 +2497,113 @@ const CrearStudioPage = () => {
                 </>
               )}
 
-              {zonaSel && zonasPrenda.length > 1 && (
-                <div className={styles.moverA}>
-                  <span>Pasar a:</span>
-                  {zonasPrenda.filter((z) => z.id !== zonaSel.id).map((z) => (
-                    <button key={z.id} type="button" className={styles.zonaMini} onClick={() => moverAZona(z)}>
-                      {z.vistaId === vista.id || z.vistaNombre === z.nombre ? z.nombre : `${z.vistaNombre} · ${z.nombre}`}
-                    </button>
-                  ))}
-                </div>
-              )}
-
+              {/* Lo que más se usa, a la vista; lo demás en "Más opciones". */}
+              <span className={styles.etiquetaCampo}>Ajustar</span>
               <div className={styles.herramientas}>
+                <button type="button" className={styles.herramienta} onClick={() => escalar(1 / 1.12)} title="Achicar (-)"><Minus size={16} aria-hidden="true" />Achicar</button>
+                <button type="button" className={styles.herramienta} onClick={() => escalar(1.12)} title="Agrandar (+)"><Plus size={16} aria-hidden="true" />Agrandar</button>
                 <button type="button" className={styles.herramienta} onClick={centrar} title="Centrar (C)"><Crosshair size={16} aria-hidden="true" />Centrar</button>
-                <button type="button" className={styles.herramienta} onClick={() => girar(1)} title="Girar (R)">
-                  <RotateCw size={16} aria-hidden="true" />Girar
-                </button>
-                {capaSel.type === 'image' && (
+                {capaSel.type === 'image' ? (
                   <>
-                    <button type="button" className={styles.herramienta} onClick={() => setRecortando(capaSel.id)} disabled={!user}><Crop size={16} aria-hidden="true" />Recortar</button>
                     <button type="button" className={styles.herramienta} onClick={() => setQuitandoFondo(capaSel.id)} disabled={!user || capaSel.subiendo}><Eraser size={16} aria-hidden="true" />Quitar fondo</button>
+                    <button type="button" className={styles.herramienta} onClick={() => setRecortando(capaSel.id)} disabled={!user}><Crop size={16} aria-hidden="true" />Recortar</button>
                     <button type="button" className={styles.herramienta} onClick={ajustarAZona}><Maximize2 size={16} aria-hidden="true" />Llenar zona</button>
-                    <button type="button" className={styles.herramienta} onClick={() => editarCapa(capaSel.id, { flipX: !capaSel.flipX })} title="Voltear (F)"><FlipHorizontal size={16} aria-hidden="true" />Voltear</button>
                   </>
+                ) : (
+                  <button type="button" className={styles.herramienta} onClick={() => girar(1)} title="Girar (R)"><RotateCw size={16} aria-hidden="true" />Girar</button>
                 )}
-                <button type="button" className={styles.herramienta} onClick={() => mover(true)} title="Adelante (])"><ArrowUpToLine size={16} aria-hidden="true" />Adelante</button>
-                <button type="button" className={styles.herramienta} onClick={() => mover(false)} title="Atrás ([)"><ArrowDownToLine size={16} aria-hidden="true" />Atrás</button>
-                <button type="button" className={styles.herramienta} onClick={duplicar} title={`Duplicar (${MOD}+D)`}><Copy size={16} aria-hidden="true" />Duplicar</button>
+                <button type="button" className={`${styles.herramienta} ${styles.herramientaPeligro}`} onClick={eliminar} title="Quitar (Supr)"><Trash2 size={16} aria-hidden="true" />Quitar</button>
               </div>
+
+              <details className={styles.masOpciones}>
+                <summary>Más opciones</summary>
+                <div className={styles.herramientas}>
+                  {capaSel.type === 'image' && (
+                    <>
+                      <button type="button" className={styles.herramienta} onClick={() => girar(1)} title="Girar (R)"><RotateCw size={16} aria-hidden="true" />Girar</button>
+                      <button type="button" className={styles.herramienta} onClick={() => editarCapa(capaSel.id, { flipX: !capaSel.flipX })} title="Voltear (F)"><FlipHorizontal size={16} aria-hidden="true" />Voltear</button>
+                    </>
+                  )}
+                  <button type="button" className={styles.herramienta} onClick={() => mover(true)} title="Adelante (])"><ArrowUpToLine size={16} aria-hidden="true" />Traer adelante</button>
+                  <button type="button" className={styles.herramienta} onClick={() => mover(false)} title="Atrás ([)"><ArrowDownToLine size={16} aria-hidden="true" />Enviar atrás</button>
+                  <button type="button" className={styles.herramienta} onClick={duplicar} title={`Duplicar (${MOD}+D)`}><Copy size={16} aria-hidden="true" />Duplicar</button>
+                </div>
+                {zonaSel && zonasPrenda.length > 1 && (
+                  <div className={styles.moverA}>
+                    <span>Pasar a otra zona:</span>
+                    {zonasPrenda.filter((z) => z.id !== zonaSel.id).map((z) => (
+                      <button key={z.id} type="button" className={styles.zonaMini} onClick={() => moverAZona(z)}>
+                        {z.vistaId === vista.id || z.vistaNombre === z.nombre ? z.nombre : `${z.vistaNombre} · ${z.nombre}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </details>
             </section>
           )}
 
-          <section className={styles.seccion} aria-label="Color de la prenda">
-            <h2 className={styles.seccionTitulo}>Color <span className={styles.valor}>{color.nombre}</span></h2>
-            <div className={styles.coloresPrenda}>
-              {cfg.colores.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`${styles.colorPrenda} ${c.id === color.id ? styles.colorPrendaActivo : ''}`}
-                  style={{ background: c.hex2 ? `linear-gradient(135deg, ${c.hex} 50%, ${c.hex2} 50%)` : c.hex }}
-                  aria-label={c.nombre}
-                  aria-pressed={c.id === color.id}
-                  title={c.nombre}
-                  onClick={() => {
-                    setColorId(c.id);
-                    if (talla && !tallasDeColor(c, cfg).includes(talla)) setTalla('');
-                  }}
-                />
-              ))}
+          {/* Paso 4 — Talla y compra */}
+          <section className={`${styles.seccion} ${styles.resumen}`} aria-label="Talla y precio">
+            {tallas.length > 0 && (
+              <>
+                <h2 className={styles.paso}>
+                  <span className={styles.numeroPaso} aria-hidden="true">4</span>
+                  Elige tu talla
+                  {talla && <span className={styles.valor}>{talla}</span>}
+                </h2>
+                <div className={styles.tallas} role="radiogroup" aria-label="Talla">
+                  {tallas.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      role="radio"
+                      aria-checked={t === talla}
+                      className={`${styles.talla} ${t === talla ? styles.tallaActiva : ''}`}
+                      onClick={() => setTalla(t)}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            <div className={`${styles.lineaPrecio} ${styles.lineaTotal}`}>
+              <span>Total</span>
+              <span>{soles(total)}</span>
             </div>
+            <p className={styles.incluye}>Incluye la impresión de todos tus diseños, en las zonas que quieras.</p>
           </section>
-
-
-          <section className={`${styles.seccion} ${styles.resumen}`} aria-label="Resumen de precio">
-            <div className={styles.lineaPrecio}><span>{prenda.name} personalizada</span><span>{soles(base)}</span></div>
-            <p className={styles.incluye}>Incluye todos tus diseños, en las zonas que quieras.</p>
-            <div className={`${styles.lineaPrecio} ${styles.lineaTotal}`}><span>Total</span><span>{soles(total)}</span></div>
-          </section>
-
-          <button type="button" className={styles.botonDescarga} onClick={descargarImagen} disabled={!!procesando}>
-            <Download size={18} aria-hidden="true" />
-            Descargar imagen ({cfg.vistas.length > 1 ? cfg.vistas.map((v) => v.nombre.toLowerCase()).join(' y ') : 'diseño'})
-          </button>
 
           <div className={styles.acciones}>
-            <button
-              type="button"
-              className={`${styles.botonSecundario} ${!hayCambios ? styles.sinCambios : ''}`}
-              onClick={guardar}
-              disabled={!!procesando || !hayCambios}
-              title={hayCambios ? `Guardar (${MOD}+S)` : 'No hay cambios por guardar'}
-            >
-              {firmaGuardada !== null && !hayCambios
-                ? <><CheckCircle2 size={18} aria-hidden="true" /> Guardado</>
-                : <><Save size={18} aria-hidden="true" /> Guardar</>}
-            </button>
             <button type="button" className={styles.botonPrincipal} onClick={agregarAlCarrito} disabled={!!procesando || agotado}>
               <ShoppingBag size={18} aria-hidden="true" />
-              {agotado ? 'Agotado por ahora' : `Agregar al carrito · ${soles(total)}`}
+              {agotado ? 'Agotado por ahora' : 'Agregar al carrito'}
+              {!agotado && <span className={styles.precioBoton}>{soles(total)}</span>}
             </button>
+            <div className={styles.accionesSecundarias}>
+              <button
+                type="button"
+                className={`${styles.botonSecundario} ${!hayCambios ? styles.sinCambios : ''}`}
+                onClick={guardar}
+                disabled={!!procesando || !hayCambios}
+                aria-label={firmaGuardada !== null && !hayCambios ? 'Guardado' : 'Guardar'}
+                title={hayCambios ? `Guardar (${MOD}+S)` : 'No hay cambios por guardar'}
+              >
+                {firmaGuardada !== null && !hayCambios
+                  ? <><CheckCircle2 size={17} aria-hidden="true" /> <span className={styles.textoAccion}>Guardado</span></>
+                  : <><Save size={17} aria-hidden="true" /> <span className={styles.textoAccion}>Guardar</span></>}
+              </button>
+              <button
+                type="button"
+                className={styles.botonSecundario}
+                onClick={descargarImagen}
+                disabled={!!procesando}
+                aria-label="Descargar imagen"
+                title="Descarga una imagen con todos los lados"
+              >
+                <Download size={17} aria-hidden="true" /> <span className={styles.textoAccion}>Descargar imagen</span>
+              </button>
+            </div>
           </div>
         </aside>
       </div>
