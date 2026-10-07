@@ -18,9 +18,9 @@ const TAMANO_INICIAL = 30;
 const radioDe = (tamano) => 0.004 + (tamano / 100) * 0.06;
 
 const MODOS = [
-  { id: 'varita', icono: Wand2, nombre: 'Varita' },
-  { id: 'borrar', icono: Eraser, nombre: 'Borrador' },
-  { id: 'restaurar', icono: Brush, nombre: 'Restaurar' },
+  { id: 'varita', icono: Wand2, nombre: 'Varita', tecla: 'V' },
+  { id: 'borrar', icono: Eraser, nombre: 'Borrador', tecla: 'B' },
+  { id: 'restaurar', icono: Brush, nombre: 'Restaurar', tecla: 'R' },
 ];
 
 /** Píxeles de una imagen a un lado máximo dado: { d, w, h }. */
@@ -226,6 +226,28 @@ const QuitarFondo = ({ src, onCancelar, onAplicar }) => {
     }
   };
 
+  // Teclado: V/B/R cambian de herramienta, [ ] el tamaño del pincel,
+  // Ctrl+Z deshace, Enter aplica y Esc cancela.
+  const teclasRef = useRef(null);
+  teclasRef.current = (e) => {
+    if (aplicando || e.isComposing) return;
+    const tecla = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if ((e.ctrlKey || e.metaKey) && tecla === 'z') { e.preventDefault(); if (opsRef.current.length) deshacer(); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (tecla === 'Escape') { e.preventDefault(); onCancelar(); }
+    else if (tecla === 'Enter') { e.preventDefault(); aplicar(); }
+    else if (tecla === 'v') setModo('varita');
+    else if (tecla === 'b') setModo('borrar');
+    else if (tecla === 'r') setModo('restaurar');
+    else if (tecla === '[') setTamano((t) => Math.max(1, t - 5));
+    else if (tecla === ']') setTamano((t) => Math.min(100, t + 5));
+  };
+  useEffect(() => {
+    const alTeclear = (e) => teclasRef.current?.(e);
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, []);
+
   const hayOps = opsRef.current.length > 0;
   const ultima = opsRef.current[opsRef.current.length - 1];
   const ajustaRelleno = ultima && (ultima.t === 'varita' || ultima.t === 'fondo');
@@ -236,7 +258,7 @@ const QuitarFondo = ({ src, onCancelar, onAplicar }) => {
         <h2 id="quitar-fondo-titulo" className={estilos.titulo}>Quitar fondo</h2>
 
         <div className={styles.modos} role="radiogroup" aria-label="Herramienta">
-          {MODOS.map(({ id, icono: Icono, nombre }) => (
+          {MODOS.map(({ id, icono: Icono, nombre, tecla }) => (
             <button
               key={id}
               type="button"
@@ -244,6 +266,7 @@ const QuitarFondo = ({ src, onCancelar, onAplicar }) => {
               aria-checked={modo === id}
               className={`${styles.modo} ${modo === id ? styles.modoActivo : ''}`}
               onClick={() => setModo(id)}
+              title={`${nombre} (${tecla})`}
             >
               <Icono size={16} aria-hidden="true" /> {nombre}
             </button>
@@ -297,7 +320,7 @@ const QuitarFondo = ({ src, onCancelar, onAplicar }) => {
           <button type="button" className={estilos.secundario} onClick={quitarFondoAuto} disabled={!fuente || aplicando}>
             <Sparkles size={16} aria-hidden="true" /> Quitar fondo
           </button>
-          <button type="button" className={estilos.secundario} onClick={deshacer} disabled={!hayOps || aplicando}>
+          <button type="button" className={estilos.secundario} onClick={deshacer} disabled={!hayOps || aplicando} title="Deshacer (Ctrl+Z)">
             <Undo2 size={16} aria-hidden="true" /> Deshacer
           </button>
           <button type="button" className={estilos.texto} onClick={restablecer} disabled={!hayOps || aplicando}>
@@ -305,8 +328,8 @@ const QuitarFondo = ({ src, onCancelar, onAplicar }) => {
           </button>
         </div>
         <div className={estilos.acciones}>
-          <button type="button" className={estilos.secundario} onClick={onCancelar} disabled={aplicando}>Cancelar</button>
-          <button type="button" className={estilos.principal} onClick={aplicar} disabled={!fuente || aplicando}>
+          <button type="button" className={estilos.secundario} onClick={onCancelar} disabled={aplicando} title="Cancelar (Esc)">Cancelar</button>
+          <button type="button" className={estilos.principal} onClick={aplicar} disabled={!fuente || aplicando} title="Aplicar (Enter)">
             {aplicando ? <><Loader2 size={16} className={styles.girando} aria-hidden="true" /> Aplicando…</> : 'Aplicar'}
           </button>
         </div>

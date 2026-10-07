@@ -61,6 +61,18 @@ const RecorteImagen = ({ src, onCancelar, onAplicar }) => {
 
   const soltar = () => { arrastreRef.current = null; };
 
+  // Enter aplica, Esc cancela.
+  const teclasRef = useRef(null);
+  teclasRef.current = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); onCancelar(); }
+    else if (e.key === 'Enter') { e.preventDefault(); aplicar(); }
+  };
+  useEffect(() => {
+    const alTeclear = (e) => teclasRef.current?.(e);
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, []);
+
   const quitarBordes = () => {
     if (!img) return;
     const caja = bordesVisibles(img);
@@ -119,8 +131,8 @@ const RecorteImagen = ({ src, onCancelar, onAplicar }) => {
           </button>
         </div>
         <div className={styles.acciones}>
-          <button type="button" className={styles.secundario} onClick={onCancelar}>Cancelar</button>
-          <button type="button" className={styles.principal} onClick={aplicar} disabled={!img}>Aplicar recorte</button>
+          <button type="button" className={styles.secundario} onClick={onCancelar} title="Cancelar (Esc)">Cancelar</button>
+          <button type="button" className={styles.principal} onClick={aplicar} disabled={!img} title="Aplicar (Enter)">Aplicar recorte</button>
         </div>
       </div>
     </div>

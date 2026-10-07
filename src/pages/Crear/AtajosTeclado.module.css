@@ -1,0 +1,137 @@
+/* Ventana de atajos del estudio de Crear. */
+
+.capa {
+  position: fixed;
+  inset: 0;
+  z-index: 3100;
+  background: rgba(20, 18, 28, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.caja {
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  border-radius: 20px;
+  padding: 1.25rem 1.4rem;
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.titulo {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.titulo svg {
+  color: var(--primary-color);
+}
+
+.cerrar {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gris-borde);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--gris-texto-secundario);
+  cursor: pointer;
+}
+
+.grupos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.grupoTitulo {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gris-texto-secundario);
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--gris-borde);
+  font-size: 0.88rem;
+}
+
+.fila:last-child {
+  border-bottom: none;
+}
+
+.teclas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tecla {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--gris-borde);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--gris-fondo, #F3F1F7);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal);
+}
+
+.mas,
+.o {
+  font-size: 0.75rem;
+  color: var(--gris-texto-secundario);
+}
+
+.o {
+  margin: 0 0.2rem;
+}
+
+.nota {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--gris-texto-secundario);
+}

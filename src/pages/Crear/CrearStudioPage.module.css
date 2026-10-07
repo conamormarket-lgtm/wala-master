@@ -149,6 +149,7 @@
 }
 
 .lienzoCaja {
+  position: relative;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -936,5 +937,68 @@
     margin: 0;
     border-radius: 0;
     padding: 0.4rem 0.9rem;
+  }
+}
+
+/* ── Soltar una imagen sobre el lienzo ─────────────────────────────────── */
+.soltarAqui {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px dashed var(--primary-color);
+  border-radius: 16px;
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--primary-color);
+  font-weight: 800;
+  pointer-events: none;
+}
+
+/* ── Deshacer, rehacer y atajos ────────────────────────────────────────── */
+.barraLienzo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.botonBarra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  font-weight: 700;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.botonBarra:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.botonBarra:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.botonAtajos {
+  margin-left: auto;
+}
+
+/* Sin teclado físico (celular, tablet) no hay atajos que mostrar. */
+@media (hover: none), (pointer: coarse) {
+  .botonAtajos {
+    display: none;
   }
 }

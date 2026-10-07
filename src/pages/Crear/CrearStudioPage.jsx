@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fabric } from 'fabric';
 import {
   ArrowLeft, ImagePlus, Images, Plus, Type, Trash2, Copy, FlipHorizontal, ArrowUpToLine, ArrowDownToLine,
-  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info,
+  Crosshair, Maximize2, RotateCw, Crop, Eraser, Download, Bold, Italic, Save, ShoppingBag, Loader2, AlertTriangle, CheckCircle2, Info, Undo2, Redo2, Keyboard,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -27,6 +27,7 @@ import {
 import RecorteImagen from './RecorteImagen';
 import QuitarFondo from './QuitarFondo';
 import { itemDeCreacion } from './creacionCarrito';
+import AtajosTeclado, { MOD } from './AtajosTeclado';
 import { registrarGuardado, ponerBorradorEnCache, quitarBorradorDeCache } from './borradoresCache';
 import styles from './CrearStudioPage.module.css';
 
@@ -135,6 +136,9 @@ const CrearStudioPage = () => {
   const [fueraDeZona, setFueraDeZona] = useState(false);
   const [recortando, setRecortando] = useState(null);
   const [quitandoFondo, setQuitandoFondo] = useState(null);
+  const [verAtajos, setVerAtajos] = useState(false);
+  const [soltando, setSoltando] = useState(false);
+  const [historialInfo, setHistorialInfo] = useState({ puedeDeshacer: false, puedeRehacer: false });
   // Nombre de la creación (se pide al guardar) y aviso de "guardada".
   const [nombre, setNombre] = useState('');
   const [nombreEditado, setNombreEditado] = useState('');
@@ -168,6 +172,14 @@ const CrearStudioPage = () => {
   const firmaBorradorRef = useRef(null);
   const autoguardarRef = useRef(null);
   const montadoRef = useRef(true);
+  // Deshacer / rehacer, portapapeles de capas y atajos de teclado.
+  const historialRef = useRef({ pasado: [], futuro: [], actual: null });
+  const restaurandoRef = useRef(false);
+  const timerHistorialRef = useRef(null);
+  const subidasRef = useRef(new Map());
+  const portapapelesRef = useRef(null);
+  const atajosRef = useRef(null);
+  const alPegarRef = useRef(null);
   const recargadaRef = useRef(null);
   if (recargadaRef.current === null) recargadaRef.current = !estudioAbierto && recargadaEn(location.pathname);
   useEffect(() => { estudioAbierto = true; }, []);
@@ -301,6 +313,87 @@ const CrearStudioPage = () => {
       }
     };
   }, []);
+
+  // ── Deshacer / rehacer ───────────────────────────────────────────────────
+  // Cada cambio del diseño es un paso; los que llegan seguidos (escribir,
+  // mover con las flechas) se agrupan. Que una imagen termine de subirse no
+  // cuenta: solo cambia su dirección, no el diseño.
+  const firmaHistorial = (capas) => JSON.stringify(capas, (k, v) => (k === 'src' || k === 'subiendo' ? undefined : v));
+
+  const actualizarHistorialInfo = () => {
+    const h = historialRef.current;
+    if (montadoRef.current) setHistorialInfo({ puedeDeshacer: h.pasado.length > 0, puedeRehacer: h.futuro.length > 0 });
+  };
+
+  const asentarHistorial = () => {
+    clearTimeout(timerHistorialRef.current);
+    timerHistorialRef.current = null;
+    const h = historialRef.current;
+    const ahora = capasRef.current;
+    if (h.actual === null || firmaHistorial(ahora) === firmaHistorial(h.actual)) {
+      h.actual = ahora;
+      return;
+    }
+    h.pasado.push(h.actual);
+    if (h.pasado.length > 80) h.pasado.shift();
+    h.futuro = [];
+    h.actual = ahora;
+    actualizarHistorialInfo();
+  };
+  const asentarRef = useRef(null);
+  asentarRef.current = asentarHistorial;
+
+  useEffect(() => {
+    if (!listo) return;
+    if (restaurandoRef.current) {
+      restaurandoRef.current = false;
+      return;
+    }
+    if (historialRef.current.actual === null) {
+      historialRef.current.actual = capasRef.current;
+      return;
+    }
+    clearTimeout(timerHistorialRef.current);
+    timerHistorialRef.current = setTimeout(() => asentarRef.current?.(), 400);
+  }, [listo, capasPorZona]);
+
+  useEffect(() => () => clearTimeout(timerHistorialRef.current), []);
+
+  /** Vuelve a un paso del historial (con las imágenes que ya terminaron de subir). */
+  const restaurar = (capas) => {
+    const listas = Object.fromEntries(Object.entries(capas).map(([zId, lista]) => [zId, lista.map((c) => {
+      if (c.type !== 'image' || (c.src && !c.subiendo)) return c;
+      const url = subidasRef.current.get(c.id);
+      return url ? { ...c, src: url, subiendo: false } : c;
+    })]));
+    restaurandoRef.current = true;
+    capasRef.current = listas;
+    setCapasPorZona(listas);
+    historialRef.current.actual = listas;
+    const sel = seleccionRef.current;
+    if (sel && !Object.values(listas).some((l) => l.some((c) => c.id === sel))) {
+      fabricRef.current?.discardActiveObject();
+      setSeleccionId(null);
+    }
+    setVersion((v) => v + 1);
+    actualizarHistorialInfo();
+  };
+
+  const deshacer = () => {
+    asentarHistorial();
+    const h = historialRef.current;
+    if (!h.pasado.length) return;
+    h.futuro.push(h.actual);
+    restaurar(h.pasado.pop());
+  };
+
+  const rehacer = () => {
+    asentarHistorial();
+    const h = historialRef.current;
+    if (!h.futuro.length) return;
+    h.pasado.push(h.actual);
+    restaurar(h.futuro.pop());
+  };
 
   // ── Capas (agrupadas por zona) ───────────────────────────────────────────
   const modificarCapas = useCallback((zId, fn, reconstruir = false) => {
@@ -480,6 +573,9 @@ const CrearStudioPage = () => {
       const iw = ancho - margen * 2;
       const ih = iw * proporcion;
       lienzo.setDimensions({ width: ancho, height: Math.round(ih + margen * 2) });
+      // clear() suelta la selección (y avisa "selection:cleared"): se recuerda
+      // cuál estaba elegida para volver a elegirla al terminar.
+      const elegida = seleccionRef.current;
       lienzo.clear();
       lienzo.backgroundColor = null;
 
@@ -515,7 +611,7 @@ const CrearStudioPage = () => {
       }
       if (token !== tokenRef.current) return;
       pintarGuias();
-      const sel = objetoDe(seleccionRef.current);
+      const sel = objetoDe(elegida);
       if (sel) {
         lienzo.setActiveObject(sel);
         revisarLimites(sel);
@@ -528,14 +624,14 @@ const CrearStudioPage = () => {
   // ── Acciones ─────────────────────────────────────────────────────────────
   const centroDe = (z) => ({ left: UNIDADES_ZONA / 2, top: altoEnUnidades(z) / 2 });
 
-  const agregarTexto = async () => {
+  const agregarTexto = async (textoInicial) => {
     if (!zona) return;
     // En una zona alargada (una manga) el texto va a lo largo, de costado.
     const alargada = altoEnUnidades(zona) > UNIDADES_ZONA * 1.8;
     const capa = {
       id: nuevoId(),
       type: 'text',
-      text: 'Tu texto',
+      text: typeof textoInicial === 'string' && textoInicial ? textoInicial : 'Tu texto',
       fuente: 'Montserrat',
       color: esColorBlanco(color.hex) || textoSobre(color.hex) !== '#FFFFFF' ? '#111111' : '#FFFFFF',
       tamano: alargada ? 520 : Math.round(Math.min(170, altoEnUnidades(zona) * 0.25)),
@@ -560,10 +656,20 @@ const CrearStudioPage = () => {
     inputArchivoRef.current?.click();
   };
 
-  const alElegirArchivo = async (e) => {
+  const alElegirArchivo = (e) => {
     const archivo = e.target.files?.[0];
     e.target.value = '';
-    if (!archivo || !zona) return;
+    if (archivo) subirArchivo(archivo);
+  };
+
+  /** Agrega una imagen a la zona elegida: del botón, arrastrada al lienzo o pegada. */
+  const subirArchivo = async (archivo) => {
+    if (!zona) return;
+    if (!user) {
+      guardarBorrador();
+      setPedirLogin(true);
+      return;
+    }
     const destino = zona;
     let capaId = null;
     try {
@@ -580,6 +686,7 @@ const CrearStudioPage = () => {
       setSubiendo((n) => n + 1);
       try {
         const url = await subirImagenCliente(user.uid, blob);
+        subidasRef.current.set(capaId, url);
         modificarCapas(destino.id, (capas) => capas.map((c) => (c.id === capaId ? { ...c, src: url, subiendo: false } : c)));
       } finally {
         setSubiendo((n) => n - 1);
@@ -601,10 +708,80 @@ const CrearStudioPage = () => {
 
   const duplicar = () => {
     if (!capaSel || !zonaSel) return;
+    if (capaSel.subiendo) {
+      toast.info('Espera a que termine de subir la imagen.');
+      return;
+    }
     const copia = { ...capaSel, id: nuevoId(), left: capaSel.left + 40, top: capaSel.top + 40 };
     if (localSrcRef.current.has(capaSel.id)) localSrcRef.current.set(copia.id, localSrcRef.current.get(capaSel.id));
     setSeleccionId(copia.id);
     modificarCapas(zonaSel.id, (capas) => [...capas, copia], true);
+  };
+
+  /** Copia la capa elegida (Ctrl+C). Devuelve si había algo que copiar. */
+  const copiar = () => {
+    if (!capaSel || !zonaSel) return false;
+    if (capaSel.subiendo) {
+      toast.info('Espera a que termine de subir la imagen.');
+      return true;
+    }
+    portapapelesRef.current = { capa: { ...capaSel }, zonaId: zonaSel.id, src: localSrcRef.current.get(capaSel.id) };
+    return true;
+  };
+
+  /** Pega la capa copiada en la zona elegida: corrida si es la misma zona, centrada si es otra. */
+  const pegar = () => {
+    const pp = portapapelesRef.current;
+    if (!pp || !zona) return;
+    let copia = { ...pp.capa, id: nuevoId() };
+    if (pp.zonaId === zona.id) {
+      copia = { ...copia, left: copia.left + 40, top: copia.top + 40 };
+      // Pegar otra vez sigue corriéndola, como en cualquier editor.
+      pp.capa = copia;
+    } else {
+      const ajuste = copia.type === 'image'
+        ? Math.min((0.8 * UNIDADES_ZONA) / copia.anchoNatural, (0.8 * altoEnUnidades(zona)) / copia.altoNatural, copia.escalaX)
+        : copia.escalaX;
+      const alargada = altoEnUnidades(zona) > UNIDADES_ZONA * 1.8;
+      copia = {
+        ...copia, ...centroDe(zona), escalaX: ajuste, escalaY: ajuste,
+        angulo: copia.type === 'text' && alargada ? 90 : copia.angulo,
+      };
+    }
+    if (pp.src) localSrcRef.current.set(copia.id, pp.src);
+    setSeleccionId(copia.id);
+    modificarCapas(zona.id, (capas) => [...capas, copia], true);
+    if (copia.type === 'text') setTimeout(() => editarCapa(copia.id, {}), 400);
+  };
+
+  /** La capa elegida tal como está ahora (no la del último render). */
+  const capaActual = () => {
+    const capaId = seleccionRef.current;
+    const zId = capaId && zonaDe(capaId);
+    return zId ? (capasRef.current[zId] || []).find((c) => c.id === capaId) || null : null;
+  };
+
+  const desplazar = (dx, dy) => {
+    const capa = capaActual();
+    if (capa) editarCapa(capa.id, { left: capa.left + dx, top: capa.top + dy });
+  };
+
+  const escalar = (factor) => {
+    const capa = capaActual();
+    if (!capa) return;
+    const escalaX = Math.max(0.01, capa.escalaX * factor);
+    editarCapa(capa.id, { escalaX, escalaY: Math.max(0.01, capa.escalaY * factor) });
+  };
+
+  const girar = (sentido = 1) => {
+    const capa = capaActual();
+    if (capa) editarCapa(capa.id, { angulo: (Math.round((capa.angulo || 0) / 90) * 90 + 90 * sentido + 360) % 360 });
+  };
+
+  const soltarSeleccion = () => {
+    fabricRef.current?.discardActiveObject();
+    fabricRef.current?.requestRenderAll();
+    setSeleccionId(null);
   };
 
   const mover = (haciaAdelante) => {
@@ -662,12 +839,16 @@ const CrearStudioPage = () => {
         src: '',
         subiendo: true,
       };
-      localSrcRef.current.set(capa.id, URL.createObjectURL(blob));
-      modificarCapas(zId, (capas) => capas.map((c) => (c.id === capa.id ? { ...c, ...cambios } : c)), true);
+      // Id nuevo: la imagen anterior sigue intacta en el historial (deshacer).
+      const nuevaId = nuevoId();
+      localSrcRef.current.set(nuevaId, URL.createObjectURL(blob));
+      if (seleccionRef.current === capa.id) setSeleccionId(nuevaId);
+      modificarCapas(zId, (capas) => capas.map((c) => (c.id === capa.id ? { ...c, ...cambios, id: nuevaId } : c)), true);
       setSubiendo((n) => n + 1);
       try {
         const url = await subirImagenCliente(user.uid, blob);
-        modificarCapas(zId, (capas) => capas.map((c) => (c.id === capa.id ? { ...c, src: url, subiendo: false } : c)));
+        subidasRef.current.set(nuevaId, url);
+        modificarCapas(zId, (capas) => capas.map((c) => (c.id === nuevaId ? { ...c, src: url, subiendo: false } : c)));
       } finally {
         setSubiendo((n) => n - 1);
       }
@@ -719,19 +900,18 @@ const CrearStudioPage = () => {
     editarCapa(capaSel.id, { fuente });
   };
 
-  // Supr / Retroceso borran la capa seleccionada (si no se está escribiendo).
+  // ── Atajos de teclado (escritorio) ───────────────────────────────────────
+  // La lista completa está en AtajosTeclado.jsx (se abre con "?").
   useEffect(() => {
-    const alTeclear = (e) => {
-      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
-      const tag = document.activeElement?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
-      if (!seleccionRef.current) return;
-      e.preventDefault();
-      eliminar();
-    };
+    const alTeclear = (e) => atajosRef.current?.(e);
+    const alPegar = (e) => alPegarRef.current?.(e);
     window.addEventListener('keydown', alTeclear);
-    return () => window.removeEventListener('keydown', alTeclear);
-  }, [eliminar]);
+    window.addEventListener('paste', alPegar);
+    return () => {
+      window.removeEventListener('keydown', alTeclear);
+      window.removeEventListener('paste', alPegar);
+    };
+  }, []);
 
   const cambiarVista = (vId) => {
     if (vId === vistaId) return;
@@ -1031,6 +1211,106 @@ const CrearStudioPage = () => {
     }
   };
 
+  // ── Atajos de teclado ────────────────────────────────────────────────────
+  // Las ventanas (recortar, quitar fondo, guardar…) manejan sus propias teclas.
+  const ventanaAbierta = Boolean(recortando || quitandoFondo || dialogoGuardar || pedirLogin || guardada || procesando);
+  const escribiendo = () => {
+    const el = document.activeElement;
+    return ['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName) || Boolean(el?.isContentEditable);
+  };
+
+  atajosRef.current = (e) => {
+    if (!listo || e.defaultPrevented || e.isComposing) return;
+    if (verAtajos) {
+      if (e.key === 'Escape' || e.key === '?') {
+        e.preventDefault();
+        setVerAtajos(false);
+      }
+      return;
+    }
+    if (dialogoGuardar && e.key === 'Escape') {
+      setDialogoGuardar(false);
+      return;
+    }
+    if (ventanaAbierta) return;
+    if (escribiendo()) {
+      // Esc sale del cuadro de texto y deja usar los atajos.
+      if (e.key === 'Escape') document.activeElement.blur();
+      return;
+    }
+    const conMod = (e.ctrlKey || e.metaKey) && !e.getModifierState?.('AltGraph');
+    const tecla = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+
+    if (conMod) {
+      if (tecla === 'z' && !e.shiftKey) { e.preventDefault(); deshacer(); }
+      else if ((tecla === 'z' && e.shiftKey) || tecla === 'y') { e.preventDefault(); rehacer(); }
+      else if (tecla === 's') { e.preventDefault(); guardar(); }
+      else if (tecla === 'd') { e.preventDefault(); asentarHistorial(); duplicar(); }
+      else if (tecla === 'c') { if (copiar()) e.preventDefault(); }
+      else if (tecla === 'x') { if (copiar()) { e.preventDefault(); asentarHistorial(); eliminar(); } }
+      // Ctrl+V llega como evento "paste" (ver alPegarRef).
+      return;
+    }
+    if (e.altKey && !e.getModifierState?.('AltGraph')) return;
+
+    if (tecla === '?') { e.preventDefault(); setVerAtajos(true); return; }
+    if (tecla === 't') { e.preventDefault(); agregarTexto(); return; }
+    if (tecla === 'i') { e.preventDefault(); elegirImagen(); return; }
+    if (/^[1-9]$/.test(tecla) && cfg.vistas[Number(tecla) - 1]) {
+      cambiarVista(cfg.vistas[Number(tecla) - 1].id);
+      return;
+    }
+
+    if (!capaActual()) return;
+    // Cada atajo es un paso propio para deshacer; solo las flechas seguidas se agrupan.
+    if (!tecla.startsWith('Arrow')) asentarHistorial();
+    const paso = e.shiftKey ? 50 : 5;
+    const capa = capaActual();
+    switch (tecla) {
+      case 'Delete':
+      case 'Backspace': e.preventDefault(); eliminar(); break;
+      case 'Escape': soltarSeleccion(); break;
+      case 'ArrowLeft': e.preventDefault(); desplazar(-paso, 0); break;
+      case 'ArrowRight': e.preventDefault(); desplazar(paso, 0); break;
+      case 'ArrowUp': e.preventDefault(); desplazar(0, -paso); break;
+      case 'ArrowDown': e.preventDefault(); desplazar(0, paso); break;
+      case '+':
+      case '=': e.preventDefault(); escalar(1.05); break;
+      case '-':
+      case '_': e.preventDefault(); escalar(1 / 1.05); break;
+      case 'r': e.preventDefault(); girar(e.shiftKey ? -1 : 1); break;
+      case 'c': e.preventDefault(); centrar(); break;
+      case 'f': if (capa.type === 'image') { e.preventDefault(); editarCapa(capa.id, { flipX: !capa.flipX }); } break;
+      case 'PageUp':
+      case ']': e.preventDefault(); mover(true); break;
+      case 'PageDown':
+      case '[': e.preventDefault(); mover(false); break;
+      default: break;
+    }
+  };
+
+  /** Ctrl+V: una imagen copiada (de otra página o una captura), una capa copiada o un texto. */
+  alPegarRef.current = (e) => {
+    if (!listo || ventanaAbierta || verAtajos || escribiendo()) return;
+    const archivo = [...(e.clipboardData?.files || [])].find((f) => /^image\//.test(f.type));
+    if (archivo) {
+      e.preventDefault();
+      subirArchivo(archivo);
+      return;
+    }
+    if (portapapelesRef.current) {
+      e.preventDefault();
+      asentarHistorial();
+      pegar();
+      return;
+    }
+    const texto = (e.clipboardData?.getData('text/plain') || '').trim();
+    if (texto && zona) {
+      e.preventDefault();
+      agregarTexto(texto.slice(0, 120));
+    }
+  };
+
   // ── Render ───────────────────────────────────────────────────────────────
   if (isLoading || (cfg && !listo && disponible)) {
     return (
@@ -1112,7 +1392,25 @@ const CrearStudioPage = () => {
       )}
 
       <div className={styles.cuerpo}>
-        <section className={styles.areaLienzo} aria-label="Lienzo de diseño">
+        <section
+          className={styles.areaLienzo}
+          aria-label="Lienzo de diseño"
+          onDragOver={(e) => {
+            if (![...e.dataTransfer.types].includes('Files')) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            setSoltando(true);
+          }}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setSoltando(false); }}
+          onDrop={(e) => {
+            if (![...e.dataTransfer.types].includes('Files')) return;
+            e.preventDefault();
+            setSoltando(false);
+            const archivo = [...e.dataTransfer.files].find((f) => /^image\//.test(f.type));
+            if (archivo) subirArchivo(archivo);
+            else toast.info('Suelta una imagen PNG, JPG o WebP.');
+          }}
+        >
           {cfg.vistas.length > 1 && (
             <div className={styles.vistas} role="tablist" aria-label="Vistas de la prenda">
               {cfg.vistas.map((v) => {
@@ -1136,6 +1434,43 @@ const CrearStudioPage = () => {
 
           <div ref={contenedorRef} className={styles.lienzoCaja}>
             <canvas ref={canvasElRef} />
+            {soltando && (
+              <div className={styles.soltarAqui} aria-hidden="true">
+                <ImagePlus size={28} />
+                Suelta tu imagen en {zona?.nombre || 'la prenda'}
+              </div>
+            )}
+          </div>
+
+          <div className={styles.barraLienzo}>
+            <button
+              type="button"
+              className={styles.botonBarra}
+              onClick={deshacer}
+              disabled={!historialInfo.puedeDeshacer}
+              aria-label="Deshacer"
+              title={`Deshacer (${MOD}+Z)`}
+            >
+              <Undo2 size={17} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className={styles.botonBarra}
+              onClick={rehacer}
+              disabled={!historialInfo.puedeRehacer}
+              aria-label="Rehacer"
+              title={`Rehacer (${MOD}+Y)`}
+            >
+              <Redo2 size={17} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className={`${styles.botonBarra} ${styles.botonAtajos}`}
+              onClick={() => setVerAtajos(true)}
+              title="Atajos de teclado (?)"
+            >
+              <Keyboard size={17} aria-hidden="true" /> Atajos
+            </button>
           </div>
 
           <p className={styles.zonaInfo}>
@@ -1171,11 +1506,11 @@ const CrearStudioPage = () => {
               })}
             </div>
             <div className={styles.agregar}>
-              <button type="button" className={styles.botonAgregar} onClick={elegirImagen}>
+              <button type="button" className={styles.botonAgregar} onClick={elegirImagen} title="Subir imagen (I) · también puedes arrastrarla o pegarla">
                 <ImagePlus size={20} aria-hidden="true" />
                 Subir imagen
               </button>
-              <button type="button" className={styles.botonAgregar} onClick={agregarTexto}>
+              <button type="button" className={styles.botonAgregar} onClick={() => agregarTexto()} title="Agregar texto (T)">
                 <Type size={20} aria-hidden="true" />
                 Agregar texto
               </button>
@@ -1195,7 +1530,7 @@ const CrearStudioPage = () => {
             <section className={`${styles.seccion} ${styles.seccionCapa}`} aria-label="Elemento seleccionado">
               <div className={styles.seccionCabecera}>
                 <h2 className={styles.seccionTitulo}>{capaSel.type === 'image' ? 'Imagen' : 'Texto'}</h2>
-                <button type="button" className={styles.botonPeligro} onClick={eliminar}>
+                <button type="button" className={styles.botonPeligro} onClick={eliminar} title="Quitar (Supr)">
                   <Trash2 size={16} aria-hidden="true" /> Quitar
                 </button>
               </div>
@@ -1295,12 +1630,8 @@ const CrearStudioPage = () => {
               )}
 
               <div className={styles.herramientas}>
-                <button type="button" className={styles.herramienta} onClick={centrar}><Crosshair size={16} aria-hidden="true" />Centrar</button>
-                <button
-                  type="button"
-                  className={styles.herramienta}
-                  onClick={() => editarCapa(capaSel.id, { angulo: (Math.round((capaSel.angulo || 0) / 90) * 90 + 90) % 360 })}
-                >
+                <button type="button" className={styles.herramienta} onClick={centrar} title="Centrar (C)"><Crosshair size={16} aria-hidden="true" />Centrar</button>
+                <button type="button" className={styles.herramienta} onClick={() => girar(1)} title="Girar (R)">
                   <RotateCw size={16} aria-hidden="true" />Girar
                 </button>
                 {capaSel.type === 'image' && (
@@ -1308,12 +1639,12 @@ const CrearStudioPage = () => {
                     <button type="button" className={styles.herramienta} onClick={() => setRecortando(capaSel.id)} disabled={!user}><Crop size={16} aria-hidden="true" />Recortar</button>
                     <button type="button" className={styles.herramienta} onClick={() => setQuitandoFondo(capaSel.id)} disabled={!user || capaSel.subiendo}><Eraser size={16} aria-hidden="true" />Quitar fondo</button>
                     <button type="button" className={styles.herramienta} onClick={ajustarAZona}><Maximize2 size={16} aria-hidden="true" />Llenar zona</button>
-                    <button type="button" className={styles.herramienta} onClick={() => editarCapa(capaSel.id, { flipX: !capaSel.flipX })}><FlipHorizontal size={16} aria-hidden="true" />Voltear</button>
+                    <button type="button" className={styles.herramienta} onClick={() => editarCapa(capaSel.id, { flipX: !capaSel.flipX })} title="Voltear (F)"><FlipHorizontal size={16} aria-hidden="true" />Voltear</button>
                   </>
                 )}
-                <button type="button" className={styles.herramienta} onClick={() => mover(true)}><ArrowUpToLine size={16} aria-hidden="true" />Adelante</button>
-                <button type="button" className={styles.herramienta} onClick={() => mover(false)}><ArrowDownToLine size={16} aria-hidden="true" />Atrás</button>
-                <button type="button" className={styles.herramienta} onClick={duplicar}><Copy size={16} aria-hidden="true" />Duplicar</button>
+                <button type="button" className={styles.herramienta} onClick={() => mover(true)} title="Adelante (])"><ArrowUpToLine size={16} aria-hidden="true" />Adelante</button>
+                <button type="button" className={styles.herramienta} onClick={() => mover(false)} title="Atrás ([)"><ArrowDownToLine size={16} aria-hidden="true" />Atrás</button>
+                <button type="button" className={styles.herramienta} onClick={duplicar} title={`Duplicar (${MOD}+D)`}><Copy size={16} aria-hidden="true" />Duplicar</button>
               </div>
             </section>
           )}
@@ -1373,7 +1704,7 @@ const CrearStudioPage = () => {
           </button>
 
           <div className={styles.acciones}>
-            <button type="button" className={styles.botonSecundario} onClick={guardar} disabled={!!procesando}>
+            <button type="button" className={styles.botonSecundario} onClick={guardar} disabled={!!procesando} title={`Guardar (${MOD}+S)`}>
               <Save size={18} aria-hidden="true" />
               Guardar
             </button>
@@ -1409,6 +1740,8 @@ const CrearStudioPage = () => {
           onAplicar={(resultado) => aplicarSinFondo(capaSel, resultado)}
         />
       )}
+
+      {verAtajos && <AtajosTeclado vistas={cfg.vistas} onCerrar={() => setVerAtajos(false)} />}
 
       {dialogoGuardar && (
         <div className={styles.capaBloqueo} role="dialog" aria-modal="true" aria-labelledby="crear-guardar-titulo" onClick={() => setDialogoGuardar(false)}>
