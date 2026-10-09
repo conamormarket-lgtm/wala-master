@@ -97,9 +97,19 @@ if (USE_EMULATORS) {
 } else if (isFirebaseConfigured()) {
   try {
     const projectId = process.env.REACT_APP_FIREBASE_PROJECT_ID;
+    // En wala.pe la ventana de "Iniciar con Google" se abre en el PROPIO dominio
+    // (www.wala.pe/__/auth/...) y no en sistema-gestion-3b225.firebaseapp.com,
+    // que se veía poco profesional y hacía que Google dijera "continuar a
+    // sistema-gestion-…". vercel.json reenvía /__/auth y /__/firebase a Firebase.
+    // Requiere https://www.wala.pe/__/auth/handler en los URIs de redirección
+    // del cliente OAuth web de Google Cloud. Previews y localhost siguen igual.
+    const enDominioPropio =
+      typeof window !== 'undefined' && /^(www\.)?wala\.pe$/.test(window.location.hostname);
     const firebaseConfig = {
       apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-      authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
+      authDomain: enDominioPropio
+        ? window.location.hostname
+        : process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
       projectId,
       storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
       messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
