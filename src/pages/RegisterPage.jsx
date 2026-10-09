@@ -299,7 +299,7 @@ const RegisterPage = () => {
                 />
                 <label htmlFor="acceptedTerms" className={styles.termsLabel}>
                   <T>Acepto los</T>{' '}
-                  <Link to="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className={styles.link}>
+                  <Link to="/terminos-y-condiciones" target="_blank" rel="noopener noreferrer" className={styles.link}>
                     <T>Términos y Condiciones</T>
                   </Link>{' '}
                   <T>y la</T>{' '}

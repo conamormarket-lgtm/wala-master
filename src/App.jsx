@@ -526,6 +526,8 @@ function App() {
                                   <Route path="/recuperar-contrasena" element={<ResetPasswordPage />} />
                                   <Route path="/politicas-privacidad" element={<PoliticasPrivacidadPage />} />
                                   <Route path="/terminos-y-condiciones" element={<TerminosCondicionesPage />} />
+                                  {/* El registro enlazaba aquí y daba página no encontrada. */}
+                                  <Route path="/terminos-condiciones" element={<Navigate to="/terminos-y-condiciones" replace />} />
                                   <Route path="/libro-de-reclamaciones" element={<LibroReclamacionesPage />} />
                                   <Route path="/regalos-con-amor" element={<NuevosUsuariosPage />} />
                                   <Route path="/nuevos-usuarios" element={<Navigate to="/regalos-con-amor" replace />} />
