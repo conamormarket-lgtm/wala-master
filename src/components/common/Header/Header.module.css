@@ -2199,20 +2199,47 @@
   }
 }
 
-/* En pantallas angostas: solo la línea principal, para tapar menos. */
-@media (max-width: 480px) {
-  .floatingSurveySub {
+/* Insignia "+15": solo se ve en el celular (ver abajo). */
+.floatingSurveyBadge {
+  display: none;
+}
+
+/* Celular y tablet: en vez de la píldora con texto (tapaba media pantalla y
+   los botones fijos de abajo), un círculo de 48 px con 🎁 y la insignia +15. */
+@media (max-width: 768px) {
+  .floatingSurveyTexto {
     display: none;
   }
 
   .floatingSurveyBtn {
-    padding: 6px 14px 6px 6px;
+    position: relative;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
   }
 
   .floatingSurveyIcon {
-    width: 30px;
-    height: 30px;
-    flex-basis: 30px;
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    background: transparent;
+    font-size: 1.35rem;
+  }
+
+  .floatingSurveyBadge {
+    display: block;
+    position: absolute;
+    right: -6px;
+    bottom: -4px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #fbbf24;
+    color: #451a03;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.4;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   }
 }
 

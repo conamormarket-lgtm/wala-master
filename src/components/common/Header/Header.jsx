@@ -93,7 +93,13 @@ const initialsOf = (name) => {
 
 // Botón flotante de la encuesta: dónde NO mostrarlo (pagar, carrito, panel
 // admin) y clave del "ocultar 3 días".
-const RUTAS_SIN_FAB_ENCUESTA = ['/encuesta-suscripcion', '/checkout', '/carrito', '/admin', '/pago', '/crear/'];
+// Donde el botón flotante "Gana 15 monedas" estorba: páginas con un botón
+// principal fijo abajo (producto, creación: tapaba "Agregar al carrito" y
+// "Editar diseño" en el celular) y el flujo de cuenta (login/registro/perfil).
+const RUTAS_SIN_FAB_ENCUESTA = [
+  '/encuesta-suscripcion', '/checkout', '/carrito', '/admin', '/pago', '/crear/',
+  '/producto/', '/creacion/', '/login', '/registro', '/completar-perfil', '/recuperar-contrasena',
+];
 const CLAVE_FAB_ENCUESTA = 'surveyFabHiddenUntil';
 
 const Header = () => {
@@ -1295,8 +1301,15 @@ const Header = () => {
           hicieron la encuesta— y se iba solo un segundo después. */}
       {user && userProfile && !userProfile._perfilNoCargado && !userProfile.hasCompletedSurvey && !surveyFabOculto && !RUTAS_SIN_FAB_ENCUESTA.some((r) => location.pathname.startsWith(r)) && (
         <div className={styles.floatingSurvey}>
-          <Link to="/encuesta-suscripcion" className={styles.floatingSurveyBtn} onClick={closeDropdowns}>
+          <Link
+            to="/encuesta-suscripcion"
+            className={styles.floatingSurveyBtn}
+            onClick={closeDropdowns}
+            aria-label="Gana 15 monedas: completa tu perfil de regalos"
+          >
             <span className={styles.floatingSurveyIcon} aria-hidden="true">🎁</span>
+            {/* En el celular solo queda el círculo con esta insignia. */}
+            <span className={styles.floatingSurveyBadge} aria-hidden="true">+15</span>
             <span className={styles.floatingSurveyTexto}>
               <span className={styles.floatingSurveyLabel}>Gana 15 monedas</span>
               <span className={styles.floatingSurveySub}>Completa tu perfil de regalos</span>
