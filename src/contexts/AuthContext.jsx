@@ -416,9 +416,31 @@ export const AuthProvider = ({ children }) => {
 
   const feedKapi = React.useCallback(async () => {
     const res = await callFn('feedKapiSecure');
-    if (!res.error) await reloadProfile();
+    if (res.error) return res;
+    // El servidor ya devuelve los campos que escribió en la transacción (saldo,
+    // fecha, felicidad, racha). Antes se esperaba además a releer el perfil
+    // entero: otra ida y vuelta a Firestore antes de ver la moneda.
+    const d = res.data || {};
+    if (d.lastKapiClaimDate && typeof d.monedas === 'number') {
+      const campos = {
+        monedas: d.monedas,
+        lastKapiClaimDate: d.lastKapiClaimDate,
+        kapiHappiness: d.kapiHappiness,
+        weeklyClaimsData: d.weeklyClaimsData,
+      };
+      if (d.ruletaDisponibleDe) campos.ruletaDisponibleDe = d.ruletaDisponibleDe;
+      setUserProfile((prev) => (prev ? { ...prev, ...campos } : prev));
+    } else {
+      await reloadProfile();
+    }
     return res;
   }, [callFn, reloadProfile]);
+
+  // Despierta la función de Kapi (ver feedKapiSecure): sin esto, la primera
+  // comida del día esperaba el arranque en frío del servidor.
+  const calentarKapi = React.useCallback(() => {
+    httpsCallable(getFunctions(), 'feedKapiSecure')({ ping: true }).catch(() => {});
+  }, []);
 
   const processChallengeEvent = React.useCallback(async (actionType, count = 1) => {
     if (!activeWeeklyChallenge) return { error: null };
@@ -484,6 +506,7 @@ export const AuthProvider = ({ children }) => {
     grantSurveyReward,
     claimDatesReward,
     feedKapi,
+    calentarKapi,
     validateDatesStreak,
     processChallengeEvent,
     reloadProfile,
@@ -505,6 +528,7 @@ export const AuthProvider = ({ children }) => {
     grantSurveyReward,
     claimDatesReward,
     feedKapi,
+    calentarKapi,
     validateDatesStreak,
     processChallengeEvent,
     reloadProfile,

@@ -1129,15 +1129,24 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
   }
+  // Antes no se comprobaba que fuera admin y el monto (rewardCoins/rewardType)
+  // llegaba del navegador: cualquiera podía aprobarse su propia evidencia por la
+  // cantidad que quisiera. Ahora solo admin, y el premio sale del reto.
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied", "Solo administradores.");
+  }
 
-  const { evidenceId, action, rewardCoins, rewardType } = data; // action: 'approve' | 'reject'
-  if (!evidenceId || !action) {
+  const { evidenceId, action } = data || {}; // action: 'approve' | 'reject'
+  if (!evidenceId || (action !== "approve" && action !== "reject")) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan datos.");
   }
 
   const evidenceRef = db.collection("challengeEvidences").doc(evidenceId);
 
-  await db.runTransaction(async (transaction) => {
+  // Firestore exige todas las lecturas antes de la primera escritura de la
+  // transacción. Antes se leía el usuario DESPUÉS de marcar la evidencia y toda
+  // aprobación fallaba con "internal".
+  const resultado = await db.runTransaction(async (transaction) => {
     const evidenceDoc = await transaction.get(evidenceRef);
     if (!evidenceDoc.exists) {
       throw new functions.https.HttpsError("not-found", "Evidencia no encontrada.");
@@ -1147,40 +1156,60 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
       throw new functions.https.HttpsError("failed-precondition", "La evidencia ya fue procesada.");
     }
 
+    let userDoc = null;
+    let reto = null;
+    const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(evData.userId);
+    if (action === "approve") {
+      userDoc = await transaction.get(userRef);
+      const retoDoc = evData.challengeId
+        ? await transaction.get(db.collection("weeklyChallenges").doc(String(evData.challengeId)))
+        : null;
+      reto = retoDoc && retoDoc.exists ? retoDoc.data() : null;
+      if (!reto) {
+        throw new functions.https.HttpsError("not-found", "El reto de esta evidencia ya no existe.");
+      }
+    }
+
     transaction.update(evidenceRef, {
       status: action === "approve" ? "approved" : "rejected",
       processedAt: FieldValue.serverTimestamp(),
       processedBy: context.auth.uid
     });
 
-    if (action === "approve") {
-      const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(evData.userId);
-      const userDoc = await transaction.get(userRef);
-      if (userDoc.exists) {
-        const userData = userDoc.data();
-        let updates = {
-          challengeEvidencesApproved: FieldValue.arrayUnion(evData.challengeId)
-        };
-        // Acreditar monedas si se aprobaron directamente acá
-        if (rewardType === 'main') {
-          // Usamos la misma lógica de earnMainCoins pero en backend
-          let activas = userData.monedasActivas || [];
-          const tzOffset = -5 * 60; // Peru
-          const expirationDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000 + tzOffset * 60000);
-          const expiresAt = expirationDate.toISOString().replace('Z', '-05:00');
-          activas.push({ amount: rewardCoins, reason: 'Reto Manual Completado', expiresAt, createdAt: new Date().toISOString() });
-          updates.monedas = (userData.monedas || 0) + rewardCoins;
-          updates.monedasActivas = activas;
-        } else if (rewardType === 'kapi_double_3d') {
-          updates.activeMultiplier = 'kapi_double_3d';
-          updates.multiplierExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-        }
-        transaction.set(userRef, updates, { merge: true });
-      }
+    if (action !== "approve" || !userDoc || !userDoc.exists) return { reward: 0 };
+
+    const userData = userDoc.data();
+    // Un reto se paga una sola vez por usuario: ni dos evidencias del mismo
+    // reto ni evidencia + progreso automático (recordChallengeEventSecure).
+    const yaAprobado = (userData.challengeEvidencesApproved || []).includes(evData.challengeId);
+    const progreso = userData.weeklyChallengeProgress || {};
+    const yaCompletado = progreso.challengeId === evData.challengeId && progreso.completed;
+    if (yaAprobado || yaCompletado) return { reward: 0, yaPagado: true };
+
+    const updates = {
+      challengeEvidencesApproved: FieldValue.arrayUnion(evData.challengeId)
+    };
+    let reward = 0;
+    if ((reto.rewardType || "main") === "kapi_double_3d") {
+      updates.activeMultiplier = "kapi_double_3d";
+      updates.multiplierExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    } else {
+      reward = Math.max(0, Math.floor(Number(reto.rewardCoins) || 0));
+      if (reward > 0) updates.monedas = (Number(userData.monedas) || 0) + reward;
     }
+    transaction.set(userRef, updates, { merge: true });
+    if (reward > 0) {
+      writeLedger(transaction, evData.userId, {
+        type: "earn",
+        amount: reward,
+        source: "reto_manual_" + evData.challengeId,
+        balanceAfter: updates.monedas,
+      });
+    }
+    return { reward };
   });
 
-  return { success: true };
+  return { success: true, ...resultado };
 });
 
 /**
@@ -1637,6 +1666,10 @@ function requireAuth(context) {
 // no descontaba, y las monedas de verdad se acumulaban para siempre. Ahora
 // alimentar da monedas directamente y son ellas las que caducan a fin de mes.
 exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
+  // Calentamiento: el cliente llama con { ping: true } al abrir el panel de
+  // Kapi. Sin instancias mínimas, la primera llamada del día arrancaba en frío
+  // (varios segundos) justo cuando el usuario pulsaba "Alimentar". No toca nada.
+  if (data && data.ping) return { warm: true };
   const uid = requireAuth(context);
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
   const today = limaTodayStr();
@@ -1684,7 +1717,9 @@ exports.feedKapiSecure = functions.https.onCall(async (data, context) => {
         source: "feed_kapi",
         balanceAfter: nuevoSaldo,
       });
-      return { success: true, ...updates };
+      // `reward` = lo que se acreditó de verdad (2 con el multiplicador), para
+      // que la animación no enseñe una cantidad distinta de la que sube el saldo.
+      return { success: true, reward: add, ...updates };
     });
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
@@ -2261,58 +2296,71 @@ exports.reconciliarMonedasEnEspera = onSchedule("every 60 minutes", async () => 
   for (const userDoc of usersSnapshot.docs) {
     const u = userDoc.data() || {};
     const historial = Array.isArray(u.historialMonedasEspera) ? u.historialMonedasEspera : [];
-    const nuevoHistorial = [...historial];
-    let liberarUsuario = 0;
-    let confirmarUsuario = 0;
-    let cambiaron = false;
 
-    for (let i = 0; i < nuevoHistorial.length; i += 1) {
-      const entry = nuevoHistorial[i];
+    // 1) Se consulta al ERP FUERA de la transacción (son lecturas a otro
+    //    proyecto y pueden tardar): qué pedido pendiente ya se resolvió y cómo.
+    const resolucion = {};
+    for (const entry of historial) {
       if (!entry || entry.status !== "pending" || !entry.orderId) continue;
+      const orderId = String(entry.orderId);
+      if (resolucion[orderId]) continue;
 
       let orderData = null;
       try {
         for (const coll of ["pedidos_web", "pedidos"]) {
-          const snap = await erpDb.collection(coll).doc(String(entry.orderId)).get();
+          const snap = await erpDb.collection(coll).doc(orderId).get();
           if (snap.exists) { orderData = snap.data(); break; }
         }
       } catch (e) {
-        console.error(`reconciliarMonedasEnEspera: error leyendo pedido ${entry.orderId}:`, e);
+        console.error(`reconciliarMonedasEnEspera: error leyendo pedido ${orderId}:`, e);
         continue; // se reintenta en la próxima corrida
       }
       if (!orderData) continue; // pedido aún no encontrado en el ERP: reintenta después
 
       const rawEstado = String(orderData.estadoGeneral || orderData.estado || orderData.status || "")
         .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-      const finalizado = /entreg|finaliz|complet/.test(rawEstado);
-      const anulado = /anul|cancel/.test(rawEstado);
-      if (!finalizado && !anulado) continue; // sigue en curso: reintenta después
-
-      const amount = Number(entry.amount) || 0;
-      if (finalizado) {
-        confirmarUsuario += amount;
-        nuevoHistorial[i] = { ...entry, status: "confirmed", resolvedAt: new Date().toISOString() };
-      } else {
-        liberarUsuario += amount;
-        nuevoHistorial[i] = { ...entry, status: "released", resolvedAt: new Date().toISOString() };
-      }
-      cambiaron = true;
+      if (/entreg|finaliz|complet/.test(rawEstado)) resolucion[orderId] = "confirmed";
+      else if (/anul|cancel/.test(rawEstado)) resolucion[orderId] = "released";
+      // sigue en curso: reintenta después
     }
+    if (!Object.keys(resolucion).length) continue;
 
-    if (!cambiaron) continue;
-
-    const totalResuelto = confirmarUsuario + liberarUsuario;
-    const update = {
-      monedasEnEspera: FieldValue.increment(-totalResuelto),
-      historialMonedasEspera: nuevoHistorial,
-    };
-    if (liberarUsuario > 0) update.monedas = FieldValue.increment(liberarUsuario);
-
+    // 2) Se aplica en una transacción que RELEE al usuario. Antes se escribía el
+    //    historial leído al principio de la corrida: si dos corridas se pisaban
+    //    (o un reintento) se devolvían dos veces las monedas de un pedido
+    //    anulado, y si el cliente congelaba monedas entre medias, su entrada
+    //    nueva se borraba. Ahora solo se tocan entradas que SIGUEN pendientes.
     try {
-      await userDoc.ref.update(update);
-      confirmadas += confirmarUsuario;
-      liberadas += liberarUsuario;
-      usuariosActualizados += 1;
+      const r = await db.runTransaction(async (t) => {
+        const fresco = await t.get(userDoc.ref);
+        const uf = fresco.exists ? fresco.data() : {};
+        const hist = Array.isArray(uf.historialMonedasEspera) ? [...uf.historialMonedasEspera] : [];
+        let liberar = 0;
+        let confirmar = 0;
+        for (let i = 0; i < hist.length; i += 1) {
+          const entry = hist[i];
+          if (!entry || entry.status !== "pending" || !entry.orderId) continue;
+          const estado = resolucion[String(entry.orderId)];
+          if (!estado) continue;
+          const amount = Number(entry.amount) || 0;
+          if (estado === "confirmed") confirmar += amount;
+          else liberar += amount;
+          hist[i] = { ...entry, status: estado, resolvedAt: new Date().toISOString() };
+        }
+        if (!confirmar && !liberar) return { confirmar: 0, liberar: 0, cambio: false };
+        const update = {
+          monedasEnEspera: FieldValue.increment(-(confirmar + liberar)),
+          historialMonedasEspera: hist,
+        };
+        if (liberar > 0) update.monedas = FieldValue.increment(liberar);
+        t.update(userDoc.ref, update);
+        return { confirmar, liberar, cambio: true };
+      });
+      if (r.cambio) {
+        confirmadas += r.confirmar;
+        liberadas += r.liberar;
+        usuariosActualizados += 1;
+      }
     } catch (e) {
       console.error(`reconciliarMonedasEnEspera: error actualizando usuario ${userDoc.id}:`, e);
     }
@@ -2418,7 +2466,10 @@ exports.claimDatesRewardSecure = functions.https.onCall(async (data, context) =>
 // ── Bono por streak de fechas (idempotente) ───────────────────────────────────
 exports.claimDatesStreakSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
-  const uniqueDates = Number(data && data.uniqueDates) || 0;
+  // El conteo de fechas cubiertas lo mandaba el navegador: bastaba llamar con
+  // { uniqueDates: 3 } para cobrar el bono sin los pedidos. Ninguna pantalla lo
+  // usa hoy, así que queda cerrado hasta que el servidor cuente los pedidos.
+  const uniqueDates = 0;
   const userRef = db.collection(PORTAL_USERS_COLLECTION).doc(uid);
   try {
     return await db.runTransaction(async (t) => {

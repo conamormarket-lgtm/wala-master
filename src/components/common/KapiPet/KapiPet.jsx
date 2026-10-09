@@ -20,7 +20,7 @@ import { T } from '../../../i18n/useTranslatedText';
 const CLAVE_TUTORIAL = 'kapiTutorialCompleted';
 
 const KapiPet = () => {
-  const { user, userProfile, feedKapi, activeWeeklyChallenge, updateUserProfile } = useAuth();
+  const { user, userProfile, feedKapi, calentarKapi, activeWeeklyChallenge, updateUserProfile } = useAuth();
   const { addToast } = useGlobalToast();
   // En landing pages el header se oculta (LayoutContext). Ahí NO mostramos ni
   // auto-abrimos a Kapi: el login anónimo del checkout dispararía el modal encima
@@ -176,6 +176,14 @@ const KapiPet = () => {
     }
   }, [isOpen]);
 
+  // Al abrir el panel con la comida pendiente se despierta el servidor: entre
+  // que se abre y se pulsa "Alimentar" pasan uno o dos segundos, que es lo que
+  // tarda en arrancar en frío. Va antes de los `return null` (orden de hooks).
+  const comidaPendiente = Boolean(user) && userProfile?.lastKapiClaimDate !== limaTodayStr();
+  useEffect(() => {
+    if (isOpen && comidaPendiente) calentarKapi();
+  }, [isOpen, comidaPendiente, calentarKapi]);
+
   // Escape cierra el panel, como el resto de modales de la app.
   //
   // OJO al sitio: este efecto va ANTES de los dos `return null` de abajo. La
@@ -224,33 +232,40 @@ const KapiPet = () => {
   const ESTADOS_DISENO = { feliz: 'happy', hambriento: 'hungry', triste: 'sad' };
   kapiState = ESTADOS_DISENO[diseno('kapi')] || kapiState;
 
+  // Con el multiplicador de la ruleta ("doble al alimentar") da 2. Mismo
+  // criterio que feedKapiSecure, para que la etiqueta no prometa 1 y caigan 2.
+  const recompensaHoy = perfil.activeMultiplier === 'kapi_double_3d' &&
+    perfil.multiplierExpiresAt && new Date(perfil.multiplierExpiresAt) > new Date() ? 2 : 1;
+
   const handleFeed = async () => {
     if (hasClaimedToday || isFeeding) return;
     setIsFeeding(true);
-    
-    // Animación de comer local
-    setTimeout(async () => {
-      const res = await feedKapi();
-      setIsFeeding(false);
-      if (res?.error) {
-        // Antes esto se tragaba el error: el usuario pulsaba, esperaba 1,5 s y no
-        // pasaba nada. callFn devuelve el error como string ya legible
-        // ("Ya alimentaste a Kapi hoy."), no como objeto Error.
-        addToast(res.error || 'No pudimos alimentar a Kapi. Inténtalo de nuevo.', 'error');
-      } else {
-        // Obtener posición del botón para la animación
-        const feedBtn = document.getElementById('kapi-feed-btn');
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2;
-        if (feedBtn) {
-          const rect = feedBtn.getBoundingClientRect();
-          x = rect.left + rect.width / 2;
-          y = rect.top;
-        }
-        // Monedas volando al contador de la cabecera.
-        volarMonedasGanadas(feedBtn, 1);
-      }
-    }, 1500);
+    // Se mide ya: al acreditarse, el botón se cambia por "¡Kapi está lleno!" y
+    // las monedas no tendrían de dónde salir.
+    const rectBoton = document.getElementById('kapi-feed-btn')?.getBoundingClientRect();
+
+    // El servidor se llama YA, a la vez que la animación de comer. Antes se
+    // esperaba 1,5 s fijos de animación y solo entonces se llamaba al servidor
+    // (y luego se releía el perfil entero): las esperas se sumaban en serie.
+    // Ahora la animación dura lo que tarde el servidor, con un mínimo para que
+    // se vea.
+    const [res] = await Promise.all([
+      feedKapi(),
+      new Promise((r) => setTimeout(r, 700)),
+    ]);
+    setIsFeeding(false);
+    if (res?.error) {
+      // callFn devuelve el error como string ya legible ("Ya alimentaste a
+      // Kapi hoy."), no como objeto Error.
+      addToast(res.error || 'No pudimos alimentar a Kapi. Inténtalo de nuevo.', 'error');
+      return;
+    }
+    // Monedas volando al contador de la cabecera: las que acreditó el
+    // servidor, no un 1 fijo.
+    volarMonedasGanadas(
+      rectBoton ? { getBoundingClientRect: () => rectBoton } : null,
+      Number(res?.data?.reward) || 1,
+    );
   };
 
   const handleSubmitEvidence = async () => {
@@ -370,7 +385,7 @@ const KapiPet = () => {
                   ? <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
                   : <Badge tone="warning" variant="soft" dot><T>Disponible hoy</T></Badge>}
                 <span className={styles.recompensa}>
-                  <span aria-hidden="true">🪙</span><T>+1 moneda</T>
+                  <span aria-hidden="true">🪙</span>{recompensaHoy === 2 ? <T>+2 monedas</T> : <T>+1 moneda</T>}
                 </span>
               </div>
               
