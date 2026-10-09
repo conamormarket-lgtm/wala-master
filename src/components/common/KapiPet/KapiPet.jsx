@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,7 +18,13 @@ import { T } from '../../../i18n/useTranslatedText';
 
 // Marca del navegador (compatibilidad); la que manda es userProfile.kapiTutorialVisto.
 const CLAVE_TUTORIAL = 'kapiTutorialCompleted';
-const RUTAS_FLUJO_CUENTA = ['/login', '/registro', '/completar-perfil', '/recuperar-contrasena', '/encuesta-suscripcion'];
+// Dónde el tutorial de Kapi puede abrirse SOLO: momentos tranquilos (inicio,
+// Mi cuenta, Minijuegos). Antes se abría en la primera página tras registrarse,
+// fuera cual fuera: encima de un producto, del carrito o del checkout, justo
+// cuando la persona iba a comprar. En el resto espera; si la persona toca a
+// Kapi por su cuenta, el recorrido empieza ahí mismo.
+const esMomentoTranquilo = (ruta) =>
+  ruta === '/' || ruta.startsWith('/cuenta') || ruta.startsWith('/minijuegos');
 
 const KapiPet = () => {
   const { user, userProfile, feedKapi, calentarKapi, activeWeeklyChallenge, updateUserProfile } = useAuth();
@@ -31,10 +37,7 @@ const KapiPet = () => {
   // En el estudio de Crear tapaba el botón de compra en el celular.
   const { pathname } = useLocation();
   const enEstudioCrear = pathname.startsWith('/crear/');
-  // Mientras se crea la cuenta o se completan los datos, el tutorial de Kapi
-  // salía ENCIMA del paso 2 del registro y tapaba el formulario. Se espera a
-  // que termine ese flujo y ya en la tienda se abre solo.
-  const enFlujoDeCuenta = RUTAS_FLUJO_CUENTA.some((r) => pathname.startsWith(r));
+  const enMomentoTranquilo = esMomentoTranquilo(pathname);
   const [isOpen, setIsOpen] = useState(false);
   const [isFeeding, setIsFeeding] = useState(false);
   const [evidenceUrl, setEvidenceUrl] = useState('');
@@ -131,7 +134,7 @@ const KapiPet = () => {
   // Hook para disparar Onboarding Tutorial a usuarios nuevos
   useEffect(() => {
     if (onLandingPage) return; // no auto-abrir Kapi en landings/checkout
-    if (enFlujoDeCuenta) return;
+    if (!enMomentoTranquilo) return;
     if (!userProfile) return;
     let enNavegador = false;
     try {
@@ -148,12 +151,21 @@ const KapiPet = () => {
     }
     // Abrir modal automáticamente si no ha completado el tutorial
     setIsOpen(true);
-  }, [userProfile, onLandingPage, enFlujoDeCuenta]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userProfile, onLandingPage, enMomentoTranquilo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Recorrido en curso. Se marca "visto" SOLO cuando la persona lo termina o lo
+  // cierra (onDestroyed). Antes se marcaba al arrancar: si se recargaba o se
+  // cortaba a la mitad, el tutorial se perdía para siempre sin haberlo visto.
+  // Si lo cerramos nosotros (se cierra el panel o se desmonta), no cuenta.
+  const recorridoRef = useRef(null);
+  const cierrePorCodigoRef = useRef(false);
 
   useEffect(() => {
+    let cancelado = false;
+    let espera = null;
     if (isOpen) {
       if (!tutorialVisto()) {
-        setTimeout(async () => {
+        espera = setTimeout(async () => {
           // driver.js (27 KB + su CSS) solo hace falta la PRIMERA vez que
           // alguien abre a Kapi, para el tour. KapiPet esta montado en todas
           // las paginas, asi que importarlo arriba metia la libreria en el
@@ -162,6 +174,8 @@ const KapiPet = () => {
             import('driver.js'),
             import('driver.js/dist/driver.css'),
           ]);
+          if (cancelado) return;
+          cierrePorCodigoRef.current = false;
           const driverObj = driver({
             showProgress: true,
             animate: true,
@@ -173,15 +187,27 @@ const KapiPet = () => {
               { element: '#kapi-stats', popover: { title: 'Felicidad de Kapi', description: 'Kapi necesita atención. Si olvidas alimentarlo, se pondrá triste y su barra de felicidad bajará.', side: "bottom" } },
               { element: '#kapi-feed-btn', popover: { title: '¡A comer!', description: 'Aliméntalo todos los días aquí. A cambio, él te premiará con monedas que puedes canjear por recompensas reales.', side: "top" } }
             ],
-            onDestroyed: () => marcarTutorialVisto(),
+            onDestroyed: () => {
+              recorridoRef.current = null;
+              if (!cierrePorCodigoRef.current) marcarTutorialVisto();
+            },
           });
+          recorridoRef.current = driverObj;
           driverObj.drive();
-          // Ya lo vio: aunque cierre el recorrido a la mitad no se repite.
-          marcarTutorialVisto();
         }, 500); // 500ms para asegurar que el DOM cargó los IDs del modal
       }
     }
-  }, [isOpen]);
+    return () => {
+      cancelado = true;
+      clearTimeout(espera);
+      // Se cerró el panel o se desmontó a mitad del recorrido: se quita sin
+      // marcarlo como visto, para que vuelva a salir la próxima vez.
+      if (recorridoRef.current) {
+        cierrePorCodigoRef.current = true;
+        recorridoRef.current.destroy();
+      }
+    };
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Al abrir el panel con la comida pendiente se despierta el servidor: entre
   // que se abre y se pulsa "Alimentar" pasan uno o dos segundos, que es lo que
@@ -329,7 +355,9 @@ const KapiPet = () => {
               style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
             />
           </div>
-        {!hasClaimedToday && <div className={styles.badge}>!</div>}
+        {/* "!" si tiene comida pendiente o aún no vio el tutorial: invita a
+            tocarlo sin abrir nada por su cuenta. */}
+        {(!hasClaimedToday || !tutorialVisto()) && <div className={styles.badge}>!</div>}
       </div>
 
       {/* Se monta en <body>, como los modales de la Zona Arcade.
