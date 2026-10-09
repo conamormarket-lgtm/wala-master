@@ -2678,14 +2678,16 @@
    Dos máscaras de public/assets/marca, generadas de public/logo-wala.png:
    - logo-header.webp: etiqueta con cordón + "WALÁ" con su tilde-etiqueta.
    - logo-header-huecos.webp: la W y el ojal (lo calado dentro de la etiqueta).
-   Proporción 506:168 (con aire extra entre las letras de WALÁ). Las letras ocupan ~72% del alto, por eso el alto es
-   menor que el del SVG anterior (donde ocupaban ~52%).
+   Proporción 431:168. La etiqueta va CENTRADA en las letras (antes apoyada
+   abajo: se veía desnivelada) y las mayúsculas quedan en el centro vertical
+   de la imagen, así "WALÁ" cae a la altura del texto del menú. Las
+   mayúsculas ocupan ~63% del alto.
    ═══════════════════════════════════════════ */
 .logoMarca {
   position: relative;
   display: block;
-  height: 42px;
-  aspect-ratio: 506 / 168;
+  height: 48px;
+  aspect-ratio: 431 / 168;
   flex-shrink: 0;
   transition: var(--transicion-rapida);
 }
@@ -2711,24 +2713,24 @@
    logo cambiara con el tema. */
 .logoMarcaForma {
   background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-  -webkit-mask-image: url('/assets/marca/logo-header.webp');
-  mask-image: url('/assets/marca/logo-header.webp');
+  -webkit-mask-image: url('/assets/marca/logo-header-v2.webp');
+  mask-image: url('/assets/marca/logo-header-v2.webp');
 }
 
 .logoMarcaHuecos {
   background: #ffffff;
-  -webkit-mask-image: url('/assets/marca/logo-header-huecos.webp');
-  mask-image: url('/assets/marca/logo-header-huecos.webp');
+  -webkit-mask-image: url('/assets/marca/logo-header-huecos-v2.webp');
+  mask-image: url('/assets/marca/logo-header-huecos-v2.webp');
 }
 
 @media (max-width: 768px) {
   .logoMarca {
-    height: 38px;
+    height: 44px;
   }
 }
 
 @media (max-width: 380px) {
   .logoMarca {
-    height: 34px;
+    height: 39px;
   }
 }
