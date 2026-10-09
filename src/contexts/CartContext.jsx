@@ -39,9 +39,22 @@ const claveDedupItem = (item) => {
   if (item.isWishlistGift || item.deliveryDate || item.isComboProduct) return null;
   const color = String(item.variant?.selectedVariant?.name || item.variant?.color || '').trim().toLowerCase();
   const size = String(item.variant?.size || '').trim().toLowerCase();
-  const custom = JSON.stringify(item.customization || null);
+  // Una creación de Crear es la misma si es el mismo diseño: comparar todo su
+  // contenido (vistas previas, archivos, zonas…) fallaba porque al volver de
+  // Firestore los campos llegan en otro orden, y la misma línea se agregaba
+  // otra vez en cada restauración (llegó a haber 84 copias de una).
+  const custom = item.customization?.designId
+    ? `diseno:${item.customization.designId}`
+    : jsonEstable(item.customization || null);
   return `${item.productId}__${color}__${size}__${custom}`;
 };
+
+/** JSON con las claves de cada objeto ordenadas: el mismo dato, el mismo texto. */
+const jsonEstable = (valor) => JSON.stringify(valor, (_, v) => (
+  v && typeof v === 'object' && !Array.isArray(v)
+    ? Object.keys(v).sort().reduce((o, k) => { o[k] = v[k]; return o; }, {})
+    : v
+));
 
 /**
  * Fusiona líneas duplicadas del carrito (misma claveDedupItem) sumando
@@ -54,8 +67,17 @@ const claveDedupItem = (item) => {
 const consolidarDuplicados = (items) => {
   if (!Array.isArray(items) || items.length === 0) return items || [];
   const indicePorClave = new Map();
+  const indicePorId = new Map();
   const resultado = [];
   for (const item of items) {
+    // Mismo id = la MISMA línea copiada (p.ej. por la restauración desde la
+    // nube), no un segundo agregado: queda una sola, sin sumar cantidades.
+    if (item.id && indicePorId.has(item.id)) {
+      const idx = indicePorId.get(item.id);
+      const existente = resultado[idx];
+      resultado[idx] = { ...existente, quantity: Math.max(existente.quantity || 0, item.quantity || 0) };
+      continue;
+    }
     const clave = claveDedupItem(item);
     if (clave && indicePorClave.has(clave)) {
       const idx = indicePorClave.get(clave);
@@ -68,6 +90,7 @@ const consolidarDuplicados = (items) => {
       continue;
     }
     if (clave) indicePorClave.set(clave, resultado.length);
+    if (item.id) indicePorId.set(item.id, resultado.length);
     // Las creaciones agregadas antes de que la línea llevara su nombre
     // (mostraban solo "Polera clásica") lo toman al cargar el carrito.
     const nombre = item.customization?.tipo === 'crear' ? String(item.customization.nombre || '').trim() : '';
@@ -228,7 +251,10 @@ export const CartProvider = ({ children }) => {
           //    en un reload normal y sumarla de nuevo duplicaría la cantidad.
           //    Los regalos/combos (clave null) siempre entran, son su propia línea.
           const clavesLocales = new Set(propios.map(claveDedupItem).filter(Boolean));
+          const idsLocales = new Set(propios.map((i) => i.id).filter(Boolean));
           const nuevosDeLaNube = remoteItems.filter((remoto) => {
+            // La misma línea (mismo id) ya está aquí: no se vuelve a agregar.
+            if (remoto?.id && idsLocales.has(remoto.id)) return false;
             const clave = claveDedupItem(remoto);
             return !clave || !clavesLocales.has(clave);
           });
@@ -252,7 +278,7 @@ export const CartProvider = ({ children }) => {
       try {
         // newValue null = otra pestaña hizo removeItem (p.ej. clearCart) → carrito vacío.
         const parsed = e.newValue ? JSON.parse(e.newValue) : [];
-        setItems(Array.isArray(parsed) ? parsed : []);
+        setItems(Array.isArray(parsed) ? consolidarDuplicados(parsed) : []);
       } catch (error) {
         console.warn('Carrito multi-pestaña: JSON inválido en storage:', error);
       }
