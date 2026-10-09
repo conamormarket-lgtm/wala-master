@@ -597,43 +597,18 @@ const Header = () => {
             <Home size={20} />
           </Link>
         ) : (
-        <Link to="/" className={styles.logo}>
-          <svg viewBox="0 0 358 120" className={styles.logoImage} style={{ height: '44px', width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              {/* Degradado de marca del header: violeta -> morado profundo.
-                  Tope en #7C3AED (firme, no se lava en modo claro). */}
-              <linearGradient id="walaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                 <stop offset="0%" stopColor="#7C3AED" />
-                 <stop offset="100%" stopColor="#5B21B6" />
-              </linearGradient>
-            </defs>
-
-            {/* ISOTIPO (Left) — MISMO isotipo que la pantalla de carga
-                (BrandLoader / splash de index.html): la bolsa inclinada con la
-                'W' y el punto. Usa las MISMAS coordenadas del loader (espacio
-                local del viewBox "12 0 94 109") para que sea exactamente la
-                misma silueta.
-                Colores INVERTIDOS respecto al loader porque aqui va sobre
-                fondo claro: bolsa en el degradado de marca + 'W' blanca +
-                punto blanco.
-                Encaje: scale(1.05) (0.87 -> 0.95 -> 1.05, se pidio agrandar solo
-                el isotipo, no el logotipo) y translate para que el contenido
-                caiga en x 7..72 y y 15..100, o sea apoyado en la linea base
-                del logotipo y pegado a el. */}
-            <g transform="translate(-22.4, 2) scale(1.05)">
-               <path d="M 32 42 L 28 88 C 27 92 30 94 34 93 L 85 80 C 89 79 91 76 89 72 L 76 18 C 75 13 68 11 65 14 L 36 34 C 32 37 31 40 32 42 Z" fill="url(#walaGradient)" />
-               <circle cx="67" cy="23" r="6.5" fill="#FFFFFF" />
-               <path d="M 38 42 L 43 78 L 54 52 L 64 72 L 72 38" fill="none" stroke="#FFFFFF" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" transform="translate(55 58) scale(0.8) translate(-55 -58)" />
-            </g>
-
-            {/* LOGOTIPO (Right) — anclado a la derecha (x=349) para que quede
-                pegado al isotipo (~16u de aire). La tilde ya NO se dibuja a
-                mano: antes era un trazo suelto que caia descolocado sobre la
-                'A'; ahora se usa el glifo real 'Á' de la fuente, asi el acento
-                tiene la forma, el peso y la posicion correctos — y sigue bien
-                puesto aunque caiga la fuente de respaldo. */}
-            <text x="349" y="100" textAnchor="end" fontFamily="'Montserrat', 'system-ui', 'Arial Black', sans-serif" fontWeight="900" fontSize="85" fill="url(#walaGradient)" stroke="url(#walaGradient)" strokeWidth="2.5" paintOrder="stroke fill" letterSpacing="-4"><T>WALÁ</T></text>
-          </svg>
+        <Link to="/" className={styles.logo} aria-label="Walá, ir al inicio">
+          {/* Logo de marca SACADO del logo oficial (public/logo-wala.png): la
+              etiqueta con su cordón y la W calada, la letra redondeada y la
+              etiquetita que hace de tilde en la Á. Antes era un dibujo
+              aproximado (bolsa a mano + "WALÁ" en Montserrat) y perdía esos
+              detalles. Son dos máscaras (public/assets/marca): la forma se pinta
+              con el degradado de marca en claro y en blanco en oscuro; la W
+              solo se pinta en oscuro (violeta), como en el logo oficial. */}
+          <span className={styles.logoMarca} role="img" aria-label="Walá">
+            <span className={styles.logoMarcaForma} aria-hidden="true" />
+            <span className={styles.logoMarcaHuecos} aria-hidden="true" />
+          </span>
         </Link>
         )}
 

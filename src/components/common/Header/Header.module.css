@@ -2009,10 +2009,9 @@
     padding: 0.5rem 0.75rem 0.625rem;
   }
 
-  /* Ocultar texto del logo */
-  .logo span {
-    display: none;
-  }
+  /* (Antes: ".logo span { display: none }" para ocultar un texto del logo
+     viejo. Ese texto ya no existe y la regla escondía las capas del logo de
+     marca, que también son <span>.) */
 
   .logo {
     height: 48px;
@@ -2672,4 +2671,73 @@
 .notifActivarBtn:disabled {
   opacity: 0.6;
   cursor: wait;
+}
+
+/* ═══════════════════════════════════════════
+   LOGO DE MARCA (desde el logo oficial)
+   Dos máscaras de public/assets/marca, generadas de public/logo-wala.png:
+   - logo-header.webp: etiqueta con cordón + "WALÁ" con su tilde-etiqueta.
+   - logo-header-huecos.webp: la W y el ojal (lo calado dentro de la etiqueta).
+   Proporción 481:168. Las letras ocupan ~72% del alto, por eso el alto es
+   menor que el del SVG anterior (donde ocupaban ~52%).
+   ═══════════════════════════════════════════ */
+.logoMarca {
+  position: relative;
+  display: block;
+  height: 42px;
+  aspect-ratio: 481 / 168;
+  flex-shrink: 0;
+  transition: var(--transicion-rapida);
+}
+
+.logo:hover .logoMarca {
+  transform: scale(1.04);
+}
+
+.logoMarcaForma,
+.logoMarcaHuecos {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Claro: degradado de marca; la W queda del color del header (blanca). */
+.logoMarcaForma {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  -webkit-mask-image: url('/assets/marca/logo-header.webp');
+  mask-image: url('/assets/marca/logo-header.webp');
+}
+
+.logoMarcaHuecos {
+  background: transparent;
+  -webkit-mask-image: url('/assets/marca/logo-header-huecos.webp');
+  mask-image: url('/assets/marca/logo-header-huecos.webp');
+}
+
+/* Oscuro (y header arcade): logo blanco con la W violeta, como el oficial. */
+:global([data-theme='dark']) .logoMarcaForma,
+.arcadeHeader .logoMarcaForma {
+  background: #ffffff;
+}
+
+:global([data-theme='dark']) .logoMarcaHuecos,
+.arcadeHeader .logoMarcaHuecos {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+}
+
+@media (max-width: 768px) {
+  .logoMarca {
+    height: 38px;
+  }
+}
+
+@media (max-width: 380px) {
+  .logoMarca {
+    height: 34px;
+  }
 }
