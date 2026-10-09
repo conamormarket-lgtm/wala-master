@@ -1,7 +1,7 @@
 import { collection, doc, getDoc, setDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from './firebase/config';
 import { getCurrentUser } from './firebase/auth';
-import { DAILY_WORDS } from '../data/wordleDictionary';
+import { DAILY_WORDS, PALABRAS_FIJAS } from '../data/wordleDictionary';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { limaTodayStr, limaYesterdayStr } from '../utils/fechaLima';
 
@@ -53,12 +53,13 @@ export const getDailyWord = async (dateStr) => {
     console.error("Error fetching daily word:", error);
   }
 
-  // Fallback: usar una palabra del arreglo basada en la fecha determinista
-  let hash = 0;
-  for (let i = 0; i < dateStr.length; i++) {
-    hash = dateStr.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % FALLBACK_WORDS.length;
+  if (PALABRAS_FIJAS[dateStr]) return PALABRAS_FIJAS[dateStr];
+
+  // Sin palabra configurada: una por día, en el orden de la lista (barajada).
+  // Mismo cálculo que palabraDelDia() en functions/wordleWords.js.
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dia = Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+  const index = ((dia % FALLBACK_WORDS.length) + FALLBACK_WORDS.length) % FALLBACK_WORDS.length;
   return FALLBACK_WORDS[index];
 };
 

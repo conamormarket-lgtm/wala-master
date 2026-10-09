@@ -22,6 +22,9 @@ const palabras = m[1]
   .map((p) => p.trim().replace(/^["']|["']$/g, ''))
   .filter((p) => /^[A-ZÁÉÍÓÚÜÑ]+$/i.test(p));
 
+const mf = src.match(/export const PALABRAS_FIJAS = (\{[\s\S]*?\});/);
+const fijas = mf ? JSON.parse(mf[1]) : {};
+
 if (palabras.length < 100) {
   throw new Error('Solo se extrajeron ' + palabras.length + ' palabras: algo va mal.');
 }
@@ -40,14 +43,18 @@ const salida = `// =============================================================
 
 const DAILY_WORDS = ${JSON.stringify(palabras)};
 
-// Mismo hash que getDailyWord() en src/services/wordle.js. Si cambia allí,
+// Días con palabra fija (ver PALABRAS_FIJAS en src/data/wordleDictionary.js).
+const PALABRAS_FIJAS = ${JSON.stringify(fijas)};
+
+// Mismo cálculo que getDailyWord() en src/services/wordle.js. Si cambia allí,
 // cambia aquí o el servidor validará contra otra palabra.
 function palabraDelDia(fechaStr) {
-  let hash = 0;
-  for (let i = 0; i < fechaStr.length; i++) {
-    hash = fechaStr.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return DAILY_WORDS[Math.abs(hash) % DAILY_WORDS.length];
+  if (PALABRAS_FIJAS[fechaStr]) return PALABRAS_FIJAS[fechaStr];
+  // Una por día, en el orden de la lista (barajada): no se repite ninguna
+  // hasta recorrerla entera.
+  const [y, m, d] = String(fechaStr).split('-').map(Number);
+  const dia = Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+  return DAILY_WORDS[((dia % DAILY_WORDS.length) + DAILY_WORDS.length) % DAILY_WORDS.length];
 }
 
 module.exports = { DAILY_WORDS, palabraDelDia };
