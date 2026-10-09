@@ -1,0 +1,239 @@
+/* =========================================================================
+   PedidosPorVerificar — pedidos que coinciden por documento pero que la
+   cuenta aún no demostró que son suyos. Sobrio: tokens --gris-* (se oscurecen
+   solos en modo noche) y botones violeta LISOS, sin degradado.
+   ========================================================================= */
+
+.bloque {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1.1rem 1.15rem;
+  border-radius: 16px;
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.cabecera {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.cabecera h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.icono {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--gris-texto-secundario, #475569);
+}
+
+.aviso {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.avisoIcono {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  color: #8b5cf6;
+}
+
+.avisoTexto {
+  min-width: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.avisoTexto p {
+  margin: 0;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  margin-top: 0.6rem;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.item {
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.itemFila {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.fecha {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.fase {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6d28d9;
+  background: rgba(139, 92, 246, 0.12);
+  white-space: nowrap;
+}
+
+.pista {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--gris-texto-secundario, #475569);
+  overflow-wrap: anywhere;
+}
+
+.form {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.campo label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.campo input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--gris-borde, #d1d5db);
+  background: var(--color-surface, #ffffff);
+  color: var(--gris-texto-principal, #0f172a);
+  font: inherit;
+  font-size: 16px; /* evita el zoom automático de iOS al enfocar */
+}
+
+.campo input:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 1px;
+}
+
+.form .error,
+.form .botonPrimario {
+  grid-column: 1 / -1;
+}
+
+.botonPrimario {
+  min-height: 42px;
+  padding: 0.55rem 1.1rem;
+  border: 0;
+  border-radius: 8px;
+  background-color: #8b5cf6;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.botonPrimario:hover:not(:disabled) {
+  background-color: #7c3aed;
+}
+
+.botonPrimario:focus-visible,
+.botonTexto:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.botonPrimario:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.botonTexto {
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  color: #7c3aed;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.error {
+  margin: 0.4rem 0 0;
+  font-size: 0.84rem;
+  color: #dc2626;
+}
+
+:global([data-theme='dark']) .fase {
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .botonTexto {
+  color: #c4b5fd;
+}
+
+@media (max-width: 480px) {
+  .form {
+    grid-template-columns: 1fr;
+  }
+}

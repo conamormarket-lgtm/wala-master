@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { PackageSearch, AlertTriangle, XCircle } from 'lucide-react';
 import { usePedidos } from '../../hooks/usePedidos';
+import PedidosPorVerificar from './PedidosPorVerificar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
 // Sistema de diseño Walá: superficie de vidrio + botón + envoltorios de movimiento.
@@ -242,7 +243,7 @@ const CuentaRastreoPage = () => {
   const dni = userProfile?.dni ? String(userProfile.dni).trim() : '';
   // UID del usuario: se hila al hook para recuperar también pedidos del espejo.
   const uid = user?.uid || undefined;
-  const { loading, error, data, buscar } = usePedidos(dni, uid);
+  const { loading, error, data, buscar, recargar } = usePedidos(dni, uid);
   const [hasFetched, setHasFetched] = useState(false);
 
   // Catálogo para enriquecer cada pedido con imagen/nombre del 1er producto.
@@ -330,7 +331,18 @@ const CuentaRastreoPage = () => {
   }
 
   const pedidos = data?.pedidos ?? [];
-  const showEmpty = !loading && hasFetched && pedidos.length === 0;
+  const pendientes = data?.pendientes ?? [];
+  const showEmpty = !loading && hasFetched && pedidos.length === 0 && pendientes.length === 0;
+
+  // Pedidos que coinciden por documento pero que la cuenta aún no probó que son
+  // suyos (ver PedidosPorVerificar). Van arriba de la lista.
+  const porVerificar = (
+    <PedidosPorVerificar
+      pendientes={pendientes}
+      emailVerificado={data?.emailVerificado === true}
+      onCambio={recargar}
+    />
+  );
 
   // ── Estado vacío ────────────────────────────────────────────────────────────
   if (showEmpty) {
@@ -350,7 +362,9 @@ const CuentaRastreoPage = () => {
   return (
     <div className={styles.content}>
       <Cabecera />
+      {porVerificar}
 
+      {pedidos.length > 0 && (
       <Stagger as="ul" className={glass.grid}>
         {pedidos.map((pedido) => {
           const r = resumirRastreo(pedido, indiceCatalogo);
@@ -462,6 +476,7 @@ const CuentaRastreoPage = () => {
           );
         })}
       </Stagger>
+      )}
     </div>
   );
 };

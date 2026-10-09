@@ -100,7 +100,7 @@ const CuentaCompraDetallePage = () => {
   const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    if (authLoading || !dni || hasFetched) return;
+    if (authLoading || !uid || hasFetched) return;
     setHasFetched(true);
     buscar(dni, uid);
   }, [authLoading, dni, uid, hasFetched, buscar]);
@@ -113,11 +113,7 @@ const CuentaCompraDetallePage = () => {
   // 2) El pedido normalizado NO conserva los campos crudos (productos,
   //    numeroPedido, metodoPago, envioDireccion, pagado, web...). Para el
   //    DETALLE necesitamos el pedido CRUDO: lo traemos por id del ERP.
-  const {
-    data: pedidoRaw,
-    isLoading: rawLoading,
-    isError: rawError,
-  } = useQuery({
+  const { data: pedidoRaw } = useQuery({
     queryKey: ['pedido-erp', id],
     queryFn: async () => {
       // Lee el pedido CRUDO por id en AMBAS colecciones del ERP (pedidos +
@@ -127,7 +123,9 @@ const CuentaCompraDetallePage = () => {
       const { data: raw } = await getOrderByIdAnyCollection(id);
       return raw || null;
     },
-    enabled: !!id,
+    // Solo pedidos que el servidor ya confirmó que son de esta cuenta (están en
+    // la lista). Antes se leía cualquier id que viniera en la URL.
+    enabled: !!id && !!pedidoNormalizado,
     staleTime: 1000 * 60 * 2,
     retry: 1,
   });
@@ -142,7 +140,8 @@ const CuentaCompraDetallePage = () => {
   // propio de WALA desde el crudo de la lista al pedido efectivo. Es ADITIVO: no
   // toca montos ni la lógica de pago; solo el estado mostrado.
   const crudoLista = pedidoNormalizado?._raw || null;
-  const pedidoBase = pedidoRaw || crudoLista || pedidoNormalizado;
+  // Sin pedido en la lista verificada no se muestra nada, aunque el id exista.
+  const pedidoBase = pedidoNormalizado ? (pedidoRaw || crudoLista || pedidoNormalizado) : null;
   const pedido = useMemo(() => {
     if (!pedidoBase) return pedidoBase;
     const walaEstado =
@@ -269,8 +268,10 @@ const CuentaCompraDetallePage = () => {
 
   /* ── Estados de carga / no encontrado ─────────────────────────────────── */
 
+  // El crudo de la lista ya trae el pedido completo: se pinta al instante y el
+  // fresco por id (pedidoRaw) lo reemplaza cuando llega.
   const cargando =
-    authLoading || rawLoading || (pedidosLoading && !pedidoNormalizado);
+    authLoading || !hasFetched || (pedidosLoading && !pedidoNormalizado);
 
   if (cargando && !pedido) {
     return (
@@ -283,11 +284,9 @@ const CuentaCompraDetallePage = () => {
     );
   }
 
-  // Si terminó la carga (ambas fuentes) y no hay pedido -> no encontrado.
-  // La búsqueda por lista solo aplica si hay DNI: sin DNI, basta con que el
-  // lookup directo por id (pedidoRaw) haya terminado para decidir.
-  const listaResuelta = !dni || (hasFetched && !pedidosLoading);
-  if (!pedido && !rawLoading && (rawError || listaResuelta)) {
+  // Si la lista de la cuenta ya cargó y el pedido no está -> no encontrado.
+  const listaResuelta = hasFetched && !pedidosLoading;
+  if (!pedido && listaResuelta) {
     return (
       <div className={styles.page}>
         <Reveal>

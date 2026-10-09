@@ -1,12 +1,6 @@
-import { useState, useEffect } from 'react';
-import { buscarPedidoCliente } from '../services/api';
-import { searchOrdersByDniInERP } from '../services/erp/firebase';
-import { isErpFirestoreAvailable } from '../services/erp/firebase';
+import { useState, useEffect, useCallback } from 'react';
+import { cargarMisPedidos } from '../services/misPedidos';
 import { normalizarPedidoParaVista, extraerDatosClienteDesdePedidos } from '../utils/pedidos';
-import {
-  ensureAccountFromOrderData,
-  extraerDatosClienteDesdePedido,
-} from '../services/accountFromOrder';
 
 const getMillis = (v) => {
   if (!v) return 0;
@@ -18,29 +12,17 @@ const getMillis = (v) => {
   return isNaN(d) ? 0 : d.getTime();
 };
 
-// Caché en memoria por (dni + userId): la clave debe considerar AMBOS, porque
-// añadir el userId puede traer pedidos del espejo (wala_pedidos) que no aparecen
-// buscando solo por DNI. Si la clave ignorara el userId, un usuario logueado
-// vería la caché vieja.
+// Caché en memoria POR CUENTA: los pedidos dependen de quién está logueado (y
+// de lo que tenga verificado), no del DNI que se pase. Con otra cuenta en el
+// mismo navegador la clave cambia y se vuelve a pedir.
 const cachePedidos = { clave: null, data: null };
 
-/** Clave de caché estable que combina DNI y userId ambos pueden faltar. */
-const claveCache = (dni, userId) =>
-  `${dni != null ? String(dni).trim() : ''}::${userId != null ? String(userId) : ''}`;
-
-const MAX_ACCOUNT_SYNC_PER_LOAD = 25;
+/** Clave de caché: el uid de la sesión (vacío sin sesión). */
+const claveCache = (userId) => (userId != null ? String(userId) : '');
 
 /**
- * Determina si un pedido viene del portal WALA.
- *
- * IMPORTANTE:
- * Antes "Mis Pedidos" filtraba SOLO pedidos WALA usando esta función.
- * Eso ocultaba pedidos creados directamente desde el ERP, por ejemplo:
- * canalVenta: "Otro", activador: "Otro", vendedor: "YORYO".
- *
- * Ahora esta función se mantiene como referencia/proveniencia, pero ya NO se usa
- * para filtrar la lista principal de "Mis Pedidos". La búsqueda por DNI ya limita
- * los pedidos al cliente correspondiente.
+ * Determina si un pedido viene del portal WALA. Solo es un dato informativo
+ * (_esPedidoWala): la lista muestra también los pedidos creados desde el ERP.
  *
  * @param {Object} p - Pedido CRUDO tal como viene del ERP.
  * @returns {boolean} true si el pedido fue hecho desde WALA.
@@ -57,179 +39,94 @@ const esPedidoWala = (p) =>
     !!p.buyerUid);
 
 /**
- * Hook para búsqueda de pedidos por DNI.
+ * Pedidos de la cuenta logueada ("Mis Pedidos", rastreo, detalle).
  *
- * Muestra pedidos asociados al DNI del cliente desde:
- * - pedidos
- * - pedidos_web
- * - wala_pedidos cuando exista espejo WALA
+ * Los carga el servidor (services/misPedidos.js): solo vienen completos los
+ * que la cuenta demuestra que son suyos. Los que solo coinciden por DNI llegan
+ * en `data.pendientes` para que la persona los verifique o vincule.
  *
- * Antes se filtraba solo a pedidos WALA con esPedidoWala().
- * Eso hacía que los pedidos creados desde el ERP no aparezcan en "Mis Pedidos".
+ * Antes este hook además creaba cuentas, desde el navegador, para cada correo
+ * que encontraba en los pedidos (createUserWithEmailAndPassword). Eso podía
+ * cambiar la sesión a una cuenta recién creada y alargaba cada carga; las
+ * cuentas desde pedidos ya las crea el servidor (webhook ensureAccountFromOrder).
  *
- * @param {string} [initialDni] - DNI/CE del perfil.
- * @param {string} [initialUserId] - UID del comprador autenticado.
- * @returns {Object} { loading, error, data: { pedidos, dataSource, clientData? }, buscar }
+ * La firma se mantiene por compatibilidad: el DNI ya no decide nada.
+ *
+ * @param {string} [_initialDni] - Ignorado (compatibilidad).
+ * @param {string} [initialUserId] - UID de la sesión.
+ * @returns {Object} { loading, error, data: { pedidos, pendientes, emailVerificado, dataSource, clientData }, buscar, recargar }
  */
-export const usePedidos = (initialDni, initialUserId) => {
-  const claveInicial = claveCache(initialDni, initialUserId);
+export const usePedidos = (_initialDni, initialUserId) => {
+  const claveInicial = claveCache(initialUserId);
+  const enCache = !!claveInicial && cachePedidos.clave === claveInicial && !!cachePedidos.data;
 
-  const dniCache =
-    initialDni != null &&
-    String(initialDni).trim() &&
-    cachePedidos.clave === claveInicial &&
-    !!cachePedidos.data;
-
-  const [loading, setLoading] = useState(!dniCache);
+  const [loading, setLoading] = useState(!enCache);
   const [error, setError] = useState(null);
-  const [data, setData] = useState(() => (dniCache ? cachePedidos.data : null));
+  const [data, setData] = useState(() => (enCache ? cachePedidos.data : null));
 
   useEffect(() => {
-    if (dniCache && cachePedidos.data) {
+    if (enCache && cachePedidos.data) {
       setData(cachePedidos.data);
       setLoading(false);
       setError(null);
     }
-  }, [dniCache]);
+  }, [enCache]);
 
-  const buscar = async (dni, userId) => {
-    const dniStr = dni != null ? String(dni).trim() : '';
-    const clave = claveCache(dniStr, userId);
+  const cargar = useCallback(async (userId, { forzar = false } = {}) => {
+    const clave = claveCache(userId ?? initialUserId);
 
-    if (dniStr && cachePedidos.clave === clave && cachePedidos.data) {
-      if (data !== cachePedidos.data) setData(cachePedidos.data);
-      if (error !== null) setError(null);
-      if (loading) setLoading(false);
+    if (!forzar && clave && cachePedidos.clave === clave && cachePedidos.data) {
+      setData(cachePedidos.data);
+      setError(null);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
-
-    // No limpiamos data inmediatamente si ya había datos, para evitar flash visual.
-    if (!cachePedidos.data) setData(null);
-
     setError(null);
 
     try {
-      if (isErpFirestoreAvailable() && dniStr) {
-        // searchOrdersByDniInERP ya busca en:
-        // - pedidos
-        // - pedidos_web
-        // - wala_pedidos si corresponde
-        //
-        // Además busca por clienteNumeroDocumento y por dni.
-        const { data: erpPedidos, error: erpError } = await searchOrdersByDniInERP(dniStr, { userId });
+      const { pedidos: crudos, pendientes, emailVerificado } = await cargarMisPedidos();
 
-        if (erpError && erpPedidos === null) {
-          setError(erpError);
-          setLoading(false);
-          return;
-        }
+      const pedidos = crudos
+        .map((raw) => {
+          const norm = normalizarPedidoParaVista(raw);
+          // _raw: doc CRUDO (productos/dirección/pago/numeroPedido) que la
+          // normalización descarta y que usan la lista y el detalle.
+          return norm ? { ...norm, _raw: raw, _esPedidoWala: esPedidoWala(raw) } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
 
-        // IMPORTANTE:
-        // Ya NO filtramos con .filter(esPedidoWala).
-        //
-        // Motivo:
-        // Los pedidos creados directamente en el ERP pueden venir con:
-        // canalVenta: "Otro"
-        // activador: "Otro"
-        // vendedor: "YORYO"
-        //
-        // Esos pedidos sí pertenecen al cliente porque coinciden por DNI,
-        // pero antes se ocultaban por no ser "Portal Web".
-        const list = Array.isArray(erpPedidos) ? erpPedidos : [];
+      const result = {
+        pedidos,
+        pendientes,
+        emailVerificado,
+        dataSource: 'erp',
+        clientData: extraerDatosClienteDesdePedidos(crudos),
+      };
 
-        const pedidos = list
-          .map((raw) => {
-            const norm = normalizarPedidoParaVista(raw);
-
-            // Adjuntamos el doc CRUDO (_raw) con productos/dirección/pago/numeroPedido,
-            // que la normalización descarta, para que "Mis Pedidos" y el detalle los usen.
-            //
-            // También marcamos si proviene de WALA como dato aditivo,
-            // pero NO lo usamos para ocultar pedidos ERP.
-            return norm
-              ? {
-                ...norm,
-                _raw: raw,
-                _esPedidoWala: esPedidoWala(raw),
-              }
-              : null;
-          })
-          .filter(Boolean)
-          .sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
-
-        const clientData = extraerDatosClienteDesdePedidos(list);
-        const result = { pedidos, dataSource: 'erp', clientData };
-
-        cachePedidos.clave = clave;
-        cachePedidos.data = result;
-
-        setData(result);
-        setLoading(false);
-
-        // Opcional: crear cuentas faltantes para pedidos con email.
-        // Máximo N por carga, en segundo plano.
-        const seen = new Set();
-        let count = 0;
-
-        for (const raw of list) {
-          if (count >= MAX_ACCOUNT_SYNC_PER_LOAD) break;
-
-          const { email } = extraerDatosClienteDesdePedido(raw);
-
-          if (email && !seen.has(email.toLowerCase())) {
-            seen.add(email.toLowerCase());
-            count += 1;
-
-            ensureAccountFromOrderData(raw, { linkOrderId: true }).catch(() => { });
-          }
-        }
-
-        return;
-      }
-
-      if (dniStr) {
-        const resultado = await buscarPedidoCliente('', dniStr);
-
-        // Igual que en la rama ERP:
-        // no filtramos solo WALA, porque esta vista debe mostrar pedidos del cliente
-        // asociados a su documento.
-        const pedidosList = (resultado.pedidos || [])
-          .map((raw) => {
-            const norm = normalizarPedidoParaVista(raw);
-
-            return norm
-              ? {
-                ...norm,
-                _raw: raw,
-                _esPedidoWala: esPedidoWala(raw),
-              }
-              : null;
-          })
-          .filter(Boolean)
-          .sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
-
-        const result = { pedidos: pedidosList, dataSource: 'api' };
-
-        cachePedidos.clave = clave;
-        cachePedidos.data = result;
-
-        setData(result);
-      } else {
-        setData({ pedidos: [], dataSource: 'api' });
-      }
+      cachePedidos.clave = clave;
+      cachePedidos.data = result;
+      setData(result);
     } catch (err) {
-      setError(err.message);
+      console.warn('[Mis Pedidos] carga:', err);
+      setError('No se pudieron cargar tus pedidos. Revisa tu conexión e inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [initialUserId]);
+
+  // buscar(dni, userId): firma antigua; el DNI se ignora.
+  const buscar = useCallback((_dni, userId) => cargar(userId), [cargar]);
+  // Tras verificar el correo o vincular un pedido: ignora la caché.
+  const recargar = useCallback(() => cargar(undefined, { forzar: true }), [cargar]);
 
   return {
     loading,
     error,
     data,
     buscar,
+    recargar,
   };
 };

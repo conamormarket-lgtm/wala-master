@@ -44,7 +44,10 @@ service cloud.firestore {
         'segment', 'lastChestDate',
         // Fechas importantes: qué fechas ya se pagaron y cuánto (claimDatesRewardSecure)
         // y qué recordatorios ya se mandaron (datesReminderEngine). Solo servidor.
-        'datesRewardedIds', 'datesRewardTotal', 'datesReminderLog'
+        'datesRewardedIds', 'datesRewardTotal', 'datesReminderLog',
+        // Pedidos que la cuenta probó que son suyos (vincularPedidoSecure). Si el
+        // cliente pudiera escribirlo, se "vincularía" pedidos ajenos sin prueba.
+        'pedidosVinculados'
       ];
     }
     function noTocaCamposSensibles() {

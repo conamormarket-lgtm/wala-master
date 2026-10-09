@@ -436,6 +436,18 @@ export const AuthProvider = ({ children }) => {
     return res;
   }, [callFn, reloadProfile]);
 
+  // "Mis Pedidos" se carga desde el servidor (misPedidosSecure). Se despierta la
+  // función por detrás poco después de entrar, para que al abrir los pedidos no
+  // se espere su arranque en frío. Una vez por pestaña y fuera del arranque.
+  const uidSesion = user && !user.isAnonymous ? user.uid : null;
+  useEffect(() => {
+    if (!uidSesion) return undefined;
+    const t = setTimeout(() => {
+      httpsCallable(getFunctions(), 'misPedidosSecure')({ ping: true }).catch(() => {});
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [uidSesion]);
+
   // Despierta la función de Kapi (ver feedKapiSecure): sin esto, la primera
   // comida del día esperaba el arranque en frío del servidor.
   const calentarKapi = React.useCallback(() => {

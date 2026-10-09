@@ -128,6 +128,99 @@ function sortPedidosByCreatedAt(pedidos) {
 }
 
 /**
+ * Fusiona los pedidos VIVOS del ERP (pedidos + pedidos_web) con las copias
+ * espejo de WALA (wala_pedidos) y los ordena del más reciente al más antiguo.
+ * La usan searchOrdersByDniInERP y la carga segura de "Mis Pedidos"
+ * (services/misPedidos.js), así ambas muestran exactamente lo mismo.
+ *
+ * @param {Array<object>} liveOrders - Docs crudos de pedidos/pedidos_web.
+ * @param {Array<object>} espejo - Copias ya normalizadas (normalizarEspejoParaVista).
+ */
+export function fusionarVivosYEspejo(liveOrders, espejo) {
+  const pedidos = [...(Array.isArray(liveOrders) ? liveOrders : [])];
+
+  // ── WALA = FUENTE DE VERDAD: presencia garantizada desde wala_pedidos ──────
+  // Los pedidos VIVOS (pedidos + pedidos_web) ya están en `pedidos`. Ahora
+  // traemos SIEMPRE el espejo propio de WALA (wala_pedidos) y lo fusionamos por
+  // CLAVE DE NEGOCIO con los vivos. Reglas (decisión del dueño):
+  //   1) PRESENCIA: el listado INCLUYE SIEMPRE todos los wala_pedidos del usuario
+  //      (no solo cuando faltan en vivo): un pedido NUNCA desaparece de "Mis
+  //      Compras" porque su existencia la garantiza wala_pedidos.
+  //   2) ESTADO mostrado = el MÁS AVANZADO entre el doc VIVO del ERP (si existe)
+  //      y wala_pedidos.estadoWala. Para que la UI pueda decidir, ADJUNTAMOS el
+  //      estadoWala del espejo sobre el doc vivo correspondiente (campos aditivos
+  //      _walaEstado/_walaPagado); la precedencia "no degradar" la resuelve
+  //      derivarEstadoCompra (src/utils/estadoCompra.js). NO se recalcula ningún
+  //      monto ni se borra nada.
+  // Best-effort: getWalaMirrorOrders nunca lanza (devuelve [] ante error).
+  try {
+    if (Array.isArray(espejo) && espejo.length > 0) {
+      // Clave de negocio idéntica a adminOrders.js (dedup de "Recepción").
+      const claveDeNegocio = (p) =>
+        (p && (p.numeroPedido || p.portalPseudoOrderId || p.pedidoWebId || p.id)) || null;
+
+      // ¿el pedido vivo SIGUE siendo de WALA? (mismo criterio que esPedidoWala
+      // de usePedidos.js). IMPORTA porque usePedidos FILTRA la lista cruda por
+      // esPedidoWala ANTES de normalizar: un vivo ya desmarcado por el ERP
+      // (p.ej. web:false) NO sobrevive ese filtro, así que su espejo debe
+      // permanecer para garantizar la presencia del pedido.
+      const esWala = (p) =>
+        !!p &&
+        (p.canalVenta === 'Portal Web' ||
+          p.web === true ||
+          p.activador === 'portal_web' ||
+          p.vendedor === 'Portal Web');
+
+      // Índice de los docs VIVOS por clave de negocio. Si existe un vivo con la
+      // misma clave que un espejo, el vivo es el portador del ESTADO de
+      // producción del ERP y le adjuntamos el estadoWala del espejo.
+      const vivosPorClave = new Map();
+      pedidos.forEach((p) => {
+        const c = claveDeNegocio(p);
+        if (c && !vivosPorClave.has(c)) vivosPorClave.set(c, p);
+      });
+
+      // Para cada pedido del espejo:
+      //   - si hay un vivo-WALA con su clave → ADJUNTAMOS estadoWala/pagado al
+      //     vivo (no duplicamos; el vivo conserva su etapa de producción del ERP
+      //     y la UI elegirá el estado más avanzado entre ambos).
+      //   - si el vivo existe pero YA NO es WALA (desmarcado por el ERP) → además
+      //     de enriquecerlo, CONSERVAMOS el espejo (sobrevive al filtro esPedidoWala
+      //     de usePedidos) para no perder la presencia del pedido.
+      //   - si NO hay vivo → AGREGAMOS la copia espejo (presencia garantizada).
+      const clavesEspejoVistas = new Set();
+      espejo.forEach((m) => {
+        const c = claveDeNegocio(m);
+        const vivo = c ? vivosPorClave.get(c) : null;
+        if (vivo) {
+          // Enriquecemos el doc vivo con el estado propio de WALA (aditivo).
+          vivo._walaEstado = m.estadoWala ?? vivo._walaEstado ?? null;
+          vivo._walaPagado = m.pagado === true || vivo._walaPagado === true;
+          // El match con el espejo PRUEBA que es un pedido de WALA: lo marcamos
+          // para que SOBREVIVA el filtro esPedidoWala aunque el ERP le haya
+          // quitado los flags (web/canalVenta) al pasarlo a producción. Así el
+          // pedido conserva su ETAPA DE PRODUCCIÓN del ERP (no se degrada al
+          // estado grueso del espejo). El vivo representa el pedido: NO duplicamos.
+          vivo._esWalaMirror = true;
+          return;
+        }
+        // Sin vivo (el ERP ya no tiene el doc): agregamos la copia espejo para
+        // garantizar la presencia, marcada como WALA para que pase el filtro.
+        if (c && clavesEspejoVistas.has(c)) return;
+        if (c) clavesEspejoVistas.add(c);
+        m._esWalaMirror = true;
+        pedidos.push(m);
+      });
+    }
+  } catch (mirrorErr) {
+    // El espejo es best-effort: si falla la lectura, seguimos con los vivos.
+    console.warn('No se pudo leer el espejo wala_pedidos (best-effort):', mirrorErr?.message);
+  }
+
+  return sortPedidosByCreatedAt(pedidos);
+}
+
+/**
  * Buscar pedidos por número de documento (DNI/CE) en el Firestore del ERP.
  * Usa el campo clienteNumeroDocumento. No requiere índice compuesto: se hace
  * una sola condición where y el ordenamiento es en memoria.
@@ -168,87 +261,7 @@ export async function searchOrdersByDniInERP(dni, { userId } = {}) {
           return [];
         }),
     ]);
-    let pedidos = liveOrders;
-
-    // ── WALA = FUENTE DE VERDAD: presencia garantizada desde wala_pedidos ──────
-    // Los pedidos VIVOS (pedidos + pedidos_web) ya están en `pedidos`. Ahora
-    // traemos SIEMPRE el espejo propio de WALA (wala_pedidos) y lo fusionamos por
-    // CLAVE DE NEGOCIO con los vivos. Reglas (decisión del dueño):
-    //   1) PRESENCIA: el listado INCLUYE SIEMPRE todos los wala_pedidos del usuario
-    //      (no solo cuando faltan en vivo): un pedido NUNCA desaparece de "Mis
-    //      Compras" porque su existencia la garantiza wala_pedidos.
-    //   2) ESTADO mostrado = el MÁS AVANZADO entre el doc VIVO del ERP (si existe)
-    //      y wala_pedidos.estadoWala. Para que la UI pueda decidir, ADJUNTAMOS el
-    //      estadoWala del espejo sobre el doc vivo correspondiente (campos aditivos
-    //      _walaEstado/_walaPagado); la precedencia "no degradar" la resuelve
-    //      derivarEstadoCompra (src/utils/estadoCompra.js). NO se recalcula ningún
-    //      monto ni se borra nada.
-    // Best-effort: getWalaMirrorOrders nunca lanza (devuelve [] ante error).
-    try {
-      if (Array.isArray(espejo) && espejo.length > 0) {
-        // Clave de negocio idéntica a adminOrders.js (dedup de "Recepción").
-        const claveDeNegocio = (p) =>
-          (p && (p.numeroPedido || p.portalPseudoOrderId || p.pedidoWebId || p.id)) || null;
-
-        // ¿el pedido vivo SIGUE siendo de WALA? (mismo criterio que esPedidoWala
-        // de usePedidos.js). IMPORTA porque usePedidos FILTRA la lista cruda por
-        // esPedidoWala ANTES de normalizar: un vivo ya desmarcado por el ERP
-        // (p.ej. web:false) NO sobrevive ese filtro, así que su espejo debe
-        // permanecer para garantizar la presencia del pedido.
-        const esWala = (p) =>
-          !!p &&
-          (p.canalVenta === 'Portal Web' ||
-            p.web === true ||
-            p.activador === 'portal_web' ||
-            p.vendedor === 'Portal Web');
-
-        // Índice de los docs VIVOS por clave de negocio. Si existe un vivo con la
-        // misma clave que un espejo, el vivo es el portador del ESTADO de
-        // producción del ERP y le adjuntamos el estadoWala del espejo.
-        const vivosPorClave = new Map();
-        pedidos.forEach((p) => {
-          const c = claveDeNegocio(p);
-          if (c && !vivosPorClave.has(c)) vivosPorClave.set(c, p);
-        });
-
-        // Para cada pedido del espejo:
-        //   - si hay un vivo-WALA con su clave → ADJUNTAMOS estadoWala/pagado al
-        //     vivo (no duplicamos; el vivo conserva su etapa de producción del ERP
-        //     y la UI elegirá el estado más avanzado entre ambos).
-        //   - si el vivo existe pero YA NO es WALA (desmarcado por el ERP) → además
-        //     de enriquecerlo, CONSERVAMOS el espejo (sobrevive al filtro esPedidoWala
-        //     de usePedidos) para no perder la presencia del pedido.
-        //   - si NO hay vivo → AGREGAMOS la copia espejo (presencia garantizada).
-        const clavesEspejoVistas = new Set();
-        espejo.forEach((m) => {
-          const c = claveDeNegocio(m);
-          const vivo = c ? vivosPorClave.get(c) : null;
-          if (vivo) {
-            // Enriquecemos el doc vivo con el estado propio de WALA (aditivo).
-            vivo._walaEstado = m.estadoWala ?? vivo._walaEstado ?? null;
-            vivo._walaPagado = m.pagado === true || vivo._walaPagado === true;
-            // El match con el espejo PRUEBA que es un pedido de WALA: lo marcamos
-            // para que SOBREVIVA el filtro esPedidoWala aunque el ERP le haya
-            // quitado los flags (web/canalVenta) al pasarlo a producción. Así el
-            // pedido conserva su ETAPA DE PRODUCCIÓN del ERP (no se degrada al
-            // estado grueso del espejo). El vivo representa el pedido: NO duplicamos.
-            vivo._esWalaMirror = true;
-            return;
-          }
-          // Sin vivo (el ERP ya no tiene el doc): agregamos la copia espejo para
-          // garantizar la presencia, marcada como WALA para que pase el filtro.
-          if (c && clavesEspejoVistas.has(c)) return;
-          if (c) clavesEspejoVistas.add(c);
-          m._esWalaMirror = true;
-          pedidos.push(m);
-        });
-      }
-    } catch (mirrorErr) {
-      // El espejo es best-effort: si falla la lectura, seguimos con los vivos.
-      console.warn('No se pudo leer el espejo wala_pedidos (best-effort):', mirrorErr?.message);
-    }
-
-    pedidos = sortPedidosByCreatedAt(pedidos);
+    const pedidos = fusionarVivosYEspejo(liveOrders, espejo);
     return { data: pedidos, error: null };
   } catch (error) {
     console.error('Error al buscar pedidos en ERP:', error);

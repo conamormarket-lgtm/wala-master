@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { signUpWithEmail, signInWithGoogle } from '../services/firebase/auth';
+import { signUpWithEmail, signInWithGoogle, enviarVerificacionCorreo } from '../services/firebase/auth';
 import { setDocument } from '../services/firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
@@ -97,6 +97,9 @@ const RegisterPage = () => {
       setError(getAuthErrorMessage(errorCode, err));
       return;
     }
+    // Correo de verificación (gratis, de Firebase). Con el correo verificado,
+    // los pedidos hechos con él aparecen solos en "Mis Pedidos". No se espera.
+    enviarVerificacionCorreo().catch(() => {});
     setStep(2);
   };
 

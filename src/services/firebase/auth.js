@@ -8,6 +8,7 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendEmailVerification,
   sendPasswordResetEmail as firebaseSendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, getFirebaseConfigMessage } from './config';
@@ -254,6 +255,44 @@ export const getCurrentUser = () => {
     return null;
   }
   return auth.currentUser;
+};
+
+/**
+ * Envía el correo de verificación de Firebase (gratis) a la cuenta actual.
+ * Verificar el correo es lo que permite ver en "Mis Pedidos" los pedidos hechos
+ * con ese correo (ver functions/misPedidosLogic.js). Al abrir el enlace vuelve
+ * a "Mis Pedidos".
+ */
+export const enviarVerificacionCorreo = async () => {
+  const actual = auth?.currentUser;
+  if (!actual) return { error: 'Inicia sesión primero.', errorCode: null };
+  if (actual.emailVerified) return { error: null, errorCode: null, yaVerificado: true };
+  try {
+    auth.languageCode = 'es';
+    await sendEmailVerification(actual, {
+      url: `${window.location.origin}/cuenta/pedidos`,
+    });
+    return { error: null, errorCode: null };
+  } catch (error) {
+    return { error: error.message, errorCode: error.code || null };
+  }
+};
+
+/**
+ * Relee la cuenta y renueva el token para que el servidor vea el correo como
+ * verificado justo después de abrir el enlace (sin cerrar sesión).
+ * @returns {Promise<boolean>} true si el correo ya está verificado.
+ */
+export const refrescarVerificacionCorreo = async () => {
+  const actual = auth?.currentUser;
+  if (!actual) return false;
+  try {
+    await actual.reload();
+    if (auth.currentUser?.emailVerified) await auth.currentUser.getIdToken(true);
+    return !!auth.currentUser?.emailVerified;
+  } catch (_) {
+    return false;
+  }
 };
 
 /**

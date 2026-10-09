@@ -1801,6 +1801,179 @@ exports.checkDniAvailableSecure = functions.https.onCall(async (data, context) =
 });
 
 // ════════════════════════════════════════════════════════════════════════════
+// MIS PEDIDOS — solo los pedidos que la cuenta demuestra que son suyos
+// ════════════════════════════════════════════════════════════════════════════
+// Antes el navegador buscaba los pedidos por el DNI del perfil, y ese DNI lo
+// escribe el propio usuario sin comprobarlo: registrándose con el DNI de un
+// comprador invitado se veían sus pedidos (nombre, dirección, teléfono…).
+// Ahora se buscan aquí y solo se devuelven completos los que la cuenta compró,
+// los de su correo VERIFICADO y los que vinculó con número de pedido + teléfono.
+// Lo que solo coincide por DNI va como resumen sin datos personales.
+// La lógica pura está en ./misPedidosLogic (tests en functions/test).
+const misPedidos = require("./misPedidosLogic");
+
+// Intentos de vínculo por cuenta (solo servidor; el cliente no lo lee).
+const VINCULO_INTENTOS_COLLECTION = "pedidos_vinculo_intentos";
+
+function requireCuentaReal(context) {
+  const uid = requireAuth(context);
+  // La sesión anónima del checkout de landings no es una cuenta: no tiene
+  // pedidos "propios" que listar ni puede vincular nada.
+  if (context.auth.token?.firebase?.sign_in_provider === "anonymous") {
+    throw new functions.https.HttpsError("permission-denied", "Inicia sesión con tu cuenta.");
+  }
+  return uid;
+}
+
+/** Lee el DNI y los vínculos del perfil (nunca del cliente). */
+async function leerCuentaPedidos(uid, token) {
+  const perfilSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+  const perfil = perfilSnap.exists ? perfilSnap.data() : {};
+  const vinculados = new Set();
+  for (const v of Array.isArray(perfil.pedidosVinculados) ? perfil.pedidosVinculados : []) {
+    if (v && v.ruta) vinculados.add(String(v.ruta));
+    if (v && v.clave) vinculados.add(`clave:${v.clave}`);
+  }
+  return {
+    uid,
+    email: misPedidos.normEmail(token?.email),
+    emailVerificado: token?.email_verified === true,
+    dniRaw: perfil.dni != null ? String(perfil.dni) : "",
+    dni: misPedidos.normDoc(perfil.dni),
+    vinculados,
+    vinculos: Array.isArray(perfil.pedidosVinculados) ? perfil.pedidosVinculados : [],
+  };
+}
+
+/**
+ * Todas las consultas EN PARALELO (antes el navegador encadenaba hasta ~9
+ * consultas una detrás de otra). Devuelve docs únicos por ruta.
+ */
+async function buscarPedidosDeCuenta(cuenta) {
+  const erpDb = getErpDb() || db;
+  const consultas = [];
+  const docs = new Map();
+  const guardar = (coleccion) => (snap) => {
+    snap.docs.forEach((d) => {
+      const ruta = `${coleccion}/${d.id}`;
+      if (!docs.has(ruta)) docs.set(ruta, { id: d.id, ...d.data(), _coleccion: coleccion });
+    });
+  };
+  const valoresDni = [...new Set([cuenta.dni, cuenta.dniRaw].filter(Boolean))];
+
+  for (const col of misPedidos.COLECCIONES_PEDIDOS) {
+    const ref = erpDb.collection(col);
+    consultas.push(ref.where("buyerUid", "==", cuenta.uid).get().then(guardar(col)));
+    if (col !== "wala_pedidos") {
+      consultas.push(ref.where("userId", "==", cuenta.uid).get().then(guardar(col)));
+    }
+    if (valoresDni.length) {
+      consultas.push(ref.where("clienteNumeroDocumento", "in", valoresDni).get().then(guardar(col)));
+      consultas.push(ref.where("dni", "in", valoresDni).get().then(guardar(col)));
+    }
+    // Correo verificado: trae también pedidos hechos con otro DNI (o sin DNI).
+    if (cuenta.email && cuenta.emailVerificado && col !== "wala_pedidos") {
+      for (const campo of misPedidos.CAMPOS_CORREO) {
+        consultas.push(ref.where(campo, "==", cuenta.email).get().then(guardar(col)));
+      }
+    }
+  }
+  for (const v of cuenta.vinculos) {
+    const [col, id] = String(v?.ruta || "").split("/");
+    if (misPedidos.COLECCIONES_PEDIDOS.includes(col) && id) {
+      consultas.push(
+        erpDb.collection(col).doc(id).get().then((d) => {
+          if (d.exists) guardar(col)({ docs: [d] });
+        })
+      );
+    }
+  }
+
+  // Una consulta que falle (índice, permisos del ERP…) no tumba las demás.
+  const resultados = await Promise.allSettled(consultas);
+  resultados
+    .filter((r) => r.status === "rejected")
+    .forEach((r) => console.warn("misPedidosSecure: consulta fallida:", r.reason?.message));
+  return [...docs.values()];
+}
+
+exports.misPedidosSecure = functions
+  .runWith({ memory: "512MB" })
+  .https.onCall(async (data, context) => {
+    // Despertador: la tienda lo llama al abrir la cuenta para que la primera
+    // carga real no espere el arranque en frío.
+    if (data?.ping) return { ok: true };
+    const uid = requireCuentaReal(context);
+    try {
+      const cuenta = await leerCuentaPedidos(uid, context.auth.token);
+      const encontrados = await buscarPedidosDeCuenta(cuenta);
+      const { visibles, pendientes } = misPedidos.clasificarPedidos(encontrados, cuenta);
+      return {
+        pedidos: visibles.map((p) => misPedidos.serializarParaCliente(p)),
+        pendientes,
+        emailVerificado: cuenta.emailVerificado,
+      };
+    } catch (err) {
+      console.error("misPedidosSecure error:", err);
+      throw new functions.https.HttpsError("internal", "No se pudieron cargar tus pedidos.");
+    }
+  });
+
+/**
+ * Vincula a la cuenta un pedido que coincide por DNI, probando que se conoce:
+ * número de pedido + teléfono con el que se hizo. Máx. 5 intentos por hora.
+ */
+exports.vincularPedidoSecure = functions.https.onCall(async (data, context) => {
+  const uid = requireCuentaReal(context);
+  const ref = String(data?.ref || "");
+  const [col, id] = ref.split("/");
+  if (!misPedidos.COLECCIONES_PEDIDOS.includes(col) || !id || ref.split("/").length !== 2) {
+    throw new functions.https.HttpsError("invalid-argument", "Pedido no válido.");
+  }
+
+  // Límite de intentos ANTES de mirar el pedido (no da pistas por tiempo).
+  const intentosRef = db.collection(VINCULO_INTENTOS_COLLECTION).doc(uid);
+  const veredicto = await db.runTransaction(async (t) => {
+    const snap = await t.get(intentosRef);
+    const r = misPedidos.evaluarIntentos(snap.exists ? snap.data() : null, Date.now());
+    t.set(intentosRef, r.siguiente);
+    return r;
+  });
+  if (!veredicto.permitido) {
+    const minutos = Math.max(1, Math.ceil((veredicto.esperaMs || 0) / 60000));
+    throw new functions.https.HttpsError(
+      "resource-exhausted",
+      `Demasiados intentos. Vuelve a intentarlo en ${minutos} min.`
+    );
+  }
+
+  const cuenta = await leerCuentaPedidos(uid, context.auth.token);
+  const erpDb = getErpDb() || db;
+  const snap = await erpDb.collection(col).doc(id).get();
+  const pedido = snap.exists ? { id: snap.id, ...snap.data(), _coleccion: col } : null;
+  // Solo pedidos con el MISMO documento del perfil: no sirve para "reclamar"
+  // pedidos de cualquiera adivinando números.
+  const dniPedido = misPedidos.normDoc(pedido?.clienteNumeroDocumento || pedido?.dni);
+  const mismoDni = !!cuenta.dni && dniPedido === cuenta.dni;
+  if (!pedido || !mismoDni || !misPedidos.pruebaDeVinculo(pedido, data || {})) {
+    // Mismo mensaje en todos los casos: no revela si el pedido existe.
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "El número de pedido o el teléfono no coinciden con este pedido."
+    );
+  }
+
+  const clave = misPedidos.claveDeNegocio(pedido);
+  await db.collection(PORTAL_USERS_COLLECTION).doc(uid).set(
+    {
+      pedidosVinculados: FieldValue.arrayUnion({ ruta: ref, ...(clave ? { clave: String(clave) } : {}) }),
+    },
+    { merge: true }
+  );
+  return { ok: true };
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 // ECONOMÍA SERVER-AUTHORITATIVE (Fase 0, H-06)
 // Todo earn/spend de monedas/kapiCoins se hace aquí, transaccional e idempotente.
 // El cliente solo invoca estas callables; nunca escribe campos de saldo (las reglas

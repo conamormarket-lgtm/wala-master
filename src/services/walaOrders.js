@@ -442,7 +442,7 @@ export function estadoWalaADisplay(estadoWala) {
  * (misma que searchOrdersByDniInERP entrega: doc crudo del ERP con `id` y nombres
  * de campo ERP que luego pasa por normalizarPedidoParaVista). Marca _fromMirror.
  */
-function normalizarEspejoParaVista(docId, data) {
+export function normalizarEspejoParaVista(docId, data) {
   const d = data && typeof data === 'object' ? data : {};
   return {
     id: docId,
