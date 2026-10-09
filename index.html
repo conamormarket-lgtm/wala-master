@@ -39,10 +39,14 @@
     </script>
     <meta name="description" content="Walá - Tienda de prendas personalizadas. Personaliza y compra tus prendas favoritas." />
     <link rel="manifest" href="/manifest.json" />
-    <!-- 192 px basta para pestana y pantalla de inicio. Antes apuntaban al
-         logo de 1080x1080 (279 KB), que el navegador se descargaba en CADA
-         carga solo para pintar un icono de 16 px. -->
-    <link rel="icon" type="image/png" href="/logo-wala-192.png" />
+    <!-- Icono de la PESTAÑA: círculo violeta con solo la etiqueta (sin "WALÁ":
+         el nombre ya lo dice la pestaña y a 16-32 px el texto emborronaba el
+         icono). .ico con 16/32/48 para cualquier navegador + PNG de 32 y 192.
+         La pantalla de inicio del celular (apple-touch-icon) sigue con el logo
+         completo, que a ese tamaño sí se lee. -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/pestana/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/pestana/favicon-192.png" />
     <link rel="apple-touch-icon" href="/logo-wala-192.png" />
 
     <!-- Preconnect crítico: fuentes UI y Firebase -->
