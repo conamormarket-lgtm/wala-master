@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,7 @@ import CountrySelect from '../components/intl/CountrySelect';
 import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import { dialCodeByCountry } from '../constants/countries';
 import { detectCountry } from '../services/geo';
+import { esperarCumpleGoogle } from '../services/firebase/auth';
 import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/documentTypes';
 import styles from './CompleteProfilePage.module.css';
 import { T } from '../i18n/useTranslatedText';
@@ -70,23 +71,34 @@ const CompleteProfilePage = () => {
       if (tipoGuardado && tipoGuardado !== 'OTRO') setTipoDoc(tipoGuardado);
       const telGuardado = userProfile.phoneIntl?.localNumber || userProfile.phone || '';
       if (telGuardado) setPhone(String(telGuardado));
-      // Precarga el cumpleaños: prioridad al del perfil; si no, al importado de
-      // Google (lo guardó el login en localStorage) para confirmarlo aquí.
-      if (userProfile.birthDate) {
-        setBirthDate(userProfile.birthDate);
-      } else {
-        try {
-          const g = typeof localStorage !== 'undefined'
-            ? localStorage.getItem('wala_google_birthday') : null;
-          if (g) {
-            setBirthDate(g);
-            setBirthFromGoogle(true);
-            localStorage.removeItem('wala_google_birthday');
-          }
-        } catch (_) { /* el cumpleaños es opcional */ }
-      }
+      // Precarga el cumpleaños: prioridad al del perfil. Si no, el de Google
+      // se coloca en el efecto de abajo (puede llegar unos instantes después).
+      if (userProfile.birthDate) setBirthDate(userProfile.birthDate);
     }
   }, [user, userProfile, authLoading, navigate]);
+
+  // Cumpleaños de Google: el login lo pide a Google SIN esperar, así que puede
+  // llegar después de que se pinte este formulario. Antes se leía una sola vez
+  // al montar y, como aún no estaba, el campo salía vacío aunque la persona
+  // acabara de dar permiso para leerlo. Nunca pisa lo que ya escribió.
+  const tieneCumplePerfil = !!userProfile?.birthDate;
+  const birthDateRef = useRef(birthDate);
+  birthDateRef.current = birthDate;
+  useEffect(() => {
+    if (!user || tieneCumplePerfil) return undefined;
+    let activo = true;
+    esperarCumpleGoogle().then((g) => {
+      if (!activo || !g || birthDateRef.current) return;
+      setBirthDate(g);
+      setBirthFromGoogle(true);
+      try { localStorage.removeItem('wala_google_birthday'); } catch (_) { /* opcional */ }
+    });
+    return () => { activo = false; };
+  }, [user, tieneCumplePerfil]);
+
+  // El nombre que trae Google se muestra como ya completado, para que se note
+  // que no hay que volver a escribirlo (solo confirmarlo).
+  const nombreDeGoogle = !!user?.displayName && fullName.trim() === user.displayName.trim();
 
   // Validación ESTRICTA peruana solo si country === 'PE'.
   const docValid = isPE
@@ -261,6 +273,9 @@ const CompleteProfilePage = () => {
                 disabled={loading}
                 placeholder="Ej. Juan Pérez"
               />
+              {nombreDeGoogle && (
+                <span className={styles.fieldHint}><T>Lo tomamos de tu cuenta de Google.</T></span>
+              )}
             </div>
             {isPE ? (
               <div className={styles.formGroup}>

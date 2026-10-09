@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Bell, Check, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, BellRing, Check, X } from 'lucide-react';
 import { tiempoRelativo } from '../../../utils/tiempoRelativo';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../../contexts/NotificationsContext';
@@ -21,7 +21,8 @@ const haceCuanto = (createdAt) => {
 };
 
 const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, className = '' }) => {
-  const { notifications, unreadCount, markAllAsRead, abrirNotificacion, requestPermission } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, abrirNotificacion, requestPermission, puedeActivarAvisos } = useNotifications();
+  const [activando, setActivando] = useState(false);
   const navigate = useNavigate();
 
   // Tocar una notificación la marca como leída y, si trae link (oferta,
@@ -34,11 +35,16 @@ const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, classNa
     }
   };
 
-  useEffect(() => {
-    // Pedir permiso al montar el componente si el usuario está logueado
-    requestPermission();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // El permiso de notificaciones ya NO se pide al montar (salía el cartel del
+  // navegador de la nada). Se pide aquí, cuando la persona toca el botón.
+  const activarAvisos = async () => {
+    setActivando(true);
+    try {
+      await requestPermission();
+    } finally {
+      setActivando(false);
+    }
+  };
 
   return (
     <div className={`${styles.accountDropdownContainer} ${isOpen ? styles.activeDropdown : ''} ${isBlocked ? styles.forceHideHover : ''} ${className}`}>
@@ -85,6 +91,18 @@ const NotificationTray = ({ isOpen = false, isBlocked = false, onToggle, classNa
               </button>
             </div>
           </div>
+
+          {puedeActivarAvisos && (
+            <div className={styles.notifActivar}>
+              <BellRing size={18} strokeWidth={1.75} aria-hidden="true" className={styles.notifActivarIcono} />
+              <p className={styles.notifActivarTexto}>
+                <T>Activa los avisos y te contamos cuando tu pedido avance o haya una oferta para ti.</T>
+              </p>
+              <button type="button" className={styles.notifActivarBtn} onClick={activarAvisos} disabled={activando}>
+                {activando ? <T>Activando…</T> : <T>Activar avisos</T>}
+              </button>
+            </div>
+          )}
 
           {notifications.length === 0 ? (
             <div className={styles.notifEmpty}>

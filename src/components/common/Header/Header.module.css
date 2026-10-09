@@ -2538,3 +2538,57 @@
 @media (prefers-reduced-motion: reduce) {
   .menuCargandoIcono { animation: none; }
 }
+
+/* "Activar avisos" dentro del panel de la campana. El permiso del navegador se
+   pide solo al tocar este botón (antes salía solo al iniciar sesión). */
+.notifActivar {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 0.65rem;
+  align-items: start;
+  margin: 0.25rem 0.75rem 0.5rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.notifActivarIcono {
+  color: #8b5cf6;
+  margin-top: 0.1rem;
+}
+
+.notifActivarTexto {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: var(--color-text, var(--gris-texto-principal));
+}
+
+.notifActivarBtn {
+  grid-column: 2;
+  justify-self: start;
+  min-height: 36px;
+  padding: 0.45rem 0.95rem;
+  border: 0;
+  border-radius: 8px;
+  background-color: #8b5cf6;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notifActivarBtn:hover:not(:disabled) {
+  background-color: #7c3aed;
+}
+
+.notifActivarBtn:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.notifActivarBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

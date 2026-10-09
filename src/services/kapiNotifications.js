@@ -1,14 +1,18 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
 
 export const scheduleKapiNotifications = async (userProfile) => {
   if (!userProfile) return;
-  
+  // Solo en la app. En la web, el plugin usa la API de notificaciones del
+  // navegador: pedía el permiso "Permitir notificaciones" al cargar el perfil
+  // (de la nada) y además no puede programar avisos con la página cerrada.
+  if (!Capacitor.isNativePlatform()) return;
+
   try {
+    // Nunca se pide el permiso desde aquí: lo concede la persona con
+    // "Activar avisos" (campana). Sin permiso, no se programa nada.
     const permStatus = await LocalNotifications.checkPermissions();
-    if (permStatus.display !== 'granted') {
-      const requested = await LocalNotifications.requestPermissions();
-      if (requested.display !== 'granted') return;
-    }
+    if (permStatus.display !== 'granted') return;
 
     // Cancel previous Kapi notifications (IDs 10 to 19)
     const pending = await LocalNotifications.getPending();

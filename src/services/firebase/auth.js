@@ -54,15 +54,45 @@ const fetchGoogleBirthday = async (accessToken) => {
   }
 };
 
+// Lectura del cumpleaños en curso. La sesión de Google queda iniciada ANTES de
+// que la People API responda, y la app salta a "Completar perfil" en ese mismo
+// instante: el formulario se pintaba con el cumpleaños vacío aunque la persona
+// acabara de dar permiso para leerlo. "Completar perfil" espera esta promesa.
+let cumpleGooglePendiente = null;
+
 // Guarda (best-effort) el cumpleaños de Google en localStorage para precargarlo
 // luego en "completar perfil". Silencioso ante cualquier error.
-const guardarCumpleGoogle = async (accessToken) => {
-  try {
-    const bday = await fetchGoogleBirthday(accessToken);
-    if (bday && typeof localStorage !== 'undefined') {
-      localStorage.setItem('wala_google_birthday', bday);
+const guardarCumpleGoogle = (accessToken) => {
+  cumpleGooglePendiente = (async () => {
+    try {
+      const bday = await fetchGoogleBirthday(accessToken);
+      if (bday && typeof localStorage !== 'undefined') {
+        localStorage.setItem('wala_google_birthday', bday);
+      }
+      return bday || null;
+    } catch (_) {
+      return null; // el cumpleaños es opcional
     }
-  } catch (_) { /* el cumpleaños es opcional */ }
+  })();
+  return cumpleGooglePendiente;
+};
+
+/**
+ * Cumpleaños traído de Google en el último inicio de sesión ('YYYY-MM-DD') o
+ * null. Si la lectura sigue en curso, espera a que termine (máx. 6 s).
+ */
+export const esperarCumpleGoogle = async () => {
+  const guardado = () => {
+    try {
+      return typeof localStorage !== 'undefined' ? localStorage.getItem('wala_google_birthday') : null;
+    } catch (_) {
+      return null;
+    }
+  };
+  if (!cumpleGooglePendiente) return guardado();
+  const tope = new Promise((resolve) => setTimeout(() => resolve(null), 6000));
+  const bday = await Promise.race([cumpleGooglePendiente, tope]);
+  return bday || guardado();
 };
 
 // Verificar si Firebase Auth está disponible
@@ -161,8 +191,9 @@ export const signInWithGoogle = async () => {
       const idToken = googleUser.authentication.idToken;
       const credential = GoogleAuthProvider.credential(idToken);
       const result = await signInWithCredential(auth, credential);
-      // Best-effort: cumpleaños desde People API con el accessToken nativo.
-      try { await guardarCumpleGoogle(googleUser.authentication?.accessToken); } catch (_) {}
+      // Best-effort y SIN esperar: cumpleaños desde People API con el accessToken
+      // nativo. "Completar perfil" lo recoge con esperarCumpleGoogle().
+      guardarCumpleGoogle(googleUser.authentication?.accessToken);
       return { user: result.user, error: null, errorCode: null, credential: null };
     } catch (error) {
       // El usuario canceló el selector de cuentas — no es un error real
@@ -194,11 +225,11 @@ export const signInWithGoogle = async () => {
     } finally {
       cierre.limpiar();
     }
-    // Best-effort: leer el cumpleaños desde la People API (gratis) y guardarlo
-    // para precargarlo en "completar perfil". Nunca rompe el login.
+    // Best-effort y SIN esperar: leer el cumpleaños desde la People API (gratis)
+    // para precargarlo en "completar perfil" (lo recoge esperarCumpleGoogle()).
+    // Antes se esperaba aquí: el login con Google tardaba una petición más.
     try {
-      const accessToken = GoogleAuthProvider.credentialFromResult(result)?.accessToken;
-      await guardarCumpleGoogle(accessToken);
+      guardarCumpleGoogle(GoogleAuthProvider.credentialFromResult(result)?.accessToken);
     } catch (_) { /* el cumpleaños es opcional */ }
     return { user: result.user, error: null, errorCode: null, credential: null };
   } catch (error) {

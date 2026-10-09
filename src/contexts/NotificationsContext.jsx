@@ -51,19 +51,32 @@ export const useNotifications = () => {
 export const NotificationsProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  // ¿Se puede ofrecer "Activar avisos"? Solo si el permiso nunca se decidió.
+  // El panel de la campana muestra el botón; el permiso se pide al tocarlo.
+  const [puedeActivarAvisos, setPuedeActivarAvisos] = useState(false);
   const { user } = useAuth() || { user: null };
 
-  const setupPushNotifications = useCallback(async (uid) => {
+  // Registra el dispositivo para push. El permiso del sistema SOLO se pide si
+  // `pedirPermiso` es true, es decir, cuando la persona tocó "Activar avisos".
+  // Antes se pedía solo al iniciar sesión (y en cada carga mientras siguiera
+  // sin decidir): el cartel "Permitir notificaciones" salía de la nada, sin
+  // contexto, y la gente lo bloqueaba. Si ya está concedido, se registra en
+  // silencio como siempre.
+  const setupPushNotifications = useCallback(async (uid, { pedirPermiso = false } = {}) => {
     if (Capacitor.isNativePlatform()) {
       // Movil: Capacitor Push Notifications
       let permStatus = await PushNotifications.checkPermissions();
 
-      if (permStatus.receive === 'prompt') {
+      if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
+        if (!pedirPermiso) {
+          setPuedeActivarAvisos(true);
+          return;
+        }
         permStatus = await PushNotifications.requestPermissions();
       }
+      setPuedeActivarAvisos(false);
 
       if (permStatus.receive !== 'granted') {
-        console.warn('User denied push notification permissions');
         return;
       }
 
@@ -114,8 +127,13 @@ export const NotificationsProvider = ({ children }) => {
         // tras un rechazo. Si ya está 'granted', seguimos directo a obtener el token.
         let permission = Notification.permission;
         if (permission === 'default') {
+          if (!pedirPermiso) {
+            setPuedeActivarAvisos(true);
+            return;
+          }
           permission = await Notification.requestPermission();
         }
+        setPuedeActivarAvisos(false);
         if (permission === 'granted') {
           // Sin VAPID propia se usa la de Firebase por defecto (antes se pasaba
           // 'TU_VAPID_KEY' y el token nunca se generaba: no había push web).
@@ -214,8 +232,10 @@ export const NotificationsProvider = ({ children }) => {
     notifications.filter((n) => !n.read).forEach((n) => markAsRead(n.id));
   }, [user, notifications, markAsRead]);
 
+  // Solo desde un toque de la persona (botón "Activar avisos").
   const requestPermission = useCallback(() => {
-    if (user) setupPushNotifications(user.uid);
+    if (user) return setupPushNotifications(user.uid, { pedirPermiso: true });
+    return Promise.resolve();
   }, [user, setupPushNotifications]);
 
   const value = {
@@ -225,6 +245,7 @@ export const NotificationsProvider = ({ children }) => {
     markAllAsRead,
     abrirNotificacion,
     requestPermission,
+    puedeActivarAvisos,
   };
 
   return (
