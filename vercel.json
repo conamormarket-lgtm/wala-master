@@ -35,7 +35,7 @@
   ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/((?!__/).*)",
       "headers": [
         {
           "key": "Cross-Origin-Opener-Policy",
