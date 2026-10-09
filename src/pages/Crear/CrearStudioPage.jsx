@@ -12,6 +12,7 @@ import { useCart } from '../../contexts/CartContext';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getPrendaBase } from '../../services/prendasBase';
 import { getDesignById, saveDesign, guardarTallaCreacion } from '../../services/designs';
+import { obtenerDisenoComunidad, registrarUsoComunidad } from '../../services/comunidad';
 import {
   prepararImagenCliente, subirImagenCliente, subirArchivoImpresion, subirVistaPrevia, recortarImagen,
 } from '../../services/crearArchivos';
@@ -136,6 +137,9 @@ const CrearStudioPage = () => {
   const { addToCart } = useCart();
   const toast = useGlobalToast();
   const designIdParam = searchParams.get('designId');
+  // Diseño de la comunidad de punto de partida (/crear/:id?plantilla=X): se
+  // abre como un diseño nuevo y al guardarlo es una creación propia.
+  const plantillaParam = searchParams.get('plantilla');
 
   const { data: prenda, isLoading, error } = useQuery({
     queryKey: ['prenda-base', id],
@@ -237,6 +241,8 @@ const CrearStudioPage = () => {
   // Lo del borrador va en refs: el autoguardado corre fuera del render (y
   // puede terminar después de salir del estudio).
   const designIdRef = useRef(designIdParam || null);
+  // De qué diseño de la comunidad partió (se guarda en la creación nueva).
+  const basadoEnRef = useRef(null);
   const esBorradorRef = useRef(false);
   const guardandoRef = useRef(false);
   const colaBorradorRef = useRef(Promise.resolve());
@@ -454,10 +460,30 @@ const CrearStudioPage = () => {
           sessionStorage.removeItem(claveBorrador(id));
         }
       } catch { /* sin borrador */ }
+      if (plantillaParam && !designIdRef.current) {
+        basadoEnRef.current = plantillaParam;
+        // Volviendo de iniciar sesión (o al recargar) sigue lo que ya cambió.
+        if (borrador) return aplicar(borrador);
+        let plantilla = null;
+        try {
+          plantilla = await obtenerDisenoComunidad(plantillaParam);
+        } catch { /* sin red: se empieza de cero */ }
+        if (cancelado) return undefined;
+        if (plantilla && plantilla.productId === id) {
+          const capas = plantilla.layersByView || {};
+          const colorPlantilla = cfg.colores.find((c) => c.id === plantilla.color?.id || c.nombre === plantilla.color?.nombre);
+          const primeraZona = Object.keys(capas)[0];
+          const vistaDeZona = vistasDelColor(cfg.vistas, colorPlantilla).find((v) => v.zonas.some((z) => z.id === primeraZona));
+          setNombre(plantilla.nombre || '');
+          return aplicar({ capasPorZona: capas, vistaId: vistaDeZona?.id, zonaId: primeraZona, colorId: colorPlantilla?.id });
+        }
+        basadoEnRef.current = null;
+        toast.info('Ese diseño ya no está disponible. Puedes empezar desde cero.');
+      }
       return aplicar(borrador);
     })();
     return () => { cancelado = true; };
-  }, [cfgPrenda, listo, authLoading, designIdParam, user, id]);
+  }, [cfgPrenda, listo, authLoading, designIdParam, plantillaParam, user, id]);
 
   // Las fuentes del selector se cargan en segundo plano para la vista previa.
   useEffect(() => { FUENTES.forEach((f) => { asegurarFuente(f); }); }, []);
@@ -1869,6 +1895,7 @@ const CrearStudioPage = () => {
         estado: 'borrador',
         color: datosColor(),
         miniatura,
+        ...(!designIdRef.current && basadoEnRef.current && { basadoEn: basadoEnRef.current }),
       };
       // La lista de borradores se ve al día al instante (por si el cliente
       // ya retrocedió), sin esperar a que Firestore termine.
@@ -1879,6 +1906,7 @@ const CrearStudioPage = () => {
       ponerBorradorEnCache(queryClient, user.uid, { id: guardadoId || designIdRef.current, userId: user.uid, ...datos });
       queryClient.invalidateQueries({ queryKey: ['mis-borradores-crear'], refetchType: 'all' });
       if (!designIdRef.current && guardadoId) {
+        if (basadoEnRef.current) registrarUsoComunidad(basadoEnRef.current);
         designIdRef.current = guardadoId;
         esBorradorRef.current = true;
         if (montadoRef.current) {
@@ -1945,10 +1973,12 @@ const CrearStudioPage = () => {
       previewUrl: archivos.imagenConjunta,
       color: datosColor(),
       ...archivos,
+      ...(!designIdActual && basadoEnRef.current && { basadoEn: basadoEnRef.current }),
     };
     const { id: guardadoId, error: err } = await saveDesign(user.uid, creacion);
     if (err) throw new Error(err);
     const idFinal = guardadoId || designIdActual;
+    if (!designIdActual && basadoEnRef.current) registrarUsoComunidad(basadoEnRef.current);
     designIdRef.current = idFinal;
     esBorradorRef.current = false;
     setDesignId(idFinal);

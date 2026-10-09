@@ -12,6 +12,7 @@ import { useTranslatedHtml } from '../../i18n/useTranslatedText';
 import { itemDeCreacion, creacionLista } from './creacionCarrito';
 import { useEliminarCreacion } from './useEliminarCreacion';
 import NombreEditable from './NombreEditable';
+import AccionesComunidad, { InsigniaPublicada, usePuedePublicar } from '../Comunidad/AccionesComunidad';
 import { fechaDeCreacion } from '../cuenta/components/MiCreacionCard';
 import styles from './CreacionPage.module.css';
 
@@ -121,6 +122,7 @@ const CreacionPage = () => {
     },
   });
   const esMia = creacion && creacion.userId === user?.uid && creacion.tipo === 'crear';
+  const puedePublicar = usePuedePublicar(creacion);
 
   const { data: prenda, isLoading: cargandoPrenda } = useQuery({
     queryKey: ['prenda-base', creacion?.productId],
@@ -410,6 +412,13 @@ const CreacionPage = () => {
             <summary>Sobre la prenda</summary>
             <div className={styles.textoRico} dangerouslySetInnerHTML={{ __html: descripcionPrenda }} />
           </details>
+        )}
+
+        {puedePublicar && (
+          <div className={styles.comunidad}>
+            <InsigniaPublicada design={creacion} />
+            <AccionesComunidad design={creacion} />
+          </div>
         )}
 
         <button type="button" className={styles.eliminar} onClick={() => pedirEliminar(creacion)}>

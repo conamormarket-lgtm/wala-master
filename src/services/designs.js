@@ -106,7 +106,7 @@ export const getDesignById = async (designId) => {
 export const saveDesign = async (userId, payload) => {
   if (!userId) return { id: null, error: 'Usuario no autenticado' };
 
-  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color, archivosImpresion, vistasPrevias, imagenConjunta, estado, miniatura } = payload || {};
+  const { designId, productId, productName, layers, layersByView, variant, name, comboItemCustomization, isUserComboDesign, tipo, previewUrl, color, archivosImpresion, vistasPrevias, imagenConjunta, estado, miniatura, basadoEn } = payload || {};
 
   // Formar una vista estandar del root layersByView (hacia atrás para compatibilidad)
   const sanitizedLayersByView = sanitizeLayersByViewMap(layersByView);
@@ -154,6 +154,8 @@ export const saveDesign = async (userId, payload) => {
       ...(Array.isArray(archivosImpresion) && { archivosImpresion }),
       ...(Array.isArray(vistasPrevias) && { vistasPrevias }),
       ...(imagenConjunta && { imagenConjunta }),
+      // Diseño de la comunidad del que partió (comunidad_disenos/{id}).
+      ...(typeof basadoEn === 'string' && basadoEn && { basadoEn }),
     } : {}),
   };
 

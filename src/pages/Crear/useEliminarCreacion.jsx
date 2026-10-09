@@ -77,6 +77,9 @@ export const useEliminarCreacion = ({ alEliminar } = {}) => {
             : 'Se borra para siempre junto con sus imágenes. No se puede deshacer.'}
         </p>
         {enCarrito.length > 0 && <p>También se quitará de tu carrito.</p>}
+        {pendiente.diseno.comunidad === 'publicada' && (
+          <p>Está publicada en la comunidad: la publicación seguirá ahí. Para quitarla, retírala antes.</p>
+        )}
         <button type="button" className={styles.eliminar} onClick={confirmar} disabled={borrando}>
           {borrando
             ? <><Loader2 size={18} className={styles.girando} aria-hidden="true" /> Eliminando…</>

@@ -11,6 +11,7 @@ import { useEliminarCreacion } from './Crear/useEliminarCreacion';
 import TusBorradores, { useBorradoresCrear } from './Crear/TusBorradores';
 import FilaCarrusel from './Crear/FilaCarrusel';
 import MiCreacionCard, { fechaDeCreacion } from './cuenta/components/MiCreacionCard';
+import TarjetaComunidad, { useComunidad } from './Comunidad/TarjetaComunidad';
 import styles from './PersonalizarPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -119,11 +120,37 @@ const TusCreaciones = ({ uid }) => {
   );
 };
 
+/**
+ * Diseños de la comunidad (los publica Walá): para empezar desde uno ya
+ * hecho en vez de desde cero. Se ven también sin iniciar sesión.
+ */
+const DisenosComunidad = () => {
+  const { data: disenos = [] } = useComunidad();
+  if (!disenos.length) return null;
+  return (
+    <section className={styles.seccion} aria-label="Diseños de la comunidad">
+      <div className={styles.seccionCabecera}>
+        <div>
+          <h2 className={styles.seccionTitulo}><T>Diseños de la comunidad</T></h2>
+          <p className={styles.seccionAyuda}><T>Elige uno y hazlo tuyo.</T></p>
+        </div>
+        <Link to="/comunidad" className={styles.verTodas}>
+          <T>Ver todos</T>{disenos.length > 1 ? ` (${disenos.length})` : ''} <ArrowRight size={16} aria-hidden="true" />
+        </Link>
+      </div>
+      <FilaCarrusel>
+        {disenos.slice(0, 8).map((d) => <TarjetaComunidad key={d.id} diseno={d} />)}
+      </FilaCarrusel>
+    </section>
+  );
+};
+
 const PersonalizarPage = () => {
   // El admin ve también los borradores, para revisarlos antes de publicarlos.
   const { isAdmin, user } = useAuth();
   const { data: creaciones = [] } = useCreacionesCrear(user?.uid);
   const { data: borradores = [] } = useBorradoresCrear(user?.uid);
+  const { data: comunidad = [] } = useComunidad();
   const { data: prendas = [], isLoading } = useQuery({
     queryKey: ['prendas-base', Boolean(isAdmin)],
     queryFn: async () => {
@@ -174,7 +201,8 @@ const PersonalizarPage = () => {
 
       {user && <TusBorradores uid={user.uid} />}
       {user && <TusCreaciones uid={user.uid} />}
-      {(creaciones.length > 0 || borradores.length > 0) && (
+      <DisenosComunidad />
+      {(creaciones.length > 0 || borradores.length > 0 || comunidad.length > 0) && (
         <div className={styles.seccionCabecera}>
           <div>
             <h2 className={styles.seccionTitulo}><T>Empieza una nueva</T></h2>

@@ -856,3 +856,11 @@
     border-top-color: var(--color-border);
   }
 }
+
+/* Admin: publicar la creación en Diseños de la comunidad. */
+.comunidad {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}

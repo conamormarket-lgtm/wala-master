@@ -4334,6 +4334,15 @@ exports.cancelPromoCampaign = require('./notificationsEngine').cancelPromoCampai
 exports.aggregateAnalyticsDaily = require('./analyticsDaily').aggregateAnalyticsDaily;
 exports.aggregateAnalyticsDailyBackfill = require('./analyticsDaily').aggregateAnalyticsDailyBackfill;
 
+// ── Diseños de la comunidad ───────────────────────────────────────────────────
+// Los admins publican creaciones suyas; cualquiera las ve (sin sesión) y las
+// usa de plantilla en el estudio. Ver ./comunidad.js y ./comunidadLogic.js.
+exports.publicarEnComunidad = require('./comunidad').publicarEnComunidad;
+exports.retirarDeComunidad = require('./comunidad').retirarDeComunidad;
+exports.listarComunidad = require('./comunidad').listarComunidad;
+exports.obtenerDisenoComunidad = require('./comunidad').obtenerDisenoComunidad;
+exports.registrarUsoComunidad = require('./comunidad').registrarUsoComunidad;
+
 // ════════════════════════════════════════════════════════════════════════════
 // PAGOS USD / TIPO DE CAMBIO Y WEBHOOK DE CULQI (Fase 0 — economía)
 // Aditivo: no altera el flujo de éxito existente de Culqi/PayPal. Solo añade

@@ -13,6 +13,7 @@ import OptimizedImage from '../../../components/common/OptimizedImage/OptimizedI
 import styles from '../MisCreacionesPage.module.css';
 import estilosEliminar from '../../Crear/EliminarCreacion.module.css';
 import NombreEditable from '../../Crear/NombreEditable';
+import AccionesComunidad, { InsigniaPublicada } from '../../Comunidad/AccionesComunidad';
 
 /**
  * Milisegundos del último guardado de una creación, o null.
@@ -73,7 +74,7 @@ export const MiCreacionCardSkeleton = () => (
   </li>
 );
 
-const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
+const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado, onComunidad }) => {
   // El estudio vuelve aquí con su flecha (ver CrearStudioPage `volverA`).
   const { pathname } = useLocation();
   const { data: productResponse, isLoading } = useQuery({
@@ -209,6 +210,7 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
             </span>
           )}
           {noDisponible && <span className={styles.insigniaNoDisponible}>Ya no disponible</span>}
+          <InsigniaPublicada design={design} />
         </div>
 
         {lados.length > 0 && (
@@ -284,6 +286,9 @@ const MiCreacionCard = ({ design, isPurchased, onEliminar, onRenombrado }) => {
             </div>
           )}
         </div>
+        {esDeCrear && !noDisponible && (
+          <AccionesComunidad design={design} onCambio={(estado) => onComunidad?.(design.id, estado)} />
+        )}
       </div>
     </li>
   );
