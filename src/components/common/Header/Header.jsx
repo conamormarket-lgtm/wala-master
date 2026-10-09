@@ -129,7 +129,18 @@ const Header = () => {
     };
   }, [monedaLista]);
   const saldoCargando = authLoading || !userProfile || !!userProfile._perfilNoCargado;
-  const monedasCargando = saldoCargando || !monedaLista;
+  // Tope de espera: el indicador nunca se queda para siempre. A los 4 s se
+  // muestra la píldora igual; si el saldo aún no llegó, con "–" (no un "0"
+  // falso) y el número aparece solo en cuanto llegue.
+  const [esperaAgotada, setEsperaAgotada] = useState(false);
+  const uidMonedas = user?.uid || null;
+  useEffect(() => {
+    setEsperaAgotada(false);
+    if (!uidMonedas) return undefined;
+    const t = setTimeout(() => setEsperaAgotada(true), 4000);
+    return () => clearTimeout(t);
+  }, [uidMonedas]);
+  const monedasCargando = !esperaAgotada && (saldoCargando || !monedaLista);
   // Fundido solo al aparecer tras la carga (no en cada rebote de monedas).
   const [monedasRecienListas, setMonedasRecienListas] = useState(false);
   const huboCargaMonedas = useRef(false);
@@ -868,7 +879,7 @@ const Header = () => {
                     </div>
                   ) : (
                     <div className={`${styles.coinsDisplay} ${monedasRecienListas ? styles.coinsAparece : ''} ${isCoinBouncing ? styles.bounce : ''}`}>
-                      <Moneda size={18} />{Math.floor(displayCoins)}
+                      <Moneda size={18} />{saldoCargando ? '–' : Math.floor(displayCoins)}
                     </div>
                   )}
                   {/* Antes era una sola oración corrida ("Tus monedas - 1
