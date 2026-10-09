@@ -931,3 +931,49 @@
     grid-column: 1 / -1;
   }
 }
+
+/* Zonas de los bicolores: pestañas "Todos los bicolores" y una por color. */
+.pestanasBicolor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pestanaBicolor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--gris-borde);
+  background: var(--blanco);
+  color: var(--gris-texto-principal);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pestanaBicolor small {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--primary-light, #ede9fe);
+  color: var(--primary-color, #7c3aed);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.pestanaBicolorActiva {
+  border-color: var(--primary-color, #7c3aed);
+  background: var(--primary-light, #ede9fe);
+  color: var(--primary-color, #7c3aed);
+}
+
+.puntoPestana {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}

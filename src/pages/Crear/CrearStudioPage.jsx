@@ -159,9 +159,9 @@ const CrearStudioPage = () => {
 
   const [vistaId, setVistaId] = useState(null);
   const [colorId, setColorId] = useState(null);
-  // La prenda vista con el color elegido: en un bicolor las zonas van en su
-  // posición de bicolor (vistasDelColor). Así el lienzo, las zonas punteadas
-  // y las vistas previas las ubican sobre su foto sin tocar nada más.
+  // La prenda vista con el color elegido: cada vista con las zonas de ese
+  // color (los bicolores pueden tener las suyas, ver zonasDeVista). Así el
+  // lienzo, las zonas punteadas y las vistas previas usan las correctas.
   const cfg = useMemo(() => {
     if (!cfgPrenda) return null;
     const elegido = cfgPrenda.colores.find((c) => c.id === colorId)
@@ -404,11 +404,13 @@ const CrearStudioPage = () => {
       capasRef.current = capas;
       setCapasPorZona(capas);
       firmaBorradorRef.current = JSON.stringify({ capas: capasParaGuardar(capas), colorId: estado?.colorId, talla: estado?.talla || '' });
-      const vistaInicial = cfg.vistas.find((v) => v.id === estado?.vistaId) || cfg.vistas[0];
-      setVistaId(vistaInicial?.id);
-      setZonaId(vistaInicial?.zonas.some((z) => z.id === estado?.zonaId) ? estado.zonaId : vistaInicial?.zonas[0]?.id);
       const principal = cfg.colores.find((c) => c.id === prenda?.defaultVariantId) || cfg.colores[0];
       const colorInicial = cfg.colores.some((c) => c.id === estado?.colorId) ? estado.colorId : principal?.id;
+      // Las zonas son las de ese color (un bicolor puede tener otras).
+      const vistasIniciales = vistasDelColor(cfg.vistas, cfg.colores.find((c) => c.id === colorInicial));
+      const vistaInicial = vistasIniciales.find((v) => v.id === estado?.vistaId) || vistasIniciales[0];
+      setVistaId(vistaInicial?.id);
+      setZonaId(vistaInicial?.zonas.some((z) => z.id === estado?.zonaId) ? estado.zonaId : vistaInicial?.zonas[0]?.id);
       const tallaInicial = cfg.tallas.includes(estado?.talla) ? estado.talla : '';
       setColorId(colorInicial);
       setTalla(tallaInicial);
@@ -426,7 +428,7 @@ const CrearStudioPage = () => {
           setEsBorrador(deBorrador);
           const colorGuardado = cfg.colores.find((c) => c.nombre === diseno.variant?.color || c.id === diseno.color?.id);
           const primeraZona = Object.keys(diseno.layersByView || {})[0];
-          const vistaDeZona = cfg.vistas.find((v) => v.zonas.some((z) => z.id === primeraZona));
+          const vistaDeZona = vistasDelColor(cfg.vistas, colorGuardado).find((v) => v.zonas.some((z) => z.id === primeraZona));
           if (!deBorrador) setNombre(diseno.name || '');
           return aplicar({
             capasPorZona: diseno.layersByView || {},
@@ -1668,6 +1670,33 @@ const CrearStudioPage = () => {
       cambio = true;
       return { ...capa, color: letra };
     })]));
+
+    // Un bicolor puede tener otras zonas (costura al medio). Lo que estaba en
+    // una zona que el nuevo color no tiene pasa a la de igual nombre en el
+    // mismo lado o, si no hay, a la primera de ese lado: no se pierde nada.
+    const vistasNuevas = vistasDelColor(cfgPrenda.vistas, c);
+    const idsNuevos = new Set(listarZonas(vistasNuevas).map((z) => z.id));
+    const zonasAntes = listarZonas(cfg.vistas);
+    const movidas = [];
+    Object.keys(next).forEach((zId) => {
+      if (idsNuevos.has(zId) || !next[zId]?.length) return;
+      const antes = zonasAntes.find((z) => z.id === zId);
+      const lado = vistasNuevas.find((v) => v.id === antes?.vistaId) || vistasNuevas[0];
+      const destino = lado?.zonas.find((z) => z.nombre === antes?.nombre) || lado?.zonas[0];
+      if (!destino) return;
+      next[destino.id] = [...(next[destino.id] || []), ...next[zId]];
+      delete next[zId];
+      cambio = true;
+      if (antes && antes.nombre !== destino.nombre) movidas.push(`${antes.nombre} → ${destino.nombre}`);
+    });
+    const ladoActual = vistasNuevas.find((v) => v.id === vistaId);
+    if (ladoActual && !ladoActual.zonas.some((z) => z.id === zonaId)) setZonaId(ladoActual.zonas[0]?.id || null);
+    if (movidas.length) {
+      fabricRef.current?.discardActiveObject();
+      setSeleccionId(null);
+      toast.info(`${c.nombre} tiene otras zonas de impresión: tu diseño pasó de ${movidas.join(', ')}.`);
+    }
+
     if (!cambio) return;
     capasRef.current = next;
     setCapasPorZona(next);

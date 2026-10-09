@@ -15,8 +15,13 @@
  *   prendaBase: {
  *     vistas:  [{ id, nombre, imagen,
  *                 zonas: [{ id, nombre, x, y, w, proporcion, angulo }],
- *                 zonasBicolor: { [zonaId]: { x, y } } }],
- *     colores: { [variantId]: { hex2, patron, fotos: { [vistaId]: url } } },
+ *                 zonasBicolor: [zonas] }],
+ *     colores: { [variantId]: { hex2, patron, fotos: { [vistaId]: url },
+ *                               zonas: { [vistaId]: [zonas] } } },
+ *
+ * Los bicolores llevan una costura al medio, así que pueden tener sus propias
+ * zonas (zonasDeVista): las de ese color, si tiene; si no, las de todos los
+ * bicolores de esa vista; si no, las de la prenda.
  *   }
  *
  * Cada vista (frente, espalda) tiene sus zonas de impresión (pecho, mangas,
@@ -132,7 +137,7 @@ export const normalizarVista = (vista, i = 0) => {
   const referencia = normalizarReferencia(vista?.referencia);
   const anchoImg = num(vista?.anchoImg, 0);
   const altoImg = num(vista?.altoImg, 0);
-  const zonasBicolor = limpiarZonasBicolor(vista?.zonasBicolor, zonas);
+  const zonasBicolor = leerZonasBicolor(vista?.zonasBicolor, zonas);
   return {
     id,
     nombre,
@@ -145,37 +150,46 @@ export const normalizarVista = (vista, i = 0) => {
 };
 
 /**
- * Posición de las zonas en los bicolores. Sus fotos son otras y la prenda
- * real también: la misma zona (mismo tamaño en cm) cae en otro lugar. Es un
- * solo juego para todos los bicolores de la prenda, por vista y por zona;
- * la zona que no lo tiene queda donde está en la prenda normal. Solo se
- * guardan las zonas que existen.
+ * Zonas de todos los bicolores de una vista (lista de zonas, como `zonas`).
+ * Acepta también el formato anterior, que solo movía las zonas de la prenda
+ * ({ [zonaId]: { x, y } }).
  */
-const limpiarZonasBicolor = (crudo, zonas) => {
+const leerZonasBicolor = (crudo, zonas) => {
+  if (Array.isArray(crudo)) return crudo.length ? crudo.map(normalizarZona) : null;
+  if (!crudo || typeof crudo !== 'object') return null;
+  const movidas = zonas.filter((z) => crudo[z.id]);
+  if (!movidas.length) return null;
+  return zonas.map((z) => {
+    const p = crudo[z.id];
+    return p ? normalizarZona({ ...z, x: p.x, y: p.y }) : z;
+  });
+};
+
+/** Zonas propias de un color: { [vistaId]: [zonas] }, solo las que tienen alguna. */
+const leerZonasDeColor = (crudo) => {
   if (!crudo || typeof crudo !== 'object') return null;
   const out = {};
-  zonas.forEach((z) => {
-    const p = crudo[z.id];
-    if (p && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y))) {
-      out[z.id] = { x: limitar(Number(p.x), -0.5, 1), y: limitar(Number(p.y), -0.5, 1) };
-    }
+  Object.entries(crudo).forEach(([vistaId, zonas]) => {
+    if (Array.isArray(zonas) && zonas.length) out[vistaId] = zonas.map(normalizarZona);
   });
   return Object.keys(out).length ? out : null;
 };
 
-/** Zonas de una vista para los bicolores: con su posición propia, si la tienen. */
-export const zonasParaBicolor = (vista) => vista.zonas.map((z) => {
-  const p = vista.zonasBicolor?.[z.id];
-  return p ? { ...z, x: p.x, y: p.y } : z;
-});
-
 /**
- * Las vistas como se ven con un color: en un bicolor, con las zonas en su
- * posición de bicolor; en los demás, tal cual.
+ * Las zonas de una vista con un color: las propias del color, si tiene; si
+ * es bicolor, las de todos los bicolores, si hay; si no, las de la prenda.
  */
-export const vistasDelColor = (vistas, color) => (color?.hex2
-  ? vistas.map((v) => (v.zonasBicolor ? { ...v, zonas: zonasParaBicolor(v) } : v))
-  : vistas);
+export const zonasDeVista = (vista, color) => {
+  if (color?.zonas?.[vista.id]?.length) return color.zonas[vista.id];
+  if (color?.hex2 && vista.zonasBicolor?.length) return vista.zonasBicolor;
+  return vista.zonas;
+};
+
+/** Las vistas como se ven con un color (cada una con sus zonas, ver zonasDeVista). */
+export const vistasDelColor = (vistas, color) => vistas.map((v) => {
+  const zonas = zonasDeVista(v, color);
+  return zonas === v.zonas ? v : { ...v, zonas };
+});
 
 /**
  * Medida de referencia de una vista (solo la ve el admin): una línea sobre la
@@ -269,6 +283,7 @@ export const normalizarColor = (color, i = 0) => ({
   hex2: esHex(color?.hex2) ? color.hex2.toUpperCase() : '',
   patron: patronDe(color),
   fotos: limpiarFotos(color?.fotos),
+  ...(leerZonasDeColor(color?.zonas) && { zonas: leerZonasDeColor(color?.zonas) }),
   tallas: (Array.isArray(color?.tallas) ? color.tallas : []).map((t) => String(t || '').trim()).filter(Boolean),
 });
 
@@ -300,6 +315,7 @@ export const leerPrendaBase = (producto) => {
       hex: v.colorHex,
       hex2: extra[v.id]?.hex2,
       patron: extra[v.id]?.patron,
+      zonas: extra[v.id]?.zonas,
       fotos: extra[v.id]?.fotos,
       tallas: v.sizes,
     }, i));

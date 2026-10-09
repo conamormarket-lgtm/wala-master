@@ -4,7 +4,7 @@ import { uploadFile } from '../../../services/firebase/storage';
 import {
   leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
   nuevoIdZona, slug, cargarImagen, tintarImagen,
-  colorDisponible, fondoMuestra, PATRONES_BICOLOR, zonasParaBicolor, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
+  colorDisponible, fondoMuestra, PATRONES_BICOLOR, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
 } from '../../../utils/prendaBase';
 import ZonaEditor from './ZonaEditor';
 import styles from './PersonalizacionPrenda.module.css';
@@ -21,7 +21,19 @@ export const prendaBaseParaGuardar = (valor, variantes) => {
   Object.entries(valor?.colores || {}).forEach(([id, c]) => {
     if (!ids.has(id)) return;
     const fotos = Object.fromEntries(Object.entries(c?.fotos || {}).filter(([, url]) => url));
-    if (c?.hex2 || Object.keys(fotos).length) colores[id] = { ...(c.hex2 ? { hex2: c.hex2 } : {}), ...(c.hex2 && c.patron ? { patron: c.patron } : {}), fotos };
+    // Zonas propias del color, por vista (solo las vistas que tienen alguna).
+    const zonas = Object.fromEntries(Object.entries(c?.zonas || {})
+      .filter(([, lista]) => Array.isArray(lista) && lista.length)
+      .map(([vistaId, lista]) => [vistaId, lista.map(normalizarZona)]));
+    const conZonas = Object.keys(zonas).length > 0;
+    if (c?.hex2 || Object.keys(fotos).length || conZonas) {
+      colores[id] = {
+        ...(c.hex2 ? { hex2: c.hex2 } : {}),
+        ...(c.hex2 && c.patron ? { patron: c.patron } : {}),
+        fotos,
+        ...(conZonas ? { zonas } : {}),
+      };
+    }
   });
   return { vistas: (valor?.vistas || []).map(normalizarVista), colores };
 };
@@ -83,6 +95,78 @@ const MiniaturaColor = ({ imagen, hex, nombre }) => {
 };
 
 /**
+ * Lista de zonas de una vista (nombre, medida en cm si hay escala, giro,
+ * quitar y agregar). La usan las zonas de la prenda, las de todos los
+ * bicolores y las propias de un color: cada una le pasa sus zonas y cómo
+ * guardarlas.
+ */
+const ListaZonas = ({ idLista, zonas, escala, elegida, onElegir, onCambiar, onZonas }) => (
+  <>
+    <datalist id={idLista}>
+      {ZONAS_SUGERIDAS.map((n) => <option key={n} value={n} />)}
+    </datalist>
+    {zonas.map((z, zi) => {
+      const zn = normalizarZona(z, zi);
+      const cm = medidaZona(zn, escala);
+      const fijarCm = (anchoCm, altoCm) => {
+        const nueva = zonaConMedida(zn, escala, anchoCm, altoCm);
+        onCambiar(zi, { ...z, w: nueva.w, proporcion: nueva.proporcion });
+      };
+      return (
+        <div
+          key={z.id || zi}
+          className={`${styles.zonaFila} ${cm ? styles.zonaFilaCm : ''} ${elegida === zi ? styles.zonaFilaActiva : ''}`}
+          onFocus={() => onElegir(zi)}
+        >
+          <label className={styles.campo}>
+            <span>Zona</span>
+            <input list={idLista} value={z.nombre} onChange={(e) => onCambiar(zi, { ...z, nombre: e.target.value })} />
+          </label>
+          {cm && (
+            <>
+              <label className={styles.campo}>
+                <span>Ancho cm</span>
+                <CampoCm valor={cm.anchoCm} onFijar={(n) => fijarCm(n, cm.altoCm)} etiqueta={`Ancho de ${z.nombre} en cm`} />
+              </label>
+              <label className={styles.campo}>
+                <span>Alto cm</span>
+                <CampoCm valor={cm.altoCm} onFijar={(n) => fijarCm(cm.anchoCm, n)} etiqueta={`Alto de ${z.nombre} en cm`} />
+              </label>
+            </>
+          )}
+          <label className={styles.campo}>
+            <span>Giro °</span>
+            <input type="number" min="-180" max="180" step="1" value={z.angulo} onChange={(e) => onCambiar(zi, { ...z, angulo: e.target.value })} />
+          </label>
+          <button
+            type="button"
+            className={styles.iconoPeligro}
+            onClick={() => {
+              onZonas(zonas.filter((_, k) => k !== zi));
+              onElegir(0);
+            }}
+            aria-label={`Quitar zona ${z.nombre}`}
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+      );
+    })}
+    {!zonas.length && <p className={styles.ayuda}>Esta vista aún no tiene zonas.</p>}
+    <button
+      type="button"
+      className={styles.botonSecundario}
+      onClick={() => {
+        onZonas([...zonas, normalizarZona({ id: nuevoIdZona(), nombre: `Zona ${zonas.length + 1}`, x: 0.4, y: 0.4, w: 0.2, proporcion: 1 })]);
+        onElegir(zonas.length);
+      }}
+    >
+      <Plus size={16} aria-hidden="true" /> Agregar zona
+    </button>
+  </>
+);
+
+/**
  * Apartado "Producto personalizable" del formulario de productos.
  *
  * Los colores y tallas NO se cargan aquí: son las variantes del producto. Aquí
@@ -95,6 +179,7 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
   const [zonaElegida, setZonaElegida] = useState({});
   const [zonaBicolorElegida, setZonaBicolorElegida] = useState({});
   const [bicolorPrevio, setBicolorPrevio] = useState(null);
+  const [objetivoBicolor, setObjetivoBicolor] = useState(null);
   // Las zonas se editan tal como se escriben (un "-" a medio tipear no puede
   // volverse 0); se normalizan al dibujarlas y al guardar.
   const vistas = (valor?.vistas || []).map((v, i) => (Array.isArray(v?.zonas)
@@ -286,68 +371,15 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                       </>
                     )}
                   </div>
-                  <datalist id={`zonas-sugeridas-${i}`}>
-                    {ZONAS_SUGERIDAS.map((n) => <option key={n} value={n} />)}
-                  </datalist>
-                  {v.zonas.map((z, zi) => {
-                    const escalaV = { referencia: normalizarReferencia(v.referencia), anchoImg: v.anchoImg, altoImg: v.altoImg };
-                    const zn = normalizarZona(z, zi);
-                    const cm = medidaZona(zn, escalaV);
-                    const fijarCm = (anchoCm, altoCm) => {
-                      const nueva = zonaConMedida(zn, escalaV, anchoCm, altoCm);
-                      setZona(i, zi, { ...z, w: nueva.w, proporcion: nueva.proporcion });
-                    };
-                    return (
-                    <div
-                      key={z.id}
-                      className={`${styles.zonaFila} ${cm ? styles.zonaFilaCm : ''} ${(zonaElegida[v.id] ?? 0) === zi ? styles.zonaFilaActiva : ''}`}
-                      onFocus={() => setZonaElegida((m) => ({ ...m, [v.id]: zi }))}
-                    >
-                      <label className={styles.campo}>
-                        <span>Zona</span>
-                        <input list={`zonas-sugeridas-${i}`} value={z.nombre} onChange={(e) => setZona(i, zi, { ...z, nombre: e.target.value })} />
-                      </label>
-                      {cm && (
-                        <>
-                          <label className={styles.campo}>
-                            <span>Ancho cm</span>
-                            <CampoCm valor={cm.anchoCm} onFijar={(n) => fijarCm(n, cm.altoCm)} etiqueta={`Ancho de ${z.nombre} en cm`} />
-                          </label>
-                          <label className={styles.campo}>
-                            <span>Alto cm</span>
-                            <CampoCm valor={cm.altoCm} onFijar={(n) => fijarCm(cm.anchoCm, n)} etiqueta={`Alto de ${z.nombre} en cm`} />
-                          </label>
-                        </>
-                      )}
-                      <label className={styles.campo}>
-                        <span>Giro °</span>
-                        <input type="number" min="-180" max="180" step="1" value={z.angulo} onChange={(e) => setZona(i, zi, { ...z, angulo: e.target.value })} />
-                      </label>
-                      <button
-                        type="button"
-                        className={styles.iconoPeligro}
-                        onClick={() => {
-                          setVista(i, { zonas: v.zonas.filter((_, k) => k !== zi) });
-                          setZonaElegida((m) => ({ ...m, [v.id]: 0 }));
-                        }}
-                        aria-label={`Quitar zona ${z.nombre}`}
-                      >
-                        <X size={16} aria-hidden="true" />
-                      </button>
-                    </div>
-                    );
-                  })}
-                  {!v.zonas.length && <p className={styles.ayuda}>Esta vista aún no tiene zonas.</p>}
-                  <button
-                    type="button"
-                    className={styles.botonSecundario}
-                    onClick={() => {
-                      setVista(i, { zonas: [...v.zonas, normalizarZona({ id: nuevoIdZona(), nombre: `Zona ${v.zonas.length + 1}`, x: 0.4, y: 0.4, w: 0.2, proporcion: 1 })] });
-                      setZonaElegida((m) => ({ ...m, [v.id]: v.zonas.length }));
-                    }}
-                  >
-                    <Plus size={16} aria-hidden="true" /> Agregar zona
-                  </button>
+                  <ListaZonas
+                    idLista={`zonas-sugeridas-${i}`}
+                    zonas={v.zonas}
+                    escala={{ referencia: normalizarReferencia(v.referencia), anchoImg: v.anchoImg, altoImg: v.altoImg }}
+                    elegida={zonaElegida[v.id] ?? 0}
+                    onElegir={(zi) => setZonaElegida((m) => ({ ...m, [v.id]: zi }))}
+                    onCambiar={(zi, zona) => setZona(i, zi, zona)}
+                    onZonas={(zonas) => setVista(i, { zonas })}
+                  />
                   <small className={styles.ayuda}>
                     Las zonas son de referencia: arrástralas para ubicarlas y estíralas desde sus bordes (a lo ancho, a lo alto o desde la esquina). El cliente elige en cuál va cada imagen o texto.
                   </small>
@@ -475,29 +507,61 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
         )}
       </section>
 
-      {/* Un solo juego de posiciones para todos los bicolores (ver
-          zonasBicolor en utils/prendaBase.js): mismo tamaño, otro lugar. */}
+      {/* Zonas de los bicolores (costura al medio): un juego para todos los
+          bicolores de cada vista y, si hace falta, uno propio por color. Ver
+          zonasDeVista en utils/prendaBase.js. */}
       {vistas.length > 0 && colores.some((c) => c.hex2) && (() => {
         const bicolores = colores.filter((c) => c.hex2);
-        const bicolor = bicolores.find((c) => c.id === bicolorPrevio) || bicolores[0];
+        const objetivo = bicolores.find((c) => c.id === objetivoBicolor) || null; // null = todos
+        const conFoto = (vistaId) => bicolores.find((c) => c.id === bicolorPrevio && c.fotos[vistaId])
+          || bicolores.find((c) => c.fotos[vistaId]);
+        const copiar = (zonas) => zonas.map((z) => ({ ...z }));
         return (
           <section className={styles.bloque}>
             <div className={styles.bloqueCabecera}>
-              <h3 className={styles.bloqueTitulo}>Zonas en los bicolores</h3>
+              <h3 className={styles.bloqueTitulo}>Zonas de los bicolores</h3>
             </div>
             <p className={styles.ayuda}>
-              En los bicolores la prenda es otra y las zonas caen en otro lugar. Arrástralas sobre la foto del bicolor
-              hasta donde van: el tamaño es el mismo de la prenda normal. Vale para <strong>todos los bicolores</strong>;
-              usa los botones de color para revisar que queden bien en cada uno.
+              Los bicolores tienen una costura al medio, así que pueden llevar <strong>otras zonas</strong> (por ejemplo,
+              un pecho a cada lado de la costura). Arma unas para <strong>todos los bicolores</strong> y, si alguno es
+              distinto, dale las suyas. El que no tiene zonas propias usa las de todos los bicolores, y si tampoco hay,
+              las de la prenda normal. Las zonas que copias conservan su nombre, así un diseño que ya estaba ahí no se
+              mueve.
             </p>
-            {bicolores.length > 1 && (
+            <div className={styles.pestanasBicolor} role="tablist" aria-label="Zonas de">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!objetivo}
+                className={`${styles.pestanaBicolor} ${!objetivo ? styles.pestanaBicolorActiva : ''}`}
+                onClick={() => setObjetivoBicolor(null)}
+              >
+                Todos los bicolores
+              </button>
+              {bicolores.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={objetivo?.id === c.id}
+                  className={`${styles.pestanaBicolor} ${objetivo?.id === c.id ? styles.pestanaBicolorActiva : ''}`}
+                  onClick={() => setObjetivoBicolor(c.id)}
+                >
+                  <span className={styles.puntoPestana} style={{ background: fondoMuestra(c) }} aria-hidden="true" />
+                  {c.nombre}
+                  {c.zonas && <small>propias</small>}
+                </button>
+              ))}
+            </div>
+
+            {!objetivo && bicolores.length > 1 && (
               <div className={styles.previoColor}>
-                <span>Ver en:</span>
+                <span>Ver sobre la foto de:</span>
                 {bicolores.map((c) => (
                   <button
                     key={c.id}
                     type="button"
-                    className={`${styles.punto} ${bicolor.id === c.id ? styles.puntoActivo : ''}`}
+                    className={`${styles.punto} ${(bicolorPrevio || bicolores[0].id) === c.id ? styles.puntoActivo : ''}`}
                     style={{ background: fondoMuestra(c) }}
                     title={c.nombre}
                     aria-label={c.nombre}
@@ -506,42 +570,97 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
                 ))}
               </div>
             )}
+
             <div className={styles.vistas}>
               {vistas.map((v, i) => {
                 const normal = normalizarVista(v, i);
-                const zonas = zonasParaBicolor(normal);
-                const foto = bicolor.fotos[normal.id];
+                const escala = { referencia: normalizarReferencia(v.referencia), anchoImg: v.anchoImg, altoImg: v.altoImg };
+                const deTodos = Array.isArray(v.zonasBicolor) ? v.zonasBicolor : normal.zonasBicolor;
+                const propias = objetivo ? extras[objetivo.id]?.zonas?.[normal.id] : null;
+                const editando = objetivo ? propias : deTodos;
+                const guardar = (zonas) => {
+                  const lista = zonas && zonas.length ? zonas : null;
+                  if (!objetivo) {
+                    setVista(i, { zonasBicolor: lista });
+                    return;
+                  }
+                  cambiar((prev) => {
+                    const actual = prev.colores[objetivo.id] || { fotos: {} };
+                    const zonasColor = { ...(actual.zonas || {}) };
+                    if (lista) zonasColor[normal.id] = lista;
+                    else delete zonasColor[normal.id];
+                    return { colores: { ...prev.colores, [objetivo.id]: { ...actual, zonas: zonasColor } } };
+                  });
+                };
+                // Lo que usa hoy, si no tiene las suyas (para verlo y copiarlo).
+                const heredadas = objetivo ? (deTodos?.length ? deTodos : normal.zonas) : normal.zonas;
+                const foto = objetivo ? objetivo.fotos[normal.id] : conFoto(normal.id)?.fotos[normal.id];
+                const clave = `${objetivo?.id || 'todos'}:${normal.id}`;
                 return (
                   <div key={normal.id} className={styles.vista}>
                     <div className={styles.vistaCabecera}>
                       <strong>{normal.nombre}</strong>
-                      {normal.zonasBicolor && (
+                      {editando?.length > 0 && (
                         <button
                           type="button"
                           className={styles.botonMini}
-                          onClick={() => setVista(i, { zonasBicolor: null })}
-                          title="Las zonas vuelven a caer donde están en la prenda normal"
+                          onClick={() => {
+                            const aviso = objetivo
+                              ? `¿Quitar las zonas propias de ${objetivo.nombre} en ${normal.nombre}? Usará las de todos los bicolores.`
+                              : `¿Quitar las zonas de los bicolores en ${normal.nombre}? Usarán las de la prenda normal.`;
+                            if (window.confirm(aviso)) guardar(null);
+                          }}
                         >
-                          Usar las de la prenda normal
+                          {objetivo ? 'Usar las de todos los bicolores' : 'Usar las de la prenda normal'}
                         </button>
                       )}
                     </div>
-                    <div className={styles.vistaFoto}>
-                      {foto ? (
-                        <ZonaEditor
-                          imagen={foto}
-                          zonas={zonas}
-                          seleccionada={zonaBicolorElegida[normal.id] ?? 0}
-                          colorHex="#FFFFFF"
-                          soloMover
-                          onSeleccionar={(zi) => setZonaBicolorElegida((m) => ({ ...m, [normal.id]: zi }))}
-                          onChange={(zi, zona) => setVista(i, {
-                            zonasBicolor: { ...(normal.zonasBicolor || {}), [zonas[zi].id]: { x: zona.x, y: zona.y } },
-                          })}
-                        />
-                      ) : (
-                        <div className={styles.zonaVacia}>Sube la foto de {bicolor.nombre} en esta vista (arriba) para ubicar sus zonas.</div>
-                      )}
+                    <div className={styles.vistaCuerpo}>
+                      <div className={styles.vistaFoto}>
+                        {foto ? (
+                          <ZonaEditor
+                            imagen={foto}
+                            zonas={editando?.length ? editando : heredadas}
+                            seleccionada={zonaBicolorElegida[clave] ?? 0}
+                            colorHex="#FFFFFF"
+                            soloMover={!editando?.length}
+                            onSeleccionar={(zi) => setZonaBicolorElegida((m) => ({ ...m, [clave]: zi }))}
+                            onChange={(zi, zona) => {
+                              if (editando?.length) guardar(editando.map((z, k) => (k === zi ? zona : z)));
+                            }}
+                          />
+                        ) : (
+                          <div className={styles.zonaVacia}>
+                            Sube la foto de {objetivo?.nombre || 'un bicolor'} en esta vista (en Colores y tallas) para ver sus zonas.
+                          </div>
+                        )}
+                      </div>
+                      <div className={styles.zonasLista}>
+                        {editando?.length ? (
+                          <ListaZonas
+                            idLista={`zonas-bicolor-${clave}`}
+                            zonas={editando}
+                            escala={escala}
+                            elegida={zonaBicolorElegida[clave] ?? 0}
+                            onElegir={(zi) => setZonaBicolorElegida((m) => ({ ...m, [clave]: zi }))}
+                            onCambiar={(zi, zona) => guardar(editando.map((z, k) => (k === zi ? zona : z)))}
+                            onZonas={guardar}
+                          />
+                        ) : (
+                          <>
+                            <p className={styles.ayuda}>
+                              {objetivo
+                                ? `${objetivo.nombre} usa ${deTodos?.length ? 'las zonas de todos los bicolores' : 'las zonas de la prenda normal'} en esta vista (se ven en la foto).`
+                                : 'Los bicolores usan las zonas de la prenda normal en esta vista (se ven en la foto).'}
+                            </p>
+                            <button type="button" className={styles.botonSecundario} onClick={() => guardar(copiar(heredadas))}>
+                              <Plus size={16} aria-hidden="true" />
+                              {objetivo ? `Darle zonas propias a ${objetivo.nombre}` : 'Crear zonas para los bicolores'}
+                            </button>
+                            <small className={styles.ayuda}>Empieza con una copia de las de ahora; después las cambias, quitas o agregas.</small>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

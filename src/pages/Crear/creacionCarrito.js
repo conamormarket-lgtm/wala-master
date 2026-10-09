@@ -1,4 +1,4 @@
-import { leerPrendaBase, listarZonas, precioPersonalizado } from '../../utils/prendaBase';
+import { leerPrendaBase, listarZonas, precioPersonalizado, vistasDelColor } from '../../utils/prendaBase';
 
 /**
  * Arma lo que addToCart necesita para una creación del apartado Crear: la
@@ -11,12 +11,14 @@ import { leerPrendaBase, listarZonas, precioPersonalizado } from '../../utils/pr
  * mismo formato recién generado en el estudio.
  */
 export const itemDeCreacion = ({ prenda, creacion, talla }) => {
-  const { vistas } = leerPrendaBase(prenda);
-  const zonasPrenda = listarZonas(vistas);
+  const { vistas, colores } = leerPrendaBase(prenda);
   const capas = creacion.layersByView || {};
   const usadas = Object.keys(capas).filter((zId) => Array.isArray(capas[zId]) && capas[zId].length);
   const vistasPrevias = creacion.vistasPrevias || [];
   const color = creacion.color || { nombre: creacion.variant?.color || '' };
+  // Las zonas del color de la creación (un bicolor puede tener las suyas).
+  const colorPrenda = colores.find((c) => (color.id && c.id === color.id) || c.nombre === color.nombre);
+  const zonasPrenda = listarZonas(vistasDelColor(vistas, colorPrenda));
   const imagen = vistasPrevias[0]?.url || creacion.previewUrl || prenda.mainImage || '';
 
   return [
