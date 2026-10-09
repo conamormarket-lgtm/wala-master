@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { signUpWithEmail, signInWithGoogle, enviarVerificacionCorreo } from '../services/firebase/auth';
+import { registrarConversionPopup } from '../services/popups';
 import { setDocument } from '../services/firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
@@ -100,6 +101,8 @@ const RegisterPage = () => {
     // Correo de verificación (gratis, de Firebase). Con el correo verificado,
     // los pedidos hechos con él aparecen solos en "Mis Pedidos". No se espera.
     enviarVerificacionCorreo().catch(() => {});
+    // Si llegó desde un popup "Crear una cuenta", esto es su conversión.
+    registrarConversionPopup('registro', { email: email.trim().toLowerCase() });
     setStep(2);
   };
 
@@ -170,7 +173,10 @@ const RegisterPage = () => {
     if (loading) return;
     setError(null);
     setLoading(true);
-    const { error: err, errorCode, user: usuarioGoogle } = await signInWithGoogle();
+    const { error: err, errorCode, user: usuarioGoogle, esNuevo } = await signInWithGoogle();
+    if (esNuevo && usuarioGoogle) {
+      registrarConversionPopup('registro', { uid: usuarioGoogle.uid, email: usuarioGoogle.email });
+    }
     setLoading(false);
     // Cerrar la ventana de Google no es un error: solo se deja de cargar.
     if (err && errorCode !== 'auth/popup-closed-by-user' && errorCode !== 'auth/cancelled-popup-request') {

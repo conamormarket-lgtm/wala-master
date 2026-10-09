@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { signInWithEmail, signInWithGoogle } from '../services/firebase/auth';
+import { registrarConversionPopup } from '../services/popups';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthErrorMessage } from '../utils/authErrorMessages';
 import { shouldPromptSurvey } from '../utils/surveyHelper';
@@ -68,7 +69,12 @@ const LoginPage = () => {
     setError(null);
     setLoading(true);
 
-    const { error: err, errorCode } = await signInWithGoogle();
+    const { error: err, errorCode, user: usuarioGoogle, esNuevo } = await signInWithGoogle();
+    // Con Google, "iniciar sesión" también crea la cuenta si no existía:
+    // si vino de un popup "Crear una cuenta", cuenta como su conversión.
+    if (esNuevo && usuarioGoogle) {
+      registrarConversionPopup('registro', { uid: usuarioGoogle.uid, email: usuarioGoogle.email });
+    }
     // Cerrar la ventana de Google no es un error: solo se deja de cargar.
     if (err && errorCode !== 'auth/popup-closed-by-user' && errorCode !== 'auth/cancelled-popup-request') {
       setError(getAuthErrorMessage(errorCode, err));

@@ -131,7 +131,7 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
   const esImagen = form.formato === 'imagen';
   const valido = form.titulo.trim()
     && (esImagen ? form.imagenUrl.trim() : form.botonTexto.trim())
-    && (form.objetivo === 'encuesta' || form.botonUrl.trim());
+    && (form.objetivo === 'encuesta' || form.objetivo === 'registro' || form.botonUrl.trim());
 
   return (
     <form className={styles.editor} onSubmit={enviar}>
@@ -191,7 +191,9 @@ const Editor = ({ inicial, idsExistentes, onGuardar, onCancelar, guardando }) =>
           label={esImagen ? '¿A dónde lleva?' : '¿Qué hace el botón?'}
           ayuda={form.objetivo === 'encuesta'
             ? 'Lleva a la encuesta (o a iniciar sesión si no la tiene). No se muestra a quien ya la llenó, y completarla cuenta como conversión.'
-            : 'Lleva al enlace que pongas. Puede ser una página de la tienda (/ofertas) o un enlace externo.'}
+            : form.objetivo === 'registro'
+              ? 'Lleva a crear una cuenta. Nunca se muestra a quien ya inició sesión, y crear la cuenta (con correo o con Google) cuenta como conversión.'
+              : 'Lleva al enlace que pongas. Puede ser una página de la tienda (/ofertas) o un enlace externo.'}
         >
           <Select campo="objetivo" value={form.objetivo} onChange={set('objetivo')} />
         </Campo>

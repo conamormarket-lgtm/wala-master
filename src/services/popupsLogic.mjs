@@ -39,6 +39,7 @@ export const OPCIONES = {
   ],
   objetivo: [
     { value: 'encuesta', label: 'Llenar la encuesta' },
+    { value: 'registro', label: 'Crear una cuenta' },
     { value: 'enlace', label: 'Ir a un enlace' },
   ],
   audiencia: [
@@ -247,6 +248,9 @@ export function evaluarPopup(popup, ctx) {
 
   if (p.audiencia === 'logueados' && !logueado) return { ok: false, motivo: 'requiere sesión' };
   if (p.audiencia === 'anonimos' && logueado) return { ok: false, motivo: 'solo sin sesión' };
+
+  // Invitar a crear cuenta a quien ya la tiene no tiene sentido.
+  if (p.objetivo === 'registro' && logueado) return { ok: false, motivo: 'ya tiene cuenta' };
 
   if (p.objetivo === 'encuesta' && logueado) {
     // Con sesión hay que esperar al perfil: sin él no sabemos si ya la llenó.

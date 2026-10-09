@@ -91,6 +91,20 @@ test('audiencia', () => {
   assert.equal(evaluarPopup(enlace({ audiencia: 'anonimos' }), { ...base, logueado: true, perfil: {} }).ok, false);
 });
 
+test('registro: solo a quien no tiene sesión, aunque la audiencia sea "todos"', () => {
+  const p = normalizarPopup({ id: 'bienvenida', activo: true, objetivo: 'registro' });
+  assert.equal(p.objetivo, 'registro');
+  assert.equal(evaluarPopup(p, base).ok, true);
+  assert.equal(evaluarPopup(p, { ...base, logueado: true, perfil: {} }).motivo, 'ya tiene cuenta');
+});
+
+test('conversión de registro: solo si el último clic fue en un popup de registro', () => {
+  const clic = { popupId: 'bienvenida', objetivo: 'registro', en: AHORA - 60_000 };
+  assert.equal(conversionPendiente(clic, 'registro', AHORA), 'bienvenida');
+  assert.equal(conversionPendiente(clic, 'encuesta', AHORA), null);
+  assert.equal(conversionPendiente({ ...clic, objetivo: 'enlace' }, 'registro', AHORA), null);
+});
+
 test('encuesta: espera el perfil, no sale si ya la llenó o la saltó hace poco', () => {
   const p = POPUP_ENCUESTA_DEFAULT;
   assert.equal(evaluarPopup(p, base).ok, true, 'anónimo sí (irá a login)');

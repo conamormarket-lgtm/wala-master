@@ -5,6 +5,7 @@ import {
   signInWithCredential,
   browserPopupRedirectResolver,
   GoogleAuthProvider,
+  getAdditionalUserInfo,
   signOut,
   onAuthStateChanged,
   updateProfile,
@@ -194,7 +195,9 @@ export const signInWithGoogle = async () => {
       // Best-effort y SIN esperar: cumpleaños desde People API con el accessToken
       // nativo. "Completar perfil" lo recoge con esperarCumpleGoogle().
       guardarCumpleGoogle(googleUser.authentication?.accessToken);
-      return { user: result.user, error: null, errorCode: null, credential: null };
+      // esNuevo: la cuenta se acaba de crear (para medir registros).
+      const esNuevo = getAdditionalUserInfo(result)?.isNewUser === true;
+      return { user: result.user, error: null, errorCode: null, credential: null, esNuevo };
     } catch (error) {
       // El usuario canceló el selector de cuentas — no es un error real
       if (error.error === 'popup_closed_by_user' || error.message === 'The user canceled the sign-in flow.') {
@@ -231,7 +234,9 @@ export const signInWithGoogle = async () => {
     try {
       guardarCumpleGoogle(GoogleAuthProvider.credentialFromResult(result)?.accessToken);
     } catch (_) { /* el cumpleaños es opcional */ }
-    return { user: result.user, error: null, errorCode: null, credential: null };
+    // esNuevo: la cuenta se acaba de crear (para medir registros).
+    const esNuevo = getAdditionalUserInfo(result)?.isNewUser === true;
+    return { user: result.user, error: null, errorCode: null, credential: null, esNuevo };
   } catch (error) {
     const credential = error.credential || null;
     return {

@@ -170,6 +170,13 @@ const CampaignPopup = () => {
       return;
     }
 
+    // Crear cuenta: al terminar el registro cuenta como conversión
+    // (RegisterPage / LoginPage llaman a registrarConversionPopup('registro')).
+    if (p.objetivo === 'registro') {
+      navigate('/registro');
+      return;
+    }
+
     const url = String(p.botonUrl || '').trim();
     if (!url) return;
     if (/^https?:\/\//i.test(url)) {
