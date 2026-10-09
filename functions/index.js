@@ -31,6 +31,7 @@ const {
 } = require("./ruletaLogic");
 const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
+const { totalEsperadoCheckout, topeMonedasCheckout, toleranciaCheckout } = require("./checkoutTotals");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -112,7 +113,14 @@ function checkoutOrderId(orderPayload) {
     .replace(/[/\\#?[\].]/g, "-");
 }
 
-async function readCheckoutIntent(intentId, context) {
+// Estados en los que una intención ya no se puede cobrar: sus monedas
+// reservadas se devolvieron (otra confirmación de datos la reemplazó, o venció
+// sin pagarse). Cobrarla daría el descuento sin gastar las monedas.
+const INTENCION_NO_COBRABLE = new Set(["reemplazada", "vencida"]);
+// Una reserva de monedas sin pedido en el ERP se devuelve pasado este plazo.
+const CHECKOUT_RESERVA_VENCE_MS = 48 * 60 * 60 * 1000;
+
+async function readCheckoutIntent(intentId, context, { exigirVigente = false } = {}) {
   const id = String(intentId || "").trim();
   if (!id) throw new functions.https.HttpsError("invalid-argument", "Falta la intención de pago.");
   const snap = await db.collection(CHECKOUT_INTENTS_COLLECTION).doc(id).get();
@@ -120,6 +128,10 @@ async function readCheckoutIntent(intentId, context) {
   const intent = snap.data() || {};
   if (context && context.auth && intent.uid && intent.uid !== context.auth.uid) {
     throw new functions.https.HttpsError("permission-denied", "Esta intención pertenece a otro usuario.");
+  }
+  if (exigirVigente && INTENCION_NO_COBRABLE.has(intent.status)) {
+    throw new functions.https.HttpsError("failed-precondition",
+      "Este pago ya no es válido porque confirmaste tus datos de nuevo o pasó demasiado tiempo. Recarga la página.");
   }
   return { id, ref: snap.ref, intent, orderPayload: intent.orderPayload || {} };
 }
@@ -160,6 +172,39 @@ exports.validateCartPricingSecure = functions.https.onCall(async (data) => {
   return { ok: true };
 });
 
+// Reserva de monedas de un checkout anterior de este usuario que se puede
+// devolver: su intención sigue sin pagar y el pedido no existe en el ERP (ni
+// por tarjeta ni por WhatsApp). Se mira FUERA de la transacción porque el ERP es
+// otro proyecto. Ante la duda (ERP no disponible) no se libera nada.
+async function reservaCheckoutLiberable(uid, intentIdNuevo) {
+  const userSnap = await db.collection(PORTAL_USERS_COLLECTION).doc(uid).get();
+  const reserva = userSnap.exists ? userSnap.data().reservaMonedasCheckout : null;
+  const anteriorId = reserva && reserva.intentId ? String(reserva.intentId) : "";
+  if (!anteriorId || anteriorId === intentIdNuevo) return null;
+  const intentSnap = await db.collection(CHECKOUT_INTENTS_COLLECTION).doc(anteriorId).get();
+  if (!intentSnap.exists || intentSnap.data().status !== "prepared") return null;
+  const erpDb = getErpDb();
+  if (!erpDb) return null;
+  for (const coll of ["pedidos_web", "pedidos"]) {
+    const snap = await erpDb.collection(coll).doc(anteriorId).get();
+    if (snap.exists) return null;
+  }
+  return anteriorId;
+}
+
+// El TOTAL lo comprueba el servidor. Antes se revisaba el precio de cada línea,
+// pero el monto que se cobraba (montoPendiente/montoTotal) era el que mandaba
+// el navegador: editando la petición se pagaba S/1 por cualquier pedido. Ahora:
+//   1. subtotal de los productos con precios del servidor (verificarPreciosYStock);
+//   2. monedas: con tope de la mitad del subtotal y contra el saldo real;
+//   3. cupón: se revalida con el del usuario (calcularDescuentoCupon);
+//   4. envío: misma regla que el checkout.
+// Si lo que se va a cobrar queda por debajo, se rechaza.
+//
+// Las monedas del descuento se RESERVAN aquí, en la misma transacción
+// (pasan a monedasEnEspera). Antes se congelaban después de crear el pedido,
+// desde el navegador y sin comprobar el resultado: si esa llamada fallaba, el
+// cliente se quedaba con el descuento y con las monedas.
 exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) => {
   const orderPayload = data && data.orderPayload;
   if (!orderPayload || typeof orderPayload !== "object" || Array.isArray(orderPayload)) {
@@ -170,8 +215,19 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
   if (!intentId || !Number.isFinite(amountPen) || amountPen <= 0) {
     throw new functions.https.HttpsError("invalid-argument", "El checkout no tiene un código o monto válido.");
   }
+  const uid = context.auth ? context.auth.uid : null;
+  const monedasPedidas = Math.max(0, Number(orderPayload.descuentoMonedas) || 0);
+  if (monedasPedidas > 0 && !uid) {
+    throw new functions.https.HttpsError("failed-precondition", "Inicia sesión para usar tus monedas.");
+  }
+  const cuponCode = orderPayload.cuponCode ? String(orderPayload.cuponCode) : "";
   const ref = db.collection(CHECKOUT_INTENTS_COLLECTION).doc(intentId);
+  const userRef = uid ? db.collection(PORTAL_USERS_COLLECTION).doc(uid) : null;
+  const anteriorId = uid ? await reservaCheckoutLiberable(uid, intentId) : null;
+  const anteriorRef = anteriorId ? db.collection(CHECKOUT_INTENTS_COLLECTION).doc(anteriorId) : null;
+
   await db.runTransaction(async (t) => {
+    // ── Lecturas (todas antes de la primera escritura) ──
     const current = await t.get(ref);
     if (current.exists) {
       const existing = current.data() || {};
@@ -181,16 +237,116 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       return;
     }
 
-    await verificarPreciosYStock(orderPayload.productos, t);
+    const { subtotal } = await verificarPreciosYStock(orderPayload.productos, t);
+    const userSnap = userRef ? await t.get(userRef) : null;
+    const u = userSnap && userSnap.exists ? userSnap.data() : {};
+    const anteriorSnap = anteriorRef ? await t.get(anteriorRef) : null;
 
+    let descuentoCupon = 0;
+    let envioGratis = false;
+    if (uid && cuponCode) {
+      const encontrado = await buscarCupon(uid, cuponCode, t);
+      if (!motivoRechazo(encontrado && encontrado.cupon)) {
+        // Todas las líneas como "no valorables": la base del descuento es el
+        // subtotal que ya calculó el servidor, no el del navegador.
+        const items = Object.values(orderPayload.productos || {}).map((p) => ({
+          productId: p && p.productoId, qty: p && p.cantidad, precio: p && p.precio, personalizado: true,
+        }));
+        const calculo = await calcularDescuentoCupon(encontrado.cupon, {
+          items,
+          subtotal: Math.max(0, subtotal - monedasPedidas),
+          subtotalProductos: subtotal,
+        });
+        envioGratis = calculo.envioGratis;
+        descuentoCupon = calculo.envioGratis ? 0 : calculo.descuento;
+      }
+    }
+
+    // ── Monedas ──
+    const historial = Array.isArray(u.historialMonedasEspera) ? [...u.historialMonedasEspera] : [];
+    let liberar = 0;
+    if (anteriorSnap && anteriorSnap.exists && anteriorSnap.data().status === "prepared") {
+      historial.forEach((e, i) => {
+        if (e && e.status === "pending" && String(e.orderId) === anteriorId) {
+          liberar += Number(e.amount) || 0;
+          historial[i] = { ...e, status: "released", resolvedAt: new Date().toISOString(), motivo: "reemplazada" };
+        }
+      });
+    }
+    if (monedasPedidas > 0) {
+      const tope = topeMonedasCheckout(subtotal);
+      if (monedasPedidas > tope) {
+        throw new functions.https.HttpsError("failed-precondition",
+          `En este pedido puedes usar hasta ${tope} monedas. Recarga la página.`);
+      }
+      const disponibles = (Number(u.monedas) || 0) + liberar;
+      if (disponibles < monedasPedidas) {
+        throw new functions.https.HttpsError("failed-precondition",
+          `Ya no tienes monedas suficientes para este descuento (tienes ${disponibles}). Recarga la página.`);
+      }
+    }
+
+    // ── Total ──
+    const { envio, total: esperado } = totalEsperadoCheckout({
+      subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis,
+      envioEstandar: ENVIO_ESTANDAR, envioGratisDesde: ENVIO_GRATIS_DESDE,
+    });
+    const unidades = Object.values(orderPayload.productos || {})
+      .reduce((acc, p) => acc + Math.max(1, Number(p && p.cantidad) || 1), 0);
+    const tolerancia = toleranciaCheckout(unidades);
+    const montoTotal = Number(orderPayload.montoTotal);
+    if (amountPen < esperado - tolerancia || (Number.isFinite(montoTotal) && montoTotal < esperado - tolerancia)) {
+      console.warn(`prepareCheckoutPayment: total del cliente por debajo del esperado en ${intentId}`, {
+        uid, amountPen, montoTotal, esperado, subtotal, monedasPedidas, descuentoCupon, envioGratis, envio,
+      });
+      throw new functions.https.HttpsError("failed-precondition",
+        `El total de tu pedido no coincide con los precios actuales (S/ ${esperado.toFixed(2)}). ` +
+        "Recarga la página e inténtalo de nuevo.");
+    }
+    if (amountPen > esperado + tolerancia) {
+      console.warn(`prepareCheckoutPayment: el cliente cobraría MÁS de lo esperado en ${intentId}`, {
+        amountPen, esperado, subtotal, monedasPedidas, descuentoCupon, envioGratis,
+      });
+    }
+
+    // ── Escrituras ──
     t.create(ref, {
-      uid: context.auth ? context.auth.uid : null,
+      uid,
       status: "prepared",
       amountPen,
       orderPayload,
+      totalesServidor: { subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis, envio, esperado },
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
+
+    if (liberar > 0) {
+      t.update(anteriorRef, { status: "reemplazada", reemplazadaPor: intentId, updatedAt: FieldValue.serverTimestamp() });
+    }
+    if (userRef && (monedasPedidas > 0 || liberar > 0)) {
+      let saldo = (Number(u.monedas) || 0) + liberar;
+      let activas = u.monedasActivas;
+      const updates = {};
+      if (monedasPedidas > 0) {
+        const debit = applyDebit({ ...u, monedas: saldo }, monedasPedidas);
+        saldo = debit.monedas;
+        activas = debit.monedasActivas;
+        historial.push({
+          orderId: intentId, amount: monedasPedidas, status: "pending",
+          date: new Date().toISOString(), origen: "checkout",
+        });
+        updates.reservaMonedasCheckout = { intentId, amount: monedasPedidas };
+      } else {
+        updates.reservaMonedasCheckout = FieldValue.delete();
+      }
+      t.update(userRef, {
+        ...updates,
+        monedas: saldo,
+        ...(activas !== undefined && { monedasActivas: activas }),
+        monedasEnEspera: Math.max(0, (Number(u.monedasEnEspera) || 0) - liberar + monedasPedidas),
+        historialMonedasEspera: historial,
+      });
+    }
   });
   return { success: true, intentId, amountPen };
 });
@@ -1256,7 +1412,7 @@ exports.processCulqiPayment = functions
   let erpDbForOrder = null;
   let orderColl = null;
   if (payCurrency === "PEN" && checkoutIntentId) {
-    checkoutIntent = await readCheckoutIntent(checkoutIntentId, context);
+    checkoutIntent = await readCheckoutIntent(checkoutIntentId, context, { exigirVigente: true });
     pedidoId = checkoutIntent.id;
     const penTotal = Number(
       checkoutIntent.orderPayload.montoPendiente ??
@@ -2238,11 +2394,17 @@ exports.freezeCoinsSecure = functions.https.onCall(async (data, context) => {
       const snap = await t.get(userRef);
       if (!snap.exists) throw new functions.https.HttpsError("not-found", "Usuario no encontrado.");
       const u = snap.data();
+      const history = u.historialMonedasEspera || [];
+      // Las monedas del checkout ya las reserva prepareCheckoutPayment con el
+      // mismo id de pedido. El navegador sigue llamando aquí después de crear
+      // el pedido: sin este corte se descontarían dos veces.
+      if (orderId && history.some((e) => e && String(e.orderId) === String(orderId))) {
+        return { success: true, yaReservadas: true };
+      }
       if ((u.monedas || 0) < amount) {
         throw new functions.https.HttpsError("failed-precondition", "Monedas insuficientes.");
       }
       const debit = applyDebit(u, amount);
-      const history = u.historialMonedasEspera || [];
       t.update(userRef, {
         ...debit,
         monedasEnEspera: (u.monedasEnEspera || 0) + amount,
@@ -2315,7 +2477,30 @@ exports.reconciliarMonedasEnEspera = onSchedule("every 60 minutes", async () => 
         console.error(`reconciliarMonedasEnEspera: error leyendo pedido ${orderId}:`, e);
         continue; // se reintenta en la próxima corrida
       }
-      if (!orderData) continue; // pedido aún no encontrado en el ERP: reintenta después
+      if (!orderData) {
+        // Reserva de un checkout (prepareCheckoutPayment) que nunca se pagó ni
+        // se pidió por WhatsApp: a las 48 h se da por abandonada y las monedas
+        // vuelven. La intención pasa a "vencida" ANTES, en transacción, para que
+        // ya no se pueda cobrar con el descuento.
+        const edadMs = Date.now() - Date.parse(entry.date || "");
+        if (entry.origen === "checkout" && edadMs > CHECKOUT_RESERVA_VENCE_MS) {
+          try {
+            const vencio = await db.runTransaction(async (t) => {
+              const intentRef = db.collection(CHECKOUT_INTENTS_COLLECTION).doc(orderId);
+              const intentSnap = await t.get(intentRef);
+              if (intentSnap.exists && intentSnap.data().status !== "prepared") return false;
+              if (intentSnap.exists) {
+                t.update(intentRef, { status: "vencida", updatedAt: FieldValue.serverTimestamp() });
+              }
+              return true;
+            });
+            if (vencio) resolucion[orderId] = "released";
+          } catch (e) {
+            console.error(`reconciliarMonedasEnEspera: no se pudo vencer la intención ${orderId}:`, e);
+          }
+        }
+        continue; // pedido aún no encontrado en el ERP: reintenta después
+      }
 
       const rawEstado = String(orderData.estadoGeneral || orderData.estado || orderData.status || "")
         .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -4664,10 +4849,11 @@ async function computePaypalUsdForOrder(pedidoId, context) {
   // compatibilidad, desde un pedido existente de los flujos antiguos.
   let orderData = null;
   try {
-    const checkout = await readCheckoutIntent(oid, context);
+    const checkout = await readCheckoutIntent(oid, context, { exigirVigente: true });
     orderData = checkout.orderPayload;
   } catch (e) {
-    if (e instanceof functions.https.HttpsError && e.code === "permission-denied") throw e;
+    if (e instanceof functions.https.HttpsError &&
+      (e.code === "permission-denied" || e.code === "failed-precondition")) throw e;
   }
   const erpDb = getErpDb();
   if (!erpDb) {

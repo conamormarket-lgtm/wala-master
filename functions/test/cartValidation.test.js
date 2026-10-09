@@ -27,7 +27,7 @@ test("checkout batches unique catalog documents and projects only validation fie
   const f = fixture({ a: { price: 45, inStock: 10 }, b: { price: 30, inStock: 2 } });
   await f.validate([line("a"), line("a", 2), line("b", 1, { precio: 30 })]);
   assert.deepEqual(f.calls, [{ ids: ["a", "b"], options: {
-    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted"],
+    fieldMask: ["price", "salePrice", "inStock", "visible", "deleted", "esPrendaBase", "prendaBase"],
   } }]);
 });
 
@@ -67,4 +67,16 @@ test("empty legacy carts do not issue an invalid empty getAll request", async ()
   await f.validate([null, { producto: "legacy" }]);
   await f.validate(null);
   assert.equal(f.calls.length, 0);
+});
+
+test("subtotal uses server prices and never lets personalized lines go below catalog", async () => {
+  const f = fixture({ a: { price: 45, inStock: 10 }, b: { price: 30, salePrice: 25, inStock: 10 } });
+  const { subtotal } = await f.validate([
+    line("a", 2),
+    line("b", 1, { precio: 25 }),
+    line("a", 1, { personalizado: true, precio: 60 }),
+    line("a", 1, { personalizado: true, precio: 1 }),
+    { productoId: "", cantidad: 1, precio: -50 },
+  ]);
+  assert.equal(subtotal, 90 + 25 + 60 + 45);
 });
