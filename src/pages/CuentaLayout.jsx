@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { Outlet, NavLink, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, IdCard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { logout } from '../services/firebase/auth';
@@ -8,6 +8,7 @@ import CuentaLoginPrompt from '../components/CuentaLoginPrompt';
 import PedidosLoginPrompt from '../components/PedidosLoginPrompt/PedidosLoginPrompt';
 import { useCuentaNavGroups } from './cuenta/useCuentaNavGroups';
 import styles from './CuentaPage.module.css';
+import { T } from '../i18n/useTranslatedText';
 
 // Iniciales (1-2 letras) para el avatar del sidebar cuando no hay foto —
 // mismo criterio que usa el header (Header.jsx) para que el avatar de
@@ -19,7 +20,7 @@ const initialsOf = (name) => {
 };
 
 const CuentaLayout = () => {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, profileIncomplete } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -67,6 +68,16 @@ const CuentaLayout = () => {
         </div>
       </div>
     );
+  }
+
+  // Mis Pedidos necesita el documento y el teléfono del perfil: sin ellos no
+  // hay cómo ubicar ni vincular pedidos. En vez de una página casi vacía, se
+  // lleva a "Completar perfil" y, al guardar, se vuelve aquí mismo (state.from).
+  // El resto de la cuenta sigue accesible, con un aviso discreto arriba.
+  const enPedidos =
+    location.pathname === '/cuenta/pedidos' || location.pathname.startsWith('/cuenta/pedidos/');
+  if (profileIncomplete && enPedidos) {
+    return <Navigate to="/completar-perfil" replace state={{ from: location.pathname }} />;
   }
 
   const avatarUrl = userProfile?.avatarConfig?.avatarUrl || user?.photoURL || null;
@@ -129,6 +140,21 @@ const CuentaLayout = () => {
               arriba de cada una. */}
 
           <div className={styles.outlet} key={location.pathname}>
+            {profileIncomplete && (
+              <div className={styles.avisoPerfil} role="status">
+                <IdCard size={18} strokeWidth={1.75} aria-hidden="true" className={styles.avisoPerfilIcono} />
+                <p className={styles.avisoPerfilTexto}>
+                  <T>Te faltan tu documento y tu teléfono para ver tus pedidos y comprar más rápido.</T>
+                </p>
+                <Link
+                  to="/completar-perfil"
+                  state={{ from: location.pathname }}
+                  className={styles.avisoPerfilBoton}
+                >
+                  <T>Completar</T>
+                </Link>
+              </div>
+            )}
             <Outlet />
           </div>
         </div>

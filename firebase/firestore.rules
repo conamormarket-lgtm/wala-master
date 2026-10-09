@@ -16,7 +16,7 @@ service cloud.firestore {
     // bootstrap, doc adminUsers/{uid} con role 'admin'. Meta: depender solo del claim.
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.admin == true ||
+        request.auth.token.get('admin', false) == true ||
         (exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin')
       );
@@ -61,7 +61,10 @@ service cloud.firestore {
     // H-06 #3: el DNI solo puede fijarse cuando está vacío; una vez puesto es inmutable
     // para el propio usuario (evita "cosechar" pedidos ajenos cambiando el DNI).
     function dniInmutable() {
-      return resource.data.dni == null || request.resource.data.dni == resource.data.dni;
+      // .get() y no resource.data.dni: si el perfil aún NO tiene el campo, leerlo
+      // directo da error de evaluación y la regla rechazaba completar el perfil.
+      return resource.data.get('dni', null) == null
+        || request.resource.data.get('dni', null) == resource.data.get('dni', null);
     }
 
     // ── Catálogo y taxonomías (lectura pública, escritura admin) ─────────────────

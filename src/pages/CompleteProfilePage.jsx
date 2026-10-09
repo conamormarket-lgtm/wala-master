@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
 import { shouldPromptSurvey } from '../utils/surveyHelper';
@@ -17,6 +17,13 @@ import { T } from '../i18n/useTranslatedText';
 
 const CompleteProfilePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // A dónde volver al terminar (p. ej. Mis Pedidos, o la página desde la que
+  // inició sesión). Solo rutas internas: nunca una URL externa.
+  const desdeEstado = location.state?.from;
+  const volverA = typeof desdeEstado === 'string' && desdeEstado.startsWith('/') && !desdeEstado.startsWith('//')
+    ? desdeEstado
+    : null;
   const { user, userProfile, loading: authLoading, updateUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -53,7 +60,9 @@ const CompleteProfilePage = () => {
       // Perfil aún no cargado (red lenta): se espera, no se muestra vacío.
       if (userProfile._perfilNoCargado) return;
       if (userProfile.dni && userProfile.phone) {
-        if (shouldPromptSurvey(userProfile)) {
+        if (volverA) {
+          navigate(volverA, { replace: true });
+        } else if (shouldPromptSurvey(userProfile)) {
           navigate('/encuesta-suscripcion');
         } else {
           navigate('/');
@@ -75,7 +84,7 @@ const CompleteProfilePage = () => {
       // se coloca en el efecto de abajo (puede llegar unos instantes después).
       if (userProfile.birthDate) setBirthDate(userProfile.birthDate);
     }
-  }, [user, userProfile, authLoading, navigate]);
+  }, [user, userProfile, authLoading, navigate, volverA]);
 
   // Cumpleaños de Google: el login lo pide a Google SIN esperar, así que puede
   // llegar después de que se pinte este formulario. Antes se leía una sola vez
@@ -165,7 +174,9 @@ const CompleteProfilePage = () => {
       setError('No se pudieron guardar tus datos. Revisa tu conexión e inténtalo de nuevo.');
       return;
     }
-    if (shouldPromptSurvey(userProfile)) {
+    if (volverA) {
+      navigate(volverA, { replace: true });
+    } else if (shouldPromptSurvey(userProfile)) {
       navigate('/encuesta-suscripcion');
     } else {
       navigate('/');

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useCart } from '../contexts/CartContext';
 import { idsDeItemsIncompletos, muestraColor } from '../utils/cartValidation';
 import { costoEnvio } from '../constants/envio';
@@ -1206,16 +1207,36 @@ const CheckoutPage = () => {
         localStorage.setItem('checkout_customer_info', JSON.stringify(savedInfo));
 
         // ── 6. Auto-actualizar perfil del usuario ─────────────────────────
-        if (user && updateUserProfile) {
-          const updates = {};
-          if (!userProfile?.dni || userProfile.dni !== values.dni) updates.dni = values.dni;
-          if (!userProfile?.phone || userProfile.phone !== values.phone) updates.phone = values.phone;
-          if (!userProfile?.displayName || userProfile.displayName !== values.customerName) updates.displayName = values.customerName;
-          if (Object.keys(updates).length > 0) {
-            updateUserProfile(updates).catch((err) =>
-              console.error('Error auto-updating profile from checkout:', err)
-            );
-          }
+        // Solo COMPLETA lo que falta; nunca reemplaza. Antes, comprar para otra
+        // persona con su DNI cambiaba el DNI del perfil por el de ella (y sin
+        // comprobar si ese documento ya era de otra cuenta). Corre por detrás:
+        // no retrasa el paso al pago.
+        if (user && updateUserProfile && !userProfile?._perfilNoCargado) {
+          (async () => {
+            const updates = {};
+            const docNuevo = String(values.dni || '').trim().replace(/\s/g, '');
+            if (!String(userProfile?.dni || '').trim() && docNuevo) {
+              try {
+                const { data: dniCheck } = await httpsCallable(getFunctions(), 'checkDniAvailableSecure')({ dni: docNuevo });
+                if (dniCheck?.available) {
+                  const tipo = values.country && values.country !== 'PE' ? 'OTRO' : (values.docType || 'DNI');
+                  Object.assign(updates, {
+                    dni: docNuevo,
+                    clienteNumeroDocumento: docNuevo,
+                    tipoDocumento: tipo,
+                    docType: tipo,
+                  });
+                  if (!userProfile?.country && values.country) updates.country = values.country;
+                }
+              } catch (_) { /* sin red: se pedirá en "Completar perfil" */ }
+            }
+            if (!String(userProfile?.phone || '').trim() && values.phone) updates.phone = values.phone;
+            if (!String(userProfile?.displayName || '').trim() && values.customerName) updates.displayName = values.customerName;
+            if (Object.keys(updates).length > 0) {
+              const { error: errPerfil } = await updateUserProfile(updates);
+              if (errPerfil) console.warn('Checkout: no se pudo completar el perfil:', errPerfil);
+            }
+          })();
         }
 
         // ── 7. Pasar a Opciones de Pago ─────────────────────────────────────────────

@@ -418,3 +418,58 @@
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
 }
 
+
+/* Aviso discreto de perfil incompleto (falta documento o teléfono). No bloquea
+   la cuenta: invita a completarlo y vuelve a la misma página al guardar. */
+.avisoPerfil {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.18);
+}
+
+.avisoPerfilIcono {
+  flex: 0 0 auto;
+  color: #8b5cf6;
+}
+
+.avisoPerfilTexto {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--color-text, var(--gris-texto-principal));
+}
+
+.avisoPerfilBoton {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  background-color: #8b5cf6;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.avisoPerfilBoton:hover {
+  background-color: #7c3aed;
+}
+
+.avisoPerfilBoton:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .avisoPerfil {
+    flex-wrap: wrap;
+  }
+  .avisoPerfilBoton {
+    margin-left: auto;
+  }
+}
