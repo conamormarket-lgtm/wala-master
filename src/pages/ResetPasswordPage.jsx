@@ -45,18 +45,18 @@ const ResetPasswordPage = () => {
           {sent ? (
             <>
               <h1 className={styles.title}><T>Correo enviado</T></h1>
-              <p className={styles.message}>
-                Si existe una cuenta con ese correo, recibirá un enlace para restablecer la contraseña. Revise su bandeja de entrada y la carpeta de spam.
+              <p className={styles.message} role="status">
+                <T>Si existe una cuenta con ese correo, te llegará un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada y la carpeta de spam.</T>
               </p>
               <Link to="/login" className={styles.backLink}>
-                Volver a Iniciar sesión
+                <T>Volver a iniciar sesión</T>
               </Link>
             </>
           ) : (
             <>
               <h1 className={styles.title}><T>Recuperar contraseña</T></h1>
               <p className={styles.subtitle}>
-                Ingrese su correo y le enviaremos un enlace para restablecer su contraseña.
+                <T>Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</T>
               </p>
               <form onSubmit={handleSubmit} className={styles.form}>
                 <div className={styles.formGroup}>
@@ -64,6 +64,11 @@ const ResetPasswordPage = () => {
                   <input
                     type="email"
                     id="email"
+                    name="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -72,18 +77,18 @@ const ResetPasswordPage = () => {
                   />
                 </div>
                 {error && (
-                  <div className={styles.errorMessage}>
+                  <div className={styles.errorMessage} role="alert">
                     <span className={styles.errorIcon}>⚠</span>
                     {error}
                   </div>
                 )}
                 <Button type="submit" variant="primary" fullWidth disabled={loading}>
-                  Enviar enlace
+                  <T>Enviar enlace</T>
                 </Button>
               </form>
               <div className={styles.footer}>
                 <Link to="/login" className={styles.link}>
-                  Volver a Iniciar sesión
+                  <T>Volver a iniciar sesión</T>
                 </Link>
               </div>
             </>

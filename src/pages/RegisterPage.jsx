@@ -21,8 +21,6 @@ import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/d
 import styles from './RegisterPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
-const PASSWORD_SPECIAL = '!#%&@*';
-
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -120,11 +118,12 @@ const RegisterPage = () => {
     try {
       const { data: dniCheck } = await httpsCallable(getFunctions(), 'checkDniAvailableSecure')({ dni: documentoNorm });
       if (!dniCheck?.available) {
-        setError('Este documento ya está registrado en otra cuenta. Si es suyo, use "Iniciar sesión" o recupere su acceso.');
+        setError('Este documento ya está registrado en otra cuenta. Si es tuyo, inicia sesión con esa cuenta o recupera tu contraseña.');
         return;
       }
     } catch (err) {
-      setError(err?.message || 'No se pudo verificar el documento. Intente de nuevo.');
+      console.warn('[Registro] checkDniAvailableSecure:', err);
+      setError('No se pudo verificar el documento. Revisa tu conexión e inténtalo de nuevo.');
       return;
     }
     setLoading(true);
@@ -157,7 +156,8 @@ const RegisterPage = () => {
     const { error: err } = await setDocument(PORTAL_USERS_COLLECTION, user.uid, docFields);
     setLoading(false);
     if (err) {
-      setError(err);
+      console.warn('[Registro] guardar perfil:', err);
+      setError('No se pudieron guardar tus datos. Revisa tu conexión e inténtalo de nuevo.');
       return;
     }
     navigate('/encuesta-suscripcion');
@@ -169,7 +169,8 @@ const RegisterPage = () => {
     setLoading(true);
     const { error: err, errorCode, user: usuarioGoogle } = await signInWithGoogle();
     setLoading(false);
-    if (err) {
+    // Cerrar la ventana de Google no es un error: solo se deja de cargar.
+    if (err && errorCode !== 'auth/popup-closed-by-user' && errorCode !== 'auth/cancelled-popup-request') {
       setError(getAuthErrorMessage(errorCode, err));
       return;
     }
@@ -192,13 +193,13 @@ const RegisterPage = () => {
         </div>
         <div className={styles.formContainer}>
           <img src={LOGO_URL} alt="Logo" className={styles.logoMovil} />
-          <div className={styles.steps}>
+          <div className={styles.steps} aria-label={`Paso ${step} de 2`}>
             <div className={styles.stepCircle + (step === 1 ? ' ' + styles.stepActive : '')}>1</div>
             <div className={styles.stepLine} />
             <div className={styles.stepCircle + (step === 2 ? ' ' + styles.stepActive : '')}>2</div>
           </div>
-          <h1>{step === 1 ? 'Crear cuenta' : 'Tus datos para el pedido'}</h1>
-          <p>{step === 1 ? 'Correo y contraseña' : 'DNI o CE, nombre y teléfono.'}</p>
+          <h1><T>{step === 1 ? 'Crear cuenta' : 'Tus datos para el pedido'}</T></h1>
+          <p><T>{step === 1 ? 'Correo y contraseña' : 'Tu documento, nombre y teléfono.'}</T></p>
 
           {step === 1 && (
             <form onSubmit={handleStep1} className={styles.form}>
@@ -207,6 +208,11 @@ const RegisterPage = () => {
                 <input
                   type="email"
                   id="email"
+                  name="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -220,6 +226,9 @@ const RegisterPage = () => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     id="password"
+                    name="new-password"
+                    autoComplete="new-password"
+                    aria-describedby="passwordReqs"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -232,7 +241,7 @@ const RegisterPage = () => {
                     onClick={() => setShowPassword((v) => !v)}
                     disabled={loading}
                     aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    tabIndex={-1}
+                    aria-pressed={showPassword}
                   >
                     {showPassword ? <EyeIcon size={20} /> : <EyeOffIcon size={20} />}
                   </button>
@@ -244,6 +253,8 @@ const RegisterPage = () => {
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     id="confirmPassword"
+                    name="confirm-password"
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
@@ -256,7 +267,7 @@ const RegisterPage = () => {
                     onClick={() => setShowConfirmPassword((v) => !v)}
                     disabled={loading}
                     aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    tabIndex={-1}
+                    aria-pressed={showConfirmPassword}
                   >
                     {showConfirmPassword ? <EyeIcon size={20} /> : <EyeOffIcon size={20} />}
                   </button>
@@ -265,14 +276,14 @@ const RegisterPage = () => {
                   <span className={styles.fieldError}><T>Las contraseñas no coinciden</T></span>
                 )}
               </div>
-              <div className={styles.passwordReqs}>
+              <div className={styles.passwordReqs} id="passwordReqs">
                 <span className={styles.passwordReqsTitle}><T>Requisitos de contraseña</T></span>
                 <ul>
                   <li className={passwordReqs.length ? styles.met : ''}><T>Al menos 8 caracteres</T></li>
                   <li className={passwordReqs.uppercase ? styles.met : ''}><T>Al menos 1 mayúscula</T></li>
                   <li className={passwordReqs.lowercase ? styles.met : ''}><T>Al menos 1 minúscula</T></li>
                   <li className={passwordReqs.number ? styles.met : ''}><T>Al menos 1 número</T></li>
-                  <li className={passwordReqs.special ? styles.met : ''}>Al menos 1 carácter especial ({PASSWORD_SPECIAL})</li>
+                  <li className={passwordReqs.special ? styles.met : ''}><T>Al menos 1 símbolo (por ejemplo ! @ # $ . -)</T></li>
                 </ul>
               </div>
               <div className={styles.termsRow}>
@@ -284,24 +295,24 @@ const RegisterPage = () => {
                   disabled={loading}
                 />
                 <label htmlFor="acceptedTerms" className={styles.termsLabel}>
-                  Acepto los{' '}
-                  <Link to="/terminos-condiciones" target="_blank" className={styles.link}>
-                    Términos y Condiciones
+                  <T>Acepto los</T>{' '}
+                  <Link to="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className={styles.link}>
+                    <T>Términos y Condiciones</T>
                   </Link>{' '}
-                  y la{' '}
-                  <Link to="/politicas-privacidad" target="_blank" className={styles.link}>
-                    Política de Privacidad
+                  <T>y la</T>{' '}
+                  <Link to="/politicas-privacidad" target="_blank" rel="noopener noreferrer" className={styles.link}>
+                    <T>Política de Privacidad</T>
                   </Link>
                 </label>
               </div>
               {error && (
-                <div className={styles.errorMessage}>
+                <div className={styles.errorMessage} role="alert">
                   <span className={styles.errorIcon}>⚠</span>
                   {error}
                 </div>
               )}
               <Button type="submit" variant="primary" fullWidth disabled={!step1Valid || loading}>
-                Siguiente
+                <T>Siguiente</T>
               </Button>
             </form>
           )}
@@ -312,6 +323,13 @@ const RegisterPage = () => {
                 onSubmit={handleStep2}
                 className={styles.form}
               >
+                {/* País: viene detectado por IP, pero se puede corregir (VPN,
+                    viajeros, peruanos fuera del país). Define qué documento
+                    y qué formato de teléfono se piden. */}
+                <div className={styles.formGroup}>
+                  <label htmlFor="country"><T>País</T></label>
+                  <CountrySelect id="country" value={country} isDisabled={loading} onChange={(code) => setCountry(code || 'PE')} />
+                </div>
                 {isPE ? (
                 <>
                   {/* Perú: tipo de documento (DNI/CE/Pasaporte) + número. */}
@@ -373,6 +391,8 @@ const RegisterPage = () => {
                 <input
                   type="text"
                   id="fullName"
+                  name="name"
+                  autoComplete="name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
@@ -380,33 +400,55 @@ const RegisterPage = () => {
                   placeholder="Ej. Juan Pérez"
                 />
               </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="phone"><T>Teléfono</T></label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
-                  required
-                  disabled={loading}
-                  placeholder="9 dígitos (ej. 987654321)"
-                />
-                {phone && !validatePhone(phone) && (
-                  <span className={styles.fieldError}><T>Teléfono debe ser 9 dígitos y empezar por 9</T></span>
-                )}
-              </div>
+              {/* Mismo esquema que Completar perfil. Antes el extranjero tenía el
+                  campo peruano: se le cortaba el número a 9 dígitos y veía el
+                  error "debe empezar por 9". */}
+              {isPE ? (
+                <div className={styles.formGroup}>
+                  <label htmlFor="phone"><T>Teléfono</T></label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    autoComplete="tel-national"
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    required
+                    disabled={loading}
+                    placeholder="9 dígitos (ej. 987654321)"
+                  />
+                  {phone && !validatePhone(phone) && (
+                    <span className={styles.fieldError}><T>El teléfono debe tener 9 dígitos y empezar por 9</T></span>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.formGroup}>
+                  <label htmlFor="phone"><T>Teléfono</T></label>
+                  <PhoneIntlInput
+                    id="phone"
+                    countryCode={country}
+                    value={phone}
+                    disabled={loading}
+                    onChange={({ localNumber }) => setPhone(localNumber)}
+                  />
+                  {phone && !phoneValid && (
+                    <span className={styles.fieldError}><T>Ingresa un número de teléfono válido</T></span>
+                  )}
+                </div>
+              )}
               {error && (
-                <div className={styles.errorMessage}>
+                <div className={styles.errorMessage} role="alert">
                   <span className={styles.errorIcon}>⚠</span>
                   {error}
                 </div>
               )}
               <div className={styles.step2Actions}>
                 <Button type="button" variant="secondary" onClick={() => setStep(1)}>
-                  Atrás
+                  <T>Atrás</T>
                 </Button>
                 <Button type="submit" variant="primary" disabled={!step2Valid || loading}>
-                  Registrarse
+                  <T>Registrarme</T>
                 </Button>
               </div>
             </form>
@@ -431,7 +473,7 @@ const RegisterPage = () => {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
-                Continuar con Google
+                <T>Continuar con Google</T>
               </Button>
             </>
           )}
@@ -446,17 +488,17 @@ const RegisterPage = () => {
       <Modal
         isOpen={confirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
-        title="¿Confirma que sus datos son correctos?"
+        title="¿Tus datos son correctos?"
       >
         <p className={styles.modalText}>
-          El DNI y el teléfono se usarán para rastrear su pedido. Verifique que todo sea correcto antes de continuar.
+          <T>Usaremos tu documento y tu teléfono para rastrear tus pedidos. Revisa que estén bien antes de continuar.</T>
         </p>
         <div className={styles.modalActions}>
           <Button type="button" variant="secondary" onClick={() => setConfirmModalOpen(false)}>
-            Cancelar
+            <T>Revisar</T>
           </Button>
           <Button type="button" variant="primary" onClick={handleConfirmRegister}>
-            Sí, registrar
+            <T>Sí, registrarme</T>
           </Button>
         </div>
       </Modal>

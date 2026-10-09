@@ -104,7 +104,7 @@ export default function PhoneIntlInput({
         name={name}
         type="tel"
         inputMode="numeric"
-        autoComplete="tel"
+        autoComplete="tel-national"
         value={value}
         onChange={handleNumberChange}
         placeholder={placeholder}

@@ -18,6 +18,7 @@ import { T } from '../../../i18n/useTranslatedText';
 
 // Marca del navegador (compatibilidad); la que manda es userProfile.kapiTutorialVisto.
 const CLAVE_TUTORIAL = 'kapiTutorialCompleted';
+const RUTAS_FLUJO_CUENTA = ['/login', '/registro', '/completar-perfil', '/recuperar-contrasena', '/encuesta-suscripcion'];
 
 const KapiPet = () => {
   const { user, userProfile, feedKapi, calentarKapi, activeWeeklyChallenge, updateUserProfile } = useAuth();
@@ -28,7 +29,12 @@ const KapiPet = () => {
   const layout = useLayoutContext();
   const onLandingPage = layout && layout.isHeaderVisible === false;
   // En el estudio de Crear tapaba el botón de compra en el celular.
-  const enEstudioCrear = useLocation().pathname.startsWith('/crear/');
+  const { pathname } = useLocation();
+  const enEstudioCrear = pathname.startsWith('/crear/');
+  // Mientras se crea la cuenta o se completan los datos, el tutorial de Kapi
+  // salía ENCIMA del paso 2 del registro y tapaba el formulario. Se espera a
+  // que termine ese flujo y ya en la tienda se abre solo.
+  const enFlujoDeCuenta = RUTAS_FLUJO_CUENTA.some((r) => pathname.startsWith(r));
   const [isOpen, setIsOpen] = useState(false);
   const [isFeeding, setIsFeeding] = useState(false);
   const [evidenceUrl, setEvidenceUrl] = useState('');
@@ -125,6 +131,7 @@ const KapiPet = () => {
   // Hook para disparar Onboarding Tutorial a usuarios nuevos
   useEffect(() => {
     if (onLandingPage) return; // no auto-abrir Kapi en landings/checkout
+    if (enFlujoDeCuenta) return;
     if (!userProfile) return;
     let enNavegador = false;
     try {
@@ -141,7 +148,7 @@ const KapiPet = () => {
     }
     // Abrir modal automáticamente si no ha completado el tutorial
     setIsOpen(true);
-  }, [userProfile, onLandingPage]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userProfile, onLandingPage, enFlujoDeCuenta]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isOpen) {

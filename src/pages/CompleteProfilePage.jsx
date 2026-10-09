@@ -106,11 +106,12 @@ const CompleteProfilePage = () => {
     try {
       const { data: dniCheck } = await httpsCallable(getFunctions(), 'checkDniAvailableSecure')({ dni: documentoNorm });
       if (!dniCheck?.available) {
-        setError('Este documento ya está registrado en otra cuenta. Si es suyo, inicie sesión en esa cuenta o contacte soporte.');
+        setError('Este documento ya está registrado en otra cuenta. Si es tuyo, inicia sesión con esa cuenta o escríbenos y te ayudamos.');
         return;
       }
     } catch (err) {
-      setError(err?.message || 'No se pudo verificar el documento. Intente de nuevo.');
+      console.warn('[Completar perfil] checkDniAvailableSecure:', err);
+      setError('No se pudo verificar el documento. Revisa tu conexión e inténtalo de nuevo.');
       return;
     }
     setLoading(true);
@@ -148,7 +149,8 @@ const CompleteProfilePage = () => {
     const { error: err } = await updateUserProfile(updates);
     setLoading(false);
     if (err) {
-      setError(err);
+      console.warn('[Completar perfil] guardar perfil:', err);
+      setError('No se pudieron guardar tus datos. Revisa tu conexión e inténtalo de nuevo.');
       return;
     }
     if (shouldPromptSurvey(userProfile)) {
@@ -163,7 +165,7 @@ const CompleteProfilePage = () => {
       <div className={styles.container}>
         <div className={styles.loadingInline}>
           <span className={styles.loadingDot} />
-          <span>Verificando...</span>
+          <span><T>Verificando...</T></span>
         </div>
       </div>
     );
@@ -188,8 +190,8 @@ const CompleteProfilePage = () => {
 
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.formGroup}>
-              <label htmlFor="country">País</label>
-              <CountrySelect value={country} onChange={(code) => setCountry(code || 'PE')} />
+              <label htmlFor="country"><T>País</T></label>
+              <CountrySelect id="country" value={country} isDisabled={loading} onChange={(code) => setCountry(code || 'PE')} />
             </div>
             {isPE ? (
               <>
@@ -251,6 +253,8 @@ const CompleteProfilePage = () => {
               <input
                 type="text"
                 id="fullName"
+                name="name"
+                autoComplete="name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -264,6 +268,9 @@ const CompleteProfilePage = () => {
                 <input
                   type="tel"
                   id="phone"
+                  name="phone"
+                  autoComplete="tel-national"
+                  inputMode="numeric"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
                   required
@@ -271,15 +278,17 @@ const CompleteProfilePage = () => {
                   placeholder="9 dígitos (ej. 987654321)"
                 />
                 {phone && !validatePhone(phone) && (
-                  <span className={styles.fieldError}><T>Teléfono debe ser 9 dígitos y empezar por 9</T></span>
+                  <span className={styles.fieldError}><T>El teléfono debe tener 9 dígitos y empezar por 9</T></span>
                 )}
               </div>
             ) : (
               <div className={styles.formGroup}>
                 <label htmlFor="phone"><T>Teléfono</T></label>
                 <PhoneIntlInput
+                  id="phone"
                   countryCode={country}
                   value={phone}
+                  disabled={loading}
                   onChange={({ localNumber }) => setPhone(localNumber)}
                 />
                 {phone && !phoneValid && (
@@ -307,13 +316,13 @@ const CompleteProfilePage = () => {
               )}
             </div>
             {error && (
-              <div className={styles.errorMessage}>
+              <div className={styles.errorMessage} role="alert">
                 <span className={styles.errorIcon}>⚠</span>
                 {error}
               </div>
             )}
             <Button type="submit" variant="primary" fullWidth disabled={!formValid || loading}>
-              Guardar
+              <T>Guardar</T>
             </Button>
           </form>
         </div>

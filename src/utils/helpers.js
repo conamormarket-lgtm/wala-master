@@ -60,6 +60,8 @@ export const validateDocInternacional = (doc) => {
 /**
  * Requisitos de contraseña para mostrar en tiempo real
  */
+const PASSWORD_SYMBOL_RE = /[\^$*.[\]{}()?"!@#%&/\\,><':;|_~`=+-]/;
+
 export const getPasswordRequirements = (password) => {
   const p = password || '';
   return {
@@ -67,7 +69,10 @@ export const getPasswordRequirements = (password) => {
     uppercase: /[A-Z]/.test(p),
     lowercase: /[a-z]/.test(p),
     number: /\d/.test(p),
-    special: /[!#%&@*]/.test(p),
+    // Cualquier símbolo de la lista que acepta la política de contraseñas de
+    // Firebase Auth (requireNonAlphanumericCharacter). Antes solo valían
+    // !#%&@* y quien usaba $ o . no entendía por qué no cumplía.
+    special: PASSWORD_SYMBOL_RE.test(p),
   };
 };
 
