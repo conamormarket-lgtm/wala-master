@@ -97,31 +97,26 @@
    de luz/brillo alrededor. */
 .mark {
   position: relative;
-  width: 96px;
+  width: 88px;
   height: auto;
   filter: drop-shadow(0 5px 14px rgba(76, 29, 149, 0.28));
 }
 
 .inline .mark {
-  width: 60px;
+  width: 58px;
 }
 
-/* Wordmark: mismo tratamiento del logotipo real del Header (mayusculas,
-   tracking ancho, muy bold) pero en blanco solido — negativo del texto
-   en degradado violeta que usa el logo sobre pagina clara. */
+/* Wordmark: "WALÁ" del logo oficial en blanco (imagen), con la misma sombra
+   suave que tenía el texto. */
 .wordmark {
-  font-family: 'Poppins', 'Montserrat', system-ui, sans-serif;
-  font-weight: 700;
-  font-size: clamp(1.1rem, 2.4vw, 1.4rem);
-  letter-spacing: 0.16em;
-  color: #ffffff;
-  text-transform: uppercase;
-  text-shadow: 0 2px 12px rgba(76, 29, 149, 0.35);
+  display: block;
+  width: 122px;
+  height: auto;
+  filter: drop-shadow(0 2px 10px rgba(76, 29, 149, 0.35));
 }
 
 .inline .wordmark {
-  font-size: 1rem;
-  letter-spacing: 0.14em;
+  width: 86px;
 }
 
 /* Pista de la barra de progreso indeterminada: un trazo fino, no un
