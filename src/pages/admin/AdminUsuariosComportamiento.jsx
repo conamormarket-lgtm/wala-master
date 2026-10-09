@@ -12,6 +12,7 @@ import KpiRow from '../../components/dashboard/KpiRow';
 import RankingConMiniaturas from '../../components/dashboard/RankingConMiniaturas';
 import { GlassCard, GlassButton, GlassInput, Badge } from '../../components/ui';
 import styles from './AdminUsuariosComportamiento.module.css';
+import Moneda from '../../components/common/Moneda';
 
 /* ============================================================================
  * AdminUsuariosComportamiento — "👥 Ver qué hacen los usuarios"
@@ -286,7 +287,7 @@ function FichaUsuario({ uid }) {
           </span>
         </div>
         <div className={styles.fichaChips}>
-          <Badge tone="warning" variant="soft" title="Monedas de fidelización">🪙 {fmtInt(f.monedas)}</Badge>
+          <Badge tone="warning" variant="soft" title="Monedas de fidelización"><Moneda />{fmtInt(f.monedas)}</Badge>
           <Badge tone={f.hasCompletedSurvey ? 'success' : 'neutral'} variant="soft">
             {f.hasCompletedSurvey ? '✓ Encuesta' : '✗ Sin encuesta'}
           </Badge>

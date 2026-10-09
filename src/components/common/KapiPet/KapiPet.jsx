@@ -15,6 +15,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { Badge } from '../../ui';
 import styles from './KapiPet.module.css';
 import { T } from '../../../i18n/useTranslatedText';
+import Moneda from '../Moneda';
 
 // Marca del navegador (compatibilidad); la que manda es userProfile.kapiTutorialVisto.
 const CLAVE_TUTORIAL = 'kapiTutorialCompleted';
@@ -420,7 +421,7 @@ const KapiPet = () => {
                   ? <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
                   : <Badge tone="warning" variant="soft" dot><T>Disponible hoy</T></Badge>}
                 <span className={styles.recompensa}>
-                  <span aria-hidden="true">🪙</span>{recompensaHoy === 2 ? <T>+2 monedas</T> : <T>+1 moneda</T>}
+                  <Moneda />{recompensaHoy === 2 ? <T>+2 monedas</T> : <T>+1 moneda</T>}
                 </span>
               </div>
               

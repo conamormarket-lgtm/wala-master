@@ -8,6 +8,7 @@ import { textoPremio } from '../../utils/ruletaModel';
 import { recordMissionAction } from '../../services/loyalty';
 import styles from './CatalogReward.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import Moneda from '../../components/common/Moneda';
 
 // Texto de lo que gana el cliente, calculado igual que en la Ruleta
 // (ver AdminRecompensas.jsx: mismo helper, mismo criterio) para que el
@@ -162,7 +163,7 @@ const CatalogReward = () => {
                 <div className={styles.cardFooter}>
                   <div className={styles.costBadge}>
                     <span className={styles.costLabel}>Cuesta</span>
-                    <span className={styles.costAmount}>🪙 {reward.cost}</span>
+                    <span className={styles.costAmount}><Moneda />{reward.cost}</span>
                   </div>
                   {isConfirming ? (
                     <div className={styles.confirmRow}>
@@ -191,7 +192,7 @@ const CatalogReward = () => {
                     >
                       {canAfford
                         ? 'Canjear'
-                        : `Faltan ${reward.cost - activeMainCoins} 🪙`}
+                        : <>Faltan {reward.cost - activeMainCoins} <Moneda /></>}
                     </button>
                   )}
                 </div>

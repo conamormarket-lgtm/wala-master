@@ -5,6 +5,7 @@ import { getTopReferrersOfMonth } from '../../services/referrals';
 import { GlassCard } from '../ui';
 import styles from './ReferralRanking.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import Moneda from '../common/Moneda';
 
 // Cabecera compartida por los tres estados (cargando / vacío / con datos):
 // misma insignia + título que el resto de las tarjetas de /cuenta.
@@ -92,7 +93,7 @@ const ReferralRanking = () => {
               <span className={styles.statPill}>
                 {user.count} {user.count === 1 ? 'compra' : 'compras'}
               </span>
-              <span className={styles.statCoins}>🪙 {user.coins}</span>
+              <span className={styles.statCoins}><Moneda />{user.coins}</span>
             </span>
           </li>
         ))}

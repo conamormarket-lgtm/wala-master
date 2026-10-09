@@ -50,6 +50,7 @@ import { Badge, Stagger, StaggerItem } from '../../components/ui';
 import ArcadeShell from './ArcadeShell';
 import styles from './MinijuegosPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import Moneda from '../../components/common/Moneda';
 
 /* -------------------------------------------------------------------------
    JuegoCard — tarjeta de vidrio con acento propio.
@@ -295,7 +296,7 @@ const MinijuegosPage = () => {
             ? <Badge tone="success" variant="soft"><T>Hecho hoy</T></Badge>
             : <Badge tone="success" variant="soft"><T>Nuevo reto cada día</T></Badge>}
           atenuada={wordleHecho}
-          recompensa={<><span aria-hidden="true">🪙</span><T>Hasta +4 monedas al acertar</T></>}
+          recompensa={<><Moneda /><T>Hasta +4 monedas al acertar</T></>}
           accion={
             resolviendoSesion ? (
               botonCargando
@@ -332,7 +333,7 @@ const MinijuegosPage = () => {
               <Badge tone="warning" variant="soft" dot><T>Disponible hoy</T></Badge>
             )
           }
-          recompensa={<><span aria-hidden="true">🪙</span>{kapiDoble ? <T>+2 monedas hoy</T> : <T>+1 moneda al día</T>}</>}
+          recompensa={<><Moneda />{kapiDoble ? <T>+2 monedas hoy</T> : <T>+1 moneda al día</T>}</>}
           atenuada={hasClaimedToday}
           accion={
             resolviendoSesion ? (
@@ -473,7 +474,7 @@ const MinijuegosPage = () => {
               <Badge tone="violet" variant="soft" dot><T>Disponible hoy</T></Badge>
             )
           }
-          recompensa={<><span aria-hidden="true">🪙</span><T>+2 monedas al día</T></>}
+          recompensa={<><Moneda /><T>+2 monedas al día</T></>}
           atenuada={hasClaimedBallSort}
           accion={
             resolviendoSesion ? (

@@ -24,6 +24,7 @@ import { GlassCard, Badge, Reveal, Stagger, StaggerItem } from '../../components
 import styles from './MisionesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
 import { volarMonedasGanadas } from '../../utils/animations';
+import Moneda from '../../components/common/Moneda';
 
 // Fecha legible en español (ej. "16 de septiembre"). `missionsDate` llega
 // como 'YYYY-MM-DD' del servidor (limaTodayStr); mismo patrón inline que ya
@@ -364,7 +365,7 @@ const MisionesPage = () => {
                         badge "CUESTA" del Catálogo de Recompensas, al revés. */}
                     <span className={styles.rewardBadge}>
                       <span className={styles.rewardLabel}>Ganas</span>
-                      <span className={styles.rewardAmount}>🪙 +{m.rewardPoints}</span>
+                      <span className={styles.rewardAmount}><Moneda />+{m.rewardPoints}</span>
                     </span>
 
                     {/* Ranura de ancho mínimo fijo: sin ella, el badge de

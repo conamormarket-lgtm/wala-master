@@ -1,3 +1,5 @@
+import { MONEDA_SRC } from '../components/common/Moneda/Moneda';
+
 export const playCoinSound = () => {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -69,8 +71,13 @@ export const showFlyingCoins = (startX, startY, amount = 10) => {
 
   for (let i = 0; i < numCoins; i++) {
     setTimeout(() => {
-      const coin = document.createElement('div');
-      coin.textContent = '🪙';
+      // La misma moneda de Walá que en el resto de la app (antes, el emoji 🪙).
+      const coin = document.createElement('img');
+      coin.src = MONEDA_SRC;
+      coin.alt = '';
+      coin.setAttribute('aria-hidden', 'true');
+      coin.style.width = '2.2rem';
+      coin.style.height = '2.2rem';
       coin.style.position = 'absolute';
       coin.style.left = `${startX}px`;
       coin.style.top = `${startY}px`;

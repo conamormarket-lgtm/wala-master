@@ -5,6 +5,7 @@ import { MISSION_ACTIONS } from '../../constants/missionActions';
 import { Edit2, Trash2, ListChecks, PackageOpen, ShieldCheck } from 'lucide-react';
 import Button from '../../components/common/Button';
 import styles from './AdminMisiones.module.css';
+import Moneda from '../../components/common/Moneda';
 
 const emptyForm = {
   title: '',
@@ -31,7 +32,7 @@ const MissionCard = ({ mission, onEdit, onDelete }) => (
         <p className={styles.missionDesc}>{mission.description}</p>
       )}
       <div className={styles.badgeRow}>
-        <span className={styles.rewardBadge}>🪙 {mission.rewardPoints ?? 0}</span>
+        <span className={styles.rewardBadge}><Moneda />{mission.rewardPoints ?? 0}</span>
         <span className={styles.orderBadge}>Orden: {mission.order ?? 0}</span>
         <span
           className={`${styles.statusBadge} ${

@@ -25,6 +25,7 @@ import FlagIcon from '../../i18n/FlagIcon';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import { T } from '../../../i18n/useTranslatedText';
 import { registrarTextosSinTraducir } from '../../../services/translate';
+import Moneda from '../Moneda';
 
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
@@ -823,7 +824,7 @@ const Header = () => {
                   className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`}
                 >
                   <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
-                    🪙 {Math.floor(displayCoins)}
+                    <Moneda />{Math.floor(displayCoins)}
                   </div>
                   {/* Antes era una sola oración corrida ("Tus monedas - 1
                       moneda = S/1 de descuento (vencen a fin de mes)") — se

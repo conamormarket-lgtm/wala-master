@@ -13,6 +13,7 @@ import { PLACEHOLDER_IMG } from '../constants/placeholder';
 import styles from './SubscriptionSurveyPage.module.css';
 import FechaEventoInput from '../components/common/FechaEventoInput/FechaEventoInput';
 import { T } from '../i18n/useTranslatedText';
+import Moneda from '../components/common/Moneda';
 
 const EVENT_TYPES = [
   { id: 'cumpleanos', label: 'Cumpleaños', needsDate: true },
@@ -422,7 +423,7 @@ const SubscriptionSurveyPage = () => {
               <h2 className={styles.subtitle}>{config.introPanel.subtitle}</h2>
 
               <div className={styles.premioBanner}>
-                <span className={styles.premioIcono} aria-hidden="true">🪙</span>
+                <Moneda size={26} className={styles.premioIcono} style={{ marginInlineEnd: 0 }} />
                 <span>
                   <strong>Gana 15 monedas</strong> al terminar y <strong>5 más</strong> por cada fecha
                   importante que registres (hasta 50). Úsalas como descuento en tus compras.

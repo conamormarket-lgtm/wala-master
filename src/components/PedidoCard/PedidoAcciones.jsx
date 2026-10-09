@@ -13,6 +13,7 @@ import { showFlyingCoins } from '../../utils/animations';
 import { listFilesInFolder } from '../../services/firebase/storage';
 import { T } from '../../i18n/useTranslatedText';
 import styles from './PedidoAcciones.module.css';
+import Moneda from '../common/Moneda';
 
 const DEUDA_IMPRESION_MENSAJE = 'STOP... TIENES UNA DEUDA PENDIENTE, POR FAVOR REALIZA TU PAGO PARA QUE TU PEDIDO PUEDA CONTINUAR AVANZANDO';
 
@@ -262,10 +263,10 @@ const PedidoAcciones = ({ pedido, estado }) => {
               onClick={handleClaimCoins}
               disabled={claimingCoins}
             >
-              🪙 {claimingCoins ? <T>Reclamando...</T> : <T>Reclamar 10 monedas</T>}
+              <Moneda />{claimingCoins ? <T>Reclamando...</T> : <T>Reclamar 10 monedas</T>}
             </button>
           ) : (
-            <span className={styles.chipReclamado}>🪙 <T>Monedas reclamadas</T></span>
+            <span className={styles.chipReclamado}><Moneda /><T>Monedas reclamadas</T></span>
           )}
         </div>
       )}

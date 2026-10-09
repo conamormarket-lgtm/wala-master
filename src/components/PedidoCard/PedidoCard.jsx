@@ -15,6 +15,7 @@ import { ChevronDown, ChevronUp, CheckCircle2, AlertTriangle } from 'lucide-reac
 import { listFilesInFolder } from '../../services/firebase/storage';
 import styles from './PedidoCard.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import Moneda from '../common/Moneda';
 
 const DEUDA_IMPRESION_MENSAJE = 'STOP... TIENES UNA DEUDA PENDIENTE, POR FAVOR REALIZA TU PAGO PARA QUE TU PEDIDO PUEDA CONTINUAR AVANZANDO';
 
@@ -289,12 +290,12 @@ const PedidoCard = ({ pedido, onImageClick, brandsMap }) => {
                 onClick={handleClaimCoins}
                 disabled={claimingCoins}
               >
-                🪙 {claimingCoins ? 'Reclamando...' : 'Reclamar 10 monedas'}
+                <Moneda />{claimingCoins ? 'Reclamando...' : 'Reclamar 10 monedas'}
               </button>
             ) : (
               isCompleted && (
                 <span className={styles.canjeadoChip}>
-                  🪙 Reclamado
+                  <Moneda />Reclamado
                 </span>
               )
             )}

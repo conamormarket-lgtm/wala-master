@@ -24,6 +24,7 @@ import ReferralRanking from '../../components/analytics/ReferralRanking';
 import { GlassCard, Reveal, Stagger, StaggerItem } from '../../components/ui';
 import styles from './CuentaReferidosPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import Moneda from '../../components/common/Moneda';
 
 const STAGES = {
   sent: 1,
@@ -491,7 +492,7 @@ const CuentaReferidosPage = () => {
                           <span className={styles.rewardLabel}>
                             {esConfirmada ? 'Ganas' : 'Ganarías'}
                           </span>
-                          <span className={styles.rewardAmount}>🪙 +{gananciaMostrada}</span>
+                          <span className={styles.rewardAmount}><Moneda />+{gananciaMostrada}</span>
                         </span>
                       </div>
                     ) : (

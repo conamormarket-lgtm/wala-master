@@ -23,6 +23,7 @@ import { volarMonedasGanadas } from '../../utils/animations';
 import { useBloquearScroll } from '../../hooks/useBloquearScroll';
 import styles from './CuentaFechasImportantesPage.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import Moneda from '../../components/common/Moneda';
 
 const EVENT_TYPES = [
   { id: 'cumpleanos', label: 'Cumpleaños', needsDate: true },
@@ -423,7 +424,7 @@ const CuentaFechasImportantesPage = () => {
           </p>
           {premio > 0 && (
             <p className={styles.premio} role="status">
-              🪙 ¡Ganaste {premio} monedas! Úsalas como descuento en tu próxima compra.
+              <Moneda />¡Ganaste {premio} monedas! Úsalas como descuento en tu próxima compra.
             </p>
           )}
         </GlassCard>

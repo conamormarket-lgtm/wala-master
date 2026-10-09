@@ -14,6 +14,7 @@ import ArcadeShell from '../Minijuegos/ArcadeShell';
 // eslint-disable-next-line no-unused-vars
 import styles from './WordlePage.module.css';
 import { T } from '../../i18n/useTranslatedText';
+import Moneda from '../../components/common/Moneda';
 
 // Constantes
 const MAX_ATTEMPTS = 6;
@@ -758,7 +759,7 @@ const WordlePage = () => {
                   ? <T>Acreditando tus monedas...</T>
                   : (
                     <>
-                      🪙 <strong>+{premio.reward} <T>monedas</T></strong>{' '}
+                      <Moneda /><strong>+{premio.reward} <T>monedas</T></strong>{' '}
                       <T>acreditadas.</T>
                       {premio.rapido && <> <T>¡Bonus por acertar rápido!</T></>}
                     </>

@@ -18,6 +18,7 @@ import { costoEnvio } from '../../../../constants/envio';
 import { GlassCard, Badge, Stagger, StaggerItem } from '../../../../components/ui';
 import styles from './Cart.module.css';
 import { T } from '../../../../i18n/useTranslatedText';
+import Moneda from '../../../../components/common/Moneda';
 
 const Cart = () => {
   const { items, getTotalPrice, clearCart, setAllItemsSelected, removeSelectedItems } = useCart();
@@ -210,7 +211,7 @@ const Cart = () => {
                 "al pagar tu pedido", que dice lo mismo sin depender de esa palabra. */}
             {monedasCount > 0 && (
               <div className={styles.coinsNotice}>
-                <span>🪙</span>
+                <Moneda size={22} style={{ marginInlineEnd: 0 }} />
                 <span><T>¡Tienes monedas disponibles! Podrás usarlas como descuento al pagar tu pedido.</T></span>
               </div>
             )}
