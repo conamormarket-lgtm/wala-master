@@ -18,7 +18,7 @@ import {
 import {
   UNIDADES_ZONA, leerPrendaBase, precioBase, precioPersonalizado, zonasConDiseno, listarZonas,
   calidadDeCapa, medidaZona, cargarImagen, tintarImagen, fotoDeVista, requiereTenido, textoSobre, esColorBlanco,
-  colorDisponible, tallasDeColor, slug, fondoMuestra,
+  colorDisponible, tallasDeColor, slug, fondoMuestra, vistasDelColor,
 } from '../../utils/prendaBase';
 import {
   FUENTES, asegurarFuente, asegurarFuentesDe, altoEnUnidades, crearObjeto, leerTransformacion,
@@ -146,7 +146,7 @@ const CrearStudioPage = () => {
     },
   });
   // Solo los colores que se pueden mostrar: un bicolor sin sus fotos no se ofrece.
-  const cfg = useMemo(() => {
+  const cfgPrenda = useMemo(() => {
     if (!prenda) return null;
     const leida = leerPrendaBase(prenda);
     const listos = leida.colores.filter((c) => colorDisponible(c, leida.vistas));
@@ -159,6 +159,16 @@ const CrearStudioPage = () => {
 
   const [vistaId, setVistaId] = useState(null);
   const [colorId, setColorId] = useState(null);
+  // La prenda vista con el color elegido: en un bicolor las zonas van en su
+  // posición de bicolor (vistasDelColor). Así el lienzo, las zonas punteadas
+  // y las vistas previas las ubican sobre su foto sin tocar nada más.
+  const cfg = useMemo(() => {
+    if (!cfgPrenda) return null;
+    const elegido = cfgPrenda.colores.find((c) => c.id === colorId)
+      || cfgPrenda.colores.find((c) => c.id === prenda?.defaultVariantId) || cfgPrenda.colores[0];
+    if (!elegido?.hex2) return cfgPrenda;
+    return { ...cfgPrenda, vistas: vistasDelColor(cfgPrenda.vistas, elegido) };
+  }, [cfgPrenda, colorId, prenda?.defaultVariantId]);
   const [talla, setTalla] = useState('');
   const [zonaId, setZonaId] = useState(null);
   // Capas agrupadas por zona de impresión: { [zonaId]: capa[] }.
@@ -381,7 +391,10 @@ const CrearStudioPage = () => {
   }, []);
 
   // ── Estado inicial: diseño guardado, borrador o valores por defecto ─────
+  // Con la prenda sin color aplicado (cfgPrenda): solo usa ids, y así elegir
+  // un bicolor no la vuelve a disparar.
   useEffect(() => {
+    const cfg = cfgPrenda;
     if (!cfg || listo || authLoading) return;
     let cancelado = false;
     const aplicar = async (estado) => {
@@ -442,7 +455,7 @@ const CrearStudioPage = () => {
       return aplicar(borrador);
     })();
     return () => { cancelado = true; };
-  }, [cfg, listo, authLoading, designIdParam, user, id]);
+  }, [cfgPrenda, listo, authLoading, designIdParam, user, id]);
 
   // Las fuentes del selector se cargan en segundo plano para la vista previa.
   useEffect(() => { FUENTES.forEach((f) => { asegurarFuente(f); }); }, []);

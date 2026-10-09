@@ -14,7 +14,8 @@
  *
  *   prendaBase: {
  *     vistas:  [{ id, nombre, imagen,
- *                 zonas: [{ id, nombre, x, y, w, proporcion, angulo }] }],
+ *                 zonas: [{ id, nombre, x, y, w, proporcion, angulo }],
+ *                 zonasBicolor: { [zonaId]: { x, y } } }],
  *     colores: { [variantId]: { hex2, patron, fotos: { [vistaId]: url } } },
  *   }
  *
@@ -131,6 +132,7 @@ export const normalizarVista = (vista, i = 0) => {
   const referencia = normalizarReferencia(vista?.referencia);
   const anchoImg = num(vista?.anchoImg, 0);
   const altoImg = num(vista?.altoImg, 0);
+  const zonasBicolor = limpiarZonasBicolor(vista?.zonasBicolor, zonas);
   return {
     id,
     nombre,
@@ -138,8 +140,42 @@ export const normalizarVista = (vista, i = 0) => {
     zonas,
     ...(referencia && { referencia }),
     ...(anchoImg > 0 && altoImg > 0 && { anchoImg, altoImg }),
+    ...(zonasBicolor && { zonasBicolor }),
   };
 };
+
+/**
+ * Posición de las zonas en los bicolores. Sus fotos son otras y la prenda
+ * real también: la misma zona (mismo tamaño en cm) cae en otro lugar. Es un
+ * solo juego para todos los bicolores de la prenda, por vista y por zona;
+ * la zona que no lo tiene queda donde está en la prenda normal. Solo se
+ * guardan las zonas que existen.
+ */
+const limpiarZonasBicolor = (crudo, zonas) => {
+  if (!crudo || typeof crudo !== 'object') return null;
+  const out = {};
+  zonas.forEach((z) => {
+    const p = crudo[z.id];
+    if (p && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y))) {
+      out[z.id] = { x: limitar(Number(p.x), -0.5, 1), y: limitar(Number(p.y), -0.5, 1) };
+    }
+  });
+  return Object.keys(out).length ? out : null;
+};
+
+/** Zonas de una vista para los bicolores: con su posición propia, si la tienen. */
+export const zonasParaBicolor = (vista) => vista.zonas.map((z) => {
+  const p = vista.zonasBicolor?.[z.id];
+  return p ? { ...z, x: p.x, y: p.y } : z;
+});
+
+/**
+ * Las vistas como se ven con un color: en un bicolor, con las zonas en su
+ * posición de bicolor; en los demás, tal cual.
+ */
+export const vistasDelColor = (vistas, color) => (color?.hex2
+  ? vistas.map((v) => (v.zonasBicolor ? { ...v, zonas: zonasParaBicolor(v) } : v))
+  : vistas);
 
 /**
  * Medida de referencia de una vista (solo la ve el admin): una línea sobre la

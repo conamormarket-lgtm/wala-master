@@ -15,10 +15,13 @@ const limitar = (v, min, max) => Math.min(max, Math.max(min, v));
  * Con la medida de referencia (línea naranja: dos extremos arrastrables y lo
  * que mide en la prenda real) se conoce la escala de la foto: cada zona
  * muestra su ancho y alto en cm y se puede pintar una cuadrícula de 5 cm.
+ *
+ * Con `soloMover` las zonas solo se mueven (sin asas para estirarlas): para
+ * ubicarlas en la foto de los bicolores sin cambiar su tamaño.
  */
 const ZonaEditor = ({
   imagen, zonas, seleccionada, colorHex, onSeleccionar, onChange,
-  referencia, onReferencia, cuadricula, onDims,
+  referencia, onReferencia, cuadricula, onDims, soloMover = false,
 }) => {
   const cajaRef = useRef(null);
   const canvasRef = useRef(null);
@@ -174,7 +177,7 @@ const ZonaEditor = ({
             >
               <span className={styles.zonaEtiqueta}>{z.nombre}</span>
               {cm && activa && <span className={styles.zonaMedida}>{cm}</span>}
-              {activa && (
+              {activa && !soloMover && (
                 <>
                   <span className={`${styles.asaBorde} ${styles.asaDerecha}`} onPointerDown={empezar(i, 'ancho')} aria-hidden="true" />
                   <span className={`${styles.asaBorde} ${styles.asaAbajo}`} onPointerDown={empezar(i, 'alto')} aria-hidden="true" />

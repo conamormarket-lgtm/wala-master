@@ -4,7 +4,7 @@ import { uploadFile } from '../../../services/firebase/storage';
 import {
   leerPrendaBase, normalizarZona, normalizarVista, normalizarReferencia, medidaZona, zonaConMedida,
   nuevoIdZona, slug, cargarImagen, tintarImagen,
-  colorDisponible, fondoMuestra, PATRONES_BICOLOR, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
+  colorDisponible, fondoMuestra, PATRONES_BICOLOR, zonasParaBicolor, vistasDeEjemplo, COLORES_POLERA, TALLAS_POLERA,
 } from '../../../utils/prendaBase';
 import ZonaEditor from './ZonaEditor';
 import styles from './PersonalizacionPrenda.module.css';
@@ -93,6 +93,8 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
   const [subiendo, setSubiendo] = useState(null);
   const [colorPrevio, setColorPrevio] = useState(null);
   const [zonaElegida, setZonaElegida] = useState({});
+  const [zonaBicolorElegida, setZonaBicolorElegida] = useState({});
+  const [bicolorPrevio, setBicolorPrevio] = useState(null);
   // Las zonas se editan tal como se escriben (un "-" a medio tipear no puede
   // volverse 0); se normalizan al dibujarlas y al guardar.
   const vistas = (valor?.vistas || []).map((v, i) => (Array.isArray(v?.zonas)
@@ -472,6 +474,82 @@ const PersonalizacionPrenda = ({ valor, variantes, varianteDefecto, draftId, onC
           </div>
         )}
       </section>
+
+      {/* Un solo juego de posiciones para todos los bicolores (ver
+          zonasBicolor en utils/prendaBase.js): mismo tamaño, otro lugar. */}
+      {vistas.length > 0 && colores.some((c) => c.hex2) && (() => {
+        const bicolores = colores.filter((c) => c.hex2);
+        const bicolor = bicolores.find((c) => c.id === bicolorPrevio) || bicolores[0];
+        return (
+          <section className={styles.bloque}>
+            <div className={styles.bloqueCabecera}>
+              <h3 className={styles.bloqueTitulo}>Zonas en los bicolores</h3>
+            </div>
+            <p className={styles.ayuda}>
+              En los bicolores la prenda es otra y las zonas caen en otro lugar. Arrástralas sobre la foto del bicolor
+              hasta donde van: el tamaño es el mismo de la prenda normal. Vale para <strong>todos los bicolores</strong>;
+              usa los botones de color para revisar que queden bien en cada uno.
+            </p>
+            {bicolores.length > 1 && (
+              <div className={styles.previoColor}>
+                <span>Ver en:</span>
+                {bicolores.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`${styles.punto} ${bicolor.id === c.id ? styles.puntoActivo : ''}`}
+                    style={{ background: fondoMuestra(c) }}
+                    title={c.nombre}
+                    aria-label={c.nombre}
+                    onClick={() => setBicolorPrevio(c.id)}
+                  />
+                ))}
+              </div>
+            )}
+            <div className={styles.vistas}>
+              {vistas.map((v, i) => {
+                const normal = normalizarVista(v, i);
+                const zonas = zonasParaBicolor(normal);
+                const foto = bicolor.fotos[normal.id];
+                return (
+                  <div key={normal.id} className={styles.vista}>
+                    <div className={styles.vistaCabecera}>
+                      <strong>{normal.nombre}</strong>
+                      {normal.zonasBicolor && (
+                        <button
+                          type="button"
+                          className={styles.botonMini}
+                          onClick={() => setVista(i, { zonasBicolor: null })}
+                          title="Las zonas vuelven a caer donde están en la prenda normal"
+                        >
+                          Usar las de la prenda normal
+                        </button>
+                      )}
+                    </div>
+                    <div className={styles.vistaFoto}>
+                      {foto ? (
+                        <ZonaEditor
+                          imagen={foto}
+                          zonas={zonas}
+                          seleccionada={zonaBicolorElegida[normal.id] ?? 0}
+                          colorHex="#FFFFFF"
+                          soloMover
+                          onSeleccionar={(zi) => setZonaBicolorElegida((m) => ({ ...m, [normal.id]: zi }))}
+                          onChange={(zi, zona) => setVista(i, {
+                            zonasBicolor: { ...(normal.zonasBicolor || {}), [zonas[zi].id]: { x: zona.x, y: zona.y } },
+                          })}
+                        />
+                      ) : (
+                        <div className={styles.zonaVacia}>Sube la foto de {bicolor.nombre} en esta vista (arriba) para ubicar sus zonas.</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
     </div>
   );
 };
