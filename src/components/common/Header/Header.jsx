@@ -602,9 +602,8 @@ const Header = () => {
               etiqueta con su cordón y la W calada, la letra redondeada y la
               etiquetita que hace de tilde en la Á. Antes era un dibujo
               aproximado (bolsa a mano + "WALÁ" en Montserrat) y perdía esos
-              detalles. Son dos máscaras (public/assets/marca): la forma se pinta
-              con el degradado de marca en claro y en blanco en oscuro; la W
-              solo se pinta en oscuro (violeta), como en el logo oficial. */}
+              detalles. Son dos máscaras (public/assets/marca): la forma con el
+              degradado de marca y la W en blanco, igual en claro y en oscuro. */}
           <span className={styles.logoMarca} role="img" aria-label="Walá">
             <span className={styles.logoMarcaForma} aria-hidden="true" />
             <span className={styles.logoMarcaHuecos} aria-hidden="true" />

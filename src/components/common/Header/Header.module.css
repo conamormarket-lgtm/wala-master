@@ -2678,14 +2678,14 @@
    Dos máscaras de public/assets/marca, generadas de public/logo-wala.png:
    - logo-header.webp: etiqueta con cordón + "WALÁ" con su tilde-etiqueta.
    - logo-header-huecos.webp: la W y el ojal (lo calado dentro de la etiqueta).
-   Proporción 481:168. Las letras ocupan ~72% del alto, por eso el alto es
+   Proporción 506:168 (con aire extra entre las letras de WALÁ). Las letras ocupan ~72% del alto, por eso el alto es
    menor que el del SVG anterior (donde ocupaban ~52%).
    ═══════════════════════════════════════════ */
 .logoMarca {
   position: relative;
   display: block;
   height: 42px;
-  aspect-ratio: 481 / 168;
+  aspect-ratio: 506 / 168;
   flex-shrink: 0;
   transition: var(--transicion-rapida);
 }
@@ -2706,7 +2706,9 @@
   mask-repeat: no-repeat;
 }
 
-/* Claro: degradado de marca; la W queda del color del header (blanca). */
+/* Mismo color en claro y en oscuro (como el logo anterior): degradado de
+   marca con la W blanca. Se probó blanco en oscuro y se veía raro que el
+   logo cambiara con el tema. */
 .logoMarcaForma {
   background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
   -webkit-mask-image: url('/assets/marca/logo-header.webp');
@@ -2714,20 +2716,9 @@
 }
 
 .logoMarcaHuecos {
-  background: transparent;
+  background: #ffffff;
   -webkit-mask-image: url('/assets/marca/logo-header-huecos.webp');
   mask-image: url('/assets/marca/logo-header-huecos.webp');
-}
-
-/* Oscuro (y header arcade): logo blanco con la W violeta, como el oficial. */
-:global([data-theme='dark']) .logoMarcaForma,
-.arcadeHeader .logoMarcaForma {
-  background: #ffffff;
-}
-
-:global([data-theme='dark']) .logoMarcaHuecos,
-.arcadeHeader .logoMarcaHuecos {
-  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
 }
 
 @media (max-width: 768px) {
