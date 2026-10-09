@@ -1292,6 +1292,60 @@
   transform: scale(1.05);
 }
 
+/* Píldora de monedas mientras cargan la imagen y el saldo: mismo tamaño que
+   la real (moneda de 18 px + número) para que nada salte al aparecer. */
+.coinsCargando {
+  gap: 0.3em;
+  cursor: default;
+}
+
+.coinsCargando:hover {
+  transform: none;
+}
+
+.coinsCargandoMoneda,
+.coinsCargandoNumero {
+  display: block;
+  background: linear-gradient(90deg, rgba(243, 156, 18, 0.22) 0%, rgba(243, 156, 18, 0.45) 50%, rgba(243, 156, 18, 0.22) 100%);
+  background-size: 200% 100%;
+  animation: coinsBrillo 1.2s ease-in-out infinite;
+}
+
+.coinsCargandoMoneda {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
+.coinsCargandoNumero {
+  width: 1.4em;
+  height: 0.8em;
+  border-radius: 4px;
+}
+
+@keyframes coinsBrillo {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* Al estar lista, aparece de una vez con un fundido corto. */
+.coinsAparece {
+  animation: coinsAparece 0.25s ease-out both;
+}
+
+@keyframes coinsAparece {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coinsCargandoMoneda,
+  .coinsCargandoNumero,
+  .coinsAparece {
+    animation: none;
+  }
+}
+
 /* En noche el dorado medio se apaga sobre la superficie oscura del header. */
 :global([data-theme='dark']) .coinsDisplay {
   background-color: rgba(243, 156, 18, 0.16);

@@ -25,7 +25,14 @@ import FlagIcon from '../../i18n/FlagIcon';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import { T } from '../../../i18n/useTranslatedText';
 import { registrarTextosSinTraducir } from '../../../services/translate';
-import Moneda from '../Moneda';
+import Moneda, { MONEDA_SRC } from '../Moneda';
+
+// La imagen de la moneda se pide en cuanto carga la app, no cuando se pinta el
+// header: así casi siempre llega antes que el saldo. `monedaPrecargada` dice
+// si ya está lista para mostrar la píldora completa (sin que la moneda
+// aparezca un instante después del número).
+const monedaPrecargada = typeof window !== 'undefined' ? new Image() : null;
+if (monedaPrecargada) monedaPrecargada.src = MONEDA_SRC;
 
 const navLinkClass = ({ isActive }) =>
   isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
@@ -105,7 +112,38 @@ const CLAVE_FAB_ENCUESTA = 'surveyFabHiddenUntil';
 
 const Header = () => {
   const { items: cartItems, getTotalItems, getTotalPrice } = useCart();
-  const { user, userProfile, updateUserProfile, activeMainCoins } = useAuth();
+  const { user, userProfile, updateUserProfile, activeMainCoins, loading: authLoading } = useAuth();
+  // Píldora de monedas: se muestra completa solo cuando están la imagen y el
+  // saldo real. Antes salía "0" mientras cargaba el perfil (y luego saltaba al
+  // número real) y la moneda aparecía después del número.
+  const [monedaLista, setMonedaLista] = useState(() => !monedaPrecargada || monedaPrecargada.complete);
+  useEffect(() => {
+    if (monedaLista || !monedaPrecargada) return undefined;
+    const lista = () => setMonedaLista(true);
+    monedaPrecargada.addEventListener('load', lista);
+    monedaPrecargada.addEventListener('error', lista); // sin imagen, igual se muestra el saldo
+    if (monedaPrecargada.complete) lista();
+    return () => {
+      monedaPrecargada.removeEventListener('load', lista);
+      monedaPrecargada.removeEventListener('error', lista);
+    };
+  }, [monedaLista]);
+  const saldoCargando = authLoading || !userProfile || !!userProfile._perfilNoCargado;
+  const monedasCargando = saldoCargando || !monedaLista;
+  // Fundido solo al aparecer tras la carga (no en cada rebote de monedas).
+  const [monedasRecienListas, setMonedasRecienListas] = useState(false);
+  const huboCargaMonedas = useRef(false);
+  useEffect(() => {
+    if (monedasCargando) {
+      huboCargaMonedas.current = true;
+      return undefined;
+    }
+    if (!huboCargaMonedas.current) return undefined;
+    huboCargaMonedas.current = false;
+    setMonedasRecienListas(true);
+    const t = setTimeout(() => setMonedasRecienListas(false), 300);
+    return () => clearTimeout(t);
+  }, [monedasCargando]);
   const navigate = useNavigate();
   const { wishlistItems } = useWishlist();
   const { lang, setLang, available, t } = useLanguage();
@@ -823,9 +861,16 @@ const Header = () => {
                 <div
                   className={`${styles.coinsDisplayTarget} ${styles.tooltipContainer} global-coins-target`}
                 >
-                  <div className={`${styles.coinsDisplay} ${isCoinBouncing ? styles.bounce : ''}`}>
-                    <Moneda />{Math.floor(displayCoins)}
-                  </div>
+                  {monedasCargando ? (
+                    <div className={`${styles.coinsDisplay} ${styles.coinsCargando}`} role="status" aria-label="Cargando tus monedas">
+                      <span className={styles.coinsCargandoMoneda} aria-hidden="true" />
+                      <span className={styles.coinsCargandoNumero} aria-hidden="true" />
+                    </div>
+                  ) : (
+                    <div className={`${styles.coinsDisplay} ${monedasRecienListas ? styles.coinsAparece : ''} ${isCoinBouncing ? styles.bounce : ''}`}>
+                      <Moneda size={18} />{Math.floor(displayCoins)}
+                    </div>
+                  )}
                   {/* Antes era una sola oración corrida ("Tus monedas - 1
                       moneda = S/1 de descuento (vencen a fin de mes)") — se
                       leía como un bloque apretado de texto. Separada en 3
