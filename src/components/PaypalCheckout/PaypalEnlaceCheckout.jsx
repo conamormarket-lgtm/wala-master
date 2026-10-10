@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { trackPaypalPurchase } from '../../services/analytics/metaPixel.mjs';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { updateDocument } from '../../services/firebase/firestore';
 import { T } from '../../i18n/useTranslatedText';
 
 const INTERNATIONAL_ADVANCE_TYPE = 'tiktok_live_international_advance';
@@ -11,7 +10,6 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const amountInUSD = Number(enlace.monto || enlace.montoUSD || 0).toFixed(2);
   const usesSecureInternationalAdvance = enlace.tipo === INTERNATIONAL_ADVANCE_TYPE;
 
   // Si el .env dice 'sb' o está vacío, usamos 'test' que es el sandbox oficial del SDK
@@ -25,63 +23,36 @@ const PaypalEnlaceCheckout = ({ enlace, onSuccess }) => {
     intent: "capture",
   };
 
-  const createOrder = (data, actions) => {
-    if (usesSecureInternationalAdvance) {
-      const createSecure = httpsCallable(getFunctions(), 'createPaypalInternationalAdvanceOrder');
-      return createSecure({ linkId: enlace.id }).then((result) => {
-        const orderID = result?.data?.orderID;
-        if (!orderID) throw new Error('No se pudo obtener la orden de pago segura.');
-        return orderID;
-      });
-    }
-    return actions.order.create({
-      purchase_units: [
-        {
-          description: enlace.concepto || `Pago de enlace #${enlace.id}`,
-          amount: {
-            currency_code: "USD",
-            value: amountInUSD,
-          },
-        },
-      ],
+  // Monto, captura y marca de pagado: siempre en el servidor. El adelanto
+  // internacional (Kenta) tiene sus propias funciones; el resto de enlaces en
+  // dólares, las de enlace genérico.
+  const fnCrear = usesSecureInternationalAdvance ? 'createPaypalInternationalAdvanceOrder' : 'createPaypalEnlaceOrderSecure';
+  const fnCapturar = usesSecureInternationalAdvance ? 'capturePaypalInternationalAdvanceOrder' : 'capturePaypalEnlaceOrderSecure';
+
+  const createOrder = () => {
+    const createSecure = httpsCallable(getFunctions(), fnCrear);
+    return createSecure({ linkId: enlace.id }).then((result) => {
+      const orderID = result?.data?.orderID;
+      if (!orderID) throw new Error('No se pudo obtener la orden de pago segura.');
+      return orderID;
+    }).catch((err) => {
+      setError(err?.message || 'No se pudo iniciar el pago seguro.');
+      throw err;
     });
   };
 
-  const onApprove = async (data, actions) => {
+  const onApprove = async (data) => {
     try {
       setIsProcessing(true);
-      if (usesSecureInternationalAdvance) {
-        const captureSecure = httpsCallable(getFunctions(), 'capturePaypalInternationalAdvanceOrder');
-        const result = await captureSecure({ linkId: enlace.id, orderID: data.orderID });
-        const capture = result?.data;
-        if (!capture?.success || capture?.status !== 'COMPLETED') {
-          throw new Error('El servidor no confirmó el pago.');
-        }
-        trackPaypalPurchase(capture);
-        if (onSuccess) {
-          onSuccess({ ...capture, id: capture.captureId || data.orderID });
-        }
-        return;
+      const captureSecure = httpsCallable(getFunctions(), fnCapturar);
+      const result = await captureSecure({ linkId: enlace.id, orderID: data.orderID });
+      const capture = result?.data;
+      if (!capture?.success || capture?.status !== 'COMPLETED') {
+        throw new Error('El servidor no confirmó el pago.');
       }
-
-      const details = await actions.order.capture();
-      trackPaypalPurchase(details);
-      
-      // Marcar el enlace como pagado en la base de datos
-      const updates = {
-        estado: 'pagado',
-        paypalOrderId: details.id,
-        pagadoEn: new Date().toISOString()
-      };
-
-      const { error: updateError } = await updateDocument('enlaces_pago', enlace.id, updates);
-      
-      if (updateError) {
-        throw new Error(updateError);
-      }
-
+      trackPaypalPurchase(capture);
       if (onSuccess) {
-        onSuccess(details);
+        onSuccess({ ...capture, id: capture.captureId || data.orderID });
       }
     } catch (err) {
       console.error("Error detallado al procesar pago de PayPal:", err);

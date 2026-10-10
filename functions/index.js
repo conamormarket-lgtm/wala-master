@@ -5878,6 +5878,146 @@ exports.capturePaypalInternationalAdvanceOrder = functions.https.onCall(async (d
   return { success: true, status: "COMPLETED", captureId: capture.id || null, amountUsd: ADVANCE_AMOUNT_USD, linkId };
 });
 
+// ── Enlaces de pago en dólares (generador del admin) por el servidor ─────────
+// Antes el navegador creaba la orden de PayPal con el monto que quisiera, la
+// capturaba y marcaba el enlace como pagado él mismo. Con las reglas cerradas esa
+// marca ya no la puede escribir el navegador; ahora monto, captura y marca los
+// hace el servidor, como en el adelanto internacional de arriba.
+function datosEnlaceUsd(link) {
+  if (!link || link.tipo === ADVANCE_TYPE) {
+    throw new functions.https.HttpsError("failed-precondition", "Este enlace se paga por otro camino.");
+  }
+  if (link.estado === "pagado") {
+    throw new functions.https.HttpsError("failed-precondition", "Este enlace ya fue pagado.");
+  }
+  if (link.estado && link.estado !== "pendiente") {
+    throw new functions.https.HttpsError("failed-precondition", "Este enlace ya no está disponible.");
+  }
+  if (pagos.enlaceVencido(link)) {
+    throw new functions.https.HttpsError("failed-precondition", "Este enlace venció. Pide uno nuevo por el chat.");
+  }
+  if (String(link.moneda || "USD").toUpperCase() !== "USD") {
+    throw new functions.https.HttpsError("failed-precondition", "Este enlace se paga con tarjeta en soles.");
+  }
+  const monto = Number(link.monto ?? link.montoUSD);
+  if (!Number.isFinite(monto) || monto < 1) {
+    throw new functions.https.HttpsError("failed-precondition", "El enlace no tiene un monto válido.");
+  }
+  return { usd: monto.toFixed(2) };
+}
+
+exports.createPaypalEnlaceOrderSecure = functions.https.onCall(async (data) => {
+  const linkId = String(data && data.linkId || "").trim();
+  if (!linkId) throw new functions.https.HttpsError("invalid-argument", "Se requiere linkId.");
+  const ref = db.collection("enlaces_pago").doc(linkId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new functions.https.HttpsError("not-found", "Enlace no encontrado.");
+  const link = snap.data() || {};
+  const { usd } = datosEnlaceUsd(link);
+
+  const accessToken = await getPaypalAccessToken();
+  const response = await fetch(`${paypalApiBase()}/v2/checkout/orders`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [{
+        reference_id: linkId,
+        custom_id: linkId,
+        description: String(link.concepto || `Pago de enlace #${linkId}`).slice(0, 120),
+        amount: { currency_code: "USD", value: usd },
+      }],
+    }),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok || !json.id) {
+    console.error("createPaypalEnlaceOrderSecure:", response.status, json);
+    throw new functions.https.HttpsError("internal", "No se pudo iniciar el pago seguro.");
+  }
+  await ref.set({ paypalOrderId: json.id, paypalOrderUsd: usd, orderCreatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { orderID: json.id, amountUsd: usd, linkId };
+});
+
+exports.capturePaypalEnlaceOrderSecure = functions.https.onCall(async (data) => {
+  const linkId = String(data && data.linkId || "").trim();
+  const orderID = String(data && data.orderID || "").trim();
+  if (!linkId || !orderID) throw new functions.https.HttpsError("invalid-argument", "Se requieren linkId y orderID.");
+  const ref = db.collection("enlaces_pago").doc(linkId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new functions.https.HttpsError("not-found", "Enlace no encontrado.");
+  const link = snap.data() || {};
+  if (link.estado === "pagado" && link.paypalOrderId === orderID) {
+    return { success: true, status: "COMPLETED", alreadyPaid: true, captureId: link.paypalCaptureId || null };
+  }
+  if (link.paypalOrderId !== orderID) {
+    throw new functions.https.HttpsError("failed-precondition", "La orden no corresponde a este enlace.");
+  }
+  const { usd } = datosEnlaceUsd(link);
+  const esperado = link.paypalOrderUsd || usd;
+
+  const accessToken = await getPaypalAccessToken();
+  const response = await fetch(`${paypalApiBase()}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "PayPal-Request-Id": `wala-enlace-capture-${orderID}`,
+    },
+    body: JSON.stringify({}),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok || json.status !== "COMPLETED") {
+    console.error("capturePaypalEnlaceOrderSecure:", response.status, json);
+    throw new functions.https.HttpsError("failed-precondition", "El pago no pudo confirmarse.");
+  }
+  const pu = (json.purchase_units || [])[0] || {};
+  const capture = (((pu.payments || {}).captures || [])[0]) || {};
+  const amount = capture.amount || {};
+  if (capture.status !== "COMPLETED" || amount.currency_code !== "USD" ||
+    Math.abs(Number(amount.value) - Number(esperado)) > 0.01 ||
+    String(pu.reference_id || pu.custom_id || "") !== linkId) {
+    await registrarAnomaliaPago(`paypal_enlace_${capture.id || orderID}`, {
+      motivo: "captura_no_cuadra", metodo: "paypal", linkId, orderID, captureId: capture.id || null,
+      capturedValue: amount.value || null, esperado,
+    });
+    throw new functions.https.HttpsError("failed-precondition", "El pago no coincide con el enlace. Lo revisaremos.");
+  }
+  await db.runTransaction(async (t) => {
+    const latest = await t.get(ref);
+    if ((latest.data() || {}).estado === "pagado") return;
+    t.set(ref, {
+      estado: "pagado",
+      paypalOrderId: orderID,
+      paypalCaptureId: capture.id || null,
+      pagadoEn: new Date().toISOString(),
+      pagadoAt: FieldValue.serverTimestamp(),
+      metodoPago: "paypal",
+      montoPagado: Number(amount.value),
+    }, { merge: true });
+  });
+  return { success: true, status: "COMPLETED", captureId: capture.id || null, amountUsd: amount.value, linkId };
+});
+
+// ── Página de regalo (/regalo/:orderId) ──────────────────────────────────────
+// La abre quien RECIBE el regalo, sin cuenta. Antes leía el pedido entero desde
+// el navegador (nombre, dirección, teléfono del comprador…); ahora el servidor
+// devuelve solo los datos del regalo.
+exports.obtenerRegaloSecure = functions.https.onCall(async (data) => {
+  const orderId = String(data && data.orderId || "").trim();
+  if (!orderId || orderId.length > 80) throw new functions.https.HttpsError("invalid-argument", "Falta el pedido.");
+  const erpDb = getErpDb();
+  for (const coleccion of ["pedidos_web", "pedidos"]) {
+    const snap = await erpDb.collection(coleccion).where("numeroPedido", "==", orderId).limit(1).get();
+    const gift = snap.empty ? null : (snap.docs[0].data() || {}).giftDetails;
+    if (gift && gift.isGift) {
+      const { isGift, recipientName, message, sticker, deliveryDate, deliveryEventLabel } = gift;
+      return { giftDetails: { isGift, recipientName: recipientName || null, message: message || null,
+        sticker: sticker || null, deliveryDate: deliveryDate || null, deliveryEventLabel: deliveryEventLabel || null } };
+    }
+  }
+  throw new functions.https.HttpsError("not-found", "No se encontraron detalles de regalo para esta orden.");
+});
+
 // Reconciliación: si Kenta estuvo temporalmente caído después de capturar, el
 // pago no se pierde ni depende de que el comprador vuelva a abrir la página.
 exports.retryKentaPaymentCallbacks = onSchedule("every 5 minutes", async () => {

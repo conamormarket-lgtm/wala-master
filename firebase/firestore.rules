@@ -1,24 +1,43 @@
 rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REGLAS DE FIRESTORE — BASE COMPARTIDA WALÁ + ERP (sistema-gestion-3b225)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Un solo archivo para los dos sistemas. Vive en el repo del ERP
+// (conamormarket-lgtm/sistema, firestore.rules) y hay una COPIA idéntica en el de
+// Walá (wala-master, firebase/firestore.rules). Cambiar los dos a la vez.
+// Desplegar una versión que no tenga las dos partes rompe al otro sistema (pasó
+// el 2026-10-02 y terminó en "allow read, write: if true" durante 8 días).
+//
+//   1) Colecciones SOLO DE WALÁ (lista en esSoloWala): sus reglas propias, abajo.
+//      Ni una sesión anónima las toca fuera de lo que cada regla permite.
+//   2) Todo lo demás (ERP y compartidas: pedidos, pedidos_web, users, fp_*…):
+//      cualquier sesión de Firebase, incluso anónima. El ERP inicia sesión
+//      anónima y valida usuarios contra la colección users en el navegador, así
+//      que para Firestore su personal y un desconocido con sesión anónima son
+//      iguales. Cerrar esto exige que el ERP use Firebase Auth de verdad.
+//   3) Sin sesión: solo lo que una regla de Walá abre a todos (catálogo, páginas…).
+// ═══════════════════════════════════════════════════════════════════════════════
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ⚠️ FASE 0: Estas reglas se reescribieron para cubrir las colecciones REALES de la
-    // app y cerrar agujeros (ver docs/wala/FASE-0-SEGURIDAD.md, H-06/H-07/H-08/H-09).
-    // ANTES DE DESPLEGAR A PRODUCCIÓN: comparar con las reglas actualmente desplegadas en
-    // la consola (pueden ser más permisivas que el repo) y probar en el Rules Playground /
-    // staging. Cualquier colección NO listada aquí queda DENEGADA por defecto.
+    // ═════════════════════════════════════════════════════════════════════════
+    // WALÁ (repo wala-master)
+    // ═════════════════════════════════════════════════════════════════════════
 
     // ── Helpers ────────────────────────────────────────────────────────────────
     function isAuthenticated() { return request.auth != null; }
     function isOwner(userId) { return isAuthenticated() && request.auth.uid == userId; }
 
-    // Admin = custom claim `admin: true` (fuente de verdad, H-09) o, como puente de
-    // bootstrap, doc adminUsers/{uid} con role 'admin'. Meta: depender solo del claim.
+    // Admin = custom claim `admin: true` (fuente de verdad, H-09) o una cuenta con
+    // rol en el panel (adminRoles/{correo}) y el correo VERIFICADO. adminRoles es
+    // solo de Walá: con estas reglas solo un admin lo puede escribir.
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.get('admin', false) == true ||
-        (exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin')
+        (request.auth.token.get('email_verified', false) == true &&
+         exists(/databases/$(database)/documents/adminRoles/$(request.auth.token.email.lower())))
       );
     }
 
@@ -294,6 +313,21 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Tipo de cambio que lee la tienda (config/fx). El resto de config es del ERP.
+    match /config/{id} {
+      allow read: if id == 'fx';
+    }
+
+    // Copia de los pedidos web del lado Walá ("Mis pedidos", Recepción). Pagos y
+    // estados los escribe solo el servidor; desde el navegador solo nace una copia
+    // SIN pago (formulario de cuestionario).
+    match /wala_pedidos/{id} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
+      allow create: if request.resource.data.get('pagado', false) == false
+                    && request.resource.data.get('estadoWala', 'pendiente_pago') == 'pendiente_pago';
+      allow update, delete: if isAdmin();
+    }
+
     // ── Admin / configuración restringida ────────────────────────────────────────
     match /adminUsers/{userId} { allow read, write: if isAdmin(); }
     // adminRoles: el cliente autenticado lee su propio rol para computar permisos de UI.
@@ -440,6 +474,100 @@ service cloud.firestore {
     match /paypalSubEvents/{e} {
       allow read: if false;
       allow write: if false;
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // ERP (repo conamormarket-lgtm/sistema)
+    // ═════════════════════════════════════════════════════════════════════════
+
+    // Colecciones que usa SOLO Walá: quedan fuera de la regla general de abajo.
+    // Para agregar una colección nueva de Walá: su match arriba y su nombre aquí.
+    function esSoloWala(c) {
+      return c in [
+        'activeChallenge', 'adminRoles', 'adminUsers', 'analytics_daily', 'analytics_events',
+        'analytics_global_summary', 'analytics_kapi', 'analytics_sessions', 'analytics_user_summary',
+        'beneficios', 'blueprints', 'challengeEvidences', 'chancesAjustes', 'characters',
+        'checkout_payment_intents', 'clics', 'cliparts', 'cobros_en_curso', 'comunidad_meta', 'contador',
+        'cuestionarios_templates', 'culqiCharges', 'culqiWebhookEvents', 'customShapes', 'designs',
+        'enlaces_pago', 'flashOffers', 'fonts', 'fx', 'galeria', 'ganadores_galeria', 'heatmap_events',
+        'inventoryLogs', 'landingPages', 'libro_reclamaciones', 'link_pages', 'loyaltyLedger',
+        'messages', 'missions', 'niches', 'notification_campaigns', 'notification_drafts',
+        'notification_settings', 'notification_state', 'notification_stats', 'notifications',
+        'order_notifications', 'organizable_events', 'pages', 'pagos_anomalias', 'participantes',
+        'payment_link_integrations', 'payouts', 'paypalPlanes', 'paypalSubEvents', 'paypal_ordenes',
+        'pedidos_vinculo_intentos', 'portal_clientes_users', 'productTypes', 'product_reviews',
+        'product_view_notifications', 'producto_cliente_personalizado', 'productos_wala', 'recibos',
+        'referralClaims', 'referralOrderClaims', 'referrals', 'rewardsCatalog', 'ruletaConfig',
+        'ruletaPrizes', 'ruletaWins', 'shippingZones', 'sorteos', 'sorteos_realizados',
+        'sorteos_suscripcion', 'storeConfig', 'storeConfigLogs', 'storefront', 'subOrders',
+        'suggested_packages', 'suscripcionCharges', 'suscriptores', 'tags', 'templates', 'tickets',
+        'tienda_brands', 'tienda_categories', 'tienda_collections', 'tienda_encuesta_config',
+        'tienda_landing_pages', 'tienda_mockups', 'tienda_themes', 'translations', 'universal_dates',
+        'userActions', 'userCoupons', 'userMissions', 'usos', 'vendors', 'wala_pedidos',
+        'weeklyChallenges', 'wishlists', 'wordle', 'wordle_daily_words'
+      ];
+    }
+
+    // ─── AUDITORÍA ───────────────────────────────────────────────────────────
+    match /audits/{auditId} {
+      allow read: if request.auth != null
+                  && request.auth.token.email == "admin@sistema.com";
+      allow create: if request.auth != null
+                    && request.resource.data.userId is string
+                    && request.resource.data.timestamp != null
+                    && request.resource.data.expiresAt != null
+                    && request.resource.data.module is string
+                    && request.resource.data.action is string
+                    && request.resource.data.entity is string;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // ─── ROLLUPS MENSUALES (solo Cloud Functions escriben) ───────────────────
+    match /rollups_mensuales/{mes} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // ─── RENDIMIENTO DE VENTAS (funnel de leads) ─────────────────────────────
+    match /leads_funnels/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /leads_dias/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /leads_avances/{id} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ─── REVISIÓN DE STOCK (cola del servidor) ───────────────────────────────
+    match /stockReview_requests/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['requestedBy', 'createdAt', 'status'])
+        && request.resource.data.requestedBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.status == 'pending';
+    }
+    function serverOwnsStockTransition() {
+      return exists(/databases/$(database)/documents/stockReview_meta/control)
+        && get(/databases/$(database)/documents/stockReview_meta/control).data.get('enabled', false) == true;
+    }
+    function changesStockState(collection) {
+      return collection == 'pedidos'
+        && request.method == 'update'
+        && resource.data.get('estadoGeneral', '') in ['En Pausa por Stock', 'Listo para Preparar']
+        && request.resource.data.get('estadoGeneral', '') in ['En Pausa por Stock', 'Listo para Preparar']
+        && resource.data.estadoGeneral != request.resource.data.estadoGeneral;
+    }
+
+    // ─── REGLA GENERAL DEL ERP ───────────────────────────────────────────────
+    // Cualquier sesión, salvo en las colecciones solo de Walá.
+    match /{collection}/{document=**} {
+      allow read: if request.auth != null && !esSoloWala(collection);
+      allow write: if request.auth != null
+        && !esSoloWala(collection)
+        && !collection.matches('stockReview_.*')
+        && !(changesStockState(collection) && serverOwnsStockTransition());
     }
   }
 }

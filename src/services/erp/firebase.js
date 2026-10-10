@@ -538,32 +538,14 @@ export async function markWebOrderWhatsapp(orderId) {
  * Solo devuelve los datos de giftDetails para mantener la privacidad
  */
 export async function getOrderGiftDetails(orderId) {
-  if (!isErpFirestoreAvailable()) {
-    return { data: null, error: 'Firestore del ERP no está disponible' };
-  }
-
+  // La página la abre quien recibe el regalo, sin cuenta: el servidor busca el
+  // pedido y devuelve SOLO los datos del regalo (antes se leía el pedido entero
+  // desde el navegador, con los datos del comprador).
   try {
-    // 1. Buscar por numeroPedido en pedidos_web
-    const qWeb = query(collection(erpDb, 'pedidos_web'), where('numeroPedido', '==', orderId));
-    const snapWeb = await getDocs(qWeb);
-    if (!snapWeb.empty) {
-      const docData = snapWeb.docs[0].data();
-      if (docData.giftDetails && docData.giftDetails.isGift) {
-        return { data: docData.giftDetails, error: null };
-      }
-    }
-
-    // 2. Buscar por numeroPedido en pedidos (aprobados)
-    const qPedidos = query(collection(erpDb, 'pedidos'), where('numeroPedido', '==', orderId));
-    const snapPedidos = await getDocs(qPedidos);
-    if (!snapPedidos.empty) {
-      const docData = snapPedidos.docs[0].data();
-      if (docData.giftDetails && docData.giftDetails.isGift) {
-        return { data: docData.giftDetails, error: null };
-      }
-    }
-
-    return { data: null, error: 'No se encontraron detalles de regalo para esta orden.' };
+    const { getFunctions, httpsCallable } = await import('firebase/functions');
+    const res = await httpsCallable(getFunctions(portalApp), 'obtenerRegaloSecure')({ orderId: String(orderId || '') });
+    const gift = res?.data?.giftDetails;
+    return gift ? { data: gift, error: null } : { data: null, error: 'No se encontraron detalles de regalo para esta orden.' };
   } catch (error) {
     console.error('Error al obtener detalles del regalo:', error);
     return { data: null, error: error.message };
