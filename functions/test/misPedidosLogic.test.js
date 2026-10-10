@@ -100,6 +100,18 @@ check("clasifica: el espejo sigue a su pedido vivo visible y no se repite en pen
   assert.strictEqual(pendientes[0].ref, "pedidos/v2");
 });
 
+check("clasifica: pedido web aprobado por el ERP (número nuevo) no repite la copia de Walá", () => {
+  const aprobado = pedido({ id: "12001", buyerUid: "u1", numeroPedido: "12001", origenPedidoWebId: "PD-9", portalPseudoOrderId: "PD-9" });
+  const espejo = { id: "PD-9", _coleccion: "wala_pedidos", numeroPedido: "PD-9", pedidoWebId: "PD-9", buyerUid: "u1" };
+  const otroEspejo = { id: "PD-8", _coleccion: "wala_pedidos", numeroPedido: "PD-8", buyerUid: "u1" };
+  const { visibles } = m.clasificarPedidos([aprobado, espejo, otroEspejo], cuenta());
+  assert.deepStrictEqual(visibles.map((p) => p.id).sort(), ["12001", "PD-8"]);
+  // Si el aprobado NO se ve completo (solo coincide por DNI), la copia se queda.
+  const ajeno = pedido({ id: "12002", numeroPedido: "12002", origenPedidoWebId: "PD-7" });
+  const espejo7 = { id: "PD-7", _coleccion: "wala_pedidos", numeroPedido: "PD-7", buyerUid: "u1" };
+  assert.deepStrictEqual(m.clasificarPedidos([ajeno, espejo7], cuenta()).visibles.map((p) => p.id), ["PD-7"]);
+});
+
 check("pendientes ordenados del más reciente al más antiguo", () => {
   const { pendientes } = m.clasificarPedidos(
     [

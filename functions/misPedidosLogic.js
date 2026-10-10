@@ -133,7 +133,17 @@ function clasificarPedidos(pedidos, cuenta) {
   const clavesVisibles = new Set();
 
   const vivos = pedidos.filter((p) => p && p._coleccion !== "wala_pedidos");
-  const espejos = pedidos.filter((p) => p && p._coleccion === "wala_pedidos");
+  // Al aprobar un pedido web, el ERP le da un número nuevo y guarda el de la web
+  // en origenPedidoWebId / portalPseudoOrderId. La copia de Walá sigue con el
+  // número web: si el pedido aprobado se ve completo, la copia sobra (salía repetido).
+  const aprobadosDesdeWeb = new Set();
+  vivos.filter((p) => motivoDeAcceso(p, cuenta)).forEach((p) => {
+    [p.origenPedidoWebId, p.portalPseudoOrderId].forEach((v) => {
+      if (v && String(v) !== String(claveDeNegocio(p))) aprobadosDesdeWeb.add(String(v));
+    });
+  });
+  const espejos = pedidos.filter((p) => p && p._coleccion === "wala_pedidos" &&
+    !aprobadosDesdeWeb.has(String(claveDeNegocio(p))) && !aprobadosDesdeWeb.has(String(p.pedidoWebId || "")));
 
   for (const p of vivos) {
     if (motivoDeAcceso(p, cuenta)) {
