@@ -7,6 +7,7 @@ const { recordatoriosDeHoy, eventosValidos, diasHastaProxima } = require("./fech
 const { hitoDeEstadoErp, hitoDeEstadoWala, debeAvisar, textoHito } = require("./ordersLogic");
 const { agruparInteres, elegirProducto } = require("./productViewLogic");
 const { recomendarRegalos } = require("./giftLogic");
+const { puedeUsarPuente } = require("./adminAuth");
 const {
   avisosFestivosDeHoy, festivasDesdeDoc, recordatorioPersonalDesdeDoc, proximaFecha, armarAvisoFestivo,
 } = require("./fechasFestivasLogic");
@@ -640,16 +641,17 @@ exports.probarAvisoFechas = functions.https.onCall(async (data, context) => {
   return { titulo: payload.title, cuerpo: payload.body, image: payload.image || "", push, tieneApp: tokens.length > 0 };
 });
 
-// Admin = custom claim o, como puente de bootstrap, doc adminUsers/{uid} con
-// role 'admin' (H-04).
+// Admin = custom claim. El doc adminUsers/{uid} solo vale para las cuentas de
+// ADMIN_BRIDGE_EMAILS (ver ./adminAuth.js) (H-04).
 async function exigirAdmin(context) {
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado.");
   }
   const esAdmin = context.auth.token?.admin === true
-    || (await db.collection("adminUsers").doc(context.auth.uid).get()
-      .then((s) => s.exists && s.data().role === "admin")
-      .catch(() => false));
+    || (puedeUsarPuente(context.auth.token)
+      && await db.collection("adminUsers").doc(context.auth.uid).get()
+        .then((s) => s.exists && s.data().role === "admin")
+        .catch(() => false));
   if (!esAdmin) {
     throw new functions.https.HttpsError("permission-denied", "Solo un administrador puede enviar notificaciones.");
   }

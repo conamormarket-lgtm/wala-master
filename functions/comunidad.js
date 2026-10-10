@@ -17,6 +17,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
 const c = require("./comunidadLogic");
+const { puedeUsarPuente } = require("./adminAuth");
 
 // Como en index.js: FieldValue de firebase-admin/firestore (admin.firestore.FieldValue
 // puede ser undefined en el emulador).
@@ -38,6 +39,9 @@ async function esAdminComunidad(context) {
   const auth = context && context.auth;
   if (!auth) return false;
   if (auth.token && auth.token.admin === true) return true;
+  // adminUsers/adminRoles se pueden escribir desde el navegador mientras las
+  // reglas compartidas sigan abiertas: solo valen para ADMIN_BRIDGE_EMAILS.
+  if (!puedeUsarPuente(auth.token)) return false;
   try {
     const snap = await db().collection("adminUsers").doc(auth.uid).get();
     if (snap.exists && snap.data().role === "admin") return true;

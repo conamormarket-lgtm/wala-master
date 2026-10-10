@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { signInAnonymously } from 'firebase/auth';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { auth } from '../../../../services/firebase/config';
 import { getProduct } from '../../../../services/products';
-import { createWebOrder } from '../../../../services/erp/firebase';
-import { markWalaOrderPagado } from '../../../../services/walaOrders';
+import { prepareCheckoutPayment } from '../../../../services/checkoutPayment';
 import { useAuth } from '../../../../contexts/AuthContext';
 import CulqiCustomCheckout from '../../../../components/CulqiCustomCheckout';
 import PaypalCheckout from '../../../../components/PaypalCheckout/PaypalCheckout';
@@ -340,7 +338,9 @@ const LandingPaymentBlock = ({ config = {} }) => {
   const isCustomerComplete = () => validateCustomer() === null;
 
   const preparePedido = async (authUser = null) => {
-    if (paymentPedido) return paymentPedido;
+    // La intención fija completo/adelanto: si la persona cambió de modo, se
+    // prepara otra (el servidor cobra lo de la intención, no lo de la pantalla).
+    if (paymentPedido && paymentPedido.modalidad === effectiveMode) return paymentPedido;
 
     const validationError = validateCustomer();
     if (validationError) throw new Error(validationError);
@@ -447,9 +447,12 @@ const LandingPaymentBlock = ({ config = {} }) => {
         },
         // En el combo, la billetera va como línea informativa (precio 0: ya está
         // incluida en el total del combo) para que Recepción sepa qué despachar.
+        // Sin productoId: con el del reloj, el servidor la valoraría al precio
+        // del reloj y rechazaría el pedido. productoIdReferencia dice de qué es.
         ...(billeteraLabel && {
           item_1: {
-            productoId: productId || '',
+            productoId: '',
+            productoIdReferencia: productId || '',
             producto: `Billetera ${billeteraLabel} (incluida en el combo)`,
             brandId: productMeta?.brandId || null,
             urlImagen: '',
@@ -466,31 +469,37 @@ const LandingPaymentBlock = ({ config = {} }) => {
       ...(buyerUid && { userId: buyerUid }),
     };
 
-    // ── Verificación de precio/stock reales contra el catálogo ────────────
-    // Este checkout crea el pedido DIRECTO (createWebOrder), sin pasar por la
-    // intención previa que usa el checkout normal (prepareCheckoutPayment) —
-    // así que, a diferencia de ahí, aquí nada bloqueaba el monto server-side
-    // antes de cobrar. Mismo criterio (misma Cloud Function reusa
-    // precioDeCatalogo) que ya protege /checkout; solo cambia CUÁNDO se llama.
+    // ── Intención de pago (igual que /checkout) ───────────────────────────
+    // Antes este checkout creaba el pedido en pedidos_web desde el navegador, con
+    // el total que pusiera el navegador, y Culqi cobraba ese número. Ahora el
+    // servidor comprueba precio y stock, fija lo que se cobra (el total o el
+    // adelanto de la configuración de la landing) y crea el pedido recién
+    // cuando el cobro está aprobado.
+    let prepared;
     try {
-      await httpsCallable(getFunctions(), 'validateCartPricingSecure')({ productos: webOrderPayload.productos });
-    } catch (validationErr) {
-      throw new Error(validationErr?.message || 'No pudimos verificar tu pedido. Intenta de nuevo.');
+      prepared = await prepareCheckoutPayment(webOrderPayload);
+    } catch (prepareErr) {
+      throw new Error(
+        prepareErr?.code === 'functions/failed-precondition' && prepareErr?.message
+          ? prepareErr.message
+          : 'No pudimos preparar tu pago. Intenta de nuevo.'
+      );
     }
-
-    const { id, error: webErr } = await createWebOrder(webOrderPayload);
-    if (webErr || !id) {
-      throw new Error(webErr || 'No se pudo registrar el pedido. Intenta de nuevo.');
+    const intentId = prepared?.intentId;
+    const cobroPen = Number(prepared?.cobro?.cobroPen);
+    if (!intentId || !(cobroPen > 0)) {
+      throw new Error('No pudimos preparar tu pago. Intenta de nuevo.');
     }
 
     const pedido = {
-      id,
-      pedidoWebId: id,
+      id: intentId,
+      checkoutIntentId: intentId,
       numeroPedido: pseudoOrderId,
+      modalidad: effectiveMode,
       // Solo la línea comercial. La billetera incluida repite el mismo ID
       // como instrucción de despacho y no es una segunda unidad del combo.
       productos: { item_0: webOrderPayload.productos.item_0 },
-      montoDeuda: chargeAmount, // Culqi cobra el total o solo el adelanto según la modalidad
+      montoDeuda: cobroPen, // lo que fijó el servidor: el total o el adelanto
       esPeru: true,
       country: 'PE',
     };
@@ -526,16 +535,9 @@ const LandingPaymentBlock = ({ config = {} }) => {
     }
   };
 
+  // El pedido pagado (y su copia en wala_pedidos) lo registra el servidor al
+  // confirmar el cobro: aquí solo se muestra la confirmación.
   const handlePagoExitoso = (details, metodo) => {
-    const pedido = paymentPedidoRef.current;
-    if (pedido) {
-      markWalaOrderPagado({
-        numeroPedido: pedido.numeroPedido,
-        pedidoWebId: pedido.pedidoWebId || pedido.id,
-        metodoPago: metodo,
-        montoPagado: Number(pedido.montoDeuda) || montoPEN,
-      }).catch(() => {});
-    }
     setPagoCompletado(true);
     setMetodoPagado(metodo);
     setActiveGateway(null);
@@ -647,6 +649,18 @@ const LandingPaymentBlock = ({ config = {} }) => {
       return;
     }
     setError(null);
+    if (paymentPedido.modalidad !== effectiveMode) {
+      // Cambió completo/adelanto: nueva intención con el monto correcto.
+      setCreating(true);
+      try {
+        await preparePedido(auth?.currentUser || null);
+      } catch (err) {
+        setError(err.message || 'No pudimos preparar tu pago. Intenta de nuevo.');
+        return;
+      } finally {
+        setCreating(false);
+      }
+    }
     setActiveGateway('culqi');
     setCulqiAutoOpen(true);
   };
@@ -1140,7 +1154,10 @@ const LandingPaymentBlock = ({ config = {} }) => {
                     {activeGateway === 'paypal' && paymentPedido ? (
                       <PaypalCheckout
                         pedido={paymentPedido}
-                        amountUsd={resolvedUSD}
+                        // Referencia en pantalla; PayPal cobra lo que fijó el servidor.
+                        amountUsd={paymentPedido.modalidad === 'adelanto'
+                          ? Math.max(1, Math.round((paymentPedido.montoDeuda / 3.75) * 100) / 100)
+                          : resolvedUSD}
                         webOrderId={paymentPedido.id}
                         onSuccess={(details) => handlePagoExitoso(details, 'paypal')}
                       />

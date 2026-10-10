@@ -32,6 +32,8 @@ const {
 const { palabraDelDia } = require("./wordleWords");
 const { calcularRecompensaFechas } = require("./fechasLogic");
 const { totalEsperadoCheckout, topeMonedasCheckout, toleranciaCheckout } = require("./checkoutTotals");
+const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
+const pagos = require("./pagosLogic");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -46,12 +48,14 @@ const RULETA_CONFIG_DOC = "ruletaConfig/settings";
 const MIN_PASSWORD_LENGTH = 6;
 
 // ── Autorización (Fase 0, H-01/H-09) ──────────────────────────────────────────
-// El llamante es admin si tiene el custom claim `admin: true`. Como puente de
-// bootstrap (mientras se asignan los claims) se acepta también un doc
-// adminUsers/{uid} con role 'admin'. La meta es depender solo del claim.
+// El llamante es admin si tiene el custom claim `admin: true`. El doc
+// adminUsers/{uid} solo vale para las cuentas de ADMIN_BRIDGE_EMAILS: mientras
+// las reglas compartidas con el ERP dejen escribirlo, cualquiera podía crearse
+// el suyo y pasar por admin (ver ./adminAuth.js).
 async function callerIsAdmin(context) {
   if (!context || !context.auth) return false;
-  if (context.auth.token && context.auth.token.admin === true) return true;
+  if (tieneClaimAdmin(context)) return true;
+  if (!puedeUsarPuente(context.auth.token)) return false;
   try {
     const snap = await db.collection(ADMIN_USERS_COLLECTION).doc(context.auth.uid).get();
     return snap.exists && snap.data().role === "admin";
@@ -129,11 +133,112 @@ async function readCheckoutIntent(intentId, context, { exigirVigente = false } =
   if (context && context.auth && intent.uid && intent.uid !== context.auth.uid) {
     throw new functions.https.HttpsError("permission-denied", "Esta intención pertenece a otro usuario.");
   }
-  if (exigirVigente && INTENCION_NO_COBRABLE.has(intent.status)) {
+  if (exigirVigente) exigirIntencionCobrable(intent);
+  return { id, ref: snap.ref, intent, orderPayload: intent.orderPayload || {} };
+}
+
+function exigirIntencionCobrable(intent) {
+  if (intent.status === "paid_order_created") {
+    throw new functions.https.HttpsError("failed-precondition",
+      "Este pedido ya está pagado. Lo encuentras en «Mis pedidos».");
+  }
+  if (INTENCION_NO_COBRABLE.has(intent.status)) {
     throw new functions.https.HttpsError("failed-precondition",
       "Este pago ya no es válido porque confirmaste tus datos de nuevo o pasó demasiado tiempo. Recarga la página.");
   }
-  return { id, ref: snap.ref, intent, orderPayload: intent.orderPayload || {} };
+}
+
+// ── Un cobro a la vez por pedido ─────────────────────────────────────────────
+// Estados de una intención: prepared → cobrando → paid_order_created.
+// "cobrando" se pone en transacción ANTES de llamar a la pasarela: un doble
+// clic, dos pestañas o un reintento con otra tarjeta ya no generan dos cargos
+// sobre el mismo pedido. Si la pasarela rechaza, vuelve a "prepared". Si la
+// llamada se corta sin respuesta (no se sabe si cobró), queda en "cobrando": el
+// webhook verificado lo cierra si el cargo existió, y pasados
+// pagos.COBRO_EN_CURSO_MS se puede reintentar.
+// Los cobros que no son de una intención (saldo de un pedido, enlace, ticket)
+// usan el mismo cerrojo en cobros_en_curso/{clave}.
+const COBROS_EN_CURSO_COLLECTION = "cobros_en_curso";
+// Cobros que necesitan que alguien los revise: cobrado sin pedido, dos cobros
+// del mismo pedido, respuesta perdida de la pasarela… Solo servidor.
+const PAGOS_ANOMALIAS_COLLECTION = "pagos_anomalias";
+
+const MSG_COBRO_EN_CURSO =
+  "Ya hay un pago en proceso para este pedido. Espera unos minutos antes de volver a intentarlo.";
+
+async function reservarCobroIntencion(intentRef, uid, metodo) {
+  await db.runTransaction(async (t) => {
+    const snap = await t.get(intentRef);
+    if (!snap.exists) throw new functions.https.HttpsError("not-found", "La intención de pago no existe.");
+    const intent = snap.data() || {};
+    if (intent.uid && intent.uid !== uid) {
+      throw new functions.https.HttpsError("permission-denied", "Esta intención pertenece a otro usuario.");
+    }
+    exigirIntencionCobrable(intent);
+    if (pagos.cobroEnCursoVigente(intent)) {
+      throw new functions.https.HttpsError("already-exists", MSG_COBRO_EN_CURSO);
+    }
+    t.update(intentRef, {
+      status: "cobrando",
+      cobroMetodo: metodo,
+      cobroIniciadoAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+}
+
+// La pasarela rechazó el cobro: el pedido se puede volver a intentar.
+async function liberarCobroIntencion(intentRef) {
+  try {
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(intentRef);
+      if (!snap.exists || snap.data().status !== "cobrando") return;
+      t.update(intentRef, {
+        status: "prepared",
+        cobroIniciadoAt: FieldValue.delete(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    });
+  } catch (e) {
+    console.warn("liberarCobroIntencion: no se pudo liberar", intentRef.id, e.message);
+  }
+}
+
+async function reservarCobroGenerico(clave, uid, metodo) {
+  const ref = db.collection(COBROS_EN_CURSO_COLLECTION).doc(clave.replace(/\//g, "__"));
+  await db.runTransaction(async (t) => {
+    const snap = await t.get(ref);
+    if (snap.exists && pagos.cobroEnCursoVigente(snap.data())) {
+      throw new functions.https.HttpsError("already-exists", MSG_COBRO_EN_CURSO);
+    }
+    t.set(ref, {
+      clave, uid, metodo,
+      status: "cobrando",
+      cobroIniciadoAt: FieldValue.serverTimestamp(),
+    });
+  });
+  return ref;
+}
+
+async function liberarCobroGenerico(ref) {
+  if (!ref) return;
+  try {
+    await ref.set({ status: "libre", liberadoAt: FieldValue.serverTimestamp() }, { merge: true });
+  } catch (e) {
+    console.warn("liberarCobroGenerico: no se pudo liberar", ref.id, e.message);
+  }
+}
+
+async function registrarAnomaliaPago(id, datos) {
+  try {
+    await db.collection(PAGOS_ANOMALIAS_COLLECTION).doc(String(id).replace(/\//g, "__")).set({
+      ...datos,
+      revisado: false,
+      createdAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  } catch (e) {
+    console.error("registrarAnomaliaPago: no se pudo registrar", id, e.message, datos);
+  }
 }
 
 // ── Verificación de precio/stock reales contra el catálogo ──────────────────
@@ -211,11 +316,19 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     throw new functions.https.HttpsError("invalid-argument", "Faltan los datos del checkout.");
   }
   const intentId = checkoutOrderId(orderPayload);
-  const amountPen = Number(orderPayload.montoPendiente ?? orderPayload.montoTotal ?? orderPayload.montoDeuda);
+  // El TOTAL del pedido. En una landing con adelanto, montoPendiente es el saldo
+  // contra entrega, no lo que se cobra: lo que se cobra lo decide el servidor.
+  const amountPen = Number(orderPayload.montoTotal ?? orderPayload.montoPendiente ?? orderPayload.montoDeuda);
   if (!intentId || !Number.isFinite(amountPen) || amountPen <= 0) {
     throw new functions.https.HttpsError("invalid-argument", "El checkout no tiene un código o monto válido.");
   }
   const uid = context.auth ? context.auth.uid : null;
+  // Landing: el envío va incluido y puede cobrarse un adelanto. Ambas cosas salen
+  // de la configuración de la landing (pages/{slug}), que solo edita el admin.
+  const landingSlug = orderPayload.origen === "landing_page"
+    ? String(orderPayload.landingSlug || "").trim().replace(/[/\\#?[\].]/g, "-")
+    : "";
+  const landingRef = landingSlug ? db.collection("pages").doc(landingSlug) : null;
   const monedasPedidas = Math.max(0, Number(orderPayload.descuentoMonedas) || 0);
   if (monedasPedidas > 0 && !uid) {
     throw new functions.https.HttpsError("failed-precondition", "Inicia sesión para usar tus monedas.");
@@ -241,9 +354,33 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
     const userSnap = userRef ? await t.get(userRef) : null;
     const u = userSnap && userSnap.exists ? userSnap.data() : {};
     const anteriorSnap = anteriorRef ? await t.get(anteriorRef) : null;
+    const landingSnap = landingRef ? await t.get(landingRef) : null;
+
+    let ajustesLanding = null;
+    if (landingRef) {
+      ajustesLanding = landingSnap.exists ? pagos.ajustesPagoLanding(landingSnap.data()) : null;
+      if (!ajustesLanding) {
+        throw new functions.https.HttpsError("failed-precondition", "Esta página de compra ya no está disponible. Recarga la página.");
+      }
+      // Solo el producto de la landing: si no, cualquier carrito podría pedir el
+      // envío incluido o el adelanto de la landing.
+      const productoLanding = String(ajustesLanding.productId || "").trim();
+      const lineas = Object.values(orderPayload.productos || {}).filter(Boolean);
+      const ajenas = lineas.filter((p) => String(p.productoId || "").trim() &&
+        String(p.productoId).trim() !== productoLanding);
+      const precioLanding = Number(ajustesLanding.montoPEN) || 0;
+      if (ajenas.length || (!productoLanding && !(precioLanding > 0)) ||
+        (precioLanding > 0 && Math.abs(subtotal - precioLanding) > 0.01)) {
+        console.warn(`prepareCheckoutPayment: landing ${landingSlug} con productos o precio distintos`, {
+          subtotal, precioLanding, productoLanding, ajenas: ajenas.map((p) => p.productoId),
+        });
+        throw new functions.https.HttpsError("failed-precondition",
+          "El precio de este producto cambió. Recarga la página e inténtalo de nuevo.");
+      }
+    }
 
     let descuentoCupon = 0;
-    let envioGratis = false;
+    let envioGratis = !!ajustesLanding;
     if (uid && cuponCode) {
       const encontrado = await buscarCupon(uid, cuponCode, t);
       if (!motivoRechazo(encontrado && encontrado.cupon)) {
@@ -257,7 +394,7 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
           subtotal: Math.max(0, subtotal - monedasPedidas),
           subtotalProductos: subtotal,
         });
-        envioGratis = calculo.envioGratis;
+        envioGratis = envioGratis || calculo.envioGratis;
         descuentoCupon = calculo.envioGratis ? 0 : calculo.descuento;
       }
     }
@@ -309,12 +446,29 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       });
     }
 
+    // Lo que se cobra ahora: el total o, en una landing, el adelanto que fija su
+    // configuración. Nunca lo que diga el navegador.
+    const cobro = ajustesLanding
+      ? pagos.cobroLanding({ total: amountPen, modalidad: orderPayload.modalidadPago, ajustes: ajustesLanding })
+      : { modalidad: "completo", cobroPen: pagos.redondear(amountPen), saldoPen: 0 };
+
+    // El pedido que se guarda es el del navegador SIN campos de pago (los pone el
+    // servidor al confirmar el cobro) y con la cuenta real de quien compra.
+    const payloadGuardado = {
+      ...pagos.limpiarPayloadCliente(orderPayload),
+      ...(uid ? { userId: uid } : {}),
+      modalidadPago: cobro.modalidad,
+      montoAdelanto: 0,
+      montoPendiente: cobro.cobroPen,
+    };
+
     // ── Escrituras ──
     t.create(ref, {
       uid,
       status: "prepared",
       amountPen,
-      orderPayload,
+      cobro,
+      orderPayload: payloadGuardado,
       totalesServidor: { subtotal, monedas: monedasPedidas, descuentoCupon, envioGratis, envio, esperado },
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
@@ -348,47 +502,154 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
       });
     }
   });
-  return { success: true, intentId, amountPen };
+  const guardada = await ref.get();
+  const cobro = (guardada.exists && guardada.data().cobro) || null;
+  return { success: true, intentId, amountPen, cobro };
 });
 
-async function createPaidWebOrderFromIntent({ intentId, context, payment }) {
+/**
+ * Crea en pedidos_web el pedido de una intención YA COBRADA (lo llaman
+ * processCulqiPayment, capturePaypalOrderSecure y culqiWebhook; el primero que
+ * llega lo crea y los demás ven que ya está hecho).
+ *
+ * @param {object} p
+ * @param {string} p.intentId
+ * @param {object|null} p.context   null desde el webhook (no hay usuario).
+ * @param {object} p.pago           { metodo, id, montoPen, moneda, montoUsd? } comprobado con la pasarela.
+ * @param {object} [p.payment]      campos sueltos que ya usaban el ERP/la tienda
+ *                                  (culqiChargeId, montoPagado, paypalOrderId…).
+ */
+async function createPaidWebOrderFromIntent({ intentId, context, pago, payment = {} }) {
   const checkout = await readCheckoutIntent(intentId, context);
   const erpDb = getErpDb();
   if (!erpDb) throw new Error("ERP no disponible después del cobro.");
   const payload = checkout.orderPayload;
   const orderId = checkoutOrderId(payload) || checkout.id;
-  const orderRef = erpDb.collection("pedidos_web").doc(orderId);
+  const pagoId = String((pago && pago.id) || "");
+
+  // 1) La intención queda pagada por ESTE cobro. Si ya la pagó otro cobro, es un
+  // cobro duplicado: no se toca el pedido y queda para devolver el dinero.
+  let yaCreado = false;
+  let duplicadoDe = null;
+  await db.runTransaction(async (t) => {
+    const snap = await t.get(checkout.ref);
+    const actual = snap.data() || {};
+    const pagoPrevio = actual.pago && actual.pago.id ? String(actual.pago.id) : "";
+    if (actual.status === "paid_order_created" && pagoPrevio && pagoId && pagoPrevio !== pagoId) {
+      duplicadoDe = pagoPrevio;
+      return;
+    }
+    if (actual.status === "paid_order_created" && actual.pedidoCreado === true) {
+      yaCreado = true;
+      return;
+    }
+    t.set(checkout.ref, {
+      status: "paid_order_created",
+      pedidoWebId: orderId,
+      pago: { ...pago, registradoAt: new Date().toISOString() },
+      pedidoCreado: false,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+  if (duplicadoDe) {
+    await registrarAnomaliaPago(`duplicado_${pagoId}`, {
+      motivo: "cobro_duplicado", intentId: checkout.id, pedidoWebId: orderId,
+      pagoId, pagoOriginal: duplicadoDe, metodo: pago.metodo, montoPen: pago.montoPen,
+    });
+    return orderId;
+  }
+  if (yaCreado) return orderId;
+
+  // 2) El pedido, con el payload que validó el servidor y los montos del cobro.
+  const total = Number(payload.montoTotal) || Number(checkout.intent.amountPen) || 0;
+  const montos = pagos.montosPedidoPagado({ total, montoPagadoPen: pago.montoPen });
   const docRaw = payload.clienteNumeroDocumento || payload.dni || "";
   const docNorm = String(docRaw).trim().replace(/\s/g, "");
+  const uid = checkout.intent.uid || null;
+  const orderRef = erpDb.collection("pedidos_web").doc(orderId);
   await erpDb.runTransaction(async (t) => {
     const existing = await t.get(orderRef);
-    const normalized = docNorm ? {
-      dniRaw: docRaw,
-      clienteNumeroDocumento: docNorm,
-      dni: docNorm,
-    } : {};
     t.set(orderRef, {
-      ...(existing.exists ? {} : payload),
-      ...normalized,
+      ...payload,
+      ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
+      ...(uid ? { userId: uid, buyerUid: uid } : {}),
       web: true,
       estadoValidacion: "pendiente",
-      pagado: true,
-      estadoPago: "pagado",
-      conDeuda: false,
-      montoDeuda: 0,
-      montoPendiente: 0,
+      ...montos,
+      metodoPago: pago.metodo,
+      // Lo que el ERP necesita para validar sin adivinar: quién cobró, cuánto y
+      // con qué id buscarlo en el panel de la pasarela.
+      pagoOnline: {
+        metodo: pago.metodo,
+        id: pagoId,
+        montoPen: pago.montoPen,
+        moneda: pago.moneda || "PEN",
+        ...(pago.montoUsd != null && { montoUsd: pago.montoUsd }),
+        modalidad: (checkout.intent.cobro && checkout.intent.cobro.modalidad) || "completo",
+        verificadoPor: "servidor",
+        fecha: new Date().toISOString(),
+      },
       ...payment,
       ...(existing.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
       updatedAt: FieldValue.serverTimestamp(),
       pagadoAt: FieldValue.serverTimestamp(),
     }, { merge: true });
   });
-  await checkout.ref.set({
-    status: "paid_order_created",
-    pedidoWebId: orderId,
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
+
+  // 3) Espejo wala_pedidos (lo que muestra "Mis pedidos"). Antes lo escribía el
+  // navegador después del pago; ahora el servidor, junto con el pedido.
+  await escribirEspejoPagado({ orderId, payload, uid, pago, montos });
+
+  await checkout.ref.set({ pedidoCreado: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return orderId;
+}
+
+async function escribirEspejoPagado({ orderId, payload, uid, pago, montos }) {
+  try {
+    const erpDb = getErpDb();
+    const numeroPedido = payload.numeroPedido || orderId;
+    const ref = erpDb.collection(WALA_ORDERS_COLLECTION).doc(sanearWalaDocId(numeroPedido));
+    const snap = await ref.get();
+    const docNorm = String(payload.clienteNumeroDocumento || payload.dni || "").trim().replace(/\s/g, "");
+    const marca = {
+      pagado: montos.pagado,
+      estadoPago: montos.estadoPago,
+      metodoPago: pago.metodo,
+      montoPagado: pago.montoPen,
+      pagadoAt: FieldValue.serverTimestamp(),
+      estadoWalaUpdatedAt: FieldValue.serverTimestamp(),
+    };
+    const estado = snap.exists ? snap.data().estadoWala : null;
+    if (snap.exists) {
+      // No se retrocede un pedido que el ERP ya avanzó.
+      await ref.set({ ...marca, ...(!estado || estado === "pendiente_pago" ? { estadoWala: "pagado" } : {}) }, { merge: true });
+      return;
+    }
+    await ref.set({
+      ...marca,
+      numeroPedido,
+      portalPseudoOrderId: payload.portalPseudoOrderId || numeroPedido,
+      pedidoWebId: orderId,
+      buyerUid: uid,
+      dni: docNorm || null,
+      dniRaw: payload.dniRaw || payload.clienteNumeroDocumento || payload.dni || null,
+      clienteNumeroDocumento: docNorm || null,
+      clienteNombreCompleto: payload.clienteNombreCompleto || payload.customerName || null,
+      productos: pagos.resumirProductos(payload.productos),
+      ...(payload.giftDetails != null && { giftDetails: payload.giftDetails }),
+      ...(payload.deliveryDate != null && { deliveryDate: payload.deliveryDate }),
+      montoTotal: payload.montoTotal ?? null,
+      moneda: "PEN",
+      canalVenta: "Portal Web",
+      web: true,
+      estadoWala: "pagado",
+      createdAt: FieldValue.serverTimestamp(),
+      fuente: "wala-mirror",
+    });
+  } catch (e) {
+    // El pedido ya está en pedidos_web: el espejo es un extra.
+    console.warn(`escribirEspejoPagado: no se pudo escribir el espejo de ${orderId}:`, e.message);
+  }
 }
 
 // ── wala_pedidos: marca de pago en la FUENTE DE VERDAD de WALA (best-effort) ───
@@ -1368,6 +1629,119 @@ exports.approveChallengeEvidence = functions.https.onCall(async (data, context) 
   return { success: true, ...resultado };
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// COBROS CON CULQI
+// ────────────────────────────────────────────────────────────────────────────
+// Qué se cobra y cuánto lo decide SIEMPRE el servidor. El navegador solo dice
+// qué quiere pagar (una intención de checkout, el saldo de un pedido, un enlace
+// de pago o un ticket de sorteo) y entrega el token de la tarjeta. Si el monto
+// que muestra la ventana de Culqi no es el del servidor, no se cobra: antes se
+// cobraba el del navegador cuando no se encontraba el pedido, cuando la moneda
+// no era PEN o cuando fallaba la lectura, y después se marcaba pagado igual.
+// ════════════════════════════════════════════════════════════════════════════
+
+const CULQI_API = "https://api.culqi.com/v2";
+
+const formatoSoles = (centimos) => `S/ ${(Number(centimos) / 100).toFixed(2)}`;
+
+// Saldo de un pedido, para pagarlo desde "Mis pedidos". Solo pedidos que ya
+// validó el ERP (pedidos) o que creó el servidor tras un pago online (pedidos_web
+// con pagoOnline: una landing con adelanto). Las solicitudes que arma el
+// navegador (WhatsApp) las valida primero el ERP: su monto lo puso el cliente.
+async function objetivoSaldoPedido(pedidoId) {
+  const erpDb = getErpDb();
+  const id = String(pedidoId);
+  let snap = await erpDb.collection("pedidos").doc(id).get();
+  let coleccion = "pedidos";
+  if (!snap.exists) {
+    const web = await erpDb.collection("pedidos_web").doc(id).get();
+    const pagoOnline = web.exists ? web.data().pagoOnline : null;
+    if (!pagoOnline || pagoOnline.verificadoPor !== "servidor") {
+      throw new functions.https.HttpsError("failed-precondition",
+        "Este pedido todavía no se puede pagar en línea. Escríbenos por WhatsApp para completarlo.");
+    }
+    snap = web;
+    coleccion = "pedidos_web";
+  }
+  const pedido = snap.data() || {};
+  if (pedido.deletedAt || pedido.estadoGeneral === "Anulado") {
+    throw new functions.https.HttpsError("failed-precondition", "Este pedido está anulado.");
+  }
+  const saldo = Number(pedido.montoPendiente ?? pedido.montoDeuda);
+  if (!Number.isFinite(saldo) || saldo <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "Este pedido no tiene saldo pendiente.");
+  }
+  return {
+    tipo: "saldo",
+    clave: `saldo:${coleccion}/${id}`,
+    coleccion,
+    pedidoId: id,
+    montoCentimos: pagos.aCentimos(saldo),
+    moneda: "PEN",
+  };
+}
+
+async function objetivoEnlace(enlaceId) {
+  const snap = await db.collection("enlaces_pago").doc(enlaceId).get();
+  if (!snap.exists) throw new functions.https.HttpsError("not-found", "El enlace de pago no existe.");
+  const enlace = snap.data() || {};
+  if (enlace.estado === "pagado") {
+    throw new functions.https.HttpsError("failed-precondition", "Este enlace ya fue pagado.");
+  }
+  if (enlace.estado && enlace.estado !== "pendiente") {
+    throw new functions.https.HttpsError("failed-precondition", "Este enlace ya no está disponible.");
+  }
+  if (pagos.enlaceVencido(enlace)) {
+    throw new functions.https.HttpsError("failed-precondition", "Este enlace venció. Pide uno nuevo por el chat.");
+  }
+  const moneda = String(enlace.moneda || "USD").toUpperCase();
+  const monto = Number(enlace.monto ?? enlace.montoPEN);
+  if (!Number.isFinite(monto) || monto <= 0) {
+    throw new functions.https.HttpsError("failed-precondition", "El enlace no tiene un monto válido.");
+  }
+  return { tipo: "enlace", clave: `enlace:${enlaceId}`, enlaceId, montoCentimos: pagos.aCentimos(monto), moneda };
+}
+
+// Saldo de un pedido pagado en línea. Idempotente por el id del cobro: el
+// cobro y el webhook pueden llegar los dos.
+async function registrarPagoSaldo({ coleccion, pedidoId, pago, payment = {} }) {
+  const erpDb = getErpDb();
+  const ref = erpDb.collection(coleccion).doc(String(pedidoId));
+  await erpDb.runTransaction(async (t) => {
+    const snap = await t.get(ref);
+    if (!snap.exists) throw new Error(`El pedido ${coleccion}/${pedidoId} ya no existe.`);
+    const previos = Array.isArray(snap.data().pagosOnline) ? snap.data().pagosOnline : [];
+    if (previos.some((p) => p && String(p.id) === String(pago.id))) return;
+    t.set(ref, {
+      pagado: true,
+      estadoPago: "pagado",
+      conDeuda: false,
+      montoDeuda: 0,
+      montoPendiente: 0,
+      metodoPago: pago.metodo,
+      pagadoAt: FieldValue.serverTimestamp(),
+      pagosOnline: [...previos, { ...pago, verificadoPor: "servidor", fecha: new Date().toISOString() }],
+      ...payment,
+    }, { merge: true });
+  });
+}
+
+async function marcarEnlacePagado({ enlaceId, pago, payment = {} }) {
+  await db.runTransaction(async (t) => {
+    const ref = db.collection("enlaces_pago").doc(enlaceId);
+    const snap = await t.get(ref);
+    if (!snap.exists || snap.data().estado === "pagado") return;
+    t.set(ref, {
+      estado: "pagado",
+      pagadoEn: new Date().toISOString(),
+      pagadoAt: FieldValue.serverTimestamp(),
+      metodoPago: pago.metodo,
+      montoPagado: pago.montoPen,
+      ...payment,
+    }, { merge: true });
+  });
+}
+
 /**
  * Callable Function: Procesar pago con Culqi
  */
@@ -1377,364 +1751,238 @@ exports.processCulqiPayment = functions
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado para pagar.");
   }
-
-  const { amount, currency, email, tokenId, description, metadata } = data || {};
+  const uid = context.auth.uid;
+  const { amount, currency, email, tokenId, description } = data || {};
+  const metadata = data && data.metadata && typeof data.metadata === "object" ? data.metadata : {};
 
   if (!amount || !email || !tokenId) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan datos requeridos para el pago.");
   }
-
-  // El monto llega en céntimos (integer). Validación básica server-side (H-11).
   if (!Number.isInteger(amount) || amount <= 0) {
     throw new functions.https.HttpsError("invalid-argument", "Monto inválido.");
   }
+  const payCurrency = String(currency || "PEN").toUpperCase();
+  const checkoutIntentId = String((data && data.checkoutIntentId) || metadata.checkoutIntentId || "").trim();
+  const enlaceId = typeof metadata.enlaceId === "string" ? metadata.enlaceId.trim() : "";
+  const pedidoId = String(metadata.pedidoId || metadata.orderId || "").trim();
 
-  // ── H-11: RECÁLCULO DEL MONTO SERVER-SIDE (cierra el TODO) ──────────────────
-  // No se confía 100% en el `amount` enviado por el cliente. Cuando el pago es en
-  // PEN y la metadata trae el id del pedido (`pedidoId`, escrito por el frontend en
-  // CulqiCustomCheckout), se relee el total REAL desde pedidos_web en el ERP y se
-  // usa ese total (en céntimos) como monto autoritativo del cargo.
-  //
-  // IMPORTANTE (regla dura de dinero): el total en PEN NO se modifica aquí; el
-  // descuento por monedas ya viene aplicado en montoTotal/montoPendiente del pedido.
-  // Solo se sustituye el `amount` del cargo por el derivado del pedido real.
-  //
-  // Tolerancia a fallos: si no hay ERP configurado, no se encuentra el pedido, o el
-  // total no es válido, se CONSERVA el `amount` del cliente (ya validado > 0) para no
-  // bloquear el cobro. Para pagos en USD/extranjero NO se recalcula aquí: PayPal cobra
-  // en USD por su propio flujo y Culqi-USD usa enlaces de monto fijo ya validados.
-  let chargeAmount = amount;
-  const payCurrency = currency || "PEN";
-  let pedidoId = metadata && (metadata.pedidoId || metadata.orderId);
-  const checkoutIntentId = data && (data.checkoutIntentId || (metadata && metadata.checkoutIntentId));
+  // ── 1) Qué se cobra y cuánto (del servidor) ────────────────────────────────
+  let objetivo;
   let checkoutIntent = null;
-  // Se capturan en scope de función para reusarlos al marcar el pedido pagado tras el cobro.
-  let erpDbForOrder = null;
-  let orderColl = null;
-  if (payCurrency === "PEN" && checkoutIntentId) {
-    checkoutIntent = await readCheckoutIntent(checkoutIntentId, context, { exigirVigente: true });
-    pedidoId = checkoutIntent.id;
-    const penTotal = Number(
-      checkoutIntent.orderPayload.montoPendiente ??
-      checkoutIntent.orderPayload.montoTotal ??
-      checkoutIntent.orderPayload.montoDeuda
-    );
-    if (!Number.isFinite(penTotal) || penTotal <= 0) {
+  if (metadata.tipo === "sorteo") {
+    // Ticket de sorteo: precio del sorteo × cantidad del ticket que creó
+    // comprarTicketSorteoSecure. Un ticket ya pagado no se vuelve a cobrar.
+    const tSnap = await db.collection("sorteos").doc(String(metadata.sorteoId))
+      .collection("tickets").doc(String(metadata.ticketId)).get();
+    if (!tSnap.exists) {
+      throw new functions.https.HttpsError("not-found", "El ticket de sorteo no existe.");
+    }
+    const ticket = tSnap.data() || {};
+    if (ticket.pagoConfirmado === true) {
+      throw new functions.https.HttpsError("failed-precondition", "Este ticket ya está pagado.");
+    }
+    const { montoCentimos } = await leerPrecioTicketSorteo(metadata.sorteoId, Number(ticket.cantidad));
+    objetivo = {
+      tipo: "sorteo",
+      clave: `sorteo:${metadata.sorteoId}/${metadata.ticketId}`,
+      montoCentimos,
+      moneda: "PEN",
+      metaCulqi: { sorteoId: String(metadata.sorteoId), ticketId: String(metadata.ticketId), uid: String(metadata.uid || uid) },
+    };
+  } else if (checkoutIntentId) {
+    // Si ya está pagada o reemplazada lo rechaza reservarCobroIntencion (paso 3),
+    // después de ver si esto es el reintento de un cobro que ya salió bien.
+    checkoutIntent = await readCheckoutIntent(checkoutIntentId, context);
+    const cobroPen = pagos.cobroDeIntencion(checkoutIntent.intent);
+    if (!cobroPen) {
       throw new functions.https.HttpsError("failed-precondition", "La intención no tiene un monto válido.");
     }
-    chargeAmount = Math.round(penTotal * 100);
-  } else if (payCurrency === "PEN" && pedidoId) {
-    try {
-      const erpDb = getErpDb();
-      if (erpDb) {
-        erpDbForOrder = erpDb;
-        let orderData = null;
-        for (const coll of ["pedidos_web", "pedidos"]) {
-          const snap = await erpDb.collection(coll).doc(String(pedidoId)).get();
-          if (snap.exists) { orderData = snap.data(); orderColl = coll; break; }
-        }
-        if (orderData) {
-          // Total final en soles (con descuento ya aplicado). Se prioriza el pendiente.
-          const penTotal = Number(
-            orderData.montoPendiente ?? orderData.montoTotal ?? orderData.montoDeuda
-          );
-          if (Number.isFinite(penTotal) && penTotal > 0) {
-            const recomputed = Math.round(penTotal * 100); // a céntimos
-            if (recomputed > 0) {
-              if (recomputed !== amount) {
-                console.warn(
-                  `processCulqiPayment H-11: monto del cliente (${amount}) != monto del pedido ` +
-                  `${pedidoId} (${recomputed}). Se usa el del servidor.`
-                );
-              }
-              chargeAmount = recomputed;
-            }
-          }
-        } else {
-          console.warn(`processCulqiPayment H-11: pedido ${pedidoId} no encontrado; se usa el monto del cliente.`);
-        }
-      }
-    } catch (e) {
-      // Nunca se bloquea el cobro por un fallo al recalcular: se usa el monto del cliente.
-      console.warn("processCulqiPayment H-11: fallo al recalcular monto, se usa el del cliente:", e.message);
-    }
+    objetivo = {
+      tipo: "checkout",
+      clave: `checkout:${checkoutIntent.id}`,
+      montoCentimos: pagos.aCentimos(cobroPen),
+      moneda: "PEN",
+      metaCulqi: { checkoutIntentId: checkoutIntent.id },
+    };
+  } else if (enlaceId) {
+    objetivo = await objetivoEnlace(enlaceId);
+    objetivo.metaCulqi = { enlaceId };
+  } else if (pedidoId) {
+    objetivo = await objetivoSaldoPedido(pedidoId);
+    objetivo.metaCulqi = { pedidoId: objetivo.pedidoId, coleccion: objetivo.coleccion };
+  } else {
+    throw new functions.https.HttpsError("invalid-argument", "El pago no indica qué se está pagando.");
   }
 
-  // ── SORTEOS: recálculo del monto del TICKET server-side ─────────────────────
-  // Si es un pago de sorteo (metadata.tipo==="sorteo"), el monto NO se toma del
-  // cliente: se relee precioTicket*cantidad desde el doc del sorteo (regla dura de
-  // dinero). Si algo no cuadra, se ABORTA el cobro (a diferencia de H-11 de pedidos,
-  // aquí no hay total de ERP de respaldo y no debe cobrarse un monto no verificado).
-  if (metadata && metadata.tipo === "sorteo") {
-    const { montoCentimos } = await leerPrecioTicketSorteo(
-      metadata.sorteoId,
-      // cantidad autoritativa: la del intent creado en comprarTicketSorteoSecure.
-      await (async () => {
-        const tSnap = await db.collection("sorteos").doc(String(metadata.sorteoId))
-          .collection("tickets").doc(String(metadata.ticketId)).get();
-        if (!tSnap.exists) {
-          throw new functions.https.HttpsError("not-found", "El ticket de sorteo no existe.");
-        }
-        const ticket = tSnap.data() || {};
-        // GUARD ANTI DOBLE COBRO: si el ticket YA está pagado, se aborta ANTES de
-        // llamar a la API de Culqi. El lock culqiCharges/{tokenId} solo cubre el
-        // mismo token; esto cubre el mismo TICKET (un reintento con token nuevo
-        // sobre un ticket ya cobrado no debe generar un segundo cargo real).
-        if (ticket.pagoConfirmado === true) {
-          throw new functions.https.HttpsError("failed-precondition", "Este ticket ya está pagado.");
-        }
-        return Number(ticket.cantidad);
-      })()
-    );
-    if (payCurrency !== "PEN") {
-      throw new functions.https.HttpsError("failed-precondition", "Los tickets de sorteo se cobran en PEN.");
-    }
-    chargeAmount = montoCentimos; // monto autoritativo del ticket (céntimos)
+  if (payCurrency !== objetivo.moneda) {
+    throw new functions.https.HttpsError("failed-precondition",
+      objetivo.moneda === "USD" ? "Este pago se hace con PayPal." : `Este pago se cobra en ${objetivo.moneda}.`);
   }
+  // La ventana de Culqi muestra el monto del navegador: si no es el del servidor,
+  // no se cobra (ni más ni menos de lo que vio la persona). El ticket de sorteo
+  // conserva su regla de siempre: se cobra el precio del servidor.
+  if (objetivo.tipo !== "sorteo" && !pagos.coincideMonto(amount, objetivo.montoCentimos)) {
+    console.warn(`processCulqiPayment: monto del cliente ${amount} != servidor ${objetivo.montoCentimos} (${objetivo.clave})`);
+    throw new functions.https.HttpsError("failed-precondition",
+      `El monto a pagar es ${formatoSoles(objetivo.montoCentimos)}. Recarga la página e inténtalo de nuevo.`);
+  }
+  const chargeAmount = objetivo.montoCentimos;
 
-  // La llave privada de Culqi DEBE venir de un secret de Functions. Sin fallback dummy
-  // y sin prefijo REACT_APP_ (que se expondría en el bundle del cliente).
   const secretKey = process.env.CULQI_SECRET_KEY;
   if (!secretKey) {
     console.error("processCulqiPayment: CULQI_SECRET_KEY no configurada.");
     throw new functions.https.HttpsError("failed-precondition", "Pago no disponible temporalmente.");
   }
 
-  // ── S-4: IDEMPOTENCIA (aditivo y seguro) ───────────────────────────────────
-  // ANTES de cobrar se intenta crear un doc de bloqueo `culqiCharges/{tokenId}`
-  // con runTransaction + t.create(): si el doc ya existe (mismo tokenId por doble
-  // click / retry de red), NO se vuelve a cobrar y se devuelve el resultado previo
-  // (o un estado "en proceso" si el primer intento aún no terminó). El tokenId de
-  // Culqi es de un solo uso, por lo que es una clave de idempotencia natural.
-  //
-  // Comportamiento conservador (no rompe pagos): si por cualquier motivo falla la
-  // adquisición del lock de forma inesperada, NO se bloquea el cobro (se procede
-  // como hoy); la transacción solo aborta el camino normal cuando detecta de forma
-  // fiable que ya hubo (o hay) un cobro para este tokenId.
+  // ── 2) El token: un token de Culqi es un cobro ─────────────────────────────
+  // culqiCharges/{tokenId} se crea ANTES de cobrar y queda atado a este usuario
+  // y a este objetivo. Antes no guardaba a qué pedido pertenecía: con el token
+  // de una compra ya pagada se "pagaba" cualquier otro pedido sin cobrar nada.
   const lockRef = db.collection("culqiCharges").doc(String(tokenId));
-  let lockAcquired = false;
+  let previo;
   try {
-    const prev = await db.runTransaction(async (t) => {
+    previo = await db.runTransaction(async (t) => {
       const snap = await t.get(lockRef);
-      if (snap.exists) {
-        // Ya existe un intento para este tokenId.
-        return snap.data() || {};
-      }
-      // Se reserva el tokenId ANTES de llamar a la API de Culqi.
+      if (snap.exists) return snap.data() || {};
       t.create(lockRef, {
         tokenId: String(tokenId),
         status: "processing",
         amount: chargeAmount,
         currency: payCurrency,
-        uid: context.auth.uid,
+        uid,
+        objetivo: objetivo.clave,
         createdAt: FieldValue.serverTimestamp(),
       });
-      return null; // null = lock recién adquirido por esta llamada
+      return null;
     });
-
-    if (prev) {
-      // Reintento detectado: NO se recobra.
-      if (prev.status === "succeeded") {
-        let recoveredPedidoWebId = null;
-        if (checkoutIntent) {
-          try {
-            recoveredPedidoWebId = await createPaidWebOrderFromIntent({
-              intentId: checkoutIntent.id,
-              context,
-              payment: {
-                metodoPago: "culqi",
-                culqiChargeId: prev.charge_id ? String(prev.charge_id) : null,
-                montoPagado: prev.amount ?? chargeAmount,
-              },
-            });
-          } catch (e) {
-            console.error("processCulqiPayment: no se pudo recuperar el pedido de un cobro idempotente:", e);
-          }
-        }
-        // Devuelve el resultado previo guardado (mismo shape que el éxito normal).
-        return {
-          success: true,
-          charge_id: prev.charge_id || null,
-          outcome: prev.outcome || null,
-          amount: prev.amount ?? chargeAmount,
-          pedidoWebId: recoveredPedidoWebId,
-          idempotent: true, // marca informativa: respuesta servida desde el lock
-        };
-      }
-      if (prev.status === "failed") {
-        // El intento previo con este token falló en Culqi. El token es de un solo
-        // uso, así que reintentarlo daría error igualmente: se informa con claridad.
-        throw new functions.https.HttpsError(
-          "failed-precondition",
-          "Este pago ya fue intentado y no se completó. Vuelve a iniciar el pago para generar un nuevo token."
-        );
-      }
-      // status "processing": otra ejecución concurrente está cobrando este token.
-      throw new functions.https.HttpsError(
-        "already-exists",
-        "El pago con esta tarjeta ya se está procesando. Espera unos segundos antes de reintentar."
-      );
-    }
-    lockAcquired = true;
   } catch (e) {
-    if (e instanceof functions.https.HttpsError) throw e;
-    // Fallo inesperado del lock: no se bloquea el cobro (comportamiento de hoy).
-    console.warn("processCulqiPayment S-4: no se pudo adquirir el lock de idempotencia, se procede sin él:", e.message);
+    // Sin el cerrojo no se cobra: es lo que impide cobrar dos veces el mismo token.
+    console.error("processCulqiPayment: no se pudo reservar el token:", e.message);
+    throw new functions.https.HttpsError("unavailable", "No pudimos iniciar el pago. Inténtalo de nuevo en unos segundos.");
   }
 
+  if (previo) {
+    if (previo.uid !== uid || previo.objetivo !== objetivo.clave) {
+      console.warn(`processCulqiPayment: token ${tokenId} reusado para ${objetivo.clave} (era ${previo.objetivo})`);
+      throw new functions.https.HttpsError("failed-precondition",
+        "Este pago ya se usó. Vuelve a ingresar los datos de tu tarjeta.");
+    }
+    if (previo.status === "succeeded") {
+      // Reintento de la MISMA llamada (red cortada después del cobro).
+      let pedidoWebId = null;
+      if (checkoutIntent) {
+        pedidoWebId = await createPaidWebOrderFromIntent({
+          intentId: checkoutIntent.id, context,
+          pago: { metodo: "culqi", id: String(previo.charge_id), montoPen: previo.amount / 100, moneda: "PEN" },
+          payment: { culqiChargeId: String(previo.charge_id), montoPagado: previo.amount },
+        }).catch((e) => { console.error("processCulqiPayment: recuperación del pedido falló:", e); return null; });
+      }
+      return {
+        success: true, charge_id: previo.charge_id || null, outcome: previo.outcome || null,
+        amount: previo.amount, pedidoWebId, idempotent: true,
+      };
+    }
+    if (previo.status === "failed") {
+      throw new functions.https.HttpsError("failed-precondition",
+        "Este pago ya fue intentado y no se completó. Vuelve a ingresar los datos de tu tarjeta.");
+    }
+    throw new functions.https.HttpsError("already-exists",
+      "El pago con esta tarjeta ya se está procesando. Espera unos segundos antes de reintentar.");
+  }
+
+  const marcarToken = (campos) => lockRef.set({ ...campos, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+    .catch((e) => console.warn("processCulqiPayment: no se pudo actualizar culqiCharges:", e.message));
+
+  // ── 3) Un cobro a la vez sobre el mismo pedido ─────────────────────────────
+  let cerrojo = null;
   try {
-    const response = await fetch("https://api.culqi.com/v2/charges", {
+    if (checkoutIntent) {
+      await reservarCobroIntencion(checkoutIntent.ref, uid, "culqi");
+    } else {
+      cerrojo = await reservarCobroGenerico(objetivo.clave, uid, "culqi");
+    }
+  } catch (e) {
+    await marcarToken({ status: "failed", error: e.message || "cobro en curso" });
+    throw e;
+  }
+  const liberar = () => (checkoutIntent ? liberarCobroIntencion(checkoutIntent.ref) : liberarCobroGenerico(cerrojo));
+
+  // ── 4) El cobro ────────────────────────────────────────────────────────────
+  let response;
+  let result;
+  try {
+    response = await fetch(`${CULQI_API}/charges`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${secretKey}`
-      },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${secretKey}` },
       body: JSON.stringify({
-        amount: chargeAmount, // H-11: monto autoritativo (recalculado server-side cuando aplica)
+        amount: chargeAmount,
         currency_code: payCurrency,
-        email: email,
+        email,
         source_id: tokenId,
         description: description || "Pago en Walá",
-        metadata: metadata || {}
-      })
+        // Lo pone el servidor: el webhook lo lee de la API de Culqi para saber
+        // qué se pagó, sin fiarse de lo que mande el navegador.
+        metadata: { tipo: objetivo.tipo, uid, ...objetivo.metaCulqi },
+      }),
     });
+    result = await response.json();
+  } catch (err) {
+    // No se sabe si Culqi cobró. NO se libera el pedido: si el cargo existió, el
+    // webhook lo registra; si no, se podrá reintentar pasados unos minutos.
+    console.error("processCulqiPayment: respuesta de Culqi perdida:", err);
+    await marcarToken({ status: "failed", error: err.message || "respuesta perdida" });
+    await registrarAnomaliaPago(`culqi_token_${tokenId}`, {
+      motivo: "respuesta_perdida", metodo: "culqi", objetivo: objetivo.clave, uid, montoCentimos: chargeAmount,
+    });
+    throw new functions.https.HttpsError("unavailable",
+      "No pudimos confirmar tu pago. No vuelvas a pagar todavía: si se realizó, aparecerá en «Mis pedidos» en unos minutos. Si no, podrás intentarlo de nuevo.");
+  }
 
-    const result = await response.json();
+  if (!response.ok) {
+    console.error("Error de Culqi:", result);
+    await marcarToken({ status: "failed", error: result.user_message || "rechazo de Culqi" });
+    await liberar();
+    throw new functions.https.HttpsError("internal", result.user_message || "Error al procesar la tarjeta con Culqi.");
+  }
 
-    if (!response.ok) {
-      console.error("Error de Culqi:", result);
-      // S-4: marca el lock como fallido para que un reintento del mismo token no
-      // vuelva a llamar a Culqi (best-effort, nunca bloquea la respuesta de error).
-      if (lockAcquired) {
-        try {
-          await lockRef.set({
-            status: "failed",
-            error: result.user_message || "rechazo de Culqi",
-            updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true });
-        } catch (e) {
-          console.warn("processCulqiPayment S-4: no se pudo marcar el lock como failed:", e.message);
-        }
-      }
-      throw new functions.https.HttpsError("internal", result.user_message || "Error al procesar la tarjeta con Culqi.");
-    }
+  const chargeId = String(result.id);
+  await marcarToken({ status: "succeeded", charge_id: chargeId, outcome: result.outcome || null, amount: chargeAmount });
 
-    // S-4: guarda el resultado exitoso en el lock para servir reintentos sin recobrar.
-    if (lockAcquired) {
-      try {
-        await lockRef.set({
-          status: "succeeded",
-          charge_id: result.id || null,
-          outcome: result.outcome || null,
-          amount: chargeAmount,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true });
-      } catch (e) {
-        console.warn("processCulqiPayment S-4: no se pudo marcar el lock como succeeded:", e.message);
-      }
-    }
-
-    // ── Marcar el PEDIDO como pagado en el ERP (best-effort) ───────────────────
-    // El culqiWebhook ya hace esto, pero hoy no está registrado en Culqi y no se
-    // dispara; por eso, en la rama de ÉXITO del cobro (protegida por el lock de
-    // idempotencia, corre una sola vez por cobro real) se marca aquí el pedido con
-    // EXACTAMENTE los mismos campos que el webhook (set merge → idempotente y sin
-    // conflicto si el webhook también corriera). NUNCA debe hacer fallar la respuesta
-    // al cliente: el cobro ya ocurrió, así que ante cualquier error solo se loguea.
-    let createdPedidoWebId = null;
-    if (checkoutIntent) {
-      try {
-        createdPedidoWebId = await createPaidWebOrderFromIntent({
-          intentId: checkoutIntent.id,
-          context,
-          payment: {
-            metodoPago: "culqi",
-            culqiChargeId: String(result.id),
-            montoPagado: chargeAmount,
-          },
-        });
-      } catch (e) {
-        console.error(`processCulqiPayment: cobro ${result.id} aprobado pero falló crear el pedido:`, e);
-      }
-    } else if (pedidoId && erpDbForOrder && orderColl) {
-      try {
-        await erpDbForOrder.collection(orderColl).doc(String(pedidoId)).set({
-          pagado: true,
-          estadoPago: "pagado",
-          culqiChargeId: String(result.id), // igual forma que el webhook (idempotencia)
-          montoPagado: chargeAmount, // céntimos realmente cobrados
-          montoPendiente: 0, // saldado
-          pagadoAt: FieldValue.serverTimestamp(),
-          metodoPago: "culqi",
-        }, { merge: true });
-      } catch (e) {
-        // El cobro ya se realizó: no se propaga el error al cliente, solo se registra.
-        console.error(`processCulqiPayment: error al marcar pedido ${pedidoId} pagado (cobro ya realizado, charge ${result.id}):`, e);
-      }
-    }
-
-    // ── ADITIVO: marca el espejo wala_pedidos como pagado (fuente de verdad WALA) ─
-    // Best-effort e idempotente; no afecta el cálculo del monto ni la respuesta al
-    // cliente. Se ejecuta ADEMÁS de la marca en pedidos_web de arriba.
-    await marcarWalaPedidoPagado({ pedidoId, metodoPago: "culqi", montoPagado: chargeAmount });
-
-    // ── SORTEOS: si el pago era de un ticket, se confirma server-side (idempotente) ─
-    // Corre dentro de la rama de ÉXITO protegida por el lock culqiCharges/{tokenId},
-    // así que solo se ejecuta una vez por cobro real. Si además llega el culqiWebhook,
-    // confirmarTicketSorteoDesdePago es idempotente por pagoId (no dobla el crédito).
-    if (metadata && metadata.tipo === "sorteo") {
+  // ── 5) Registrar lo pagado. El cobro YA ocurrió: un fallo aquí no se le
+  // devuelve como error a la persona, queda en pagos_anomalias y el webhook lo
+  // vuelve a intentar.
+  const pago = { metodo: "culqi", id: chargeId, montoPen: chargeAmount / 100, moneda: "PEN" };
+  const payment = { culqiChargeId: chargeId, montoPagado: chargeAmount };
+  let createdPedidoWebId = null;
+  try {
+    if (objetivo.tipo === "checkout") {
+      createdPedidoWebId = await createPaidWebOrderFromIntent({ intentId: checkoutIntent.id, context, pago, payment });
+    } else if (objetivo.tipo === "saldo") {
+      await registrarPagoSaldo({ coleccion: objetivo.coleccion, pedidoId: objetivo.pedidoId, pago, payment });
+      await marcarWalaPedidoPagado({ pedidoId: objetivo.pedidoId, metodoPago: "culqi", montoPagado: chargeAmount });
+    } else if (objetivo.tipo === "enlace") {
+      await marcarEnlacePagado({ enlaceId: objetivo.enlaceId, pago, payment: { culqiChargeId: chargeId } });
+    } else if (objetivo.tipo === "sorteo") {
       await confirmarTicketSorteoDesdePago({
-        metadata,
-        pagoId: String(result.id),
-        metodoPago: "culqi",
+        metadata: { tipo: "sorteo", ...objetivo.metaCulqi }, pagoId: chargeId, metodoPago: "culqi",
       });
     }
-
-    // ── ENLACE DE PAGO: si el cobro corresponde a un enlace rápido (metadata.enlaceId),
-    // se marca el doc enlaces_pago como PAGADO server-side (igual que PayPal ya hace en
-    // el cliente). Cierra la brecha: antes un enlace PEN quedaba "pendiente" y reutilizable,
-    // y el historial no lo veía pagado. Best-effort e idempotente (merge): el cobro ya ocurrió.
-    const enlaceId = metadata && typeof metadata.enlaceId === "string" ? metadata.enlaceId.trim() : "";
-    if (enlaceId) {
-      try {
-        await db.collection("enlaces_pago").doc(enlaceId).set({
-          estado: "pagado",
-          culqiChargeId: String(result.id),
-          pagadoEn: new Date().toISOString(),
-          metodoPago: "culqi",
-        }, { merge: true });
-      } catch (e) {
-        console.error(`processCulqiPayment: cobro OK (charge ${result.id}) pero no se pudo marcar enlaces_pago/${enlaceId}:`, e);
-      }
-    }
-
-    return {
-      success: true,
-      charge_id: result.id,
-      outcome: result.outcome,
-      amount: chargeAmount, // H-11: monto realmente cobrado (céntimos), por si difería del cliente
-      pedidoWebId: createdPedidoWebId,
-    };
-
-  } catch (err) {
-    if (err instanceof functions.https.HttpsError) throw err;
-    console.error("Excepción en processCulqiPayment:", err);
-    // S-4: ante una excepción de red NO se puede saber si Culqi cobró o no. Se marca
-    // el lock como "failed" para evitar un recobro automático con el mismo token;
-    // el cliente debe iniciar un pago nuevo (token nuevo). best-effort.
-    if (lockAcquired) {
-      try {
-        await lockRef.set({
-          status: "failed",
-          error: err.message || "excepción de red",
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true });
-      } catch (e) {
-        console.warn("processCulqiPayment S-4: no se pudo marcar el lock como failed (excepción):", e.message);
-      }
-    }
-    throw new functions.https.HttpsError("internal", err.message || "Excepción interna al procesar el pago.");
+  } catch (e) {
+    console.error(`processCulqiPayment: cobro ${chargeId} aprobado pero no se pudo registrar:`, e);
+    await registrarAnomaliaPago(`culqi_${chargeId}`, {
+      motivo: "cobrado_sin_registrar", metodo: "culqi", chargeId, objetivo: objetivo.clave, uid,
+      montoCentimos: chargeAmount, error: String(e.message || e),
+    });
   }
+  if (!checkoutIntent) await liberarCobroGenerico(cerrojo);
+
+  return {
+    success: true,
+    charge_id: chargeId,
+    outcome: result.outcome,
+    amount: chargeAmount,
+    pedidoWebId: createdPedidoWebId,
+  };
 });
 
 /**
@@ -4041,6 +4289,15 @@ exports.confirmPaymentSecure = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const orderId = data && data.orderId != null ? String(data.orderId) : null;
 
+  // Marcar una orden como pagada sin comprobar ningún pago solo lo puede hacer un
+  // admin (pruebas del marketplace). Antes cualquier cuenta confirmaba su propia
+  // orden y generaba payouts sin haber pagado. El pago real lo confirma
+  // mercadoPagoWebhook consultando a Mercado Pago.
+  if (!(await callerIsAdmin(context))) {
+    throw new functions.https.HttpsError("permission-denied",
+      "El pago se confirma automáticamente cuando Mercado Pago lo aprueba.");
+  }
+
   // ── S-3: Verificación de propiedad detrás de flag (SEGURO POR DEFECTO) ──────
   // Con process.env.ENFORCE_PAYMENT_OWNERSHIP !== 'true' (default) el comportamiento
   // es EXACTAMENTE el de hoy: cualquier usuario autenticado puede confirmar. Cuando
@@ -4352,218 +4609,106 @@ exports.registrarUsoComunidad = require('./comunidad').registrarUsoComunidad;
 // ════════════════════════════════════════════════════════════════════════════
 
 // ── culqiWebhook (onRequest) ──────────────────────────────────────────────────
-// Recibe la notificación (evento) que Culqi envía a la URL configurada en su panel.
-// Ante un cargo exitoso ('charge.creation.succeeded' / 'charge.succeeded'), marca el
-// pedido correspondiente en pedidos_web como PAGADO de forma IDEMPOTENTE (por el id
-// del charge): si el charge ya fue procesado, no vuelve a escribir ni duplica nada.
+// Culqi avisa aquí de cada cargo (URL configurada en su panel). Es la red de
+// seguridad del cobro: si processCulqiPayment cobró pero se cortó antes de crear
+// el pedido, el webhook lo crea.
 //
-// La relación charge -> pedido se obtiene de charge.metadata.pedidoId, que el frontend
-// (CulqiCustomCheckout) envía al crear el cargo y Culqi reenvía en el evento.
+// NO se cree lo que trae el aviso: cualquiera puede llamar a esta URL. Del aviso
+// solo se toma el id del cargo y se le pide el cargo a la API de Culqi con la
+// llave secreta. El monto, el estado y la metadata (que puso processCulqiPayment)
+// salen de esa respuesta. Un aviso inventado no encuentra cargo y se ignora.
 //
-// IDEMPOTENCIA: se usa una colección de marcas `culqiWebhookEvents/{chargeId}` creada
-// con transacción + create() (falla si ya existe). Si ya existía, el webhook responde
-// 200 sin reprocesar (evita doble cobro / doble marca ante reintentos de Culqi).
+// Todo lo que hace es idempotente por id de cargo: el cobro y el webhook pueden
+// llegar los dos, y Culqi reintenta.
 //
-// FIRMA: el panel de Culqi entrega un "secret" para validar la autenticidad del evento
-// (cabecera de firma). Aquí se deja la validación CLARAMENTE comentada y lista: cuando
-// CULQI_WEBHOOK_SECRET esté configurado, descomentar el bloque de verificación HMAC.
-exports.culqiWebhook = functions.https.onRequest(async (req, res) => {
+// FIRMA (adicional): con CULQI_VERIFY_SIGNATURE='true' y CULQI_WEBHOOK_SECRET se
+// exige además la firma del panel de Culqi.
+exports.culqiWebhook = functions
+  .runWith({ secrets: ["CULQI_SECRET_KEY"] })
+  .https.onRequest(async (req, res) => {
   try {
     if (req.method !== "POST") {
       return res.status(405).send("Method Not Allowed");
     }
 
-    // ── S-2: Validación de firma (Culqi) detrás de flag ──────────────────────
-    // SEGURO POR DEFECTO: la verificación SOLO se ejecuta si
-    // process.env.CULQI_VERIFY_SIGNATURE === 'true'. Con el flag APAGADO (default)
-    // el comportamiento es EXACTAMENTE el de hoy (se acepta el evento), así que el
-    // despliegue NO cambia nada hasta que el dueño active el flag a conciencia.
-    //
-    // SIEMPRE se loguea la(s) cabecera(s) de firma recibida(s) para que el dueño
-    // confirme el NOMBRE EXACTO de la cabecera con su cuenta de Culqi ANTES de
-    // activar el flag (el nombre puede variar entre cuentas/versiones de la API).
-    const verifySignature = process.env.CULQI_VERIFY_SIGNATURE === "true";
-    const webhookSecret = process.env.CULQI_WEBHOOK_SECRET;
-
-    // Posibles nombres de cabecera de firma (se loguean todos los presentes).
-    const sigHeaderCandidates = [
-      "x-culqi-signature",
-      "culqi-signature",
-      "x-signature",
-      "signature",
-    ];
-    const receivedSigHeaders = {};
-    for (const h of sigHeaderCandidates) {
-      const v = req.get(h);
-      if (v) receivedSigHeaders[h] = v;
-    }
-    console.log(
-      "culqiWebhook: cabeceras de firma recibidas (para confirmar el nombre exacto antes de activar CULQI_VERIFY_SIGNATURE):",
-      JSON.stringify(receivedSigHeaders)
-    );
-
-    if (verifySignature) {
-      // Flag ACTIVADO: se exige firma válida.
+    if (process.env.CULQI_VERIFY_SIGNATURE === "true") {
+      const webhookSecret = process.env.CULQI_WEBHOOK_SECRET;
       if (!webhookSecret) {
-        console.error(
-          "culqiWebhook: CULQI_VERIFY_SIGNATURE='true' pero falta CULQI_WEBHOOK_SECRET. " +
-          "No se puede verificar la firma; se rechaza el evento (401)."
-        );
+        console.error("culqiWebhook: CULQI_VERIFY_SIGNATURE='true' pero falta CULQI_WEBHOOK_SECRET; se rechaza.");
         return res.status(401).send("signature verification not configured");
       }
-      // rawBody es necesario: el HMAC se calcula sobre el cuerpo EXACTO recibido,
-      // no sobre el JSON re-serializado (que puede diferir en orden/espacios).
       const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
-      // Se toma la primera cabecera candidata presente como firma provista.
-      const providedSig =
-        receivedSigHeaders["x-culqi-signature"] ||
-        receivedSigHeaders["culqi-signature"] ||
-        receivedSigHeaders["x-signature"] ||
-        receivedSigHeaders["signature"] ||
-        "";
-      const valid = verifyWebhookSignature(rawBody, providedSig, webhookSecret);
-      if (!valid) {
+      const providedSig = req.get("x-culqi-signature") || req.get("culqi-signature") ||
+        req.get("x-signature") || req.get("signature") || "";
+      if (!verifyWebhookSignature(rawBody, providedSig, webhookSecret)) {
         console.warn("culqiWebhook: firma inválida o ausente; se rechaza (401).");
         return res.status(401).send("invalid signature");
       }
-      // Firma válida: continúa el procesamiento normal.
-    } else {
-      // Flag APAGADO (default): mismo comportamiento de hoy. Solo se advierte.
-      console.warn(
-        "culqiWebhook: CULQI_VERIFY_SIGNATURE no está en 'true'; webhook SIN verificar firma " +
-        "(comportamiento actual). Configure CULQI_WEBHOOK_SECRET, confirme el nombre de la " +
-        "cabecera con los logs y active CULQI_VERIFY_SIGNATURE='true' para cerrar el agujero."
-      );
     }
 
     const body = (typeof req.body === "object" && req.body) ? req.body : {};
+    const chargeId = pagos.chargeIdDeEvento(body);
+    if (!chargeId) return res.status(200).send("ignored");
 
-    // Culqi envía el tipo de evento y el objeto del cargo. Se contemplan variantes de
-    // nombre por compatibilidad entre versiones de la API.
-    const eventType = body.type || body.event || "";
-    const charge = body.data || body.object || body;
-
-    // Solo interesan cargos exitosos.
-    const isCharge = String(eventType).includes("charge") || (charge && charge.object === "charge");
-    const okOutcome =
-      (charge && charge.outcome && (charge.outcome.type === "venta_exitosa" || charge.outcome.code === "AUT0000")) ||
-      String(eventType).includes("succeeded") ||
-      String(eventType).includes("creation");
-    if (!isCharge || !charge || !okOutcome) {
-      // 200 para que Culqi no reintente eventos que no nos competen.
-      return res.status(200).send("ignored");
+    const secretKey = process.env.CULQI_SECRET_KEY;
+    if (!secretKey) {
+      console.error("culqiWebhook: CULQI_SECRET_KEY no configurada; no se puede verificar el cargo.");
+      return res.status(500).send("not configured"); // Culqi reintenta
     }
-
-    const chargeId = charge.id || (charge.data && charge.data.id);
-    if (!chargeId) {
-      return res.status(200).send("no charge id");
-    }
-
-    const meta = charge.metadata || (charge.data && charge.data.metadata) || {};
-    const pedidoId = meta.pedidoId || meta.orderId || null;
-
-    // ── Idempotencia: marca única por chargeId ───────────────────────────────
-    const eventRef = db.collection("culqiWebhookEvents").doc(String(chargeId));
-    let alreadyProcessed = false;
-    await db.runTransaction(async (t) => {
-      const existing = await t.get(eventRef);
-      if (existing.exists) {
-        alreadyProcessed = true;
-        return;
+    const resp = await fetch(`${CULQI_API}/charges/${encodeURIComponent(chargeId)}`, {
+      headers: { "Authorization": `Bearer ${secretKey}` },
+    });
+    if (!resp.ok) {
+      const detalle = await resp.text().catch(() => "");
+      if (pagos.cargoNoExiste(resp.status, detalle)) {
+        console.warn(`culqiWebhook: el cargo ${chargeId} no existe en Culqi; aviso ignorado.`);
+        return res.status(200).send("unknown charge");
       }
-      t.create(eventRef, {
-        chargeId: String(chargeId),
-        pedidoId: pedidoId ? String(pedidoId) : null,
-        amount: charge.amount ?? null, // céntimos, tal como lo reporta Culqi
-        currency: charge.currency_code || charge.currency || null,
-        receivedAt: FieldValue.serverTimestamp(),
-      });
+      console.error("culqiWebhook: no se pudo consultar el cargo", chargeId, resp.status, detalle.slice(0, 300));
+      return res.status(500).send("lookup failed"); // Culqi reintenta
+    }
+    const charge = await resp.json();
+    if (!pagos.ventaExitosa(charge)) return res.status(200).send("not paid");
+
+    const meta = charge.metadata || {};
+    const montoCentimos = Number(charge.amount) || 0;
+    const moneda = String(charge.currency_code || charge.currency || "").toUpperCase();
+    await db.collection("culqiWebhookEvents").doc(chargeId).set({
+      chargeId, tipo: meta.tipo || null, amount: montoCentimos, currency: moneda,
+      receivedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    const pago = { metodo: "culqi", id: chargeId, montoPen: montoCentimos / 100, moneda };
+    const payment = { culqiChargeId: chargeId, montoPagado: montoCentimos };
+    const anomalia = (motivo, extra = {}) => registrarAnomaliaPago(`culqi_${chargeId}`, {
+      motivo, metodo: "culqi", chargeId, montoCentimos, moneda, metadata: meta, origen: "webhook", ...extra,
     });
 
-    if (alreadyProcessed) {
-      // Ya se procesó este charge: no se vuelve a marcar el pedido (sin doble cobro/marca).
-      return res.status(200).send("already processed");
-    }
-
-    // ── SORTEOS: si el cargo era de un ticket, se confirma server-side y se retorna ─
-    // Gateado por metadata.tipo==="sorteo". Idempotente por culqiWebhookEvents/{chargeId}
-    // (arriba) y, además, por pagoId dentro de confirmarTicketSorteoDesdePago (no dobla
-    // el crédito si processCulqiPayment ya lo había confirmado con el mismo chargeId).
-    if (meta && meta.tipo === "sorteo") {
-      await confirmarTicketSorteoDesdePago({
-        metadata: meta,
-        pagoId: String(chargeId),
-        metodoPago: "culqi",
-      });
-      return res.status(200).send("ok sorteo");
-    }
-
-    // ── Marcar el pedido como pagado en pedidos_web (ERP), de forma idempotente ─
-    if (pedidoId) {
-      try {
-        const erpDb = getErpDb();
-        if (erpDb) {
-          const pedidoRef = erpDb.collection("pedidos_web").doc(String(pedidoId));
-          await erpDb.runTransaction(async (t) => {
-            const snap = await t.get(pedidoRef);
-            if (!snap.exists) {
-              console.warn(`culqiWebhook: pedido ${pedidoId} no existe en pedidos_web.`);
-              return;
-            }
-            const d = snap.data() || {};
-            // Idempotente: si ya está pagado por este charge, no se reescribe.
-            if (d.pagado === true && d.culqiChargeId === String(chargeId)) {
-              return;
-            }
-            t.set(pedidoRef, {
-              pagado: true,
-              estadoPago: "pagado",
-              culqiChargeId: String(chargeId),
-              montoPagado: charge.amount ?? d.montoTotal ?? null, // céntimos según Culqi
-              montoPendiente: 0, // saldado
-              pagadoAt: FieldValue.serverTimestamp(),
-              metodoPago: "culqi",
-            }, { merge: true });
-          });
-        } else {
-          console.warn("culqiWebhook: ERP no disponible (getErpDb null); no se pudo marcar el pedido.");
-        }
-
-        // ── ADITIVO: marca el espejo wala_pedidos como pagado (fuente de verdad WALA) ─
-        // Best-effort e idempotente; no afecta la marca de pedidos_web de arriba ni la
-        // idempotencia por chargeId del webhook.
-        await marcarWalaPedidoPagado({
-          pedidoId,
-          metodoPago: "culqi",
-          montoPagado: charge.amount ?? null, // céntimos según Culqi (informativo)
-        });
-      } catch (e) {
-        // No se hace fallar el webhook: el evento ya quedó registrado (idempotente) y
-        // Culqi no debe reintentar indefinidamente. Se registra para revisión manual.
-        console.error("culqiWebhook: error al marcar pedido pagado:", e);
+    if (meta.tipo === "checkout" && meta.checkoutIntentId) {
+      const checkout = await readCheckoutIntent(meta.checkoutIntentId, null).catch(() => null);
+      const esperado = checkout ? pagos.aCentimos(pagos.cobroDeIntencion(checkout.intent) || 0) : 0;
+      if (!checkout || moneda !== "PEN" || !pagos.coincideMonto(montoCentimos, esperado)) {
+        await anomalia("webhook_no_cuadra", { esperadoCentimos: esperado });
+        return res.status(200).send("mismatch");
       }
+      await createPaidWebOrderFromIntent({ intentId: checkout.id, context: null, pago, payment });
+    } else if (meta.tipo === "saldo" && meta.pedidoId && ["pedidos", "pedidos_web"].includes(meta.coleccion)) {
+      await registrarPagoSaldo({ coleccion: meta.coleccion, pedidoId: meta.pedidoId, pago, payment });
+      await marcarWalaPedidoPagado({ pedidoId: meta.pedidoId, metodoPago: "culqi", montoPagado: montoCentimos });
+    } else if (meta.tipo === "enlace" && meta.enlaceId) {
+      await marcarEnlacePagado({ enlaceId: String(meta.enlaceId), pago, payment: { culqiChargeId: chargeId } });
+    } else if (meta.tipo === "sorteo") {
+      await confirmarTicketSorteoDesdePago({ metadata: meta, pagoId: chargeId, metodoPago: "culqi" });
     } else {
-      // Cobro sin pedido asociado (metadata.pedidoId ausente): se registra como ANOMALÍA
-      // para reconciliación manual del admin (evita el "cobro fantasma" sin rastro).
-      console.warn(`culqiWebhook: charge ${chargeId} sin pedidoId en metadata; solo se registró el evento.`);
-      try {
-        await db.collection("culqiWebhookAnomalies").doc(String(chargeId)).set({
-          chargeId: String(chargeId),
-          amount: charge.amount ?? null,
-          currency: charge.currency_code || charge.currency || null,
-          motivo: "sin_pedidoId",
-          receivedAt: FieldValue.serverTimestamp(),
-        }, { merge: true });
-      } catch (e) {
-        console.error("culqiWebhook: no se pudo registrar anomalía:", e);
-      }
+      // Cargo de antes de este cambio o hecho fuera de la tienda: no se marca
+      // nada como pagado sin saber qué es; queda para revisarlo a mano.
+      await anomalia("webhook_sin_objetivo");
     }
-
     return res.status(200).send("ok");
   } catch (e) {
     console.error("culqiWebhook error:", e);
-    // 200 para evitar reintentos infinitos de Culqi ante errores no recuperables.
-    return res.status(200).send("error handled");
+    // 500: Culqi reintenta; todo lo de arriba es idempotente.
+    return res.status(500).send("error");
   }
 });
 
@@ -5027,36 +5172,22 @@ async function computePaypalUsdForOrder(pedidoId, context) {
     throw new functions.https.HttpsError("invalid-argument", "Se requiere pedidoId.");
   }
 
-  // 1) Total en PEN desde la intención preparada (checkout nuevo) o, por
-  // compatibilidad, desde un pedido existente de los flujos antiguos.
-  let orderData = null;
+  // 1) Lo que se cobra en PEN: el de la intención (checkout/landing) o el saldo
+  // de un pedido validado (mismas reglas que Culqi: objetivoSaldoPedido).
+  let checkout = null;
   try {
-    const checkout = await readCheckoutIntent(oid, context, { exigirVigente: true });
-    orderData = checkout.orderPayload;
+    checkout = await readCheckoutIntent(oid, context, { exigirVigente: true });
   } catch (e) {
-    if (e instanceof functions.https.HttpsError &&
-      (e.code === "permission-denied" || e.code === "failed-precondition")) throw e;
+    if (!(e instanceof functions.https.HttpsError) || e.code !== "not-found") throw e;
   }
-  const erpDb = getErpDb();
-  if (!erpDb) {
-    throw new functions.https.HttpsError(
-      "failed-precondition",
-      "No se puede validar el pedido (ERP no disponible)."
-    );
+  let penTotal;
+  let saldo = null;
+  if (checkout) {
+    penTotal = pagos.cobroDeIntencion(checkout.intent);
+  } else {
+    saldo = await objetivoSaldoPedido(oid);
+    penTotal = saldo.montoCentimos / 100;
   }
-  if (!orderData) {
-    for (const coll of ["pedidos_web", "pedidos"]) {
-      const snap = await erpDb.collection(coll).doc(oid).get();
-      if (snap.exists) { orderData = snap.data(); break; }
-    }
-  }
-  if (!orderData) {
-    throw new functions.https.HttpsError("not-found", "Pedido no encontrado.");
-  }
-  // Se prioriza el saldo pendiente / deuda (con descuento por monedas ya aplicado).
-  const penTotal = Number(
-    orderData.montoPendiente ?? orderData.montoDeuda ?? orderData.montoTotal
-  );
   if (!Number.isFinite(penTotal) || penTotal <= 0) {
     throw new functions.https.HttpsError("failed-precondition", "El pedido no tiene un monto válido por cobrar.");
   }
@@ -5079,8 +5210,12 @@ async function computePaypalUsdForOrder(pedidoId, context) {
   if (!(Number(usd) > 0)) {
     throw new functions.https.HttpsError("failed-precondition", "Monto USD calculado inválido.");
   }
-  return { usd, penTotal, penPerUsd, margin };
+  return { usd, penTotal, penPerUsd, margin, checkout, saldo };
 }
+
+// Orden de PayPal creada por createPaypalOrderSecure: el monto USD con el que
+// se creó (el tipo de cambio puede cambiar antes de capturar) y de qué pedido es.
+const PAYPAL_ORDENES_COLLECTION = "paypal_ordenes";
 
 // ── createPaypalOrderSecure({ pedidoId }) ──────────────────────────────────────
 // Crea la orden PayPal (intent CAPTURE) con el monto USD recalculado server-side.
@@ -5090,7 +5225,7 @@ exports.createPaypalOrderSecure = functions.https.onCall(async (data, context) =
   const pedidoId = data && (data.pedidoId || data.orderId);
 
   // Monto USD autoritativo (recalculado del pedido real; nunca del cliente).
-  const { usd } = await computePaypalUsdForOrder(pedidoId, context);
+  const { usd, penTotal } = await computePaypalUsdForOrder(pedidoId, context);
 
   const accessToken = await getPaypalAccessToken();
   const resp = await fetch(`${paypalApiBase()}/v2/checkout/orders`, {
@@ -5120,6 +5255,10 @@ exports.createPaypalOrderSecure = functions.https.onCall(async (data, context) =
     console.error("createPaypalOrderSecure: PayPal rechazó la creación:", resp.status, json);
     throw new functions.https.HttpsError("internal", "PayPal no pudo crear la orden.");
   }
+  await db.collection(PAYPAL_ORDENES_COLLECTION).doc(String(json.id)).set({
+    pedidoId: String(pedidoId), uid: context.auth.uid, usd, penTotal,
+    createdAt: FieldValue.serverTimestamp(),
+  });
 
   return { orderID: json.id, amountUsd: usd, pedidoId: String(pedidoId) };
 });
@@ -5129,133 +5268,119 @@ exports.createPaypalOrderSecure = functions.https.onCall(async (data, context) =
 // entonces marca el pedido como pagado en pedidos_web vía Admin SDK (idempotente
 // por captureId). Espejo de la lógica de processCulqiPayment/culqiWebhook.
 exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) => {
-  requireAuth(context);
-  const orderID = data && data.orderID;
-  const pedidoId = data && (data.pedidoId || data.orderId);
-  if (!orderID) {
-    throw new functions.https.HttpsError("invalid-argument", "Se requiere orderID de PayPal.");
+  const uid = requireAuth(context);
+  const orderID = data && data.orderID ? String(data.orderID) : "";
+  const pedidoId = data && (data.pedidoId || data.orderId) ? String(data.pedidoId || data.orderId) : "";
+  if (!orderID || !pedidoId) {
+    throw new functions.https.HttpsError("invalid-argument", "Se requieren orderID de PayPal y pedidoId.");
   }
 
-  // Monto USD esperado (recalculado server-side) para comparar contra lo capturado.
-  const { usd: expectedUsd } = await computePaypalUsdForOrder(pedidoId, context);
+  // La orden la creó createPaypalOrderSecure para ESTE pedido y usuario, con un
+  // monto USD fijo: se compara contra ese monto (el tipo de cambio pudo cambiar
+  // mientras la persona aprobaba en PayPal). Órdenes anteriores a este registro:
+  // se recalcula como antes.
+  const ordenSnap = await db.collection(PAYPAL_ORDENES_COLLECTION).doc(orderID).get();
+  const orden = ordenSnap.exists ? ordenSnap.data() : null;
+  if (orden && (orden.pedidoId !== pedidoId || orden.uid !== uid)) {
+    throw new functions.https.HttpsError("permission-denied", "La orden de PayPal no corresponde a este pedido.");
+  }
+  const calculo = await computePaypalUsdForOrder(pedidoId, context);
+  const expectedUsd = orden ? orden.usd : calculo.usd;
+  const checkout = calculo.checkout;
+  const saldo = calculo.saldo;
 
-  const accessToken = await getPaypalAccessToken();
-  const resp = await fetch(`${paypalApiBase()}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    // Cuerpo vacío: la orden ya trae el purchase_unit creado en createPaypalOrderSecure.
-    body: JSON.stringify({}),
-  });
-  const json = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    console.error("capturePaypalOrderSecure: PayPal rechazó la captura:", resp.status, json);
-    throw new functions.https.HttpsError("internal", "PayPal no pudo capturar la orden.");
+  // Un cobro a la vez sobre el mismo pedido (ver reservarCobroIntencion).
+  let cerrojo = null;
+  if (checkout) {
+    await reservarCobroIntencion(checkout.ref, uid, "paypal");
+  } else {
+    cerrojo = await reservarCobroGenerico(saldo.clave, uid, "paypal");
+  }
+  const liberar = () => (checkout ? liberarCobroIntencion(checkout.ref) : liberarCobroGenerico(cerrojo));
+
+  let resp;
+  let json;
+  try {
+    const accessToken = await getPaypalAccessToken();
+    resp = await fetch(`${paypalApiBase()}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        // Reintentar la captura de la misma orden no cobra dos veces.
+        "PayPal-Request-Id": `wala-capture-${orderID}`,
+      },
+      body: JSON.stringify({}),
+    });
+    json = await resp.json().catch(() => ({}));
+  } catch (e) {
+    // No se sabe si PayPal capturó: no se libera el pedido (ver Culqi).
+    console.error("capturePaypalOrderSecure: respuesta de PayPal perdida:", e);
+    await registrarAnomaliaPago(`paypal_${orderID}`, {
+      motivo: "respuesta_perdida", metodo: "paypal", orderID, pedidoId, uid,
+    });
+    throw new functions.https.HttpsError("unavailable",
+      "No pudimos confirmar tu pago. No vuelvas a pagar todavía: si se realizó, aparecerá en «Mis pedidos» en unos minutos.");
+  }
+  if (!resp.ok || json.status !== "COMPLETED") {
+    console.error("capturePaypalOrderSecure: PayPal no completó la captura:", resp.status, json);
+    await liberar();
+    throw new functions.https.HttpsError("failed-precondition", "PayPal no pudo completar el pago.");
   }
 
-  // 1) status COMPLETED a nivel de orden.
-  if (json.status !== "COMPLETED") {
-    console.warn("capturePaypalOrderSecure: status no COMPLETED:", json.status);
-    throw new functions.https.HttpsError("failed-precondition", `El pago no se completó (status: ${json.status}).`);
-  }
-
-  // 2) Extraer la captura y validar monto + moneda + reference_id contra lo esperado.
   const pu = (json.purchase_units && json.purchase_units[0]) || {};
   const capture = (pu.payments && pu.payments.captures && pu.payments.captures[0]) || {};
-  const captureStatus = capture.status;
   const capturedValue = capture.amount && capture.amount.value;
   const capturedCurrency = capture.amount && capture.amount.currency_code;
-  const captureId = capture.id || null;
+  const captureId = capture.id ? String(capture.id) : null;
   const refId = pu.reference_id || pu.custom_id || null;
 
-  if (captureStatus !== "COMPLETED") {
-    throw new functions.https.HttpsError("failed-precondition", `La captura no se completó (status: ${captureStatus}).`);
-  }
-  if (capturedCurrency !== "USD") {
-    throw new functions.https.HttpsError("failed-precondition", `Moneda inesperada en la captura: ${capturedCurrency}.`);
-  }
-  // El monto capturado debe coincidir con el recalculado server-side (tolerancia 1 céntimo
-  // por redondeos de PayPal). Si difiere, NO se marca el pedido pagado.
-  if (Math.abs(Number(capturedValue) - Number(expectedUsd)) > 0.01) {
-    console.error(
-      `capturePaypalOrderSecure: monto capturado (${capturedValue}) != esperado (${expectedUsd}) ` +
-      `para pedido ${pedidoId}.`
-    );
-    throw new functions.https.HttpsError("failed-precondition", "El monto capturado no coincide con el del pedido.");
-  }
-  if (refId && String(refId) !== String(pedidoId)) {
-    console.error(`capturePaypalOrderSecure: reference_id (${refId}) != pedidoId (${pedidoId}).`);
-    throw new functions.https.HttpsError("failed-precondition", "La orden de PayPal no corresponde a este pedido.");
+  // El dinero YA se capturó: si algo no cuadra no se marca pagado, pero queda
+  // registrado para devolverlo o completarlo a mano.
+  const problema =
+    capture.status !== "COMPLETED" ? `captura ${capture.status}` :
+      capturedCurrency !== "USD" ? `moneda ${capturedCurrency}` :
+        Math.abs(Number(capturedValue) - Number(expectedUsd)) > 0.01 ? `monto ${capturedValue} != ${expectedUsd}` :
+          (refId && String(refId) !== pedidoId) ? `reference_id ${refId}` : null;
+  if (problema) {
+    console.error(`capturePaypalOrderSecure: ${problema} (pedido ${pedidoId}, orden ${orderID})`);
+    await registrarAnomaliaPago(`paypal_${captureId || orderID}`, {
+      motivo: "captura_no_cuadra", detalle: problema, metodo: "paypal", orderID, captureId, pedidoId, uid,
+      capturedValue: capturedValue || null, expectedUsd,
+    });
+    await liberar();
+    throw new functions.https.HttpsError("failed-precondition",
+      "El pago no coincide con tu pedido. Lo revisaremos y te escribiremos.");
   }
 
-  // 3) Solo DESPUÉS de la captura aprobada se crea el pedido del checkout nuevo.
-  // Para pedidos antiguos conservamos el marcado compatible.
+  const pago = {
+    metodo: "paypal", id: captureId || orderID, montoPen: calculo.penTotal,
+    moneda: "USD", montoUsd: Number(capturedValue),
+  };
+  const payment = { paypalOrderId: orderID, paypalCaptureId: captureId, montoPagadoUsd: capturedValue };
   let createdPedidoWebId = null;
   try {
-    try {
-      await readCheckoutIntent(pedidoId, context);
-      createdPedidoWebId = await createPaidWebOrderFromIntent({
-        intentId: pedidoId,
-        context,
-        payment: {
-          metodoPago: "paypal",
-          paypalOrderId: String(orderID),
-          paypalCaptureId: captureId ? String(captureId) : null,
-          montoPagadoUsd: capturedValue,
-        },
-      });
-    } catch (intentErr) {
-      if (intentErr instanceof functions.https.HttpsError && intentErr.code === "permission-denied") throw intentErr;
-    }
-    const erpDb = getErpDb();
-    if (!createdPedidoWebId && erpDb && pedidoId) {
-      const pedidoRef = erpDb.collection("pedidos_web").doc(String(pedidoId));
-      await erpDb.runTransaction(async (t) => {
-        const snap = await t.get(pedidoRef);
-        if (!snap.exists) {
-          console.warn(`capturePaypalOrderSecure: pedido ${pedidoId} no existe en pedidos_web.`);
-          return;
-        }
-        const d = snap.data() || {};
-        // Idempotente: si ya está pagado por esta captura, no se reescribe.
-        if (d.pagado === true && d.paypalCaptureId === String(captureId)) {
-          return;
-        }
-        t.set(pedidoRef, {
-          pagado: true,
-          estadoPago: "pagado",
-          conDeuda: false,
-          montoDeuda: 0,
-          montoPendiente: 0,
-          paypalOrderId: String(orderID),
-          paypalCaptureId: captureId ? String(captureId) : null,
-          montoPagadoUsd: capturedValue,
-          pagadoAt: FieldValue.serverTimestamp(),
-          metodoPago: "paypal",
-        }, { merge: true });
-      });
-    } else if (!createdPedidoWebId) {
-      console.warn("capturePaypalOrderSecure: ERP no disponible; no se pudo marcar el pedido (el cobro YA se capturó).");
+    if (checkout) {
+      createdPedidoWebId = await createPaidWebOrderFromIntent({ intentId: checkout.id, context, pago, payment });
+    } else {
+      await registrarPagoSaldo({ coleccion: saldo.coleccion, pedidoId: saldo.pedidoId, pago, payment });
+      await marcarWalaPedidoPagado({ pedidoId: saldo.pedidoId, metodoPago: "paypal", montoPagado: capturedValue });
     }
   } catch (e) {
-    // El cobro ya está capturado en PayPal: no se hace fallar al cliente por un
-    // fallo al escribir el pedido. Se registra para reconciliación manual.
-    console.error("capturePaypalOrderSecure: el cobro se capturó pero falló la actualización del pedido:", e);
+    console.error("capturePaypalOrderSecure: el cobro se capturó pero no se pudo registrar:", e);
+    await registrarAnomaliaPago(`paypal_${captureId || orderID}`, {
+      motivo: "cobrado_sin_registrar", metodo: "paypal", orderID, captureId, pedidoId, uid,
+      capturedValue, error: String(e.message || e),
+    });
   }
-
-  // ── ADITIVO: marca el espejo wala_pedidos como pagado (fuente de verdad WALA) ───
-  // Best-effort e idempotente; no afecta el cálculo del monto USD ni la marca de
-  // pedidos_web de arriba. montoPagado se deja como el monto USD capturado (informativo).
-  await marcarWalaPedidoPagado({ pedidoId, metodoPago: "paypal", montoPagado: capturedValue });
+  if (!checkout) await liberarCobroGenerico(cerrojo);
 
   return {
     success: true,
     status: "COMPLETED",
     captureId,
     amountUsd: capturedValue,
-    pedidoId: String(pedidoId),
+    pedidoId,
     pedidoWebId: createdPedidoWebId,
   };
 });

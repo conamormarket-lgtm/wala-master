@@ -14,11 +14,6 @@ import { getBrands } from '../services/brands';
 import { linkPurchaseToReferral } from '../services/referrals';
 import { createWebOrder, markWebOrderWhatsapp } from '../services/erp/firebase';
 import { prepareCheckoutPayment } from '../services/checkoutPayment';
-// WALA = FUENTE DE VERDAD: al confirmarse el pago (Culqi/PayPal) marcamos el
-// pedido como pagado en SU propia base wala_pedidos. Es ADITIVO e IDEMPOTENTE:
-// no toca la lógica de pagos/totales (Culqi montoDeuda / PayPal amountUsd) ni el
-// marcado de pedidos_web; markWalaOrderPagado nunca lanza (best-effort).
-import { markWalaOrderPagado, mirrorWebOrder } from '../services/walaOrders';
 import { markItemAsGifted } from '../services/wishlist';
 import { marcarCreacionesEnPedido } from '../services/designs';
 // Cupones: el valor lo decide el servidor (validarCuponSecure), igual que las
@@ -1243,10 +1238,7 @@ const CheckoutPage = () => {
         toast.success('Datos confirmados. Selecciona cómo terminar tu compra.');
         setPaymentStepData({
           id: checkoutIntentId || pseudoOrderId,
-          // Claves de negocio para localizar el doc en wala_pedidos al confirmar el
-          // pago (markWalaOrderPagado): numeroPedido = pseudoOrderId (clave estable
-          // del espejo, doc id), pedidoWebId = id real en pedidos_web (query de
-          // fallback). Aditivos: NO alteran montoDeuda ni el flujo de pago/totales.
+          // Código de negocio del pedido (id en pedidos_web y en wala_pedidos).
           numeroPedido: pseudoOrderId,
           pedidoWebId: null,
           checkoutIntentId,
@@ -1464,34 +1456,15 @@ const CheckoutPage = () => {
 
   async function finishGatewayOrder(method, gatewayResult = {}) {
     if (!paymentStepData) return;
-    let pedidoWebId = gatewayResult.pedidoWebId || paymentStepData.numeroPedido;
-    // Respaldo posterior al pago: si la función cobró pero no logró persistir el
-    // pedido, setDoc con id estable lo crea sin riesgo de duplicarlo.
+    // El pedido pagado lo crea SOLO el servidor, después de comprobar el cobro con
+    // la pasarela. Antes, si no venía pedidoWebId, el navegador lo creaba él mismo
+    // con `pagado: true`, y esa función se podía llamar sin pagar nada. Si el
+    // servidor cobró pero no alcanzó a crearlo, lo completa el webhook de la
+    // pasarela (queda registrado en pagos_anomalias).
+    const pedidoWebId = gatewayResult.pedidoWebId || paymentStepData.numeroPedido;
     if (!gatewayResult.pedidoWebId) {
-      const paidPayload = {
-        ...paymentStepData.webOrderPayload,
-        pagado: true,
-        estadoPago: 'pagado',
-        conDeuda: false,
-        montoDeuda: 0,
-        montoPendiente: 0,
-        metodoPago: method,
-      };
-      const created = await createWebOrder(paidPayload, paymentStepData.numeroPedido);
-      if (created.error || !created.id) {
-        toast.error('El pago fue aprobado, pero no pudimos registrar el pedido. Contáctanos con tu comprobante.');
-        return;
-      }
-      pedidoWebId = created.id;
-    } else {
-      await mirrorWebOrder({ pedidoWebId, payload: paymentStepData.webOrderPayload });
+      toast.info('Tu pago fue aprobado. Estamos registrando tu pedido: aparecerá en «Mis pedidos» en unos minutos.');
     }
-    await markWalaOrderPagado({
-      numeroPedido: paymentStepData.numeroPedido,
-      pedidoWebId,
-      metodoPago: method,
-      montoPagado: paymentStepData.montoDeuda,
-    });
     setPaymentStepData((prev) => prev ? { ...prev, pedidoWebId } : prev);
     await applyPostCreationEffects(pedidoWebId, method);
     clearSelectedItems();
