@@ -34,6 +34,7 @@ const { calcularRecompensaFechas } = require("./fechasLogic");
 const { totalEsperadoCheckout, topeMonedasCheckout, toleranciaCheckout } = require("./checkoutTotals");
 const { puedeUsarPuente, tieneClaimAdmin } = require("./adminAuth");
 const pagos = require("./pagosLogic");
+const erpCobranza = require("./erpCobranzaLogic");
 
 admin.initializeApp();
 const auth = admin.auth();
@@ -600,9 +601,95 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
   // navegador después del pago; ahora el servidor, junto con el pedido.
   await escribirEspejoPagado({ orderId, payload, uid, pago, montos });
 
+  // 4) El cobro en Finanzas del ERP (adelanto pendiente de validar). Al aprobar el
+  // pedido, el ERP lo enlaza con el número de pedido nuevo (origenPedidoWebId).
+  await registrarMovimientoWeb({ orderId, payload, pago });
+
   await checkout.ref.set({ pedidoCreado: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return orderId;
 }
+
+// ── Terminar la compra por WhatsApp ──────────────────────────────────────────
+// La solicitud entra a la cola de validación del ERP (pedidos_web) SIN pago: el
+// ERP la valida a mano. Antes la escribía el navegador con el payload que
+// quisiera (montos, `pagado: true`…); ahora sale de la intención que ya validó
+// prepareCheckoutPayment (precios, monedas, cupón y envío del servidor).
+exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, context) => {
+  const checkout = await readCheckoutIntent(data && data.intentId, context);
+  if (INTENCION_NO_COBRABLE.has(checkout.intent.status)) {
+    throw new functions.https.HttpsError("failed-precondition",
+      "Tus datos cambiaron o pasó demasiado tiempo. Recarga la página e inténtalo de nuevo.");
+  }
+  const erpDb = getErpDb();
+  const payload = checkout.orderPayload;
+  const orderId = checkoutOrderId(payload) || checkout.id;
+  const orderRef = erpDb.collection("pedidos_web").doc(orderId);
+  const docRaw = payload.clienteNumeroDocumento || payload.dni || "";
+  const docNorm = String(docRaw).trim().replace(/\s/g, "");
+  const marcaWhatsapp = {
+    metodoPagoSeleccionado: "whatsapp",
+    canalConfirmacion: "whatsapp",
+    whatsappSolicitado: true,
+    whatsappSolicitadoAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  let nuevo = false;
+  await erpDb.runTransaction(async (t) => {
+    const existing = await t.get(orderRef);
+    if (existing.exists) {
+      // Ya existe (se pagó online o ya se pidió por WhatsApp): solo se marca.
+      t.set(orderRef, marcaWhatsapp, { merge: true });
+      return;
+    }
+    nuevo = true;
+    t.set(orderRef, {
+      ...payload,
+      ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
+      ...(checkout.intent.uid ? { userId: checkout.intent.uid, buyerUid: checkout.intent.uid } : {}),
+      metodoPago: "whatsapp",
+      canalVenta: "WhatsApp",
+      web: true,
+      estadoValidacion: "pendiente",
+      pagado: false,
+      ...marcaWhatsapp,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  });
+  if (nuevo) {
+    // Espejo para "Mis pedidos" (pendiente de pago), como lo hacía el navegador.
+    try {
+      const ref = erpDb.collection(WALA_ORDERS_COLLECTION).doc(sanearWalaDocId(payload.numeroPedido || orderId));
+      const snap = await ref.get();
+      if (!snap.exists) {
+        await ref.set({
+          numeroPedido: payload.numeroPedido || orderId,
+          portalPseudoOrderId: payload.portalPseudoOrderId || payload.numeroPedido || orderId,
+          pedidoWebId: orderId,
+          buyerUid: checkout.intent.uid || null,
+          dni: docNorm || null,
+          dniRaw: docRaw || null,
+          clienteNumeroDocumento: docNorm || null,
+          clienteNombreCompleto: payload.clienteNombreCompleto || null,
+          productos: pagos.resumirProductos(payload.productos),
+          ...(payload.giftDetails != null && { giftDetails: payload.giftDetails }),
+          ...(payload.deliveryDate != null && { deliveryDate: payload.deliveryDate }),
+          montoTotal: payload.montoTotal ?? null,
+          moneda: "PEN",
+          canalVenta: "Portal Web",
+          web: true,
+          estadoWala: "pendiente_pago",
+          pagado: false,
+          createdAt: FieldValue.serverTimestamp(),
+          fuente: "wala-mirror",
+        });
+      }
+    } catch (e) {
+      console.warn(`crearSolicitudWhatsappSecure: espejo de ${orderId} no escrito:`, e.message);
+    }
+  }
+  await checkout.ref.set({ whatsappSolicitado: true, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { id: orderId };
+});
 
 async function escribirEspejoPagado({ orderId, payload, uid, pago, montos }) {
   try {
@@ -1667,7 +1754,12 @@ async function objetivoSaldoPedido(pedidoId) {
   if (pedido.deletedAt || pedido.estadoGeneral === "Anulado") {
     throw new functions.https.HttpsError("failed-precondition", "Este pedido está anulado.");
   }
-  const saldo = Number(pedido.montoPendiente ?? pedido.montoDeuda);
+  // `pedidos`: el saldo como lo calcula la cobranza del ERP (con añadidos,
+  // complementos y el delivery que va con el restante). montoPendiente puede estar
+  // desactualizado: el ERP lo recalcula recién al guardar.
+  const saldo = coleccion === "pedidos"
+    ? erpCobranza.saldoCobrableOnline(pedido)
+    : Number(pedido.montoPendiente ?? pedido.montoDeuda);
   if (!Number.isFinite(saldo) || saldo <= 0) {
     throw new functions.https.HttpsError("failed-precondition", "Este pedido no tiene saldo pendiente.");
   }
@@ -1702,28 +1794,158 @@ async function objetivoEnlace(enlaceId) {
   return { tipo: "enlace", clave: `enlace:${enlaceId}`, enlaceId, montoCentimos: pagos.aCentimos(monto), moneda };
 }
 
+// ── Pagos online en la cobranza y en Finanzas del ERP ────────────────────────
+// Un pago online queda en el ERP como uno que registra cobranza: una entrada en
+// cobranza.historialPagos y un movimiento en fp_transactions (pendiente de
+// validar). Antes solo se marcaba `montoPendiente: 0`: el ERP calcula la deuda
+// con su historial y la recalcula al guardar, así que la deuda volvía y el
+// ingreso no llegaba a Finanzas. Reglas en ./erpCobranzaLogic.js.
+const FP_TRANSACTIONS_COLLECTION = "fp_transactions";
+
+// Id del movimiento: estable por cobro (el cobro y el webhook pueden llegar los
+// dos y no deben duplicarlo). Mismo prefijo que los del ERP.
+function txIdPagoOnline(coleccion, pedidoId, metodo, pagoId) {
+  const huella = JSON.stringify([coleccion, String(pedidoId), "pasarela", metodo, String(pagoId)]);
+  return `cobro_${crypto.createHash("sha256").update(huella).digest("hex")}`;
+}
+
+// Cuenta de Finanzas por la que entra el dinero de la pasarela (la única llamada
+// "Culqi" / "PayPal"). Sin una así, el movimiento queda sin cuenta y Finanzas la
+// pone al validar, como con cualquier cobro.
+const cacheCuentas = { ts: 0, cuentas: null };
+async function cuentaPasarelaId(metodo) {
+  try {
+    if (!cacheCuentas.cuentas || Date.now() - cacheCuentas.ts > 10 * 60 * 1000) {
+      const snap = await getErpDb().collection("fp_accounts").get();
+      cacheCuentas.cuentas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      cacheCuentas.ts = Date.now();
+    }
+    return erpCobranza.cuentaDePasarela(cacheCuentas.cuentas, metodo);
+  } catch (e) {
+    console.warn("cuentaPasarelaId: no se pudieron leer las cuentas de Finanzas:", e.message);
+    return null;
+  }
+}
+
+// Flag del ERP cobranzaLimaSinAutoHabilitar (configuracion/featureFlags; ON por defecto).
+async function flagLimaSinAutoHabilitar() {
+  try {
+    const snap = await getErpDb().collection("configuracion").doc("featureFlags").get();
+    const v = snap.exists ? snap.data().cobranzaLimaSinAutoHabilitar : undefined;
+    return v === undefined ? true : v === true;
+  } catch (e) {
+    return true; // ante la duda, no habilitar solo
+  }
+}
+
+/** Movimiento de adelanto en Finanzas por un pago online de un pedido web. */
+async function registrarMovimientoWeb({ orderId, payload, pago, sourceType = "adelanto" }) {
+  try {
+    const erpDb = getErpDb();
+    const txId = txIdPagoOnline("pedidos_web", orderId, pago.metodo, pago.id);
+    const ref = erpDb.collection(FP_TRANSACTIONS_COLLECTION).doc(txId);
+    const accountId = await cuentaPasarelaId(pago.metodo);
+    const movimiento = {
+      ...erpCobranza.crearMovimientoAbono({
+        pedidoId: orderId,
+        numeroPedido: orderId,
+        clienteContacto: payload.clienteContacto || "",
+        clienteNombre: `${payload.clienteNombre || ""} ${payload.clienteApellidos || ""}`.trim(),
+        monto: pago.montoPen,
+        fechaVentaPedido: new Date(),
+        sourceType,
+        usuarioEmail: erpCobranza.USUARIO_PORTAL,
+        fechaPago: erpCobranza.fechaLima(),
+        operationNumber: erpCobranza.normalizarOperacion(pago.id) || undefined,
+        accountId: accountId || undefined,
+      }),
+      id: txId,
+      paymentId: txId,
+      sourceCollection: "pedidos_web",
+      comprobanteHashes: [],
+      pasarela: { metodo: pago.metodo, id: String(pago.id), ...(pago.montoUsd != null && { montoUsd: pago.montoUsd }) },
+    };
+    // create(): si el cobro y el webhook llegan los dos, el segundo no lo pisa.
+    await ref.create(movimiento).catch((e) => {
+      if (e.code !== 6 && !/already exists/i.test(String(e.message))) throw e;
+    });
+    return txId;
+  } catch (e) {
+    console.error(`registrarMovimientoWeb: no se pudo registrar el movimiento de ${orderId}:`, e);
+    await registrarAnomaliaPago(`finanzas_${pago.metodo}_${pago.id}`, {
+      motivo: "movimiento_finanzas_no_registrado", pedidoWebId: orderId, metodo: pago.metodo,
+      pagoId: String(pago.id), montoPen: pago.montoPen, error: String(e.message || e),
+    });
+    return null;
+  }
+}
+
 // Saldo de un pedido pagado en línea. Idempotente por el id del cobro: el
 // cobro y el webhook pueden llegar los dos.
 async function registrarPagoSaldo({ coleccion, pedidoId, pago, payment = {} }) {
   const erpDb = getErpDb();
   const ref = erpDb.collection(coleccion).doc(String(pedidoId));
+
+  if (coleccion === "pedidos_web") {
+    // Pedido web aún sin validar (landing con adelanto): lo pagado se suma al
+    // adelanto, que es lo que el ERP toma al aprobarlo.
+    let payload = null;
+    await erpDb.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      if (!snap.exists) throw new Error(`El pedido ${coleccion}/${pedidoId} ya no existe.`);
+      const pedido = snap.data() || {};
+      const previos = Array.isArray(pedido.pagosOnline) ? pedido.pagosOnline : [];
+      if (previos.some((p) => p && String(p.id) === String(pago.id))) return;
+      payload = pedido;
+      const adelanto = pagos.redondear((Number(pedido.montoAdelanto) || 0) + pago.montoPen);
+      t.set(ref, {
+        ...pagos.montosPedidoPagado({ total: Number(pedido.montoTotal) || 0, montoPagadoPen: adelanto }),
+        metodoPago: pago.metodo,
+        pagadoAt: FieldValue.serverTimestamp(),
+        pagosOnline: [...previos, { ...pago, verificadoPor: "servidor", fecha: new Date().toISOString() }],
+        ...payment,
+      }, { merge: true });
+    });
+    if (payload) await registrarMovimientoWeb({ orderId: String(pedidoId), payload, pago });
+    return;
+  }
+
+  // `pedidos` (validado por el ERP): como un pago de cobranza.
+  const txId = txIdPagoOnline(coleccion, pedidoId, pago.metodo, pago.id);
+  const movimientoRef = erpDb.collection(FP_TRANSACTIONS_COLLECTION).doc(txId);
+  const [accountId, limaSinAuto] = await Promise.all([cuentaPasarelaId(pago.metodo), flagLimaSinAutoHabilitar()]);
+  let resultado = null;
   await erpDb.runTransaction(async (t) => {
+    const previo = await t.get(movimientoRef);
     const snap = await t.get(ref);
+    if (previo.exists) return; // ya registrado
     if (!snap.exists) throw new Error(`El pedido ${coleccion}/${pedidoId} ya no existe.`);
-    const previos = Array.isArray(snap.data().pagosOnline) ? snap.data().pagosOnline : [];
-    if (previos.some((p) => p && String(p.id) === String(pago.id))) return;
-    t.set(ref, {
-      pagado: true,
-      estadoPago: "pagado",
-      conDeuda: false,
-      montoDeuda: 0,
-      montoPendiente: 0,
-      metodoPago: pago.metodo,
-      pagadoAt: FieldValue.serverTimestamp(),
-      pagosOnline: [...previos, { ...pago, verificadoPor: "servidor", fecha: new Date().toISOString() }],
+    const pedido = snap.data() || {};
+    const plan = erpCobranza.planificarPagoOnline(pedido, {
+      pedidoId: String(pedidoId), coleccion, montoPagado: pago.montoPen, metodo: pago.metodo, pagoId: pago.id,
+      txId, accountId, autoHabilitar: erpCobranza.permiteAutoHabilitado(pedido, limaSinAuto),
+    });
+    const previos = Array.isArray(pedido.pagosOnline) ? pedido.pagosOnline : [];
+    t.update(ref, {
+      ...plan.updates,
+      updatedAt: FieldValue.serverTimestamp(),
+      // Lo que lee la tienda ("Mis pedidos").
+      conDeuda: plan.nuevoSaldo > 0,
+      montoDeuda: plan.nuevoSaldo,
+      pagosOnline: [...previos, { ...pago, paymentId: txId, verificadoPor: "servidor", fecha: new Date().toISOString() }],
       ...payment,
-    }, { merge: true });
+    });
+    t.set(movimientoRef, plan.movimiento);
+    resultado = plan;
   });
+  // Lo pagado no coincide con el saldo que se registró (el ERP cambió el pedido
+  // entre el cobro y el registro): queda para revisarlo.
+  if (resultado && Math.abs(resultado.montoPedido + (resultado.movimiento.deliveryMonto || 0) - pago.montoPen) > 0.01) {
+    await registrarAnomaliaPago(`saldo_${pago.metodo}_${pago.id}`, {
+      motivo: "pago_no_coincide_con_saldo", coleccion, pedidoId: String(pedidoId), metodo: pago.metodo,
+      pagoId: String(pago.id), montoPen: pago.montoPen, registrado: resultado.montoPedido,
+    });
+  }
 }
 
 async function marcarEnlacePagado({ enlaceId, pago, payment = {} }) {
@@ -2156,8 +2378,16 @@ exports.misPedidosSecure = functions
       const cuenta = await leerCuentaPedidos(uid, context.auth.token);
       const encontrados = await buscarPedidosDeCuenta(cuenta);
       const { visibles, pendientes } = misPedidos.clasificarPedidos(encontrados, cuenta);
+      // Pedidos del ERP: la deuda que se muestra es la que se cobra al pagar en
+      // línea (saldo de cobranza + delivery del restante), no un montoPendiente
+      // que el ERP recalcula recién al guardar.
+      const conSaldoReal = visibles.map((p) => {
+        if (p._coleccion !== "pedidos") return p;
+        const saldo = p.deletedAt || p.estadoGeneral === "Anulado" ? 0 : erpCobranza.saldoCobrableOnline(p);
+        return { ...p, montoDeuda: saldo, conDeuda: saldo > 0 };
+      });
       return {
-        pedidos: visibles.map((p) => misPedidos.serializarParaCliente(p)),
+        pedidos: conSaldoReal.map((p) => misPedidos.serializarParaCliente(p)),
         pendientes,
         emailVerificado: cuenta.emailVerificado,
       };

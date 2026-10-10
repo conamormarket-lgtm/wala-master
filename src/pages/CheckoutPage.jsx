@@ -12,7 +12,6 @@ import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../services/messages';
 import { getBrands } from '../services/brands';
 import { linkPurchaseToReferral } from '../services/referrals';
-import { createWebOrder, markWebOrderWhatsapp } from '../services/erp/firebase';
 import { prepareCheckoutPayment } from '../services/checkoutPayment';
 import { markItemAsGifted } from '../services/wishlist';
 import { marcarCreacionesEnPedido } from '../services/designs';
@@ -1432,12 +1431,13 @@ const CheckoutPage = () => {
       whatsappOrderPromiseRef.current = (async () => {
         setProcessing(true);
         try {
-          const { id, error } = await createWebOrder(
-            { ...paymentStepData.webOrderPayload, metodoPago: 'whatsapp', canalVenta: 'WhatsApp' },
-            paymentStepData.numeroPedido,
-          );
-          if (error || !id) throw new Error(error || 'No se recibió el id del pedido.');
-          await markWebOrderWhatsapp(id);
+          // La solicitud la crea el servidor desde la intención que ya validó
+          // (precios, monedas, cupón y envío): el navegador no escribe el pedido.
+          const res = await httpsCallable(getFunctions(), 'crearSolicitudWhatsappSecure')({
+            intentId: paymentStepData.checkoutIntentId,
+          });
+          const id = res?.data?.id;
+          if (!id) throw new Error('No se recibió el id del pedido.');
           setPaymentStepData((prev) => prev ? { ...prev, pedidoWebId: id } : prev);
           await applyPostCreationEffects(id, 'whatsapp');
           return id;
