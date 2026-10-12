@@ -152,7 +152,7 @@ const SECCIONES_DEMO = [
     paddingTop: '1rem', paddingBottom: '1rem',
   } },
   { id: 's4', type: 'flash_sales', order: 3, settings: {
-    title: 'Ofertas relámpago', collection: 'ofertas', endTime: new Date(Date.now() + 5 * 3600 * 1000 + 17 * 60 * 1000).toISOString(),
+    title: 'Ofertas relámpago', subtitle: 'Precios que se van a medianoche.', collection: 'ofertas', endTime: new Date(Date.now() + 5 * 3600 * 1000 + 17 * 60 * 1000).toISOString(),
     anchorId: 'oferta-flash', paddingTop: '1.5rem', paddingBottom: '1.5rem',
   } },
   { id: 's5', type: 'category_grid', order: 4, settings: {

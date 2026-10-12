@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Star, Zap, BadgeCheck, ArrowRight, ChevronLeft, ChevronRight,
+  Star, BadgeCheck, ArrowRight, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import Boton from './Boton';
 import Carrusel from './Carrusel';
@@ -257,20 +257,73 @@ export function CarruselProductos({ ajustes = {}, productos = [], onAgregar }) {
 }
 
 /* ── Ofertas flash (flash_sales) ────────────────────────── */
+
+/** Mayor descuento entre los productos (para "Hasta -31%"). */
+const mayorDescuento = (productos) => productos.reduce((max, p) => {
+  const antes = Number(p.price) || 0;
+  const ahora = Number(p.salePrice) || 0;
+  return antes > 0 && ahora > 0 && ahora < antes ? Math.max(max, Math.round((1 - ahora / antes) * 100)) : max;
+}, 0);
+
+/** "¡Quedan 6!" con barra, solo cuando el stock es bajo (inStock numérico ≤ 20). */
+function Quedan({ stock }) {
+  const n = Number(stock);
+  // Sin stock bajo igual se reserva el lugar: así todas las tarjetas miden lo mismo.
+  if (!Number.isFinite(n) || n <= 0 || n > 20) return <div className={s.quedan} aria-hidden="true" />;
+  return (
+    <div className={s.quedan}>
+      <span className={s.quedanTexto}>{n <= 5 ? <>¡Solo quedan <strong>{n}</strong>!</> : <>Quedan <strong>{n}</strong></>}</span>
+      <span className={s.quedanBarra} aria-hidden="true"><span style={{ width: `${Math.max(8, (n / 20) * 100)}%` }} /></span>
+    </div>
+  );
+}
+
+/**
+ * Ofertas relámpago: un evento dentro de la página. Panel en la noche violeta
+ * de Walá (en claro y en noche), rayo en sticker, etiqueta "Hasta -X%",
+ * cuenta regresiva grande y, bajo cada producto, cuántos quedan.
+ */
 export function OfertaRelampago({ ajustes = {}, productos = [], onAgregar }) {
   const [terminada, setTerminada] = useState(false);
   if (!productos.length || terminada) return null;
+  const lista = productos.slice(0, 8);
+  const hasta = mayorDescuento(lista);
   return (
     <div className={s.flash}>
+      <span className={s.flashFranjas} aria-hidden="true" />
+      <Destello className={s.flashChispa1} />
+      <Destello className={s.flashChispa2} />
       <div className={s.flashCabeza}>
-        <h2 className={s.flashTitulo}><Zap aria-hidden="true" /> {ajustes.title || 'Ofertas relámpago'}</h2>
-        <CuentaRegresiva hasta={ajustes.endTime} etiqueta="Termina en" onTerminar={() => setTerminada(true)} />
+        <div className={s.flashTituloCaja}>
+          <IconoWala nombre="rayo" tamano={58} girar={-10} className={s.flashRayo} />
+          <div>
+            {(ajustes.eyebrow || hasta > 0) && (
+              <p className={s.flashEtiqueta}>
+                <EtiquetaColgante tono="rojo">{ajustes.eyebrow || `Hasta -${hasta}%`}</EtiquetaColgante>
+              </p>
+            )}
+            <h2 className={s.flashTitulo}>{ajustes.title || 'Ofertas relámpago'}</h2>
+            {ajustes.subtitle && <p className={s.flashSubtitulo}>{ajustes.subtitle}</p>}
+          </div>
+        </div>
+        <div className={s.flashReloj}>
+          <span className={s.flashTermina}>Termina en</span>
+          <CuentaRegresiva hasta={ajustes.endTime} variante="evento" etiqueta="Termina en" onTerminar={() => setTerminada(true)} />
+        </div>
       </div>
       <Carrusel visibles={{ escritorio: 4, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta={ajustes.title || 'Ofertas'}>
-        {productos.slice(0, 8).map((p) => (
-          <TarjetaProducto key={p.id} inclinar={false} {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} />
+        {lista.map((p) => (
+          <div key={p.id} className={s.flashItem}>
+            <TarjetaProducto inclinar={false} {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} />
+            <Quedan stock={p.inStock} />
+          </div>
         ))}
       </Carrusel>
+      {ajustes.buttonText && ajustes.buttonLink && (
+        <div className={s.flashPie}>
+          <Boton to={ajustes.buttonLink} variante="contorno" style={{ '--b-fondo': '#fff', '--b-fondo-hover': '#fff', '--b-texto': '#14121c', '--b-borde': 'transparent' }}>{ajustes.buttonText}</Boton>
+        </div>
+      )}
     </div>
   );
 }

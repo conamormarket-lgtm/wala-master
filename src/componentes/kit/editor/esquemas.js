@@ -283,6 +283,7 @@ export const ESQUEMAS = {
       { tipo: 'fuente', campo: 'collection', etiqueta: 'Colección', datos: 'colecciones', vacio: 'Elige una colección' },
       { tipo: 'fecha', campo: 'endTime', etiqueta: 'Termina el' },
       ...cabeceraSeccion(),
+      { tipo: 'texto', campo: 'subtitle', etiqueta: 'Subtítulo', placeholder: 'Ej: Precios que se van a medianoche' },
       ...pieComun(),
     ],
     inicial: () => ({ title: 'Ofertas relámpago', collection: '', endTime: new Date(Date.now() + 86400000).toISOString() }),

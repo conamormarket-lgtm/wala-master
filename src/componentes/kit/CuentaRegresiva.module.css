@@ -53,3 +53,66 @@
   color: var(--color-text-muted);
   font-weight: 600;
 }
+
+/* ── Variante evento (ofertas relámpago, fondo oscuro) ── */
+.evento {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.eventoCaja {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+}
+
+.eventoNumero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--noche-wala, #14121c);
+  overflow: hidden;
+  box-shadow: inset 0 -3px 0 rgba(20, 18, 28, 0.12);
+}
+
+.eventoNumero strong {
+  font-family: var(--fuente-marca);
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* Los segundos en oro: es lo único que se mueve. */
+.eventoSegundos .eventoNumero {
+  background: #fbbf24;
+  color: #3b2300;
+}
+
+.eventoCaja small {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eventoDosPuntos {
+  margin-top: 0.55rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--fuente-marca);
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventoNumero strong {
+    transition: none;
+  }
+}

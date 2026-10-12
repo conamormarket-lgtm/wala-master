@@ -334,6 +334,12 @@
   .badgeTexto {
     display: none;
   }
+
+  /* No caben junto al precio: los colores se eligen al agregar.
+     (.pie .colores para ganarle a la regla de .colores, que va más abajo). */
+  .pie .colores {
+    display: none;
+  }
 }
 
 @container tarjeta (max-width: 170px) {

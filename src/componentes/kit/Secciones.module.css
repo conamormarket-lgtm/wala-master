@@ -333,39 +333,159 @@ a.anuncio:hover {
   }
 }
 
-/* ── Ofertas flash ── */
+/* ── Ofertas flash: un evento en la noche violeta ── */
 .flash {
-  padding: clamp(1rem, 3cqi, 1.5rem);
-  border: 1px solid rgba(225, 29, 72, 0.18);
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(225, 29, 72, 0.06), rgba(245, 158, 11, 0.06));
+  position: relative;
+  isolation: isolate;
+  padding: clamp(1.1rem, 3cqi, 1.75rem);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-radius: 28px;
+  background:
+    radial-gradient(70% 90% at 100% 0%, rgba(225, 29, 72, 0.32), transparent 60%),
+    radial-gradient(60% 80% at 0% 100%, rgba(124, 58, 237, 0.4), transparent 65%),
+    var(--noche-wala, #14121c);
+  color: #fff;
+  overflow: hidden;
 }
+
+/* Franjas diagonales de energía (quietas) en la esquina. */
+.flashFranjas {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  width: 46%;
+  height: 160px;
+  background: repeating-linear-gradient(-55deg, rgba(251, 191, 36, 0.12) 0 10px, transparent 10px 26px);
+  -webkit-mask-image: linear-gradient(to left, #000, transparent);
+  mask-image: linear-gradient(to left, #000, transparent);
+  pointer-events: none;
+}
+
+.flashChispa1,
+.flashChispa2 {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.flashChispa1 { top: 18px; left: 46%; width: 18px; color: #fbbf24; }
+.flashChispa2 { top: 64px; left: 52%; width: 10px; color: #f9a8d4; }
 
 .flashCabeza {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 1rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.flashTituloCaja {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.flashEtiqueta {
+  margin: 0 0 0.5rem;
 }
 
 .flashTitulo {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
   margin: 0;
+  color: #fff;
   font-family: var(--fuente-marca);
-  font-size: calc(var(--section-title-size) * 1.05);
+  font-size: calc(var(--section-title-size) * 1.2);
   font-weight: 900;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
 
-.flashTitulo svg {
-  width: 1.4rem;
-  height: 1.4rem;
-  color: #f59e0b;
-  fill: currentColor;
+.flashSubtitulo {
+  margin: 0.35rem 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+}
+
+.flashReloj {
+  display: grid;
+  justify-items: end;
+  gap: 0.4rem;
+}
+
+.flashTermina {
+  color: #fbbf24;
+  font-family: var(--fuente-marca);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Cada producto con su "Quedan X" debajo. */
+.flashItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  height: 100%;
+}
+
+.flashItem > :first-child {
+  flex: 1;
+}
+
+.quedan {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  min-height: 2.05rem;
+  padding: 0 0.2rem;
+}
+
+.quedanTexto {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.quedanTexto strong {
+  color: #fbbf24;
+  font-family: var(--fuente-marca);
+  font-weight: 900;
+}
+
+.quedanBarra {
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.quedanBarra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f59e0b, #e11d48);
+}
+
+.flashPie {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+@container (max-width: 640px) {
+  .flashCabeza {
+    align-items: flex-start;
+  }
+
+  .flashReloj {
+    justify-items: start;
+  }
+
+  .flashFranjas {
+    width: 70%;
+  }
 }
 
 /* ── Testimonios ── */

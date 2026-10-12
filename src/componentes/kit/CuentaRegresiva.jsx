@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import s from './CuentaRegresiva.module.css';
 
 /**
@@ -8,7 +9,9 @@ import s from './CuentaRegresiva.module.css';
  *  - horas + clave: "siempre activa": cada visitante tiene su propio plazo
  *    de N horas guardado en localStorage con esa clave (landings).
  *  - textoFin: lo que se muestra al terminar. onTerminar: aviso.
- *  - variante: 'bloques' (cajitas HH MM SS) | 'texto' (02:14:09).
+ *  - variante: 'bloques' (cajitas HH MM SS) | 'texto' (02:14:09) |
+ *    'evento' (dígitos grandes con la letra del logo y rótulos; para fondos
+ *    oscuros como el de las ofertas relámpago).
  */
 export default function CuentaRegresiva({ hasta, horas, clave = 'wala_oferta_fin', textoFin = '¡Terminó!', onTerminar, variante = 'bloques', etiqueta = 'Termina en' }) {
   const [fin] = useState(() => calcularFin({ hasta, horas, clave }));
@@ -34,6 +37,35 @@ export default function CuentaRegresiva({ hasta, horas, clave = 'wala_oferta_fin
     ['s', total % 60],
   ];
   const dos = (n) => String(n).padStart(2, '0');
+
+  if (variante === 'evento') {
+    const nombres = { h: 'horas', m: 'min', s: 'seg' };
+    return (
+      <div className={s.evento} role="timer" aria-label={`${etiqueta} ${partes[0][1]} horas ${partes[1][1]} minutos`}>
+        {partes.map(([u, n], i) => (
+          <React.Fragment key={u}>
+            {i > 0 && <span className={s.eventoDosPuntos} aria-hidden="true">:</span>}
+            <span className={[s.eventoCaja, u === 's' && s.eventoSegundos].filter(Boolean).join(' ')}>
+              <span className={s.eventoNumero}>
+                <AnimatePresence initial={false} mode="popLayout">
+                  <motion.strong
+                    key={n}
+                    initial={{ y: '-60%', opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: '60%', opacity: 0 }}
+                    transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
+                  >
+                    {dos(n)}
+                  </motion.strong>
+                </AnimatePresence>
+              </span>
+              <small>{nombres[u]}</small>
+            </span>
+          </React.Fragment>
+        ))}
+      </div>
+    );
+  }
 
   if (variante === 'texto') {
     return (
