@@ -538,6 +538,17 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
 // elige vendedor y activador al validar.
 const ERP_CANAL_WALA = "Tienda Virtual";
 const ERP_VENDEDOR_WALA = "Portal Web";
+const ERP_MARCA_WALA = "Walá";
+// Campos que el formulario del ERP lee con otro nombre: la marca (lista del ERP) y
+// la dirección de entrega en Lima/Callao (envioDireccionLima; la tienda manda
+// envioDireccion y el ERP la mostraba vacía).
+function camposErpWala(payload) {
+  return {
+    marca: payload.marca || ERP_MARCA_WALA,
+    ...(payload.envioProvincia === "No" && payload.envioDireccion && !payload.envioDireccionLima
+      ? { envioDireccionLima: payload.envioDireccion } : {}),
+  };
+}
 
 async function createPaidWebOrderFromIntent({ intentId, context, pago, payment = {} }) {
   const checkout = await readCheckoutIntent(intentId, context);
@@ -594,6 +605,7 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
       ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
       ...(uid ? { userId: uid, buyerUid: uid } : {}),
       web: true,
+      ...camposErpWala(payload),
       canalVenta: ERP_CANAL_WALA,
       vendedor: ERP_VENDEDOR_WALA,
       activador: "",
@@ -670,6 +682,7 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
       ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
       ...(checkout.intent.uid ? { userId: checkout.intent.uid, buyerUid: checkout.intent.uid } : {}),
       metodoPago: "whatsapp",
+      ...camposErpWala(payload),
       canalVenta: ERP_CANAL_WALA,
       vendedor: "",
       activador: "",
