@@ -42,7 +42,7 @@ async function porCampo(coleccion, campo, valor, campos) {
       ['status', 'amountPen', 'montoCobrar', 'whatsappSolicitado', 'uid', 'createdAt', 'updatedAt']);
   }
 
-  salida.pedidos_erp = await porCampo('pedidos', 'pedidoWebId', numero,
+  salida.pedidos_erp = await porCampo('pedidos', 'origenPedidoWebId', numero,
     ['numeroPedido', 'estadoGeneral', 'montoTotal', 'montoAdelanto', 'pagoOnline', 'createdAt']);
 
   salida.culqiCharges = await porCampo('culqiCharges', 'objetivo', `checkout:${numero}`,
