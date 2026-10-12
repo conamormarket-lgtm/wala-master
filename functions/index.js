@@ -2381,6 +2381,42 @@ async function buscarPedidosDeCuenta(cuenta) {
   return [...docs.values()];
 }
 
+// Copias de Walá (wala_pedidos) de pedidos web que el ERP eliminó sin aprobarlos.
+// El ERP borra pedidos_web tanto al aprobar (antes crea el pedido con
+// origenPedidoWebId / portalPseudoOrderId) como al eliminar; la copia nunca se
+// enteraba y seguía en "Mis pedidos". Solo se miran copias sin pagar y
+// pendientes de pago, y se comprueba en el ERP doc por doc (si una consulta
+// falla, la copia se muestra: mejor de más que esconder un pedido real).
+async function quitarCopiasEliminadasEnErp(encontrados) {
+  const erpDb = getErpDb() || db;
+  const clave = (p) => String(p.numeroPedido || p.id || "");
+  const conocidos = new Set();
+  encontrados.forEach((p) => {
+    if (p._coleccion === "pedidos_web") conocidos.add(String(p.id)).add(clave(p));
+    if (p._coleccion === "pedidos") {
+      [p.origenPedidoWebId, p.portalPseudoOrderId].forEach((v) => { if (v) conocidos.add(String(v)); });
+    }
+  });
+  const dudosas = encontrados.filter((p) => p._coleccion === "wala_pedidos" && !p.pagado &&
+    (p.estadoWala || "pendiente_pago") === "pendiente_pago" && clave(p) && !conocidos.has(clave(p)));
+  const eliminadas = new Set();
+  await Promise.all(dudosas.map(async (p) => {
+    const id = clave(p);
+    try {
+      const [web, webPorNumero, aprobadoA, aprobadoB] = await Promise.all([
+        erpDb.collection("pedidos_web").doc(id).get(),
+        erpDb.collection("pedidos_web").where("numeroPedido", "==", id).limit(1).get(),
+        erpDb.collection("pedidos").where("origenPedidoWebId", "==", id).limit(1).get(),
+        erpDb.collection("pedidos").where("portalPseudoOrderId", "==", id).limit(1).get(),
+      ]);
+      if (!web.exists && webPorNumero.empty && aprobadoA.empty && aprobadoB.empty) eliminadas.add(p);
+    } catch (e) {
+      console.warn("misPedidosSecure: no se pudo comprobar la copia", id, e.message);
+    }
+  }));
+  return eliminadas.size ? encontrados.filter((p) => !eliminadas.has(p)) : encontrados;
+}
+
 exports.misPedidosSecure = functions
   .runWith({ memory: "512MB" })
   .https.onCall(async (data, context) => {
@@ -2390,7 +2426,7 @@ exports.misPedidosSecure = functions
     const uid = requireCuentaReal(context);
     try {
       const cuenta = await leerCuentaPedidos(uid, context.auth.token);
-      const encontrados = await buscarPedidosDeCuenta(cuenta);
+      const encontrados = await quitarCopiasEliminadasEnErp(await buscarPedidosDeCuenta(cuenta));
       const { visibles, pendientes } = misPedidos.clasificarPedidos(encontrados, cuenta);
       // Pedidos del ERP: la deuda que se muestra es la que se cobra al pagar en
       // línea (saldo de cobranza + delivery del restante), no un montoPendiente
