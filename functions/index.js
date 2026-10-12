@@ -122,6 +122,11 @@ function checkoutOrderId(orderPayload) {
 // reservadas se devolvieron (otra confirmación de datos la reemplazó, o venció
 // sin pagarse). Cobrarla daría el descuento sin gastar las monedas.
 const INTENCION_NO_COBRABLE = new Set(["reemplazada", "vencida"]);
+
+// El checkout llama a sus funciones con { precalentar: true } al abrirse, para que
+// no estén frías (4-5 s de arranque) cuando el cliente confirma o paga. Responde
+// sin leer ni escribir nada.
+const esPrecalentamiento = (data) => !!data && data.precalentar === true;
 // Una reserva de monedas sin pedido en el ERP se devuelve pasado este plazo.
 const CHECKOUT_RESERVA_VENCE_MS = 48 * 60 * 60 * 1000;
 
@@ -312,6 +317,7 @@ async function reservaCheckoutLiberable(uid, intentIdNuevo) {
 // desde el navegador y sin comprobar el resultado: si esa llamada fallaba, el
 // cliente se quedaba con el descuento y con las monedas.
 exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) => {
+  if (esPrecalentamiento(data)) return { listo: true };
   const orderPayload = data && data.orderPayload;
   if (!orderPayload || typeof orderPayload !== "object" || Array.isArray(orderPayload)) {
     throw new functions.https.HttpsError("invalid-argument", "Faltan los datos del checkout.");
@@ -615,6 +621,7 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
 // quisiera (montos, `pagado: true`…); ahora sale de la intención que ya validó
 // prepareCheckoutPayment (precios, monedas, cupón y envío del servidor).
 exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, context) => {
+  if (esPrecalentamiento(data)) return { listo: true };
   const checkout = await readCheckoutIntent(data && data.intentId, context);
   if (INTENCION_NO_COBRABLE.has(checkout.intent.status)) {
     throw new functions.https.HttpsError("failed-precondition",
@@ -1970,6 +1977,7 @@ async function marcarEnlacePagado({ enlaceId, pago, payment = {} }) {
 exports.processCulqiPayment = functions
   .runWith({ secrets: ["CULQI_SECRET_KEY"] })
   .https.onCall(async (data, context) => {
+  if (esPrecalentamiento(data)) return { listo: true };
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Debe estar autenticado para pagar.");
   }
@@ -5451,6 +5459,7 @@ const PAYPAL_ORDENES_COLLECTION = "paypal_ordenes";
 // Crea la orden PayPal (intent CAPTURE) con el monto USD recalculado server-side.
 // Devuelve { orderID, amountUsd, pedidoId } para que el cliente abra el aprobador.
 exports.createPaypalOrderSecure = functions.https.onCall(async (data, context) => {
+  if (esPrecalentamiento(data)) return { listo: true };
   requireAuth(context);
   const pedidoId = data && (data.pedidoId || data.orderId);
 
@@ -5498,6 +5507,7 @@ exports.createPaypalOrderSecure = functions.https.onCall(async (data, context) =
 // entonces marca el pedido como pagado en pedidos_web vía Admin SDK (idempotente
 // por captureId). Espejo de la lógica de processCulqiPayment/culqiWebhook.
 exports.capturePaypalOrderSecure = functions.https.onCall(async (data, context) => {
+  if (esPrecalentamiento(data)) return { listo: true };
   const uid = requireAuth(context);
   const orderID = data && data.orderID ? String(data.orderID) : "";
   const pedidoId = data && (data.pedidoId || data.orderId) ? String(data.pedidoId || data.orderId) : "";

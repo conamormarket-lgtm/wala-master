@@ -1,8 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { CreditCard, Lock } from 'lucide-react';
 import { useGlobalToast } from '../../contexts/ToastContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getOrCreateCulqi } from './culqiSingleton';
 import { trackCulqiPurchase } from '../../services/analytics/metaPixel.mjs';
+import styles from './CulqiCustomCheckout.module.css';
+
+const CULQI_SCRIPT_ID = 'culqi-js-v4';
+
+// Carga el SDK de Culqi una sola vez. El checkout lo llama apenas se abre la página
+// para que, al llegar al paso de pago, el modal se abra sin esperar la descarga.
+export function precargarCulqi() {
+  if (typeof document === 'undefined' || document.getElementById(CULQI_SCRIPT_ID)) return;
+  const script = document.createElement('script');
+  script.id = CULQI_SCRIPT_ID;
+  script.src = 'https://js.culqi.com/checkout-js';
+  script.async = true;
+  document.body.appendChild(script);
+}
 
 // Recuerda a nivel de MÓDULO (sobrevive a remontes del componente) para qué
 // combinación de pedido + reintento ya se auto-abrió el modal. Así, si el
@@ -25,10 +41,13 @@ const isCulqiModalVisible = () => {
   return false;
 };
 
-const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = false, reopenKey = 0 }) => {
+const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = false, reopenKey = 0, buttonLabel }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  // Pantalla sobre la página mientras el servidor cobra ('cobrando') y justo después
+  // del cobro ('aprobado'), hasta que el padre navegue.
+  const [pantalla, setPantalla] = useState(null);
   const culqiRef = useRef(null);
 
   // Identidad ESTABLE del pedido (sobrevive a remontes): con ella reutilizamos la
@@ -61,26 +80,17 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
   }, [onSuccess, onClose]);
 
   useEffect(() => {
-    const scriptId = 'culqi-js-v4';
-    
+    let timer = null;
     const checkAndSetReady = () => {
       if (window.CulqiCheckout) {
         setIsReady(true);
       } else {
-        setTimeout(checkAndSetReady, 200);
+        timer = setTimeout(checkAndSetReady, 100);
       }
     };
-
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = 'culqi-js-v4';
-      script.src = 'https://js.culqi.com/checkout-js';
-      script.async = true;
-      script.onload = checkAndSetReady;
-      document.body.appendChild(script);
-    } else {
-      checkAndSetReady();
-    }
+    precargarCulqi();
+    checkAndSetReady();
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -152,7 +162,8 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
         culqiInstance.close();
 
         setIsProcessing(true);
-        toast.info('Procesando pago seguro con Culqi...');
+        setPantalla('cobrando');
+        let aprobado = false;
 
         try {
           const functions = getFunctions();
@@ -173,6 +184,10 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
           });
 
           if (result.data && result.data.success) {
+            aprobado = true;
+            setPantalla('aprobado');
+            // Por si el padre no navega (p. ej. pago de saldo): no dejarla puesta.
+            setTimeout(() => setPantalla(null), 5000);
             trackCulqiPurchase(result.data, currency, pedido);
             toast.success('¡Pago procesado exitosamente!');
             // Usa la versión más reciente del callback (ref estable): NO depende
@@ -186,6 +201,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
           console.error("Error processCulqiPayment:", error);
           toast.error(error.message || 'Error de comunicación con el servidor.');
         } finally {
+          if (!aprobado) setPantalla(null);
           setIsProcessing(false);
           processingRef.current = false; // libera el guard (permite reintento si falló)
         }
@@ -275,7 +291,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
       if (isCulqiModalVisible()) { sawModal = true; goneTicks = 0; return; }
       if (!sawModal) return; // el modal aún no aparece
       goneTicks += 1;
-      if (goneTicks >= 2) { // ~1.4s sin el modal => se cerró
+      if (goneTicks >= 2) { // ~0,5 s sin el modal => se cerró
         clearInterval(closePollRef.current);
         closePollRef.current = null;
         if (!firedClose && !resolvedRef.current && !processingRef.current) {
@@ -283,7 +299,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
           if (typeof onCloseRef.current === 'function') onCloseRef.current();
         }
       }
-    }, 700);
+    }, 250);
   };
 
   // Auto-abrir el checkout de Culqi cuando el padre lo solicite (UX Opción A).
@@ -309,33 +325,39 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
   }, []);
 
   return (
-    <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
-      <button 
+    <div className={styles.wrap}>
+      <button
+        type="button"
+        className={styles.payButton}
         onClick={handleOpenCheckout}
-        style={{
-          width: '100%',
-          padding: '14px 20px',
-          backgroundColor: '#5d2bb4',
-          color: 'white',
-          border: 'none',
-          borderRadius: '12px',
-          fontSize: '1.05rem',
-          fontWeight: '600',
-          cursor: isProcessing ? 'wait' : 'pointer',
-          opacity: (!isReady || isProcessing) ? 0.7 : 1,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: '8px',
-          boxShadow: '0 4px 6px -1px rgba(93, 43, 180, 0.2)'
-        }}
+        disabled={isProcessing}
       >
-        <span style={{ fontSize: '1.2rem' }}>💳</span> 
-        {isProcessing ? 'Procesando tu pago...' : 'Pagar con Tarjeta'}
+        {isProcessing ? (
+          <><span className={styles.spinner} aria-hidden="true" /> Procesando tu pago...</>
+        ) : (
+          <><CreditCard size={20} aria-hidden="true" /> {buttonLabel || 'Pagar con tarjeta'}</>
+        )}
       </button>
-      <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center', marginTop: '0.6rem', marginBottom: 0 }}>
-        Pagos 100% seguros encriptados por Culqi.
+      <p className={styles.secureNote}>
+        <Lock size={13} aria-hidden="true" />
+        Pago seguro con Culqi. Walá no guarda los datos de tu tarjeta.
       </p>
+      {pantalla && typeof document !== 'undefined' && createPortal(
+        <div className={styles.overlay} role="alertdialog" aria-live="assertive" aria-busy={pantalla === 'cobrando'}>
+          <div className={styles.overlayCard}>
+            <div className={styles.overlaySpinner} aria-hidden="true" />
+            <p className={styles.overlayTitle}>
+              {pantalla === 'cobrando' ? 'Confirmando tu pago…' : '¡Pago aprobado!'}
+            </p>
+            <p className={styles.overlayText}>
+              {pantalla === 'cobrando'
+                ? 'Estamos confirmando el cobro con tu banco. No cierres ni recargues esta página.'
+                : 'Estamos registrando tu pedido. En un momento verás el detalle.'}
+            </p>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

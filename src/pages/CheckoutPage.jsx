@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getMessage } from '../services/messages';
 import { getBrands } from '../services/brands';
 import { linkPurchaseToReferral } from '../services/referrals';
-import { prepareCheckoutPayment } from '../services/checkoutPayment';
+import { prepareCheckoutPayment, precalentarFunciones } from '../services/checkoutPayment';
 import { markItemAsGifted } from '../services/wishlist';
 import { marcarCreacionesEnPedido } from '../services/designs';
 // Cupones: el valor lo decide el servidor (validarCuponSecure), igual que las
@@ -25,7 +25,8 @@ import { trackCheckoutStart, trackPurchaseComplete } from '../services/analytics
 import CountrySelect from '../components/intl/CountrySelect';
 import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import Button from '../components/common/Button';
-import CulqiCustomCheckout from '../components/CulqiCustomCheckout/CulqiCustomCheckout';
+import CulqiCustomCheckout, { precargarCulqi } from '../components/CulqiCustomCheckout/CulqiCustomCheckout';
+import { CreditCard, MessageCircle, ShieldCheck } from 'lucide-react';
 import PaypalCheckout from '../components/PaypalCheckout/PaypalCheckout';
 // ── Internacionalización de cobro (aditivo) ───────────────────────────────────
 // getFx/penToUsd/penToLocal: tasa de cambio (config/fx + fallback en cascada).
@@ -198,6 +199,19 @@ const CheckoutPage = () => {
   // productos de varias marcas con asesor propio (paymentStepData.waGroups),
   // muestra un botón por marca (cada asesor recibe SOLO sus productos) + un
   // "Listo" para finalizar. Si no, un único botón (comportamiento de siempre).
+  // La ventana se abre en el clic (si no, el navegador la bloquea) y muestra un
+  // mensaje mientras el servidor crea el pedido; antes quedaba en blanco.
+  const abrirVentanaWhatsApp = () => {
+    const popup = window.open('', '_blank');
+    try {
+      if (popup) {
+        popup.document.title = 'Abriendo WhatsApp…';
+        popup.document.body.innerHTML = '<p style="font-family:system-ui,sans-serif;text-align:center;margin-top:40vh;color:#444;font-size:16px">Creando tu pedido y abriendo WhatsApp…</p>';
+      }
+    } catch (_) { /* ventana de otro origen: se ignora */ }
+    return popup;
+  };
+
   const renderWhatsAppFinish = (asPrimary = false) => {
     if (!paymentStepData) return null;
     const groups = paymentStepData.waGroups || [];
@@ -217,48 +231,51 @@ const CheckoutPage = () => {
               key={i}
               variant="ghost"
               fullWidth
+              disabled={processing}
               onClick={async () => {
-                const popup = window.open('', '_blank');
+                const popup = abrirVentanaWhatsApp();
                 const pedidoWebId = await ensureWhatsAppOrder();
                 if (!pedidoWebId) { if (popup) popup.close(); return; }
                 if (popup) popup.location.href = g.link; else window.open(g.link, '_blank');
               }}
             >
-              💬 Enviar a {g.label} ({g.count})
+              <MessageCircle size={18} aria-hidden="true" /> Enviar a {g.label} ({g.count})
             </GlassButton>
           ))}
           {/* FIX analítica: este botón confirmaba el pedido SIN emitir purchase_complete
               si el cliente no tocaba ningún botón de marca. emitPurchaseComplete es
               idempotente (purchaseSentRef) y fire-and-forget: no toca pagos/montos. */}
-          <GlassButton variant="primary" fullWidth onClick={async () => {
+          <button type="button" className={styles.solidButton} disabled={processing} onClick={async () => {
             const pedidoWebId = await ensureWhatsAppOrder();
             if (pedidoWebId) finalize();
           }}>
-            Listo, ya envié mis pedidos ✓
-          </GlassButton>
+            Listo, ya envié mis pedidos
+          </button>
         </div>
       );
     }
     const single = groups.length === 1 ? groups[0] : null;
     const link = single ? single.link : paymentStepData.waLink;
-    const label = single
-      ? `Acordar pago por WhatsApp (asesor de ${single.label})`
-      : 'Acordar pago por WhatsApp (Yape / Plin / Transf)';
+    const label = asPrimary
+      ? 'Terminar mi compra por WhatsApp'
+      : single ? `Continuar con el asesor de ${single.label}` : 'Continuar por WhatsApp';
     return (
-      <GlassButton
-        variant={asPrimary ? 'primary' : 'ghost'}
-        size={asPrimary ? 'lg' : 'md'}
-        fullWidth
+      <button
+        type="button"
+        className={styles.waButton}
+        disabled={processing}
         onClick={async () => {
-          const popup = window.open('', '_blank');
+          const popup = abrirVentanaWhatsApp();
           const pedidoWebId = await ensureWhatsAppOrder();
           if (!pedidoWebId) { if (popup) popup.close(); return; }
           if (popup) popup.location.href = link; else window.open(link, '_blank');
           finalize();
         }}
       >
-        {asPrimary ? '💬 Terminar mi compra por WhatsApp' : label}
-      </GlassButton>
+        {processing
+          ? <><span className={styles.spinnerVerde} aria-hidden="true" /> Creando tu pedido…</>
+          : <><MessageCircle size={19} aria-hidden="true" /> {label}</>}
+      </button>
     );
   };
 
@@ -269,6 +286,26 @@ const CheckoutPage = () => {
   const [cuponCargando, setCuponCargando] = useState(false);
   const [cuponError, setCuponError] = useState('');
   const [paymentStepData, setPaymentStepData] = useState(null);
+  const payStepRef = useRef(null);
+
+  // Mientras el cliente llena sus datos: bajar el SDK de Culqi y despertar la
+  // función que prepara el pago, para que "Continuar al pago" no espere 4-5 s.
+  useEffect(() => {
+    precargarCulqi();
+    precalentarFunciones(['prepareCheckoutPayment']);
+  }, []);
+
+  // Al llegar al paso de pago: llevar la vista a las opciones (la página quedaba
+  // abajo, en el resumen) y despertar las funciones que se usan desde ahí.
+  const enPasoDePago = !!paymentStepData;
+  const pagoEsPeru = paymentStepData?.esPeru;
+  useEffect(() => {
+    if (!enPasoDePago) return;
+    payStepRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    precalentarFunciones(pagoEsPeru
+      ? ['processCulqiPayment', 'crearSolicitudWhatsappSecure']
+      : ['createPaypalOrderSecure', 'capturePaypalOrderSecure', 'crearSolicitudWhatsappSecure']);
+  }, [enPasoDePago, pagoEsPeru]);
   // Teléfono internacional: guardamos el número en formato completo (dialCode + número local).
   const [phoneFull, setPhoneFull] = useState('');
   // Marca si el usuario tocó manualmente el selector de país (para no pisar su elección con la autodetección).
@@ -1234,7 +1271,6 @@ const CheckoutPage = () => {
         }
 
         // ── 7. Pasar a Opciones de Pago ─────────────────────────────────────────────
-        toast.success('Datos confirmados. Selecciona cómo terminar tu compra.');
         setPaymentStepData({
           id: checkoutIntentId || pseudoOrderId,
           // Código de negocio del pedido (id en pedidos_web y en wala_pedidos).
@@ -1533,16 +1569,23 @@ const CheckoutPage = () => {
     <div className={styles.container}>
       {/* Fondo de marca MUY suave detrás del contenido (decorativo, no interactivo). */}
       <AuroraBackground variant="subtle" intensity={0.18} />
-      <h1>Checkout</h1>
+      <h1>Finalizar compra</h1>
 
       <div className={styles.layout}>
         <div className={styles.formContainer}>
           {paymentStepData ? (
             <GlassCard variant="solid" padding="lg" className={styles.payCard}>
-              <h2 className={styles.payTitle} style={{ marginBottom: '1rem', textAlign: 'center' }}><T>Selecciona tu método de pago</T></h2>
-              <p className={styles.paySubtitle} style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                Tus datos están listos. El pedido se creará cuando termines por WhatsApp o cuando el pago sea aprobado.
-              </p>
+              <div ref={payStepRef} className={styles.payHeader}>
+                <h2 className={styles.payTitle}><T>Elige cómo pagar</T></h2>
+                <p className={styles.payAmount}>
+                  {paymentStepData.esPeru
+                    ? `S/ ${Number(paymentStepData.montoDeuda || 0).toFixed(2)}`
+                    : `US$ ${Number(penToUsd(paymentStepData.montoDeuda, fx) || 0).toFixed(2)}`}
+                </p>
+                <p className={styles.paySubtitle}>
+                  Pedido {paymentStepData.numeroPedido} · a nombre de {paymentStepData.customerName}
+                </p>
+              </div>
 
               {/* Aviso de envío internacional (solo si NO es Perú) */}
               {!paymentStepData.esPeru && (
@@ -1552,70 +1595,80 @@ const CheckoutPage = () => {
                 </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {paymentStepData.esPeru ? (
-                  <>
-                    {/* Plan B: el cliente cerró el modal de Culqi sin pagar → ofrecer WhatsApp.
-                        IMPORTANTE (fix reapertura del modal): este bloque va SIEMPRE dentro de
-                        un contenedor fijo. Si se renderizara como `{culqiClosed && ...}` suelto
-                        (hermano condicional SIN key junto al <CulqiCustomCheckout> keyed), al
-                        activarse React DESMONTA y REMONTA el componente de Culqi; el remonte
-                        resetea sus refs (autoOpenedRef) y el autoOpen VUELVE a disparar el modal.
-                        Con el wrapper fijo, la posición de los hermanos no cambia y Culqi NO se
-                        remonta al cerrar → el modal ya no se reabre solo. El reintento explícito
-                        sigue funcionando porque cambia `culqiKey` (remonte intencional). */}
-                    <div className={styles.recoverySlot}>
-                      {culqiClosed && (
-                        <div className={styles.recoveryCard}>
-                          <div className={styles.recoveryIcon} aria-hidden="true">💬</div>
-                          <div className={styles.recoveryBody}>
-                            <h4 className={styles.recoveryTitle}><T>¿Cerraste el pago? Termínalo por WhatsApp</T></h4>
-                            <p className={styles.recoveryText}>
-                              Tu pedido se creará al pulsar WhatsApp. Un asesor recibirá tu lista completa
-                              (qué quieres y para cuándo), te dice el costo final y coordinas el
-                              pago por Yape, Plin o transferencia.
-                            </p>
-                            {/* DOS botones grandes (primary, fullWidth, lg):
-                                (a) reabrir Culqi (remonta el componente vía culqiKey y auto-abre),
-                                (b) terminar la compra por WhatsApp (número principal). */}
-                            <div className={styles.recoveryActions}>
-                              <GlassButton
-                                variant="primary"
-                                size="lg"
-                                fullWidth
-                                onClick={() => { setCulqiClosed(false); setCulqiKey((k) => k + 1); }}
-                              >
-                                💳 Continuar comprando con tarjeta
-                              </GlassButton>
-                              {renderWhatsAppFinish(true)}
-                            </div>
-                          </div>
+              {paymentStepData.esPeru ? (
+                <>
+                  {/* Plan B: el cliente cerró el modal de Culqi sin pagar → ofrecer WhatsApp.
+                      IMPORTANTE (fix reapertura del modal): este bloque va SIEMPRE dentro de
+                      un contenedor fijo. Si se renderizara como `{culqiClosed && ...}` suelto
+                      (hermano condicional SIN key junto al <CulqiCustomCheckout> keyed), al
+                      activarse React DESMONTA y REMONTA el componente de Culqi; el remonte
+                      resetea sus refs (autoOpenedRef) y el autoOpen VUELVE a disparar el modal.
+                      Con el wrapper fijo, la posición de los hermanos no cambia y Culqi NO se
+                      remonta al cerrar → el modal ya no se reabre solo. El reintento explícito
+                      sigue funcionando porque cambia `culqiKey` (remonte intencional). */}
+                  <div className={styles.recoverySlot}>
+                    {culqiClosed && (
+                      <div className={styles.recoveryCard}>
+                        <p className={styles.recoveryTitle}><T>¿No pudiste pagar con tarjeta?</T></p>
+                        <p className={styles.recoveryText}>
+                          Puedes intentarlo de nuevo o terminar por WhatsApp y pagar con Yape, Plin
+                          o transferencia. Un asesor recibe tu pedido completo y te confirma.
+                        </p>
+                        <div className={styles.recoveryActions}>
+                          <button
+                            type="button"
+                            className={styles.solidButton}
+                            onClick={() => { setCulqiClosed(false); setCulqiKey((k) => k + 1); }}
+                          >
+                            <CreditCard size={19} aria-hidden="true" /> Intentar de nuevo con tarjeta
+                          </button>
+                          {renderWhatsAppFinish(true)}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+                  </div>
 
-                    {/* PERÚ: Culqi (idéntico a hoy) + acuerdo por WhatsApp/Yape.
-                        autoOpen (Opción A): al entrar al paso de pago tras confirmar,
+                  <section className={styles.methodCard}>
+                    <div className={styles.methodHead}>
+                      <span className={styles.methodIcon} aria-hidden="true"><CreditCard size={20} /></span>
+                      <div>
+                        <p className={styles.methodTitle}>Tarjeta de crédito o débito</p>
+                        <p className={styles.methodText}>Visa, Mastercard, American Express o Diners. Tu pedido queda confirmado al instante.</p>
+                      </div>
+                    </div>
+                    {/* autoOpen (Opción A): al entrar al paso de pago tras confirmar,
                         se abre automáticamente el modal de Culqi una sola vez. */}
                     <CulqiCustomCheckout
                       key={culqiKey}
                       reopenKey={culqiKey}
                       pedido={paymentStepData}
                       autoOpen={true}
+                      buttonLabel={`Pagar S/ ${Number(paymentStepData.montoDeuda || 0).toFixed(2)}`}
                       onSuccess={(result) => finishGatewayOrder('culqi', result)}
                       onClose={() => setCulqiClosed(true)}
                     />
+                  </section>
 
-                    <div className={styles.payDivider}>O</div>
+                  <div className={styles.payDivider}><span>o</span></div>
 
+                  <section className={styles.methodCard}>
+                    <div className={styles.methodHead}>
+                      <span className={`${styles.methodIcon} ${styles.methodIconWa}`} aria-hidden="true"><MessageCircle size={20} /></span>
+                      <div>
+                        <p className={styles.methodTitle}>Yape, Plin o transferencia</p>
+                        <p className={styles.methodText}>Te atendemos por WhatsApp: un asesor recibe tu pedido y te indica cómo pagar.</p>
+                      </div>
+                    </div>
                     {renderWhatsAppFinish()}
-                  </>
-                ) : (
-                  <>
-                    {/* INTERNACIONAL: PayPal (Culqi oculto) + acuerdo por WhatsApp.
-                        amountUsd = USD final a cobrar, derivado del TOTAL final en PEN
-                        (paymentStepData.montoDeuda) con el margen FX aplicado.
-                        PayPal SIEMPRE cobra en USD; la moneda local es solo display. */}
+                  </section>
+                </>
+              ) : (
+                <>
+                  {/* INTERNACIONAL: PayPal (Culqi oculto) + acuerdo por WhatsApp.
+                      amountUsd = USD final a cobrar, derivado del TOTAL final en PEN
+                      (paymentStepData.montoDeuda) con el margen FX aplicado.
+                      PayPal SIEMPRE cobra en USD; la moneda local es solo display. */}
+                  <section className={styles.methodCard}>
                     <PaypalCheckout
                       pedido={paymentStepData}
                       amountUsd={penToUsd(paymentStepData.montoDeuda, fx)}
@@ -1629,13 +1682,27 @@ const CheckoutPage = () => {
                       })()}
                       onSuccess={(result) => finishGatewayOrder('paypal', result)}
                     />
+                  </section>
 
-                    <div className={styles.payDivider}>O</div>
+                  <div className={styles.payDivider}><span>o</span></div>
 
+                  <section className={styles.methodCard}>
+                    <div className={styles.methodHead}>
+                      <span className={`${styles.methodIcon} ${styles.methodIconWa}`} aria-hidden="true"><MessageCircle size={20} /></span>
+                      <div>
+                        <p className={styles.methodTitle}>Coordinar por WhatsApp</p>
+                        <p className={styles.methodText}>Un asesor recibe tu pedido y te indica cómo pagar desde tu país.</p>
+                      </div>
+                    </div>
                     {renderWhatsAppFinish()}
-                  </>
-                )}
-              </div>
+                  </section>
+                </>
+              )}
+
+              <p className={styles.payTrust}>
+                <ShieldCheck size={15} aria-hidden="true" />
+                Tu pedido se registra solo cuando el pago se aprueba o cuando lo envías por WhatsApp.
+              </p>
             </GlassCard>
           ) : (
           <form
@@ -1933,9 +2000,11 @@ const CheckoutPage = () => {
               <Button type="button" variant="outline" onClick={() => navigate('/carrito')} disabled={processing} fullWidth>
                 Volver al carrito
               </Button>
-              <GlassButton type="submit" variant="primary" loading={processing} disabled={processing || !hasSelectedItems} fullWidth>
-                {processing ? 'Generando...' : 'Confirmar y Seleccionar Pago'}
-              </GlassButton>
+              <button type="submit" className={styles.solidButton} disabled={processing || !hasSelectedItems}>
+                {processing
+                  ? <><span className={styles.spinner} aria-hidden="true" /> Preparando tu pago…</>
+                  : 'Continuar al pago'}
+              </button>
             </div>
           </form>
           )}

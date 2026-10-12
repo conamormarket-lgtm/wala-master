@@ -106,7 +106,8 @@ const WhatsAppButton = () => {
   }
 
   // 2. Fuera del panel de administración y de las landings de conversión.
-  const shouldShow = context !== 'admin' && !onLandingPage;
+  // En el checkout tapaba los botones de pago (y su propio "Continuar por WhatsApp").
+  const shouldShow = context !== 'admin' && !onLandingPage && !pathname.startsWith('/checkout');
 
   const { data: whatsappNumbers } = useQuery({
     queryKey: ['whatsapp-numbers-config'],

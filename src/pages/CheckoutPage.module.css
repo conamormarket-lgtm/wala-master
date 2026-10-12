@@ -29,6 +29,12 @@
   align-items: start;
 }
 
+/* Sin esto, un hijo ancho (fila de teléfono, cupón) estiraba la columna y el
+   formulario y el resumen se salían por la derecha en tablets y móviles. */
+.layout > * {
+  min-width: 0;
+}
+
 /* ── Formulario ── */
 .form {
   display: flex;
@@ -90,6 +96,13 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+/* Que las columnas y los campos (documento, teléfono) puedan encogerse. */
+.row > *,
+.field input,
+.field select {
+  min-width: 0;
 }
 
 /* ── Resumen del pedido ── */
@@ -465,16 +478,188 @@
 /* ── Tarjeta del paso de pago ── */
 .payCard {
   text-align: left;
+  scroll-margin-top: calc(var(--header-height, 72px) + 1rem);
 }
 
-/* Separador "O" entre métodos de pago. */
-.payDivider {
+.payHeader {
   text-align: center;
-  margin: 1rem 0;
-  color: var(--violet-400, #94a3b8);
-  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  scroll-margin-top: 140px;
+}
+
+.payHeader .payTitle {
+  margin: 0;
+  font-size: 1.15rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+}
+
+.payAmount {
+  margin: 0.35rem 0 0.25rem;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #5d2bb4;
+}
+
+.payHeader .paySubtitle {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Cada método de pago en su propia caja. */
+.methodCard {
+  padding: 1.1rem;
+  border: 1px solid #e5e1f0;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.methodHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.methodIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f1ebfc;
+  color: #5d2bb4;
+}
+
+.methodIconWa {
+  background: #e8f8ee;
+  color: #15803d;
+}
+
+.methodTitle {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.methodText {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+/* Separador "o" entre métodos de pago, con líneas a los lados. */
+.payDivider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.9rem 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.payDivider::before,
+.payDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e1f0;
+}
+
+.payTrust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 1.25rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Botón principal violeta liso (sin degradado). */
+.solidButton {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.85rem 1.25rem;
+  border: none;
+  border-radius: 12px;
+  background: #5d2bb4;
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.solidButton:hover:not(:disabled) {
+  background: #4c2196;
+}
+
+.solidButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* Botón de WhatsApp: borde verde, fondo claro. */
+.waButton {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.85rem 1.25rem;
+  border: 1.5px solid #22c55e;
+  border-radius: 12px;
+  background: #f0fdf4;
+  color: #15803d;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.waButton:hover:not(:disabled) {
+  background: #dcfce7;
+}
+
+.waButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.spinner,
+.spinnerVerde {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: girarCheckout 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+.spinnerVerde {
+  border-color: rgba(21, 128, 61, 0.25);
+  border-top-color: #15803d;
+}
+
+@keyframes girarCheckout {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Aviso de envío internacional (glass frío) ── */
@@ -516,41 +701,35 @@
 
 .recoveryCard {
   display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
-  padding: 1.1rem 1.15rem;
-  margin-bottom: 1rem;
-  border-radius: 16px;
-  border: 1px solid rgba(34, 197, 94, 0.35);
-  background: linear-gradient(145deg, rgba(240, 253, 244, 0.95), rgba(220, 252, 231, 0.9));
-  box-shadow: 0 10px 28px -14px rgba(22, 163, 74, 0.45);
-}
-
-.recoveryIcon {
-  font-size: 1.6rem;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.recoveryBody {
-  display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  width: 100%;
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+  border-radius: 14px;
+  border: 1px solid #fcd9a8;
+  background: #fffaf2;
+  animation: aparecer 0.2s ease-out;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 .recoveryTitle {
   margin: 0;
-  font-size: 1.02rem;
-  font-weight: 800;
-  color: #166534;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
 }
 
 .recoveryText {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   line-height: 1.45;
-  color: #15803d;
+  color: #64748b;
 }
 
 .recoveryActions {
@@ -935,12 +1114,12 @@
 
 /* ── PANEL DE RECUPERACIÓN (Plan B): tinte verde oscuro translúcido ── */
 :global([data-theme='dark']) .recoveryCard {
-  border-color: rgba(34, 197, 94, 0.4);
-  background: linear-gradient(145deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.08));
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.08);
 }
 
 :global([data-theme='dark']) .recoveryTitle {
-  color: #86efac; /* verde claro legible */
+  color: var(--color-text);
 }
 
 :global([data-theme='dark']) .recoveryText {
@@ -955,4 +1134,73 @@
 
 :global([data-theme='dark']) .brandWaTitle {
   color: #c4b5fd; /* violeta claro legible */
+}
+/* ── PASO DE PAGO (rediseño) ── */
+:global([data-theme='dark']) .payAmount {
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .methodCard {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .methodTitle {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .methodText,
+:global([data-theme='dark']) .payTrust,
+:global([data-theme='dark']) .payDivider {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .payDivider::before,
+:global([data-theme='dark']) .payDivider::after {
+  background: var(--color-border);
+}
+
+:global([data-theme='dark']) .methodIcon {
+  background: rgba(167, 139, 250, 0.16);
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .methodIconWa {
+  background: rgba(34, 197, 94, 0.14);
+  color: #86efac;
+}
+
+:global([data-theme='dark']) .waButton {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.55);
+  color: #86efac;
+}
+
+:global([data-theme='dark']) .waButton:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.18);
+}
+
+:global([data-theme='dark']) .spinnerVerde {
+  border-color: rgba(134, 239, 172, 0.25);
+  border-top-color: #86efac;
+}
+
+/* Paso de pago en celular: menos margen interno para que el contenido respire. */
+@media (max-width: 576px) {
+  .payCard {
+    padding: 1.1rem !important;
+  }
+
+  .methodCard {
+    padding: 0.9rem;
+  }
+
+  .methodIcon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .payAmount {
+    font-size: 1.75rem;
+  }
 }

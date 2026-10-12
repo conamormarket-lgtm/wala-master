@@ -1,0 +1,121 @@
+/* Botón de pago con tarjeta: violeta sólido (sin degradado). */
+.wrap {
+  margin: 0.25rem 0;
+}
+
+.payButton {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.85rem 1.25rem;
+  border: none;
+  border-radius: 12px;
+  background: #5d2bb4;
+  color: #fff;
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.payButton:hover:not(:disabled) {
+  background: #4c2196;
+}
+
+.payButton:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.payButton:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.secureNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  text-align: center;
+}
+
+:global([data-theme='dark']) .secureNote {
+  color: var(--color-text-muted, #c7c1d8);
+}
+
+/* Spinner compartido (botón y pantalla de confirmación). */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: girar 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Pantalla "Confirmando tu pago" mientras el servidor cobra ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 10, 30, 0.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.overlayCard {
+  width: 100%;
+  max-width: 340px;
+  padding: 1.75rem 1.5rem;
+  border-radius: 18px;
+  background: #fff;
+  color: #1e293b;
+  text-align: center;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme='dark']) .overlayCard {
+  background: var(--color-surface, #1e1b2e);
+  color: var(--color-text, #f1eef9);
+}
+
+.overlaySpinner {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 1rem;
+  border: 4px solid rgba(93, 43, 180, 0.18);
+  border-top-color: #5d2bb4;
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+.overlayTitle {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.overlayText {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  opacity: 0.8;
+}

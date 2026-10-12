@@ -86,9 +86,9 @@ export default function PhoneIntlInput({
           padding: '0 10px',
           height: 42,
           borderRadius: 8,
-          border: '1px solid #d1d5db',
-          background: '#fff',
-          color: '#0a0a0a',
+          border: '1px solid var(--color-border, #d1d5db)',
+          background: 'var(--color-surface-2, #fff)',
+          color: 'var(--color-text, #0a0a0a)',
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
       >
@@ -116,8 +116,9 @@ export default function PhoneIntlInput({
           padding: '0 12px',
           height: 42,
           borderRadius: 8,
-          border: '1px solid #d1d5db',
-          color: '#0a0a0a',
+          border: '1px solid var(--color-border, #d1d5db)',
+          background: 'var(--color-surface-2, #fff)',
+          color: 'var(--color-text, #0a0a0a)',
         }}
       />
     </div>
