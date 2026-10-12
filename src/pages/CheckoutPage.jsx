@@ -191,7 +191,7 @@ const CheckoutPage = () => {
   // waLink lleva todo el detalle al asesor). culqiKey permite REINTENTAR el pago
   // (remonta el componente de Culqi y vuelve a auto-abrir el modal).
   const [culqiClosed, setCulqiClosed] = useState(false);
-  const [culqiKey, setCulqiKey] = useState(0);
+  const [culqiKey] = useState(0);
   const whatsappOrderPromiseRef = useRef(null);
   const postCreationDoneRef = useRef(false);
 
@@ -1608,22 +1608,12 @@ const CheckoutPage = () => {
                       sigue funcionando porque cambia `culqiKey` (remonte intencional). */}
                   <div className={styles.recoverySlot}>
                     {culqiClosed && (
-                      <div className={styles.recoveryCard}>
-                        <p className={styles.recoveryTitle}><T>¿No pudiste pagar con tarjeta?</T></p>
+                      <div className={styles.recoveryCard} role="status">
+                        <p className={styles.recoveryTitle}><T>No se completó el pago con tarjeta</T></p>
                         <p className={styles.recoveryText}>
-                          Puedes intentarlo de nuevo o terminar por WhatsApp y pagar con Yape, Plin
-                          o transferencia. Un asesor recibe tu pedido completo y te confirma.
+                          Puedes intentarlo otra vez con el botón de tarjeta o pagar con Yape, Plin
+                          o transferencia por WhatsApp.
                         </p>
-                        <div className={styles.recoveryActions}>
-                          <button
-                            type="button"
-                            className={styles.solidButton}
-                            onClick={() => { setCulqiClosed(false); setCulqiKey((k) => k + 1); }}
-                          >
-                            <CreditCard size={19} aria-hidden="true" /> Intentar de nuevo con tarjeta
-                          </button>
-                          {renderWhatsAppFinish(true)}
-                        </div>
                       </div>
                     )}
                   </div>
@@ -1646,6 +1636,7 @@ const CheckoutPage = () => {
                       title="Compra en Walá"
                       buttonLabel={`Pagar S/ ${Number(paymentStepData.montoDeuda || 0).toFixed(2)}`}
                       onSuccess={(result) => finishGatewayOrder('culqi', result)}
+                      onOpen={() => setCulqiClosed(false)}
                       onClose={() => setCulqiClosed(true)}
                     />
                   </section>
@@ -2052,6 +2043,18 @@ const CheckoutPage = () => {
                     </p>
                   </div>
                 </div>
+              )}
+              {/* Con monedas pero sin poder usarlas: antes el bloque desaparecía y no se
+                  entendía por qué. Tope: la mitad del subtotal de productos (igual que
+                  topeMonedasCheckout en el servidor). */}
+              {!canUseCoins && monedasCount > 0 && (
+                <p className={styles.coinsTopeAviso}>
+                  <KapiSolCoinMini />
+                  <span>
+                    Tienes {monedasCount} monedas. Puedes pagar con monedas hasta la mitad del
+                    precio de tus productos, y en esta compra no alcanza para usarlas.
+                  </span>
+                </p>
               )}
               {discount > 0 && (
                 <div className={`${styles.totalRow} ${styles.discountRow}`} style={{ fontWeight: 600, fontSize: '1.05rem', margin: '0.5rem 0', padding: '0.5rem', borderRadius: '8px' }}>

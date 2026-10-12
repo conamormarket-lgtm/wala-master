@@ -1204,3 +1204,22 @@
     font-size: 1.75rem;
   }
 }
+
+/* Aviso cuando el cliente tiene monedas pero el tope (50 % del subtotal) no alcanza. */
+.coinsTopeAviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+:global([data-theme='dark']) .coinsTopeAviso {
+  background: rgba(251, 191, 36, 0.1);
+  color: #fcd34d;
+}

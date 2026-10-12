@@ -41,7 +41,22 @@ const isCulqiModalVisible = () => {
   return false;
 };
 
-const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal }) => {
+// Con el modal abierto, la rueda del mouse desplazaba la página de fondo y el
+// modal se iba con ella. Se bloquea el scroll mientras está abierto.
+const bloquearScrollDeFondo = (bloquear) => {
+  const html = document.documentElement;
+  if (bloquear) {
+    if (html.dataset.culqiOverflow == null) {
+      html.dataset.culqiOverflow = html.style.overflow || '';
+      html.style.overflow = 'hidden';
+    }
+  } else if (html.dataset.culqiOverflow != null) {
+    html.style.overflow = html.dataset.culqiOverflow;
+    delete html.dataset.culqiOverflow;
+  }
+};
+
+const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, onOpen, autoOpen = false, reopenKey = 0, buttonLabel, title: tituloModal }) => {
   const toast = useGlobalToast();
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -74,10 +89,12 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
   // versión más reciente del callback sin recrear nada.
   const onSuccessRef = useRef(onSuccess);
   const onCloseRef = useRef(onClose);
+  const onOpenRef = useRef(onOpen);
   useEffect(() => {
     onSuccessRef.current = onSuccess;
     onCloseRef.current = onClose;
-  }, [onSuccess, onClose]);
+    onOpenRef.current = onOpen;
+  }, [onSuccess, onClose, onOpen]);
 
   useEffect(() => {
     let timer = null;
@@ -160,6 +177,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
         const token = culqiInstance.token.id;
         const email = culqiInstance.token.email;
         culqiInstance.close();
+        bloquearScrollDeFondo(false);
 
         setIsProcessing(true);
         setPantalla('cobrando');
@@ -212,6 +230,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
          console.error("Error de Culqi:", culqiInstance.error);
          toast.error(culqiInstance.error.user_message || 'El pago no pudo completarse.');
          culqiInstance.close();
+         bloquearScrollDeFondo(false);
       }
     };
 
@@ -271,15 +290,17 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
     // guard del auto-open para que NO se vuelva a disparar solo.
     autoOpenedRef.current = true;
     culqiRef.current.open();
+    bloquearScrollDeFondo(true);
+    if (typeof onOpenRef.current === 'function') onOpenRef.current();
     startCloseWatch();
   };
 
-  // Vigila el cierre del modal: si el usuario lo abre y luego lo cierra SIN pagar
-  // (sin token ni error), dispara onClose UNA sola vez para ofrecer terminar por
-  // WhatsApp. Lee el callback vía ref estable (no por la prop directa) para no
-  // depender de la identidad del arrow inline del padre.
+  // Vigila el cierre del modal: desbloquea el scroll de fondo y, si el usuario lo
+  // cerró SIN pagar (sin token ni error), dispara onClose UNA sola vez para ofrecer
+  // terminar por WhatsApp. Corre aunque no haya onClose (el scroll se desbloquea
+  // igual). Lee el callback vía ref estable para no depender de la identidad del
+  // arrow inline del padre.
   const startCloseWatch = () => {
-    if (typeof onCloseRef.current !== 'function') return;
     resolvedRef.current = false;
     let sawModal = false;
     let goneTicks = 0;
@@ -287,10 +308,22 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
     // ciclo de apertura, aunque el poller alcance a ejecutarse de más.
     let firedClose = false;
     if (closePollRef.current) clearInterval(closePollRef.current);
+    let ticksSinModal = 0;
     closePollRef.current = setInterval(() => {
       if (isCulqiModalVisible()) { sawModal = true; goneTicks = 0; return; }
-      if (!sawModal) return; // el modal aún no aparece
+      if (!sawModal) {
+        // El modal aún no aparece; si no aparece en ~10 s (bloqueador, error del
+        // SDK), se suelta el scroll y se deja de vigilar.
+        ticksSinModal += 1;
+        if (ticksSinModal >= 40) {
+          clearInterval(closePollRef.current);
+          closePollRef.current = null;
+          bloquearScrollDeFondo(false);
+        }
+        return;
+      }
       goneTicks += 1;
+      bloquearScrollDeFondo(false);
       if (goneTicks >= 2) { // ~0,5 s sin el modal => se cerró
         clearInterval(closePollRef.current);
         closePollRef.current = null;
@@ -322,6 +355,7 @@ const CulqiCustomCheckout = ({ pedido, enlace, onSuccess, onClose, autoOpen = fa
   // Limpia el watcher de cierre al desmontar el componente.
   useEffect(() => () => {
     if (closePollRef.current) clearInterval(closePollRef.current);
+    bloquearScrollDeFondo(false);
   }, []);
 
   return (
