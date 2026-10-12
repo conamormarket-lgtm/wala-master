@@ -1829,8 +1829,21 @@ const cacheCuentas = { ts: 0, cuentas: null };
 async function cuentaPasarelaId(metodo) {
   try {
     if (!cacheCuentas.cuentas || Date.now() - cacheCuentas.ts > 10 * 60 * 1000) {
-      const snap = await getErpDb().collection("fp_accounts").get();
-      cacheCuentas.cuentas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      // FinanzaPro guarda las cuentas como lista en fp_config/general.accounts;
+      // la colección fp_accounts (la que se leía antes) está vacía en esta base,
+      // y los movimientos quedaban sin cuenta. Se usan las dos.
+      const [config, coleccion] = await Promise.all([
+        getErpDb().collection("fp_config").doc("general").get(),
+        getErpDb().collection("fp_accounts").get(),
+      ]);
+      const deConfig = config.exists && Array.isArray(config.data().accounts) ? config.data().accounts : [];
+      const deColeccion = coleccion.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const vistos = new Set();
+      cacheCuentas.cuentas = [...deConfig, ...deColeccion].filter((a) => {
+        if (!a || a.id == null || vistos.has(String(a.id))) return false;
+        vistos.add(String(a.id));
+        return true;
+      });
       cacheCuentas.ts = Date.now();
     }
     return erpCobranza.cuentaDePasarela(cacheCuentas.cuentas, metodo);

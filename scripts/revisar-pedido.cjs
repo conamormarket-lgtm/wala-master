@@ -45,11 +45,11 @@ async function porCampo(coleccion, campo, valor, campos) {
   salida.pedidos_erp = await porCampo('pedidos', 'pedidoWebId', numero,
     ['numeroPedido', 'estadoGeneral', 'montoTotal', 'montoAdelanto', 'pagoOnline', 'createdAt']);
 
-  salida.culqiCharges = await porCampo('culqiCharges', 'objetivo.numeroPedido', numero,
-    ['status', 'amount', 'chargeId', 'createdAt']);
+  salida.culqiCharges = await porCampo('culqiCharges', 'objetivo', `checkout:${numero}`,
+    ['status', 'amount', 'currency', 'charge_id', 'createdAt']);
 
-  salida.fp_transactions = await porCampo('fp_transactions', 'pedidoWebId', numero,
-    ['tipo', 'monto', 'cuenta', 'estado', 'numeroOperacion', 'createdAt']);
+  salida.fp_transactions = await porCampo('fp_transactions', 'sourcePedidoId', numero,
+    ['type', 'sourceType', 'amount', 'accountId', 'status', 'operationNumber', 'createdAt']);
 
   salida.pagos_anomalias = await porCampo('pagos_anomalias', 'numeroPedido', numero,
     ['tipo', 'motivo', 'createdAt']);
