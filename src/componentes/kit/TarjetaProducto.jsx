@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Heart, Star, Plus, Check, Palette } from 'lucide-react';
 import { Etiqueta } from './Etiquetas';
 import { Estallido } from './Efectos';
+import { Enlace } from './Enlace';
 import s from './TarjetaProducto.module.css';
 
 export const soles = (n) => `S/ ${n.toFixed(2)}`;
@@ -37,6 +38,7 @@ export default function TarjetaProducto({
   agotado = false,
   vendidos,
   inclinar = true,
+  url = '#producto',
   onAgregar,
 }) {
   const ref = useRef(null);
@@ -86,10 +88,10 @@ export default function TarjetaProducto({
     >
       <span className={s.bordeLuz} aria-hidden="true" />
       <div className={s.media}>
-        <a href="#producto" className={s.enlaceImagen} aria-label={nombre}>
+        <Enlace to={url} className={s.enlaceImagen} aria-label={nombre}>
           <img src={imagen} alt="" className={s.img} loading="lazy" decoding="async" />
           {imagenHover && <img src={imagenHover} alt="" className={`${s.img} ${s.imgHover}`} loading="lazy" decoding="async" />}
-        </a>
+        </Enlace>
         <span className={s.barrido} aria-hidden="true" />
 
         <div className={s.badges}>
@@ -131,7 +133,7 @@ export default function TarjetaProducto({
 
       <div className={s.cuerpo}>
         <p className={s.categoria}>{categoria || ' '}</p>
-        <h3 className={s.nombre}><a href="#producto">{nombre}</a></h3>
+        <h3 className={s.nombre}><Enlace to={url}>{nombre}</Enlace></h3>
 
         <p className={s.puntuacion}>
           {puntuacion != null ? (

@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { AnimatePresence, MotionConfig, motion, useScroll, useSpring } from 'framer-motion';
 import {
   ArrowRight, Bell, BellRing, CheckCircle2, Heart, Mail, Moon, Phone, Plus, RotateCcw, Search, ShoppingBag, Sparkles, Sun, Trash2, Wand2, User,
+  UserRound, Package, Settings, Gift, Ticket, Palette,
 } from 'lucide-react';
 import {
   Boton, Etiqueta, Chip, CostoMonedas, GananciaMonedas, SaldoMonedas,
@@ -12,6 +13,7 @@ import {
   SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido,
   Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior, soles,
   EASE, RESORTE, Revelar, Contador,
+  ProveedorEnlaces, MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito,
 } from './kit';
 import s from './ComponentesPage.module.css';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
@@ -30,6 +32,7 @@ const SECCIONES = [
   ['formularios', 'Formularios'],
   ['productos', 'Productos'],
   ['navegacion', 'Navegación'],
+  ['menus', 'Menús'],
   ['carrito', 'Carrito'],
   ['pedidos', 'Pedidos'],
   ['avisos', 'Avisos'],
@@ -50,6 +53,55 @@ const NOTIFICACIONES_INICIALES = [
   { id: 'n3', tipo: 'aviso', titulo: 'Tu cupón WALA10 vence hoy', texto: 'Úsalo en tu próxima compra', fecha: ahora - 5 * 3600000, leida: true },
   { id: 'n4', tipo: 'exito', titulo: 'Kapi te regaló 45 monedas', texto: 'Por completar la misión semanal', fecha: ahora - 26 * 3600000, leida: true },
 ];
+
+/* Datos de ejemplo de los menús (en la app salen de Firestore / AuthContext / CartContext). */
+const MENU_TIENDA = {
+  categorias: [
+    { id: 'polos', nombre: 'Polos', url: '/tienda?categoria=polos' },
+    { id: 'poleras', nombre: 'Poleras', url: '/tienda?categoria=poleras' },
+    { id: 'tazas', nombre: 'Tazas', url: '/tienda?categoria=tazas' },
+    { id: 'gorras', nombre: 'Gorras', url: '/tienda?categoria=gorras' },
+    { id: 'parejas', nombre: 'Para parejas', url: '/tienda?categoria=parejas' },
+    { id: 'cumple', nombre: 'Cumpleaños', url: '/tienda?categoria=cumple' },
+    { id: 'peluches', nombre: 'Peluches', url: '/tienda?categoria=peluches' },
+    { id: 'llaveros', nombre: 'Llaveros', url: '/tienda?categoria=llaveros' },
+  ],
+  activa: 'poleras',
+  marcas: [
+    { id: 'conamor', nombre: 'Con Amor', url: '/conamor' },
+    { id: 'geeks', nombre: 'Con Amor Geeks', url: '/geeks' },
+    { id: 'nova', nombre: 'Nova', url: '/nova' },
+    { id: 'catas', nombre: 'Catas', url: '/catas' },
+    { id: 'kapi', nombre: 'Kapi', url: '/kapi' },
+    { id: 'deporte', nombre: 'Deporte', url: '/deporte' },
+    { id: 'familia', nombre: 'Familia', url: '/familia' },
+  ],
+};
+
+const FAVORITOS_DEMO = [
+  { id: 'f1', nombre: 'Polera Essentials', imagen: FRENTE_BLANCO },
+  { id: 'f2', nombre: 'Polera con tu diseño', imagen: ESPALDA_BLANCO },
+  { id: 'f3', nombre: 'Polera oversize', imagen: FRENTE },
+  { id: 'f4', nombre: 'Combo Él y Ella', imagen: ESPALDA },
+  { id: 'f5', nombre: 'Polera Essentials blanca', imagen: FRENTE_BLANCO },
+  { id: 'f6', nombre: 'Polera edición limitada', imagen: ESPALDA_BLANCO },
+  { id: 'f7', nombre: 'Taza Kapi', imagen: FRENTE },
+];
+
+const USUARIO_DEMO = { nombre: 'Isaac Castro', email: 'isaac@correo.com' };
+const GRUPOS_CUENTA = [
+  { titulo: 'Mis compras', items: [
+    { to: '/cuenta/pedidos', texto: 'Mis pedidos', Icono: Package },
+    { to: '/cuenta/cupones', texto: 'Mis cupones', Icono: Ticket },
+    { to: '/cuenta/catalogo', texto: 'Canjear monedas', Icono: Gift },
+  ] },
+  { titulo: 'Mi perfil', items: [
+    { to: '/cuenta/perfil', texto: 'Mi perfil', Icono: UserRound },
+    { to: '/cuenta/creaciones', texto: 'Mis creaciones', Icono: Palette },
+    { to: '/cuenta/ajustes', texto: 'Ajustes', Icono: Settings },
+  ] },
+];
+const PROMO_CUENTA = { texto: 'Cuéntanos de ti y gana 50 monedas', url: '/encuesta-suscripcion' };
 
 const CARRITO_INICIAL = [
   { id: 'essentials', imagen: FRENTE_BLANCO, nombre: 'Polera Walá Essentials con capucha', variante: 'Negro · M', precio: 89.9, precioAntes: 129.9, cantidad: 1 },
@@ -245,8 +297,30 @@ function Portada({ tema, cambiarTema, avisarAgregado }) {
 
 /* ── Contenido ─────────────────────────────────────────── */
 
+/** En esta página de prueba los enlaces no navegan: avisan a dónde irían. */
+const EnlaceDemo = React.forwardRef(function EnlaceDemo({ to, onClick, children, ...rest }, ref) {
+  const toast = useToast();
+  return (
+    <a
+      ref={ref}
+      href={to}
+      {...rest}
+      onClick={(e) => {
+        onClick?.(e);
+        if (e.defaultPrevented) return;
+        e.preventDefault();
+        toast({ tipo: 'info', titulo: 'En la tienda iría a', texto: to, duracion: 2200 });
+      }}
+    >
+      {children}
+    </a>
+  );
+});
+
 function Contenido({ tema, cambiarTema }) {
   const toast = useToast();
+  const [conSesion, setConSesion] = useState(true);
+  const [tiendaCargando, setTiendaCargando] = useState(false);
   const { historial, noLeidas, marcarLeidas, leer, abrirCentro } = useNotificaciones();
   const [talla, setTalla] = useState('M');
   const [color, setColor] = useState('Negro');
@@ -490,13 +564,24 @@ function Contenido({ tema, cambiarTema }) {
         >
           <Panel titulo="Cabecera" className={s.panelFondo}>
             <Cabecera
-              enCarrito={enCarrito}
+              activo="tienda"
+              menuTienda={{ ...MENU_TIENDA, destacado: { titulo: 'Polera Essentials', texto: 'Lo más vendido · -31%', url: '/producto/essentials', imagen: FRENTE_BLANCO } }}
               monedas={saldo}
               notificaciones={historial}
               onLeer={leer}
               onMarcarLeidas={marcarLeidas}
               onVerTodas={abrirCentro}
+              usuario={conSesion ? USUARIO_DEMO : null}
+              gruposCuenta={GRUPOS_CUENTA}
+              promoCuenta={PROMO_CUENTA}
+              onCerrarSesion={() => { setConSesion(false); toast({ tipo: 'info', titulo: 'Sesión cerrada' }); }}
+              favoritos={conSesion ? FAVORITOS_DEMO : []}
+              carrito={carrito}
             />
+            <div className={s.fila}>
+              <Interruptor etiqueta="Con sesión iniciada" descripcion="Cambia el menú de cuenta y favoritos" activo={conSesion} onChange={setConSesion} />
+            </div>
+            <p className={s.nota}>Pasa el ratón por “Tienda”, las monedas, la campana, el corazón, la bolsa y el avatar. Un clic deja el menú fijo; Esc o un clic fuera lo cierran.</p>
           </Panel>
           <div className={s.gridNav}>
             <Panel titulo="Pestañas (Mis pedidos)">
@@ -556,9 +641,41 @@ function Contenido({ tema, cambiarTema }) {
           </div>
         </Seccion>
 
+        {/* ── MENÚS DE LA CABECERA ── */}
+        <Seccion
+          id="menus" numero="07" titulo="Menús de la cabecera"
+          descripcion="El contenido de cada menú, por separado. Son los mismos componentes que se abren en la cabecera: en escritorio como panel al pasar el ratón y en el celular como hoja inferior."
+          mejoras={['Un solo componente base (Desplegable)', 'Estados de carga, vacío y sin sesión', 'Enlaces del router sin recargar']}
+        >
+          <div className={s.gridMenus}>
+            <Panel titulo="Tienda (categorías y marcas)" className={s.menuAncho}>
+              <div className={s.fila}>
+                <Interruptor etiqueta="Simular carga" activo={tiendaCargando} onChange={setTiendaCargando} />
+              </div>
+              <div className={s.marcoMenu}>
+                <MenuTienda {...MENU_TIENDA} cargando={tiendaCargando} />
+              </div>
+            </Panel>
+            <Panel titulo="Monedas">
+              <div className={s.marcoMenu}><AyudaMonedas saldo={saldo} /></div>
+            </Panel>
+            <Panel titulo={conSesion ? 'Cuenta (con sesión)' : 'Cuenta (sin sesión)'}>
+              <div className={s.marcoMenu}>
+                <MenuCuenta usuario={conSesion ? USUARIO_DEMO : null} grupos={GRUPOS_CUENTA} promo={PROMO_CUENTA} onCerrarSesion={() => setConSesion(false)} />
+              </div>
+            </Panel>
+            <Panel titulo="Favoritos">
+              <div className={s.marcoMenu}><VistaFavoritos items={conSesion ? FAVORITOS_DEMO : []} sesion={conSesion} /></div>
+            </Panel>
+            <Panel titulo="Carrito">
+              <div className={s.marcoMenu}><VistaCarrito items={carrito} /></div>
+            </Panel>
+          </div>
+        </Seccion>
+
         {/* ── CARRITO ── */}
         <Seccion
-          id="carrito" numero="07" titulo="Carrito y resumen"
+          id="carrito" numero="08" titulo="Carrito y resumen"
           descripcion="Funciona de verdad: sube la cantidad hasta pasar S/ 150 y mira qué pasa. Prueba el cupón WALA10."
           mejoras={['Camión que avanza hacia el envío gratis', 'Confeti al llegar a la meta', 'Totales que corren', 'Quitar con animación']}
         >
@@ -606,7 +723,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── PEDIDOS ── */}
         <Seccion
-          id="pedidos" numero="08" titulo="Mis pedidos"
+          id="pedidos" numero="09" titulo="Mis pedidos"
           descripcion="Una sola tarjeta con resumen, seguimiento y la acción que toca."
           mejoras={['La línea se dibuja al aparecer', 'El paso actual late', 'Si falta pagar, el borde respira en ámbar', 'Copiar con burbuja']}
         >
@@ -642,7 +759,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── AVISOS ── */}
         <Seccion
-          id="avisos" numero="09" titulo="Avisos y estados"
+          id="avisos" numero="10" titulo="Avisos y estados"
           descripcion="Si llegan varias notificaciones se apilan como en el celular; tócalas (o pasa el ratón) para desplegarlas y usa “Ver todas” para abrir el centro."
           mejoras={['Avisos limpios, sin franjas', 'Notificaciones apiladas', 'Centro con todas las notificaciones', 'Desliza un toast para cerrarlo']}
         >
@@ -757,7 +874,10 @@ export default function ComponentesPage() {
   return (
     <MotionConfig reducedMotion="user">
       <ProveedorToasts iniciales={NOTIFICACIONES_INICIALES}>
-        <Contenido tema={tema} cambiarTema={cambiarTema} />
+        {/* En la app: <ProveedorEnlaces componente={Link}> (react-router). */}
+        <ProveedorEnlaces componente={EnlaceDemo}>
+          <Contenido tema={tema} cambiarTema={cambiarTema} />
+        </ProveedorEnlaces>
       </ProveedorToasts>
     </MotionConfig>
   );

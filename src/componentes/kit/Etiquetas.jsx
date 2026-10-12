@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Check } from 'lucide-react';
 import { useContador } from './Efectos';
 import s from './Etiquetas.module.css';
@@ -60,16 +60,16 @@ export function GananciaMonedas({ monto }) {
 }
 
 /** Saldo de monedas (header, cuenta). La moneda gira al pasar el ratón y el número corre al cambiar. */
-export function SaldoMonedas({ saldo, onClick }) {
+export const SaldoMonedas = forwardRef(function SaldoMonedas({ saldo, ...rest }, ref) {
   const mostrado = useContador(saldo, 0.9);
   return (
-    <button type="button" className={s.saldo} onClick={onClick} aria-label={`Tienes ${saldo} monedas`}>
+    <button ref={ref} type="button" className={s.saldo} aria-label={`Tienes ${saldo} monedas`} {...rest}>
       <span className={s.saldoDestello} aria-hidden="true" />
       <img src={MONEDA} alt="" width="20" height="20" />
       <span className={s.saldoNumero}>{miles(mostrado)}</span>
     </button>
   );
-}
+});
 
 /** Contador sobre un icono (carrito, notificaciones). Rebota cada vez que cambia. */
 export function Contador({ valor }) {

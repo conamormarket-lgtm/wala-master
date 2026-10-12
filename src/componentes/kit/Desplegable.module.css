@@ -1,0 +1,81 @@
+.caja {
+  position: relative;
+  display: inline-flex;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  z-index: 60;
+  max-width: calc(100vw - 24px);
+  max-height: min(520px, calc(100vh - 120px));
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 20px 44px -18px rgba(15, 23, 42, 0.32);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* Puente invisible sobre el hueco para no perder el hover al bajar al panel. */
+.panel::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+}
+
+:global([data-theme='dark']) .panel {
+  border-color: rgba(167, 139, 250, 0.2);
+  background: var(--color-surface-2);
+  box-shadow: 0 20px 44px -16px rgba(0, 0, 0, 0.7);
+}
+
+.derecha {
+  right: -8px;
+  transform-origin: top right;
+}
+
+.izquierda {
+  left: -8px;
+  transform-origin: top left;
+}
+
+.centro {
+  left: 50%;
+  translate: -50% 0;
+  transform-origin: top center;
+}
+
+/* Globo: ayudas cortas (monedas), más compacto y con flecha. */
+.globo {
+  overflow: visible;
+  border-radius: 12px;
+}
+
+.globo::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 22px;
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+.globo.centro::after {
+  right: auto;
+  left: 50%;
+  margin-left: -6px;
+}
+
+.globo.izquierda::after {
+  right: auto;
+  left: 22px;
+}

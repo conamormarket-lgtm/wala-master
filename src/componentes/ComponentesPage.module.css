@@ -698,6 +698,36 @@
   max-width: 640px;
 }
 
+/* Menús de la cabecera mostrados sueltos. */
+.gridMenus {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.menuAncho {
+  grid-column: 1 / -1;
+}
+
+.marcoMenu {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+:global([data-theme='dark']) .marcoMenu {
+  background: var(--color-surface-2);
+}
+
+/* En celular los menús no traen margen propio (lo pone la hoja). */
+@media (max-width: 760px) {
+  .marcoMenu {
+    padding: 1rem 1.1rem;
+  }
+}
+
 /* Celda de la cuadrícula de productos: estira la tarjeta a la fila. */
 .celda {
   height: 100%;

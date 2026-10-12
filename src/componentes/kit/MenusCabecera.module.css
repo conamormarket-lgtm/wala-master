@@ -1,0 +1,593 @@
+/* ── Piezas comunes ────────────────────────────────────── */
+.titulo {
+  margin: 0 0 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.enlace,
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 38px;
+  padding: 0 0.6rem;
+  margin: 0 -0.6rem;
+  border-radius: 10px;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background-color var(--dur-rapida) ease, color var(--dur-rapida) ease;
+}
+
+.enlace:hover,
+.item:hover {
+  background: var(--color-hover);
+  color: var(--primary-color);
+}
+
+.enlace:focus-visible,
+.item:focus-visible,
+.verTodo:focus-visible,
+.botonPrimario:focus-visible,
+.botonSecundario:focus-visible,
+.salir:focus-visible,
+.destacado:focus-visible {
+  outline: 2px solid var(--violet-500);
+  outline-offset: 2px;
+}
+
+.enlaceActivo {
+  color: var(--primary-color);
+  font-weight: 600;
+  background: var(--primary-light);
+}
+
+.verTodo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  color: var(--primary-color);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.verTodo svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.verTodo:hover svg {
+  transform: translateX(3px);
+}
+
+.botones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.botonPrimario,
+.botonSecundario {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 1rem;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color var(--dur-rapida) ease;
+}
+
+.botonPrimario {
+  background: var(--violet-700);
+  color: #fff;
+}
+
+.botonPrimario:hover {
+  background: var(--violet-600);
+}
+
+:global([data-theme='dark']) .botonPrimario {
+  background: var(--violet-600);
+}
+
+.botonSecundario {
+  background: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.botonSecundario:hover {
+  background: var(--violet-100);
+}
+
+:global([data-theme='dark']) .botonSecundario:hover {
+  background: rgba(167, 139, 250, 0.22);
+}
+
+/* ── Tienda ────────────────────────────────────────────── */
+.tienda {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 1.5rem;
+  padding: 1.1rem 1.25rem 1.2rem;
+}
+
+.tiendaConDestacado {
+  grid-template-columns: 1.3fr 1fr 1fr;
+}
+
+.listaCategorias,
+.listaMarcas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listaCategorias {
+  columns: 2;
+  column-gap: 1.6rem;
+}
+
+.listaCategorias li {
+  break-inside: avoid;
+}
+
+.columnaMarcas {
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--color-border);
+}
+
+.estado {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  min-height: 38px;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+.estado svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.girando {
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.reintentar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  border-radius: 9px;
+  background: var(--danger-soft);
+  color: var(--danger-hover);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.destacado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.6rem;
+  border-radius: 14px;
+  background: var(--color-hover);
+  color: var(--color-text);
+  font-size: 0.86rem;
+  text-decoration: none;
+  transition: background-color var(--dur-rapida) ease;
+}
+
+.destacado:hover {
+  background: var(--primary-light);
+}
+
+.destacado span:last-child {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.destacadoImg {
+  display: block;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 0.35rem;
+  border-radius: 10px;
+  background: #f5f4f8;
+  overflow: hidden;
+}
+
+.destacadoImg img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+/* En hoja (celular) todo en una columna. */
+@media (max-width: 760px) {
+  .tienda,
+  .tiendaConDestacado {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+    padding: 0;
+  }
+
+  .columnaMarcas {
+    padding: 1rem 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .listaCategorias {
+    columns: 1;
+  }
+
+  .enlace,
+  .item {
+    min-height: 46px;
+  }
+}
+
+/* ── Monedas ───────────────────────────────────────────── */
+.monedas {
+  padding: 0.9rem 1rem;
+  font-size: 0.86rem;
+}
+
+.monedasCabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.monedasCabeza div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.monedasCabeza span {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.monedas p {
+  margin: 0;
+}
+
+.meta {
+  margin-top: 0.15rem !important;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+/* ── Cuenta ────────────────────────────────────────────── */
+.cuenta,
+.cuentaInvitado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+}
+
+.cuentaInvitado h3,
+.vacio h3,
+.vistaCabeza h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.cuentaInvitado p,
+.vacio p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.identidad {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--violet-100);
+  color: var(--violet-800);
+  font-weight: 700;
+  object-fit: cover;
+}
+
+:global([data-theme='dark']) .avatar {
+  background: #2d2645;
+  color: var(--violet-200);
+}
+
+.identidadTexto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.identidadTexto span {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.promo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.promo svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.grupo + .grupo {
+  margin-top: 0.6rem;
+}
+
+.item svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.item:hover svg {
+  color: var(--primary-color);
+}
+
+.cuentaPie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.cuentaPie .verTodo {
+  margin-top: 0;
+}
+
+.salir {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0 0.6rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.salir:hover {
+  background: var(--danger-soft);
+  color: var(--danger-hover);
+}
+
+.salir svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ── Favoritos / carrito ───────────────────────────────── */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem 1.1rem;
+  text-align: center;
+}
+
+.vacio > svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  color: var(--violet-400);
+}
+
+.vacio .botones,
+.vacio > .botonPrimario {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+.vista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+}
+
+.vistaCabeza {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.vistaCabeza span {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.mosaico {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mosaico a {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: #f5f4f8;
+  overflow: hidden;
+}
+
+.mosaico img,
+.miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6%;
+  mix-blend-mode: multiply;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.mosaico a:hover img {
+  transform: scale(1.06);
+}
+
+.mas {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  color: #fff;
+  font-weight: 700;
+}
+
+.listaCarrito {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listaCarrito li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.miniatura {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: #f5f4f8;
+  overflow: hidden;
+}
+
+.lineaTexto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.lineaTexto strong {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineaTexto small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.lineaPrecio {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.masItems {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.total strong {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* En la hoja del celular el margen lo pone la hoja. */
+@media (max-width: 760px) {
+  .monedas,
+  .cuenta,
+  .cuentaInvitado,
+  .vista,
+  .vacio {
+    padding: 0.25rem 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .girando {
+    animation-duration: 2.4s;
+  }
+}

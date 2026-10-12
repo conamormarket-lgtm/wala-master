@@ -1,9 +1,12 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Home, ShoppingBag, Brush, Gamepad2, User, Search, Heart, Bell } from 'lucide-react';
+import React, { useId, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Home, ShoppingBag, Brush, Gamepad2, User, Search, Heart, Bell, ChevronDown } from 'lucide-react';
 import { Contador, SaldoMonedas } from './Etiquetas';
 import { RESORTE } from './Efectos';
 import { ListaNotificaciones } from './Feedback';
+import { Enlace } from './Enlace';
+import Desplegable from './Desplegable';
+import { MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
 import s from './Navegacion.module.css';
 
 /**
@@ -21,53 +24,108 @@ export function Logo({ alto = 32 }) {
 }
 
 /**
- * Cabecera de escritorio: logo, enlaces con píldora que sigue al ratón,
- * buscador que se ilumina al enfocarlo y accesos animados.
+ * Cabecera de la tienda: logo, enlaces (con menú grande en "Tienda"),
+ * buscador y accesos. Cada acceso tiene su menú, como el header real:
+ * monedas (ayuda), notificaciones, favoritos, carrito y cuenta.
+ *
+ * Con ratón los menús se abren al pasar por encima; en celular / app,
+ * cuenta y tienda abren una hoja inferior, monedas un globo, y favoritos y
+ * carrito navegan directo. Solo hay un menú abierto a la vez.
+ *
+ * Todo llega por props (en la app: AuthContext, CartContext, Firestore…):
+ *  - enlaces: [{ id, texto, url, menu?: 'tienda' }]   activo: id actual
+ *  - menuTienda: props de <MenuTienda>
+ *  - monedas, notificaciones (+ onLeer, onMarcarLeidas, onVerTodas)
+ *  - usuario, gruposCuenta, promoCuenta, onCerrarSesion
+ *  - favoritos: [{ id, nombre, imagen }]   carrito: [{ id, nombre, imagen, precio, cantidad, variante }]
  */
-export function Cabecera({ enCarrito = 0, monedas = 0, notificaciones = [], onLeer, onMarcarLeidas, onVerTodas }) {
+export function Cabecera({
+  enlaces = ENLACES_POR_DEFECTO,
+  activo = 'tienda',
+  menuTienda = {},
+  monedas = 0,
+  notificaciones = [],
+  onLeer,
+  onMarcarLeidas,
+  onVerTodas,
+  usuario = null,
+  gruposCuenta = [],
+  promoCuenta,
+  onCerrarSesion,
+  favoritos = [],
+  carrito = [],
+}) {
   const uid = useId();
-  const [activo, setActivo] = useState('Tienda');
   const [sobre, setSobre] = useState(null);
-  const [bandeja, setBandeja] = useState(false);
-  const bandejaRef = useRef(null);
+  const [abierto, setAbierto] = useState(null);
   const noLeidas = notificaciones.filter((n) => !n.leida).length;
+  const enCarrito = carrito.reduce((a, it) => a + it.cantidad, 0);
 
-  // Cierra la bandeja al tocar fuera o con Esc.
-  useEffect(() => {
-    if (!bandeja) return undefined;
-    const fuera = (e) => { if (!bandejaRef.current?.contains(e.target)) setBandeja(false); };
-    const esc = (e) => { if (e.key === 'Escape') setBandeja(false); };
-    document.addEventListener('pointerdown', fuera);
-    document.addEventListener('keydown', esc);
-    return () => {
-      document.removeEventListener('pointerdown', fuera);
-      document.removeEventListener('keydown', esc);
-    };
-  }, [bandeja]);
-  const enlaces = ['Tienda', 'Suscripciones', 'Crear', 'Minijuegos'];
+  // Un solo menú abierto a la vez.
+  const control = (clave) => ({
+    abierto: abierto === clave,
+    onAbiertoChange: (v) => setAbierto((prev) => (v ? clave : prev === clave ? null : prev)),
+  });
+
+  const pildoras = (id) => (
+    <>
+      {sobre === id && <motion.span layoutId={`${uid}-sobre`} className={s.pildoraSobre} transition={RESORTE} />}
+      {activo === id && <motion.span layoutId={`${uid}-activo`} className={s.subrayado} transition={RESORTE} />}
+    </>
+  );
 
   return (
     <header className={s.cabecera}>
-      <a href="#inicio" className={s.logo} aria-label="Walá, inicio">
+      <Enlace to="/" className={s.logo} aria-label="Walá, inicio">
         <Logo alto={36} />
-      </a>
+      </Enlace>
 
       <nav className={s.enlaces} aria-label="Principal" onMouseLeave={() => setSobre(null)}>
-        {enlaces.map((e) => (
-          <a
-            key={e}
-            href={`#${e}`}
-            className={[s.enlace, activo === e && s.enlaceActivo].filter(Boolean).join(' ')}
-            aria-current={activo === e ? 'page' : undefined}
-            onMouseEnter={() => setSobre(e)}
-            onFocus={() => setSobre(e)}
-            onClick={(ev) => { ev.preventDefault(); setActivo(e); }}
-          >
-            {sobre === e && <motion.span layoutId={`${uid}-sobre`} className={s.pildoraSobre} transition={RESORTE} />}
-            {activo === e && <motion.span layoutId={`${uid}-activo`} className={s.subrayado} transition={RESORTE} />}
-            <span className={s.enlaceTexto}>{e}</span>
-          </a>
-        ))}
+        {enlaces.map((e) => {
+          const clases = [s.enlace, activo === e.id && s.enlaceActivo].filter(Boolean).join(' ');
+          if (e.menu === 'tienda') {
+            return (
+              <Desplegable
+                key={e.id}
+                titulo={e.texto}
+                alinear="izquierda"
+                ancho={menuTienda.destacado ? 720 : 560}
+                {...control('tienda')}
+                disparador={(props) => (
+                  <button
+                    type="button"
+                    {...props}
+                    className={clases}
+                    aria-current={activo === e.id ? 'page' : undefined}
+                    onMouseEnter={() => setSobre(e.id)}
+                    onFocus={() => setSobre(e.id)}
+                  >
+                    {pildoras(e.id)}
+                    <span className={s.enlaceTexto}>
+                      {e.texto}
+                      <ChevronDown className={[s.chevron, abierto === 'tienda' && s.chevronAbierto].filter(Boolean).join(' ')} aria-hidden="true" />
+                    </span>
+                  </button>
+                )}
+              >
+                {(cerrar) => <MenuTienda {...menuTienda} onNavegar={cerrar} />}
+              </Desplegable>
+            );
+          }
+          return (
+            <Enlace
+              key={e.id}
+              to={e.url}
+              className={clases}
+              aria-current={activo === e.id ? 'page' : undefined}
+              onMouseEnter={() => setSobre(e.id)}
+              onFocus={() => setSobre(e.id)}
+            >
+              {pildoras(e.id)}
+              <span className={s.enlaceTexto}>{e.texto}</span>
+            </Enlace>
+          );
+        })}
       </nav>
 
       <label className={s.buscador}>
@@ -80,55 +138,115 @@ export function Cabecera({ enCarrito = 0, monedas = 0, notificaciones = [], onLe
         <button type="button" className={`${s.iconoBtn} ${s.soloMovil}`} aria-label="Buscar">
           <Search aria-hidden="true" />
         </button>
-        <span className={s.ocultarMovil}><SaldoMonedas saldo={monedas} /></span>
-        <div className={`${s.bandejaCaja} ${s.ocultarMovil}`} ref={bandejaRef}>
-          <button
-            type="button"
-            className={[s.iconoBtn, s.campana, bandeja && s.iconoActivo].filter(Boolean).join(' ')}
-            aria-label={`Notificaciones (${noLeidas} sin leer)`}
-            aria-expanded={bandeja}
-            onClick={() => setBandeja((v) => !v)}
+
+        <span className={s.ocultarMovil}>
+          <Desplegable
+            alTocar="globo"
+            variante="globo"
+            alinear="centro"
+            ancho={250}
+            {...control('monedas')}
+            disparador={(props) => <SaldoMonedas saldo={monedas} {...props} />}
           >
-            <Bell aria-hidden="true" />
-            <Contador valor={noLeidas} />
-          </button>
-          <AnimatePresence>
-            {bandeja && (
-              <motion.div
-                className={s.bandeja}
-                initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -4, scale: 0.98 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            {(cerrar) => <AyudaMonedas saldo={monedas} onNavegar={cerrar} />}
+          </Desplegable>
+        </span>
+
+        <span className={s.ocultarMovil}>
+          <Desplegable
+            titulo="Notificaciones"
+            ancho={370}
+            {...control('notificaciones')}
+            disparador={(props) => (
+              <button
+                type="button"
+                {...props}
+                className={[s.iconoBtn, s.campana, abierto === 'notificaciones' && s.iconoActivo].filter(Boolean).join(' ')}
+                aria-label={`Notificaciones (${noLeidas} sin leer)`}
               >
+                <Bell aria-hidden="true" />
+                <Contador valor={noLeidas} />
+              </button>
+            )}
+          >
+            {(cerrar) => (
+              <div className={s.bandeja}>
                 <div className={s.bandejaCabeza}>
-                  <strong>Notificaciones</strong>
+                  <span>{noLeidas ? `${noLeidas} sin leer` : 'Todo al día'}</span>
                   {noLeidas > 0 && <button type="button" onClick={onMarcarLeidas}>Marcar leídas</button>}
                 </div>
                 <div className={s.bandejaLista}>
                   <ListaNotificaciones items={notificaciones} limite={5} onAbrir={(n) => onLeer?.(n.id)} />
                 </div>
-                <button type="button" className={s.bandejaTodas} onClick={() => { setBandeja(false); onVerTodas?.(); }}>
+                <button type="button" className={s.bandejaTodas} onClick={() => { cerrar(); onVerTodas?.(); }}>
                   Ver todas las notificaciones
                 </button>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
-        </div>
-        <button type="button" className={`${s.iconoBtn} ${s.corazon} ${s.ocultarMovil}`} aria-label="Deseos">
-          <Heart aria-hidden="true" />
-        </button>
-        <button type="button" className={`${s.iconoBtn} ${s.bolsa}`} aria-label={`Carrito (${enCarrito})`}>
-          <ShoppingBag aria-hidden="true" />
-          <Contador valor={enCarrito} />
-        </button>
-        <button type="button" className={s.avatar} aria-label="Mi cuenta">
-          <span>IC</span>
-        </button>
+          </Desplegable>
+        </span>
+
+        <span className={s.ocultarMovil}>
+          <Desplegable
+            alTocar="nada"
+            ancho={330}
+            {...control('favoritos')}
+            disparador={(props) => (
+              <Enlace to="/cuenta/wishlist" {...props} className={`${s.iconoBtn} ${s.corazon}`} aria-label={`Favoritos (${favoritos.length})`}>
+                <Heart aria-hidden="true" />
+                <Contador valor={favoritos.length} />
+              </Enlace>
+            )}
+          >
+            {(cerrar) => <VistaFavoritos items={favoritos} sesion={Boolean(usuario)} onNavegar={cerrar} />}
+          </Desplegable>
+        </span>
+
+        <Desplegable
+          alTocar="nada"
+          ancho={360}
+          {...control('carrito')}
+          disparador={(props) => (
+            <Enlace to="/carrito" {...props} className={`${s.iconoBtn} ${s.bolsa}`} aria-label={`Carrito (${enCarrito})`}>
+              <ShoppingBag aria-hidden="true" />
+              <Contador valor={enCarrito} />
+            </Enlace>
+          )}
+        >
+          {(cerrar) => <VistaCarrito items={carrito} onNavegar={cerrar} />}
+        </Desplegable>
+
+        <Desplegable
+          titulo="Mi cuenta"
+          ancho={320}
+          {...control('cuenta')}
+          disparador={(props) => (
+            <button type="button" {...props} className={s.avatar} aria-label="Mi cuenta">
+              {usuario?.avatar ? (
+                <img src={usuario.avatar} alt="" referrerPolicy="no-referrer" />
+              ) : (
+                <span>{usuario ? iniciales(usuario.nombre) : <User aria-hidden="true" />}</span>
+              )}
+            </button>
+          )}
+        >
+          {(cerrar) => (
+            <MenuCuenta usuario={usuario} grupos={gruposCuenta} promo={promoCuenta} onCerrarSesion={onCerrarSesion} onNavegar={cerrar} />
+          )}
+        </Desplegable>
       </div>
     </header>
   );
 }
+
+const iniciales = (nombre) => String(nombre || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+
+const ENLACES_POR_DEFECTO = [
+  { id: 'tienda', texto: 'Tienda', url: '/tienda', menu: 'tienda' },
+  { id: 'suscripciones', texto: 'Suscripciones', url: '/suscripciones' },
+  { id: 'crear', texto: 'Crear', url: '/personalizar' },
+  { id: 'minijuegos', texto: 'Minijuegos', url: '/minijuegos' },
+];
 
 const TABS = [
   { id: 'inicio', texto: 'Inicio', Icono: Home },

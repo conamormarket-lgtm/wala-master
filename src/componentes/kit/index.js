@@ -6,3 +6,6 @@ export { Cabecera, BarraInferior, Pestanas, Logo } from './Navegacion';
 export { SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido, PASOS_PEDIDO } from './Pedido';
 export { Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior } from './Feedback';
 export { EASE, RESORTE, useContador, seguirPuntero, Estallido, Revelar, esApp, useBloquearScroll, useCerrarConAtras } from './Efectos';
+export { Enlace, ProveedorEnlaces } from './Enlace';
+export { default as Desplegable } from './Desplegable';
+export { MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';

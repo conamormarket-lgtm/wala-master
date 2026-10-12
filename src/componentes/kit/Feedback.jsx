@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls, useMotionValue, useTransform } from 'framer-motion';
 import { CheckCircle2, Info, AlertTriangle, XCircle, X, Sparkles, BellOff, CheckCheck } from 'lucide-react';
 import { useBloquearScroll, useCerrarConAtras } from './Efectos';
@@ -306,7 +307,7 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
 
   const empezarArrastre = (e) => { if (!modal) controles.start(e); };
 
-  return (
+  const hoja = (
     <AnimatePresence>
       {abierta && (
         <motion.div
@@ -357,4 +358,10 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
       )}
     </AnimatePresence>
   );
+
+  // Se dibuja en <body>: si la hoja vive dentro de algo con transform,
+  // filter o backdrop-filter (la cabecera de vidrio, por ejemplo), position:
+  // fixed quedaría atrapado en ese contenedor en vez de cubrir la pantalla.
+  if (contenida || typeof document === 'undefined') return hoja;
+  return createPortal(hoja, document.body);
 }
