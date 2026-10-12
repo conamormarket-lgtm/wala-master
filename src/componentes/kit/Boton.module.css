@@ -25,7 +25,6 @@
   letter-spacing: -0.01em;
   white-space: nowrap;
   cursor: pointer;
-  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   user-select: none;
@@ -75,6 +74,15 @@
 
 .texto {
   display: inline-block;
+}
+
+.recorte {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 /* ── Destello: banda de luz suave que cruza una vez al pasar el ratón ── */

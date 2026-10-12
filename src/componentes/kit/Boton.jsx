@@ -60,16 +60,19 @@ const Boton = forwardRef(function Boton({
 
   const contenido = (
     <>
-      <span className={s.destello} aria-hidden="true" />
-      {ondas.map((o) => (
-        <span
-          key={o.id}
-          className={s.onda}
-          style={{ left: o.x, top: o.y, width: o.tam, height: o.tam }}
-          onAnimationEnd={() => setOndas((os) => os.filter((x) => x.id !== o.id))}
-          aria-hidden="true"
-        />
-      ))}
+      {/* Capa que recorta solo los efectos: así la insignia puede asomar
+          por la esquina sin que la onda o el destello se salgan. */}
+      <span className={s.recorte} aria-hidden="true">
+        <span className={s.destello} />
+        {ondas.map((o) => (
+          <span
+            key={o.id}
+            className={s.onda}
+            style={{ left: o.x, top: o.y, width: o.tam, height: o.tam }}
+            onAnimationEnd={() => setOndas((os) => os.filter((x) => x.id !== o.id))}
+          />
+        ))}
+      </span>
       <span className={s.contenido}>
         {cargando ? <Loader2 className={s.spin} aria-hidden="true" /> : icono && <span className={s.icono}>{icono}</span>}
         {children != null && <span className={s.texto}>{children}</span>}

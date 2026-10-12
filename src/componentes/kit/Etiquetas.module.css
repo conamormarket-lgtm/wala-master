@@ -324,8 +324,9 @@
 /* ── Contador ──────────────────────────────────────────── */
 .contador {
   position: absolute;
-  top: 1px;
-  right: 1px;
+  top: -3px;
+  right: -3px;
+  z-index: 3;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
