@@ -231,30 +231,74 @@
   letter-spacing: -0.04em;
 }
 
-/* El logo va sobre un círculo blanco: sirve igual para logos con fondo
-   transparente que para los que traen fondo blanco. */
-.marcaLogo {
+/* El logo cuelga de una etiqueta blanca con ojal e hilo, un poco girada
+   (como la etiqueta del logo de Walá). Al pasar el ratón se mece. */
+.marcaColgante {
+  position: relative;
   grid-column: 2;
   grid-row: 1;
   align-self: center;
+  width: 100%;
+  padding-top: 16px;
+  transform: rotate(-6deg);
+  transform-origin: 50% 0;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.marcaHilo {
+  position: absolute;
+  z-index: 2;
+  top: -8px;
+  left: 50%;
+  width: 2px;
+  height: calc(16px + 8px + 11%);
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(20, 18, 28, 0.18);
+  transform: translateX(-50%);
+}
+
+.marcaLogo {
+  position: relative;
   display: grid;
   place-items: center;
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 50%;
+  padding: 24% 11% 11%;
+  border-radius: 22%;
   background: #fff;
-  color: var(--marca-color);
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  overflow: hidden;
-  transition: transform var(--dur-media) var(--ease-signature);
+  box-shadow: 0 14px 26px -16px rgba(0, 0, 0, 0.6);
+}
+
+/* El ojal de la etiqueta (deja ver el color de la tarjeta). */
+.marcaLogo::before {
+  content: '';
+  position: absolute;
+  top: 7%;
+  left: 50%;
+  width: 11%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--marca-color);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%);
 }
 
 .marcaLogo img {
-  width: 78%;
-  height: 78%;
+  width: 100%;
+  height: 100%;
+  border-radius: 12%;
   object-fit: contain;
+}
+
+/* Sin logo: las iniciales con la letra del logo de Walá. */
+.marcaIniciales {
+  color: var(--marca-color);
+  font-family: var(--fuente-marca);
+  font-size: clamp(1.4rem, 3.4cqi, 2rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
 
 .marcaTexto {
@@ -307,8 +351,8 @@
     transform: translateY(-4px);
   }
 
-  .marca:hover .marcaLogo {
-    transform: scale(1.05);
+  .marca:hover .marcaColgante {
+    transform: rotate(2deg);
   }
 
   .marca:hover .marcaCta svg {
@@ -339,7 +383,17 @@
 }
 
 .marcaBorde .marcaLogo {
-  box-shadow: 0 0 0 1px var(--color-border);
+  box-shadow: 0 0 0 1px var(--color-border), 0 12px 22px -16px rgba(30, 17, 64, 0.45);
+}
+
+.marcaBorde .marcaLogo::before {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.marcaBorde .marcaHilo {
+  background: var(--violet-300, #c4b5fd);
+  box-shadow: none;
 }
 
 .marcaBorde .marcaCta {
@@ -462,7 +516,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .marca,
-  .marcaLogo,
+  .marcaColgante,
   .marcaCta svg,
   .banner,
   .destacado,

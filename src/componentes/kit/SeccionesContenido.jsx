@@ -293,10 +293,15 @@ function TarjetaMarca({ marca, indice, estilo, mostrarNombre }) {
       aria-label={`Explorar ${marca.nombre}`}
     >
       <span className={s.marcaNumero} aria-hidden="true">{String(indice + 1).padStart(2, '0')}</span>
-      <span className={s.marcaLogo}>
-        {marca.logo
-          ? <img src={toDirectImageUrl(marca.logo)} alt="" loading="lazy" decoding="async" />
-          : <span aria-hidden="true">{iniciales(marca.nombre)}</span>}
+      {/* El logo cuelga de una etiqueta (como la del logo de Walá): sirve
+          igual para logos cuadrados, redondos o con fondo transparente. */}
+      <span className={s.marcaColgante}>
+        <span className={s.marcaHilo} aria-hidden="true" />
+        <span className={s.marcaLogo}>
+          {marca.logo
+            ? <img src={toDirectImageUrl(marca.logo)} alt="" loading="lazy" decoding="async" />
+            : <span className={s.marcaIniciales} aria-hidden="true">{iniciales(marca.nombre)}</span>}
+        </span>
       </span>
       <span className={s.marcaTexto}>
         <EtiquetaColgante tono={estilo === 'outline' ? 'violeta' : 'blanco'} tamano="sm" className={s.marcaEtiqueta}>Universo Walá</EtiquetaColgante>
