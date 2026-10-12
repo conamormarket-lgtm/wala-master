@@ -1223,3 +1223,39 @@
   background: rgba(251, 191, 36, 0.1);
   color: #fcd34d;
 }
+
+/* Mientras se recalcula el total (monedas o cupón cambiados en el paso de pago). */
+.payCardRecalc .methodCard,
+.payCardRecalc .recoveryCard {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.payRecalc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5d2bb4;
+}
+
+.spinnerOscuro {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(93, 43, 180, 0.25);
+  border-top-color: #5d2bb4;
+  border-radius: 50%;
+  animation: girarCheckout 0.75s linear infinite;
+}
+
+:global([data-theme='dark']) .payRecalc {
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .spinnerOscuro {
+  border-color: rgba(196, 181, 253, 0.25);
+  border-top-color: #c4b5fd;
+}

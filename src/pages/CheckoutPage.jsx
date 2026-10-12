@@ -191,6 +191,11 @@ const CheckoutPage = () => {
   // waLink lleva todo el detalle al asesor). culqiKey permite REINTENTAR el pago
   // (remonta el componente de Culqi y vuelve a auto-abrir el modal).
   const [culqiClosed, setCulqiClosed] = useState(false);
+  // Culqi se abre solo al entrar al paso de pago, no cuando se recalcula el total.
+  const [autoAbrirCulqi, setAutoAbrirCulqi] = useState(true);
+  // Monedas o cupón cambiados en el paso de pago: se vuelve a preparar el pago.
+  const [recalculando, setRecalculando] = useState(false);
+  const preparadoOkRef = useRef(false);
   const [culqiKey] = useState(0);
   const whatsappOrderPromiseRef = useRef(null);
   const postCreationDoneRef = useRef(false);
@@ -272,7 +277,7 @@ const CheckoutPage = () => {
           finalize();
         }}
       >
-        {processing
+        {processing && !recalculando
           ? <><span className={styles.spinnerVerde} aria-hidden="true" /> Creando tu pedido…</>
           : <><MessageCircle size={19} aria-hidden="true" /> {label}</>}
       </button>
@@ -1271,6 +1276,7 @@ const CheckoutPage = () => {
         }
 
         // ── 7. Pasar a Opciones de Pago ─────────────────────────────────────────────
+        preparadoOkRef.current = true;
         setPaymentStepData({
           id: checkoutIntentId || pseudoOrderId,
           // Código de negocio del pedido (id en pedidos_web y en wala_pedidos).
@@ -1300,6 +1306,33 @@ const CheckoutPage = () => {
   });
 
   const { setFieldValue } = formik;
+
+  // El total lo fija el servidor al preparar el pago. Si en el paso de pago el
+  // cliente marca monedas o aplica un cupón, el resumen cambiaba pero Culqi y
+  // WhatsApp seguían con el total anterior: se vuelve a preparar (el servidor
+  // reemplaza la preparación anterior y libera sus monedas reservadas).
+  const descuentosKey = `${useCoinsToggle}|${cuponAplicado?.code || ''}`;
+  const descuentosPrevRef = useRef(descuentosKey);
+  useEffect(() => {
+    if (descuentosPrevRef.current === descuentosKey) return;
+    const anteriorKey = descuentosPrevRef.current;
+    descuentosPrevRef.current = descuentosKey;
+    if (!paymentStepData || paymentStepData.pedidoWebId) return;
+    setAutoAbrirCulqi(false);
+    setCulqiClosed(false);
+    whatsappOrderPromiseRef.current = null;
+    setRecalculando(true);
+    preparadoOkRef.current = false;
+    formik.submitForm().finally(() => {
+      setRecalculando(false);
+      if (!preparadoOkRef.current && anteriorKey.split('|')[0] !== String(useCoinsToggle)) {
+        // El servidor lo rechazó: la casilla vuelve a como estaba, sin re-preparar.
+        descuentosPrevRef.current = anteriorKey;
+        setUseCoinsToggle(anteriorKey.startsWith('true'));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [descuentosKey]);
 
   // ── Siembra POR CAMPO del perfil/invitado sin pisar lo tecleado ──────────────
   // Reemplaza el viejo enableReinitialize (que borraba lo escrito al cargar el
@@ -1574,7 +1607,7 @@ const CheckoutPage = () => {
       <div className={styles.layout}>
         <div className={styles.formContainer}>
           {paymentStepData ? (
-            <GlassCard variant="solid" padding="lg" className={styles.payCard}>
+            <GlassCard variant="solid" padding="lg" className={`${styles.payCard} ${recalculando ? styles.payCardRecalc : ''}`}>
               <div ref={payStepRef} className={styles.payHeader}>
                 <h2 className={styles.payTitle}><T>Elige cómo pagar</T></h2>
                 <p className={styles.payAmount}>
@@ -1585,6 +1618,11 @@ const CheckoutPage = () => {
                 <p className={styles.paySubtitle}>
                   Pedido {paymentStepData.numeroPedido} · a nombre de {paymentStepData.customerName}
                 </p>
+                {recalculando && (
+                  <p className={styles.payRecalc} role="status">
+                    <span className={styles.spinnerOscuro} aria-hidden="true" /> Actualizando el total…
+                  </p>
+                )}
               </div>
 
               {/* Aviso de envío internacional (solo si NO es Perú) */}
@@ -1632,7 +1670,7 @@ const CheckoutPage = () => {
                       key={culqiKey}
                       reopenKey={culqiKey}
                       pedido={paymentStepData}
-                      autoOpen={true}
+                      autoOpen={autoAbrirCulqi}
                       title="Compra en Walá"
                       buttonLabel={`Pagar S/ ${Number(paymentStepData.montoDeuda || 0).toFixed(2)}`}
                       onSuccess={(result) => finishGatewayOrder('culqi', result)}
@@ -2034,6 +2072,7 @@ const CheckoutPage = () => {
                           type="checkbox"
                           checked={useCoinsToggle}
                           onChange={handleToggleCoins}
+                          disabled={processing || !!paymentStepData?.pedidoWebId}
                           style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#e11d48' }}
                         />
                       </div>
