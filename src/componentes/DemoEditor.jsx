@@ -20,12 +20,12 @@ const crearPagina = (img) => [
   { id: 'e2', type: 'categories_nav', order: 1, settings: { brandId: 'conamor', paddingTop: '1rem', paddingBottom: '0.5rem' } },
   { id: 'e3', type: 'sidebar_catalog', order: 2, settings: { title: 'Catálogo Con Amor', brandId: 'conamor', paddingTop: '1rem', paddingBottom: '2rem' } },
   { id: 'e4', type: 'feature_list', order: 3, settings: {
-    eyebrow: 'Hecho a mano', title: '¿Por qué elegirnos?', subtitle: 'Lo que nos dicen que nos hace distintos.', imageUrl: img.taller,
+    eyebrow: 'Hecho a mano', title: '¿Por qué elegirnos?', subtitle: 'Lo que nos dicen que nos hace distintos.', imageUrl: img.taller, imageAlt: 'Recién salida del taller',
     items: [{ icon: '✓', text: 'Estampado que no se cuartea al lavar' }, { icon: '🚚', text: 'Envío a todo el Perú' }, { icon: '💬', text: 'Te ayudamos con tu diseño por WhatsApp' }],
     quote: 'Pedí tres poleras para el cumple de mi papá y llegaron perfectas.', quoteAuthor: 'Andrea, Lima', paddingTop: '2rem', paddingBottom: '2rem',
   } },
   { id: 'e5', type: 'map_location', order: 4, settings: {
-    title: 'Visítanos en Lima', description: 'Av. Ejemplo 123, Miraflores\nLunes a sábado de 10 a. m. a 7 p. m.',
+    eyebrow: 'Nuestra tienda', title: 'Visítanos en Lima', description: 'Av. Ejemplo 123, Miraflores\nLunes a sábado de 10 a. m. a 7 p. m.',
     embedUrl: 'https://www.google.com/maps?q=Miraflores,Lima,Peru&output=embed', layout: 'mapRight', mapWidth: '55%', mapHeight: '320px',
     buttonText: 'Escríbenos', buttonLink: 'https://wa.me/51900000000', paddingTop: '2rem', paddingBottom: '2rem',
   } },

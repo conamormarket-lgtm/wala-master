@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, LayoutGrid, MapPin, SlidersHorizontal, X, MessageCircle, Music2, Mail } from 'lucide-react';
+import { Check, Clock, LayoutGrid, MapPin, SlidersHorizontal, X, MessageCircle, Music2, Mail } from 'lucide-react';
 import Boton from './Boton';
 import Marquesina from './Marquesina';
 import TarjetaProducto, { TarjetaProductoEsqueleto } from './TarjetaProducto';
@@ -10,7 +10,7 @@ import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
-import { EtiquetaColgante, Garabatos, LogoWala } from './Marca';
+import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon } from './Marca';
 import s from './SeccionesExtra.module.css';
 
 /*
@@ -101,27 +101,48 @@ export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) 
 }
 
 /* ── Lista de beneficios (feature_list) ─────────────────── */
+/**
+ * Por qué elegirnos. La foto va como polaroid con cinta washi (como las
+ * piezas "Crea tus recuerdos" de la marca); cada beneficio, numerado.
+ * El ícono: ✓ (o vacío) = sello con el degradado del logo; un emoji va en
+ * un círculo claro (sobre violeta se veía apagado).
+ */
 export function ListaBeneficios({ ajustes = {} }) {
   const items = (ajustes.items || []).filter((i) => i?.text);
   if (!items.length && !ajustes.title) return null;
   return (
     <div className={[s.beneficios, ajustes.imageUrl && s.beneficiosConFoto].filter(Boolean).join(' ')}>
       {ajustes.imageUrl && (
-        <img className={s.beneficiosFoto} src={toDirectImageUrl(ajustes.imageUrl)} alt={ajustes.imageAlt || ''} loading="lazy" decoding="async" />
+        <div className={s.beneficiosArte}>
+          <figure className={s.polaroid}>
+            <span className={s.washi} aria-hidden="true" />
+            <span className={s.polaroidFoto}>
+              <img src={toDirectImageUrl(ajustes.imageUrl)} alt={ajustes.imageAlt || ''} loading="lazy" decoding="async" />
+            </span>
+            {ajustes.imageAlt && <figcaption>{ajustes.imageAlt}</figcaption>}
+          </figure>
+          <Destello className={s.arte1} />
+          <Destello className={s.arte2} />
+          <Corazon className={s.arte3} />
+        </div>
       )}
       <div>
         <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} adorno />
         {items.length > 0 && (
-          <ul className={s.beneficiosLista}>
-            {items.map((it, k) => (
-              <li key={k}>
-                <span className={s.beneficioIcono} aria-hidden="true">
-                  {!it.icon || it.icon === '✓' ? <Check /> : it.icon}
-                </span>
-                <span>{it.text}</span>
-              </li>
-            ))}
-          </ul>
+          <ol className={s.beneficiosLista}>
+            {items.map((it, k) => {
+              const sello = !it.icon || it.icon === '✓';
+              return (
+                <li key={k}>
+                  <span className={sello ? s.beneficioIcono : s.beneficioEmoji} aria-hidden="true">
+                    {sello ? <Check /> : it.icon}
+                  </span>
+                  <span className={s.beneficioTexto}>{it.text}</span>
+                  <span className={s.beneficioNumero} aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+                </li>
+              );
+            })}
+          </ol>
         )}
         {ajustes.quote && (
           <blockquote className={s.cita}>
@@ -151,8 +172,18 @@ export function Ubicacion({ ajustes = {} }) {
   return (
     <div className={[s.mapa, s[layout] || s.mapRight].filter(Boolean).join(' ')} style={{ '--ancho-mapa': apilado ? '100%' : mapWidth, '--alto-mapa': mapHeight }}>
       <div className={s.mapaTexto}>
+        <span className={s.mapaSello} aria-hidden="true"><MapPin /></span>
+        {ajustes.eyebrow && <p className={s.mapaEtiqueta}><EtiquetaColgante tono="suave">{ajustes.eyebrow}</EtiquetaColgante></p>}
         <TextoCampo ajustes={ajustes} campo="title" como="h2" className={s.mapaTitulo}>{title}</TextoCampo>
-        <TextoCampo ajustes={ajustes} campo="description" className={s.mapaDescripcion}>{description}</TextoCampo>
+        {description && (
+          <TextoCampo ajustes={ajustes} campo="description" como="div" className={s.mapaDescripcion}>
+            <ul className={s.mapaDatos}>
+              {String(description).split(/\n/).filter((l) => l.trim()).map((linea, k) => (
+                <li key={k}>{k === 0 ? <MapPin aria-hidden="true" /> : <Clock aria-hidden="true" />}<span>{linea}</span></li>
+              ))}
+            </ul>
+          </TextoCampo>
+        )}
         <BotonDeAjustes ajustes={ajustes} />
       </div>
       <div className={s.mapaMarco}>
@@ -351,27 +382,48 @@ export function CatalogoConFiltros({
     cambiarPrecio({ min: '', max: '' });
   };
 
+  const cuantos = activos.length + (hayPrecio ? 1 : 0);
+  const RANGOS = [['', '50', 'Hasta S/ 50'], ['50', '100', 'S/ 50 – 100'], ['100', '', 'Más de S/ 100']];
   const filtros = (
     <div className={s.filtros}>
+      <div className={s.filtrosCabeza}>
+        <span className={s.filtrosSello} aria-hidden="true"><SlidersHorizontal /></span>
+        <strong>Filtros</strong>
+        {cuantos > 0 && <button type="button" className={s.limpiar} onClick={limpiar}>Limpiar ({cuantos})</button>}
+      </div>
       {grupos.filter((g) => g.opciones?.length).map((g) => (
         <fieldset key={g.id} className={s.filtroGrupo}>
           <legend>{g.titulo}</legend>
-          {g.opciones.map((o) => {
-            const marcada = sel[g.id] === o.valor;
-            return (
-              <button key={String(o.valor)} type="button" className={[s.filtro, marcada && s.filtroActivo].filter(Boolean).join(' ')} aria-pressed={marcada} onClick={() => filtrar(g.id, o.valor)}>
-                <span>{o.nombre}</span>
-                {o.cuenta != null && <small>{o.cuenta}</small>}
-              </button>
-            );
-          })}
+          <div className={s.opciones}>
+            {g.opciones.map((o) => {
+              const marcada = sel[g.id] === o.valor;
+              return (
+                <button key={String(o.valor)} type="button" className={[s.filtro, marcada && s.filtroActivo].filter(Boolean).join(' ')} aria-pressed={marcada} onClick={() => filtrar(g.id, o.valor)}>
+                  {marcada && <Check className={s.filtroCheck} aria-hidden="true" />}
+                  <span>{o.nombre}</span>
+                  {o.cuenta != null && <small>{o.cuenta}</small>}
+                </button>
+              );
+            })}
+          </div>
         </fieldset>
       ))}
       <fieldset className={s.filtroGrupo}>
-        <legend>Precio (S/)</legend>
+        <legend>Precio</legend>
+        <div className={s.opciones}>
+          {RANGOS.map(([min, max, texto]) => {
+            const marcado = rango.min === min && rango.max === max;
+            return (
+              <button key={texto} type="button" className={[s.filtro, marcado && s.filtroActivo].filter(Boolean).join(' ')} aria-pressed={marcado} onClick={() => cambiarPrecio(marcado ? { min: '', max: '' } : { min, max })}>
+                {marcado && <Check className={s.filtroCheck} aria-hidden="true" />}
+                <span>{texto}</span>
+              </button>
+            );
+          })}
+        </div>
         <div className={s.precio}>
-          <Campo type="number" inputMode="numeric" min="0" placeholder="Mín." aria-label="Precio mínimo" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
-          <Campo type="number" inputMode="numeric" min="0" placeholder="Máx." aria-label="Precio máximo" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
+          <Campo type="number" inputMode="numeric" min="0" placeholder="Mín." aria-label="Precio mínimo" icono="S/" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
+          <Campo type="number" inputMode="numeric" min="0" placeholder="Máx." aria-label="Precio máximo" icono="S/" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
         </div>
       </fieldset>
     </div>
@@ -406,7 +458,7 @@ export function CatalogoConFiltros({
         <GrillaProductos {...grilla} productos={visibles} vacio={grilla.vacio || { titulo: 'Nada coincide con tu búsqueda', texto: 'Prueba con otros filtros o quítalos.' }} />
       </div>
       <HojaInferior abierta={hoja} onCerrar={() => setHoja(false)} titulo="Filtros" pie={<Boton bloque onClick={() => setHoja(false)}>Ver {visibles.length} productos</Boton>}>
-        {filtros}
+        <div className={s.filtrosEnHoja}>{filtros}</div>
       </HojaInferior>
     </div>
   );

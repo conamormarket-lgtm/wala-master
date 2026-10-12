@@ -72,67 +72,196 @@
 /* ── Beneficios ── */
 .beneficios {
   display: grid;
-  gap: clamp(1.25rem, 4cqi, 3rem);
+  gap: clamp(1.5rem, 5cqi, 3.5rem);
   align-items: center;
 }
 
 .beneficiosConFoto {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
 }
 
 @container (max-width: 760px) {
   .beneficiosConFoto {
     grid-template-columns: 1fr;
   }
+
+  .polaroid {
+    width: min(76%, 270px);
+  }
 }
 
-.beneficiosFoto {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: 20px;
-  object-fit: cover;
-  background: #f5f4f8;
+/* Foto como polaroid con cinta washi, sobre una mancha violeta suave. */
+.beneficiosArte {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 1.75rem 1rem;
 }
+
+.beneficiosArte::before {
+  content: '';
+  position: absolute;
+  inset: 4% 8%;
+  border-radius: 46% 54% 42% 58% / 52% 44% 56% 48%;
+  background: var(--primary-light);
+}
+
+.polaroid {
+  position: relative;
+  width: min(100%, 340px);
+  margin: 0;
+  padding: 12px 12px 14px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 22px 40px -24px rgba(30, 17, 64, 0.5), 0 0 0 1px rgba(30, 17, 64, 0.06);
+  transform: rotate(-3deg);
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .beneficiosArte:hover .polaroid {
+    transform: rotate(-1deg) translateY(-4px);
+  }
+}
+
+.polaroidFoto {
+  display: block;
+  aspect-ratio: 4 / 5;
+  border-radius: 3px;
+  background: #f5f4f8;
+  overflow: hidden;
+}
+
+.polaroidFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.polaroid figcaption {
+  margin-top: 0.7rem;
+  color: #3b2f5a;
+  font-family: var(--fuente-marca);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+/* Cinta washi: franja translúcida con rayas y bordes rasgados. */
+.washi {
+  position: absolute;
+  z-index: 1;
+  top: -14px;
+  left: 50%;
+  width: 116px;
+  height: 30px;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0 6px, transparent 6px 12px),
+    rgba(196, 181, 253, 0.85);
+  transform: translateX(-50%) rotate(4deg);
+  clip-path: polygon(3% 0, 97% 4%, 100% 22%, 96% 40%, 100% 62%, 97% 82%, 99% 100%, 2% 96%, 0 78%, 4% 58%, 0 38%, 3% 18%);
+}
+
+.arte1,
+.arte2,
+.arte3 {
+  position: absolute;
+  z-index: 2;
+}
+
+.arte1 { top: 6%; right: 12%; width: 30px; color: #f59e0b; }
+.arte2 { top: 18%; right: 6%; width: 14px; color: var(--violet-500, #8b5cf6); }
+.arte3 { bottom: 10%; left: 9%; width: 30px; color: #f472b6; transform: rotate(-14deg); }
 
 .beneficiosLista {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.65rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .beneficiosLista li {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  padding: 0.55rem 0.9rem 0.55rem 0.55rem;
-  border-radius: 999px;
+  gap: 0.85rem;
+  min-height: 64px;
+  padding: 0.7rem 3.6rem 0.7rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 20px 20px 20px;
   background: var(--color-surface);
-  box-shadow: 0 0 0 1px var(--color-border);
-  font-size: 0.95rem;
+  overflow: hidden;
+  transition: transform var(--dur-media) var(--ease-signature), border-color var(--dur-rapida) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .beneficiosLista li:hover {
+    border-color: var(--violet-300, #c4b5fd);
+    transform: translateX(4px);
+  }
+}
+
+.beneficioTexto {
+  font-size: 0.96rem;
   font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Número grande y tenue con la letra del logo. */
+.beneficioNumero {
+  position: absolute;
+  right: 0.8rem;
+  bottom: -0.35rem;
+  color: var(--violet-200, #ddd6fe);
+  font-family: var(--fuente-marca);
+  font-size: 2.6rem;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+:global([data-theme='dark']) .beneficioNumero {
+  color: rgba(167, 139, 250, 0.22);
 }
 
 /* Sello redondo con el degradado del logo, un poco girado. */
-.beneficioIcono {
+.beneficioIcono,
+.beneficioEmoji {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: var(--degradado-logo);
-  color: #fff;
-  font-size: 1.05rem;
   transform: rotate(-8deg);
 }
 
+.beneficioIcono {
+  background: var(--degradado-logo);
+  color: #fff;
+}
+
 .beneficioIcono svg {
-  width: 1.05rem;
-  height: 1.05rem;
-  stroke-width: 2.6;
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 2.8;
+}
+
+/* Un emoji va sobre un círculo claro con borde: se ve con su color. */
+.beneficioEmoji {
+  background: var(--violet-50, #f5f3ff);
+  box-shadow: inset 0 0 0 1.5px var(--violet-200, #ddd6fe);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+:global([data-theme='dark']) .beneficioEmoji {
+  background: rgba(167, 139, 250, 0.14);
+  box-shadow: inset 0 0 0 1.5px rgba(167, 139, 250, 0.3);
 }
 
 .cita {
@@ -144,7 +273,7 @@
 }
 
 .cita::before {
-  content: '“';
+  content: '\201C';
   position: absolute;
   top: 0.15rem;
   left: 0.8rem;
@@ -171,11 +300,15 @@
   font-weight: 600;
 }
 
-/* ── Mapa ── */
+/* ── Mapa: una tarjeta de tienda con el mapa a un lado ── */
 .mapa {
   display: flex;
-  gap: clamp(1rem, 4cqi, 2.5rem);
-  align-items: center;
+  gap: 0.75rem;
+  align-items: stretch;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 28px;
+  background: var(--color-surface);
 }
 
 .mapLeft {
@@ -184,21 +317,47 @@
 
 .mapTop {
   flex-direction: column-reverse;
-  align-items: stretch;
 }
 
 .mapBottom {
   flex-direction: column;
-  align-items: stretch;
 }
 
 .mapaTexto {
+  position: relative;
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
   min-width: 0;
+  padding: clamp(1rem, 3cqi, 2rem);
+}
+
+.mapaSello {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 0.9rem;
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  transform: rotate(-8deg);
+}
+
+.mapaSello svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.mapaEtiqueta {
+  margin: 0 0 0.6rem;
 }
 
 .mapaTitulo {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.8rem;
   font-family: var(--fuente-marca);
   font-size: calc(var(--section-title-size) * 1.05);
   font-weight: 900;
@@ -206,18 +365,40 @@
 }
 
 .mapaDescripcion {
+  width: 100%;
+  margin-bottom: 0.4rem;
+}
+
+.mapaDatos {
+  display: grid;
+  gap: 0.55rem;
   margin: 0;
-  color: var(--color-text-muted);
-  line-height: 1.6;
-  white-space: pre-line;
+  padding: 0;
+  list-style: none;
+}
+
+.mapaDatos li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.mapaDatos svg {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+  color: var(--primary-color);
 }
 
 .mapaMarco {
   flex: 0 0 var(--ancho-mapa);
   width: var(--ancho-mapa);
-  height: var(--alto-mapa);
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
+  min-height: var(--alto-mapa);
+  border-radius: 20px;
   overflow: hidden;
   background: var(--color-surface-2, #f1f0f5);
 }
@@ -226,6 +407,7 @@
   display: block;
   width: 100%;
   height: 100%;
+  min-height: var(--alto-mapa);
   border: 0;
 }
 
@@ -235,6 +417,7 @@
   justify-content: center;
   gap: 0.4rem;
   height: 100%;
+  min-height: var(--alto-mapa);
   color: var(--color-text-muted);
   font-size: 0.9rem;
 }
@@ -247,7 +430,6 @@
   .mapa,
   .mapLeft {
     flex-direction: column;
-    align-items: stretch;
   }
 
   .mapTop {
@@ -257,7 +439,11 @@
   .mapaMarco {
     flex-basis: auto;
     width: 100%;
-    height: min(var(--alto-mapa), 320px);
+    min-height: min(var(--alto-mapa), 300px);
+  }
+
+  .mapaMarco iframe {
+    min-height: min(var(--alto-mapa), 300px);
   }
 }
 
@@ -392,7 +578,7 @@
 /* ── Catálogo ── */
 .catalogo {
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
+  grid-template-columns: 264px minmax(0, 1fr);
   gap: clamp(1rem, 3cqi, 2rem);
   align-items: start;
 }
@@ -400,6 +586,10 @@
 .catalogoLado {
   position: sticky;
   top: calc(var(--altura-cabecera, 72px) + 1rem);
+  padding: 1rem 1rem 1.15rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px 22px 22px 22px;
+  background: var(--color-surface);
 }
 
 .catalogoPrincipal {
@@ -448,67 +638,146 @@
 
 .filtros {
   display: grid;
-  gap: 1.1rem;
+  gap: 1.15rem;
+}
+
+.filtrosEnHoja .filtrosCabeza {
+  display: none; /* la hoja ya trae su título */
+}
+
+.filtrosEnHoja .filtroGrupo:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.filtrosCabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.filtrosCabeza strong {
+  flex: 1;
+  font-family: var(--fuente-marca);
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.filtrosSello {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--degradado-logo);
+  color: #fff;
+  transform: rotate(-8deg);
+}
+
+.filtrosSello svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .filtroGrupo {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.55rem;
   min-width: 0;
   margin: 0;
-  padding: 0;
+  padding: 0.95rem 0 0;
   border: 0;
+  border-top: 1px dashed var(--color-border);
 }
 
 .filtroGrupo legend {
-  margin-bottom: 0.4rem;
+  float: left;
+  width: 100%;
+  margin-bottom: 0.15rem;
   padding: 0;
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 0.86rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
 }
 
-.filtro {
+.opciones {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Cada opción es un chip con su contador; el elegido se pinta violeta. */
+.filtro {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  min-height: 38px;
-  padding: 0 0.7rem;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0 0.45rem 0 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
-  font-size: 0.9rem;
-  text-align: left;
+  font-size: 0.84rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--dur-rapida) ease;
+  transition: border-color var(--dur-rapida) ease, transform var(--dur-rapida) ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filtro:not(:has(small)) {
+  padding-right: 0.8rem;
 }
 
 .filtro small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--color-hover, rgba(124, 58, 237, 0.08));
   color: var(--color-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.filtroCheck {
+  width: 0.95rem;
+  height: 0.95rem;
+  stroke-width: 3;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .filtro:hover {
-    background: var(--primary-light);
+    border-color: var(--violet-400, #a78bfa);
   }
 }
 
+.filtro:active {
+  transform: scale(0.96);
+}
+
 .filtroActivo {
-  background: var(--primary-light);
-  color: var(--primary-color);
-  font-weight: 700;
+  border-color: transparent;
+  background: var(--violet-700, #6d28d9);
+  color: #fff;
+}
+
+.filtroActivo small {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
 }
 
 .precio {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .chips {
@@ -541,13 +810,13 @@
 }
 
 .limpiar {
-  padding: 0.3rem;
+  padding: 0.3rem 0.2rem;
   border: 0;
   background: none;
-  color: var(--color-text-muted);
+  color: var(--primary-color);
   font: inherit;
   font-size: 0.82rem;
-  text-decoration: underline;
+  font-weight: 700;
   cursor: pointer;
 }
 
