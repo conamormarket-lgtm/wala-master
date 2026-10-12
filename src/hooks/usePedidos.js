@@ -76,15 +76,18 @@ export const usePedidos = (_initialDni, initialUserId) => {
   const cargar = useCallback(async (userId, { forzar = false } = {}) => {
     const clave = claveCache(userId ?? initialUserId);
 
-    if (!forzar && clave && cachePedidos.clave === clave && cachePedidos.data) {
+    // Con copia en memoria se muestra al instante y se actualiza por detrás. Antes
+    // se devolvía la copia y no se volvía a pedir en toda la sesión: un pedido
+    // recién pagado seguía "Pendiente de pago" hasta recargar la página.
+    const enSegundoPlano = !forzar && !!clave && cachePedidos.clave === clave && !!cachePedidos.data;
+    if (enSegundoPlano) {
       setData(cachePedidos.data);
       setError(null);
       setLoading(false);
-      return;
+    } else {
+      setLoading(true);
+      setError(null);
     }
-
-    setLoading(true);
-    setError(null);
 
     try {
       const { pedidos: crudos, pendientes, emailVerificado } = await cargarMisPedidos();
@@ -112,9 +115,10 @@ export const usePedidos = (_initialDni, initialUserId) => {
       setData(result);
     } catch (err) {
       console.warn('[Mis Pedidos] carga:', err);
-      setError('No se pudieron cargar tus pedidos. Revisa tu conexión e inténtalo de nuevo.');
+      // Si ya se mostraba la copia, un fallo de la actualización no la tapa con un error.
+      if (!enSegundoPlano) setError('No se pudieron cargar tus pedidos. Revisa tu conexión e inténtalo de nuevo.');
     } finally {
-      setLoading(false);
+      if (!enSegundoPlano) setLoading(false);
     }
   }, [initialUserId]);
 
