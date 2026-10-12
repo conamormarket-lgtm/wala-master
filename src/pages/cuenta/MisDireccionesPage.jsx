@@ -6,7 +6,7 @@ import { GlassCard } from '../../components/ui';
 import { T } from '../../i18n/useTranslatedText';
 import { obtenerDirecciones, guardarDirecciones, MAX_DIRECCIONES } from '../../services/direcciones';
 import { DEPARTAMENTOS, getProvincias } from '../../constants/peruUbigeo';
-import { lugarLegible, distritosSugeridos, distritoEnLugar } from '../../utils/ubicacionErp';
+import { lugarLegible, distritosSugeridos, distritoEnLugar, distritoDeLista, esExtranjero } from '../../utils/ubicacionErp';
 import styles from './MisDireccionesPage.module.css';
 
 const CIUDADES = { Lima: 'Lima Metropolitana', Callao: 'Callao', Provincias: 'Otras Provincias' };
@@ -17,8 +17,13 @@ const validar = (d) => {
   if (d.customerName.trim().length < 3) return 'Escribe el nombre de quien recibe.';
   if (d.dni.trim().length < 6) return 'Escribe un número de documento válido.';
   if (d.phone.replace(/\D/g, '').length < 6) return 'Escribe un teléfono válido.';
-  if (d.city === 'Provincias' && (!d.department || !d.province)) return 'Elige el departamento y la provincia.';
-  if (!d.district.trim()) return 'Escribe el distrito.';
+  if (esExtranjero(d.country)) {
+    if (!d.province.trim()) return 'Escribe la región o estado.';
+    if (!d.district.trim()) return 'Escribe la ciudad.';
+  } else {
+    if (d.city === 'Provincias' && (!d.department || !d.province)) return 'Elige el departamento y la provincia.';
+    if (!d.district.trim() || !distritoEnLugar(d, d.district)) return 'Elige el distrito.';
+  }
   if (d.address.trim().length < 5) return 'Escribe la dirección exacta.';
   return null;
 };
@@ -111,14 +116,20 @@ const MisDireccionesPage = () => {
     }),
   });
 
-  // Distrito: texto libre con los distritos del lugar elegido como sugerencias.
+  // Distrito: en el Perú se elige de la lista del lugar (igual que en el checkout).
+  const distritosDelLugar = distritosSugeridos(form);
   const campoDistrito = (
     <label className={styles.campo}>
       <span>Distrito</span>
-      <input {...campo('district')} autoComplete="address-level2" list="direcciones-distritos" />
-      <datalist id="direcciones-distritos">
-        {distritosSugeridos(form).map((d) => <option key={d} value={d} />)}
-      </datalist>
+      <select
+        {...campo('district')}
+        value={distritoDeLista(form, form.district)}
+        autoComplete="off"
+        disabled={distritosDelLugar.length === 0}
+      >
+        <option value="">{distritosDelLugar.length ? 'Elige…' : 'Primero la provincia'}</option>
+        {distritosDelLugar.map((d) => <option key={d} value={d}>{d}</option>)}
+      </select>
     </label>
   );
 
@@ -208,6 +219,20 @@ const MisDireccionesPage = () => {
             </div>
             </>
             )}
+            {esExtranjero(form.country) ? (
+              // Dirección fuera del Perú (guardada desde el checkout): región y ciudad escritas.
+              <div className={styles.fila}>
+                <label className={styles.campo}>
+                  <span>Región / Estado</span>
+                  <input {...campo('province')} autoComplete="address-level1" />
+                </label>
+                <label className={styles.campo}>
+                  <span>Ciudad</span>
+                  <input {...campo('district')} autoComplete="address-level2" />
+                </label>
+              </div>
+            ) : (
+            <>
             <div className={styles.fila}>
               <label className={styles.campo}>
                 <span>Ciudad / Región</span>
@@ -243,6 +268,8 @@ const MisDireccionesPage = () => {
                 </label>
                 {campoDistrito}
               </div>
+            )}
+            </>
             )}
             <label className={styles.campo}>
               <span>Dirección exacta</span>

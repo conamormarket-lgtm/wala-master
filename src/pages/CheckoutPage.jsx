@@ -43,7 +43,7 @@ import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/d
 // Uso SOLO presentacional (aditivo); no altera lógica de compra/pago/totales.
 import { GlassCard, GlassButton, Badge, AuroraBackground } from '../components/ui';
 import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
-import { ubicacionErp, lugarLegible, distritosSugeridos, distritoEnLugar } from '../utils/ubicacionErp';
+import { ubicacionErp, lugarLegible, distritosSugeridos, distritoEnLugar, distritoDeLista, esExtranjero } from '../utils/ubicacionErp';
 import styles from './CheckoutPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -96,19 +96,20 @@ const validationSchema = Yup.object({
     .min(3, 'Documento inválido (mínimo 3 caracteres)'),
   phone: Yup.string().required('Teléfono requerido'),
   address: Yup.string().required('Dirección requerida'),
-  district: Yup.string().required('Distrito requerido'),
+  // En el Perú el distrito sale de la lista del lugar elegido; fuera, es la ciudad escrita.
+  district: Yup.string()
+    .required('Distrito requerido')
+    .test('distrito-del-lugar', 'Elige un distrito de la lista', function (valor) {
+      return distritoEnLugar(this.parent, valor);
+    }),
   city: Yup.string().required('Ciudad requerida'),
   // Fuera de Lima y Callao el envío va por agencia: el ERP necesita departamento y provincia.
-  department: Yup.string().when('city', {
-    is: 'Provincias',
-    then: (s) => s.required('Elige el departamento'),
-    otherwise: (s) => s.notRequired(),
-  }),
-  province: Yup.string().when('city', {
-    is: 'Provincias',
-    then: (s) => s.required('Elige la provincia'),
-    otherwise: (s) => s.notRequired(),
-  }),
+  department: Yup.string().when(['city', 'country'], ([city, country], s) =>
+    (!esExtranjero(country) && city === 'Provincias') ? s.required('Elige el departamento') : s.notRequired()),
+  // Provincia del ubigeo, o la región/estado escrita fuera del Perú.
+  province: Yup.string().when(['city', 'country'], ([city, country], s) =>
+    esExtranjero(country) ? s.required('Escribe tu región o estado')
+      : city === 'Provincias' ? s.required('Elige la provincia') : s.notRequired()),
   email: Yup.string().email('Email inválido').required('Email requerido'),
   isGiftMode: Yup.boolean(),
   giftRecipientName: Yup.string().when('isGiftMode', {
@@ -1281,8 +1282,8 @@ const CheckoutPage = () => {
           address: values.address,
           district: values.district,
           city: values.city,
-          department: values.city === 'Provincias' ? values.department : '',
-          province: values.city === 'Provincias' ? values.province : '',
+          department: values.city === 'Provincias' && !esExtranjero(values.country) ? values.department : '',
+          province: values.city === 'Provincias' || esExtranjero(values.country) ? values.province : '',
           email: values.email,
         };
         try {
@@ -1571,24 +1572,40 @@ const CheckoutPage = () => {
     Object.entries(conDistrito).forEach(([campo, valor]) => setFieldValue(campo, valor, false));
   };
 
-  // Distrito: texto libre con los distritos del lugar elegido como sugerencias.
-  const sugerenciasDistrito = distritosSugeridos(formik.values);
+  // Distrito: en el Perú se elige de la lista del lugar (escrito a mano llegaban
+  // distritos de otro sitio, y el autocompletado del navegador metía los suyos).
+  // Fuera del Perú es la ciudad, escrita.
+  const extranjero = esExtranjero(formik.values.country);
+  const distritosDelLugar = distritosSugeridos(formik.values);
+  const estiloSelect = { padding: '0.8rem 1rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem' };
   const campoDistrito = (
     <div className={styles.field}>
-      <label>Distrito *</label>
-      <input
-        type="text"
-        name="district"
-        autoComplete="address-level2"
-        list="checkout-distritos"
-        value={formik.values.district}
-        onChange={formik.handleChange}
-        onBlur={formik.handleBlur}
-        placeholder={formik.values.city === 'Provincias' ? 'Ej: Yanahuara' : 'Ej: Miraflores'}
-      />
-      <datalist id="checkout-distritos">
-        {sugerenciasDistrito.map((d) => <option key={d} value={d} />)}
-      </datalist>
+      <label>{extranjero ? <T>Ciudad *</T> : 'Distrito *'}</label>
+      {extranjero ? (
+        <input
+          type="text"
+          name="district"
+          autoComplete="address-level2"
+          value={formik.values.district}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          placeholder="Ej: Santiago"
+        />
+      ) : (
+        <select
+          name="district"
+          autoComplete="off"
+          value={distritoDeLista(formik.values, formik.values.district)}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          disabled={distritosDelLugar.length === 0}
+          className={styles.selectInput}
+          style={estiloSelect}
+        >
+          <option value="">{distritosDelLugar.length ? 'Elige…' : 'Primero la provincia'}</option>
+          {distritosDelLugar.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      )}
       {formik.touched.district && formik.errors.district && (
         <span className={styles.error}>{formik.errors.district}</span>
       )}
@@ -2055,6 +2072,11 @@ const CheckoutPage = () => {
                 value={formik.values.country}
                 onChange={(code) => {
                   countryTouchedRef.current = true;
+                  // Perú usa el ubigeo y fuera se escriben región y ciudad: al cruzar
+                  // esa frontera, lo elegido antes ya no sirve.
+                  if (esExtranjero(code) !== esExtranjero(formik.values.country)) {
+                    ['department', 'province', 'district'].forEach((c) => setFieldValue(c, '', false));
+                  }
                   formik.setFieldValue('country', code);
                 }}
               />
@@ -2157,6 +2179,27 @@ const CheckoutPage = () => {
             </div>
 
 
+            {extranjero ? (
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <label><T>Región / Estado *</T></label>
+                  <input
+                    type="text"
+                    name="province"
+                    autoComplete="address-level1"
+                    value={formik.values.province}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    placeholder="Ej: Región Metropolitana"
+                  />
+                  {formik.touched.province && formik.errors.province && (
+                    <span className={styles.error}>{formik.errors.province}</span>
+                  )}
+                </div>
+                {campoDistrito}
+              </div>
+            ) : (
+            <>
             <div className={styles.row}>
               <div className={styles.field}>
                 <label><T>Ciudad / Región *</T></label>
@@ -2222,6 +2265,8 @@ const CheckoutPage = () => {
                 </div>
                 {campoDistrito}
               </div>
+            )}
+            </>
             )}
 
             <div className={styles.field}>
