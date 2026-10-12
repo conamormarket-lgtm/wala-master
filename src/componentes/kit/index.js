@@ -22,3 +22,8 @@ export {
   Testimonios, PreguntasFrecuentes, MarcasMarquesina, GrillaCategorias, REGISTRO_SECCIONES, RenderSecciones,
 } from './Secciones';
 export { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados, videoIncrustado } from './SeccionesContenido';
+export { BannerPrincipal, ListaBeneficios, Ubicacion, urlDeMapa, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
+export { default as PanelEditor, useBorrador, actualizarAjustes, insertarSeccion, moverSeccion, duplicarSeccion, quitarSeccion, nuevoIdSeccion } from './editor/PanelEditor';
+export { SeccionEditable, InsertarAqui } from './editor/SeccionEditable';
+export { FormularioSeccion, ProveedorEditor } from './editor/CamposEditor';
+export { ESQUEMAS, GRUPOS_MODULOS, esquemaDe, ajustesIniciales, resumenDe } from './editor/esquemas';

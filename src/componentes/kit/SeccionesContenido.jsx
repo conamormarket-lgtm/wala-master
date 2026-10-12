@@ -24,13 +24,13 @@ import s from './SeccionesContenido.module.css';
  * sobre fondo negro. Se tratan como "sin color" para que mande el tema.
  */
 const COLORES_DE_FABRICA = new Set(['#000', '#000000', '#333', '#333333', '#666', '#666666']);
-const colorPropio = (c) => {
+export const colorPropio = (c) => {
   const v = String(c || '').trim().toLowerCase();
   return v && v !== 'transparent' && !COLORES_DE_FABRICA.has(v) ? c : undefined;
 };
 
 /** Fuente elegida en el editor para un campo (`${campo}FontSize`, …). */
-const fuenteDe = (a, campo) => ({
+export const fuenteDe = (a, campo) => ({
   fontFamily: a[`${campo}FontFamily`] || undefined,
   fontSize: a[`${campo}FontSize`] || undefined,
   fontWeight: a[`${campo}FontWeight`] || undefined,
@@ -42,7 +42,7 @@ const fuenteDe = (a, campo) => ({
  * TextStyleControl): `${campo}Align`, `${campo}Underline`, `${campo}Bg` y
  * `${campo}Link`. Vacíos = texto normal.
  */
-function TextoCampo({ ajustes, campo, como: Etiqueta = 'p', className, style, children }) {
+export function TextoCampo({ ajustes, campo, como: Etiqueta = 'p', className, style, children }) {
   if (children == null || children === '') return null;
   const fondo = colorPropio(ajustes[`${campo}Bg`]);
   const subrayado = !!ajustes[`${campo}Underline`];
@@ -66,7 +66,7 @@ function TextoCampo({ ajustes, campo, como: Etiqueta = 'p', className, style, ch
 }
 
 /** Botón opcional de la sección (buttonText + buttonLink). Violeta liso salvo que el editor fije color. */
-function BotonDeAjustes({ ajustes }) {
+export function BotonDeAjustes({ ajustes }) {
   const { buttonText, buttonLink, buttonBgColor, buttonTextColor } = ajustes;
   if (!buttonText || !buttonLink) return null;
   const propio = buttonBgColor
@@ -193,7 +193,7 @@ const FORMATOS_VIDEO = {
   '9:16': { proporcion: '9 / 16', ancho: '450px', alto: 'min(68dvh, 520px)' },
 };
 
-const prefiereQuieto = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const prefiereQuieto = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * Video del builder. Los archivos (.mp4) se reproducen solo mientras se ven

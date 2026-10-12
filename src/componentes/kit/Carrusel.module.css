@@ -1,17 +1,21 @@
 .carrusel {
-  --visibles: var(--visibles-escritorio);
-
+  /* Cuántos caben depende del ancho del carrusel, no de la ventana. */
+  container-type: inline-size;
   position: relative;
 }
 
-@media (max-width: 1024px) {
-  .carrusel {
+.pista {
+  --visibles: var(--visibles-escritorio);
+}
+
+@container (max-width: 1000px) {
+  .pista {
     --visibles: var(--visibles-tablet);
   }
 }
 
-@media (max-width: 640px) {
-  .carrusel {
+@container (max-width: 620px) {
+  .pista {
     --visibles: var(--visibles-movil);
   }
 }

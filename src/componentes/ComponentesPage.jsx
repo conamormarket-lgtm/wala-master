@@ -17,6 +17,7 @@ import {
   accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto, RenderSecciones,
 } from './kit';
 import s from './ComponentesPage.module.css';
+import DemoEditor from './DemoEditor';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
 import FRENTE_BLANCO from './demo/polera-fondo-blanco.jpg';
 import ESPALDA_BLANCO from './demo/polera-fondo-blanco-espalda.jpg';
@@ -37,6 +38,7 @@ const SECCIONES = [
   ['navegacion', 'Navegación'],
   ['menus', 'Menús'],
   ['builder', 'Builder'],
+  ['editor', 'Editor'],
   ['carrito', 'Carrito'],
   ['pedidos', 'Pedidos'],
   ['avisos', 'Avisos'],
@@ -877,9 +879,25 @@ function Contenido({ tema, cambiarTema }) {
           </Revelar>
         </Seccion>
 
+        {/* ── EDITOR DEL BUILDER ── */}
+        <Seccion
+          id="editor" numero="09" titulo="Editor del builder"
+          descripcion="El mismo editor para todas las secciones: cada tipo describe sus campos una vez y el panel los dibuja. Toca una sección de la página o elígela en el panel, cambia textos, colores o fotos y mira el cambio al instante. Arrastra las filas para reordenar, usa el + entre secciones para insertar y Ctrl+Z para deshacer."
+          mejoras={['1 formulario por esquema en vez de 30 copiados', 'Colores con opción «del tema» (modo noche)', 'Fechas en hora de Perú', 'Deshacer y rehacer', 'Eliminar sin ventanas del navegador', 'Hoja inferior en el celular']}
+        >
+          <DemoEditor
+            productos={PRODUCTOS_DEMO}
+            marcas={MARCAS_DEMO}
+            categorias={SECCIONES_DEMO.find((x) => x.type === 'category_grid').settings.items}
+            categoriaDe={(p) => EXTRAS_DEMO[p.id]?.categoria}
+            imagenes={{ taller: ESPALDA_BLANCO }}
+            onAgregar={manejarAgregar}
+          />
+        </Seccion>
+
         {/* ── CARRITO ── */}
         <Seccion
-          id="carrito" numero="09" titulo="Carrito y resumen"
+          id="carrito" numero="10" titulo="Carrito y resumen"
           descripcion="Funciona de verdad: sube la cantidad hasta pasar S/ 150 y mira qué pasa. Prueba el cupón WALA10."
           mejoras={['Camión que avanza hacia el envío gratis', 'Confeti al llegar a la meta', 'Totales que corren', 'Quitar con animación']}
         >
@@ -927,7 +945,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── PEDIDOS ── */}
         <Seccion
-          id="pedidos" numero="10" titulo="Mis pedidos"
+          id="pedidos" numero="11" titulo="Mis pedidos"
           descripcion="Una sola tarjeta con resumen, seguimiento y la acción que toca."
           mejoras={['La línea se dibuja al aparecer', 'El paso actual late', 'Si falta pagar, el borde respira en ámbar', 'Copiar con burbuja']}
         >
@@ -963,7 +981,7 @@ function Contenido({ tema, cambiarTema }) {
 
         {/* ── AVISOS ── */}
         <Seccion
-          id="avisos" numero="11" titulo="Avisos y estados"
+          id="avisos" numero="12" titulo="Avisos y estados"
           descripcion="Si llegan varias notificaciones se apilan como en el celular; tócalas (o pasa el ratón) para desplegarlas y usa “Ver todas” para abrir el centro."
           mejoras={['Avisos limpios, sin franjas', 'Notificaciones apiladas', 'Centro con todas las notificaciones', 'Desliza un toast para cerrarlo']}
         >

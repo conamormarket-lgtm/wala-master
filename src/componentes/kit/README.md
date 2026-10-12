@@ -58,6 +58,8 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Seccion.jsx` | `BloqueSeccion`, `TituloSeccion`, `tituloDesdeAjustes` | Relleno, fondo y título iguales en todas las secciones |
 | `Secciones.jsx` | `BarraAnuncios`, `HeroCarrusel`, `InsigniasConfianza`, `CarruselProductos`, `OfertaRelampago`, `Testimonios`, `PreguntasFrecuentes`, `MarcasMarquesina`, `GrillaCategorias`, `RenderSecciones`, `REGISTRO_SECCIONES` | Secciones del builder; reciben el mismo `settings` que guarda Firestore |
 | `SeccionesContenido.jsx` | `Encabezado`, `BloqueTexto`, `BloqueImagen`, `BloqueVideo`, `MosaicoBanners`, `FilaDestacados`, `videoIncrustado` | Secciones de contenido del builder (header, text, image, video, banner_grid, bestsellers_row) |
+| `SeccionesExtra.jsx` | `BannerPrincipal`, `ListaBeneficios`, `Ubicacion`, `NavCategorias`, `GrillaProductos`, `CatalogoConFiltros`, `PiePagina` | Resto de secciones (hero_banner, feature_list, map_location, categories_nav, featured_products, product_grid, sidebar_catalog, footer_columns) |
+| `editor/` | `PanelEditor`, `useBorrador`, `SeccionEditable`, `InsertarAqui`, `FormularioSeccion`, `ESQUEMAS` | Editor del builder armado por esquemas (ver abajo) |
 | `Efectos.jsx` | `Revelar`, `useContador`, `Estallido`, `useBloquearScroll`, `useCerrarConAtras`, `esApp` | Utilidades de animación y de app |
 
 ## Ejemplos rápidos
@@ -120,16 +122,18 @@ Una página del builder (`pages/{pageId}` en Firestore) se dibuja así:
 />
 ```
 
-Ya cubiertos: `announcement_bar`, `hero_carousel`, `trust_badges`,
-`featured_carousel`, `new_arrivals_carousel`, `sale_carousel`,
-`category_carousel`, `collection_carousel`, `flash_sales`, `testimonials`,
-`faq_accordion`, `marquee`, `category_grid`, `header`, `text`, `image`,
-`video`, `banner_grid`, `bestsellers_row`. El resto sigue con el switch de
-`TiendaPage.jsx` mediante `respaldo`.
+Ya cubiertos: todos los tipos del builder menos `conversion_fold` y
+`landing_payment`, que son de la landing del reloj (cacherito) y siguen con su
+componente vía `respaldo`.
 
-Faltan: `hero_banner`, `featured_products`, `product_grid`, `sidebar_catalog`,
-`categories_nav`, `map_location`, `feature_list`, `conversion_fold`,
-`landing_payment`, `footer_columns`.
+Props de página por sección con `propsPara(sec)`: `{ cargando, hayMas,
+onCargarMas, cargandoMas }` en grillas, `{ grupos, seleccion, onFiltrar,
+busqueda, onBuscar, precio, onPrecio }` en el catálogo, `{ activa,
+onSeleccionar }` en categories_nav y `{ onClicBoton }` en hero_banner.
+
+Las secciones se acomodan al ancho de su contenedor (container queries en
+`BloqueSeccion` y en `Carrusel`), no al de la ventana: la vista de celular del
+editor se ve igual que en un celular.
 
 Notas de las secciones de contenido:
 
@@ -158,3 +162,48 @@ simple a lo más conectado, comprobando cada paso:
 4. Carrito, checkout y Mis pedidos.
 5. `Cabecera` y `BarraInferior` (alimentadas por AuthContext, CartContext y la
    configuración de Firestore).
+
+## Editor del builder (`editor/`)
+
+Reemplaza a VisualEditorPanel + EditableSection + ModuleInserter. Cada tipo
+de sección describe sus campos una sola vez en `editor/esquemas.js` (mismos
+nombres que guarda Firestore y que escribe el editor de hoy) y
+`FormularioSeccion` los dibuja en tres pestañas: Contenido, Diseño y Fondo y
+espacio. Se ve en `/componentes.html#editor`.
+
+```jsx
+const borrador = useBorrador(seccionesDeFirestore);   // deshacer/rehacer y "sin publicar"
+
+<RenderSecciones
+  secciones={borrador.secciones}
+  envolver={(sec, nodo, i) => (
+    <>
+      <InsertarAqui indice={i} onInsertar={setInsertarEn} />
+      <SeccionEditable id={sec.id} tipo={sec.type} activa={sel === sec.id} onEditar={setSel}>{nodo}</SeccionEditable>
+    </>
+  )}
+  …
+/>
+<PanelEditor
+  secciones={borrador.secciones} onCambiar={borrador.cambiar}
+  seleccionada={sel} onSeleccionar={setSel} insertarEn={insertarEn} onInsertarEn={setInsertarEn}
+  crearAjustes={getDefaultSettings}                       // de services/storefront.js
+  fuentes={{ colecciones, categorias, marcas, subirArchivo: uploadFile }}
+  extensiones={{ burbujasDeMarca: ({ ajustes }) => <CategoryNavEditor brandId={ajustes.brandId} /> }}
+  onGuardar={publicar} guardando={…} sinGuardar={borrador.sinGuardar}
+  onDeshacer={borrador.deshacer} onRehacer={borrador.rehacer}
+  puedeDeshacer={borrador.puedeDeshacer} puedeRehacer={borrador.puedeRehacer}
+  vista={vista} onVista={setVista} lado={lado} onLado={setLado} onCerrar={salir}
+  ajustesPagina={<TemaYVisibilidad />}
+/>
+```
+
+- Escritorio: panel fijo a un lado (se cambia de lado). Celular/app: hoja
+  inferior que se agranda; la página queda visible arriba.
+- Colores con opción "del tema" (guarda `''`): el modo noche sigue funcionando.
+- Fechas en hora local (el editor de hoy mostraba UTC, 5 h corrida).
+- Eliminar pide confirmación en el mismo botón (sin `window.confirm`); publicar
+  no usa `alert` (la página decide: toast).
+- Ctrl+Z / Ctrl+Shift+Z fuera de los campos y Ctrl+S para publicar.
+- Arrastrar filas para reordenar (o flechas), duplicar secciones y elementos.
+- `feature_list` por fin se puede editar completo (antes solo el título).

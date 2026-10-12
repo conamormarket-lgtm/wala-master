@@ -5,6 +5,9 @@
 }
 
 .contenido {
+  /* Contenedor: las secciones se acomodan a SU ancho, no al de la ventana
+     (así la vista de celular del editor se ve como en un celular). */
+  container-type: inline-size;
   position: relative;
   width: 100%;
   max-width: var(--content-max, 1280px);

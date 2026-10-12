@@ -13,6 +13,7 @@ import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
+import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
 import s from './Secciones.module.css';
 
 /*
@@ -294,7 +295,21 @@ export const REGISTRO_SECCIONES = {
   video: { Componente: BloqueVideo },
   banner_grid: { Componente: MosaicoBanners, marcas: true },
   bestsellers_row: { Componente: FilaDestacados },
+  hero_banner: { Componente: BannerPrincipal },
+  feature_list: { Componente: ListaBeneficios },
+  map_location: { Componente: Ubicacion },
+  categories_nav: { Componente: NavCategorias, categorias: true },
+  featured_products: { Componente: GrillaProductos, productos: true },
+  product_grid: { Componente: GrillaProductos, productos: true },
+  sidebar_catalog: { Componente: CatalogoConFiltros, productos: true },
+  footer_columns: { Componente: PiePagina },
 };
+
+/*
+ * Fuera del kit a propósito: conversion_fold y landing_payment son de la
+ * landing del reloj (cacherito) y siguen con su propio componente vía
+ * `respaldo`.
+ */
 
 /**
  * Dibuja una página del builder: `secciones` = [{ id, type, order, settings }]
@@ -308,13 +323,20 @@ export const REGISTRO_SECCIONES = {
  *  - marcasPara(seccion) → marcas de tienda_brands (banner_grid con
  *    dataSource 'brands'); la sección las traduce con tarjetaDesdeMarca.
  *  - onAgregar(producto) → devuelve el handler del botón de esa tarjeta
+ *  - propsPara(seccion) → props extra de esa sección que dependen de la
+ *    página: { cargando, hayMas, onCargarMas } en grillas, { grupos,
+ *    seleccion, onFiltrar } en el catálogo, { activa, onSeleccionar } en
+ *    categories_nav, { onClicBoton } en hero_banner…
+ *  - envolver(seccion, nodo, indice) → para el editor: envuelve cada sección
+ *    (p. ej. con <SeccionEditable>) sin que RenderSecciones lo conozca.
  */
-export function RenderSecciones({ secciones = [], productosPara, categoriasPara, marcasPara, onAgregar, respaldo }) {
+export function RenderSecciones({ secciones = [], productosPara, categoriasPara, marcasPara, propsPara, onAgregar, respaldo, envolver }) {
   return [...secciones]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((sec, indice) => {
       const reg = REGISTRO_SECCIONES[sec.type];
-      if (!reg) return respaldo ? <React.Fragment key={sec.id}>{respaldo(sec)}</React.Fragment> : null;
+      const conMarco = (nodo) => (envolver ? <React.Fragment key={sec.id}>{envolver(sec, nodo, indice)}</React.Fragment> : nodo);
+      if (!reg) return conMarco(respaldo ? <React.Fragment key={sec.id}>{respaldo(sec)}</React.Fragment> : null);
       const { Componente } = reg;
       const extra = {};
       if (reg.productos) extra.productos = productosPara?.(sec) || [];
@@ -322,8 +344,9 @@ export function RenderSecciones({ secciones = [], productosPara, categoriasPara,
       if (reg.marcas) extra.marcas = marcasPara?.(sec) || [];
       if (indice === 0) extra.primera = true; // lo primero que se ve: sin carga diferida
       if (reg.productos) extra.onAgregar = onAgregar;
+      Object.assign(extra, propsPara?.(sec));
       const ajustes = sec.settings || {};
-      return (
+      return conMarco(
         <BloqueSeccion
           key={sec.id}
           ajustes={reg.sinRelleno ? { ...ajustes, paddingTop: '0', paddingBottom: '0' } : ajustes}

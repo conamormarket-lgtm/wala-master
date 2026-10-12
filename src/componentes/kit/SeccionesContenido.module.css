@@ -345,13 +345,13 @@
   list-style: none;
 }
 
-@media (max-width: 900px) {
+@container (max-width: 900px) {
   .banners {
     grid-template-columns: repeat(min(2, var(--columnas)), minmax(0, 1fr));
   }
 }
 
-@media (max-width: 560px) {
+@container (max-width: 560px) {
   .banners {
     grid-template-columns: 1fr;
   }

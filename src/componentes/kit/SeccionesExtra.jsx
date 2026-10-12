@@ -1,0 +1,473 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, LayoutGrid, MapPin, SlidersHorizontal, X, MessageCircle, Music2, Mail } from 'lucide-react';
+import Boton from './Boton';
+import Marquesina from './Marquesina';
+import TarjetaProducto, { TarjetaProductoEsqueleto } from './TarjetaProducto';
+import { Enlace } from './Enlace';
+import { Buscador, Campo } from './Formulario';
+import { EstadoVacio, HojaInferior } from './Feedback';
+import { TituloSeccion, tituloDesdeAjustes } from './Seccion';
+import { tarjetaDesdeProducto } from './adaptadores';
+import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
+import { toDirectImageUrl } from '../../utils/imageUrl';
+import s from './SeccionesExtra.module.css';
+
+/*
+ * Resto de secciones del builder: banner principal, beneficios, mapa,
+ * navegación de categorías, grillas de productos, catálogo con filtros y pie
+ * de página. Mismos campos de `settings` que getDefaultSettings
+ * (src/pages/Tienda/services/storefront.js). Lo que sale de consultas
+ * (productos, categorías, estado de filtros) entra por props.
+ */
+
+/* ── Banner principal (hero_banner) ─────────────────────── */
+const POSICION_VERTICAL = { 'flex-start': 'flex-start', top: 'flex-start', center: 'center', 'flex-end': 'flex-end', bottom: 'flex-end' };
+
+/**
+ * Imagen o video de fondo con título, subtítulo y botón encima.
+ *  - primera: es lo primero de la página → la imagen se pide con prioridad.
+ *  - onClicBoton: para medir clics (la tienda llama a trackBannerClick).
+ */
+export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) {
+  const {
+    mediaType = 'image', mediaUrl, thumbnailUrl, title, subtitle, buttonText, buttonLink,
+    textAlign = 'center', textPosition = 'center', overlayOpacity = 40, minHeight = '600px',
+    titleColor, subtitleColor, buttonBgColor, buttonTextColor,
+  } = ajustes;
+  const video = useRef(null);
+  const esVideo = mediaType === 'video' && mediaUrl;
+
+  // El video de fondo solo corre mientras se ve (y nunca con "reducir movimiento").
+  useEffect(() => {
+    const v = video.current;
+    if (!v || prefiereQuieto()) return undefined;
+    v.muted = true;
+    const io = new IntersectionObserver(([e]) => (e.isIntersecting ? v.play().catch(() => {}) : v.pause()), { threshold: 0.2 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, [mediaUrl, esVideo]);
+
+  if (!mediaUrl && !title && !subtitle) return null;
+  const velo = Math.min(100, Math.max(0, Number(overlayOpacity) || 0)) / 100;
+  const alinear = { left: 'flex-start', right: 'flex-end' }[textAlign] || 'center';
+
+  return (
+    <div className={s.banner} style={{ '--alto': minHeight }}>
+      <div className={s.bannerMedio}>
+        {esVideo ? (
+          <video ref={video} src={mediaUrl} poster={thumbnailUrl || undefined} muted loop playsInline preload="none" aria-hidden="true" />
+        ) : mediaUrl ? (
+          <img
+            src={toDirectImageUrl(mediaUrl)}
+            alt=""
+            loading={primera ? 'eager' : 'lazy'}
+            fetchpriority={primera ? 'high' : undefined}
+            decoding="async"
+          />
+        ) : null}
+      </div>
+      <span
+        className={s.bannerVelo}
+        style={{ background: `linear-gradient(to bottom, rgba(0,0,0,${velo * 0.2}), rgba(0,0,0,${velo * 0.7}) 50%, rgba(0,0,0,${velo}))` }}
+      />
+      <div
+        className={s.bannerTexto}
+        style={{ justifyContent: POSICION_VERTICAL[textPosition] || 'center', alignItems: alinear, textAlign }}
+      >
+        <TextoCampo ajustes={ajustes} campo="title" como="h1" className={s.bannerTitulo} style={{ color: titleColor || '#fff', ...fuenteDe(ajustes, 'title') }}>
+          {title}
+        </TextoCampo>
+        <TextoCampo ajustes={ajustes} campo="subtitle" className={s.bannerSubtitulo} style={{ color: subtitleColor || '#fff', ...fuenteDe(ajustes, 'subtitle') }}>
+          {subtitle}
+        </TextoCampo>
+        {buttonText && buttonLink && (
+          <Boton
+            to={buttonLink}
+            tamano="lg"
+            variante="contorno"
+            onClick={onClicBoton}
+            className={s.bannerBoton}
+            style={{ '--b-fondo': buttonBgColor || '#fff', '--b-fondo-hover': buttonBgColor || '#fff', '--b-texto': buttonTextColor || '#111827', '--b-borde': 'transparent' }}
+          >
+            {buttonText}
+          </Boton>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Lista de beneficios (feature_list) ─────────────────── */
+export function ListaBeneficios({ ajustes = {} }) {
+  const items = (ajustes.items || []).filter((i) => i?.text);
+  if (!items.length && !ajustes.title) return null;
+  return (
+    <div className={[s.beneficios, ajustes.imageUrl && s.beneficiosConFoto].filter(Boolean).join(' ')}>
+      {ajustes.imageUrl && (
+        <img className={s.beneficiosFoto} src={toDirectImageUrl(ajustes.imageUrl)} alt={ajustes.imageAlt || ''} loading="lazy" decoding="async" />
+      )}
+      <div>
+        <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} />
+        {items.length > 0 && (
+          <ul className={s.beneficiosLista}>
+            {items.map((it, k) => (
+              <li key={k}>
+                <span className={s.beneficioIcono} aria-hidden="true">
+                  {!it.icon || it.icon === '✓' ? <Check /> : it.icon}
+                </span>
+                <span>{it.text}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {ajustes.quote && (
+          <blockquote className={s.cita}>
+            <p>{ajustes.quote}</p>
+            {ajustes.quoteAuthor && <cite>— {ajustes.quoteAuthor}</cite>}
+          </blockquote>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Ubicación (map_location) ───────────────────────────── */
+
+/** Dirección del mapa: acepta la URL o el <iframe> entero que da Google Maps. Solo http(s). */
+export function urlDeMapa(embed) {
+  const crudo = String(embed || '').trim();
+  const src = crudo.match(/src="([^"]+)"/)?.[1] || crudo;
+  return /^https:\/\//i.test(src) ? src : '';
+}
+
+export function Ubicacion({ ajustes = {} }) {
+  const { title, description, layout = 'mapRight', mapWidth = '50%', mapHeight = '400px' } = ajustes;
+  const src = urlDeMapa(ajustes.embedUrl);
+  if (!src && !title) return null;
+  const apilado = layout === 'mapTop' || layout === 'mapBottom';
+  return (
+    <div className={[s.mapa, s[layout] || s.mapRight].filter(Boolean).join(' ')} style={{ '--ancho-mapa': apilado ? '100%' : mapWidth, '--alto-mapa': mapHeight }}>
+      <div className={s.mapaTexto}>
+        <TextoCampo ajustes={ajustes} campo="title" como="h2" className={s.mapaTitulo}>{title}</TextoCampo>
+        <TextoCampo ajustes={ajustes} campo="description" className={s.mapaDescripcion}>{description}</TextoCampo>
+        <BotonDeAjustes ajustes={ajustes} />
+      </div>
+      <div className={s.mapaMarco}>
+        {src ? (
+          <iframe src={src} title={title || 'Ubicación'} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />
+        ) : (
+          <span className={s.mapaVacio}><MapPin aria-hidden="true" /> Falta el enlace de Google Maps</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Navegación de categorías (categories_nav) ──────────── */
+
+/** Color estable para la burbuja sin foto (mismo nombre → mismo color). */
+const tonoDe = (texto) => {
+  let h = 0;
+  for (const c of String(texto || '')) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return `hsl(${Math.abs(h) % 360} 55% 82%)`;
+};
+
+/**
+ * Burbujas con miniatura. Dos modos, como en la tienda:
+ *  - con `onSeleccionar`: filtran el catálogo de la misma página (botones);
+ *    la primera es "Todos" (null).
+ *  - sin él: enlazan a `?categoria=ID` (o a `url` si la categoría la trae).
+ *  - activa: id de la categoría resaltada.
+ *  - ajustes.align: 'left' | 'center' | 'right' | 'justify'
+ *  - ajustes.animation: 'static' (fila deslizable) | 'slider' (cinta sin fin)
+ */
+export function NavCategorias({ ajustes = {}, categorias = [], activa = null, onSeleccionar, cargando = false }) {
+  const lista = (categorias || []).filter((c) => c?.name);
+  if (cargando) {
+    return (
+      <div className={s.burbujas} aria-hidden="true">
+        {[0, 1, 2, 3, 4].map((k) => <span key={k} className={`${s.burbuja} ${s.burbujaEsqueleto}`}><span className={s.burbujaFoto} /></span>)}
+      </div>
+    );
+  }
+  if (!lista.length) return null;
+
+  const filtra = typeof onSeleccionar === 'function';
+  const burbuja = (c, k) => {
+    const id = c.categoryId ?? c.id ?? null;
+    const sel = activa === id;
+    const contenido = (
+      <>
+        <span className={s.burbujaFoto} style={!c.imageUrl && id ? { background: tonoDe(c.name) } : undefined}>
+          {id == null ? <LayoutGrid aria-hidden="true" />
+            : c.imageUrl ? <img src={toDirectImageUrl(c.imageUrl)} alt="" loading="lazy" decoding="async" />
+              : <span aria-hidden="true">{c.name.trim()[0]?.toUpperCase()}</span>}
+        </span>
+        <span className={s.burbujaNombre}>{c.name}</span>
+      </>
+    );
+    const cls = [s.burbuja, sel && s.burbujaActiva].filter(Boolean).join(' ');
+    return filtra ? (
+      <button key={`${id}-${k}`} type="button" className={cls} aria-pressed={sel} onClick={() => onSeleccionar(id)}>{contenido}</button>
+    ) : (
+      <Enlace key={`${id}-${k}`} to={c.url || (id ? `?categoria=${encodeURIComponent(id)}` : '?')} className={cls} aria-current={sel ? 'page' : undefined}>{contenido}</Enlace>
+    );
+  };
+  const todas = [{ categoryId: null, name: 'Todos' }, ...lista];
+
+  if (ajustes.animation === 'slider') {
+    return (
+      <Marquesina segundos={Math.max(18, todas.length * 3)} espacio="1rem" etiqueta="Categorías">
+        {todas.map(burbuja)}
+      </Marquesina>
+    );
+  }
+  return (
+    <nav aria-label="Categorías" className={[s.burbujas, s[`alinear_${ajustes.align || 'center'}`]].filter(Boolean).join(' ')}>
+      {todas.map(burbuja)}
+    </nav>
+  );
+}
+
+/* ── Grilla de productos (featured_products, product_grid) ─ */
+
+/** Observa el final de la lista y pide más antes de llegar (como ProductGrid). */
+function useCargarAlLlegar(activo, alLlegar) {
+  const marca = useRef(null);
+  useEffect(() => {
+    const el = marca.current;
+    if (!activo || !el) return undefined;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) alLlegar(); }, { rootMargin: '400px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [activo, alLlegar]);
+  return marca;
+}
+
+/**
+ * Productos en cuadrícula de alturas parejas.
+ *  - productos: productos_wala (se traducen con tarjetaDesdeProducto).
+ *  - cargando: muestra esqueletos.
+ *  - hayMas / onCargarMas / cargandoMas: paginación de la tienda (cursor).
+ *    Sin onCargarMas se muestran de 12 en 12 en memoria.
+ *  - vacio: { titulo, texto } cuando no hay nada.
+ */
+export function GrillaProductos({ ajustes = {}, productos = [], cargando = false, hayMas, onCargarMas, cargandoMas, onAgregar, vacio }) {
+  const servidor = typeof onCargarMas === 'function';
+  const [visibles, setVisibles] = useState(12);
+  useEffect(() => { if (!servidor) setVisibles(12); }, [productos, servidor]);
+  const lista = servidor ? productos : productos.slice(0, visibles);
+  const quedan = servidor ? !!hayMas : visibles < productos.length;
+  const pedirMas = useMemo(() => () => {
+    if (servidor) { if (hayMas && !cargandoMas) onCargarMas(); } else setVisibles((v) => v + 12);
+  }, [servidor, hayMas, cargandoMas, onCargarMas]);
+  const marca = useCargarAlLlegar(quedan && !cargando, pedirMas);
+
+  if (!cargando && !productos.length) {
+    return vacio ? <EstadoVacio titulo={vacio.titulo || 'Próximamente más productos'} texto={vacio.texto} /> : null;
+  }
+  return (
+    <>
+      <TituloSeccion {...tituloDesdeAjustes(ajustes)} />
+      <ul className={s.grilla}>
+        {cargando
+          ? Array.from({ length: 8 }, (_, k) => <li key={k}><TarjetaProductoEsqueleto /></li>)
+          : lista.map((p) => (
+            <li key={p.id}><TarjetaProducto inclinar={false} {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} /></li>
+          ))}
+        {cargandoMas && Array.from({ length: 4 }, (_, k) => <li key={`m${k}`}><TarjetaProductoEsqueleto /></li>)}
+      </ul>
+      {quedan && !cargando && (
+        <div ref={marca} className={s.cargarMas}>
+          <Boton variante="secundario" cargando={cargandoMas} onClick={pedirMas}>Ver más productos</Boton>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ── Catálogo con filtros (sidebar_catalog) ─────────────── */
+
+/**
+ * Catálogo: filtros a la izquierda en escritorio; en el celular un botón
+ * "Filtros" abre la hoja inferior y los elegidos quedan como chips.
+ *
+ *  - grupos: [{ id, titulo, opciones: [{ valor, nombre, cuenta? }], de?(producto) }]
+ *    `de` (opcional) devuelve el valor (o valores) del producto para filtrar
+ *    aquí mismo; sin `de` el filtrado lo hace la página (paginación en servidor).
+ *  - seleccion / onFiltrar(grupoId, valor|null): controlado; sin ellos el
+ *    catálogo guarda su propio estado.
+ *  - busqueda / onBuscar, precio {min, max} / onPrecio: igual.
+ *  - resto: como GrillaProductos (hayMas, onCargarMas, onAgregar…).
+ */
+export function CatalogoConFiltros({
+  ajustes = {}, productos = [], grupos = [], seleccion, onFiltrar, busqueda, onBuscar, precio, onPrecio, ...grilla
+}) {
+  const [propia, setPropia] = useState({});
+  const [textoPropio, setTextoPropio] = useState('');
+  const [precioPropio, setPrecioPropio] = useState({ min: '', max: '' });
+  const [hoja, setHoja] = useState(false);
+  const sel = seleccion ?? propia;
+  const texto = busqueda ?? textoPropio;
+  const rango = precio ?? precioPropio;
+
+  const filtrar = (grupo, valor) => {
+    const nuevo = sel[grupo] === valor ? null : valor;
+    if (onFiltrar) onFiltrar(grupo, nuevo);
+    else setPropia((p) => ({ ...p, [grupo]: nuevo }));
+  };
+  const buscar = (t) => (onBuscar ? onBuscar(t) : setTextoPropio(t));
+  const cambiarPrecio = (r) => (onPrecio ? onPrecio(r) : setPrecioPropio(r));
+
+  // Filtrado aquí mismo solo cuando el catálogo maneja su estado.
+  const visibles = useMemo(() => {
+    if (onFiltrar) return productos;
+    const q = texto.trim().toLowerCase();
+    const min = Number(rango.min) || 0;
+    const max = Number(rango.max) || Infinity;
+    return productos.filter((p) => {
+      if (q && !String(p.name || '').toLowerCase().includes(q)) return false;
+      const pr = p.salePrice || p.price || 0;
+      if (pr < min || pr > max) return false;
+      return grupos.every((g) => {
+        const v = sel[g.id];
+        if (v == null || !g.de) return true;
+        return [].concat(g.de(p) ?? []).includes(v);
+      });
+    });
+  }, [onFiltrar, productos, texto, rango, grupos, sel]);
+
+  const activos = grupos.flatMap((g) => {
+    const v = sel[g.id];
+    const op = v != null && g.opciones.find((o) => o.valor === v);
+    return op ? [{ grupo: g.id, valor: v, nombre: op.nombre }] : [];
+  });
+  const hayPrecio = rango.min !== '' || rango.max !== '';
+  const limpiar = () => {
+    activos.forEach((a) => filtrar(a.grupo, a.valor));
+    cambiarPrecio({ min: '', max: '' });
+  };
+
+  const filtros = (
+    <div className={s.filtros}>
+      {grupos.filter((g) => g.opciones?.length).map((g) => (
+        <fieldset key={g.id} className={s.filtroGrupo}>
+          <legend>{g.titulo}</legend>
+          {g.opciones.map((o) => {
+            const marcada = sel[g.id] === o.valor;
+            return (
+              <button key={String(o.valor)} type="button" className={[s.filtro, marcada && s.filtroActivo].filter(Boolean).join(' ')} aria-pressed={marcada} onClick={() => filtrar(g.id, o.valor)}>
+                <span>{o.nombre}</span>
+                {o.cuenta != null && <small>{o.cuenta}</small>}
+              </button>
+            );
+          })}
+        </fieldset>
+      ))}
+      <fieldset className={s.filtroGrupo}>
+        <legend>Precio (S/)</legend>
+        <div className={s.precio}>
+          <Campo type="number" inputMode="numeric" min="0" placeholder="Mín." aria-label="Precio mínimo" value={rango.min} onChange={(e) => cambiarPrecio({ ...rango, min: e.target.value })} />
+          <Campo type="number" inputMode="numeric" min="0" placeholder="Máx." aria-label="Precio máximo" value={rango.max} onChange={(e) => cambiarPrecio({ ...rango, max: e.target.value })} />
+        </div>
+      </fieldset>
+    </div>
+  );
+
+  return (
+    <div className={s.catalogo}>
+      <aside className={s.catalogoLado} aria-label="Filtros">{filtros}</aside>
+      <div className={s.catalogoPrincipal}>
+        <div className={s.catalogoBarra}>
+          {ajustes.title && <h2 className={s.catalogoTitulo}>{ajustes.title}</h2>}
+          <Buscador placeholder="Buscar en el catálogo" atajo={null} defaultValue={texto} onBuscar={buscar} onChange={onBuscar ? undefined : (e) => setTextoPropio(e.target.value)} className={s.catalogoBuscador} />
+          <Boton variante="contorno" className={s.botonFiltros} icono={<SlidersHorizontal aria-hidden="true" />} onClick={() => setHoja(true)}>
+            Filtros{activos.length + (hayPrecio ? 1 : 0) ? ` (${activos.length + (hayPrecio ? 1 : 0)})` : ''}
+          </Boton>
+        </div>
+        {(activos.length > 0 || hayPrecio) && (
+          <div className={s.chips}>
+            {activos.map((a) => (
+              <button key={`${a.grupo}-${a.valor}`} type="button" className={s.chip} onClick={() => filtrar(a.grupo, a.valor)}>
+                {a.nombre} <X aria-label="Quitar" />
+              </button>
+            ))}
+            {hayPrecio && (
+              <button type="button" className={s.chip} onClick={() => cambiarPrecio({ min: '', max: '' })}>
+                S/ {rango.min || 0} – {rango.max || '∞'} <X aria-label="Quitar" />
+              </button>
+            )}
+            <button type="button" className={s.limpiar} onClick={limpiar}>Limpiar todo</button>
+          </div>
+        )}
+        <GrillaProductos {...grilla} productos={visibles} vacio={grilla.vacio || { titulo: 'Nada coincide con tu búsqueda', texto: 'Prueba con otros filtros o quítalos.' }} />
+      </div>
+      <HojaInferior abierta={hoja} onCerrar={() => setHoja(false)} titulo="Filtros" pie={<Boton bloque onClick={() => setHoja(false)}>Ver {visibles.length} productos</Boton>}>
+        {filtros}
+      </HojaInferior>
+    </div>
+  );
+}
+
+/* ── Pie de página (footer_columns) ─────────────────────── */
+
+/* Íconos de redes dibujados a trazo (lucide ya no trae marcas). */
+const trazo = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+const Instagram = (p) => <svg {...trazo} {...p}><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" /></svg>;
+const Facebook = (p) => <svg {...trazo} {...p}><path d="M15 3h-2.5A3.5 3.5 0 0 0 9 6.5V10H6.5v3.5H9V21h3.5v-7.5H15l.5-3.5h-3V7a1 1 0 0 1 1-1H15z" /></svg>;
+const Youtube = (p) => <svg {...trazo} {...p}><rect x="2.5" y="5.5" width="19" height="13" rx="4" /><path d="m10 9.5 4.5 2.5-4.5 2.5z" fill="currentColor" /></svg>;
+
+const REDES = [
+  [/instagram\./i, Instagram, 'Instagram'],
+  [/facebook\.|fb\.com/i, Facebook, 'Facebook'],
+  [/tiktok\./i, Music2, 'TikTok'],
+  [/youtube\.|youtu\.be/i, Youtube, 'YouTube'],
+  [/wa\.me|whatsapp/i, MessageCircle, 'WhatsApp'],
+  [/^mailto:/i, Mail, 'Correo'],
+];
+const redDe = (url) => REDES.find(([re]) => re.test(url || '')) || [null, null, null];
+
+/**
+ * Columnas del pie: `type` 'text' (content), 'links' (links: [{ text, url,
+ * color, bold }]) o 'social' (links con íconos según la red).
+ */
+export function PiePagina({ ajustes = {}, pieLegal }) {
+  const columnas = (ajustes.columns || []).filter((c) => c?.title || c?.content || c?.links?.length);
+  if (!columnas.length) return null;
+  return (
+    <footer className={s.pie}>
+      <div className={s.pieColumnas}>
+        {columnas.map((c, i) => (
+          <div key={c.id || i} className={s.pieColumna}>
+            {c.title && <h3>{c.title}</h3>}
+            {c.type === 'text' && c.content && <p>{c.content}</p>}
+            {c.type === 'links' && (
+              <ul>
+                {(c.links || []).filter((l) => l?.text).map((l, j) => (
+                  <li key={j}>
+                    <Enlace to={l.url} className={s.pieEnlace} style={{ color: l.color || undefined, fontWeight: l.bold ? 700 : undefined }}>{l.text}</Enlace>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {c.type === 'social' && (
+              <ul className={s.redes}>
+                {(c.links || []).filter((l) => l?.url).map((l, j) => {
+                  const [, Icono, red] = redDe(l.url);
+                  return (
+                    <li key={j}>
+                      <Enlace to={l.url} className={s.red} aria-label={l.text || red || l.url}>
+                        {Icono ? <Icono aria-hidden="true" /> : (l.text || l.url)}
+                      </Enlace>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+      {pieLegal && <div className={s.pieLegal}>{pieLegal}</div>}
+    </footer>
+  );
+}

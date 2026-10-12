@@ -288,7 +288,7 @@
   align-items: start;
 }
 
-@media (max-width: 860px) {
+@container (max-width: 860px) {
   .faqDividido {
     grid-template-columns: 1fr;
   }
@@ -342,7 +342,7 @@
 }
 
 /* En el celular, fila deslizable (como hoy). */
-@media (max-width: 640px) {
+@container (max-width: 640px) {
   .categorias {
     display: flex;
     overflow-x: auto;
