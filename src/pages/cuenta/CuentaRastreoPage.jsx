@@ -140,7 +140,10 @@ function resumirRastreo(pedido, indiceCatalogo) {
       coarse = { label: disp.label, color: semaforo[disp.color] || ESTADOS_COLORS['pendiente'], paso: disp.paso };
     } else {
       // Estado combinado autoritativo (fusiona ERP+WALA, elige el más avanzado).
-      const der = derivarEstadoCompra(fuente)?.estado || null;
+      // derivarEstadoCompra devuelve { key, label, color, … } directamente. Antes se
+      // leía `.estado` (no existe): siempre caía en "Pendiente de pago", aunque el
+      // pedido estuviera pagado (el detalle sí decía "Pagado").
+      const der = derivarEstadoCompra(fuente) || null;
       const mapaPaso = { por_confirmar_pago: 0, pago_confirmado: 1, en_preparacion: 2, entregado: 4, anulado: -1 };
       coarse = der
         ? { label: der.label, color: der.color, paso: mapaPaso[der.key] ?? 0 }
