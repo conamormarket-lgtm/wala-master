@@ -166,7 +166,38 @@ const SECCIONES_DEMO = [
   { id: 's6', type: 'featured_carousel', order: 5, settings: {
     title: 'Lo más pedido', visibleItems: 4, autoPlay: false, buttonText: 'Ver todo', buttonLink: '/tienda', paddingTop: '1.5rem', paddingBottom: '1.5rem',
   } },
-  { id: 's7', type: 'testimonials', order: 6, settings: {
+  { id: 's10', type: 'banner_grid', order: 5.5, settings: {
+    dataSource: 'brands', title: 'Explora nuestros mundos', subtitle: 'Encuentra productos de tus marcas favoritas',
+    showBrandName: true, brandCardStyle: 'editorial', columns: 3, autoPlay: true, autoPlaySpeed: 6000, gap: '1rem',
+    paddingTop: '2rem', paddingBottom: '2rem',
+  } },
+  { id: 's11', type: 'bestsellers_row', order: 5.7, settings: {
+    title: 'Los más regalados', paddingTop: '1rem', paddingBottom: '1.5rem',
+    cards: [
+      { id: 'card1', title: 'Polera con tu foto', subtitle: 'Estampado de alta duración', imageUrl: FRENTE_BLANCO, link: '/tienda?categoria=poleras' },
+      { id: 'card2', title: 'Taza mágica', subtitle: 'Aparece el diseño con el calor', imageUrl: TAZA, link: '/tienda?categoria=tazas' },
+      { id: 'card3', title: 'Kapi de peluche', subtitle: 'Suave y con lazo', imageUrl: '/assets/kapi/kapi-happy.webp', link: '/kapi' },
+      { id: 'card4', title: 'Cuadro decorativo', subtitle: 'Tu foto en lienzo', imageUrl: CUADRO, link: '/tienda?categoria=cuadros' },
+      { id: 'card5', title: 'Para parejas', subtitle: 'Diseños que combinan', imageUrl: ESPALDA_BLANCO, link: '/tienda?categoria=parejas' },
+    ],
+  } },
+  { id: 's12', type: 'header', order: 6.2, settings: {
+    title: 'Hecho en Perú, con amor', titleHighlight: 'con amor', subtitle: 'Cada pedido se estampa a mano en nuestro taller de Lima.',
+    textAlign: 'center', titleColor: '', subtitleColor: '', paddingTop: '2.5rem', paddingBottom: '0.5rem',
+  } },
+  { id: 's13', type: 'text', order: 6.3, settings: {
+    heading: '', content: 'Empezamos con una plancha y muchas ganas. Hoy enviamos a todo el Perú, pero cada prenda pasa por las mismas manos: revisamos tu diseño, lo probamos en tela y recién ahí lo estampamos.\nSi algo no queda como esperabas, lo rehacemos.',
+    textAlign: 'center', textColor: '#333333', headingColor: '#000000', maxWidth: '680px', buttonText: 'Conoce el taller', buttonLink: '#oferta-flash',
+    paddingTop: '0.5rem', paddingBottom: '1.5rem',
+  } },
+  { id: 's14', type: 'video', order: 6.4, settings: {
+    url: '/landing-matador/video/video-01.mp4', aspectRatio: '9:16', autoplay: true, loop: true, paddingTop: '0.5rem', paddingBottom: '2rem',
+  } },
+  { id: 's15', type: 'image', order: 6.5, settings: {
+    url: '/crear/banner-crear-1200.webp', alt: 'Crea tu polera en Walá', link: '/personalizar', maxWidth: '960px', alignment: 'center', borderRadius: '20px',
+    paddingTop: '0rem', paddingBottom: '2rem',
+  } },
+  { id: 's7', type: 'testimonials', order: 6.7, settings: {
     title: 'Lo que dicen nuestros clientes', backgroundColor: 'rgba(139, 92, 246, 0.06)', paddingTop: '2rem', paddingBottom: '2rem',
     testimonials: [
       { topic: 'Calidad del producto', text: 'La polera llegó igualita al diseño y la tela es súper suave. Ya pedí otra para mi hermana.', author: 'Andrea P.', city: 'Lima', rating: 5, verified: true },
@@ -194,6 +225,16 @@ const SECCIONES_DEMO = [
     ],
     paddingTop: '1.5rem', paddingBottom: '2rem',
   } },
+];
+
+/* Marcas como las guarda tienda_brands (las lee getBrands() en la tienda). */
+const MARCAS_DEMO = [
+  { id: 'conamor', name: 'Con Amor', slug: 'conamor', logoUrl: '/marcas/con-amor.png', active: true },
+  { id: 'kapi', name: 'Kapi', slug: 'kapi', logoUrl: '/assets/kapi/kapi-happy.webp', bgColor: '#0f766e', active: true },
+  { id: 'catas', name: 'Catas', slug: 'catas', logoUrl: '/marcas/catas.png', active: true },
+  { id: 'geeks', name: 'Con Amor Geeks', slug: 'geeks', active: true },
+  { id: 'nova', name: 'Nova', slug: 'nova', active: true },
+  { id: 'oculta', name: 'Marca oculta', slug: 'oculta', visible: false },
 ];
 
 const productosParaSeccion = (sec) => {
@@ -824,12 +865,13 @@ function Contenido({ tema, cambiarTema }) {
         <Seccion
           id="builder" numero="08" titulo="Secciones del builder"
           descripcion="Esta mini página está escrita como la guarda Firestore: una lista de secciones { type, settings } con los mismos campos que hoy usa el editor visual. RenderSecciones la dibuja con piezas del kit: un solo carrusel, una sola marquesina, una sola cuenta regresiva, un solo título y un solo bloque para relleno y fondo."
-          mejoras={['1 carrusel en vez de 6', '1 marquesina en vez de 3', '1 cuenta regresiva en vez de 2', 'Títulos y fondos iguales en todas', 'Enlaces internos, externos y #ancla con una regla']}
+          mejoras={['1 carrusel en vez de 6', '1 marquesina en vez de 3', '1 cuenta regresiva en vez de 2', 'Títulos y fondos iguales en todas', 'Enlaces internos, externos y #ancla con una regla', 'Textos viejos en negro se adaptan al modo noche', 'Videos que se pausan fuera de pantalla']}
         >
           <Revelar className={s.paginaBuilder}>
             <RenderSecciones
               secciones={SECCIONES_DEMO}
               productosPara={productosParaSeccion}
+              marcasPara={() => MARCAS_DEMO}
               onAgregar={manejarAgregar}
             />
           </Revelar>

@@ -74,3 +74,32 @@ export function opcionesDeProducto(p, { subproductos = {} } = {}) {
     personalizable: Boolean(p.customizable),
   };
 }
+
+/*
+ * Marcas (colección tienda_brands, la misma consulta getBrands() que ya usan
+ * el Header y el mosaico "Explora nuestros mundos") → tarjeta del kit.
+ */
+
+/** Ruta de la landing de una marca: su `slug` o el nombre sin tildes ni espacios. */
+export function rutaDeMarca(m) {
+  if (m?.slug) return String(m.slug).replace(/^\/+|\/+$/g, '');
+  return String(m?.name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '');
+}
+
+/** Props de una tarjeta de marca; null si la marca está oculta o no tiene ruta. */
+export function tarjetaDesdeMarca(m) {
+  const ruta = rutaDeMarca(m);
+  if (!m?.name || !ruta || m.active === false || m.visible === false) return null;
+  return {
+    id: m.id || ruta,
+    nombre: m.name,
+    logo: m.logoUrl || m.imageUrl || '',
+    url: `/${ruta}`,
+    color: m.bgColor || '',
+    fondo: m.bgImage || '',
+  };
+}

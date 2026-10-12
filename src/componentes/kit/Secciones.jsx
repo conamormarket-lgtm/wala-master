@@ -12,6 +12,7 @@ import TarjetaProducto from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
+import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import s from './Secciones.module.css';
 
 /*
@@ -287,6 +288,12 @@ export const REGISTRO_SECCIONES = {
   faq_accordion: { Componente: PreguntasFrecuentes },
   marquee: { Componente: MarcasMarquesina },
   category_grid: { Componente: GrillaCategorias, categorias: true },
+  header: { Componente: Encabezado },
+  text: { Componente: BloqueTexto },
+  image: { Componente: BloqueImagen },
+  video: { Componente: BloqueVideo },
+  banner_grid: { Componente: MosaicoBanners, marcas: true },
+  bestsellers_row: { Componente: FilaDestacados },
 };
 
 /**
@@ -298,18 +305,22 @@ export const REGISTRO_SECCIONES = {
  *  - productosPara(seccion) → productos de Firestore (productos_wala); la
  *    sección los traduce con tarjetaDesdeProducto.
  *  - categoriasPara(seccion) → [{ categoryId, name, imageUrl }]
+ *  - marcasPara(seccion) → marcas de tienda_brands (banner_grid con
+ *    dataSource 'brands'); la sección las traduce con tarjetaDesdeMarca.
  *  - onAgregar(producto) → devuelve el handler del botón de esa tarjeta
  */
-export function RenderSecciones({ secciones = [], productosPara, categoriasPara, onAgregar, respaldo }) {
+export function RenderSecciones({ secciones = [], productosPara, categoriasPara, marcasPara, onAgregar, respaldo }) {
   return [...secciones]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-    .map((sec) => {
+    .map((sec, indice) => {
       const reg = REGISTRO_SECCIONES[sec.type];
       if (!reg) return respaldo ? <React.Fragment key={sec.id}>{respaldo(sec)}</React.Fragment> : null;
       const { Componente } = reg;
       const extra = {};
       if (reg.productos) extra.productos = productosPara?.(sec) || [];
       if (reg.categorias) extra.categorias = categoriasPara?.(sec);
+      if (reg.marcas) extra.marcas = marcasPara?.(sec) || [];
+      if (indice === 0) extra.primera = true; // lo primero que se ve: sin carga diferida
       if (reg.productos) extra.onAgregar = onAgregar;
       const ajustes = sec.settings || {};
       return (

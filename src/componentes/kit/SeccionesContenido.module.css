@@ -1,0 +1,455 @@
+/* ── Piezas comunes ── */
+.resaltado {
+  display: inline-block;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+}
+
+.enlaceTexto,
+.enlaceTexto:hover {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+.boton {
+  margin-top: 1.4rem;
+}
+
+.resalte {
+  color: var(--primary-color);
+}
+
+/* ── Encabezado ── */
+.encabezado {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.encabezadoTitulo {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.encabezadoSubtitulo {
+  max-width: 800px;
+  margin: 0.5rem 0 0;
+  color: var(--color-text-muted);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Centrado: el subtítulo (de ancho limitado) también va al medio. */
+.centrado .encabezadoSubtitulo {
+  margin-inline: auto;
+}
+
+.derecha .encabezadoSubtitulo {
+  margin-left: auto;
+}
+
+.compacto .encabezadoTitulo {
+  font-size: 1.05rem;
+}
+
+.compacto .encabezadoSubtitulo {
+  font-size: 0.78rem;
+}
+
+/* ── Texto ── */
+.texto {
+  margin: 0 auto;
+}
+
+.textoTitulo {
+  margin: 0 0 1rem;
+  color: var(--color-text);
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.textoTitulo:last-child {
+  margin-bottom: 0;
+}
+
+.textoCuerpo {
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.compacto .textoTitulo {
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+}
+
+.compacto .textoCuerpo {
+  font-size: 0.8rem;
+}
+
+/* ── Imagen ── */
+.imagenMarco {
+  display: flex;
+}
+
+.imagen {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.imagenEnlace {
+  display: block;
+}
+
+/* ── Video ── */
+.video {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  touch-action: pan-y;
+}
+
+.video video,
+.video iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+.videoFijo video,
+.videoFijo iframe {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Sin controles el video no debe tragarse el gesto de desplazar la página. */
+.videoSinToque {
+  pointer-events: none;
+}
+
+/* ── Mosaico de marcas ── */
+.marca {
+  --marca-texto: #fff;
+
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(88px, 34%, 128px);
+  align-items: end;
+  gap: 0.75rem;
+  height: 100%;
+  min-height: 230px;
+  padding: 1.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  background-color: var(--marca-color);
+  background-position: center;
+  background-size: cover;
+  color: var(--marca-texto);
+  text-decoration: none;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.marca:hover {
+  color: var(--marca-texto);
+}
+
+/* Círculos de adorno, quietos (sin animación ni desenfoque). */
+.marca::before,
+.marca::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.marca::before {
+  top: -110px;
+  right: -70px;
+  width: 240px;
+  height: 240px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.marca::after {
+  right: 22%;
+  bottom: -100px;
+  width: 150px;
+  height: 150px;
+  border: 22px solid rgba(255, 255, 255, 0.07);
+}
+
+.marcaNumero {
+  position: absolute;
+  top: 1rem;
+  left: 1.25rem;
+  opacity: 0.6;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+/* El logo va sobre un círculo blanco: sirve igual para logos con fondo
+   transparente que para los que traen fondo blanco. */
+.marcaLogo {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--marca-color);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.marcaLogo img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+}
+
+.marcaTexto {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding-top: 2.5rem;
+}
+
+.marcaTexto small {
+  margin-bottom: 0.35rem;
+  opacity: 0.75;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.marcaTexto strong {
+  max-width: 13ch;
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+.marcaCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.marcaCta svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .marca:hover {
+    transform: translateY(-4px);
+  }
+
+  .marca:hover .marcaLogo {
+    transform: scale(1.05);
+  }
+
+  .marca:hover .marcaCta svg {
+    transform: translateX(3px);
+  }
+}
+
+.marca:active {
+  transform: scale(0.985);
+}
+
+/* Variante "con borde": superficie del tema con un toque del color de la marca. */
+.marcaBorde {
+  --marca-texto: var(--color-text);
+
+  border-color: var(--color-border);
+  background-color: var(--color-surface);
+}
+
+.marcaBorde::before {
+  background: var(--marca-suave);
+  opacity: 0.8;
+}
+
+.marcaBorde::after {
+  border-color: var(--marca-suave);
+  opacity: 0.5;
+}
+
+.marcaBorde .marcaLogo {
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.marcaBorde .marcaTexto small {
+  color: var(--primary-color);
+  opacity: 1;
+}
+
+.marcaBorde .marcaCta {
+  background: var(--color-text);
+  color: var(--color-surface);
+}
+
+:global([data-theme='dark']) .marcaBorde::before,
+:global([data-theme='dark']) .marcaBorde::after {
+  opacity: 0.12;
+}
+
+/* ── Banners a mano ── */
+.banners {
+  display: grid;
+  grid-template-columns: repeat(var(--columnas), minmax(0, 1fr));
+  gap: var(--espacio);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 900px) {
+  .banners {
+    grid-template-columns: repeat(min(2, var(--columnas)), minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .banners {
+    grid-template-columns: 1fr;
+  }
+}
+
+.banner {
+  display: block;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.banner:hover {
+    transform: translateY(-3px);
+  }
+}
+
+/* ── Fila de destacados ── */
+.destacado {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.destacado:hover {
+  color: var(--color-text);
+}
+
+/* Escenario claro: las fotos casi siempre traen fondo blanco. */
+.destacadoFoto {
+  display: block;
+  aspect-ratio: 1;
+  background: #f5f4f8;
+  overflow: hidden;
+}
+
+.destacadoFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  user-select: none;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+.destacadoTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 0.8rem 0.85rem;
+}
+
+.destacadoTexto strong {
+  font-size: 0.86rem;
+  line-height: 1.25;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.destacadoTexto small {
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.destacado:hover {
+    transform: translateY(-3px);
+  }
+
+  a.destacado:hover .destacadoFoto img {
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marca,
+  .marcaLogo,
+  .marcaCta svg,
+  .banner,
+  .destacado,
+  .destacadoFoto img {
+    transition: none;
+  }
+}

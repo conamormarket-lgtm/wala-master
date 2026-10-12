@@ -50,13 +50,14 @@ import { ProveedorEnlaces, ProveedorToasts } from '../componentes/kit';
 | `Pedido.jsx` | `SeguimientoPedido`, `ItemCarrito`, `BarraEnvioGratis`, `ResumenPedido` | Carrito y Mis pedidos |
 | `Feedback.jsx` | `Aviso`, `ProveedorToasts`, `useToast`, `useNotificaciones`, `ListaNotificaciones`, `EstadoVacio`, `HojaInferior` | Avisos, notificaciones y modales |
 | `Enlace.jsx` | `Enlace`, `ProveedorEnlaces`, `tipoDeEnlace` | La única regla de enlaces: internos por el router, externos en otra pestaña, `#ancla` con scroll suave |
-| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto` | Traducen un producto de `productos_wala` (Firestore) a props del kit |
+| `adaptadores.js` | `accionDeProducto`, `tarjetaDesdeProducto`, `opcionesDeProducto`, `rutaDeMarca`, `tarjetaDesdeMarca` | Traducen un producto de `productos_wala` o una marca de `tienda_brands` (Firestore) a props del kit |
 | `Carrusel.jsx` | `Carrusel` | El único carrusel: deslizar nativo, flechas, puntos, autoplay con pausas |
 | `Marquesina.jsx` | `Marquesina` | Cinta sin fin (logos, anuncios, burbujas) |
 | `CuentaRegresiva.jsx` | `CuentaRegresiva` | Hasta una fecha o "siempre activa" por visitante |
 | `Acordeon.jsx` | `Acordeon` | Preguntas frecuentes y detalles plegables |
 | `Seccion.jsx` | `BloqueSeccion`, `TituloSeccion`, `tituloDesdeAjustes` | Relleno, fondo y título iguales en todas las secciones |
 | `Secciones.jsx` | `BarraAnuncios`, `HeroCarrusel`, `InsigniasConfianza`, `CarruselProductos`, `OfertaRelampago`, `Testimonios`, `PreguntasFrecuentes`, `MarcasMarquesina`, `GrillaCategorias`, `RenderSecciones`, `REGISTRO_SECCIONES` | Secciones del builder; reciben el mismo `settings` que guarda Firestore |
+| `SeccionesContenido.jsx` | `Encabezado`, `BloqueTexto`, `BloqueImagen`, `BloqueVideo`, `MosaicoBanners`, `FilaDestacados`, `videoIncrustado` | Secciones de contenido del builder (header, text, image, video, banner_grid, bestsellers_row) |
 | `Efectos.jsx` | `Revelar`, `useContador`, `Estallido`, `useBloquearScroll`, `useCerrarConAtras`, `esApp` | Utilidades de animación y de app |
 
 ## Ejemplos rápidos
@@ -113,6 +114,7 @@ Una página del builder (`pages/{pageId}` en Firestore) se dibuja así:
   secciones={config.sections}               // [{ id, type, order, settings }]
   productosPara={(sec) => productosDe(sec)}  // productos_wala de esa sección
   categoriasPara={(sec) => categoriasDe(sec)}
+  marcasPara={() => marcas}                 // tienda_brands (getBrands), para banner_grid
   onAgregar={(producto) => () => …}
   respaldo={(sec) => renderSectionViejo(sec)} // tipos que el kit aún no tiene
 />
@@ -121,8 +123,29 @@ Una página del builder (`pages/{pageId}` en Firestore) se dibuja así:
 Ya cubiertos: `announcement_bar`, `hero_carousel`, `trust_badges`,
 `featured_carousel`, `new_arrivals_carousel`, `sale_carousel`,
 `category_carousel`, `collection_carousel`, `flash_sales`, `testimonials`,
-`faq_accordion`, `marquee`, `category_grid`. El resto sigue con el switch de
+`faq_accordion`, `marquee`, `category_grid`, `header`, `text`, `image`,
+`video`, `banner_grid`, `bestsellers_row`. El resto sigue con el switch de
 `TiendaPage.jsx` mediante `respaldo`.
+
+Faltan: `hero_banner`, `featured_products`, `product_grid`, `sidebar_catalog`,
+`categories_nav`, `map_location`, `feature_list`, `conversion_fold`,
+`landing_payment`, `footer_columns`.
+
+Notas de las secciones de contenido:
+
+- Los colores que el builder guardaba por defecto (`#000000`, `#333333`,
+  `#666666`) se tratan como "sin color": manda el tema y se leen en modo noche.
+- El botón opcional (`buttonText` + `buttonLink`) es el `Boton` violeta liso;
+  `buttonBgColor` / `buttonTextColor` siguen mandando si el editor los fijó.
+- Los videos .mp4 no se descargan hasta acercarse, se pausan fuera de pantalla
+  y con "reducir movimiento" no arrancan solos (muestran controles).
+- `banner_grid` con marcas usa el `Carrusel` (una fila deslizable con puntos)
+  en vez del mosaico paginado de dos filas.
+- Las excepciones de una landing concreta (p. ej. `isKcheroLanding` en
+  TiendaPage) se filtran antes de pasar `secciones`, no dentro del kit.
+- El kit no traduce: TextoSeccion de la tienda envuelve los textos en `<T>`.
+  Al migrar, hará falta un proveedor de traducción o pasar los textos ya
+  traducidos.
 
 ## Llevarlo a la tienda
 
