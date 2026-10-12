@@ -5,7 +5,9 @@ import { Estallido } from './Efectos';
 import { Enlace } from './Enlace';
 import s from './TarjetaProducto.module.css';
 
-export const soles = (n) => `S/ ${n.toFixed(2)}`;
+// Formato peruano: separador de miles y 2 decimales (S/ 1,250.00).
+const formatoSoles = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const soles = (n) => `S/ ${formatoSoles.format(n)}`;
 
 const INCLINACION = 4; // grados máximos, suave
 

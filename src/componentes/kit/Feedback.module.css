@@ -570,13 +570,41 @@
   animation: flotarKapi 4s ease-in-out infinite;
 }
 
+/* Chispas fuera de la cabeza de Kapi (antes una quedaba tapada por la oreja). */
 .chispa {
   position: absolute;
-  top: 4px;
-  right: 2px;
-  width: 18px;
-  height: 18px;
+  z-index: 1;
   color: var(--violet-400);
+  animation: titilar 2.6s ease-in-out infinite;
+}
+
+.chispa1 {
+  top: -6px;
+  right: -14px;
+  width: 20px;
+  height: 20px;
+}
+
+.chispa2 {
+  top: 34px;
+  left: -16px;
+  width: 14px;
+  height: 14px;
+  color: #f59e0b;
+  animation-delay: 1.3s;
+}
+
+@keyframes titilar {
+  0%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.45;
+  }
+
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes flotarKapi {
@@ -615,9 +643,13 @@
   justify-content: center;
 }
 
+.veloCapa,
 .velo {
   position: absolute;
   inset: 0;
+}
+
+.velo {
   background: rgba(15, 23, 42, 0.5);
 }
 
@@ -717,6 +749,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .kapi img,
+  .chispa,
   .tiempo {
     animation: none;
   }

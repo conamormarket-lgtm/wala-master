@@ -118,12 +118,9 @@ export function ProveedorToasts({ children, iniciales = [] }) {
   const desplegadoRef = useRef(false);
   desplegadoRef.current = desplegado;
 
-  // Cerrar (X o deslizar) cuenta como vista: baja el contador de no leídas.
-  // Si se va sola por tiempo, sigue sin leer en el centro.
-  const cerrar = useCallback((id) => {
-    setToasts((t) => t.filter((x) => x.id !== id));
-    setHistorial((h) => h.map((n) => (n.id === id ? { ...n, leida: true } : n)));
-  }, []);
+  // Cerrar (X o deslizar) solo la quita de la pantalla: en el centro sigue
+  // sin leer hasta que el usuario la abra o use "Marcar leídas".
+  const cerrar = useCallback((id) => setToasts((t) => t.filter((x) => x.id !== id)), []);
 
   const mostrar = useCallback((toast) => {
     const id = `t${++idRef.current}`;
@@ -184,7 +181,7 @@ export function ProveedorToasts({ children, iniciales = [] }) {
                 exit={{ opacity: 0, y: 10 }}
                 transition={ENTRA}
               >
-                Ver todas{noLeidas ? ` (${noLeidas})` : ''}
+                Ver todas ({toasts.length})
               </motion.button>
             )}
             {visibles.map((t, i) => {
@@ -262,8 +259,9 @@ export function EstadoVacio({ imagen = '/assets/kapi/kapi-sad.webp', titulo, tex
   return (
     <div className={s.vacio}>
       <div className={s.kapi}>
-        <Sparkles className={s.chispa} aria-hidden="true" />
         <img src={imagen} alt="" width="112" height="112" />
+        <Sparkles className={`${s.chispa} ${s.chispa1}`} aria-hidden="true" />
+        <Sparkles className={`${s.chispa} ${s.chispa2}`} aria-hidden="true" />
       </div>
       <h3>{titulo}</h3>
       {texto && <p>{texto}</p>}
@@ -312,11 +310,20 @@ export function HojaInferior({ abierta, onCerrar, titulo, acciones, children, pi
       {abierta && (
         <motion.div
           className={[s.fondo, contenida && s.fondoContenido, modal && s.fondoModal].filter(Boolean).join(' ')}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.3 } }}
-          exit={{ opacity: 0, transition: { duration: 0.24 } }}
+          // El contenedor no se funde (eso hacía que la hoja apareciera
+          // "desvaneciéndose"); solo espera a que la hoja termine de bajar.
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 1, transition: { duration: modal ? 0.16 : 0.26 } }}
         >
-          <motion.div className={s.velo} style={{ opacity: opacidadFondo }} onClick={onCerrar} />
+          <motion.div
+            className={s.veloCapa}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: { duration: 0.3 } }}
+            exit={{ opacity: 0, transition: { duration: 0.24 } }}
+          >
+            <motion.div className={s.velo} style={{ opacity: opacidadFondo }} onClick={onCerrar} />
+          </motion.div>
           <motion.div
             ref={panelRef}
             className={[s.hoja, modal && s.hojaModal].filter(Boolean).join(' ')}

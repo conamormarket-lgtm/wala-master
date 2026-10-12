@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles } from 'lucide-react';
+import { ArrowRight, Loader2, LogOut, RefreshCw, ShoppingBag, Heart, Sparkles, Coins, CalendarClock, Trophy } from 'lucide-react';
 import { Enlace } from './Enlace';
 import { soles } from './TarjetaProducto';
 import s from './MenusCabecera.module.css';
@@ -103,24 +103,42 @@ export function MenuTienda({
 
 /* ── Monedas ────────────────────────────────────────────── */
 
-/** Ayuda corta de las monedas (lo que hoy dice el tooltip del header). */
-export function AyudaMonedas({ saldo, equivalencia = '1 moneda = S/1 de descuento', vencen = 'Vencen a fin de mes', url = '/cuenta/catalogo', onNavegar }) {
+const finDeMes = () => {
+  const hoy = new Date();
+  const fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+  return fin.toLocaleDateString('es-PE', { day: 'numeric', month: 'long' });
+};
+
+/**
+ * Explicación de las monedas (lo que hoy dice el tooltip del header):
+ * saldo grande, cuánto vale, cuándo vencen y dónde canjearlas o ganar más.
+ */
+export function AyudaMonedas({
+  saldo = 0,
+  valorMoneda = 1,
+  urlCanjear = '/cuenta/catalogo',
+  urlGanar = '/cuenta/misiones',
+  onNavegar,
+}) {
   return (
     <div className={s.monedas}>
-      <div className={s.monedasCabeza}>
-        <img src={MONEDA} alt="" width="28" height="28" />
+      <div className={s.monedasSaldo}>
+        <img src={MONEDA} alt="" width="40" height="40" />
         <div>
-          <strong>Tus monedas</strong>
-          {saldo != null && <span>{saldo.toLocaleString('es-PE')} disponibles</span>}
+          <span className={s.monedasEtiqueta}>Tus monedas</span>
+          <strong>{saldo.toLocaleString('es-PE')}</strong>
+          <span className={s.monedasValor}>= {soles(saldo * valorMoneda)} en descuentos</span>
         </div>
       </div>
-      <p>{equivalencia}</p>
-      <p className={s.meta}>{vencen}</p>
-      {url && (
-        <Enlace to={url} className={s.verTodo} onClick={onNavegar}>
-          Canjear monedas <ArrowRight aria-hidden="true" />
-        </Enlace>
-      )}
+      <ul className={s.monedasDatos}>
+        <li><Coins aria-hidden="true" /><span><strong>1 moneda = {soles(valorMoneda)}</strong> de descuento en tus compras</span></li>
+        <li><CalendarClock aria-hidden="true" /><span>Vencen a fin de mes, el <strong>{finDeMes()}</strong></span></li>
+        <li><Trophy aria-hidden="true" /><span>Gana más con misiones, sorteos y referidos</span></li>
+      </ul>
+      <div className={s.monedasAcciones}>
+        <Enlace to={urlCanjear} className={s.botonPrimario} onClick={onNavegar}>Canjear</Enlace>
+        <Enlace to={urlGanar} className={s.botonSecundario} onClick={onNavegar}>Ganar más</Enlace>
+      </div>
     </div>
   );
 }
@@ -219,24 +237,40 @@ export function VistaFavoritos({ items = [], sesion = true, urlLista = '/cuenta/
       </div>
     );
   }
-  const visibles = items.slice(0, 6);
+  // Abanico como en el header actual: hasta 4 fotos + "+N", giradas desde el
+  // centro (sirve para 1, 2, 3… sin depender de nth-child fijos).
+  const visibles = items.slice(0, 4);
+  const hayMas = items.length > visibles.length;
+  const total = visibles.length + (hayMas ? 1 : 0);
+  const centro = (total - 1) / 2;
+  const naipe = (i) => {
+    const d = i - centro;
+    return { '--giro': `${d * 9}deg`, '--alza': `${-Math.abs(d) * 5}px`, zIndex: total - Math.abs(d) };
+  };
   return (
     <div className={s.vista}>
       <div className={s.vistaCabeza}>
         <h3>Tu lista de deseos</h3>
         <span>{items.length} {items.length === 1 ? 'producto' : 'productos'}</span>
       </div>
-      <ul className={s.mosaico}>
+      <p className={s.vistaTexto}>
+        {items.length === 1 ? 'Tienes 1 producto guardado en tu lista.' : `Tienes ${items.length} productos guardados en tu lista.`}
+      </p>
+      <ul className={s.abanico}>
         {visibles.map((it, i) => (
-          <li key={it.id}>
-            <Enlace to={urlLista} title={it.nombre} onClick={onNavegar}>
+          <li key={it.id} style={naipe(i)}>
+            <Enlace to={urlLista} title={it.nombre} className={s.naipe} onClick={onNavegar}>
               <img src={it.imagen} alt={it.nombre} loading="lazy" />
-              {i === visibles.length - 1 && items.length > visibles.length && (
-                <span className={s.mas}>+{items.length - visibles.length}</span>
-              )}
             </Enlace>
           </li>
         ))}
+        {hayMas && (
+          <li style={naipe(visibles.length)}>
+            <Enlace to={urlLista} className={`${s.naipe} ${s.naipeMas}`} onClick={onNavegar} aria-label={`Ver ${items.length - visibles.length} más`}>
+              +{items.length - visibles.length}
+            </Enlace>
+          </li>
+        )}
       </ul>
       <Enlace to={urlLista} className={s.botonPrimario} onClick={onNavegar}>Ver mi lista</Enlace>
     </div>

@@ -144,7 +144,7 @@ export function Cabecera({
             alTocar="globo"
             variante="globo"
             alinear="centro"
-            ancho={250}
+            ancho={300}
             {...control('monedas')}
             disparador={(props) => <SaldoMonedas saldo={monedas} {...props} />}
           >
