@@ -787,9 +787,13 @@ async function uidDePedido(p) {
   return snap.size === 1 ? snap.docs[0].id : null;
 }
 
-function claveDePedido(p, docId) {
-  return String(p.numeroPedido || docId).trim().replace(/[/\\#?[\].]/g, "-").replace(/\s+/g, "-");
+// El código que el cliente ve en "Mis pedidos": en un pedido web aprobado, el PD-…
+// de la tienda (el ERP le pone su propio número correlativo en numeroPedido).
+function codigoClienteDePedido(p, docId) {
+  return String(p.origenPedidoWebId || p.portalPseudoOrderId || p.numeroPedido || docId || "").trim();
 }
+
+const limpiarClave = (s) => String(s).trim().replace(/[/\\#?[\].]/g, "-").replace(/\s+/g, "-");
 
 async function avisarHitoPedido(pedido, docId, hito) {
   const settings = await leerSettings();
@@ -798,17 +802,29 @@ async function avisarHitoPedido(pedido, docId, hito) {
   const uid = await uidDePedido(pedido);
   if (!uid) return;
 
-  const logRef = db.collection(ORDER_LOG_COLLECTION).doc(claveDePedido(pedido, docId));
+  const codigo = codigoClienteDePedido(pedido, docId);
+  if (!codigo) return;
+  // Un solo registro por pedido aunque llegue por wala_pedidos y por el ERP. Los
+  // pedidos web anteriores a este cambio tienen hitos también bajo el número del
+  // ERP: se suman para no repetir un aviso ya enviado.
+  const logRef = db.collection(ORDER_LOG_COLLECTION).doc(limpiarClave(codigo));
+  const numeroErp = String(pedido.numeroPedido || "").trim();
+  const legacyRef = numeroErp && numeroErp !== codigo
+    ? db.collection(ORDER_LOG_COLLECTION).doc(limpiarClave(numeroErp)) : null;
   const avisar = await db.runTransaction(async (t) => {
     const snap = await t.get(logRef);
-    const hitos = snap.exists ? (snap.data().hitos || []) : [];
+    const legacy = legacyRef ? await t.get(legacyRef) : null;
+    const hitos = [...new Set([
+      ...(snap.exists ? (snap.data().hitos || []) : []),
+      ...(legacy && legacy.exists ? (legacy.data().hitos || []) : []),
+    ])];
     if (!debeAvisar(hito, hitos)) return false;
     t.set(logRef, { uid, hitos: [...hitos, hito], updatedAt: new Date().toISOString() }, { merge: true });
     return true;
   });
   if (!avisar) return;
 
-  const texto = textoHito(hito, pedido.numeroPedido);
+  const texto = textoHito(hito, codigo);
   if (!texto) return;
   const payload = { ...texto, type: "orders", link: "/cuenta/pedidos" };
 
