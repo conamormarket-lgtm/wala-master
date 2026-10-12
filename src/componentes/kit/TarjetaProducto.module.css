@@ -62,6 +62,11 @@
     transform: translateY(-3px);
   }
 
+  /* Inclinable: sigue al ratón y además se levanta un poco. */
+  .inclinable:hover {
+    transform: perspective(1000px) translateY(-4px) rotateX(var(--rx)) rotateY(var(--ry));
+  }
+
   .tarjeta:hover .bordeLuz {
     opacity: 1;
   }

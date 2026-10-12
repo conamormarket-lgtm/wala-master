@@ -28,9 +28,11 @@
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  /* Aire para sombras y para que el foco no se corte. */
-  padding: 6px 2px 10px;
-  margin: -6px -2px -10px;
+  /* Aire para que la tarjeta se levante, se incline y deje su sombra sin
+     cortarse (el scroll recorta todo lo que sale de la pista). */
+  padding: 10px 4px 26px;
+  margin: -10px -4px -26px;
+  scroll-padding-inline: 4px;
 }
 
 .pista::-webkit-scrollbar {

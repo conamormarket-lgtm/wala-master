@@ -287,7 +287,7 @@ export function GrillaProductos({ ajustes = {}, productos = [], cargando = false
         {cargando
           ? Array.from({ length: 8 }, (_, k) => <li key={k}><TarjetaProductoEsqueleto /></li>)
           : lista.map((p) => (
-            <li key={p.id}><TarjetaProducto inclinar={false} {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} /></li>
+            <li key={p.id}><TarjetaProducto {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} /></li>
           ))}
         {cargandoMas && Array.from({ length: 4 }, (_, k) => <li key={`m${k}`}><TarjetaProductoEsqueleto /></li>)}
       </ul>

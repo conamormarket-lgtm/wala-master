@@ -267,7 +267,7 @@ export function CarruselProductos({ ajustes = {}, productos = [], onAgregar }) {
         etiqueta={ajustes.title || 'Productos'}
       >
         {productos.map((p) => (
-          <TarjetaProducto key={p.id} inclinar={false} {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} />
+          <TarjetaProducto key={p.id} {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} />
         ))}
       </Carrusel>
     </>
@@ -319,7 +319,7 @@ export function OfertaRelampago({ ajustes = {}, productos = [], onAgregar }) {
       <Carrusel visibles={{ escritorio: 4, tablet: 3, movil: 2.15 }} espacio="0.85rem" etiqueta={ajustes.title || 'Ofertas'}>
         {lista.map((p) => (
           <div key={p.id} className={s.flashItem}>
-            <TarjetaProducto inclinar={false} {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} />
+            <TarjetaProducto {...tarjetaDesdeProducto(p)} onAgregar={onAgregar?.(p)} />
             <StockBajo stock={p.inStock} />
           </div>
         ))}
