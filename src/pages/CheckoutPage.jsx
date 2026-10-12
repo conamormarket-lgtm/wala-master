@@ -45,6 +45,20 @@ import styles from './CheckoutPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
 // Reutilizamos el mini componente de la moneda KapiSol para darle branding
+// Datos de la compra anterior guardados en este navegador. Con cuenta van
+// atados a su uid (AuthContext los borra al cerrar sesión); un invitado solo
+// los guarda si marca "Recordar mis datos". Antes se guardaban siempre, y en
+// una computadora compartida el siguiente veía nombre, DNI y dirección ajenos.
+const DATOS_CHECKOUT_KEY = 'checkout_customer_info';
+const leerDatosGuardados = () => {
+  try {
+    const d = JSON.parse(localStorage.getItem(DATOS_CHECKOUT_KEY) || '{}');
+    return d && typeof d === 'object' ? d : {};
+  } catch (_) {
+    return {};
+  }
+};
+
 const KapiSolCoinMini = () => (
   <div style={{ width: '24px', height: '24px', perspective: '500px', display: 'inline-block', flexShrink: 0 }}>
     <div style={{ position: 'relative', width: '100%', height: '100%', transformStyle: 'preserve-3d', animation: 'floatSpin 6s infinite' }}>
@@ -489,7 +503,10 @@ const CheckoutPage = () => {
     }
   });
 
-  const guestSavedInfo = JSON.parse(localStorage.getItem('checkout_customer_info') || '{}');
+  const [datosGuardados] = useState(leerDatosGuardados);
+  // Solo lo que un invitado pidió recordar llena el formulario de entrada; los
+  // de una cuenta se siembran cuando se sabe quién es (ver seededRef).
+  const guestSavedInfo = datosGuardados.recordar ? datosGuardados : {};
 
   // ── Contexto de regalo "Mis fechas especiales" (Feature B) ───────────────────
   // El checkout YA consume el contexto de regalo de la wishlist pública EXCLUSIVAMENTE
@@ -581,6 +598,7 @@ const CheckoutPage = () => {
       giftRecipientName: registryRecipient || '',
       giftMessage: '',
       giftSticker: 'kapi-love',
+      recordarDatos: !!guestSavedInfo.recordar,
       // Fecha de entrega programada (ISO 'YYYY-MM-DD'); vacía en el flujo normal.
       deliveryDate: registryDeliveryDate
     },
@@ -1240,7 +1258,15 @@ const CheckoutPage = () => {
           city: values.city,
           email: values.email,
         };
-        localStorage.setItem('checkout_customer_info', JSON.stringify(savedInfo));
+        try {
+          if (user?.uid) {
+            localStorage.setItem(DATOS_CHECKOUT_KEY, JSON.stringify({ ...savedInfo, uid: user.uid }));
+          } else if (values.recordarDatos) {
+            localStorage.setItem(DATOS_CHECKOUT_KEY, JSON.stringify({ ...savedInfo, recordar: true }));
+          } else {
+            localStorage.removeItem(DATOS_CHECKOUT_KEY);
+          }
+        } catch (_) { /* sin localStorage (modo privado): no se recuerda */ }
 
         // ── 6. Auto-actualizar perfil del usuario ─────────────────────────
         // Solo COMPLETA lo que falta; nunca reemplaza. Antes, comprar para otra
@@ -1347,18 +1373,39 @@ const CheckoutPage = () => {
   // conserva sus initialValues de guestSavedInfo (esos campos ya traen valor, así
   // que el guard !formik.values[campo] evita pisarlos).
   const seededRef = useRef(new Set());
+  // Lo guardado en este navegador vale para una cuenta si lleva su uid, o si es
+  // del formato anterior (sin uid) con el mismo correo que la cuenta.
+  const correoCuenta = String(user?.email || '').trim().toLowerCase();
+  const datosSonDeLaCuenta = !!user?.uid && (
+    datosGuardados.uid === user.uid ||
+    (!datosGuardados.uid && !!correoCuenta && String(datosGuardados.email || '').trim().toLowerCase() === correoCuenta)
+  );
+  // Datos que no son de esta cuenta ni los pidió recordar un invitado: se borran.
+  useEffect(() => {
+    if (authLoading || !Object.keys(datosGuardados).length) return;
+    if (datosGuardados.recordar || datosSonDeLaCuenta) return;
+    try { localStorage.removeItem(DATOS_CHECKOUT_KEY); } catch (_) { /* no-op */ }
+  }, [authLoading, datosSonDeLaCuenta, datosGuardados]);
   useEffect(() => {
     // Esperamos a tener algo del usuario logueado (perfil o auth) antes de sembrar.
     if (!userProfile && !user) return;
 
+    const propios = datosSonDeLaCuenta ? datosGuardados : {};
     const candidatos = [
-      ['customerName', userProfile?.displayName || user?.displayName],
+      ['customerName', userProfile?.displayName || user?.displayName || propios.customerName],
       ['country', userProfile?.country],
-      ['dni', userProfile?.dni],
-      ['docType', userProfile?.docType],
-      ['phone', userProfile?.phone],
-      ['email', user?.email || userProfile?.email],
+      ['dni', userProfile?.dni || propios.dni],
+      ['docType', userProfile?.docType || propios.docType],
+      ['phone', userProfile?.phone || propios.phone],
+      ['email', user?.email || userProfile?.email || propios.email],
+      ['address', propios.address],
+      ['district', propios.district],
     ];
+    // city siempre trae 'Lima' por defecto: se siembra si el cliente no la tocó.
+    if (propios.city && !seededRef.current.has('city') && !formik.touched.city) {
+      setFieldValue('city', propios.city, false);
+      seededRef.current.add('city');
+    }
 
     candidatos.forEach(([campo, valor]) => {
       // Siembra cada campo UNA sola vez (su primera aparición con valor) y SOLO
@@ -1779,6 +1826,7 @@ const CheckoutPage = () => {
               <input
                 type="text"
                 name="customerName"
+                autoComplete="name"
                 value={formik.values.customerName}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -1857,6 +1905,7 @@ const CheckoutPage = () => {
               <input
                 type="email"
                 name="email"
+                autoComplete="email"
                 value={formik.values.email}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -1891,6 +1940,7 @@ const CheckoutPage = () => {
                 <input
                   type="text"
                   name="district"
+                  autoComplete="address-level2"
                   value={formik.values.district}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -1907,6 +1957,7 @@ const CheckoutPage = () => {
               <input
                 type="text"
                 name="address"
+                autoComplete="street-address"
                 value={formik.values.address}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -1916,6 +1967,21 @@ const CheckoutPage = () => {
                 <span className={styles.error}>{formik.errors.address}</span>
               )}
             </div>
+
+            {!user && !authLoading && (
+              <label className={styles.recordarDatos}>
+                <input
+                  type="checkbox"
+                  name="recordarDatos"
+                  checked={formik.values.recordarDatos}
+                  onChange={formik.handleChange}
+                />
+                <span>
+                  <strong>Recordar mis datos en este dispositivo</strong>
+                  <small>No lo marques si la computadora o el celular no es tuyo.</small>
+                </span>
+              </label>
+            )}
 
             <div className={styles.giftModeContainer}>
               <div className={styles.giftModeToggle}>
@@ -2056,51 +2122,71 @@ const CheckoutPage = () => {
                 <span>Subtotal:</span>
                 <span>S/ {subtotal.toFixed(2)}</span>
               </div>
-              {canUseCoins && (
-                <div className={styles.coinsNotice}>
-                  <div className={styles.coinsNoticeInner}>
-                    <div className={styles.coinsNoticeHead}>
-                      <div className={styles.coinsNoticeTitle}>
-                        <KapiSolCoinMini />
-                        <label className={styles.coinsNoticeLabel}>
-                          Tienes {monedasCount} monedas = S/{monedasCount.toFixed(2)}
-                        </label>
-                      </div>
-                      <div className={styles.coinsNoticeToggle}>
-                        <Badge tone="warning" variant="soft" size="sm"><T>¿Aplicar?</T></Badge>
-                        <input
-                          type="checkbox"
-                          checked={useCoinsToggle}
-                          onChange={handleToggleCoins}
-                          disabled={processing || !!paymentStepData?.pedidoWebId}
-                          style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#e11d48' }}
-                        />
-                      </div>
-                    </div>
-                    <p className={styles.coinsNoticeHint}>
-                      Se aplicará automáticamente el descuento máximo permitido ({availableCoins} monedas = S/{availableCoins.toFixed(2)}).
-                    </p>
+              {/* Monedas: una fila fija desde el inicio (antes aparecía de la nada al
+                  cargar el perfil y movía la página). Tope: la mitad del subtotal de
+                  productos, igual que topeMonedasCheckout en el servidor. */}
+              <div className={styles.coinsRow} aria-live="polite">
+                <KapiSolCoinMini />
+                {authLoading || (user && !userProfile) ? (
+                  <div className={styles.coinsRowText}>
+                    <span className={styles.coinsSkeleton} aria-hidden="true" />
+                    <span className={styles.srOnly}>Cargando tus monedas…</span>
                   </div>
-                </div>
-              )}
-              {/* Con monedas pero sin poder usarlas: antes el bloque desaparecía y no se
-                  entendía por qué. Tope: la mitad del subtotal de productos (igual que
-                  topeMonedasCheckout en el servidor). */}
-              {!canUseCoins && monedasCount > 0 && (
-                <p className={styles.coinsTopeAviso}>
-                  <KapiSolCoinMini />
-                  <span>
-                    Tienes {monedasCount} monedas. Puedes pagar con monedas hasta la mitad del
-                    precio de tus productos, y en esta compra no alcanza para usarlas.
-                  </span>
-                </p>
-              )}
+                ) : !user ? (
+                  <div className={styles.coinsRowText}>
+                    <span className={styles.coinsRowTitle}>Monedas Walá</span>
+                    <span className={styles.coinsRowSub}>
+                      <button
+                        type="button"
+                        className={styles.coinsLink}
+                        onClick={() => navigate('/login', { state: { from: '/checkout' } })}
+                      >
+                        Inicia sesión
+                      </button>{' '}
+                      y paga parte de tu compra con tus monedas.
+                    </span>
+                  </div>
+                ) : monedasCount === 0 ? (
+                  <div className={styles.coinsRowText}>
+                    <span className={styles.coinsRowTitle}>Monedas Walá</span>
+                    <span className={styles.coinsRowSub}>Aún no tienes monedas. Gánalas en los minijuegos y retos.</span>
+                  </div>
+                ) : !canUseCoins ? (
+                  <div className={styles.coinsRowText}>
+                    <span className={styles.coinsRowTitle}>Tienes {monedasCount} monedas</span>
+                    <span className={styles.coinsRowSub}>
+                      Puedes pagar con monedas hasta la mitad del precio de tus productos; en esta compra no alcanza.
+                    </span>
+                  </div>
+                ) : (
+                  <label className={styles.coinsRowToggle}>
+                    <span className={styles.coinsRowText}>
+                      <span className={styles.coinsRowTitle}>
+                        Usar {availableCoins} {availableCoins === 1 ? 'moneda' : 'monedas'}
+                        <span className={styles.coinsRowAmount}> −S/ {availableCoins.toFixed(2)}</span>
+                      </span>
+                      <span className={styles.coinsRowSub}>
+                        {availableCoins < monedasCount
+                          ? `Tienes ${monedasCount}; en esta compra puedes usar hasta la mitad del precio.`
+                          : `Tienes ${monedasCount} ${monedasCount === 1 ? 'moneda' : 'monedas'}. 1 moneda = S/ 1.00`}
+                      </span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      className={styles.coinsSwitch}
+                      checked={useCoinsToggle}
+                      onChange={handleToggleCoins}
+                      disabled={processing || !!paymentStepData?.pedidoWebId}
+                      aria-label="Usar mis monedas en esta compra"
+                    />
+                  </label>
+                )}
+              </div>
               {discount > 0 && (
-                <div className={`${styles.totalRow} ${styles.discountRow}`} style={{ fontWeight: 600, fontSize: '1.05rem', margin: '0.5rem 0', padding: '0.5rem', borderRadius: '8px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <KapiSolCoinMini /> Ahorro Monedas:
-                  </span>
-                  <span>-S/ {discount.toFixed(2)}</span>
+                <div className={`${styles.totalRow} ${styles.discountRow}`}>
+                  <span>Monedas Walá:</span>
+                  <span>−S/ {discount.toFixed(2)}</span>
                 </div>
               )}
               {/* ── Cupón ──────────────────────────────────────────────────

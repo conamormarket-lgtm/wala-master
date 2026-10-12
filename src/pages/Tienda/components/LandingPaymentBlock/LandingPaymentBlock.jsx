@@ -348,7 +348,8 @@ const LandingPaymentBlock = ({ config = {} }) => {
 
     try {
       localStorage.setItem(GUEST_KEY, JSON.stringify(customer));
-      localStorage.setItem('checkout_customer_info', JSON.stringify(customer));
+      // El checkout de la tienda solo usa lo guardado si es de esta cuenta (uid).
+      if (user?.uid) localStorage.setItem('checkout_customer_info', JSON.stringify({ ...customer, uid: user.uid }));
     } catch { /* ignore */ }
 
     const parts = String(customer.customerName).trim().split(/\s+/);

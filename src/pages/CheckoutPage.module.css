@@ -808,8 +808,8 @@
 
 /* Fila de ahorro por monedas en el resumen (antes #fffbeb / #d97706 inline). */
 .discountRow {
-  background: #fffbeb;
-  color: #d97706;
+  color: #15803d;
+  font-weight: 600;
 }
 
 /* ── Cupón ────────────────────────────────────────────────────────────────
@@ -1082,8 +1082,7 @@
 
 /* Fila de ahorro por monedas: tinte ámbar oscuro translúcido. */
 :global([data-theme='dark']) .discountRow {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fcd34d;
+  color: #86efac;
 }
 
 /* ── AVISO ENVÍO INTERNACIONAL: tinte azul oscuro translúcido ── */
@@ -1258,4 +1257,209 @@
 :global([data-theme='dark']) .spinnerOscuro {
   border-color: rgba(196, 181, 253, 0.25);
   border-top-color: #c4b5fd;
+}
+
+/* ── Monedas: fila fija en el resumen (sin saltos al cargar) ── */
+.coinsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 64px;
+  margin: 0.25rem 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #f3e1a8;
+  border-radius: 12px;
+  background: #fffbeb;
+}
+
+.coinsRowToggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.coinsRowText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.coinsRowTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #78350f;
+}
+
+.coinsRowAmount {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.coinsRowSub {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #92400e;
+}
+
+.coinsLink {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: #5d2bb4;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.coinsSkeleton {
+  display: block;
+  width: 70%;
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(180, 140, 40, 0.15), rgba(180, 140, 40, 0.3), rgba(180, 140, 40, 0.15));
+  background-size: 200% 100%;
+  animation: brilloMonedas 1.2s ease-in-out infinite;
+}
+
+@keyframes brilloMonedas {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* Interruptor (checkbox con apariencia de switch). */
+.coinsSwitch {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  border-radius: 999px;
+  background: #d6d3d1;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.coinsSwitch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.coinsSwitch:checked {
+  background: #5d2bb4;
+}
+
+.coinsSwitch:checked::after {
+  transform: translateX(18px);
+}
+
+.coinsSwitch:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.coinsSwitch:focus-visible {
+  outline: 2px solid #5d2bb4;
+  outline-offset: 2px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+:global([data-theme='dark']) .coinsRow {
+  border-color: rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+:global([data-theme='dark']) .coinsRowTitle {
+  color: #fcd34d;
+}
+
+:global([data-theme='dark']) .coinsRowSub {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .coinsRowAmount {
+  color: #86efac;
+}
+
+:global([data-theme='dark']) .coinsLink {
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .coinsSwitch {
+  background: #4b4560;
+}
+
+:global([data-theme='dark']) .coinsSwitch:checked {
+  background: #7c4dde;
+}
+
+/* ── "Recordar mis datos" (solo invitados) ── */
+.recordarDatos {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.recordarDatos input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #5d2bb4;
+  flex-shrink: 0;
+}
+
+.recordarDatos span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.recordarDatos strong {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--gris-texto-principal, #1e293b);
+}
+
+.recordarDatos small {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+:global([data-theme='dark']) .recordarDatos {
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .recordarDatos strong {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .recordarDatos small {
+  color: var(--color-text-muted);
 }
