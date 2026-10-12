@@ -1,37 +1,243 @@
 /* ── Barra de anuncios ── */
 .anuncios {
-  background: var(--anuncio-fondo);
-  color: var(--anuncio-texto);
+  --a-fondo: color-mix(in srgb, var(--anuncio-color) 12%, var(--color-surface, #fff));
+  --a-texto: color-mix(in srgb, var(--anuncio-color) 78%, var(--color-text, #1e1b2e));
+  --a-cta-fondo: var(--anuncio-color);
+  --a-cta-texto: #fff;
+  --a-adorno: color-mix(in srgb, var(--anuncio-color) 35%, transparent);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--a-fondo);
+  color: var(--a-texto);
   font-size: 0.84rem;
   font-weight: 600;
 }
 
+/* Sólida: el color del builder tal cual, con su texto. */
+.anuncio_solid {
+  --a-fondo: var(--anuncio-color);
+  --a-texto: var(--anuncio-texto);
+  --a-cta-fondo: #fff;
+  --a-cta-texto: var(--anuncio-color);
+  --a-adorno: rgba(255, 255, 255, 0.28);
+}
+
+/* Oscura: la noche violeta de Walá con el color como acento. */
+.anuncio_dark {
+  --a-fondo: var(--noche-wala, #14121c);
+  --a-texto: #fff;
+  --a-adorno: color-mix(in srgb, var(--anuncio-color) 55%, transparent);
+
+  border-bottom: 1px solid color-mix(in srgb, var(--anuncio-color) 45%, transparent);
+}
+
+:global([data-theme='dark']) .anuncio_soft {
+  --a-fondo: color-mix(in srgb, var(--anuncio-color) 22%, var(--noche-wala, #14121c));
+  --a-texto: color-mix(in srgb, var(--anuncio-color) 30%, #fff);
+}
+
+/* Textura quieta de marca en los bordes: destello y puntos de medio tono. */
+.anuncioAdorno1,
+.anuncioAdorno2 {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  color: var(--a-adorno);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* Por dentro de las flechas, para no quedar debajo de ellas. */
+.anuncioAdorno1 {
+  left: 52px;
+  width: 16px;
+}
+
+.anuncioAdorno2 {
+  right: 48px;
+  width: 64px;
+}
+
+@container (max-width: 640px) {
+  .anuncioAdorno1,
+  .anuncioAdorno2 {
+    display: none;
+  }
+}
+
 .anuncioFijo {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
-  padding: 0 1rem;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 2.6rem;
   text-align: center;
-  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.anuncioComodo .anuncioFijo,
+.anuncioComodo :global([role='region']) {
+  min-height: 48px;
 }
 
 .anuncios :global([role='region']) {
   display: flex;
   align-items: center;
-  min-height: 38px;
+  min-height: 40px;
+}
+
+.anuncioMarco {
+  min-width: 0;
 }
 
 .anuncio {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
   white-space: nowrap;
 }
 
-.anuncioEnlace,
-.anuncioEnlace:hover {
+a.anuncio,
+a.anuncio:hover {
   color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration: none;
+}
+
+.anuncioTexto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.anuncioIcono {
+  margin: -6px 0;
+}
+
+.anuncioImagen {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.anuncioDestello {
+  flex-shrink: 0;
+  width: 13px;
+  color: #fbbf24;
+}
+
+/* Llamado a la acción: píldora que contrasta con la barra. */
+.anuncioCta {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.22rem 0.55rem 0.22rem 0.7rem;
+  border-radius: 999px;
+  background: var(--a-cta-fondo);
+  color: var(--a-cta-texto);
+  font-family: var(--fuente-marca);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.anuncioCta svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  transition: transform var(--dur-media) var(--ease-signature);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.anuncio:hover .anuncioCta svg {
+    transform: translateX(3px);
+  }
+}
+
+/* Flechas (solo con ratón; en el celular se desliza con el dedo). */
+.anuncioFlecha {
+  position: absolute;
+  top: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: opacity var(--dur-rapida) ease, background-color var(--dur-rapida) ease;
+}
+
+.anuncioFlecha svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.anuncioAnterior { left: 0.5rem; }
+.anuncioSiguiente { right: 0.5rem; }
+
+@media (hover: hover) and (pointer: fine) {
+  .anuncioFlecha {
+    display: inline-flex;
+  }
+
+  .anuncioFlecha:hover {
+    background: color-mix(in srgb, currentColor 14%, transparent);
+    opacity: 1;
+  }
+}
+
+/* Puntos de avance, abajo y discretos. */
+.anuncioPuntos {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  display: flex;
+  gap: 3px;
+  transform: translateX(-50%);
+}
+
+.anuncioPuntos span {
+  width: 4px;
+  height: 4px;
+  border-radius: 4px;
+  background: currentColor;
+  opacity: 0.3;
+  transition: width var(--dur-media) var(--ease-signature), opacity var(--dur-rapida) ease;
+}
+
+.anuncioPuntos .anuncioPuntoActivo {
+  width: 12px;
+  opacity: 0.85;
+}
+
+@container (max-width: 640px) {
+  .anuncioFijo {
+    padding: 0.35rem 0.75rem 9px;
+  }
+
+  /* En el celular el mensaje baja a dos líneas en vez de cortarse. */
+  .anuncioFijo .anuncio {
+    white-space: normal;
+    line-height: 1.3;
+    text-align: left;
+  }
+
+  .anuncioFijo .anuncioTexto {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
 }
 
 /* ── Hero ── */

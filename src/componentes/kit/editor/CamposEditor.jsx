@@ -264,11 +264,16 @@ export function ControlImagen({ etiqueta, ayuda, valor, onCambiar, acepta = 'ima
 }
 
 /** Selector de íconos de Walá (reemplaza escribir un emoji). */
-export function ControlIcono({ etiqueta, valor, onCambiar }) {
-  const actual = iconoDesde(valor);
+export function ControlIcono({ etiqueta, valor, onCambiar, ninguno = false }) {
+  const actual = valor ? iconoDesde(valor) : ninguno ? '' : 'check';
   return (
     <Fila etiqueta={etiqueta}>
       <div className={s.iconos} role="radiogroup" aria-label={etiqueta}>
+        {ninguno && (
+          <button type="button" role="radio" aria-checked={actual === ''} className={[s.iconoOpcion, s.iconoNinguno, actual === '' && s.iconoOpcionActiva].filter(Boolean).join(' ')} onClick={() => onCambiar('')}>
+            Sin ícono
+          </button>
+        )}
         {ICONOS_WALA.map((i) => {
           const sel = actual === i.nombre;
           return (
@@ -503,7 +508,7 @@ function CampoEsquema({ def, ajustes, cambiar }) {
     case 'opciones': return <ControlOpciones etiqueta={def.etiqueta} ayuda={def.ayuda} opciones={def.opciones} valor={v ?? def.opciones[0]?.valor} onCambiar={poner} />;
     case 'interruptor': return <ControlInterruptor etiqueta={def.etiqueta} descripcion={def.descripcion} valor={v ?? def.porDefecto ?? false} onCambiar={poner} />;
     case 'fecha': return <ControlFecha etiqueta={def.etiqueta} valor={v} onCambiar={poner} />;
-    case 'icono': return <ControlIcono etiqueta={def.etiqueta} valor={v} onCambiar={poner} />;
+    case 'icono': return <ControlIcono etiqueta={def.etiqueta} valor={v} onCambiar={poner} ninguno={def.ninguno} />;
     case 'medida': return <ControlMedida {...def} valor={v} onCambiar={poner} />;
     case 'fuente': return <ControlFuente {...def} valor={v} onCambiar={poner} />;
     case 'lista': return <ControlLista campo={def} valor={v} onCambiar={poner} />;

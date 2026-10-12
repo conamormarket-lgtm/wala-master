@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Star, Zap, BadgeCheck,
+  Star, Zap, BadgeCheck, ArrowRight, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import Boton from './Boton';
 import Carrusel from './Carrusel';
@@ -12,8 +12,8 @@ import TarjetaProducto from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
-import { EtiquetaColgante } from './Marca';
-import { IconoWala } from './IconosWala';
+import { EtiquetaColgante, Destello, Puntos } from './Marca';
+import { IconoWala, iconoDesde } from './IconosWala';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
 import s from './Secciones.module.css';
@@ -27,41 +27,139 @@ import s from './Secciones.module.css';
  */
 
 /* ── Barra de anuncios (announcement_bar) ───────────────── */
+
+/** Separa un emoji del inicio del texto ("⚡ Ofertas…" → ⚡ + "Ofertas…"). */
+const EMOJI_INICIAL = /^(\p{Extended_Pictographic}️?)\s*/u;
+function separarIcono(texto = '') {
+  const m = String(texto).match(EMOJI_INICIAL);
+  return m ? { emoji: m[1], texto: String(texto).slice(m[0].length) } : { emoji: null, texto: String(texto) };
+}
+
+/** Un mensaje: ícono de Walá (o imagen), texto con su estilo y "Ver →" si lleva enlace. */
+function MensajeAnuncio({ m, acento }) {
+  const { emoji, texto } = separarIcono(m.text);
+  const icono = m.icon || (emoji && iconoDesde(emoji));
+  const estilo = {
+    fontFamily: m.fontFamily || undefined,
+    fontSize: m.fontSize || undefined,
+    fontWeight: m.bold ? 800 : undefined,
+    fontStyle: m.italic ? 'italic' : undefined,
+    textDecoration: m.underline ? 'underline' : undefined,
+    background: m.textBg || undefined,
+    padding: m.textBg ? '0.1em 0.4em' : undefined,
+    borderRadius: m.textBg ? '6px' : undefined,
+  };
+  const cuerpo = (
+    <>
+      {m.imageUrl ? <img src={m.imageUrl} alt="" className={s.anuncioImagen} />
+        : icono ? <IconoWala nombre={icono} tamano={24} sticker={false} girar={-8} className={s.anuncioIcono} />
+          : emoji ? <span aria-hidden="true">{emoji}</span>
+            : acento ? <Destello className={s.anuncioDestello} /> : null}
+      <span className={s.anuncioTexto} style={estilo}>{texto}</span>
+      {m.link && <span className={s.anuncioCta}>Ver <ArrowRight aria-hidden="true" /></span>}
+    </>
+  );
+  return m.link
+    ? <Enlace to={m.link} className={s.anuncio}>{cuerpo}</Enlace>
+    : <span className={s.anuncio}>{cuerpo}</span>;
+}
+
+/**
+ * Barra de anuncios. Mismos campos que el builder:
+ *  - variant: 'soft' (por defecto) | 'solid' | 'dark'; bgColor es el color de
+ *    la barra (sólida) o su acento (suave y oscura); textColor, el texto en sólida.
+ *  - density: 'compact' | 'comfortable'; showAccent: destello si no hay ícono.
+ *  - animationType: 'fade' (uno a la vez: flechas, deslizar y puntos) | 'scroll' (cinta).
+ *  - messages: [{ text, link, icon, imageUrl, fontFamily, fontSize, bold, italic, underline, textBg }]
+ */
 export function BarraAnuncios({ ajustes = {} }) {
-  const { messages = [], speed = 4000, bgColor = '#7c3aed', textColor = '#ffffff', animationType = 'fade' } = ajustes;
+  const {
+    messages = [], speed = 4000, bgColor = '#7c3aed', textColor = '#ffffff', animationType = 'fade',
+    variant = 'soft', density = 'compact', showAccent = true,
+  } = ajustes;
   const mensajes = messages.filter((m) => m?.text);
   const [i, setI] = useState(0);
+  const [dir, setDir] = useState(1);
+  const pausa = useRef(false);
+  const toque = useRef(null);
+  const total = mensajes.length;
+
+  const ir = (paso) => {
+    setDir(paso);
+    setI((x) => (x + paso + total) % total);
+  };
 
   useEffect(() => {
-    if (animationType !== 'fade' || mensajes.length < 2) return undefined;
+    if (animationType !== 'fade' || total < 2) return undefined;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const id = window.setInterval(() => setI((x) => (x + 1) % mensajes.length), Math.max(2500, speed));
+    const id = window.setInterval(() => {
+      if (pausa.current || document.hidden) return;
+      setDir(1);
+      setI((x) => (x + 1) % total);
+    }, Math.max(2500, speed));
     return () => window.clearInterval(id);
-  }, [animationType, mensajes.length, speed]);
+  }, [animationType, total, speed]);
 
-  if (!mensajes.length) return null;
-  const mensaje = (m) => (m.link ? <Enlace to={m.link} className={s.anuncioEnlace}>{m.text}</Enlace> : <span>{m.text}</span>);
+  if (!total) return null;
+  const actual = mensajes[i % total];
+  const clase = [s.anuncios, s[`anuncio_${variant}`] || s.anuncio_soft, density === 'comfortable' && s.anuncioComodo].filter(Boolean).join(' ');
 
   return (
-    <div className={s.anuncios} style={{ '--anuncio-fondo': bgColor, '--anuncio-texto': textColor }} role="region" aria-label="Anuncios">
+    <div
+      className={clase}
+      style={{ '--anuncio-color': bgColor, '--anuncio-texto': textColor }}
+      role="region"
+      aria-label="Anuncios"
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') pausa.current = true; }}
+      onPointerLeave={() => { pausa.current = false; }}
+    >
+      <Destello className={s.anuncioAdorno1} />
+      <Puntos className={s.anuncioAdorno2} filas={3} columnas={8} />
       {animationType === 'scroll' ? (
-        <Marquesina segundos={Math.max(12, mensajes.length * 6)} espacio="3rem" etiqueta="Anuncios">
-          {mensajes.map((m, k) => <span key={k} className={s.anuncio}>{mensaje(m)}</span>)}
+        <Marquesina segundos={Math.max(14, total * 7)} espacio="2.5rem" etiqueta="Anuncios">
+          {mensajes.map((m, k) => <MensajeAnuncio key={k} m={m} acento={showAccent} />)}
         </Marquesina>
       ) : (
-        <div className={s.anuncioFijo} aria-live="polite">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span
+        <div
+          className={s.anuncioFijo}
+          aria-live="polite"
+          onTouchStart={(e) => { toque.current = e.touches[0]?.clientX ?? null; pausa.current = true; }}
+          onTouchEnd={(e) => {
+            pausa.current = false;
+            if (toque.current == null || total < 2) return;
+            const dx = (e.changedTouches[0]?.clientX ?? toque.current) - toque.current;
+            toque.current = null;
+            if (Math.abs(dx) > 40) ir(dx < 0 ? 1 : -1);
+          }}
+        >
+          {total > 1 && (
+            <button type="button" className={`${s.anuncioFlecha} ${s.anuncioAnterior}`} onClick={() => ir(-1)} aria-label="Anuncio anterior">
+              <ChevronLeft aria-hidden="true" />
+            </button>
+          )}
+          <AnimatePresence mode="wait" initial={false} custom={dir}>
+            <motion.div
               key={i}
-              className={s.anuncio}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25 }}
+              className={s.anuncioMarco}
+              custom={dir}
+              initial={{ opacity: 0, x: dir * 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: dir * -18 }}
+              transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
             >
-              {mensaje(mensajes[i % mensajes.length])}
-            </motion.span>
+              <MensajeAnuncio m={actual} acento={showAccent} />
+            </motion.div>
           </AnimatePresence>
+          {total > 1 && (
+            <>
+              <button type="button" className={`${s.anuncioFlecha} ${s.anuncioSiguiente}`} onClick={() => ir(1)} aria-label="Anuncio siguiente">
+                <ChevronRight aria-hidden="true" />
+              </button>
+              <span className={s.anuncioPuntos} aria-hidden="true">
+                {mensajes.map((_, k) => <span key={k} className={k === i % total ? s.anuncioPuntoActivo : undefined} />)}
+              </span>
+            </>
+          )}
         </div>
       )}
     </div>

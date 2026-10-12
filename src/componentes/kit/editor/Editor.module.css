@@ -1050,6 +1050,15 @@
   }
 }
 
+.iconoNinguno {
+  grid-column: span 2;
+  aspect-ratio: auto;
+  color: var(--ed-tenue);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
 .iconoOpcionActiva {
   border-color: var(--ed-acento);
   background: var(--ed-acento-suave);

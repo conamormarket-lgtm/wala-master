@@ -12,6 +12,13 @@ import s from './DemoEditor.module.css';
  */
 
 const crearPagina = (img) => [
+  { id: 'e0', type: 'announcement_bar', order: -1, settings: {
+    messages: [
+      { text: '🎁 Envoltura de regalo gratis en pedidos Con Amor', link: '/conamor' },
+      { text: '🚚 Llega en 48 h a Lima y 3 a 5 días a provincias', link: '' },
+    ],
+    variant: 'soft', density: 'comfortable', bgColor: '#db2777', textColor: '#ffffff', animationType: 'fade', speed: 5000, showAccent: true,
+  } },
   { id: 'e1', type: 'hero_banner', order: 0, settings: {
     mediaType: 'image', mediaUrl: '/crear/banner-crear-1200.webp', eyebrow: 'Con Amor', title: 'Regalos que se recuerdan', subtitle: 'Tu foto, tu frase y nuestro taller. Listo en 48 horas.',
     buttonText: 'Crear el mío', buttonLink: '/personalizar', textAlign: 'left', textPosition: 'center', overlayOpacity: 55, minHeight: '420px',

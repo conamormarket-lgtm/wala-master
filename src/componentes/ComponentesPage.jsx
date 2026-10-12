@@ -138,7 +138,7 @@ const SECCIONES_DEMO = [
       { text: '🎁 Usa WALA10 y ahorra S/ 10 en tu primera compra', link: '/tienda' },
       { text: '⚡ Ofertas relámpago solo por hoy', link: '#oferta-flash' },
     ],
-    speed: 4000, bgColor: '#6d28d9', textColor: '#ffffff', animationType: 'fade',
+    speed: 4000, bgColor: '#6d28d9', textColor: '#ffffff', animationType: 'fade', variant: 'solid', density: 'compact', showAccent: true,
   } },
   { id: 's2', type: 'hero_carousel', order: 1, settings: {
     slides: [

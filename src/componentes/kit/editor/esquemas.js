@@ -165,9 +165,10 @@ export const ESQUEMAS = {
         tipo: 'lista', campo: 'messages', etiqueta: 'Mensajes', titulo: (m, i) => m.text || `Mensaje ${i + 1}`,
         nuevo: () => ({ text: 'Nuevo anuncio', link: '' }),
         campos: [
-          { tipo: 'texto', campo: 'text', etiqueta: 'Texto' },
-          { tipo: 'enlace', campo: 'link', etiqueta: 'Enlace' },
-          { tipo: 'imagen', campo: 'imageUrl', etiqueta: 'Ícono (opcional)' },
+          { tipo: 'texto', campo: 'text', etiqueta: 'Texto', ayuda: 'Si empieza con un emoji (⚡, 🎁…) se cambia solo por su ícono de Walá.' },
+          { tipo: 'enlace', campo: 'link', etiqueta: 'Enlace', ayuda: 'Con enlace aparece el botón "Ver".' },
+          { tipo: 'icono', campo: 'icon', etiqueta: 'Ícono', ninguno: true },
+          { tipo: 'imagen', campo: 'imageUrl', etiqueta: 'O una imagen propia' },
           { tipo: 'opciones', campo: 'fontFamily', etiqueta: 'Letra', opciones: FUENTES_TIPOGRAFIA.slice(0, 1).concat(FUENTES_TIPOGRAFIA.filter((f) => /Inter|Outfit|Roboto|Montserrat/.test(f.texto))) },
           { tipo: 'medida', campo: 'fontSize', etiqueta: 'Tamaño', sugerencias: ['12px', '14px', '16px'] },
           { tipo: 'interruptor', campo: 'bold', etiqueta: 'Negrita' },
