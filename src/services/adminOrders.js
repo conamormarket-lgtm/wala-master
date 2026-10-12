@@ -92,7 +92,8 @@ function esPedidoWala(p) {
       p.canalVenta === 'Tienda Virtual' ||
       p.web === true ||
       p.activador === 'portal_web' ||
-      p.vendedor === 'Portal Web')
+      p.vendedor === 'Portal Web' ||
+      p.vendedor === 'WALÁ')
   );
 }
 

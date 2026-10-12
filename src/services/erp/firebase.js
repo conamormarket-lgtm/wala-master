@@ -170,7 +170,8 @@ export function fusionarVivosYEspejo(liveOrders, espejo) {
           p.canalVenta === 'Tienda Virtual' ||
           p.web === true ||
           p.activador === 'portal_web' ||
-          p.vendedor === 'Portal Web');
+          p.vendedor === 'Portal Web' ||
+          p.vendedor === 'WALÁ');
 
       // Índice de los docs VIVOS por clave de negocio. Si existe un vivo con la
       // misma clave que un espejo, el vivo es el portador del ESTADO de

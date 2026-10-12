@@ -34,6 +34,7 @@ const esPedidoWala = (p) =>
     p.web === true ||
     p.activador === 'portal_web' ||
     p.vendedor === 'Portal Web' ||
+    p.vendedor === 'WALÁ' ||
     p._esWalaMirror === true ||
     !!p.portalPseudoOrderId ||
     !!p.pedidoWebId ||

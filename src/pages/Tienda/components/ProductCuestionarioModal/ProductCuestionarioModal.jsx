@@ -156,7 +156,6 @@ function ProductCuestionarioModal({
         web: true,
         activador: '',
         vendedor: '',
-        marca: 'Walá',
         montoTotal: total,
         montoAdelanto: 0,
         montoPendiente: total,

@@ -533,18 +533,44 @@ exports.prepareCheckoutPayment = functions.https.onCall(async (data, context) =>
  *                                  (culqiChargeId, montoPagado, paypalOrderId…).
  */
 // Cómo llega un pedido de Walá al formulario de validación del ERP. Canal: el de
-// la tienda en su lista. Pagado online, no lo atendió nadie: vendedor "Portal Web"
-// (los filtros de Walá también lo usan). Por WhatsApp lo atiende una asesora, que
+// la tienda en su lista. Pagado online, no lo atendió nadie: vendedor "WALÁ" (está
+// en la lista de vendedores del ERP). Por WhatsApp lo atiende una asesora, que
 // elige vendedor y activador al validar.
 const ERP_CANAL_WALA = "Tienda Virtual";
-const ERP_VENDEDOR_WALA = "Portal Web";
-const ERP_MARCA_WALA = "Walá";
+const ERP_VENDEDOR_WALA = "WALÁ";
+
+// Marca del ERP según la marca del producto en Walá (tienda_brands): Walá es la
+// tienda, no la marca. "Con Amor Geeks" → "Con Amor" (la de la lista del ERP que
+// esté contenida en el nombre; la más larga si hay varias). Sin coincidencia,
+// vacía: la elige quien valida.
+async function marcaErpDelPedido(payload) {
+  try {
+    const productos = Object.values(payload.productos || {});
+    const brandId = (productos.find((p) => p && p.brandId) || {}).brandId;
+    if (!brandId) return "";
+    const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+    const [marcaWala, config] = await Promise.all([
+      db.collection("tienda_brands").doc(String(brandId)).get(),
+      getErpDb().collection("configuracion").doc("general").get(),
+    ]);
+    const nombre = norm(marcaWala.exists ? (marcaWala.get("name") || marcaWala.get("nombre")) : "");
+    const marcasErp = config.exists && Array.isArray(config.get("marcas")) ? config.get("marcas") : [];
+    if (!nombre) return "";
+    return marcasErp
+      .filter((m) => norm(m) && nombre.includes(norm(m)))
+      .sort((a, b) => norm(b).length - norm(a).length)[0] || "";
+  } catch (e) {
+    console.warn("marcaErpDelPedido:", e.message);
+    return "";
+  }
+}
+
 // Campos que el formulario del ERP lee con otro nombre: la marca (lista del ERP) y
 // la dirección de entrega en Lima/Callao (envioDireccionLima; la tienda manda
 // envioDireccion y el ERP la mostraba vacía).
-function camposErpWala(payload) {
+async function camposErpWala(payload) {
   return {
-    marca: payload.marca || ERP_MARCA_WALA,
+    marca: payload.marca || await marcaErpDelPedido(payload),
     ...(payload.envioProvincia === "No" && payload.envioDireccion && !payload.envioDireccionLima
       ? { envioDireccionLima: payload.envioDireccion } : {}),
   };
@@ -598,6 +624,7 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
   const docNorm = String(docRaw).trim().replace(/\s/g, "");
   const uid = checkout.intent.uid || null;
   const orderRef = erpDb.collection("pedidos_web").doc(orderId);
+  const erpWala = await camposErpWala(payload);
   await erpDb.runTransaction(async (t) => {
     const existing = await t.get(orderRef);
     t.set(orderRef, {
@@ -605,7 +632,7 @@ async function createPaidWebOrderFromIntent({ intentId, context, pago, payment =
       ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
       ...(uid ? { userId: uid, buyerUid: uid } : {}),
       web: true,
-      ...camposErpWala(payload),
+      ...erpWala,
       canalVenta: ERP_CANAL_WALA,
       vendedor: ERP_VENDEDOR_WALA,
       activador: "",
@@ -668,6 +695,7 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
     whatsappSolicitadoAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };
+  const erpWala = await camposErpWala(payload);
   let nuevo = false;
   await erpDb.runTransaction(async (t) => {
     const existing = await t.get(orderRef);
@@ -682,7 +710,7 @@ exports.crearSolicitudWhatsappSecure = functions.https.onCall(async (data, conte
       ...(docNorm ? { dniRaw: docRaw, clienteNumeroDocumento: docNorm, dni: docNorm } : {}),
       ...(checkout.intent.uid ? { userId: checkout.intent.uid, buyerUid: checkout.intent.uid } : {}),
       metodoPago: "whatsapp",
-      ...camposErpWala(payload),
+      ...erpWala,
       canalVenta: ERP_CANAL_WALA,
       vendedor: "",
       activador: "",
