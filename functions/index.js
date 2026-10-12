@@ -565,14 +565,76 @@ async function marcaErpDelPedido(payload) {
   }
 }
 
-// Campos que el formulario del ERP lee con otro nombre: la marca (lista del ERP) y
+// Prendas en el formato del inventario del ERP (inventarioPrendas: tipo, color,
+// talla). La tienda mandaba un texto ("Casaca Naruto…/Naranja (L) x1") que el ERP
+// partía mal y Diseño no dejaba guardar. Tipo: el del inventario cuyo nombre
+// aparece en el del producto; color: el del inventario (con sinónimos). Lo que no
+// coincide se manda tal cual y el ERP lo marca para corregir.
+const cacheInventarioPrendas = { tipos: null, ts: 0 };
+const SINONIMOS_COLOR_ERP = { naranja: "anaranjado" };
+// Igual que normalizarValorInventario del ERP: sin tildes, minúsculas, solo letras y números.
+const normInventario = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const palabrasNorm = (s) => ` ${String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()} `;
+
+async function tiposInventarioPrendas() {
+  if (cacheInventarioPrendas.tipos && Date.now() - cacheInventarioPrendas.ts < 10 * 60 * 1000) {
+    return cacheInventarioPrendas.tipos;
+  }
+  const snap = await getErpDb().collection("inventarioPrendas").select("tipoPrenda", "type", "color").get();
+  const tipos = new Map();
+  snap.docs.forEach((d) => {
+    const etiqueta = String(d.get("tipoPrenda") || d.get("type") || "").trim();
+    const color = String(d.get("color") || "").trim();
+    if (!etiqueta) return;
+    const clave = normInventario(etiqueta);
+    if (!tipos.has(clave)) tipos.set(clave, { etiqueta, colores: new Map() });
+    if (color) tipos.get(clave).colores.set(normInventario(color), color);
+  });
+  cacheInventarioPrendas.tipos = tipos;
+  cacheInventarioPrendas.ts = Date.now();
+  return tipos;
+}
+
+async function prendasErpDelPedido(payload) {
+  const productos = Object.values(payload.productos || {}).filter(Boolean);
+  if (!productos.length) return null;
+  let tipos = new Map();
+  try {
+    tipos = await tiposInventarioPrendas();
+  } catch (e) {
+    console.warn("prendasErpDelPedido: inventario no disponible:", e.message);
+  }
+  return productos.map((p) => {
+    const nombre = palabrasNorm(p.producto || p.nombre);
+    let tipo = null;
+    let posicion = Infinity;
+    for (const t of tipos.values()) {
+      const i = nombre.indexOf(palabrasNorm(t.etiqueta));
+      if (i >= 0 && i < posicion) { posicion = i; tipo = t; }
+    }
+    const colorWala = String(p.color || "").trim();
+    const n = normInventario(colorWala);
+    const color = (tipo && (tipo.colores.get(n) || tipo.colores.get(normInventario(SINONIMOS_COLOR_ERP[n])))) || colorWala;
+    return {
+      tipoPrenda: tipo ? tipo.etiqueta : "",
+      color,
+      talla: String(p.talla || "").trim(),
+      cantidad: Number(p.cantidad) || 1,
+      productoId: p.productoId || "",
+    };
+  });
+}
+
+// Campos que el formulario del ERP lee con otro nombre: la marca (lista del ERP),
 // la dirección de entrega en Lima/Callao (envioDireccionLima; la tienda manda
-// envioDireccion y el ERP la mostraba vacía).
+// envioDireccion y el ERP la mostraba vacía) y las prendas como lista.
 async function camposErpWala(payload) {
+  const prendas = await prendasErpDelPedido(payload);
   return {
     marca: payload.marca || await marcaErpDelPedido(payload),
     ...(payload.envioProvincia === "No" && payload.envioDireccion && !payload.envioDireccionLima
       ? { envioDireccionLima: payload.envioDireccion } : {}),
+    ...(prendas ? { prendas, ...(typeof payload.prendas === "string" ? { prendasTexto: payload.prendas } : {}) } : {}),
   };
 }
 
