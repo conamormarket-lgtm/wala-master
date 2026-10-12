@@ -94,12 +94,15 @@ export function rutaDeMarca(m) {
 export function tarjetaDesdeMarca(m) {
   const ruta = rutaDeMarca(m);
   if (!m?.name || !ruta || m.active === false || m.visible === false) return null;
+  // bgColor viene en #ffffff en casi todas las marcas (valor por defecto del
+  // admin): blanco o casi blanco no sirve de fondo de tarjeta → paleta.
+  const color = /^#?(f{3}|f{6}|fefefe|fafafa)$/i.test(String(m.bgColor || '').trim()) ? '' : m.bgColor || '';
   return {
     id: m.id || ruta,
     nombre: m.name,
     logo: m.logoUrl || m.imageUrl || '',
     url: `/${ruta}`,
-    color: m.bgColor || '',
+    color,
     fondo: m.bgImage || '',
   };
 }

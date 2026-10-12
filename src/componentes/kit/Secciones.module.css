@@ -738,70 +738,91 @@ a.anuncio:hover {
   }
 }
 
-/* ── Marcas: cada logo en una etiqueta blanca, girada como la del logo ── */
+/* ── Marcas: cada logo es un sticker con borde blanco, girado un poco ── */
+.marcaEnlace,
+.marcaEnlace:hover {
+  color: inherit;
+  text-decoration: none;
+}
+
 .marca {
-  position: relative;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 84px;
-  height: 84px;
-  margin: 12px 0;
-  padding: 18px 10px 10px;
-  border-radius: 22%;
+  gap: 0.7rem;
+  width: 112px;
+  padding: 12px 0 6px;
+}
+
+/* El borde blanco va por fuera (box-shadow): así el zoom del logo nunca lo tapa. */
+.marcaForma {
+  display: block;
+  width: 80px;
+  height: 80px;
+  border-radius: 22px;
   background: #fff;
-  color: var(--violet-800, #5b21b6);
-  box-shadow: 0 0 0 1px rgba(30, 17, 64, 0.08), 0 10px 20px -14px rgba(30, 17, 64, 0.5);
-  transform: rotate(var(--giro, -5deg));
+  box-shadow: 0 0 0 4px #fff, 0 0 0 5px rgba(30, 17, 64, 0.08), 0 14px 22px -12px rgba(30, 17, 64, 0.55);
+  overflow: hidden;
+  transform: rotate(var(--giro, -4deg));
   transition: transform var(--dur-media) var(--ease-signature);
 }
 
-/* Ojal de la etiqueta. */
-.marca::before {
-  content: '';
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  width: 8px;
-  height: 8px;
+.marcaForma img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.marcaForma strong {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--degradado-logo);
+  color: #fff;
+  font-family: var(--fuente-marca);
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.forma_circle {
   border-radius: 50%;
-  background: var(--color-bg, var(--gris-fondo));
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
-  transform: translateX(-50%);
+}
+
+/* Estrella y pentágono: la forma recorta el logo (sin borde blanco). */
+.forma_star,
+.forma_pentagon {
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Nombre en hasta dos líneas (los "Con Amor …" son largos). */
+.marcaNombre {
+  display: -webkit-box;
+  max-width: 100%;
+  min-height: 2.3em;
+  overflow: hidden;
+  color: var(--color-text);
+  font-family: var(--fuente-marca);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  text-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .marca:hover {
+  .marcaEnlace:hover .marcaForma {
     transform: rotate(0deg) scale(1.08);
   }
-}
 
-.marca img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.marca strong {
-  font-family: var(--fuente-marca);
-  font-size: 0.8rem;
-  font-weight: 900;
-  text-align: center;
-}
-
-/* Logos redondos: sticker circular (sin ojal). */
-.marcaCirculo {
-  padding: 6px;
-  border-radius: 50%;
-}
-
-.marcaCirculo::before {
-  display: none;
-}
-
-.marcaCirculo img {
-  border-radius: 50%;
-  object-fit: cover;
+  .marcaEnlace:hover .marcaNombre {
+    color: var(--primary-color);
+  }
 }
 
 /* ── Categorías ── */

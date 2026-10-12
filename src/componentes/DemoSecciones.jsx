@@ -12,7 +12,7 @@ import s from './DemoSecciones.module.css';
 const VIDEO_DEMO = 'https://www.youtube.com/watch?v=aqz-KE-bpKQ';
 
 /** Ejemplos por tipo: [{ nombre de la variante, settings }]. */
-const ejemplos = (img) => ({
+const ejemplos = (img, logos = []) => ({
   announcement_bar: [
     ['Suave', { variant: 'soft', bgColor: '#7c3aed', density: 'comfortable', messages: [{ text: '🎁 Envoltura de regalo gratis este mes', link: '/conamor' }, { text: '🚚 Envíos a todo el Perú', link: '' }] }],
     ['Sólida', { variant: 'solid', bgColor: '#6d28d9', textColor: '#ffffff', messages: [{ text: '⚡ Ofertas relámpago solo por hoy', link: '#ofertas' }, { text: '💳 Paga con Yape o tarjeta', link: '' }] }],
@@ -103,15 +103,8 @@ const ejemplos = (img) => ({
     }],
   ],
   marquee: [
-    ['Logos', {
-      title: 'Nuestras marcas', speed: 25000,
-      items: [
-        { imageUrl: '/marcas/con-amor.png', name: 'Con Amor', link: '/conamor', shape: 'circle' },
-        { imageUrl: '/marcas/catas.png', name: 'Catas', link: '/catas', shape: 'square' },
-        { imageUrl: '/logo-wala-192.png', name: 'Walá', link: '/', shape: 'circle' },
-        { imageUrl: '/assets/kapi/kapi-happy.webp', name: 'Kapi', link: '/kapi', shape: 'circle' },
-      ],
-    }],
+    ['Cuadrados', { title: 'Nuestras marcas', subtitle: 'Todas hechas con amor en el mismo taller.', speed: 30000, items: logos }],
+    ['Círculos', { title: 'Nuestras marcas', speed: 30000, items: logos.map((l) => ({ ...l, shape: 'circle', zoom: 1 })) }],
   ],
   feature_list: [
     ['Con foto', {
@@ -209,7 +202,7 @@ function Ficha({ tipo, variantes, datos }) {
  *  - datos: { productos, categorias, marcas, grupos, imagenes, onAgregar }
  */
 export default function DemoSecciones({ datos }) {
-  const lista = ejemplos(datos.imagenes);
+  const lista = ejemplos(datos.imagenes, datos.logos);
   return (
     <div className={s.catalogo}>
       {GRUPOS_MODULOS.map((g, k) => {

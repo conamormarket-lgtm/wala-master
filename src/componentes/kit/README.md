@@ -141,6 +141,13 @@ que `productNeedsVariantSelection`):
 <AgregarRapido abierto {...opcionesDeProducto(producto, { subproductos })} onConfirmar={…} />
 ```
 
+## Datos de ejemplo
+
+`src/componentes/demo/marcas.json` es una copia de las marcas reales
+(`tienda_brands`, leída con la API pública, sin permisos de admin). Si se
+agregan marcas en la tienda, se puede volver a copiar; la demo no lee
+Firestore.
+
 ## Builder
 
 Una página del builder (`pages/{pageId}` en Firestore) se dibuja así:

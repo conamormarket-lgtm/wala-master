@@ -1,0 +1,66 @@
+[
+  {
+    "id": "y5eh2sd61nUC5kTBndax",
+    "name": "Con Amor Parejas",
+    "slug": "conamorparejas",
+    "logoUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809053230_1788465161780_parejas.webp?alt=media&token=c8316da1-eff8-423d-a7f2-01ec9b45521c",
+    "bgColor": "#ffffff",
+    "order": 2
+  },
+  {
+    "id": "xjlrkw1JM8InbEw1mWtt",
+    "name": "Con Amor Geeks",
+    "slug": "conamorgeeks",
+    "logoUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809051837_1788463881615_images.webp?alt=media&token=94636b60-9e6f-4794-9ed6-42e39c85580c",
+    "bgColor": "#ffffff",
+    "order": 3
+  },
+  {
+    "id": "oxHdwFi49aDpbclImIog",
+    "name": "Con Amor Equipos",
+    "slug": "conamorequipos",
+    "logoUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809046936_1788465195818_equipos.webp?alt=media&token=78338361-ba87-4662-a5af-f9a0cbc47e43",
+    "bgColor": "#ffffff",
+    "order": 4
+  },
+  {
+    "id": "pMujqcyIIDUF2EdSSX5V",
+    "name": "MUSSA",
+    "slug": "mussa",
+    "logoUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809048355_1788465136025_mussa.webp?alt=media&token=3bac5cb2-7a97-4b58-be85-130bf6aec311",
+    "bgColor": "#ffffff",
+    "order": 5
+  },
+  {
+    "id": "ALn64YiCeoFJgMSVE2oh",
+    "name": "Nova",
+    "slug": "nova",
+    "logoUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809040756_1788465234410_nova.webp?alt=media&token=96cd6ce5-87c3-45a4-9a39-d65b57aec41d",
+    "bgColor": "#ffffff",
+    "order": 6
+  },
+  {
+    "id": "XivhXo5IVUvksIehFt0z",
+    "name": "Catas",
+    "slug": "catas",
+    "logoUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809042222_1788465259737_catas.webp?alt=media&token=83e93101-d243-43e0-93e8-98f8a6ca94ae",
+    "bgColor": "#ffffff",
+    "order": 7
+  },
+  {
+    "id": "l658LKNzAlybrfUVdxxE",
+    "name": "Factos",
+    "slug": "factos",
+    "logoUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809043653_1788465287299_factos.webp?alt=media&token=16459de1-bc1e-4ffb-80fc-bd14b7a5564f",
+    "bgColor": "#ffffff",
+    "order": 8
+  },
+  {
+    "id": "rEPEpl4Hvzi6ogOBHn7x",
+    "name": "Yoryo",
+    "slug": "yoryo",
+    "logoUrl": "https://firebasestorage.googleapis.com/v0/b/sistema-gestion-3b225.firebasestorage.app/o/reconvertidas%2F1788809049922_1788464875591_yoryo.webp?alt=media&token=3984692b-e61a-45c6-bf4f-0e183af4f1c4",
+    "bgColor": "#ffffff",
+    "order": 9
+  }
+]

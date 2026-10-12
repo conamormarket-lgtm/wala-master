@@ -10,6 +10,7 @@ import Acordeon from './Acordeon';
 import TarjetaProducto from './TarjetaProducto';
 import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
+import { toDirectImageUrl } from '../../utils/imageUrl';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { EtiquetaColgante, Destello, acento } from './Marca';
 import { IconoWala, iconoDesde } from './IconosWala';
@@ -405,20 +406,49 @@ export function PreguntasFrecuentes({ ajustes = {} }) {
 }
 
 /* ── Marcas en movimiento (marquee) ─────────────────────── */
+
+/** Formas que guarda el editor (MarqueeBrandItem): circle | square | star | pentagon. */
+const FORMAS_LOGO = {
+  star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+  pentagon: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)',
+};
+
+/**
+ * Logos en una cinta sin fin. Cada logo es un sticker con la forma, el zoom
+ * y el encuadre que se eligen en el editor, y su nombre debajo.
+ * `speed` viene en milisegundos (el editor guarda segundos × 1000).
+ */
 export function MarcasMarquesina({ ajustes = {} }) {
   const items = (ajustes.items || []).filter((m) => m?.imageUrl || m?.name);
   if (!items.length) return null;
+  const velocidad = Number(ajustes.speed) || 30000;
+  const segundos = velocidad > 1000 ? velocidad / 1000 : velocidad;
   return (
     <>
-      <TituloSeccion titulo={ajustes.title ?? 'Empresas con las que trabajamos'} alinear="center" />
-      <Marquesina segundos={ajustes.speed || 30} espacio="2.5rem" etiqueta="Marcas">
+      <TituloSeccion titulo={ajustes.title ?? 'Empresas con las que trabajamos'} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} alinear="center" />
+      <Marquesina segundos={Math.max(10, segundos * (items.length / 6 || 1))} espacio="1.75rem" etiqueta="Marcas">
         {items.map((m, k) => {
+          const forma = m.shape || 'square';
           const logo = (
-            <span className={[s.marca, m.shape === 'circle' && s.marcaCirculo].filter(Boolean).join(' ')} title={m.name} style={{ '--giro': k % 2 ? '5deg' : '-5deg' }}>
-              {m.imageUrl ? <img src={m.imageUrl} alt={m.alt || m.name || ''} loading="lazy" /> : <strong>{m.name}</strong>}
+            <span className={s.marca} style={{ '--giro': k % 2 ? '4deg' : '-4deg' }} title={m.name}>
+              <span className={[s.marcaForma, s[`forma_${forma}`]].filter(Boolean).join(' ')} style={FORMAS_LOGO[forma] ? { clipPath: FORMAS_LOGO[forma] } : undefined}>
+                {m.imageUrl ? (
+                  <img
+                    src={toDirectImageUrl(m.imageUrl)}
+                    alt={m.alt || m.name || ''}
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                      objectPosition: `${m.posX ?? 50}% ${m.posY ?? 50}%`,
+                      transform: Number(m.zoom) > 1 ? `scale(${m.zoom})` : undefined,
+                    }}
+                  />
+                ) : <strong>{(m.name || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase()}</strong>}
+              </span>
+              {m.name && <small className={s.marcaNombre}>{m.name}</small>}
             </span>
           );
-          return m.link ? <Enlace key={k} to={m.link}>{logo}</Enlace> : <React.Fragment key={k}>{logo}</React.Fragment>;
+          return m.link ? <Enlace key={k} to={m.link} className={s.marcaEnlace}>{logo}</Enlace> : <React.Fragment key={k}>{logo}</React.Fragment>;
         })}
       </Marquesina>
     </>

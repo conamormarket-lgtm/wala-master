@@ -25,6 +25,8 @@ import FRENTE_BLANCO from './demo/polera-fondo-blanco.jpg';
 import ESPALDA_BLANCO from './demo/polera-fondo-blanco-espalda.jpg';
 import TAZA from './demo/taza.svg';
 import CUADRO from './demo/cuadro.svg';
+// Marcas reales de la tienda (copia de tienda_brands, solo lectura).
+import MARCAS_TIENDA from './demo/marcas.json';
 
 const FRENTE = '/prendas/hoodie-frente.webp';
 const ESPALDA = '/prendas/hoodie-espalda.webp';
@@ -231,12 +233,8 @@ const SECCIONES_DEMO = [
     ],
   } },
   { id: 's8', type: 'marquee', order: 7, settings: {
-    title: 'Nuestras marcas', speed: 25,
-    items: [
-      { imageUrl: '/marcas/con-amor.png', name: 'Con Amor', link: '/conamor', shape: 'circle' },
-      { imageUrl: '/marcas/catas.png', name: 'Catas', link: '/catas', shape: 'circle' },
-      { imageUrl: '/logo-wala-192.png', name: 'Walá', link: '/', shape: 'circle' },
-    ],
+    title: 'Nuestras marcas', speed: 30000,
+    items: MARCAS_TIENDA.map((b) => ({ name: b.name, imageUrl: b.logoUrl, link: `/${b.slug}`, shape: 'square', zoom: 1, posX: 50, posY: 50, brandId: b.id })),
     paddingTop: '1.5rem', paddingBottom: '1.5rem',
   } },
   { id: 's9', type: 'faq_accordion', order: 8, settings: {
@@ -251,15 +249,11 @@ const SECCIONES_DEMO = [
   } },
 ];
 
-/* Marcas como las guarda tienda_brands (las lee getBrands() en la tienda). */
-const MARCAS_DEMO = [
-  { id: 'conamor', name: 'Con Amor', slug: 'conamor', logoUrl: '/marcas/con-amor.png', active: true },
-  { id: 'kapi', name: 'Kapi', slug: 'kapi', logoUrl: '/assets/kapi/kapi-happy.webp', bgColor: '#0f766e', active: true },
-  { id: 'catas', name: 'Catas', slug: 'catas', logoUrl: '/marcas/catas.png', active: true },
-  { id: 'geeks', name: 'Con Amor Geeks', slug: 'geeks', active: true },
-  { id: 'nova', name: 'Nova', slug: 'nova', active: true },
-  { id: 'oculta', name: 'Marca oculta', slug: 'oculta', visible: false },
-];
+/* Marcas como las guarda tienda_brands (copia de la tienda real). */
+const MARCAS_DEMO = MARCAS_TIENDA;
+
+/** Logos en movimiento como los arma el editor con "Añadir todas las marcas". */
+const LOGOS_MARCAS = MARCAS_TIENDA.map((b) => ({ name: b.name, imageUrl: b.logoUrl, link: `/${b.slug}`, shape: 'square', zoom: 1, posX: 50, posY: 50, brandId: b.id }));
 
 const CATEGORIAS_DEMO = SECCIONES_DEMO.find((x) => x.type === 'category_grid').settings.items;
 const GRUPOS_FILTRO_DEMO = [
@@ -301,15 +295,7 @@ const MENU_TIENDA = {
     { id: 'llaveros', nombre: 'Llaveros', url: '/tienda?categoria=llaveros' },
   ],
   activa: 'poleras',
-  marcas: [
-    { id: 'conamor', nombre: 'Con Amor', url: '/conamor' },
-    { id: 'geeks', nombre: 'Con Amor Geeks', url: '/geeks' },
-    { id: 'nova', nombre: 'Nova', url: '/nova' },
-    { id: 'catas', nombre: 'Catas', url: '/catas' },
-    { id: 'kapi', nombre: 'Kapi', url: '/kapi' },
-    { id: 'deporte', nombre: 'Deporte', url: '/deporte' },
-    { id: 'familia', nombre: 'Familia', url: '/familia' },
-  ],
+  marcas: MARCAS_TIENDA.map((b) => ({ id: b.id, nombre: b.name, url: `/${b.slug}` })),
 };
 
 const FAVORITOS_DEMO = [
@@ -656,6 +642,7 @@ function Contenido({ tema, cambiarTema }) {
               productos: PRODUCTOS_DEMO,
               categorias: CATEGORIAS_DEMO,
               marcas: MARCAS_DEMO,
+              logos: LOGOS_MARCAS,
               grupos: GRUPOS_FILTRO_DEMO,
               imagenes: { frente: FRENTE_BLANCO, espalda: ESPALDA_BLANCO, taza: TAZA, cuadro: CUADRO },
               onAgregar: manejarAgregar,
