@@ -607,6 +607,26 @@
 }
 
 /* ── Formulario ── */
+/* Pestañas del panel: a todo el ancho y con aire debajo. */
+.pestanasPanel {
+  margin-bottom: 1.1rem;
+}
+
+.formulario .pestanasPanel {
+  margin-bottom: 0.2rem;
+}
+
+.pestanasPanel > [role='tablist'] {
+  display: flex;
+  width: 100%;
+}
+
+.pestanasPanel [role='tab'] {
+  flex: 1;
+  justify-content: center;
+  padding: 0 0.6rem;
+}
+
 .formulario {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

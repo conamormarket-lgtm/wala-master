@@ -313,7 +313,9 @@ export default function PanelEditor({
             {vistaActual === 'lista' && (
               <motion.div key="lista" {...transicionVista}>
                 {ajustesPagina && (
-                  <Pestanas opciones={[{ id: 'secciones', texto: 'Secciones', cuenta: lista.length }, { id: 'pagina', texto: 'Página' }]} valor={pestana} onChange={setPestana} etiqueta="Panel" />
+                  <div className={s.pestanasPanel}>
+                    <Pestanas opciones={[{ id: 'secciones', texto: 'Secciones', cuenta: lista.length }, { id: 'pagina', texto: 'Página' }]} valor={pestana} onChange={setPestana} etiqueta="Panel" />
+                  </div>
                 )}
                 {pestana === 'pagina' && ajustesPagina ? (
                   <div className={s.campos}>{ajustesPagina}</div>

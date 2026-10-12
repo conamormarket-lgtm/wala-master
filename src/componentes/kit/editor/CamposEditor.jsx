@@ -529,7 +529,11 @@ export function FormularioSeccion({ seccion, onCambiar }) {
   }
   return (
     <div className={s.formulario}>
-      {disponibles.length > 1 && <Pestanas opciones={disponibles} valor={actual} onChange={setPestana} etiqueta="Partes del formulario" />}
+      {disponibles.length > 1 && (
+        <div className={s.pestanasPanel}>
+          <Pestanas opciones={disponibles} valor={actual} onChange={setPestana} etiqueta="Partes del formulario" />
+        </div>
+      )}
       <div key={actual} className={s.campos}>
         <CamposDe campos={esquema.campos.filter((c) => (c.pestana || 'contenido') === actual)} ajustes={ajustes} cambiar={onCambiar} />
       </div>
