@@ -29,11 +29,24 @@
       "destination": "https://sistema-gestion-3b225.firebaseapp.com/__/firebase/:path*"
     },
     {
+      "source": "/componentes",
+      "destination": "/componentes.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/componentes(.html)?",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
     {
       "source": "/((?!__/).*)",
       "headers": [

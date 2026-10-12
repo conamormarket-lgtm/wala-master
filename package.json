@@ -44,7 +44,7 @@
     "start": "vite",
     "dev": "vite",
     "dev:3001": "vite --port 3001",
-    "build": "vite build",
+    "build": "vite build && node scripts/build-componentes.mjs",
     "postinstall": "node scripts/patch-google-auth-gradle.js",
     "preview": "vite build --mode preview && vite preview",
     "preview:local": "npm run preview",
