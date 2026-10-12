@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import {
   Star, BadgeCheck, ArrowRight, ChevronLeft, ChevronRight,
 } from 'lucide-react';
@@ -36,7 +35,7 @@ function separarIcono(texto = '') {
 }
 
 /** Un mensaje: ícono de Walá (o imagen), texto con su estilo y "Ver →" si lleva enlace. */
-function MensajeAnuncio({ m, acento }) {
+function MensajeAnuncio({ m, acento, oculto = false }) {
   const { emoji, texto } = separarIcono(m.text);
   const icono = m.icon || (emoji && iconoDesde(emoji));
   const estilo = {
@@ -60,7 +59,7 @@ function MensajeAnuncio({ m, acento }) {
     </>
   );
   return m.link
-    ? <Enlace to={m.link} className={s.anuncio}>{cuerpo}</Enlace>
+    ? <Enlace to={m.link} className={s.anuncio} tabIndex={oculto ? -1 : undefined}>{cuerpo}</Enlace>
     : <span className={s.anuncio}>{cuerpo}</span>;
 }
 
@@ -78,30 +77,61 @@ export function BarraAnuncios({ ajustes = {} }) {
     variant = 'soft', density = 'compact', showAccent = true,
   } = ajustes;
   const mensajes = messages.filter((m) => m?.text);
-  const [i, setI] = useState(0);
-  const [dir, setDir] = useState(1);
+  const [estado, setEstado] = useState({ i: 0, previo: null, dir: 1 });
   const pausa = useRef(false);
   const toque = useRef(null);
+  const pila = useRef(null);
+  const ultimo = useRef(0);
   const total = mensajes.length;
+  const i = estado.i % Math.max(1, total);
+  const intervalo = Math.max(2500, speed);
 
-  const ir = (paso) => {
-    setDir(paso);
-    setI((x) => (x + paso + total) % total);
-  };
+  const ir = (paso) => setEstado((e) => ({ i: (e.i + paso + total) % total, previo: e.i, dir: paso }));
 
   useEffect(() => {
     if (animationType !== 'fade' || total < 2) return undefined;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
     const id = window.setInterval(() => {
-      if (pausa.current || document.hidden) return;
-      setDir(1);
-      setI((x) => (x + 1) % total);
-    }, Math.max(2500, speed));
+      // Tras tocar o deslizar, espera un ciclo entero para no pisar al usuario.
+      if (pausa.current || document.hidden || Date.now() - ultimo.current < intervalo) return;
+      ir(1);
+    }, intervalo);
     return () => window.clearInterval(id);
-  }, [animationType, total, speed]);
+  }, [animationType, total, intervalo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Deslizar con el dedo: el mensaje sigue al dedo; al soltar pasa o vuelve. */
+  const moverPila = (dx, conTransicion) => {
+    const el = pila.current;
+    if (!el) return;
+    el.style.transition = conTransicion ? '' : 'none';
+    el.style.transform = dx ? `translateX(${dx}px)` : '';
+  };
+  const alTocar = (e) => {
+    toque.current = e.touches[0]?.clientX ?? null;
+    pausa.current = true;
+  };
+  const alMover = (e) => {
+    if (toque.current == null || total < 2) return;
+    const dx = (e.touches[0]?.clientX ?? toque.current) - toque.current;
+    moverPila(Math.max(-80, Math.min(80, dx * 0.6)), false);
+  };
+  const alSoltar = (e) => {
+    pausa.current = false;
+    ultimo.current = Date.now();
+    if (toque.current == null) return;
+    const dx = (e.changedTouches[0]?.clientX ?? toque.current) - toque.current;
+    toque.current = null;
+    moverPila(0, true);
+    if (total > 1 && Math.abs(dx) > 40) ir(dx < 0 ? 1 : -1);
+  };
+  /** Posición de cada mensaje: el actual al centro, el que sale hacia su lado. */
+  const posicion = (k) => {
+    if (k === i) return 'activo';
+    if (k === estado.previo) return estado.dir > 0 ? 'antes' : 'despues';
+    return estado.dir > 0 ? 'despues' : 'antes';
+  };
 
   if (!total) return null;
-  const actual = mensajes[i % total];
   const clase = [s.anuncios, s[`anuncio_${variant}`] || s.anuncio_soft, density === 'comfortable' && s.anuncioComodo].filter(Boolean).join(' ');
 
   return (
@@ -125,29 +155,19 @@ export function BarraAnuncios({ ajustes = {} }) {
       ) : (
         <div
           className={[s.anuncioFijo, total > 1 && s.anuncioConControles].filter(Boolean).join(' ')}
-          onTouchStart={(e) => { toque.current = e.touches[0]?.clientX ?? null; pausa.current = true; }}
-          onTouchEnd={(e) => {
-            pausa.current = false;
-            if (toque.current == null || total < 2) return;
-            const dx = (e.changedTouches[0]?.clientX ?? toque.current) - toque.current;
-            toque.current = null;
-            if (Math.abs(dx) > 40) ir(dx < 0 ? 1 : -1);
-          }}
+          onTouchStart={alTocar}
+          onTouchMove={alMover}
+          onTouchEnd={alSoltar}
+          onTouchCancel={alSoltar}
         >
-          <div className={s.anuncioCentro} aria-live="polite">
-            <AnimatePresence mode="wait" initial={false} custom={dir}>
-              <motion.div
-                key={i}
-                className={s.anuncioMarco}
-                custom={dir}
-                initial={{ opacity: 0, x: dir * 18 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: dir * -18 }}
-                transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
-              >
-                <MensajeAnuncio m={actual} acento={showAccent} />
-              </motion.div>
-            </AnimatePresence>
+          {/* Todos los mensajes en la misma celda: la barra mide lo que el
+              más largo y no salta de alto al cambiar. */}
+          <div ref={pila} className={s.anuncioPila} aria-live="polite">
+            {mensajes.map((m, k) => (
+              <div key={k} className={s.anuncioItem} data-pos={posicion(k)} aria-hidden={k !== i || undefined}>
+                <MensajeAnuncio m={m} acento={showAccent} oculto={k !== i} />
+              </div>
+            ))}
           </div>
           {total > 1 && (
             <div className={s.anuncioControles}>
@@ -155,7 +175,7 @@ export function BarraAnuncios({ ajustes = {} }) {
                 <ChevronLeft aria-hidden="true" />
               </button>
               <span className={s.anuncioPuntos} aria-hidden="true">
-                {mensajes.map((_, k) => <span key={k} className={k === i % total ? s.anuncioPuntoActivo : undefined} />)}
+                {mensajes.map((_, k) => <span key={k} className={k === i ? s.anuncioPuntoActivo : undefined} />)}
               </span>
               <button type="button" className={s.anuncioFlecha} onClick={() => ir(1)} aria-label="Anuncio siguiente">
                 <ChevronRight aria-hidden="true" />

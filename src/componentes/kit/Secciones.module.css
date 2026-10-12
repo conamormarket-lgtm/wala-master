@@ -62,15 +62,39 @@
   padding: 0 7.5rem;
 }
 
-.anuncioCentro {
-  display: flex;
-  justify-content: center;
+/* Pila: todos los mensajes en la misma celda de la cuadrícula. */
+.anuncioPila {
+  display: grid;
+  width: 100%;
   min-width: 0;
+  transition: transform 0.25s var(--ease-signature, ease);
 }
 
-.anuncioMarco {
+.anuncioItem {
   display: flex;
+  grid-area: 1 / 1;
+  justify-content: center;
+  align-items: center;
   min-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.34s var(--ease-signature, ease);
+}
+
+.anuncioItem[data-pos='antes'] { transform: translateX(-28px); }
+.anuncioItem[data-pos='despues'] { transform: translateX(28px); }
+
+.anuncioItem[data-pos='activo'] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anuncioPila,
+  .anuncioItem {
+    transition: none;
+  }
 }
 
 .anuncios :global([role='region']) {
@@ -250,7 +274,7 @@ a.anuncio:hover {
     padding-right: 3.25rem;
   }
 
-  .anuncioCentro {
+  .anuncioItem {
     justify-content: flex-start;
   }
 
