@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Truck, ShieldCheck, Clock, CreditCard, RotateCcw, Heart, Star, CheckCircle2, Zap, BadgeCheck,
+  Star, Zap, BadgeCheck,
 } from 'lucide-react';
 import Boton from './Boton';
 import Carrusel from './Carrusel';
@@ -13,6 +13,7 @@ import { Enlace } from './Enlace';
 import { tarjetaDesdeProducto } from './adaptadores';
 import { BloqueSeccion, TituloSeccion, tituloDesdeAjustes } from './Seccion';
 import { EtiquetaColgante } from './Marca';
+import { IconoWala } from './IconosWala';
 import { Encabezado, BloqueTexto, BloqueImagen, BloqueVideo, MosaicoBanners, FilaDestacados } from './SeccionesContenido';
 import { BannerPrincipal, ListaBeneficios, Ubicacion, NavCategorias, GrillaProductos, CatalogoConFiltros, PiePagina } from './SeccionesExtra';
 import s from './Secciones.module.css';
@@ -120,22 +121,18 @@ export function HeroCarrusel({ ajustes = {} }) {
 }
 
 /* ── Íconos de confianza (trust_badges) ─────────────────── */
-const ICONOS_CONFIANZA = { truck: Truck, shield: ShieldCheck, clock: Clock, credit_card: CreditCard, return: RotateCcw, heart: Heart, star: Star, check: CheckCircle2 };
 
 export function InsigniasConfianza({ ajustes = {} }) {
   const badges = (ajustes.badges || []).filter((b) => b?.text);
   if (!badges.length) return null;
   return (
     <ul className={s.insignias}>
-      {badges.map((b, k) => {
-        const Icono = ICONOS_CONFIANZA[b.icon] || CheckCircle2;
-        return (
-          <li key={k}>
-            <span className={s.insigniaIcono}><Icono aria-hidden="true" /></span>
-            <span>{b.text}</span>
-          </li>
-        );
-      })}
+      {badges.map((b, k) => (
+        <li key={k}>
+          <IconoWala nombre={b.icon} tamano={46} girar={k % 2 ? 6 : -6} className={s.insigniaIcono} />
+          <span>{b.text}</span>
+        </li>
+      ))}
     </ul>
   );
 }

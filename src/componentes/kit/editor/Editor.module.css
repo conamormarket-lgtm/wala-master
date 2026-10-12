@@ -1025,6 +1025,36 @@
   to { transform: rotate(360deg); }
 }
 
+/* Selector de íconos */
+.iconos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 0.35rem;
+}
+
+.iconoOpcion {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: var(--ed-suave);
+  cursor: pointer;
+  transition: transform var(--dur-rapida) ease, border-color var(--dur-rapida) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .iconoOpcion:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.iconoOpcionActiva {
+  border-color: var(--ed-acento);
+  background: var(--ed-acento-suave);
+}
+
 /* Alternar (subrayado) */
 .alternar {
   display: inline-flex;

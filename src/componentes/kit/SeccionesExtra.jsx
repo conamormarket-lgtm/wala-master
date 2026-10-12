@@ -11,6 +11,7 @@ import { tarjetaDesdeProducto } from './adaptadores';
 import { TextoCampo, BotonDeAjustes, fuenteDe, prefiereQuieto } from './SeccionesContenido';
 import { toDirectImageUrl } from '../../utils/imageUrl';
 import { EtiquetaColgante, Garabatos, LogoWala, Destello, Corazon } from './Marca';
+import { IconoWala } from './IconosWala';
 import s from './SeccionesExtra.module.css';
 
 /*
@@ -104,8 +105,8 @@ export function BannerPrincipal({ ajustes = {}, primera = false, onClicBoton }) 
 /**
  * Por qué elegirnos. La foto va como polaroid con cinta washi (como las
  * piezas "Crea tus recuerdos" de la marca); cada beneficio, numerado.
- * El ícono: ✓ (o vacío) = sello con el degradado del logo; un emoji va en
- * un círculo claro (sobre violeta se veía apagado).
+ * El ícono es un <IconoWala> (nombre guardado en `icon`; los emojis viejos se
+ * traducen solos a su ícono).
  */
 export function ListaBeneficios({ ajustes = {} }) {
   const items = (ajustes.items || []).filter((i) => i?.text);
@@ -130,18 +131,13 @@ export function ListaBeneficios({ ajustes = {} }) {
         <TituloSeccion titulo={ajustes.title} subtitulo={ajustes.subtitle} antetitulo={ajustes.eyebrow} adorno />
         {items.length > 0 && (
           <ol className={s.beneficiosLista}>
-            {items.map((it, k) => {
-              const sello = !it.icon || it.icon === '✓';
-              return (
-                <li key={k}>
-                  <span className={sello ? s.beneficioIcono : s.beneficioEmoji} aria-hidden="true">
-                    {sello ? <Check /> : it.icon}
-                  </span>
-                  <span className={s.beneficioTexto}>{it.text}</span>
-                  <span className={s.beneficioNumero} aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
-                </li>
-              );
-            })}
+            {items.map((it, k) => (
+              <li key={k}>
+                <IconoWala nombre={it.icon} tamano={48} girar={k % 2 ? 6 : -6} />
+                <span className={s.beneficioTexto}>{it.text}</span>
+                <span className={s.beneficioNumero} aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+              </li>
+            ))}
           </ol>
         )}
         {ajustes.quote && (

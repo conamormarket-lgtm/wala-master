@@ -39,6 +39,12 @@ también es una etiqueta) y de los banners de la tienda.
 - **Garabatos** (`Garabatos`, `Destello`, `Corazon`, `Puntos`, `Trazo`):
   destellos ✦, corazones, puntos de medio tono y subrayado a mano para las
   palabras resaltadas. Siempre quietos.
+- **Íconos de Walá** (`IconosWala.jsx`: `IconoWala`, `ICONOS_WALA`,
+  `iconoDesde`): dibujados como Kapi (contorno violeta grueso, colores planos
+  de la marca, brillo blanco) en un sticker redondo. Reemplazan a los emojis
+  (cada celular los dibuja distinto) y a los íconos de línea en beneficios e
+  íconos de confianza. Los emojis o nombres viejos guardados (🚚, truck…) se
+  traducen solos; en el editor el campo "Ícono" es un selector visual.
 - **Kapi** con voz propia: FAQ ("¿Te quedó otra duda?"), pie de página
   asomándose, vacíos del editor ("Esta página tiene hambre").
 - **Noche violeta** (`--noche-wala: #14121c`), no gris carbón.

@@ -21,7 +21,7 @@ const crearPagina = (img) => [
   { id: 'e3', type: 'sidebar_catalog', order: 2, settings: { title: 'Catálogo Con Amor', brandId: 'conamor', paddingTop: '1rem', paddingBottom: '2rem' } },
   { id: 'e4', type: 'feature_list', order: 3, settings: {
     eyebrow: 'Hecho a mano', title: '¿Por qué elegirnos?', subtitle: 'Lo que nos dicen que nos hace distintos.', imageUrl: img.taller, imageAlt: 'Recién salida del taller',
-    items: [{ icon: '✓', text: 'Estampado que no se cuartea al lavar' }, { icon: '🚚', text: 'Envío a todo el Perú' }, { icon: '💬', text: 'Te ayudamos con tu diseño por WhatsApp' }],
+    items: [{ icon: 'paleta', text: 'Estampado que no se cuartea al lavar' }, { icon: 'camion', text: 'Envío a todo el Perú' }, { icon: 'chat', text: 'Te ayudamos con tu diseño por WhatsApp' }],
     quote: 'Pedí tres poleras para el cumple de mi papá y llegaron perfectas.', quoteAuthor: 'Andrea, Lima', paddingTop: '2rem', paddingBottom: '2rem',
   } },
   { id: 'e5', type: 'map_location', order: 4, settings: {

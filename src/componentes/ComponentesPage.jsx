@@ -15,6 +15,7 @@ import {
   EASE, RESORTE, Revelar, Contador,
   ProveedorEnlaces, MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito, AgregarRapido,
   accionDeProducto, tarjetaDesdeProducto, opcionesDeProducto, RenderSecciones,
+  IconoWala, ICONOS_WALA,
 } from './kit';
 import s from './ComponentesPage.module.css';
 import DemoEditor from './DemoEditor';
@@ -690,6 +691,17 @@ function Contenido({ tema, cambiarTema }) {
               <p className={s.nota}>Toca el saldo: suma 45 y el número corre.</p>
             </Panel>
           </div>
+          <Panel titulo="Íconos de Walá (en vez de emojis)">
+            <div className={s.iconos}>
+              {ICONOS_WALA.map((i) => (
+                <figure key={i.nombre}>
+                  <IconoWala nombre={i.nombre} tamano={56} />
+                  <figcaption><strong>{i.etiqueta}</strong><code>{i.nombre}</code></figcaption>
+                </figure>
+              ))}
+            </div>
+            <p className={s.nota}>Contorno violeta grueso y colores de la marca, como Kapi. Un emoji guardado (🚚, 💬, 🎁…) se cambia solo por su ícono.</p>
+          </Panel>
           <Panel titulo="Chips de filtro">
             <div className={s.fila}>
               {['Polos', 'Poleras', 'Tazas', 'Gorras', 'Para parejas', 'Cumpleaños'].map((f) => (

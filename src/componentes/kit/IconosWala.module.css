@@ -1,0 +1,44 @@
+.icono {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--tam);
+  height: var(--tam);
+  transform: rotate(var(--girar, 0deg));
+  transition: transform var(--dur-media, 0.35s) var(--ease-signature, ease);
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Sticker: círculo blanco con un aro lila y sombra corta, como pegado. */
+.sticker {
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--violet-200, #ddd6fe), 0 3px 0 0 rgba(46, 16, 101, 0.12);
+}
+
+.sticker .svg {
+  width: 74%;
+  height: 74%;
+}
+
+:global([data-theme='dark']) .sticker {
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.45), 0 3px 0 0 rgba(0, 0, 0, 0.35);
+}
+
+.emoji {
+  font-size: calc(var(--tam) * 0.5);
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icono {
+    transition: none;
+  }
+}

@@ -8,6 +8,7 @@ import { Interruptor } from '../Formulario';
 import { Pestanas } from '../Navegacion';
 import { tipoDeEnlace } from '../Enlace';
 import { FUENTES_TIPOGRAFIA, esquemaDe } from './esquemas';
+import { IconoWala, ICONOS_WALA, iconoDesde } from '../IconosWala';
 import s from './Editor.module.css';
 
 /*
@@ -262,6 +263,26 @@ export function ControlImagen({ etiqueta, ayuda, valor, onCambiar, acepta = 'ima
   );
 }
 
+/** Selector de íconos de Walá (reemplaza escribir un emoji). */
+export function ControlIcono({ etiqueta, valor, onCambiar }) {
+  const actual = iconoDesde(valor);
+  return (
+    <Fila etiqueta={etiqueta}>
+      <div className={s.iconos} role="radiogroup" aria-label={etiqueta}>
+        {ICONOS_WALA.map((i) => {
+          const sel = actual === i.nombre;
+          return (
+            <button key={i.nombre} type="button" role="radio" aria-checked={sel} title={i.etiqueta} aria-label={i.etiqueta} className={[s.iconoOpcion, sel && s.iconoOpcionActiva].filter(Boolean).join(' ')} onClick={() => onCambiar(i.nombre)}>
+              <IconoWala nombre={i.nombre} tamano={34} sticker={false} girar={0} />
+            </button>
+          );
+        })}
+      </div>
+      {valor && !actual && <p className={s.aviso}>Tenía el emoji {valor}: elige un ícono para que se vea igual en todos los celulares.</p>}
+    </Fila>
+  );
+}
+
 /** Selector de colección, categoría o marca (datos de la tienda). */
 export function ControlFuente({ etiqueta, valor, onCambiar, datos, vacio = 'Ninguna' }) {
   const { fuentes } = useEditor();
@@ -482,6 +503,7 @@ function CampoEsquema({ def, ajustes, cambiar }) {
     case 'opciones': return <ControlOpciones etiqueta={def.etiqueta} ayuda={def.ayuda} opciones={def.opciones} valor={v ?? def.opciones[0]?.valor} onCambiar={poner} />;
     case 'interruptor': return <ControlInterruptor etiqueta={def.etiqueta} descripcion={def.descripcion} valor={v ?? def.porDefecto ?? false} onCambiar={poner} />;
     case 'fecha': return <ControlFecha etiqueta={def.etiqueta} valor={v} onCambiar={poner} />;
+    case 'icono': return <ControlIcono etiqueta={def.etiqueta} valor={v} onCambiar={poner} />;
     case 'medida': return <ControlMedida {...def} valor={v} onCambiar={poner} />;
     case 'fuente': return <ControlFuente {...def} valor={v} onCambiar={poner} />;
     case 'lista': return <ControlLista campo={def} valor={v} onCambiar={poner} />;

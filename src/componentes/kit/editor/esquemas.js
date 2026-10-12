@@ -386,7 +386,7 @@ export const ESQUEMAS = {
         nuevo: () => ({ icon: 'check', text: 'Nueva insignia' }),
         campos: [
           { tipo: 'texto', campo: 'text', etiqueta: 'Texto corto' },
-          { tipo: 'opciones', campo: 'icon', etiqueta: 'Ícono', opciones: [['truck', 'Camión'], ['shield', 'Escudo'], ['clock', 'Reloj'], ['credit_card', 'Tarjeta'], ['return', 'Cambio'], ['heart', 'Corazón'], ['star', 'Estrella'], ['check', 'Visto']].map(([valor, texto]) => ({ valor, texto })) },
+          { tipo: 'icono', campo: 'icon', etiqueta: 'Ícono' },
         ],
       },
       ...pieComun(),
@@ -446,10 +446,10 @@ export const ESQUEMAS = {
       { tipo: 'texto', campo: 'subtitle', etiqueta: 'Subtítulo' },
       {
         tipo: 'lista', campo: 'items', etiqueta: 'Beneficios', titulo: (b, i) => b.text || `Beneficio ${i + 1}`,
-        nuevo: () => ({ icon: '✓', text: 'Nuevo beneficio' }),
+        nuevo: () => ({ icon: 'check', text: 'Nuevo beneficio' }),
         campos: [
           { tipo: 'texto', campo: 'text', etiqueta: 'Texto' },
-          { tipo: 'texto', campo: 'icon', etiqueta: 'Ícono', ayuda: 'Un emoji o ✓.' },
+          { tipo: 'icono', campo: 'icon', etiqueta: 'Ícono' },
         ],
       },
       { tipo: 'imagen', campo: 'imageUrl', etiqueta: 'Foto (opcional)' },
