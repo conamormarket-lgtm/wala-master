@@ -39,9 +39,9 @@ export function SeguimientoPedido({ codigo, fecha, paso, total, items, pagoPendi
       <header className={s.cabeza}>
         <div className={s.miniaturas}>
           {items.slice(0, 3).map((it, i) => (
-            <img key={i} src={it.imagen} alt="" />
+            <span key={i} className={s.miniatura}><img src={it.imagen} alt="" /></span>
           ))}
-          {items.length > 3 && <span>+{items.length - 3}</span>}
+          {items.length > 3 && <span className={`${s.miniatura} ${s.miniaturaMas}`}>+{items.length - 3}</span>}
         </div>
         <div className={s.datos}>
           <p className={s.codigo}>

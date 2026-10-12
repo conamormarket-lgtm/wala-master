@@ -73,10 +73,12 @@ export default function TarjetaProducto({
     setDeseado(!deseado);
   };
 
+  // Si onAgregar devuelve false (p. ej. abrió el selector de talla), la
+  // tarjeta no se marca como agregada: eso lo confirma el selector.
   const agregar = () => {
+    if (onAgregar?.() === false) return;
     setAgregado(true);
     setSumas((n) => n + 1);
-    onAgregar?.();
     window.clearTimeout(temporizador.current);
     temporizador.current = window.setTimeout(() => setAgregado(false), 1600);
   };
@@ -127,7 +129,7 @@ export default function TarjetaProducto({
             <span className={s.agregarIcono}>
               {agregado ? <Check key="ok" aria-hidden="true" /> : <Plus key="mas" aria-hidden="true" />}
             </span>
-            <span className={s.agregarTexto}>{agregado ? 'Listo' : 'Agregar'}</span>
+            <span className={s.agregarTexto}>{agregado ? 'Agregado' : 'Agregar'}</span>
             {sumas > 0 && <span key={sumas} className={s.masUno} aria-hidden="true">+1</span>}
           </button>
         )}

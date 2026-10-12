@@ -61,16 +61,24 @@ export function useCerrarConAtras(activo, onCerrar) {
   cerrar.current = onCerrar;
   useEffect(() => {
     if (!activo) return undefined;
+    let apilado = false;
     let porAtras = false;
-    window.history.pushState({ walaModal: true }, '');
     const alVolver = () => {
       porAtras = true;
       cerrar.current();
     };
-    window.addEventListener('popstate', alVolver);
+    // Se apila un instante después: si el componente se monta y desmonta en
+    // seguida (StrictMode lo hace en desarrollo, o un cierre inmediato), no
+    // queda un history.back() pendiente que cierre la siguiente hoja.
+    const t = window.setTimeout(() => {
+      window.history.pushState({ walaModal: true }, '');
+      apilado = true;
+      window.addEventListener('popstate', alVolver);
+    }, 0);
     return () => {
+      window.clearTimeout(t);
       window.removeEventListener('popstate', alVolver);
-      if (!porAtras && window.history.state?.walaModal) window.history.back();
+      if (apilado && !porAtras && window.history.state?.walaModal) window.history.back();
     };
   }, [activo]);
 }

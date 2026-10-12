@@ -46,6 +46,13 @@
   background: var(--primary-light);
 }
 
+.verTodo,
+.verTodo:hover,
+.promo:hover,
+.destacado:hover {
+  color: var(--primary-color);
+}
+
 .verTodo {
   display: inline-flex;
   align-items: center;
@@ -72,6 +79,10 @@
   gap: 0.5rem;
 }
 
+/* Botones de los menús: mismo trazo que los popups del header actual
+   (violeta liso / contorno, radio 10). El color en :hover se repite a
+   propósito: globals.css tiene un `a:hover { color: … }` que, sin esto,
+   pintaba el texto violeta sobre el botón violeta. */
 .botonPrimario,
 .botonSecundario {
   display: inline-flex;
@@ -80,17 +91,21 @@
   justify-content: center;
   min-height: 42px;
   padding: 0 1rem;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 0.88rem;
   font-weight: 600;
   text-align: center;
   text-decoration: none;
-  transition: background-color var(--dur-rapida) ease;
+  transition: background-color var(--dur-rapida) ease, border-color var(--dur-rapida) ease;
+}
+
+.botonPrimario,
+.botonPrimario:hover {
+  color: #fff;
 }
 
 .botonPrimario {
   background: var(--violet-700);
-  color: #fff;
 }
 
 .botonPrimario:hover {
@@ -101,17 +116,19 @@
   background: var(--violet-600);
 }
 
+.botonSecundario,
+.botonSecundario:hover {
+  color: var(--color-text);
+}
+
 .botonSecundario {
-  background: var(--primary-light);
-  color: var(--primary-color);
+  border: 1px solid var(--color-border);
+  background: transparent;
 }
 
 .botonSecundario:hover {
-  background: var(--violet-100);
-}
-
-:global([data-theme='dark']) .botonSecundario:hover {
-  background: rgba(167, 139, 250, 0.22);
+  border-color: var(--violet-300);
+  background: var(--color-hover);
 }
 
 /* ── Tienda ────────────────────────────────────────────── */
@@ -259,22 +276,14 @@
   font-size: 0.84rem;
 }
 
-/* Tarjeta dorada con el saldo grande. */
+/* Saldo arriba, sin tarjeta de color propia: el mismo blanco del popup. */
 .monedasSaldo {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.8rem 0.9rem;
-  border: 1px solid rgba(217, 119, 6, 0.22);
-  border-radius: 14px;
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  color: var(--gold-text);
-}
-
-:global([data-theme='dark']) .monedasSaldo {
-  border-color: rgba(252, 211, 77, 0.2);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.06));
-  color: #fcd34d;
+  padding: 0.35rem 0.25rem 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .monedasSaldo img {
@@ -296,17 +305,22 @@
 }
 
 .monedasEtiqueta {
+  color: var(--color-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.8;
 }
 
 .monedasValor {
   margin-top: 0.15rem;
+  color: var(--gold-text);
   font-size: 0.78rem;
-  opacity: 0.85;
+  font-weight: 600;
+}
+
+:global([data-theme='dark']) .monedasValor {
+  color: #fcd34d;
 }
 
 .monedasDatos {
@@ -346,7 +360,7 @@
 
 .monedasAcciones .botonPrimario,
 .monedasAcciones .botonSecundario {
-  min-height: 38px;
+  min-height: 40px;
 }
 
 /* ── Cuenta ────────────────────────────────────────────── */

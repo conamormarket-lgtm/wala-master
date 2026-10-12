@@ -49,53 +49,47 @@
   }
 }
 
+/* Miniaturas del pedido: fotos superpuestas, quietas (antes se movían y
+   giraban al pasar el ratón y se veía desordenado). */
 .miniaturas {
   display: flex;
   flex-shrink: 0;
 }
 
-.miniaturas img,
-.miniaturas span {
-  width: 46px;
-  height: 46px;
-  margin-left: -14px;
-  border-radius: 13px;
-  /* Miniatura: fondo blanco, igual que la mayoría de fotos de producto. */
-  background: #fff;
-  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 3px var(--color-border);
-  object-fit: contain;
-  transition: transform var(--dur-media) var(--ease-signature), margin var(--dur-media) var(--ease-signature);
-}
-
-:global([data-theme='dark']) .miniaturas span {
-  background: #2a2440;
-}
-
-.miniaturas > :first-child {
-  margin-left: 0;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .pedido:hover .miniaturas > :not(:first-child) {
-    margin-left: -6px;
-  }
-
-  .pedido:hover .miniaturas > :nth-child(2) {
-    transform: rotate(4deg);
-  }
-
-  .pedido:hover .miniaturas > :first-child {
-    transform: rotate(-4deg);
-  }
-}
-
-.miniaturas span {
+.miniatura {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  width: 44px;
+  height: 44px;
+  margin-left: -12px;
+  border-radius: 12px;
+  background: #f5f4f8;
+  box-shadow: 0 0 0 2px var(--color-surface);
+  overflow: hidden;
+}
+
+.miniatura:first-child {
+  margin-left: 0;
+}
+
+.miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 3px;
+  mix-blend-mode: multiply;
+}
+
+.miniaturaMas {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  font-size: 0.78rem;
   font-weight: 700;
-  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .miniatura:not(.miniaturaMas) {
+  background: #e9e7f0;
 }
 
 .datos {

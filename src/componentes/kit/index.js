@@ -9,3 +9,4 @@ export { EASE, RESORTE, useContador, seguirPuntero, Estallido, Revelar, esApp, u
 export { Enlace, ProveedorEnlaces } from './Enlace';
 export { default as Desplegable } from './Desplegable';
 export { MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito } from './MenusCabecera';
+export { default as AgregarRapido } from './AgregarRapido';

@@ -928,6 +928,10 @@
 
 .telefono {
   position: relative;
+  /* Su reflejo (::after, z-index 20) se queda dentro del teléfono: sin esto
+     se pintaba encima de los menús de la cabecera y partía los botones en
+     dos tonos. */
+  isolation: isolate;
   justify-self: center;
   width: 100%;
   max-width: 350px;

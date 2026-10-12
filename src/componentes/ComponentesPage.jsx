@@ -13,7 +13,7 @@ import {
   SeguimientoPedido, ItemCarrito, BarraEnvioGratis, ResumenPedido,
   Aviso, ProveedorToasts, useToast, useNotificaciones, ListaNotificaciones, EstadoVacio, HojaInferior, soles,
   EASE, RESORTE, Revelar, Contador,
-  ProveedorEnlaces, MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito,
+  ProveedorEnlaces, MenuTienda, AyudaMonedas, MenuCuenta, VistaFavoritos, VistaCarrito, AgregarRapido,
 } from './kit';
 import s from './ComponentesPage.module.css';
 // La mayoría de productos reales vienen con fondo blanco: estas fotos lo simulan.
@@ -228,7 +228,7 @@ function BarraSuperior({ tema, cambiarTema }) {
 }
 
 /** Portada: texto a la izquierda y una escena flotante a la derecha. */
-function Portada({ tema, cambiarTema, avisarAgregado }) {
+function Portada({ tema, cambiarTema, elegirTalla }) {
   const aparecer = (i) => ({
     initial: { opacity: 0, y: 24 },
     animate: { opacity: 1, y: 0 },
@@ -276,7 +276,7 @@ function Portada({ tema, cambiarTema, avisarAgregado }) {
             categoria="Más vendido" nombre="Polera Walá Essentials con capucha"
             precio={89.9} precioAntes={129.9} puntuacion={4.8} resenas={124}
             colores={['#111827', '#f8fafc', '#c4b5fd', '#4d5b3a']}
-            onAgregar={avisarAgregado('Polera Walá Essentials con capucha')}
+            onAgregar={elegirTalla({ nombre: 'Polera Walá Essentials con capucha', imagen: FRENTE_BLANCO, precio: 89.9, precioAntes: 129.9 })}
           />
         </div>
         <img src={MONEDA} alt="" className={`${s.moneda} ${s.moneda1}`} aria-hidden="true" />
@@ -320,6 +320,7 @@ const EnlaceDemo = React.forwardRef(function EnlaceDemo({ to, onClick, children,
 function Contenido({ tema, cambiarTema }) {
   const toast = useToast();
   const [conSesion, setConSesion] = useState(true);
+  const [seleccion, setSeleccion] = useState(null); // producto en el selector rápido
   const [tiendaCargando, setTiendaCargando] = useState(false);
   const { historial, noLeidas, marcarLeidas, leer, abrirCentro } = useNotificaciones();
   const [talla, setTalla] = useState('M');
@@ -337,8 +338,11 @@ function Contenido({ tema, cambiarTema }) {
   const cerrarHoja = useCallback(() => setHoja(false), []);
   const cerrarHojaMovil = useCallback(() => setHojaMovil(false), []);
 
-  const avisarAgregado = (nombre, imagen = FRENTE_BLANCO) => () =>
-    toast({ titulo: 'Agregado al carrito', texto: nombre, imagen, accion: 'Ver' });
+  // Prendas con talla: "Agregar" abre el selector en vez de agregar a ciegas.
+  const elegirTalla = (producto) => () => {
+    setSeleccion(producto);
+    return false;
+  };
 
   const alternarFiltro = (f) =>
     setFiltros((xs) => (xs.includes(f) ? xs.filter((x) => x !== f) : [...xs, f]));
@@ -372,7 +376,7 @@ function Contenido({ tema, cambiarTema }) {
       <BarraSuperior tema={tema} cambiarTema={cambiarTema} />
 
       <main className={s.main}>
-        <Portada tema={tema} cambiarTema={cambiarTema} avisarAgregado={avisarAgregado} />
+        <Portada tema={tema} cambiarTema={cambiarTema} elegirTalla={elegirTalla} />
 
         {/* ── BASE ── */}
         <Seccion
@@ -516,7 +520,7 @@ function Contenido({ tema, cambiarTema }) {
         <Seccion
           id="productos" numero="05" titulo="Tarjeta de producto"
           descripcion="Las dos primeras usan fotos con fondo blanco (como la mayoría de productos) y las otras, sin fondo: se ven iguales. Todas las tarjetas miden lo mismo aunque falten datos."
-          mejoras={['Fotos con fondo blanco sin recuadro', 'Alturas parejas en la cuadrícula', 'Inclinación suave y espalda al pasar el ratón', 'Corazón que estalla']}
+          mejoras={['Fotos con fondo blanco sin recuadro', 'Alturas parejas en la cuadrícula', '“Agregar” pide talla y color antes', 'Corazón que estalla']}
         >
           <div className={s.gridProductos}>
             {[
@@ -526,7 +530,7 @@ function Contenido({ tema, cambiarTema }) {
                 categoria="Poleras" nombre="Polera Walá Essentials con capucha"
                 precio={89.9} precioAntes={129.9} puntuacion={4.8} resenas={124} vendidos="1,2 mil"
                 colores={['#111827', '#f8fafc', '#c4b5fd', '#4d5b3a', '#7f1d1d', '#1e3a8a']}
-                onAgregar={avisarAgregado('Polera Walá Essentials con capucha')}
+                onAgregar={elegirTalla({ nombre: 'Polera Walá Essentials con capucha', imagen: FRENTE_BLANCO, precio: 89.9, precioAntes: 129.9 })}
               />,
               <TarjetaProducto
                 key="b"
@@ -534,7 +538,7 @@ function Contenido({ tema, cambiarTema }) {
                 categoria="Personalizable" nombre="Polera con tu diseño en la espalda"
                 precio={99.9} puntuacion={4.9} resenas={58} personalizable
                 colores={['#111827', '#f8fafc', '#c4b5fd']}
-                onAgregar={avisarAgregado('Polera con tu diseño en la espalda', ESPALDA)}
+                onAgregar={elegirTalla({ nombre: 'Polera con tu diseño en la espalda', imagen: ESPALDA_BLANCO, precio: 99.9 })}
               />,
               <TarjetaProducto
                 key="c"
@@ -542,7 +546,7 @@ function Contenido({ tema, cambiarTema }) {
                 categoria="Parejas" nombre="Combo polera x2 · Él y Ella"
                 precio={169.9} nuevo
                 colores={['#111827', '#7f1d1d']}
-                onAgregar={avisarAgregado('Combo polera x2 · Él y Ella')}
+                onAgregar={elegirTalla({ nombre: 'Combo polera x2 · Él y Ella', imagen: FRENTE, precio: 169.9 })}
               />,
               <TarjetaProducto
                 key="d"
@@ -622,8 +626,8 @@ function Contenido({ tema, cambiarTema }) {
                 <div className={s.telefonoContenido}>
                   <BarraEnvioGratis actual={cuentas.neto} meta={META_ENVIO} />
                   <div className={s.telefonoGrid}>
-                    <TarjetaProducto imagen={FRENTE_BLANCO} categoria="Poleras" nombre="Polera Essentials" precio={89.9} precioAntes={129.9} puntuacion={4.8} resenas={124} inclinar={false} onAgregar={avisarAgregado('Polera Essentials')} />
-                    <TarjetaProducto imagen={ESPALDA} categoria="Personalizable" nombre="Con tu diseño" precio={99.9} personalizable inclinar={false} onAgregar={avisarAgregado('Polera con tu diseño', ESPALDA)} />
+                    <TarjetaProducto imagen={FRENTE_BLANCO} categoria="Poleras" nombre="Polera Essentials" precio={89.9} precioAntes={129.9} puntuacion={4.8} resenas={124} inclinar={false} onAgregar={elegirTalla({ nombre: 'Polera Essentials', imagen: FRENTE_BLANCO, precio: 89.9, precioAntes: 129.9 })} />
+                    <TarjetaProducto imagen={ESPALDA} categoria="Personalizable" nombre="Con tu diseño" precio={99.9} personalizable inclinar={false} onAgregar={elegirTalla({ nombre: 'Polera con tu diseño', imagen: ESPALDA, precio: 99.9 })} />
                   </div>
                 </div>
                 <BarraInferior carrito={enCarrito} />
@@ -826,6 +830,19 @@ function Contenido({ tema, cambiarTema }) {
           <span>Página local de componentes · <code>src/componentes/kit</code></span>
         </footer>
       </main>
+
+      <AgregarRapido
+        abierto={Boolean(seleccion)}
+        onCerrar={() => setSeleccion(null)}
+        producto={seleccion}
+        tallas={['XS', 'S', 'M', 'L', 'XL', 'XXL']}
+        agotadas={['XS', 'XXL']}
+        colores={COLORES_PRENDA}
+        onConfirmar={({ talla: t, color: col, cantidad: n }) => {
+          toast({ titulo: 'Agregado al carrito', texto: `${seleccion.nombre} · ${t} · ${col}${n > 1 ? ` · x${n}` : ''}`, imagen: seleccion.imagen, accion: 'Ver' });
+          setSeleccion(null);
+        }}
+      />
 
       <HojaInferior
         abierta={hoja}

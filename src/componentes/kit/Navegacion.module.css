@@ -68,10 +68,22 @@
   padding: 0 1rem 0 1.25rem;
   border: var(--glass-border);
   border-radius: 20px;
+  box-shadow: var(--glass-shadow);
+}
+
+/* El vidrio va en una capa propia detrás del contenido. Con backdrop-filter
+   en la cabecera misma, todo lo position: fixed que viva dentro (una hoja,
+   un modal) se acomoda a la cabecera en vez de a la pantalla. */
+.cabecera::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
   background: var(--glass-bg-strong);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-shadow);
+  pointer-events: none;
 }
 
 /* Línea de luz de marca que recorre el borde inferior. */
