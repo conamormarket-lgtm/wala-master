@@ -5,16 +5,19 @@ import { useGlobalToast } from '../../contexts/ToastContext';
 import { GlassCard } from '../../components/ui';
 import { T } from '../../i18n/useTranslatedText';
 import { obtenerDirecciones, guardarDirecciones, MAX_DIRECCIONES } from '../../services/direcciones';
+import { DEPARTAMENTOS, getProvincias } from '../../constants/peruUbigeo';
+import { lugarLegible, distritosSugeridos } from '../../utils/ubicacionErp';
 import styles from './MisDireccionesPage.module.css';
 
 const CIUDADES = { Lima: 'Lima Metropolitana', Callao: 'Callao', Provincias: 'Otras Provincias' };
-const VACIA = { customerName: '', docType: 'DNI', dni: '', phone: '', country: 'PE', city: 'Lima', district: '', address: '' };
+const VACIA = { customerName: '', docType: 'DNI', dni: '', phone: '', country: 'PE', city: 'Lima', department: '', province: '', district: '', address: '' };
 
 // Mismos mínimos que el checkout, para que una dirección guardada siempre sirva.
 const validar = (d) => {
   if (d.customerName.trim().length < 3) return 'Escribe el nombre de quien recibe.';
   if (d.dni.trim().length < 6) return 'Escribe un número de documento válido.';
   if (d.phone.replace(/\D/g, '').length < 6) return 'Escribe un teléfono válido.';
+  if (d.city === 'Provincias' && (!d.department || !d.province)) return 'Elige el departamento y la provincia.';
   if (!d.district.trim()) return 'Escribe el distrito.';
   if (d.address.trim().length < 5) return 'Escribe la dirección exacta.';
   return null;
@@ -103,6 +106,17 @@ const MisDireccionesPage = () => {
     onChange: (e) => setForm((f) => ({ ...f, [nombre]: e.target.value })),
   });
 
+  // Distrito: texto libre con los distritos del lugar elegido como sugerencias.
+  const campoDistrito = (
+    <label className={styles.campo}>
+      <span>Distrito</span>
+      <input {...campo('district')} autoComplete="address-level2" list="direcciones-distritos" />
+      <datalist id="direcciones-distritos">
+        {distritosSugeridos(form).map((d) => <option key={d} value={d} />)}
+      </datalist>
+    </label>
+  );
+
   if (lista === null) {
     return <GlassCard variant="solid" padding="lg" animate={false}><p className={styles.vacio}><T>Cargando tus direcciones…</T></p></GlassCard>;
   }
@@ -130,7 +144,7 @@ const MisDireccionesPage = () => {
                   {d.principal && <span className={styles.etiqueta}>Principal</span>}
                 </p>
                 <p>{d.address}</p>
-                <p>{d.district}, {CIUDADES[d.city] || d.city}</p>
+                <p>{lugarLegible(d)}</p>
                 <p className={styles.itemDato}>{d.docType} {d.dni} · {d.phone}</p>
               </div>
               <div className={styles.itemAcciones}>
@@ -196,11 +210,35 @@ const MisDireccionesPage = () => {
                   {Object.entries(CIUDADES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </label>
-              <label className={styles.campo}>
-                <span>Distrito</span>
-                <input {...campo('district')} autoComplete="address-level2" />
-              </label>
+              {form.city === 'Provincias' ? (
+                <label className={styles.campo}>
+                  <span>Departamento</span>
+                  <select
+                    name="department"
+                    value={form.department}
+                    onChange={(e) => setForm((f) => ({ ...f, department: e.target.value, province: '' }))}
+                  >
+                    <option value="">Elige…</option>
+                    {DEPARTAMENTOS.filter((d) => d !== 'Callao').map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </label>
+              ) : campoDistrito}
             </div>
+            {form.city === 'Provincias' && (
+              <div className={styles.fila}>
+                <label className={styles.campo}>
+                  <span>Provincia</span>
+                  <select {...campo('province')} disabled={!form.department}>
+                    <option value="">{form.department ? 'Elige…' : 'Primero el departamento'}</option>
+                    {/* Lima/Lima es Lima Metropolitana: se elige en Ciudad / Región. */}
+                    {getProvincias(form.department)
+                      .filter((p) => !(form.department === 'Lima' && p === 'Lima'))
+                      .map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </label>
+                {campoDistrito}
+              </div>
+            )}
             <label className={styles.campo}>
               <span>Dirección exacta</span>
               <input {...campo('address')} autoComplete="street-address" placeholder="Avenida, Calle, Nro, Dpto, Referencia" />

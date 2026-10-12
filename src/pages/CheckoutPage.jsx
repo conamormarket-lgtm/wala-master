@@ -42,6 +42,8 @@ import { getDocTypesForCountry, FOREIGN_DOC_LABEL, isPeru } from '../constants/d
 // Design System "Aurora Violeta Serena": superficies de vidrio y CTAs premium.
 // Uso SOLO presentacional (aditivo); no altera lógica de compra/pago/totales.
 import { GlassCard, GlassButton, Badge, AuroraBackground } from '../components/ui';
+import { DEPARTAMENTOS, getProvincias } from '../constants/peruUbigeo';
+import { ubicacionErp, lugarLegible, distritosSugeridos } from '../utils/ubicacionErp';
 import styles from './CheckoutPage.module.css';
 import { T } from '../i18n/useTranslatedText';
 
@@ -96,6 +98,17 @@ const validationSchema = Yup.object({
   address: Yup.string().required('Dirección requerida'),
   district: Yup.string().required('Distrito requerido'),
   city: Yup.string().required('Ciudad requerida'),
+  // Fuera de Lima y Callao el envío va por agencia: el ERP necesita departamento y provincia.
+  department: Yup.string().when('city', {
+    is: 'Provincias',
+    then: (s) => s.required('Elige el departamento'),
+    otherwise: (s) => s.notRequired(),
+  }),
+  province: Yup.string().when('city', {
+    is: 'Provincias',
+    then: (s) => s.required('Elige la provincia'),
+    otherwise: (s) => s.notRequired(),
+  }),
   email: Yup.string().email('Email inválido').required('Email requerido'),
   isGiftMode: Yup.boolean(),
   giftRecipientName: Yup.string().when('isGiftMode', {
@@ -601,6 +614,8 @@ const CheckoutPage = () => {
       address: guestSavedInfo.address || '',
       district: guestSavedInfo.district || '',
       city: guestSavedInfo.city || 'Lima',
+      department: guestSavedInfo.department || '',
+      province: guestSavedInfo.province || '',
       email: user?.email || guestSavedInfo.email || '',
       // ── Preselección de Modo Regalo para "Mis fechas especiales" (ADITIVO) ──
       // Si el carrito trae una fecha de entrega del registro (/regalar/:code),
@@ -892,6 +907,8 @@ const CheckoutPage = () => {
         });
 
         // ── Payload completo con campos del ERP ───────────────────────────
+        // Ubicación con nombres (departamento/provincia) y tipoEnvio, como la guarda el ERP.
+        const ubicacion = ubicacionErp(values);
         const webOrderPayload = {
           // ─ Número de referencia ─
           numeroPedido: pseudoOrderId,
@@ -912,9 +929,10 @@ const CheckoutPage = () => {
           clienteContacto: values.phone,
           clienteContactoSecundario: '',
           clienteCorreo: values.email,
-          clienteDepartamento: values.city,
+          clienteDepartamento: ubicacion.departamento,
           clienteDistrito: values.district,
-          clienteProvincia: values.city === 'Lima' || values.city === 'Callao' ? 'No' : 'Sí',
+          clienteDistritoReal: values.district,
+          clienteProvincia: ubicacion.provincia,
 
           // ─ Datos de envío ─
           envioNombres: clienteNombre,
@@ -924,8 +942,10 @@ const CheckoutPage = () => {
           envioTipoDocumento: tipoDocumento,
           envioDireccion: values.address,
           envioDistrito: values.district,
-          envioDepartamento: values.city,
-          envioProvincia: values.city === 'Lima' || values.city === 'Callao' ? 'No' : 'Sí',
+          envioDepartamento: ubicacion.departamento,
+          envioProvincia: ubicacion.provincia,
+          envioEsProvincia: ubicacion.esProvincia ? 'Sí' : 'No',
+          tipoEnvio: ubicacion.tipoEnvio,
 
           // ─ Canal, origen y flag web ─
           canalVenta: 'Portal Web',
@@ -1094,7 +1114,7 @@ const CheckoutPage = () => {
         message += `DNI: ${values.dni}\n`;
         message += `Teléfono: ${values.phone}\n`;
         message += `Email: ${values.email}\n`;
-        message += `Dirección: ${values.address}, ${values.district}, ${values.city}\n\n`;
+        message += `Dirección: ${values.address}, ${lugarLegible(values)}\n\n`;
 
         if (values.isGiftMode) {
           message += `🎁 *MODO REGALO ACTIVO*\n`;
@@ -1164,7 +1184,7 @@ const CheckoutPage = () => {
           m += `DNI: ${values.dni}\n`;
           m += `Teléfono: ${values.phone}\n`;
           m += `Email: ${values.email}\n`;
-          m += `Dirección: ${values.address}, ${values.district}, ${values.city}\n\n`;
+          m += `Dirección: ${values.address}, ${lugarLegible(values)}\n\n`;
           if (values.isGiftMode) {
             m += `🎁 *MODO REGALO ACTIVO*\n   Para: ${values.giftRecipientName}\n   Mensaje: "${values.giftMessage}"\n`;
             if (values.deliveryDate) {
@@ -1261,6 +1281,8 @@ const CheckoutPage = () => {
           address: values.address,
           district: values.district,
           city: values.city,
+          department: values.city === 'Provincias' ? values.department : '',
+          province: values.city === 'Provincias' ? values.province : '',
           email: values.email,
         };
         try {
@@ -1411,6 +1433,8 @@ const CheckoutPage = () => {
       ['email', user?.email || userProfile?.email || propios.email],
       ['address', propios.address],
       ['district', propios.district],
+      ['department', propios.department],
+      ['province', propios.province],
     ];
     // city siempre trae 'Lima' por defecto: se siembra si el cliente no la tocó.
     if (propios.city && !seededRef.current.has('city') && !formik.touched.city) {
@@ -1458,6 +1482,8 @@ const CheckoutPage = () => {
       phone: d.phone || '',
       country: d.country || 'PE',
       city: d.city || 'Lima',
+      department: d.department || '',
+      province: d.province || '',
       district: d.district || '',
       address: d.address || '',
     });
@@ -1520,6 +1546,8 @@ const CheckoutPage = () => {
       dni: userProfile?.dni || '',
       docType: userProfile?.docType || 'DNI',
       phone: userProfile?.phone || '',
+      department: '',
+      province: '',
       district: '',
       address: '',
     });
@@ -1534,6 +1562,30 @@ const CheckoutPage = () => {
   const resumirDestinatario = !!user && modoDireccion === 'formulario' && !editarDestinatario
     && !!String(formik.values.customerName).trim() && !!String(formik.values.dni).trim()
     && !!String(formik.values.phone).trim();
+
+  // Distrito: texto libre con los distritos del lugar elegido como sugerencias.
+  const sugerenciasDistrito = distritosSugeridos(formik.values);
+  const campoDistrito = (
+    <div className={styles.field}>
+      <label>Distrito *</label>
+      <input
+        type="text"
+        name="district"
+        autoComplete="address-level2"
+        list="checkout-distritos"
+        value={formik.values.district}
+        onChange={formik.handleChange}
+        onBlur={formik.handleBlur}
+        placeholder={formik.values.city === 'Provincias' ? 'Ej: Yanahuara' : 'Ej: Miraflores'}
+      />
+      <datalist id="checkout-distritos">
+        {sugerenciasDistrito.map((d) => <option key={d} value={d} />)}
+      </datalist>
+      {formik.touched.district && formik.errors.district && (
+        <span className={styles.error}>{formik.errors.district}</span>
+      )}
+    </div>
+  );
 
   // ── Analytics: contexto de usuario reutilizable para los eventos del embudo ──
   const analyticsUserCtx = React.useMemo(
@@ -1939,11 +1991,7 @@ const CheckoutPage = () => {
                 <div className={styles.envioTexto}>
                   <p className={styles.envioNombre}>{formik.values.customerName} · {formik.values.phone}</p>
                   <p>{formik.values.address}</p>
-                  <p>
-                    {formik.values.district}
-                    {', '}
-                    {{ Lima: 'Lima Metropolitana', Callao: 'Callao', Provincias: 'Provincias' }[formik.values.city] || formik.values.city}
-                  </p>
+                  <p>{lugarLegible(formik.values)}</p>
                   <p className={styles.envioDoc}>{formik.values.docType} {formik.values.dni}</p>
                 </div>
                 <button type="button" className={styles.envioCambiar} onClick={abrirLista}>
@@ -2120,22 +2168,56 @@ const CheckoutPage = () => {
                   <span className={styles.error}>{formik.errors.city}</span>
                 )}
               </div>
-              <div className={styles.field}>
-                <label>Distrito *</label>
-                <input
-                  type="text"
-                  name="district"
-                  autoComplete="address-level2"
-                  value={formik.values.district}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="Ej: Miraflores"
-                />
-                {formik.touched.district && formik.errors.district && (
-                  <span className={styles.error}>{formik.errors.district}</span>
-                )}
-              </div>
+              {formik.values.city === 'Provincias' ? (
+                <div className={styles.field}>
+                  <label><T>Departamento *</T></label>
+                  <select
+                    name="department"
+                    value={formik.values.department}
+                    onChange={(e) => {
+                      setFieldValue('department', e.target.value);
+                      setFieldValue('province', '', false);
+                    }}
+                    onBlur={formik.handleBlur}
+                    className={styles.selectInput}
+                    style={{ padding: '0.8rem 1rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem' }}
+                  >
+                    <option value="">Elige…</option>
+                    {DEPARTAMENTOS.filter((d) => d !== 'Callao').map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  {formik.touched.department && formik.errors.department && (
+                    <span className={styles.error}>{formik.errors.department}</span>
+                  )}
+                </div>
+              ) : campoDistrito}
             </div>
+
+            {formik.values.city === 'Provincias' && (
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <label><T>Provincia *</T></label>
+                  <select
+                    name="province"
+                    value={formik.values.province}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    disabled={!formik.values.department}
+                    className={styles.selectInput}
+                    style={{ padding: '0.8rem 1rem', border: '2px solid var(--gris-borde)', borderRadius: 'var(--radio-pequeno)', fontSize: '1rem' }}
+                  >
+                    <option value="">{formik.values.department ? 'Elige…' : 'Primero el departamento'}</option>
+                    {/* Lima/Lima es Lima Metropolitana: se elige arriba, no como provincia. */}
+                    {getProvincias(formik.values.department)
+                      .filter((p) => !(formik.values.department === 'Lima' && p === 'Lima'))
+                      .map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  {formik.touched.province && formik.errors.province && (
+                    <span className={styles.error}>{formik.errors.province}</span>
+                  )}
+                </div>
+                {campoDistrito}
+              </div>
+            )}
 
             <div className={styles.field}>
               <label><T>Dirección exacta *</T></label>

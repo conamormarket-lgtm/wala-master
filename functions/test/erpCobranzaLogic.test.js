@@ -85,6 +85,10 @@ test("auto-habilitar: Lima Metropolitana no se habilita sola con el flag del ERP
   assert.equal(c.permiteAutoHabilitado({ tipoEnvio: "delivery" }, false), true);
   assert.equal(c.permiteAutoHabilitado({ envioDepartamento: "Callao" }, true), false);
   assert.equal(c.permiteAutoHabilitado({ envioDepartamento: "Arequipa" }, true), true);
+  // Pagado online en Walá (verificado por el servidor): también en Lima.
+  const pagoOnline = { metodo: "culqi", id: "chr_x", montoPen: 18, verificadoPor: "servidor" };
+  assert.equal(c.permiteAutoHabilitado({ tipoEnvio: "delivery", pagoOnline }, true), true);
+  assert.equal(c.permiteAutoHabilitado({ tipoEnvio: "delivery", pagoOnline: { ...pagoOnline, verificadoPor: "" } }, true), false);
 });
 
 test("cuenta de la pasarela: solo si hay UNA con ese nombre o alias", () => {

@@ -121,7 +121,16 @@ function esDeliveryLima(pedido) {
 function permiteAutoHabilitado(pedido, limaSinAutoHabilitar = true) {
   if (String((pedido && pedido.cobranza && pedido.cobranza.estado) || "").trim() === "Habilitado") return true;
   if (!limaSinAutoHabilitar) return true;
+  // Pagado online en Walá (cobro comprobado por el servidor): se habilita también en Lima.
+  if (tienePagoOnlineVerificado(pedido)) return true;
   return !esDeliveryLima(pedido);
+}
+
+// Igual que pagoOnlineDe() del ERP (lib/pago-online-web.ts).
+function tienePagoOnlineVerificado(pedido) {
+  const p = pedido && pedido.pagoOnline;
+  if (!p || p.verificadoPor !== "servidor" || !p.id) return false;
+  return parseMontoRobust(p.montoPen) > 0;
 }
 
 function toIsoDate(val) {

@@ -637,13 +637,45 @@ function productosConNombreErp(productos) {
     : Object.fromEntries(Object.entries(productos).map(([k, p]) => [k, conNombre(p)]));
 }
 
+// Ubicación en el formato del ERP: envioProvincia/clienteProvincia con el NOMBRE de
+// la provincia (la tienda mandaba "Sí"/"No") y tipoEnvio ("delivery" = Lima
+// Metropolitana y Callao; "agencia" = el resto), que el ERP usa para separar Lima de
+// provincia en Cobranza y para habilitar. Sirve para el checkout nuevo (ya manda
+// nombres) y para la landing y pedidos viejos (bandera + envioProvinciaNombre).
+const esBanderaProvincia = (v) => /^(s[ií]|no)$/i.test(String(v || "").trim());
+
+function ubicacionErpDelPedido(payload) {
+  const departamento = String(payload.envioDepartamento || payload.clienteDepartamento || "").trim();
+  const bandera = esBanderaProvincia(payload.envioProvincia) ? String(payload.envioProvincia).trim()
+    : String(payload.envioEsProvincia || "").trim();
+  const esProvincia = /^s[ií]$/i.test(bandera);
+  let provincia = String(payload.envioProvinciaNombre
+    || (esBanderaProvincia(payload.envioProvincia) ? "" : payload.envioProvincia) || "").trim();
+  const dep = departamento.toLowerCase();
+  if (dep === "callao") provincia = "Callao";
+  else if (dep === "lima" && !esProvincia && (!provincia || provincia.toLowerCase() === "lima")) provincia = "Lima Metropolitana";
+  const tipoEnvio = payload.tipoEnvio === "delivery" || payload.tipoEnvio === "agencia" ? payload.tipoEnvio
+    : (dep === "callao" || (dep === "lima" && provincia === "Lima Metropolitana")) ? "delivery" : "agencia";
+  const distrito = String(payload.envioDistrito || payload.clienteDistrito || "").trim();
+  return {
+    tipoEnvio,
+    envioEsProvincia: tipoEnvio === "agencia" ? "Sí" : "No",
+    ...(departamento ? { envioDepartamento: departamento } : {}),
+    ...(provincia ? { envioProvincia: provincia } : {}),
+    ...(esBanderaProvincia(payload.clienteProvincia) && provincia ? { clienteProvincia: provincia } : {}),
+    ...(!payload.clienteDistritoReal && distrito ? { clienteDistritoReal: distrito } : {}),
+  };
+}
+
 async function camposErpWala(payload) {
   const prendas = await prendasErpDelPedido(payload);
   const productos = productosConNombreErp(payload.productos);
+  const ubicacion = ubicacionErpDelPedido(payload);
   return {
     ...(productos ? { productos } : {}),
     marca: payload.marca || await marcaErpDelPedido(payload),
-    ...(payload.envioProvincia === "No" && payload.envioDireccion && !payload.envioDireccionLima
+    ...ubicacion,
+    ...(ubicacion.tipoEnvio === "delivery" && payload.envioDireccion && !payload.envioDireccionLima
       ? { envioDireccionLima: payload.envioDireccion } : {}),
     ...(prendas ? { prendas, ...(typeof payload.prendas === "string" ? { prendasTexto: payload.prendas } : {}) } : {}),
   };

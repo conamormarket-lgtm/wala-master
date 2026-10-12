@@ -8,7 +8,8 @@ const COLECCION = 'wala_direcciones';
 export const MAX_DIRECCIONES = 10;
 
 // Campos de una dirección: los mismos que pide el checkout.
-const CAMPOS = ['customerName', 'docType', 'dni', 'phone', 'country', 'city', 'district', 'address'];
+// department/province: solo con city "Provincias" (departamento y provincia del ubigeo).
+const CAMPOS = ['customerName', 'docType', 'dni', 'phone', 'country', 'city', 'department', 'province', 'district', 'address'];
 
 const limpiar = (d) => {
   const out = { id: d.id || `dir-${Date.now().toString(36)}`, principal: !!d.principal };
@@ -25,7 +26,7 @@ const normalizar = (lista) => {
 
 // Dos direcciones son la misma si coinciden destinatario, documento y lugar.
 export const mismaDireccion = (a, b) =>
-  ['customerName', 'dni', 'phone', 'city', 'district', 'address'].every(
+  ['customerName', 'dni', 'phone', 'city', 'department', 'province', 'district', 'address'].every(
     (c) => String(a?.[c] ?? '').trim().toLowerCase() === String(b?.[c] ?? '').trim().toLowerCase()
   );
 
