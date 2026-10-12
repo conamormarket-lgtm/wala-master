@@ -26,7 +26,8 @@ import CountrySelect from '../components/intl/CountrySelect';
 import PhoneIntlInput from '../components/intl/PhoneIntlInput';
 import Button from '../components/common/Button';
 import CulqiCustomCheckout, { precargarCulqi } from '../components/CulqiCustomCheckout/CulqiCustomCheckout';
-import { CreditCard, MessageCircle, ShieldCheck } from 'lucide-react';
+import { CreditCard, MessageCircle, ShieldCheck, MapPin, Plus } from 'lucide-react';
+import { obtenerDirecciones, agregarDireccion, direccionPrincipal } from '../services/direcciones';
 import PaypalCheckout from '../components/PaypalCheckout/PaypalCheckout';
 // ── Internacionalización de cobro (aditivo) ───────────────────────────────────
 // getFx/penToUsd/penToLocal: tasa de cambio (config/fx + fallback en cascada).
@@ -1261,6 +1262,11 @@ const CheckoutPage = () => {
         try {
           if (user?.uid) {
             localStorage.setItem(DATOS_CHECKOUT_KEY, JSON.stringify({ ...savedInfo, uid: user.uid }));
+            if (modoDireccion === 'formulario' && guardarEnLibreta) {
+              agregarDireccion(user.uid, { ...savedInfo, country: values.country })
+                .then((lista) => setLibreta(lista))
+                .catch((e) => console.warn('No se pudo guardar la dirección:', e));
+            }
           } else if (values.recordarDatos) {
             localStorage.setItem(DATOS_CHECKOUT_KEY, JSON.stringify({ ...savedInfo, recordar: true }));
           } else {
@@ -1417,6 +1423,66 @@ const CheckoutPage = () => {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProfile, user]);
+
+  // ── Libreta de direcciones (cuenta) ─────────────────────────────────────────
+  // Con direcciones guardadas, el checkout muestra una tarjeta "Enviar a" con
+  // "Cambiar" (como las tiendas grandes) en vez del formulario lleno. Los campos
+  // siguen en formik (ocultos): el envío del pedido no cambia.
+  const [libreta, setLibreta] = useState([]);
+  const [modoDireccion, setModoDireccion] = useState('formulario'); // 'tarjeta' | 'lista' | 'formulario'
+  const [direccionId, setDireccionId] = useState(null);
+  const [guardarEnLibreta, setGuardarEnLibreta] = useState(true);
+
+  const aplicarDireccion = (d) => {
+    formik.setValues({
+      ...formik.values,
+      customerName: d.customerName || '',
+      docType: d.docType || 'DNI',
+      dni: d.dni || '',
+      phone: d.phone || '',
+      country: d.country || 'PE',
+      city: d.city || 'Lima',
+      district: d.district || '',
+      address: d.address || '',
+    }, false);
+    setPhoneFull('');
+    setDireccionId(d.id);
+  };
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    let vivo = true;
+    obtenerDirecciones(user.uid)
+      .then((lista) => {
+        if (!vivo) return;
+        setLibreta(lista);
+        const principal = direccionPrincipal(lista);
+        // Solo si el cliente no empezó a escribir en el formulario.
+        if (principal && Object.keys(formik.touched).length === 0) {
+          aplicarDireccion(principal);
+          setModoDireccion('tarjeta');
+        }
+      })
+      .catch((e) => console.warn('No se pudieron cargar las direcciones:', e));
+    return () => { vivo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
+
+  const nuevaDireccion = () => {
+    // Parte de los datos del perfil (quien compra), no de la última dirección elegida.
+    formik.setValues({
+      ...formik.values,
+      customerName: userProfile?.displayName || user?.displayName || '',
+      dni: userProfile?.dni || '',
+      docType: userProfile?.docType || 'DNI',
+      phone: userProfile?.phone || '',
+      district: '',
+      address: '',
+    }, false);
+    setDireccionId(null);
+    setGuardarEnLibreta(true);
+    setModoDireccion('formulario');
+  };
 
   // ── Analytics: contexto de usuario reutilizable para los eventos del embudo ──
   const analyticsUserCtx = React.useMemo(
@@ -1793,20 +1859,77 @@ const CheckoutPage = () => {
                   false,
                 );
                 toast.error('Revisa los campos marcados en rojo para continuar.');
+                // Con la tarjeta "Enviar a", los campos están ocultos: se muestran.
+                if (modoDireccion !== 'formulario') setModoDireccion('formulario');
                 const firstKey = Object.keys(errs)[0];
-                const el = document.querySelector(`[name="${firstKey}"]`);
-                if (el) {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  if (typeof el.focus === 'function') el.focus();
-                }
+                setTimeout(() => {
+                  const el = document.querySelector(`[name="${firstKey}"]`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (typeof el.focus === 'function') el.focus();
+                  }
+                }, 50);
                 return;
               }
               formik.handleSubmit(e);
             }}
             className={styles.form}
           >
-            <h2><T>Detalles de Envío</T></h2>
+            <h2>{modoDireccion === 'formulario' ? <T>Detalles de Envío</T> : <T>Enviar a</T>}</h2>
 
+            {modoDireccion === 'tarjeta' && (
+              <div className={styles.envioCard}>
+                <span className={styles.envioIcono} aria-hidden="true"><MapPin size={20} /></span>
+                <div className={styles.envioTexto}>
+                  <p className={styles.envioNombre}>{formik.values.customerName} · {formik.values.phone}</p>
+                  <p>{formik.values.address}</p>
+                  <p>
+                    {formik.values.district}
+                    {', '}
+                    {{ Lima: 'Lima Metropolitana', Callao: 'Callao', Provincias: 'Provincias' }[formik.values.city] || formik.values.city}
+                  </p>
+                  <p className={styles.envioDoc}>{formik.values.docType} {formik.values.dni}</p>
+                </div>
+                <button type="button" className={styles.envioCambiar} onClick={() => setModoDireccion('lista')}>
+                  Cambiar
+                </button>
+              </div>
+            )}
+
+            {modoDireccion === 'lista' && (
+              <div className={styles.libreta}>
+                {libreta.map((d) => (
+                  <button
+                    type="button"
+                    key={d.id}
+                    className={`${styles.libretaItem} ${d.id === direccionId ? styles.libretaItemActiva : ''}`}
+                    onClick={() => { aplicarDireccion(d); setModoDireccion('tarjeta'); }}
+                  >
+                    <span className={styles.libretaNombre}>
+                      {d.customerName}
+                      {d.principal && <span className={styles.libretaPrincipal}>Principal</span>}
+                    </span>
+                    <span>{d.address}, {d.district}</span>
+                    <span>{d.phone}</span>
+                  </button>
+                ))}
+                <button type="button" className={styles.libretaNueva} onClick={nuevaDireccion}>
+                  <Plus size={18} aria-hidden="true" /> Agregar una dirección nueva
+                </button>
+                <button type="button" className={styles.libretaCancelar} onClick={() => setModoDireccion('tarjeta')}>
+                  Cancelar
+                </button>
+              </div>
+            )}
+
+            {modoDireccion === 'formulario' && libreta.length > 0 && (
+              <button type="button" className={styles.libretaVolver} onClick={() => setModoDireccion('lista')}>
+                ← Usar una dirección guardada
+              </button>
+            )}
+
+            {/* Campos del envío: ocultos (no desmontados) con la tarjeta "Enviar a". */}
+            <div className={styles.camposDireccion} hidden={modoDireccion !== 'formulario'}>
             <div className={styles.field}>
               <label>País *</label>
               <CountrySelect
@@ -1900,21 +2023,6 @@ const CheckoutPage = () => {
               </div>
             </div>
 
-            <div className={styles.field}>
-              <label>Email *</label>
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                value={formik.values.email}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                placeholder="correo@ejemplo.com"
-              />
-              {formik.touched.email && formik.errors.email && (
-                <span className={styles.error}>{formik.errors.email}</span>
-              )}
-            </div>
 
             <div className={styles.row}>
               <div className={styles.field}>
@@ -1967,6 +2075,39 @@ const CheckoutPage = () => {
                 <span className={styles.error}>{formik.errors.address}</span>
               )}
             </div>
+            </div>
+
+            {(modoDireccion === 'formulario' || !formik.values.email) && (
+            <div className={styles.field}>
+              <label>Email *</label>
+              <input
+                type="email"
+                name="email"
+                autoComplete="email"
+                value={formik.values.email}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                placeholder="correo@ejemplo.com"
+              />
+              {formik.touched.email && formik.errors.email && (
+                <span className={styles.error}>{formik.errors.email}</span>
+              )}
+            </div>
+            )}
+
+            {user && modoDireccion === 'formulario' && (
+              <label className={styles.recordarDatos}>
+                <input
+                  type="checkbox"
+                  checked={guardarEnLibreta}
+                  onChange={(e) => setGuardarEnLibreta(e.target.checked)}
+                />
+                <span>
+                  <strong>Guardar esta dirección en mi cuenta</strong>
+                  <small>La verás la próxima vez y en «Mis direcciones».</small>
+                </span>
+              </label>
+            )}
 
             {!user && !authLoading && (
               <label className={styles.recordarDatos}>

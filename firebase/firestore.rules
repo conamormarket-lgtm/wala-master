@@ -304,6 +304,17 @@ service cloud.firestore {
       allow write: if isOwner(userId) || isAdmin();
     }
 
+    // Libreta de direcciones del cliente (doc id = uid): nombre, documento,
+    // teléfono y dirección. Solo su dueño (y un admin para soporte).
+    match /wala_direcciones/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['lista', 'actualizado'])
+        && request.resource.data.lista is list
+        && request.resource.data.lista.size() <= 10;
+    }
+
     // Reseñas de productos. Lectura pública; crear autenticado; update permitido para
     // votos útiles. TODO: restringir update a solo 'helpfulVotes' con diff().
     match /product_reviews/{id} {
@@ -503,7 +514,7 @@ service cloud.firestore {
         'suggested_packages', 'suscripcionCharges', 'suscriptores', 'tags', 'templates', 'tickets',
         'tienda_brands', 'tienda_categories', 'tienda_collections', 'tienda_encuesta_config',
         'tienda_landing_pages', 'tienda_mockups', 'tienda_themes', 'translations', 'universal_dates',
-        'userActions', 'userCoupons', 'userMissions', 'usos', 'vendors', 'wala_pedidos',
+        'userActions', 'userCoupons', 'userMissions', 'usos', 'vendors', 'wala_direcciones', 'wala_pedidos',
         'weeklyChallenges', 'wishlists', 'wordle', 'wordle_daily_words'
       ];
     }

@@ -258,6 +258,7 @@ const CatalogReward = lazy(() => import('./pages/cuenta/CatalogReward'));
 const MisCuponesPage = lazy(() => import('./pages/cuenta/MisCuponesPage'));
 const MisionesPage = lazy(() => import('./pages/cuenta/MisionesPage'));
 const WishlistPrivatePage = lazy(() => import('./pages/cuenta/WishlistPage'));
+const MisDireccionesPage = lazy(() => import('./pages/cuenta/MisDireccionesPage'));
 const WishlistPublicPage = lazy(() => import('./pages/WishlistPublic/WishlistPublic'));
 const GiftRegistryPage = lazy(() => import('./pages/GiftRegistry/GiftRegistryPage'));
 
@@ -423,6 +424,7 @@ function App() {
                                     <Route path="perfil" element={<PerfilPage />} />
                                     <Route path="pedidos" element={<CuentaRastreoPage />} />
                                     <Route path="pedidos/:id" element={<CuentaCompraDetallePage />} />
+                                    <Route path="direcciones" element={<MisDireccionesPage />} />
                                     {/* /cuenta/rastreo se unificó con "Mis Pedidos" (ver comentario junto al
                                         lazy import de CuentaRastreoPage); se conserva como redirect por si
                                         queda algún enlace/bookmark viejo apuntando ahí. */}

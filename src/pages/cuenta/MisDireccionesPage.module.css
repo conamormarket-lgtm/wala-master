@@ -1,0 +1,299 @@
+/* Mis direcciones: mismo patrón de tarjeta que Ajustes / Mi Perfil. */
+.pagina {
+  max-width: 640px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.cardHeader h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--gris-texto-principal, #0f172a);
+}
+
+.headerIcon {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.vacio {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  color: #64748b;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1.5px solid #e5e1f0;
+  border-radius: 12px;
+}
+
+.itemPrincipal {
+  border-color: #5d2bb4;
+  background: #faf7ff;
+}
+
+.itemTexto {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemTexto p {
+  margin: 0 0 0.15rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+.itemTexto .itemNombre {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.itemTexto .itemDato {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.etiqueta {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #f1ebfc;
+  color: #5d2bb4;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.itemAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.enlace {
+  padding: 0.3rem 0.4rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #5d2bb4;
+  cursor: pointer;
+}
+
+.icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.icono:hover {
+  background: rgba(100, 116, 139, 0.12);
+}
+
+.agregar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 1rem;
+  border: 1.5px dashed #b9a2e6;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #5d2bb4;
+  cursor: pointer;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gris-borde, #e2e8f0);
+}
+
+.formTitulo {
+  margin: 0;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.fila > * {
+  min-width: 0;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.campo input,
+.campo select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--color-surface-2, #fff);
+  color: var(--color-text, #0f172a);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  box-sizing: border-box;
+}
+
+.doc {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.doc select {
+  flex: 0 0 42%;
+}
+
+.botones {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.principal,
+.secundario {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.principal {
+  border: none;
+  background: #5d2bb4;
+  color: #fff;
+}
+
+.principal:hover:not(:disabled) {
+  background: #4c2196;
+}
+
+.secundario {
+  border: 1.5px solid #c4b5fd;
+  background: none;
+  color: #5d2bb4;
+}
+
+.principal:disabled,
+.secundario:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+@media (max-width: 520px) {
+  .fila {
+    grid-template-columns: 1fr;
+  }
+
+  .item {
+    flex-direction: column;
+  }
+
+  .itemAcciones {
+    align-self: stretch;
+    justify-content: flex-start;
+  }
+}
+
+:global([data-theme='dark']) .cardHeader {
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .cardHeader h2,
+:global([data-theme='dark']) .itemTexto .itemNombre,
+:global([data-theme='dark']) .formTitulo {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .itemTexto p,
+:global([data-theme='dark']) .vacio,
+:global([data-theme='dark']) .campo {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .item {
+  border-color: var(--color-border);
+}
+
+:global([data-theme='dark']) .itemPrincipal {
+  border-color: #7c4dde;
+  background: rgba(124, 77, 222, 0.12);
+}
+
+:global([data-theme='dark']) .etiqueta {
+  background: rgba(167, 139, 250, 0.16);
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .enlace,
+:global([data-theme='dark']) .agregar,
+:global([data-theme='dark']) .secundario {
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .formulario {
+  border-color: var(--color-border);
+}

@@ -1463,3 +1463,193 @@
 :global([data-theme='dark']) .recordarDatos small {
   color: var(--color-text-muted);
 }
+
+/* ── Libreta de direcciones en el checkout ── */
+.camposDireccion {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.camposDireccion[hidden] {
+  display: none;
+}
+
+.envioCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border: 1.5px solid #5d2bb4;
+  border-radius: 14px;
+  background: #faf7ff;
+}
+
+.envioIcono {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f1ebfc;
+  color: #5d2bb4;
+}
+
+.envioTexto {
+  flex: 1;
+  min-width: 0;
+}
+
+.envioTexto p {
+  margin: 0 0 0.15rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+.envioTexto .envioNombre {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.envioTexto .envioDoc {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.envioCambiar,
+.libretaCancelar,
+.libretaVolver {
+  flex-shrink: 0;
+  padding: 0.4rem 0.2rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #5d2bb4;
+  cursor: pointer;
+}
+
+.libretaVolver {
+  align-self: flex-start;
+  margin-top: -0.75rem;
+}
+
+.libreta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.libretaItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1.5px solid #e5e1f0;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  color: #475569;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.libretaItem:hover {
+  border-color: #b9a2e6;
+}
+
+.libretaItemActiva {
+  border-color: #5d2bb4;
+  background: #faf7ff;
+}
+
+.libretaNombre {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.libretaPrincipal {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #f1ebfc;
+  color: #5d2bb4;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.libretaNueva {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 48px;
+  border: 1.5px dashed #b9a2e6;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #5d2bb4;
+  cursor: pointer;
+}
+
+.libretaCancelar {
+  align-self: center;
+}
+
+:global([data-theme='dark']) .envioCard {
+  border-color: #7c4dde;
+  background: rgba(124, 77, 222, 0.1);
+}
+
+:global([data-theme='dark']) .envioIcono,
+:global([data-theme='dark']) .libretaPrincipal {
+  background: rgba(167, 139, 250, 0.16);
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .envioTexto p,
+:global([data-theme='dark']) .libretaItem {
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='dark']) .envioTexto .envioNombre,
+:global([data-theme='dark']) .libretaNombre {
+  color: var(--color-text);
+}
+
+:global([data-theme='dark']) .libretaItem {
+  border-color: var(--color-border);
+  background: var(--color-surface-2);
+}
+
+:global([data-theme='dark']) .libretaItemActiva {
+  border-color: #7c4dde;
+  background: rgba(124, 77, 222, 0.12);
+}
+
+:global([data-theme='dark']) .envioCambiar,
+:global([data-theme='dark']) .libretaCancelar,
+:global([data-theme='dark']) .libretaVolver,
+:global([data-theme='dark']) .libretaNueva {
+  color: #c4b5fd;
+}
+
+:global([data-theme='dark']) .libretaNueva {
+  border-color: rgba(167, 139, 250, 0.45);
+}

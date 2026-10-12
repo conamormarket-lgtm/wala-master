@@ -10,6 +10,7 @@ import {
   Heart,
   Calendar,
   Settings,
+  MapPin,
 } from 'lucide-react';
 
 // Fuente única de "todas las opciones a donde se quiere dirigir" dentro de
@@ -29,6 +30,7 @@ export const useCuentaNavGroups = () => {
         // mostraban la misma lista con distinto diseño -pedido a mano: "se
         // repite 2 veces lo mismo"-. Se unificaron en uno solo.
         { to: '/cuenta/pedidos', labelKey: 'account.misPedidos', label: 'Mis Pedidos', icon: Package },
+        { to: '/cuenta/direcciones', labelKey: 'account.misDirecciones', label: 'Mis Direcciones', icon: MapPin },
         { to: '/cuenta/ajustes', labelKey: 'account.ajustes', label: 'Ajustes', icon: Settings },
       ],
     },
